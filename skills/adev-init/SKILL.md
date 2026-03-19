@@ -20,7 +20,7 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 This IS the onboarding experience. Walk through each layer interactively:
 
 ```
-Step 1/7: Project Analysis
+Step 1/8: Project Analysis
   Analyzing your project...
 
   Detected:
@@ -35,7 +35,7 @@ Step 1/7: Project Analysis
 ```
 
 ```
-Step 2/7: Constitution
+Step 2/8: Constitution
   The constitution is the core of adev. It defines your project's
   non-negotiable principles, coding standards, and architecture
   boundaries. It stays under 200 lines and syncs to CLAUDE.md
@@ -60,7 +60,7 @@ If the user says yes, proceed with the constitution wizard:
 Generate `constitution.md` from answers using the template at `${CLAUDE_PLUGIN_ROOT}/templates/constitution-template.md`.
 
 ```
-Step 3/7: Platform Context
+Step 3/8: Platform Context
   Platform context captures your tech stack so agents make
   technology-aware decisions. When an agent needs to choose
   between Redis and Postgres, it checks here first.
@@ -80,7 +80,7 @@ Step 3/7: Platform Context
 ```
 
 ```
-Step 4/7: Orientation
+Step 4/8: Orientation
   The orientation file is a human-written guide to your codebase.
   It tells agents where to find things: which directory handles
   auth, where the API routes live, how the modules connect.
@@ -94,7 +94,7 @@ Step 4/7: Orientation
 If yes, analyze directory structure, identify key modules, produce a brief `orientation/architecture.md` (3-5 paragraphs describing the codebase layout and module relationships).
 
 ```
-Step 5/7: Product Charter
+Step 5/8: Product Charter
   A product charter defines WHAT you are building at the highest
   level: vision, module map, cross-cutting concerns, and quality
   attributes. Feature charters break this down per module.
@@ -103,7 +103,7 @@ Step 5/7: Product Charter
 ```
 
 ```
-Step 6/7: Sync Targets
+Step 6/8: Sync Targets
   Your constitution will be synced to agent-specific files so
   every AI tool gets the same rules.
 
@@ -117,7 +117,52 @@ Step 6/7: Sync Targets
 ```
 
 ```
-Step 7/7: Summary
+Step 7/8: Plugin Conflicts
+  adev replaces the workflows provided by Superpowers and Spec Kit.
+  Running them together causes duplicate skill invocations and
+  competing gateway hooks.
+
+  Detected plugins that conflict with adev:
+  ⚠ superpowers — brainstorming, planning, TDD, and code review
+    overlap with /adev-brainstorm, /adev-plan, /adev-implement,
+    and /adev-validate.
+
+  Recommended: disable conflicting plugins for THIS project only.
+  They stay installed globally for your other projects.
+
+  → Disable Superpowers for this project? (yes / no, I'll manage it myself)
+```
+
+If the user says yes, create or update `.claude/settings.json` in the project:
+
+```json
+{
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": false
+  }
+}
+```
+
+If `.claude/settings.json` already exists, merge the `enabledPlugins` key without overwriting other settings.
+
+If the user says no, warn them:
+
+```
+  ⚠ Both adev and Superpowers will be active. You may see duplicate
+  skill suggestions. If this becomes noisy, run:
+    /adev-init
+  and select "Fix issue" to disable Superpowers later.
+```
+
+Detection logic: check for installed plugins by looking at:
+- `~/.claude/settings.json` → `enabledPlugins` for globally enabled plugins
+- Project `.claude/settings.json` → `enabledPlugins` for project-level overrides
+- Known conflicting plugins: `superpowers@claude-plugins-official`
+
+If no conflicting plugins are detected, skip this step entirely.
+
+```
+Step 8/8: Summary
 
   Ready to create:
   ✓ .context-kit/constitution.md          (87 lines)
@@ -153,15 +198,18 @@ adev Context Kit — Health Check
 ✓ Orientation         architecture.md (last updated 12 days ago)
 ✗ Samples             empty directory
 ✓ Sync Status         CLAUDE.md matches constitution (synced 2 days ago)
+⚠ Plugin Conflict     Superpowers is active globally but not disabled for this project
 
 Issues found:
 1. user-management module has no charter
 2. No ADRs — 3 recent architectural changes could be documented
 3. No golden samples — agents have no reference implementations
+4. Superpowers plugin may conflict with adev workflows
 
 → Fix issue 1: create charter for user-management? (yes / skip)
 → Fix issue 2: draft ADRs from git history? (yes / skip)
 → Fix issue 3: I'll skip samples for now
+→ Fix issue 4: disable Superpowers for this project? (yes / no)
 ```
 
 This replaces the need for a separate `/adev-tour` skill. The init command IS the tour on first run, and the diagnostic on subsequent runs.
