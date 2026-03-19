@@ -15,26 +15,16 @@ fi
 # Read the skill content
 SKILL_CONTENT=$(cat "$SKILL_FILE")
 
-# Escape for JSON
-SKILL_CONTENT=$(echo "$SKILL_CONTENT" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
-# Remove surrounding quotes from json.dumps
+# Escape for JSON using python3
+SKILL_CONTENT=$(printf '%s' "$SKILL_CONTENT" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
+# Remove surrounding quotes from json.dumps output
 SKILL_CONTENT="${SKILL_CONTENT:1:${#SKILL_CONTENT}-2}"
 
-# Detect platform and output appropriate format
-if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
-  # Claude Code native
-  cat <<JSONEOF
+cat <<JSONEOF
 {
   "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
     "additionalContext": "${SKILL_CONTENT}"
   }
 }
 JSONEOF
-else
-  # Other platforms (Cursor, etc.)
-  cat <<JSONEOF
-{
-  "additional_context": "${SKILL_CONTENT}"
-}
-JSONEOF
-fi
