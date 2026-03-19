@@ -1,0 +1,29 @@
+{
+  "name": "adev-cli",
+  "version": "0.1.0",
+  "description": "CLI for the Agentic Development Framework — installs the adev plugin into Claude Code and scaffolds .context-kit/",
+  "bin": {
+    "adev": "./cli/index.mjs"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node cli/index.mjs --help"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agentic-development/adev-plugin.git"
+  },
+  "keywords": [
+    "agentic-development",
+    "claude-code",
+    "plugin",
+    "context-engineering",
+    "cli"
+  ],
+  "author": "Agentic Development",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/agentic-development/adev-plugin/issues"
+  },
+  "homepage": "https://github.com/agentic-development/adev-plugin#readme"
+}

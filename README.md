@@ -7,17 +7,28 @@ Grounded in the [Agentic Development Handbook](https://www.agentic-dev.org/en/ha
 ## Install
 
 ```bash
-claude plugin install agentic-development/adev-plugin
+npx adev-cli init
+```
+
+This installs the plugin into Claude Code, detects conflicting plugins (Superpowers), scaffolds `.context-kit/`, and configures your settings. Zero dependencies.
+
+Alternatively, for development or testing:
+
+```bash
+claude --plugin-dir /path/to/adev-plugin
 ```
 
 ## Quick Start
 
 ```bash
-# Initialize context kit for a new project
+# After install, start Claude Code and run the interactive wizard
 /adev-init
 
 # Or onboard an existing codebase
 /adev-init --brownfield
+
+# Preview what would be created without writing files
+/adev-init --dry-run
 ```
 
 This scaffolds a `.context-kit/` directory with your project's constitution, platform context, and orientation. The constitution is synced to `CLAUDE.md` (and other agent files) automatically.
