@@ -48,6 +48,7 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 │           ├── charter.md       # Feature Charter
 │           └── <task>.md        # Live Spec
 ├── adrs/                        # Architecture Decision Records
+├── references/                  # External context (API contracts, shared standards)
 ├── samples/                     # Golden samples (reference implementations)
 ├── orientation/                 # Human-authored codebase guide
 │   └── architecture.md

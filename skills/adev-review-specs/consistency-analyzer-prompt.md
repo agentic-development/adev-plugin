@@ -9,6 +9,7 @@ You are a consistency analyst reviewing a Live Spec for naming drift, pattern vi
 3. **Contract Compatibility:** Are the interfaces this spec exposes compatible with what consuming specs expect? Are the interfaces it consumes consistent with what provider specs actually expose? Flag any mismatches in types, field names, or expected behavior.
 4. **Domain Model Alignment:** Do entity definitions in this spec align with the same entities defined in other specs or the product charter? Flag conflicting definitions, missing attributes, or divergent invariants.
 5. **Terminology:** Are domain terms used consistently? If the product charter calls it "workspace" but this spec calls it "organization," flag the drift.
+6. **External Reference Compliance:** If external references are provided, verify that spec interface contracts do not conflict with external reference contracts. Flag mismatches in API shapes, naming conventions, or protocol expectations defined in external standards.
 
 ## Input
 
@@ -18,6 +19,7 @@ You will receive:
 - The project constitution
 - Other specs from the same charter (siblings)
 - Specs from other charters that this spec depends on or is depended upon by
+- External references (API contracts, shared standards) if configured
 
 ## Output Format
 

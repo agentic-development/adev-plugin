@@ -58,6 +58,29 @@ modules: []
   #     - src/routes/
 
 # ============================================================================
+# External Contexts
+# References to external repositories, API contracts, or shared standards
+# that this project depends on. Files are stored in .context-index/references/.
+# Run /adev-hygiene to check freshness against refresh_interval_days.
+# ============================================================================
+
+external_contexts: []
+  # - slug: company-standards
+  #   source: github:org/company-standards/main
+  #   path: .context-index/
+  #   refresh_interval_days: 7
+
+  # - slug: api-contracts
+  #   source: https://api.example.com/openapi.yaml
+  #   path: openapi.yaml
+  #   refresh_interval_days: 3
+
+  # - slug: design-system
+  #   source: github:org/design-system/main
+  #   path: docs/tokens/
+  #   refresh_interval_days: 14
+
+# ============================================================================
 # Specialists
 # Domain expert subagent prompts for /adev-implement task routing.
 # Each specialist is a markdown file with a system prompt.

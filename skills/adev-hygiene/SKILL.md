@@ -1,16 +1,16 @@
 ---
 name: adev-hygiene
-description: Audit all context for staleness, drift, and coverage gaps. Runs six audit passes across the .context-index/ directory and generates actionable reports with checklists.
+description: Audit all context for staleness, drift, and coverage gaps. Runs seven audit passes across the .context-index/ directory and generates actionable reports with checklists.
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and generate actionable reports. Six audit passes detect staleness, drift, and coverage gaps so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and generate actionable reports. Seven audit passes detect staleness, drift, and coverage gaps so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all six passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions)
+- No arguments: full audit (all seven passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references)
 - `--fix`: auto-fix issues where possible (runs /adev-sync for constitution drift, etc.)
 
 ## Prerequisites
@@ -268,6 +268,44 @@ Sessions analyzed: 23 (last 30 days)
 - [ ] Add file upload validation to relevant feature charter
 ```
 
+## Audit Pass 7: External Reference Freshness
+
+**Goal:** Verify that external reference files are up-to-date per their configured refresh intervals.
+
+**Prerequisite check:**
+
+1. Read `.context-index/manifest.yaml` for the `external_contexts` section.
+2. If `external_contexts` is empty or missing, SKIP this pass entirely. Print:
+   ```
+   ## External Reference Freshness
+
+   Skipped — no external contexts configured in manifest.yaml.
+   ```
+
+**Steps (when external contexts are configured):**
+
+1. For each entry in `external_contexts`:
+   - Check if `.context-index/references/<slug>/` exists. If not, flag as MISSING.
+   - Read the frontmatter of files in the reference directory for a `last_fetched` date.
+   - If no `last_fetched` field exists, check the file's git commit date as a fallback.
+   - Compare the age against `refresh_interval_days` from the manifest entry.
+   - Flag references older than the interval as STALE.
+
+**Output format:**
+```
+## External Reference Freshness
+
+Configured references: 3
+
+- [x] company-standards — fetched 2 days ago (interval: 7 days) ✓
+- [ ] api-contracts — STALE: fetched 12 days ago (interval: 3 days)
+- [ ] design-system — MISSING: directory .context-index/references/design-system/ not found
+
+**Actions:**
+- [ ] Refresh api-contracts: fetch latest from source
+- [ ] Create design-system reference: fetch from github:org/design-system/main
+```
+
 ## Report Format
 
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
@@ -288,6 +326,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Golden Sample Validity | FAIL | 1 invalid sample |
 | Spec-to-Code Drift | WARN | 3 drift items |
 | Session Analysis | SKIP | no provider configured |
+| External Reference Freshness | PASS | 0 issues |
 
 ## Priority Actions
 

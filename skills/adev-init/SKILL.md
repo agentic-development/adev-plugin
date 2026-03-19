@@ -20,7 +20,7 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 This IS the onboarding experience. Walk through each layer interactively:
 
 ```
-Step 1/8: Project Analysis
+Step 1/9: Project Analysis
   Analyzing your project...
 
   Detected:
@@ -35,7 +35,7 @@ Step 1/8: Project Analysis
 ```
 
 ```
-Step 2/8: Constitution
+Step 2/9: Constitution
   The constitution is the core of adev. It defines your project's
   non-negotiable principles, coding standards, and architecture
   boundaries. It stays under 200 lines and syncs to CLAUDE.md
@@ -60,7 +60,7 @@ If the user says yes, proceed with the constitution wizard:
 Generate `constitution.md` from answers using the template at `${CLAUDE_PLUGIN_ROOT}/templates/constitution-template.md`.
 
 ```
-Step 3/8: Platform Context
+Step 3/9: Platform Context
   Platform context captures your tech stack so agents make
   technology-aware decisions. When an agent needs to choose
   between Redis and Postgres, it checks here first.
@@ -80,7 +80,7 @@ Step 3/8: Platform Context
 ```
 
 ```
-Step 4/8: Orientation
+Step 4/9: Orientation
   The orientation file is a human-written guide to your codebase.
   It tells agents where to find things: which directory handles
   auth, where the API routes live, how the modules connect.
@@ -94,7 +94,7 @@ Step 4/8: Orientation
 If yes, analyze directory structure, identify key modules, produce a brief `orientation/architecture.md` (3-5 paragraphs describing the codebase layout and module relationships).
 
 ```
-Step 5/8: Product Charter
+Step 5/9: Product Charter
   A product charter defines WHAT you are building at the highest
   level: vision, module map, cross-cutting concerns, and quality
   attributes. Feature charters break this down per module.
@@ -103,7 +103,25 @@ Step 5/8: Product Charter
 ```
 
 ```
-Step 6/8: Sync Targets
+Step 6/9: External References
+
+  Does this project depend on external repos, API contracts,
+  or shared standards? (e.g., company coding standards, OpenAPI specs,
+  shared design tokens)
+
+  → yes / no (skip)
+```
+
+If yes:
+- Prompt for each reference: slug, source URL/repo, path, refresh interval
+- Add entries to `external_contexts` in manifest
+- Create `.context-index/references/` directory
+- Show summary of configured references
+
+If no: skip, most projects start without this.
+
+```
+Step 7/9: Sync Targets
   Your constitution will be synced to agent-specific files so
   every AI tool gets the same rules.
 
@@ -117,7 +135,7 @@ Step 6/8: Sync Targets
 ```
 
 ```
-Step 7/8: Plugin Conflicts
+Step 8/9: Plugin Conflicts
   adev replaces the workflows provided by Superpowers and Spec Kit.
   Running them together causes duplicate skill invocations and
   competing gateway hooks.
@@ -162,7 +180,7 @@ Detection logic: check for installed plugins by looking at:
 If no conflicting plugins are detected, skip this step entirely.
 
 ```
-Step 8/8: Summary
+Step 9/9: Summary
 
   Ready to create:
   ✓ .context-index/constitution.md          (87 lines)
@@ -172,6 +190,7 @@ Step 8/8: Summary
   ✓ .context-index/specs/product.md         (draft)
   ○ .context-index/specs/features/          (empty, ready for charters)
   ○ .context-index/adrs/                    (empty, ready for decisions)
+  ○ .context-index/references/              (external contexts, if configured)
   ○ .context-index/samples/                 (empty, ready for examples)
 
   Will also:
@@ -197,6 +216,7 @@ adev Context Index — Health Check
 ✗ ADRs                none found (3 architectural changes detected in recent git history)
 ✓ Orientation         architecture.md (last updated 12 days ago)
 ✗ Samples             empty directory
+✓ External References references/ matches manifest (2 configured, 2 present)
 ✓ Sync Status         CLAUDE.md matches constitution (synced 2 days ago)
 ⚠ Plugin Conflict     Superpowers is active globally but not disabled for this project
 

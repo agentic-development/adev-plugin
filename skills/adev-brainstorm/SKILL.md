@@ -55,6 +55,7 @@ Read these files using Glob/Grep/Read. Do not ask the user for information that 
 - `.context-index/adrs/*.md` — read all ADRs. Note decisions that constrain the design space.
 - `.context-index/orientation/architecture.md` — if it exists, read for module boundaries and codebase structure
 - `.context-index/specs/cross-cutting/*.md` — read any cross-cutting specs for shared constraints
+- `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
 **If `--module <name>` was provided:**
 - Read `.context-index/specs/features/<name>/charter.md` if it exists. You are extending or revising this charter, not replacing it from scratch.

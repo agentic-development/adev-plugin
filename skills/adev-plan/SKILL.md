@@ -55,18 +55,20 @@ Read these files in order. Each informs the planning decisions that follow.
 
 4. **ADRs:** Read all files in `.context-index/adrs/`. Note any decisions relevant to the spec being planned. Reference specific ADRs in tasks where they apply.
 
-5. **Parent charter:** Read the feature charter (`.context-index/specs/features/<module>/charter.md`). Extract the capability map. Every task in the plan must trace to a capability listed here.
+5. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts. Note external interfaces this module must comply with.
 
-6. **The spec:** Read the Live Spec itself. Extract:
+6. **Parent charter:** Read the feature charter (`.context-index/specs/features/<module>/charter.md`). Extract the capability map. Every task in the plan must trace to a capability listed here.
+
+7. **The spec:** Read the Live Spec itself. Extract:
    - Behavioral contract (what the implementation must do)
    - Acceptance criteria (the checklist the implementation must satisfy)
    - Actionable task map (the spec's own decomposition, if present)
 
-7. **Review report:** Read the `.review.md` file. Note any `PASS_WITH_NOTES` warnings. The plan should address or acknowledge them.
+8. **Review report:** Read the `.review.md` file. Note any `PASS_WITH_NOTES` warnings. The plan should address or acknowledge them.
 
-8. **Cross-cutting specs:** Read relevant files from `.context-index/specs/cross-cutting/` that the spec depends on (error handling, auth flow, API versioning, etc.).
+9. **Cross-cutting specs:** Read relevant files from `.context-index/specs/cross-cutting/` that the spec depends on (error handling, auth flow, API versioning, etc.).
 
-9. **Samples:** If `.context-index/samples/` contains golden samples relevant to this spec's patterns, note them. Tasks should reference samples where applicable.
+10. **Samples:** If `.context-index/samples/` contains golden samples relevant to this spec's patterns, note them. Tasks should reference samples where applicable.
 
 ## Step 3: Constitution Validation
 

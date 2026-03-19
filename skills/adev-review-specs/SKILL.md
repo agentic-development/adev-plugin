@@ -38,6 +38,7 @@ For each spec to be reviewed, gather the context package that all reviewers will
 5. **Cross-cutting specs:** Read all files in `.context-index/specs/cross-cutting/` (for contract compatibility).
 6. **ADRs:** Read all files in `.context-index/adrs/` (for decision compliance).
 7. **Platform context:** Read `.context-index/platform-context.yaml` (for technology constraints).
+8. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts that specs must comply with.
 
 If a charter or constitution file is missing, warn the user and ask whether to proceed with reduced context or abort.
 
@@ -123,6 +124,9 @@ Task tool (general-purpose):
 
     ## Cross-Cutting Specs
     <cross-cutting specs, each prefixed with filename>
+
+    ## External References
+    <external reference files from .context-index/references/, each prefixed with filename. If none exist, state "No external references configured.">
 
     ## Target Spec
     <the spec being reviewed>

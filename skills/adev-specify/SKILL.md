@@ -72,6 +72,7 @@ Read these files and hold them in working memory:
 - The resolved Feature Charter — for scope boundaries and capability list
 - `.context-index/specs/product.md` — for cross-module awareness
 - Any existing specs in the same module directory — to avoid duplication
+- `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
 ### Step 3: Identify Capability
 
