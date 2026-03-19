@@ -1,28 +1,207 @@
 ---
 name: adev-validate
-description: Post-implementation validation. Checks that completed work satisfies the Live Spec's acceptance criteria, passes constitutional quality gates, and does not introduce drift.
+description: Post-implementation validation with 7 ordered checks. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
 ---
 
 # Validate Implementation
 
-Run post-implementation checks against specs, constitution, and quality gates.
-
-Full implementation pending. See design doc Part 3, Phase 3.
-
-## Process
-
-1. **Load spec:** Read the Live Spec that was implemented.
-2. **Acceptance criteria check:** Walk through each acceptance criterion in the spec and verify it is satisfied by the implementation (tests exist, behavior confirmed).
-3. **Constitution compliance:** Run all quality gate commands defined in the constitution:
-   - Test suite passes
-   - Linter passes
-   - Type checker passes
-   - Any custom gates
-4. **Drift detection:** Compare the implementation against the spec's behavioral contract. Flag any deviations (extra endpoints, missing error handling, changed contracts).
-5. **Coverage report:** Check test coverage for files touched by the implementation.
-6. **Output:** Write validation report to `.context-kit/specs/features/<module>/<spec-slug>-validation.md` with pass/fail status and findings.
+Run post-implementation validation against specs, constitution, charters, ADRs, and quality gates. Produces a structured report with PASS/FAIL per check and specific file references for every failure.
 
 ## Arguments
 
-- `--spec <path>`: validate against a specific spec (required)
-- `--fix`: attempt to auto-fix minor issues (missing tests, lint errors)
+- `--spec <path>`: validate against a specific Live Spec (required)
+- `--plan <path>`: cross-reference the implementation plan (optional, improves traceability)
+- `--fix`: attempt to auto-fix minor issues (lint errors, formatting) before reporting
+
+## Prerequisites
+
+Before starting, verify:
+
+1. **Context Kit exists.** `.context-kit/` must be present with `constitution.md` and `manifest.yaml`.
+2. **Spec exists.** The target Live Spec must exist and be readable.
+3. **Implementation exists.** The files referenced in the spec or plan must exist. If the spec references files that do not exist, the implementation is incomplete. Report this immediately without running the full check suite.
+
+## Execution Strategy
+
+**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 7 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev-validate`.
+
+**Checks 2 through 7 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
+
+## The 7 Checks
+
+### Check 1: Quality Gates (fail-fast)
+
+Read the Quality Gates section from `.context-kit/constitution.md`. Run every command listed there.
+
+Typical commands:
+- Test suite: the `[test command]` from the constitution
+- Linter: the `[lint command]` from the constitution
+- Type checker: the `[type check command]` from the constitution
+- Any custom gates the project defines
+
+**If `--fix` was passed:** Before reporting failures, attempt auto-fix for lint and formatting errors (e.g., `npx eslint --fix`, `npx prettier --write`). Re-run the failing gate after the fix. If it passes now, record it as PASS (auto-fixed). If it still fails, record it as FAIL.
+
+**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 7. The report's overall status is FAIL.
+
+**If all gates pass:** Proceed to Check 2.
+
+### Check 2: Spec Compliance
+
+Load the Live Spec and walk through every acceptance criterion.
+
+For each criterion:
+1. Identify which files and tests address it.
+2. Read the relevant code. Verify the behavior matches the criterion.
+3. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
+
+Record per criterion:
+- PASS: code and tests satisfy the criterion.
+- FAIL: code does not satisfy the criterion (with file:line references and explanation).
+- PARTIAL: code partially satisfies (describe what is missing).
+
+### Check 3: Charter Consistency
+
+Load the Feature Charter referenced by the spec. Verify:
+
+- **Scope boundaries.** The implementation does not introduce functionality outside the charter's defined scope. New endpoints, models, or UI components that are not described in the charter's Capability Map are flagged.
+- **Domain model alignment.** Entity names, relationships, and boundaries in the code match the charter's Domain Model section.
+- **Interface contracts.** API signatures, request/response shapes, and event payloads match the charter's Interface Contracts section (if defined).
+
+Record PASS or FAIL with specific references to charter sections and code locations.
+
+### Check 4: Constitution Compliance
+
+Load `.context-kit/constitution.md`. Check:
+
+- **Architecture Boundaries.** Verify no boundary was crossed. Common violations: new services or database tables created without approval, authentication flows modified, unauthorized dependencies added.
+- **Non-Negotiable Principles.** Verify each principle is respected in the implementation. This is a semantic check: read the code and assess whether the principle's intent is honored.
+- **Coding Standards.** Verify naming conventions, pattern usage, and structural conventions match the constitution. This complements the linter (Check 1) with standards that cannot be machine-checked.
+
+Record PASS or FAIL with specific principle/boundary violated and code location.
+
+### Check 5: ADR Compliance
+
+List all ADRs in `.context-kit/adrs/`. For each ADR relevant to the implementation's domain:
+
+1. Read the ADR's decision and rationale.
+2. Check whether the implementation conflicts with, contradicts, or ignores the decision.
+3. If the implementation intentionally deviates from an ADR, flag it. The user must either update the ADR or change the implementation.
+
+If no ADRs exist or none are relevant, record PASS (no applicable ADRs).
+
+### Check 6: Cross-Cutting Spec Compliance
+
+List all specs in `.context-kit/specs/cross-cutting/`. For each cross-cutting spec relevant to the implementation:
+
+1. Read the spec's requirements (e.g., error handling conventions, API versioning rules, auth flow requirements).
+2. Verify the implementation follows those requirements.
+
+Relevance is determined by the domain: if a cross-cutting spec covers error handling and the implementation includes error handling code, that spec is relevant.
+
+If no cross-cutting specs exist or none are relevant, record PASS (no applicable cross-cutting specs).
+
+### Check 7: Specialist Review
+
+Read the `specialists` registry from `.context-kit/manifest.yaml`. Apply the same match scoring algorithm used by `/adev-implement`:
+
+1. Collect all files touched by the implementation (from the plan, or by diffing against the base branch).
+2. For each specialist, compute pattern score (2 points per matching glob + depth bonus) and keyword score (1 point per matching keyword in the spec title/description).
+3. If any specialist scores above 0, flag the implementation for domain-specific review.
+
+For each matched specialist:
+- If `invoke: skill`, note the skill name and recommend the user invoke it for a focused review.
+- If `invoke: subagent`, dispatch the specialist as a review subagent with:
+  - The specialist's prompt template from `.context-kit/specialists/<name>.md`
+  - The list of files to review
+  - The relevant spec sections
+  - Instructions to check domain-specific quality (e.g., accessibility for frontend, injection vectors for security, migration safety for data-engineering)
+
+Record per specialist: PASS, FAIL (with specific findings), or SKIPPED (no specialist matched).
+
+## Report Format
+
+Write the validation report to `.context-kit/specs/features/<module>/<spec-slug>-validation.md`.
+
+```markdown
+# Validation Report: [Spec Title]
+
+> **Date:** [YYYY-MM-DD]
+> **Spec:** [path to Live Spec]
+> **Plan:** [path to plan, if provided]
+> **Overall Status:** PASS | FAIL
+
+---
+
+## Check 1: Quality Gates — PASS | FAIL
+- Tests: PASS | FAIL [command output if failed]
+- Lint: PASS | FAIL (auto-fixed) [command output if failed]
+- Typecheck: PASS | FAIL [command output if failed]
+- [Custom gate]: PASS | FAIL
+
+[If FAIL: "Quality gates failed. Checks 2-7 skipped. Fix the above and re-run /adev-validate."]
+
+## Check 2: Spec Compliance — PASS | FAIL
+- [Criterion 1]: PASS | FAIL | PARTIAL
+  - [file:line reference and explanation if not PASS]
+- [Criterion 2]: PASS
+- ...
+
+## Check 3: Charter Consistency — PASS | FAIL
+- Scope: PASS | FAIL [details]
+- Domain model: PASS | FAIL [details]
+- Interface contracts: PASS | FAIL [details]
+
+## Check 4: Constitution Compliance — PASS | FAIL
+- Architecture boundaries: PASS | FAIL [boundary violated, file:line]
+- Non-negotiable principles: PASS | FAIL [principle violated, file:line]
+- Coding standards: PASS | FAIL [standard violated, file:line]
+
+## Check 5: ADR Compliance — PASS | FAIL | N/A
+- [ADR-001]: PASS | FAIL [conflict description]
+- ...
+
+## Check 6: Cross-Cutting Specs — PASS | FAIL | N/A
+- [error-handling.md]: PASS | FAIL [details]
+- ...
+
+## Check 7: Specialist Review — PASS | FAIL | SKIPPED
+- [frontend-design]: PASS | FAIL [findings]
+- [security]: PASS | FAIL [findings]
+- ...
+```
+
+## Overall Status
+
+- **PASS:** All 7 checks passed. The implementation is validated.
+- **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev-validate`.
+
+## After Validation
+
+If PASS:
+```
+Validation passed. All 7 checks green.
+
+The implementation satisfies the spec, stays within charter scope,
+respects the constitution, and passes all quality gates.
+
+Ready to merge or proceed to the next feature.
+```
+
+If FAIL:
+```
+Validation failed. [N] check(s) need attention.
+
+[List the failed checks with a one-line summary each]
+
+Fix the issues above and re-run: /adev-validate --spec <path>
+```
+
+## Red Flags
+
+**Never:**
+- Continue to Checks 2-7 if Check 1 (Quality Gates) failed
+- Skip any of the 7 checks (except when fail-fast applies to Check 1)
+- Report PASS when any check has unresolved failures
+- Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
+- Trust implementer claims without reading the actual code
+- Skip specialist review when the scoring algorithm produces matches
