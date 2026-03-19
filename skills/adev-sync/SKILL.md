@@ -5,27 +5,27 @@ description: Sync constitution to CLAUDE.md, AGENTS.md, and other agent files de
 
 # Sync Constitution to Agent Files
 
-Reads `.context-kit/constitution.md` and generates tool-specific agent files based on `manifest.yaml` sync targets.
+Reads `.context-index/constitution.md` and generates tool-specific agent files based on `manifest.yaml` sync targets.
 
 ## Process
 
 1. **Read source files:**
-   - `.context-kit/constitution.md` (required)
-   - `.context-kit/manifest.yaml` (required, for sync targets)
-   - `.context-kit/platform-context.yaml` (optional, for tech stack summary)
+   - `.context-index/constitution.md` (required)
+   - `.context-index/manifest.yaml` (required, for sync targets)
+   - `.context-index/platform-context.yaml` (optional, for tech stack summary)
 
 2. **For each sync target in manifest:**
 
    ### Claude format (`CLAUDE.md`)
    ```markdown
-   <!-- Synced from .context-kit/constitution.md by adev. Do not edit above the User Additions line. -->
+   <!-- Synced from .context-index/constitution.md by adev. Do not edit above the User Additions line. -->
 
    [Full constitution content]
 
-   ## Context Kit
+   ## Context Index
    This project uses the Agentic Development Framework (adev).
-   - Constitution: `.context-kit/constitution.md`
-   - Manifest: `.context-kit/manifest.yaml`
+   - Constitution: `.context-index/constitution.md`
+   - Manifest: `.context-index/manifest.yaml`
    - Platform: [summary from platform-context.yaml]
    - Available skills: /adev-brainstorm, /adev-specify, /adev-review-specs, /adev-plan, /adev-implement, /adev-validate, /adev-debug, /adev-hygiene
 
@@ -37,12 +37,12 @@ Reads `.context-kit/constitution.md` and generates tool-specific agent files bas
 
    ### AGENTS.md format
    ```markdown
-   <!-- Synced from .context-kit/constitution.md by adev. -->
+   <!-- Synced from .context-index/constitution.md by adev. -->
 
    [Full constitution content]
 
    ## Project Context
-   For detailed context, see `.context-kit/manifest.yaml`.
+   For detailed context, see `.context-index/manifest.yaml`.
    ```
 
    ### Copilot format (`.github/copilot-instructions.md`)
@@ -67,6 +67,6 @@ Reads `.context-kit/constitution.md` and generates tool-specific agent files bas
 ## When to Run
 
 - After `/adev-init` (automatic)
-- After editing `.context-kit/constitution.md` (suggested by sync-trigger hook)
-- After editing `.context-kit/manifest.yaml` (manual)
+- After editing `.context-index/constitution.md` (suggested by sync-trigger hook)
+- After editing `.context-index/manifest.yaml` (manual)
 - When agent files seem stale (`/adev-hygiene` will detect this)

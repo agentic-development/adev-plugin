@@ -166,7 +166,7 @@ function disableConflictingPlugin(pluginKey) {
 // ── Scaffold ────────────────────────────────────────────────────────────
 
 function scaffoldContextKit() {
-  const root = join(process.cwd(), ".context-kit");
+  const root = join(process.cwd(), ".context-index");
   const created = [];
 
   const dirs = [
@@ -185,7 +185,7 @@ function scaffoldContextKit() {
     const path = join(root, dir);
     if (!existsSync(path)) {
       ensureDir(path);
-      created.push(dir || ".context-kit/");
+      created.push(dir || ".context-index/");
     }
   }
 
@@ -212,12 +212,12 @@ function scaffoldContextKit() {
   const gitignorePath = join(process.cwd(), ".gitignore");
   if (existsSync(gitignorePath)) {
     const content = readFileSync(gitignorePath, "utf8");
-    if (!content.includes(".context-kit/hygiene")) {
-      writeFileSync(gitignorePath, content.trimEnd() + "\n\n# adev context kit\n.context-kit/hygiene/\n");
+    if (!content.includes(".context-index/hygiene")) {
+      writeFileSync(gitignorePath, content.trimEnd() + "\n\n# adev context index\n.context-index/hygiene/\n");
       created.push(".gitignore (updated)");
     }
   } else {
-    writeFileSync(gitignorePath, "# adev context kit\n.context-kit/hygiene/\n");
+    writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n");
     created.push(".gitignore (created)");
   }
 
@@ -268,13 +268,13 @@ async function cmdInit() {
     }
   }
 
-  // Step 4: Scaffold .context-kit/
-  heading("Step 4: Scaffold .context-kit/");
+  // Step 4: Scaffold .context-index/
+  heading("Step 4: Scaffold .context-index/");
 
-  if (existsSync(join(process.cwd(), ".context-kit"))) {
-    log(".context-kit/ already exists, skipping scaffold");
+  if (existsSync(join(process.cwd(), ".context-index"))) {
+    log(".context-index/ already exists, skipping scaffold");
   } else {
-    const scaffold = await ask("Create .context-kit/ directory with templates? (yes/no)");
+    const scaffold = await ask("Create .context-index/ directory with templates? (yes/no)");
     if (scaffold === "yes" || scaffold === "y") {
       const created = scaffoldContextKit();
       for (const item of created) {
@@ -335,7 +335,7 @@ async function cmdUninstall() {
     success("Removed cached plugin files");
   }
 
-  log(".context-kit/ directory was NOT removed (your project context is preserved).");
+  log(".context-index/ directory was NOT removed (your project context is preserved).");
   console.log();
 }
 
@@ -344,7 +344,7 @@ function cmdHelp() {
   adev — Agentic Development Framework CLI
 
   Usage:
-    npx adev-cli init        Install plugin + scaffold .context-kit/
+    npx adev-cli init        Install plugin + scaffold .context-index/
     npx adev-cli uninstall   Remove plugin from Claude Code settings
     npx adev-cli help        Show this help
 

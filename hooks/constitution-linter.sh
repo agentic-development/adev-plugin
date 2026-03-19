@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # adev PreToolUse hook: Constitution Linter
-# Fires on: Edit of .context-kit/constitution.md
+# Fires on: Edit of .context-index/constitution.md
 # Validates structure, size, and pointer integrity.
 # Exit code 2 = block the edit. Exit code 0 = allow.
 
@@ -8,7 +8,7 @@ set -uo pipefail
 
 # Only trigger on constitution.md edits
 FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
-if [[ "$FILE_PATH" != *".context-kit/constitution.md" ]]; then
+if [[ "$FILE_PATH" != *".context-index/constitution.md" ]]; then
   exit 0
 fi
 
@@ -22,8 +22,8 @@ fi
 
 # 1. Check line count
 MAX_LINES=200
-if [ -f ".context-kit/manifest.yaml" ]; then
-  MANIFEST_MAX=$(grep -oP 'max_constitution_lines:\s*\K\d+' .context-kit/manifest.yaml 2>/dev/null || echo "")
+if [ -f ".context-index/manifest.yaml" ]; then
+  MANIFEST_MAX=$(grep -oP 'max_constitution_lines:\s*\K\d+' .context-index/manifest.yaml 2>/dev/null || echo "")
   if [ -n "$MANIFEST_MAX" ]; then
     MAX_LINES="$MANIFEST_MAX"
   fi

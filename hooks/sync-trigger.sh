@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # adev PostToolUse hook: Sync Trigger
-# Fires on: Edit of .context-kit/constitution.md (after successful lint)
+# Fires on: Edit of .context-index/constitution.md (after successful lint)
 # Triggers /adev-sync to update agent files.
 # Non-blocking: failures are warnings only.
 
@@ -8,12 +8,12 @@ set -uo pipefail
 
 # Only trigger on constitution.md edits
 FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
-if [[ "$FILE_PATH" != *".context-kit/constitution.md" ]]; then
+if [[ "$FILE_PATH" != *".context-index/constitution.md" ]]; then
   exit 0
 fi
 
 # Check if manifest exists
-if [ ! -f ".context-kit/manifest.yaml" ]; then
+if [ ! -f ".context-index/manifest.yaml" ]; then
   exit 0
 fi
 

@@ -43,19 +43,19 @@ Before planning, verify the spec has passed architecture review.
 
 Read these files in order. Each informs the planning decisions that follow.
 
-1. **Constitution:** Read `.context-kit/constitution.md`. Extract:
+1. **Constitution:** Read `.context-index/constitution.md`. Extract:
    - Non-negotiable principles (these constrain the plan)
    - Architecture boundaries (these define what tasks must NOT do without human approval)
    - Quality gate commands (these become the verification steps in each task)
    - Coding standards (these inform implementation guidance)
 
-2. **Platform context:** Read `.context-kit/platform-context.yaml`. Note the tech stack, framework versions, and deployment targets. These determine which libraries, patterns, and commands appear in the plan.
+2. **Platform context:** Read `.context-index/platform-context.yaml`. Note the tech stack, framework versions, and deployment targets. These determine which libraries, patterns, and commands appear in the plan.
 
-3. **Orientation:** Read `.context-kit/orientation/architecture.md` if it exists. This tells you how the codebase is organized: where modules live, how they connect, where to find things.
+3. **Orientation:** Read `.context-index/orientation/architecture.md` if it exists. This tells you how the codebase is organized: where modules live, how they connect, where to find things.
 
-4. **ADRs:** Read all files in `.context-kit/adrs/`. Note any decisions relevant to the spec being planned. Reference specific ADRs in tasks where they apply.
+4. **ADRs:** Read all files in `.context-index/adrs/`. Note any decisions relevant to the spec being planned. Reference specific ADRs in tasks where they apply.
 
-5. **Parent charter:** Read the feature charter (`.context-kit/specs/features/<module>/charter.md`). Extract the capability map. Every task in the plan must trace to a capability listed here.
+5. **Parent charter:** Read the feature charter (`.context-index/specs/features/<module>/charter.md`). Extract the capability map. Every task in the plan must trace to a capability listed here.
 
 6. **The spec:** Read the Live Spec itself. Extract:
    - Behavioral contract (what the implementation must do)
@@ -64,9 +64,9 @@ Read these files in order. Each informs the planning decisions that follow.
 
 7. **Review report:** Read the `.review.md` file. Note any `PASS_WITH_NOTES` warnings. The plan should address or acknowledge them.
 
-8. **Cross-cutting specs:** Read relevant files from `.context-kit/specs/cross-cutting/` that the spec depends on (error handling, auth flow, API versioning, etc.).
+8. **Cross-cutting specs:** Read relevant files from `.context-index/specs/cross-cutting/` that the spec depends on (error handling, auth flow, API versioning, etc.).
 
-9. **Samples:** If `.context-kit/samples/` contains golden samples relevant to this spec's patterns, note them. Tasks should reference samples where applicable.
+9. **Samples:** If `.context-index/samples/` contains golden samples relevant to this spec's patterns, note them. Tasks should reference samples where applicable.
 
 ## Step 3: Constitution Validation
 
@@ -86,7 +86,7 @@ Before writing any tasks, validate that the planned work stays within constituti
 
 ## Step 4: Specialist Routing
 
-Read `.context-kit/manifest.yaml` and check the `specialists` section. For each planned task, determine if a specialist should handle it:
+Read `.context-index/manifest.yaml` and check the `specialists` section. For each planned task, determine if a specialist should handle it:
 
 - Match file paths the task will touch against each specialist's `trigger_patterns`.
 - Match task description keywords against each specialist's `trigger_keywords`.
@@ -101,8 +101,8 @@ These tags tell `/adev-implement` which subagent to dispatch for each task.
 ### Plan Location
 
 Save the plan adjacent to the spec:
-- Spec at `.context-kit/specs/features/<module>/<task>.md` gets its plan at `.context-kit/specs/features/<module>/<task>.plan.md`
-- Cross-cutting spec at `.context-kit/specs/cross-cutting/<topic>.md` gets its plan at `.context-kit/specs/cross-cutting/<topic>.plan.md`
+- Spec at `.context-index/specs/features/<module>/<task>.md` gets its plan at `.context-index/specs/features/<module>/<task>.plan.md`
+- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its plan at `.context-index/specs/cross-cutting/<topic>.plan.md`
 
 ### Plan Document Header
 
@@ -112,8 +112,8 @@ Every plan starts with this header:
 # Implementation Plan: <Feature Name>
 
 > **Methodology:** adev
-> **Charter:** .context-kit/specs/features/<module>/charter.md
-> **Spec:** .context-kit/specs/features/<module>/<task>.md
+> **Charter:** .context-index/specs/features/<module>/charter.md
+> **Spec:** .context-index/specs/features/<module>/<task>.md
 > **Review:** <PASS|PASS_WITH_NOTES> (YYYY-MM-DD)
 > **Platform:** <framework> <version>, <language>, <key deps>
 
@@ -144,7 +144,7 @@ Before defining tasks, map out all files that will be created or modified:
 - `src/lib/api/index.ts:42-50` — Export new endpoint handler
 
 **Reference (read, do not modify):**
-- `.context-kit/samples/component-sample.md` — Follow this pattern for component structure
+- `.context-index/samples/component-sample.md` — Follow this pattern for component structure
 - `src/components/ExistingWidget.tsx` — Follow this component's pattern for state management
 ```
 
@@ -164,8 +164,8 @@ Each task follows TDD. Steps are granular (2-5 minutes each).
 - Test: `tests/exact/path/to/test.ts`
 
 **Context to load:**
-- `.context-kit/adrs/001-session-store-redis.md` (relevant decision)
-- `.context-kit/samples/service-sample.md` (follow this pattern)
+- `.context-index/adrs/001-session-store-redis.md` (relevant decision)
+- `.context-index/samples/service-sample.md` (follow this pattern)
 
 - [ ] **Write failing test**
 

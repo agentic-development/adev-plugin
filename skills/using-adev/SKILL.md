@@ -7,12 +7,12 @@ description: Gateway skill for the Agentic Development Framework. Injected at se
 
 This project uses the **Agentic Development Framework**, a full-lifecycle methodology for AI-assisted software delivery grounded in four pillars: Context-First Architecture, Ephemeral Infrastructure, Gate-Based Governance, and Hybrid Engineering.
 
-## Context Kit
+## Context Index
 
-All structured context lives in `.context-kit/`:
+All structured context lives in `.context-index/`:
 
 ```
-.context-kit/
+.context-index/
 ├── constitution.md          # Project principles (source of truth)
 ├── manifest.yaml            # Context types, sync targets, specialist registry
 ├── platform-context.yaml    # Tech stack and deployment targets
@@ -26,13 +26,13 @@ All structured context lives in `.context-kit/`:
 └── specialists/             # Domain expert subagent prompts
 ```
 
-The constitution is synced into CLAUDE.md (and other agent files). For deeper context, use agentic search (Glob/Grep/Read) against `.context-kit/`.
+The constitution is synced into CLAUDE.md (and other agent files). For deeper context, use agentic search (Glob/Grep/Read) against `.context-index/`.
 
 ## Available Skills
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
-| `/adev-init` | Context Setup | Scaffold `.context-kit/` for a new or existing project |
+| `/adev-init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
 | `/adev-sync` | Context Setup | Sync constitution to CLAUDE.md and other agent files |
 | `/adev-brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
 | `/adev-specify` | Specification | Write Live Specs within a charter's scope |

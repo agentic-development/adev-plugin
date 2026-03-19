@@ -2,7 +2,7 @@
 
 <!-- Architecture Decision Record.
      Records a significant architectural decision, its context, and consequences.
-     File: .context-kit/adrs/{{ number }}-{{ slug }}.md -->
+     File: .context-index/adrs/{{ number }}-{{ slug }}.md -->
 
 ## Status
 

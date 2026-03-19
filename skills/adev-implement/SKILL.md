@@ -9,7 +9,7 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 
 ## Arguments
 
-- `<plan-path>`: path to the plan file (required). Usually `.context-kit/specs/features/<module>/<spec-slug>-plan.md`.
+- `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>-plan.md`.
 - `--task <N>`: execute only task N (useful for re-running a single task after a fix)
 - `--dry-run`: show routing decisions and specialist matches without executing
 
@@ -18,7 +18,7 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 Before starting, verify all four conditions. If any fails, stop and tell the user what to fix.
 
 1. **Plan exists.** The plan file must exist and be readable.
-2. **Context Kit exists.** `.context-kit/` must be present with `constitution.md` and `manifest.yaml`.
+2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
 3. **Spec review passed.** The plan must reference a spec with a passing `.review.md` file adjacent to it. If the review file is missing, has status BLOCK, or is older than the spec's last modification date, direct the user to run `/adev-review-specs` first.
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch.
 
@@ -29,8 +29,8 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 Read these files once at the start. Extract everything subagents will need so they never have to re-read these files themselves.
 
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
-2. `.context-kit/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
-3. `.context-kit/manifest.yaml`. Extract the `specialists` registry.
+2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
+3. `.context-index/manifest.yaml`. Extract the `specialists` registry.
 4. The Live Spec referenced by the plan. Extract acceptance criteria and behavioral contract.
 5. The Feature Charter referenced by the plan. Extract scope boundaries.
 6. Any cross-cutting specs or ADRs listed in the plan's context routing section.
@@ -109,7 +109,7 @@ No production code without a failing test first. No exceptions.
 If you wrote code before the test, delete it and start over.
 ```
 
-7. **Specialist context** (if routed). Load the specialist prompt template from `.context-kit/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
+7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Escalation rules.** The subagent must report one of four status codes. It must never silently produce work it is unsure about. It is always acceptable to stop and escalate.
 9. **Report format:**
 
@@ -130,7 +130,7 @@ When done, report:
 **Spec traceability.** If Entire.io integration is configured (`integrations.session_capture.provider: entire` in `manifest.yaml`), prepend a traceability marker:
 
 ```
-<!-- entire:spec-trace spec=".context-kit/specs/features/<module>/<task>.md" task="N" -->
+<!-- entire:spec-trace spec=".context-index/specs/features/<module>/<task>.md" task="N" -->
 ```
 
 #### 2c. Dispatch and Handle Status
@@ -144,7 +144,7 @@ Dispatch the subagent. Handle the returned status:
 - Correctness or scope concerns (e.g., "unsure this handles the edge case in the spec"): address before review. Re-dispatch with clarification, or ask the user.
 
 **NEEDS_CONTEXT.** The subagent lacks information.
-1. Check whether the missing context exists in `.context-kit/` (charters, ADRs, samples, orientation, cross-cutting specs).
+1. Check whether the missing context exists in `.context-index/` (charters, ADRs, samples, orientation, cross-cutting specs).
 2. If found: re-dispatch the same subagent with the additional context appended to the prompt.
 3. If not found: ask the user to provide the missing information.
 4. Maximum 2 re-dispatches per task. After the second, escalate to the user regardless.

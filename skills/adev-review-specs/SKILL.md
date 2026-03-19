@@ -20,8 +20,8 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 Determine which specs need review:
 
 1. If `--spec <path>` is provided, use that file directly.
-2. If `--charter <module>` is provided, glob `.context-kit/specs/features/<module>/*.md` excluding `charter.md` and any `*.review.md` files.
-3. If no arguments, scan all `.context-kit/specs/features/` and `.context-kit/specs/cross-cutting/` directories. A spec needs review if:
+2. If `--charter <module>` is provided, glob `.context-index/specs/features/<module>/*.md` excluding `charter.md` and any `*.review.md` files.
+3. If no arguments, scan all `.context-index/specs/features/` and `.context-index/specs/cross-cutting/` directories. A spec needs review if:
    - No adjacent `.review.md` file exists (e.g., `card-ordering.md` expects `card-ordering.review.md`)
    - The spec file is newer than its `.review.md` file (spec was modified after last review)
 
@@ -32,18 +32,18 @@ If no specs need review, report that and exit.
 For each spec to be reviewed, gather the context package that all reviewers will receive:
 
 1. **The spec itself:** Read the full Live Spec file.
-2. **Parent charter:** Read `.context-kit/specs/features/<module>/charter.md` (the charter that owns this spec).
-3. **Constitution:** Read `.context-kit/constitution.md`.
+2. **Parent charter:** Read `.context-index/specs/features/<module>/charter.md` (the charter that owns this spec).
+3. **Constitution:** Read `.context-index/constitution.md`.
 4. **Sibling specs:** Read other specs under the same charter (for cross-reference checks).
-5. **Cross-cutting specs:** Read all files in `.context-kit/specs/cross-cutting/` (for contract compatibility).
-6. **ADRs:** Read all files in `.context-kit/adrs/` (for decision compliance).
-7. **Platform context:** Read `.context-kit/platform-context.yaml` (for technology constraints).
+5. **Cross-cutting specs:** Read all files in `.context-index/specs/cross-cutting/` (for contract compatibility).
+6. **ADRs:** Read all files in `.context-index/adrs/` (for decision compliance).
+7. **Platform context:** Read `.context-index/platform-context.yaml` (for technology constraints).
 
 If a charter or constitution file is missing, warn the user and ask whether to proceed with reduced context or abort.
 
 ## Step 3: Check Specialist Registry
 
-Read `.context-kit/manifest.yaml` and check the `specialists` section. For each spec, match file patterns and keywords from the spec content against the specialist registry:
+Read `.context-index/manifest.yaml` and check the `specialists` section. For each spec, match file patterns and keywords from the spec content against the specialist registry:
 
 - **Pattern match:** Check file paths mentioned in the spec (in "Files" sections, code blocks, or interface contracts) against each specialist's `trigger_patterns`.
 - **Keyword match:** Check the spec body text against each specialist's `trigger_keywords`.
@@ -199,8 +199,8 @@ Determine the overall verdict for each spec:
 
 Write the consolidated report to a `.review.md` file adjacent to the spec:
 
-- Feature spec at `.context-kit/specs/features/<module>/<task>.md` gets its review at `.context-kit/specs/features/<module>/<task>.review.md`
-- Cross-cutting spec at `.context-kit/specs/cross-cutting/<topic>.md` gets its review at `.context-kit/specs/cross-cutting/<topic>.review.md`
+- Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
+- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
 ## Step 7: Report to User
 

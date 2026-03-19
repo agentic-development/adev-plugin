@@ -4,7 +4,7 @@ Use this template when dispatching a charter-reviewer subagent in Step 6 of `/ad
 
 **Purpose:** Verify the Feature Charter is structurally complete, constitutionally compliant, and consistent with existing charters and ADRs.
 
-**Dispatch after:** Charter is written to `.context-kit/specs/features/<module>/charter.md`
+**Dispatch after:** Charter is written to `.context-index/specs/features/<module>/charter.md`
 
 ```
 Task tool (general-purpose):
@@ -13,8 +13,8 @@ Task tool (general-purpose):
     You are a Feature Charter reviewer for the Agentic Development Framework.
 
     **Charter to review:** [CHARTER_FILE_PATH]
-    **Constitution:** [Read and paste the full content of .context-kit/constitution.md]
-    **Platform context:** [Read and paste the full content of .context-kit/platform-context.yaml]
+    **Constitution:** [Read and paste the full content of .context-index/constitution.md]
+    **Platform context:** [Read and paste the full content of .context-index/platform-context.yaml]
     **Existing charters:** [For each existing charter, paste its file path and Business Intent + Scope sections. If there are no other charters, state "No other charters exist."]
     **ADRs:** [For each ADR, paste its file path and decision summary. If there are no ADRs, state "No ADRs exist."]
 

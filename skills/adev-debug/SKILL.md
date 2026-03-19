@@ -69,27 +69,27 @@ Six phases. Complete each before proceeding to the next.
 This is the key difference from generic debugging. Before diving into code, load the project's documented knowledge.
 
 1. **Check ADRs for known issues.**
-   - Read `.context-kit/adrs/` for decisions related to the affected area.
+   - Read `.context-index/adrs/` for decisions related to the affected area.
    - Look for ADRs that document known trade-offs, workarounds, or constraints.
    - A previous team may have already encountered and documented this failure mode.
 
 2. **Check specs for expected behavior.**
-   - Read the relevant Feature Charter at `.context-kit/specs/features/<module>/charter.md`.
+   - Read the relevant Feature Charter at `.context-index/specs/features/<module>/charter.md`.
    - Read the Live Spec if one exists for the current task.
    - Compare the observed behavior against the spec's behavioral contract.
    - The bug may be "working as specified" (spec problem, not code problem).
 
 3. **Check orientation for architecture context.**
-   - Read `.context-kit/orientation/architecture.md` for module relationships.
-   - Read `.context-kit/platform-context.yaml` for technology constraints.
+   - Read `.context-index/orientation/architecture.md` for module relationships.
+   - Read `.context-index/platform-context.yaml` for technology constraints.
    - Understand data flow across the affected module boundaries.
 
 4. **Check the constitution for relevant principles.**
-   - Read `.context-kit/constitution.md` for non-negotiable rules.
+   - Read `.context-index/constitution.md` for non-negotiable rules.
    - The bug may result from violating a constitutional boundary.
 
 5. **Check the repo map if available.**
-   - Read `.context-kit/hygiene/repo-map.md` to locate symbols and dependencies.
+   - Read `.context-index/hygiene/repo-map.md` to locate symbols and dependencies.
    - Identify which files import or depend on the broken component.
 
 6. **Gather evidence in multi-component systems.**
@@ -125,7 +125,7 @@ This is the key difference from generic debugging. Before diving into code, load
 
 2. **Compare against references.**
    - If implementing a pattern, read the reference implementation completely.
-   - Check golden samples in `.context-kit/samples/` for how the pattern should look.
+   - Check golden samples in `.context-index/samples/` for how the pattern should look.
    - Do not skim. Read every line.
 
 3. **Form a single hypothesis.**
@@ -186,7 +186,7 @@ This is the key difference from generic debugging. Before diving into code, load
    - The fix must not violate any constitutional principles.
 
 3. **Check for checkpoint rewind (if Entire is installed).**
-   - Read `.context-kit/manifest.yaml` for `integrations.session_capture.provider`.
+   - Read `.context-index/manifest.yaml` for `integrations.session_capture.provider`.
    - If `provider: entire`, check whether the issue was introduced during the current session.
    - If so, suggest reverting to a checkpoint before the deviation using the Entire checkpoint branch.
    - Format: "The issue was introduced at [approximate point]. You can rewind to a checkpoint before that change if the fix is complex."
@@ -194,7 +194,7 @@ This is the key difference from generic debugging. Before diving into code, load
 4. **Consider drafting an ADR.**
    - If the root cause reveals an architectural insight (unexpected coupling, missing abstraction, violated assumption, technology constraint), suggest drafting an ADR.
    - Prompt the user: "The root cause was [X]. This reveals [architectural insight]. Want me to draft an ADR to document this decision/constraint?"
-   - If yes, create a draft ADR in `.context-kit/adrs/` with the next sequential number.
+   - If yes, create a draft ADR in `.context-index/adrs/` with the next sequential number.
    - Use the template at `${CLAUDE_PLUGIN_ROOT}/templates/adr-template.md` if it exists.
 
 ## Red Flags

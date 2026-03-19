@@ -1,11 +1,11 @@
 ---
 name: adev-hygiene
-description: Audit all context for staleness, drift, and coverage gaps. Runs six audit passes across the .context-kit/ directory and generates actionable reports with checklists.
+description: Audit all context for staleness, drift, and coverage gaps. Runs six audit passes across the .context-index/ directory and generates actionable reports with checklists.
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-kit/` and generate actionable reports. Six audit passes detect staleness, drift, and coverage gaps so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and generate actionable reports. Six audit passes detect staleness, drift, and coverage gaps so the team can fix them before they become obstacles.
 
 ## Arguments
 
@@ -15,13 +15,13 @@ Audit the health of `.context-kit/` and generate actionable reports. Six audit p
 
 ## Prerequisites
 
-The project must have `.context-kit/` initialized. If it does not exist, suggest running `/adev-init` first.
+The project must have `.context-index/` initialized. If it does not exist, suggest running `/adev-init` first.
 
 ## Process
 
-1. **Load manifest:** Read `.context-kit/manifest.yaml` for configuration, sync targets, and integration settings.
+1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
 2. **Run audit passes:** Execute each of the six passes below. If `--check` was provided, run only that pass.
-3. **Generate report:** Write findings to `.context-kit/hygiene/drift-report.md`.
+3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
 
@@ -31,7 +31,7 @@ The project must have `.context-kit/` initialized. If it does not exist, suggest
 
 **Steps:**
 
-1. Read `.context-kit/constitution.md`.
+1. Read `.context-index/constitution.md`.
 2. For each sync target in `manifest.yaml` (CLAUDE.md, AGENTS.md, .cursorrules, etc.):
    - Check that the target file exists.
    - Compare the constitution content in the target against `constitution.md`.
@@ -52,12 +52,12 @@ The project must have `.context-kit/` initialized. If it does not exist, suggest
 - [x] Section completeness: 6/6 sections present
 - [ ] CLAUDE.md: DRIFT — constitution updated 2 days after last sync
 - [x] AGENTS.md: in sync
-- [ ] Context routing: BROKEN_POINTER — .context-kit/specs/features/payments/charter.md does not exist
+- [ ] Context routing: BROKEN_POINTER — .context-index/specs/features/payments/charter.md does not exist
 - [x] Context routing: 11/12 pointers valid
 
 **Actions:**
 - [ ] Run `/adev-sync` to update CLAUDE.md
-- [ ] Remove or create .context-kit/specs/features/payments/charter.md
+- [ ] Remove or create .context-index/specs/features/payments/charter.md
 ```
 
 **Auto-fix (if `--fix`):** Run `/adev-sync` for drift issues.
@@ -68,7 +68,7 @@ The project must have `.context-kit/` initialized. If it does not exist, suggest
 
 **Steps:**
 
-1. List all feature charter directories under `.context-kit/specs/features/`.
+1. List all feature charter directories under `.context-index/specs/features/`.
 2. Map each charter to its corresponding codebase area:
    - Read each charter's scope section for directory/file references.
    - If no explicit scope, infer from the module name.
@@ -112,7 +112,7 @@ Uncharted areas: 5
 
 **Steps:**
 
-1. List all ADR files in `.context-kit/adrs/`.
+1. List all ADR files in `.context-index/adrs/`.
 2. For each ADR:
    - Extract file paths and symbol names referenced in the ADR body.
    - Check that referenced files still exist. Flag deleted references as STALE_REF.
@@ -152,7 +152,7 @@ Issues: 2
 
 **Steps:**
 
-1. List all sample files in `.context-kit/samples/`.
+1. List all sample files in `.context-index/samples/`.
 2. If the directory is empty, flag as NO_SAMPLES and suggest creating reference implementations.
 3. For each sample:
    - Check that the code syntax is valid for the project's language (run the type checker or compiler on the sample if possible).
@@ -181,8 +181,8 @@ Issues: 1
 
 **Steps:**
 
-1. Check if `.context-kit/hygiene/repo-map.md` exists. If not, suggest running `/adev-repomap` first.
-2. Read `.context-kit/orientation/architecture.md`.
+1. Check if `.context-index/hygiene/repo-map.md` exists. If not, suggest running `/adev-repomap` first.
+2. Read `.context-index/orientation/architecture.md`.
 3. Extract module names, key files, and relationships described in the orientation doc.
 4. Compare against the repo map:
    - **New high-importance symbols not in orientation:** Symbols with high reference counts (top 20% in the repo map) that are not mentioned in orientation. These represent important code that the orientation does not describe.
@@ -220,7 +220,7 @@ Orientation: last updated 2026-03-01
 
 **Prerequisite check:**
 
-1. Read `.context-kit/manifest.yaml` for `integrations.session_capture.provider`.
+1. Read `.context-index/manifest.yaml` for `integrations.session_capture.provider`.
 2. If `provider` is `none` or the `integrations.session_capture` section does not exist, SKIP this pass entirely. Print:
    ```
    ## Session Analysis
@@ -229,7 +229,7 @@ Orientation: last updated 2026-03-01
    To enable, set integrations.session_capture.provider to "entire" or "jsonl".
    ```
 3. If `provider: entire`, look for session data via the Entire checkpoint branch configured in `checkpoint_branch`.
-4. If `provider: jsonl`, read session logs from `.context-kit/hygiene/sessions/`.
+4. If `provider: jsonl`, read session logs from `.context-index/hygiene/sessions/`.
 
 **Steps (when session data is available):**
 
@@ -240,7 +240,7 @@ Orientation: last updated 2026-03-01
    - Which files or modules had the most debugging sessions?
    - Which areas had repeated fix attempts (3+ fixes in same area within a week)?
 3. Identify context gaps:
-   - Sessions where the agent searched for information that does not exist in `.context-kit/` (searches with no results in context directories).
+   - Sessions where the agent searched for information that does not exist in `.context-index/` (searches with no results in context directories).
    - These represent missing documentation the team should create.
 
 **Output format:**
@@ -270,7 +270,7 @@ Sessions analyzed: 23 (last 30 days)
 
 ## Report Format
 
-The full report is written to `.context-kit/hygiene/drift-report.md` with this structure:
+The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
 
 ```markdown
 # Context Hygiene Report
@@ -306,7 +306,7 @@ The full report is written to `.context-kit/hygiene/drift-report.md` with this s
 Print the summary table and top 3 priority actions to the user. Then:
 
 ```
-Full report saved to .context-kit/hygiene/drift-report.md
+Full report saved to .context-index/hygiene/drift-report.md
 
 Next steps:
 - Fix the highest-priority items above

@@ -2,7 +2,7 @@
 
 <!-- Refactoring spec within the {{ module_name }} charter.
      Extends the Live Spec format with current-state/target-state analysis and migration path.
-     Parent Charter: .context-kit/specs/features/{{ module_name }}/charter.md -->
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md -->
 
 ---
 charter: {{ module_name }}

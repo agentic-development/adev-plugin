@@ -1,9 +1,9 @@
 ---
 name: adev-init
-description: Initialize or diagnose the .context-kit/ directory. Interactive wizard that explains each layer, detects existing setup, and lets users opt in or skip per layer. Use --brownfield for existing codebases, --dry-run to preview without writing.
+description: Initialize or diagnose the .context-index/ directory. Interactive wizard that explains each layer, detects existing setup, and lets users opt in or skip per layer. Use --brownfield for existing codebases, --dry-run to preview without writing.
 ---
 
-# Initialize Context Kit
+# Initialize Context Index
 
 Interactive setup wizard for the Agentic Development Framework. Walks through each context layer one at a time, explains what it does, and lets the user opt in or skip.
 
@@ -15,7 +15,7 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 
 ## Behavior by Project State
 
-### No `.context-kit/` exists (First Run)
+### No `.context-index/` exists (First Run)
 
 This IS the onboarding experience. Walk through each layer interactively:
 
@@ -165,32 +165,32 @@ If no conflicting plugins are detected, skip this step entirely.
 Step 8/8: Summary
 
   Ready to create:
-  ✓ .context-kit/constitution.md          (87 lines)
-  ✓ .context-kit/manifest.yaml            (4 sync targets)
-  ✓ .context-kit/platform-context.yaml    (detected stack)
-  ✓ .context-kit/orientation/architecture.md (draft)
-  ✓ .context-kit/specs/product.md         (draft)
-  ○ .context-kit/specs/features/          (empty, ready for charters)
-  ○ .context-kit/adrs/                    (empty, ready for decisions)
-  ○ .context-kit/samples/                 (empty, ready for examples)
+  ✓ .context-index/constitution.md          (87 lines)
+  ✓ .context-index/manifest.yaml            (4 sync targets)
+  ✓ .context-index/platform-context.yaml    (detected stack)
+  ✓ .context-index/orientation/architecture.md (draft)
+  ✓ .context-index/specs/product.md         (draft)
+  ○ .context-index/specs/features/          (empty, ready for charters)
+  ○ .context-index/adrs/                    (empty, ready for decisions)
+  ○ .context-index/samples/                 (empty, ready for examples)
 
   Will also:
   - Sync constitution → CLAUDE.md, AGENTS.md
-  - Add .context-kit/hygiene/ to .gitignore
+  - Add .context-index/hygiene/ to .gitignore
   - Commit all files
 
   → Create everything? (yes / go back to step N / cancel)
 ```
 
-### `.context-kit/` already exists (Diagnostic Mode)
+### `.context-index/` already exists (Diagnostic Mode)
 
-When run on a project that already has `.context-kit/`, the wizard becomes a health check:
+When run on a project that already has `.context-index/`, the wizard becomes a health check:
 
 ```
-adev Context Kit — Health Check
+adev Context Index — Health Check
 
-✓ Constitution        .context-kit/constitution.md (92 lines, 6/6 sections)
-✓ Manifest            .context-kit/manifest.yaml (2 sync targets)
+✓ Constitution        .context-index/constitution.md (92 lines, 6/6 sections)
+✓ Manifest            .context-index/manifest.yaml (2 sync targets)
 ✓ Platform Context    Next.js 16, Prisma, Clerk, Vercel
 ✓ Product Charter     2 modules defined
 ⚠ Feature Charters    task-boards has charter, user-management does not
@@ -270,7 +270,7 @@ Coverage Report
   Low churn, no charter:   prisma/ (5 changes in 30 days)
   Chartered:               (none yet — this is a fresh setup)
 
-  Saved to .context-kit/hygiene/coverage-report.md
+  Saved to .context-index/hygiene/coverage-report.md
 
   Recommendation: Start by chartering src/lib/auth/ — it changes
   most frequently and will benefit most from structured context.
@@ -284,18 +284,18 @@ Shows what would be created without writing anything. Runs the full analysis (te
 /adev-init --dry-run
 
 Would create:
-  .context-kit/constitution.md          (~85 lines)
-  .context-kit/manifest.yaml            (2 sync targets)
-  .context-kit/platform-context.yaml    (Next.js 16, Prisma, Clerk)
-  .context-kit/orientation/architecture.md
-  .context-kit/specs/product.md
+  .context-index/constitution.md          (~85 lines)
+  .context-index/manifest.yaml            (2 sync targets)
+  .context-index/platform-context.yaml    (Next.js 16, Prisma, Clerk)
+  .context-index/orientation/architecture.md
+  .context-index/specs/product.md
 
 Would sync to:
   CLAUDE.md (new file)
   AGENTS.md (would merge with existing 120-line file)
 
 Would modify:
-  .gitignore (add .context-kit/hygiene/)
+  .gitignore (add .context-index/hygiene/)
 
 Run /adev-init to proceed.
 ```
@@ -303,13 +303,13 @@ Run /adev-init to proceed.
 ## After Initialization
 
 ```
-Context Kit initialized at .context-kit/
+Context Index initialized at .context-index/
 
 Your constitution has been synced to CLAUDE.md. Every AI agent
 that works on this project will now follow your rules.
 
 Next steps:
-- Review your constitution: .context-kit/constitution.md
+- Review your constitution: .context-index/constitution.md
 - Charter your first feature: /adev-brainstorm
 - Or specify existing work: /adev-specify
 

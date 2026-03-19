@@ -25,9 +25,9 @@ Modes are mutually exclusive. If none is specified, standard mode is used.
 
 Before running this skill, verify:
 
-1. `.context-kit/` exists. If not, tell the user to run `/adev-init` first.
-2. `.context-kit/constitution.md` exists and is non-empty.
-3. At least one Feature Charter exists under `.context-kit/specs/features/` (except for `--cross-cutting` mode, which only needs the constitution and product charter).
+1. `.context-index/` exists. If not, tell the user to run `/adev-init` first.
+2. `.context-index/constitution.md` exists and is non-empty.
+3. At least one Feature Charter exists under `.context-index/specs/features/` (except for `--cross-cutting` mode, which only needs the constitution and product charter).
 
 If any prerequisite fails, stop and explain what is missing. Do not generate a spec without a charter anchor (cross-cutting excepted).
 
@@ -35,11 +35,11 @@ If any prerequisite fails, stop and explain what is missing. Do not generate a s
 
 | Mode | Flag | Input | Output Location | Template |
 |------|------|-------|-----------------|----------|
-| Standard | *(default)* | Charter capability | `.context-kit/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
-| Extract | `--extract` | Existing source code | `.context-kit/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
-| Refactor | `--refactor` | Existing code + target description | `.context-kit/specs/features/<module>/<spec-slug>.md` | `refactoring-spec-template.md` |
-| From-Diff | `--from-diff` | Git diff or PR | `.context-kit/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
-| Cross-Cutting | `--cross-cutting` | Cross-module concern | `.context-kit/specs/cross-cutting/<spec-slug>.md` | `live-spec-template.md` |
+| Standard | *(default)* | Charter capability | `.context-index/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
+| Extract | `--extract` | Existing source code | `.context-index/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
+| Refactor | `--refactor` | Existing code + target description | `.context-index/specs/features/<module>/<spec-slug>.md` | `refactoring-spec-template.md` |
+| From-Diff | `--from-diff` | Git diff or PR | `.context-index/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
+| Cross-Cutting | `--cross-cutting` | Cross-module concern | `.context-index/specs/cross-cutting/<spec-slug>.md` | `live-spec-template.md` |
 
 ---
 
@@ -49,7 +49,7 @@ The primary path. Takes a Feature Charter and produces a Live Spec for one capab
 
 ### Step 1: Resolve Charter
 
-1. Read all Feature Charters by scanning `.context-kit/specs/features/*/charter.md`.
+1. Read all Feature Charters by scanning `.context-index/specs/features/*/charter.md`.
 2. If `--charter <module>` is provided, load that charter directly. Error if it does not exist.
 3. If a positional argument is provided, match it against charter module names. If ambiguous, list the matches and ask the user to pick one.
 4. If no argument is provided and only one charter exists, use it automatically. If multiple exist, list them and ask:
@@ -67,10 +67,10 @@ Found 3 Feature Charters:
 
 Read these files and hold them in working memory:
 
-- `.context-kit/constitution.md` — for principle references and gate validation
-- `.context-kit/platform-context.yaml` — for technology-aware decisions
+- `.context-index/constitution.md` — for principle references and gate validation
+- `.context-index/platform-context.yaml` — for technology-aware decisions
 - The resolved Feature Charter — for scope boundaries and capability list
-- `.context-kit/specs/product.md` — for cross-module awareness
+- `.context-index/specs/product.md` — for cross-module awareness
 - Any existing specs in the same module directory — to avoid duplication
 
 ### Step 3: Identify Capability
@@ -174,13 +174,13 @@ Generate concrete, checkable criteria. Every behavior statement must map to at l
    status: draft
    created: <today's date YYYY-MM-DD>
    ```
-4. Save to `.context-kit/specs/features/<module>/<spec-slug>.md`.
+4. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 6: Summary
 
 ```
 Live Spec created:
-  .context-kit/specs/features/task-boards/drag-and-drop-reordering.md
+  .context-index/specs/features/task-boards/drag-and-drop-reordering.md
 
   Charter: task-boards
   Status: draft
@@ -190,7 +190,7 @@ Live Spec created:
   Acceptance criteria: 7
 
 Next steps:
-  - Review the spec: read .context-kit/specs/features/task-boards/drag-and-drop-reordering.md
+  - Review the spec: read .context-index/specs/features/task-boards/drag-and-drop-reordering.md
   - Submit for architecture review: /adev-review-specs
   - Or write another spec: /adev-specify task-boards
 ```
@@ -268,13 +268,13 @@ extracted-from:
   - src/lib/auth/permissions.ts
 ```
 
-Save to `.context-kit/specs/features/<module>/<spec-slug>.md`.
+Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 5: Summary
 
 ```
 Extract Spec created:
-  .context-kit/specs/features/user-management/user-api-snapshot.md
+  .context-index/specs/features/user-management/user-api-snapshot.md
 
   Extracted from: 5 files (499 lines analyzed)
   Behaviors documented: 8
@@ -404,13 +404,13 @@ Even for refactoring, define the target behavior. The behavioral contract descri
    mode: refactor
    created: <today's date>
    ```
-3. Save to `.context-kit/specs/features/<module>/<spec-slug>.md`.
+3. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 9: Summary
 
 ```
 Refactoring Spec created:
-  .context-kit/specs/features/orders/refactor-process-order.md
+  .context-index/specs/features/orders/refactor-process-order.md
 
   Current state: 5 files, 3 problems identified
   Target state: 8 files (3 new, 2 modified, 3 unchanged)
@@ -508,13 +508,13 @@ created: <today's date>
 diff-source: <commit range, branch name, or "working tree">
 ```
 
-Save to `.context-kit/specs/features/<module>/<spec-slug>.md`.
+Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 5: Summary
 
 ```
 Retroactive Spec created:
-  .context-kit/specs/features/task-boards/add-priority-scoring.md
+  .context-index/specs/features/task-boards/add-priority-scoring.md
 
   Diff source: HEAD~3..HEAD
   Files analyzed: 4
@@ -538,8 +538,8 @@ Produces specs for concerns that span multiple features: authentication flows, e
 ### Step 1: Prerequisites
 
 Cross-cutting specs do not require a Feature Charter. They do require:
-- `.context-kit/constitution.md` (mandatory)
-- `.context-kit/specs/product.md` (recommended, for module awareness)
+- `.context-index/constitution.md` (mandatory)
+- `.context-index/specs/product.md` (recommended, for module awareness)
 
 ### Step 2: Identify the Concern
 
@@ -596,7 +596,7 @@ Same process as standard mode (behavioral contract, constitution reference, task
      - user-management
      - notifications
    ```
-4. Save to `.context-kit/specs/cross-cutting/<spec-slug>.md`.
+4. Save to `.context-index/specs/cross-cutting/<spec-slug>.md`.
 
 Note: cross-cutting specs have no `charter` field in frontmatter. They use `affects` instead to list the modules they touch.
 
@@ -604,7 +604,7 @@ Note: cross-cutting specs have no `charter` field in frontmatter. They use `affe
 
 ```
 Cross-Cutting Spec created:
-  .context-kit/specs/cross-cutting/auth-flow.md
+  .context-index/specs/cross-cutting/auth-flow.md
 
   Affects: 3 modules
   Behaviors: 6
@@ -614,7 +614,7 @@ Cross-Cutting Spec created:
 Next steps:
   - Review the module impact with each module's maintainer
   - Submit for review: /adev-review-specs
-  - Plan implementation: /adev-plan --spec .context-kit/specs/cross-cutting/auth-flow.md
+  - Plan implementation: /adev-plan --spec .context-index/specs/cross-cutting/auth-flow.md
 ```
 
 ---
@@ -623,7 +623,7 @@ Next steps:
 
 Before writing any spec, scan the constitution for conflicts:
 
-1. Read `.context-kit/constitution.md`.
+1. Read `.context-index/constitution.md`.
 2. Check that the proposed spec does not contradict any principle.
 3. If a conflict is found, present it to the user:
 
@@ -641,7 +641,7 @@ Before writing any spec, scan the constitution for conflicts:
 → Your choice?
 ```
 
-If the user chooses option 2, create an ADR draft at `.context-kit/adrs/NNNN-<title>.md` and note the pending ADR in the spec. If option 3, add `constitutional-exception: "<principle text>"` to the spec frontmatter.
+If the user chooses option 2, create an ADR draft at `.context-index/adrs/NNNN-<title>.md` and note the pending ADR in the spec. If option 3, add `constitutional-exception: "<principle text>"` to the spec frontmatter.
 
 ## Duplicate Detection (All Modes)
 

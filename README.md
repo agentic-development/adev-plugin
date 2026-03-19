@@ -10,7 +10,7 @@ Grounded in the [Agentic Development Handbook](https://www.agentic-dev.org/en/ha
 npx adev-cli init
 ```
 
-This installs the plugin into Claude Code, detects conflicting plugins (Superpowers), scaffolds `.context-kit/`, and configures your settings. Zero dependencies.
+This installs the plugin into Claude Code, detects conflicting plugins (Superpowers), scaffolds `.context-index/`, and configures your settings. Zero dependencies.
 
 Alternatively, for development or testing:
 
@@ -31,12 +31,12 @@ claude --plugin-dir /path/to/adev-plugin
 /adev-init --dry-run
 ```
 
-This scaffolds a `.context-kit/` directory with your project's constitution, platform context, and orientation. The constitution is synced to `CLAUDE.md` (and other agent files) automatically.
+This scaffolds a `.context-index/` directory with your project's constitution, platform context, and orientation. The constitution is synced to `CLAUDE.md` (and other agent files) automatically.
 
-## The .context-kit/ Directory
+## The .context-index/ Directory
 
 ```
-.context-kit/
+.context-index/
 ├── constitution.md              # Project principles (source of truth)
 ├── manifest.yaml                # Context types, sync targets, specialist registry
 ├── platform-context.yaml        # Tech stack and deployment targets
@@ -59,7 +59,7 @@ This scaffolds a `.context-kit/` directory with your project's constitution, pla
 
 | Phase | Skill | What Happens |
 |-------|-------|-------------|
-| Context Setup | `/adev-init` | Scaffold `.context-kit/`, generate constitution, sync agent files |
+| Context Setup | `/adev-init` | Scaffold `.context-index/`, generate constitution, sync agent files |
 | Brainstorming | `/adev-brainstorm` | Explore idea, produce a Feature Charter |
 | Specification | `/adev-specify` | Write Live Specs within charter scope |
 | Architecture Review | `/adev-review-specs` | Parallel specialist agents review specs (Opus) |
@@ -73,7 +73,7 @@ This scaffolds a `.context-kit/` directory with your project's constitution, pla
 
 ### Constitution
 
-A tool-agnostic document (`.context-kit/constitution.md`) containing your project's non-negotiable principles, coding standards, architecture boundaries, context routing rules, and quality gates. Kept under 200 lines. Synced to CLAUDE.md, AGENTS.md, .cursorrules, and copilot-instructions.md via `/adev-sync`.
+A tool-agnostic document (`.context-index/constitution.md`) containing your project's non-negotiable principles, coding standards, architecture boundaries, context routing rules, and quality gates. Kept under 200 lines. Synced to CLAUDE.md, AGENTS.md, .cursorrules, and copilot-instructions.md via `/adev-sync`.
 
 ### Context Routing
 

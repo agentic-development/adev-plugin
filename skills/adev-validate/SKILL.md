@@ -17,7 +17,7 @@ Run post-implementation validation against specs, constitution, charters, ADRs, 
 
 Before starting, verify:
 
-1. **Context Kit exists.** `.context-kit/` must be present with `constitution.md` and `manifest.yaml`.
+1. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
 2. **Spec exists.** The target Live Spec must exist and be readable.
 3. **Implementation exists.** The files referenced in the spec or plan must exist. If the spec references files that do not exist, the implementation is incomplete. Report this immediately without running the full check suite.
 
@@ -31,7 +31,7 @@ Before starting, verify:
 
 ### Check 1: Quality Gates (fail-fast)
 
-Read the Quality Gates section from `.context-kit/constitution.md`. Run every command listed there.
+Read the Quality Gates section from `.context-index/constitution.md`. Run every command listed there.
 
 Typical commands:
 - Test suite: the `[test command]` from the constitution
@@ -71,7 +71,7 @@ Record PASS or FAIL with specific references to charter sections and code locati
 
 ### Check 4: Constitution Compliance
 
-Load `.context-kit/constitution.md`. Check:
+Load `.context-index/constitution.md`. Check:
 
 - **Architecture Boundaries.** Verify no boundary was crossed. Common violations: new services or database tables created without approval, authentication flows modified, unauthorized dependencies added.
 - **Non-Negotiable Principles.** Verify each principle is respected in the implementation. This is a semantic check: read the code and assess whether the principle's intent is honored.
@@ -81,7 +81,7 @@ Record PASS or FAIL with specific principle/boundary violated and code location.
 
 ### Check 5: ADR Compliance
 
-List all ADRs in `.context-kit/adrs/`. For each ADR relevant to the implementation's domain:
+List all ADRs in `.context-index/adrs/`. For each ADR relevant to the implementation's domain:
 
 1. Read the ADR's decision and rationale.
 2. Check whether the implementation conflicts with, contradicts, or ignores the decision.
@@ -91,7 +91,7 @@ If no ADRs exist or none are relevant, record PASS (no applicable ADRs).
 
 ### Check 6: Cross-Cutting Spec Compliance
 
-List all specs in `.context-kit/specs/cross-cutting/`. For each cross-cutting spec relevant to the implementation:
+List all specs in `.context-index/specs/cross-cutting/`. For each cross-cutting spec relevant to the implementation:
 
 1. Read the spec's requirements (e.g., error handling conventions, API versioning rules, auth flow requirements).
 2. Verify the implementation follows those requirements.
@@ -102,7 +102,7 @@ If no cross-cutting specs exist or none are relevant, record PASS (no applicable
 
 ### Check 7: Specialist Review
 
-Read the `specialists` registry from `.context-kit/manifest.yaml`. Apply the same match scoring algorithm used by `/adev-implement`:
+Read the `specialists` registry from `.context-index/manifest.yaml`. Apply the same match scoring algorithm used by `/adev-implement`:
 
 1. Collect all files touched by the implementation (from the plan, or by diffing against the base branch).
 2. For each specialist, compute pattern score (2 points per matching glob + depth bonus) and keyword score (1 point per matching keyword in the spec title/description).
@@ -111,7 +111,7 @@ Read the `specialists` registry from `.context-kit/manifest.yaml`. Apply the sam
 For each matched specialist:
 - If `invoke: skill`, note the skill name and recommend the user invoke it for a focused review.
 - If `invoke: subagent`, dispatch the specialist as a review subagent with:
-  - The specialist's prompt template from `.context-kit/specialists/<name>.md`
+  - The specialist's prompt template from `.context-index/specialists/<name>.md`
   - The list of files to review
   - The relevant spec sections
   - Instructions to check domain-specific quality (e.g., accessibility for frontend, injection vectors for security, migration safety for data-engineering)
@@ -120,7 +120,7 @@ Record per specialist: PASS, FAIL (with specific findings), or SKIPPED (no speci
 
 ## Report Format
 
-Write the validation report to `.context-kit/specs/features/<module>/<spec-slug>-validation.md`.
+Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
 
 ```markdown
 # Validation Report: [Spec Title]

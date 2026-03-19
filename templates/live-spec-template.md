@@ -2,7 +2,7 @@
 
 <!-- Live Spec within the {{ module_name }} charter.
      This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-kit/specs/features/{{ module_name }}/charter.md -->
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md -->
 
 ---
 charter: {{ module_name }}

@@ -30,7 +30,7 @@ Read project root files to determine the primary language(s):
 
 If multiple language markers exist (e.g., a monorepo with `package.json` and `go.mod`), extract symbols from all detected languages.
 
-Read `.context-kit/manifest.yaml` for any `exclude` patterns. Fall back to `.gitignore` for exclusions. Always exclude: `node_modules/`, `vendor/`, `dist/`, `build/`, `.git/`, `.context-kit/hygiene/`.
+Read `.context-index/manifest.yaml` for any `exclude` patterns. Fall back to `.gitignore` for exclusions. Always exclude: `node_modules/`, `vendor/`, `dist/`, `build/`, `.git/`, `.context-index/hygiene/`.
 
 ### Step 2: Discover Source Files
 
@@ -147,7 +147,7 @@ To keep this tractable for large codebases:
 
 ### Step 6: Generate Output
 
-Write the repo map to `.context-kit/hygiene/repo-map.md` with this format:
+Write the repo map to `.context-index/hygiene/repo-map.md` with this format:
 
 ```markdown
 # Repository Map
@@ -234,7 +234,7 @@ Typical execution time targets:
 ## After Generation
 
 ```
-Repository map generated at .context-kit/hygiene/repo-map.md
+Repository map generated at .context-index/hygiene/repo-map.md
 
   Source files scanned: 142
   Exported symbols found: 387
