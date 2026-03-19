@@ -20,7 +20,7 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 This IS the onboarding experience. Walk through each layer interactively:
 
 ```
-Step 1/9: Project Analysis
+Step 1/10: Project Analysis
   Analyzing your project...
 
   Detected:
@@ -35,7 +35,7 @@ Step 1/9: Project Analysis
 ```
 
 ```
-Step 2/9: Constitution
+Step 2/10: Constitution
   The constitution is the core of adev. It defines your project's
   non-negotiable principles, coding standards, and architecture
   boundaries. It stays under 200 lines and syncs to CLAUDE.md
@@ -60,7 +60,7 @@ If the user says yes, proceed with the constitution wizard:
 Generate `constitution.md` from answers using the template at `${CLAUDE_PLUGIN_ROOT}/templates/constitution-template.md`.
 
 ```
-Step 3/9: Platform Context
+Step 3/10: Platform Context
   Platform context captures your tech stack so agents make
   technology-aware decisions. When an agent needs to choose
   between Redis and Postgres, it checks here first.
@@ -80,7 +80,7 @@ Step 3/9: Platform Context
 ```
 
 ```
-Step 4/9: Orientation
+Step 4/10: Orientation
   The orientation file is a human-written guide to your codebase.
   It tells agents where to find things: which directory handles
   auth, where the API routes live, how the modules connect.
@@ -94,7 +94,7 @@ Step 4/9: Orientation
 If yes, analyze directory structure, identify key modules, produce a brief `orientation/architecture.md` (3-5 paragraphs describing the codebase layout and module relationships).
 
 ```
-Step 5/9: Product Charter
+Step 5/10: Product Charter
   A product charter defines WHAT you are building at the highest
   level: vision, module map, cross-cutting concerns, and quality
   attributes. Feature charters break this down per module.
@@ -103,7 +103,7 @@ Step 5/9: Product Charter
 ```
 
 ```
-Step 6/9: External References
+Step 6/10: External References
 
   Does this project depend on external repos, API contracts,
   or shared standards? (e.g., company coding standards, OpenAPI specs,
@@ -121,7 +121,29 @@ If yes:
 If no: skip, most projects start without this.
 
 ```
-Step 7/9: Sync Targets
+Step 7/10: Governance Policies
+
+  Declarative governance lets you define quality gates, architectural
+  boundary rules, and risk-based review policies as YAML files. Skills
+  enforce these automatically during planning, implementation, and
+  validation.
+
+  Without governance files, adev uses the quality gate commands from
+  your constitution and requires review for all specs.
+
+  → Set up governance? (yes / skip)
+```
+
+If yes:
+- Create `.context-index/governance/` and `.context-index/governance/overrides/`
+- Generate `gates.yaml` from template, seeding gate commands from the quality gate values collected in Step 2 (Constitution wizard)
+- Copy `boundaries.yaml` from template (empty rules, commented examples)
+- Copy `risk-policies.yaml` from template (sensible defaults)
+
+If no: skip. Governance/ is optional.
+
+```
+Step 8/10: Sync Targets
   Your constitution will be synced to agent-specific files so
   every AI tool gets the same rules.
 
@@ -135,7 +157,7 @@ Step 7/9: Sync Targets
 ```
 
 ```
-Step 8/9: Plugin Conflicts
+Step 9/10: Plugin Conflicts
   adev replaces the workflows provided by Superpowers and Spec Kit.
   Running them together causes duplicate skill invocations and
   competing gateway hooks.
@@ -180,7 +202,7 @@ Detection logic: check for installed plugins by looking at:
 If no conflicting plugins are detected, skip this step entirely.
 
 ```
-Step 9/9: Summary
+Step 10/10: Summary
 
   Ready to create:
   ✓ .context-index/constitution.md          (87 lines)
@@ -191,6 +213,7 @@ Step 9/9: Summary
   ○ .context-index/specs/features/          (empty, ready for charters)
   ○ .context-index/adrs/                    (empty, ready for decisions)
   ○ .context-index/references/              (external contexts, if configured)
+  ○ .context-index/governance/              (gates, boundaries, risk policies, if configured)
   ○ .context-index/samples/                 (empty, ready for examples)
 
   Will also:
@@ -217,6 +240,7 @@ adev Context Index — Health Check
 ✓ Orientation         architecture.md (last updated 12 days ago)
 ✗ Samples             empty directory
 ✓ External References references/ matches manifest (2 configured, 2 present)
+✓ Governance          gates.yaml, boundaries.yaml, risk-policies.yaml configured
 ✓ Sync Status         CLAUDE.md matches constitution (synced 2 days ago)
 ⚠ Plugin Conflict     Superpowers is active globally but not disabled for this project
 

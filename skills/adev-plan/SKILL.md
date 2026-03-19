@@ -70,6 +70,10 @@ Read these files in order. Each informs the planning decisions that follow.
 
 10. **Samples:** If `.context-index/samples/` contains golden samples relevant to this spec's patterns, note them. Tasks should reference samples where applicable.
 
+11. **Boundary rules:** If `.context-index/governance/boundaries.yaml` exists, read it.
+    Extract all boundary rules as additional planning constraints alongside the
+    constitution's Architecture Boundaries. If it does not exist, skip.
+
 ## Step 3: Constitution Validation
 
 Before writing any tasks, validate that the planned work stays within constitutional boundaries:
@@ -85,6 +89,11 @@ Before writing any tasks, validate that the planned work stays within constituti
    ```
    ### Task N: [Title] [REQUIRES HUMAN APPROVAL]
    ```
+
+Check each planned file path against boundary patterns from `governance/boundaries.yaml`:
+- `severity: error` → flag as blocker, must resolve before planning proceeds
+- `severity: warning` → flag as warning, proceed with caution
+- Tasks touching files across multiple boundary patterns → note as "cross-boundary operation"
 
 ## Step 4: Specialist Routing
 
@@ -238,6 +247,8 @@ After all tasks are complete, run the full quality gate suite:
 - [ ] Lint passes: `<lint command>`
 - [ ] Type check passes: `<typecheck command>`
 - [ ] All acceptance criteria from spec satisfied
+
+If `governance/gates.yaml` exists, use its gate definitions instead of constitution Quality Gates. List deterministic gates with commands. Note probabilistic/no-command gates as skipped.
 ```
 
 ## Step 6: Plan Review Loop

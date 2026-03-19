@@ -1,11 +1,11 @@
 ---
 name: adev-validate
-description: Post-implementation validation with 7 ordered checks. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
+description: Post-implementation validation with 9 ordered checks. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
 ---
 
 # Validate Implementation
 
-Run post-implementation validation against specs, constitution, charters, ADRs, and quality gates. Produces a structured report with PASS/FAIL per check and specific file references for every failure.
+Run post-implementation validation against specs, constitution, charters, ADRs, quality gates, governance boundaries, and transition gates. Produces a structured report with PASS/FAIL per check and specific file references for every failure.
 
 ## Arguments
 
@@ -23,15 +23,22 @@ Before starting, verify:
 
 ## Execution Strategy
 
-**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 7 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev-validate`.
+**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 9 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev-validate`.
 
-**Checks 2 through 7 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
+**Checks 2 through 9 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
 
-## The 7 Checks
+## The 9 Checks
 
 ### Check 1: Quality Gates (fail-fast)
 
-Read the Quality Gates section from `.context-index/constitution.md`. Run every command listed there.
+Gate source resolution order:
+1. If `.context-index/governance/gates.yaml` exists → primary source
+   - Run gates where `kind: deterministic` and `command` is non-empty
+   - `kind: probabilistic` → skip with note
+   - No `command` → skip with note
+   - Record `required` flag (non-required failures = warnings, not failures)
+2. If governance does not exist → fall back to constitution Quality Gates (existing behavior)
+3. Also check manifest.yaml `gates:` as secondary fallback
 
 Typical commands:
 - Test suite: the `[test command]` from the constitution
@@ -41,7 +48,7 @@ Typical commands:
 
 **If `--fix` was passed:** Before reporting failures, attempt auto-fix for lint and formatting errors (e.g., `npx eslint --fix`, `npx prettier --write`). Re-run the failing gate after the fix. If it passes now, record it as PASS (auto-fixed). If it still fails, record it as FAIL.
 
-**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 7. The report's overall status is FAIL.
+**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 9. The report's overall status is FAIL.
 
 **If all gates pass:** Proceed to Check 2.
 
@@ -118,6 +125,25 @@ For each matched specialist:
 
 Record per specialist: PASS, FAIL (with specific findings), or SKIPPED (no specialist matched).
 
+### Check 8: Boundary Compliance
+
+If `.context-index/governance/boundaries.yaml` exists, collect all files changed. For each boundary rule:
+
+1. Run regex `pattern` against file contents, respecting `exclude` globs.
+2. `severity: error` → FAIL
+3. `severity: warning` → WARN (does not cause overall FAIL)
+4. Apply charter-specific overrides from `governance/overrides/<slug>.yaml` if present.
+5. If `boundaries.yaml` does not exist → PASS (no rules configured).
+
+### Check 9: Transition Gates
+
+If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merge` transition:
+
+1. Verify each `required_gates` was run and passed in Check 1.
+2. If a required gate was skipped (probabilistic/no command) → log "manual verification required."
+3. Note `approver_role` if present (informational).
+4. If no transitions defined or governance/ absent → PASS.
+
 ## Report Format
 
 Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
@@ -138,7 +164,7 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Typecheck: PASS | FAIL [command output if failed]
 - [Custom gate]: PASS | FAIL
 
-[If FAIL: "Quality gates failed. Checks 2-7 skipped. Fix the above and re-run /adev-validate."]
+[If FAIL: "Quality gates failed. Checks 2-9 skipped. Fix the above and re-run /adev-validate."]
 
 ## Check 2: Spec Compliance — PASS | FAIL
 - [Criterion 1]: PASS | FAIL | PARTIAL
@@ -168,18 +194,26 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - [frontend-design]: PASS | FAIL [findings]
 - [security]: PASS | FAIL [findings]
 - ...
+
+## Check 8: Boundary Compliance — PASS | FAIL | N/A
+- [boundary-id]: PASS | FAIL | WARN [details]
+- ...
+
+## Check 9: Transition Gates — PASS | FAIL | N/A
+- [transition-id]: PASS | FAIL [details]
+- ...
 ```
 
 ## Overall Status
 
-- **PASS:** All 7 checks passed. The implementation is validated.
+- **PASS:** All 9 checks passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev-validate`.
 
 ## After Validation
 
 If PASS:
 ```
-Validation passed. All 7 checks green.
+Validation passed. All 9 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -199,8 +233,8 @@ Fix the issues above and re-run: /adev-validate --spec <path>
 ## Red Flags
 
 **Never:**
-- Continue to Checks 2-7 if Check 1 (Quality Gates) failed
-- Skip any of the 7 checks (except when fail-fast applies to Check 1)
+- Continue to Checks 2-9 if Check 1 (Quality Gates) failed
+- Skip any of the 9 checks (except when fail-fast applies to Check 1)
 - Report PASS when any check has unresolved failures
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code

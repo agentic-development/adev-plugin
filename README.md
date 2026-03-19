@@ -49,6 +49,11 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 │           └── <task>.md        # Live Spec
 ├── adrs/                        # Architecture Decision Records
 ├── references/                  # External context (API contracts, shared standards)
+├── governance/                  # Declarative gates, boundaries, risk policies (optional)
+│   ├── gates.yaml
+│   ├── boundaries.yaml
+│   ├── risk-policies.yaml
+│   └── overrides/
 ├── samples/                     # Golden samples (reference implementations)
 ├── orientation/                 # Human-authored codebase guide
 │   └── architecture.md
@@ -88,6 +93,10 @@ Before any code is written, `/adev-review-specs` dispatches parallel specialist 
 
 Domain experts (frontend design, data engineering, security) are declared in `manifest.yaml`. During implementation, tasks are automatically routed to the matching specialist based on file patterns and keywords.
 
+### Governance
+
+Declarative governance policies live in `.context-index/governance/` as YAML files. Define quality gates with triggers and commands (`gates.yaml`), architectural boundary rules with regex patterns (`boundaries.yaml`), and risk-based review escalation policies (`risk-policies.yaml`). Skills enforce these automatically during planning, implementation, and validation. Charter-specific overrides go in `governance/overrides/`. Projects without governance files continue working unchanged, falling back to manifest gates.
+
 ### Brownfield Support
 
 For existing codebases: `/adev-init --brownfield` reverse-engineers charters from code structure, generates retrospective ADRs from git history, and produces a coverage report showing which areas need specs.
@@ -122,7 +131,7 @@ Full design document: [adev-plugin-design.md](https://github.com/agentic-develop
 
 ## Status
 
-**v0.2.0** — Full skill specifications for all lifecycle phases. External references support for cross-repo context (API contracts, shared standards). Skills `adev-init`, `adev-sync`, `using-adev`, `adev-brainstorm`, `adev-specify`, `adev-review-specs`, `adev-plan`, `adev-implement`, `adev-validate`, `adev-debug`, and `adev-hygiene` are fully specified.
+**v0.3.0** — Declarative governance support: quality gates, architectural boundary rules, and risk-based review policies as YAML in `.context-index/governance/`. All lifecycle skills enforce governance automatically with graceful degradation when governance files are absent.
 
 ## License
 

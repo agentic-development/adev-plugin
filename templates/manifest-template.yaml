@@ -142,6 +142,19 @@ repomap:
 # Configuration for /adev-hygiene audits.
 # ============================================================================
 
+# ============================================================================
+# Governance (Optional)
+# Declarative quality gates, boundary rules, and risk policies.
+# Stored in .context-index/governance/. Run /adev-init to scaffold.
+# When present, governance files take precedence over the gates: section above.
+# ============================================================================
+
+# governance:
+#   gates: .context-index/governance/gates.yaml
+#   boundaries: .context-index/governance/boundaries.yaml
+#   risk_policies: .context-index/governance/risk-policies.yaml
+#   overrides: .context-index/governance/overrides/
+
 hygiene:
   # Number of days before a spec is considered stale
   staleness_threshold_days: 30

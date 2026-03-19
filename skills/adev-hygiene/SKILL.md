@@ -1,16 +1,16 @@
 ---
 name: adev-hygiene
-description: Audit all context for staleness, drift, and coverage gaps. Runs seven audit passes across the .context-index/ directory and generates actionable reports with checklists.
+description: Audit all context for staleness, drift, and coverage gaps. Runs eight audit passes across the .context-index/ directory and generates actionable reports with checklists.
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and generate actionable reports. Seven audit passes detect staleness, drift, and coverage gaps so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and generate actionable reports. Eight audit passes detect staleness, drift, and coverage gaps so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all seven passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references)
+- No arguments: full audit (all eight passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance)
 - `--fix`: auto-fix issues where possible (runs /adev-sync for constitution drift, etc.)
 
 ## Prerequisites
@@ -20,7 +20,7 @@ The project must have `.context-index/` initialized. If it does not exist, sugge
 ## Process
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
-2. **Run audit passes:** Execute each of the six passes below. If `--check` was provided, run only that pass.
+2. **Run audit passes:** Execute each of the eight passes below. If `--check` was provided, run only that pass.
 3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
@@ -306,6 +306,46 @@ Configured references: 3
 - [ ] Create design-system reference: fetch from github:org/design-system/main
 ```
 
+## Audit Pass 8: Governance Policy Health
+
+**Goal:** Verify that governance policy files are well-formed and internally consistent.
+
+**Prerequisite check:**
+
+If `.context-index/governance/` does not exist, SKIP this pass entirely. Print:
+```
+## Governance Policy Health
+
+Skipped — using manifest gates. No governance/ directory configured.
+```
+
+**Steps (when governance/ exists):**
+
+1. **YAML parsing.** Parse each file (`gates.yaml`, `boundaries.yaml`, `risk-policies.yaml`). Flag PARSE_ERROR on failure.
+2. **Gate command validation.** For each gate with a non-empty `command`, check that the binary exists on PATH (e.g., `which npm`, `which pytest`). Do not run the command. Flag COMMAND_NOT_FOUND.
+3. **Regex validation.** For each boundary rule, compile the `pattern` as a regex. Flag INVALID_REGEX on failure.
+4. **Charter override references.** For each file in `governance/overrides/`, verify the charter exists at `.context-index/specs/features/<slug>/charter.md`. Flag ORPHAN_OVERRIDE if the charter does not exist.
+5. **Transition gate references.** For each gate ID in `transitions.*.required_gates`, verify it exists in the `gates` list. Flag MISSING_GATE_REF.
+6. **Risk policy completeness.** Verify all three levels (high, medium, low) are defined in `risk-policies.yaml`. Flag INCOMPLETE_POLICY.
+
+**Output format:**
+```
+## Governance Policy Health
+
+- [x] gates.yaml: valid YAML, 4 gates defined
+- [x] boundaries.yaml: valid YAML, 2 rules defined
+- [x] risk-policies.yaml: valid YAML, 3/3 levels defined
+- [ ] Gate "custom-build": COMMAND_NOT_FOUND — "turbo" not on PATH
+- [ ] Boundary "no-direct-db": INVALID_REGEX — unclosed group
+- [ ] Override "payments.yaml": ORPHAN_OVERRIDE — no charter at specs/features/payments/
+- [x] Transition gate references: all valid
+
+**Actions:**
+- [ ] Install turbo or update gate command
+- [ ] Fix regex pattern in boundary "no-direct-db"
+- [ ] Remove orphan override payments.yaml or create the charter
+```
+
 ## Report Format
 
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
@@ -327,6 +367,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Spec-to-Code Drift | WARN | 3 drift items |
 | Session Analysis | SKIP | no provider configured |
 | External Reference Freshness | PASS | 0 issues |
+| Governance Policy Health | PASS | 0 issues |
 
 ## Priority Actions
 

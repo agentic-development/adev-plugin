@@ -1,0 +1,21 @@
+# boundaries.yaml — Architectural boundary rules
+# This file lives at .context-index/governance/boundaries.yaml
+# Each rule defines a regex pattern. Files matching the pattern trigger
+# an error or warning during planning, implementation, and validation.
+
+boundaries: []
+  # - id: no-direct-db-outside-db-layer
+  #   severity: error             # error | warning
+  #   pattern: "import.*from.*prisma"
+  #   exclude:
+  #     - "src/db/**"
+  #     - "prisma/**"
+  #   description: "Direct database imports are only allowed in src/db/"
+
+  # - id: no-console-log
+  #   severity: warning
+  #   pattern: "console\\.log"
+  #   exclude:
+  #     - "scripts/**"
+  #     - "**/*.test.*"
+  #   description: "Avoid console.log in production code"

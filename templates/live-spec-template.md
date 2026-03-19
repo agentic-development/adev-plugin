@@ -7,6 +7,7 @@
 ---
 charter: {{ module_name }}
 status: draft  <!-- draft | review-pending | review-passed | review-blocked | implemented | validated -->
+risk_level: medium  <!-- high | medium | low. Used by governance risk policies. -->
 created: {{ date }}
 ---
 

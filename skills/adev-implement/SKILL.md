@@ -34,6 +34,9 @@ Read these files once at the start. Extract everything subagents will need so th
 4. The Live Spec referenced by the plan. Extract acceptance criteria and behavioral contract.
 5. The Feature Charter referenced by the plan. Extract scope boundaries.
 6. Any cross-cutting specs or ADRs listed in the plan's context routing section.
+7. **Boundary rules:** If `.context-index/governance/boundaries.yaml` exists, read it.
+   Pass boundary rules to implementer subagents as additional constraints in prompt section 2
+   (alongside constitution excerpt). If it does not exist, skip.
 
 Create a TodoWrite entry for every task extracted from the plan.
 
@@ -198,6 +201,13 @@ The code quality reviewer checks:
 
 #### 2f. Mark Task Complete
 
+After both reviews pass, if `governance/gates.yaml` exists:
+1. Read gates where `triggers` includes "post-task" or "post-implement"
+2. For each gate with `kind: deterministic` and non-empty `command`: run it. If fail + `required: true` → task failure. If fail + `required: false` → log warning.
+3. `kind: probabilistic` or no `command` → log "Skipped (requires platform runtime)"
+4. `approver_role` → log informational note
+5. If `governance/gates.yaml` does not exist, fall back to manifest quality gates (existing behavior)
+
 After both reviews pass:
 1. Mark the task complete in TodoWrite.
 2. Record: specialist used (or "generic"), review cycles needed, concerns noted.
@@ -210,6 +220,8 @@ After all tasks are complete, dispatch a final code quality reviewer subagent th
 - Cross-task consistency (shared types, naming conventions, import patterns)
 - Integration between tasks (do components connect correctly?)
 - Overall architecture coherence (does the whole thing match the charter's scope?)
+
+If `governance/boundaries.yaml` exists, run final boundary compliance check: grep all changed files against boundary patterns, report violations.
 
 ### Step 4: Completion
 

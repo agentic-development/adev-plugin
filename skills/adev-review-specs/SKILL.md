@@ -39,6 +39,19 @@ For each spec to be reviewed, gather the context package that all reviewers will
 6. **ADRs:** Read all files in `.context-index/adrs/` (for decision compliance).
 7. **Platform context:** Read `.context-index/platform-context.yaml` (for technology constraints).
 8. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts that specs must comply with.
+9. **Governance policies:** If `.context-index/governance/risk-policies.yaml` exists, read it.
+   Check the spec's `risk_level` frontmatter field (default: "medium"). If the policy allows
+   skipping review for this level (`require_review: false`), inform the user and offer to skip.
+   If skipped, write a `.review.md` with verdict PASS and note "Review skipped per risk policy."
+
+   If `.context-index/governance/gates.yaml` exists, read the `transitions` section. If a
+   `spec-to-plan` transition defines an `approver_role`, note it in the review report footer
+   (informational only, do not block).
+
+   If `.context-index/governance/overrides/<charter-slug>.yaml` exists, let it override the
+   base risk policy for this charter's specs.
+
+   If governance files do not exist, proceed normally (all specs require review).
 
 If a charter or constitution file is missing, warn the user and ask whether to proceed with reduced context or abort.
 
