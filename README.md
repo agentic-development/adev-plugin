@@ -122,7 +122,7 @@ Full design document: [adev-plugin-design.md](https://github.com/agentic-develop
 
 ## Status
 
-**v0.1.0** — Plugin skeleton with Phase 1 components. Skills `adev-init`, `adev-sync`, and `using-adev` are fully specified. Remaining skills have stubs with defined interfaces.
+**v0.2.0** — Full skill specifications for all lifecycle phases. External references support for cross-repo context (API contracts, shared standards). Skills `adev-init`, `adev-sync`, `using-adev`, `adev-brainstorm`, `adev-specify`, `adev-review-specs`, `adev-plan`, `adev-implement`, `adev-validate`, `adev-debug`, and `adev-hygiene` are fully specified.
 
 ## License
 
