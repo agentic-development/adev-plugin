@@ -118,6 +118,22 @@ gates:
   # bundle-size: "npx size-limit"
 
 # ============================================================================
+# Completion Policy
+# Controls what happens after implementation and validation pass.
+# ============================================================================
+
+completion:
+  merge_policy: pr          # pr | merge | ask
+  # pr:    Always open a pull request. Never merge directly. (default, recommended)
+  # merge: Allow direct merge to the target branch after validation passes.
+  # ask:   Ask the user each time whether to open a PR or merge.
+  protected_branches:
+    - main
+    - master
+  # Branches that agents must NEVER merge to or push to directly,
+  # regardless of merge_policy. Always open a PR for these.
+
+# ============================================================================
 # Repo Map Configuration
 # Controls how /adev-repomap scans the repository.
 # ============================================================================

@@ -91,6 +91,10 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 
 A tool-agnostic document (`.context-index/constitution.md`) containing your project's non-negotiable principles, coding standards, architecture boundaries, context routing rules, and quality gates. Kept under 200 lines. Synced to CLAUDE.md, AGENTS.md, .cursorrules, and copilot-instructions.md via `/adev-sync`.
 
+### Merge Policy
+
+The `completion.merge_policy` field in `manifest.yaml` controls what happens after implementation and validation pass. Options: `pr` (default, always open a PR), `merge` (allow direct merge to non-protected branches), `ask` (prompt the user each time). Branches listed in `completion.protected_branches` (default: main, master) always require a PR regardless of policy. The `merge-guard` hook enforces this programmatically by blocking Bash commands that merge or push to protected branches.
+
 ### Context Routing
 
 The constitution tells agents *when* and *where* to look for deeper context. Agents use standard agentic search (Glob/Grep/Read) to fetch what they need. No pre-computed indexes required.
@@ -130,6 +134,7 @@ For existing codebases: `/adev-init --brownfield` reverse-engineers charters fro
 | `using-adev` | SessionStart | Injects adev awareness and available skills |
 | `constitution-linter` | PreToolUse (Edit) | Validates constitution structure, size, pointers |
 | `sync-trigger` | PostToolUse (Edit) | Triggers agent file sync after constitution changes |
+| `merge-guard` | PreToolUse (Bash) | Blocks git merge/push to protected branches when merge_policy is "pr" |
 
 ## Integrations
 
@@ -152,6 +157,8 @@ adev is a methodology choice in the [claude-blueprints-plugin](https://github.co
 Full design document: [adev-plugin-design.md](https://github.com/agentic-development/agentic-dev-content/blob/main/docs/superpowers/specs/2026-03-19-adev-plugin-design.md)
 
 ## Status
+
+**v0.4.1** — Merge policy enforcement. Agents can no longer merge directly to protected branches. Three-layer defense: manifest configuration, skill instructions, and a PreToolUse hook guard.
 
 **v0.4.0** — Context packets, task routing, agent recovery, golden sample curation, sprint retrospectives, and graduated evaluation harness. Five new skills (`/adev-sample`, `/adev-route`, `/adev-recover`, `/adev-retro`, `/adev-eval`) plus context packet assembly, blocker flag protocol, and scope guard integration across existing skills.
 

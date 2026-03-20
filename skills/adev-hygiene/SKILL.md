@@ -1,16 +1,16 @@
 ---
 name: adev-hygiene
-description: Audit all context for staleness, drift, and coverage gaps. Runs ten audit passes across the .context-index/ directory and generates actionable reports with checklists.
+description: Audit all context for staleness, drift, and coverage gaps. Runs eleven audit passes across the .context-index/ directory and generates actionable reports with checklists.
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and generate actionable reports. Ten audit passes detect staleness, drift, coverage gaps, and operational patterns so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and generate actionable reports. Eleven audit passes detect staleness, drift, coverage gaps, phase readiness, and operational patterns so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all ten passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers)
+- No arguments: full audit (all eleven passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases)
 - `--fix`: auto-fix issues where possible (runs /adev-sync for constitution drift, etc.)
 
 ## Prerequisites
@@ -20,7 +20,7 @@ The project must have `.context-index/` initialized. If it does not exist, sugge
 ## Process
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
-2. **Run audit passes:** Execute each of the ten passes below. If `--check` was provided, run only that pass.
+2. **Run audit passes:** Execute each of the eleven passes below. If `--check` was provided, run only that pass.
 3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
@@ -431,6 +431,52 @@ Total blockers: 5
 - [ ] Review NOVEL_PROBLEM blocker for specialist gap
 ```
 
+## Audit Pass 11: Phase Coverage
+
+**Goal:** Report delivery readiness per phase by cross-referencing charter capability phases with spec statuses. Identify capabilities with no phase, and phases with missing or incomplete specs.
+
+**Steps:**
+
+1. **Scan all charters.** Read every `.context-index/specs/features/*/charter.md`. For each charter, parse the Capability Map table. Extract each capability's name, priority, and phase.
+2. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`). Parse frontmatter for `charter`, `milestone`, and `status`.
+3. **Match capabilities to specs.** For each charter capability, find the corresponding spec by:
+   - Matching `milestone` in the spec to the capability's phase, AND
+   - Matching the spec's `charter` field to the charter's module name.
+   - If no milestone match, fall back to matching by capability name similarity against spec titles.
+4. **Group by phase.** For each distinct phase found across all charters:
+   - List all capabilities assigned to that phase.
+   - For each capability, show the matching spec and its status (or "(no spec created)" if none).
+   - Compute a summary: N specified, M implemented, K in review, J draft, L missing.
+5. **List unphased capabilities.** Capabilities with no phase assigned, grouped by charter. Include their priority for triage.
+
+**Output format:**
+```
+## Phase Coverage
+
+### v1
+- auth/password-login — implemented ✓
+- auth/session-management — review-passed
+- task-boards/create-boards — draft
+  → 1/3 implemented, 1 in review, 1 draft
+
+### v2
+- auth/sso-integration — (no spec created)
+  → 0/1 specified (1 charter capability without a spec)
+
+### Unphased Capabilities
+- auth: MFA — nice-to-have, no phase assigned
+- task-boards: board-analytics — should-have, no phase assigned
+
+**Actions:**
+- [ ] Create spec for auth/sso-integration (v2 capability with no spec)
+- [ ] Assign phase to 2 unphased capabilities
+```
+
+**Integration with summary table:** Add a row for Phase Coverage in the report summary:
+```
+| Phase Coverage | WARN | 1 unspecified capability, 2 unphased |
+```
+
 ## Report Format
 
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
@@ -455,6 +501,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Governance Policy Health | PASS | 0 issues |
 | Recovery Pattern Analysis | WARN | 2 repeat offenders |
 | Blocker Frequency Analysis | WARN | 1 stale blocker |
+| Phase Coverage | WARN | 1 unspecified, 2 unphased |
 
 ## Priority Actions
 

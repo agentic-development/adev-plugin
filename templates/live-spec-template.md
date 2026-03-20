@@ -8,6 +8,7 @@
 charter: {{ module_name }}
 status: draft  <!-- draft | review-pending | review-passed | review-blocked | implemented | validated -->
 risk_level: medium  <!-- high | medium | low. Used by governance risk policies. -->
+milestone:        <!-- optional — phase from charter capability map, or explicit override (e.g., v1, v2, mvp) -->
 created: {{ date }}
 ---
 

@@ -20,6 +20,15 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/constitution-linter.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/merge-guard.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [

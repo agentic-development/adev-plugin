@@ -60,11 +60,13 @@
 ## Capability Map
 
 <!-- The specific capabilities (features, operations) this module provides.
-     Each capability is a candidate for a Live Spec. -->
+     Each capability is a candidate for a Live Spec.
+     Phase indicates WHEN a capability ships (e.g., v1, v2, mvp, post-launch).
+     Phase is about timing, not importance (that is Priority). Leave blank if unassigned. -->
 
-| Capability | Description | Priority |
-|-----------|-------------|----------|
-| ... | ... | must-have / should-have / nice-to-have |
+| Capability | Description | Priority | Phase |
+|-----------|-------------|----------|-------|
+| ... | ... | must-have / should-have / nice-to-have | |
 
 ## Interface Contracts
 

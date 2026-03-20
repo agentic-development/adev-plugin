@@ -1,6 +1,6 @@
 ---
 name: adev-validate
-description: Post-implementation validation with 9 ordered checks. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
+description: Post-implementation validation with 10 ordered checks. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
 ---
 
 # Validate Implementation
@@ -23,11 +23,11 @@ Before starting, verify:
 
 ## Execution Strategy
 
-**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 9 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev-validate`.
+**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 10 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev-validate`.
 
-**Checks 2 through 9 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
+**Checks 2 through 10 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
 
-## The 9 Checks
+## The 10 Checks
 
 ### Check 1: Quality Gates (fail-fast)
 
@@ -48,7 +48,7 @@ Typical commands:
 
 **If `--fix` was passed:** Before reporting failures, attempt auto-fix for lint and formatting errors (e.g., `npx eslint --fix`, `npx prettier --write`). Re-run the failing gate after the fix. If it passes now, record it as PASS (auto-fixed). If it still fails, record it as FAIL.
 
-**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 9. The report's overall status is FAIL.
+**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 10. The report's overall status is FAIL.
 
 **If all gates pass:** Proceed to Check 2.
 
@@ -144,6 +144,33 @@ If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merg
 3. Note `approver_role` if present (informational).
 4. If no transitions defined or governance/ absent → PASS.
 
+### Check 10: Platform Drift
+
+Compare `.context-index/platform-context.yaml` tech stack declarations against `package.json` dependencies. Catches cases where the declared stack no longer matches what is actually installed.
+
+**If `platform-context.yaml` does not exist:** SKIP (no platform context configured).
+**If `package.json` does not exist:** SKIP (not a Node.js project; platform drift check is not applicable).
+
+**Mapping rules:**
+
+For each field in `platform-context.yaml`, check the corresponding package in `package.json` (dependencies + devDependencies):
+
+| platform-context field | Expected package(s) | Example |
+|----------------------|---------------------|---------|
+| `framework` | Framework package present (`next`, `nuxt`, `astro`, `svelte`, etc.) | `framework: nextjs` → `next` in dependencies |
+| `version` | Framework package version satisfies declared version | `version: "16"` → `next` version starts with `16.x` |
+| `language` | If `typescript`, `typescript` in devDependencies | `language: typescript` → `typescript` present |
+| `orm` | ORM package present (`prisma`, `drizzle-orm`, `typeorm`, `@mikro-orm/core`, etc.) | `orm: prisma` → `prisma` or `@prisma/client` present |
+| `auth` | Auth package present (`@clerk/nextjs`, `next-auth`, `@auth0/nextjs-auth0`, etc.) | `auth: clerk` → `@clerk/nextjs` present |
+| `database` | DB driver or client present if applicable | `database: postgresql` → pg-related package or ORM handles it |
+| `testing` | Test framework present | `testing: vitest` → `vitest` in devDependencies |
+
+**Unknown fields or values:** If a `platform-context.yaml` field has a value the mapping does not recognize, log it as INFO (not a failure). The mapping is best-effort.
+
+**Version check:** Only performed for `framework` + `version`. Uses semver-compatible prefix matching (e.g., declared `"16"` matches installed `16.1.2`). If the major version does not match, flag as FAIL.
+
+Record per field: PASS (matches), FAIL (mismatch with details), WARN (could not verify), or SKIP (field not declared).
+
 ## Report Format
 
 Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
@@ -164,7 +191,7 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Typecheck: PASS | FAIL [command output if failed]
 - [Custom gate]: PASS | FAIL
 
-[If FAIL: "Quality gates failed. Checks 2-9 skipped. Fix the above and re-run /adev-validate."]
+[If FAIL: "Quality gates failed. Checks 2-10 skipped. Fix the above and re-run /adev-validate."]
 
 ## Check 2: Spec Compliance — PASS | FAIL
 - [Criterion 1]: PASS | FAIL | PARTIAL
@@ -202,23 +229,56 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 ## Check 9: Transition Gates — PASS | FAIL | N/A
 - [transition-id]: PASS | FAIL [details]
 - ...
+
+## Check 10: Platform Drift — PASS | FAIL | SKIP
+- framework: PASS | FAIL [declared: X, found: Y]
+- version: PASS | FAIL [declared: X, installed: Y]
+- language: PASS | FAIL [details]
+- orm: PASS | FAIL [declared: X, not found in package.json]
+- auth: PASS | FAIL [details]
+- ...
 ```
 
 ## Overall Status
 
-- **PASS:** All 9 checks passed. The implementation is validated.
+- **PASS:** All 10 checks passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev-validate`.
 
 ## After Validation
 
 If PASS:
+
+Read `completion.merge_policy` from manifest.yaml (default: "pr").
+
+If "pr" (or target branch is in `completion.protected_branches`):
 ```
-Validation passed. All 9 checks green.
+Validation passed. All 10 checks green.
+
+The implementation satisfies the spec, stays within charter scope,
+respects the constitution, and passes all quality gates.
+
+Ready for PR. Run: gh pr create --base <target-branch>
+Do NOT merge directly to protected branches.
+```
+
+If "merge" (and target branch is NOT protected):
+```
+Validation passed. All 10 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
 
 Ready to merge or proceed to the next feature.
+```
+
+If "ask":
+```
+Validation passed. All 10 checks green.
+
+The implementation satisfies the spec, stays within charter scope,
+respects the constitution, and passes all quality gates.
+
+Ready to integrate. Open a PR or merge directly?
 ```
 
 If FAIL:
@@ -233,9 +293,10 @@ Fix the issues above and re-run: /adev-validate --spec <path>
 ## Red Flags
 
 **Never:**
-- Continue to Checks 2-9 if Check 1 (Quality Gates) failed
-- Skip any of the 9 checks (except when fail-fast applies to Check 1)
+- Continue to Checks 2-10 if Check 1 (Quality Gates) failed
+- Skip any of the 10 checks (except when fail-fast applies to Check 1)
 - Report PASS when any check has unresolved failures
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code
 - Skip specialist review when the scoring algorithm produces matches
+- Suggest merging to a protected branch (always suggest PR for protected branches)

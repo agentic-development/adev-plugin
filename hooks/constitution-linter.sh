@@ -23,7 +23,7 @@ fi
 # 1. Check line count
 MAX_LINES=200
 if [ -f ".context-index/manifest.yaml" ]; then
-  MANIFEST_MAX=$(grep -oP 'max_constitution_lines:\s*\K\d+' .context-index/manifest.yaml 2>/dev/null || echo "")
+  MANIFEST_MAX=$(sed -n 's/^[[:space:]]*max_constitution_lines:[[:space:]]*\([0-9][0-9]*\).*/\1/p' .context-index/manifest.yaml 2>/dev/null || echo "")
   if [ -n "$MANIFEST_MAX" ]; then
     MAX_LINES="$MANIFEST_MAX"
   fi
@@ -46,7 +46,7 @@ done
 if grep -q "## Context Routing" "$CONSTITUTION" 2>/dev/null; then
   # Extract file paths from backticks in the Context Routing section
   ROUTING_SECTION=$(sed -n '/^## Context Routing/,/^## /p' "$CONSTITUTION" | head -n -1)
-  PATHS=$(echo "$ROUTING_SECTION" | grep -oP '`([^`]+\.(md|yaml|yml))`' | tr -d '`' || true)
+  PATHS=$(echo "$ROUTING_SECTION" | sed -n 's/.*`\([^`]*\.\(md\|yaml\|yml\)\)`.*/\1/p' || true)
   for P in $PATHS; do
     if [ ! -f "$P" ] && [ ! -d "$P" ]; then
       ERRORS+=("Context routing references '${P}' but it does not exist.")

@@ -12,7 +12,47 @@ Decompose a reviewed Live Spec into an ordered task list ready for `/adev-implem
 ## Arguments
 
 - `--spec <path>`: plan a specific spec (required unless a spec path is obvious from conversation context)
+- `--phase <name>`: plan all specs matching a phase/milestone across all modules (e.g., `--phase v1`)
 - `--dry-run`: show the plan structure without writing it
+
+## Phase Planning Mode (`--phase`)
+
+When `--phase <name>` is provided, the skill switches from single-spec planning to multi-spec phase planning:
+
+1. **Scan all specs:** Read all `.md` files under `.context-index/specs/features/` (excluding `charter.md` and `*.plan.md` and `*.review.md`). Parse frontmatter for the `milestone` field.
+2. **Filter by phase:** Select specs whose `milestone` matches `<name>` (case-insensitive).
+3. **Report matching specs** before planning:
+   ```
+   Phase: v1
+   Matching specs:
+     1. auth/password-login.md — status: implemented ✓
+     2. auth/session-management.md — status: review-passed ✓
+     3. task-boards/create-boards.md — status: draft ⚠ (not yet review-passed)
+
+   3 specs found. 1 warning (draft spec included but may not be ready for planning).
+   → Proceed with planning all review-passed specs? (yes / include drafts / select)
+   ```
+4. **Warn on non-reviewed specs:** Specs that have not reached `review-passed` status are flagged with a warning. Include them in the plan only if the user confirms.
+5. **Ordering:** Plan specs in dependency order:
+   - Specs within the same charter are ordered by the charter's Capability Map sequence.
+   - Cross-charter dependencies are resolved by reading each spec's preconditions and consumed APIs.
+   - If no dependency information is available, group by charter (all specs from one charter together).
+6. **Output:** For each qualifying spec, run the standard planning process (Steps 1-7). Save each plan adjacent to its spec as usual. At the end, produce a phase summary:
+   ```
+   Phase v1 planning complete.
+
+   Plans created:
+     - .context-index/specs/features/auth/session-management.plan.md (3 tasks)
+     - .context-index/specs/features/task-boards/create-boards.plan.md (5 tasks)
+
+   Skipped (already implemented):
+     - auth/password-login.md
+
+   Warnings:
+     - task-boards/create-boards.md was planned from a draft spec (not review-passed)
+   ```
+
+Without `--phase`, behavior is unchanged (single spec planning via `--spec`).
 
 ## Step 1: Review Gate
 

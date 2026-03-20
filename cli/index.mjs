@@ -355,24 +355,43 @@ function cmdHelp() {
   `);
 }
 
+// ── Exports (for testing) ────────────────────────────────────────────────
+
+export {
+  installPlugin,
+  enablePlugin,
+  detectConflicts,
+  disableConflictingPlugin,
+  scaffoldContextKit,
+  PLUGIN_ROOT,
+  PLUGIN_VERSION,
+};
+
 // ── Main ────────────────────────────────────────────────────────────────
 
-const command = process.argv[2] || "help";
+// Only run CLI when invoked directly (not when imported for testing)
+const isDirectRun =
+  process.argv[1] &&
+  resolve(process.argv[1]) === resolve(__filename);
 
-switch (command) {
-  case "init":
-    await cmdInit();
-    break;
-  case "uninstall":
-    await cmdUninstall();
-    break;
-  case "help":
-  case "--help":
-  case "-h":
-    cmdHelp();
-    break;
-  default:
-    error(`Unknown command: ${command}`);
-    cmdHelp();
-    process.exit(1);
+if (isDirectRun) {
+  const command = process.argv[2] || "help";
+
+  switch (command) {
+    case "init":
+      await cmdInit();
+      break;
+    case "uninstall":
+      await cmdUninstall();
+      break;
+    case "help":
+    case "--help":
+    case "-h":
+      cmdHelp();
+      break;
+    default:
+      error(`Unknown command: ${command}`);
+      cmdHelp();
+      process.exit(1);
+  }
 }

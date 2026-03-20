@@ -173,7 +173,13 @@ Generate concrete, checkable criteria. Every behavior statement must map to at l
    ```yaml
    charter: <module-name>
    status: draft
+   milestone: <phase from charter capability map, if any>
    created: <today's date YYYY-MM-DD>
+   ```
+   **Milestone inheritance:** Read the capability's Phase from the parent charter's Capability Map. If the capability has a phase assigned, set the spec's `milestone` to match. If the capability has no phase, leave `milestone` empty. Always tell the user which milestone was inherited and allow them to override:
+   ```
+   The charter assigns this capability to phase "v1". Setting milestone: v1.
+   → Keep this milestone, or override? (enter to confirm / type new value)
    ```
 4. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 

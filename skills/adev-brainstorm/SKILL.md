@@ -150,6 +150,9 @@ Present a table of capabilities with:
 - Capability name
 - Description
 - Priority (must-have / should-have / nice-to-have)
+- Phase (e.g., v1, v2, mvp, post-launch, or blank if unassigned)
+
+For each capability, assign a phase or leave blank. Phase indicates WHEN this capability ships, not its importance (that is Priority). Phases are free-form strings agreed upon with the user.
 
 Each capability is a candidate for a future Live Spec. Order by priority.
 

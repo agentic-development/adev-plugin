@@ -56,6 +56,16 @@ If the user says yes, proceed with the constitution wizard:
 - Coding standards (detect from tsconfig/eslint/prettier, user confirms)
 - Architecture boundaries (suggest based on project structure, user confirms)
 - Quality gate commands (detect test/lint/typecheck commands from package.json scripts)
+- Merge policy:
+
+```
+  Your merge policy controls whether agents can merge to main
+  or must open pull requests.
+
+  → Merge policy: pr (recommended) / merge / ask
+```
+
+Seed the `completion` section in the generated manifest with the user's answer. Default to `pr`.
 
 Generate `constitution.md` from answers using the template at `${CLAUDE_PLUGIN_ROOT}/templates/constitution-template.md`.
 

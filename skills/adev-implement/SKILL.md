@@ -40,6 +40,8 @@ Read these files once at the start. Extract everything subagents will need so th
 8. **Routing tags:** If tasks have routing annotations (from `/adev-route`), read them.
    Adjust execution strategy per task based on `auto-agent`, `assisted-agent`, or `human-only` tags.
    If no routing tags exist, treat all tasks as `auto-agent` (default behavior).
+9. **Completion policy:** Read `completion.merge_policy` from manifest.yaml (default: "pr").
+   Read `completion.protected_branches` (default: ["main", "master"]).
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
@@ -247,6 +249,17 @@ If `governance/boundaries.yaml` exists, run final boundary compliance check: gre
 
 Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
 
+Read the `completion.merge_policy` from manifest.yaml (default: "pr").
+
+If merge_policy is "pr" or the current target branch is in protected_branches:
+  Do NOT merge. Do NOT push to the protected branch. Suggest opening a PR.
+
+If merge_policy is "merge" AND target branch is NOT protected:
+  Offer to merge. Still confirm with the user before executing.
+
+If merge_policy is "ask":
+  Ask the user: "Open a PR or merge directly?"
+
 Report to the user:
 
 ```
@@ -258,6 +271,13 @@ Review cycles: [total across all tasks, highlight any task that needed 3+]
 Concerns noted: [list any DONE_WITH_CONCERNS items]
 
 Next step: run /adev-validate for full post-implementation validation.
+```
+
+If merge_policy is "pr" (or target is a protected branch), append:
+
+```
+When validation passes, open a PR: gh pr create --base <target-branch>
+Do NOT merge directly to <target-branch>.
 ```
 
 ## Red Flags
@@ -275,3 +295,6 @@ Next step: run /adev-validate for full post-implementation validation.
 - Re-dispatch a BLOCKED subagent without changing something
 - Skip TDD for any task (RED-GREEN-REFACTOR, no exceptions)
 - Let implementer self-review replace actual review (both are required)
+- Merge to a protected branch (main, master, or any branch listed in completion.protected_branches)
+- Push directly to a protected branch without opening a PR
+- Ignore merge_policy from manifest.yaml (default is "pr": never merge without explicit configuration)
