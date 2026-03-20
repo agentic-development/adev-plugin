@@ -63,6 +63,18 @@ created: {{ date }}
 |------|-------------|---------------------|
 | ... | ... | small / medium / large |
 
+## Visual Expectations
+
+<!-- For UI tasks only. Delete this section for backend-only specs.
+     Describe what the user SEES, not what the code does.
+     These are verified by browser snapshot during /adev-implement and /adev-validate.
+     Be specific: sizes, positions, colors, states, responsive breakpoints. -->
+
+- ...
+- **Loading state:** ...
+- **Error state:** ...
+- **Mobile (< 768px):** ...
+
 ## Acceptance Criteria
 
 <!-- Concrete, verifiable criteria for this spec to be considered complete.

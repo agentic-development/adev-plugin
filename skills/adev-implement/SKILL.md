@@ -81,7 +81,7 @@ Determine which specialist (if any) should handle this task.
    - No specialist scores above 0: use generic implementation subagent.
    - Single highest scorer: route to that specialist.
    - Tie between highest scorers: the specialist declared first in `manifest.yaml` wins.
-   - Secondary matches (score > 0 but not highest): record them. Pass the list to the code quality reviewer in step 2e so it knows which additional domains to check.
+   - Secondary matches (score > 0 but not highest): record them. Pass the list to the code quality reviewer in step 2g so it knows which additional domains to check.
 
 **Example.** Given specialists:
 
@@ -162,7 +162,7 @@ When done, report:
 
 Dispatch the subagent. Handle the returned status:
 
-**DONE.** Proceed to 2-stage review (step 2d).
+**DONE.** Proceed to visual verification (step 2e) then 2-stage review (steps 2f-2g).
 
 **DONE_WITH_CONCERNS.** Read the concerns carefully.
 - Observational concerns (e.g., "this file is getting large", "naming could be improved"): note them and proceed to review. Pass them to the code quality reviewer.
@@ -179,7 +179,45 @@ Dispatch the subagent. Handle the returned status:
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev-specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 
-#### 2e. Stage 1 Review: Spec Compliance
+#### 2e. Visual Verification (UI tasks)
+
+**Trigger:** If any file in the task's file list matches UI patterns: `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `components/**`, `app/**/page.*`, `app/**/layout.*`, `pages/**`.
+
+**Playwright MCP required.** Check for the Playwright MCP browser tools (`browser_navigate`, `browser_snapshot`). If they are not available, **STOP the entire implementation** and tell the user:
+
+```
+BLOCKED: This task modifies UI files but no browser verification tool is available.
+
+Install the Playwright MCP server so the agent can visually verify UI work:
+  npm install -g @anthropic/mcp-playwright
+
+Then add it to your Claude Code MCP config and restart.
+
+Without visual verification, UI tasks cannot be validated one-shot.
+The agent will ship broken layouts, invisible elements, and styling regressions.
+```
+
+Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
+
+**If Playwright is available:**
+
+1. **Dev server.** Ensure the dev server is running. If not, start it (`npm run dev`, `next dev`, or whatever the project uses). Wait for it to be ready.
+2. **Navigate.** Use the browser tool to navigate to the route this task affects. Infer the route from the file path (e.g., `app/dashboard/page.tsx` → `/dashboard`). If ambiguous, check the spec for the target URL.
+3. **Snapshot and verify.** Take a browser snapshot. Compare against the Visual Expectations section from the Live Spec:
+   - Are all described elements visible and correctly positioned?
+   - Does text content render (no blank screens, no hydration errors)?
+   - Are interactive states working (hover, focus, disabled)?
+4. **Responsive check.** If the spec mentions mobile or responsive behavior, resize the viewport to 375px width and re-snapshot. Verify mobile expectations.
+5. **Fix loop.** If something is wrong:
+   - Identify the issue from the snapshot.
+   - Fix the code.
+   - Re-snapshot and verify.
+   - Maximum 3 visual fix cycles per task. After the third, report remaining visual issues in the subagent report as DONE_WITH_CONCERNS.
+6. **Evidence.** Include a summary of what was visually verified in the subagent report (which pages, which breakpoints, what was checked).
+
+**If the spec has no Visual Expectations section:** Still take a basic snapshot after implementation. Verify the page loads without errors, shows content (not a blank screen), and has no console errors. This is the minimum bar.
+
+#### 2f. Stage 1 Review: Spec Compliance
 
 Dispatch a fresh spec reviewer subagent with:
 
@@ -197,7 +235,7 @@ The spec reviewer verifies by reading code, not by trusting the report:
 
 **Only proceed to Stage 2 after Stage 1 passes.**
 
-#### 2f. Stage 2 Review: Code Quality
+#### 2g. Stage 2 Review: Code Quality
 
 Dispatch a fresh code quality reviewer subagent with:
 
@@ -221,7 +259,7 @@ The code quality reviewer checks:
 
 **Minor issues:** Noted but do not block progress.
 
-#### 2g. Mark Task Complete
+#### 2h. Mark Task Complete
 
 After both reviews pass, if `governance/gates.yaml` exists:
 1. Read gates where `triggers` includes "post-task" or "post-implement"
@@ -294,6 +332,8 @@ Do NOT merge directly to <target-branch>.
 - Move to the next task while either review has open issues
 - Re-dispatch a BLOCKED subagent without changing something
 - Skip TDD for any task (RED-GREEN-REFACTOR, no exceptions)
+- Skip visual verification for UI tasks (block and require Playwright MCP)
+- Proceed with UI tasks when Playwright MCP is not available (stop, do not fall back to code-only review)
 - Let implementer self-review replace actual review (both are required)
 - Merge to a protected branch (main, master, or any branch listed in completion.protected_branches)
 - Push directly to a protected branch without opening a PR

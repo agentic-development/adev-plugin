@@ -1,6 +1,6 @@
 ---
 name: adev-validate
-description: Post-implementation validation with 10 ordered checks. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
+description: Post-implementation validation with 11 ordered checks including browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
 ---
 
 # Validate Implementation
@@ -23,11 +23,11 @@ Before starting, verify:
 
 ## Execution Strategy
 
-**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 10 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev-validate`.
+**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 11 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev-validate`. **Exception:** Check 11 (Visual Verification) is triggered independently for UI files. If quality gates fail but the implementation includes UI files, still note that visual verification is pending.
 
-**Checks 2 through 10 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
+**Checks 2 through 11 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
 
-## The 10 Checks
+## The 11 Checks
 
 ### Check 1: Quality Gates (fail-fast)
 
@@ -48,7 +48,7 @@ Typical commands:
 
 **If `--fix` was passed:** Before reporting failures, attempt auto-fix for lint and formatting errors (e.g., `npx eslint --fix`, `npx prettier --write`). Re-run the failing gate after the fix. If it passes now, record it as PASS (auto-fixed). If it still fails, record it as FAIL.
 
-**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 10. The report's overall status is FAIL.
+**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 11. The report's overall status is FAIL.
 
 **If all gates pass:** Proceed to Check 2.
 
@@ -171,6 +171,47 @@ For each field in `platform-context.yaml`, check the corresponding package in `p
 
 Record per field: PASS (matches), FAIL (mismatch with details), WARN (could not verify), or SKIP (field not declared).
 
+### Check 11: Visual Verification (UI projects)
+
+**Trigger:** If any file touched by the implementation matches UI patterns (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `components/**`, `app/**/page.*`, `app/**/layout.*`, `pages/**`).
+
+**Playwright MCP required.** Check for the Playwright MCP browser tools (`browser_navigate`, `browser_snapshot`). If they are not available, **BLOCK validation** and tell the user:
+
+```
+BLOCKED: This implementation includes UI files but no browser verification tool is available.
+
+Install the Playwright MCP server so the agent can visually verify UI work:
+  npm install -g @anthropic/mcp-playwright
+
+Then add it to your Claude Code MCP config and restart.
+
+Without visual verification, UI implementations cannot be fully validated.
+```
+
+Do not record SKIP. Do not proceed without it. UI code without visual verification is unvalidated code.
+
+**If Playwright is available:**
+
+1. **Dev server.** Ensure the dev server is running. If not, start it. Wait for it to be ready.
+2. **Visual Expectations check.** If the spec has a `## Visual Expectations` section, verify each expectation:
+   - Navigate to the relevant route.
+   - Take a browser snapshot.
+   - Verify each visual expectation against the snapshot.
+   - Record PASS or FAIL per expectation with a description of what was seen.
+3. **Responsive check.** Test at three breakpoints:
+   - Mobile: 375px width
+   - Tablet: 768px width
+   - Desktop: 1280px width
+   If the spec mentions specific responsive behavior, verify it. Otherwise, verify no layout breakage (overlapping elements, horizontal scroll, invisible content).
+4. **Baseline check (no Visual Expectations).** If the spec has no Visual Expectations section, still verify the minimum:
+   - Page loads without blank screen or error page.
+   - Key elements from acceptance criteria are visible on screen.
+   - No console errors (use browser console messages tool if available).
+5. **Dark mode.** If the project uses dark mode (check for `dark:` classes in CSS or `darkMode` config), toggle and verify no contrast or visibility issues.
+
+Record per visual expectation: PASS or FAIL with description.
+Overall: PASS if all expectations met, FAIL if any expectation fails or if page does not load.
+
 ## Report Format
 
 Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
@@ -237,11 +278,19 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - orm: PASS | FAIL [declared: X, not found in package.json]
 - auth: PASS | FAIL [details]
 - ...
+
+## Check 11: Visual Verification — PASS | FAIL | N/A
+- [expectation 1]: PASS | FAIL [what was seen]
+- [expectation 2]: PASS | FAIL [what was seen]
+- Responsive (375px): PASS | FAIL [details]
+- Responsive (768px): PASS | FAIL [details]
+- Responsive (1280px): PASS | FAIL [details]
+- Dark mode: PASS | FAIL | N/A [details]
 ```
 
 ## Overall Status
 
-- **PASS:** All 10 checks passed. The implementation is validated.
+- **PASS:** All 11 checks passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev-validate`.
 
 ## After Validation
@@ -252,7 +301,7 @@ Read `completion.merge_policy` from manifest.yaml (default: "pr").
 
 If "pr" (or target branch is in `completion.protected_branches`):
 ```
-Validation passed. All 10 checks green.
+Validation passed. All 11 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -263,7 +312,7 @@ Do NOT merge directly to protected branches.
 
 If "merge" (and target branch is NOT protected):
 ```
-Validation passed. All 10 checks green.
+Validation passed. All 11 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -273,7 +322,7 @@ Ready to merge or proceed to the next feature.
 
 If "ask":
 ```
-Validation passed. All 10 checks green.
+Validation passed. All 11 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -294,9 +343,11 @@ Fix the issues above and re-run: /adev-validate --spec <path>
 
 **Never:**
 - Continue to Checks 2-10 if Check 1 (Quality Gates) failed
-- Skip any of the 10 checks (except when fail-fast applies to Check 1)
+- Skip any of the 11 checks (except when fail-fast applies to Check 1)
 - Report PASS when any check has unresolved failures
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code
 - Skip specialist review when the scoring algorithm produces matches
+- Skip visual verification for UI files when Playwright is not available (block and ask the user to install it)
+- Record SKIP for Check 11 when UI files are present (N/A is only valid when no UI files are touched)
 - Suggest merging to a protected branch (always suggest PR for protected branches)
