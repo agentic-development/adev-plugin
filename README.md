@@ -54,11 +54,16 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 │   ├── boundaries.yaml
 │   ├── risk-policies.yaml
 │   └── overrides/
-├── samples/                     # Golden samples (reference implementations)
+├── samples/                     # Golden samples (curated by /adev-sample)
+├── packets/                     # Context packets per task (gitignored, debugging)
+├── evals/                       # Evaluation harness config and reports (optional)
 ├── orientation/                 # Human-authored codebase guide
 │   └── architecture.md
 ├── specialists/                 # Domain expert subagent prompts
 └── hygiene/                     # Generated reports (gitignored)
+    ├── recoveries/              # Agent recovery records
+    ├── blockers/                # Agent blocker files
+    └── retros/                  # Sprint retrospective reports
 ```
 
 ## Lifecycle
@@ -70,10 +75,15 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 | Specification | `/adev-specify` | Write Live Specs within charter scope |
 | Architecture Review | `/adev-review-specs` | Parallel specialist agents review specs (Opus) |
 | Planning | `/adev-plan` | Constitution-gated task decomposition |
-| Implementation | `/adev-implement` | TDD, specialist routing, subagent execution |
+| Routing | `/adev-route` | Score tasks on routing matrix, recommend execution strategy |
+| Implementation | `/adev-implement` | TDD, specialist routing, context packets, subagent execution |
 | Validation | `/adev-validate` | Multi-check against specs, constitution, ADRs |
+| Evaluation | `/adev-eval` | Graduated quality scoring (deterministic → LLM-as-a-Judge → HITL) |
 | Debugging | `/adev-debug` | Context-aware systematic debugging |
-| Maintenance | `/adev-hygiene` | Audit staleness, drift, coverage gaps |
+| Recovery | `/adev-recover` | Diagnose and resume stuck agents (6 root cause categories) |
+| Samples | `/adev-sample` | Discover, score, and curate golden sample implementations |
+| Retrospective | `/adev-retro` | Analyze delivery metrics, extract lessons, suggest improvements |
+| Maintenance | `/adev-hygiene` | Audit staleness, drift, coverage gaps, recovery patterns |
 
 ## Key Concepts
 
@@ -96,6 +106,18 @@ Domain experts (frontend design, data engineering, security) are declared in `ma
 ### Governance
 
 Declarative governance policies live in `.context-index/governance/` as YAML files. Define quality gates with triggers and commands (`gates.yaml`), architectural boundary rules with regex patterns (`boundaries.yaml`), and risk-based review escalation policies (`risk-policies.yaml`). Skills enforce these automatically during planning, implementation, and validation. Charter-specific overrides go in `governance/overrides/`. Projects without governance files continue working unchanged, falling back to manifest gates.
+
+### Context Packets
+
+Every implementation task gets an explicit context packet: a manifest of exactly which files, spec sections, ADRs, and samples the subagent receives. Packets are logged to `.context-index/packets/` (gitignored) for debugging. When a task fails, `/adev-recover` inspects the packet to diagnose what context was missing.
+
+### Task Routing
+
+`/adev-route` scores each task on four dimensions (spec completeness, pattern coverage, blast radius, novelty) and recommends `auto-agent` (run unattended), `assisted-agent` (pause for mid-point review), or `human-only` (agent scaffolds, human implements). Prevents over-delegation and under-delegation.
+
+### Agent Recovery
+
+When subagents get stuck, `/adev-recover` diagnoses the root cause from six categories (missing context, ambiguous spec, constraint conflict, novel problem, tool failure, budget exhaustion), injects corrective context, and resumes. Recovery records feed into `/adev-retro` for trend analysis.
 
 ### Brownfield Support
 
@@ -131,7 +153,7 @@ Full design document: [adev-plugin-design.md](https://github.com/agentic-develop
 
 ## Status
 
-**v0.3.0** — Declarative governance support: quality gates, architectural boundary rules, and risk-based review policies as YAML in `.context-index/governance/`. All lifecycle skills enforce governance automatically with graceful degradation when governance files are absent.
+**v0.4.0** — Context packets, task routing, agent recovery, golden sample curation, sprint retrospectives, and graduated evaluation harness. Five new skills (`/adev-sample`, `/adev-route`, `/adev-recover`, `/adev-retro`, `/adev-eval`) plus context packet assembly, blocker flag protocol, and scope guard integration across existing skills.
 
 ## License
 

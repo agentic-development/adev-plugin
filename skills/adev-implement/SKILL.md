@@ -37,6 +37,11 @@ Read these files once at the start. Extract everything subagents will need so th
 7. **Boundary rules:** If `.context-index/governance/boundaries.yaml` exists, read it.
    Pass boundary rules to implementer subagents as additional constraints in prompt section 2
    (alongside constitution excerpt). If it does not exist, skip.
+8. **Routing tags:** If tasks have routing annotations (from `/adev-route`), read them.
+   Adjust execution strategy per task based on `auto-agent`, `assisted-agent`, or `human-only` tags.
+   If no routing tags exist, treat all tasks as `auto-agent` (default behavior).
+
+Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
 Create a TodoWrite entry for every task extracted from the plan.
 
@@ -44,7 +49,21 @@ Create a TodoWrite entry for every task extracted from the plan.
 
 For each task in dependency order:
 
-#### 2a. Specialist Routing
+#### 2a. Context Packet Assembly
+
+Before routing or dispatching, assemble the task's context packet:
+
+1. Read the task's `context_packet` section from the plan (if present).
+2. For each listed file, read and extract the relevant section.
+3. Write the assembled packet to `.context-index/packets/<task-slug>.md` (gitignored). This log enables post-mortem debugging via `/adev-recover`.
+4. If no context_packet section exists in the plan, assemble a default packet from: constitution excerpt, spec acceptance criteria for this task, charter capability, and any samples matching the task's file patterns.
+
+**Routing tag check:** If the task has a routing tag from `/adev-route`:
+- `auto-agent`: proceed with standard dispatch
+- `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
+- `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, mark task as MANUAL in TodoWrite, skip to next task
+
+#### 2b. Specialist Routing
 
 Determine which specialist (if any) should handle this task.
 
@@ -85,7 +104,7 @@ Primary: frontend-design. Secondary: security (flagged for review).
 
 If `--dry-run` was passed, print the routing table for every task and stop.
 
-#### 2b. Compose Subagent Prompt
+#### 2c. Compose Subagent Prompt
 
 Build the implementer subagent prompt with these sections in order:
 
@@ -113,7 +132,8 @@ If you wrote code before the test, delete it and start over.
 ```
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
-8. **Escalation rules.** The subagent must report one of four status codes. It must never silently produce work it is unsure about. It is always acceptable to stop and escalate.
+8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev-recover` for diagnosis. Never loop on a problem — file a blocker and halt.
+9. **Escalation rules.** The subagent must report one of four status codes. It must never silently produce work it is unsure about. It is always acceptable to stop and escalate.
 9. **Report format:**
 
 ```
@@ -136,7 +156,7 @@ When done, report:
 <!-- entire:spec-trace spec=".context-index/specs/features/<module>/<task>.md" task="N" -->
 ```
 
-#### 2c. Dispatch and Handle Status
+#### 2d. Dispatch and Handle Status
 
 Dispatch the subagent. Handle the returned status:
 
@@ -157,7 +177,7 @@ Dispatch the subagent. Handle the returned status:
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev-specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 
-#### 2d. Stage 1 Review: Spec Compliance
+#### 2e. Stage 1 Review: Spec Compliance
 
 Dispatch a fresh spec reviewer subagent with:
 
@@ -175,7 +195,7 @@ The spec reviewer verifies by reading code, not by trusting the report:
 
 **Only proceed to Stage 2 after Stage 1 passes.**
 
-#### 2e. Stage 2 Review: Code Quality
+#### 2f. Stage 2 Review: Code Quality
 
 Dispatch a fresh code quality reviewer subagent with:
 
@@ -199,7 +219,7 @@ The code quality reviewer checks:
 
 **Minor issues:** Noted but do not block progress.
 
-#### 2f. Mark Task Complete
+#### 2g. Mark Task Complete
 
 After both reviews pass, if `governance/gates.yaml` exists:
 1. Read gates where `triggers` includes "post-task" or "post-implement"
@@ -224,6 +244,8 @@ After all tasks are complete, dispatch a final code quality reviewer subagent th
 If `governance/boundaries.yaml` exists, run final boundary compliance check: grep all changed files against boundary patterns, report violations.
 
 ### Step 4: Completion
+
+Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
 
 Report to the user:
 

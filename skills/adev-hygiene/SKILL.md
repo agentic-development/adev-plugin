@@ -1,16 +1,16 @@
 ---
 name: adev-hygiene
-description: Audit all context for staleness, drift, and coverage gaps. Runs eight audit passes across the .context-index/ directory and generates actionable reports with checklists.
+description: Audit all context for staleness, drift, and coverage gaps. Runs ten audit passes across the .context-index/ directory and generates actionable reports with checklists.
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and generate actionable reports. Eight audit passes detect staleness, drift, and coverage gaps so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and generate actionable reports. Ten audit passes detect staleness, drift, coverage gaps, and operational patterns so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all eight passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance)
+- No arguments: full audit (all ten passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers)
 - `--fix`: auto-fix issues where possible (runs /adev-sync for constitution drift, etc.)
 
 ## Prerequisites
@@ -20,7 +20,7 @@ The project must have `.context-index/` initialized. If it does not exist, sugge
 ## Process
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
-2. **Run audit passes:** Execute each of the eight passes below. If `--check` was provided, run only that pass.
+2. **Run audit passes:** Execute each of the ten passes below. If `--check` was provided, run only that pass.
 3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
@@ -346,6 +346,91 @@ Skipped — using manifest gates. No governance/ directory configured.
 - [ ] Remove orphan override payments.yaml or create the charter
 ```
 
+## Audit Pass 9: Recovery Pattern Analysis
+
+**Goal:** Identify systemic context gaps from recovery records.
+
+**Prerequisite check:**
+
+If `.context-index/hygiene/recoveries/` does not exist or is empty, SKIP this pass. Print:
+```
+## Recovery Pattern Analysis
+
+Skipped — no recovery records found. Records are created by /adev-recover.
+```
+
+**Steps (when recovery records exist):**
+
+1. Read all recovery records in `.context-index/hygiene/recoveries/`.
+2. Compute root cause distribution (count per category: MISSING_CONTEXT, AMBIGUOUS_SPEC, CONSTRAINT_CONFLICT, NOVEL_PROBLEM, TOOL_FAILURE, BUDGET_EXHAUSTION).
+3. Identify repeat offenders: same root cause in the same module more than once.
+4. Compute Mean Time to Recovery (MTTU) across all records.
+5. Flag modules with 3+ recoveries as HIGH_RECOVERY_RATE.
+6. If MISSING_CONTEXT is the top category, list which context types were missing (ADR, sample, cross-cutting spec) and suggest additions.
+
+**Output format:**
+```
+## Recovery Pattern Analysis
+
+Total recoveries: 7 (last 90 days)
+
+| Root Cause | Count | Avg MTTU |
+|-----------|-------|---------|
+| MISSING_CONTEXT | 3 | 8m |
+| AMBIGUOUS_SPEC | 2 | 15m |
+| NOVEL_PROBLEM | 1 | 22m |
+| TOOL_FAILURE | 1 | 5m |
+
+### Repeat Offenders
+- [ ] auth module: 2x MISSING_CONTEXT (missing ADR for session storage)
+- [ ] payments module: 2x AMBIGUOUS_SPEC (unclear error handling)
+
+**Actions:**
+- [ ] Draft ADR for session storage (would prevent 2 recoveries)
+- [ ] Clarify error handling spec in payments charter
+```
+
+## Audit Pass 10: Blocker Frequency Analysis
+
+**Goal:** Identify patterns in agent blockers to proactively improve context.
+
+**Prerequisite check:**
+
+If `.context-index/hygiene/blockers/` does not exist or is empty, SKIP this pass. Print:
+```
+## Blocker Frequency Analysis
+
+Skipped — no blocker files found. Blockers are filed by subagents during /adev-implement.
+```
+
+**Steps (when blocker files exist):**
+
+1. Read all blocker files in `.context-index/hygiene/blockers/`.
+2. Count blockers per category and per module.
+3. Identify modules with 3+ blockers as HIGH_BLOCKER_RATE.
+4. Check if blocked tasks were eventually resolved (corresponding recovery record or validation report exists).
+5. Flag unresolved blockers older than 7 days as STALE_BLOCKER.
+
+**Output format:**
+```
+## Blocker Frequency Analysis
+
+Total blockers: 5
+
+| Category | Count | Resolved | Stale |
+|----------|-------|----------|-------|
+| MISSING_CONTEXT | 2 | 2 | 0 |
+| AMBIGUOUS_SPEC | 2 | 1 | 1 |
+| NOVEL_PROBLEM | 1 | 0 | 1 |
+
+### Stale Blockers
+- [ ] payments/stripe-webhook.md — AMBIGUOUS_SPEC, 12 days old, unresolved
+
+**Actions:**
+- [ ] Resolve stale blocker: clarify stripe webhook spec
+- [ ] Review NOVEL_PROBLEM blocker for specialist gap
+```
+
 ## Report Format
 
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
@@ -368,6 +453,8 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Session Analysis | SKIP | no provider configured |
 | External Reference Freshness | PASS | 0 issues |
 | Governance Policy Health | PASS | 0 issues |
+| Recovery Pattern Analysis | WARN | 2 repeat offenders |
+| Blocker Frequency Analysis | WARN | 1 stale blocker |
 
 ## Priority Actions
 

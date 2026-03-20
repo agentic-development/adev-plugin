@@ -161,6 +161,43 @@ Before defining tasks, map out all files that will be created or modified:
 
 Design units with clear boundaries. Prefer smaller, focused files. Follow existing codebase patterns. If the codebase uses large files, do not unilaterally restructure.
 
+### Context Packet Section
+
+After the file structure and before individual tasks, include a context packet manifest per task. This makes subagent context explicit and inspectable.
+
+```markdown
+## Context Packets
+
+### Task 1 Context
+- Spec: `.context-index/specs/features/<module>/<task>.md` (criteria 1-3)
+- Charter: `.context-index/specs/features/<module>/charter.md` (capability: <name>)
+- Sample: `.context-index/samples/<pattern>-sample.md`
+- ADR: `.context-index/adrs/<relevant-adr>.md`
+- Cross-cutting: `.context-index/specs/cross-cutting/<relevant>.md`
+- Boundary rules: `governance/boundaries.yaml` (rules affecting task files)
+
+### Task 2 Context
+- ...
+```
+
+Each packet entry lists the specific file AND the relevant section or criteria within it. `/adev-implement` assembles these packets before dispatching subagents and logs them to `.context-index/packets/` (gitignored) for debugging failed tasks. `/adev-recover` reads packets to diagnose root causes.
+
+### Parallelization Hints
+
+After context packets, annotate which tasks can run in parallel (no shared file dependencies):
+
+```markdown
+## Parallelization
+
+- Group A (sequential): Task 1 → Task 2 (shared files)
+- Group B (independent): Task 3 (no file overlap with Group A)
+- Group C (independent): Task 4 (no file overlap with A or B)
+
+Groups B and C can run in parallel with Group A.
+```
+
+This is informational for `/adev-implement --parallel` (future). Tasks within a group run sequentially; groups run concurrently.
+
 ### Task Structure
 
 Each task follows TDD. Steps are granular (2-5 minutes each).

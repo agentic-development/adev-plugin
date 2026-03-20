@@ -1,6 +1,6 @@
 {
   "name": "adev-cli",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "CLI for the Agentic Development Framework — installs the adev plugin into Claude Code and scaffolds .context-index/",
   "bin": {
     "adev": "./cli/index.mjs"
