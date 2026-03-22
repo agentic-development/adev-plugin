@@ -1,6 +1,6 @@
 ---
 name: adev-validate
-description: Post-implementation validation with 11 ordered checks including browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable.
+description: "Post-implementation validation with 11 ordered checks including browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable. Use when the user says 'validate the implementation', 'check if it works', 'run validation', 'verify the feature', or after implementation is complete and needs quality assurance."
 ---
 
 # Validate Implementation
@@ -60,6 +60,20 @@ For each criterion:
 1. Identify which files and tests address it.
 2. Read the relevant code. Verify the behavior matches the criterion.
 3. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
+4. Verify test integrity: assertions must be strict and match the spec exactly.
+   Flag any of these anti-patterns:
+   - Loose matchers where exact values are expected (regex where string would do,
+     `toContain` where `toEqual` is appropriate)
+   - Conditional skips (`if visible`, `try/catch` around assertions)
+   - Assertions that can never fail (`>= 0`, `toBeTruthy()` on a string)
+   - Tests that were clearly weakened to pass (look for recent changes that
+     loosen assertions without a corresponding spec change)
+   - Tests that assert on runtime/dynamic data instead of deterministic seed values
+     (e.g., `toBeGreaterThan(0)` on a query result instead of seeding known data
+     and asserting exact values)
+   - Fixes applied to failing tests without evidence that the spec, charter,
+     or ADRs were consulted (look for comments or commit messages referencing
+     the context that justified the change)
 
 Record per criterion:
 - PASS: code and tests satisfy the criterion.

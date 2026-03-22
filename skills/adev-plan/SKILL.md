@@ -1,6 +1,6 @@
 ---
 name: adev-plan
-description: Constitution-gated planning. Decomposes reviewed Live Specs into ordered implementation tasks with TDD expectations and context routing hints.
+description: "Constitution-gated planning. Decomposes reviewed Live Specs into ordered implementation tasks with TDD expectations and context routing hints. Use when the user says 'break this into tasks', 'create an implementation plan', 'plan the work', 'decompose the spec', or is ready to move from reviewed specs to actionable development tasks."
 ---
 
 # Plan Implementation
@@ -286,6 +286,8 @@ Run: `<test command from constitution quality gates> -- <path to test file>`
 Expected: PASS
 
 - [ ] **Commit**
+
+Branch (if not already created): `feat/<module>/<short-description>`
 
 ```bash
 git add <specific files>

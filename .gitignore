@@ -1,3 +1,7 @@
 node_modules/
 .DS_Store
 *.log
+
+# Skill-creator workspace directories
+skills/*-workspace/
+skills/*/evals/

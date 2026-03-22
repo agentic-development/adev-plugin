@@ -1,6 +1,6 @@
 ---
 name: adev-sample
-description: Scan the codebase for high-quality implementations, score them against constitution and patterns, and curate annotated golden samples in .context-index/samples/. Golden samples serve as reference implementations that guide subagents during /adev-implement.
+description: "Scan the codebase for high-quality implementations, score them against constitution and patterns, and curate annotated golden samples in .context-index/samples/. Golden samples serve as reference implementations that guide subagents during /adev-implement. Use when the user wants to find good examples, curate reference code, build a sample library, or identify high-quality patterns in the codebase."
 ---
 
 # Golden Sample Curation

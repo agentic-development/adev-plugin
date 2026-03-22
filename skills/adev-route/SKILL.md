@@ -1,6 +1,6 @@
 ---
 name: adev-route
-description: Score tasks on a four-dimensional routing matrix (spec completeness, pattern coverage, blast radius, novelty) and recommend auto-agent, assisted-agent, or human-only execution for each task in a plan.
+description: "Score tasks on a four-dimensional routing matrix (spec completeness, pattern coverage, blast radius, novelty) and recommend auto-agent, assisted-agent, or human-only execution for each task in a plan. Use when the user asks 'which tasks need human review', 'score the tasks', 'route the plan', or wants to decide which tasks agents can handle autonomously versus which need human oversight."
 ---
 
 # Task Routing Advisor

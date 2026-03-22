@@ -1,6 +1,6 @@
 ---
 name: adev-review-specs
-description: Architecture review using parallel specialist subagents. A structural architect, security reviewer, and consistency analyzer independently evaluate specs before planning begins.
+description: "Architecture review using parallel specialist subagents. A structural architect, security reviewer, and consistency analyzer independently evaluate specs before planning begins. Use when the user says 'review the specs', 'architecture review', 'are the specs ready for planning', or when Live Specs need expert evaluation before decomposing into tasks."
 ---
 
 # Review Specs

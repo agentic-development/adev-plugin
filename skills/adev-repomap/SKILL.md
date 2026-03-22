@@ -1,6 +1,6 @@
 ---
 name: adev-repomap
-description: Generate an AST-based symbol index of the repository. Extracts exported functions, classes, types, and interfaces, ranks by reference count, and outputs a repo map for drift detection by /adev-hygiene.
+description: "Generate an AST-based symbol index of the repository. Extracts exported functions, classes, types, and interfaces, ranks by reference count, and outputs a repo map for drift detection by /adev-hygiene. Use when the user wants to map the codebase, generate a symbol index, understand the project structure, or prepare for drift detection."
 ---
 
 # Generate Repository Map

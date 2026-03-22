@@ -1,6 +1,6 @@
 ---
 name: adev-recover
-description: Structured diagnosis-correction-resume cycle when agents get stuck during implementation. Classifies root causes into six categories, injects corrective context, and re-dispatches with enriched prompts. Writes recovery records for retrospective analysis.
+description: "Structured diagnosis-correction-resume cycle when agents get stuck during implementation. Classifies root causes into six categories, injects corrective context, and re-dispatches with enriched prompts. Writes recovery records for retrospective analysis. Use when a subagent is stuck, a task has stalled, an agent failed mid-execution, or the user reports 'the agent is looping' or 'it is not making progress'."
 ---
 
 # Agent Recovery Workflow

@@ -132,6 +132,12 @@ completion:
     - master
   # Branches that agents must NEVER merge to or push to directly,
   # regardless of merge_policy. Always open a PR for these.
+  branch_naming: "<type>/<module>/<short-description>"
+  # Convention for feature branch names. Not enforced, but referenced by skills.
+  # <type>:  feat | fix | chore | spike | refactor | docs
+  # <module>: charter module name (same scope as commit messages)
+  # <short-description>: kebab-case, 2-4 words
+  # Examples: feat/auth/login-flow, fix/payments/webhook-retry
 
 # ============================================================================
 # Repo Map Configuration

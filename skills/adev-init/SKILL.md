@@ -1,6 +1,6 @@
 ---
 name: adev-init
-description: Initialize or diagnose the .context-index/ directory. Interactive wizard that explains each layer, detects existing setup, and lets users opt in or skip per layer. Use --brownfield for existing codebases, --dry-run to preview without writing.
+description: "Initialize or diagnose the .context-index/ directory. Interactive wizard that explains each layer, detects existing setup, and lets users opt in or skip per layer. Use --brownfield for existing codebases, --dry-run to preview without writing. Trigger when the user wants to set up adev, initialize context, start a new project with adev, or diagnose a broken context-index."
 ---
 
 # Initialize Context Index

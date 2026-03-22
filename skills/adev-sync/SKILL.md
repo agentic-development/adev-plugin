@@ -1,6 +1,6 @@
 ---
 name: adev-sync
-description: Sync constitution to CLAUDE.md, AGENTS.md, and other agent files declared in manifest.yaml. Run after editing the constitution or when agent files are out of date.
+description: "Sync constitution to CLAUDE.md, AGENTS.md, and other agent files declared in manifest.yaml. Run after editing the constitution or when agent files are out of date. Use when the user says 'sync agent files', 'update CLAUDE.md', 'constitution changed', 'regenerate agent configs', or after any edit to constitution.md."
 ---
 
 # Sync Constitution to Agent Files

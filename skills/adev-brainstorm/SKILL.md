@@ -1,6 +1,6 @@
 ---
 name: adev-brainstorm
-description: "You MUST use this before building any new feature or module. Explores the idea interactively, validates against the project constitution and existing charters, and produces a Feature Charter saved to .context-index/specs/features/<module>/charter.md."
+description: "You MUST use this before building any new feature or module. Explores the idea interactively, validates against the project constitution and existing charters, and produces a Feature Charter. Use whenever the user mentions a new feature, wants to add a capability, discusses a module idea, or says 'let us build X', 'I want to add Y', or 'we need a new Z'. Also use when the user wants to explore or brainstorm an idea before committing to implementation."
 ---
 
 # Brainstorm a Feature Charter
@@ -195,6 +195,7 @@ Where `<module>` is the module slug (lowercase, hyphenated, e.g., `task-boards`,
 **After writing:**
 - If `.context-index/specs/product.md` exists and has a module map, check whether this module is listed. If not, tell the user: "This is a new module not listed in the product charter. After we finalize the charter, consider updating the product charter module map."
 - Commit the charter file to git with message: `feat: add <module> feature charter`
+- Suggest the implementation branch name: `feat/<module>/<short-description>` (e.g. `feat/auth/login-flow`)
 
 ## Step 6: Charter Review Loop
 

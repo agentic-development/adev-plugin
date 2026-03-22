@@ -1,6 +1,6 @@
 ---
 name: adev-debug
-description: Context-aware systematic debugging. Checks ADRs for known issues, specs for expected behavior, and orientation for architecture context before investigating. Use when encountering any bug, test failure, or unexpected behavior.
+description: "Context-aware systematic debugging. Checks ADRs for known issues, specs for expected behavior, and orientation for architecture context before investigating. Use when encountering any bug, test failure, or unexpected behavior. Trigger on 'something is broken', 'this test fails', 'unexpected error', 'why is this not working', or any debugging session where context from specs and ADRs would help root-cause analysis."
 ---
 
 # Debug an Issue
@@ -160,6 +160,10 @@ This is the key difference from generic debugging. Before diving into code, load
 1. **Create a failing test case.**
    - Simplest possible reproduction as an automated test.
    - This test MUST fail before the fix and pass after.
+   - If the test already exists and is failing, do NOT weaken it. Read the test,
+     understand what it expects, then fix the code to satisfy the original assertion.
+   - If you need to change the test, explain why the REQUIREMENT changed, not just
+     why the code produces a different value.
 
 2. **Implement a single fix.**
    - Address the root cause identified in Phase 4.

@@ -1,6 +1,6 @@
 ---
 name: adev-hygiene
-description: Audit all context for staleness, drift, and coverage gaps. Runs eleven audit passes across the .context-index/ directory and generates actionable reports with checklists.
+description: "Audit all context for staleness, drift, and coverage gaps. Runs eleven audit passes across the .context-index/ directory and generates actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, or clean up the context index."
 ---
 
 # Context Hygiene Audit

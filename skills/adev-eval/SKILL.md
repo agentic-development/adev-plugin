@@ -1,6 +1,6 @@
 ---
 name: adev-eval
-description: Configure and run a graduated evaluation harness that scores agent output quality beyond pass/fail. Four layers from deterministic gates through LLM-as-a-Judge to human-in-the-loop checkpoints.
+description: "Configure and run a graduated evaluation harness that scores agent output quality beyond pass/fail. Four layers from deterministic gates through LLM-as-a-Judge to human-in-the-loop checkpoints. Use when the user wants to evaluate output quality, score agent work, run evals, set up quality benchmarks, or measure how well agents perform against expectations."
 ---
 
 # Graduated Evaluation Harness

@@ -1,6 +1,6 @@
 ---
 name: adev-implement
-description: Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. Reads plans produced by /adev-plan and dispatches one fresh subagent per task.
+description: "Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. Reads plans produced by /adev-plan and dispatches one fresh subagent per task. Use when the user says 'implement the plan', 'start coding', 'execute the tasks', 'build it', or wants to begin development after planning is complete."
 ---
 
 # Implement Plan
@@ -20,7 +20,7 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 1. **Plan exists.** The plan file must exist and be readable.
 2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
 3. **Spec review passed.** The plan must reference a spec with a passing `.review.md` file adjacent to it. If the review file is missing, has status BLOCK, or is older than the spec's last modification date, direct the user to run `/adev-review-specs` first.
-4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch.
+4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
 
@@ -131,6 +131,51 @@ Every piece of production code requires a failing test first.
 
 No production code without a failing test first. No exceptions.
 If you wrote code before the test, delete it and start over.
+
+### Test Integrity
+
+When a test fails unexpectedly:
+
+1. INVESTIGATE FIRST. Before changing any assertion, look at the actual behavior:
+   - For UI: take a browser snapshot, read the DOM, check console errors.
+   - For API: read the actual response body, status code, headers.
+   - For logic: add a console.log or debugger, read the actual value.
+   Understand WHY the test failed before deciding what to change.
+   Then check project context before proposing a fix:
+   - Read the Live Spec's acceptance criteria — is the test asserting
+     the right behavior, or is the spec different from what you assumed?
+   - Check `.context-index/adrs/` for known constraints or trade-offs
+     in the affected area.
+   - Check the Feature Charter's behavioral contract — the bug may be
+     "working as specified" (spec problem, not code problem).
+   If the context says the test is correct, fix the code. If the context
+   says the behavior is correct, the spec or test needs updating (escalate).
+
+2. KEEP ASSERTIONS STRICT. Never loosen a matcher to make a test pass:
+   - Do not change `getByText("Submit")` to `getByText(/submit/i)`.
+   - Do not change `toEqual(expected)` to `toContain(partial)`.
+   - Do not change `toBe(false)` to `toBeFalsy()`.
+   If the exact value is wrong, fix the code that produces it.
+
+3. NO CONDITIONAL SKIPS. Never write:
+   - `if (element.isVisible()) { ... } else { skip }`
+   - `try { assert(...) } catch { /* ignore */ }`
+   - `expect(items.length).toBeGreaterThanOrEqual(0)` (always passes)
+   If the element should be visible, assert it. If the data should exist, assert it.
+   A test that cannot fail is not a test.
+
+4. FIX THE APP, NOT THE TEST. When a test reveals a real issue:
+   - The test is doing its job. Do not punish it.
+   - Fix the application code so the test passes as originally written.
+   - Only change the test if the REQUIREMENT changed (and update the spec too).
+
+5. SEED BEFORE YOU ASSERT. Every test must control its own data:
+   - Set up deterministic seed data (fixtures, factories, builders) at the start
+     of the test. Do not rely on data left by other tests or existing in the DB.
+   - Assert against the exact seed values, not against "whatever came back."
+   - Bad: `expect(users.length).toBeGreaterThan(0)` (passes if DB has any row).
+   - Good: seed 3 users → `expect(users).toHaveLength(3)` and check names.
+   If you cannot assert exact values, you did not control the input.
 ```
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
@@ -210,6 +255,12 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 4. **Responsive check.** If the spec mentions mobile or responsive behavior, resize the viewport to 375px width and re-snapshot. Verify mobile expectations.
 5. **Fix loop.** If something is wrong:
    - Identify the issue from the snapshot.
+   - IMPORTANT: If a test assertion fails after the visual fix, investigate the
+     rendered UI (snapshot) before changing the assertion. The visual result is
+     the source of truth. If the snapshot shows the correct behavior but the test
+     fails, the test selector or matcher is wrong — fix the selector, not the
+     assertion strength. If the snapshot shows incorrect behavior, fix the
+     component code.
    - Fix the code.
    - Re-snapshot and verify.
    - Maximum 3 visual fix cycles per task. After the third, report remaining visual issues in the subagent report as DONE_WITH_CONCERNS.
@@ -249,6 +300,7 @@ Dispatch a fresh code quality reviewer subagent with:
 The code quality reviewer checks:
 - Single responsibility per file, well-defined interfaces
 - Test quality: tests verify real behavior, not mock behavior
+- Test integrity: no loosened assertions, no conditional skips, no try/catch swallowing failures, no assertions against unseeded runtime data. Compare test assertions against spec requirements — if the assertion is weaker than the requirement, flag it. If any test was changed to fix a failure, verify the fix was grounded in spec/charter context, not just "make it green."
 - TDD was followed: test files exist, tests are meaningful, test-first evidence
 - Naming, readability, maintainability
 - Adherence to constitutional coding standards
@@ -332,6 +384,11 @@ Do NOT merge directly to <target-branch>.
 - Move to the next task while either review has open issues
 - Re-dispatch a BLOCKED subagent without changing something
 - Skip TDD for any task (RED-GREEN-REFACTOR, no exceptions)
+- Loosen a test assertion to make it pass (fix the code, not the test)
+- Add conditional skip logic to tests (`if visible`, `try/catch`, `>= 0`)
+- Change a test without first investigating the actual behavior (screenshot, DOM, logs)
+- Propose a fix for a test failure without checking the spec and charter first
+- Write tests that assert on runtime data without setting up deterministic seed values
 - Skip visual verification for UI tasks (block and require Playwright MCP)
 - Proceed with UI tasks when Playwright MCP is not available (stop, do not fall back to code-only review)
 - Let implementer self-review replace actual review (both are required)

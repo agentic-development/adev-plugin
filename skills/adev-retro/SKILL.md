@@ -1,6 +1,6 @@
 ---
 name: adev-retro
-description: Analyze completed work over a time period to extract lessons, compute delivery metrics, identify improvement opportunities, and update context artifacts. Sprint retrospective for agentic development.
+description: "Analyze completed work over a time period to extract lessons, compute delivery metrics, identify improvement opportunities, and update context artifacts. Sprint retrospective for agentic development. Use when the user says 'run a retro', 'what went well', 'review the sprint', 'delivery metrics', or wants to reflect on recent development work."
 ---
 
 # Sprint Retrospective
