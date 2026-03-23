@@ -16,7 +16,8 @@
     "providers/",
     "hooks/",
     "skills/",
-    "templates/"
+    "templates/",
+    ".claude-plugin/"
   ],
   "scripts": {
     "test": "node --test tests/*.test.mjs tests/**/*.test.mjs",
