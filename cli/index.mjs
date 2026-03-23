@@ -3,6 +3,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
 import { createInterface } from "readline";
 import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
 
@@ -331,9 +332,20 @@ export const enablePlugin = getProvider("claude-code").enable;
 export const detectConflicts = getProvider("claude-code").detectConflicts;
 export const disableConflictingPlugin = getProvider("claude-code").disableConflictingPlugin;
 
-const isDirectRun =
-  process.argv[1] &&
-  resolve(process.argv[1]) === resolve(__filename);
+function resolveSymlink(p) {
+  try {
+    return execSync("readlink -f '" + p.replace(/'/g, "'\\''") + "'", { encoding: "utf8", cwd: "/" }).trim();
+  } catch {
+    return p;
+  }
+}
+
+const isDirectRun = (() => {
+  if (!process.argv[1]) return false;
+  const argvPath = resolveSymlink(process.argv[1]);
+  const filenamePath = resolve(__filename);
+  return argvPath === filenamePath;
+})();
 
 if (isDirectRun) {
   const command = process.argv[2] || "help";
