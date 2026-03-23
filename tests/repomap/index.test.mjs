@@ -396,6 +396,73 @@ describe('integration - full pipeline', () => {
     assert.equal(graph.nodes.length, 10, `should have 10 nodes, got ${graph.nodes.length}`);
   });
 
+  // --- --mode flag ---
+
+  it('--mode regex forces regex pipeline and produces Parser: regex annotation', () => {
+    // Clean up artifacts from prior runs so we can verify regex mode does not create them
+    rmSync(join(HYGIENE_DIR, 'dependency-graph.json'), { force: true });
+    rmSync(join(HYGIENE_DIR, 'symbol-ranks.json'), { force: true });
+
+    // Even though tree-sitter IS available, --mode regex should force regex
+    execFileSync('node', [SCRIPT_PATH, '--root', FIXTURE_ROOT, '--mode', 'regex'], {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    const regexRepoMap = readFileSync(join(HYGIENE_DIR, 'repo-map.md'), 'utf-8');
+    assert.ok(
+      regexRepoMap.includes('Parser: regex'),
+      'repo-map.md should annotate Parser: regex when --mode regex is used',
+    );
+
+    // In regex mode, dependency-graph.json and symbol-ranks.json should NOT be produced
+    assert.ok(
+      !existsSync(join(HYGIENE_DIR, 'dependency-graph.json')),
+      'dependency-graph.json should not exist in regex mode',
+    );
+    assert.ok(
+      !existsSync(join(HYGIENE_DIR, 'symbol-ranks.json')),
+      'symbol-ranks.json should not exist in regex mode',
+    );
+  });
+
+  it('--mode tree-sitter forces tree-sitter pipeline and produces all three artifacts', () => {
+    execFileSync('node', [SCRIPT_PATH, '--root', FIXTURE_ROOT, '--mode', 'tree-sitter'], {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    const tsRepoMap = readFileSync(join(HYGIENE_DIR, 'repo-map.md'), 'utf-8');
+    assert.ok(
+      tsRepoMap.includes('Parser: tree-sitter'),
+      'repo-map.md should annotate Parser: tree-sitter when --mode tree-sitter is used',
+    );
+    assert.ok(
+      existsSync(join(HYGIENE_DIR, 'dependency-graph.json')),
+      'dependency-graph.json should exist in tree-sitter mode',
+    );
+    assert.ok(
+      existsSync(join(HYGIENE_DIR, 'symbol-ranks.json')),
+      'symbol-ranks.json should exist in tree-sitter mode',
+    );
+  });
+
+  it('invalid --mode value exits 1 with error message', () => {
+    try {
+      execFileSync('node', [SCRIPT_PATH, '--root', FIXTURE_ROOT, '--mode', 'invalid'], {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('Should have exited with code 1');
+    } catch (err) {
+      assert.equal(err.status, 1);
+      assert.ok(
+        err.stderr.includes('Invalid --mode value'),
+        `stderr should mention invalid --mode value, got: ${err.stderr}`,
+      );
+    }
+  });
+
   // --- Symlink exclusion ---
 
   it('excludes symlinks pointing outside the project', () => {
