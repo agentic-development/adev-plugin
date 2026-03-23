@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 import { createInterface } from "readline";
+import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PLUGIN_ROOT = resolve(__dirname, "..");
-const PLUGIN_NAME = "adev";
 const PLUGIN_VERSION = JSON.parse(
-  readFileSync(join(PLUGIN_ROOT, ".claude-plugin", "plugin.json"), "utf8")
+  readFileSync(join(PLUGIN_ROOT, "package.json"), "utf8")
 ).version;
-
-// ── Helpers ──────────────────────────────────────────────────────────────
 
 function log(msg) {
   console.log(`  ${msg}`);
@@ -46,124 +43,52 @@ async function ask(question) {
   });
 }
 
-function readJson(path) {
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(path, data) {
-  writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
-}
-
 function ensureDir(path) {
   if (!existsSync(path)) {
     mkdirSync(path, { recursive: true });
   }
 }
 
-// ── Plugin Installation ─────────────────────────────────────────────────
-
-function getClaudeHome() {
-  return join(process.env.HOME || process.env.USERPROFILE, ".claude");
-}
-
-function installPlugin() {
-  const claudeHome = getClaudeHome();
-  const cacheDir = join(claudeHome, "plugins", "cache", "agentic-development", PLUGIN_NAME, PLUGIN_VERSION);
-
-  if (existsSync(cacheDir)) {
-    log(`Plugin already installed at ${cacheDir}`);
-    return { installed: false, path: cacheDir };
-  }
-
-  ensureDir(dirname(cacheDir));
-  cpSync(PLUGIN_ROOT, cacheDir, {
-    recursive: true,
-    filter: (src) => {
-      const name = src.split("/").pop();
-      return name !== ".git" && name !== "node_modules" && name !== ".DS_Store";
-    },
-  });
-
-  // Make hooks executable
-  const hooksDir = join(cacheDir, "hooks");
-  if (existsSync(hooksDir)) {
-    for (const file of ["session-start.sh", "constitution-linter.sh", "sync-trigger.sh"]) {
-      const hookPath = join(hooksDir, file);
-      if (existsSync(hookPath)) {
-        chmodSync(hookPath, 0o755);
+function parseProviderFlags() {
+  const providers = [];
+  const argv = process.argv;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--provider" && argv[i + 1]) {
+      const p = argv[i + 1];
+      if (!getProviderNames().includes(p)) {
+        error(`Unknown provider: ${p}`);
+        error(`Available: ${getProviderNames().join(", ")}`);
+        process.exit(1);
       }
+      providers.push(p);
+      i++;
     }
   }
-
-  return { installed: true, path: cacheDir };
+  return providers;
 }
 
-function enablePlugin(scope = "user") {
-  const claudeHome = getClaudeHome();
-  let settingsPath;
-
-  if (scope === "user") {
-    settingsPath = join(claudeHome, "settings.json");
-  } else {
-    settingsPath = join(process.cwd(), ".claude", "settings.json");
+async function selectProviders() {
+  const explicitProviders = parseProviderFlags();
+  if (explicitProviders.length > 0) {
+    return explicitProviders;
   }
 
-  const settings = readJson(settingsPath) || {};
-  if (!settings.enabledPlugins) {
-    settings.enabledPlugins = {};
+  console.log("  Which AI coding assistant(s) do you want to use?\n");
+  console.log("    [1] Claude Code only (default)");
+  console.log("    [2] OpenCode only");
+  console.log("    [3] Both Claude Code and OpenCode\n");
+
+  const answer = await ask("Enter choice (1-3) [1]: ");
+
+  switch (answer) {
+    case "2":
+      return ["opencode"];
+    case "3":
+      return ["claude-code", "opencode"];
+    default:
+      return ["claude-code"];
   }
-
-  settings.enabledPlugins["adev@agentic-development"] = true;
-  ensureDir(dirname(settingsPath));
-  writeJson(settingsPath, settings);
-
-  return settingsPath;
 }
-
-// ── Conflict Detection ──────────────────────────────────────────────────
-
-function detectConflicts() {
-  const claudeHome = getClaudeHome();
-  const userSettings = readJson(join(claudeHome, "settings.json")) || {};
-  const projectSettingsPath = join(process.cwd(), ".claude", "settings.json");
-  const projectSettings = readJson(projectSettingsPath) || {};
-
-  const conflicts = [];
-  const enabled = {
-    ...userSettings.enabledPlugins,
-    ...projectSettings.enabledPlugins,
-  };
-
-  if (enabled["superpowers@claude-plugins-official"] === true) {
-    // Check if already disabled at project level
-    if (projectSettings.enabledPlugins?.["superpowers@claude-plugins-official"] !== false) {
-      conflicts.push({
-        name: "superpowers",
-        key: "superpowers@claude-plugins-official",
-        reason: "Overlapping brainstorming, planning, TDD, and code review workflows",
-      });
-    }
-  }
-
-  return conflicts;
-}
-
-function disableConflictingPlugin(pluginKey) {
-  const settingsPath = join(process.cwd(), ".claude", "settings.json");
-  const settings = readJson(settingsPath) || {};
-  if (!settings.enabledPlugins) {
-    settings.enabledPlugins = {};
-  }
-  settings.enabledPlugins[pluginKey] = false;
-  ensureDir(dirname(settingsPath));
-  writeJson(settingsPath, settings);
-}
-
-// ── Scaffold ────────────────────────────────────────────────────────────
 
 function scaffoldContextKit() {
   const root = join(process.cwd(), ".context-index");
@@ -189,7 +114,6 @@ function scaffoldContextKit() {
     }
   }
 
-  // Copy templates
   const templates = [
     { src: "constitution-template.md", dest: "constitution.md" },
     { src: "manifest-template.yaml", dest: "manifest.yaml" },
@@ -208,7 +132,6 @@ function scaffoldContextKit() {
     }
   }
 
-  // Add hygiene/ to .gitignore
   const gitignorePath = join(process.cwd(), ".gitignore");
   if (existsSync(gitignorePath)) {
     const content = readFileSync(gitignorePath, "utf8");
@@ -224,115 +147,149 @@ function scaffoldContextKit() {
   return created;
 }
 
-// ── Commands ────────────────────────────────────────────────────────────
+async function handleDualSyncTargets(providerNames) {
+  if (providerNames.length < 2) return;
+
+  const manifestPath = join(process.cwd(), ".context-index", "manifest.yaml");
+
+  if (!existsSync(manifestPath)) {
+    log("Configuring sync targets for dual setup...");
+    const templateContent = readFileSync(join(PLUGIN_ROOT, "templates", "manifest-template.yaml"), "utf8");
+    const dualContent = templateContent.replace(
+      /# Claude Code.*?# OpenCode.*?# Cursor.*?# GitHub Copilot/s,
+      `# Claude Code (primary)
+    - path: CLAUDE.md
+      format: claude
+      providers: [claude-code]
+
+    # OpenCode (primary)
+    - path: AGENTS.md
+      format: agents
+      providers: [opencode]
+
+    # Cursor
+    # - path: .cursorrules
+    #   format: cursor
+    #   providers: [cursor]
+
+    # GitHub Copilot
+    # - path: .github/copilot-instructions.md
+    #   format: copilot
+    #   providers: [copilot]`
+    );
+    writeFileSync(manifestPath, dualContent);
+    success("Added both CLAUDE.md and AGENTS.md sync targets");
+  } else {
+    console.log("\n  Dual-setup detected.");
+    console.log("  [1] Sync to both CLAUDE.md and AGENTS.md (default)");
+    console.log("  [2] Sync to CLAUDE.md only");
+    console.log("  [3] Sync to AGENTS.md only\n");
+
+    const choice = await ask("Enter choice (1-3) [1]: ");
+    updateManifestSyncTargets(manifestPath, choice);
+  }
+}
+
+function updateManifestSyncTargets(manifestPath, choice) {
+  let content = readFileSync(manifestPath, "utf8");
+
+  const hasClaude = content.includes("path: CLAUDE.md");
+  const hasAgents = content.includes("path: AGENTS.md");
+
+  if (choice === "2" && hasAgents) {
+    content = content.replace(/- path: AGENTS\.md[\s\S]*?providers: \[opencode\]\n\n?/m, "");
+    writeFileSync(manifestPath, content);
+    success("Removed AGENTS.md sync target");
+  } else if (choice === "3" && hasClaude) {
+    content = content.replace(/- path: CLAUDE\.md[\s\S]*?providers: \[claude-code\]\n\n?/m, "");
+    writeFileSync(manifestPath, content);
+    success("Removed CLAUDE.md sync target");
+  }
+}
 
 async function cmdInit() {
   console.log();
   console.log("  adev — Agentic Development Framework");
   console.log("  ─────────────────────────────────────");
+  console.log();
 
-  // Step 1: Install plugin
-  heading("Step 1: Install Plugin");
+  const providerNames = await selectProviders();
 
-  const { installed, path: pluginPath } = installPlugin();
-  if (installed) {
-    success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
-  } else {
-    success(`Plugin v${PLUGIN_VERSION} already installed`);
-  }
+  for (const providerName of providerNames) {
+    const provider = getProvider(providerName);
+    heading(`Installing for ${provider.name}`);
 
-  // Step 2: Enable in Claude Code settings
-  heading("Step 2: Enable Plugin");
-
-  const answer = await ask("Install for all projects (user) or this project only (project)? [user/project]");
-  const scope = answer === "project" ? "project" : "user";
-  const settingsPath = enablePlugin(scope);
-  success(`Plugin enabled in ${settingsPath}`);
-
-  // Step 3: Detect conflicts
-  heading("Step 3: Check for Conflicts");
-
-  const conflicts = detectConflicts();
-  if (conflicts.length === 0) {
-    success("No conflicting plugins detected");
-  } else {
-    for (const conflict of conflicts) {
-      warn(`${conflict.name} — ${conflict.reason}`);
-      const disable = await ask(`Disable ${conflict.name} for THIS project? (yes/no)`);
-      if (disable === "yes" || disable === "y") {
-        disableConflictingPlugin(conflict.key);
-        success(`${conflict.name} disabled for this project (stays installed globally)`);
-      } else {
-        warn(`${conflict.name} will remain active. You may see duplicate skill suggestions.`);
-      }
+    const { installed, path: pluginPath } = await provider.install();
+    if (installed) {
+      success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+    } else {
+      success(`Plugin v${PLUGIN_VERSION} already installed`);
     }
-  }
 
-  // Step 4: Scaffold .context-index/
-  heading("Step 4: Scaffold .context-index/");
+    if (providerName === "claude-code") {
+      const scope = await ask("Install for all projects (user) or this project only (project)? [user/project]");
+      const settingsPath = provider.enable(scope === "project" ? "project" : "user");
+      success(`Plugin enabled in ${settingsPath}`);
 
-  if (existsSync(join(process.cwd(), ".context-index"))) {
-    log(".context-index/ already exists, skipping scaffold");
-  } else {
-    const scaffold = await ask("Create .context-index/ directory with templates? (yes/no)");
-    if (scaffold === "yes" || scaffold === "y") {
-      const created = scaffoldContextKit();
-      for (const item of created) {
-        success(item);
+      const conflicts = provider.detectConflicts();
+      if (conflicts.length === 0) {
+        success("No conflicting plugins detected");
+      } else {
+        for (const conflict of conflicts) {
+          warn(`${conflict.name} — ${conflict.reason}`);
+          const disable = await ask(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          if (disable === "yes" || disable === "y") {
+            provider.disableConflictingPlugin(conflict.key);
+            success(`${conflict.name} disabled for this project`);
+          }
+        }
       }
     } else {
-      log("Skipped. Run /adev-init inside Claude Code to scaffold later.");
+      log("Plugin installed. Skills are available.");
+      log("Add to opencode.json if not using the plugin cache:");
+      console.log();
+      log('  "plugin": ["@adev/opencode"]');
+      console.log();
     }
   }
 
-  // Done
+  const scaffoldChoice = await ask("Scaffold .context-index/ with templates? (yes/no)");
+  if (scaffoldChoice === "yes" || scaffoldChoice === "y") {
+    const created = scaffoldContextKit();
+    for (const item of created) {
+      success(item);
+    }
+    await handleDualSyncTargets(providerNames);
+  } else {
+    log("Skipped. Run /adev-init to scaffold later.");
+    await handleDualSyncTargets(providerNames);
+  }
+
   heading("Done!");
-  log("Start a new Claude Code session to load the plugin:");
   console.log();
-  log("  claude");
+  log("Next steps:");
   console.log();
-  log("Then run the interactive setup wizard:");
+  if (providerNames.includes("claude-code")) {
+    log("  claude");
+    log("  /adev-init");
+  }
+  if (providerNames.includes("opencode")) {
+    log("  opencode");
+    log("  /adev-init");
+  }
   console.log();
-  log("  /adev-init");
-  console.log();
-  log("This will generate your constitution, detect your tech stack,");
-  log("create orientation docs, and sync everything to CLAUDE.md.");
+  log("Repository: https://github.com/agentic-development/adev-plugin");
   console.log();
 }
 
 async function cmdUninstall() {
-  heading("Uninstalling adev plugin");
+  const providerNames = await selectProviders();
 
-  const claudeHome = getClaudeHome();
-
-  // Remove from user settings
-  const userSettingsPath = join(claudeHome, "settings.json");
-  const userSettings = readJson(userSettingsPath);
-  if (userSettings?.enabledPlugins?.["adev@agentic-development"] !== undefined) {
-    delete userSettings.enabledPlugins["adev@agentic-development"];
-    writeJson(userSettingsPath, userSettings);
-    success("Removed from user settings");
-  }
-
-  // Remove from project settings
-  const projectSettingsPath = join(process.cwd(), ".claude", "settings.json");
-  const projectSettings = readJson(projectSettingsPath);
-  if (projectSettings?.enabledPlugins?.["adev@agentic-development"] !== undefined) {
-    delete projectSettings.enabledPlugins["adev@agentic-development"];
-    // Re-enable superpowers if it was disabled
-    if (projectSettings.enabledPlugins["superpowers@claude-plugins-official"] === false) {
-      delete projectSettings.enabledPlugins["superpowers@claude-plugins-official"];
-      success("Re-enabled Superpowers for this project");
-    }
-    writeJson(projectSettingsPath, projectSettings);
-    success("Removed from project settings");
-  }
-
-  // Remove cached plugin
-  const cacheDir = join(claudeHome, "plugins", "cache", "agentic-development");
-  if (existsSync(cacheDir)) {
-    execSync(`rm -rf "${cacheDir}"`);
-    success("Removed cached plugin files");
+  for (const providerName of providerNames) {
+    const provider = getProvider(providerName);
+    heading(`Uninstalling from ${provider.name}`);
+    await provider.uninstall();
+    success(`Uninstalled from ${provider.name}`);
   }
 
   log(".context-index/ directory was NOT removed (your project context is preserved).");
@@ -344,32 +301,36 @@ function cmdHelp() {
   adev — Agentic Development Framework CLI
 
   Usage:
-    npx adev-cli init        Install plugin + scaffold .context-index/
-    npx adev-cli uninstall   Remove plugin from Claude Code settings
-    npx adev-cli help        Show this help
+    npx adev-cli init              Interactive wizard (default: Claude Code)
+    npx adev-cli uninstall        Uninstall plugin(s)
 
-  After init, start Claude Code and run /adev-init for the
-  interactive setup wizard.
+  Provider Selection:
+    --provider claude-code        Install for Claude Code only
+    --provider opencode           Install for OpenCode only
+    --provider claude-code --provider opencode  Install for both
+
+  Examples:
+    npx adev-cli init                          # Claude Code (default)
+    npx adev-cli init --provider opencode      # OpenCode only
+    npx adev-cli init --provider both          # Both providers
+    npx adev-cli uninstall                     # Remove from selected providers
 
   Repository: https://github.com/agentic-development/adev-plugin
   `);
 }
 
-// ── Exports (for testing) ────────────────────────────────────────────────
-
 export {
-  installPlugin,
-  enablePlugin,
-  detectConflicts,
-  disableConflictingPlugin,
   scaffoldContextKit,
   PLUGIN_ROOT,
   PLUGIN_VERSION,
+  selectProviders,
 };
 
-// ── Main ────────────────────────────────────────────────────────────────
+// Re-export Claude Code adapter functions for backward compatibility
+export const enablePlugin = getProvider("claude-code").enable;
+export const detectConflicts = getProvider("claude-code").detectConflicts;
+export const disableConflictingPlugin = getProvider("claude-code").disableConflictingPlugin;
 
-// Only run CLI when invoked directly (not when imported for testing)
 const isDirectRun =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(__filename);
@@ -377,21 +338,23 @@ const isDirectRun =
 if (isDirectRun) {
   const command = process.argv[2] || "help";
 
-  switch (command) {
-    case "init":
-      await cmdInit();
-      break;
-    case "uninstall":
-      await cmdUninstall();
-      break;
-    case "help":
-    case "--help":
-    case "-h":
-      cmdHelp();
-      break;
-    default:
-      error(`Unknown command: ${command}`);
-      cmdHelp();
-      process.exit(1);
-  }
+  (async () => {
+    switch (command) {
+      case "init":
+        await cmdInit();
+        break;
+      case "uninstall":
+        await cmdUninstall();
+        break;
+      case "help":
+      case "--help":
+      case "-h":
+        cmdHelp();
+        break;
+      default:
+        error(`Unknown command: ${command}`);
+        cmdHelp();
+        process.exit(1);
+    }
+  })();
 }

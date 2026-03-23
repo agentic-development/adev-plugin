@@ -1,11 +1,23 @@
 {
   "name": "adev-cli",
   "version": "0.4.1",
-  "description": "CLI for the Agentic Development Framework — installs the adev plugin into Claude Code and scaffolds .context-index/",
+  "description": "CLI for the Agentic Development Framework — installs adev into Claude Code, OpenCode, and other AI coding assistants. Scaffolds .context-index/ with constitution, manifests, and templates.",
+  "type": "module",
   "bin": {
     "adev": "./cli/index.mjs"
   },
-  "type": "module",
+  "exports": {
+    ".": "./cli/index.mjs",
+    "./opencode": "./providers/opencode/plugin.mjs"
+  },
+  "files": [
+    "cli/",
+    "lib/",
+    "providers/",
+    "hooks/",
+    "skills/",
+    "templates/"
+  ],
   "scripts": {
     "test": "node --test tests/*.test.mjs tests/**/*.test.mjs"
   },
@@ -14,8 +26,10 @@
     "url": "git+https://github.com/agentic-development/adev-plugin.git"
   },
   "keywords": [
+    "adev",
     "agentic-development",
     "claude-code",
+    "opencode",
     "plugin",
     "context-engineering",
     "cli"
@@ -25,5 +39,10 @@
   "bugs": {
     "url": "https://github.com/agentic-development/adev-plugin/issues"
   },
-  "homepage": "https://github.com/agentic-development/adev-plugin#readme"
+  "homepage": "https://github.com/agentic-development/adev-plugin#readme",
+  "dependencies": {
+    "tree-sitter-typescript": "^0.23.2",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.26.7"
+  }
 }
