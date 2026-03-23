@@ -12,3 +12,6 @@ skills/*/evals/
 
 # Eval cached repos (cloned on demand, large)
 tests/evals/repomap/.cache/
+
+# Eval generated data (regenerate with: npm run eval)
+tests/evals/repomap/*/
