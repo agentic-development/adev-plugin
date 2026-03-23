@@ -1,0 +1,27 @@
+{
+  "name": "@adev/opencode",
+  "version": "0.4.1",
+  "description": "OpenCode plugin for the Agentic Development Framework",
+  "main": "plugin.mjs",
+  "type": "module",
+  "keywords": [
+    "adev",
+    "opencode",
+    "plugin",
+    "agentic-development"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agentic-development/adev-plugin.git"
+  },
+  "author": "Agentic Development",
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode-ai/plugin": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@opencode-ai/plugin": {
+      "optional": true
+    }
+  }
+}
