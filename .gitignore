@@ -5,3 +5,7 @@ node_modules/
 # Skill-creator workspace directories
 skills/*-workspace/
 skills/*/evals/
+
+# adev hygiene reports (generated, not committed)
+.context-index/hygiene/
+.context-index/packets/
