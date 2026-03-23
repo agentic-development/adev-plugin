@@ -68,3 +68,29 @@ export function runHook(hookName, { env = {}, cwd, stdin } = {}) {
     stderr: result.stderr || "",
   };
 }
+
+/**
+ * Execute the adev CLI with simulated interactive input.
+ * @param {string} command - CLI command (e.g., "init", "uninstall")
+ * @param {string[]} inputs - Array of inputs to simulate (one per prompt)
+ * @param {object} opts
+ * @param {Record<string, string>} [opts.env] - Extra environment variables
+ * @param {string} [opts.cwd] - Working directory
+ * @returns {{ exitCode: number, stdout: string, stderr: string }}
+ */
+export function runCLI(command, inputs = [], { env = {}, cwd } = {}) {
+  const input = inputs.join("\n") + "\n";
+  const result = spawnSync("node", [join(PLUGIN_ROOT, "cli", "index.mjs"), command], {
+    env: { ...process.env, ...env },
+    cwd: cwd || process.cwd(),
+    input,
+    encoding: "utf8",
+    timeout: 30_000,
+  });
+
+  return {
+    exitCode: result.status ?? 1,
+    stdout: result.stdout || "",
+    stderr: result.stderr || "",
+  };
+}

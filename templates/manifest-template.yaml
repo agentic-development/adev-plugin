@@ -21,22 +21,32 @@ project:
 
 sync:
   targets:
+    # Claude Code / OpenCode / Cursor formats supported
+    # Uncomment targets based on which AI coding assistants you use:
+    
+    # Claude Code (primary)
     - path: CLAUDE.md
       format: claude
+      providers: [claude-code]
       # Claude format includes full constitution + context index summary + user additions section
 
-    # Uncomment targets as needed:
+    # OpenCode (primary)
     # - path: AGENTS.md
     #   format: agents
+    #   providers: [opencode]
     #   # AGENTS.md format includes full constitution + project context pointer
 
-    # - path: .github/copilot-instructions.md
-    #   format: copilot
-    #   # Copilot format includes principles and coding standards only (no context routing)
-
+    # Cursor
     # - path: .cursorrules
     #   format: cursor
+    #   providers: [cursor]
     #   # Cursor format includes full constitution with Cursor-compatible references
+
+    # GitHub Copilot
+    # - path: .github/copilot-instructions.md
+    #   format: copilot
+    #   providers: [copilot]
+    #   # Copilot format includes principles and coding standards only (no context routing)
 
 # ============================================================================
 # Modules

@@ -1,11 +1,21 @@
 ---
 name: adev-sync
-description: "Sync constitution to CLAUDE.md, AGENTS.md, and other agent files declared in manifest.yaml. Run after editing the constitution or when agent files are out of date. Use when the user says 'sync agent files', 'update CLAUDE.md', 'constitution changed', 'regenerate agent configs', or after any edit to constitution.md."
+description: "Sync constitution to CLAUDE.md, AGENTS.md, and other agent files declared in manifest.yaml. Run after editing the constitution or when agent files are out of date. Use when the user says 'sync agent files', 'update agent files', 'constitution changed', 'regenerate agent configs', or after any edit to constitution.md."
 ---
 
 # Sync Constitution to Agent Files
 
 Reads `.context-index/constitution.md` and generates tool-specific agent files based on `manifest.yaml` sync targets.
+
+## Provider Detection
+
+When syncing, detect which AI coding assistant is running:
+- Claude Code: `CLAUDE.md` (primary)
+- OpenCode: `AGENTS.md` (primary)
+- Cursor: `.cursorrules`
+- GitHub Copilot: `.github/copilot-instructions.md`
+
+If multiple providers are used, sync all enabled targets from the manifest.
 
 ## Process
 
@@ -35,14 +45,18 @@ Reads `.context-index/constitution.md` and generates tool-specific agent files b
    [preserved content from previous CLAUDE.md below this marker]
    ```
 
-   ### AGENTS.md format
+   ### OpenCode / Generic agents format (`AGENTS.md`)
    ```markdown
    <!-- Synced from .context-index/constitution.md by adev. -->
 
    [Full constitution content]
 
    ## Project Context
-   For detailed context, see `.context-index/manifest.yaml`.
+   This project uses the Agentic Development Framework (adev).
+   - Constitution: `.context-index/constitution.md`
+   - Manifest: `.context-index/manifest.yaml`
+   - Platform: [summary from platform-context.yaml]
+   - Available skills: /adev-brainstorm, /adev-specify, /adev-review-specs, /adev-plan, /adev-implement, /adev-validate, /adev-debug, /adev-hygiene
    ```
 
    ### Copilot format (`.github/copilot-instructions.md`)
