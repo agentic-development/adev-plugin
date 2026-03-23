@@ -23,36 +23,22 @@ Modes are mutually exclusive. If none is specified, standard mode is used.
 
 ## Prerequisites
 
-Before running this skill, verify:
-
 1. `.context-index/` exists. If not, tell the user to run `/adev-init` first.
 2. `.context-index/constitution.md` exists and is non-empty.
 3. At least one Feature Charter exists under `.context-index/specs/features/` (except for `--cross-cutting` mode, which only needs the constitution and product charter).
 
 If any prerequisite fails, stop and explain what is missing. Do not generate a spec without a charter anchor (cross-cutting excepted).
 
-## Mode Reference
-
-| Mode | Flag | Input | Output Location | Template |
-|------|------|-------|-----------------|----------|
-| Standard | *(default)* | Charter capability | `.context-index/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
-| Extract | `--extract` | Existing source code | `.context-index/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
-| Refactor | `--refactor` | Existing code + target description | `.context-index/specs/features/<module>/<spec-slug>.md` | `refactoring-spec-template.md` |
-| From-Diff | `--from-diff` | Git diff or PR | `.context-index/specs/features/<module>/<spec-slug>.md` | `live-spec-template.md` |
-| Cross-Cutting | `--cross-cutting` | Cross-module concern | `.context-index/specs/cross-cutting/<spec-slug>.md` | `live-spec-template.md` |
-
 ---
 
-## Standard Mode (default)
+## Shared: Resolve Charter
 
-The primary path. Takes a Feature Charter and produces a Live Spec for one capability within that charter.
+Used by Standard, Extract, Refactor, and From-Diff modes. Cross-Cutting skips this.
 
-### Step 1: Resolve Charter
-
-1. Read all Feature Charters by scanning `.context-index/specs/features/*/charter.md`.
-2. If `--charter <module>` is provided, load that charter directly. Error if it does not exist.
-3. If a positional argument is provided, match it against charter module names. If ambiguous, list the matches and ask the user to pick one.
-4. If no argument is provided and only one charter exists, use it automatically. If multiple exist, list them and ask:
+1. Scan `.context-index/specs/features/*/charter.md` to find all charters.
+2. If `--charter <module>` is provided, load directly (error if missing).
+3. If positional arg provided, match against charter module names (ask if ambiguous).
+4. If no arg and one charter exists, use it. If multiple, list and ask:
 
 ```
 Found 3 Feature Charters:
@@ -63,7 +49,9 @@ Found 3 Feature Charters:
 → Which charter should this spec belong to? (number or name)
 ```
 
-### Step 2: Load Context
+## Shared: Load Context
+
+Used by all modes (Cross-Cutting loads only constitution and product charter).
 
 Read these files and hold them in working memory:
 
@@ -74,9 +62,47 @@ Read these files and hold them in working memory:
 - Any existing specs in the same module directory — to avoid duplication
 - `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
+## Shared: Frontmatter
+
+```yaml
+charter: <module-name>          # omit for cross-cutting (use affects: instead)
+status: draft                   # always starts as draft
+milestone: <phase from charter> # standard mode only
+created: <today's date YYYY-MM-DD>
+# mode: extract | refactor | from-diff | cross-cutting
+# extracted-from: [...]         # extract mode
+# diff-source: "..."            # from-diff mode
+# affects: [...]                # cross-cutting (replaces charter:)
+# charter-extension: true       # if capability not in charter
+# constitutional-exception: "." # if user chose explicit exception
+```
+
+**Milestone inheritance (standard mode):** Inherit from the capability's Phase in the parent charter. Tell the user and allow override:
+```
+→ Keep milestone "v1", or override? (enter to confirm / type new value)
+```
+
+## Shared: Summary Template
+
+After writing any spec, output the path, mode-specific stats (see each mode), and next steps: review the spec, `/adev-review-specs`, or write another spec.
+
+---
+
+## Standard Mode (default)
+
+The primary path. Takes a Feature Charter and produces a Live Spec for one capability.
+
+### Step 1: Resolve Charter
+
+Use the shared Resolve Charter section above.
+
+### Step 2: Load Context
+
+Load context per the shared section above.
+
 ### Step 3: Identify Capability
 
-Present the charter's Capability Map to the user:
+Present the charter's Capability Map and list existing specs in the module. Ask which capability to cover:
 
 ```
 Charter: task-boards
@@ -97,126 +123,72 @@ Existing specs in this module:
 If the user describes something not in the charter, warn them:
 
 ```
-⚠ "Export to CSV" is not listed in the task-boards charter.
+⚠ "<capability>" is not listed in the <module> charter.
   Options:
-  1. Add it to the charter first (recommended — run /adev-brainstorm --module task-boards)
+  1. Add it to the charter first (recommended — run /adev-brainstorm --module <module>)
   2. Proceed anyway (the spec will note it extends beyond the current charter scope)
 
 → Your choice?
 ```
 
-If the user chooses option 2, add a frontmatter field `charter-extension: true` and a comment at the top of the spec noting the charter divergence.
+If option 2, add `charter-extension: true` to frontmatter and a comment at the top of the spec noting the charter divergence.
 
 ### Step 4: Interactive Spec Authoring
 
-Gather the information needed to fill the Live Spec template. Ask focused questions. Do not dump a blank template and ask the user to fill it. Instead, guide them through each section:
+Guide the user through each section. Do not dump a blank template.
 
 **Behavioral Contract:**
-```
-Let's define the behavioral contract for "Drag-and-drop card reordering."
+Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors in the **When...then** format:
+- **When** a user drags a card to a new position within the same column **then** the card's `position` updates and affected cards reindex.
+- **When** a user drags a card to a different column **then** the card moves and both columns reindex.
 
-→ What triggers this behavior? (e.g., user action, API call, system event)
-→ What is the expected outcome when it succeeds?
-→ What are the failure scenarios? (e.g., concurrent edits, permission denied, network failure)
-```
-
-Write behaviors in the **When...then** format:
-- **When** a user drags a card to a new position within the same column **then** the card's `position` field updates and all affected cards reindex.
-- **When** a user drags a card to a different column **then** the card moves to the target column and both columns reindex.
-
-Aim for 3-8 behavior statements. Each must be directly testable.
+Aim for 3-8 directly testable behavior statements.
 
 **Preconditions and Postconditions:**
-Derive from the behavioral statements. Preconditions are what must be true before execution. Postconditions are what must be true after.
+Derive from behavioral statements. Preconditions = what must be true before. Postconditions = what must be true after.
 
 **Error Cases:**
-Build the error case table. Each row needs: condition, expected behavior, and status/error code. Ask the user:
-
+Build an error case table (condition, expected behavior, status code). Ask:
 ```
-→ Any additional error cases beyond the obvious ones? I have:
-  - User lacks edit permission on the board → 403 Forbidden
-  - Target column does not exist → 404 Not Found
-  - Concurrent edit conflict → 409 Conflict
+→ Any additional error cases? I have: lacks permission → 403, column not found → 404, conflict → 409
 ```
 
 **Constitution Reference:**
-Scan the constitution for principles relevant to this spec. Select 2-4 principles and explain why each applies. Example:
-
+Select 2-4 relevant principles from the constitution and explain why each applies:
 ```
-Constitution principles relevant to this spec:
-  - "All state mutations go through server actions" — Applies because card reordering mutates position state.
-  - "Optimistic UI with server reconciliation" — Applies because drag-and-drop requires instant visual feedback.
-
 → Any other principles I should reference? (enter to confirm)
 ```
 
 **Actionable Task Map:**
-Produce a preliminary task breakdown. This is not the full implementation plan (that is `/adev-plan`'s job), but a rough map so reviewers can assess scope:
-
-| Task | Description | Estimated Complexity |
-|------|-------------|---------------------|
-| Reorder API endpoint | Server action for position updates with conflict detection | medium |
-| Drag-and-drop UI | DnD handler using the platform's drag library | medium |
-| Reindex logic | Batch position recalculation on column change | small |
-| Optimistic update | Client-side state update with rollback on failure | small |
+Preliminary task breakdown (not the full plan — that is `/adev-plan`'s job). Table with task, description, estimated complexity.
 
 **Acceptance Criteria:**
-Generate concrete, checkable criteria. Every behavior statement must map to at least one acceptance criterion. Always include:
-- All quality gates pass (tests, lint, typecheck)
-- No constitutional violations introduced
+Concrete, checkable criteria. Every behavior maps to at least one criterion. Always include: all quality gates pass, no constitutional violations.
 
 ### Step 5: Write the Spec
 
-1. Generate the spec slug from the title: lowercase, kebab-case, no special characters. Example: `drag-and-drop-reordering`.
-2. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md` with all gathered content.
-3. Set frontmatter:
-   ```yaml
-   charter: <module-name>
-   status: draft
-   milestone: <phase from charter capability map, if any>
-   created: <today's date YYYY-MM-DD>
-   ```
-   **Milestone inheritance:** Read the capability's Phase from the parent charter's Capability Map. If the capability has a phase assigned, set the spec's `milestone` to match. If the capability has no phase, leave `milestone` empty. Always tell the user which milestone was inherited and allow them to override:
-   ```
-   The charter assigns this capability to phase "v1". Setting milestone: v1.
-   → Keep this milestone, or override? (enter to confirm / type new value)
-   ```
+1. Generate slug: lowercase, kebab-case, no special characters.
+2. Fill `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
+3. Set frontmatter per shared section (including milestone inheritance).
 4. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 6: Summary
 
-```
-Live Spec created:
-  .context-index/specs/features/task-boards/drag-and-drop-reordering.md
-
-  Charter: task-boards
-  Status: draft
-  Behaviors: 5
-  Error cases: 3
-  Tasks: 4
-  Acceptance criteria: 7
-
-Next steps:
-  - Review the spec: read .context-index/specs/features/task-boards/drag-and-drop-reordering.md
-  - Submit for architecture review: /adev-review-specs
-  - Or write another spec: /adev-specify task-boards
-```
+Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps.
 
 ---
 
 ## Extract Mode (`--extract`)
 
-For brownfield codebases. Reads existing source code and produces a "snapshot spec" that captures current behavior. This documents what IS, not what SHOULD BE.
+For brownfield codebases. Reads existing source code and produces a "snapshot spec" that captures current behavior. Documents what IS, not what SHOULD BE.
 
 ### Step 1: Resolve Charter
 
-Same as standard mode. The extract spec belongs to a charter just like any other spec.
+Use the shared Resolve Charter section above.
 
 ### Step 2: Identify Code to Extract
 
-If the user provides a module name, scan the codebase for files associated with that module. Use the charter's file references, directory conventions, and `platform-context.yaml` to locate relevant code.
-
-If the user provides specific file paths, use those directly.
+If the user provides a module name, scan the codebase for associated files using the charter's file references, directory conventions, and `platform-context.yaml`. If the user provides specific file paths, use those directly.
 
 ```
 Analyzing module: user-management
@@ -225,8 +197,6 @@ Found relevant files:
   src/app/api/users/route.ts          (API routes, 142 lines)
   src/lib/auth/permissions.ts          (Permission checks, 89 lines)
   src/components/user-profile.tsx      (Profile UI, 201 lines)
-  prisma/schema.prisma                 (User model, lines 12-45)
-  src/lib/auth/session.ts              (Session management, 67 lines)
 
 → Extract a spec from all of these, or select specific files? (all / select)
 ```
@@ -243,96 +213,84 @@ Read each selected file. For each, identify:
 
 Produce a Live Spec where:
 
-- **Behavioral Contract** describes observed behavior, not intended behavior. Use past tense framing in comments: `<!-- Extracted from existing code. Describes current behavior as of YYYY-MM-DD. -->`
-- **Behaviors** are derived from code paths, not user stories. Each public function or API endpoint becomes one or more behavior statements.
-- **Error Cases** come from existing error handling code. Flag any unhandled cases:
+- **Behavioral Contract** describes observed behavior. Use comment: `<!-- Extracted from existing code. Describes current behavior as of YYYY-MM-DD. -->`
+- **Behaviors** are derived from code paths. Each public function or API endpoint becomes one or more behavior statements.
+- **Error Cases** come from existing error handling code. Flag unhandled cases:
   ```
   | Missing auth token | Returns 401 | 401 |
   | Invalid user ID | ⚠ UNHANDLED — throws raw Prisma error | 500 |
   ```
-- **Actionable Task Map** is empty for extract specs (the code already exists). Replace with a **Coverage Gaps** section:
+- **Actionable Task Map** is replaced with a **Coverage Gaps** section:
   ```
   ## Coverage Gaps
-  <!-- Issues discovered during extraction. These may become future specs. -->
   - No rate limiting on user creation endpoint
   - Permission checks bypass for admin role is implicit, not tested
   - Profile image upload has no size validation
   ```
-- **Constitution Reference** flags any observed violations:
+- **Constitution Reference** flags observed violations:
   ```
-  - **Principle:** "All database queries use parameterized statements" — ✓ Compliant
-  - **Principle:** "Error responses use standard error envelope" — ⚠ VIOLATION: /api/users/[id] returns raw error strings
+  - "All database queries use parameterized statements" — ✓ Compliant
+  - "Error responses use standard error envelope" — ⚠ VIOLATION: /api/users/[id] returns raw error strings
   ```
 
-Add to frontmatter:
-```yaml
-charter: <module-name>
-status: draft
-mode: extract
-created: <today's date>
-extracted-from:
-  - src/app/api/users/route.ts
-  - src/lib/auth/permissions.ts
-```
+Add `mode: extract` and `extracted-from: [<file list>]` to frontmatter per the shared section.
 
-Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
+Load context per the shared section above. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 5: Summary
 
+Output the shared summary template with these stats:
 ```
-Extract Spec created:
-  .context-index/specs/features/user-management/user-api-snapshot.md
-
-  Extracted from: 5 files (499 lines analyzed)
-  Behaviors documented: 8
-  Error cases: 5 (1 unhandled)
-  Coverage gaps: 3
-  Constitutional violations: 1
+  Extracted from: <N> files (<N> lines analyzed)
+  Behaviors documented: <count>
+  Error cases: <count> (<N> unhandled)
+  Coverage gaps: <count>
+  Constitutional violations: <count>
 
   This spec captures current behavior. It does NOT prescribe changes.
-  To plan improvements, use one of:
-  - /adev-specify --refactor user-management (for structural changes)
-  - /adev-specify user-management (for new capabilities)
+  To plan improvements, use:
+  - /adev-specify --refactor <module> (for structural changes)
+  - /adev-specify <module> (for new capabilities)
 ```
 
 ---
 
 ## Refactor Mode (`--refactor`)
 
-Produces a refactoring spec with current state analysis, target state definition, a step-by-step migration path, and invariants that must hold throughout.
+Produces a refactoring spec with current state analysis, target state definition, a step-by-step migration path, and invariants.
 
 ### Step 1: Resolve Charter
 
-Same as standard mode.
+Use the shared Resolve Charter section above.
 
-### Step 2: Identify Refactoring Scope
+### Step 2: Load Context and Identify Scope
 
-Ask the user what they want to refactor and why:
+Load context per the shared section above. Ask the user:
 
 ```
 → What code do you want to refactor? (module, files, or describe the area)
-→ What is the problem with the current code? (performance, complexity, maintainability, etc.)
-→ What should the code look like after refactoring? (describe the target state)
+→ What is the problem with the current code?
+→ What should the code look like after refactoring?
 ```
 
 ### Step 3: Analyze Current State
 
-Read the code identified in Step 2. Build the Current State section:
+Read the identified code. Build the Current State section:
 
-- **Structure table:** file, role, line count, notes (complexity, issues)
-- **Problems:** specific, measurable issues. Not "the code is messy" but "the `processOrder` function is 340 lines with cyclomatic complexity of 28, handling 4 unrelated concerns."
-- **Dependencies:** what other code imports from, extends, or relies on the code being refactored. These are migration constraints.
+- **Structure table:** file, role, line count, notes
+- **Problems:** specific, measurable issues (e.g., "`processOrder` is 340 lines with cyclomatic complexity of 28, handling 4 unrelated concerns.")
+- **Dependencies:** what other code relies on code being refactored — these are migration constraints.
 
-If an extract spec already exists for this module, load it as the starting point instead of re-analyzing from scratch.
+If an extract spec already exists for this module, load it instead of re-analyzing.
 
 ### Step 4: Define Target State
 
-Based on the user's description and your analysis, define:
+Based on user description and analysis:
 
 - **Structure table:** target file layout with roles
 - **Improvements:** how each problem from Current State is resolved
 
-Validate the target state against the constitution. If the refactoring would violate a principle, flag it:
+Validate the target state against the constitution. Flag violations:
 
 ```
 ⚠ Your target state introduces a direct database call from a UI component.
@@ -343,37 +301,27 @@ Validate the target state against the constitution. If the refactoring would vio
 
 ### Step 5: Build Migration Path
 
-This is the critical section. Each migration step must:
+Each migration step must be independently deployable, have clear verification criteria, include risk assessment, and follow safe ordering (extract before modify, tests before refactor).
 
-1. Be independently deployable (all tests pass after each step)
-2. Have a clear verification criteria
-3. Include risk assessment
-4. Follow a safe ordering (extract before modify, tests before refactor)
-
-Use the refactoring spec template at `${CLAUDE_PLUGIN_ROOT}/templates/refactoring-spec-template.md`.
-
-Guide the user through the path:
+Use the template at `${CLAUDE_PLUGIN_ROOT}/templates/refactoring-spec-template.md`.
 
 ```
 Proposed migration path (4 steps):
 
   Step 1: Extract shared validation logic
-    Move validation from processOrder into validators/order-validators.ts.
+    Move validation into validators/order-validators.ts.
     Risk: Low — pure extraction, no behavior change.
     Verify: All existing order tests pass.
 
   Step 2: Split processOrder into pipeline stages
-    Break the 340-line function into: validate → enrich → persist → notify.
+    Break into: validate → enrich → persist → notify.
     Risk: Medium — behavior must remain identical.
-    Verify: Existing tests pass + new unit tests for each stage.
+    Verify: Existing tests pass + new unit tests per stage.
 
   Step 3: Add integration test for the full pipeline
-    Cover the end-to-end flow before touching the entry points.
     Risk: Low — adding tests only.
-    Verify: New integration test passes.
 
   Step 4: Update entry points to use the pipeline
-    Replace direct processOrder calls with the pipeline.
     Risk: Medium — all callers must be updated.
     Verify: All tests pass, no remaining references to old function.
 
@@ -382,69 +330,54 @@ Proposed migration path (4 steps):
 
 ### Step 6: Define Invariants
 
-Invariants are properties that must remain true at every step of the migration. Always include:
+Invariants are properties that must remain true at every migration step. Always include:
 
 - All existing tests continue to pass at every step
 - Public API contracts do not change (unless the spec explicitly permits it)
 - No data loss or corruption during migration
 
-Ask the user for domain-specific invariants:
+Ask for domain-specific invariants:
 
 ```
 → Any additional invariants? For example:
   - "Response times must stay under 200ms"
   - "The audit log format must not change"
-  - "Backward compatibility with v2 API clients"
 ```
 
-### Step 7: Write Behavioral Contract
+### Step 7: Write Behavioral Contract and Spec
 
-Even for refactoring, define the target behavior. The behavioral contract describes what the system does AFTER the refactoring is complete. This gives `/adev-validate` something to verify against.
-
-### Step 8: Write the Spec
+Define the target behavior (what the system does AFTER refactoring). This gives `/adev-validate` something to verify against.
 
 1. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/refactoring-spec-template.md`.
-2. Set frontmatter:
-   ```yaml
-   charter: <module-name>
-   status: draft
-   mode: refactor
-   created: <today's date>
-   ```
+2. Set frontmatter per the shared section with `mode: refactor`.
 3. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
-### Step 9: Summary
+### Step 8: Summary
 
+Output the shared summary template with these stats:
 ```
-Refactoring Spec created:
-  .context-index/specs/features/orders/refactor-process-order.md
+  Current state: <N> files, <N> problems identified
+  Target state: <N> files (<N> new, <N> modified, <N> unchanged)
+  Migration steps: <count>
+  Invariants: <count>
+  Behaviors: <count>
+  Acceptance criteria: <count>
 
-  Current state: 5 files, 3 problems identified
-  Target state: 8 files (3 new, 2 modified, 3 unchanged)
-  Migration steps: 4
-  Invariants: 5
-  Behaviors: 4
-  Acceptance criteria: 9
-
-Next steps:
-  - Review the migration path carefully — this is the highest-risk section
-  - Submit for architecture review: /adev-review-specs
+  Review the migration path carefully — this is the highest-risk section.
 ```
 
 ---
 
 ## From-Diff Mode (`--from-diff`)
 
-Generates a retroactive Live Spec from a git diff or PR. Useful for documenting work done before adev was adopted, or for catching up on hotfixes that skipped the spec phase.
+Generates a retroactive Live Spec from a git diff or PR. Useful for documenting work done before adev was adopted, or hotfixes that skipped the spec phase.
 
 ### Step 1: Identify the Diff
 
-Determine the source of the diff:
-
-1. If no argument is provided, use the current staged changes: `git diff --cached`. If nothing is staged, use the working tree diff: `git diff`.
-2. If a commit range is provided (e.g., `HEAD~3..HEAD`), use `git diff <range>`.
-3. If a branch name is provided, diff against the main branch: `git diff main..<branch>`.
-4. If a PR number is provided, fetch the PR diff.
+1. If no argument: use `git diff --cached`, or if nothing staged, `git diff`.
+2. If a commit range (e.g., `HEAD~3..HEAD`): use `git diff <range>`.
+3. If a branch name: diff against main: `git diff main..<branch>`.
+4. If a PR number: fetch the PR diff.
 
 ```
 Analyzing diff...
@@ -453,16 +386,15 @@ Changes:
   Modified: src/app/api/tasks/route.ts (+45, -12)
   Created:  src/lib/tasks/priority-engine.ts (+89)
   Modified: prisma/schema.prisma (+8)
-  Modified: src/components/task-card.tsx (+23, -5)
 
-Total: 4 files, 165 additions, 17 deletions
+Total: 3 files, 142 additions, 12 deletions
 
 → Generate a retroactive spec for these changes? (yes / narrow scope / cancel)
 ```
 
 ### Step 2: Resolve Charter
 
-Analyze the changed files to determine which module they belong to. Match against existing charters. If the changes span multiple modules, ask the user which charter to associate:
+Analyze the changed files to determine which module they belong to. Match against existing charters. If changes span multiple modules:
 
 ```
 These changes touch 2 modules:
@@ -474,77 +406,57 @@ These changes touch 2 modules:
 
 ### Step 3: Analyze the Diff
 
-Read the full diff content. For each changed file, identify:
-- What behavior was added (new functions, new endpoints, new UI elements)
-- What behavior was modified (changed logic, updated validation, altered responses)
-- What behavior was removed (deleted functions, removed endpoints)
+Load context per the shared section above. Read the full diff content. For each changed file, identify:
+- Behavior added (new functions, endpoints, UI elements)
+- Behavior modified (changed logic, updated validation)
+- Behavior removed (deleted functions, removed endpoints)
 
 ### Step 4: Generate Retroactive Spec
 
 Produce a Live Spec where:
 
-- **Behavioral Contract** describes the behavior as it exists after the diff is applied.
-- **Behaviors** map to the changes in the diff. Each significant code change becomes a behavior statement.
-- **Error Cases** are extracted from new or modified error handling in the diff.
-- **Actionable Task Map** is replaced with a **Changes Summary** section:
+- **Behavioral Contract** describes behavior as it exists after the diff.
+- **Behaviors** map to changes in the diff — each significant code change becomes a behavior statement.
+- **Error Cases** extracted from new or modified error handling.
+- **Actionable Task Map** replaced with **Changes Summary**:
   ```
   ## Changes Summary
-  <!-- Retroactive documentation of changes already implemented. -->
-
   | File | Change Type | Description |
   |------|------------|-------------|
   | src/lib/tasks/priority-engine.ts | Created | New priority scoring algorithm |
   | src/app/api/tasks/route.ts | Modified | Added priority field to task creation |
-  | prisma/schema.prisma | Modified | Added priority column to Task model |
-  | src/components/task-card.tsx | Modified | Display priority badge on cards |
   ```
-- **Acceptance Criteria** use checked boxes for behaviors that already exist in the diff, unchecked for anything that appears missing:
+- **Acceptance Criteria** use checked boxes for existing behaviors, unchecked for missing:
   ```
   - [x] Priority field accepted on task creation
-  - [x] Priority badge displays on task cards
   - [ ] Priority validation (no validation found in diff — may be missing)
   - [ ] Test coverage for priority engine (no tests found in diff)
   ```
 
-Add to frontmatter:
-```yaml
-charter: <module-name>
-status: draft
-mode: from-diff
-created: <today's date>
-diff-source: <commit range, branch name, or "working tree">
-```
-
-Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
+Set frontmatter per the shared section with `mode: from-diff` and `diff-source`. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 5: Summary
 
+Output the shared summary template with these stats:
 ```
-Retroactive Spec created:
-  .context-index/specs/features/task-boards/add-priority-scoring.md
-
-  Diff source: HEAD~3..HEAD
-  Files analyzed: 4
-  Behaviors documented: 4
-  Gaps identified: 2 (missing validation, missing tests)
+  Diff source: <source>
+  Files analyzed: <count>
+  Behaviors documented: <count>
+  Gaps identified: <count> (details)
 
   This spec documents existing changes. Review the gaps — they may
   need follow-up specs or immediate fixes.
-
-Next steps:
-  - Address gaps: write tests, add validation
-  - Submit for review: /adev-review-specs (validates the spec, not the code)
 ```
 
 ---
 
 ## Cross-Cutting Mode (`--cross-cutting`)
 
-Produces specs for concerns that span multiple features: authentication flows, error handling patterns, API versioning, logging standards, etc.
+Produces specs for concerns spanning multiple features: authentication, error handling, API versioning, logging, etc.
 
 ### Step 1: Prerequisites
 
-Cross-cutting specs do not require a Feature Charter. They do require:
+Cross-cutting specs do not require a Feature Charter. They require:
 - `.context-index/constitution.md` (mandatory)
 - `.context-index/specs/product.md` (recommended, for module awareness)
 
@@ -560,7 +472,7 @@ Cross-cutting specs do not require a Feature Charter. They do require:
 
 ### Step 3: Load Affected Charters
 
-If specific modules are named, load their charters. Identify any existing references to the concern within those charters.
+Load context per the shared section above (constitution, product charter). If specific modules are named, load their charters. Identify existing references to the concern.
 
 ### Step 4: Interactive Spec Authoring
 
@@ -568,8 +480,6 @@ Same process as standard mode (behavioral contract, constitution reference, task
 
 **Module Impact Map:**
 ```
-## Module Impact
-
 | Module | Impact | Changes Required |
 |--------|--------|-----------------|
 | task-boards | High | Add auth checks to all task mutations |
@@ -579,49 +489,28 @@ Same process as standard mode (behavioral contract, constitution reference, task
 
 **Integration Points:**
 ```
-## Integration Points
-
-<!-- How this cross-cutting concern connects to each affected module.
-     Each integration point needs its own test. -->
-
-1. **task-boards ↔ auth:** Task mutations call `checkPermission(userId, boardId, 'edit')` before writes.
-2. **notifications ↔ auth:** Notification reads validate session token via middleware.
-3. **user-management ↔ auth:** Canonical permission definitions live here. Other modules import.
+1. task-boards ↔ auth: Task mutations call checkPermission(userId, boardId, 'edit') before writes.
+2. notifications ↔ auth: Notification reads validate session token via middleware.
+3. user-management ↔ auth: Canonical permission definitions live here. Other modules import.
 ```
 
 ### Step 5: Write the Spec
 
 1. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
-2. Add the Module Impact and Integration Points sections after the standard template sections.
-3. Set frontmatter:
-   ```yaml
-   status: draft
-   mode: cross-cutting
-   created: <today's date>
-   affects:
-     - task-boards
-     - user-management
-     - notifications
-   ```
+2. Add Module Impact and Integration Points after the standard template sections.
+3. Set frontmatter per the shared section with `mode: cross-cutting` and `affects: [<modules>]` instead of `charter:`.
 4. Save to `.context-index/specs/cross-cutting/<spec-slug>.md`.
-
-Note: cross-cutting specs have no `charter` field in frontmatter. They use `affects` instead to list the modules they touch.
 
 ### Step 6: Summary
 
+Output the shared summary template with these stats:
 ```
-Cross-Cutting Spec created:
-  .context-index/specs/cross-cutting/auth-flow.md
+  Affects: <N> modules
+  Behaviors: <count>
+  Integration points: <count>
+  Acceptance criteria: <count>
 
-  Affects: 3 modules
-  Behaviors: 6
-  Integration points: 3
-  Acceptance criteria: 10
-
-Next steps:
-  - Review the module impact with each module's maintainer
-  - Submit for review: /adev-review-specs
-  - Plan implementation: /adev-plan --spec .context-index/specs/cross-cutting/auth-flow.md
+  Review the module impact with each module's maintainer.
 ```
 
 ---
@@ -632,7 +521,7 @@ Before writing any spec, scan the constitution for conflicts:
 
 1. Read `.context-index/constitution.md`.
 2. Check that the proposed spec does not contradict any principle.
-3. If a conflict is found, present it to the user:
+3. If a conflict is found:
 
 ```
 ⚠ Constitutional conflict detected:
@@ -648,7 +537,7 @@ Before writing any spec, scan the constitution for conflicts:
 → Your choice?
 ```
 
-If the user chooses option 2, create an ADR draft at `.context-index/adrs/NNNN-<title>.md` and note the pending ADR in the spec. If option 3, add `constitutional-exception: "<principle text>"` to the spec frontmatter.
+If option 2, create an ADR draft at `.context-index/adrs/NNNN-<title>.md` and note the pending ADR in the spec. If option 3, add `constitutional-exception: "<principle text>"` to frontmatter.
 
 ## Duplicate Detection (All Modes)
 
@@ -673,10 +562,3 @@ Before creating a spec, check existing specs in the target directory:
 
 → Your choice?
 ```
-
-## Output Conventions
-
-- **Slug format:** lowercase kebab-case, no special characters. Derived from the spec title. Example: "Add drag-and-drop reordering" becomes `add-drag-and-drop-reordering`.
-- **Date format:** YYYY-MM-DD in all frontmatter fields.
-- **Status:** always starts as `draft`. Only `/adev-review-specs` can advance it.
-- **Template resolution:** Templates are resolved from `${CLAUDE_PLUGIN_ROOT}/templates/`. If a template is missing, warn the user and generate the spec structure inline.
