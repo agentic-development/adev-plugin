@@ -278,16 +278,32 @@ async function cmdInit() {
     }
   }
 
-  const scaffoldChoice = await ask("Scaffold .context-index/ with templates? (yes/no)");
-  if (scaffoldChoice === "yes" || scaffoldChoice === "y") {
-    const created = scaffoldContextKit();
-    for (const item of created) {
-      success(item);
+  const contextIndexExists = existsSync(join(process.cwd(), ".context-index"));
+  let scaffoldCreated = [];
+
+  if (contextIndexExists) {
+    log(".context-index/ already exists");
+    scaffoldCreated = scaffoldContextKit();
+    if (scaffoldCreated.length > 0) {
+      log("Added missing directories and files:");
+      for (const item of scaffoldCreated) {
+        success(item);
+      }
+    } else {
+      log("All files and directories already present.");
     }
     await handleDualSyncTargets(providerNames);
   } else {
-    log("Skipped. Run /adev-init to scaffold later.");
-    await handleDualSyncTargets(providerNames);
+    const scaffoldChoice = await ask("Create .context-index/ with templates? (yes/no)");
+    if (scaffoldChoice === "yes" || scaffoldChoice === "y") {
+      scaffoldCreated = scaffoldContextKit();
+      for (const item of scaffoldCreated) {
+        success(item);
+      }
+      await handleDualSyncTargets(providerNames);
+    } else {
+      log("Skipped. Run /adev-init to scaffold later.");
+    }
   }
 
   heading("Done!");
