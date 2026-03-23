@@ -246,11 +246,35 @@ async function cmdInit() {
         }
       }
     } else {
-      log("Plugin installed. Skills are available.");
-      log("Add to opencode.json if not using the plugin cache:");
-      console.log();
-      log('  "plugin": ["@adev/opencode"]');
-      console.log();
+      const opencodeConfigPath = join(process.env.HOME || process.env.USERPROFILE, ".config", "opencode", "opencode.json");
+      const opencodeConfigDir = join(process.env.HOME || process.env.USERPROFILE, ".config", "opencode");
+      let config = { plugin: [] };
+      
+      if (existsSync(opencodeConfigPath)) {
+        try {
+          config = JSON.parse(readFileSync(opencodeConfigPath, "utf8"));
+        } catch {}
+      }
+      
+      const pluginEntry = PLUGIN_ROOT;
+      if (!config.plugin) {
+        config.plugin = [];
+      }
+      
+      const alreadyAdded = config.plugin.some(p => 
+        p.includes("adev") || p.includes("adev-plugin") || p === pluginEntry
+      );
+      
+      if (!alreadyAdded) {
+        config.plugin.push(pluginEntry);
+        ensureDir(opencodeConfigDir);
+        writeFileSync(opencodeConfigPath, JSON.stringify(config, null, 2) + "\n");
+        success(`Registered plugin in ${opencodeConfigPath}`);
+      } else {
+        success("Plugin already registered in opencode.json");
+      }
+      
+      log("Skills are available via ~/.config/opencode/skills/");
     }
   }
 

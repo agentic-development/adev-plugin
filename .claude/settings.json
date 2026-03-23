@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
-    "superpowers@claude-plugins-official": false
+    "superpowers@claude-plugins-official": false,
+    "adev@agentic-development": true
   }
 }
