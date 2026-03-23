@@ -16,10 +16,13 @@
     "providers/",
     "hooks/",
     "skills/",
-    "templates/"
+    "templates/",
+    ".claude-plugin/"
   ],
   "scripts": {
-    "test": "node --test tests/*.test.mjs tests/**/*.test.mjs"
+    "test": "node --test tests/*.test.mjs tests/**/*.test.mjs",
+    "eval": "node tests/evals/repomap/run-eval.mjs",
+    "eval:generate": "node tests/evals/repomap/run-eval.mjs --generate-only"
   },
   "repository": {
     "type": "git",
@@ -44,5 +47,8 @@
     "tree-sitter-typescript": "^0.23.2",
     "tree-sitter-wasms": "^0.1.13",
     "web-tree-sitter": "^0.26.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

@@ -9,3 +9,6 @@ skills/*/evals/
 # adev hygiene reports (generated, not committed)
 .context-index/hygiene/
 .context-index/packets/
+
+# Eval cached repos (cloned on demand, large)
+tests/evals/repomap/.cache/
