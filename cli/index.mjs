@@ -77,15 +77,24 @@ async function selectProviders() {
   console.log("  Which AI coding assistant(s) do you want to use?\n");
   console.log("    [1] Claude Code only (default)");
   console.log("    [2] OpenCode only");
-  console.log("    [3] Both Claude Code and OpenCode\n");
+  console.log("    [3] OpenAI Codex only");
+  console.log("    [4] Claude Code and OpenCode");
+  console.log("    [5] Claude Code and OpenAI Codex");
+  console.log("    [6] All three providers\n");
 
-  const answer = await ask("Enter choice (1-3) [1]: ");
+  const answer = await ask("Enter choice (1-6) [1]: ");
 
   switch (answer) {
     case "2":
       return ["opencode"];
     case "3":
+      return ["codex"];
+    case "4":
       return ["claude-code", "opencode"];
+    case "5":
+      return ["claude-code", "codex"];
+    case "6":
+      return ["claude-code", "opencode", "codex"];
     default:
       return ["claude-code"];
   }
@@ -318,6 +327,10 @@ async function cmdInit() {
     log("  opencode");
     log("  /adev-init");
   }
+  if (providerNames.includes("codex")) {
+    log("  codex");
+    log("  $adev-init");
+  }
   console.log();
   log("Repository: https://github.com/agentic-development/adev-plugin");
   console.log();
@@ -348,11 +361,14 @@ function cmdHelp() {
   Provider Selection:
     --provider claude-code        Install for Claude Code only
     --provider opencode           Install for OpenCode only
+    --provider codex             Install for OpenAI Codex only
     --provider claude-code --provider opencode  Install for both
+    --provider claude-code --provider codex     Install for Claude + Codex
 
   Examples:
     npx adev-cli init                          # Claude Code (default)
     npx adev-cli init --provider opencode      # OpenCode only
+    npx adev-cli init --provider codex        # OpenAI Codex only
     npx adev-cli init --provider both          # Both providers
     npx adev-cli uninstall                     # Remove from selected providers
 

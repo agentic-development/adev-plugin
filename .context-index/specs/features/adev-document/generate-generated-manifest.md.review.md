@@ -7,21 +7,15 @@
 
 ## Structural Architect
 
-**Verdict:** PASS
-
-No findings.
+**Verdict:** PASS — No findings.
 
 ## Security Reviewer
 
-**Verdict:** PASS
-
-No findings.
+**Verdict:** PASS — No findings.
 
 ## Consistency Analyzer
 
-**Verdict:** PASS
-
-No findings.
+**Verdict:** PASS — No findings.
 
 ---
 

@@ -16,18 +16,21 @@ created: 2026-03-23
 
 ### Preconditions
 
-- `docs/` directory exists
-- At least one documentation file has been generated (architecture.md or module docs)
+- `docs/` directory exists (created by the architecture or module doc generation step that precedes manifest generation)
 
 ### Behaviors
 
 1. **When** `/adev-document` generates documentation **then** it also generates or updates `docs/GENERATED.md` with a table tracking all generated files.
 
-2. **When** generating the manifest **then** include for each file: file path, generated sections, last commit hash, last run date (YYYY-MM-DD).
+2. **When** generating the manifest **then** include for each file: file path, generated sections, last commit short SHA (7 characters from `git rev-parse --short HEAD`), last run date (YYYY-MM-DD). A row is "unchanged" if the file was not regenerated in the current run (it was not targeted by this invocation).
 
 3. **When** updating an existing manifest **then** update rows for files that were regenerated, add rows for new files, keep rows for unchanged files.
 
 4. **When** running with `--force` flag **then** regenerate all sections and update all rows in the manifest with new commit and date.
+
+5. **When** `--check` flag is provided **then** output the generated manifest content as a diff without writing to disk, reporting what rows would change.
+
+6. **When** an existing `docs/GENERATED.md` cannot be parsed (malformed table structure) **then** treat it as missing, regenerate from scratch, and emit a warning: "GENERATED.md was malformed and has been regenerated."
 
 ### Postconditions
 
@@ -38,8 +41,9 @@ created: 2026-03-23
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| docs/ directory does not exist | Create docs/ first, then generate manifest | 0 |
-| No docs generated yet | Skip manifest generation (nothing to track) | 0 |
+| docs/ directory does not exist | Output error: "docs/ not found. Run /adev-document to generate docs first." | 1 |
+| No docs generated yet (docs/ exists but empty) | Skip manifest generation, emit info: "No generated docs found. Skipping GENERATED.md." | 0 |
+| GENERATED.md exists but cannot be parsed | Regenerate from scratch, emit warning | 0 |
 
 ## System Constitution Reference
 
@@ -62,5 +66,8 @@ created: 2026-03-23
 - [ ] Each row has: File, Generated Sections, Last Commit, Last Run
 - [ ] Updates existing manifest preserving unchanged rows
 - [ ] --force flag updates all rows
+- [ ] --check flag shows diff without writing
+- [ ] Errors with exit 1 when docs/ does not exist
+- [ ] Malformed existing GENERATED.md is regenerated from scratch with warning
 - [ ] All quality gates pass (tests, lint, typecheck)
 - [ ] No constitutional violations introduced
