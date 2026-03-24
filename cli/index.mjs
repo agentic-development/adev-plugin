@@ -256,7 +256,7 @@ async function cmdInit() {
         } catch {}
       }
       
-      const pluginEntry = PLUGIN_ROOT;
+      const pluginEntry = `file://${pluginPath}/providers/opencode`;
       if (!config.plugin) {
         config.plugin = [];
       }

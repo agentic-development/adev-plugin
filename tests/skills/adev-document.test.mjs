@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
-const SKILL_PATH = join(PLUGIN_ROOT, "skills", "adev-document", "SKILL.md");
+const SKILL_PATH = join(PLUGIN_ROOT, "providers", "opencode", "skills", "adev-document", "SKILL.md");
 
 describe("adev-document skill", () => {
   it("SKILL.md exists at the correct path", () => {

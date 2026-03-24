@@ -11,17 +11,21 @@ Produce human-readable documentation in `docs/` from `.context-index/` artifacts
 
 - No arguments: generate all documentation
 - `--module <slug>`: regenerate only `docs/modules/<slug>.md`
+  - Validate slug matches pattern `^[a-z0-9_-]+$` — exit 1 if invalid
+  - Prevent path traversal: reject slugs containing ".." or use path.resolve to normalize and verify it stays within docs/modules/
+  - Check slug exists in manifest — exit 1 with error "<slug> not found in manifest" if missing
 - `--check`: compute what would change, output diff without writing
 - `--force`: regenerate all sections unconditionally
 
 ## Precondition Checks
 
 1. Check `.context-index/hygiene/dependency-graph.json` exists
-2. Check `.context-index/hygiene/symbol-ranks.json` exists
+   - If missing: exit 1 with error "Run /adev-repomap first to generate dependency-graph.json"
+ 2. Check `.context-index/hygiene/symbol-ranks.json` exists (symbol index)
+   - If missing: exit 1 with error "Run /adev-repomap first to generate symbol-ranks.json"
 3. Check `.context-index/manifest.yaml` exists
+   - If missing: exit 1 with error "Run /adev-init first to generate manifest.yaml"
 4. If `docs/` does not exist, create it
-
-If any required input is missing, stop with error message.
 
 ## Marker Protocol
 
@@ -80,11 +84,11 @@ Prose paragraph summarizing dependency topology:
 
 ### 1.4 Identify Entry Points
 
-Files with zero inbound edges in dependency-graph.
+From `dependency-graph.json`, identify files with zero inbound edges (no other files depend on them). These are entry points — leaf nodes in the dependency graph.
 
 ### 1.5 Build ADR Links
 
-Find `.context-index/adrs/*.md`, extract status, produce markdown links.
+Find `.context-index/adrs/*.md` (excluding `.template.md`), extract status, produce markdown links.
 
 ### 1.6 Assemble docs/architecture.md
 
@@ -146,6 +150,11 @@ Find `.context-index/adrs/*.md`, extract status, produce markdown links.
 ## Step 3: Generate docs/GENERATED.md
 
 Manifest of all generated doc files:
+
+1. **Read existing** `docs/GENERATED.md` if it exists
+   - If malformed (cannot be parsed): log warning, treat as empty
+2. **Get commit SHA**: run `git rev-parse --short HEAD` for 7-character short SHA
+3. **Assemble table**:
 
 ```markdown
 # Generated Documentation Manifest
