@@ -2,6 +2,12 @@ node_modules/
 .DS_Store
 *.log
 
+# Claude Code local settings
+.claude/settings.local.json
+
+# NPM package archives
+*.tgz
+
 # Skill-creator workspace directories
 skills/*-workspace/
 skills/*/evals/
