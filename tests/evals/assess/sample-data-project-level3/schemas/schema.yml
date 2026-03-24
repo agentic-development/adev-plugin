@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: raw
+    database: analytics
+    schema: raw
+    tables:
+      - name: users
+        description: Raw user data from auth service
+      - name: events
+        description: Raw event data
+
+models:
+  - name: stg_users
+    description: Staged user data
+    columns:
+      - name: id
+        description: User ID
+      - name: created_at
+        description: Creation timestamp

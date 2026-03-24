@@ -6,6 +6,8 @@ import { join, basename } from 'path';
 const SAMPLE_PROJECTS = {
   l1: join(import.meta.dirname, 'sample-project'),
   l3: join(import.meta.dirname, 'sample-project-level3'),
+  dataL1: join(import.meta.dirname, 'sample-data-project'),
+  dataL3: join(import.meta.dirname, 'sample-data-project-level3'),
 };
 
 function findFiles(dir, pattern, files = []) {
@@ -185,6 +187,125 @@ function assessDimension(projectPath, dimension) {
     case 'Naming Conventions': {
       scores.evidence.push('Checked file naming patterns');
       scores.score = 70;
+      return scores;
+    }
+    
+    // Data-specific dimensions
+    case 'Orchestration': {
+      const hasDags = existsSync(join(projectPath, 'dags'));
+      const hasAirflow = existsSync(join(projectPath, 'airflow'));
+      const hasDagster = existsSync(join(projectPath, 'Dagster'));
+      const hasPrefect = existsSync(join(projectPath, 'prefect'));
+      const dagFiles = findFiles(projectPath, /\.py$/).filter(f => f.includes('dag') || f.includes('workflow'));
+      
+      if (hasDags || hasAirflow || hasDagster || hasPrefect) {
+        scores.evidence.push('Orchestration framework found');
+        scores.score = 90;
+      } else if (dagFiles.length > 0) {
+        scores.evidence.push(`${dagFiles.length} workflow file(s) found`);
+        scores.score = 60;
+      } else {
+        scores.evidence.push('No orchestration found');
+        scores.score = 10;
+      }
+      return scores;
+    }
+    
+    case 'Data Lineage': {
+      const hasLineage = existsSync(join(projectPath, 'lineage'));
+      const hasDbt = existsSync(join(projectPath, 'dbt_project.yml'));
+      const schemaFiles = findFiles(projectPath, /schema\.yml$/);
+      
+      if (hasDbt) {
+        scores.evidence.push('dbt project found');
+        scores.score = 85;
+      } else if (hasLineage) {
+        scores.evidence.push('Lineage directory found');
+        scores.score = 70;
+      } else if (schemaFiles.length > 0) {
+        scores.evidence.push(`${schemaFiles.length} schema file(s) found`);
+        scores.score = 50;
+      } else {
+        scores.evidence.push('No data lineage found');
+        scores.score = 10;
+      }
+      return scores;
+    }
+    
+    case 'Schema Management': {
+      const hasDbt = existsSync(join(projectPath, 'dbt_project.yml'));
+      const hasModels = existsSync(join(projectPath, 'models'));
+      const hasSchemas = existsSync(join(projectPath, 'schemas'));
+      
+      if (hasDbt && hasModels) {
+        scores.evidence.push('dbt project with models found');
+        scores.score = 90;
+      } else if (hasSchemas) {
+        scores.evidence.push('Schema directory found');
+        scores.score = 70;
+      } else {
+        scores.evidence.push('No schema management found');
+        scores.score = 10;
+      }
+      return scores;
+    }
+    
+    case 'Data Quality': {
+      const hasGreatExpectations = existsSync(join(projectPath, 'great_expectations'));
+      const hasExpectations = existsSync(join(projectPath, 'expectations'));
+      const hasSoda = existsSync(join(projectPath, '.soda'));
+      const hasDbtTests = findFiles(projectPath, /\.yml$/).some(f => f.includes('tests:'));
+      
+      if (hasGreatExpectations || hasExpectations) {
+        scores.evidence.push('Great Expectations found');
+        scores.score = 90;
+      } else if (hasSoda) {
+        scores.evidence.push('Soda checks found');
+        scores.score = 80;
+      } else if (hasDbtTests) {
+        scores.evidence.push('dbt tests found');
+        scores.score = 60;
+      } else {
+        scores.evidence.push('No data quality checks found');
+        scores.score = 10;
+      }
+      return scores;
+    }
+    
+    case 'Infrastructure as Code': {
+      const hasTerraform = existsSync(join(projectPath, 'terraform'));
+      const tfFiles = findFiles(projectPath, /\.tf$/);
+      const hasCloudFormation = existsSync(join(projectPath, 'cloudformation'));
+      const hasPulumi = existsSync(join(projectPath, 'Pulumi.yaml'));
+      
+      if (hasTerraform || tfFiles.length > 0) {
+        scores.evidence.push('Terraform found');
+        scores.score = 90;
+      } else if (hasCloudFormation || hasPulumi) {
+        scores.evidence.push('IaC config found');
+        scores.score = 70;
+      } else {
+        scores.evidence.push('No IaC found');
+        scores.score = 10;
+      }
+      return scores;
+    }
+    
+    case 'Metadata': {
+      const hasCatalog = existsSync(join(projectPath, 'catalog'));
+      const hasMetadata = existsSync(join(projectPath, 'metadata'));
+      const hasDocs = existsSync(join(projectPath, 'docs'));
+      
+      if (hasCatalog || hasMetadata) {
+        scores.evidence.push('Metadata directory found');
+        scores.score = 90;
+      } else if (hasDocs) {
+        scores.evidence.push('docs/ directory found');
+        scores.score = 50;
+      } else {
+        scores.evidence.push('No metadata found');
+        scores.score = 10;
+      }
       return scores;
     }
     
@@ -376,6 +497,162 @@ describe('adev-assess evaluation', () => {
       assert.ok(parsed.level, 'Should have level');
       assert.ok(Array.isArray(parsed.dimensions), 'Should have dimensions array');
       assert.strictEqual(parsed.dimensions.length, 8, 'Should have 8 dimensions');
+    });
+  });
+  
+  // ============================================
+  // Data Domain Assessment Tests
+  // ============================================
+  
+  describe('Data Domain - Orchestration dimension', () => {
+    it('scores low for project without orchestration', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL1, 'Orchestration');
+      assert.strictEqual(result.score, 10, 'Should score 10 for no orchestration');
+    });
+    
+    it('scores high for project with Airflow dags', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL3, 'Orchestration');
+      assert.ok(result.score >= 80, 'Should score >= 80 for dags directory');
+    });
+  });
+  
+  describe('Data Domain - Data Lineage dimension', () => {
+    it('scores low for project without lineage', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL1, 'Data Lineage');
+      assert.strictEqual(result.score, 10, 'Should score 10 for no lineage');
+    });
+    
+    it('scores high for project with dbt', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL3, 'Data Lineage');
+      assert.ok(result.score >= 80, 'Should score >= 80 for dbt project');
+    });
+  });
+  
+  describe('Data Domain - Schema Management dimension', () => {
+    it('scores low for project without schema mgmt', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL1, 'Schema Management');
+      assert.strictEqual(result.score, 10, 'Should score 10 for no schema mgmt');
+    });
+    
+    it('scores high for project with dbt models', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL3, 'Schema Management');
+      assert.ok(result.score >= 80, 'Should score >= 80 for dbt models');
+    });
+  });
+  
+  describe('Data Domain - Data Quality dimension', () => {
+    it('scores low for project without data quality', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL1, 'Data Quality');
+      assert.strictEqual(result.score, 10, 'Should score 10 for no data quality');
+    });
+    
+    it('scores high for project with Great Expectations', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL3, 'Data Quality');
+      assert.ok(result.score >= 80, 'Should score >= 80 for expectations');
+    });
+  });
+  
+  describe('Data Domain - Infrastructure as Code dimension', () => {
+    it('scores low for project without IaC', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL1, 'Infrastructure as Code');
+      assert.strictEqual(result.score, 10, 'Should score 10 for no IaC');
+    });
+    
+    it('scores high for project with Terraform', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL3, 'Infrastructure as Code');
+      assert.ok(result.score >= 80, 'Should score >= 80 for terraform');
+    });
+  });
+  
+  describe('Data Domain - Metadata dimension', () => {
+    it('scores low for project without metadata', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL1, 'Metadata');
+      assert.strictEqual(result.score, 10, 'Should score 10 for no metadata');
+    });
+    
+    it('scores high for project with metadata directory', () => {
+      const result = assessDimension(SAMPLE_PROJECTS.dataL3, 'Metadata');
+      assert.ok(result.score >= 50, 'Should score >= 50 for docs');
+    });
+  });
+  
+  describe('Data Domain - Full assessment', () => {
+    it('assigns low level to minimal data project', () => {
+      function runDataAssessment(projectPath) {
+        const sharedDimensions = [
+          'Documentation',
+          'Dependency Hygiene', 
+          'Build Configuration',
+          'Spec Sources'
+        ];
+        const dataDimensions = [
+          'Orchestration',
+          'Data Lineage',
+          'Schema Management',
+          'Data Quality',
+          'Infrastructure as Code',
+          'Metadata'
+        ];
+        
+        const results = {};
+        for (const dim of [...sharedDimensions, ...dataDimensions]) {
+          results[dim] = assessDimension(projectPath, dim);
+        }
+        
+        const allDims = [...sharedDimensions, ...dataDimensions];
+        const totalScore = Math.round(
+          Object.values(results).reduce((sum, r) => sum + r.score, 0) / allDims.length
+        );
+        
+        const level = totalScore <= 20 ? 'L1' : 
+                      totalScore <= 40 ? 'L2' : 
+                      totalScore <= 60 ? 'L3' : 
+                      totalScore <= 80 ? 'L4' : 'L5';
+        
+        return { totalScore, level, dimensions: results };
+      }
+      
+      const result = runDataAssessment(SAMPLE_PROJECTS.dataL1);
+      assert.ok(result.totalScore <= 30, `Should be L1-L2, got ${result.totalScore}`);
+    });
+    
+    it('assigns higher level to well-structured data project', () => {
+      function runDataAssessment(projectPath) {
+        const sharedDimensions = [
+          'Documentation',
+          'Dependency Hygiene', 
+          'Build Configuration',
+          'Spec Sources'
+        ];
+        const dataDimensions = [
+          'Orchestration',
+          'Data Lineage',
+          'Schema Management',
+          'Data Quality',
+          'Infrastructure as Code',
+          'Metadata'
+        ];
+        
+        const results = {};
+        for (const dim of [...sharedDimensions, ...dataDimensions]) {
+          results[dim] = assessDimension(projectPath, dim);
+        }
+        
+        const allDims = [...sharedDimensions, ...dataDimensions];
+        const totalScore = Math.round(
+          Object.values(results).reduce((sum, r) => sum + r.score, 0) / allDims.length
+        );
+        
+        const level = totalScore <= 20 ? 'L1' : 
+                      totalScore <= 40 ? 'L2' : 
+                      totalScore <= 60 ? 'L3' : 
+                      totalScore <= 80 ? 'L4' : 'L5';
+        
+        return { totalScore, level, dimensions: results };
+      }
+      
+      const result = runDataAssessment(SAMPLE_PROJECTS.dataL3);
+      assert.ok(result.totalScore > 40, `Should be > L2, got ${result.totalScore}`);
     });
   });
 });

@@ -1,0 +1,11 @@
+{
+  "name": "sample-data-project-level3",
+  "version": "1.0.0",
+  "dependencies": {
+    "dbt-core": "^1.0.0",
+    "airflow-providers": "^2.0.0"
+  },
+  "devDependencies": {
+    "great-expectations": "^0.15.0"
+  }
+}
