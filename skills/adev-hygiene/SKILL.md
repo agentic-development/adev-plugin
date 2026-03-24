@@ -12,12 +12,30 @@ Audit the health of `.context-index/` and generate actionable reports. Eleven au
 - No arguments: full audit (all eleven passes)
 - `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases)
 - `--fix`: auto-fix issues where possible (runs /adev-sync for constitution drift, etc.)
+- `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
+
+  Valid status values: `draft`, `review-pending`, `review-passed`, `review-blocked`, `implemented`, `validated`
 
 ## Prerequisites
 
 The project must have `.context-index/` initialized. If it does not exist, suggest running `/adev-init` first.
 
 ## Process
+
+**If `--status <spec-path> <new-status>` is provided:**
+
+1. Validate the spec path exists and is a valid spec file
+2. Validate the new status value is one of: draft, review-pending, review-passed, review-blocked, implemented, validated
+3. Read the spec file
+4. Parse YAML frontmatter
+5. Record the old status value
+6. Update the status field to the new value
+7. Write the spec file back
+8. Log: "Updated spec status: {old} → {new}"
+
+Then exit (skip audit passes).
+
+**Otherwise (normal audit mode):**
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
 2. **Run audit passes:** Execute each of the eleven passes below. If `--check` was provided, run only that pass.

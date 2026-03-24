@@ -177,6 +177,24 @@ Write the consolidated report to a `.review.md` file adjacent to the spec:
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` → `.context-index/specs/features/<module>/<task>.review.md`
 - Cross-cutting spec → similarly adjacent
 
+## Step 6.5: Update Spec Status
+
+After saving the review report, update the spec's status based on the verdict:
+
+**If verdict is PASS or PASS_WITH_NOTES:**
+1. Read the spec file
+2. Parse YAML frontmatter
+3. Update status: `review-pending` → `review-passed`
+4. Write the spec file back
+
+**If verdict is BLOCK:**
+1. Read the spec file
+2. Parse YAML frontmatter
+3. Update status: `review-pending` → `review-blocked`
+4. Write the spec file back
+
+Log the status change to the user.
+
 ## Step 7: Report to User
 
 **If PASS:**

@@ -56,6 +56,14 @@ Present charter's capability map and existing specs.
 2. Fill template at `${ADEV_PLUGIN_ROOT}/templates/live-spec-template.md`
 3. Save to `.context-index/specs/features/<module>/<spec-slug>.md`
 
+### Step 3.5: Update Spec Status
+
+After saving the spec:
+1. Read the spec file you just created
+2. Parse the YAML frontmatter
+3. Update the `status` field to `review-pending`
+4. Write the file back with the updated status
+
 ## Extract Mode (`--extract`)
 
 For brownfield codebases:

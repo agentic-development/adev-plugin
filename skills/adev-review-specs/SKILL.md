@@ -219,7 +219,25 @@ Write the consolidated report to a `.review.md` file adjacent to the spec:
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
 - Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
-## Step 7: Report to User
+## Step 7: Update Spec Status
+
+After saving the review report, update the spec's status based on the verdict:
+
+**If verdict is PASS or PASS_WITH_NOTES:**
+1. Read the spec file
+2. Parse YAML frontmatter
+3. Update status: `review-pending` → `review-passed`
+4. Write the spec file back
+
+**If verdict is BLOCK:**
+1. Read the spec file
+2. Parse YAML frontmatter
+3. Update status: `review-pending` → `review-blocked`
+4. Write the spec file back
+
+Log the status change to the user.
+
+## Step 8: Report to User
 
 Present the consolidated verdict and findings summary.
 
@@ -270,9 +288,16 @@ This skill produces the gate artifact that `/adev-plan` checks. The plan skill w
 3. Compare the spec file modification time against the review file modification time.
 4. Block planning if: no review exists, verdict is BLOCK, or spec is newer than review.
 
+This skill also updates the spec's `status` frontmatter field:
+- PASS → `review-passed`
+- PASS_WITH_NOTES → `review-passed`
+- BLOCK → `review-blocked`
+
+When a blocked spec is revised and re-reviewed, the status will be updated from `review-blocked` back to `review-passed` upon a passing verdict.
+
 ## Multiple Specs
 
-When reviewing multiple specs (no arguments or `--charter`), process each spec independently. Each gets its own set of parallel subagents and its own `.review.md` file. Present a summary table at the end:
+When reviewing multiple specs (no arguments or `--charter`), process each spec independently. Each gets its own set of parallel subagents, its own `.review.md` file, and its own status update. Present a summary table at the end:
 
 ```
 Architecture Review Summary

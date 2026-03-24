@@ -103,6 +103,14 @@ Requires Playwright MCP. BLOCK if not available.
 
 ## After Validation
 
-If PASS: Ready for PR or merge per completion policy.
+If PASS:
+1. Update the spec's status to `validated`:
+   - Read the spec file that was validated
+   - Parse YAML frontmatter
+   - Update status: `implemented` → `validated`
+   - Write the spec file back
+   - Log: "Updated spec status: implemented → validated"
+
+2. Ready for PR or merge per completion policy.
 
 If FAIL: Fix issues, re-run `$adev-validate`.

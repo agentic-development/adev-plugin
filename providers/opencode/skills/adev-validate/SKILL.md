@@ -161,7 +161,14 @@ Write to `.context-index/specs/features/<module>/<spec-slug>-validation.md`:
 
 If PASS:
 
-Read `completion.merge_policy` from manifest.yaml:
+1. Update the spec's status to `validated`:
+   - Read the spec file that was validated
+   - Parse YAML frontmatter
+   - Update status: `implemented` → `validated`
+   - Write the spec file back
+   - Log: "Updated spec status: implemented → validated"
+
+2. Read `completion.merge_policy` from manifest.yaml:
 
 - **"pr" or protected:** Ready for PR. Do NOT merge directly.
 - **"merge":** Ready to merge or proceed.
