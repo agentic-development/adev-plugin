@@ -88,10 +88,40 @@ export const OpenCodeAdapter = {
     }
 
     if (scope === "user" || scope === "all") {
-      this.linkSkills();
+      this.linkSkillsFromCache(cacheDir);
     }
 
     return { installed: true, path: cacheDir };
+  },
+
+  linkSkillsFromCache(cacheDir) {
+    const skillsDir = join(cacheDir, "providers/opencode/skills");
+    if (!existsSync(skillsDir)) {
+      return;
+    }
+
+    ensureSkillsDir();
+
+    const skillDirs = readdirSync(skillsDir, { withFileTypes: true });
+    for (const skill of skillDirs) {
+      if (skill.isDirectory()) {
+        const skillPath = join(skillsDir, skill.name);
+        const skillMdPath = join(skillPath, "SKILL.md");
+        if (existsSync(skillMdPath)) {
+          const symlinkPath = getSkillSymlinkPath(skill.name);
+          if (existsSync(symlinkPath)) {
+            try {
+              unlinkSync(symlinkPath);
+            } catch {}
+          }
+          try {
+            symlinkSync(skillPath, symlinkPath);
+          } catch (e) {
+            // Symlink may already exist or fail on some systems
+          }
+        }
+      }
+    }
   },
 
   linkSkills() {

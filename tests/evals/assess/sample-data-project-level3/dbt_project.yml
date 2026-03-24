@@ -1,0 +1,9 @@
+name: sample_data_project
+version: 1.0.0
+
+models:
+  sample_data_project:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: table

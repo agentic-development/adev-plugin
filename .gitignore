@@ -2,6 +2,12 @@ node_modules/
 .DS_Store
 *.log
 
+# Claude Code local settings
+.claude/settings.local.json
+
+# NPM package archives
+*.tgz
+
 # Skill-creator workspace directories
 skills/*-workspace/
 skills/*/evals/
@@ -9,3 +15,10 @@ skills/*/evals/
 # adev hygiene reports (generated, not committed)
 .context-index/hygiene/
 .context-index/packets/
+
+# Eval cached repos (cloned on demand, large)
+tests/evals/repomap/.cache/
+
+# Eval generated data (regenerate with: npm run eval / eval:skill-compression)
+tests/evals/repomap/*/
+tests/evals/skill-compression/outputs/

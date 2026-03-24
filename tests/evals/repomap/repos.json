@@ -1,0 +1,10 @@
+{
+  "repos": [
+    {
+      "name": "zod",
+      "url": "https://github.com/colinhacks/zod.git",
+      "gitRef": "ca3c8629c0c2715571f70b44c2433cad3db7fe4e",
+      "language": "typescript"
+    }
+  ]
+}
