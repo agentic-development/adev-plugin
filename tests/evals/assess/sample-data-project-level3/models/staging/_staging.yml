@@ -1,0 +1,9 @@
+- name: stg_users
+  description: Staged users must have id
+  tests:
+    - not_null:
+        column_name: id
+  columns:
+    - name: id
+      tests:
+        - unique
