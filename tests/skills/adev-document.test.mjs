@@ -100,4 +100,45 @@ describe("adev-document skill", () => {
       "Must include exact error message for missing manifest.yaml"
     );
   });
+
+  it("SKILL.md contains module docs generation section", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("docs/modules/"), "Must reference docs/modules/ output path");
+    assert.ok(content.includes("slug"), "Must reference module slug");
+    assert.ok(content.includes("Key Exports"), "Must define Key Exports section");
+    assert.ok(content.includes("Dependencies"), "Must define Dependencies section");
+    assert.ok(content.includes("Related Specs"), "Must define Related Specs section");
+  });
+
+  it("SKILL.md enforces slug validation before path construction", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("[a-z0-9_-]"), "Must specify allowed slug character set");
+    assert.ok(content.includes("path traversal") || content.includes(".."), "Must mention path traversal prevention");
+    assert.ok(content.includes("path.resolve") || content.includes("prefix check"), "Must require boundary check after resolve");
+  });
+
+  it("SKILL.md defines --force flag behaviour for module docs", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("--force"), "Must define --force flag");
+    const forceIdx = content.indexOf("--force");
+    const humanIdx = content.indexOf("adev:human", forceIdx);
+    assert.ok(humanIdx !== -1 || content.includes("human content is never overwritten"),
+      "Must clarify human content is preserved even with --force");
+  });
+
+  it("SKILL.md handles --module with slug not in manifest as exit 1", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(
+      content.includes("not found in manifest"),
+      "Must define error when --module slug is not in manifest"
+    );
+  });
+
+  it("SKILL.md defines marker-skip behaviour for module docs", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(
+      content.includes("adev:human") && content.includes("adev:generated"),
+      "Must define both markers in the skill"
+    );
+  });
 });
