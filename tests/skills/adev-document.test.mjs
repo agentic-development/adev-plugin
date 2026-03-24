@@ -141,4 +141,57 @@ describe("adev-document skill", () => {
       "Must define both markers in the skill"
     );
   });
+
+  it("SKILL.md contains manifest generation section", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("GENERATED.md"), "Must reference GENERATED.md output file");
+    assert.ok(content.includes("Last Commit"), "Must define Last Commit column");
+    assert.ok(content.includes("Last Run"), "Must define Last Run column");
+    assert.ok(content.includes("Generated Sections"), "Must define Generated Sections column");
+  });
+
+  it("SKILL.md validates commit SHA format before writing", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(
+      content.includes("rev-parse --short") || content.includes("short SHA") || content.includes("7-character"),
+      "Must specify short SHA (7 chars) from git rev-parse --short HEAD"
+    );
+  });
+
+  it("SKILL.md defines --check flag for manifest", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("--check"), "Must define --check flag in manifest section");
+  });
+
+  it("SKILL.md handles malformed GENERATED.md with recovery", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(
+      content.includes("malformed") || content.includes("cannot be parsed"),
+      "Must handle malformed existing GENERATED.md"
+    );
+  });
+
+  it("SKILL.md covers all three generation steps in order", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    const step1 = content.indexOf("Step 1");
+    const step2 = content.indexOf("Step 2");
+    const step3 = content.indexOf("Step 3");
+    assert.ok(step1 !== -1, "Step 1 must be present");
+    assert.ok(step2 !== -1, "Step 2 must be present");
+    assert.ok(step3 !== -1, "Step 3 must be present");
+    assert.ok(step1 < step2, "Step 1 must precede Step 2");
+    assert.ok(step2 < step3, "Step 2 must precede Step 3");
+  });
+
+  it("SKILL.md defines Precondition Checks section", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("Precondition"), "Must have precondition section");
+  });
+
+  it("SKILL.md defines all four argument flags", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("--module"), "Must define --module flag");
+    assert.ok(content.includes("--check"), "Must define --check flag");
+    assert.ok(content.includes("--force"), "Must define --force flag");
+  });
 });

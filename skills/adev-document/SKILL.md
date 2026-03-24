@@ -158,6 +158,8 @@ On completion, print a summary:
 Documentation generated:
 
   docs/architecture.md       — module map, dependency flow, entry points, ADRs
+  docs/modules/<slug>.md     — per-module purpose, exports, dependencies, specs
+  docs/GENERATED.md          — manifest of all generated doc files
 
 Run /adev-document --check to preview changes before regenerating.
 ```
@@ -253,3 +255,71 @@ When `--force` is set, skip diff comparison and regenerate all sections uncondit
 ### 2.6 --check Behaviour
 
 When `--check` is set, output the diff for each module doc that would change. Do not write any files.
+
+## Step 3: Generate docs/GENERATED.md
+
+This step runs after Steps 1 and 2 as part of every `/adev-document` invocation.
+
+### 3.1 Precondition Check
+
+If `docs/` does not exist at this point, output error:
+> "docs/ not found. Run /adev-document to generate docs first."
+Exit 1.
+
+If `docs/` exists but contains no generated files (no `docs/architecture.md` and no files in `docs/modules/`), emit:
+> "No generated docs found. Skipping GENERATED.md."
+Exit 0.
+
+### 3.2 Read Current Commit SHA
+
+Run `git rev-parse --short HEAD` to get the current short SHA (7 hex characters).
+Validate the output matches `^[0-9a-f]{7}$`. If it does not (e.g., not a git repo or no commits), use `"unknown"` as the value.
+
+### 3.3 Read or Initialize the Manifest
+
+If `docs/GENERATED.md` exists:
+- Attempt to parse the markdown table. A valid table has a header row, a separator row (`|---|`), and data rows.
+- If parsing fails (malformed table structure — cannot be parsed): treat as missing, emit warning:
+  > "GENERATED.md was malformed and has been regenerated."
+  Proceed as if the file does not exist.
+- If parsing succeeds: load existing rows as a map keyed by file path.
+
+If `docs/GENERATED.md` does not exist: start with an empty map.
+
+### 3.4 Build the Updated Manifest Table
+
+Enumerate all generated files in `docs/`. A file is "generated" if it was produced in the current run (architecture.md, and any modules/<slug>.md written in Steps 1-2).
+
+For each generated file, build a row:
+- **File**: relative path from project root (e.g., `docs/architecture.md`)
+- **Generated Sections**: pipe-delimited list of top-level section headings in the file
+- **Last Commit**: 7-character short SHA from Step 3.2
+- **Last Run**: today's date in YYYY-MM-DD format
+
+For unchanged files (in the existing manifest but not regenerated in this run): keep their existing row as-is.
+
+Sanitize all values before inserting into the table:
+- File paths: strip `|`, `\n`, `\r` characters
+- SHA: already validated as hex
+- Section names: strip `|`, `\n`, `\r` characters
+
+### 3.5 Write docs/GENERATED.md
+
+```markdown
+# Generated Documentation Manifest
+
+> Managed by /adev-document. Do not edit rows manually — run /adev-document to regenerate.
+
+| File | Generated Sections | Last Commit | Last Run |
+|------|--------------------|-------------|----------|
+| docs/architecture.md | Module Map \| Dependency Flow \| Entry Points \| ADRs | abc1234 | 2026-03-23 |
+| docs/modules/cli.md | Purpose \| Key Exports \| Dependencies \| Related Specs | abc1234 | 2026-03-23 |
+```
+
+### 3.6 --force Behaviour
+
+When `--force` is set: update all rows (even unchanged files) with the current commit SHA and today's date.
+
+### 3.7 --check Behaviour
+
+When `--check` is set: output the diff of what rows would change without writing `docs/GENERATED.md`.
