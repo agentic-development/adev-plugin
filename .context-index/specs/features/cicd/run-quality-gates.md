@@ -6,7 +6,7 @@
 
 ---
 charter: cicd
-status: implemented
+status: validated
 risk_level: medium
 milestone: v1
 created: 2026-03-24
