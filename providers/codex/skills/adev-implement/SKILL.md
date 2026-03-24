@@ -1,0 +1,124 @@
+---
+name: adev-implement
+description: "Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. In Codex, invoke with $adev-implement"
+---
+
+# Implement Plan
+
+Execute an implementation plan with TDD enforcement and 2-stage review.
+
+## Arguments
+
+- `<plan-path>`: path to plan file (required)
+- `--task <N>`: execute only task N
+- `--dry-run`: show routing decisions without executing
+
+## Prerequisites
+
+1. Plan exists
+2. Context Index exists
+3. Spec review passed
+4. Working branch (not main/master)
+
+## Step 1: Load Context
+
+Read once at start:
+1. Plan file
+2. Constitution
+3. Manifest
+4. Live Spec
+5. Feature Charter
+6. Cross-cutting specs
+7. Boundary rules
+8. Routing tags
+9. Completion policy
+
+## Step 2: Per-Task Execution
+
+For each task in dependency order:
+
+### 2a. Context Packet Assembly
+
+1. Read task's `context_packet` section
+2. Assemble packet, write to `.context-index/packets/<task-slug>.md`
+
+### 2b. Specialist Routing
+
+Score against specialists registry. Route to highest scorer.
+
+### 2c. Compose Subagent Prompt
+
+Include:
+- Role and constitution excerpt
+- Task description
+- Scene-setting context
+- Spec excerpt
+- TDD mandate: RED-GREEN-REFACTOR
+- Specialist context
+- Report format
+
+### 2d. Dispatch and Handle Status
+
+- **DONE:** Proceed to reviews
+- **DONE_WITH_CONCERNS:** Note, pass to quality reviewer
+- **NEEDS_CONTEXT:** Re-dispatch with context (max 2)
+- **BLOCKED:** Present to user immediately
+
+### 2e. Visual Verification (UI tasks)
+
+If UI files modified:
+1. Ensure dev server running
+2. Navigate to route
+3. Take browser snapshot
+4. Verify against Visual Expectations
+5. Responsive check (375px, 768px, 1280px)
+
+### 2f. Stage 1: Spec Compliance Review
+
+Verify implementation against spec by reading actual code.
+
+### 2g. Stage 2: Code Quality Review
+
+Check:
+- Single responsibility
+- Test quality
+- TDD followed
+- Naming, readability
+- Constitution adherence
+
+### 2h. Mark Complete
+
+Record: specialist used, review cycles, concerns.
+
+## Step 3: Final Review
+
+After all tasks:
+- Cross-task consistency
+- Integration between tasks
+- Final boundary compliance
+
+## Step 4: Completion
+
+Clear `.context-index/hygiene/.active-plan`.
+
+Report merge policy:
+- **pr/protected:** Suggest opening PR
+- **merge:** Offer to merge
+- **ask:** Ask user
+
+```
+Implementation complete.
+
+Tasks: N/N completed
+Next step: $adev-validate
+```
+
+## Red Flags
+
+**Never:**
+- Start on main/master without consent
+- Skip review stages
+- Proceed with unfixed Critical issues
+- Skip TDD
+- Loosen test assertions
+- Skip visual verification for UI
