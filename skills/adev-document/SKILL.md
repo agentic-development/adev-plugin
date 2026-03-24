@@ -1,0 +1,171 @@
+---
+name: adev-document
+description: "Generate human-readable developer documentation in docs/ from repomap output. Produces docs/architecture.md (module map, dependency flow, entry points, ADR links), docs/modules/<slug>.md for each module, and docs/GENERATED.md manifest. Use when the user runs /adev-document, wants to generate project docs, or wants to update architecture documentation."
+---
+
+# Generate Developer Documentation
+
+Produce human-readable documentation in `docs/` from `.context-index/` artifacts. This skill transforms machine-readable repomap outputs into navigable docs for developers onboarding to or maintaining the codebase.
+
+## Arguments
+
+- No arguments: generate all documentation (architecture + all module pages + manifest)
+- `--module <slug>`: regenerate only the `docs/modules/<slug>.md` page for a single module
+- `--check`: compute what would change and output a diff without writing any files to disk
+- `--force`: overwrite files even if they contain human-only content (both markers absent)
+
+## Precondition Checks
+
+Before doing any work, verify each required input exists. Stop immediately on the first failure.
+
+1. Check `.context-index/hygiene/dependency-graph.json` exists.
+   - If missing: output error `"Run /adev-repomap first. /adev-document requires the dependency graph."` and stop.
+
+2. Check `.context-index/hygiene/symbol-ranks.json` exists.
+   - If missing: output error `"Run /adev-repomap first. /adev-document requires the symbol index."` and stop.
+
+3. Check `.context-index/manifest.yaml` exists.
+   - If missing: output error `"Run /adev-init first. /adev-document requires manifest.yaml."` and stop.
+
+4. If `docs/` does not exist, create it now (do not error — this is an expected first-run condition).
+
+## Marker Protocol
+
+Every file managed by this skill uses a two-zone layout. The markers divide generated content from human-authored content:
+
+```
+<!-- adev:generated -->
+<!-- adev:human -->
+```
+
+**Canonical file layout:**
+
+```
+[generated content — owned by /adev-document]
+
+<!-- adev:generated -->
+
+[human content — owned by the developer, never overwritten]
+
+<!-- adev:human -->
+```
+
+**Rules — apply before every write:**
+
+| Condition | Action |
+|-----------|--------|
+| Both `<!-- adev:generated -->` and `<!-- adev:human -->` present | Preserve all content after `<!-- adev:human -->` verbatim. Regenerate everything before and including `<!-- adev:generated -->`. |
+| `<!-- adev:human -->` present but `<!-- adev:generated -->` absent | File is human-owned. Do NOT overwrite. Emit warning: `"Skipping <path>: file is human-owned (<!-- adev:human --> present but no <!-- adev:generated --> marker). Use --force to override."` Exit 0. |
+| `<!-- adev:generated -->` present but `<!-- adev:human -->` absent | Regenerate the entire file. No human section to preserve. |
+| Neither marker present | Write fresh content with both markers appended at the end. |
+
+When `--force` is set, ignore the human-owned rule and overwrite regardless.
+
+When `--check` is set, compute what the new content would be, diff it against the current file (or show the full content as an addition if the file does not exist), print the diff to stdout, and do NOT write to disk.
+
+## Step 1: Generate docs/architecture.md
+
+### 1.1 Load Inputs
+
+Read the following files (skip gracefully if optional files are missing):
+
+| File | Required | Purpose |
+|------|----------|---------|
+| `.context-index/hygiene/dependency-graph.json` | Yes | Module dependency edges, inbound/outbound counts |
+| `.context-index/hygiene/symbol-ranks.json` | Yes | Exported symbols ranked by reference count |
+| `.context-index/manifest.yaml` | Yes | Module list, project metadata |
+| `.context-index/constitution.md` | Optional | Project principles (referenced in ADR links section) |
+| `.context-index/platform-context.yaml` | Optional | Runtime environment metadata |
+| `.context-index/charter/*.md` | Optional | Per-module charter files (Business Intent field) |
+
+### 1.2 Build Module Map
+
+Produce a markdown table with one row per module declared in `manifest.yaml`:
+
+| Column | Source |
+|--------|--------|
+| **Module** | Module name from `manifest.yaml` |
+| **Purpose** | "Business Intent" field from the corresponding charter file in `.context-index/charter/`. If no charter file exists for this module, use the description from `manifest.yaml` or leave blank. |
+| **Key Exports** | Top 3 symbols from `symbol-ranks.json` whose `file` path falls under the module's path prefix. List as comma-separated identifiers. |
+| **Inbound** | Count of inbound edges for this module from `dependency-graph.json` (other modules that import from it). |
+| **Outbound** | Count of outbound edges for this module from `dependency-graph.json` (modules this module imports from). |
+
+### 1.3 Build Dependency Flow
+
+Write a prose paragraph (3–6 sentences) summarizing the dependency topology derived from `dependency-graph.json` edges. Identify:
+
+- **Core modules**: high inbound, low outbound (other modules depend on them).
+- **Leaf consumers**: low inbound, high outbound (they consume core modules but are not themselves depended upon).
+- **Middleware modules**: moderate inbound and outbound (pass-through orchestrators).
+
+Name the top 2–3 modules in each category if they can be identified from the data.
+
+### 1.4 Identify Entry Points
+
+Entry points are files with **zero inbound edges** as recorded in `dependency-graph.json`. Do NOT use `symbol-ranks.json` for this determination — the dependency graph is the authoritative source for import topology.
+
+List each entry point as a relative path from the project root. If more than 10 entry points are found, list the first 10 and append `... and N more`.
+
+### 1.5 Build ADR Links
+
+Use Glob to find all files matching `.context-index/adrs/*.md`. Exclude any file whose name ends with `.template.md`.
+
+For each ADR file found:
+- Read the first 10 lines to extract the `status:` frontmatter field (e.g., `accepted`, `proposed`, `superseded`, `deprecated`).
+- Produce a markdown link: `- [<filename without extension>](<relative path>) — <status>`
+
+If no ADR files exist (after excluding templates), omit this section from the output entirely.
+
+### 1.6 Assemble docs/architecture.md
+
+Build the file content with this structure:
+
+```markdown
+# Architecture
+
+> Generated by /adev-document on <ISO timestamp>. Edit content below <!-- adev:human --> to add permanent notes.
+
+## Module Map
+
+<table from Step 1.2>
+
+## Dependency Flow
+
+<prose paragraph from Step 1.3>
+
+## Entry Points
+
+<list from Step 1.4>
+
+## Architecture Decision Records
+
+<links from Step 1.5, or omit section if no ADRs>
+
+<!-- adev:generated -->
+
+<!-- adev:human -->
+```
+
+Apply the marker protocol (Step "Marker Protocol" above) before writing `docs/architecture.md`.
+
+If `--check` is set: compute the new content, diff against `docs/architecture.md` (or show full addition if it does not exist), print to stdout, do not write.
+
+## After Generation
+
+On completion, print a summary:
+
+```
+Documentation generated:
+
+  docs/architecture.md       — module map, dependency flow, entry points, ADRs
+  docs/GENERATED.md          — manifest of all generated doc files
+
+Run /adev-document --check to preview changes before regenerating.
+```
+
+If `--check` was set, print instead:
+
+```
+/adev-document --check: no files were written.
+<diff output>
+```
