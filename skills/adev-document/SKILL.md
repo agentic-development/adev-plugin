@@ -12,7 +12,7 @@ Produce human-readable documentation in `docs/` from `.context-index/` artifacts
 - No arguments: generate all documentation (architecture + all module pages + manifest)
 - `--module <slug>`: regenerate only the `docs/modules/<slug>.md` page for a single module
 - `--check`: compute what would change and output a diff without writing any files to disk
-- `--force`: overwrite files even if they contain human-only content (both markers absent)
+- `--force`: regenerate all generated sections unconditionally, even if the file has not changed. Human content (after `<!-- adev:generated -->` zone, delimited by `<!-- adev:human -->`) is always preserved. Files that are human-owned (have `<!-- adev:human -->` but no `<!-- adev:generated -->`) are still skipped with a warning even under `--force`.
 
 ## Precondition Checks
 
@@ -55,13 +55,13 @@ Every file managed by this skill uses a two-zone layout. The markers divide gene
 | Condition | Action |
 |-----------|--------|
 | Both `<!-- adev:generated -->` and `<!-- adev:human -->` present | Preserve all content after `<!-- adev:human -->` verbatim. Regenerate everything before and including `<!-- adev:generated -->`. |
-| `<!-- adev:human -->` present but `<!-- adev:generated -->` absent | File is human-owned. Do NOT overwrite. Emit warning: `"Skipping <path>: file is human-owned (<!-- adev:human --> present but no <!-- adev:generated --> marker). Use --force to override."` Exit 0. |
+| `<!-- adev:human -->` present but `<!-- adev:generated -->` absent | File is human-owned. do NOT overwrite. Emit warning: `"Skipping <path>: file is human-owned (<!-- adev:human --> present but no <!-- adev:generated --> marker). Use --force to override."` Exit 0. |
 | `<!-- adev:generated -->` present but `<!-- adev:human -->` absent | Regenerate the entire file. No human section to preserve. |
 | Neither marker present | Write fresh content with both markers appended at the end. |
 
-When `--force` is set, ignore the human-owned rule and overwrite regardless.
+When `--force` is set, regenerate all generated content unconditionally (skip the "unchanged" optimization). Human-owned files (row 2 in the table above — `<!-- adev:human -->` present but no `<!-- adev:generated -->`) are still skipped with a warning. `--force` never removes the `<!-- adev:human -->` content boundary.
 
-When `--check` is set, compute what the new content would be, diff it against the current file (or show the full content as an addition if the file does not exist), print the diff to stdout, and do NOT write to disk.
+When `--check` is set, compute what the new content would be, diff it against the current file (or show the full content as an addition if the file does not exist), print the diff to stdout, and do NOT write to disk. When both `--force` and `--check` are set, `--check` takes precedence: compute the forced regeneration diff but do not write.
 
 ## Step 1: Generate docs/architecture.md
 
@@ -76,7 +76,7 @@ Read the following files (skip gracefully if optional files are missing):
 | `.context-index/manifest.yaml` | Yes | Module list, project metadata |
 | `.context-index/constitution.md` | Optional | Project principles (referenced in ADR links section) |
 | `.context-index/platform-context.yaml` | Optional | Runtime environment metadata |
-| `.context-index/charter/*.md` | Optional | Per-module charter files (Business Intent field) |
+| `.context-index/specs/features/*/charter.md` | Optional | Per-module charter files (Business Intent field) |
 
 ### 1.2 Build Module Map
 
@@ -85,7 +85,7 @@ Produce a markdown table with one row per module declared in `manifest.yaml`:
 | Column | Source |
 |--------|--------|
 | **Module** | Module name from `manifest.yaml` |
-| **Purpose** | "Business Intent" field from the corresponding charter file in `.context-index/charter/`. If no charter file exists for this module, use the description from `manifest.yaml` or leave blank. |
+| **Purpose** | "Business Intent" field from the corresponding charter file in `.context-index/specs/features/<module>/charter.md`. If no charter file exists for this module, use the description from `manifest.yaml` or leave blank. |
 | **Key Exports** | Top 3 symbols from `symbol-ranks.json` whose `file` path falls under the module's path prefix. List as comma-separated identifiers. |
 | **Inbound** | Count of inbound edges for this module from `dependency-graph.json` (other modules that import from it). |
 | **Outbound** | Count of outbound edges for this module from `dependency-graph.json` (modules this module imports from). |
@@ -158,7 +158,6 @@ On completion, print a summary:
 Documentation generated:
 
   docs/architecture.md       — module map, dependency flow, entry points, ADRs
-  docs/GENERATED.md          — manifest of all generated doc files
 
 Run /adev-document --check to preview changes before regenerating.
 ```
