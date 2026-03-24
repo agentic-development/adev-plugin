@@ -172,6 +172,25 @@ Concrete, checkable criteria. Every behavior maps to at least one criterion. Alw
 3. Set frontmatter per shared section (including milestone inheritance).
 4. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
+### Step 5.5: Update Spec Status
+
+After saving the spec:
+
+1. Read the spec file you just created
+2. Parse the YAML frontmatter
+3. Update the `status` field to `review-pending`
+4. Write the file back with the updated status
+
+Example:
+```
+---
+charter: task-boards
+status: review-pending
+milestone: v1
+created: 2026-03-24
+---
+```
+
 ### Step 6: Summary
 
 Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps.
@@ -236,6 +255,10 @@ Produce a Live Spec where:
 Add `mode: extract` and `extracted-from: [<file list>]` to frontmatter per the shared section.
 
 Load context per the shared section above. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
+
+### Step 4.5: Update Spec Status
+
+After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
 
 ### Step 5: Summary
 
@@ -352,6 +375,10 @@ Define the target behavior (what the system does AFTER refactoring). This gives 
 2. Set frontmatter per the shared section with `mode: refactor`.
 3. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
+### Step 7.5: Update Spec Status
+
+After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
+
 ### Step 8: Summary
 
 Output the shared summary template with these stats:
@@ -435,6 +462,10 @@ Produce a Live Spec where:
 
 Set frontmatter per the shared section with `mode: from-diff` and `diff-source`. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
+### Step 4.5: Update Spec Status
+
+After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
+
 ### Step 5: Summary
 
 Output the shared summary template with these stats:
@@ -500,6 +531,10 @@ Same process as standard mode (behavioral contract, constitution reference, task
 2. Add Module Impact and Integration Points after the standard template sections.
 3. Set frontmatter per the shared section with `mode: cross-cutting` and `affects: [<modules>]` instead of `charter:`.
 4. Save to `.context-index/specs/cross-cutting/<spec-slug>.md`.
+
+### Step 5.5: Update Spec Status
+
+After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
 
 ### Step 6: Summary
 

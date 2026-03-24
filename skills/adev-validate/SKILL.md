@@ -311,7 +311,14 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 
 If PASS:
 
-Read `completion.merge_policy` from manifest.yaml (default: "pr").
+1. Update the spec's status to `validated`:
+   - Read the spec file that was validated
+   - Parse YAML frontmatter
+   - Update status: `implemented` → `validated`
+   - Write the spec file back
+   - Log: "Updated spec status: implemented → validated"
+
+2. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 
 If "pr" (or target branch is in `completion.protected_branches`):
 ```

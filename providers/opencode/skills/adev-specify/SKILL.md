@@ -167,6 +167,25 @@ Concrete, checkable criteria. Every behavior maps to at least one criterion. Alw
 3. Set frontmatter per shared section (including milestone inheritance).
 4. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
+### Step 5.5: Update Spec Status
+
+After saving the spec:
+
+1. Read the spec file you just created
+2. Parse the YAML frontmatter
+3. Update the `status` field to `review-pending`
+4. Write the file back with the updated status
+
+Example:
+```
+---
+charter: task-boards
+status: review-pending
+milestone: v1
+created: 2026-03-24
+---
+```
+
 ### Step 6: Summary
 
 Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps.
@@ -205,6 +224,12 @@ Produce a Live Spec where:
 - **Constitution Reference** flags observed violations.
 
 Add `mode: extract` and `extracted-from: [<file list>]` to frontmatter.
+
+Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
+
+### Step 4.5: Update Spec Status
+
+After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
 
 ### Step 5: Summary
 

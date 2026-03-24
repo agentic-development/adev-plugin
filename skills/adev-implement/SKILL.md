@@ -370,6 +370,16 @@ When validation passes, open a PR: gh pr create --base <target-branch>
 Do NOT merge directly to <target-branch>.
 ```
 
+## Step 5: Update Spec Status
+
+After all tasks are complete and before reporting completion:
+
+1. Read the spec file that this plan implements (the plan file references the spec)
+2. Parse YAML frontmatter
+3. Update status: `review-passed` → `implemented`
+4. Write the spec file back
+5. Log: "Updated spec status: review-passed → implemented"
+
 ## Red Flags
 
 **Never:**

@@ -207,6 +207,16 @@ Concerns noted: [list]
 Next step: skill({ name: "adev-validate", args: { spec: "<path>" } })
 ```
 
+## Update Spec Status
+
+After all tasks are complete and before reporting completion:
+
+1. Read the spec file that this plan implements
+2. Parse YAML frontmatter
+3. Update status: `review-passed` → `implemented`
+4. Write the spec file back
+5. Log: "Updated spec status: review-passed → implemented"
+
 ## Red Flags
 
 **Never:**
