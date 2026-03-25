@@ -1,7 +1,7 @@
 {
   "name": "adev",
-  "version": "0.4.1",
-  "description": "Agentic Development Framework — full lifecycle methodology for AI-assisted software delivery. Context engineering, charter-native specs, constitution gating, architecture review, and specialist routing.",
+  "version": "0.5.0",
+  "description": "Agentic Development Framework — full lifecycle methodology for AI-assisted software delivery. Context engineering, charter-native specs, constitution gating, architecture review, specialist routing, and Claude Code/OpenCode/OpenAI Codex provider support.",
   "author": {
     "name": "Agentic Development",
     "url": "https://agentic-dev.org"
