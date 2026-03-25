@@ -15,6 +15,12 @@ describe("getProvider", () => {
     assert.strictEqual(provider.name, "opencode");
   });
 
+  it("returns Codex adapter by name", () => {
+    const provider = getProvider("codex");
+    assert.ok(provider);
+    assert.strictEqual(provider.name, "OpenAI Codex");
+  });
+
   it("returns Claude Code adapter for unknown name (fallback)", () => {
     const provider = getProvider("unknown-provider");
     assert.ok(provider);
@@ -24,9 +30,11 @@ describe("getProvider", () => {
   it("has getAgentFile method", () => {
     const claudeProvider = getProvider("claude-code");
     const opencodeProvider = getProvider("opencode");
+    const codexProvider = getProvider("codex");
 
     assert.strictEqual(claudeProvider.getAgentFile(), "CLAUDE.md");
     assert.strictEqual(opencodeProvider.getAgentFile(), "AGENTS.md");
+    assert.strictEqual(codexProvider.getAgentFile(), "AGENTS.md");
   });
 
   it("has detect method", () => {
@@ -51,5 +59,6 @@ describe("getProviderNames", () => {
     assert.ok(Array.isArray(names));
     assert.ok(names.includes("claude-code"));
     assert.ok(names.includes("opencode"));
+    assert.ok(names.includes("codex"));
   });
 });

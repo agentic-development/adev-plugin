@@ -1,0 +1,4 @@
+interface:
+  display_name: "Using adev"
+  short_description: "Learn the adev workflow in Codex"
+  default_prompt: "Use $using-adev to explain the available adev skills and workflow for this project."

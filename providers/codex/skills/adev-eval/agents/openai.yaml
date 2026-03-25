@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Eval"
+  short_description: "Run the adev evaluation harness"
+  default_prompt: "Use $adev-eval to configure or run the evaluation harness for this workflow."

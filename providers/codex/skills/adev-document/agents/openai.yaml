@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Document"
+  short_description: "Generate docs from adev context"
+  default_prompt: "Use $adev-document to generate or refresh the developer docs for this project."

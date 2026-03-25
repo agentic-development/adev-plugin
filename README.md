@@ -10,13 +10,15 @@ Grounded in the [Agentic Development Handbook](https://www.agentic-dev.org/en/ha
 npx adev-cli init
 ```
 
-This installs the plugin into Claude Code, OpenCode, or OpenCodex (specify with `--provider`), detects conflicting plugins, scaffolds `.context-index/`, and configures your settings. Zero dependencies.
+This installs the plugin into Claude Code, OpenCode, or OpenAI Codex (specify with `--provider`), detects conflicting plugins, scaffolds `.context-index/`, and configures your settings. Zero dependencies.
 
 Alternatively, for development or testing:
 
 ```bash
 claude --plugin-dir /path/to/adev-plugin
 ```
+
+For OpenAI Codex, `npx adev-cli init --provider codex` links the provider-specific skills into either `~/.agents/skills/` or `<repo>/.agents/skills/`, depending on the scope you choose during install.
 
 ## Quick Start
 

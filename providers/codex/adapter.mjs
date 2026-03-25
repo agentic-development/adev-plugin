@@ -1,101 +1,200 @@
-import { existsSync, readFileSync, readdirSync, lstatSync, symlinkSync, mkdirSync, unlinkSync, readlinkSync, writeFileSync } from "fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync, rmSync, symlinkSync, unlinkSync } from "fs";
 import { join } from "path";
+
+function getPluginRoot() {
+  return join(import.meta.dirname, "..", "..");
+}
+
+function getHomeDir() {
+  return process.env.HOME || process.env.USERPROFILE || process.cwd();
+}
+
+function getSourceSkillsDir(pluginRoot = getPluginRoot()) {
+  return join(pluginRoot, "providers", "codex", "skills");
+}
+
+function getTargetSkillsDir(scope = "user") {
+  if (scope === "project") {
+    return join(process.cwd(), ".agents", "skills");
+  }
+  return join(getHomeDir(), ".agents", "skills");
+}
+
+function getDisplayPath(scope = "user") {
+  return scope === "project" ? ".agents/skills/" : "~/.agents/skills/";
+}
+
+function listSkillNames(sourceSkillsDir) {
+  if (!existsSync(sourceSkillsDir)) {
+    return [];
+  }
+
+  return readdirSync(sourceSkillsDir).filter((skillName) => {
+    const skillDir = join(sourceSkillsDir, skillName);
+    return lstatSync(skillDir).isDirectory() && existsSync(join(skillDir, "SKILL.md"));
+  });
+}
+
+function isManagedTarget(targetPath, sourceSkillPath) {
+  if (!existsSync(targetPath)) {
+    return false;
+  }
+
+  const stat = lstatSync(targetPath);
+  if (stat.isSymbolicLink()) {
+    try {
+      return readlinkSync(targetPath) === sourceSkillPath;
+    } catch {
+      return false;
+    }
+  }
+
+  if (!stat.isDirectory()) {
+    return false;
+  }
+
+  const skillMdPath = join(targetPath, "SKILL.md");
+  if (!existsSync(skillMdPath)) {
+    return false;
+  }
+
+  try {
+    return lstatSync(skillMdPath).isSymbolicLink() && readlinkSync(skillMdPath) === join(sourceSkillPath, "SKILL.md");
+  } catch {
+    return false;
+  }
+}
+
+function isOldManagedLayout(targetPath, sourceSkillPath) {
+  if (!existsSync(targetPath) || !lstatSync(targetPath).isDirectory()) {
+    return false;
+  }
+
+  const skillMdPath = join(targetPath, "SKILL.md");
+  if (!existsSync(skillMdPath)) {
+    return false;
+  }
+
+  try {
+    return lstatSync(skillMdPath).isSymbolicLink() && readlinkSync(skillMdPath) === join(sourceSkillPath, "SKILL.md");
+  } catch {
+    return false;
+  }
+}
+
+function ensureDir(path) {
+  if (!existsSync(path)) {
+    mkdirSync(path, { recursive: true });
+  }
+}
 
 export class CodexAdapter {
   name = "OpenAI Codex";
 
-  async install() {
-    const pluginRoot = join(import.meta.dirname, "..", "..");
-    const codexSkillsDir = join(process.env.HOME || process.env.USERPROFILE, ".agents", "skills");
-    const pluginCodexSkillsDir = join(pluginRoot, "providers", "codex", "skills");
-    
-    let installed = false;
-    const skillDirs = existsSync(pluginCodexSkillsDir) 
-      ? readdirSync(pluginCodexSkillsDir) 
-      : [];
-    
-    if (skillDirs.length > 0) {
-      installed = true;
-    }
-    
-    return { installed, path: "~/.agents/" };
+  detect() {
+    return process.env.CODEX === "true" || process.env.OPENAI_CODEX === "true" || existsSync(".agents");
   }
 
-  enable() {
-    const pluginRoot = join(import.meta.dirname, "..", "..");
-    const codexSkillsDir = join(process.env.HOME || process.env.USERPROFILE, ".agents", "skills");
-    
-    this.#linkSkills(pluginRoot, codexSkillsDir);
-    
-    return "~/.agents/skills/";
+  getAgentFile() {
+    return "AGENTS.md";
+  }
+
+  async install(opts = {}) {
+    const scope = opts.scope || "user";
+    const pluginRoot = getPluginRoot();
+    const sourceSkillsDir = getSourceSkillsDir(pluginRoot);
+    const targetSkillsDir = getTargetSkillsDir(scope);
+    const skillNames = listSkillNames(sourceSkillsDir);
+
+    if (skillNames.length === 0) {
+      return { installed: false, path: getDisplayPath(scope) };
+    }
+
+    const alreadyInstalled = skillNames.every((skillName) => {
+      const sourceSkillPath = join(sourceSkillsDir, skillName);
+      const targetSkillPath = join(targetSkillsDir, skillName);
+      return isManagedTarget(targetSkillPath, sourceSkillPath);
+    });
+
+    if (alreadyInstalled) {
+      return { installed: false, path: getDisplayPath(scope) };
+    }
+
+    this.enable(scope);
+    return { installed: true, path: getDisplayPath(scope) };
+  }
+
+  enable(scope = "user") {
+    const pluginRoot = getPluginRoot();
+    const targetSkillsDir = getTargetSkillsDir(scope);
+
+    this.#linkSkills(pluginRoot, targetSkillsDir);
+    return getDisplayPath(scope);
   }
 
   #linkSkills(pluginRoot, targetDir) {
-    const pluginCodexSkillsDir = join(pluginRoot, "providers", "codex", "skills");
-    
-    if (!existsSync(pluginCodexSkillsDir)) {
+    const sourceSkillsDir = getSourceSkillsDir(pluginRoot);
+    const skillNames = listSkillNames(sourceSkillsDir);
+
+    if (skillNames.length === 0) {
       return;
     }
-    
-    if (!existsSync(targetDir)) {
-      mkdirSync(targetDir, { recursive: true });
-    }
-    
-    try {
-      const skillDirs = readdirSync(pluginCodexSkillsDir);
-      
-      for (const skillName of skillDirs) {
-        const sourceSkillPath = join(pluginCodexSkillsDir, skillName);
-        const targetSkillPath = join(targetDir, skillName);
-        const sourceSkillyml = join(sourceSkillPath, "SKILL.md");
-        
-        if (!lstatSync(sourceSkillPath).isDirectory() || !existsSync(sourceSkillyml)) {
+
+    ensureDir(targetDir);
+
+    for (const skillName of skillNames) {
+      const sourceSkillPath = join(sourceSkillsDir, skillName);
+      const targetSkillPath = join(targetDir, skillName);
+
+      if (isManagedTarget(targetSkillPath, sourceSkillPath)) {
+        continue;
+      }
+
+      if (existsSync(targetSkillPath)) {
+        if (isOldManagedLayout(targetSkillPath, sourceSkillPath)) {
+          rmSync(targetSkillPath, { recursive: true, force: true });
+        } else {
           continue;
         }
-        
-        try {
-          if (existsSync(targetSkillPath)) {
-            const existingSkillyml = join(targetSkillPath, "SKILL.md");
-            if (existsSync(existingSkillyml)) {
-              try {
-                const existingTarget = readlinkSync(existingSkillyml);
-                if (existingTarget === sourceSkillyml) {
-                  continue;
-                }
-                unlinkSync(existingSkillyml);
-              } catch {
-                unlinkSync(existingSkillyml);
-              }
-            }
-          } else {
-            mkdirSync(targetSkillPath, { recursive: true });
-          }
-          
-          symlinkSync(sourceSkillyml, join(targetSkillPath, "SKILL.md"));
-        } catch {}
       }
-    } catch {}
+
+      try {
+        symlinkSync(sourceSkillPath, targetSkillPath, process.platform === "win32" ? "junction" : "dir");
+      } catch {}
+    }
   }
 
-  async uninstall() {
-    const codexSkillsDir = join(process.env.HOME || process.env.USERPROFILE, ".agents", "skills");
-    
-    if (existsSync(codexSkillsDir)) {
-      try {
-        const skillDirs = readdirSync(codexSkillsDir);
-        for (const skillName of skillDirs) {
-          const skillPath = join(codexSkillsDir, skillName);
-          const skillyml = join(skillPath, "SKILL.md");
-          if (existsSync(skillyml)) {
-            try {
-              const target = readlinkSync(skillyml);
-              if (target.includes("adev-plugin")) {
-                unlinkSync(skillyml);
-              }
-            } catch {}
+  async uninstall(opts = {}) {
+    const scope = opts.scope || "user";
+    const pluginRoot = getPluginRoot();
+    const sourceSkillsDir = getSourceSkillsDir(pluginRoot);
+    const targetSkillsDir = getTargetSkillsDir(scope);
+    const skillNames = listSkillNames(sourceSkillsDir);
+
+    if (!existsSync(targetSkillsDir)) {
+      return;
+    }
+
+    for (const skillName of skillNames) {
+      const sourceSkillPath = join(sourceSkillsDir, skillName);
+      const targetSkillPath = join(targetSkillsDir, skillName);
+
+      if (!existsSync(targetSkillPath)) {
+        continue;
+      }
+
+      if (lstatSync(targetSkillPath).isSymbolicLink()) {
+        try {
+          if (readlinkSync(targetSkillPath) === sourceSkillPath) {
+            unlinkSync(targetSkillPath);
           }
-        }
-      } catch {}
+        } catch {}
+        continue;
+      }
+
+      if (isOldManagedLayout(targetSkillPath, sourceSkillPath)) {
+        rmSync(targetSkillPath, { recursive: true, force: true });
+      }
     }
   }
 
