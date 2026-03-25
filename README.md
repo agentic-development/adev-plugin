@@ -1,6 +1,6 @@
 # adev — Agentic Development Framework
 
-A Claude Code plugin that implements a full-lifecycle methodology for AI-assisted software delivery. Covers context engineering, charter-native specifications, constitution gating, architecture review, specialist routing, and automated context maintenance.
+A plugin for Claude Code, OpenCode, and OpenAI Codex that implements a full-lifecycle methodology for AI-assisted software delivery. Covers context engineering, charter-native specifications, constitution gating, architecture review, specialist routing, and automated context maintenance.
 
 Grounded in the [Agentic Development Handbook](https://www.agentic-dev.org/en/handbook) and its four pillars: Context-First Architecture, Ephemeral Infrastructure, Gate-Based Governance, and Hybrid Engineering.
 
@@ -10,7 +10,7 @@ Grounded in the [Agentic Development Handbook](https://www.agentic-dev.org/en/ha
 npx adev-cli init
 ```
 
-This installs the plugin into Claude Code, detects conflicting plugins (Superpowers), scaffolds `.context-index/`, and configures your settings. Zero dependencies.
+This installs the plugin into Claude Code, OpenCode, or OpenCodex (specify with `--provider`), detects conflicting plugins, scaffolds `.context-index/`, and configures your settings. Zero dependencies.
 
 Alternatively, for development or testing:
 
@@ -158,9 +158,11 @@ Full design document: [adev-plugin-design.md](https://github.com/agentic-develop
 
 ## Status
 
+**v0.5.0** — Multi-provider support. Added OpenCode and OpenAI Codex providers alongside Claude Code. Each provider has a dedicated skill set. New features: codebase readiness assessment (`/adev-assess`), improved documentation generation (`/adev-document`), eval framework for skill quality, CI/CD quality gates, and automatic spec status updates across lifecycle.
+
 **v0.4.1** — Merge policy enforcement. Agents can no longer merge directly to protected branches. Three-layer defense: manifest configuration, skill instructions, and a PreToolUse hook guard.
 
-**v0.4.0** — Context packets, task routing, agent recovery, golden sample curation, sprint retrospectives, and graduated evaluation harness. Five new skills (`/adev-sample`, `/adev-route`, `/adev-recover`, `/adev-retro`, `/adev-eval`) plus context packet assembly, blocker flag protocol, and scope guard integration across existing skills.
+**v0.4.0** — Context packets, task routing, agent recovery, golden sample curation, sprint retrospectives, and graduated evaluation harness.
 
 ## License
 
