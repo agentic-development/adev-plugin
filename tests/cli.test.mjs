@@ -164,26 +164,29 @@ describe("enablePlugin", () => {
 // --- detectConflicts ---
 
 describe("detectConflicts", () => {
-  let tempDir;
+  let projectDir;
+  let homeDir;
   let origCwd;
   let origHome;
 
   beforeEach(() => {
-    tempDir = createTempDir();
+    projectDir = createTempDir();
+    homeDir = createTempDir();
     origCwd = process.cwd();
     origHome = process.env.HOME;
-    process.env.HOME = tempDir;
-    process.chdir(tempDir);
+    process.env.HOME = homeDir;
+    process.chdir(projectDir);
   });
 
   afterEach(() => {
     process.chdir(origCwd);
     process.env.HOME = origHome;
-    cleanupTempDir(tempDir);
+    cleanupTempDir(projectDir);
+    cleanupTempDir(homeDir);
   });
 
   it("detects superpowers conflict", () => {
-    writeFixture(tempDir, ".claude/settings.json", JSON.stringify({
+    writeFixture(homeDir, ".claude/settings.json", JSON.stringify({
       enabledPlugins: { "superpowers@claude-plugins-official": true },
     }));
 
@@ -194,11 +197,11 @@ describe("detectConflicts", () => {
 
   it("ignores already-disabled superpowers at project level", () => {
     // User level has it enabled
-    writeFixture(tempDir, ".claude/settings.json", JSON.stringify({
+    writeFixture(homeDir, ".claude/settings.json", JSON.stringify({
       enabledPlugins: { "superpowers@claude-plugins-official": true },
     }));
     // But also disabled at project level
-    writeFixture(tempDir, ".claude/settings.json", JSON.stringify({
+    writeFixture(projectDir, ".claude/settings.json", JSON.stringify({
       enabledPlugins: { "superpowers@claude-plugins-official": false },
     }));
 
