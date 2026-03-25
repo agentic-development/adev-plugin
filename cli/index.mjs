@@ -229,14 +229,14 @@ async function cmdInit() {
     const provider = getProvider(providerName);
     heading(`Installing for ${provider.name}`);
 
-    const { installed, path: pluginPath } = await provider.install();
-    if (installed) {
-      success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
-    } else {
-      success(`Plugin v${PLUGIN_VERSION} already installed`);
-    }
-
     if (providerName === "claude-code") {
+      const { installed, path: pluginPath } = await provider.install();
+      if (installed) {
+        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+      } else {
+        success(`Plugin v${PLUGIN_VERSION} already installed`);
+      }
+
       const scope = await ask("Install for all projects (user) or this project only (project)? [user/project]");
       const settingsPath = provider.enable(scope === "project" ? "project" : "user");
       success(`Plugin enabled in ${settingsPath}`);
@@ -254,7 +254,14 @@ async function cmdInit() {
           }
         }
       }
-    } else {
+    } else if (providerName === "opencode") {
+      const { installed, path: pluginPath } = await provider.install();
+      if (installed) {
+        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+      } else {
+        success(`Plugin v${PLUGIN_VERSION} already installed`);
+      }
+
       const opencodeConfigPath = join(process.env.HOME || process.env.USERPROFILE, ".config", "opencode", "opencode.json");
       const opencodeConfigDir = join(process.env.HOME || process.env.USERPROFILE, ".config", "opencode");
       let config = { plugin: [] };
@@ -284,6 +291,18 @@ async function cmdInit() {
       }
       
       log("Skills are available via ~/.config/opencode/skills/");
+    } else if (providerName === "codex") {
+      const scope = await ask("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
+      const targetScope = scope === "project" ? "project" : "user";
+      const { installed, path: pluginPath } = await provider.install({ scope: targetScope });
+      if (installed) {
+        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+      } else {
+        success(`Plugin v${PLUGIN_VERSION} already installed`);
+      }
+
+      const skillsPath = provider.enable(targetScope);
+      success(`Codex skills linked in ${skillsPath}`);
     }
   }
 
@@ -342,7 +361,14 @@ async function cmdUninstall() {
   for (const providerName of providerNames) {
     const provider = getProvider(providerName);
     heading(`Uninstalling from ${provider.name}`);
-    await provider.uninstall();
+
+    if (providerName === "codex") {
+      const scope = await ask("Remove Codex skills for all projects (user) or this project only (project)? [user/project]");
+      await provider.uninstall({ scope: scope === "project" ? "project" : "user" });
+    } else {
+      await provider.uninstall();
+    }
+
     success(`Uninstalled from ${provider.name}`);
   }
 
@@ -361,14 +387,14 @@ function cmdHelp() {
   Provider Selection:
     --provider claude-code        Install for Claude Code only
     --provider opencode           Install for OpenCode only
-    --provider codex             Install for OpenAI Codex only
+    --provider codex            Install for OpenAI Codex only
     --provider claude-code --provider opencode  Install for both
     --provider claude-code --provider codex     Install for Claude + Codex
 
   Examples:
     npx adev-cli init                          # Claude Code (default)
     npx adev-cli init --provider opencode      # OpenCode only
-    npx adev-cli init --provider codex        # OpenAI Codex only
+    npx adev-cli init --provider codex       # OpenAI Codex only
     npx adev-cli init --provider both          # Both providers
     npx adev-cli uninstall                     # Remove from selected providers
 

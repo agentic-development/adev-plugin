@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Debug"
+  short_description: "Debug with specs, ADRs, and context"
+  default_prompt: "Use $adev-debug to diagnose this issue against the current specs and architecture context."
