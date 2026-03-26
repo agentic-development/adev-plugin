@@ -1,0 +1,25 @@
+{
+  "scenario_id": "happy-path",
+  "scenario_name": "Happy Path",
+  "complexity_tags": ["happy-path"],
+  "start_phase_id": "brainstorm",
+  "terminal_phase_ids": ["validate"],
+  "max_total_steps": 12,
+  "max_phase_visits": 1,
+  "max_subagent_events_per_phase": 4,
+  "phases": [
+    { "id": "brainstorm", "name": "Brainstorm", "skill_name": "adev-brainstorm" },
+    { "id": "specify", "name": "Specify", "skill_name": "adev-specify" },
+    { "id": "review-specs", "name": "Review Specs", "skill_name": "adev-review-specs" },
+    { "id": "plan", "name": "Plan", "skill_name": "adev-plan" },
+    { "id": "implement", "name": "Implement", "skill_name": "adev-implement" },
+    { "id": "validate", "name": "Validate", "skill_name": "adev-validate" }
+  ],
+  "branches": [
+    { "branch_id": "b1", "from_phase_id": "brainstorm", "to_phase_id": "specify", "trigger_type": "on_success" },
+    { "branch_id": "b2", "from_phase_id": "specify", "to_phase_id": "review-specs", "trigger_type": "on_success" },
+    { "branch_id": "b3", "from_phase_id": "review-specs", "to_phase_id": "plan", "trigger_type": "on_success" },
+    { "branch_id": "b4", "from_phase_id": "plan", "to_phase_id": "implement", "trigger_type": "on_success" },
+    { "branch_id": "b5", "from_phase_id": "implement", "to_phase_id": "validate", "trigger_type": "on_success" }
+  ]
+}
