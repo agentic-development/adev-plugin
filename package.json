@@ -24,7 +24,8 @@
     "eval": "node tests/evals/repomap/run-eval.mjs",
     "eval:generate": "node tests/evals/repomap/run-eval.mjs --generate-only",
     "eval:skill-compression": "node tests/evals/skill-compression/run-eval.mjs",
-    "eval:lifecycle-tokens": "node tests/evals/lifecycle-tokens/run-eval.mjs"
+    "eval:lifecycle-tokens": "node tests/evals/lifecycle-tokens/run-eval.mjs",
+    "eval:lifecycle-tokens:live": "node tests/evals/lifecycle-tokens/run-live-eval.mjs"
   },
   "repository": {
     "type": "git",

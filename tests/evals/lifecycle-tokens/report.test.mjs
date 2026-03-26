@@ -1,12 +1,18 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { loadScenarioRegistry } from "./registry.mjs";
 import { runScenarioMatrix } from "./run-orchestration.mjs";
-import { generateRollupReport, generateScenarioReport, readEventLog, writeReports } from "./report.mjs";
+import {
+  generateCrossProviderReport,
+  generateRollupReport,
+  generateScenarioReport,
+  readEventLog,
+  writeReports,
+} from "./report.mjs";
 
 const SCENARIOS_DIR = new URL("./scenarios/", import.meta.url);
 
@@ -32,7 +38,6 @@ describe("scenario reporting", () => {
           tokenUsage: { input_tokens: 40, output_tokens: 20, total_tokens: 60 },
           subagentRuns: [
             {
-              actorId: "reviewer-security",
               actorRole: "security",
               status: "passed",
               tokenUsage: { input_tokens: 12, output_tokens: 6, total_tokens: 18 },
@@ -51,8 +56,10 @@ describe("scenario reporting", () => {
         scenarios: scenarios.filter((scenario) => scenario.scenario_id === "subagent-heavy-review"),
         executePhase,
         eventsDir: tempDir,
-        makeRunId: () => "subagent-heavy-review-run-1",
+        artifactRoot: tempDir,
+        makeRunId: () => "codex-subagent-heavy-review-run-1",
         now: () => "2026-03-25T12:20:00.000Z",
+        providerId: "codex",
       })
     ).scenarioRuns;
 
@@ -63,19 +70,21 @@ describe("scenario reporting", () => {
     });
 
     assert.match(report, /# Scenario Report: Subagent Heavy Review/);
+    assert.match(report, /Provider ID: codex/);
     assert.match(report, /## Declared Path/);
     assert.match(report, /brainstorm -> specify -> review-specs -> plan -> implement -> validate/);
     assert.match(report, /## Realized Path/);
     assert.match(report, /## Retry And Fan-Out Overhead/);
+    assert.match(report, /Retry multiplier/);
     assert.match(report, /Subagent share/);
   });
 
-  it("generates a rollup report ranked by total lifecycle tokens and flags optimization candidates", async () => {
-    const executePhase = async ({ scenario, phase }) => {
+  it("generates rollup and cross-provider reports with deterministic report paths", async () => {
+    const executePhase = async ({ scenario, phase, providerId }) => {
       if (scenario.scenario_id === "review-fails-once" && phase.id === "review-specs") {
         return {
-          status: "failed",
-          triggerType: "on_review_reject",
+          status: providerId === "claude-code" ? "failed" : "passed",
+          triggerType: providerId === "claude-code" ? "on_review_reject" : "on_success",
           tokenUsage: { input_tokens: 35, output_tokens: 15, total_tokens: 50 },
         };
       }
@@ -86,16 +95,14 @@ describe("scenario reporting", () => {
           tokenUsage: { input_tokens: 45, output_tokens: 20, total_tokens: 65 },
           subagentRuns: [
             {
-              actorId: "reviewer-security",
               actorRole: "security",
               status: "passed",
               tokenUsage: { input_tokens: 18, output_tokens: 6, total_tokens: 24 },
             },
             {
-              actorId: "reviewer-arch",
               actorRole: "architecture",
               status: "passed",
-              tokenUsage: {},
+              tokenUsage: providerId === "opencode" ? {} : { input_tokens: 9, output_tokens: 3, total_tokens: 12 },
             },
           ],
         };
@@ -106,33 +113,79 @@ describe("scenario reporting", () => {
       };
     };
 
-    const result = await runScenarioMatrix({
-      scenarios,
-      executePhase,
-      eventsDir: tempDir,
-      makeRunId: (scenarioId) => `${scenarioId}-run-1`,
-      now: () => "2026-03-25T12:25:00.000Z",
-    });
+    const codexRuns = (
+      await runScenarioMatrix({
+        scenarios,
+        providerId: "codex",
+        executePhase,
+        eventsDir: tempDir,
+        artifactRoot: tempDir,
+        makeRunId: (scenarioId) => `codex-${scenarioId}-run-1`,
+        now: () => "2026-03-25T12:25:00.000Z",
+      })
+    ).scenarioRuns;
+    const claudeRuns = (
+      await runScenarioMatrix({
+        scenarios,
+        providerId: "claude-code",
+        executePhase,
+        eventsDir: tempDir,
+        artifactRoot: tempDir,
+        makeRunId: (scenarioId) => `claude-code-${scenarioId}-run-1`,
+        now: () => "2026-03-25T12:25:00.000Z",
+      })
+    ).scenarioRuns;
+    const opencodeRuns = (
+      await runScenarioMatrix({
+        scenarios,
+        providerId: "opencode",
+        executePhase,
+        eventsDir: tempDir,
+        artifactRoot: tempDir,
+        makeRunId: (scenarioId) => `opencode-${scenarioId}-run-1`,
+        now: () => "2026-03-25T12:25:00.000Z",
+      })
+    ).scenarioRuns;
 
+    const scenarioRuns = [...claudeRuns, ...codexRuns, ...opencodeRuns];
     const reports = writeReports({
       scenarios,
-      scenarioRuns: result.scenarioRuns,
+      scenarioRuns,
       reportsDir: join(tempDir, "reports"),
+      invocation: { mode: "live" },
     });
+
+    assert.equal(reports.scenarioReportPaths.length, 9);
+    assert.equal(existsSync(join(tempDir, "reports", "codex-happy-path-run-1.md")), true);
+    assert.equal(existsSync(reports.crossProviderReportPath), true);
+
     const rollup = generateRollupReport({
       scenarios,
-      scenarioRuns: result.scenarioRuns,
+      scenarioRuns,
       eventsByRun: Object.fromEntries(
-        result.scenarioRuns.map((run) => [run.run_id, readEventLog(run.event_log_path)]),
+        scenarioRuns.map((run) => [run.run_id, readEventLog(run.event_log_path)]),
       ),
     });
 
-    assert.equal(reports.scenarioReportPaths.length, 3);
-    assert.match(rollup, /# Lifecycle Token Rollup/);
-    assert.match(rollup, /\| review-fails-once \|/);
-    assert.match(rollup, /## Retry Overhead/);
-    assert.match(rollup, /## Fan-Out Overhead/);
-    assert.match(rollup, /## Top Optimization Candidates/);
+    assert.match(rollup, /## Phase Rankings/);
+    assert.match(rollup, /## Retry Multipliers/);
+    assert.match(rollup, /## Subagent Cost Share/);
     assert.match(rollup, /Unknown token data remains in this run/);
+
+    unlinkSync(reports.scenarioReportPathsByRun["codex-happy-path-run-1"]);
+    const crossProvider = generateCrossProviderReport({
+      scenarios,
+      scenarioRuns,
+      eventsByRun: Object.fromEntries(
+        scenarioRuns.map((run) => [run.run_id, readEventLog(run.event_log_path)]),
+      ),
+      scenarioReportPathsByRun: reports.scenarioReportPathsByRun,
+    });
+
+    assert.match(crossProvider, /# Cross-Provider Rollup/);
+    assert.match(crossProvider, /## Provider Totals/);
+    assert.match(crossProvider, /## Scenario: Happy Path/);
+    assert.match(crossProvider, /\| codex \|/);
+    assert.match(crossProvider, /Missing provider-scoped report for codex-happy-path-run-1/);
   });
 });

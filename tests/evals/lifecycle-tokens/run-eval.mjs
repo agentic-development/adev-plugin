@@ -73,6 +73,7 @@ async function main() {
     scenarios,
     scenarioRuns: result.scenarioRuns,
     reportsDir: artifactsDir,
+    invocation: { mode: "fixture" },
   });
 
   console.log("Lifecycle Token Eval");

@@ -10,14 +10,20 @@ describe("normalizeTokenEvent", () => {
   it("normalizes a main-phase event with known token usage", () => {
     const event = normalizeTokenEvent({
       runId: "run-1",
+      providerId: "codex",
+      modelId: "gpt-5.4",
       scenarioId: "happy-path",
+      eventId: "specify-attempt-1",
+      eventIndex: 0,
       phaseId: "specify",
       phaseName: "Specify",
       skillName: "adev-specify",
       attempt: 1,
-      actorType: "main",
-      actorId: "phase-specify-attempt-1",
+      actorType: "phase",
       status: "passed",
+      triggerType: "on_success",
+      reasonCode: null,
+      artifactPaths: ["artifacts/specify.json"],
       timestamp: "2026-03-25T12:00:00.000Z",
       tokenUsage: {
         input_tokens: 120,
@@ -28,17 +34,23 @@ describe("normalizeTokenEvent", () => {
 
     assert.deepEqual(event, {
       run_id: "run-1",
+      provider_id: "codex",
+      model_id: "gpt-5.4",
       scenario_id: "happy-path",
+      event_id: "specify-attempt-1",
+      event_index: 0,
+      actor_type: "phase",
       phase_id: "specify",
       phase_name: "Specify",
       skill_name: "adev-specify",
       attempt: 1,
-      actor_type: "main",
-      actor_id: "phase-specify-attempt-1",
-      actor_role: null,
-      parent_phase_id: null,
       status: "passed",
+      trigger_type: "on_success",
+      reason_code: null,
+      artifact_paths: ["artifacts/specify.json"],
       timestamp: "2026-03-25T12:00:00.000Z",
+      subagent_role: null,
+      parent_phase_event_id: null,
       input_tokens: 120,
       input_tokens_availability: "known",
       output_tokens: 80,
@@ -52,14 +64,15 @@ describe("normalizeTokenEvent", () => {
     const event = normalizeTokenEvent({
       runId: "run-2",
       scenarioId: "subagent-heavy-review",
+      eventId: "review-attempt-2-subagent-1",
+      eventIndex: 3,
       phaseId: "review",
       phaseName: "Review",
       skillName: "adev-review-specs",
       attempt: 2,
       actorType: "subagent",
-      actorId: "reviewer-security",
-      actorRole: "security",
-      parentPhaseId: "review",
+      parentPhaseEventId: "review-attempt-2",
+      subagentRole: "security",
       status: "passed",
       timestamp: "2026-03-25T12:05:00.000Z",
       tokenUsage: {
@@ -73,8 +86,8 @@ describe("normalizeTokenEvent", () => {
     assert.equal(event.output_tokens_availability, "unknown");
     assert.equal(event.total_tokens, null);
     assert.equal(event.total_tokens_availability, "unknown");
-    assert.equal(event.parent_phase_id, "review");
-    assert.equal(event.actor_role, "security");
+    assert.equal(event.parent_phase_event_id, "review-attempt-2");
+    assert.equal(event.subagent_role, "security");
   });
 
   it("rejects inconsistent token totals", () => {
@@ -83,12 +96,13 @@ describe("normalizeTokenEvent", () => {
         normalizeTokenEvent({
           runId: "run-3",
           scenarioId: "happy-path",
+          eventId: "validate-attempt-1",
+          eventIndex: 5,
           phaseId: "validate",
           phaseName: "Validate",
           skillName: "adev-validate",
           attempt: 1,
-          actorType: "main",
-          actorId: "phase-validate-attempt-1",
+          actorType: "phase",
           status: "passed",
           timestamp: "2026-03-25T12:10:00.000Z",
           tokenUsage: {
@@ -101,18 +115,19 @@ describe("normalizeTokenEvent", () => {
     );
   });
 
-  it("requires parent phase ids for subagent events", () => {
+  it("requires parent phase event ids for subagent events", () => {
     assert.throws(
       () =>
         normalizeTokenEvent({
           runId: "run-4",
           scenarioId: "review-fails-once",
+          eventId: "review-attempt-1-subagent-1",
+          eventIndex: 2,
           phaseId: "review",
           phaseName: "Review",
           skillName: "adev-review-specs",
           attempt: 1,
           actorType: "subagent",
-          actorId: "reviewer-1",
           status: "failed",
           timestamp: "2026-03-25T12:15:00.000Z",
           tokenUsage: {
@@ -121,7 +136,7 @@ describe("normalizeTokenEvent", () => {
             total_tokens: 20,
           },
         }),
-      /missing_parent_phase_id/,
+      /parentPhaseEventId is required/,
     );
   });
 });
@@ -141,12 +156,13 @@ describe("writeRawEventLog", () => {
     const event = normalizeTokenEvent({
       runId: "run-5",
       scenarioId: "happy-path",
+      eventId: "brainstorm-attempt-1",
+      eventIndex: 0,
       phaseId: "brainstorm",
       phaseName: "Brainstorm",
       skillName: "adev-brainstorm",
       attempt: 1,
-      actorType: "main",
-      actorId: "phase-brainstorm-attempt-1",
+      actorType: "phase",
       status: "passed",
       timestamp: "2026-03-25T12:20:00.000Z",
       tokenUsage: {

@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 const KNOWN = "known";
 const UNKNOWN = "unknown";
-const ACTOR_TYPES = new Set(["main", "subagent"]);
+const ACTOR_TYPES = new Set(["phase", "subagent"]);
 const STATUS_TYPES = new Set(["passed", "failed", "incomplete"]);
 const SAFE_ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -29,18 +29,41 @@ function normalizeTokenField(value) {
   return { value, availability: KNOWN };
 }
 
+function normalizeOptionalString(value, field) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    fail("invalid_field_type", `${field} must be a string when provided`);
+  }
+  return value;
+}
+
+function normalizeArtifactPaths(artifactPaths) {
+  if (artifactPaths === undefined || artifactPaths === null) {
+    return [];
+  }
+  if (!Array.isArray(artifactPaths) || artifactPaths.some((entry) => typeof entry !== "string")) {
+    fail("invalid_artifact_paths", "artifactPaths must be an array of strings");
+  }
+  return [...artifactPaths];
+}
+
 export function normalizeTokenEvent(input) {
   validateRequiredString(input.runId, "runId");
   validateRequiredString(input.scenarioId, "scenarioId");
+  validateRequiredString(input.eventId, "eventId");
   validateRequiredString(input.phaseId, "phaseId");
   validateRequiredString(input.phaseName, "phaseName");
   validateRequiredString(input.skillName, "skillName");
-  validateRequiredString(input.actorId, "actorId");
   validateRequiredString(input.status, "status");
   validateRequiredString(input.timestamp, "timestamp");
 
   if (!SAFE_ID_RE.test(input.scenarioId)) {
     fail("invalid_scenario_id", `unsafe scenario id ${input.scenarioId}`);
+  }
+  if (!Number.isInteger(input.eventIndex) || input.eventIndex < 0) {
+    fail("invalid_event_index", "eventIndex must be a non-negative integer");
   }
   if (!Number.isInteger(input.attempt) || input.attempt <= 0) {
     fail("invalid_attempt", "attempt must be a positive integer");
@@ -52,9 +75,7 @@ export function normalizeTokenEvent(input) {
     fail("invalid_status", `unsupported status ${input.status}`);
   }
   if (input.actorType === "subagent") {
-    if (typeof input.parentPhaseId !== "string" || input.parentPhaseId.trim() === "") {
-      fail("missing_parent_phase_id", "parentPhaseId is required for subagent events");
-    }
+    validateRequiredString(input.parentPhaseEventId, "parentPhaseEventId");
   }
 
   const usage = input.tokenUsage ?? {};
@@ -73,17 +94,26 @@ export function normalizeTokenEvent(input) {
 
   return {
     run_id: input.runId,
+    provider_id: normalizeOptionalString(input.providerId, "providerId"),
+    model_id: normalizeOptionalString(input.modelId, "modelId"),
     scenario_id: input.scenarioId,
+    event_id: input.eventId,
+    event_index: input.eventIndex,
+    actor_type: input.actorType,
     phase_id: input.phaseId,
     phase_name: input.phaseName,
     skill_name: input.skillName,
     attempt: input.attempt,
-    actor_type: input.actorType,
-    actor_id: input.actorId,
-    actor_role: input.actorRole ?? null,
-    parent_phase_id: input.actorType === "subagent" ? input.parentPhaseId : null,
     status: input.status,
+    trigger_type: normalizeOptionalString(input.triggerType, "triggerType"),
+    reason_code: normalizeOptionalString(input.reasonCode, "reasonCode"),
+    artifact_paths: normalizeArtifactPaths(input.artifactPaths),
     timestamp: input.timestamp,
+    subagent_role: input.actorType === "subagent" ? normalizeOptionalString(input.subagentRole, "subagentRole") : null,
+    parent_phase_event_id:
+      input.actorType === "subagent"
+        ? input.parentPhaseEventId
+        : null,
     input_tokens: inputTokens.value,
     input_tokens_availability: inputTokens.availability,
     output_tokens: outputTokens.value,

@@ -19,7 +19,7 @@ created: 2026-03-25
 ### Behaviors
 
 1. **When** a scenario run finishes **then** the reporting layer generates a per-scenario-run report from that run's raw events and terminal status.
-2. **When** all scenario runs in the matrix finish **then** the reporting layer generates a rollup report across the full invocation.
+2. **When** all scenario runs in the matrix finish **then** the reporting layer generates `tests/evals/lifecycle-tokens/reports/ROLLUP.md` across the full invocation.
 3. **When** a per-scenario-run report is generated **then** it shows both the declared scenario structure and the realized execution path for that run.
 4. **When** a scenario contains retries, re-review loops, recovery branches, or subagent fan-out **then** the report quantifies their token overhead explicitly.
 5. **When** the rollup report is generated **then** it ranks scenarios by total lifecycle tokens as the primary ordering.
