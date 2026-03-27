@@ -19,13 +19,13 @@ created: 2026-03-27
 
 ### Behaviors
 
-1. **When** `provider` is `native` and a Claude Code session is active **then** `hooks/session-capture.sh` (PostToolUse hook) appends a line to a temporary session log file recording: tool name, files modified, and timestamp.
+1. **When** `provider` is `native` and a Claude Code session is active **then** `hooks/session-capture.sh` (PostToolUse hook) appends a JSON line to the session tracking file at `.context-index/.session-tracking.jsonl` (permissions 0600) recording: `{"tool": "<name>", "files": ["<paths>"], "specs": ["<spec-paths>"], "timestamp": "<ISO>"}`. This file is the canonical format consumed by `.githooks/prepare-commit-msg` for commit trailer injection. The file is created on first tool use and deleted after session end or commit.
 
-2. **When** `provider` is `native` and `resolveLogPath('claude-code')` is called **then** it returns the path to the current session's JSONL file under `~/.claude/projects/`.
+2. **When** `provider` is `native` and `resolveLogPath('claude-code')` is called **then** it identifies the current project by computing a deterministic hash of the absolute project root path (matching Claude Code's internal project ID scheme), resolves the session log directory at `~/.claude/projects/<project-hash>/sessions/`, and returns the path to the most recent JSONL file in that directory. The resolved path is validated to be a child of `~/.claude/projects/` before being opened.
 
-3. **When** `provider` is `native` and `parseSession(logPath, 'claude-code')` is called **then** it reads the JSONL file line by line, parses each JSON object, and returns a condensed transcript: `{ messages: [{role, content}], filesModified: [paths], toolCalls: [{name, file}], tokenUsage: {input, output} }`.
+3. **When** `provider` is `native` and `parseSession(logPath, 'claude-code')` is called **then** it reads the JSONL file line by line, parses each JSON object, and returns a condensed transcript: `{ messages: [{role, turnIndex, timestamp}], filesModified: [paths], toolCalls: [{name, file}], tokenUsage: {input, output} }`. Message content is **never** included in the condensed transcript — only metadata (role, turn index, timestamp) is retained. This prevents secrets, API keys, PII, or confidential data from leaking into downstream artifacts.
 
-4. **When** `provider` is `native` and the session JSONL contains tool results with large outputs (>500 chars) **then** `parseSession` truncates them to tool name + file path only, keeping the condensed transcript lightweight.
+4. **When** `provider` is `native` and the session JSONL contains tool results **then** `parseSession` extracts only the tool name and file path (if applicable), discarding all tool output content. No raw conversation text or tool output is retained in the condensed transcript.
 
 5. **When** `provider` is `entire` **then** native Claude Code hooks are NOT registered. The system reads Entire's summaries from the `entire/checkpoints/v1` git branch instead.
 
@@ -38,7 +38,8 @@ created: 2026-03-27
 ### Postconditions
 
 - `lib/session-parser.mjs` exports `parseSession(logPath, agent)` and `resolveLogPath(agent)` as named exports
-- The condensed transcript contains only structured data, no raw conversation text
+- The condensed transcript contains only structured metadata — no message content, no tool output content, no secrets, no PII
+- The session tracking file format (`.context-index/.session-tracking.jsonl`) is owned by this spec and consumed by structured-commit-trailers
 - No external dependencies — only Node.js built-ins used
 - Session capture never blocks commits or agent operations
 
