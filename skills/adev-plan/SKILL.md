@@ -334,7 +334,7 @@ If `governance/gates.yaml` exists, use its gate definitions instead of constitut
 
 After writing the complete plan, dispatch a plan-reviewer subagent.
 
-**Dispatch the reviewer** (model: opus):
+**Dispatch the reviewer** (`capable` tier — read from `model_tiers` in `.context-index/platform-context.yaml`; fall back to hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` if unset):
 ```
 Task tool (general-purpose):
   description: "Review implementation plan"

@@ -62,7 +62,7 @@ Dispatch a reviewer subagent with a rubric to score code quality on subjective d
 
 5. **Error handling (0-5):** Are errors handled at the right level? Are error messages useful? Does the happy path degrade gracefully?
 
-Dispatch the reviewer subagent (model: opus) with:
+Dispatch the reviewer subagent (`reasoning` tier — read from `model_tiers` in `.context-index/platform-context.yaml`; fall back to the hardcoded default in `.context-index/specs/cross-cutting/model-routing.md` if unset, and log a one-time advisory) with:
 - The implementation diff (all files changed)
 - The Live Spec
 - The rubric (default or custom from `--rubric`)

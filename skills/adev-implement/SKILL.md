@@ -42,6 +42,9 @@ Read these files once at the start. Extract everything subagents will need so th
    If no routing tags exist, treat all tasks as `auto-agent` (default behavior).
 9. **Completion policy:** Read `completion.merge_policy` from manifest.yaml (default: "pr").
    Read `completion.protected_branches` (default: ["main", "master"]).
+10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
+    All subagent dispatches in this skill use the `capable` tier (implementer, spec reviewer, code quality reviewer, visual verifier).
+    If `model_tiers` is absent or a tier is unset, use the hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
