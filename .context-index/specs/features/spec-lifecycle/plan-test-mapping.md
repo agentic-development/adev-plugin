@@ -22,7 +22,7 @@ created: 2026-03-27
 
 2. **When** `/adev-implement` completes a task and runs tests **then** the test pass/fail result is the authoritative signal for whether the task is done — no separate task status field is maintained.
 
-3. **When** `/adev-status --spec <path>` queries a spec's implementation progress **then** it reads the plan's task list, extracts the `tests:` references, runs them (or checks last test results), and reports task completion as "<N>/<total> tasks verified by passing tests".
+3. **When** `/adev-status --spec <path>` queries a spec's implementation progress **then** it reads the plan's task list, extracts the `tests:` references, checks whether the referenced test files exist, and reports task completion as "<N>/<total> tasks with existing test files". `/adev-status` does NOT execute tests (it is read-only) — it checks file existence and last known test results from the most recent `npm test` run.
 
 4. **When** a plan task has no `tests:` field **then** `/adev-status` reports it as "unverifiable" and does not count it toward completion.
 

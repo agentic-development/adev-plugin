@@ -41,7 +41,7 @@ The spec-lifecycle module improves how charters and specs track their status, re
 - Auto-generating session summaries via LLM calls (v2)
 - Multi-agent adapters beyond Claude Code and Entire (v2)
 - PR-level session aggregation (v2)
-- Sidecar state files — all state lives in frontmatter
+- New sidecar state files — all new lifecycle state lives in frontmatter. Exception: `.review.md` is a pre-existing pattern (used by `/adev-review-specs` since before this charter) and is retained for separation of concerns between spec authors and reviewers
 - State machine helper module — skills enforce transitions inline
 - Epic/task management — belongs in future adev-graph plugin
 - External tracker API integration (Jira, Linear, GitHub) — belongs in future adev-graph plugin or dedicated integration plugin

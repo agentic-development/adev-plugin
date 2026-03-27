@@ -20,7 +20,7 @@ created: 2026-03-27
 
 1. **When** `/adev-implement` completes all tasks for a spec and tests pass (GREEN) **then** it reads the plan's file list, computes a SHA-256 hash of the concatenated sorted file contents, and stamps a `source-manifest` block in the spec's frontmatter.
 
-2. **When** `computeManifest(filePaths)` is called **then** it reads each file, sorts file paths alphabetically, concatenates their contents, computes SHA-256, and returns `{ sha: <first 7 chars>, files: [<sorted paths>], computedAt: <ISO timestamp> }`.
+2. **When** `computeManifest(filePaths)` is called **then** it validates that all paths resolve inside the project root (rejects any path resolving outside with `PATH_OUTSIDE_ROOT`), reads each file, computes a SHA-256 hash per file, sorts the per-file hashes alphabetically, hashes the sorted hash list to produce the final SHA, and returns `{ sha: <first 7 chars>, files: [<sorted paths>], computedAt: <ISO timestamp> }`. The per-file hashing avoids content-boundary collision risks from naive concatenation. The truncated SHA is for readability only, not cryptographic integrity.
 
 3. **When** `verifyManifest(manifest)` is called **then** it re-reads the files listed in `manifest.files`, recomputes the SHA using the same algorithm, and returns `{ matches: <boolean>, currentSha: <string> }`.
 
@@ -43,6 +43,7 @@ created: 2026-03-27
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | One or more files in plan do not exist at compute time | `computeManifest` throws with list of missing files | FILES_NOT_FOUND |
+| File path resolves outside project root | `computeManifest` throws with the offending path | PATH_OUTSIDE_ROOT |
 | File in manifest deleted after compute | `verifyManifest` returns `{ matches: false, missingFiles: [...] }` | — (drift) |
 | Empty file list passed to `computeManifest` | Returns `{ sha: null, files: [], computedAt: <timestamp> }` | — (no-op) |
 | File read permission denied | `computeManifest` throws with the filesystem error | READ_ERROR |
