@@ -2,7 +2,7 @@
 
 ---
 charter: spec-lifecycle
-status: review-pending
+status: review-passed
 risk_level: high
 milestone: v1
 created: 2026-03-27
