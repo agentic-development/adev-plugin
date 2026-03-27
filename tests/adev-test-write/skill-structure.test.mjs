@@ -85,3 +85,41 @@ test('SKILL.md documents GAMING_VIOLATION error code', () => {
 test('SKILL.md documents RED_STATE_FAILED error code', () => {
   assert.ok(readSkill().includes('RED_STATE_FAILED'));
 });
+
+test('SKILL.md documents PACKET_NOT_FOUND error code', () => {
+  assert.ok(readSkill().includes('PACKET_NOT_FOUND'));
+});
+
+test('SKILL.md documents STALE_PACKET error code', () => {
+  assert.ok(readSkill().includes('STALE_PACKET'));
+});
+
+test('SKILL.md documents DIFF_UNAVAILABLE error code', () => {
+  assert.ok(readSkill().includes('DIFF_UNAVAILABLE'));
+});
+
+test('SKILL.md documents UNDECLARED_MOCK error code', () => {
+  assert.ok(readSkill().includes('UNDECLARED_MOCK'));
+});
+
+test('SKILL.md documents REGRESSION_DETECTED error code', () => {
+  assert.ok(readSkill().includes('REGRESSION_DETECTED'));
+});
+
+test('SKILL.md documents CONCURRENT_EXECUTION error code', () => {
+  assert.ok(readSkill().includes('CONCURRENT_EXECUTION'));
+});
+
+test('SKILL.md documents .context-index/-free fallback to ./packets/', () => {
+  const content = readSkill();
+  assert.ok(content.includes('./packets/') || content.includes("'./packets'"));
+});
+
+test('SKILL.md documents model tier fallback advisory message', () => {
+  assert.ok(readSkill().includes('model_tiers not configured'));
+});
+
+test('SKILL.md documents internal module mocking as a violation requiring redirect to external boundary', () => {
+  const content = readSkill();
+  assert.ok(content.includes('Internal') && content.includes('VIOLATION'));
+});

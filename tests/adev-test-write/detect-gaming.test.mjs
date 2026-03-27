@@ -85,3 +85,43 @@ test('returns structured violation with file, line, matched text, severity', asy
   assert.ok(violations[0].severity);
   assert.ok(violations[0].type);
 });
+
+test('flags toMatchObject as advisory (not blocking)', async () => {
+  const violations = await scan(`
+    test('x', () => {
+      expect(user).toMatchObject({ id: 1 });
+    });
+  `);
+  const match = violations.find(v => v.type === 'weak-equality');
+  assert.ok(match, 'expected a weak-equality violation');
+  assert.equal(match.severity, 'advisory');
+});
+
+test('does not produce blocking violation for toMatchObject', async () => {
+  const violations = await scan(`
+    test('x', () => {
+      expect(user).toMatchObject({ id: 1, name: 'Alice' });
+    });
+  `);
+  assert.equal(violations.filter(v => v.severity === 'blocking').length, 0);
+});
+
+test('returns empty array for content with no violations', async () => {
+  const violations = await scan(`
+    test('x', () => {
+      expect(add(2, 3)).toEqual(5);
+    });
+  `);
+  assert.equal(violations.length, 0);
+});
+
+test('detects violations across multiple files', async () => {
+  const violations = await detectGaming([
+    { path: 'a.test.mjs', content: `test('x', () => { expect(r).toBeTruthy(); });` },
+    { path: 'b.test.mjs', content: `test('y', () => { expect(count).toBeGreaterThanOrEqual(0); });` },
+  ]);
+  assert.equal(violations.filter(v => v.severity === 'blocking').length, 2);
+  const files = violations.map(v => v.file);
+  assert.ok(files.includes('a.test.mjs'));
+  assert.ok(files.includes('b.test.mjs'));
+});

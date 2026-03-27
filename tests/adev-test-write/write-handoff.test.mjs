@@ -130,3 +130,64 @@ test('verifyHandoff returns HASH_MISMATCH when file content changed', async (t) 
   assert.ok(result.storedHash);
   assert.ok(result.computedHash);
 });
+
+test('verifyHandoff throws PACKET_NOT_FOUND error when packet does not exist', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  const missing = join(dir, 'packets', 'no-such-packet-tests.md');
+  await assert.rejects(
+    () => verifyHandoff(missing),
+    (err) => {
+      assert.ok(err.message.includes('Packet not found'));
+      return true;
+    }
+  );
+});
+
+test('verifyHandoff throws STALE_PACKET error when a listed test file no longer exists', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  const testFile = join(dir, 'tests/gone.test.mjs');
+  await writeFixture(dir, 'tests/gone.test.mjs', 'original');
+  const packetPath = join(dir, 'packets', 'gone-tests.md');
+  await writeHandoff({ packetsDir: join(dir, 'packets'), slug: 'gone', spec: 's', testFiles: [testFile], verificationCommand: 'c', redStateEvidence: 'e', constraints: [], mockingBoundaries: [], preexistingCheck: 'passed', gamingCheck: 'passed', framework: 'node:test' });
+  // Delete the test file after writing the packet
+  const { unlinkSync } = await import('node:fs');
+  unlinkSync(testFile);
+  await assert.rejects(
+    () => verifyHandoff(packetPath),
+    (err) => {
+      assert.ok(err.message.includes('Test file missing'), `expected "Test file missing" in: ${err.message}`);
+      return true;
+    }
+  );
+});
+
+test('writeHandoff records mocking boundaries with target, type, and justification', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  await writeFixture(dir, 'tests/m.test.mjs', 'content');
+  await writeHandoff({
+    packetsDir: join(dir, 'packets'),
+    slug: 'm',
+    spec: 's',
+    testFiles: [join(dir, 'tests/m.test.mjs')],
+    verificationCommand: 'c',
+    redStateEvidence: 'e',
+    constraints: [],
+    mockingBoundaries: [
+      { target: 'node-fetch', type: 'HTTP', justification: 'fetches external API' },
+      { target: 'pg', type: 'DB', justification: 'reads user records' },
+    ],
+    preexistingCheck: 'passed',
+    gamingCheck: 'passed',
+    framework: 'node:test',
+  });
+  const content = readFileSync(join(dir, 'packets', 'm-tests.md'), 'utf-8');
+  assert.ok(content.includes('node-fetch'));
+  assert.ok(content.includes('HTTP'));
+  assert.ok(content.includes('fetches external API'));
+  assert.ok(content.includes('pg'));
+  assert.ok(content.includes('DB'));
+  assert.ok(content.includes('reads user records'));
+});

@@ -214,6 +214,13 @@ export async function verifyHandoff(packetPath) {
     .map(line => line.slice(2).trim())
     .filter(Boolean);
 
+  // Check all test files still exist before hashing
+  for (const filePath of testFiles) {
+    if (!existsSync(filePath)) {
+      throw new Error(`Test file missing: ${filePath}. Cannot verify integrity.`);
+    }
+  }
+
   // Recompute hash from current files
   const computedHash = computeHash(testFiles);
 

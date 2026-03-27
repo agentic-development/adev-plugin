@@ -77,3 +77,58 @@ test('file scan reads at most 4096 bytes per file', async (t) => {
   // Should not detect jest because relevant content is past 4096 bytes
   assert.equal(result, null);
 });
+
+test('detects mocha from package.json devDependencies', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  await writeFixture(dir, 'package.json', JSON.stringify({ devDependencies: { mocha: '^10.0.0' } }));
+  const result = await detectFramework(dir);
+  assert.equal(result.framework, 'mocha');
+  assert.equal(result.command, 'npx mocha');
+});
+
+test('detects jasmine from package.json devDependencies', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  await writeFixture(dir, 'package.json', JSON.stringify({ devDependencies: { jasmine: '^5.0.0' } }));
+  const result = await detectFramework(dir);
+  assert.equal(result.framework, 'jasmine');
+  assert.equal(result.command, 'npx jasmine');
+});
+
+test('detects pytest from pyproject.toml marker file', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  await writeFixture(dir, 'pyproject.toml', '[tool.pytest.ini_options]');
+  const result = await detectFramework(dir);
+  assert.equal(result.framework, 'pytest');
+  assert.equal(result.command, 'pytest');
+});
+
+test('detects go test from go.mod marker file', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  await writeFixture(dir, 'go.mod', 'module example.com/myapp\n\ngo 1.21');
+  const result = await detectFramework(dir);
+  assert.equal(result.framework, 'go test');
+  assert.equal(result.command, 'go test ./...');
+});
+
+test('detects cargo test from Cargo.toml marker file', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  await writeFixture(dir, 'Cargo.toml', '[package]\nname = "my-crate"');
+  const result = await detectFramework(dir);
+  assert.equal(result.framework, 'cargo test');
+  assert.equal(result.command, 'cargo test');
+});
+
+test('prefers jest over mocha when both present', async (t) => {
+  const dir = await createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  await writeFixture(dir, 'package.json', JSON.stringify({
+    devDependencies: { jest: '^29.0.0', mocha: '^10.0.0' }
+  }));
+  const result = await detectFramework(dir);
+  assert.equal(result.framework, 'jest');
+});
