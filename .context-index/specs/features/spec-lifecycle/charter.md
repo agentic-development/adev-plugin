@@ -2,7 +2,7 @@
 
 ## Business Intent
 
-The spec-lifecycle module improves how charters and specs track their status, revision history, and relationship to implementation code. It eliminates status drift by making skills auto-transition status fields, introduces revision counters for drift detection at plan gates, adds source manifests to map specs to their implementing files via content hashes, and provides automatic session capture to record why decisions were made. The goal is that any developer or agent can read a single spec file and immediately know: is it current, has it been reviewed, and does the code match.
+The spec-lifecycle module improves how charters and specs track their status, revision history, and relationship to implementation code. Note: this charter introduces a new skill (`/adev-status`) which requires human approval per Architecture Boundaries — approved during brainstorm. It eliminates status drift by making skills auto-transition status fields, introduces revision counters for drift detection at plan gates, adds source manifests to map specs to their implementing files via content hashes, and provides automatic session capture to record why decisions were made. The goal is that any developer or agent can read a single spec file and immediately know: is it current, has it been reviewed, and does the code match.
 
 ## Scope and Boundaries
 
@@ -116,9 +116,9 @@ The spec-lifecycle module improves how charters and specs track their status, re
 | Template Updates | Update charter, spec, and manifest templates with new fields; `/adev-init` scaffolds `.githooks/` and sets `core.hooksPath` | must-have | v1 | — |
 | Structured Commit Trailers | Git hooks inject `Spec:`, `Plan-task:`, `Session:` trailers into commit messages automatically | must-have | v1 | — |
 | Entire Provider Adapter | When `provider: entire`, read summaries from Entire's checkpoint branch; disable native hooks to avoid duplication | should-have | v1 | — |
-| Hygiene Status Aggregation | `/adev-hygiene` queries charters, specs, plans, tests, git log, and session summaries; produces project status report | should-have | v1 | — |
-| Status Query Skill | `/adev-status` skill queries spec-lifecycle data: per-spec status (revision, source manifest match, commits, sessions, test results), per-charter status (capability progress), project-wide aggregation. Composes git log, frontmatter, test results, and session summaries into a single report. | should-have | v1 | — |
-| Tracker Reference Field | Optional `tracker-ref` field in spec and charter frontmatter linking to external trackers (Jira, Linear, GitHub Issues). No API integration — metadata only. Displayed by `/adev-status`, queryable by future adev-graph plugin. | should-have | v1 | — |
+| Hygiene Lifecycle Auditing | `/adev-hygiene` extended with lifecycle-specific audit passes: detect specs whose frontmatter status contradicts source manifest evidence, flag charters with stale capability status, report specs with `charter-revision` behind current charter revision. Focuses on staleness, drift, and coverage gaps — not progress reporting (that is `/adev-status`). | should-have | v1 | — |
+| Status Query Skill | `/adev-status` skill queries spec-lifecycle data: per-spec status (revision, source manifest match, commits, sessions, test results), per-charter status (capability progress), project-wide aggregation. Composes git log, frontmatter, test results, and session summaries into a single report. | must-have | v1 | — |
+| Tracker Reference Field | Optional `tracker-ref` field in spec and charter frontmatter linking to external trackers (Jira, Linear, GitHub Issues). No API integration — metadata only. Displayed by `/adev-status`, queryable by future adev-graph plugin. | must-have | v1 | — |
 | Codex Adapter | Session parser adapter for Codex log format | nice-to-have | v2 | — |
 | PR Session Aggregation | Aggregate session summaries from branch commits into PR description | nice-to-have | v2 | — |
 | LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | nice-to-have | v2 | — |
