@@ -25,6 +25,23 @@ function defaultRunId(scenarioId, providerId) {
   return `${providerId}-${scenarioId}-${Date.now()}`;
 }
 
+function readTimeoutMsFromEnv() {
+  const raw = process.env.ADEV_LIFECYCLE_LIVE_TIMEOUT_MS;
+  if (raw === undefined) {
+    return 120_000;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    fail(
+      "invalid_timeout_configuration",
+      "ADEV_LIFECYCLE_LIVE_TIMEOUT_MS must be a positive integer when set",
+    );
+  }
+
+  return parsed;
+}
+
 function createUnavailableRun({ scenario, provider, eventsDir, makeRunId, now }) {
   return runScenarioMatrix({
     scenarios: [scenario],
@@ -155,7 +172,7 @@ export async function runLiveProviderEval({
   scenarios,
   providers,
   reportsDir,
-  timeoutMs = 30_000,
+  timeoutMs = readTimeoutMsFromEnv(),
   maxPayloadBytes = 256 * 1024,
   makeRunId = defaultRunId,
   now = () => new Date().toISOString(),

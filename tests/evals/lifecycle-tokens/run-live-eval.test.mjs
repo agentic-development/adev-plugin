@@ -8,6 +8,11 @@ import { loadScenarioRegistry } from "./registry.mjs";
 import { runLiveProviderEval } from "./run-live-eval.mjs";
 
 const SCENARIOS_DIR = new URL("./scenarios/", import.meta.url);
+const hasRealCodexEnv =
+  process.env.ADEV_RUN_REAL_CODEX_TESTS === "true" &&
+  typeof process.env.ADEV_LIFECYCLE_PROVIDER_CODEX_RUNNER === "string" &&
+  process.env.ADEV_LIFECYCLE_PROVIDER_CODEX_RUNNER.length > 0 &&
+  (process.env.CODEX === "true" || process.env.OPENAI_CODEX === "true");
 
 function createProviderModule(tempDir, fileName, source) {
   const filePath = join(tempDir, fileName);
@@ -27,6 +32,10 @@ describe("runLiveProviderEval", () => {
   });
 
   afterEach(() => {
+    delete process.env.CODEX;
+    delete process.env.ADEV_LIFECYCLE_PROVIDER_CODEX_RUNNER;
+    delete process.env.ADEV_LIFECYCLE_PROVIDER_CODEX_BIN;
+    delete process.env.ADEV_LIFECYCLE_PROVIDER_CODEX_ARGS;
     rmSync(tempDir, { recursive: true, force: true });
   });
 
@@ -180,4 +189,29 @@ describe("runLiveProviderEval", () => {
       [["claude-code", "incomplete", "provider_not_installed"]],
     );
   });
+
+  it(
+    "can run the real codex wrapper with the actual codex CLI when explicitly enabled",
+    { skip: !hasRealCodexEnv },
+    async () => {
+    const { providerWrapper } = await import(new URL(`./providers/codex.mjs?live=${Date.now()}`, import.meta.url));
+
+    const result = await runLiveProviderEval({
+      scenarios: scenarios.filter((scenario) =>
+        ["happy-path", "subagent-heavy-review"].includes(scenario.scenario_id),
+      ),
+      providers: [providerWrapper],
+      reportsDir,
+      timeoutMs: 30_000,
+      maxPayloadBytes: 64 * 1024,
+      makeRunId: (scenarioId, providerId) => `${providerId}-${scenarioId}-live-2`,
+      now: () => "2026-03-26T00:00:00.000Z",
+    });
+
+      assert.equal(result.scenarioRuns.length, 2);
+      assert.ok(result.scenarioRuns.every((run) => run.provider_id === "codex"));
+      assert.ok(result.scenarioRuns.every((run) => ["passed", "failed", "incomplete"].includes(run.status)));
+      assert.ok(result.scenarioRuns.every((run) => typeof run.event_log_path === "string"));
+    },
+  );
 });
