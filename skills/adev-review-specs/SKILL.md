@@ -71,9 +71,13 @@ Scoring (used to determine which specialists to invoke):
 
 Launch all reviewer subagents in parallel. Each subagent gets a clean context window with only the context package from Step 2. Do not pass your session history.
 
+Before dispatching, read `model_tiers` from `.context-index/platform-context.yaml`. If absent or a tier is unset, use hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
+
+Tier assignments for this skill: structural architect = `reasoning`, security reviewer = `capable`, consistency analyzer = `fast`.
+
 ### Core Reviewers (always dispatched)
 
-**Structural Architect** (model: opus):
+**Structural Architect** (`reasoning` tier):
 ```
 Task tool (general-purpose):
   description: "Structural architecture review of Live Spec"
@@ -98,7 +102,7 @@ Task tool (general-purpose):
     <the spec being reviewed>
 ```
 
-**Security Reviewer** (model: opus):
+**Security Reviewer** (`capable` tier):
 ```
 Task tool (general-purpose):
   description: "Security review of Live Spec"
@@ -117,7 +121,7 @@ Task tool (general-purpose):
     <the spec being reviewed>
 ```
 
-**Consistency Analyzer** (model: opus):
+**Consistency Analyzer** (`fast` tier):
 ```
 Task tool (general-purpose):
   description: "Consistency analysis of Live Spec"
