@@ -4,20 +4,55 @@
 
 | Scenario | Status | Total Tokens | Retry Overhead | Fan-Out Overhead |
 |---|---|---:|---:|---:|
-| subagent-heavy-review | passed | 195 | 0 | 43 |
-| review-fails-once | passed | 180 | 36 | 0 |
-| happy-path | passed | 108 | 0 | 0 |
+| happy-path | incomplete | 0 | 0 | 0 |
+| happy-path | incomplete | 0 | 0 | 0 |
+| happy-path | incomplete | 0 | 0 | 0 |
+| review-fails-once | incomplete | 0 | 0 | 0 |
+| review-fails-once | incomplete | 0 | 0 | 0 |
+| review-fails-once | incomplete | 0 | 0 | 0 |
+| subagent-heavy-review | incomplete | 0 | 0 | 0 |
+| subagent-heavy-review | incomplete | 0 | 0 | 0 |
+| subagent-heavy-review | incomplete | 0 | 0 | 0 |
+
+## Phase Rankings
+
+| Phase | Total Tokens |
+|---|---:|
+| Brainstorm | unknown |
+
+## Retry Multipliers
+
+- happy-path: 1.00x
+- happy-path: 1.00x
+- happy-path: 1.00x
+- review-fails-once: 1.00x
+- review-fails-once: 1.00x
+- review-fails-once: 1.00x
+- subagent-heavy-review: 1.00x
+- subagent-heavy-review: 1.00x
+- subagent-heavy-review: 1.00x
+
+## Subagent Cost Share
+
+- happy-path: 0.0%
+- happy-path: 0.0%
+- happy-path: 0.0%
+- review-fails-once: 0.0%
+- review-fails-once: 0.0%
+- review-fails-once: 0.0%
+- subagent-heavy-review: 0.0%
+- subagent-heavy-review: 0.0%
+- subagent-heavy-review: 0.0%
 
 ## Retry Overhead
 
-- review-fails-once: 36
+- None
 
 ## Fan-Out Overhead
 
-- subagent-heavy-review: 43 (22.1% subagent share)
+- None
 
 ## Top Optimization Candidates
 
-- Highest total scenario: subagent-heavy-review (195 tokens)
-- Highest retry overhead: review-fails-once (36 tokens)
-- Highest fan-out overhead: subagent-heavy-review (43 tokens)
+- Highest total scenario: happy-path (0 tokens)
+- Unknown token data remains in this run; prioritize instrumentation gaps before budget enforcement.

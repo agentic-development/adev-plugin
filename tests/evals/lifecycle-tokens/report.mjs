@@ -191,6 +191,12 @@ export function generateScenarioReport({ scenario, run, events }) {
   if (run.provider_id) {
     lines.push(`- Provider ID: ${escapeCell(run.provider_id)}`);
   }
+  if (run.fixture_profile_id) {
+    lines.push(`- Fixture Profile: ${escapeCell(run.fixture_profile_id)}`);
+  }
+  if (run.fixture_complexity) {
+    lines.push(`- Fixture Complexity: ${escapeCell(run.fixture_complexity)}`);
+  }
   if (run.model_id) {
     lines.push(`- Model ID: ${escapeCell(run.model_id)}`);
   }
@@ -228,7 +234,7 @@ export function generateScenarioReport({ scenario, run, events }) {
   return lines.join("\n");
 }
 
-export function generateRollupReport({ scenarios, scenarioRuns, eventsByRun }) {
+export function generateRollupReport({ scenarios, scenarioRuns, eventsByRun, invocation = { mode: "fixture" } }) {
   const scenarioMap = new Map(scenarios.map((scenario) => [scenario.scenario_id, scenario]));
   const rows = scenarioRuns.map((run) => {
     const events = eventsByRun[run.run_id] ?? [];
@@ -251,6 +257,10 @@ export function generateRollupReport({ scenarios, scenarioRuns, eventsByRun }) {
   const lines = [];
   lines.push("# Lifecycle Token Rollup");
   lines.push("");
+  if (invocation.fixtureProfileId) {
+    lines.push(`- Fixture Profile: ${escapeCell(invocation.fixtureProfileId)}`);
+    lines.push("");
+  }
   lines.push("## Scenario Rankings");
   lines.push("");
   lines.push("| Scenario | Status | Total Tokens | Retry Overhead | Fan-Out Overhead |");
@@ -327,6 +337,7 @@ export function generateCrossProviderReport({
   scenarioRuns,
   eventsByRun,
   scenarioReportPathsByRun = {},
+  invocation = { mode: "live" },
 }) {
   const scenarioMap = new Map(scenarios.map((scenario) => [scenario.scenario_id, scenario]));
   const providerTotals = buildProviderTotals(scenarioRuns, eventsByRun);
@@ -335,6 +346,10 @@ export function generateCrossProviderReport({
 
   lines.push("# Cross-Provider Rollup");
   lines.push("");
+  if (invocation.fixtureProfileId) {
+    lines.push(`- Fixture Profile: ${escapeCell(invocation.fixtureProfileId)}`);
+    lines.push("");
+  }
   lines.push("## Provider Totals");
   lines.push("");
   lines.push("| Provider | Known Total Tokens | Unknown Runs | Failed Runs | Incomplete Runs |");
@@ -438,7 +453,7 @@ export function writeReports({
   const rollupReportPath = join(reportsDir, "ROLLUP.md");
   writeFileSync(
     rollupReportPath,
-    generateRollupReport({ scenarios, scenarioRuns, eventsByRun }),
+    generateRollupReport({ scenarios, scenarioRuns, eventsByRun, invocation }),
     "utf8",
   );
 
@@ -452,6 +467,7 @@ export function writeReports({
         scenarioRuns,
         eventsByRun,
         scenarioReportPathsByRun,
+        invocation,
       }),
       "utf8",
     );

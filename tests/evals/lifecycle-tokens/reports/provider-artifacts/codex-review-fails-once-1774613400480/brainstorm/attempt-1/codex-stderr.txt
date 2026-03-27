@@ -1,0 +1,23 @@
+WARNING: proceeding, even though we could not update PATH: Operation not permitted (os error 1)
+
+thread 'reqwest-internal-sync-runtime' (7098166) panicked at /Users/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/system-configuration-0.6.1/src/dynamic_store.rs:154:1:
+Attempted to create a NULL object.
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread '<unnamed>' (7098165) panicked at /Users/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/reqwest-0.12.28/src/blocking/client.rs:1523:5:
+event loop thread panicked
+
+thread 'main' (7098149) panicked at /Users/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.31.0/src/exporter/http/mod.rs:190:22:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+Could not create otel exporter: panicked during initialization
+2026-03-27T12:10:01.656551Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses
+2026-03-27T12:10:01.657824Z ERROR codex_core::codex: failed to record rollout items: failed to queue rollout items: channel closed
+2026-03-27T12:10:01.657852Z ERROR codex_core::codex: failed to record rollout items: failed to queue rollout items: channel closed
+2026-03-27T12:10:01.658763Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses
+2026-03-27T12:10:01.871139Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses
+2026-03-27T12:10:02.244481Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses
+2026-03-27T12:10:02.998466Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses
+2026-03-27T12:10:04.654022Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses
+2026-03-27T12:10:07.696361Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses
+2026-03-27T12:10:32.352301Z ERROR codex_core::codex: failed to record rollout items: failed to queue rollout items: channel closed
+Warning: no last agent message; wrote empty content to /Users/dpavancini/Development/adev-plugin/tests/evals/lifecycle-tokens/reports/provider-artifacts/codex-review-fails-once-1774613400480/brainstorm/attempt-1/codex-last-message.json

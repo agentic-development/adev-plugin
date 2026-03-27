@@ -52,11 +52,11 @@ describe("runLiveProviderEval", () => {
         "  is_available: true,",
         "  availability_reason: null,",
         `  worker_module_path: ${JSON.stringify(new URL(`file://${join(tempDir, "provider-ok.mjs")}`).href)},`,
-        "  async runPhase({ scenario, phase }) {",
+        "  async runPhase({ scenario, phase, fixtureProfileId }) {",
         '    if (scenario.scenario_id === "subagent-heavy-review" && phase.id === "review-specs") {',
-        '      return { status: "passed", triggerType: "on_fanout_complete", model_id: "gpt-5.4", tokenUsage: { input_tokens: 20, output_tokens: 10, total_tokens: 30 }, subagentRuns: [{ actorRole: "security", status: "passed", tokenUsage: { input_tokens: 4, output_tokens: 2, total_tokens: 6 } }] };',
+        '      return { status: "passed", triggerType: "on_fanout_complete", model_id: "gpt-5.4", fixture_profile_id: fixtureProfileId, fixture_complexity: "medium", tokenUsage: { input_tokens: 20, output_tokens: 10, total_tokens: 30 }, subagentRuns: [{ actorRole: "security", status: "passed", tokenUsage: { input_tokens: 4, output_tokens: 2, total_tokens: 6 } }] };',
         "    }",
-        '    return { status: "passed", model_id: "gpt-5.4", tokenUsage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 } };',
+        '    return { status: "passed", model_id: "gpt-5.4", fixture_profile_id: fixtureProfileId, fixture_complexity: "medium", tokenUsage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 } };',
         "  }",
         "};",
         "export default providerWrapper;",
@@ -139,10 +139,11 @@ describe("runLiveProviderEval", () => {
         },
       ],
       reportsDir,
-      timeoutMs: 100,
+      timeoutMs: 400,
       maxPayloadBytes: 8_192,
       makeRunId: (scenarioId, providerId) => `${providerId}-${scenarioId}-live-1`,
       now: () => "2026-03-26T00:00:00.000Z",
+      fixtureProfileId: "sample-project-medium",
     });
 
     assert.deepEqual(
@@ -156,8 +157,14 @@ describe("runLiveProviderEval", () => {
         ["opencode", "subagent-heavy-review", "failed", "invalid_phase_mapping"],
       ],
     );
+    assert.ok(
+      result.scenarioRuns
+        .filter((run) => run.provider_id === "codex")
+        .every((run) => run.fixture_profile_id === "sample-project-medium" && run.fixture_complexity === "medium"),
+    );
 
     assert.equal(readFileSync(result.reports.crossProviderReportPath, "utf8").includes("Cross-Provider Rollup"), true);
+    assert.equal(readFileSync(result.reports.crossProviderReportPath, "utf8").includes("Fixture Profile: sample-project-medium"), true);
     assert.equal(readFileSync(result.reports.rollupReportPath, "utf8").includes("Phase Rankings"), true);
   });
 

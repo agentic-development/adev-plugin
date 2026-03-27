@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
+
+import { getDefaultCodexFixtureProfileId, resolveCodexFixtureProfile } from "./codex-fixtures.mjs";
 
 const STATUS_TYPES = new Set(["passed", "failed", "incomplete"]);
 const SENSITIVE_ENV_RE = /(token|secret|password|credential|api[_-]?key)/i;
@@ -181,6 +183,32 @@ function normalizeTokenUsageFields(tokenUsage) {
   return sawValue ? normalized : null;
 }
 
+function normalizeUsageSummary(usage) {
+  if (usage === undefined || usage === null) {
+    return undefined;
+  }
+  if (!usage || typeof usage !== "object" || Array.isArray(usage)) {
+    fail("provider_result_unmappable", "usage must be an object");
+  }
+
+  const inputTokens = usage.input_tokens;
+  const outputTokens = usage.output_tokens;
+  if (
+    !Number.isInteger(inputTokens) ||
+    inputTokens < 0 ||
+    !Number.isInteger(outputTokens) ||
+    outputTokens < 0
+  ) {
+    return null;
+  }
+
+  return {
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    total_tokens: inputTokens + outputTokens,
+  };
+}
+
 function normalizeSubagentRuns(subagentRuns) {
   if (subagentRuns === undefined || subagentRuns === null) {
     return undefined;
@@ -285,7 +313,9 @@ export function extractTokenUsageFromEvents(eventsText) {
       const event = JSON.parse(line);
       const candidate =
         normalizeTokenUsageFields(event.token_usage ?? event.tokenUsage) ??
-        normalizeTokenUsageFields(event.item?.token_usage ?? event.item?.tokenUsage);
+        normalizeTokenUsageFields(event.item?.token_usage ?? event.item?.tokenUsage) ??
+        normalizeUsageSummary(event.usage) ??
+        normalizeUsageSummary(event.item?.usage);
       if (candidate) {
         return candidate;
       }
@@ -298,12 +328,47 @@ export function extractTokenUsageFromEvents(eventsText) {
 }
 
 function buildPrompt(context) {
+  const featureSlug = context.fixtureProfile?.feature_slug ?? "fixture-feature";
+  const fixtureSummary = context.fixtureProfile
+    ? `Fixture Profile: ${context.fixtureProfile.fixture_name} (${context.fixtureProfile.fixture_id}, complexity: ${context.fixtureProfile.complexity})`
+    : null;
+  const featureSummary = context.fixtureProfile
+    ? `Fixture Feature: ${context.fixtureProfile.feature_slug} - ${context.fixtureProfile.feature_task}`
+    : null;
+  const phaseInstructionById = {
+    brainstorm:
+      `Perform the brainstorm phase for the fixture feature. Create or update a feature charter under .context-index/specs/features/${featureSlug}/charter.md.`,
+    specify:
+      `Perform the specify phase for the same fixture feature. Author or update the live spec under .context-index/specs/features/${featureSlug}/.`,
+    "review-specs":
+      `Perform the review-specs phase for the same feature. Review the authored spec, use reviewer fan-out if useful, and write review artifacts under .context-index/specs/features/${featureSlug}/.`,
+    plan:
+      `Perform the plan phase for the same feature. Produce the implementation plan artifact under .context-index/specs/features/${featureSlug}/.`,
+    implement:
+      "Perform the implement phase for the same feature. Modify the fixture workspace and tests to implement the planned behavior.",
+    validate:
+      "Perform the validate phase for the same feature. Run the relevant checks in the fixture workspace and record validation evidence under the artifact directory.",
+  };
+
   return [
-    "Execute one deterministic lifecycle eval phase for the current repository.",
+    "Execute one deterministic lifecycle eval phase for the current fixture workspace.",
     "Return a final JSON object matching the provided schema.",
     "Do not include Markdown fences in the final answer.",
+    "This is an observability eval, not a normal coding session.",
+    "The fixture workspace is disposable for this run; you may modify files inside it.",
+    "Do not run git write operations or mutate the source repository outside the provided fixture workspace.",
+    "Write any extra artifacts only inside the provided artifact directory.",
+    "Do not ask the user any questions and do not wait for interaction.",
+    "Continue the same feature across phases by reusing the existing workspace state from earlier phases in this run.",
+    "Do not restart from scratch if earlier phase artifacts already exist in the workspace.",
+    "TODO: split this runner into classification and behavioral modes so runner verification can stay deterministic without losing realistic review-specs fan-out costs in behavioral runs.",
+    "Prefer completing the actual phase work for this fixture feature instead of classifying repo state.",
+    "Keep the work bounded to the named fixture feature and stop after this phase reaches a terminal outcome.",
+    phaseInstructionById[context.phase.id] ?? "Perform the requested lifecycle phase for the fixture feature and return the phase result.",
+    ...(fixtureSummary ? ["", fixtureSummary] : []),
+    ...(featureSummary ? [featureSummary] : []),
     "",
-    `Objective: Run the lifecycle phase ${context.phase.name} (${context.phase.skill_name}) and report its terminal outcome for the current repository state.`,
+    `Objective: Run the lifecycle phase ${context.phase.name} (${context.phase.skill_name}) for the selected fixture feature and report its terminal outcome.`,
     `Scenario ID: ${context.scenario.scenario_id}`,
     `Scenario Name: ${context.scenario.scenario_name ?? context.scenario.scenario_id}`,
     `Phase ID: ${context.phase.id}`,
@@ -312,6 +377,45 @@ function buildPrompt(context) {
     `Attempt: ${context.attempt}`,
     `Run ID: ${context.runId}`,
   ].join("\n");
+}
+
+function shouldCopyWorkspacePath(sourceRoot, candidatePath) {
+  const relativePath = relative(sourceRoot, candidatePath).split("\\").join("/");
+  if (!relativePath || relativePath === ".") {
+    return true;
+  }
+
+  const segments = relativePath.split("/").filter(Boolean);
+  if (segments.includes(".git")) {
+    return false;
+  }
+
+  if (relativePath === ".claude/worktrees" || relativePath.startsWith(".claude/worktrees/")) {
+    return false;
+  }
+
+  if (
+    relativePath === "tests/evals/lifecycle-tokens/reports" ||
+    relativePath.startsWith("tests/evals/lifecycle-tokens/reports/")
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function ensureRunWorkspace({ sourceRoot, runWorkspaceRoot }) {
+  const workspacePath = join(runWorkspaceRoot, "repo");
+  if (existsSync(workspacePath)) {
+    return workspacePath;
+  }
+
+  mkdirSync(runWorkspaceRoot, { recursive: true });
+  cpSync(sourceRoot, workspacePath, {
+    recursive: true,
+    filter: (src) => shouldCopyWorkspacePath(sourceRoot, src),
+  });
+  return workspacePath;
 }
 
 function executeCodex({ executable, executableArgs, args, prompt, cwd, env, spawnFn }) {
@@ -343,14 +447,61 @@ function executeCodex({ executable, executableArgs, args, prompt, cwd, env, spaw
   });
 }
 
+function createFailureResult({ status, reasonCode, modelId = null, artifactPaths, fixtureProfile = null }) {
+  return {
+    status,
+    triggerType: null,
+    modelId,
+    reasonCode,
+    tokenUsage: null,
+    subagentRuns: null,
+    ...(fixtureProfile
+      ? {
+          fixtureProfileId: fixtureProfile.fixture_id,
+          fixtureComplexity: fixtureProfile.complexity,
+        }
+      : {}),
+    artifactPaths,
+  };
+}
+
+function classifyCodexFailure({ stderr, exitCode, parseError }) {
+  const stderrText = String(stderr ?? "").toLowerCase();
+  if (
+    stderrText.includes("operation not permitted") ||
+    stderrText.includes("permission denied") ||
+    stderrText.includes("sandbox")
+  ) {
+    return { status: "incomplete", reasonCode: "codex_sandbox_denied" };
+  }
+  if (parseError?.code === "ENOENT") {
+    return {
+      status: exitCode === 0 ? "failed" : "incomplete",
+      reasonCode: "codex_output_missing",
+    };
+  }
+  if (parseError instanceof SyntaxError) {
+    return { status: "failed", reasonCode: "codex_output_invalid_json" };
+  }
+  if (exitCode !== 0) {
+    return { status: "incomplete", reasonCode: `codex_exit_${exitCode}` };
+  }
+  return { status: "failed", reasonCode: "provider_output_unparseable" };
+}
+
 export async function runPhase(context, options = {}) {
   validateContext(context);
 
   const env = options.env ?? process.env;
+  const fixtureProfileId =
+    options.fixtureProfileId ??
+    context.fixtureProfileId ??
+    env.ADEV_LIFECYCLE_PROVIDER_CODEX_FIXTURE ??
+    getDefaultCodexFixtureProfileId();
+  const fixtureProfile = resolveCodexFixtureProfile(fixtureProfileId);
   const executable = options.executable ?? env.ADEV_LIFECYCLE_PROVIDER_CODEX_BIN ?? "codex";
   const executableArgs = options.executableArgs ?? parseExecutableArgs(env.ADEV_LIFECYCLE_PROVIDER_CODEX_ARGS);
   const model = options.model ?? env.ADEV_LIFECYCLE_PROVIDER_CODEX_MODEL ?? null;
-  const cwd = options.cwd ?? process.cwd();
   const spawnFn = options.spawnFn ?? spawn;
 
   const attemptDir = join(
@@ -361,8 +512,18 @@ export async function runPhase(context, options = {}) {
     `attempt-${context.attempt}`,
   );
   mkdirSync(attemptDir, { recursive: true });
+  const runWorkspaceRoot = join(
+    context.artifactRoot,
+    "provider-artifacts",
+    context.runId,
+    "workspace",
+  );
+  const workspacePath = ensureRunWorkspace({
+    sourceRoot: fixtureProfile.fixture_root,
+    runWorkspaceRoot,
+  });
 
-  const prompt = buildPrompt(context);
+  const prompt = buildPrompt({ ...context, fixtureProfile });
   const schemaPath = join(attemptDir, "codex-output-schema.json");
   const outputLastMessagePath = join(attemptDir, "codex-last-message.json");
   writeFileSync(schemaPath, JSON.stringify(OUTPUT_SCHEMA, null, 2), "utf8");
@@ -380,7 +541,7 @@ export async function runPhase(context, options = {}) {
     "--output-last-message",
     outputLastMessagePath,
     "-C",
-    cwd,
+    workspacePath,
     "--add-dir",
     context.artifactRoot,
   ];
@@ -396,7 +557,7 @@ export async function runPhase(context, options = {}) {
       executableArgs,
       args,
       prompt,
-      cwd,
+      cwd: workspacePath,
       env,
       spawnFn,
     });
@@ -424,6 +585,14 @@ export async function runPhase(context, options = {}) {
       env,
     }),
   );
+  artifactPaths.push(
+    writeArtifact({
+      rootPath: context.artifactRoot,
+      relativePath: relative(context.artifactRoot, join(attemptDir, "codex-stderr.txt")),
+      content: execution.stderr,
+      env,
+    }),
+  );
 
   const eventTokenUsage = extractTokenUsageFromEvents(execution.stdout);
 
@@ -431,7 +600,17 @@ export async function runPhase(context, options = {}) {
   try {
     parsedPayload = JSON.parse(readFileSync(outputLastMessagePath, "utf8"));
   } catch (error) {
-    fail("provider_output_unparseable", error.message);
+    const failure = classifyCodexFailure({
+      stderr: execution.stderr,
+      exitCode: execution.code,
+      parseError: error,
+    });
+    return createFailureResult({
+      status: failure.status,
+      reasonCode: failure.reasonCode,
+      artifactPaths,
+      fixtureProfile,
+    });
   }
 
   if (
@@ -460,6 +639,8 @@ export async function runPhase(context, options = {}) {
     }
   }
 
+  normalized.fixtureProfileId = fixtureProfile.fixture_id;
+  normalized.fixtureComplexity = fixtureProfile.complexity;
   normalized.artifactPaths = artifactPaths;
   return normalized;
 }

@@ -42,6 +42,10 @@ function readTimeoutMsFromEnv() {
   return parsed;
 }
 
+function readCodexFixtureProfileIdFromEnv() {
+  return process.env.ADEV_LIFECYCLE_PROVIDER_CODEX_FIXTURE ?? null;
+}
+
 function createUnavailableRun({ scenario, provider, eventsDir, makeRunId, now }) {
   return runScenarioMatrix({
     scenarios: [scenario],
@@ -64,6 +68,7 @@ function executeWorkerRun({
   maxPayloadBytes,
   makeRunId,
   now,
+  fixtureProfileId,
 }) {
   return new Promise((resolveRun) => {
     const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--worker"], {
@@ -163,6 +168,7 @@ function executeWorkerRun({
         maxPayloadBytes,
         runId: makeRunId(scenario.scenario_id, provider.provider_id),
         now: now(),
+        fixtureProfileId,
       }),
     );
   });
@@ -176,6 +182,7 @@ export async function runLiveProviderEval({
   maxPayloadBytes = 256 * 1024,
   makeRunId = defaultRunId,
   now = () => new Date().toISOString(),
+  fixtureProfileId = readCodexFixtureProfileIdFromEnv(),
 }) {
   const scenarioRuns = [];
 
@@ -201,6 +208,7 @@ export async function runLiveProviderEval({
           maxPayloadBytes,
           makeRunId,
           now,
+          fixtureProfileId,
         }),
       );
     }
@@ -210,7 +218,7 @@ export async function runLiveProviderEval({
     scenarios,
     scenarioRuns,
     reportsDir,
-    invocation: { mode: "live" },
+    invocation: { mode: "live", fixtureProfileId },
   });
 
   return { scenarioRuns, reports };
@@ -229,7 +237,10 @@ async function runWorker() {
     makeRunId: () => payload.runId,
     now: () => payload.now,
     executePhase: async (context) => {
-      const rawResult = await provider.runPhase(context);
+      const rawResult = await provider.runPhase({
+        ...context,
+        ...(payload.fixtureProfileId ? { fixtureProfileId: payload.fixtureProfileId } : {}),
+      });
       const serialized = Buffer.byteLength(JSON.stringify(rawResult));
       if (serialized > payload.maxPayloadBytes) {
         const error = new Error("payload_limit_exceeded");

@@ -62,6 +62,8 @@ describe("scenario reporting", () => {
         providerId: "codex",
       })
     ).scenarioRuns;
+    run.fixture_profile_id = "sample-project-medium";
+    run.fixture_complexity = "medium";
 
     const report = generateScenarioReport({
       scenario: scenarios.find((scenario) => scenario.scenario_id === "subagent-heavy-review"),
@@ -71,6 +73,8 @@ describe("scenario reporting", () => {
 
     assert.match(report, /# Scenario Report: Subagent Heavy Review/);
     assert.match(report, /Provider ID: codex/);
+    assert.match(report, /Fixture Profile: sample-project-medium/);
+    assert.match(report, /Fixture Complexity: medium/);
     assert.match(report, /## Declared Path/);
     assert.match(report, /brainstorm -> specify -> review-specs -> plan -> implement -> validate/);
     assert.match(report, /## Realized Path/);
@@ -148,11 +152,15 @@ describe("scenario reporting", () => {
     ).scenarioRuns;
 
     const scenarioRuns = [...claudeRuns, ...codexRuns, ...opencodeRuns];
+    for (const run of scenarioRuns) {
+      run.fixture_profile_id = "sample-project-small";
+      run.fixture_complexity = "small";
+    }
     const reports = writeReports({
       scenarios,
       scenarioRuns,
       reportsDir: join(tempDir, "reports"),
-      invocation: { mode: "live" },
+      invocation: { mode: "live", fixtureProfileId: "sample-project-small" },
     });
 
     assert.equal(reports.scenarioReportPaths.length, 9);
@@ -165,9 +173,11 @@ describe("scenario reporting", () => {
       eventsByRun: Object.fromEntries(
         scenarioRuns.map((run) => [run.run_id, readEventLog(run.event_log_path)]),
       ),
+      invocation: { mode: "live", fixtureProfileId: "sample-project-small" },
     });
 
     assert.match(rollup, /## Phase Rankings/);
+    assert.match(rollup, /Fixture Profile: sample-project-small/);
     assert.match(rollup, /## Retry Multipliers/);
     assert.match(rollup, /## Subagent Cost Share/);
     assert.match(rollup, /Unknown token data remains in this run/);
@@ -180,9 +190,11 @@ describe("scenario reporting", () => {
         scenarioRuns.map((run) => [run.run_id, readEventLog(run.event_log_path)]),
       ),
       scenarioReportPathsByRun: reports.scenarioReportPathsByRun,
+      invocation: { mode: "live", fixtureProfileId: "sample-project-small" },
     });
 
     assert.match(crossProvider, /# Cross-Provider Rollup/);
+    assert.match(crossProvider, /Fixture Profile: sample-project-small/);
     assert.match(crossProvider, /## Provider Totals/);
     assert.match(crossProvider, /## Scenario: Happy Path/);
     assert.match(crossProvider, /\| codex \|/);

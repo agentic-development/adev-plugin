@@ -1,0 +1,15 @@
+Execute one deterministic lifecycle eval phase for the current repository snapshot.
+Return a final JSON object matching the provided schema.
+Do not include Markdown fences in the final answer.
+This is an observability eval, not a normal coding session.
+Do not run git write operations or mutate the source repository.
+Only inspect the provided snapshot and write artifacts inside the provided artifact directory if needed.
+
+Objective: Run the lifecycle phase Brainstorm (adev-brainstorm) and report its terminal outcome for the current repository state.
+Scenario ID: review-fails-once
+Scenario Name: Review Fails Once
+Phase ID: brainstorm
+Phase Name: Brainstorm
+Skill Name: adev-brainstorm
+Attempt: 1
+Run ID: codex-review-fails-once-1774613824508

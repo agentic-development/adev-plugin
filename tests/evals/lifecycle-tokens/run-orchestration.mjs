@@ -86,6 +86,8 @@ async function runScenario({
   let status = "incomplete";
   let reasonCode = null;
   let modelId = null;
+  let fixtureProfileId = null;
+  let fixtureComplexity = null;
 
   if (!phaseMap.has(currentPhaseId)) {
     status = "failed";
@@ -157,6 +159,12 @@ async function runScenario({
     nextEventIndex += phaseEvents.length;
     if (normalized.runMetadata.model_id && !modelId) {
       modelId = normalized.runMetadata.model_id;
+    }
+    if (normalized.runMetadata.fixture_profile_id && !fixtureProfileId) {
+      fixtureProfileId = normalized.runMetadata.fixture_profile_id;
+    }
+    if (normalized.runMetadata.fixture_complexity && !fixtureComplexity) {
+      fixtureComplexity = normalized.runMetadata.fixture_complexity;
     }
     for (const artifactPath of normalized.runMetadata.artifact_paths) {
       if (!artifactPaths.includes(artifactPath)) {
@@ -243,6 +251,8 @@ async function runScenario({
     run_id: runId,
     provider_id: providerId,
     model_id: modelId,
+    fixture_profile_id: fixtureProfileId,
+    fixture_complexity: fixtureComplexity,
     scenario_id: scenario.scenario_id,
     scenario_name: scenario.scenario_name,
     status,

@@ -1,0 +1,132 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "triggerType",
+    "modelId",
+    "reasonCode",
+    "tokenUsage",
+    "subagentRuns"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "passed",
+        "failed",
+        "incomplete"
+      ]
+    },
+    "triggerType": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "modelId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reasonCode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tokenUsage": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "total_tokens"
+      ],
+      "properties": {
+        "input_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "output_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "total_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    },
+    "subagentRuns": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "actorRole",
+          "status",
+          "tokenUsage"
+        ],
+        "properties": {
+          "actorRole": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "incomplete"
+            ]
+          },
+          "tokenUsage": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "input_tokens",
+              "output_tokens",
+              "total_tokens"
+            ],
+            "properties": {
+              "input_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "output_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "total_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

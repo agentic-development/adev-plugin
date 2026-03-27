@@ -29,6 +29,10 @@ const ALLOWED_TOP_LEVEL_FIELDS = new Set([
   "phase_id",
   "providerId",
   "provider_id",
+  "fixtureProfileId",
+  "fixture_profile_id",
+  "fixtureComplexity",
+  "fixture_complexity",
 ]);
 
 function fail(code, message) {
@@ -143,6 +147,14 @@ export function normalizePhaseExecutionResult({
   const triggerType = normalizeTriggerType(result.trigger_type ?? result.triggerType);
   const reasonCode = normalizeOptionalString(result.reason_code ?? result.reasonCode, "reasonCode");
   const modelId = normalizeOptionalString(result.model_id ?? result.modelId, "modelId");
+  const fixtureProfileId = normalizeOptionalString(
+    result.fixture_profile_id ?? result.fixtureProfileId,
+    "fixtureProfileId",
+  );
+  const fixtureComplexity = normalizeOptionalString(
+    result.fixture_complexity ?? result.fixtureComplexity,
+    "fixtureComplexity",
+  );
   const artifactPaths = normalizeArtifactPaths(result.artifact_paths ?? result.artifactPaths, artifactRoot);
   const tokenUsage = result.token_usage ?? result.tokenUsage ?? {};
   const rawSubagents = normalizeSubagents(result.subagents ?? result.subagentRuns);
@@ -198,6 +210,8 @@ export function normalizePhaseExecutionResult({
     runMetadata: {
       provider_id: providerId,
       model_id: modelId,
+      fixture_profile_id: fixtureProfileId,
+      fixture_complexity: fixtureComplexity,
       artifact_paths: artifactPaths,
       reason_code: reasonCode,
     },

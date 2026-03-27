@@ -33,6 +33,8 @@ describe("normalizePhaseExecutionResult", () => {
           status: "passed",
           trigger_type: "on_fanout_complete",
           model_id: "gpt-5.4",
+          fixture_profile_id: "sample-project-small",
+          fixture_complexity: "small",
           reason_code: "completed",
           artifact_paths: ["artifacts/review.json"],
           token_usage: { input_tokens: 20, output_tokens: 10, total_tokens: 30 },
@@ -58,6 +60,8 @@ describe("normalizePhaseExecutionResult", () => {
       assert.deepEqual(normalized.runMetadata, {
         provider_id: "codex",
         model_id: "gpt-5.4",
+        fixture_profile_id: "sample-project-small",
+        fixture_complexity: "small",
         artifact_paths: ["artifacts/review.json"],
         reason_code: "completed",
       });
