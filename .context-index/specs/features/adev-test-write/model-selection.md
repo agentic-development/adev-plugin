@@ -6,7 +6,7 @@
 
 ---
 charter: adev-test-write
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: v1
 created: 2026-03-27
@@ -29,14 +29,15 @@ cross-cutting-refs:
 
 3. **When** the skill prepares to dispatch the gaming violation judgment subagent (for edge cases not caught by `detect-gaming.mjs` regex) **then** it reads `model_tiers.fast` from `platform-context.yaml`.
 
-4. **When** `model_tiers` is absent from `platform-context.yaml` **then** the skill uses these hardcoded defaults and logs a one-time advisory: "Add `model_tiers` to `.context-index/platform-context.yaml` to configure provider-specific model IDs."
+4. **When** `model_tiers` is absent from `platform-context.yaml` **then** the skill uses the hardcoded defaults defined in the model-routing cross-cutting spec and logs a one-time advisory. The canonical fallback table (all three tiers) is defined in `.context-index/specs/cross-cutting/model-routing.md`. For reference, the tiers used by this skill fall back to:
 
    | Tier | Hardcoded Default |
    |------|-------------------|
    | `capable` | `claude-sonnet-4-6` |
    | `fast` | `claude-haiku-4-5` |
+   | `reasoning` | `claude-opus-4-6` |
 
-5. **When** a tier key exists in `model_tiers` but its value is empty or null **then** the skill falls back to the `capable` tier value (or the `capable` hardcoded default if `capable` is also unset).
+5. **When** a tier key exists in `model_tiers` but its value is empty or null **then** the skill falls back to the `capable` tier value; if `capable` is also empty, falls back to the hardcoded default `claude-sonnet-4-6`. Resolution order: tier-specific value → `capable` value → hardcoded default `claude-sonnet-4-6`.
 
 6. **When** `platform-context.yaml` is unreadable (permission error, malformed YAML) **then** the skill uses hardcoded defaults and logs a warning with the file path and error.
 

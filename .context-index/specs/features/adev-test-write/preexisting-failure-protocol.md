@@ -5,7 +5,7 @@
 
 ---
 charter: adev-test-write
-status: review-pending
+status: review-passed
 risk_level: high
 milestone: v1
 created: 2026-03-27
@@ -16,14 +16,15 @@ created: 2026-03-27
 ### Preconditions
 
 - `adev-test-write --red` has been invoked
-- The project has a detectable test command (framework detection has run)
+- The project has a detectable test command from the allowlisted framework detection table (framework detection has run)
 - The working tree has uncommitted changes (otherwise stash is a no-op and the check is skipped)
+- No `.context-index/.test-write.lock` file exists (concurrent execution guard)
 
 ### Behaviors
 
 1. **When** `--red` is invoked **then** the skill runs the test command before writing any tests. If all tests pass, it proceeds immediately to authoring — no stash is needed.
 
-2. **When** `--red` is invoked and one or more tests are already failing **then** the skill must prove those failures predate the current changes before proceeding. It runs `git stash`, re-runs the failing tests on the clean branch, records the output, then runs `git stash pop` to restore changes — regardless of whether the test run succeeded or errored.
+2. **When** `--red` is invoked and one or more tests are already failing **then** the skill must prove those failures predate the current changes before proceeding. It runs `git stash --include-untracked` (to stash both tracked and untracked files, preventing contamination of the clean-branch check), re-runs the failing tests on the clean branch with a 60-second timeout, records the output, then runs `git stash pop` to restore changes — regardless of whether the test run succeeded, errored, or timed out.
 
 3. **When** the stash check confirms a failure existed before current changes (test still fails on clean branch) **then** the skill attaches a Pre-existing Failure Record to the Handoff Block and proceeds to authoring. The record documents: the stash SHA, the test output before stash pop, and the test output after stash pop.
 
@@ -43,7 +44,9 @@ created: 2026-03-27
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| `git stash` fails | Block with git error message. Do not proceed. | GIT_STASH_FAILED |
+| Lock file exists | Block with "Another adev-test-write instance is running. Wait for it to complete or remove `.context-index/.test-write.lock` if stale." | CONCURRENT_EXECUTION |
+| `git stash --include-untracked` fails | Block with git error message. Do not proceed. | GIT_STASH_FAILED |
+| Intermediate test run times out (> 60s) | Kill the process. Proceed to `git stash pop`. Block with TIMEOUT_ERROR. | TIMEOUT_ERROR |
 | `git stash pop` fails | Block immediately. Report stash SHA. Instruct manual recovery. Do not attempt further operations. | GIT_POP_FAILED |
 | Test command not found | Block with "Test command not detected. Run framework detection first." | FRAMEWORK_NOT_DETECTED |
 | Failure caused by current changes | Block with failing test name and instruction to fix before authoring new tests. | REGRESSION_DETECTED |
@@ -67,7 +70,10 @@ created: 2026-03-27
 - [ ] When tests pass before `--red`, the stash protocol is skipped and authoring proceeds
 - [ ] When tests fail before `--red` and the failure predates current changes, a Pre-existing Failure Record is attached to the Handoff Block
 - [ ] When tests fail before `--red` and the failure is caused by current changes, the skill blocks with the failing test name and a fix instruction
-- [ ] `git stash pop` always executes after `git stash` — even if the intermediate test run errors
+- [ ] Uses `git stash --include-untracked` to prevent untracked files from contaminating the clean-branch check
+- [ ] Creates `.context-index/.test-write.lock` before stash and removes it after stash pop (even on failure)
+- [ ] `git stash pop` always executes after `git stash` — even if the intermediate test run errors or times out
+- [ ] Intermediate test run is killed and stash pop proceeds if the test command does not complete within 60 seconds
 - [ ] A failed `git stash pop` causes an immediate block with the stash SHA for manual recovery
 - [ ] A clean working tree skips the stash protocol and records `preexisting_check: skipped (clean tree)` in the Handoff Block
 - [ ] All quality gates pass (`npm test`)
