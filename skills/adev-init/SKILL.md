@@ -89,6 +89,25 @@ Step 3/10: Platform Context
   → Save this? (yes / edit / skip)
 ```
 
+After saving the stack, prompt for model tiers:
+
+```
+  Model tiers let skills pick the right model for each task.
+  Defaults (from model-routing spec):
+
+    fast:      claude-haiku-4-5-20251001  # diffs, pattern matching, gaming detection
+    capable:   claude-sonnet-4-6          # code generation, test authoring
+    reasoning: claude-opus-4-6            # architecture review, cross-cutting analysis
+
+  → Accept defaults / enter custom model IDs / skip
+```
+
+- **Accept defaults:** write the three keys with the hardcoded default values shown above.
+- **Enter custom model IDs:** prompt for each tier value individually; accept empty to keep the default.
+- **Skip:** write the three keys with blank values (skills will log a one-time advisory on first dispatch).
+
+Write the `model_tiers` section to `platform-context.yaml` immediately after the stack fields, with inline comments matching the tier descriptions above.
+
 ```
 Step 4/10: Orientation
   The orientation file is a human-written guide to your codebase.
