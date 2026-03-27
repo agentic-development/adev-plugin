@@ -27,11 +27,13 @@ The spec-lifecycle module improves how charters and specs track their status, re
 - `lib/source-manifest.mjs` — plugin-level helper for computing and verifying content hashes
 - Git native hooks (`.githooks/prepare-commit-msg`, `.githooks/post-commit`) installed by `/adev-init`
 - `/adev-hygiene` aggregation: queries git + tests + frontmatter + session summaries for project status report
-- Updated templates: charter template with status/revision/capability status, spec template with revision/charter-revision/source-manifest, manifest template with `integrations:` section
+- Updated templates: charter template with status/revision/capability status, spec template with revision/charter-revision/source-manifest/tracker-ref, manifest template with `integrations:` section
+- `/adev-status` skill for querying spec-lifecycle data: per-spec, per-charter, and project-wide status reports
+- Optional `tracker-ref` field in spec and charter frontmatter for linking to external trackers (metadata only, no API integration)
 
 ### Out of Scope
 
-- Traceability graph (epics → tasks → specs → code → sessions) — separate charter
+- Traceability graph (epics → tasks → specs → code → sessions) — separate adev-graph plugin
 - Semantic versioning (1.0.0 style) — revision counter is sufficient
 - Amendment Log — git log with structured commits replaces this
 - Plan task checkboxes / status tracking — tests are source of truth
@@ -41,6 +43,9 @@ The spec-lifecycle module improves how charters and specs track their status, re
 - PR-level session aggregation (v2)
 - Sidecar state files — all state lives in frontmatter
 - State machine helper module — skills enforce transitions inline
+- Epic/task management — belongs in future adev-graph plugin
+- External tracker API integration (Jira, Linear, GitHub) — belongs in future adev-graph plugin or dedicated integration plugin
+- Bidirectional sync between tracker-ref and external systems
 
 ### Dependencies
 
@@ -112,6 +117,8 @@ The spec-lifecycle module improves how charters and specs track their status, re
 | Structured Commit Trailers | Git hooks inject `Spec:`, `Plan-task:`, `Session:` trailers into commit messages automatically | must-have | v1 | — |
 | Entire Provider Adapter | When `provider: entire`, read summaries from Entire's checkpoint branch; disable native hooks to avoid duplication | should-have | v1 | — |
 | Hygiene Status Aggregation | `/adev-hygiene` queries charters, specs, plans, tests, git log, and session summaries; produces project status report | should-have | v1 | — |
+| Status Query Skill | `/adev-status` skill queries spec-lifecycle data: per-spec status (revision, source manifest match, commits, sessions, test results), per-charter status (capability progress), project-wide aggregation. Composes git log, frontmatter, test results, and session summaries into a single report. | should-have | v1 | — |
+| Tracker Reference Field | Optional `tracker-ref` field in spec and charter frontmatter linking to external trackers (Jira, Linear, GitHub Issues). No API integration — metadata only. Displayed by `/adev-status`, queryable by future adev-graph plugin. | should-have | v1 | — |
 | Codex Adapter | Session parser adapter for Codex log format | nice-to-have | v2 | — |
 | PR Session Aggregation | Aggregate session summaries from branch commits into PR description | nice-to-have | v2 | — |
 | LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | nice-to-have | v2 | — |
@@ -131,6 +138,7 @@ The spec-lifecycle module improves how charters and specs track their status, re
 | `.githooks/prepare-commit-msg` | git hook | Injects `Spec:`, `Plan-task:`, `Session:` trailers into commit messages |
 | `.githooks/post-commit` | git hook | Calls session-summary writer to persist session summary on commit |
 | `hooks/session-capture.sh` | Claude Code PostToolUse hook | Logs tool name + files touched to lightweight session tracking file. Uses `.sh` (not `.mjs`) for consistency with existing Claude Code hooks (`session-start.sh`, `constitution-linter.sh`, `merge-guard.sh`, `sync-trigger.sh`) which all follow the bash hook protocol. |
+| `skills/adev-status/SKILL.md` | skill | Queries spec-lifecycle data. Arguments: `--spec <path>` (single spec status), `--charter <name>` (charter + capability progress), `--all` (project-wide aggregation). Composes git log, frontmatter, test results, session summaries, and tracker-ref into a structured report. |
 
 ### Consumed APIs
 
