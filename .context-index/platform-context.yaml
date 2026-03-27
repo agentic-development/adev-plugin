@@ -9,3 +9,15 @@ test_runner: "node:test"
 package_manager: npm
 deployment: npm registry  # npx adev-cli init
 plugin_target: claude-code
+
+# ============================================================================
+# Model Tier Configuration
+# ============================================================================
+
+# Set to provider model IDs. Skills fall back to built-in defaults if absent.
+# See .context-index/specs/cross-cutting/model-routing.md for tier semantics.
+
+model_tiers:
+  fast:      claude-haiku-4-5-20251001  # pattern matching, diffs, gaming detection
+  capable:   claude-sonnet-4-6          # code generation, test authoring, behavioral reasoning
+  reasoning: claude-opus-4-6            # architecture review, cross-cutting analysis
