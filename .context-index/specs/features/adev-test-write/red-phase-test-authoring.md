@@ -6,7 +6,7 @@
 
 ---
 charter: adev-test-write
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v1
 created: 2026-03-27

@@ -5,7 +5,7 @@
 
 ---
 charter: adev-test-write
-status: review-pending
+status: review-passed
 risk_level: high
 milestone: v1
 created: 2026-03-27
@@ -26,12 +26,12 @@ created: 2026-03-27
 
 2. **When** the hash does not match **then** the skill does not immediately fail — it proceeds to semantic diff to distinguish meaningful changes from cosmetic ones (whitespace, comments, variable renames that do not affect assertion logic).
 
-3. **When** a semantic diff is performed **then** the skill compares each assertion in the original test files (reconstructed from the Handoff Block's locked constraints and the original file contents, if stored) against the current assertions. Changes that weaken a test are flagged as TAMPERED:
-   - Assertion removed entirely
-   - Matcher loosened (e.g., `toEqual` → `toMatchObject`, `toBe(false)` → `toBeFalsy()`, `toHaveLength(3)` → `toBeGreaterThan(0)`)
-   - Expected value changed to match actual implementation output
-   - Test skipped or commented out
-   - Conditional logic added around an assertion
+3. **When** a semantic diff is performed **then** the skill reads the original test file contents from the Handoff Block's `## Original Test File Contents` section (stored verbatim at RED phase) and compares them line-by-line against the current test files. Changes that weaken a test are flagged as TAMPERED:
+   - Assertion removed entirely (`REMOVED`)
+   - Matcher loosened (`LOOSENED`) — e.g., `toEqual` → `toMatchObject`, `toBe(false)` → `toBeFalsy()`, `toHaveLength(3)` → `toBeGreaterThan(0)`
+   - Expected value changed to differ from the original (`HARDCODED_TO_PASS`) — detected by comparing original expected value to current expected value in the diff; does not require running the implementation
+   - Test skipped or commented out (`SKIPPED`) — `.skip`, `.todo`, `xit`, `xdescribe`, commented-out test block
+   - Conditional logic added around an assertion (`CONDITIONAL`) — `if/else` guard or `try/catch` swallowing assertion failure
 
 4. **When** only cosmetic changes are found (whitespace, comments, non-assertion code reformatting) **then** the skill returns `PASS_WITH_COSMETIC_CHANGES` and logs what changed without blocking.
 
@@ -50,7 +50,7 @@ created: 2026-03-27
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | Handoff Block not found at `<path>` | Block with "Packet not found: <path>. Run `--red` first." | PACKET_NOT_FOUND |
-| Test file listed in Handoff Block no longer exists | Block with "Test file missing: <path>. Cannot verify integrity." | STALE_PACKET |
+| Test file listed in Handoff Block no longer exists | Block with "Test file missing: <path>. Cannot verify integrity." (verification reads always block on STALE_PACKET) | STALE_PACKET |
 | Hash recomputation fails | Block with filesystem error | HASH_ERROR |
 | All tests now pass (GREEN achieved) but hash mismatches | Still perform semantic diff — passing tests do not exempt from tamper check | — |
 

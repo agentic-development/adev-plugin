@@ -5,7 +5,7 @@
 
 ---
 charter: adev-test-write
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: v1
 created: 2026-03-27
@@ -26,9 +26,11 @@ created: 2026-03-27
 
 3. **When** an assertion **matcher was loosened** **then** the report entry shows: file path, line number, original matcher + expected value, current matcher + expected value, and tamper classification `LOOSENED`. Examples: `toEqual({id: 1, name: "Alice"})` → `toMatchObject({id: 1})`, `toBe(false)` → `toBeFalsy()`.
 
-4. **When** an **expected value was changed** to match the implementation's actual output **then** the report entry shows: original expected value, current expected value, and tamper classification `HARDCODED_TO_PASS`.
+4. **When** an **expected value was changed** (original expected value differs from current expected value in the diff) **then** the report entry shows: original expected value, current expected value, and tamper classification `HARDCODED_TO_PASS`. This classification is determined by diffing original vs current file contents — it does not require executing the implementation.
 
-5. **When** a test was **conditionally skipped** (`.skip`, `if` guard, `try/catch` swallow) **then** the report entry shows the added code and tamper classification `SKIPPED`.
+5. **When** a test was **disabled** (`.skip`, `.todo`, `xit`, `xdescribe`, commented-out test block) **then** the report entry shows the added/changed code and tamper classification `SKIPPED`.
+
+6. **When** **conditional logic was added around an assertion** (`if/else` guard, `try/catch` swallowing the assertion failure) **then** the report entry shows the added wrapper code and tamper classification `CONDITIONAL`.
 
 6. **When** the diff report is produced **then** it is written to `.context-index/packets/<slug>-verify-report.md` alongside the Handoff Block, and also printed to the skill's output so the user and `adev-implement` can act on it immediately.
 
@@ -45,7 +47,7 @@ created: 2026-03-27
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | Report file not writable | Print report inline only — do not block on write failure | — |
-| Original test file content not recoverable from Handoff Block | Report "Unable to produce line-level diff — hash mismatch detected but original content not stored. Revert test files to match Handoff Block constraints." | DIFF_UNAVAILABLE |
+| Original test file content section absent from Handoff Block (written by older version of the skill) | Report "Unable to produce line-level diff — Handoff Block was written without original content storage. Check git log for the commit where tests were written to retrieve originals." | DIFF_UNAVAILABLE |
 
 ### Diff Report Format
 
@@ -108,7 +110,7 @@ Do NOT modify the tests — fix the implementation.
 
 - [ ] `TAMPERED` result always produces a diff report at `.context-index/packets/<slug>-verify-report.md`
 - [ ] Report includes one entry per tampered assertion with: file, line, original, current, classification
-- [ ] All 4 tamper classifications (REMOVED, LOOSENED, HARDCODED_TO_PASS, SKIPPED) are represented in the report format
+- [ ] All 5 tamper classifications (REMOVED, LOOSENED, HARDCODED_TO_PASS, SKIPPED, CONDITIONAL) are represented in the report format
 - [ ] Report is printed inline in skill output (not just written to file)
 - [ ] `PASS_WITH_COSMETIC_CHANGES` does not produce a report file
 - [ ] All quality gates pass (`npm test`)

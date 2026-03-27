@@ -5,7 +5,7 @@
 
 ---
 charter: adev-test-write
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v1
 created: 2026-03-27
@@ -28,9 +28,9 @@ created: 2026-03-27
 
 3. **When** the slug is derived **then** it is generated from the spec title or file name: lowercase, kebab-case, no special characters. If a packet with the same slug already exists, the existing file is overwritten and the previous hash is recorded in a `previous_hash` field for audit trail.
 
-4. **When** `adev-implement` dispatches the implementer subagent **then** it passes the Handoff Block path so the implementer receives the exact test files and verification command without needing to re-read the spec or re-derive the test scope.
+4. **When** any consumer reads the Handoff Block **then** the `test_files` and `verification_command` fields provide sufficient information to reproduce RED state without re-reading the original spec or re-running the authoring phase.
 
-5. **When** the Handoff Block is read by any consumer (`--verify`, implementer subagent, `/adev-retro`) **then** the consumer treats the `constraints` field as immutable — it must not modify, relax, or reinterpret the locked constraints.
+5. **When** the Handoff Block is read by any consumer (`--verify`, implementer subagent, `/adev-retro`) **then** the consumer treats the `constraints` field as immutable — it must not modify, relax, or reinterpret the locked constraints. `previous_hash` is informational only: it enables auditing of overwrites but does not imply the previous test content is recoverable.
 
 ### Postconditions
 
@@ -44,7 +44,7 @@ created: 2026-03-27
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | Packet directory not writable | Block with filesystem error and path | WRITE_ERROR |
-| Test file path listed in block no longer exists on disk | Warn on read — file was deleted after handoff was written | STALE_PACKET |
+| Test file path listed in block no longer exists on disk | Block on verification reads (`--verify`). Warn on informational reads (`/adev-retro`). | STALE_PACKET |
 | Hash computation fails | Block — do not write an incomplete handoff block | HASH_ERROR |
 | Slug collision with different test scope | Overwrite. Record `previous_hash` for audit. Log advisory. | — |
 
@@ -59,12 +59,24 @@ hash: <sha256-hex>
 previous_hash: <sha256-hex or null>
 created: <ISO timestamp>
 framework: <detected framework name>
+preexisting_check: passed | skipped (clean tree) | pre-existing-recorded
+gaming_check: passed | violations-found
 ---
 
 ## Test Files
 
 - <relative path to test file 1>
 - <relative path to test file 2>
+
+## Original Test File Contents
+
+<!-- Stored verbatim at write time. Used by --verify for semantic diff. -->
+
+### <relative path to test file 1>
+
+```
+<full content of test file 1>
+```
 
 ## Verification Command
 
@@ -75,7 +87,7 @@ framework: <detected framework name>
 ## RED State Evidence
 
 ```
-<last 20 lines of test runner output confirming failure>
+<relevant assertion failure output from test runner — enough to confirm the test fails for the right behavioral reason. Secrets and credential-looking values redacted.>
 ```
 
 ## Locked Constraints
@@ -89,6 +101,14 @@ framework: <detected framework name>
 | Mock Target | Boundary Type | Justification |
 |-------------|--------------|---------------|
 | <module/path> | HTTP / DB / filesystem / external-api | <why this is a legitimate boundary> |
+
+## Pre-existing Failure Record
+
+<!-- Present only when preexisting_check: pre-existing-recorded -->
+
+- **Stash SHA:** <git stash SHA>
+- **Test output (clean branch):** <output confirming failure existed before current changes>
+- **Test output (after pop):** <output confirming failure persists after restoring changes>
 ```
 
 ## System Constitution Reference
@@ -107,7 +127,9 @@ framework: <detected framework name>
 ## Acceptance Criteria
 
 - [ ] Handoff Block is written to `.context-index/packets/<slug>-tests.md` after every successful RED phase
-- [ ] Block contains: `slug`, `spec`, `locked: true`, `hash`, `created`, `framework`, test file list, verification command, RED state evidence, locked constraints, mocking boundaries
+- [ ] Block contains: `slug`, `spec`, `locked: true`, `hash`, `created`, `framework`, `preexisting_check`, `gaming_check`, test file list, original test file contents, verification command, RED state evidence, locked constraints, mocking boundaries
+- [ ] Original test file contents are stored verbatim in the Handoff Block at write time
+- [ ] RED State Evidence redacts lines matching common secret patterns (PASSWORD, SECRET, TOKEN, API_KEY, connection strings)
 - [ ] `hash` is SHA-256 of all test file contents concatenated in path-alphabetical order
 - [ ] Re-running `--red` on the same target overwrites the packet and records `previous_hash`
 - [ ] Packet directory is created if absent
