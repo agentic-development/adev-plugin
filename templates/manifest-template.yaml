@@ -187,6 +187,20 @@ repomap:
 #   risk_policies: .context-index/governance/risk-policies.yaml
 #   overrides: .context-index/governance/overrides/
 
+# ============================================================================
+# Integrations
+# External tool integrations for session capture, notifications, etc.
+# ============================================================================
+
+integrations:
+  session_capture:
+    # Provider for capturing agent session transcripts.
+    # Options:
+    #   entire  — use Entire for full session recording
+    #   native  — use built-in session logging (writes to .context-index/sessions/)
+    #   none    — no session capture (default)
+    provider: none
+
 hygiene:
   # Number of days before a spec is considered stale
   staleness_threshold_days: 30

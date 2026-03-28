@@ -1,8 +1,16 @@
+---
+status: draft
+revision: 1
+updated: {{ date }}
+---
+
 # Feature Charter: {{ module_name }}
 
 <!-- Feature Charter for the {{ module_name }} module.
      This defines WHAT the module does and its boundaries, not HOW it is built.
      Live Specs within this charter define specific behavioral contracts. -->
+
+<!-- # tracker-ref: -->
 
 ## Business Intent
 
@@ -64,9 +72,9 @@
      Phase indicates WHEN a capability ships (e.g., v1, v2, mvp, post-launch).
      Phase is about timing, not importance (that is Priority). Leave blank if unassigned. -->
 
-| Capability | Description | Priority | Phase |
-|-----------|-------------|----------|-------|
-| ... | ... | must-have / should-have / nice-to-have | |
+| Capability | Description | Priority | Phase | Status |
+|-----------|-------------|----------|-------|--------|
+| ... | ... | must-have / should-have / nice-to-have | | — |
 
 ## Interface Contracts
 
