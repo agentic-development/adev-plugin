@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -114,6 +114,7 @@ function scaffoldContextKit() {
     "orientation",
     "specialists",
     "hygiene",
+    "sessions",
   ];
 
   for (const dir of dirs) {
@@ -152,6 +153,51 @@ function scaffoldContextKit() {
   } else {
     writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n");
     created.push(".gitignore (created)");
+  }
+
+  // Scaffold .githooks/ with prepare-commit-msg and post-commit
+  const githooksDir = join(process.cwd(), ".githooks");
+  ensureDir(githooksDir);
+  const hookNames = ["prepare-commit-msg", "post-commit"];
+  const pluginHooksDir = join(PLUGIN_ROOT, ".githooks");
+
+  for (const hookName of hookNames) {
+    const srcPath = join(pluginHooksDir, hookName);
+    const destPath = join(githooksDir, hookName);
+    if (!existsSync(srcPath)) continue;
+
+    const srcContent = readFileSync(srcPath);
+    if (existsSync(destPath)) {
+      // If identical content, skip (idempotent)
+      const destContent = readFileSync(destPath);
+      if (Buffer.compare(srcContent, destContent) === 0) continue;
+
+      // Don't overwrite — write as <name>.adev and warn
+      const altPath = join(githooksDir, `${hookName}.adev`);
+      if (existsSync(altPath)) {
+        const altContent = readFileSync(altPath);
+        if (Buffer.compare(srcContent, altContent) === 0) continue;
+      }
+      cpSync(srcPath, altPath);
+      chmodSync(altPath, 0o755);
+      created.push(`.githooks/${hookName}.adev (existing hook preserved)`);
+      warn(`.githooks/${hookName} already exists — wrote ${hookName}.adev instead`);
+    } else {
+      cpSync(srcPath, destPath);
+      chmodSync(destPath, 0o755);
+      created.push(`.githooks/${hookName}`);
+    }
+  }
+
+  // Configure git to use .githooks/ as the hooks path
+  try {
+    execSync("git config core.hooksPath .githooks", {
+      cwd: process.cwd(),
+      stdio: "ignore",
+    });
+    created.push("git config core.hooksPath .githooks");
+  } catch {
+    // Not a git repo or git not available — skip silently
   }
 
   return created;
