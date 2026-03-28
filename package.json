@@ -17,7 +17,8 @@
     "hooks/",
     "skills/",
     "templates/",
-    ".claude-plugin/"
+    ".claude-plugin/",
+    ".githooks/"
   ],
   "scripts": {
     "test": "node --test tests/*.test.mjs tests/**/*.test.mjs",
