@@ -54,7 +54,7 @@ Read these files using Glob/Grep/Read. Do not ask the user for information that 
 - `.context-index/specs/cross-cutting/*.md` — shared constraints
 - `.context-index/references/**/*.md` — external reference charters and contracts
 
-**If `--module <name>`:** Also read `.context-index/specs/features/<name>/charter.md` and any Live Specs under that directory.
+**If `--module <name>`:** Also read `.context-index/specs/features/<name>/charter.md` and any Live Specs under that directory. When modifying an approved charter in `--module` mode, set `status: evolving`, increment `revision` by 1, and set `updated: <today's date YYYY-MM-DD>`. This signals that the charter is undergoing active changes and downstream specs should check for charter-revision staleness.
 
 **If `--from-blueprint <path>`:** Read the blueprint and extract module definition, business intent, and capability list.
 
@@ -73,6 +73,7 @@ Ask questions one at a time. Prefer multiple-choice when possible. Do not ask mo
 - What capabilities does it provide? (Capability Map)
 - How do other modules interact? (Interface Contracts)
 - What quality attributes matter? (Quality Attributes)
+- (Optional) Is there an external tracker reference for this feature? If so, record it as `tracker-ref` in the charter frontmatter (e.g., `tracker-ref: JIRA-1234`).
 
 **Constitution check during clarification:**
 As the user describes the feature, check each answer against:
@@ -123,6 +124,13 @@ Generate the charter file using the template at `${CLAUDE_PLUGIN_ROOT}/templates
 **Before writing:** Create directory if needed. If charter exists (`--module`), read and merge rather than overwrite.
 
 **Writing:** Fill all sections from Step 4, replace placeholders, remove HTML comments, no TODOs/TBDs.
+
+**Lifecycle frontmatter:** Set the following fields in the charter's YAML frontmatter:
+- `status: draft`
+- `revision: 1`
+- `updated: <today's date YYYY-MM-DD>`
+
+**Capability Map Status column:** The Capability Map table must include a `Status` column. Initialize every capability's Status to `—` (em dash). This column is updated by downstream skills as capabilities progress through the lifecycle.
 
 **After writing:**
 - Check if `.context-index/specs/product.md` has a module map — if this module is unlisted, tell the user.
@@ -187,6 +195,8 @@ After the review loop passes:
 > Charter written and committed to `.context-index/specs/features/<module>/charter.md`. Please review it and let me know if you want any changes before we move to specification.
 
 If changes requested: make them, re-run Step 6, ask for approval again. Only proceed once user explicitly approves.
+
+**On user approval:** Update the charter frontmatter: set `status: approved`, increment `revision` by 1, and set `updated: <today's date YYYY-MM-DD>`.
 
 ## Step 8: Transition to Specification
 

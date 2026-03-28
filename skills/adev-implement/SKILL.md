@@ -48,6 +48,8 @@ Read these files once at the start. Extract everything subagents will need so th
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
+**Update charter Capability Map:** At the start of implementation, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `implementing`.
+
 Create a TodoWrite entry for every task extracted from the plan.
 
 ### Step 2: Per-Task Execution Loop
@@ -373,15 +375,40 @@ When validation passes, open a PR: gh pr create --base <target-branch>
 Do NOT merge directly to <target-branch>.
 ```
 
-## Step 5: Update Spec Status
+## Step 5: Update Spec Status and Source Manifest
 
 After all tasks are complete and before reporting completion:
 
 1. Read the spec file that this plan implements (the plan file references the spec)
 2. Parse YAML frontmatter
 3. Update status: `review-passed` → `implemented`
-4. Write the spec file back
-5. Log: "Updated spec status: review-passed → implemented"
+4. **Compute source manifest:** Call `computeManifest(specPath)` from `lib/source-manifest.mjs` to generate a hash manifest of all source files produced by this implementation. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter:
+   ```yaml
+   source-manifest:
+     hash: <aggregate SHA>
+     files:
+       - path: src/lib/feature.ts
+         sha: <file SHA>
+       - path: tests/feature.test.ts
+         sha: <file SHA>
+   ```
+5. Write the spec file back
+6. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `implemented`.
+7. Log: "Updated spec status: review-passed → implemented"
+
+## Step 5.5: Commit Trailers
+
+When committing implementation work, include structured trailers in commit messages for traceability:
+
+```
+feat(<module>): implement <description>
+
+Spec: .context-index/specs/features/<module>/<spec-slug>.md
+Plan-task: <task-number>
+Session: <session-id or timestamp>
+```
+
+These trailers enable `/adev-retro` and `/adev-hygiene` to trace commits back to specs and tasks.
 
 ## Red Flags
 

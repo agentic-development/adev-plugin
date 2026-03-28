@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Git post-commit hook
+# Invokes session-summary writer after each commit.
+# Always exits 0 — never blocks.
+
+set -uo pipefail
+
+# Guard: require node
+command -v node >/dev/null 2>&1 || exit 0
+
+# Read commit info
+COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null) || exit 0
+COMMIT_DATE=$(git log -1 --format='%aI' "$COMMIT_HASH" 2>/dev/null) || exit 0
+
+# Extract Spec: trailers from the commit message
+SPECS_TOUCHED=$(git log -1 --format='%(trailers:key=Spec,valueonly)' "$COMMIT_HASH" 2>/dev/null | tr '\n' ',' | sed 's/,$//' || echo "")
+
+# Determine output directory
+OUTPUT_DIR=".context-index/sessions"
+
+# Call session-summary writer with placeholder content
+node -e "
+  import { writeSummary } from './lib/session-summary.mjs';
+
+  const metadata = {
+    date: '${COMMIT_DATE}'.slice(0, 10),
+    type: 'commit',
+    mode: 'auto',
+    agent: 'git-hook',
+    specsTouched: '${SPECS_TOUCHED}'.split(',').filter(Boolean),
+    commits: ['${COMMIT_HASH}'],
+  };
+
+  // Placeholder content sections — to be enriched by future hooks
+  const condensed = [
+    '## Intent',
+    '',
+    '(auto-captured from commit)',
+    '',
+    '## Outcome',
+    '',
+    'Commit ${COMMIT_HASH} created.',
+    '',
+  ].join('\n');
+
+  await writeSummary(condensed, metadata, '${OUTPUT_DIR}');
+" 2>/dev/null || true
+
+exit 0

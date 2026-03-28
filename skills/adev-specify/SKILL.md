@@ -100,6 +100,16 @@ Use the shared Resolve Charter section above.
 
 Load context per the shared section above.
 
+### Step 2.5: Charter Status Gate
+
+Before creating any spec, check the parent charter's `status` frontmatter field:
+- If `status: closed`, **block** with error:
+  ```
+  CHARTER_CLOSED: The charter for <module> has status "closed".
+  A closed charter does not accept new specs. To reopen it, run /adev-brainstorm --module <module>.
+  ```
+- If the charter has no `status` field or any other status value, proceed normally.
+
 ### Step 3: Identify Capability
 
 Present the charter's Capability Map and list existing specs in the module. Ask which capability to cover:
@@ -169,8 +179,13 @@ Concrete, checkable criteria. Every behavior maps to at least one criterion. Alw
 
 1. Generate slug: lowercase, kebab-case, no special characters.
 2. Fill `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
-3. Set frontmatter per shared section (including milestone inheritance).
+3. Set frontmatter per shared section (including milestone inheritance). Additionally set:
+   - `revision: 1`
+   - `charter-revision: <the parent charter's current revision value>`
+   - `updated: <today's date YYYY-MM-DD>`
+   - (Optional) Ask the user if there is an external tracker reference. If so, add `tracker-ref: <value>` to frontmatter.
 4. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
+5. **Update charter Capability Map:** Read the parent charter, find the capability row that this spec covers in the Capability Map table, and update its `Status` column to `specified`.
 
 ### Step 5.5: Update Spec Status
 
