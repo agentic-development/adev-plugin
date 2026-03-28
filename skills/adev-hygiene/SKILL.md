@@ -1,16 +1,16 @@
 ---
 name: adev-hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs eleven audit passes across the .context-index/ directory and generates actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, or clean up the context index."
+description: "Audit all context for staleness, drift, and coverage gaps. Runs twelve audit passes across the .context-index/ directory and generates actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, or clean up the context index."
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and generate actionable reports. Eleven audit passes detect staleness, drift, coverage gaps, phase readiness, and operational patterns so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and generate actionable reports. Twelve audit passes detect staleness, drift, coverage gaps, phase readiness, lifecycle consistency, and operational patterns so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all eleven passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases)
+- No arguments: full audit (all twelve passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle)
 - `--fix`: auto-fix issues where possible (runs /adev-sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
 
@@ -495,6 +495,76 @@ Total blockers: 5
 | Phase Coverage | WARN | 1 unspecified capability, 2 unphased |
 ```
 
+## Audit Pass 12: Lifecycle Audit
+
+**Goal:** Detect revision drift, file drift, charter-revision staleness, and capability status inconsistencies across all specs and charters.
+
+**Steps:**
+
+1. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`). Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
+2. **Scan all review files.** Read every `.review.md` file. Parse `last-reviewed-revision` and `file-sha` fields.
+3. **Scan all charters.** Read every `charter.md`. Parse `revision` and the Capability Map table (including the `Status` column).
+
+4. **Revision drift check:** For each spec that has a corresponding `.review.md`:
+   - Compare spec's `revision` against the review's `last-reviewed-revision`.
+   - If the spec's revision is greater, flag as `REVISION_DRIFT`:
+     ```
+     - [ ] <spec-path>: REVISION_DRIFT — spec revision <N>, last reviewed revision <M>
+     ```
+
+5. **File drift check:** For each spec that has a corresponding `.review.md` with a `file-sha` field:
+   - Run `git hash-object <spec-file-path>` and compare against `file-sha`.
+   - If they differ, flag as `FILE_DRIFT`:
+     ```
+     - [ ] <spec-path>: FILE_DRIFT — file hash changed since last review
+     ```
+
+6. **Charter-revision staleness check:** For each spec with a `charter-revision` field:
+   - Read the parent charter's current `revision`.
+   - If the spec's `charter-revision` is less than the charter's current `revision`, flag as `CHARTER_STALE`:
+     ```
+     - [ ] <spec-path>: CHARTER_STALE — spec references charter revision <M>, charter is now at revision <N>
+     ```
+
+7. **Capability status consistency check:** For each charter, compare the Capability Map's `Status` column against the actual status of corresponding specs:
+   - If a capability's Status says `implemented` but the spec's frontmatter status is `review-passed`, flag as `STATUS_MISMATCH`.
+   - If a capability's Status says `—` (default) but a spec exists for that capability, flag as `STATUS_BEHIND`.
+   - Report all mismatches:
+     ```
+     - [ ] <charter-path>: STATUS_MISMATCH — capability "<name>" shows "<charter-status>" but spec status is "<spec-status>"
+     ```
+
+**Output format:**
+```
+## Lifecycle Audit
+
+Specs scanned: <N>
+Reviews scanned: <N>
+Charters scanned: <N>
+
+### Revision Drift
+- [ ] specs/features/auth/login.md: REVISION_DRIFT — spec revision 3, last reviewed revision 1
+
+### File Drift
+- [ ] specs/features/auth/login.md: FILE_DRIFT — file hash changed since last review
+
+### Charter-Revision Staleness
+- [ ] specs/features/auth/login.md: CHARTER_STALE — spec references charter revision 1, charter is now at revision 3
+
+### Capability Status Inconsistencies
+- [ ] specs/features/auth/charter.md: STATUS_MISMATCH — capability "login" shows "planned" but spec status is "implemented"
+
+**Actions:**
+- [ ] Re-review specs with revision or file drift: /adev-review-specs
+- [ ] Update specs referencing stale charter revisions: check for charter changes that affect the spec
+- [ ] Fix capability status mismatches in charter Capability Map tables
+```
+
+**Integration with summary table:** Add a row for Lifecycle Audit in the report summary:
+```
+| Lifecycle Audit | WARN | 2 revision drift, 1 charter stale, 1 status mismatch |
+```
+
 ## Report Format
 
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
@@ -520,6 +590,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Recovery Pattern Analysis | WARN | 2 repeat offenders |
 | Blocker Frequency Analysis | WARN | 1 stale blocker |
 | Phase Coverage | WARN | 1 unspecified, 2 unphased |
+| Lifecycle Audit | WARN | 2 revision drift, 1 charter stale |
 
 ## Priority Actions
 
