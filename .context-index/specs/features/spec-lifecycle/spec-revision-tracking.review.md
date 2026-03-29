@@ -17,7 +17,11 @@ No findings.
 **Verdict:** PASS
 No findings.
 
+
 ---
 ## Summary
 **Total findings:** 1 (0 blockers, 0 warnings, 1 suggestion)
 **Action required:** None — spec is ready for planning.
+
+last-reviewed-revision: 1
+file-sha: e75e41b

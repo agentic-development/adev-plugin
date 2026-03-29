@@ -18,7 +18,11 @@
 **Verdict:** PASS_WITH_NOTES
 - **CON-4** (warning): camelCase field names vs kebab-case convention used elsewhere in spec-lifecycle.
 
+
 ---
 ## Summary
 **Total findings:** 4 (0 blockers, 3 warnings, 1 suggestion)
 **Action required:** None — spec is ready for planning. Consider SA-10 bridge mechanism and SEC-13 sanitization chain.
+
+last-reviewed-revision: 1
+file-sha: 05871c4

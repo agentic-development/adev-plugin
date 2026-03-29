@@ -17,7 +17,11 @@
 **Verdict:** PASS_WITH_NOTES
 - **CON-2** (warning): Manifest field names use camelCase (`sourceManifest`) but spec-lifecycle convention elsewhere uses kebab-case; standardize.
 
+
 ---
 ## Summary
 **Total findings:** 3 (0 blockers, 1 warning, 2 suggestions)
 **Action required:** None — spec is ready for planning. Consider CON-2 naming convention alignment.
+
+last-reviewed-revision: 1
+file-sha: 6c21764

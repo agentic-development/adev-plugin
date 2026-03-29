@@ -2,10 +2,13 @@
 
 ---
 charter: spec-lifecycle
-status: review-passed
+status: implemented
 risk_level: low
 milestone: v1
+revision: 1
+charter-revision: 1
 created: 2026-03-27
+updated: 2026-03-28
 ---
 
 ## Behavioral Contract

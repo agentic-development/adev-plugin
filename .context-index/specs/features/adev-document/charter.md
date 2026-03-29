@@ -1,3 +1,9 @@
+---
+status: approved
+revision: 1
+updated: 2026-03-23
+---
+
 # Feature Charter: adev-document
 
 <!-- Feature Charter for the adev-document skill.
@@ -64,15 +70,15 @@ Create `/adev-document` skill that generates human-readable developer documentat
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase |
-|------------|-------------|----------|-------|
-| Generate architecture.md | Create project-level overview with module map, dependency flow, entry points | must-have | v1 |
-| Generate module docs | Create docs/modules/<slug>.md for each module in manifest | must-have | v1 |
-| GENERATED.md manifest | Track generated files, last commit, sections | must-have | v1 |
-| Argument: --module | Generate/update single module doc | must-have | v1 |
-| Argument: --check | Dry-run: show what would change without writing | must-have | v1 |
-| Argument: --force | Regenerate all sections ignoring diff | should-have | v1 |
-| Error on missing repomap | Clear error if dependency-graph.json or symbol-ranks.json missing | must-have | v1 |
+| Capability | Description | Priority | Phase | Status |
+|------------|-------------|----------|-------|--------|
+| Generate architecture.md | Create project-level overview with module map, dependency flow, entry points | must-have | v1 | — |
+| Generate module docs | Create docs/modules/<slug>.md for each module in manifest | must-have | v1 | — |
+| GENERATED.md manifest | Track generated files, last commit, sections | must-have | v1 | — |
+| Argument: --module | Generate/update single module doc | must-have | v1 | — |
+| Argument: --check | Dry-run: show what would change without writing | must-have | v1 | — |
+| Argument: --force | Regenerate all sections ignoring diff | should-have | v1 | — |
+| Error on missing repomap | Clear error if dependency-graph.json or symbol-ranks.json missing | must-have | v1 | — |
 
 ## Interface Contracts
 
