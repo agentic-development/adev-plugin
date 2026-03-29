@@ -1,3 +1,9 @@
+---
+status: approved
+revision: 1
+updated: 2026-03-24
+---
+
 # Feature Charter: adev-assess
 
 <!-- Feature Charter for the adev-assess module.
@@ -55,13 +61,13 @@ Evaluate codebase readiness for agentic development using static file inspection
 
 ## Capability Map
 
-| Capability | Description | Priority |
-|------------|-------------|----------|
-| Run Assessment | Execute static file inspection across all dimensions | must-have |
-| Output Markdown | Generate readable scorecard with visual indicators | must-have |
-| Output JSON | Generate machine-readable report with scores | must-have |
-| Detect Mode | Auto-detect if codebase has .context-index/ for mode selection | must-have |
-| Configurable Weights | Allow adjusting dimension weights | nice-to-have |
+| Capability | Description | Priority | Status |
+|------------|-------------|----------|--------|
+| Run Assessment | Execute static file inspection across all dimensions | must-have | — |
+| Output Markdown | Generate readable scorecard with visual indicators | must-have | — |
+| Output JSON | Generate machine-readable report with scores | must-have | — |
+| Detect Mode | Auto-detect if codebase has .context-index/ for mode selection | must-have | — |
+| Configurable Weights | Allow adjusting dimension weights | nice-to-have | — |
 
 ## Interface Contracts
 

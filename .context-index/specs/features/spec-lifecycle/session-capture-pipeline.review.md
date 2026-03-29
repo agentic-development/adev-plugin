@@ -21,7 +21,11 @@
 **Verdict:** PASS_WITH_NOTES
 - **CON-3** (warning): camelCase field names (`parseSession`) vs kebab-case convention used elsewhere in spec-lifecycle.
 
+
 ---
 ## Summary
 **Total findings:** 7 (0 blockers, 5 warnings, 1 suggestion, 3 resolved)
 **Action required:** None — spec is ready for planning. Consider SA-8 hook matcher definition and CON-3 naming alignment.
+
+last-reviewed-revision: 1
+file-sha: 8ee2f5a

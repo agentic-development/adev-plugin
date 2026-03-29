@@ -27,7 +27,7 @@ fi
 
 if [ -z "$PROVIDER" ] && [ -f ".context-index/manifest.yaml" ]; then
   # Simple grep for provider line in manifest
-  PROVIDER=$(grep -m1 '^provider:' .context-index/manifest.yaml 2>/dev/null | sed 's/^provider:[[:space:]]*//' | tr -d '[:space:]' || echo "")
+  PROVIDER=$(grep -m1 'provider:' .context-index/manifest.yaml 2>/dev/null | sed 's/^.*provider:[[:space:]]*//' | tr -d '[:space:]' || echo "")
 fi
 
 # Only track when provider is native

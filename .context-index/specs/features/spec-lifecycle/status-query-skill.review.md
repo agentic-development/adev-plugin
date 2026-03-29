@@ -18,7 +18,11 @@
 **Verdict:** PASS_WITH_NOTES
 - **CON-6** (note): Enum disambiguation — status values overlap between charter and spec lifecycle; query output should clarify which lifecycle a status belongs to.
 
+
 ---
 ## Summary
 **Total findings:** 4 (0 blockers, 1 warning, 2 suggestions, 1 note)
 **Action required:** None — spec is ready for planning. Consider SA-13 traceability and CON-6 enum clarity.
+
+last-reviewed-revision: 1
+file-sha: 8609287

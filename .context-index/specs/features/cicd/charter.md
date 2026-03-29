@@ -1,3 +1,9 @@
+---
+status: approved
+revision: 1
+updated: 2026-03-24
+---
+
 # Feature Charter: cicd
 
 ## Business Intent
@@ -47,12 +53,12 @@ Automate quality gates (tests, lint, typecheck) on every PR and push, and publis
 
 ## Capability Map
 
-| Capability | Description | Priority |
-|------------|-------------|----------|
-| Run Quality Gates | Execute npm test on PR/push | must-have |
-| Block Bad Merges | Fail workflow if tests fail | must-have |
-| Publish on Tags | Publish to npm on version tags | must-have |
-| Cache Dependencies | Speed up workflow runs | should-have |
+| Capability | Description | Priority | Status |
+|------------|-------------|----------|--------|
+| Run Quality Gates | Execute npm test on PR/push | must-have | — |
+| Block Bad Merges | Fail workflow if tests fail | must-have | — |
+| Publish on Tags | Publish to npm on version tags | must-have | — |
+| Cache Dependencies | Speed up workflow runs | should-have | — |
 
 ## Interface Contracts
 
