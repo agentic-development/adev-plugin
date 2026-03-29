@@ -3,3 +3,6 @@
 > **Spec:** .context-index/specs/features/adev-test-write/framework-detection.md
 > **Charter:** .context-index/specs/features/adev-test-write/charter.md
 > **Verdict:** PASS_WITH_NOTES
+
+last-reviewed-revision: 1
+file-sha: d9dd3cc33c0bd8b2d0d2125be1d129372afc6ab3

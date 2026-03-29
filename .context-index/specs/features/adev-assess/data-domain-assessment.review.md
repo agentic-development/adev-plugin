@@ -41,3 +41,6 @@
 **Action required:** Address the warnings before planning, or clarify the missing dimension definitions in the spec.
 
 The spec is fundamentally sound but has gaps in dimension definition that should be clarified. The architectural approach (static file inspection, read-only, zero dependencies) aligns with constitution principles.
+
+last-reviewed-revision: 1
+file-sha: 7795791d059ccb4056a591910eaa36252d957c24
