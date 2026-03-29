@@ -5,7 +5,10 @@ charter: repomap-eval
 status: draft
 risk_level: medium
 milestone: v1
+revision: 1
+charter-revision: 1
 created: 2026-03-23
+updated: 2026-03-23
 ---
 
 ## Behavioral Contract

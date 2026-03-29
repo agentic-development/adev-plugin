@@ -223,6 +223,10 @@ Write the consolidated report to a `.review.md` file adjacent to the spec:
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
 - Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
+**Lifecycle tracking fields:** In the `.review.md` file, also record:
+- `last-reviewed-revision: <spec's current revision value>` — the spec's `revision` frontmatter field at the time of review.
+- `file-sha: <git hash-object output>` — run `git hash-object <spec-file-path>` and record the SHA. This enables drift detection: if the file changes without a revision bump, `/adev-plan` can detect it.
+
 ## Step 7: Update Spec Status
 
 After saving the review report, update the spec's status based on the verdict:
@@ -240,6 +244,10 @@ After saving the review report, update the spec's status based on the verdict:
 4. Write the spec file back
 
 Log the status change to the user.
+
+**Charter Capability Map update (PASS or PASS_WITH_NOTES only):** After updating the spec status to `review-passed`, also update the parent charter's Capability Map. Find the capability row corresponding to this spec and set its `Status` column to `review-passed`.
+
+**Note:** Do not increment the spec's `revision` field on status-only changes. The `revision` field tracks content changes, not workflow transitions.
 
 ## Step 8: Report to User
 
