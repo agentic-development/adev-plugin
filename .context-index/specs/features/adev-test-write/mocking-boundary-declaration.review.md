@@ -3,3 +3,6 @@
 > **Spec:** .context-index/specs/features/adev-test-write/mocking-boundary-declaration.md
 > **Charter:** .context-index/specs/features/adev-test-write/charter.md
 > **Verdict:** PASS_WITH_NOTES
+
+last-reviewed-revision: 1
+file-sha: 37f3ef3553dfec2b9081a526f8b7073a9dd4b3ad

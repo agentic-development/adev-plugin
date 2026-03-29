@@ -59,3 +59,6 @@ Suggestions (noted):
 
 **Total findings:** 19 (3 blockers resolved, 9 warnings addressed, 7 suggestions noted)
 **Action required:** None — all blockers resolved, spec updated. Ready for planning.
+
+last-reviewed-revision: 1
+file-sha: 64581d48ca9d60cae96d97ae78e23a63cdfa524f
