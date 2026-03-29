@@ -9,7 +9,10 @@ charter: adev-assess
 status: validated
 risk_level: medium
 milestone: v1
+revision: 1
+charter-revision: 1
 created: 2026-03-24
+updated: 2026-03-24
 ---
 
 ## Behavioral Contract

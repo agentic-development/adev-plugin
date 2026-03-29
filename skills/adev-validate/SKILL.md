@@ -52,6 +52,21 @@ Typical commands:
 
 **If all gates pass:** Proceed to Check 2.
 
+### Check 1.5: Source Manifest Verification
+
+If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev-implement`), verify it:
+
+1. Call `verifyManifest(specPath)` from `lib/source-manifest.mjs`.
+2. For each file in the manifest, compare the recorded SHA against the current `git hash-object` output.
+3. Report results:
+   - **Match:** All source files are unchanged since implementation. Record PASS.
+   - **Drift:** One or more files have been modified since the manifest was stamped. List each drifted file with its expected and actual SHA. Record WARN (does not cause overall FAIL, but signals that source may have diverged from the spec contract).
+   - **Missing files:** Source files in the manifest that no longer exist. Record FAIL.
+
+If the spec has no `source-manifest` block, skip this check with a note: "No source manifest found. Run /adev-implement to stamp one."
+
+This check runs after quality gates (Check 1) regardless of their result, since it is a metadata check, not a code quality check.
+
 ### Check 2: Spec Compliance
 
 Load the Live Spec and walk through every acceptance criterion.
@@ -317,6 +332,8 @@ If PASS:
    - Update status: `implemented` → `validated`
    - Write the spec file back
    - Log: "Updated spec status: implemented → validated"
+
+2. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `validated`.
 
 2. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 

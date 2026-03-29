@@ -40,6 +40,15 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sync-trigger.sh\""
           }
         ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-capture.sh\""
+          }
+        ]
       }
     ]
   }

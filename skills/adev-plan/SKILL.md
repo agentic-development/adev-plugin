@@ -77,7 +77,20 @@ Before planning, verify the spec has passed architecture review.
    The spec has been modified since its last review.
    Run /adev-review-specs --spec <path> to re-review the updated spec.
    ```
-7. If verdict is `PASS` or `PASS_WITH_NOTES`, proceed. If `PASS_WITH_NOTES`, print the warnings for the user's awareness but do not block.
+7. **Dual drift check.** Detect spec changes that bypassed the review process:
+   - **Revision drift:** Compare the spec's `revision` frontmatter field against the `.review.md` file's `last-reviewed-revision` value. If the spec's revision is greater, **block**:
+     ```
+     Spec revision drift detected: spec is at revision <N>, but review was performed at revision <M>.
+     The spec content has changed since the last review.
+     Run /adev-review-specs --spec <path> to re-review.
+     ```
+   - **File hash drift:** Run `git hash-object <spec-file-path>` and compare against the `.review.md` file's `file-sha` value. If they differ, **block**:
+     ```
+     Spec file drift detected: the spec file has been modified since the last review (hash mismatch).
+     Run /adev-review-specs --spec <path> to re-review.
+     ```
+   - If the `.review.md` file does not contain `last-reviewed-revision` or `file-sha` fields (legacy review), fall back to the file modification time check in step 6.
+8. If verdict is `PASS` or `PASS_WITH_NOTES`, proceed. If `PASS_WITH_NOTES`, print the warnings for the user's awareness but do not block.
 
 ## Step 2: Load Context
 
@@ -251,6 +264,8 @@ Each task follows TDD. Steps are granular (2-5 minutes each).
 - Modify: `exact/path/to/existing.ts:123-145`
 - Test: `tests/exact/path/to/test.ts`
 
+**Tests:** `tests/exact/path/to/test.ts` — every task must reference at least one test file. If no test file exists yet, the task must create one. This field is required; a task without a `tests:` field is incomplete.
+
 **Context to load:**
 - `.context-index/adrs/001-session-store-redis.md` (relevant decision)
 - `.context-index/samples/service-sample.md` (follow this pattern)
@@ -370,6 +385,8 @@ Proceed to the execution handoff.
 **Disagreements:** If you believe reviewer feedback is incorrect (e.g., flagging something that is intentionally designed that way based on the spec or ADR), explain your reasoning in the plan as a comment and do not change it. The reviewer is advisory.
 
 ## Step 7: Execution Handoff
+
+**Update charter Capability Map:** After saving the plan, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `planned`.
 
 After the plan is saved and reviewed, present the user with next steps:
 

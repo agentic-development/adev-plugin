@@ -1,3 +1,9 @@
+---
+status: approved
+revision: 1
+updated: 2026-03-23
+---
+
 # Feature Charter: Tree-Sitter Repomap
 
 ## Business Intent
@@ -68,22 +74,22 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase |
-|---|---|---|---|
-| Regex repomap (preserve) | Keep existing regex-based symbol extraction as the default zero-dependency mode | must-have | v0.5.0 |
-| Tree-sitter parsing | Parse source files via web-tree-sitter WASM for accurate symbol extraction | must-have | v0.5.0 |
-| Dependency graph construction | Build file-level import graph from AST-extracted import statements | must-have | v0.5.0 |
-| PageRank ranking | Compute symbol importance scores from the dependency graph | must-have | v0.5.0 |
-| Prompt-based installation | Offer tree-sitter install via "yes/no" prompt in `/adev-repomap` and `/adev-init` | must-have | v0.5.0 |
-| Parser mode detection | Auto-detect whether tree-sitter is available, annotate outputs with parser mode | must-have | v0.5.0 |
-| Grammar auto-download | Download language grammar WASM files on first use based on detected languages | must-have | v0.5.0 |
-| Blast radius scoring (route) | Define artifact contract for `/adev-route` to consume dependency graph for transitive dependent analysis. Consumption logic owned by assessment charter. | should-have | v0.5.1 |
-| Context packet enrichment (implement) | Define artifact contract for `/adev-implement` to add relevant symbols and dependency context to packets. Consumption logic owned by implementation charter. | should-have | v0.5.1 |
-| Drift detection (hygiene) | Define artifact contract for `/adev-hygiene` to compare spec-declared interfaces against symbol index. Consumption logic owned by maintenance charter. | should-have | v0.5.1 |
-| Dependency integrity check (validate) | Define artifact contract for `/adev-validate` to detect new cross-module edges. Consumption logic owned by validation charter. | should-have | v0.5.1 |
-| Recovery diagnosis (recover) | Define artifact contract for `/adev-recover` to check packets against dependency graph. Consumption logic owned by implementation charter. | nice-to-have | v0.5.1 |
-| Multi-language support | TypeScript/JS, Python, Go, Rust, Java, Ruby grammar support | should-have | v0.5.0 |
-| Manifest output config | Add `repomap.output` section to manifest for enabling/disabling output formats | nice-to-have | v0.5.2 |
+| Capability | Description | Priority | Phase | Status |
+|---|---|---|---|--------|
+| Regex repomap (preserve) | Keep existing regex-based symbol extraction as the default zero-dependency mode | must-have | v0.5.0 | — |
+| Tree-sitter parsing | Parse source files via web-tree-sitter WASM for accurate symbol extraction | must-have | v0.5.0 | — |
+| Dependency graph construction | Build file-level import graph from AST-extracted import statements | must-have | v0.5.0 | — |
+| PageRank ranking | Compute symbol importance scores from the dependency graph | must-have | v0.5.0 | — |
+| Prompt-based installation | Offer tree-sitter install via "yes/no" prompt in `/adev-repomap` and `/adev-init` | must-have | v0.5.0 | — |
+| Parser mode detection | Auto-detect whether tree-sitter is available, annotate outputs with parser mode | must-have | v0.5.0 | — |
+| Grammar auto-download | Download language grammar WASM files on first use based on detected languages | must-have | v0.5.0 | — |
+| Blast radius scoring (route) | Define artifact contract for `/adev-route` to consume dependency graph for transitive dependent analysis. Consumption logic owned by assessment charter. | should-have | v0.5.1 | — |
+| Context packet enrichment (implement) | Define artifact contract for `/adev-implement` to add relevant symbols and dependency context to packets. Consumption logic owned by implementation charter. | should-have | v0.5.1 | — |
+| Drift detection (hygiene) | Define artifact contract for `/adev-hygiene` to compare spec-declared interfaces against symbol index. Consumption logic owned by maintenance charter. | should-have | v0.5.1 | — |
+| Dependency integrity check (validate) | Define artifact contract for `/adev-validate` to detect new cross-module edges. Consumption logic owned by validation charter. | should-have | v0.5.1 | — |
+| Recovery diagnosis (recover) | Define artifact contract for `/adev-recover` to check packets against dependency graph. Consumption logic owned by implementation charter. | nice-to-have | v0.5.1 | — |
+| Multi-language support | TypeScript/JS, Python, Go, Rust, Java, Ruby grammar support | should-have | v0.5.0 | — |
+| Manifest output config | Add `repomap.output` section to manifest for enabling/disabling output formats | nice-to-have | v0.5.2 | — |
 
 ## Interface Contracts
 

@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Git prepare-commit-msg hook
+# Reads .context-index/.session-tracking.jsonl and appends
+# Spec:, Plan-task:, and Session: trailers to the commit message.
+# ALWAYS exits 0 — never blocks a commit.
+
+set -uo pipefail
+
+COMMIT_MSG_FILE="${1:-}"
+
+if [ -z "$COMMIT_MSG_FILE" ] || [ ! -f "$COMMIT_MSG_FILE" ]; then
+  exit 0
+fi
+
+TRACKING_FILE=".context-index/.session-tracking.jsonl"
+
+# Exit silently if tracking file is missing or empty
+if [ ! -f "$TRACKING_FILE" ] || [ ! -s "$TRACKING_FILE" ]; then
+  exit 0
+fi
+
+# Read the current commit message
+CURRENT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Extract unique spec paths from JSONL
+SPECS=$(node -e '
+  const fs = require("fs");
+  const lines = fs.readFileSync(process.argv[1], "utf8").trim().split("\n");
+  const specs = new Set();
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (Array.isArray(obj.specs)) {
+        for (const s of obj.specs) {
+          // Sanitize: strip newlines, validate path-like pattern
+          const clean = String(s).replace(/[\r\n]/g, "").trim();
+          if (clean && /^[\w.\/\-]+$/.test(clean)) {
+            specs.add(clean);
+          }
+        }
+      }
+    } catch {}
+  }
+  for (const s of specs) console.log(s);
+' "$TRACKING_FILE" 2>/dev/null) || SPECS=""
+
+# Extract unique session IDs (if present)
+SESSIONS=$(node -e '
+  const fs = require("fs");
+  const lines = fs.readFileSync(process.argv[1], "utf8").trim().split("\n");
+  const sessions = new Set();
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.sessionId) {
+        const clean = String(obj.sessionId).replace(/[\r\n]/g, "").trim();
+        if (clean && /^[\w\-]+$/.test(clean)) {
+          sessions.add(clean);
+        }
+      }
+    } catch {}
+  }
+  for (const s of sessions) console.log(s);
+' "$TRACKING_FILE" 2>/dev/null) || SESSIONS=""
+
+# Extract unique plan-task numbers (if present)
+TASKS=$(node -e '
+  const fs = require("fs");
+  const lines = fs.readFileSync(process.argv[1], "utf8").trim().split("\n");
+  const tasks = new Set();
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.planTask != null) {
+        const clean = String(obj.planTask).replace(/[\r\n]/g, "").trim();
+        if (clean && /^[\w\-\.]+$/.test(clean)) {
+          tasks.add(clean);
+        }
+      }
+    } catch {}
+  }
+  for (const t of tasks) console.log(t);
+' "$TRACKING_FILE" 2>/dev/null) || TASKS=""
+
+# Function to check if a trailer already exists in the commit message
+trailer_exists() {
+  local trailer="$1"
+  grep -qF "$trailer" "$COMMIT_MSG_FILE" 2>/dev/null
+}
+
+# Build trailers to append
+TRAILERS=""
+
+while IFS= read -r spec; do
+  [ -z "$spec" ] && continue
+  TRAILER="Spec: $spec"
+  if ! trailer_exists "$TRAILER"; then
+    TRAILERS="${TRAILERS}${TRAILER}"$'\n'
+  fi
+done <<< "$SPECS"
+
+while IFS= read -r task; do
+  [ -z "$task" ] && continue
+  TRAILER="Plan-task: $task"
+  if ! trailer_exists "$TRAILER"; then
+    TRAILERS="${TRAILERS}${TRAILER}"$'\n'
+  fi
+done <<< "$TASKS"
+
+while IFS= read -r session; do
+  [ -z "$session" ] && continue
+  TRAILER="Session: $session"
+  if ! trailer_exists "$TRAILER"; then
+    TRAILERS="${TRAILERS}${TRAILER}"$'\n'
+  fi
+done <<< "$SESSIONS"
+
+# Append trailers if any
+if [ -n "$TRAILERS" ]; then
+  # Ensure there's a blank line before trailers
+  printf '\n%s' "$TRAILERS" >> "$COMMIT_MSG_FILE"
+fi
+
+exit 0
