@@ -4,7 +4,7 @@
 
 ## Overview
 
-adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). It has four main subsystems: the CLI installer, skills (markdown instructions), hooks (bash lifecycle scripts), and templates (scaffolding files). There are zero external dependencies — everything runs on Node.js built-ins.
+adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). It has four main subsystems: the CLI installer, skills (markdown instructions), hooks (bash lifecycle scripts), and templates (scaffolding files). Runtime dependencies are minimal — `web-tree-sitter` is the only external dependency, installed optionally for AST-based symbol extraction (see ADR 0001). `typescript` is a dev dependency used only by the repomap eval harness (see ADR 0002).
 
 ## Directory Map
 
@@ -40,6 +40,14 @@ adev-plugin/
 │   ├── helpers.mjs             # Shared test utilities (temp dirs, fixtures, runHook)
 │   ├── cli.test.mjs            # CLI unit tests
 │   └── hooks/                  # Per-hook integration tests
+├── lib/                        # Companion code for skills
+│   └── repomap/                # Tree-sitter and regex parsers for /adev-repomap
+│       ├── index.mjs           # Main entry — parser mode detection, pipeline orchestration
+│       ├── check-deps.mjs      # Runtime detection of web-tree-sitter availability
+│       ├── parse.mjs           # Symbol extraction (regex and tree-sitter modes)
+│       ├── graph.mjs           # Dependency graph construction from import statements
+│       ├── rank.mjs            # PageRank-based symbol importance scoring
+│       └── languages/          # Tree-sitter grammar queries per language
 ├── .claude-plugin/
 │   └── plugin.json             # Plugin registration (name, version, metadata)
 ├── package.json                # npm package config (version must match plugin.json)
