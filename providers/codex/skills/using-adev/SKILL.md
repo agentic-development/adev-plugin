@@ -47,6 +47,13 @@ Invoke skills explicitly with `$adev-<skill>` or let Codex implicitly activate t
 | `$adev-debug` | Debugging | Context-aware systematic debugging |
 | `$adev-hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
 | `$adev-repomap` | Maintenance | Generate AST-based symbol index for drift detection |
+| `$adev-assess` | Assessment | Assess codebase readiness across 8 (raw) or 11 (adev) dimensions |
+| `$adev-test-write` | Implementation | TDD test authoring with gaming detection |
+| `$adev-recover` | Implementation | Resume stuck agent tasks — diagnosis, correction, re-dispatch |
+| `$adev-eval` | Validation | Graduated evaluation harness — score output quality beyond pass/fail |
+| `$adev-sample` | Maintenance | Curate golden samples from high-quality implementations |
+| `$adev-retro` | Maintenance | Sprint retrospective — extract lessons and delivery metrics |
+| `$adev-status` | Maintenance | Read-only dashboard of charters, specs, and lifecycle progress |
 
 ## Lifecycle Gates
 
