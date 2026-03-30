@@ -73,11 +73,11 @@ Log a one-time advisory when fallback is active: "model_tiers not configured in 
 
 ## Step 2: Framework Detection
 
-Run `detect-framework.mjs` with the project root:
+Run `detect-framework.sh` with the project root:
 
-```javascript
-import { detectFramework } from './detect-framework.mjs';
-const result = await detectFramework(projectRoot);
+```bash
+result=$(bash detect-framework.sh "$projectRoot")
+# Returns JSON: {"framework":"...","command":"...","filePattern":"..."} or exits 1
 ```
 
 - Returns `{ framework, command, filePattern }` or `null`.
@@ -141,17 +141,17 @@ Any assertion against unseeded runtime data is a Gaming Violation — `GAMING_VI
 
 ### Gaming Violation Detection
 
-Run `detect-gaming.mjs` on each test file before producing the Handoff Block:
+Run `detect-gaming.sh` on each test file before producing the Handoff Block:
 
-```javascript
-import { detectGaming } from './detect-gaming.mjs';
-const violations = await detectGaming(testFiles);
+```bash
+violations=$(bash detect-gaming.sh test-file1.test.ts test-file2.test.ts)
+# Returns JSON array of violations. Exit 0 always — read the JSON for results.
 ```
 
 - Any `blocking` violation → block with the violation type, file path, line number, and matched text. Error code: `GAMING_VIOLATION`. Do not produce the Handoff Block until resolved.
 - Any `advisory` violation → log with file and line. Do not block.
 
-**The 9 canonical blocking patterns (from `detect-gaming.mjs`):**
+**The 9 canonical blocking patterns (from `detect-gaming.sh`):**
 - `toBeTruthy()` as sole assertion
 - `toBeDefined()` as sole assertion
 - `toBeGreaterThanOrEqual(0)`
@@ -208,23 +208,19 @@ Tests must fail because the required behavior is not yet implemented — **not**
 
 ## Step 5: Handoff Block Production
 
-Call `write-handoff.mjs` with all required fields:
+Call `write-handoff.sh` with all required fields:
 
-```javascript
-import { writeHandoff } from './write-handoff.mjs';
-await writeHandoff({
-  packetsDir: '.context-index/packets',  // fallback: './packets'
-  slug: '<kebab-case-slug>',
-  spec: '<spec path or "standalone" or "inline-description">',
-  testFiles: ['<absolute path to test file>', ...],
-  verificationCommand: '<exact command to reproduce RED state>',
-  redStateEvidence: '<last 20 lines of test output confirming failure>',
-  constraints: ['<constraint 1>', '<constraint 2>', ...],
-  mockingBoundaries: [{ target, type, justification }, ...],
-  preexistingCheck: 'passed | skipped (clean tree) | pre-existing-recorded',
-  gamingCheck: 'passed | violations-found',
-  framework: '<detected framework name>',
-});
+```bash
+bash write-handoff.sh write \
+  "<slug>" \
+  "<spec path or standalone>" \
+  ".context-index/packets" \
+  "<framework>" \
+  "<preexisting_check: passed | skipped | pre-existing-recorded>" \
+  "<gaming_check: passed | violations-found>" \
+  "<verification command>" \
+  "<RED state evidence — last 20 lines of test output>" \
+  test-file1.test.ts [test-file2.test.ts ...]
 ```
 
 If write fails → block with filesystem error. Do not report success. — `WRITE_ERROR`
@@ -241,9 +237,9 @@ Invoked as: `adev-test-write --verify --packet <path>`
 
 ### 6a. Hash Check
 
-```javascript
-import { verifyHandoff } from './write-handoff.mjs';
-const result = await verifyHandoff(packetPath);
+```bash
+result=$(bash write-handoff.sh verify "<packetPath>")
+# Outputs: PASS or HASH_MISMATCH:<stored>:<computed>
 ```
 
 - `PASS` → verification complete. Report and stop.
@@ -363,8 +359,8 @@ During `--verify`, also check if the implementer introduced new mocks in test fi
 
 | Helper | Purpose | Uses |
 |--------|---------|------|
-| `detect-framework.mjs` | Detect test framework from package.json or test files | Step 2 |
-| `detect-gaming.mjs` | Scan test files for canonical gaming patterns | Step 4 |
-| `write-handoff.mjs` | Write and verify Handoff Block with SHA-256 hash | Step 5, Step 6 |
+| `detect-framework.sh` | Detect test framework from package.json or test files | Step 2 |
+| `detect-gaming.sh` | Scan test files for canonical gaming patterns | Step 4 |
+| `write-handoff.sh` | Write and verify Handoff Block with SHA-256 hash | Step 5, Step 6 |
 
 These helpers accelerate deterministic checks. The skill functions without them — Claude can apply the same rules manually if a helper is unavailable.
