@@ -18,3 +18,6 @@
 ## Summary
 **Total findings:** 0 blockers, 0 warnings, 0 suggestions
 **Action required:** None - spec ready for planning
+
+last-reviewed-revision: 1
+file-sha: 21b98b0575ee44c083fdc00a87c285e3c567f447

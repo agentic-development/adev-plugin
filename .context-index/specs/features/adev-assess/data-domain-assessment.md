@@ -9,7 +9,10 @@ charter: adev-assess
 status: draft
 risk_level: low
 milestone: v2
+revision: 1
+charter-revision: 1
 created: 2026-03-24
+updated: 2026-03-24
 charter-extension: true
 ---
 
