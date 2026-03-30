@@ -54,6 +54,8 @@ Include:
 - Scene-setting context
 - Spec excerpt
 - TDD mandate: RED-GREEN-REFACTOR
+  - VERIFY RED/GREEN: run only the specific test file, not the full suite
+  - Full suite runs at quality-gate stage after review
 - Specialist context
 - Report format
 
