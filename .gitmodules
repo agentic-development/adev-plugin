@@ -1,0 +1,3 @@
+[submodule "tests/evals/adev-data-eval"]
+	path = tests/evals/adev-data-eval
+	url = https://github.com/agentic-development/adev-data-eval.git
