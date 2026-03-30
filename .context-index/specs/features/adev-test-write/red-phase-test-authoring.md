@@ -9,7 +9,10 @@ charter: adev-test-write
 status: review-passed
 risk_level: medium
 milestone: v1
+revision: 1
+charter-revision: 1
 created: 2026-03-27
+updated: 2026-03-27
 cross-cutting-refs:
   - .context-index/specs/cross-cutting/model-routing.md
 ---

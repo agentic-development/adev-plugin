@@ -46,3 +46,6 @@
 **Total findings:** 0 (B blockers, W warnings, S suggestions)
 
 **Action required:** None. Spec passes review and is ready for planning.
+
+last-reviewed-revision: 1
+file-sha: ac8d5b73fa2eee1f54baf02e02bb9346d6ffb005

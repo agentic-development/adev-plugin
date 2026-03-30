@@ -62,3 +62,6 @@ Warnings to address:
 3. SA-3: Scope grammar acquisition (own spec or add behaviors here)
 4. SEC-1: Add path containment check
 5. CON-1: Use fully qualified file paths in task map
+
+last-reviewed-revision: 1
+file-sha: d599b29b77810f32cc39609ce4ddcba17168bba1

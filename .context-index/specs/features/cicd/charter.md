@@ -55,9 +55,9 @@ Automate quality gates (tests, lint, typecheck) on every PR and push, and publis
 
 | Capability | Description | Priority | Status |
 |------------|-------------|----------|--------|
-| Run Quality Gates | Execute npm test on PR/push | must-have | — |
-| Block Bad Merges | Fail workflow if tests fail | must-have | — |
-| Publish on Tags | Publish to npm on version tags | must-have | — |
+| Run Quality Gates | Execute npm test on PR/push | must-have | validated |
+| Block Bad Merges | Fail workflow if tests fail | must-have | review-passed |
+| Publish on Tags | Publish to npm on version tags | must-have | review-passed |
 | Cache Dependencies | Speed up workflow runs | should-have | — |
 
 ## Interface Contracts

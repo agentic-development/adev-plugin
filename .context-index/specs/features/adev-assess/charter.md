@@ -63,10 +63,10 @@ Evaluate codebase readiness for agentic development using static file inspection
 
 | Capability | Description | Priority | Status |
 |------------|-------------|----------|--------|
-| Run Assessment | Execute static file inspection across all dimensions | must-have | — |
-| Output Markdown | Generate readable scorecard with visual indicators | must-have | — |
-| Output JSON | Generate machine-readable report with scores | must-have | — |
-| Detect Mode | Auto-detect if codebase has .context-index/ for mode selection | must-have | — |
+| Run Assessment | Execute static file inspection across all dimensions | must-have | validated |
+| Output Markdown | Generate readable scorecard with visual indicators | must-have | review-passed |
+| Output JSON | Generate machine-readable report with scores | must-have | review-passed |
+| Detect Mode | Auto-detect if codebase has .context-index/ for mode selection | must-have | review-passed |
 | Configurable Weights | Allow adjusting dimension weights | nice-to-have | — |
 
 ## Interface Contracts
