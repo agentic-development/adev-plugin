@@ -41,6 +41,11 @@ modules:
       - skills/adev-sync/
       - templates/
 
+  - slug: triage
+    name: Triage
+    paths:
+      - skills/adev-start/
+
   - slug: design
     name: Design
     paths:
