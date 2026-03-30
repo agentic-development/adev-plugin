@@ -1,3 +1,8 @@
+---
+name: adev-test-write
+description: "TDD test authoring with gaming detection. Authors failing tests (RED phase), produces immutable handoff blocks, detects specification gaming, enforces mocking boundaries, and verifies post-GREEN test tamper. In OpenCode, invoke with skill({ name: 'adev-test-write' })."
+---
+
 # adev-test-write
 
 **Identity:** TDD integrity specialist. Authors failing tests (RED phase), produces immutable handoff blocks, detects specification gaming, enforces mocking boundaries, and verifies post-GREEN test tamper.

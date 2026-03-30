@@ -34,6 +34,7 @@ Use the `skill` tool to invoke these skills. For example: `skill({ name: "adev-i
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
+| `adev-start` | Triage | Classify incoming work and route to the right skill |
 | `adev-init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
 | `adev-sync` | Context Setup | Sync constitution to AGENTS.md and other agent files |
 | `adev-brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
@@ -46,6 +47,13 @@ Use the `skill` tool to invoke these skills. For example: `skill({ name: "adev-i
 | `adev-debug` | Debugging | Context-aware systematic debugging |
 | `adev-hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
 | `adev-repomap` | Maintenance | Generate AST-based symbol index for drift detection |
+| `adev-assess` | Assessment | Assess codebase readiness across 8 (raw) or 11 (adev) dimensions |
+| `adev-test-write` | Implementation | TDD test authoring with gaming detection |
+| `adev-recover` | Implementation | Resume stuck agent tasks — diagnosis, correction, re-dispatch |
+| `adev-eval` | Validation | Graduated evaluation harness — score output quality beyond pass/fail |
+| `adev-sample` | Maintenance | Curate golden samples from high-quality implementations |
+| `adev-retro` | Maintenance | Sprint retrospective — extract lessons and delivery metrics |
+| `adev-status` | Maintenance | Read-only dashboard of charters, specs, and lifecycle progress |
 
 ## Lifecycle Gates
 
@@ -63,6 +71,12 @@ If any `adev-*` skill applies to the current task, invoke it before proceeding u
 ## Invocation Examples
 
 ```javascript
+// Triage incoming work
+skill({ name: "adev-start" })
+
+// Assess codebase readiness
+skill({ name: "adev-assess" })
+
 // Initialize a project
 skill({ name: "adev-init" })
 
