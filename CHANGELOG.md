@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1] - 2026-03-30
+
+### Fixes
+
+- **TDD verification uses targeted test runs** — `adev-implement` VERIFY RED/GREEN steps now run only the specific test file instead of the full suite, preventing dozens of unnecessary full-suite runs during multi-task implementation sessions (all three providers updated)
+
 ## [0.6.0] - 2026-03-29
 
 ### New Features

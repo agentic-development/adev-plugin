@@ -85,9 +85,9 @@ Build the implementer subagent prompt:
    Every piece of production code requires a failing test first.
    
    1. RED: Write one failing test that captures the next behavior to implement.
-   2. VERIFY RED: Run the test. Confirm it fails for the expected reason.
+   2. VERIFY RED: Run only the specific test file (e.g., `npx vitest run <path-to-test-file>`), not the full suite. Confirm it fails for the expected reason.
    3. GREEN: Write the minimal code to make the test pass.
-   4. VERIFY GREEN: Run the test. Confirm it passes.
+   4. VERIFY GREEN: Run only the specific test file again. Confirm it passes. The full suite runs at the quality-gate stage, not here.
    5. REFACTOR: Clean up while keeping all tests green.
    
    No production code without a failing test first. No exceptions.
