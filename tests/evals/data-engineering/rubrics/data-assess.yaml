@@ -1,0 +1,75 @@
+# Rubric: data-assess — Assess a dbt project with /adev-assess --domain data
+# Target: tests/evals/adev-data-eval
+# Difficulty: HARD — requires specific structural output, not just keyword mentions
+
+skill: adev-assess
+scenario: data-assess
+
+required_elements:
+  # --- Structural output requirements ---
+  - id: per_dimension_scores
+    description: "Produced individual numeric scores per dimension (not just an overall score)"
+    match_pattern: "\\|.*\\d{1,3}\\s*\\|"
+
+  - id: overall_score_formatted
+    description: "Overall score in X/100 format"
+    match_pattern: "\\d{1,2}/100|100/100"
+
+  - id: maturity_level_with_name
+    description: "Maturity level with label (e.g., L3 -- Defined, not just L3)"
+    match_pattern: "L[1-5]\\s*[-–—:]\\s*\\w+"
+
+  # --- Data-specific dimension coverage ---
+  - id: orchestration_evidence
+    description: "Cited specific Airflow evidence (DAG names or schedule)"
+    match_pattern: "dbt_daily_run|data_quality_check|0 [68] \\*|schedule_interval|BashOperator"
+
+  - id: lineage_gap_identified
+    description: "Identified the missing source() declarations as a gap"
+    match_pattern: "source\\(\\)|_sources?.yml|no.*source.*declar|source.*missing|source.*not.*defined"
+
+  - id: quality_ge_coverage_gap
+    description: "Identified that Great Expectations covers only 2 of 4 tables"
+    match_pattern: "2 of 4|raw_payments.*missing|raw_products.*missing|only.*customers.*orders"
+
+  - id: dbt_utils_unused
+    description: "Noticed dbt_utils package is installed but unused"
+    match_pattern: "dbt_utils.*unused|unused.*dbt_utils|installed.*not.*used|imported.*not.*used"
+
+  - id: naming_convention_scored
+    description: "Recognized the stg_/int_/fct_/dim_ naming convention as a strength"
+    match_pattern: "stg_.*int_.*fct_|dim_.*fct_|naming.*convention.*consistent|prefix.*convention"
+
+  - id: no_contract_enforced
+    description: "Identified lack of dbt model contracts (dbt 1.5+ feature)"
+    match_pattern: "contract.*enforced|model.*contract|no.*contract"
+
+  # --- Recommendations ---
+  - id: actionable_recommendation_with_file
+    description: "At least one recommendation references a specific file or config to change"
+    match_pattern: "_sources?.yml|dbt_project.yml|profiles.yml|_marts.yml|manifest|schema.yml"
+
+  - id: iac_score_zero_or_low
+    description: "Scored Infrastructure as Code at 0 or very low (no Terraform in project)"
+    match_pattern: "[Ii]nfrastructure.*0|IaC.*0|0/100.*[Ii]nfra|[Tt]erraform.*none|no.*[Tt]erraform|0.*[Ii]nfrastructure"
+
+quality_dimensions:
+  - id: dimension_accuracy
+    description: "Scores reflect actual project maturity (L3+, not L1-L2 or L5)"
+    weight: 2
+
+  - id: gap_specificity
+    description: "Gaps cite specific files/configs, not generic advice"
+    weight: 2
+
+  - id: data_domain_depth
+    description: "Distinguishes data-specific dimensions from generic code dimensions"
+    weight: 1.5
+
+  - id: no_hallucinated_files
+    description: "Does not reference files that don't exist in the project"
+    weight: 1.5
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50
