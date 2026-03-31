@@ -1,0 +1,81 @@
+# Rubric: data-document — Generate architecture docs for a dbt project
+# Target: tests/evals/adev-data-eval
+# Difficulty: HARD — must produce accurate, structured docs with specific project details
+
+skill: adev-document
+scenario: data-document
+
+required_elements:
+  # --- Model inventory accuracy ---
+  - id: all_nine_models_listed
+    description: "Listed all 9 dbt models by name (4 staging + 2 intermediate + 3 marts)"
+    match_pattern: "stg_customers.*stg_orders.*stg_payments.*stg_products|stg_\\w+.*stg_\\w+.*stg_\\w+.*stg_\\w+"
+
+  - id: materialization_per_layer
+    description: "Documented that staging=views, intermediate=tables, marts=tables"
+    match_pattern: "staging.*view|view.*staging"
+
+  - id: intermediate_tables_materialized
+    description: "Documented intermediate and marts as tables (not views)"
+    match_pattern: "intermediate.*table|mart.*table"
+
+  # --- Data flow diagram ---
+  - id: visual_data_flow
+    description: "Included a visual/ASCII data flow diagram (not just prose)"
+    match_pattern: "──>|-->|->.*->|═|┌|└|│|\\|.*\\|.*\\|"
+
+  - id: flow_shows_all_layers
+    description: "Diagram shows seeds -> staging -> intermediate -> marts flow"
+    match_pattern: "raw.*stg.*int.*fct|seed.*staging.*intermediate.*mart|raw.*staging.*intermediate.*mart"
+
+  # --- Key transformations documented ---
+  - id: cents_to_dollars_documented
+    description: "Documented the cents_to_dollars macro with its formula"
+    match_pattern: "cents_to_dollars.*round|round.*100\\.0|cents.*dollars.*macro"
+
+  - id: payment_pivot_documented
+    description: "Documented the payment pivoting transformation with method names"
+    match_pattern: "pivot.*credit_card.*bank_transfer|CASE.*WHEN.*payment_method|conditional.*SUM|SUM.*CASE"
+
+  - id: lifetime_value_logic
+    description: "Documented that lifetime_value only counts completed orders"
+    match_pattern: "completed.*order.*lifetime|lifetime.*value.*completed|order_status.*completed.*sum|only.*completed"
+
+  # --- Testing and quality ---
+  - id: test_count_mentioned
+    description: "Mentioned the total test count (50 tests)"
+    match_pattern: "50.*test|50.*data test"
+
+  - id: snapshot_documented
+    description: "Documented the SCD Type 2 snapshot on order_status"
+    match_pattern: "SCD.*[Tt]ype.*2.*order|snapshot.*order.*status|snapshot_orders.*check.*order_status"
+
+  # --- Orchestration ---
+  - id: both_dags_named
+    description: "Named both Airflow DAGs (dbt_daily_run AND data_quality_check)"
+    match_pattern: "dbt_daily_run.*data_quality_check|data_quality_check.*dbt_daily_run"
+
+  - id: dag_execution_order
+    description: "Documented the dbt_daily_run task execution order (seed -> run -> test -> snapshot)"
+    match_pattern: "seed.*run.*test.*snapshot|seed.*staging.*intermediate.*mart|seed.*test.*run.*test"
+
+quality_dimensions:
+  - id: accuracy
+    description: "No factual errors about the project structure"
+    weight: 2.5
+
+  - id: completeness
+    description: "Covers models, transformations, testing, orchestration, and consumers"
+    weight: 2
+
+  - id: onboarding_value
+    description: "A new team member could understand the project from this doc alone"
+    weight: 1.5
+
+  - id: no_hallucination
+    description: "Does not reference models, files, or features that don't exist"
+    weight: 1.5
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

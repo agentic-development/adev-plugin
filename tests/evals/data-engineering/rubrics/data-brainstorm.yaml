@@ -1,0 +1,80 @@
+# Rubric: data-brainstorm — Charter a Customer Lifetime Value analytics module
+# Target: tests/evals/adev-data-eval
+# Difficulty: HARD — must demonstrate reuse of existing models and proper scoping
+
+skill: adev-brainstorm
+scenario: data-brainstorm
+
+required_elements:
+  # --- Must reference existing models by exact name ---
+  - id: references_dim_customers
+    description: "Referenced dim_customers.lifetime_value as existing partial CLV"
+    match_pattern: "dim_customers\\.lifetime_value|dim_customers.*lifetime_value|lifetime_value.*dim_customers"
+
+  - id: references_int_customer_order_history
+    description: "Referenced int_customer_order_history as reusable upstream"
+    match_pattern: "int_customer_order_history"
+
+  - id: references_fct_orders
+    description: "Referenced fct_orders for order-level detail"
+    match_pattern: "fct_orders"
+
+  # --- Charter structure ---
+  - id: business_intent_section
+    description: "Has a Business Intent section header (not just mentions lifetime value)"
+    match_pattern: "^#{1,3}.*[Bb]usiness [Ii]ntent"
+
+  - id: in_out_scope_sections
+    description: "Has both In Scope and Out of Scope as distinct sections"
+    match_pattern: "^#{1,4}.*[Ii]n [Ss]cope"
+
+  - id: capability_with_priority
+    description: "Listed at least one capability with must-have or should-have priority"
+    match_pattern: "[Mm]ust-[Hh]ave|[Ss]hould-[Hh]ave|P0|P1|MVP"
+
+  # --- Data modeling awareness ---
+  - id: proposes_new_intermediate_model
+    description: "Proposed a new intermediate model (e.g., purchase intervals, cohort aggregation)"
+    match_pattern: "int_.*purchase|int_.*interval|int_.*cohort|int_.*clv|intermediate.*model.*new|new.*intermediate"
+
+  - id: proposes_new_mart_model
+    description: "Proposed a new mart/fact model for CLV"
+    match_pattern: "fct_.*clv|fct_.*lifetime|dim_.*segment|mart.*clv|CLV.*mart"
+
+  - id: does_not_modify_staging
+    description: "Explicitly states staging models are not modified (out of scope)"
+    match_pattern: "stag.*not.*modif|stag.*unchanged|not.*modify.*stag|stag.*stable|stag.*out of scope|without.*chang.*stag"
+
+  - id: grain_specified
+    description: "Specified the grain of at least one proposed model"
+    match_pattern: "one row per|grain.*customer|per.customer|customer.grain"
+
+  # --- Quality and testability ---
+  - id: defines_invariant_or_business_rule
+    description: "Defined at least one domain invariant or testable business rule"
+    match_pattern: "[Ii]nvariant|CLV.*non-negative|only.*completed.*orders|lifetime_value.*>=.*0"
+
+  - id: mentions_segmentation_logic
+    description: "Described customer segmentation with named segments"
+    match_pattern: "(high.value|low.value|at.risk|churned).*segment|(segment|tier).*high.value"
+
+quality_dimensions:
+  - id: reuse_over_rebuild
+    description: "Builds on existing models rather than proposing to rebuild from scratch"
+    weight: 2.5
+
+  - id: dimensional_modeling
+    description: "Follows dimensional modeling conventions (fact/dim naming, grain, measures vs attributes)"
+    weight: 2
+
+  - id: scope_discipline
+    description: "CLV-focused, doesn't scope-creep into product recommendations, marketing attribution"
+    weight: 1.5
+
+  - id: completeness
+    description: "All 6 charter sections present and substantive (not placeholder)"
+    weight: 1
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50
