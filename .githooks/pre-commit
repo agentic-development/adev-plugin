@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# Git pre-commit hook — blocks commits on protected branches.
+# Reads configuration from .context-index/manifest.yaml when available.
+# Exit codes: 0 = allow, 1 = block.
+
+set -uo pipefail
+
+# --- Detect current branch ---
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
+
+# Detached HEAD — allow
+if [ "$CURRENT_BRANCH" = "HEAD" ]; then
+  exit 0
+fi
+
+# --- Load configuration from manifest.yaml ---
+
+MANIFEST=""
+for candidate in ".context-index/manifest.yaml" "../.context-index/manifest.yaml"; do
+  if [ -f "$candidate" ]; then
+    MANIFEST="$candidate"
+    break
+  fi
+done
+
+# Default values
+MERGE_POLICY="pr"
+PROTECTED_BRANCHES=("main" "master")
+
+if [ -n "$MANIFEST" ]; then
+  # Extract merge_policy (simple grep, no yq dependency)
+  POLICY_LINE=$(grep -E '^\s*merge_policy:' "$MANIFEST" 2>/dev/null || true)
+  if [ -n "$POLICY_LINE" ]; then
+    EXTRACTED=$(echo "$POLICY_LINE" | sed 's/.*merge_policy:[[:space:]]*//' | sed 's/[[:space:]]*#.*//' | tr -d '"' | tr -d "'")
+    if [ -n "$EXTRACTED" ]; then
+      MERGE_POLICY="$EXTRACTED"
+    fi
+  fi
+
+  # Extract protected_branches (simple line-by-line parse)
+  IN_PROTECTED=false
+  CUSTOM_BRANCHES=()
+  while IFS= read -r line; do
+    if echo "$line" | grep -qE '^\s*protected_branches:'; then
+      IN_PROTECTED=true
+      continue
+    fi
+    if $IN_PROTECTED; then
+      if echo "$line" | grep -qE '^\s*-\s+'; then
+        BRANCH=$(echo "$line" | sed 's/.*-[[:space:]]*//' | tr -d '"' | tr -d "'" | sed 's/[[:space:]]*#.*//')
+        if [ -n "$BRANCH" ]; then
+          CUSTOM_BRANCHES+=("$BRANCH")
+        fi
+      else
+        IN_PROTECTED=false
+      fi
+    fi
+  done < "$MANIFEST"
+
+  if [ ${#CUSTOM_BRANCHES[@]} -gt 0 ]; then
+    PROTECTED_BRANCHES=("${CUSTOM_BRANCHES[@]}")
+  fi
+fi
+
+# --- Check if current branch is protected ---
+
+IS_PROTECTED=false
+for branch in "${PROTECTED_BRANCHES[@]}"; do
+  if [ "$CURRENT_BRANCH" = "$branch" ]; then
+    IS_PROTECTED=true
+    break
+  fi
+done
+
+if ! $IS_PROTECTED; then
+  exit 0
+fi
+
+# --- Enforce policy ---
+
+case "$MERGE_POLICY" in
+  pr)
+    echo "" >&2
+    echo "  ✗ Blocked: commit on protected branch '${CURRENT_BRANCH}'" >&2
+    echo "    merge_policy is 'pr' — create a feature branch first:" >&2
+    echo "" >&2
+    echo "      git checkout -b feat/my-feature" >&2
+    echo "" >&2
+    exit 1
+    ;;
+  merge)
+    echo "" >&2
+    echo "  ✗ Blocked: commit on protected branch '${CURRENT_BRANCH}'" >&2
+    echo "    Protected branches require a pull request even with merge_policy: merge." >&2
+    echo "" >&2
+    echo "      git checkout -b feat/my-feature" >&2
+    echo "" >&2
+    exit 1
+    ;;
+  ask)
+    echo "" >&2
+    echo "  ⚠ Warning: committing directly to protected branch '${CURRENT_BRANCH}'" >&2
+    echo "    merge_policy is 'ask' — consider using a feature branch instead." >&2
+    echo "" >&2
+    exit 0
+    ;;
+  *)
+    echo "" >&2
+    echo "  ✗ Blocked: commit on protected branch '${CURRENT_BRANCH}'" >&2
+    echo "    Unknown merge_policy '${MERGE_POLICY}'. Defaulting to 'pr'." >&2
+    echo "" >&2
+    exit 1
+    ;;
+esac

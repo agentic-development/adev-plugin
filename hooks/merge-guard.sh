@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # merge-guard.sh — PreToolUse hook for Bash commands.
-# Blocks git merge/push to protected branches when merge_policy is "pr".
+# Blocks git commit/merge/push to protected branches when merge_policy is "pr".
 # Exit codes: 0 = allow, 2 = block.
 
 set -euo pipefail
@@ -16,8 +16,8 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# Fast path: skip if the command does not contain git-related merge/push keywords
-if ! echo "$COMMAND" | grep -qiE '(git\s+(merge|push|checkout)|gh\s+pr\s+merge)'; then
+# Fast path: skip if the command does not contain git-related commit/merge/push keywords
+if ! echo "$COMMAND" | grep -qiE '(git\s+(commit|merge|push|checkout)|gh\s+pr\s+merge)'; then
   exit 0
 fi
 
@@ -74,8 +74,39 @@ fi
 
 # --- Check if command targets a protected branch ---
 
+# --- Detect current branch (for commit guard) ---
+
+CURRENT_BRANCH=""
+if command -v git &>/dev/null; then
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+fi
+
+is_on_protected_branch() {
+  if [ -z "$CURRENT_BRANCH" ]; then
+    return 1
+  fi
+  for branch in "${PROTECTED_BRANCHES[@]}"; do
+    if [ "$CURRENT_BRANCH" = "$branch" ]; then
+      echo "$branch"
+      return 0
+    fi
+  done
+  return 1
+}
+
 targets_protected_branch() {
   local cmd="$1"
+
+  # git commit while on a protected branch
+  if echo "$cmd" | grep -qE "git\s+commit"; then
+    local on_protected
+    on_protected=$(is_on_protected_branch) || true
+    if [ -n "$on_protected" ]; then
+      echo "$on_protected"
+      return 0
+    fi
+  fi
+
   for branch in "${PROTECTED_BRANCHES[@]}"; do
     # git merge <branch> or git merge ... <branch>
     if echo "$cmd" | grep -qE "git\s+merge\s+.*\b${branch}\b"; then
@@ -112,16 +143,16 @@ fi
 
 case "$MERGE_POLICY" in
   pr)
-    echo "Blocked: merge_policy is 'pr'. Open a pull request instead of merging directly to ${TARGET}." >&2
+    echo "Blocked: merge_policy is 'pr'. Create a feature branch and open a pull request instead of committing/merging directly to ${TARGET}." >&2
     exit 2
     ;;
   merge)
     # Even with merge policy, protected branches require a PR
-    echo "Blocked: ${TARGET} is a protected branch. Open a PR even with merge_policy: merge." >&2
+    echo "Blocked: ${TARGET} is a protected branch. Create a feature branch and open a PR even with merge_policy: merge." >&2
     exit 2
     ;;
   ask)
-    echo "Advisory: merge_policy is 'ask'. Please confirm with the user before merging to ${TARGET}." >&2
+    echo "Advisory: merge_policy is 'ask'. Please confirm with the user before committing/merging to ${TARGET}." >&2
     exit 0
     ;;
   *)

@@ -2,9 +2,9 @@
  * Shared test utilities for adev-plugin E2E tests.
  */
 
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync } from "fs";
 import { join, resolve, dirname } from "path";
-import { spawnSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
 import { tmpdir } from "os";
 import { fileURLToPath } from "url";
 
@@ -62,6 +62,50 @@ export function runHook(hookName, { env = {}, cwd, stdin } = {}) {
     timeout: 10_000,
   });
 
+  return {
+    exitCode: result.status ?? 1,
+    stdout: result.stdout || "",
+    stderr: result.stderr || "",
+  };
+}
+
+/**
+ * Create an isolated temp directory initialized as a git repo.
+ * @param {object} [opts]
+ * @param {string} [opts.branch] - Branch to create and checkout (default: "main").
+ * @returns {string} Absolute path to the temp dir (git repo root).
+ */
+export function createTempGitRepo({ branch = "main" } = {}) {
+  const dir = createTempDir();
+  execSync("git init -b main", { cwd: dir, stdio: "ignore" });
+  execSync('git config user.email "test@test.com"', { cwd: dir, stdio: "ignore" });
+  execSync('git config user.name "Test"', { cwd: dir, stdio: "ignore" });
+  // Create initial commit so branch exists
+  writeFileSync(join(dir, "README.md"), "init\n");
+  execSync("git add README.md && git commit -m init", { cwd: dir, stdio: "ignore" });
+  if (branch !== "main") {
+    execSync(`git checkout -b ${branch}`, { cwd: dir, stdio: "ignore" });
+  }
+  return dir;
+}
+
+/**
+ * Run a git hook script (from .githooks/) in a temp git repo.
+ * @param {string} hookName - Script basename, e.g. "pre-commit".
+ * @param {object} options
+ * @param {string} [options.cwd] - Working directory (must be a git repo).
+ * @param {string} [options.stdin] - Data to pipe into stdin.
+ * @returns {{ exitCode: number, stdout: string, stderr: string }}
+ */
+export function runGitHook(hookName, { cwd, stdin } = {}) {
+  const hookPath = join(PLUGIN_ROOT, ".githooks", hookName);
+  const result = spawnSync("bash", [hookPath], {
+    env: { ...process.env },
+    cwd: cwd || process.cwd(),
+    input: stdin || "",
+    encoding: "utf8",
+    timeout: 10_000,
+  });
   return {
     exitCode: result.status ?? 1,
     stdout: result.stdout || "",
