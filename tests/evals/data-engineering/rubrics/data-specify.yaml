@@ -1,0 +1,81 @@
+# Rubric: data-specify — Reverse-engineer a Live Spec from fct_orders
+# Target: tests/evals/adev-data-eval/models/marts/fct_orders.sql
+# Difficulty: HARD — must demonstrate deep understanding of the model, not surface-level description
+
+skill: adev-specify
+scenario: data-specify
+
+required_elements:
+  # --- Grain and structure ---
+  - id: grain_explicit
+    description: "Explicitly states grain as one row per order with order_id as PK"
+    match_pattern: "one row per order|order.grain|grain.*order_id|order_id.*primary key"
+
+  - id: left_join_documented
+    description: "Documented LEFT JOIN type specifically (not just 'join')"
+    match_pattern: "LEFT JOIN|left join|left outer join"
+
+  - id: fan_out_risk_addressed
+    description: "Addressed fan-out risk (or lack thereof) from the join"
+    match_pattern: "fan.out|one.to.one|1:1|no.*duplicat|aggregat.*per.*order_id"
+
+  # --- Behavioral contract format ---
+  - id: when_then_statements
+    description: "At least 3 distinct When...Then behavioral statements"
+    match_pattern: "[Ww]hen.*[Tt]hen"
+
+  - id: null_payment_behavior
+    description: "Documented what happens when an order has no payments (NULL columns)"
+    match_pattern: "NULL.*payment|no.*payment.*NULL|orphan.*order.*NULL|LEFT JOIN.*NULL"
+
+  - id: payment_method_unknown_edge
+    description: "Identified edge case of unknown payment methods not captured in named columns"
+    match_pattern: "unknown.*payment.*method|payment.*method.*not.*in|method.*outside|unrecognized.*method"
+
+  # --- Column-level detail ---
+  - id: all_payment_columns_listed
+    description: "Listed all four payment columns explicitly"
+    match_pattern: "credit_card_amount.*bank_transfer_amount.*gift_card_amount.*total_amount"
+
+  - id: cents_to_dollars_noted
+    description: "Noted that amounts are converted from cents to dollars upstream"
+    match_pattern: "cents.*dollars|cents_to_dollars|100\\.0|divided by 100|upstream.*conver"
+
+  # --- Upstream lineage ---
+  - id: both_upstream_models_named
+    description: "Named both direct upstream models (stg_orders AND int_orders_pivoted_to_payments)"
+    match_pattern: "stg_orders.*int_orders_pivoted|int_orders_pivoted.*stg_orders"
+
+  - id: transitive_dependency_traced
+    description: "Traced at least one transitive dependency (e.g., stg_payments feeds int_orders_pivoted)"
+    match_pattern: "stg_payments.*int_orders|raw_payments.*stg_payments|transitive|indirect.*depend"
+
+  # --- Acceptance criteria ---
+  - id: untested_criteria_identified
+    description: "Identified at least one acceptance criterion that is NOT currently tested"
+    match_pattern: "[Uu]ntested|not.*tested|no.*test.*for|missing.*test|gap"
+
+  - id: order_total_discrepancy
+    description: "Noticed stg_orders.order_total exists but fct_orders uses payment totals instead"
+    match_pattern: "order_total.*unused|order_total.*not.*used|stg_orders.*order_total.*fct_orders|payment.*total.*instead"
+
+quality_dimensions:
+  - id: extraction_accuracy
+    description: "Spec accurately reflects what the SQL does, not what it should do"
+    weight: 2.5
+
+  - id: edge_case_depth
+    description: "Identifies non-obvious edge cases beyond the happy path"
+    weight: 2
+
+  - id: lineage_completeness
+    description: "Full upstream chain traced, not just direct refs"
+    weight: 1.5
+
+  - id: gap_identification
+    description: "Identifies testing or design gaps in the existing model"
+    weight: 1.5
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50
