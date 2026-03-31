@@ -9,7 +9,7 @@ set -euo pipefail
 INPUT=$(cat)
 
 # Extract the command field from the JSON input
-COMMAND=$(echo "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/"command"[[:space:]]*:[[:space:]]*"//;s/"$//')
+COMMAND=$(echo "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/"command"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 
 # If we cannot extract a command, allow (not a Bash invocation we care about)
 if [ -z "$COMMAND" ]; then

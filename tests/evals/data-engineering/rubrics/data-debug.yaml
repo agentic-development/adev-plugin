@@ -1,0 +1,77 @@
+# Rubric: data-debug — Debug a failing dbt test (NULL total_amount)
+# Target: tests/evals/adev-data-eval
+# Difficulty: HARD — must follow systematic approach AND catch the subtle seed data nuance
+
+skill: adev-debug
+scenario: data-debug
+
+required_elements:
+  # --- Systematic approach evidence ---
+  - id: read_fct_orders_sql
+    description: "Actually read and quoted from fct_orders.sql (not generic description)"
+    match_pattern: "orders\\.order_id.*payments\\.order_id|from orders.*left join payments|payments\\.credit_card_amount"
+
+  - id: traced_upstream_chain
+    description: "Traced the full upstream chain (stg_payments -> int_orders_pivoted -> fct_orders)"
+    match_pattern: "stg_payments.*int_orders_pivoted|int_orders_pivoted.*stg_payments"
+
+  - id: left_join_as_root_cause
+    description: "Identified the LEFT JOIN as the mechanism producing NULLs"
+    match_pattern: "LEFT JOIN.*NULL|left join.*produce.*NULL|LEFT JOIN.*cause|left join.*result.*NULL"
+
+  # --- Verification queries ---
+  - id: diagnostic_sql_query
+    description: "Proposed a specific SQL query to find the affected rows"
+    match_pattern: "SELECT.*order_id.*WHERE.*NULL|SELECT.*WHERE.*total_amount.*IS NULL"
+
+  - id: coalesce_fix_proposed
+    description: "Proposed COALESCE(..., 0) as the fix (not just described the issue)"
+    match_pattern: "coalesce\\(.*payments.*,\\s*0\\)|COALESCE\\(.*payments.*,\\s*0\\)|coalesce\\(.*total_amount.*,\\s*0\\)|COALESCE\\(.*total_amount.*,\\s*0\\)"
+
+  # --- Nuance: seed data paradox ---
+  - id: noticed_seed_data_has_all_payments
+    description: "Noticed that the current seed data has payments for ALL orders (so NULLs wouldn't occur with current seeds)"
+    match_pattern: "seed.*all.*payment|all.*order.*have.*payment|current.*seed.*payment.*exist|seed.*data.*happen.*include|seed.*data.*has.*payment"
+
+  - id: placed_orders_connection
+    description: "Connected the 3 NULL rows to the 3 orders with 'placed' status (IDs 53, 57, 89)"
+    match_pattern: "(53|57|89).*placed|placed.*(53|57|89)|3.*order.*placed|placed.*status.*3"
+
+  # --- Fix validation ---
+  - id: rerun_specific_test
+    description: "Proposed re-running the specific test (not just 'run dbt test')"
+    match_pattern: "dbt test.*--select.*not_null|dbt test.*fct_orders|dbt test.*total_amount"
+
+  - id: all_payment_columns_fixed
+    description: "Applied fix to ALL four payment columns, not just total_amount"
+    match_pattern: "credit_card_amount.*bank_transfer_amount|coalesce.*credit.*coalesce.*bank|all.*payment.*column"
+
+  # --- Approach quality ---
+  - id: data_vs_model_distinction
+    description: "Distinguished between 'fix the model' vs 'fix the data' approaches"
+    match_pattern: "fix.*data|fix.*model|data.*issue.*model.*issue|model.*logic.*data.*quality"
+
+  - id: no_trial_and_error
+    description: "Did not suggest random fixes before reading the code"
+    match_pattern: "[Rr]ead.*fct_orders|[Ii]nvestigat.*model|[Ee]xamin.*code|[Rr]eview.*sql"
+
+quality_dimensions:
+  - id: systematic_rigor
+    description: "Followed reproduce -> investigate -> hypothesize -> fix -> validate, in order"
+    weight: 2
+
+  - id: seed_data_awareness
+    description: "Recognized the paradox: seed data has all payments, so the bug requires different data"
+    weight: 2.5
+
+  - id: fix_completeness
+    description: "Fixed all four columns and suggested adding not_null tests for the others"
+    weight: 1.5
+
+  - id: non_destructive
+    description: "COALESCE preserves the LEFT JOIN (don't switch to INNER JOIN)"
+    weight: 1
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50
