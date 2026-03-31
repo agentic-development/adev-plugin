@@ -158,7 +158,7 @@ function scaffoldContextKit() {
   // Scaffold .githooks/ with prepare-commit-msg and post-commit
   const githooksDir = join(process.cwd(), ".githooks");
   ensureDir(githooksDir);
-  const hookNames = ["prepare-commit-msg", "post-commit"];
+  const hookNames = ["pre-commit", "prepare-commit-msg", "post-commit"];
   const pluginHooksDir = join(PLUGIN_ROOT, ".githooks");
 
   for (const hookName of hookNames) {

@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { createTempDir, cleanupTempDir, writeFixture, runHook } from "../helpers.mjs";
+import { createTempDir, createTempGitRepo, cleanupTempDir, writeFixture, runHook } from "../helpers.mjs";
 
 describe("merge-guard hook", () => {
   let tempDir;
@@ -115,5 +115,64 @@ describe("merge-guard hook", () => {
       stdin: commandInput("git checkout main && git merge feature/x"),
     });
     assert.equal(exitCode, 2);
+  });
+
+  describe("git commit guard", () => {
+    let gitDir;
+
+    beforeEach(() => {
+      gitDir = createTempGitRepo({ branch: "main" });
+    });
+
+    afterEach(() => {
+      cleanupTempDir(gitDir);
+    });
+
+    it("blocks git commit when on main branch", () => {
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput('git commit -m "bad commit"'),
+      });
+      assert.equal(exitCode, 2);
+      assert.ok(stderr.includes("main"), "stderr should mention main");
+    });
+
+    it("allows git commit when on a feature branch", () => {
+      const featureDir = createTempGitRepo({ branch: "feat/test" });
+      try {
+        const { exitCode } = runHook("merge-guard.sh", {
+          cwd: featureDir,
+          stdin: commandInput('git commit -m "ok commit"'),
+        });
+        assert.equal(exitCode, 0);
+      } finally {
+        cleanupTempDir(featureDir);
+      }
+    });
+
+    it("blocks git commit on custom protected branch", () => {
+      writeFixture(
+        gitDir,
+        ".context-index/manifest.yaml",
+        "merge_policy: pr\nprotected_branches:\n  - main\n  - release\n"
+      );
+
+      const { exitCode } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput('git commit -m "bad"'),
+      });
+      assert.equal(exitCode, 2);
+    });
+
+    it("advisory for git commit on main with ask policy", () => {
+      writeFixture(gitDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
+
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput('git commit -m "ask commit"'),
+      });
+      assert.equal(exitCode, 0);
+      assert.ok(stderr.includes("Advisory"), "stderr should contain advisory");
+    });
   });
 });
