@@ -272,18 +272,36 @@ adev Context Index — Health Check
 ✓ Governance          gates.yaml, boundaries.yaml, risk-policies.yaml configured
 ✓ Sync Status         CLAUDE.md matches constitution (synced 2 days ago)
 ⚠ Plugin Conflict     Superpowers is active globally but not disabled for this project
+✗ Task Management     no tasks: section in manifest.yaml
 
 Issues found:
 1. user-management module has no charter
 2. No ADRs — 3 recent architectural changes could be documented
 3. No golden samples — agents have no reference implementations
 4. Superpowers plugin may conflict with adev workflows
+5. Task management not configured — /adev-plan and /adev-implement
+   cannot track issues without tasks.backend in manifest.yaml
 
 → Fix issue 1: create charter for user-management? (yes / skip)
 → Fix issue 2: draft ADRs from git history? (yes / skip)
 → Fix issue 3: I'll skip samples for now
 → Fix issue 4: disable Superpowers for this project? (yes / no)
+→ Fix issue 5: enable task management? (file / beads / skip)
 ```
+
+**Fix issue 5 behavior (task management):**
+
+Detect by checking whether `manifest.yaml` contains a `tasks:` section with a `backend` key.
+
+- **If `tasks:` section is missing:** flag as issue and prompt.
+- **If `tasks:` section exists:** show `✓ Task Management` with the configured backend and skip.
+
+When the user selects a backend:
+- **file:** Add `tasks:\n  backend: file` to `manifest.yaml`. Report: "Task management enabled (file backend). Issues will be tracked in `.context-index/tasks/tasks.md`."
+- **beads:** Check if `br` is on PATH. If yes, add `tasks:\n  backend: beads`. If no, warn: "`br` not found. Install beads_rust first, or use `file` backend." and re-prompt.
+- **skip:** Leave manifest unchanged. Note: "/adev-plan and /adev-implement will skip issue tracking."
+
+After enabling, suggest: "Run `/adev-sync` to update CLAUDE.md with task management instructions."
 
 This replaces the need for a separate `/adev-tour` skill. The init command IS the tour on first run, and the diagnostic on subsequent runs.
 
