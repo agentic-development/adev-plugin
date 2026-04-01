@@ -50,7 +50,12 @@ Write the active plan path to `.context-index/hygiene/.active-plan` so the scope
 
 **Update charter Capability Map:** At the start of implementation, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `implementing`.
 
-Create a TodoWrite entry for every task extracted from the plan.
+**Load or create issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
+- If issues exist matching this plan's `plan-ref` (check via `list({ planRef: "<plan-file-path>" })`), load them.
+- If no issues exist, create them now: create an epic with the plan's title and `plan-ref`, then create one issue per plan task with title, type `task`, priority `2`, `plan-ref`, `plan-task` number, and `epic-id`. Record dependencies via `addDependency()` for tasks with `Depends on:` annotations.
+- Update the first task's issue status to `in_progress` via `update(id, { status: "in_progress" })`.
+
+If `tasks.backend` is not configured, skip issue board operations.
 
 ### Step 2: Per-Task Execution Loop
 
@@ -68,7 +73,7 @@ Before routing or dispatching, assemble the task's context packet:
 **Routing tag check:** If the task has a routing tag from `/adev-route`:
 - `auto-agent`: proceed with standard dispatch
 - `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
-- `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, mark task as MANUAL in TodoWrite, skip to next task
+- `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, mark the issue status as `deferred` with note "MANUAL — requires human implementation" via `update(id, { status: "deferred", notes: "MANUAL — requires human implementation" })`, skip to next task
 
 #### 2b. Specialist Routing
 
@@ -326,7 +331,7 @@ After both reviews pass, if `governance/gates.yaml` exists:
 5. If `governance/gates.yaml` does not exist, fall back to manifest quality gates (existing behavior)
 
 After both reviews pass:
-1. Mark the task complete in TodoWrite.
+1. Update the issue status to `closed` via `close(id, "Implemented and reviewed")`.
 2. Record: specialist used (or "generic"), review cycles needed, concerns noted.
 3. Move to the next task.
 

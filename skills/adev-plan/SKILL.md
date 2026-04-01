@@ -388,6 +388,16 @@ Proceed to the execution handoff.
 
 **Update charter Capability Map:** After saving the plan, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `planned`.
 
+**Issue creation (optional):** Read `tasks.backend` from `manifest.yaml`.
+
+If `tasks.backend` is configured:
+1. Create an epic: call `createEpic({ title: "<plan title>", planRef: "<plan-file-path>" })` from `lib/issues/registry.mjs` (use `getIssueManager(manifest)` to get the active adapter).
+2. For each task in the plan, create an issue: call `create({ title: "<task title>", type: "task", priority: 2, epicId: "<epic-id>", planRef: "<plan-file-path>", planTask: <task-number> })`.
+3. For each task with `Depends on: Task N, Task M` annotations, call `addDependency(<this-issue-id>, <dependency-issue-id>)` for each dependency.
+4. Report: "Created epic `<epic-id>` with `<N>` issues on the issue board."
+
+If `tasks.backend` is not configured in the manifest, skip issue creation entirely.
+
 After the plan is saved and reviewed, present the user with next steps:
 
 ```

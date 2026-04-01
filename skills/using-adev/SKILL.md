@@ -42,6 +42,7 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 | `/adev-implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
 | `/adev-validate` | Validation | Post-implementation checks against specs and constitution |
 | `/adev-debug` | Debugging | Context-aware systematic debugging |
+| `/adev-issues` | Issue Management | Create, update, and track issues and epics |
 | `/adev-hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
 | `/adev-repomap` | Maintenance | Generate AST-based symbol index for drift detection |
 

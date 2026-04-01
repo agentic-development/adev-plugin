@@ -335,7 +335,15 @@ If PASS:
 
 2. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `validated`.
 
-2. Read `completion.merge_policy` from manifest.yaml (default: "pr").
+3. **Record validation outcome on issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
+   - Find all issues with `plan-ref` matching the validated spec's plan file.
+   - For each issue, add a note with the validation result:
+     - PASS: `update(id, { notes: "Validated: PASS (YYYY-MM-DD) — <validation-report-path>" })`
+     - FAIL: `update(id, { notes: "Validated: FAIL (YYYY-MM-DD) — <validation-report-path>" })`
+   - Do not change issue status based on validation outcome.
+   If `tasks.backend` is not configured, skip.
+
+4. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 
 If "pr" (or target branch is in `completion.protected_branches`):
 ```
