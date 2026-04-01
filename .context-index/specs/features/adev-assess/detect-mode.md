@@ -6,7 +6,7 @@
 
 ---
 charter: adev-assess
-status: review-passed
+status: implemented
 risk_level: low
 milestone: v1
 revision: 1

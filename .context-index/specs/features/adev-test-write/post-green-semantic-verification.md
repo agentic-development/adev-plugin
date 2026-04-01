@@ -5,7 +5,7 @@
 
 ---
 charter: adev-test-write
-status: review-passed
+status: implemented
 risk_level: high
 milestone: v1
 revision: 1

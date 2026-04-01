@@ -2,7 +2,7 @@
 
 ---
 charter: tree-sitter-repomap
-status: draft
+status: implemented
 risk_level: medium
 milestone: v0.5.0
 revision: 1
