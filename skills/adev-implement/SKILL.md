@@ -390,12 +390,11 @@ After all tasks are complete and before reporting completion:
 4. **Compute source manifest:** Call `computeManifest(specPath)` from `lib/source-manifest.mjs` to generate a hash manifest of all source files produced by this implementation. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter:
    ```yaml
    source-manifest:
-     hash: <aggregate SHA>
+     sha: "abc1234"          # first 7 chars of composite SHA-256
      files:
-       - path: src/lib/feature.ts
-         sha: <file SHA>
-       - path: tests/feature.test.ts
-         sha: <file SHA>
+       - src/lib/feature.mjs
+       - tests/feature.test.mjs
+     computed-at: "2026-04-01T10:00:00.000Z"
    ```
 5. Write the spec file back
 6. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `implemented`.

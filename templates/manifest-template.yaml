@@ -160,6 +160,10 @@ tasks:
   #   beads — beads_rust CLI (br), local-first git-native issue tracker
   #           Install: https://github.com/Dicklesworthstone/beads_rust
   backend: file
+  # db_path: /absolute/path/to/shared/root
+  #   Optional — override the storage root for issue data.
+  #   Useful when multiple git worktrees need to share a single issue database.
+  #   When omitted, the main repo root is auto-resolved via git.
 
 # ============================================================================
 # Repo Map Configuration

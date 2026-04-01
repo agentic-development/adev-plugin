@@ -107,3 +107,4 @@ Call `list({ status: "open" })`, then filter out issues whose dependencies inclu
 - **Backend agnostic.** Instructions work identically for file and beads backends.
 - **Graceful errors.** Report clear error messages for validation failures.
 - **No lifecycle gating.** This skill is supporting — it does not gate the plan/implement/validate pipeline.
+- **Worktree-safe.** Issue storage is automatically shared across git worktrees. The registry resolves the main repo root via git, or uses `tasks.db_path` from manifest if configured.

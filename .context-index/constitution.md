@@ -36,6 +36,7 @@ adev-plugin is a Claude Code plugin and zero-dependency CLI that implements a fu
 - Hook scripts read `CLAUDE_TOOL_INPUT_*` env vars and JSON from stdin
 - Templates are consumed verbatim by `cpSync()` — changes only affect new scaffolds
 - Test helpers (`tests/helpers.mjs`) provide `createTempDir()`, `cleanupTempDir()`, `writeFixture()`, `runHook()`
+- Issue storage is shared across git worktrees — adapters resolve the main repo root via `resolveStorageRoot()` in `lib/issues/resolve-root.mjs`, overridable with `tasks.db_path` in manifest
 
 ### Anti-Patterns to Avoid
 
@@ -61,6 +62,7 @@ adev-plugin is a Claude Code plugin and zero-dependency CLI that implements a fu
 - Editing skill markdown content
 - Updating templates
 - Updating internal documentation
+- Bumping version in `package.json` AND `.claude-plugin/plugin.json` (must stay in sync) when a PR adds features, fixes, or breaking changes
 
 ## Context Routing
 
