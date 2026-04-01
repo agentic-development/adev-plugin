@@ -150,6 +150,18 @@ completion:
   # Examples: feat/auth/login-flow, fix/payments/webhook-retry
 
 # ============================================================================
+# Task Management
+# Controls how /adev-plan and /adev-implement track issue progress.
+# ============================================================================
+
+tasks:
+  # Backend for issue tracking:
+  #   file  — markdown table in .context-index/tasks/ (default, zero setup)
+  #   beads — beads_rust CLI (br), local-first git-native issue tracker
+  #           Install: https://github.com/Dicklesworthstone/beads_rust
+  backend: file
+
+# ============================================================================
 # Repo Map Configuration
 # Controls how /adev-repomap scans the repository.
 # ============================================================================
