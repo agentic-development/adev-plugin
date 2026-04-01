@@ -6,7 +6,7 @@
 
 ---
 charter: adev-document
-status: draft
+status: implemented
 risk_level: low
 milestone: v1
 revision: 1
