@@ -27,6 +27,11 @@ describe("BeadsAdapter", () => {
     assert.equal(adapter.name, "beads");
   });
 
+  it("sets dbPath to .beads under projectRoot", () => {
+    const adapter = new BeadsAdapter("/tmp/test-root", { checkBr: false });
+    assert.equal(adapter.dbPath, "/tmp/test-root/.beads");
+  });
+
   it("delegates createEpic to file adapter", async () => {
     // BeadsAdapter delegates epic ops to FileAdapter
     const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
