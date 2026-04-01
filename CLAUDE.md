@@ -16,23 +16,6 @@ adev-plugin is a Claude Code plugin and zero-dependency CLI that implements a fu
 4. **Hook protocol compliance** — hooks read JSON from stdin + env vars, exit 0 (allow) or 2 (block), output JSON to stdout.
 5. **Version parity** — `package.json` and `.claude-plugin/plugin.json` versions must always match.
 
-## Commands
-
-```bash
-# Run all tests (Node.js built-in test runner, no external deps)
-npm test
-
-# Run a single test file
-node --test tests/cli.test.mjs
-node --test tests/hooks/merge-guard.test.mjs
-
-# Test the CLI locally (without installing)
-claude --plugin-dir /path/to/adev-plugin
-
-# Install into Claude Code (production path)
-npx adev-cli init
-```
-
 ## Coding Standards
 
 ### Language and Runtime
@@ -99,4 +82,43 @@ npx adev-cli init
 ```bash
 # Tests
 npm test
+```
+
+## Context Index
+
+This project uses the Agentic Development Framework (adev).
+- Constitution: `.context-index/constitution.md`
+- Manifest: `.context-index/manifest.yaml`
+- Platform: JavaScript (ESM), Node.js, npm, node:test
+- Available skills: /adev-brainstorm, /adev-specify, /adev-review-specs, /adev-plan, /adev-implement, /adev-validate, /adev-debug, /adev-hygiene, /adev-issues
+
+<!-- BEGIN TASK MANAGEMENT -->
+## Task Management
+
+Issues are tracked using the file backend. The issue board lives at `.context-index/tasks/tasks.md`.
+
+- Use `/adev-issues` to manage issues interactively (create, update, close, view board)
+- Use `/adev-issues ready` to see actionable issues (open and unblocked)
+- `lib/issues/registry.mjs` provides `getIssueManager(manifest)` for programmatic access
+- `/adev-plan` and `/adev-implement` create and update issues automatically when `tasks.backend` is configured
+<!-- END TASK MANAGEMENT -->
+
+# User Additions
+<!-- Content below is preserved across syncs. Add Claude-specific instructions here. -->
+
+## Commands
+
+```bash
+# Run all tests (Node.js built-in test runner, no external deps)
+npm test
+
+# Run a single test file
+node --test tests/cli.test.mjs
+node --test tests/hooks/merge-guard.test.mjs
+
+# Test the CLI locally (without installing)
+claude --plugin-dir /path/to/adev-plugin
+
+# Install into Claude Code (production path)
+npx adev-cli init
 ```
