@@ -13,6 +13,11 @@ revision: 1
 charter-revision: 1
 created: 2026-03-24
 updated: 2026-03-24
+source-manifest:
+  sha: "5022550"
+  files:
+    - .github/workflows/ci.yml
+  computed-at: "2026-04-01T13:43:22.551Z"
 ---
 
 ## Behavioral Contract

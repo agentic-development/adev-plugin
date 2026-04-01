@@ -2,7 +2,7 @@
 
 ---
 charter: spec-lifecycle
-status: implemented
+status: validated
 risk_level: high
 milestone: v1
 revision: 1
