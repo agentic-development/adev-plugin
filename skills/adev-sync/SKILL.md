@@ -37,7 +37,19 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - Constitution: `.context-index/constitution.md`
    - Manifest: `.context-index/manifest.yaml`
    - Platform: [summary from platform-context.yaml]
-   - Available skills: /adev-brainstorm, /adev-specify, /adev-review-specs, /adev-plan, /adev-implement, /adev-validate, /adev-debug, /adev-hygiene
+   - Available skills: /adev-brainstorm, /adev-specify, /adev-review-specs, /adev-plan, /adev-implement, /adev-validate, /adev-debug, /adev-issues, /adev-hygiene
+
+   ## Task Management (conditional)
+   <!-- BEGIN TASK MANAGEMENT -->
+   [Read `tasks.backend` from manifest.yaml. If configured:
+    - Include the Task Management section from constitution.md.
+    - If tasks.backend is "beads", include br command reference.
+    - If tasks.backend is "file", include markdown table reference.
+    - If constitution has no Task Management section, generate from
+      the default content matching the configured backend.
+    If tasks.backend is NOT configured in the manifest, omit this
+    entire section (no empty block, no placeholder).]
+   <!-- END TASK MANAGEMENT -->
 
    # User Additions
    <!-- Content below is preserved across syncs. Add Claude-specific instructions here. -->
@@ -56,7 +68,12 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - Constitution: `.context-index/constitution.md`
    - Manifest: `.context-index/manifest.yaml`
    - Platform: [summary from platform-context.yaml]
-   - Available skills: /adev-brainstorm, /adev-specify, /adev-review-specs, /adev-plan, /adev-implement, /adev-validate, /adev-debug, /adev-hygiene
+   - Available skills: /adev-brainstorm, /adev-specify, /adev-review-specs, /adev-plan, /adev-implement, /adev-validate, /adev-debug, /adev-issues, /adev-hygiene
+
+   ## Task Management (conditional)
+   <!-- BEGIN TASK MANAGEMENT -->
+   [Same logic as Claude format: include if tasks.backend is configured, omit otherwise.]
+   <!-- END TASK MANAGEMENT -->
    ```
 
    ### Copilot format (`.github/copilot-instructions.md`)
