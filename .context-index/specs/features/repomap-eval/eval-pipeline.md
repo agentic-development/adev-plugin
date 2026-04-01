@@ -2,7 +2,7 @@
 
 ---
 charter: repomap-eval
-status: draft
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 1
