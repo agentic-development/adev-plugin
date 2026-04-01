@@ -8,6 +8,12 @@ revision: 1
 charter-revision: 2
 created: 2026-03-31
 updated: 2026-04-01
+source-manifest:
+  sha: "392fd55"
+  files:
+    - lib/issues/interface.mjs
+    - tests/lib/issues-interface.test.mjs
+  computed-at: "2026-04-01T13:43:22.543Z"
 ---
 
 ## Behavioral Contract

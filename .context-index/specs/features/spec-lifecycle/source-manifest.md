@@ -2,13 +2,19 @@
 
 ---
 charter: spec-lifecycle
-status: implemented
+status: validated
 risk_level: medium
 milestone: v1
 revision: 1
 charter-revision: 1
 created: 2026-03-27
 updated: 2026-03-28
+source-manifest:
+  sha: "789c1a0"
+  files:
+    - lib/source-manifest.mjs
+    - tests/lib/source-manifest.test.mjs
+  computed-at: "2026-04-01T13:43:22.524Z"
 ---
 
 ## Behavioral Contract

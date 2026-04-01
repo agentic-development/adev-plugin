@@ -2,13 +2,21 @@
 
 ---
 charter: spec-lifecycle
-status: implemented
+status: validated
 risk_level: high
 milestone: v1
 revision: 1
 charter-revision: 1
 created: 2026-03-27
 updated: 2026-03-28
+source-manifest:
+  sha: "94602b0"
+  files:
+    - hooks/session-capture.sh
+    - lib/session-parser.mjs
+    - tests/hooks/session-capture.test.mjs
+    - tests/lib/session-parser.test.mjs
+  computed-at: "2026-04-01T13:43:22.528Z"
 ---
 
 ## Behavioral Contract
