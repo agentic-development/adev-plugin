@@ -61,6 +61,7 @@ adev-plugin is a Claude Code plugin and zero-dependency CLI that implements a fu
 - Editing skill markdown content
 - Updating templates
 - Updating internal documentation
+- Bumping version in `package.json` AND `.claude-plugin/plugin.json` (must stay in sync) when a PR adds features, fixes, or breaking changes
 
 ## Context Routing
 
