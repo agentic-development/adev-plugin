@@ -107,3 +107,23 @@
 ```
 
 <!-- Add any custom gates below (e.g., bundle size check, migration validation). -->
+
+## Task Management
+
+<!-- Task tracking configuration. Controls how implementation issues are tracked.
+     The backend is configured in manifest.yaml (tasks.backend).
+     Options: file (markdown table, default), beads (beads_rust CLI). -->
+
+Issues are tracked using the backend configured in `manifest.yaml` (`tasks.backend`).
+
+When `tasks.backend: beads`:
+- Use `br ready` to see actionable issues (open, unblocked)
+- Use `br list --status in_progress` to see current work
+- Use `br create "title" --type <bug|feature|task>` to create issues
+- Use `br close <id> --reason "text"` to complete issues
+- Issue data lives in `.beads/` (git-committed via `br sync --flush-only`)
+
+When `tasks.backend: file` (or unset):
+- The issue board lives at `.context-index/tasks/tasks.md`
+- Update the markdown table directly to change issue status
+- Use `/adev-issues` to manage issues interactively
