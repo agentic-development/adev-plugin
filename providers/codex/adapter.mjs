@@ -1,5 +1,6 @@
-import { existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync, rmSync, symlinkSync, unlinkSync } from "fs";
+import { existsSync, lstatSync, readdirSync, readlinkSync, rmSync, symlinkSync, unlinkSync } from "fs";
 import { join } from "path";
+import { ensureDir } from "../../lib/fs-utils.mjs";
 
 function getPluginRoot() {
   return join(import.meta.dirname, "..", "..");
@@ -79,12 +80,6 @@ function isOldManagedLayout(targetPath, sourceSkillPath) {
     return lstatSync(skillMdPath).isSymbolicLink() && readlinkSync(skillMdPath) === join(sourceSkillPath, "SKILL.md");
   } catch {
     return false;
-  }
-}
-
-function ensureDir(path) {
-  if (!existsSync(path)) {
-    mkdirSync(path, { recursive: true });
   }
 }
 

@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, symlinkSync, unlinkSync } from "fs";
+import { existsSync, readFileSync, readdirSync, symlinkSync, unlinkSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
+import { ensureDir, readJson, writeJson } from "../../lib/fs-utils.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,24 +10,6 @@ const PLUGIN_ROOT = join(__dirname, "../..");
 const PLUGIN_VERSION = JSON.parse(
   readFileSync(join(PLUGIN_ROOT, "package.json"), "utf8")
 ).version;
-
-function ensureDir(path) {
-  if (!existsSync(path)) {
-    mkdirSync(path, { recursive: true });
-  }
-}
-
-function readJson(path) {
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(path, data) {
-  writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
-}
 
 function getOpenCodeConfigDir() {
   return join(process.env.HOME || process.env.USERPROFILE, ".config", "opencode");
@@ -44,6 +27,35 @@ function ensureSkillsDir() {
   const skillsDir = join(getOpenCodeConfigDir(), "skills");
   ensureDir(skillsDir);
   return skillsDir;
+}
+
+function _linkSkillsFrom(skillsDir) {
+  if (!existsSync(skillsDir)) {
+    return;
+  }
+
+  ensureSkillsDir();
+
+  const skillDirs = readdirSync(skillsDir, { withFileTypes: true });
+  for (const skill of skillDirs) {
+    if (skill.isDirectory()) {
+      const skillPath = join(skillsDir, skill.name);
+      const skillMdPath = join(skillPath, "SKILL.md");
+      if (existsSync(skillMdPath)) {
+        const symlinkPath = getSkillSymlinkPath(skill.name);
+        if (existsSync(symlinkPath)) {
+          try {
+            unlinkSync(symlinkPath);
+          } catch {}
+        }
+        try {
+          symlinkSync(skillPath, symlinkPath);
+        } catch (e) {
+          // Symlink may already exist or fail on some systems
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -95,63 +107,11 @@ export const OpenCodeAdapter = {
   },
 
   linkSkillsFromCache(cacheDir) {
-    const skillsDir = join(cacheDir, "providers/opencode/skills");
-    if (!existsSync(skillsDir)) {
-      return;
-    }
-
-    ensureSkillsDir();
-
-    const skillDirs = readdirSync(skillsDir, { withFileTypes: true });
-    for (const skill of skillDirs) {
-      if (skill.isDirectory()) {
-        const skillPath = join(skillsDir, skill.name);
-        const skillMdPath = join(skillPath, "SKILL.md");
-        if (existsSync(skillMdPath)) {
-          const symlinkPath = getSkillSymlinkPath(skill.name);
-          if (existsSync(symlinkPath)) {
-            try {
-              unlinkSync(symlinkPath);
-            } catch {}
-          }
-          try {
-            symlinkSync(skillPath, symlinkPath);
-          } catch (e) {
-            // Symlink may already exist or fail on some systems
-          }
-        }
-      }
-    }
+    _linkSkillsFrom(join(cacheDir, "providers/opencode/skills"));
   },
 
   linkSkills() {
-    const skillsDir = join(PLUGIN_ROOT, "skills");
-    if (!existsSync(skillsDir)) {
-      return;
-    }
-
-    ensureSkillsDir();
-
-    const skillDirs = readdirSync(skillsDir, { withFileTypes: true });
-    for (const skill of skillDirs) {
-      if (skill.isDirectory()) {
-        const skillPath = join(skillsDir, skill.name);
-        const skillMdPath = join(skillPath, "SKILL.md");
-        if (existsSync(skillMdPath)) {
-          const symlinkPath = getSkillSymlinkPath(skill.name);
-          if (existsSync(symlinkPath)) {
-            try {
-              unlinkSync(symlinkPath);
-            } catch {}
-          }
-          try {
-            symlinkSync(skillPath, symlinkPath);
-          } catch (e) {
-            // Symlink may already exist or fail on some systems
-          }
-        }
-      }
-    }
+    _linkSkillsFrom(join(PLUGIN_ROOT, "skills"));
   },
 
   async uninstall(opts = {}) {

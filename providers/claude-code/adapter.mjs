@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync } from "fs";
+import { existsSync, readFileSync, cpSync, chmodSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
+import { ensureDir, readJson, writeJson } from "../../lib/fs-utils.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,24 +10,6 @@ const PLUGIN_ROOT = join(__dirname, "../..");
 const PLUGIN_VERSION = JSON.parse(
   readFileSync(join(PLUGIN_ROOT, ".claude-plugin", "plugin.json"), "utf8")
 ).version;
-
-function ensureDir(path) {
-  if (!existsSync(path)) {
-    mkdirSync(path, { recursive: true });
-  }
-}
-
-function readJson(path) {
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(path, data) {
-  writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
-}
 
 function getClaudeHome() {
   return join(process.env.HOME || process.env.USERPROFILE, ".claude");
