@@ -132,6 +132,7 @@ function scaffoldContextKit() {
     { src: "charter-template.md", dest: "specs/features/.charter-template.md" },
     { src: "live-spec-template.md", dest: "specs/features/.live-spec-template.md" },
     { src: "refactoring-spec-template.md", dest: "specs/features/.refactoring-spec-template.md" },
+    { src: "context-index-readme.md", dest: "README.md" },
   ];
 
   const templatesDir = join(PLUGIN_ROOT, "templates");
@@ -512,23 +513,25 @@ async function cmdInit() {
     log("Git hooks already up to date.");
   }
 
-  heading("Done!");
+  heading(`Done! Your project is set up with adev v${PLUGIN_VERSION}.`);
   console.log();
   log("Next steps:");
   console.log();
   if (providerNames.includes("claude-code")) {
-    log("  claude");
-    log("  /adev-init");
+    log("  1. Open Claude Code:  claude");
+    log("  2. Configure context: /adev-init");
+    log("  3. Start working:    /adev-start");
   }
   if (providerNames.includes("opencode")) {
-    log("  opencode");
-    log("  /adev-init");
+    log("  1. Open OpenCode:    opencode");
+    log("  2. Configure context: /adev-init");
   }
   if (providerNames.includes("codex")) {
-    log("  codex");
-    log("  $adev-init");
+    log("  1. Open Codex:       codex");
+    log("  2. Configure context: $adev-init");
   }
   console.log();
+  log("Docs:       https://agentic-dev.org");
   log("Repository: https://github.com/agentic-development/adev-plugin");
   console.log();
 }
