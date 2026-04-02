@@ -86,6 +86,14 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 | Samples | `/adev-sample` | Discover, score, and curate golden sample implementations |
 | Retrospective | `/adev-retro` | Analyze delivery metrics, extract lessons, suggest improvements |
 | Maintenance | `/adev-hygiene` | Audit staleness, drift, coverage gaps, recovery patterns |
+| Repo Map | `/adev-repomap` | Generate AST-based symbol index for drift detection |
+| Documentation | `/adev-document` | Generate architecture and module docs from repomap |
+| Issue Tracking | `/adev-issues` | Create, update, close issues and epics |
+| Status | `/adev-status` | Query project progress across specs and charters |
+| Assessment | `/adev-assess` | Score codebase readiness for agentic development |
+| Test Writing | `/adev-test-write` | Standalone TDD test authoring |
+
+For a complete skill reference with dependencies and a lifecycle flowchart, see [docs/skills.md](docs/skills.md). New to adev? Start with the [quickstart guide](docs/quickstart.md).
 
 ## Key Concepts
 
@@ -159,6 +167,8 @@ adev is a methodology choice in the [claude-blueprints-plugin](https://github.co
 Full design document: [adev-plugin-design.md](https://github.com/agentic-development/agentic-dev-content/blob/main/docs/superpowers/specs/2026-03-19-adev-plugin-design.md)
 
 ## Status
+
+**v0.8.0** — Persistent issue tracking with pluggable backends (file-based markdown or beads_rust). Worktree-safe storage shared across git worktrees. Source manifest stamping for drift detection. All spec-lifecycle specs validated.
 
 **v0.5.0** — Multi-provider support. Added OpenCode and OpenAI Codex providers alongside Claude Code. Each provider has a dedicated skill set. New features: codebase readiness assessment (`/adev-assess`), improved documentation generation (`/adev-document`), eval framework for skill quality, CI/CD quality gates, and automatic spec status updates across lifecycle.
 
