@@ -81,6 +81,7 @@ modules:
     paths:
       - skills/adev-hygiene/
       - skills/adev-repomap/
+      - skills/adev-codehealth/
       - skills/adev-sample/
       - skills/adev-retro/
 
@@ -151,6 +152,8 @@ hygiene:
   source_roots:
     - cli/
     - hooks/
+    - lib/
+    - providers/
     - skills/
     - templates/
   coverage_exclude:
