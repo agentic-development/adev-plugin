@@ -1,16 +1,16 @@
 ---
 name: adev-hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs twelve audit passes across the .context-index/ directory and generates actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, or clean up the context index."
+description: "Audit all context for staleness, drift, and coverage gaps. Runs thirteen audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and generate actionable reports. Twelve audit passes detect staleness, drift, coverage gaps, phase readiness, lifecycle consistency, and operational patterns so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and source code, generating actionable reports. Thirteen audit passes detect staleness, drift, coverage gaps, phase readiness, lifecycle consistency, operational patterns, and code health issues so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all twelve passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle)
+- No arguments: full audit (all thirteen passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health)
 - `--fix`: auto-fix issues where possible (runs /adev-sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
 
@@ -563,6 +563,52 @@ Charters scanned: <N>
 **Integration with summary table:** Add a row for Lifecycle Audit in the report summary:
 ```
 | Lifecycle Audit | WARN | 2 revision drift, 1 charter stale, 1 status mismatch |
+```
+
+## Audit Pass 13: Code Health
+
+**Goal:** Detect dead exports, orphan files, unused dependencies, stale code, and duplicate logic in source code by dispatching `/adev-codehealth`.
+
+**Prerequisite check:** Verify that `.context-index/hygiene/symbol-ranks.json` and `.context-index/hygiene/dependency-graph.json` exist. If either is missing, output SKIP:
+
+```
+| Code Health | SKIP | Repomap artifacts not found — run `/adev-repomap` first |
+```
+
+Do not invoke `/adev-codehealth`. Proceed to the report.
+
+**Steps:**
+
+1. Invoke `/adev-codehealth` with no filters (full scan).
+2. Read the generated report at `.context-index/reports/codehealth-<YYYY-MM-DD>.md`.
+3. Parse the frontmatter `summary` to extract finding counts by severity.
+
+**Status mapping:**
+
+| Condition | Status |
+|-----------|--------|
+| Zero findings | PASS |
+| All findings are low severity | WARN |
+| Any medium or high severity findings | FAIL |
+| Repomap artifacts missing | SKIP |
+| `/adev-codehealth` errors | FAIL |
+
+**Output format:**
+```
+## Code Health
+
+Dispatched `/adev-codehealth` — full scan.
+
+Findings: N high, N medium, N low
+
+**Actions:**
+- [ ] Review full report at `.context-index/reports/codehealth-<date>.md`
+- [ ] Run `/adev-specify --refactor` for high-severity clusters
+```
+
+**Integration with summary table:** Add a row for Code Health in the report summary:
+```
+| Code Health | WARN | 2 high, 3 medium, 1 low |
 ```
 
 ## Report Format
