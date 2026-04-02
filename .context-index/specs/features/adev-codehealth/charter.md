@@ -67,17 +67,17 @@ updated: 2026-04-02
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Dead export detection | Identify exported symbols with zero imports across the codebase using repomap dependency graph | must-have | v1 | — |
-| Orphan file detection | Find source files not imported by any other file and not covered by any test | must-have | v1 | — |
-| Unused dependency detection | Compare `package.json` dependencies against actual imports in source files | must-have | v1 | — |
-| Stale code detection | Flag files/symbols with no git commits in a configurable threshold relative to their module's activity | should-have | v1 | — |
-| Duplicate logic detection | Identify near-duplicate code blocks across files using structural similarity from repomap AST data. Skipped when tree-sitter data is unavailable (per ADR-0001). | should-have | v1 | — |
-| Module scoping | `--module <slug>` filter restricts scan to a single manifest module's paths | must-have | v1 | — |
-| Pass scoping | `--pass <name>` filter runs only specified detection passes | must-have | v1 | — |
-| Severity classification | Classify each finding as high, medium, or low confidence | must-have | v1 | — |
-| Report generation | Write structured markdown report to `.context-index/reports/codehealth-<date>.md` | must-have | v1 | — |
-| Precondition validation | Verify repomap artifacts exist before running passes; emit actionable error pointing to `/adev-repomap` if missing | must-have | v1 | — |
-| Hygiene integration | Callable by `/adev-hygiene` as a dispatched pass | should-have | v1 | — |
+| Dead export detection | Identify exported symbols with zero imports across the codebase using repomap dependency graph | must-have | v1 | validated |
+| Orphan file detection | Find source files not imported by any other file and not covered by any test | must-have | v1 | validated |
+| Unused dependency detection | Compare `package.json` dependencies against actual imports in source files | must-have | v1 | validated |
+| Stale code detection | Flag files/symbols with no git commits in a configurable threshold relative to their module's activity | should-have | v1 | validated |
+| Duplicate logic detection | Identify near-duplicate code blocks across files using structural similarity from repomap AST data. Skipped when tree-sitter data is unavailable (per ADR-0001). | should-have | v1 | validated |
+| Module scoping | `--module <slug>` filter restricts scan to a single manifest module's paths | must-have | v1 | validated |
+| Pass scoping | `--pass <name>` filter runs only specified detection passes | must-have | v1 | validated |
+| Severity classification | Classify each finding as high, medium, or low confidence | must-have | v1 | validated |
+| Report generation | Write structured markdown report to `.context-index/reports/codehealth-<date>.md` | must-have | v1 | validated |
+| Precondition validation | Verify repomap artifacts exist before running passes; emit actionable error pointing to `/adev-repomap` if missing | must-have | v1 | validated |
+| Hygiene integration | Callable by `/adev-hygiene` as a dispatched pass | should-have | v1 | validated |
 
 ## Interface Contracts
 

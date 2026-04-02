@@ -81,6 +81,7 @@ modules:
     paths:
       - skills/adev-hygiene/
       - skills/adev-repomap/
+      - skills/adev-codehealth/
       - skills/adev-sample/
       - skills/adev-retro/
 
