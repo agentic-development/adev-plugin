@@ -152,6 +152,8 @@ hygiene:
   source_roots:
     - cli/
     - hooks/
+    - lib/
+    - providers/
     - skills/
     - templates/
   coverage_exclude:
