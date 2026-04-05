@@ -1,19 +1,19 @@
-# Plan: adev-issues Milestone Extension
+# Plan: adev:issues Milestone Extension
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev-issues-milestone-ext.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
 ## Overview
 
-Extend the existing `skills/adev-issues/SKILL.md` to support milestone-based workflows. This adds `--milestone` as an argument to the `epic`, `list`, and `update` subcommands, and introduces milestone-based grouping in the board display when milestones are present on epics. All changes are markdown-only — no companion code is needed.
+Extend the existing `skills/issues/SKILL.md` to support milestone-based workflows. This adds `--milestone` as an argument to the `epic`, `list`, and `update` subcommands, and introduces milestone-based grouping in the board display when milestones are present on epics. All changes are markdown-only — no companion code is needed.
 
 ## Tasks
 
 ### Task 1: Add `--milestone` to Arguments section for epic, list, and update
-- **Files:** `skills/adev-issues/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-issues-milestone.test.mjs` (create)
+- **Files:** `skills/issues/SKILL.md` (modify)
+- **Tests:** `tests/skills/issues-milestone.test.mjs` (create)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Update the Arguments section of SKILL.md to include `--milestone <name>` as an optional flag on three subcommands:
@@ -29,8 +29,8 @@ Extend the existing `skills/adev-issues/SKILL.md` to support milestone-based wor
   - SKILL.md contains at least 3 occurrences of `--milestone`
 
 ### Task 2: Update Board Display section with milestone grouping logic
-- **Files:** `skills/adev-issues/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-issues-milestone.test.mjs` (modify)
+- **Files:** `skills/issues/SKILL.md` (modify)
+- **Tests:** `tests/skills/issues-milestone.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Extend the Board Display subsection to describe milestone-aware grouping behavior:
@@ -46,8 +46,8 @@ Extend the existing `skills/adev-issues/SKILL.md` to support milestone-based wor
   - SKILL.md describes backward-compatible behavior when no milestones exist
 
 ### Task 3: Update Create Epic section with milestone parameter
-- **Files:** `skills/adev-issues/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-issues-milestone.test.mjs` (modify)
+- **Files:** `skills/issues/SKILL.md` (modify)
+- **Tests:** `tests/skills/issues-milestone.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Update the Create Epic subsection to document the optional `milestone` parameter:
@@ -63,30 +63,30 @@ Extend the existing `skills/adev-issues/SKILL.md` to support milestone-based wor
 ## File Structure
 
 **Create:**
-- `tests/skills/adev-issues-milestone.test.mjs` — Tests verifying SKILL.md milestone content
+- `tests/skills/issues-milestone.test.mjs` — Tests verifying SKILL.md milestone content
 
 **Modify:**
-- `skills/adev-issues/SKILL.md` — Add milestone support to arguments, board display, and epic creation
+- `skills/issues/SKILL.md` — Add milestone support to arguments, board display, and epic creation
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-issues-milestone-ext.md` — Behavioral contract
-- `.context-index/specs/features/strategic-planning/adev-issues-milestone-ext.review.md` — Review notes (CON-1 re: flag interaction)
+- `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.review.md` — Review notes (CON-1 re: flag interaction)
 - `lib/issues/registry.mjs` — Issue model API reference
-- `tests/skills/adev-assess.test.mjs` — Test pattern reference for SKILL.md tests
+- `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `adev-issues-milestone-ext.md` (Behaviors 1-4, Acceptance Criteria)
-- Review: `adev-issues-milestone-ext.review.md` (CON-1 — flag interaction clarification)
+- Spec: `adev:issues-milestone-ext.md` (Behaviors 1-4, Acceptance Criteria)
+- Review: `adev:issues-milestone-ext.review.md` (CON-1 — flag interaction clarification)
 - SKILL.md: Arguments section (current command signatures)
 
 ### Task 2 Context
-- Spec: `adev-issues-milestone-ext.md` (Behaviors 5-6, Board Display)
+- Spec: `adev:issues-milestone-ext.md` (Behaviors 5-6, Board Display)
 - SKILL.md: Board Display section (current format and example)
 
 ### Task 3 Context
-- Spec: `adev-issues-milestone-ext.md` (Behaviors 1-2, Create Epic)
+- Spec: `adev:issues-milestone-ext.md` (Behaviors 1-2, Create Epic)
 - SKILL.md: Create Epic section (current createEpic documentation)
 
 ## Parallelization

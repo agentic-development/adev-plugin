@@ -15,8 +15,8 @@ describe("CodexAdapter", () => {
   beforeEach(() => {
     originalEnv = { ...process.env };
     originalCwd = process.cwd();
-    homeDir = mkdtempSync(join(tmpdir(), "adev-codex-home-"));
-    projectDir = mkdtempSync(join(tmpdir(), "adev-codex-project-"));
+    homeDir = mkdtempSync(join(tmpdir(), "codex-home-"));
+    projectDir = mkdtempSync(join(tmpdir(), "codex-project-"));
     process.env.HOME = homeDir;
     delete process.env.USERPROFILE;
     process.chdir(projectDir);
@@ -44,8 +44,8 @@ describe("CodexAdapter", () => {
 
     assert.strictEqual(result.installed, true);
     assert.strictEqual(result.path, "~/.agents/skills/");
-    assert.ok(existsSync(join(homeDir, ".agents", "skills", "adev-init", "SKILL.md")));
-    assert.ok(existsSync(join(homeDir, ".agents", "skills", "adev-init", "agents", "openai.yaml")));
+    assert.ok(existsSync(join(homeDir, ".agents", "skills", "init", "SKILL.md")));
+    assert.ok(existsSync(join(homeDir, ".agents", "skills", "init", "agents", "openai.yaml")));
   });
 
   it("installs project-scoped skills into .agents/skills", async () => {
@@ -53,14 +53,14 @@ describe("CodexAdapter", () => {
 
     assert.strictEqual(result.installed, true);
     assert.strictEqual(result.path, ".agents/skills/");
-    assert.ok(existsSync(join(projectDir, ".agents", "skills", "adev-init", "SKILL.md")));
-    assert.ok(existsSync(join(projectDir, ".agents", "skills", "adev-init", "agents", "openai.yaml")));
+    assert.ok(existsSync(join(projectDir, ".agents", "skills", "init", "SKILL.md")));
+    assert.ok(existsSync(join(projectDir, ".agents", "skills", "init", "agents", "openai.yaml")));
   });
 
   it("uninstalls only managed project-scoped skills", async () => {
     await adapter.install({ scope: "project" });
     await adapter.uninstall({ scope: "project" });
 
-    assert.ok(!existsSync(join(projectDir, ".agents", "skills", "adev-init")));
+    assert.ok(!existsSync(join(projectDir, ".agents", "skills", "init")));
   });
 });

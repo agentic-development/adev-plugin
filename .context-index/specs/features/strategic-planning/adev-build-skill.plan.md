@@ -1,24 +1,24 @@
-# Plan: adev-build Orchestrator
+# Plan: adev:build Orchestrator
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:build-skill.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
 ## Overview
 
-Create a new `skills/adev-build/SKILL.md` — the end-to-end build orchestrator that chains review, plan, route, implement, and validate for one or more specs. This skill coordinates the full lifecycle pipeline, supports resume from failure via persisted build state JSON, batch processing via `--phase`, and preview via `--dry-run`. This is a milestone v2 skill and the most complex addition to the strategic planning feature set.
+Create a new `skills/build/SKILL.md` — the end-to-end build orchestrator that chains review, plan, route, implement, and validate for one or more specs. This skill coordinates the full lifecycle pipeline, supports resume from failure via persisted build state JSON, batch processing via `--phase`, and preview via `--dry-run`. This is a milestone v2 skill and the most complex addition to the strategic planning feature set.
 
 ## Tasks
 
 ### Task 1: Create SKILL.md with pipeline steps
-- **Files:** `skills/adev-build/SKILL.md` (create)
-- **Tests:** `tests/skills/adev-build.test.mjs` (create)
+- **Files:** `skills/build/SKILL.md` (create)
+- **Tests:** `tests/skills/build.test.mjs` (create)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Create the core SKILL.md with frontmatter, arguments, prerequisites, and the 5-step pipeline:
-  1. Add YAML frontmatter with `name: adev-build` and description for the orchestrator skill
-  2. Add announcement line: "I'm using the adev-build skill to orchestrate a full build pipeline."
+  1. Add YAML frontmatter with `name: adev:build` and description for the orchestrator skill
+  2. Add announcement line: "I'm using the adev:build skill to orchestrate a full build pipeline."
   3. Define Arguments section:
      - `--spec <path>`: Build a single spec end-to-end
      - `--phase <name>`: Build all specs with matching milestone
@@ -27,28 +27,28 @@ Create a new `skills/adev-build/SKILL.md` — the end-to-end build orchestrator 
      - `--no-route`: Skip the route step
   4. Define Prerequisites: `.context-index/` must exist with `constitution.md` and `manifest.yaml`; at least one spec must be provided or discoverable
   5. Define the Build Pipeline section with 5 steps per spec:
-     - Step 1: Review — invoke `/adev-review-specs --spec <path>`; skip if `.review.md` exists and is current (not stale); STOP if verdict is BLOCK
-     - Step 2: Plan — invoke `/adev-plan --spec <path>`; skip if `.plan.md` exists; STOP if constitution violation detected
-     - Step 3: Route — invoke `/adev-route --plan <plan-path>`; optional/advisory; skip if `--no-route` flag set
-     - Step 4: Implement — invoke `/adev-implement <plan-path>`; STOP if quality gates fail
-     - Step 5: Validate — invoke `/adev-validate --spec <path> --plan <plan-path>`; report PASS/FAIL
+     - Step 1: Review — invoke `/adev:review-specs --spec <path>`; skip if `.review.md` exists and is current (not stale); STOP if verdict is BLOCK
+     - Step 2: Plan — invoke `/adev:plan --spec <path>`; skip if `.plan.md` exists; STOP if constitution violation detected
+     - Step 3: Route — invoke `/adev:route --plan <plan-path>`; optional/advisory; skip if `--no-route` flag set
+     - Step 4: Implement — invoke `/adev:implement <plan-path>`; STOP if quality gates fail
+     - Step 5: Validate — invoke `/adev:validate --spec <path> --plan <plan-path>`; report PASS/FAIL
   6. Define skip conditions for each step (review already passed, plan already exists)
   7. Per review note CON-1, ensure pipeline step ordering in SKILL.md matches the 5-step flow consistently throughout
   8. Define the summary output format: "N specs attempted, N passed, N failed, N skipped"
 
   **Test cases:**
-  - SKILL.md exists at `skills/adev-build/SKILL.md`
-  - SKILL.md has valid frontmatter with `name: adev-build`
+  - SKILL.md exists at `skills/build/SKILL.md`
+  - SKILL.md has valid frontmatter with `name: adev:build`
   - SKILL.md contains `--spec` argument
   - SKILL.md contains `--phase` argument
   - SKILL.md contains `--resume` argument
   - SKILL.md contains `--dry-run` argument
   - SKILL.md contains all 5 pipeline step names: review, plan, route, implement, validate
-  - SKILL.md references `/adev-review-specs`, `/adev-plan`, `/adev-implement`, `/adev-validate`
+  - SKILL.md references `/adev:review-specs`, `/adev:plan`, `/adev:implement`, `/adev:validate`
 
 ### Task 2: Define build state JSON format
-- **Files:** `skills/adev-build/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-build.test.mjs` (modify)
+- **Files:** `skills/build/SKILL.md` (modify)
+- **Tests:** `tests/skills/build.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Add the Build State section to SKILL.md defining the JSON persistence format:
@@ -67,8 +67,8 @@ Create a new `skills/adev-build/SKILL.md` — the end-to-end build orchestrator 
   - SKILL.md describes `.context-index/build-state/` directory creation
 
 ### Task 3: Implement `--resume` logic
-- **Files:** `skills/adev-build/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-build.test.mjs` (modify)
+- **Files:** `skills/build/SKILL.md` (modify)
+- **Tests:** `tests/skills/build.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Add the Resume section to SKILL.md defining how interrupted builds are continued:
@@ -88,8 +88,8 @@ Create a new `skills/adev-build/SKILL.md` — the end-to-end build orchestrator 
   - SKILL.md describes "No interrupted build found" error message
 
 ### Task 4: Implement `--phase` batch mode
-- **Files:** `skills/adev-build/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-build.test.mjs` (modify)
+- **Files:** `skills/build/SKILL.md` (modify)
+- **Tests:** `tests/skills/build.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Add the Phase Mode section to SKILL.md defining batch processing of milestone specs:
@@ -110,8 +110,8 @@ Create a new `skills/adev-build/SKILL.md` — the end-to-end build orchestrator 
   - SKILL.md describes "No specs found for milestone" error
 
 ### Task 5: Implement `--dry-run` mode
-- **Files:** `skills/adev-build/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-build.test.mjs` (modify)
+- **Files:** `skills/build/SKILL.md` (modify)
+- **Tests:** `tests/skills/build.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Add the Dry Run section to SKILL.md defining the preview mode:
@@ -131,44 +131,44 @@ Create a new `skills/adev-build/SKILL.md` — the end-to-end build orchestrator 
 ## File Structure
 
 **Create:**
-- `skills/adev-build/SKILL.md` — The build orchestrator skill
-- `tests/skills/adev-build.test.mjs` — Tests verifying SKILL.md structure and key sections
+- `skills/build/SKILL.md` — The build orchestrator skill
+- `tests/skills/build.test.mjs` — Tests verifying SKILL.md structure and key sections
 
 **Modify:**
 - None
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-build-skill.md` — Behavioral contract
-- `.context-index/specs/features/strategic-planning/adev-build-skill.review.md` — Review notes (SA-2, SA-3, SEC-1, CON-1)
+- `.context-index/specs/features/strategic-planning/adev:build-skill.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:build-skill.review.md` — Review notes (SA-2, SA-3, SEC-1, CON-1)
 - `.context-index/specs/features/strategic-planning/charter.md` — Charter context
-- `skills/adev-issues/SKILL.md` — Issue board integration patterns
-- `skills/adev-start/SKILL.md` — Routing and classification patterns
-- `skills/adev-assess/SKILL.md` — Frontmatter and structure reference for new skills
-- `tests/skills/adev-assess.test.mjs` — Test pattern reference for SKILL.md tests
+- `skills/issues/SKILL.md` — Issue board integration patterns
+- `skills/start/SKILL.md` — Routing and classification patterns
+- `skills/assess/SKILL.md` — Frontmatter and structure reference for new skills
+- `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `adev-build-skill.md` (Build Pipeline Steps, Behaviors 1-2, 6-8)
-- Review: `adev-build-skill.review.md` (CON-1 — pipeline order consistency)
-- Charter: `charter.md` (Interface Contracts — /adev-build)
-- `skills/adev-assess/SKILL.md`: Frontmatter and structure pattern for new skills
+- Spec: `adev:build-skill.md` (Build Pipeline Steps, Behaviors 1-2, 6-8)
+- Review: `adev:build-skill.review.md` (CON-1 — pipeline order consistency)
+- Charter: `charter.md` (Interface Contracts — /adev:build)
+- `skills/assess/SKILL.md`: Frontmatter and structure pattern for new skills
 
 ### Task 2 Context
-- Spec: `adev-build-skill.md` (Build State File Format, Behaviors 10-11)
-- Review: `adev-build-skill.review.md` (SA-2 — phase resume re-discovery)
+- Spec: `adev:build-skill.md` (Build State File Format, Behaviors 10-11)
+- Review: `adev:build-skill.review.md` (SA-2 — phase resume re-discovery)
 
 ### Task 3 Context
-- Spec: `adev-build-skill.md` (Behaviors 3-4, Error Cases — resume and failure)
-- Review: `adev-build-skill.review.md` (SEC-1 — `--from` override, SA-2 — phase re-discovery)
+- Spec: `adev:build-skill.md` (Behaviors 3-4, Error Cases — resume and failure)
+- Review: `adev:build-skill.review.md` (SEC-1 — `--from` override, SA-2 — phase re-discovery)
 
 ### Task 4 Context
-- Spec: `adev-build-skill.md` (Behaviors 2, 9, Error Cases — no specs for phase)
-- Spec: `adev-build-skill.md` (Issue Board Integration section)
+- Spec: `adev:build-skill.md` (Behaviors 2, 9, Error Cases — no specs for phase)
+- Spec: `adev:build-skill.md` (Issue Board Integration section)
 
 ### Task 5 Context
-- Spec: `adev-build-skill.md` (Behavior 5, Error Cases)
-- Review: `adev-build-skill.review.md` (SA-3 — completed_with_warnings)
+- Spec: `adev:build-skill.md` (Behavior 5, Error Cases)
+- Review: `adev:build-skill.review.md` (SA-3 — completed_with_warnings)
 
 ## Parallelization
 

@@ -1,10 +1,10 @@
 # Scenario: Charter a Customer Lifetime Value module
 
 ## Skill
-`/adev-brainstorm`
+`/adev:brainstorm`
 
 ## Target Project
-`tests/evals/adev-data-eval` — E-commerce dbt + DuckDB project
+`tests/evals/adev:data-eval` — E-commerce dbt + DuckDB project
 
 ## Prompt
 Create a feature charter for a "Customer Lifetime Value" analytics module in this project. The module should compute CLV metrics from existing order and customer data using dbt models.

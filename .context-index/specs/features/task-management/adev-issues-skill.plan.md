@@ -1,12 +1,12 @@
-# Implementation Plan: /adev-issues Skill
+# Implementation Plan: /adev:issues Skill
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/task-management/charter.md
-> **Spec:** .context-index/specs/features/task-management/adev-issues-skill.md
+> **Spec:** .context-index/specs/features/task-management/adev:issues-skill.md
 > **Review:** PASS_WITH_NOTES (2026-03-31)
 > **Platform:** none, javascript (ESM), node:test
 
-**Goal:** Create the `/adev-issues` SKILL.md for user-facing issue management and register it in the plugin.
+**Goal:** Create the `/adev:issues` SKILL.md for user-facing issue management and register it in the plugin.
 
 **Architecture:** Pure markdown skill — structured instructions telling the agent how to use `lib/issues/` for CRUD operations. Follows existing skill patterns (`skills/<name>/SKILL.md`). Registration adds it to the `using-adev` gateway skill's available skills table.
 
@@ -15,21 +15,21 @@
 ## File Structure
 
 **Create:**
-- `skills/adev-issues/SKILL.md` — User-facing issue management skill
+- `skills/issues/SKILL.md` — User-facing issue management skill
 
 **Modify:**
-- `skills/using-adev/SKILL.md` — Add `/adev-issues` to available skills table
+- `skills/using-adev/SKILL.md` — Add `/adev:issues` to available skills table
 
 **Reference (read, do not modify):**
-- `skills/adev-status/SKILL.md` — Pattern reference for read/query skill structure
-- `skills/adev-debug/SKILL.md` — Pattern reference for supporting skill structure
-- `.context-index/specs/features/task-management/adev-issues-skill.md` — Spec with all 10 behaviors
+- `skills/status/SKILL.md` — Pattern reference for read/query skill structure
+- `skills/debug/SKILL.md` — Pattern reference for supporting skill structure
+- `.context-index/specs/features/task-management/adev:issues-skill.md` — Spec with all 10 behaviors
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `adev-issues-skill.md` (all 10 Behaviors)
-- Reference: `skills/adev-status/SKILL.md` (skill structure pattern)
+- Spec: `adev:issues-skill.md` (all 10 Behaviors)
+- Reference: `skills/status/SKILL.md` (skill structure pattern)
 - Spec: `issue-epic-crud.md` (interface methods)
 - Spec: `backend-adapters.md` (backend-specific behavior)
 
@@ -42,29 +42,29 @@
 
 ---
 
-### Task 1: Write /adev-issues SKILL.md [specialist: none]
+### Task 1: Write /adev:issues SKILL.md [specialist: none]
 
 **Charter capability:** User-Facing Skill
 **Files:**
-- Create: `skills/adev-issues/SKILL.md`
+- Create: `skills/issues/SKILL.md`
 
 **Tests:** No test file — this is a markdown skill. Acceptance verified by reading the file.
 
 - [ ] **Write failing test**
 
 ```bash
-! test -f skills/adev-issues/SKILL.md
+! test -f skills/issues/SKILL.md
 ```
 
 - [ ] **Verify test fails** (file does not exist)
 
 - [ ] **Implement**
 
-Create `skills/adev-issues/SKILL.md` with frontmatter and full instructions:
+Create `skills/issues/SKILL.md` with frontmatter and full instructions:
 
 ```markdown
 ---
-name: adev-issues
+name: adev:issues
 description: "Manage project issues and epics. Create, update, close, and view issues across file-based or beads_rust backends. Use when the user says 'create an issue', 'file a bug', 'show issues', 'what needs to be done', 'create epic', or wants to manage work items directly."
 ---
 
@@ -72,7 +72,7 @@ description: "Manage project issues and epics. Create, update, close, and view i
 
 Manage project issues and epics using the configured task backend.
 
-**Announce at start:** "I'm using the adev-issues skill to manage project issues."
+**Announce at start:** "I'm using the adev:issues skill to manage project issues."
 
 ## Arguments
 
@@ -88,7 +88,7 @@ Manage project issues and epics using the configured task backend.
 ## Prerequisites
 
 Check that `.context-index/` exists with `manifest.yaml`. If not:
-> Run `/adev-init` first to set up the context index.
+> Run `/adev:init` first to set up the context index.
 
 ## Process
 
@@ -155,8 +155,8 @@ Call `list({ status: "open" })`, then filter out issues with unclosed dependenci
 - [ ] **Commit**
 
 ```bash
-git add skills/adev-issues/SKILL.md
-git commit -m "feat(task-management): add /adev-issues skill"
+git add skills/issues/SKILL.md
+git commit -m "feat(task-management): add /adev:issues skill"
 ```
 
 ### Task 2: Register in Gateway Skill [specialist: none]
@@ -170,25 +170,25 @@ git commit -m "feat(task-management): add /adev-issues skill"
 - [ ] **Write failing test**
 
 ```bash
-! grep -q "adev-issues" skills/using-adev/SKILL.md
+! grep -q "adev:issues" skills/using-adev/SKILL.md
 ```
 
 - [ ] **Verify test fails** (not registered yet)
 
 - [ ] **Implement**
 
-Add `/adev-issues` to the Available Skills table in `skills/using-adev/SKILL.md`, in the appropriate section (Supporting/Maintenance skills):
+Add `/adev:issues` to the Available Skills table in `skills/using-adev/SKILL.md`, in the appropriate section (Supporting/Maintenance skills):
 
 ```markdown
-| `/adev-issues` | Issue Management | Create, update, and track issues and epics |
+| `/adev:issues` | Issue Management | Create, update, and track issues and epics |
 ```
 
-- [ ] **Verify test passes** — grep finds "adev-issues"
+- [ ] **Verify test passes** — grep finds "adev:issues"
 - [ ] **Commit**
 
 ```bash
 git add skills/using-adev/SKILL.md
-git commit -m "feat(task-management): register /adev-issues in gateway skill"
+git commit -m "feat(task-management): register /adev:issues in gateway skill"
 ```
 
 ---

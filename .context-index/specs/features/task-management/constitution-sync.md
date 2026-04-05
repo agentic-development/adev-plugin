@@ -17,21 +17,21 @@ updated: 2026-04-01
 - `.context-index/constitution.md` exists
 - `.context-index/manifest.yaml` exists
 - `templates/constitution-template.md` exists
-- `skills/adev-sync/SKILL.md` exists
+- `skills/sync/SKILL.md` exists
 
 ### Behaviors
 
 **Constitution Template:**
 
-1. **When** a new project runs `/adev-init` **then** the scaffolded `constitution.md` includes a "Task Management" section after Quality Gates, documenting both file and beads backends with their respective commands.
+1. **When** a new project runs `/adev:init` **then** the scaffolded `constitution.md` includes a "Task Management" section after Quality Gates, documenting both file and beads backends with their respective commands.
 2. **When** the Task Management section is present in the constitution **then** it lists `br` commands for the beads backend and markdown table instructions for the file backend.
 
 **Sync Integration:**
 
-3. **When** `/adev-sync` runs and `tasks.backend` is configured in `manifest.yaml` **then** the generated agent files (CLAUDE.md, AGENTS.md) include a `## Task Management` block between Context Index and User Additions sections.
-4. **When** `/adev-sync` runs and `tasks.backend` is not configured **then** no Task Management block is emitted (clean omission, no empty section).
-5. **When** `/adev-sync` runs with `tasks.backend: beads` **then** the Task Management block includes `br` CLI command reference.
-6. **When** `/adev-sync` runs with `tasks.backend: file` **then** the Task Management block references `.context-index/tasks/tasks.md` and markdown table format.
+3. **When** `/adev:sync` runs and `tasks.backend` is configured in `manifest.yaml` **then** the generated agent files (CLAUDE.md, AGENTS.md) include a `## Task Management` block between Context Index and User Additions sections.
+4. **When** `/adev:sync` runs and `tasks.backend` is not configured **then** no Task Management block is emitted (clean omission, no empty section).
+5. **When** `/adev:sync` runs with `tasks.backend: beads` **then** the Task Management block includes `br` CLI command reference.
+6. **When** `/adev:sync` runs with `tasks.backend: file` **then** the Task Management block references `.context-index/tasks/tasks.md` and markdown table format.
 
 ### Postconditions
 
@@ -56,14 +56,14 @@ updated: 2026-04-01
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
 | Update constitution template | Add Task Management section to `templates/constitution-template.md` | small |
-| Update sync skill | Add conditional Task Management block to `skills/adev-sync/SKILL.md` | small |
+| Update sync skill | Add conditional Task Management block to `skills/sync/SKILL.md` | small |
 
 ## Acceptance Criteria
 
 - [ ] `templates/constitution-template.md` includes a Task Management section after Quality Gates
 - [ ] Task Management section documents both file and beads backends
 - [ ] Task Management section includes `br` command reference for beads backend
-- [ ] `skills/adev-sync/SKILL.md` includes conditional Task Management block generation
+- [ ] `skills/sync/SKILL.md` includes conditional Task Management block generation
 - [ ] Sync block is omitted when `tasks.backend` is not configured
 - [ ] Sync block content matches the active backend
 - [ ] User Additions preservation is not affected

@@ -15,7 +15,7 @@ This installs the plugin into Claude Code, OpenCode, or OpenAI Codex (specify wi
 Alternatively, for development or testing:
 
 ```bash
-claude --plugin-dir /path/to/adev-plugin
+claude --plugin-dir /path/to/adev:plugin
 ```
 
 For OpenAI Codex, `npx adev-cli init --provider codex` links the provider-specific skills into either `~/.agents/skills/` or `<repo>/.agents/skills/`, depending on the scope you choose during install.
@@ -24,13 +24,13 @@ For OpenAI Codex, `npx adev-cli init --provider codex` links the provider-specif
 
 ```bash
 # After install, start Claude Code and run the interactive wizard
-/adev-init
+/adev:init
 
 # Or onboard an existing codebase
-/adev-init --brownfield
+/adev:init --brownfield
 
 # Preview what would be created without writing files
-/adev-init --dry-run
+/adev:init --dry-run
 ```
 
 This scaffolds a `.context-index/` directory with your project's constitution, platform context, and orientation. The constitution is synced to `CLAUDE.md` (and other agent files) automatically.
@@ -56,7 +56,7 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 │   ├── boundaries.yaml
 │   ├── risk-policies.yaml
 │   └── overrides/
-├── samples/                     # Golden samples (curated by /adev-sample)
+├── samples/                     # Golden samples (curated by /adev:sample)
 ├── packets/                     # Context packets per task (gitignored, debugging)
 ├── evals/                       # Evaluation harness config and reports (optional)
 ├── orientation/                 # Human-authored codebase guide
@@ -72,26 +72,26 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 
 | Phase | Skill | What Happens |
 |-------|-------|-------------|
-| Context Setup | `/adev-init` | Scaffold `.context-index/`, generate constitution, sync agent files |
-| Brainstorming | `/adev-brainstorm` | Explore idea, produce a Feature Charter |
-| Specification | `/adev-specify` | Write Live Specs within charter scope |
-| Architecture Review | `/adev-review-specs` | Parallel specialist agents review specs (Opus) |
-| Planning | `/adev-plan` | Constitution-gated task decomposition |
-| Routing | `/adev-route` | Score tasks on routing matrix, recommend execution strategy |
-| Implementation | `/adev-implement` | TDD, specialist routing, context packets, subagent execution |
-| Validation | `/adev-validate` | Multi-check against specs, constitution, ADRs |
-| Evaluation | `/adev-eval` | Graduated quality scoring (deterministic → LLM-as-a-Judge → HITL) |
-| Debugging | `/adev-debug` | Context-aware systematic debugging |
-| Recovery | `/adev-recover` | Diagnose and resume stuck agents (6 root cause categories) |
-| Samples | `/adev-sample` | Discover, score, and curate golden sample implementations |
-| Retrospective | `/adev-retro` | Analyze delivery metrics, extract lessons, suggest improvements |
-| Maintenance | `/adev-hygiene` | Audit staleness, drift, coverage gaps, recovery patterns |
-| Repo Map | `/adev-repomap` | Generate AST-based symbol index for drift detection |
-| Documentation | `/adev-document` | Generate architecture and module docs from repomap |
-| Issue Tracking | `/adev-issues` | Create, update, close issues and epics |
-| Status | `/adev-status` | Query project progress across specs and charters |
-| Assessment | `/adev-assess` | Score codebase readiness for agentic development |
-| Test Writing | `/adev-test-write` | Standalone TDD test authoring |
+| Context Setup | `/adev:init` | Scaffold `.context-index/`, generate constitution, sync agent files |
+| Brainstorming | `/adev:brainstorm` | Explore idea, produce a Feature Charter |
+| Specification | `/adev:specify` | Write Live Specs within charter scope |
+| Architecture Review | `/adev:review-specs` | Parallel specialist agents review specs (Opus) |
+| Planning | `/adev:plan` | Constitution-gated task decomposition |
+| Routing | `/adev:route` | Score tasks on routing matrix, recommend execution strategy |
+| Implementation | `/adev:implement` | TDD, specialist routing, context packets, subagent execution |
+| Validation | `/adev:validate` | Multi-check against specs, constitution, ADRs |
+| Evaluation | `/adev:eval` | Graduated quality scoring (deterministic → LLM-as-a-Judge → HITL) |
+| Debugging | `/adev:debug` | Context-aware systematic debugging |
+| Recovery | `/adev:recover` | Diagnose and resume stuck agents (6 root cause categories) |
+| Samples | `/adev:sample` | Discover, score, and curate golden sample implementations |
+| Retrospective | `/adev:retro` | Analyze delivery metrics, extract lessons, suggest improvements |
+| Maintenance | `/adev:hygiene` | Audit staleness, drift, coverage gaps, recovery patterns |
+| Repo Map | `/adev:repomap` | Generate AST-based symbol index for drift detection |
+| Documentation | `/adev:document` | Generate architecture and module docs from repomap |
+| Issue Tracking | `/adev:issues` | Create, update, close issues and epics |
+| Status | `/adev:status` | Query project progress across specs and charters |
+| Assessment | `/adev:assess` | Score codebase readiness for agentic development |
+| Test Writing | `/adev:test-write` | Standalone TDD test authoring |
 
 For a complete skill reference with dependencies and a lifecycle flowchart, see [docs/skills.md](docs/skills.md). New to adev? Start with the [quickstart guide](docs/quickstart.md).
 
@@ -99,7 +99,7 @@ For a complete skill reference with dependencies and a lifecycle flowchart, see 
 
 ### Constitution
 
-A tool-agnostic document (`.context-index/constitution.md`) containing your project's non-negotiable principles, coding standards, architecture boundaries, context routing rules, and quality gates. Kept under 200 lines. Synced to CLAUDE.md, AGENTS.md, .cursorrules, and copilot-instructions.md via `/adev-sync`.
+A tool-agnostic document (`.context-index/constitution.md`) containing your project's non-negotiable principles, coding standards, architecture boundaries, context routing rules, and quality gates. Kept under 200 lines. Synced to CLAUDE.md, AGENTS.md, .cursorrules, and copilot-instructions.md via `/adev:sync`.
 
 ### Merge Policy
 
@@ -111,7 +111,7 @@ The constitution tells agents *when* and *where* to look for deeper context. Age
 
 ### Architecture Review
 
-Before any code is written, `/adev-review-specs` dispatches parallel specialist subagents (structural architect, security reviewer, consistency analyzer) to review specs. Returns PASS / PASS_WITH_NOTES / BLOCK. Planning is gated on passing review.
+Before any code is written, `/adev:review-specs` dispatches parallel specialist subagents (structural architect, security reviewer, consistency analyzer) to review specs. Returns PASS / PASS_WITH_NOTES / BLOCK. Planning is gated on passing review.
 
 ### Specialist Routing
 
@@ -123,19 +123,19 @@ Declarative governance policies live in `.context-index/governance/` as YAML fil
 
 ### Context Packets
 
-Every implementation task gets an explicit context packet: a manifest of exactly which files, spec sections, ADRs, and samples the subagent receives. Packets are logged to `.context-index/packets/` (gitignored) for debugging. When a task fails, `/adev-recover` inspects the packet to diagnose what context was missing.
+Every implementation task gets an explicit context packet: a manifest of exactly which files, spec sections, ADRs, and samples the subagent receives. Packets are logged to `.context-index/packets/` (gitignored) for debugging. When a task fails, `/adev:recover` inspects the packet to diagnose what context was missing.
 
 ### Task Routing
 
-`/adev-route` scores each task on four dimensions (spec completeness, pattern coverage, blast radius, novelty) and recommends `auto-agent` (run unattended), `assisted-agent` (pause for mid-point review), or `human-only` (agent scaffolds, human implements). Prevents over-delegation and under-delegation.
+`/adev:route` scores each task on four dimensions (spec completeness, pattern coverage, blast radius, novelty) and recommends `auto-agent` (run unattended), `assisted-agent` (pause for mid-point review), or `human-only` (agent scaffolds, human implements). Prevents over-delegation and under-delegation.
 
 ### Agent Recovery
 
-When subagents get stuck, `/adev-recover` diagnoses the root cause from six categories (missing context, ambiguous spec, constraint conflict, novel problem, tool failure, budget exhaustion), injects corrective context, and resumes. Recovery records feed into `/adev-retro` for trend analysis.
+When subagents get stuck, `/adev:recover` diagnoses the root cause from six categories (missing context, ambiguous spec, constraint conflict, novel problem, tool failure, budget exhaustion), injects corrective context, and resumes. Recovery records feed into `/adev:retro` for trend analysis.
 
 ### Brownfield Support
 
-For existing codebases: `/adev-init --brownfield` reverse-engineers charters from code structure, generates retrospective ADRs from git history, and produces a coverage report showing which areas need specs.
+For existing codebases: `/adev:init --brownfield` reverse-engineers charters from code structure, generates retrospective ADRs from git history, and produces a coverage report showing which areas need specs.
 
 ## Hooks
 
@@ -170,7 +170,7 @@ Full design document: [adev-plugin-design.md](https://github.com/agentic-develop
 
 **v0.8.0** — Persistent issue tracking with pluggable backends (file-based markdown or beads_rust). Worktree-safe storage shared across git worktrees. Source manifest stamping for drift detection. All spec-lifecycle specs validated.
 
-**v0.5.0** — Multi-provider support. Added OpenCode and OpenAI Codex providers alongside Claude Code. Each provider has a dedicated skill set. New features: codebase readiness assessment (`/adev-assess`), improved documentation generation (`/adev-document`), eval framework for skill quality, CI/CD quality gates, and automatic spec status updates across lifecycle.
+**v0.5.0** — Multi-provider support. Added OpenCode and OpenAI Codex providers alongside Claude Code. Each provider has a dedicated skill set. New features: codebase readiness assessment (`/adev:assess`), improved documentation generation (`/adev:document`), eval framework for skill quality, CI/CD quality gates, and automatic spec status updates across lifecycle.
 
 **v0.4.1** — Merge policy enforcement. Agents can no longer merge directly to protected branches. Three-layer defense: manifest configuration, skill instructions, and a PreToolUse hook guard.
 

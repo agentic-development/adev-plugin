@@ -33,32 +33,32 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
-| `/adev-start` | Triage | Classify incoming work and route to the right skill |
-| `/adev-vision` | Strategic Planning | Define product vision, milestones, and feature inventory |
-| `/adev-roadmap` | Strategic Planning | Sequence releases with dependency analysis and risk assessment |
-| `/adev-research` | Research | Persistent structured research using web, GitHub, and codebase sources |
-| `/adev-init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
-| `/adev-sync` | Context Setup | Sync constitution to CLAUDE.md and other agent files |
-| `/adev-brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
-| `/adev-specify` | Specification | Write Live Specs within a charter's scope |
-| `/adev-review-specs` | Architecture Review | Principal architect agents review specs before planning |
-| `/adev-plan` | Planning | Decompose specs into implementation tasks |
-| `/adev-build` | Build | End-to-end orchestrator: review → plan → route → implement → validate |
-| `/adev-implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
-| `/adev-validate` | Validation | Post-implementation checks against specs and constitution |
-| `/adev-debug` | Debugging | Context-aware systematic debugging |
-| `/adev-issues` | Issue Management | Create, update, and track issues and epics (with milestone support) |
-| `/adev-hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
-| `/adev-repomap` | Maintenance | Generate AST-based symbol index for drift detection |
+| `/adev:start` | Triage | Classify incoming work and route to the right skill |
+| `/adev:vision` | Strategic Planning | Define product vision, milestones, and feature inventory |
+| `/adev:roadmap` | Strategic Planning | Sequence releases with dependency analysis and risk assessment |
+| `/adev:research` | Research | Persistent structured research using web, GitHub, and codebase sources |
+| `/adev:init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
+| `/adev:sync` | Context Setup | Sync constitution to CLAUDE.md and other agent files |
+| `/adev:brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
+| `/adev:specify` | Specification | Write Live Specs within a charter's scope |
+| `/adev:review-specs` | Architecture Review | Principal architect agents review specs before planning |
+| `/adev:plan` | Planning | Decompose specs into implementation tasks |
+| `/adev:build` | Build | End-to-end orchestrator: review → plan → route → implement → validate |
+| `/adev:implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
+| `/adev:validate` | Validation | Post-implementation checks against specs and constitution |
+| `/adev:debug` | Debugging | Context-aware systematic debugging |
+| `/adev:issues` | Issue Management | Create, update, and track issues and epics (with milestone support) |
+| `/adev:hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
+| `/adev:repomap` | Maintenance | Generate AST-based symbol index for drift detection |
 
 ## Lifecycle Gates
 
 These gates enforce quality:
 - **Brainstorm before implement.** Do not write implementation code without a charter or spec.
-- **Review before plan.** `/adev-plan` blocks if specs have not passed `/adev-review-specs`.
+- **Review before plan.** `/adev:plan` blocks if specs have not passed `/adev:review-specs`.
 - **Constitution compliance.** Every phase checks against constitutional principles.
 - **TDD.** Implementation follows RED-GREEN-REFACTOR (test first, then code).
 
 ## Skill Invocation Rule
 
-If any `/adev-*` skill applies to the current task, invoke it before proceeding. Even a 1% chance it applies means you should check. The skill can always be skipped if it turns out to be irrelevant.
+If any `/adev:*` skill applies to the current task, invoke it before proceeding. Even a 1% chance it applies means you should check. The skill can always be skipped if it turns out to be irrelevant.

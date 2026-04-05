@@ -1,19 +1,19 @@
-# Plan: adev-vision Skill
+# Plan: adev:vision Skill
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev-vision-skill.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:vision-skill.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
 ## Overview
 
-Create the `/adev-vision` skill as a markdown-based SKILL.md that guides product vision definition and milestone planning through an interactive interview pattern. The skill reads the constitution, product.md, and existing charters, then helps the user define milestones that are written to a structured `## Milestones` section in `product.md` and synced as epics on the issue board. No companion code is needed — this is purely markdown instructions.
+Create the `/adev:vision` skill as a markdown-based SKILL.md that guides product vision definition and milestone planning through an interactive interview pattern. The skill reads the constitution, product.md, and existing charters, then helps the user define milestones that are written to a structured `## Milestones` section in `product.md` and synced as epics on the issue board. No companion code is needed — this is purely markdown instructions.
 
 ## Tasks
 
 ### Task 1: Define Milestones section format for product.md
-- **Files:** `skills/adev-vision/SKILL.md` (create — partial, Milestones format definition only)
-- **Tests:** `tests/skills/adev-vision.test.mjs` (create)
+- **Files:** `skills/vision/SKILL.md` (create — partial, Milestones format definition only)
+- **Tests:** `tests/skills/vision.test.mjs` (create)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Define and document the canonical markdown format for the `## Milestones` section in `product.md`. This format is referenced by the skill and other downstream consumers (roadmap, status).
@@ -27,19 +27,19 @@ Create the `/adev-vision` skill as a markdown-based SKILL.md that guides product
   4. Document this format in the SKILL.md Output section so Claude knows exactly what to write.
 
   **Test cases:**
-  - `skills/adev-vision/SKILL.md` exists
+  - `skills/vision/SKILL.md` exists
   - SKILL.md contains `## Milestones` format description
   - SKILL.md contains milestone status values: `planned`, `active`, `completed`
   - SKILL.md contains `### ` as the milestone subheading pattern
 
 ### Task 2: Create full SKILL.md with interview pattern and all steps
-- **Files:** `skills/adev-vision/SKILL.md` (modify — complete the file)
-- **Tests:** `tests/skills/adev-vision.test.mjs` (modify)
+- **Files:** `skills/vision/SKILL.md` (modify — complete the file)
+- **Tests:** `tests/skills/vision.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Complete the skill definition with the interactive interview pattern, context loading, milestone writing, and epic creation logic.
 
-  1. Add YAML frontmatter with `name: adev-vision`, `description`, `arguments` list.
+  1. Add YAML frontmatter with `name: adev:vision`, `description`, `arguments` list.
   2. Define Arguments section:
      - No required arguments (default: full interview mode)
      - `--refresh` — skip interview, review and update existing milestones
@@ -56,7 +56,7 @@ Create the `/adev-vision` skill as a markdown-based SKILL.md that guides product
      - Step 9: On approval, write `## Milestones` section to `product.md` (replace in-place if exists, append if not; preserve all other sections)
      - Step 10: Sync epics — for each milestone, create or update an epic with the `milestone` field set to the milestone name (match by milestone field per SA-1, not title)
      - Step 11: If vision implies new architectural constraints, propose as clearly labeled amendments with warning per Architecture Boundaries
-     - Step 12: If vision references charters that don't exist, list as "Charters to Create" and suggest `/adev-brainstorm`
+     - Step 12: If vision references charters that don't exist, list as "Charters to Create" and suggest `/adev:brainstorm`
   4. Define Key Principles section:
      - One question at a time in interview mode
      - Epic matching by milestone field (not title) per review SA-1
@@ -65,7 +65,7 @@ Create the `/adev-vision` skill as a markdown-based SKILL.md that guides product
   5. Note hard dependency on `issue-model-milestone` spec per review SA-2: the milestone field on epics must be implemented first.
 
   **Test cases:**
-  - SKILL.md contains `name: adev-vision` in frontmatter
+  - SKILL.md contains `name: adev:vision` in frontmatter
   - SKILL.md contains `--refresh` flag
   - SKILL.md contains `--milestone` flag
   - SKILL.md contains interview pattern instruction ("one question at a time" or equivalent)
@@ -79,18 +79,18 @@ Create the `/adev-vision` skill as a markdown-based SKILL.md that guides product
 ## File Structure
 
 **Create:**
-- `skills/adev-vision/SKILL.md` — Skill definition with interview pattern, milestone writing, epic sync
-- `tests/skills/adev-vision.test.mjs` — Tests verifying skill content and structure
+- `skills/vision/SKILL.md` — Skill definition with interview pattern, milestone writing, epic sync
+- `tests/skills/vision.test.mjs` — Tests verifying skill content and structure
 
 **Modify:**
 - None
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-vision-skill.md` — Behavioral contract
-- `.context-index/specs/features/strategic-planning/adev-vision-skill.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
+- `.context-index/specs/features/strategic-planning/adev:vision-skill.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:vision-skill.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
 - `.context-index/constitution.md` — Identity section (used for product.md bootstrap)
-- `skills/adev-assess/SKILL.md` — Pattern reference for skill file structure
-- `tests/skills/adev-assess.test.mjs` — Test pattern reference for SKILL.md tests
+- `skills/assess/SKILL.md` — Pattern reference for skill file structure
+- `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
 ## Context Packets
 
@@ -101,7 +101,7 @@ Create the `/adev-vision` skill as a markdown-based SKILL.md that guides product
 ### Task 2 Context
 - Spec: All Behaviors (1-9), Error Cases, Postconditions
 - Review: SA-1 (match epics by milestone field), SA-2 (hard dependency on issue-model-milestone)
-- `skills/adev-assess/SKILL.md` — Structural pattern for skill frontmatter and process sections
+- `skills/assess/SKILL.md` — Structural pattern for skill frontmatter and process sections
 - `.context-index/constitution.md` — Identity section for bootstrap content
 
 ## Parallelization

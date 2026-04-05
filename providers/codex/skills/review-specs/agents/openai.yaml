@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Review Specs"
+  short_description: "Review specs before planning"
+  default_prompt: "Use $adev:review-specs to review this spec before planning or implementation."

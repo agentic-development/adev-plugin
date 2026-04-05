@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Sample"
-  short_description: "Curate strong codebase examples"
-  default_prompt: "Use $adev-sample to find and curate high-quality implementation samples in this repo."

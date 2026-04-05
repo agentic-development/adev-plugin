@@ -14,8 +14,8 @@ describe("ClaudeCodeAdapter", () => {
   beforeEach(() => {
     originalEnv = { ...process.env };
     originalCwd = process.cwd();
-    homeDir = mkdtempSync(join(tmpdir(), "adev-claude-home-"));
-    projectDir = mkdtempSync(join(tmpdir(), "adev-claude-project-"));
+    homeDir = mkdtempSync(join(tmpdir(), "claude-home-"));
+    projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
     process.env.HOME = homeDir;
     delete process.env.USERPROFILE;
     process.chdir(projectDir);
@@ -36,7 +36,7 @@ describe("ClaudeCodeAdapter", () => {
     assert.equal(result.installed, true);
     assert.equal(result.path, cacheDir);
     assert.ok(existsSync(join(cacheDir, ".claude-plugin", "plugin.json")));
-    assert.ok(existsSync(join(cacheDir, "skills", "adev-init", "SKILL.md")));
+    assert.ok(existsSync(join(cacheDir, "skills", "init", "SKILL.md")));
 
     const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
     assert.equal(settings.enabledPlugins["adev@agentic-development"], true);

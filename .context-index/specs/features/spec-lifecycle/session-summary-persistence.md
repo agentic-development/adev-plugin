@@ -22,7 +22,7 @@ source-manifest:
 ### Preconditions
 
 - A condensed transcript exists (produced by `parseSession` from the Session Capture Pipeline)
-- `.context-index/sessions/` directory exists (created by `/adev-init` or on first write)
+- `.context-index/sessions/` directory exists (created by `/adev:init` or on first write)
 - Session metadata is available: date, type, mode, agent, specs-touched, commits
 
 ### Behaviors
@@ -31,7 +31,7 @@ source-manifest:
 
 2. **When** `writeSummary` is called and the agent is running in-session **then** the intent/outcome/learnings/friction/open_items sections are populated by the agent based on its own session context — the function provides the file structure, not the content.
 
-3. **When** `writeSummary` is called from a git hook (post-commit) **then** the intent/outcome fields are left as placeholders (`<!-- Fill in during session or via /adev-retro -->`) since the hook cannot generate semantic summaries without an LLM.
+3. **When** `writeSummary` is called from a git hook (post-commit) **then** the intent/outcome fields are left as placeholders (`<!-- Fill in during session or via /adev:retro -->`) since the hook cannot generate semantic summaries without an LLM.
 
 4. **When** `readSummary(summaryPath)` is called **then** it reads the markdown file, parses the YAML frontmatter and content sections, and returns a structured object: `{ metadata: {date, type, mode, agent, specsTouched, commits}, content: {intent, outcome, learnings, friction, openItems} }`.
 
@@ -67,7 +67,7 @@ source-manifest:
 |------|-------------|---------------------|
 | Create `lib/session-summary.mjs` | Implement `writeSummary` and `readSummary` functions | medium |
 | Create `.githooks/post-commit` | Git hook that calls session-summary writer after each commit | medium |
-| Update `/adev-init` | Scaffold `.context-index/sessions/` directory and install `.githooks/` | small |
+| Update `/adev:init` | Scaffold `.context-index/sessions/` directory and install `.githooks/` | small |
 | Write tests for `lib/session-summary.mjs` | Test write, read, directory creation, duplicate naming, malformed files | medium |
 
 ## Acceptance Criteria

@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Plan"
-  short_description: "Turn specs into implementation tasks"
-  default_prompt: "Use $adev-plan to convert the reviewed spec into an implementation plan."

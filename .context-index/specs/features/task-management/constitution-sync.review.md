@@ -11,7 +11,7 @@
 
 **Verdict:** PASS_WITH_NOTES
 
-- SA-14 (warning): Spec prescribes block position in agent files. Advisory — the content contract is what matters; position is adev-sync's concern.
+- SA-14 (warning): Spec prescribes block position in agent files. Advisory — the content contract is what matters; position is adev:sync's concern.
 - SA-15 (suggestion): Existing projects won't get the Task Management section on upgrade. Accepted — template changes only affect new scaffolds per constitution. Existing projects can manually add the section.
 
 ## Security Reviewer

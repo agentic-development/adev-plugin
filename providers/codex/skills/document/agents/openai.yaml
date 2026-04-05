@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Document"
+  short_description: "Generate architecture and module docs from context index"
+  default_prompt: "Use $adev:document to generate documentation from the .context-index/."

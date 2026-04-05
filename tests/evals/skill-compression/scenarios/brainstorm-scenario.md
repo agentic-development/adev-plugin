@@ -1,6 +1,6 @@
-# Test Scenario: adev-brainstorm
+# Test Scenario: adev:brainstorm
 
-You are a Claude Code agent running the adev-brainstorm skill. Execute the skill for the test case below.
+You are a Claude Code agent running the adev:brainstorm skill. Execute the skill for the test case below.
 
 ## Test Case
 
@@ -33,13 +33,13 @@ The project has these files available:
 **Existing Feature Charters:**
 - cli: CLI for installing and managing the plugin
 - hooks: Session-start, pre/post tool-use hooks
-- setup: adev-init and adev-sync skills
-- design: adev-brainstorm skill
-- assessment: adev-review-specs skill
-- planning: adev-plan skill
-- implementation: adev-implement skill
-- validation: adev-validate skill
-- maintenance: adev-hygiene, adev-repomap, adev-retro skills
+- setup: adev:init and adev:sync skills
+- design: adev:brainstorm skill
+- assessment: adev:review-specs skill
+- planning: adev:plan skill
+- implementation: adev:implement skill
+- validation: adev:validate skill
+- maintenance: adev:hygiene, adev:repomap, adev:retro skills
 
 **Platform Context:**
 - Runtime: Node.js
@@ -48,13 +48,13 @@ The project has these files available:
 
 ## Instructions
 
-Execute the adev-brainstorm skill completely. Show:
+Execute the adev:brainstorm skill completely. Show:
 1. Context exploration summary
 2. Clarifying questions (one at a time, using simulated responses)
 3. 2-3 approach proposals with trade-offs and constitution compliance
 4. Each charter section (4a-4f) presented for approval
 5. The complete charter file content you would write
 6. Charter review dispatch
-7. Transition to /adev-specify
+7. Transition to /adev:specify
 
 Output everything as if executing the skill for real, simulating user responses as specified above.

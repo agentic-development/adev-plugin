@@ -1,7 +1,7 @@
-# Architecture Review: adev-status-milestone-ext
+# Architecture Review: adev:status-milestone-ext
 
 > **Date:** 2026-04-05
-> **Spec:** .context-index/specs/features/strategic-planning/adev-status-milestone-ext.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev:status-milestone-ext.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS
 
@@ -22,7 +22,7 @@
 
 **Verdict:** PASS
 
-- Follows existing `/adev-status` extension patterns exactly.
+- Follows existing `/adev:status` extension patterns exactly.
 - No deviations from charter interface contracts.
 
 ---

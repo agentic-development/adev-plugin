@@ -1,10 +1,10 @@
 # Scenario: Generate architecture docs for a dbt project
 
 ## Skill
-`/adev-document`
+`/adev:document`
 
 ## Target Project
-`tests/evals/adev-data-eval` — E-commerce dbt + DuckDB project
+`tests/evals/adev:data-eval` — E-commerce dbt + DuckDB project
 
 ## Prompt
 Generate architecture documentation for this dbt project. Cover the model layers, data flow from seeds to marts, key transformations, and testing strategy.

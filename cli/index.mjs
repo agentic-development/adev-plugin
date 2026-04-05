@@ -498,7 +498,7 @@ async function cmdInit() {
       }
       await handleDualSyncTargets(providerNames);
     } else {
-      log("Skipped. Run /adev-init to scaffold later.");
+      log("Skipped. Run /adev:init to scaffold later.");
     }
   }
 
@@ -519,20 +519,20 @@ async function cmdInit() {
   console.log();
   if (providerNames.includes("claude-code")) {
     log("  1. Open Claude Code:  claude");
-    log("  2. Configure context: /adev-init");
-    log("  3. Start working:    /adev-start");
+    log("  2. Configure context: /adev:init");
+    log("  3. Start working:    /adev:start");
   }
   if (providerNames.includes("opencode")) {
     log("  1. Open OpenCode:    opencode");
-    log("  2. Configure context: /adev-init");
+    log("  2. Configure context: /adev:init");
   }
   if (providerNames.includes("codex")) {
     log("  1. Open Codex:       codex");
-    log("  2. Configure context: $adev-init");
+    log("  2. Configure context: $adev:init");
   }
   console.log();
   log("Docs:       https://agentic-dev.org");
-  log("Repository: https://github.com/agentic-development/adev-plugin");
+  log("Repository: https://github.com/agentic-development/adev:plugin");
   console.log();
 }
 
@@ -579,7 +579,7 @@ function cmdHelp() {
     npx adev-cli init --provider both          # Both providers
     npx adev-cli uninstall                     # Remove from selected providers
 
-  Repository: https://github.com/agentic-development/adev-plugin
+  Repository: https://github.com/agentic-development/adev:plugin
   `);
 }
 

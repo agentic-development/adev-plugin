@@ -42,7 +42,7 @@ updated: 2026-03-23
 - Valid edge `type` values: `import`, `require`, `re-export`, `dynamic-import`, `type-import`
 - `symbol-ranks.json` schema: `{ generated: <ISO 8601 timestamp>, commit: <git hash string>, symbols: [{ name, kind, file, line, score, references, module }] }`
 - `references` is the number of distinct files that import the symbol (counted from dependency graph edges, not grep)
-- Output directory for all artifacts: `.context-index/hygiene/` (gitignored by `/adev-init`)
+- Output directory for all artifacts: `.context-index/hygiene/` (gitignored by `/adev:init`)
 - PageRank scores across all file nodes sum to 1.0 (±0.001)
 - Symbols in `symbol-ranks.json` are sorted by score descending
 
@@ -62,7 +62,7 @@ updated: 2026-03-23
 ## System Constitution Reference
 
 - **Principle #1:** "Minimize external dependencies — justify in ADR" — Applies because tree-sitter mode requires `web-tree-sitter`. An ADR must exist before implementation begins.
-- **Principle #2:** "Skills are primarily markdown — companion code allowed but must not be required" — Applies because `lib/repomap/` is companion code. The `/adev-repomap` skill must function in regex mode without it.
+- **Principle #2:** "Skills are primarily markdown — companion code allowed but must not be required" — Applies because `lib/repomap/` is companion code. The `/adev:repomap` skill must function in regex mode without it.
 - **Principle #3:** "Pure ESM" — Applies because all new files in `lib/repomap/` must use `.mjs` extension and ESM imports.
 
 ## Actionable Task Map

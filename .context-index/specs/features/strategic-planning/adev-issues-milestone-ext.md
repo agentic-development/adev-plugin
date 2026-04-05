@@ -1,4 +1,4 @@
-# Live Spec: adev-issues Milestone Extension
+# Live Spec: adev:issues Milestone Extension
 
 <!-- Live Spec within the strategic-planning charter.
      This defines a specific behavioral contract that drives implementation and testing.
@@ -19,7 +19,7 @@ updated: 2026-04-05
 
 ### Preconditions
 
-- `skills/adev-issues/SKILL.md` exists
+- `skills/issues/SKILL.md` exists
 - Issue model supports `milestone` field on Epic (spec: issue-model-milestone)
 
 ### Behaviors

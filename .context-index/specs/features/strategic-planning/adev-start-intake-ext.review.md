@@ -1,7 +1,7 @@
-# Architecture Review: adev-start-intake-ext
+# Architecture Review: adev:start-intake-ext
 
 > **Date:** 2026-04-05
-> **Spec:** .context-index/specs/features/strategic-planning/adev-start-intake-ext.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev:start-intake-ext.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

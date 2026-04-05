@@ -1,19 +1,19 @@
-# Plan: adev-start Intake Extension
+# Plan: adev:start Intake Extension
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev-start-intake-ext.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:start-intake-ext.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
 ## Overview
 
-Extend the existing `skills/adev-start/SKILL.md` to add an `--intake` mode for triaging incoming work requests into classified issues on the issue board. This adds `--intake` as a new argument with optional `--file` sub-flag for batch processing, a classification table for categorizing requests, and processing steps that match requests to existing epics and milestones. All changes are markdown-only — no companion code is needed.
+Extend the existing `skills/start/SKILL.md` to add an `--intake` mode for triaging incoming work requests into classified issues on the issue board. This adds `--intake` as a new argument with optional `--file` sub-flag for batch processing, a classification table for categorizing requests, and processing steps that match requests to existing epics and milestones. All changes are markdown-only — no companion code is needed.
 
 ## Tasks
 
 ### Task 1: Add `--intake` argument and classification table
-- **Files:** `skills/adev-start/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-start-intake.test.mjs` (create)
+- **Files:** `skills/start/SKILL.md` (modify)
+- **Tests:** `tests/skills/start-intake.test.mjs` (create)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Update the Arguments section and add intake classification logic to SKILL.md:
@@ -34,8 +34,8 @@ Extend the existing `skills/adev-start/SKILL.md` to add an `--intake` mode for t
   - SKILL.md contains file size validation (100KB limit)
 
 ### Task 2: Add intake processing steps
-- **Files:** `skills/adev-start/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-start-intake.test.mjs` (modify)
+- **Files:** `skills/start/SKILL.md` (modify)
+- **Tests:** `tests/skills/start-intake.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Add a new process section for intake mode after the existing Step 5:
@@ -57,8 +57,8 @@ Extend the existing `skills/adev-start/SKILL.md` to add an `--intake` mode for t
   - SKILL.md describes user confirmation before issue creation
 
 ### Task 3: Add batch file mode
-- **Files:** `skills/adev-start/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-start-intake.test.mjs` (modify)
+- **Files:** `skills/start/SKILL.md` (modify)
+- **Tests:** `tests/skills/start-intake.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Extend the intake processing section to support batch file processing:
@@ -88,33 +88,33 @@ Extend the existing `skills/adev-start/SKILL.md` to add an `--intake` mode for t
 ## File Structure
 
 **Create:**
-- `tests/skills/adev-start-intake.test.mjs` — Tests verifying SKILL.md intake content
+- `tests/skills/start-intake.test.mjs` — Tests verifying SKILL.md intake content
 
 **Modify:**
-- `skills/adev-start/SKILL.md` — Add --intake argument, classification table, processing steps, and batch file mode
+- `skills/start/SKILL.md` — Add --intake argument, classification table, processing steps, and batch file mode
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-start-intake-ext.md` — Behavioral contract
-- `.context-index/specs/features/strategic-planning/adev-start-intake-ext.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
-- `skills/adev-issues/SKILL.md` — Issue creation patterns (create, createEpic)
+- `.context-index/specs/features/strategic-planning/adev:start-intake-ext.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:start-intake-ext.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
+- `skills/issues/SKILL.md` — Issue creation patterns (create, createEpic)
 - `lib/issues/registry.mjs` — Issue model API reference
-- `tests/skills/adev-assess.test.mjs` — Test pattern reference for SKILL.md tests
+- `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `adev-start-intake-ext.md` (Behaviors 1-2, 4-5)
-- Review: `adev-start-intake-ext.review.md` (SA-1 — epic matching, SA-2 — file format, SEC-1 — file validation)
+- Spec: `adev:start-intake-ext.md` (Behaviors 1-2, 4-5)
+- Review: `adev:start-intake-ext.review.md` (SA-1 — epic matching, SA-2 — file format, SEC-1 — file validation)
 - SKILL.md: Arguments section (current flags), Step 2 classification table (pattern reference)
 
 ### Task 2 Context
-- Spec: `adev-start-intake-ext.md` (Behaviors 1-2, 4-5, 7, Error Cases)
+- Spec: `adev:start-intake-ext.md` (Behaviors 1-2, 4-5, 7, Error Cases)
 - SKILL.md: Step 2 (classification), Step 4 (routing — pattern for proposing and confirming)
-- `skills/adev-issues/SKILL.md`: Create Issue section (adapter call pattern)
+- `skills/issues/SKILL.md`: Create Issue section (adapter call pattern)
 
 ### Task 3 Context
-- Spec: `adev-start-intake-ext.md` (Behaviors 3, 6, Error Cases)
-- Review: `adev-start-intake-ext.review.md` (SA-2 — file format pinning)
+- Spec: `adev:start-intake-ext.md` (Behaviors 3, 6, Error Cases)
+- Review: `adev:start-intake-ext.review.md` (SA-2 — file format pinning)
 - SKILL.md: Intake processing steps from Task 2 (extends the same section)
 
 ## Parallelization
