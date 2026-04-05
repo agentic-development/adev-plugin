@@ -1,7 +1,7 @@
-# Architecture Review: adev-issues-milestone-ext
+# Architecture Review: adev:issues-milestone-ext
 
 > **Date:** 2026-04-05
-> **Spec:** .context-index/specs/features/strategic-planning/adev-issues-milestone-ext.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev:issues-milestone-ext.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS_WITH_NOTES
 
@@ -9,7 +9,7 @@
 
 **Verdict:** PASS
 
-- Minimal scope — pure SKILL.md instruction changes to the existing `/adev-issues` skill.
+- Minimal scope — pure SKILL.md instruction changes to the existing `/adev:issues` skill.
 - No new modules or files required beyond skill markdown edits.
 
 ## Security Reviewer

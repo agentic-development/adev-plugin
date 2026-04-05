@@ -1,4 +1,4 @@
-# Live Spec: adev-roadmap Skill
+# Live Spec: adev:roadmap Skill
 
 <!-- Live Spec within the strategic-planning charter.
      This defines a specific behavioral contract that drives implementation and testing.
@@ -20,7 +20,7 @@ updated: 2026-04-05
 ### Preconditions
 
 - `.context-index/` exists with `constitution.md`, `manifest.yaml`, and `specs/product.md`
-- `product.md` contains a Milestones section (written by `/adev-vision`)
+- `product.md` contains a Milestones section (written by `/adev:vision`)
 - At least one feature charter exists
 
 ### Behaviors
@@ -33,7 +33,7 @@ updated: 2026-04-05
 6. **When** the roadmap is complete **then** it is saved to `.context-index/specs/roadmap/<milestone-slug>.md` (or `full-roadmap.md` for `--all`)
 7. **When** writing the roadmap **then** each milestone section includes: features (with charter references), dependency graph (text-based), implementation order (topologically sorted), risk assessment (high/medium/low per feature), and suggested parallelization opportunities
 8. **When** cross-feature dependencies are identified **then** they are recorded in the roadmap document's dependency graph section (text-based DAG). Epic-level dependencies are not stored on the issue board since `addDependency()` operates on issues, not epics — the roadmap document is the source of truth for cross-feature ordering
-9. **When** a charter referenced by a milestone has no specs yet **then** the roadmap flags it as "specs needed" and suggests invoking `/adev-specify`
+9. **When** a charter referenced by a milestone has no specs yet **then** the roadmap flags it as "specs needed" and suggests invoking `/adev:specify`
 10. **When** a circular dependency is detected **then** the skill reports the cycle and asks the user to resolve it before proceeding
 
 ### Postconditions
@@ -47,7 +47,7 @@ updated: 2026-04-05
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| product.md missing Milestones section | Print "Run `/adev-vision` first to define milestones" and stop | N/A |
+| product.md missing Milestones section | Print "Run `/adev:vision` first to define milestones" and stop | N/A |
 | No feature charters exist | Print warning, create minimal roadmap with only milestone structure | N/A |
 | `--milestone <name>` but milestone doesn't exist | Print available milestones and ask user to choose | N/A |
 | Circular dependency detected | Report the cycle, ask user to resolve | N/A |

@@ -1,4 +1,4 @@
-# Live Spec: adev-research Skill
+# Live Spec: adev:research Skill
 
 <!-- Live Spec within the strategic-planning charter.
      This defines a specific behavioral contract that drives implementation and testing.
@@ -44,7 +44,7 @@ updated: 2026-04-05
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| `.context-index/` missing | Print "Run `/adev-init` first" and stop | N/A |
+| `.context-index/` missing | Print "Run `/adev:init` first" and stop | N/A |
 | WebSearch unavailable | Print warning, skip web sources, continue with other sources | N/A |
 | GitHub MCP unavailable | Print warning, skip GitHub sources, continue with other sources | N/A |
 | No sources produce results | Create artifact with empty findings section and a note | N/A |

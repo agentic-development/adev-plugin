@@ -52,7 +52,7 @@ source-manifest:
 |-----------|-------------------|------------|
 | Session tracking file missing | Hook exits 0, no trailers added | — (graceful) |
 | Session tracking file malformed | Hook exits 0, no trailers added, logs warning to stderr | — (graceful) |
-| `prepare-commit-msg` hook not installed | No trailers injected (silent — user may not have run `/adev-init`) | — (not installed) |
+| `prepare-commit-msg` hook not installed | No trailers injected (silent — user may not have run `/adev:init`) | — (not installed) |
 | Commit message file unwritable | Hook exits 0, logs warning — never blocks a commit | — (graceful) |
 
 ## System Constitution Reference

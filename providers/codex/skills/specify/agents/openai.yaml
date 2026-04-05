@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Specify"
+  short_description: "Write a live spec from a charter"
+  default_prompt: "Use $adev:specify to author a live spec for this feature or change."

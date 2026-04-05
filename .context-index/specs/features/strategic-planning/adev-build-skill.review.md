@@ -1,7 +1,7 @@
-# Architecture Review: adev-build-skill
+# Architecture Review: adev:build-skill
 
 > **Date:** 2026-04-05
-> **Spec:** .context-index/specs/features/strategic-planning/adev-build-skill.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev:build-skill.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

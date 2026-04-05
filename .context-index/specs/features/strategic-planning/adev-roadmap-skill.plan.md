@@ -1,24 +1,24 @@
-# Plan: adev-roadmap Skill
+# Plan: adev:roadmap Skill
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev-roadmap-skill.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:roadmap-skill.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
 ## Overview
 
-Create the `/adev-roadmap` skill as a markdown-based SKILL.md that analyzes product milestones, feature charters, and spec dependencies to produce a structured roadmap document with dependency graphs, topologically sorted implementation order, risk assessment, and parallelization opportunities. The roadmap is saved to `.context-index/specs/roadmap/`. No companion code is needed — this is purely markdown instructions.
+Create the `/adev:roadmap` skill as a markdown-based SKILL.md that analyzes product milestones, feature charters, and spec dependencies to produce a structured roadmap document with dependency graphs, topologically sorted implementation order, risk assessment, and parallelization opportunities. The roadmap is saved to `.context-index/specs/roadmap/`. No companion code is needed — this is purely markdown instructions.
 
 ## Tasks
 
 ### Task 1: Create SKILL.md with dependency analysis, critical path, and risk assessment
-- **Files:** `skills/adev-roadmap/SKILL.md` (create)
-- **Tests:** `tests/skills/adev-roadmap.test.mjs` (create)
+- **Files:** `skills/roadmap/SKILL.md` (create)
+- **Tests:** `tests/skills/roadmap.test.mjs` (create)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Create the full skill definition with all analysis capabilities.
 
-  1. Add YAML frontmatter with `name: adev-roadmap`, `description`, `arguments` list.
+  1. Add YAML frontmatter with `name: adev:roadmap`, `description`, `arguments` list.
   2. Define Arguments section:
      - No required arguments (default: full roadmap across all milestones)
      - `--milestone <name>` — produce roadmap for a single milestone
@@ -33,7 +33,7 @@ Create the `/adev-roadmap` skill as a markdown-based SKILL.md that analyzes prod
      - Step 7: Topological sort — produce implementation order respecting all dependencies
      - Step 8: Risk assessment — assign high/medium/low risk per feature based on: dependency count, spec completeness, complexity signals from charter
      - Step 9: Identify parallelization opportunities — features with no mutual dependencies that can be worked on simultaneously
-     - Step 10: Flag charters without specs as "specs needed" and suggest `/adev-specify`
+     - Step 10: Flag charters without specs as "specs needed" and suggest `/adev:specify`
      - Step 11: Write roadmap document to `.context-index/specs/roadmap/<milestone-slug>.md` (or `full-roadmap.md` for `--all`/default)
      - Step 12: Update epics with milestone assignments if any are missing (guard: check `tasks.backend` in manifest)
      - Step 13: Report summary — feature count, critical path length, risk distribution, parallelization groups
@@ -46,8 +46,8 @@ Create the `/adev-roadmap` skill as a markdown-based SKILL.md that analyzes prod
      - Graceful handling when no charters exist (minimal roadmap with milestone structure only)
 
   **Test cases:**
-  - `skills/adev-roadmap/SKILL.md` exists
-  - SKILL.md contains `name: adev-roadmap` in frontmatter
+  - `skills/roadmap/SKILL.md` exists
+  - SKILL.md contains `name: adev:roadmap` in frontmatter
   - SKILL.md contains `--milestone` flag
   - SKILL.md contains `--all` flag
   - SKILL.md contains dependency graph instructions
@@ -61,8 +61,8 @@ Create the `/adev-roadmap` skill as a markdown-based SKILL.md that analyzes prod
   - SKILL.md references `product.md` milestones as input
 
 ### Task 2: Define roadmap output format and create directory convention
-- **Files:** `skills/adev-roadmap/SKILL.md` (modify — ensure output format section is complete)
-- **Tests:** `tests/skills/adev-roadmap.test.mjs` (modify)
+- **Files:** `skills/roadmap/SKILL.md` (modify — ensure output format section is complete)
+- **Tests:** `tests/skills/roadmap.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Finalize the roadmap output format within SKILL.md and document the directory convention. Address review note SA-2 about context routing.
@@ -86,25 +86,25 @@ Create the `/adev-roadmap` skill as a markdown-based SKILL.md that analyzes prod
 ## File Structure
 
 **Create:**
-- `skills/adev-roadmap/SKILL.md` — Skill definition with dependency analysis, critical path, risk assessment
-- `tests/skills/adev-roadmap.test.mjs` — Tests verifying skill content and structure
+- `skills/roadmap/SKILL.md` — Skill definition with dependency analysis, critical path, risk assessment
+- `tests/skills/roadmap.test.mjs` — Tests verifying skill content and structure
 
 **Modify:**
 - None
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-roadmap-skill.md` — Behavioral contract
-- `.context-index/specs/features/strategic-planning/adev-roadmap-skill.review.md` — Review notes (SA-1, SA-2)
-- `.context-index/specs/features/strategic-planning/adev-vision-skill.md` — Vision spec (defines Milestones section that roadmap reads)
-- `skills/adev-assess/SKILL.md` — Pattern reference for skill file structure
-- `tests/skills/adev-assess.test.mjs` — Test pattern reference for SKILL.md tests
+- `.context-index/specs/features/strategic-planning/adev:roadmap-skill.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:roadmap-skill.review.md` — Review notes (SA-1, SA-2)
+- `.context-index/specs/features/strategic-planning/adev:vision-skill.md` — Vision spec (defines Milestones section that roadmap reads)
+- `skills/assess/SKILL.md` — Pattern reference for skill file structure
+- `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
 ## Context Packets
 
 ### Task 1 Context
 - Spec: All Behaviors (1-10), Error Cases, Postconditions
 - Review: SA-1 (dependency data in roadmap doc, not issue model), SA-2 (context routing)
-- `skills/adev-assess/SKILL.md` — Structural pattern for skill frontmatter and process sections
+- `skills/assess/SKILL.md` — Structural pattern for skill frontmatter and process sections
 - Vision spec: Milestones section format (input to roadmap)
 
 ### Task 2 Context

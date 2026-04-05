@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Hygiene"
-  short_description: "Audit context drift and staleness"
-  default_prompt: "Use $adev-hygiene to audit this repo for stale or incomplete adev context."

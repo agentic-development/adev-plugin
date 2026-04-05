@@ -1,13 +1,13 @@
 # Scenario: Assess a dbt project
 
 ## Skill
-`/adev-assess --domain data`
+`/adev:assess --domain data`
 
 ## Target Project
-`tests/evals/adev-data-eval` — E-commerce dbt + DuckDB project
+`tests/evals/adev:data-eval` — E-commerce dbt + DuckDB project
 
 ## Prompt
-Run `/adev-assess --domain data` against this project. The project contains:
+Run `/adev:assess --domain data` against this project. The project contains:
 - dbt project with staging/intermediate/marts model layers
 - Airflow DAGs for orchestration
 - Great Expectations expectation suites

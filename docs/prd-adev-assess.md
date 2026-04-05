@@ -1,4 +1,4 @@
-# PRD: `/adev-assess` — Codebase Readiness Assessment
+# PRD: `/adev:assess` — Codebase Readiness Assessment
 
 **Date:** 2026-03-22
 **Author:** dpavancini
@@ -9,8 +9,8 @@
 
 Teams considering agentic development have no way to evaluate whether their codebase is ready. Common failure modes:
 
-1. **Adopting adev on a codebase with no tests.** Agents cannot validate their work. `/adev-validate` check 1 (quality gates) fails immediately. The team blames the tooling.
-2. **Adopting adev on a monolithic codebase with no module boundaries.** `/adev-route` cannot score blast radius because everything is coupled. Every task routes as human-only.
+1. **Adopting adev on a codebase with no tests.** Agents cannot validate their work. `/adev:validate` check 1 (quality gates) fails immediately. The team blames the tooling.
+2. **Adopting adev on a monolithic codebase with no module boundaries.** `/adev:route` cannot score blast radius because everything is coupled. Every task routes as human-only.
 3. **Overestimating readiness.** A team with "good test coverage" discovers their tests are all integration tests that take 10 minutes to run. Agents timeout waiting for feedback.
 4. **No baseline for improvement.** After 3 months of adev adoption, there is no way to measure whether the codebase has become more agent-friendly.
 
@@ -20,7 +20,7 @@ Factory AI published an "Agent Readiness Framework" but it is proprietary and in
 
 ## Goals
 
-1. Create `/adev-assess`, a skill that evaluates codebase readiness for agentic development.
+1. Create `/adev:assess`, a skill that evaluates codebase readiness for agentic development.
 2. Produce a human-readable scorecard (markdown) and a machine-readable report (JSON).
 3. Work on any codebase, with or without `.context-index/`. If adev is already configured, assess spec coverage and constitution quality as additional dimensions.
 4. Provide a composite readiness level (1-5) that maps to what agents can realistically accomplish.
@@ -29,7 +29,7 @@ Factory AI published an "Agent Readiness Framework" but it is proprietary and in
 ## Non-Goals
 
 - Running build/test/lint commands. The skill assesses structure and configuration only. It does not execute quality gates (too slow, too noisy on unfamiliar codebases). It checks whether the commands are configured and trusts the user to confirm they pass.
-- Prescribing a full adoption plan. The scorecard informs planning; a consulting engagement or `/adev-init` does the actual setup.
+- Prescribing a full adoption plan. The scorecard informs planning; a consulting engagement or `/adev:init` does the actual setup.
 - Comparing against other projects or industry benchmarks. The score is relative to adev's own requirements, not to external standards.
 
 ## Design
@@ -153,7 +153,7 @@ These are bonus dimensions that do not affect the 1-5 level but are reported sep
 |---|---|---|---|
 | **1** | 0-20 | **Hostile** | Almost nothing. Manual preparation required before adopting adev. |
 | **2** | 21-40 | **Fragile** | Simple, well-scoped bug fixes with heavy human supervision. |
-| **3** | 41-60 | **Viable** | Assisted agent tasks. Most `/adev-route` scores land on "assisted-agent". |
+| **3** | 41-60 | **Viable** | Assisted agent tasks. Most `/adev:route` scores land on "assisted-agent". |
 | **4** | 61-80 | **Ready** | Full adev pipeline works. Mix of auto-agent and assisted-agent routing. |
 | **5** | 81-100 | **Optimized** | Most tasks route as auto-agent. Agents operate with high autonomy. |
 
@@ -166,7 +166,7 @@ These are bonus dimensions that do not affect the 1-5 level but are reported sep
 
 **Project:** my-app
 **Date:** 2026-03-22
-**Assessed by:** /adev-assess v0.6.0
+**Assessed by:** /adev:assess v0.6.0
 
 ## Readiness Level: 3 — Viable (Score: 58/100)
 
@@ -194,7 +194,7 @@ improve before full autonomous operation: test coverage and type safety.
 
 2. **Add a typecheck script** (+5 points → score 67, Level 4).
    Add `"typecheck": "tsc --noEmit"` to package.json scripts.
-   This enables `/adev-validate` quality gate for type checking.
+   This enables `/adev:validate` quality gate for type checking.
 
 3. **Write more tests** (up to +6 points).
    Current test-to-source ratio is 0.15 (target: 0.3+).
@@ -346,7 +346,7 @@ Create minimal fixture projects:
 
 ## Rollout
 
-Single phase (v0.6.0). No dependencies on tree-sitter repomap. Can ship in parallel with `/adev-document`.
+Single phase (v0.6.0). No dependencies on tree-sitter repomap. Can ship in parallel with `/adev:document`.
 
 ## Success Metrics
 

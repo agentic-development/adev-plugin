@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Route"
+  short_description: "Score task routing complexity"
+  default_prompt: "Use $adev:route to score this task and recommend the right execution mode."

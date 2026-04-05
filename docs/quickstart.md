@@ -15,7 +15,7 @@ Select your AI coding assistant (Claude Code is the default). The CLI scaffolds 
 Open Claude Code in your project directory and run:
 
 ```
-/adev-init
+/adev:init
 ```
 
 The interactive wizard walks you through 10 layers:
@@ -29,7 +29,7 @@ For existing codebases, use `--brownfield` to detect your stack automatically.
 ## 3. Brainstorm a feature
 
 ```
-/adev-brainstorm
+/adev:brainstorm
 ```
 
 Describe your feature idea. The skill explores it interactively and produces a **Feature Charter** — a structured document defining scope, capabilities, and quality attributes. The charter lives in `.context-index/specs/features/<name>/charter.md`.
@@ -37,7 +37,7 @@ Describe your feature idea. The skill explores it interactively and produces a *
 ## 4. Write a spec
 
 ```
-/adev-specify
+/adev:specify
 ```
 
 Within a charter's scope, write a **Live Spec** — a behavioral contract defining preconditions, behaviors, postconditions, and error cases. Each behavior maps to one or more test cases.
@@ -45,7 +45,7 @@ Within a charter's scope, write a **Live Spec** — a behavioral contract defini
 ## 5. Review the spec
 
 ```
-/adev-review-specs
+/adev:review-specs
 ```
 
 Three parallel specialist subagents review your spec:
@@ -58,7 +58,7 @@ The spec must pass review before planning can begin.
 ## 6. Plan the work
 
 ```
-/adev-plan
+/adev:plan
 ```
 
 The spec is decomposed into ordered implementation tasks with:
@@ -70,7 +70,7 @@ The spec is decomposed into ordered implementation tasks with:
 ## 7. Implement
 
 ```
-/adev-implement
+/adev:implement
 ```
 
 Each task is executed by a fresh subagent following TDD:
@@ -83,7 +83,7 @@ Two-stage review (spec compliance + code quality) runs after each task.
 ## 8. Validate
 
 ```
-/adev-validate
+/adev:validate
 ```
 
 11 ordered checks verify the implementation:
@@ -97,7 +97,7 @@ If all checks pass, the spec is promoted to `validated`.
 
 ## What's next?
 
-- Run `/adev-start` any time — it classifies your work and routes to the right skill
-- Use `/adev-issues` to track bugs and tasks
-- Use `/adev-status` to see project-wide progress
+- Run `/adev:start` any time — it classifies your work and routes to the right skill
+- Use `/adev:issues` to track bugs and tasks
+- Use `/adev:status` to see project-wide progress
 - See [docs/skills.md](skills.md) for the full skill reference

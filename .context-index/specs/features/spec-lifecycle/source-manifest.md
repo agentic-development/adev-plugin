@@ -27,7 +27,7 @@ source-manifest:
 
 ### Behaviors
 
-1. **When** `/adev-implement` completes all tasks for a spec and tests pass (GREEN) **then** it reads the plan's file list, computes a SHA-256 hash of the concatenated sorted file contents, and stamps a `source-manifest` block in the spec's frontmatter.
+1. **When** `/adev:implement` completes all tasks for a spec and tests pass (GREEN) **then** it reads the plan's file list, computes a SHA-256 hash of the concatenated sorted file contents, and stamps a `source-manifest` block in the spec's frontmatter.
 
 2. **When** `computeManifest(filePaths)` is called **then** it validates that all paths resolve inside the project root (rejects any path resolving outside with `PATH_OUTSIDE_ROOT`), reads each file, computes a SHA-256 hash per file, sorts the per-file hashes alphabetically, hashes the sorted hash list to produce the final SHA, and returns `{ sha: <first 7 chars>, files: [<sorted paths>], computedAt: <ISO timestamp> }`. The per-file hashing avoids content-boundary collision risks from naive concatenation. The truncated SHA is for readability only, not cryptographic integrity.
 
@@ -35,11 +35,11 @@ source-manifest:
 
 4. **When** `verifyManifest` is called and a file in `manifest.files` no longer exists **then** it returns `{ matches: false, currentSha: null, missingFiles: [<paths>] }`.
 
-5. **When** `/adev-validate` runs on a spec with a `source-manifest` **then** it calls `verifyManifest` and reports whether code matches the spec's last known state.
+5. **When** `/adev:validate` runs on a spec with a `source-manifest` **then** it calls `verifyManifest` and reports whether code matches the spec's last known state.
 
-6. **When** `/adev-status` reports on a spec with a `source-manifest` **then** it calls `verifyManifest` and displays match/drift status.
+6. **When** `/adev:status` reports on a spec with a `source-manifest` **then** it calls `verifyManifest` and displays match/drift status.
 
-7. **When** a spec has no `source-manifest` block **then** `/adev-status` and `/adev-validate` report "no source manifest — spec may not be implemented" rather than failing.
+7. **When** a spec has no `source-manifest` block **then** `/adev:status` and `/adev:validate` report "no source manifest — spec may not be implemented" rather than failing.
 
 ### Postconditions
 
@@ -67,8 +67,8 @@ source-manifest:
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
 | Create `lib/source-manifest.mjs` | Implement `computeManifest` and `verifyManifest` functions | medium |
-| Update `adev-implement/SKILL.md` | Add source manifest computation after GREEN phase | small |
-| Update `adev-validate/SKILL.md` | Add source manifest verification step | small |
+| Update `adev:implement/SKILL.md` | Add source manifest computation after GREEN phase | small |
+| Update `adev:validate/SKILL.md` | Add source manifest verification step | small |
 | Write tests for `lib/source-manifest.mjs` | Test compute, verify, missing files, empty list, determinism | medium |
 
 ## Acceptance Criteria
@@ -77,8 +77,8 @@ source-manifest:
 - [ ] `verifyManifest(manifest)` returns `{ matches, currentSha }` comparing current vs stored SHA
 - [ ] Missing files during verify return `{ matches: false, missingFiles: [...] }`
 - [ ] Same file contents always produce the same SHA regardless of call order
-- [ ] `/adev-implement` stamps `source-manifest` in spec frontmatter after GREEN
-- [ ] `/adev-validate` checks source manifest and reports match/drift
+- [ ] `/adev:implement` stamps `source-manifest` in spec frontmatter after GREEN
+- [ ] `/adev:validate` checks source manifest and reports match/drift
 - [ ] `lib/source-manifest.mjs` uses only Node.js built-ins
 - [ ] All quality gates pass (tests, lint, typecheck)
 - [ ] No constitutional violations introduced

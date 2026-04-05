@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Init"
+  short_description: "Initialize the adev context index"
+  default_prompt: "Use $adev:init to set up or diagnose the .context-index for this project."

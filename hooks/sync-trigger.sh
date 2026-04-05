@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # adev PostToolUse hook: Sync Trigger
 # Fires on: Edit of .context-index/constitution.md (after successful lint)
-# Triggers /adev-sync to update agent files.
+# Triggers /adev:sync to update agent files.
 # Non-blocking: failures are warnings only.
 
 set -uo pipefail
@@ -21,7 +21,7 @@ fi
 cat <<JSONEOF
 {
   "hookSpecificOutput": {
-    "additionalContext": "[adev] Constitution was updated. Run /adev-sync to propagate changes to CLAUDE.md and other agent files, or it will be done automatically on next session start."
+    "additionalContext": "[adev] Constitution was updated. Run /adev:sync to propagate changes to CLAUDE.md and other agent files, or it will be done automatically on next session start."
   }
 }
 JSONEOF

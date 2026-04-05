@@ -1,4 +1,4 @@
-# Live Spec: adev-vision Skill
+# Live Spec: adev:vision Skill
 
 <!-- Live Spec within the strategic-planning charter.
      This defines a specific behavioral contract that drives implementation and testing.
@@ -33,7 +33,7 @@ updated: 2026-04-05
 6. **When** `--refresh` is specified **then** the skill skips the interview and instead reviews the current milestones against the latest charters, proposing additions, removals, or reorderings
 7. **When** `--milestone <name>` is specified **then** the skill focuses on defining or refining a single milestone rather than the full vision
 8. **When** the vision implies new architectural constraints not in the constitution **then** the skill proposes amendments as a clearly marked section in the output and warns: "These amendments require human approval per Architecture Boundaries"
-9. **When** the vision references charters that don't exist yet **then** the skill lists them as "Charters to Create" and suggests invoking `/adev-brainstorm` for each
+9. **When** the vision references charters that don't exist yet **then** the skill lists them as "Charters to Create" and suggests invoking `/adev:brainstorm` for each
 
 ### Postconditions
 
@@ -46,7 +46,7 @@ updated: 2026-04-05
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| `.context-index/` missing | Print "Run `/adev-init` first" and stop | N/A |
+| `.context-index/` missing | Print "Run `/adev:init` first" and stop | N/A |
 | `product.md` missing | Create a minimal product.md from constitution Identity section, then proceed | N/A |
 | `--refresh` but no Milestones section | Print warning, fall back to full interview mode | N/A |
 | `--milestone <name>` but milestone doesn't exist | Create it as a new milestone | N/A |

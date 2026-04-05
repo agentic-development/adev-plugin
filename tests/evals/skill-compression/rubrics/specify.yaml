@@ -1,0 +1,76 @@
+# Rubric: adev:specify skill evaluation
+# Scores skill output on required elements (binary) and quality dimensions (1-5)
+
+skill: adev:specify
+scenario: specify-scenario
+
+# Required elements — binary pass/fail
+# Each element checked by regex/string match against the output
+required_elements:
+  - id: charter_resolution
+    description: "Resolved the correct parent charter"
+    match_pattern: "charter.*cli|cli.*charter"
+
+  - id: context_loading
+    description: "Loaded constitution and platform context"
+    match_pattern: "constitution|platform-context"
+
+  - id: capability_identification
+    description: "Presented capability map from charter"
+    match_pattern: "capabilit|Which.*capability|Which.*spec"
+
+  - id: behavioral_contract
+    description: "Generated When...then behavior statements"
+    match_pattern: "When.*then|behavioral contract"
+
+  - id: error_cases
+    description: "Included error case table or list"
+    match_pattern: "error case|Error Cases|error.*scenario"
+
+  - id: constitution_reference
+    description: "Referenced relevant constitution principles"
+    match_pattern: "constitution.*principle|principle.*constitution|Non-Negotiable"
+
+  - id: acceptance_criteria
+    description: "Generated testable acceptance criteria"
+    match_pattern: "acceptance criteria|Acceptance Criteria"
+
+  - id: frontmatter
+    description: "Generated spec frontmatter with required fields"
+    match_pattern: "charter:|status: draft|created:"
+
+  - id: file_path
+    description: "Specified correct output file path"
+    match_pattern: "\\.context-index/specs/features/"
+
+  - id: summary
+    description: "Produced summary with next steps"
+    match_pattern: "Next steps|/adev:review-specs|/adev:specify"
+
+# Quality dimensions — scored 1-5 by LLM judge
+quality_dimensions:
+  - id: completeness
+    description: "All sections of a Live Spec are addressed (behaviors, errors, preconditions, postconditions, acceptance criteria)"
+    weight: 2
+
+  - id: spec_fidelity
+    description: "Behaviors are specific, testable, and relevant to the chosen capability"
+    weight: 2
+
+  - id: constitution_compliance
+    description: "Spec respects constitutional principles and flags conflicts"
+    weight: 1.5
+
+  - id: interactive_flow
+    description: "Guides the user through focused questions rather than dumping a blank template"
+    weight: 1
+
+  - id: scope_discipline
+    description: "Stays within charter boundaries, warns about out-of-scope requests"
+    weight: 1
+
+# Scoring formula
+scoring:
+  required_element_weight: 50    # 50% of total score
+  quality_dimension_weight: 50   # 50% of total score
+  # Total = (elements_passed / total_elements) * 50 + (weighted_quality_avg / 5) * 50

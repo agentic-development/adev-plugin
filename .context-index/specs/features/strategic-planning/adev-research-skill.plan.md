@@ -1,19 +1,19 @@
-# Plan: adev-research Skill
+# Plan: adev:research Skill
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev-research-skill.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:research-skill.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
 ## Overview
 
-Create the `/adev-research` skill as a markdown-based SKILL.md with a companion research output template. The skill enables structured research with internal codebase search, web search, and GitHub code search as sources, producing organized research artifacts at `.context-index/research/<slug>.md`. No companion code is needed — this is purely markdown instructions and a template.
+Create the `/adev:research` skill as a markdown-based SKILL.md with a companion research output template. The skill enables structured research with internal codebase search, web search, and GitHub code search as sources, producing organized research artifacts at `.context-index/research/<slug>.md`. No companion code is needed — this is purely markdown instructions and a template.
 
 ## Tasks
 
 ### Task 1: Create research output template
 - **Files:** `templates/research-template.md` (create)
-- **Tests:** `tests/skills/adev-research.test.mjs` (create)
+- **Tests:** `tests/skills/research.test.mjs` (create)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Create the research artifact template that the skill will use when generating output. The template provides the standard structure for all research artifacts.
@@ -30,13 +30,13 @@ Create the `/adev-research` skill as a markdown-based SKILL.md with a companion 
   - Template contains all required sections: Summary, Findings, Code Examples, Recommendations, References
 
 ### Task 2: Create SKILL.md with full skill definition
-- **Files:** `skills/adev-research/SKILL.md` (create)
-- **Tests:** `tests/skills/adev-research.test.mjs` (modify)
+- **Files:** `skills/research/SKILL.md` (create)
+- **Tests:** `tests/skills/research.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Create the skill definition file with all arguments, process steps, and key principles.
 
-  1. Add YAML frontmatter with `name: adev-research`, `description`, `arguments` list.
+  1. Add YAML frontmatter with `name: adev:research`, `description`, `arguments` list.
   2. Define Arguments section with all flags:
      - `<topic>` (required) — free-text research topic
      - `--web` — use web search as a source
@@ -59,8 +59,8 @@ Create the `/adev-research` skill as a markdown-based SKILL.md with a companion 
   6. Define Output section describing the artifact structure and referencing the template.
 
   **Test cases:**
-  - `skills/adev-research/SKILL.md` exists
-  - SKILL.md contains `name: adev-research` in frontmatter
+  - `skills/research/SKILL.md` exists
+  - SKILL.md contains `name: adev:research` in frontmatter
   - SKILL.md contains all argument flags: `--web`, `--github`, `--internal`, `--compare`, `--issue`
   - SKILL.md contains graceful degradation instructions for unavailable tools
   - SKILL.md references `templates/research-template.md`
@@ -69,7 +69,7 @@ Create the `/adev-research` skill as a markdown-based SKILL.md with a companion 
 
 ### Task 3: Update context routing in constitution
 - **Files:** `.context-index/constitution.md` (modify)
-- **Tests:** `tests/skills/adev-research.test.mjs` (modify)
+- **Tests:** `tests/skills/research.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Add the `.context-index/research/` directory to the Context Routing table in the constitution so that Claude and other skills can discover research artifacts. Address review note CON-1.
@@ -84,18 +84,18 @@ Create the `/adev-research` skill as a markdown-based SKILL.md with a companion 
 ## File Structure
 
 **Create:**
-- `skills/adev-research/SKILL.md` — Skill definition with arguments, process, principles
+- `skills/research/SKILL.md` — Skill definition with arguments, process, principles
 - `templates/research-template.md` — Research artifact output template
-- `tests/skills/adev-research.test.mjs` — Tests verifying skill and template content
+- `tests/skills/research.test.mjs` — Tests verifying skill and template content
 
 **Modify:**
 - `.context-index/constitution.md` — Add research directory to Context Routing table
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-research-skill.md` — Behavioral contract
-- `.context-index/specs/features/strategic-planning/adev-research-skill.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
-- `skills/adev-assess/SKILL.md` — Pattern reference for skill file structure
-- `tests/skills/adev-assess.test.mjs` — Test pattern reference for SKILL.md tests
+- `.context-index/specs/features/strategic-planning/adev:research-skill.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:research-skill.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
+- `skills/assess/SKILL.md` — Pattern reference for skill file structure
+- `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
 ## Context Packets
 
@@ -106,7 +106,7 @@ Create the `/adev-research` skill as a markdown-based SKILL.md with a companion 
 ### Task 2 Context
 - Spec: All Behaviors (1-9), Error Cases, Postconditions
 - Review: SA-1 (slug convention), SA-2 (default source behavior), SEC-1 (github repo validation)
-- `skills/adev-assess/SKILL.md` — Structural pattern for skill frontmatter and sections
+- `skills/assess/SKILL.md` — Structural pattern for skill frontmatter and sections
 
 ### Task 3 Context
 - Review: CON-1 (context routing update)

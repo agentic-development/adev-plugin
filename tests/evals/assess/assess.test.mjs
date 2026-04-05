@@ -345,7 +345,7 @@ function runAssessment(projectPath) {
   return { totalScore, level, dimensions: results };
 }
 
-describe('adev-assess evaluation', () => {
+describe('adev:assess evaluation', () => {
   describe('Test Infrastructure dimension', () => {
     it('scores low for project with no tests', () => {
       const result = assessDimension(SAMPLE_PROJECTS.l1, 'Test Infrastructure');

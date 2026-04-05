@@ -26,7 +26,7 @@ No findings. Local CRUD operations with no shell-out.
 
 **Verdict:** PASS_WITH_NOTES
 
-- CON-2 (warning): `epicId` (camelCase in JS API) vs. `epic-id` (kebab-case in CLI args) needs explicit mapping. Advisory — the mapping is a presentation concern in the `/adev-issues` skill.
+- CON-2 (warning): `epicId` (camelCase in JS API) vs. `epic-id` (kebab-case in CLI args) needs explicit mapping. Advisory — the mapping is a presentation concern in the `/adev:issues` skill.
 
 ---
 

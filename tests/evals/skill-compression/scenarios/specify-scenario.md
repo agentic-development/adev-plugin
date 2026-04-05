@@ -1,6 +1,6 @@
-# Test Scenario: adev-specify (Standard Mode)
+# Test Scenario: adev:specify (Standard Mode)
 
-You are a Claude Code agent running the adev-specify skill. Execute the skill for the test case below.
+You are a Claude Code agent running the adev:specify skill. Execute the skill for the test case below.
 
 ## Test Case
 
@@ -40,7 +40,7 @@ The project has these files available:
 
 ## Instructions
 
-Execute the adev-specify skill completely. Show:
+Execute the adev:specify skill completely. Show:
 1. How you would resolve the charter
 2. Context you would load
 3. The capability identification step

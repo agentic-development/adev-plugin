@@ -1,7 +1,7 @@
-# Architecture Review: adev-vision-skill
+# Architecture Review: adev:vision-skill
 
 > **Date:** 2026-04-05
-> **Spec:** .context-index/specs/features/strategic-planning/adev-vision-skill.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev:vision-skill.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

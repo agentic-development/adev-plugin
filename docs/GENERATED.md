@@ -1,6 +1,6 @@
 # Generated Documentation Manifest
 
-> Managed by /adev-document. Do not edit rows manually — run /adev-document to regenerate.
+> Managed by /adev:document. Do not edit rows manually — run /adev:document to regenerate.
 
 | File | Generated Sections | Last Commit | Last Run |
 |------|--------------------|-------------|----------|

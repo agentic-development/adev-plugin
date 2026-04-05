@@ -1,8 +1,8 @@
 # Rubric: data-specify — Reverse-engineer a Live Spec from fct_orders
-# Target: tests/evals/adev-data-eval/models/marts/fct_orders.sql
+# Target: tests/evals/adev:data-eval/models/marts/fct_orders.sql
 # Difficulty: HARD — must demonstrate deep understanding of the model, not surface-level description
 
-skill: adev-specify
+skill: adev:specify
 scenario: data-specify
 
 required_elements:

@@ -20,19 +20,19 @@ updated: 2026-03-28
 
 ### Behaviors
 
-1. **When** `/adev-brainstorm` creates or updates a charter **then** the Capability Map table includes a `Status` column with value `—` for each capability.
+1. **When** `/adev:brainstorm` creates or updates a charter **then** the Capability Map table includes a `Status` column with value `—` for each capability.
 
-2. **When** `/adev-specify` creates a spec for a charter capability **then** it updates that capability's Status to `specified` in the charter's Capability Map.
+2. **When** `/adev:specify` creates a spec for a charter capability **then** it updates that capability's Status to `specified` in the charter's Capability Map.
 
-3. **When** `/adev-review-specs` sets a spec to `review-passed` **then** it updates the corresponding capability's Status to `review-passed` in the charter.
+3. **When** `/adev:review-specs` sets a spec to `review-passed` **then** it updates the corresponding capability's Status to `review-passed` in the charter.
 
-4. **When** `/adev-plan` creates a plan for a spec **then** it updates the corresponding capability's Status to `planned` in the charter.
+4. **When** `/adev:plan` creates a plan for a spec **then** it updates the corresponding capability's Status to `planned` in the charter.
 
-5. **When** `/adev-implement` begins working on a spec **then** it updates the corresponding capability's Status to `implementing` in the charter.
+5. **When** `/adev:implement` begins working on a spec **then** it updates the corresponding capability's Status to `implementing` in the charter.
 
-6. **When** `/adev-implement` completes all tasks for a spec and tests pass **then** it updates the corresponding capability's Status to `implemented` in the charter.
+6. **When** `/adev:implement` completes all tasks for a spec and tests pass **then** it updates the corresponding capability's Status to `implemented` in the charter.
 
-7. **When** `/adev-validate` passes a spec **then** it updates the corresponding capability's Status to `validated` in the charter.
+7. **When** `/adev:validate` passes a spec **then** it updates the corresponding capability's Status to `validated` in the charter.
 
 8. **When** a capability's Status is updated **then** the charter's `revision` is incremented and `updated` is set to today's date.
 
@@ -56,12 +56,12 @@ updated: 2026-03-28
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Update `adev-brainstorm/SKILL.md` | Ensure Capability Map table includes Status column with `—` default | small |
-| Update `adev-specify/SKILL.md` | Add capability status update to `specified` after spec creation | small |
-| Update `adev-review-specs/SKILL.md` | Add capability status update to `review-passed` after review passes | small |
-| Update `adev-plan/SKILL.md` | Add capability status update to `planned` after plan creation | small |
-| Update `adev-implement/SKILL.md` | Add capability status updates for `implementing` and `implemented` | small |
-| Update `adev-validate/SKILL.md` | Add capability status update to `validated` after validation passes | small |
+| Update `adev:brainstorm/SKILL.md` | Ensure Capability Map table includes Status column with `—` default | small |
+| Update `adev:specify/SKILL.md` | Add capability status update to `specified` after spec creation | small |
+| Update `adev:review-specs/SKILL.md` | Add capability status update to `review-passed` after review passes | small |
+| Update `adev:plan/SKILL.md` | Add capability status update to `planned` after plan creation | small |
+| Update `adev:implement/SKILL.md` | Add capability status updates for `implementing` and `implemented` | small |
+| Update `adev:validate/SKILL.md` | Add capability status update to `validated` after validation passes | small |
 | Update charter template | Add Status column to Capability Map in `templates/charter-template.md` | small |
 
 ## Acceptance Criteria

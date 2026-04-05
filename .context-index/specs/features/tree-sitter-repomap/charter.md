@@ -18,11 +18,11 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 - File-level dependency graph from import/require statements
 - PageRank-style symbol ranking on the dependency graph
 - Language support: TypeScript/JavaScript, Python, Go, Rust, Java, Ruby
-- Prompt-based installation during `/adev-repomap` and `/adev-init`
+- Prompt-based installation during `/adev:repomap` and `/adev:init`
 - Graceful degradation: regex default, tree-sitter when available
 - Three output artifacts: `repo-map.md` (enhanced), `dependency-graph.json`, `symbol-ranks.json`
 - Output artifacts consumed by downstream skills (route, hygiene, implement, validate, recover). This charter defines the artifact format; downstream charters own their consumption logic.
-- Coordination with `/adev-init` (setup charter) to offer tree-sitter installation during project setup
+- Coordination with `/adev:init` (setup charter) to offer tree-sitter installation during project setup
 
 ### Out of Scope
 
@@ -80,14 +80,14 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 | Tree-sitter parsing | Parse source files via web-tree-sitter WASM for accurate symbol extraction | must-have | v0.5.0 | — |
 | Dependency graph construction | Build file-level import graph from AST-extracted import statements | must-have | v0.5.0 | — |
 | PageRank ranking | Compute symbol importance scores from the dependency graph | must-have | v0.5.0 | — |
-| Prompt-based installation | Offer tree-sitter install via "yes/no" prompt in `/adev-repomap` and `/adev-init` | must-have | v0.5.0 | — |
+| Prompt-based installation | Offer tree-sitter install via "yes/no" prompt in `/adev:repomap` and `/adev:init` | must-have | v0.5.0 | — |
 | Parser mode detection | Auto-detect whether tree-sitter is available, annotate outputs with parser mode | must-have | v0.5.0 | — |
 | Grammar auto-download | Download language grammar WASM files on first use based on detected languages | must-have | v0.5.0 | — |
-| Blast radius scoring (route) | Define artifact contract for `/adev-route` to consume dependency graph for transitive dependent analysis. Consumption logic owned by assessment charter. | should-have | v0.5.1 | — |
-| Context packet enrichment (implement) | Define artifact contract for `/adev-implement` to add relevant symbols and dependency context to packets. Consumption logic owned by implementation charter. | should-have | v0.5.1 | — |
-| Drift detection (hygiene) | Define artifact contract for `/adev-hygiene` to compare spec-declared interfaces against symbol index. Consumption logic owned by maintenance charter. | should-have | v0.5.1 | — |
-| Dependency integrity check (validate) | Define artifact contract for `/adev-validate` to detect new cross-module edges. Consumption logic owned by validation charter. | should-have | v0.5.1 | — |
-| Recovery diagnosis (recover) | Define artifact contract for `/adev-recover` to check packets against dependency graph. Consumption logic owned by implementation charter. | nice-to-have | v0.5.1 | — |
+| Blast radius scoring (route) | Define artifact contract for `/adev:route` to consume dependency graph for transitive dependent analysis. Consumption logic owned by assessment charter. | should-have | v0.5.1 | — |
+| Context packet enrichment (implement) | Define artifact contract for `/adev:implement` to add relevant symbols and dependency context to packets. Consumption logic owned by implementation charter. | should-have | v0.5.1 | — |
+| Drift detection (hygiene) | Define artifact contract for `/adev:hygiene` to compare spec-declared interfaces against symbol index. Consumption logic owned by maintenance charter. | should-have | v0.5.1 | — |
+| Dependency integrity check (validate) | Define artifact contract for `/adev:validate` to detect new cross-module edges. Consumption logic owned by validation charter. | should-have | v0.5.1 | — |
+| Recovery diagnosis (recover) | Define artifact contract for `/adev:recover` to check packets against dependency graph. Consumption logic owned by implementation charter. | nice-to-have | v0.5.1 | — |
 | Multi-language support | TypeScript/JS, Python, Go, Rust, Java, Ruby grammar support | should-have | v0.5.0 | — |
 | Manifest output config | Add `repomap.output` section to manifest for enabling/disabling output formats | nice-to-have | v0.5.2 | — |
 
@@ -97,10 +97,10 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 
 | Interface | Type | Description |
 |---|---|---|
-| `repo-map.md` | File artifact | Human-readable symbol table with parser mode annotation. Consumed by humans and `/adev-hygiene` |
-| `dependency-graph.json` | File artifact | File nodes + import edges with types. Only produced when tree-sitter is installed. Consumed by `/adev-route`, `/adev-validate`, `/adev-recover` |
-| `symbol-ranks.json` | File artifact | PageRank-scored symbols with kind, file, line, module. Only produced when tree-sitter is installed. Consumed by `/adev-implement`, `/adev-hygiene` |
-| `node lib/repomap/index.mjs` | CLI command (tree-sitter mode only) | Orchestrator: glob files → parse → graph → rank → output. Only called when tree-sitter is installed. In regex mode, the `/adev-repomap` skill works without any companion code. |
+| `repo-map.md` | File artifact | Human-readable symbol table with parser mode annotation. Consumed by humans and `/adev:hygiene` |
+| `dependency-graph.json` | File artifact | File nodes + import edges with types. Only produced when tree-sitter is installed. Consumed by `/adev:route`, `/adev:validate`, `/adev:recover` |
+| `symbol-ranks.json` | File artifact | PageRank-scored symbols with kind, file, line, module. Only produced when tree-sitter is installed. Consumed by `/adev:implement`, `/adev:hygiene` |
+| `node lib/repomap/index.mjs` | CLI command (tree-sitter mode only) | Orchestrator: glob files → parse → graph → rank → output. Only called when tree-sitter is installed. In regex mode, the `/adev:repomap` skill works without any companion code. |
 | `node lib/repomap/check-deps.mjs` | CLI command | Returns exit 0 if web-tree-sitter is available, exit 1 if not. Called by skills to decide parser mode |
 
 ### Consumed APIs

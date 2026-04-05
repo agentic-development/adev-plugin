@@ -11,9 +11,9 @@
 
 **Verdict:** PASS_WITH_NOTES
 
-- SA-9 (warning, resolved): Behavior 5 now references "same shared procedure as adev-plan Step 7" instead of re-specifying creation logic.
+- SA-9 (warning, resolved): Behavior 5 now references "same shared procedure as adev:plan Step 7" instead of re-specifying creation logic.
 - SA-10 (warning, resolved): Behavior 9 reframed to describe target state ("uses issue board, must not invoke TodoWrite") instead of migration path.
-- SA-11 (suggestion): Spec-to-plan-to-issues lookup chain relies on existing adev-validate mechanism. Accepted — the validate skill already resolves plan files from spec references.
+- SA-11 (suggestion): Spec-to-plan-to-issues lookup chain relies on existing adev:validate mechanism. Accepted — the validate skill already resolves plan files from spec references.
 
 ## Security Reviewer
 

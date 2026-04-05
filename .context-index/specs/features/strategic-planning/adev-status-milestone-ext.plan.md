@@ -1,19 +1,19 @@
-# Plan: adev-status Milestone Extension
+# Plan: adev:status Milestone Extension
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev-status-milestone-ext.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS
 
 ## Overview
 
-Extend the existing `skills/adev-status/SKILL.md` to add milestone progress views. This adds a `--milestone <name>` argument for a detailed single-milestone view, and augments the `--all` dashboard mode with a "Milestone Progress" aggregation section when milestones exist on epics. All changes are markdown-only — no companion code is needed.
+Extend the existing `skills/status/SKILL.md` to add milestone progress views. This adds a `--milestone <name>` argument for a detailed single-milestone view, and augments the `--all` dashboard mode with a "Milestone Progress" aggregation section when milestones exist on epics. All changes are markdown-only — no companion code is needed.
 
 ## Tasks
 
 ### Task 1: Add `--milestone` argument to Arguments section
-- **Files:** `skills/adev-status/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-status-milestone.test.mjs` (create)
+- **Files:** `skills/status/SKILL.md` (modify)
+- **Tests:** `tests/skills/status-milestone.test.mjs` (create)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Update the Arguments section of SKILL.md to include the new `--milestone` flag:
@@ -26,8 +26,8 @@ Extend the existing `skills/adev-status/SKILL.md` to add milestone progress view
   - SKILL.md contains `--milestone` at least twice (argument definition and process section)
 
 ### Task 2: Add Milestone Progress section to `--all` mode
-- **Files:** `skills/adev-status/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-status-milestone.test.mjs` (modify)
+- **Files:** `skills/status/SKILL.md` (modify)
+- **Tests:** `tests/skills/status-milestone.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Extend the `--all` mode Process section to include milestone progress reporting:
@@ -44,8 +44,8 @@ Extend the existing `skills/adev-status/SKILL.md` to add milestone progress view
   - SKILL.md describes skipping milestone section when tasks.backend is not configured
 
 ### Task 3: Add single-milestone detailed view
-- **Files:** `skills/adev-status/SKILL.md` (modify)
-- **Tests:** `tests/skills/adev-status-milestone.test.mjs` (modify)
+- **Files:** `skills/status/SKILL.md` (modify)
+- **Tests:** `tests/skills/status-milestone.test.mjs` (modify)
 - **TDD:** RED — write test first, then implement
 - **Description:**
   Add a new Process subsection for `--milestone <name>` mode:
@@ -67,29 +67,29 @@ Extend the existing `skills/adev-status/SKILL.md` to add milestone progress view
 ## File Structure
 
 **Create:**
-- `tests/skills/adev-status-milestone.test.mjs` — Tests verifying SKILL.md milestone content
+- `tests/skills/status-milestone.test.mjs` — Tests verifying SKILL.md milestone content
 
 **Modify:**
-- `skills/adev-status/SKILL.md` — Add milestone argument, milestone progress in --all, and single-milestone view
+- `skills/status/SKILL.md` — Add milestone argument, milestone progress in --all, and single-milestone view
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-status-milestone-ext.md` — Behavioral contract
-- `.context-index/specs/features/strategic-planning/adev-status-milestone-ext.review.md` — Review (clean PASS)
+- `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.review.md` — Review (clean PASS)
 - `lib/issues/registry.mjs` — Issue model API reference for querying epics
-- `tests/skills/adev-assess.test.mjs` — Test pattern reference for SKILL.md tests
+- `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `adev-status-milestone-ext.md` (Behaviors 1-4, Arguments)
+- Spec: `adev:status-milestone-ext.md` (Behaviors 1-4, Arguments)
 - SKILL.md: Arguments section (current flags)
 
 ### Task 2 Context
-- Spec: `adev-status-milestone-ext.md` (Behaviors 1-2, Postconditions)
+- Spec: `adev:status-milestone-ext.md` (Behaviors 1-2, Postconditions)
 - SKILL.md: Mode `--all` section (current report sections and output format)
 
 ### Task 3 Context
-- Spec: `adev-status-milestone-ext.md` (Behaviors 3-4, Error Cases)
+- Spec: `adev:status-milestone-ext.md` (Behaviors 3-4, Error Cases)
 - SKILL.md: Mode `--charter` section (pattern reference for single-entity detailed view)
 
 ## Parallelization

@@ -21,7 +21,7 @@
 - `hooks/session-capture.sh` — Claude Code PostToolUse hook
 - `.githooks/prepare-commit-msg` — commit trailer injection
 - `.githooks/post-commit` — session summary persistence
-- `skills/adev-status/SKILL.md` — status query skill
+- `skills/status/SKILL.md` — status query skill
 - `tests/lib/source-manifest.test.mjs` — source manifest tests
 - `tests/lib/session-parser.test.mjs` — session parser tests
 - `tests/lib/session-summary.test.mjs` — session summary tests
@@ -34,14 +34,14 @@
 - `templates/manifest-template.yaml` — add integrations.session_capture section
 - `hooks/hooks.json` — register session-capture.sh
 - `cli/index.mjs` — scaffold .githooks/ and .context-index/sessions/
-- `skills/adev-brainstorm/SKILL.md` — charter status lifecycle + capability status + tracker-ref
-- `skills/adev-specify/SKILL.md` — closed-charter gate + revision tracking + capability status + tracker-ref
-- `skills/adev-review-specs/SKILL.md` — drift snapshot + capability status + revision tracking
-- `skills/adev-plan/SKILL.md` — drift detection gate + plan-test mapping + capability status
-- `skills/adev-implement/SKILL.md` — source manifest + capability status + structured commits
-- `skills/adev-validate/SKILL.md` — source manifest verification + capability status
-- `skills/adev-hygiene/SKILL.md` — drift scanning + session analysis
-- `.claude-plugin/plugin.json` — register adev-status skill
+- `skills/brainstorm/SKILL.md` — charter status lifecycle + capability status + tracker-ref
+- `skills/specify/SKILL.md` — closed-charter gate + revision tracking + capability status + tracker-ref
+- `skills/review-specs/SKILL.md` — drift snapshot + capability status + revision tracking
+- `skills/plan/SKILL.md` — drift detection gate + plan-test mapping + capability status
+- `skills/implement/SKILL.md` — source manifest + capability status + structured commits
+- `skills/validate/SKILL.md` — source manifest verification + capability status
+- `skills/hygiene/SKILL.md` — drift scanning + session analysis
+- `.claude-plugin/plugin.json` — register adev:status skill
 
 **Reference (read, do not modify):**
 - `.context-index/constitution.md`
@@ -56,7 +56,7 @@
 - **Group B (parallel with A):** Tasks 4-6 (lib files — independent of templates)
 - **Group C (after A+B):** Tasks 7-9 (hooks — depend on lib files)
 - **Group D (after A):** Tasks 10-16 (skill updates — depend on templates)
-- **Group E (after B+C+D):** Tasks 17-18 (CLI + adev-status — depend on everything)
+- **Group E (after B+C+D):** Tasks 17-18 (CLI + adev:status — depend on everything)
 - **Group F (after all):** Task 19 (registration + integration)
 
 ---
@@ -257,106 +257,106 @@
   - Read commit metadata (hash, date, author)
   - Read specs-touched from commit trailers
   - Call `node -e "import {writeSummary} from './lib/session-summary.mjs'; ..."` with metadata
-  - Content sections left as placeholders for /adev-retro
+  - Content sections left as placeholders for /adev:retro
   - Always exit 0, never block
 - [ ] **Make executable** `chmod +x .githooks/post-commit`
 - [ ] **Commit** `feat(spec-lifecycle): add post-commit hook for session summaries`
 
 ---
 
-### Task 10: Update adev-brainstorm SKILL.md [specialist: none]
+### Task 10: Update adev:brainstorm SKILL.md [specialist: none]
 
 **Charter capability:** Charter Status Lifecycle, Capability Status Column, Tracker Reference Field
 **Specs:** charter-status-lifecycle, capability-status-column, tracker-reference-field
 **Files:**
-- Modify: `skills/adev-brainstorm/SKILL.md`
+- Modify: `skills/brainstorm/SKILL.md`
 
 - [ ] **Add to Step 5 (Write Charter):** Set frontmatter `status: draft`, `revision: 1`, `updated: <today>`. Ensure Capability Map has `Status` column with `—` default.
 - [ ] **Add to Step 7 (User Reviews):** On approval, update `status: approved`, increment `revision`.
 - [ ] **Add to Step 2 (Clarify):** Optionally ask for `tracker-ref` during charter creation.
 - [ ] **Add to --module mode:** When modifying approved charter, set `status: evolving`, increment `revision`.
-- [ ] **Commit** `feat(spec-lifecycle): add lifecycle fields to adev-brainstorm`
+- [ ] **Commit** `feat(spec-lifecycle): add lifecycle fields to adev:brainstorm`
 
 ---
 
-### Task 11: Update adev-specify SKILL.md [specialist: none]
+### Task 11: Update adev:specify SKILL.md [specialist: none]
 
 **Charter capability:** Charter Status Lifecycle, Spec Revision Tracking, Capability Status Column, Tracker Reference Field
 **Specs:** charter-status-lifecycle, spec-revision-tracking, capability-status-column, tracker-reference-field
 **Files:**
-- Modify: `skills/adev-specify/SKILL.md`
+- Modify: `skills/specify/SKILL.md`
 
 - [ ] **Add closed-charter gate:** Before spec creation, check charter `status`. If `closed`, block with `CHARTER_CLOSED`.
 - [ ] **Add to spec creation:** Set `revision: 1`, `charter-revision: <N>`, `updated: <today>`. Optionally ask for `tracker-ref`.
 - [ ] **Add capability status update:** After writing spec, update charter's Capability Map Status to `specified`.
-- [ ] **Commit** `feat(spec-lifecycle): add lifecycle fields to adev-specify`
+- [ ] **Commit** `feat(spec-lifecycle): add lifecycle fields to adev:specify`
 
 ---
 
-### Task 12: Update adev-review-specs SKILL.md [specialist: none]
+### Task 12: Update adev:review-specs SKILL.md [specialist: none]
 
 **Charter capability:** Git Drift Detection, Capability Status Column, Spec Revision Tracking
 **Specs:** git-drift-detection, capability-status-column, spec-revision-tracking
 **Files:**
-- Modify: `skills/adev-review-specs/SKILL.md`
+- Modify: `skills/review-specs/SKILL.md`
 
 - [ ] **Add to Step 6 (Save Review):** Record `last-reviewed-revision` and `file-sha` (via `git hash-object`) in `.review.md`.
 - [ ] **Add to Step 7 (Update Status):** After updating spec status, also update the corresponding capability's Status to `review-passed` in the charter's Capability Map table.
 - [ ] **Add revision handling:** Do not increment spec revision on status-only changes.
-- [ ] **Commit** `feat(spec-lifecycle): add drift snapshot to adev-review-specs`
+- [ ] **Commit** `feat(spec-lifecycle): add drift snapshot to adev:review-specs`
 
 ---
 
-### Task 13: Update adev-plan SKILL.md [specialist: none]
+### Task 13: Update adev:plan SKILL.md [specialist: none]
 
 **Charter capability:** Git Drift Detection, Plan-Test Mapping, Capability Status Column
 **Specs:** git-drift-detection, plan-test-mapping, capability-status-column
 **Files:**
-- Modify: `skills/adev-plan/SKILL.md`
+- Modify: `skills/plan/SKILL.md`
 
 - [ ] **Enhance Step 1 (Review Gate):** Add dual drift check — compare spec `revision` vs `last-reviewed-revision` AND `git hash-object` vs `file-sha` from `.review.md`. Block on drift.
 - [ ] **Add to Task Structure:** Each task must include `tests:` field referencing test file(s).
 - [ ] **Add capability status update:** Update charter Capability Map Status to `planned`.
-- [ ] **Commit** `feat(spec-lifecycle): add drift detection + test mapping to adev-plan`
+- [ ] **Commit** `feat(spec-lifecycle): add drift detection + test mapping to adev:plan`
 
 ---
 
-### Task 14: Update adev-implement SKILL.md [specialist: none]
+### Task 14: Update adev:implement SKILL.md [specialist: none]
 
 **Charter capability:** Source Manifest, Capability Status Column, Structured Commit Trailers
 **Specs:** source-manifest, capability-status-column, structured-commit-trailers
 **Files:**
-- Modify: `skills/adev-implement/SKILL.md`
+- Modify: `skills/implement/SKILL.md`
 
 - [ ] **Add capability status updates:** Set `implementing` at start, `implemented` after all tasks pass.
 - [ ] **Add source manifest:** After GREEN, compute manifest via `lib/source-manifest.mjs` and stamp in spec frontmatter.
 - [ ] **Add commit trailer guidance:** Structured commits with `Spec:`, `Plan-task:`, `Session:` trailers.
-- [ ] **Commit** `feat(spec-lifecycle): add source manifest + capability status to adev-implement`
+- [ ] **Commit** `feat(spec-lifecycle): add source manifest + capability status to adev:implement`
 
 ---
 
-### Task 15: Update adev-validate SKILL.md [specialist: none]
+### Task 15: Update adev:validate SKILL.md [specialist: none]
 
 **Charter capability:** Source Manifest, Capability Status Column
 **Specs:** source-manifest, capability-status-column
 **Files:**
-- Modify: `skills/adev-validate/SKILL.md`
+- Modify: `skills/validate/SKILL.md`
 
 - [ ] **Add source manifest verification:** Call `verifyManifest` and report match/drift.
 - [ ] **Add capability status update:** Set `validated` on pass.
-- [ ] **Commit** `feat(spec-lifecycle): add source manifest verification to adev-validate`
+- [ ] **Commit** `feat(spec-lifecycle): add source manifest verification to adev:validate`
 
 ---
 
-### Task 16: Update adev-hygiene SKILL.md [specialist: none]
+### Task 16: Update adev:hygiene SKILL.md [specialist: none]
 
 **Charter capability:** Git Drift Detection
 **Specs:** git-drift-detection
 **Files:**
-- Modify: `skills/adev-hygiene/SKILL.md`
+- Modify: `skills/hygiene/SKILL.md`
 
 - [ ] **Add lifecycle audit pass:** Scan all specs for revision drift, file drift, charter-revision staleness, capability status inconsistencies.
-- [ ] **Commit** `feat(spec-lifecycle): add lifecycle auditing to adev-hygiene`
+- [ ] **Commit** `feat(spec-lifecycle): add lifecycle auditing to adev:hygiene`
 
 ---
 
@@ -373,17 +373,17 @@
 - [ ] **Add idempotency:** If `.githooks/` exists, don't overwrite — write as `<name>.adev` and warn.
 - [ ] **Write tests:** Test scaffolding creates hooks, sets git config, handles existing hooks.
 - [ ] **Verify** `node --test tests/cli.test.mjs`
-- [ ] **Commit** `feat(spec-lifecycle): scaffold .githooks/ and sessions/ in adev-init`
+- [ ] **Commit** `feat(spec-lifecycle): scaffold .githooks/ and sessions/ in adev:init`
 
 ---
 
-### Task 18: Create adev-status SKILL.md [specialist: none]
+### Task 18: Create adev:status SKILL.md [specialist: none]
 
 **Charter capability:** Status Query Skill
 **Specs:** status-query-skill
 **Depends on:** Tasks 4, 5, 6
 **Files:**
-- Create: `skills/adev-status/SKILL.md`
+- Create: `skills/status/SKILL.md`
 
 - [ ] **Write SKILL.md** with three modes:
   - `--spec <path>`: Read frontmatter, verify source manifest, query git log, read sessions, check plan tasks
@@ -391,7 +391,7 @@
   - `--all`: Aggregate across all charters/specs, report project-wide status
   - Default (no args) → `--all`
 - [ ] **Include:** tracker-ref display, charter-revision staleness warning, source drift highlighting
-- [ ] **Commit** `feat(spec-lifecycle): create adev-status skill`
+- [ ] **Commit** `feat(spec-lifecycle): create adev:status skill`
 
 ---
 
@@ -401,13 +401,13 @@
 **Specs:** template-updates, session-capture-pipeline
 **Depends on:** All previous tasks
 **Files:**
-- Modify: `.claude-plugin/plugin.json` — add adev-status to skills
+- Modify: `.claude-plugin/plugin.json` — add adev:status to skills
 - Modify: `hooks/hooks.json` — verify session-capture registration
 
-- [ ] **Register** `adev-status` in `.claude-plugin/plugin.json`
+- [ ] **Register** `adev:status` in `.claude-plugin/plugin.json`
 - [ ] **Verify** all hooks registered in `hooks/hooks.json`
 - [ ] **Run full test suite** `npm test`
-- [ ] **Commit** `feat(spec-lifecycle): register adev-status skill and finalize integration`
+- [ ] **Commit** `feat(spec-lifecycle): register adev:status skill and finalize integration`
 
 ---
 

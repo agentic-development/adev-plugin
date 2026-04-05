@@ -1,4 +1,4 @@
-<!-- Research artifact template for /adev-research skill.
+<!-- Research artifact template for /adev:research skill.
      Slug convention: lowercase, hyphenated, max 50 characters derived from topic.
      Example: "Dependency Injection in ESM" -> dependency-injection-in-esm -->
 ---
