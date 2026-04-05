@@ -19,14 +19,15 @@ updated: 2026-04-05
 
 ### Preconditions
 
-- `.context-index/` exists with `constitution.md`, `manifest.yaml`, and `specs/product.md`
-- If `--refresh`, an existing `product.md` with a Milestones section must exist
+- `.context-index/` exists with `constitution.md` and `manifest.yaml`
+- `specs/product.md` may or may not exist (bootstrapped from constitution Identity if absent)
+- If `--refresh`, an existing `product.md` with a `## Milestones` section must exist
 
 ### Behaviors
 
 1. **When** invoked without arguments **then** the skill enters interview mode: reads constitution, product.md, and all existing charters, then asks the user one question at a time about business objectives, target audience, success metrics, feature priorities, and timeline
 2. **When** interview is complete **then** the skill proposes a structured Milestones section with milestone names, target dates, feature inventory per milestone, and priority ordering
-3. **When** the user approves the milestones **then** `product.md` is updated with the Milestones section (appended or replaced if it already exists), preserving all other sections
+3. **When** the user approves the milestones **then** `product.md` is updated with the `## Milestones` section (delimited by the `## Milestones` heading, extending to the next `##` heading or EOF). If the section exists, it is replaced in-place; if not, it is appended. All other sections are preserved unchanged
 4. **When** milestones are written **then** the skill creates one epic per milestone on the issue board, each with the `milestone` field set to the milestone name
 5. **When** epics already exist for a milestone name **then** existing epics are updated (not duplicated) — match by milestone name
 6. **When** `--refresh` is specified **then** the skill skips the interview and instead reviews the current milestones against the latest charters, proposing additions, removals, or reorderings
