@@ -15,9 +15,11 @@ AI coding agents work best with structured context but most projects provide non
 | Module | Description | Key Files |
 |--------|-------------|-----------|
 | CLI | Installation, scaffolding, conflict detection | `cli/index.mjs` |
-| Skills | 17 markdown-based lifecycle instructions | `skills/<name>/SKILL.md` |
+| Skills | 21+ markdown-based lifecycle instructions | `skills/<name>/SKILL.md` |
+| Strategic Planning | Product vision, roadmaps, research, build orchestration | `skills/adev-vision/`, `skills/adev-roadmap/`, `skills/adev-research/`, `skills/adev-build/` |
+| Issue Management | Epic/issue tracking with milestone support | `lib/issues/`, `skills/adev-issues/` |
 | Hooks | 4 bash lifecycle guards (session, lint, merge, sync) | `hooks/` |
-| Templates | 12 scaffold files for `.context-index/` | `templates/` |
+| Templates | 13 scaffold files for `.context-index/` | `templates/` |
 | Plugin Registration | Metadata and version for Claude Code | `.claude-plugin/plugin.json` |
 
 ## Cross-Cutting Concerns

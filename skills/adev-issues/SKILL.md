@@ -13,10 +13,10 @@ Manage project issues and epics using the configured task backend.
 
 - No arguments: display the full issue board
 - `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4]`: create an issue
-- `epic "<title>"`: create a new epic
-- `update <id> --status <open|in_progress|closed|deferred>`: update issue status
+- `epic "<title>" [--milestone <name>]`: create a new epic, optionally assigning it to a milestone
+- `update <id> --status <open|in_progress|closed|deferred> [--milestone <name>]`: update issue status and/or milestone (for epics). `--status` and `--milestone` can be used together or independently — both fields are updated in a single call
 - `close <id> --reason "<text>"`: close an issue with a reason
-- `list [--status <status>] [--epic <epic-id>]`: filtered issue list
+- `list [--status <status>] [--epic <epic-id>] [--milestone <name>]`: filtered issue list. `--milestone` filters to epics and issues belonging to epics with that milestone
 - `dep <issue-id> <depends-on-id>`: add a blocking dependency
 - `ready`: show actionable issues (open + unblocked)
 
@@ -44,10 +44,18 @@ Read all epics and issues. Display grouped by epic, then by status:
 
 Standalone issues (no epic) appear under "Unassigned."
 
-Format:
+#### Milestone Grouping
+
+When any epic has a `milestone` field set, group epics by milestone name with a heading per milestone. Epics without a milestone assignment appear under a "No Milestone" group at the end. Within each milestone group, the existing epic/status grouping applies as described above.
+
+When no epics have milestones, the display format is unchanged (no milestone grouping headers are shown).
+
+Format (with milestones):
 
 ```
 ## Issue Board
+
+## Milestone: v1
 
 ### Epic: epic-1 — Auth Feature (open)
 
@@ -56,12 +64,22 @@ Format:
 | issue-1 | Login flow | closed | 2 | task | |
 | issue-2 | Session management | in_progress | 2 | task | issue-1 |
 
+## No Milestone
+
+### Epic: epic-3 — Misc Improvements (open)
+
+| ID | Title | Status | Priority | Type | Deps |
+|----|-------|--------|----------|------|------|
+| issue-4 | Update docs | open | 3 | task | |
+
 ### Unassigned
 
 | ID | Title | Status | Priority | Type | Deps |
 |----|-------|--------|----------|------|------|
 | issue-5 | Fix typo in README | open | 4 | bug | |
 ```
+
+When no epics have milestones, omit the milestone headings and display the board in the original flat format.
 
 ### Create Issue
 
@@ -73,7 +91,9 @@ Report: "Created `<id>`: <title> (status: open, priority: <N>)"
 
 ### Create Epic
 
-Call `createEpic()` with the title. Report: "Created `<id>`: <title>"
+Call `createEpic({ title, milestone })` with the title and optional milestone. When `--milestone <name>` is provided, pass the `milestone` field to set it on the epic. When `--milestone` is omitted, the epic is created without a milestone (backward compatible).
+
+Report: "Created `<id>`: <title>" — or when a milestone is set: "Created `<id>`: <title> (milestone: <name>)"
 
 ### Update
 
@@ -91,7 +111,9 @@ Call `close(id, reason)` on the adapter. If blocked by unclosed dependencies, re
 
 ### List (filtered)
 
-Call `list(filters)` with provided filters. Display as a table sorted by priority.
+Call `list(filters)` with provided filters (`--status`, `--epic`, `--milestone`). When `--milestone <name>` is provided, filter to only epics with that milestone and their child issues. If no epics match the milestone, show an empty table with the message: "No epics found for milestone '<name>'."
+
+Display as a table sorted by priority.
 
 ### Add Dependency
 

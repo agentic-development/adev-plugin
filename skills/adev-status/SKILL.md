@@ -13,6 +13,7 @@ Query and display the current status of adev lifecycle artifacts. This skill is 
 
 - `--spec <path>`: Show detailed status for a single spec
 - `--charter <name>`: Show status for a charter and its specs/capabilities
+- `--milestone <name>`: Show detailed status for a single milestone (mutually exclusive with `--spec` and `--charter`)
 - `--all`: Show full project status dashboard (default when no args)
 
 ## Prerequisites
@@ -100,6 +101,41 @@ Specs (<N total>):
   ...
 ```
 
+### Mode: `--milestone <name>`
+
+1. Read `tasks.backend` from `.context-index/manifest.yaml`. If not configured, print "Issue board not configured. Add `tasks.backend` to manifest.yaml." and stop.
+2. Query the issue board for all epics with `milestone` matching `<name>`
+3. If no epics match, print "No epics found for milestone '<name>'. Available milestones: <list of known milestones>" and stop
+4. For each matching epic, list all child issues with their statuses
+5. For each epic, find related specs (by matching charter or plan references) and report their statuses (draft / review-passed / implemented / validated)
+6. Compute aggregate progress: total issues, issues by status, percentage complete (closed / total)
+7. Display the milestone name, associated epics, issue breakdown, and spec statuses
+
+**Output format:**
+
+```
+=== Milestone: <name> ===
+
+Progress: <closed>/<total> issues complete (<percentage>%)
+
+Epics:
+  epic-1 — Auth Feature (open)
+    Issues: 2 open, 1 in_progress, 3 closed
+    Specs:
+      - auth-login.md: implemented
+      - auth-session.md: review-passed
+
+  epic-4 — Payment Flow (open)
+    Issues: 4 open, 0 in_progress, 0 closed
+    Specs:
+      - payment-checkout.md: draft
+
+Summary:
+  Total epics: 2
+  Total issues: 10 (6 open, 1 in_progress, 3 closed)
+  Percentage complete: 30%
+```
+
 ### Mode: `--all` (default)
 
 1. Scan all charters under `.context-index/specs/features/` and `.context-index/specs/cross-cutting/`
@@ -124,6 +160,18 @@ For each spec with a `source-manifest`, check using `lib/source-manifest.mjs`. F
 #### Specs Needing Re-Review
 Flag specs where `revision` is greater than the last-reviewed revision (specs modified since last review pass).
 
+#### Milestone Progress
+
+If `tasks.backend` is configured in `manifest.yaml`, scan all epics for `milestone` fields. If any epics have milestones, add a "Milestone Progress" section showing per-milestone aggregation:
+
+- **Milestone name**
+- Total epics in milestone
+- Total issues across those epics
+- Issue counts by status: open / in_progress / closed
+- Percentage complete (closed issues / total issues)
+
+If no epics have milestones, skip this section entirely (unchanged behavior). If `tasks.backend` is not configured, skip this section silently.
+
 #### Recent Sessions
 Read the 10 most recent session summaries from `.context-index/sessions/` and display date, type, and summary line.
 
@@ -146,6 +194,10 @@ Drifted specs: <N>
 
 Specs needing re-review: <N>
   - <spec-path>: revision <current> (last reviewed: <last-reviewed>)
+
+Milestone Progress:
+  v1: 3 epics, 12 issues (4 open, 5 in_progress, 3 closed) — 25% complete
+  v2: 1 epic, 4 issues (4 open, 0 in_progress, 0 closed) — 0% complete
 
 Recent sessions (last 10):
   - <date> [<type>] <summary>
