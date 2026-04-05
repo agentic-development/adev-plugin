@@ -39,25 +39,22 @@ updated: 2026-04-05
 ### Build Pipeline Steps (per spec)
 
 ```
-Step 1: Review  — invoke /adev-review-specs --spec <path>
-                   Skip if .review.md exists and is current
-                   STOP if verdict is BLOCK
+Step 1: Review    — invoke /adev-review-specs --spec <path>
+                     Skip if .review.md exists and is current
+                     STOP if verdict is BLOCK
 
-Step 2: Route   — invoke /adev-route --plan <plan-path>
-                   Skip if plan doesn't exist yet (route runs after plan)
-                   Optional: route annotations are advisory
+Step 2: Plan      — invoke /adev-plan --spec <path>
+                     Skip if .plan.md exists
+                     STOP if constitution violation detected
 
-Step 3: Plan    — invoke /adev-plan --spec <path>
-                   Skip if .plan.md exists
-                   STOP if constitution violation detected
+Step 3: Route     — invoke /adev-route --plan <plan-path>
+                     Optional: route annotations are advisory
+                     Skip if --no-route flag set
 
-Step 4: Route   — invoke /adev-route --plan <plan-path>
-                   Run now that plan exists (if skipped in Step 2)
-
-Step 5: Implement — invoke /adev-implement <plan-path>
+Step 4: Implement — invoke /adev-implement <plan-path>
                      STOP if quality gates fail
 
-Step 6: Validate  — invoke /adev-validate --spec <path> --plan <plan-path>
+Step 5: Validate  — invoke /adev-validate --spec <path> --plan <plan-path>
                      Report PASS/FAIL
 ```
 

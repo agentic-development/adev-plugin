@@ -32,7 +32,7 @@ updated: 2026-04-05
 5. **When** dependencies are identified **then** the skill determines a critical path — the longest chain of dependent features that constrains the overall timeline
 6. **When** the roadmap is complete **then** it is saved to `.context-index/specs/roadmap/<milestone-slug>.md` (or `full-roadmap.md` for `--all`)
 7. **When** writing the roadmap **then** each milestone section includes: features (with charter references), dependency graph (text-based), implementation order (topologically sorted), risk assessment (high/medium/low per feature), and suggested parallelization opportunities
-8. **When** epics exist on the issue board for milestones **then** the skill updates them with dependency information via `addDependency()` for cross-epic blocking relationships
+8. **When** cross-feature dependencies are identified **then** they are recorded in the roadmap document's dependency graph section (text-based DAG). Epic-level dependencies are not stored on the issue board since `addDependency()` operates on issues, not epics — the roadmap document is the source of truth for cross-feature ordering
 9. **When** a charter referenced by a milestone has no specs yet **then** the roadmap flags it as "specs needed" and suggests invoking `/adev-specify`
 10. **When** a circular dependency is detected **then** the skill reports the cycle and asks the user to resolve it before proceeding
 
@@ -67,7 +67,7 @@ updated: 2026-04-05
 ## Issue Board Integration
 
 - **Start**: Reads existing epics to understand current milestone assignments
-- **During**: Updates epic dependencies via `addDependency()` for cross-feature blocking
+- **During**: Cross-feature dependencies stored in the roadmap document (not via `addDependency()`, which operates on issues not epics)
 - **End**: Updates epics with milestone assignments if missing. Reports: "Updated N epics with milestone assignments."
 - Guard pattern: check `tasks.backend` in manifest; skip if unconfigured
 
