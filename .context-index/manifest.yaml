@@ -76,6 +76,14 @@ modules:
       - skills/adev-validate/
       - skills/adev-eval/
 
+  - slug: strategic-planning
+    name: Strategic Planning
+    paths:
+      - skills/adev-vision/
+      - skills/adev-roadmap/
+      - skills/adev-research/
+      - skills/adev-build/
+
   - slug: maintenance
     name: Maintenance
     paths:
