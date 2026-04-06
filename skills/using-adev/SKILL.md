@@ -45,6 +45,7 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 | `/adev:plan` | Planning | Decompose specs into implementation tasks |
 | `/adev:build` | Build | End-to-end orchestrator: review → plan → route → implement → validate |
 | `/adev:implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
+| `/adev:write-test` | Implementation | Standalone TDD test authoring with gaming detection |
 | `/adev:validate` | Validation | Post-implementation checks against specs and constitution |
 | `/adev:debug` | Debugging | Context-aware systematic debugging |
 | `/adev:issues` | Issue Management | Create, update, and track issues and epics (with milestone support) |

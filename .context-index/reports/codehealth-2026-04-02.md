@@ -28,8 +28,8 @@ summary:
 | high | lib/provider/interface.mjs | 17 | ProviderInterface | Only export in file, zero references in dependency graph |
 | high | lib/repomap/graph.mjs | 34 | buildGraph | Only export in file, zero references in dependency graph (consumed via dynamic import in index.mjs, not captured in static graph) |
 | high | lib/repomap/rank.mjs | 15 | computeRanks | Only export in file, zero references in dependency graph (consumed via dynamic import in index.mjs, not captured in static graph) |
-| high | skills/test-write/detect-framework.mjs | 107 | detectFramework | Only export in file, zero references in dependency graph |
-| high | skills/test-write/detect-gaming.mjs | 155 | detectGaming | Only export in file, zero references in dependency graph |
+| high | skills/write-test/detect-framework.mjs | 107 | detectFramework | Only export in file, zero references in dependency graph |
+| high | skills/write-test/detect-gaming.mjs | 155 | detectGaming | Only export in file, zero references in dependency graph |
 | medium | cli/index.mjs | 592 | enablePlugin | Coexists with 2 other unreferenced exports; likely API surface for external consumers |
 | medium | cli/index.mjs | 593 | detectConflicts | Coexists with 2 other unreferenced exports; likely API surface for external consumers |
 | medium | cli/index.mjs | 594 | disableConflictingPlugin | Coexists with 2 other unreferenced exports; likely API surface for external consumers |
@@ -55,8 +55,8 @@ summary:
 | medium | lib/session-summary.mjs | 209 | readSummary | Coexists with 1 other unreferenced export |
 | medium | lib/source-manifest.mjs | 42 | computeManifest | Coexists with 1 other unreferenced export |
 | medium | lib/source-manifest.mjs | 117 | verifyManifest | Coexists with 1 other unreferenced export |
-| medium | skills/test-write/write-handoff.mjs | 68 | writeHandoff | Coexists with 1 other unreferenced export |
-| medium | skills/test-write/write-handoff.mjs | 191 | verifyHandoff | Coexists with 1 other unreferenced export |
+| medium | skills/write-test/write-handoff.mjs | 68 | writeHandoff | Coexists with 1 other unreferenced export |
+| medium | skills/write-test/write-handoff.mjs | 191 | verifyHandoff | Coexists with 1 other unreferenced export |
 
 > **Note:** Many "dead" exports are false positives caused by consumption patterns not captured in the static dependency graph: (1) `lib/repomap/graph.mjs`, `rank.mjs`, and `parse.mjs` are consumed via `await import()` dynamic imports in `lib/repomap/index.mjs`. (2) `lib/issues/registry.mjs` exports are consumed by skill markdown at runtime. (3) `cli/index.mjs` exports are the package's public API. (4) `lib/session-parser.mjs`, `lib/session-summary.mjs`, and `lib/source-manifest.mjs` are consumed by hook scripts via `node` invocations. Genuinely suspicious: `lib/provider/detect.mjs` (detectProvider) and `lib/provider/interface.mjs` (ProviderInterface) — neither is imported by any file in the graph or dynamically.
 
@@ -73,9 +73,9 @@ summary:
 | high | lib/session-summary.mjs | — | — | Fully isolated: no edges in or out within dependency graph |
 | high | lib/source-manifest.mjs | — | — | Fully isolated: no edges in or out within dependency graph |
 | high | providers/opencode/plugin.mjs | — | — | No incoming edges; listed as package.json export ("./opencode") but not imported internally |
-| high | skills/test-write/detect-framework.mjs | — | — | Fully isolated: no edges in or out |
-| high | skills/test-write/detect-gaming.mjs | — | — | Fully isolated: no edges in or out |
-| high | skills/test-write/write-handoff.mjs | — | — | Fully isolated: no edges in or out |
+| high | skills/write-test/detect-framework.mjs | — | — | Fully isolated: no edges in or out |
+| high | skills/write-test/detect-gaming.mjs | — | — | Fully isolated: no edges in or out |
+| high | skills/write-test/write-handoff.mjs | — | — | Fully isolated: no edges in or out |
 | medium | lib/issues/registry.mjs | — | — | No incoming edges but has outgoing edges (imports file-adapter, beads-adapter, resolve-root) |
 
 > **Note:** Most orphan findings are false positives for the same reasons as dead exports — dynamic imports, hook-script invocations, and package.json entry points. Genuinely suspicious orphans: `lib/provider/detect.mjs` and `lib/provider/interface.mjs`.
@@ -104,7 +104,7 @@ No issues found.
 | medium | providers/claude-code/adapter.mjs | 27 | writeJson | Duplicate of providers/opencode/adapter.mjs:27 (writeJson) — identical `writeFileSync(JSON.stringify + newline)` body |
 | medium | providers/opencode/adapter.mjs | 97 | linkSkillsFromCache | Structurally similar to providers/opencode/adapter.mjs:127 (linkSkills) — same iterate-skills/check-exists/unlink/symlink pattern, differs in source directory |
 | medium | lib/issues/file-adapter.mjs | 179 | _nextIssueId | Structurally similar to lib/issues/file-adapter.mjs:188 (_nextEpicId) — identical max-ID-from-prefix pattern, differs only in prefix string ("issue-" vs "epic-") |
-| low | skills/test-write/write-handoff.mjs | 41 | computeHash | Similar hash-computation pattern to lib/source-manifest.mjs:42 (computeManifest) — both sort files and compute SHA-256 over concatenated contents |
+| low | skills/write-test/write-handoff.mjs | 41 | computeHash | Similar hash-computation pattern to lib/source-manifest.mjs:42 (computeManifest) — both sort files and compute SHA-256 over concatenated contents |
 | low | providers/codex/adapter.mjs | 85 | ensureDir | Exact duplicate of providers/claude-code/adapter.mjs:13 (ensureDir) — see above |
 | low | providers/opencode/adapter.mjs | 13 | ensureDir | Exact duplicate of providers/claude-code/adapter.mjs:13 (ensureDir) — see above |
 
