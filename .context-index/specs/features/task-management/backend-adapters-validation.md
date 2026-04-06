@@ -13,7 +13,7 @@
 - Typecheck: N/A (no type checker configured)
 
 ## Check 1.5: Source Manifest Verification — SKIP
-No source manifest found in spec frontmatter. Run /adev-implement to stamp one.
+No source manifest found in spec frontmatter. Run /adev:implement to stamp one.
 
 ## Check 2: Spec Compliance — PASS
 - `lib/issues/file-adapter.mjs` implements full `IssueManagerInterface`: PASS (`lib/issues/file-adapter.mjs:95-318`)

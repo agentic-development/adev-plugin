@@ -1,10 +1,10 @@
 # Scenario: Reverse-engineer a spec from fct_orders
 
 ## Skill
-`/adev-specify --extract`
+`/adev:specify --extract`
 
 ## Target Project
-`tests/evals/adev-data-eval` — E-commerce dbt + DuckDB project
+`tests/evals/adev:data-eval` — E-commerce dbt + DuckDB project
 
 ## Prompt
 Reverse-engineer a Live Spec from the existing `fct_orders` mart model at `models/marts/fct_orders.sql`.

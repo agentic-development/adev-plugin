@@ -10,12 +10,12 @@ Accepted
 
 ## Context
 
-`/adev-repomap` currently uses regex-based pattern matching (Grep) to extract exported symbols. This approach misses approximately 30% of export patterns: re-exports (`export { foo } from './bar'`), arrow function exports (`export const x = () => {}`), destructured exports, and default exports assigned after declaration.
+`/adev:repomap` currently uses regex-based pattern matching (Grep) to extract exported symbols. This approach misses approximately 30% of export patterns: re-exports (`export { foo } from './bar'`), arrow function exports (`export const x = () => {}`), destructured exports, and default exports assigned after declaration.
 
 More critically, regex cannot build a dependency graph from import statements, which means:
-- Blast radius scoring in `/adev-route` relies on file-count heuristics instead of tracing actual import chains.
-- Spec-to-code drift detection in `/adev-hygiene` compares names but cannot detect structural changes.
-- Context packets in `/adev-implement` cannot include dependency-aware symbol rankings.
+- Blast radius scoring in `/adev:route` relies on file-count heuristics instead of tracing actual import chains.
+- Spec-to-code drift detection in `/adev:hygiene` compares names but cannot detect structural changes.
+- Context packets in `/adev:implement` cannot include dependency-aware symbol rankings.
 
 Industry research (Aider, Sourcegraph/Cody, Augment Code, Greptile) confirms convergence on AST-based structural indexing as the foundation for agentic codebase understanding.
 
@@ -23,7 +23,7 @@ Industry research (Aider, Sourcegraph/Cody, Augment Code, Greptile) confirms con
 
 Add `web-tree-sitter` (WASM-based tree-sitter bindings) as an **optional** dependency:
 
-- It is NOT added to `package.json` dependencies. Users install it on demand via a prompt in `/adev-repomap` or `/adev-init` ("Install tree-sitter parser? yes/no").
+- It is NOT added to `package.json` dependencies. Users install it on demand via a prompt in `/adev:repomap` or `/adev:init` ("Install tree-sitter parser? yes/no").
 - Language grammar WASM files are downloaded per-language on first use.
 - `web-tree-sitter` uses WASM, not native C bindings — no C compiler required.
 - `lib/repomap/check-deps.mjs` detects availability at runtime.
@@ -44,4 +44,4 @@ The existing regex-based repomap remains the zero-dependency default. Tree-sitte
 - Two code paths to maintain and test (regex + tree-sitter).
 - Users who don't install tree-sitter get the same experience as before.
 - Downstream skills (route, hygiene, implement, validate, recover) gain access to dependency graph and ranked symbols when tree-sitter is available, fall back to heuristics when not.
-- All new code lives in `lib/repomap/` as companion modules — the `/adev-repomap` skill remains pure markdown.
+- All new code lives in `lib/repomap/` as companion modules — the `/adev:repomap` skill remains pure markdown.

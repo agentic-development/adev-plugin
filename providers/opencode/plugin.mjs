@@ -108,7 +108,7 @@ export default async function AdevPlugin(ctx) {
 
     /**
      * Sync trigger - runs after Edit tool on constitution.md
-     * Notifies user to run /adev-sync
+     * Notifies user to run /adev:sync
      */
     "tool.execute.after": async (input, output) => {
       const tool = input?.tool;
@@ -124,7 +124,7 @@ export default async function AdevPlugin(ctx) {
                 body: {
                   parts: [{
                     type: "text",
-                    text: "[adev] Constitution was updated. Run /adev-sync to propagate changes to AGENTS.md and other agent files."
+                    text: "[adev] Constitution was updated. Run /adev:sync to propagate changes to AGENTS.md and other agent files."
                   }]
                 }
               });
@@ -143,7 +143,7 @@ export default async function AdevPlugin(ctx) {
         output.context = output.context || [];
         output.context.push(
           "[adev] This session uses the Agentic Development Framework. " +
-          "Context lives in .context-index/. Run /adev-hygiene to audit context health."
+          "Context lives in .context-index/. Run /adev:hygiene to audit context health."
         );
       }
     },

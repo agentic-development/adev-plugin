@@ -20,17 +20,17 @@ updated: 2026-03-28
 
 ### Behaviors
 
-1. **When** `/adev-specify` creates a new spec and the user provides a tracker reference **then** it sets `tracker-ref: <value>` in the spec's YAML frontmatter.
+1. **When** `/adev:specify` creates a new spec and the user provides a tracker reference **then** it sets `tracker-ref: <value>` in the spec's YAML frontmatter.
 
-2. **When** `/adev-brainstorm` creates a new charter and the user provides a tracker reference **then** it sets `tracker-ref: <value>` in the charter's YAML frontmatter.
+2. **When** `/adev:brainstorm` creates a new charter and the user provides a tracker reference **then** it sets `tracker-ref: <value>` in the charter's YAML frontmatter.
 
 3. **When** no tracker reference is provided **then** the `tracker-ref` field is omitted from frontmatter (not set to empty or null).
 
-4. **When** `/adev-status` reports on a spec or charter with a `tracker-ref` **then** it displays the reference: "Tracker: <value>".
+4. **When** `/adev:status` reports on a spec or charter with a `tracker-ref` **then** it displays the reference: "Tracker: <value>".
 
-5. **When** `/adev-status --all` generates a project report **then** it includes tracker references alongside each spec/charter entry that has one.
+5. **When** `/adev:status --all` generates a project report **then** it includes tracker references alongside each spec/charter entry that has one.
 
-6. **When** the `tracker-ref` value follows common patterns **then** `/adev-status` formats it readably:
+6. **When** the `tracker-ref` value follows common patterns **then** `/adev:status` formats it readably:
    - `#123` → GitHub Issue format
    - `LINEAR-1234` → Linear format
    - `PROJ-567` → Jira format
@@ -62,17 +62,17 @@ updated: 2026-03-28
 |------|-------------|---------------------|
 | Update spec template | Add commented-out `tracker-ref` field with explanation | small |
 | Update charter template | Add commented-out `tracker-ref` field with explanation | small |
-| Update `adev-specify/SKILL.md` | Ask user for tracker reference during spec creation (optional) | small |
-| Update `adev-brainstorm/SKILL.md` | Ask user for tracker reference during charter creation (optional) | small |
-| Update `adev-status/SKILL.md` | Display tracker-ref in status reports | small |
+| Update `adev:specify/SKILL.md` | Ask user for tracker reference during spec creation (optional) | small |
+| Update `adev:brainstorm/SKILL.md` | Ask user for tracker reference during charter creation (optional) | small |
+| Update `adev:status/SKILL.md` | Display tracker-ref in status reports | small |
 
 ## Acceptance Criteria
 
 - [ ] Spec template includes commented-out `tracker-ref` field with explanation
 - [ ] Charter template includes commented-out `tracker-ref` field with explanation
-- [ ] `/adev-specify` optionally accepts and sets `tracker-ref` during spec creation
-- [ ] `/adev-brainstorm` optionally accepts and sets `tracker-ref` during charter creation
-- [ ] `/adev-status` displays `tracker-ref` when present
+- [ ] `/adev:specify` optionally accepts and sets `tracker-ref` during spec creation
+- [ ] `/adev:brainstorm` optionally accepts and sets `tracker-ref` during charter creation
+- [ ] `/adev:status` displays `tracker-ref` when present
 - [ ] Missing `tracker-ref` is silently ignored (no warnings, no errors)
 - [ ] No external API calls or validation — metadata only
 - [ ] All quality gates pass (tests, lint, typecheck)

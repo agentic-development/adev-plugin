@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Sync"
-  short_description: "Sync the constitution to agent files"
-  default_prompt: "Use $adev-sync to update AGENTS.md, CLAUDE.md, and other synced agent files."

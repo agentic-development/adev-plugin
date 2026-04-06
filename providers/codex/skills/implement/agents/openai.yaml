@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Implement"
+  short_description: "Execute an approved adev plan"
+  default_prompt: "Use $adev:implement to execute the approved plan with tests and review gates."

@@ -11,7 +11,7 @@ describe("detectProvider", () => {
 
   beforeEach(() => {
     originalEnv = { ...process.env };
-    tempDir = join(tmpdir(), `adev-detect-test-${Date.now()}`);
+    tempDir = join(tmpdir(), `detect-test-${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
   });
 
@@ -25,7 +25,7 @@ describe("detectProvider", () => {
     const { join } = await import("path");
     const { tmpdir } = await import("os");
 
-    const isolatedDir = mkdtempSync(join(tmpdir(), "adev-opencode-test-"));
+    const isolatedDir = mkdtempSync(join(tmpdir(), "opencode-test-"));
     const originalCwd = process.cwd();
     process.chdir(isolatedDir);
     

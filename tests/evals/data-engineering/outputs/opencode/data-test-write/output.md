@@ -1,4 +1,4 @@
-The skill `/adev-test-write` is not available. Let me explore the project and write the dbt tests directly.
+The skill `/adev:test-write` is not available. Let me explore the project and write the dbt tests directly.
 Now I'll add more schema tests and a custom generic test for the date logic, plus accepted_values for country.
 Tests for `dim_customers` created:
 

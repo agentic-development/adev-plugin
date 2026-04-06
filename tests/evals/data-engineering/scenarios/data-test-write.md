@@ -1,10 +1,10 @@
 # Scenario: Write dbt tests for dim_customers
 
 ## Skill
-`/adev-test-write --red`
+`/adev:test-write --red`
 
 ## Target Project
-`tests/evals/adev-data-eval` — E-commerce dbt + DuckDB project
+`tests/evals/adev:data-eval` — E-commerce dbt + DuckDB project
 
 ## Prompt
 Write data quality tests for the `dim_customers` mart model at `models/marts/dim_customers.sql`. The model joins `stg_customers` with `int_customer_order_history` to produce a customer dimension with lifetime metrics.

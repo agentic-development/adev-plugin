@@ -8,7 +8,7 @@
 
 **Goal:** Build the tree-sitter AST parsing pipeline with dependency graph construction and PageRank ranking as a progressive enhancement to the existing regex-based repomap.
 
-**Architecture:** New code lives in `lib/repomap/` as companion modules to the `/adev-repomap` skill. The orchestrator (`index.mjs`) detects whether `web-tree-sitter` is available and routes to either tree-sitter or regex mode. Tree-sitter mode produces three artifacts (`repo-map.md`, `dependency-graph.json`, `symbol-ranks.json`); regex mode produces only `repo-map.md`. All outputs go to `.context-index/hygiene/` (gitignored).
+**Architecture:** New code lives in `lib/repomap/` as companion modules to the `/adev:repomap` skill. The orchestrator (`index.mjs`) detects whether `web-tree-sitter` is available and routes to either tree-sitter or regex mode. Tree-sitter mode produces three artifacts (`repo-map.md`, `dependency-graph.json`, `symbol-ranks.json`); regex mode produces only `repo-map.md`. All outputs go to `.context-index/hygiene/` (gitignored).
 
 ---
 
@@ -37,7 +37,7 @@
 **Reference (read, do not modify):**
 - `.context-index/constitution.md` — Principles and quality gates
 - `.context-index/specs/features/tree-sitter-repomap/charter.md` — Scope and contracts
-- `skills/adev-repomap/SKILL.md` — Current regex-based behavior (reference for regex mode)
+- `skills/repomap/SKILL.md` — Current regex-based behavior (reference for regex mode)
 
 ## Context Packets
 
@@ -72,7 +72,7 @@
 ### Task 8 Context (Orchestrator)
 - Spec: `core-parser-pipeline.md` (behaviors 6-7; all postconditions; all error cases)
 - Charter: `charter.md` (interface contracts: all exposed APIs)
-- Skill: `skills/adev-repomap/SKILL.md` (current regex behavior to preserve)
+- Skill: `skills/repomap/SKILL.md` (current regex behavior to preserve)
 
 ### Task 9 Context (Integration Test)
 - Spec: `core-parser-pipeline.md` (all acceptance criteria)
@@ -108,7 +108,7 @@ Constitution principle #1 requires an ADR before adding any external dependency.
 Accepted
 
 ## Context
-/adev-repomap currently uses regex-based pattern matching to extract exported symbols.
+/adev:repomap currently uses regex-based pattern matching to extract exported symbols.
 This approach misses ~30% of export patterns (re-exports, arrow functions, destructured
 exports) and cannot build a dependency graph for blast radius scoring or drift detection.
 
@@ -117,7 +117,7 @@ stays as the zero-dependency default, web-tree-sitter (WASM) is opt-in for AST a
 
 ## Decision
 Add `web-tree-sitter` as an optional dependency. It is NOT added to package.json
-dependencies — users install it on demand via a prompt in `/adev-repomap` or `/adev-init`.
+dependencies — users install it on demand via a prompt in `/adev:repomap` or `/adev:init`.
 Grammar WASM files are downloaded per-language on first use.
 
 ## Consequences

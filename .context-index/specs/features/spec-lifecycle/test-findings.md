@@ -6,7 +6,7 @@ Captured during interactive testing on 2026-03-29, branch `feat/spec-lifecycle`.
 
 ### Finding 1: Legacy charters lack lifecycle frontmatter
 
-**Severity:** Medium — blocks `/adev-status --all` capability aggregation
+**Severity:** Medium — blocks `/adev:status --all` capability aggregation
 **Status:** RESOLVED — all 16 charters now have `status: approved`, `revision: 1`, `updated` frontmatter. 6 charters with capability maps now include Status column
 
 ---
@@ -18,10 +18,10 @@ Captured during interactive testing on 2026-03-29, branch `feat/spec-lifecycle`.
 
 ---
 
-### Finding 3: `adev-status` not registered in plugin.json
+### Finding 3: `adev:status` not registered in plugin.json
 
 **Severity:** High
-**Status:** RESOLVED — added `adev-status` to `providers/opencode/skills/` and `providers/codex/skills/` (with `agents/openai.yaml` for Codex). Claude Code cache will pick it up on next plugin reload.
+**Status:** RESOLVED — added `adev:status` to `providers/opencode/skills/` and `providers/codex/skills/` (with `agents/openai.yaml` for Codex). Claude Code cache will pick it up on next plugin reload.
 
 ---
 
@@ -62,7 +62,7 @@ Captured during interactive testing on 2026-03-29, branch `feat/spec-lifecycle`.
 
 ## Remaining work
 
-- Verify `/adev-status` skill discovery on a fresh Claude Code session (cache rebuild needed)
+- Verify `/adev:status` skill discovery on a fresh Claude Code session (cache rebuild needed)
 
 ---
 
@@ -71,12 +71,12 @@ Captured during interactive testing on 2026-03-29, branch `feat/spec-lifecycle`.
 | Test | Description | Status | Notes |
 |------|-------------|--------|-------|
 | 10 | Template validation | PASS | All 3 templates have lifecycle fields |
-| 1 | `/adev-status --all` | PASS | Charter + spec counts correct, session found |
-| 2 | `/adev-status --charter spec-lifecycle` | PASS | Frontmatter, capability map, all 12 specs correct |
-| 3 | `/adev-status --spec` (single spec) | PASS | All fields present, file-sha matches, no drift |
+| 1 | `/adev:status --all` | PASS | Charter + spec counts correct, session found |
+| 2 | `/adev:status --charter spec-lifecycle` | PASS | Frontmatter, capability map, all 12 specs correct |
+| 3 | `/adev:status --spec` (single spec) | PASS | All fields present, file-sha matches, no drift |
 | 4 | Session capture hook | PASS | Manifest fallback, stdin, provider=none all work |
 | 5 | prepare-commit-msg trailers | PASS | Spec, Plan-task, Session trailers + dedup |
 | 6 | post-commit session summary | PASS | Session file created with correct metadata |
-| 7 | `/adev-hygiene` lifecycle audit | PASS | All 4 checks pass, no drift or staleness |
-| 8 | Drift detection gate (`/adev-plan`) | PASS | SHA-based drift detection works, revert confirmed |
+| 7 | `/adev:hygiene` lifecycle audit | PASS | All 4 checks pass, no drift or staleness |
+| 8 | Drift detection gate (`/adev:plan`) | PASS | SHA-based drift detection works, revert confirmed |
 | 9 | Source manifest library | PASS | Compute, verify, determinism, empty, missing all pass |

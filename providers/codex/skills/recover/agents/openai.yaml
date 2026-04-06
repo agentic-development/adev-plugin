@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Recover"
+  short_description: "Recover a blocked adev task"
+  default_prompt: "Use $adev:recover to diagnose why this task is stuck and propose the resume path."

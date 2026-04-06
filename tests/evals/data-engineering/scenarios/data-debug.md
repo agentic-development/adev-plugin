@@ -1,10 +1,10 @@
 # Scenario: Debug a failing dbt test (NULL total_amount)
 
 ## Skill
-`/adev-debug`
+`/adev:debug`
 
 ## Target Project
-`tests/evals/adev-data-eval` — E-commerce dbt + DuckDB project
+`tests/evals/adev:data-eval` — E-commerce dbt + DuckDB project
 
 ## Prompt
 Debug this error: `dbt test not_null_fct_orders_total_amount failed: 3 rows with NULL total_amount found`

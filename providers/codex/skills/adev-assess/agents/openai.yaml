@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Assess"
-  short_description: "Assess codebase readiness for agentic development"
-  default_prompt: "Use $adev-assess to evaluate this codebase's readiness for AI-assisted development."

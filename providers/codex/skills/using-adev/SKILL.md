@@ -30,37 +30,37 @@ The constitution is synced to AGENTS.md. For deeper context, use agentic search 
 
 ## Available Skills
 
-Invoke skills explicitly with `$adev-<skill>` or let Codex implicitly activate them based on the description.
+Invoke skills explicitly with `$adev:<skill>` or let Codex implicitly activate them based on the description.
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
-| `$adev-start` | Triage | Classify incoming work and route to the right skill |
-| `$adev-init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
-| `$adev-sync` | Context Setup | Sync constitution to AGENTS.md and other agent files |
-| `$adev-brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
-| `$adev-specify` | Specification | Write Live Specs within a charter's scope |
-| `$adev-review-specs` | Architecture Review | Principal architect agents review specs before planning |
-| `$adev-plan` | Planning | Decompose specs into implementation tasks |
-| `$adev-route` | Planning | Score tasks on routing matrix for autonomous vs assisted execution |
-| `$adev-implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
-| `$adev-validate` | Validation | Post-implementation checks against specs and constitution |
-| `$adev-debug` | Debugging | Context-aware systematic debugging |
-| `$adev-hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
-| `$adev-repomap` | Maintenance | Generate AST-based symbol index for drift detection |
-| `$adev-assess` | Assessment | Assess codebase readiness across 8 (raw) or 11 (adev) dimensions |
-| `$adev-test-write` | Implementation | TDD test authoring with gaming detection |
-| `$adev-recover` | Implementation | Resume stuck agent tasks — diagnosis, correction, re-dispatch |
-| `$adev-eval` | Validation | Graduated evaluation harness — score output quality beyond pass/fail |
-| `$adev-sample` | Maintenance | Curate golden samples from high-quality implementations |
-| `$adev-retro` | Maintenance | Sprint retrospective — extract lessons and delivery metrics |
-| `$adev-status` | Maintenance | Read-only dashboard of charters, specs, and lifecycle progress |
+| `$adev:start` | Triage | Classify incoming work and route to the right skill |
+| `$adev:init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
+| `$adev:sync` | Context Setup | Sync constitution to AGENTS.md and other agent files |
+| `$adev:brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
+| `$adev:specify` | Specification | Write Live Specs within a charter's scope |
+| `$adev:review-specs` | Architecture Review | Principal architect agents review specs before planning |
+| `$adev:plan` | Planning | Decompose specs into implementation tasks |
+| `$adev:route` | Planning | Score tasks on routing matrix for autonomous vs assisted execution |
+| `$adev:implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
+| `$adev:validate` | Validation | Post-implementation checks against specs and constitution |
+| `$adev:debug` | Debugging | Context-aware systematic debugging |
+| `$adev:hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
+| `$adev:repomap` | Maintenance | Generate AST-based symbol index for drift detection |
+| `$adev:assess` | Assessment | Assess codebase readiness across 8 (raw) or 11 (adev) dimensions |
+| `$adev:test-write` | Implementation | TDD test authoring with gaming detection |
+| `$adev:recover` | Implementation | Resume stuck agent tasks — diagnosis, correction, re-dispatch |
+| `$adev:eval` | Validation | Graduated evaluation harness — score output quality beyond pass/fail |
+| `$adev:sample` | Maintenance | Curate golden samples from high-quality implementations |
+| `$adev:retro` | Maintenance | Sprint retrospective — extract lessons and delivery metrics |
+| `$adev:status` | Maintenance | Read-only dashboard of charters, specs, and lifecycle progress |
 
 ## Lifecycle Gates
 
 These gates enforce quality:
 
 - **Brainstorm before implement.** Do not write implementation code without a charter or spec.
-- **Review before plan.** `$adev-plan` blocks if specs have not passed `$adev-review-specs`.
+- **Review before plan.** `$adev:plan` blocks if specs have not passed `$adev:review-specs`.
 - **Constitution compliance.** Every phase checks against constitutional principles.
 - **TDD.** Implementation follows RED-GREEN-REFACTOR (test first, then code).
 
@@ -71,10 +71,10 @@ If any `adev-*` skill applies to the current task, invoke it before proceeding. 
 ## Invocation Examples
 
 ```text
-$adev-init
-$adev-sync
-$adev-brainstorm
-$adev-plan
+$adev:init
+$adev:sync
+$adev:brainstorm
+$adev:plan
 ```
 
 For Codex, prefix any adev skill with `$` to explicitly invoke it.

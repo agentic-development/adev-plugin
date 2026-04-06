@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Retro"
-  short_description: "Summarize lessons from completed work"
-  default_prompt: "Use $adev-retro to analyze recent work and capture delivery lessons."

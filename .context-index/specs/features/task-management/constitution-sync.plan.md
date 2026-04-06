@@ -16,7 +16,7 @@
 
 **Modify:**
 - `templates/constitution-template.md` — Add Task Management section
-- `skills/adev-sync/SKILL.md` — Add conditional Task Management block
+- `skills/sync/SKILL.md` — Add conditional Task Management block
 
 **Reference (read, do not modify):**
 - `.context-index/constitution.md` — Current constitution for reference
@@ -30,7 +30,7 @@
 
 ### Task 2 Context
 - Spec: `constitution-sync.md` (Behaviors 3-6, Sync Integration)
-- Skill: `skills/adev-sync/SKILL.md` (current sync instructions)
+- Skill: `skills/sync/SKILL.md` (current sync instructions)
 
 ## Parallelization
 
@@ -77,7 +77,7 @@ When `tasks.backend: beads`:
 When `tasks.backend: file` (or unset):
 - The issue board lives at `.context-index/tasks/tasks.md`
 - Update the markdown table directly to change issue status
-- Use `/adev-issues` to manage issues interactively
+- Use `/adev:issues` to manage issues interactively
 ```
 
 - [ ] **Verify test passes** — grep finds "Task Management"
@@ -92,21 +92,21 @@ git commit -m "feat(task-management): add Task Management section to constitutio
 
 **Charter capability:** Sync Block
 **Files:**
-- Modify: `skills/adev-sync/SKILL.md`
+- Modify: `skills/sync/SKILL.md`
 
 **Tests:** No test file — skill markdown change.
 
 - [ ] **Write failing test**
 
 ```bash
-! grep -q "BEGIN TASK MANAGEMENT" skills/adev-sync/SKILL.md
+! grep -q "BEGIN TASK MANAGEMENT" skills/sync/SKILL.md
 ```
 
 - [ ] **Verify test fails**
 
 - [ ] **Implement**
 
-Add a conditional Task Management block to the Claude format and OpenCode format sections in `skills/adev-sync/SKILL.md`. Insert after the Context Index section, before User Additions:
+Add a conditional Task Management block to the Claude format and OpenCode format sections in `skills/sync/SKILL.md`. Insert after the Context Index section, before User Additions:
 
 ```markdown
    ### Task Management block (conditional)
@@ -131,8 +131,8 @@ Add a conditional Task Management block to the Claude format and OpenCode format
 - [ ] **Commit**
 
 ```bash
-git add skills/adev-sync/SKILL.md
-git commit -m "feat(task-management): add conditional task management block to adev-sync"
+git add skills/sync/SKILL.md
+git commit -m "feat(task-management): add conditional task management block to adev:sync"
 ```
 
 ---

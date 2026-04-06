@@ -62,7 +62,7 @@ updated: {{ date }}
 ## Actionable Task Map
 
 <!-- A preliminary breakdown of implementation tasks.
-     /adev-plan will refine this into a detailed plan after review. -->
+     /adev:plan will refine this into a detailed plan after review. -->
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
@@ -72,7 +72,7 @@ updated: {{ date }}
 
 <!-- For UI tasks only. Delete this section for backend-only specs.
      Describe what the user SEES, not what the code does.
-     These are verified by browser snapshot during /adev-implement and /adev-validate.
+     These are verified by browser snapshot during /adev:implement and /adev:validate.
      Be specific: sizes, positions, colors, states, responsive breakpoints. -->
 
 - ...
@@ -83,7 +83,7 @@ updated: {{ date }}
 ## Acceptance Criteria
 
 <!-- Concrete, verifiable criteria for this spec to be considered complete.
-     /adev-validate checks these after implementation. -->
+     /adev:validate checks these after implementation. -->
 
 - [ ] ...
 - [ ] ...
