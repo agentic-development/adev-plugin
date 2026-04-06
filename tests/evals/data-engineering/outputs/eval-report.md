@@ -14,7 +14,7 @@ Generated: 2026-03-31T14:33:06.925Z
 | codex | data-debug | 6/11 | 27.3 | 50 | partial |
 | codex | data-document | 8/12 | 33.3 | 50 | partial |
 | codex | data-specify | 10/12 | 41.7 | 50 | partial |
-| codex | data-test-write | 3/12 | 12.5 | 50 | partial |
+| codex | data-write-test | 3/12 | 12.5 | 50 | partial |
 
 ## Details
 
@@ -156,7 +156,7 @@ Generated: 2026-03-31T14:33:06.925Z
 | `lineage_completeness` | Full upstream chain traced, not just direct refs | 1.5 | - |
 | `gap_identification` | Identifies testing or design gaps in the existing model | 1.5 | - |
 
-### codex / data-test-write
+### codex / data-write-test
 
 **Required Elements:**
 

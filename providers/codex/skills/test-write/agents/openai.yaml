@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Test Write"
-  short_description: "TDD test authoring with gaming detection"
-  default_prompt: "Use $adev:test-write to author failing tests before implementation."

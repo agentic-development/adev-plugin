@@ -43,12 +43,13 @@ Invoke skills explicitly with `$adev:<skill>` or let Codex implicitly activate t
 | `$adev:plan` | Planning | Decompose specs into implementation tasks |
 | `$adev:route` | Planning | Score tasks on routing matrix for autonomous vs assisted execution |
 | `$adev:implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
+| `$adev:write-test` | Implementation | Standalone TDD test authoring with gaming detection |
 | `$adev:validate` | Validation | Post-implementation checks against specs and constitution |
 | `$adev:debug` | Debugging | Context-aware systematic debugging |
 | `$adev:hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
 | `$adev:repomap` | Maintenance | Generate AST-based symbol index for drift detection |
 | `$adev:assess` | Assessment | Assess codebase readiness across 8 (raw) or 11 (adev) dimensions |
-| `$adev:test-write` | Implementation | TDD test authoring with gaming detection |
+| `$adev:write-test` | Implementation | TDD test authoring with gaming detection |
 | `$adev:recover` | Implementation | Resume stuck agent tasks — diagnosis, correction, re-dispatch |
 | `$adev:eval` | Validation | Graduated evaluation harness — score output quality beyond pass/fail |
 | `$adev:sample` | Maintenance | Curate golden samples from high-quality implementations |
