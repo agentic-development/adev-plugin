@@ -48,6 +48,8 @@ Read these files once at the start. Extract everything subagents will need so th
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
+**Execution State Check:** Read `.context-index/.execution-state.md` using inline Node.js: `node -e "import { readExecutionState } from './lib/execution-state.mjs'; ..."`. If the file exists with `status: "active"`, resume from the `currentTask` in the state file instead of task 1. If `status: "blocked"`, surface the blocker to the user and suggest running `/adev:recover` before continuing. If the file is missing or `status: "idle"`, start from task 1 as normal.
+
 **Update charter Capability Map:** At the start of implementation, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `implementing`.
 
 **Load or create issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
@@ -213,6 +215,8 @@ When done, report:
 <!-- entire:spec-trace spec=".context-index/specs/features/<module>/<task>.md" task="N" -->
 ```
 
+**Update Execution State:** Before dispatching the implementer subagent, write execution state using inline Node.js: `node -e "import { writeExecutionState } from './lib/execution-state.mjs'; ..."` with `status: "active"`, `planRef` set to the plan file path, `currentTask` set to the task number, `issueBinding` set to the issue ID (if `tasks.backend` is configured), `nextAction` set to the task description, and `progress` set to the full task checklist with completed tasks marked done. If `writeExecutionState` fails, log a warning and continue — do not block implementation.
+
 #### 2d. Dispatch and Handle Status
 
 Dispatch the subagent. Handle the returned status:
@@ -231,6 +235,7 @@ Dispatch the subagent. Handle the returned status:
 
 **BLOCKED.** The subagent cannot proceed.
 - Present the blocker description to the user immediately.
+- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution. Use inline Node.js: `node -e "import { writeExecutionState } from './lib/execution-state.mjs'; ..."`.
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev:specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 
@@ -348,6 +353,8 @@ If `governance/boundaries.yaml` exists, run final boundary compliance check: gre
 ### Step 4: Completion
 
 Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
+
+**Clear Execution State:** After all tasks are complete, clear the execution state using inline Node.js: `node -e "import { clearExecutionState } from './lib/execution-state.mjs'; ..."`. This resets the state to `idle` so the next session starts fresh. If `clearExecutionState` fails, log a warning — implementation is still considered complete.
 
 Read the `completion.merge_policy` from manifest.yaml (default: "pr").
 

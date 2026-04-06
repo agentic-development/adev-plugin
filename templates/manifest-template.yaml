@@ -160,6 +160,8 @@ tasks:
   #   beads — beads_rust CLI (br), local-first git-native issue tracker
   #           Install: https://github.com/Dicklesworthstone/beads_rust
   backend: file
+  # Tool calls between issue reminders. 0 to disable. Default: 25.
+  reminder_interval: 25
   # db_path: /absolute/path/to/shared/root
   #   Optional — override the storage root for issue data.
   #   Useful when multiple git worktrees need to share a single issue database.
