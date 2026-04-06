@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.11.0] - 2026-04-06
+
+### New Features
+
+- **Session Awareness module** — Full feature charter with 10 capabilities, all validated
+- **Execution state file** — `lib/execution-state.mjs` with read/write/clear, atomic writes (temp-file-then-rename), YAML frontmatter + markdown progress body. Tracks active plan, current task, issue binding, blockers, and next action
+- **Session-start resume** — Extended `session-start.sh` to read execution state and inject a resume block (active plan context or blocker alert) at session start, enabling seamless continuation across sessions
+- **Issue reminder hook** — New `issue-reminder.sh/.mjs` PostToolUse hook that surfaces active issues every N tool calls and after git commits, with counter-based triggering and git commit detection
+- **Idle nudge** — When no in-progress issues exist, the reminder hook shows up to 3 open issues by priority or an "all resolved" message, with a stale execution state warning when applicable
+- **Configurable reminder interval** — `tasks.reminder_interval` in manifest.yaml (default 25, set to 0 to disable). Added to scaffold template
+- **Session log schema** — Formalized the existing JSONL schema for `.session-tracking.jsonl`, removed undocumented `specs` field, added `tool_name` guard to skip writes when tool name is missing
+- **Skill-level state instructions** — Added execution state instructions to `/adev:implement` SKILL.md: resume check at Step 1, per-task state writes at Step 2, blocker state at Step 2d, and clear on completion at Step 4
+- **Format documentation** — `FORMAT.md` template documenting execution state and session log schemas as public contracts for external tool interoperability
+
+### Fixes
+
+- **Session capture schema alignment** — Removed undocumented `specs: []` field from JSONL output, added guard to skip writes when `tool_name` is missing (was writing `"unknown"`)
+
+### Other
+
+- 22 new tests across 4 test files (531 total, 0 failures)
+- 7 Live Specs written, reviewed (3 specialist reviewers each), and validated (11-check suite)
+- Feature charter fully validated: all 10 capabilities at `validated` status
+
 ## [0.7.1] - 2026-03-30
 
 ### Fixes
