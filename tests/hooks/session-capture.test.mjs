@@ -19,12 +19,13 @@ describe("session-capture hook", () => {
     writeFixture(tempDir, ".context-index/.gitkeep", "");
 
     const { exitCode, stdout } = runHook("session-capture.sh", {
-      env: {
-        CLAUDE_TOOL_USE_NAME: "Edit",
-        CLAUDE_TOOL_INPUT_file_path: "src/index.ts",
-      },
       cwd: tempDir,
-      stdin: JSON.stringify({ provider: "native" }),
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Edit",
+        tool_input: { file_path: "src/index.ts" },
+        session_id: "test-session-1",
+      }),
     });
 
     assert.equal(exitCode, 0);
@@ -41,6 +42,7 @@ describe("session-capture hook", () => {
     assert.equal(entry.tool, "Edit");
     assert.deepEqual(entry.files, ["src/index.ts"]);
     assert.deepEqual(entry.specs, []);
+    assert.equal(entry.session_id, "test-session-1");
     assert.ok(entry.timestamp, "should have a timestamp");
   });
 
@@ -48,11 +50,11 @@ describe("session-capture hook", () => {
     writeFixture(tempDir, ".context-index/manifest.yaml", "provider: native\n");
 
     const { exitCode, stdout } = runHook("session-capture.sh", {
-      env: {
-        CLAUDE_TOOL_USE_NAME: "Bash",
-      },
       cwd: tempDir,
-      stdin: "{}",
+      stdin: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "npm test" },
+      }),
     });
 
     assert.equal(exitCode, 0);
@@ -70,7 +72,7 @@ describe("session-capture hook", () => {
   it("exits 0 with empty JSON when provider=none", () => {
     const { exitCode, stdout } = runHook("session-capture.sh", {
       cwd: tempDir,
-      stdin: JSON.stringify({ provider: "none" }),
+      stdin: JSON.stringify({ provider: "none", tool_name: "Read" }),
     });
 
     assert.equal(exitCode, 0);
@@ -84,7 +86,7 @@ describe("session-capture hook", () => {
   it("exits 0 with empty JSON when provider=entire", () => {
     const { exitCode, stdout } = runHook("session-capture.sh", {
       cwd: tempDir,
-      stdin: JSON.stringify({ provider: "entire" }),
+      stdin: JSON.stringify({ provider: "entire", tool_name: "Edit" }),
     });
 
     assert.equal(exitCode, 0);
@@ -98,12 +100,12 @@ describe("session-capture hook", () => {
   it("creates .context-index directory if missing", () => {
     // No .context-index directory at all
     const { exitCode } = runHook("session-capture.sh", {
-      env: {
-        CLAUDE_TOOL_USE_NAME: "Read",
-        CLAUDE_TOOL_INPUT_file_path: "foo.txt",
-      },
       cwd: tempDir,
-      stdin: JSON.stringify({ provider: "native" }),
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Read",
+        tool_input: { file_path: "foo.txt" },
+      }),
     });
 
     assert.equal(exitCode, 0);
@@ -116,15 +118,19 @@ describe("session-capture hook", () => {
     writeFixture(tempDir, ".context-index/manifest.yaml", "provider: native\n");
 
     runHook("session-capture.sh", {
-      env: { CLAUDE_TOOL_USE_NAME: "Edit", CLAUDE_TOOL_INPUT_file_path: "a.ts" },
       cwd: tempDir,
-      stdin: "{}",
+      stdin: JSON.stringify({
+        tool_name: "Edit",
+        tool_input: { file_path: "a.ts" },
+      }),
     });
 
     runHook("session-capture.sh", {
-      env: { CLAUDE_TOOL_USE_NAME: "Read", CLAUDE_TOOL_INPUT_file_path: "b.ts" },
       cwd: tempDir,
-      stdin: "{}",
+      stdin: JSON.stringify({
+        tool_name: "Read",
+        tool_input: { file_path: "b.ts" },
+      }),
     });
 
     const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
@@ -134,6 +140,22 @@ describe("session-capture hook", () => {
     const first = JSON.parse(lines[0]);
     const second = JSON.parse(lines[1]);
     assert.equal(first.tool, "Edit");
+    assert.deepEqual(first.files, ["a.ts"]);
     assert.equal(second.tool, "Read");
+    assert.deepEqual(second.files, ["b.ts"]);
+  });
+
+  it("records tool_name as unknown when not provided", () => {
+    const { exitCode } = runHook("session-capture.sh", {
+      cwd: tempDir,
+      stdin: JSON.stringify({ provider: "native" }),
+    });
+
+    assert.equal(exitCode, 0);
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
+    assert.equal(entry.tool, "unknown");
+    assert.deepEqual(entry.files, []);
   });
 });
