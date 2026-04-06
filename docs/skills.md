@@ -69,7 +69,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
 | Skill | Purpose | Prerequisites |
 |-------|---------|---------------|
 | `/adev:implement` | Execute tasks with TDD and 2-stage review | Plan exists |
-| `/adev:test-write` | Standalone TDD test authoring | None |
+| `/adev:write-test` | Standalone TDD test authoring | None |
 | `/adev:debug` | Context-aware debugging (checks ADRs, specs) | None |
 | `/adev:recover` | Unstick a stalled agent with corrective context | Agent stuck |
 

@@ -91,7 +91,7 @@ This project uses the Agentic Development Framework (adev).
 - Constitution: `.context-index/constitution.md`
 - Manifest: `.context-index/manifest.yaml`
 - Platform: JavaScript (ESM), Node.js, npm, node:test
-- Available skills: /adev:brainstorm, /adev:specify, /adev:review-specs, /adev:plan, /adev:implement, /adev:validate, /adev:debug, /adev:hygiene, /adev:issues
+- Available skills: /adev:brainstorm, /adev:specify, /adev:review-specs, /adev:plan, /adev:implement, /adev:write-test, /adev:validate, /adev:debug, /adev:hygiene, /adev:issues
 
 <!-- BEGIN TASK MANAGEMENT -->
 ## Task Management

@@ -40,7 +40,7 @@ echo "Project:   $PROJECT_DIR"
 echo "Output:    $OUTPUT_DIR"
 echo ""
 
-SKILLS=(data-assess data-brainstorm data-specify data-test-write data-debug data-document)
+SKILLS=(data-assess data-brainstorm data-specify data-write-test data-debug data-document)
 
 # Snapshot: list all tracked + untracked files with their checksums
 SNAPSHOT_FILE=$(mktemp)

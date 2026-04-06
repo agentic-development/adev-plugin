@@ -8,7 +8,7 @@
 
 Several skills already comply with the model-routing spec:
 - `templates/platform-context.yaml` — already has `model_tiers` with blank values and comments
-- `skills/test-write/SKILL.md` — already uses tier names, no hardcoded models
+- `skills/write-test/SKILL.md` — already uses tier names, no hardcoded models
 - `skills/implement/SKILL.md` — already reads `model_tiers` in Load Context step
 - `skills/eval/SKILL.md` — already references `reasoning` tier with fallback
 - `skills/review-specs/SKILL.md` — already has tier annotations for all three subagents
@@ -41,7 +41,7 @@ Remaining work:
 ### Task 4: Add subagent-dispatching skills tier documentation test
 - **Files:** (no source changes)
 - **Tests:** `tests/model-routing/tier-annotations.test.mjs`
-- **TDD:** RED — write test that checks each skill known to dispatch subagents (`adev:implement`, `adev:eval`, `adev:review-specs`, `adev:brainstorm`, `adev:test-write`) references `model_tiers` and at least one tier name (`fast`, `capable`, or `reasoning`).
+- **TDD:** RED — write test that checks each skill known to dispatch subagents (`adev:implement`, `adev:eval`, `adev:review-specs`, `adev:brainstorm`, `adev:write-test`) references `model_tiers` and at least one tier name (`fast`, `capable`, or `reasoning`).
 - **Description:** Regression guard ensuring skills that dispatch subagents always document their tier resolution. The list of dispatching skills is maintained as a constant in the test file. When a new dispatching skill is added, it must be added to this list (the test serves as a checklist). Should pass after Tasks 1-2 are complete.
 
 ## Task Order
