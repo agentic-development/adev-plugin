@@ -118,7 +118,7 @@ node --test tests/cli.test.mjs
 node --test tests/hooks/merge-guard.test.mjs
 
 # Test the CLI locally (without installing)
-claude --plugin-dir /path/to/adev:plugin
+claude --plugin-dir /path/to/adev-plugin
 
 # Install into Claude Code (production path)
 npx adev-cli init

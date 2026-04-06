@@ -59,6 +59,18 @@ These gates enforce quality:
 - **Constitution compliance.** Every phase checks against constitutional principles.
 - **TDD.** Implementation follows RED-GREEN-REFACTOR (test first, then code).
 
+## Context-First Rule
+
+**Before editing ANY source code**, read relevant project context:
+
+1. **Bug fix?** → Invoke `/adev:debug`. It mandates reading ADRs, specs, and architecture before proposing fixes.
+2. **Implementation task?** → Invoke `/adev:implement`. It loads context automatically in Step 1.
+3. **Quick fix or small change?** → Read the relevant charter or spec FIRST. Even a 1-line fix can violate spec assumptions.
+
+A context-preflight hook will warn if you edit source code without reading `.context-index/` files first. Treat this warning as a stop signal — read context before continuing.
+
 ## Skill Invocation Rule
 
 If any `/adev:*` skill applies to the current task, invoke it before proceeding. Even a 1% chance it applies means you should check. The skill can always be skipped if it turns out to be irrelevant.
+
+Bug fixes are the most common case where agents skip skills. A "simple" fix without context risks violating spec assumptions or missing the root cause entirely.

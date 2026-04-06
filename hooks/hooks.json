@@ -17,6 +17,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-preflight.sh\""
+          },
+          {
+            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/constitution-linter.sh\""
           }
         ]
@@ -32,6 +36,15 @@
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-read-tracker.sh\""
+          }
+        ]
+      },
       {
         "matcher": "Edit",
         "hooks": [

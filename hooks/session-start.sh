@@ -8,6 +8,9 @@ set -euo pipefail
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 SKILL_FILE="${PLUGIN_ROOT}/skills/using-adev/SKILL.md"
 
+# Clear context-preflight flag so each session starts fresh
+rm -f .context-index/.context-preflight-ok
+
 if [ ! -f "$SKILL_FILE" ]; then
   exit 0
 fi
