@@ -41,7 +41,6 @@ describe("session-capture hook", () => {
     const entry = JSON.parse(lines[0]);
     assert.equal(entry.tool, "Edit");
     assert.deepEqual(entry.files, ["src/index.ts"]);
-    assert.deepEqual(entry.specs, []);
     assert.equal(entry.session_id, "test-session-1");
     assert.ok(entry.timestamp, "should have a timestamp");
   });
@@ -145,7 +144,7 @@ describe("session-capture hook", () => {
     assert.deepEqual(second.files, ["b.ts"]);
   });
 
-  it("records tool_name as unknown when not provided", () => {
+  it("does not write entry when tool_name is missing", () => {
     const { exitCode } = runHook("session-capture.sh", {
       cwd: tempDir,
       stdin: JSON.stringify({ provider: "native" }),
@@ -154,8 +153,93 @@ describe("session-capture hook", () => {
     assert.equal(exitCode, 0);
 
     const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    assert.ok(!existsSync(trackingFile), "should NOT write when tool_name missing");
+  });
+
+  it("does not include specs field in JSONL output", () => {
+    writeFixture(tempDir, ".context-index/.gitkeep", "");
+
+    runHook("session-capture.sh", {
+      cwd: tempDir,
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Read",
+        tool_input: { file_path: "foo.txt" },
+      }),
+    });
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
     const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
-    assert.equal(entry.tool, "unknown");
-    assert.deepEqual(entry.files, []);
+    assert.equal(entry.specs, undefined, "specs field should not be present");
+  });
+
+  it("timestamp is ISO 8601 UTC truncated to seconds", () => {
+    writeFixture(tempDir, ".context-index/.gitkeep", "");
+    runHook("session-capture.sh", {
+      cwd: tempDir,
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Bash",
+        tool_input: { command: "echo hi" },
+      }),
+    });
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
+    assert.match(entry.timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+  });
+
+  it("session_id is omitted when not provided", () => {
+    writeFixture(tempDir, ".context-index/.gitkeep", "");
+    runHook("session-capture.sh", {
+      cwd: tempDir,
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Read",
+        tool_input: { file_path: "foo.txt" },
+      }),
+    });
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
+    assert.ok(!("session_id" in entry), "session_id should be omitted, not null");
+  });
+
+  it("files is always an array even when no file_path", () => {
+    writeFixture(tempDir, ".context-index/.gitkeep", "");
+    runHook("session-capture.sh", {
+      cwd: tempDir,
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Bash",
+      }),
+    });
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
+    assert.ok(Array.isArray(entry.files), "files should be an array");
+    assert.equal(entry.files.length, 0);
+  });
+
+  it("each line is valid independent JSON", () => {
+    writeFixture(tempDir, ".context-index/manifest.yaml", "provider: native\n");
+
+    runHook("session-capture.sh", {
+      cwd: tempDir,
+      stdin: JSON.stringify({ tool_name: "Edit", tool_input: { file_path: "a.ts" } }),
+    });
+    runHook("session-capture.sh", {
+      cwd: tempDir,
+      stdin: JSON.stringify({ tool_name: "Read", tool_input: { file_path: "b.ts" } }),
+    });
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    const lines = readFileSync(trackingFile, "utf8").trim().split("\n");
+    for (const line of lines) {
+      const entry = JSON.parse(line);
+      assert.ok(entry.tool, "tool field required");
+      assert.ok(Array.isArray(entry.files), "files field required");
+      assert.ok(entry.timestamp, "timestamp field required");
+    }
   });
 });

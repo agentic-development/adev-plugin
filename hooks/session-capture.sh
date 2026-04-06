@@ -37,14 +37,17 @@ printf '%s' "$STDIN_JSON" | node -e '
     }
 
     // Extract fields from stdin JSON (PostToolUse protocol)
-    const toolName = input.tool_name || "unknown";
+    const toolName = input.tool_name || "";
+    if (!toolName) {
+      process.stdout.write("{}\n");
+      return;
+    }
     const filePath = (input.tool_input && input.tool_input.file_path) || "";
     const sessionId = input.session_id || "";
 
     const entry = {
       tool: toolName,
       files: filePath ? [filePath] : [],
-      specs: [],
       timestamp: new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
     };
     if (sessionId) entry.session_id = sessionId;

@@ -71,15 +71,15 @@ The session-awareness module provides continuous context about active work throu
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
 | Execution State File | Read/write `.execution-state.md` with defined YAML frontmatter schema, atomic writes | must-have | 1 | validated |
-| Issue Reminder Hook | PostToolUse hook that surfaces active issues every N tool calls and after git commits | must-have | 1 | — |
-| Session-Start Resume | Extend `session-start.sh` to read execution state and inject resumption context | must-have | 1 | — |
-| Session Log Schema | Documented JSONL schema for session-tracking entries (already captured, needs formal spec) | must-have | 1 | — |
-| Skill-Level State Instructions | Markdown instructions in `adev-implement` for updating execution state at task boundaries | must-have | 1 | — |
-| Configurable Reminder Interval | `tasks.reminder_interval` in manifest.yaml with sensible default | should-have | 1 | — |
-| Idle Nudge | When no issues are in_progress, remind to update the issue board | should-have | 1 | — |
-| Execution State Lib | `lib/execution-state.mjs` — thin read/write abstraction over the state file | should-have | 1 | — |
-| Concurrent Access Safety | Atomic writes via temp-file-then-rename for execution state | should-have | 1 | — |
-| Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | — |
+| Issue Reminder Hook | PostToolUse hook that surfaces active issues every N tool calls and after git commits | must-have | 1 | review-passed |
+| Session-Start Resume | Extend `session-start.sh` to read execution state and inject resumption context | must-have | 1 | review-passed |
+| Session Log Schema | Documented JSONL schema for session-tracking entries (already captured, needs formal spec) | must-have | 1 | implemented |
+| Skill-Level State Instructions | Markdown instructions in `adev-implement` for updating execution state at task boundaries | must-have | 1 | review-passed |
+| Configurable Reminder Interval | `tasks.reminder_interval` in manifest.yaml with sensible default | should-have | 1 | review-passed |
+| Idle Nudge | When no issues are in_progress, remind to update the issue board | should-have | 1 | review-passed |
+| Execution State Lib | `lib/execution-state.mjs` — thin read/write abstraction over the state file | should-have | 1 | validated |
+| Concurrent Access Safety | Atomic writes via temp-file-then-rename for execution state | should-have | 1 | validated |
+| Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | review-passed |
 
 ## Interface Contracts
 
