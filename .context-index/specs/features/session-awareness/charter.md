@@ -71,15 +71,15 @@ The session-awareness module provides continuous context about active work throu
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
 | Execution State File | Read/write `.execution-state.md` with defined YAML frontmatter schema, atomic writes | must-have | 1 | validated |
-| Issue Reminder Hook | PostToolUse hook that surfaces active issues every N tool calls and after git commits | must-have | 1 | review-passed |
+| Issue Reminder Hook | PostToolUse hook that surfaces active issues every N tool calls and after git commits | must-have | 1 | implemented |
 | Session-Start Resume | Extend `session-start.sh` to read execution state and inject resumption context | must-have | 1 | implemented |
 | Session Log Schema | Documented JSONL schema for session-tracking entries (already captured, needs formal spec) | must-have | 1 | implemented |
 | Skill-Level State Instructions | Markdown instructions in `adev-implement` for updating execution state at task boundaries | must-have | 1 | implemented |
 | Configurable Reminder Interval | `tasks.reminder_interval` in manifest.yaml with sensible default | should-have | 1 | implemented |
-| Idle Nudge | When no issues are in_progress, remind to update the issue board | should-have | 1 | review-passed |
+| Idle Nudge | When no issues are in_progress, remind to update the issue board | should-have | 1 | implemented |
 | Execution State Lib | `lib/execution-state.mjs` — thin read/write abstraction over the state file | should-have | 1 | validated |
 | Concurrent Access Safety | Atomic writes via temp-file-then-rename for execution state | should-have | 1 | validated |
-| Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | review-passed |
+| Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | implemented |
 
 ## Interface Contracts
 
