@@ -17,7 +17,7 @@ affects:
   - validation
   - assessment
   - design
-  - adev:test-write
+  - adev:write-test
 ---
 
 ## Behavioral Contract
@@ -78,7 +78,7 @@ affects:
 | Module | Impact | Changes Required |
 |--------|--------|-----------------|
 | implementation | High | `adev:implement` dispatches 3+ subagents per task. Each dispatch must specify tier. Implementer = `capable`, spec reviewer = `capable`, code quality reviewer = `capable`, visual verifier = `capable` |
-| adev:test-write | High | RED phase authoring = `capable`, verify mode = `fast`, gaming judgment = `fast` |
+| adev:write-test | High | RED phase authoring = `capable`, verify mode = `fast`, gaming judgment = `fast` |
 | validation | Medium | `adev:eval` LLM-as-judge dispatch = `reasoning`. `adev:validate` dispatches = `capable` |
 | assessment | Medium | `adev:review-specs` dispatches structural architect = `reasoning`, security reviewer = `capable`, consistency analyzer = `fast` |
 | design | Low | `adev:brainstorm` charter reviewer = `capable` |
@@ -89,7 +89,7 @@ affects:
 
 2. **`/adev:init` → `templates/platform-context.yaml`:** The template scaffolds the `model_tiers` section with blank values. Existing projects that upgrade can add the section manually.
 
-3. **`adev:test-write` → model-routing:** `adev:test-write` is the primary beneficiary. Its per-phase tier assignments (`capable` for RED, `fast` for verify) are the canonical example of how to document tier usage in a skill.
+3. **`adev:write-test` → model-routing:** `adev:write-test` is the primary beneficiary. Its per-phase tier assignments (`capable` for RED, `fast` for verify) are the canonical example of how to document tier usage in a skill.
 
 ## Actionable Task Map
 

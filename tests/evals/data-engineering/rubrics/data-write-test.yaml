@@ -1,0 +1,80 @@
+# Rubric: data-write-test — Write dbt tests for dim_customers
+# Target: tests/evals/adev:data-eval/models/marts/dim_customers.sql
+# Difficulty: HARD — must produce dbt-idiomatic tests with deterministic seed assertions
+
+skill: adev:write-test
+scenario: data-write-test
+
+required_elements:
+  # --- dbt schema test format ---
+  - id: schema_yml_format
+    description: "Produced tests in dbt YAML schema format (version: 2 + models section)"
+    match_pattern: "version: 2"
+
+  - id: relationship_test_with_arguments
+    description: "Used the dbt 1.7+ arguments format for relationship tests"
+    match_pattern: "relationships.*arguments|arguments.*to.*ref"
+
+  - id: accepted_values_for_country
+    description: "Proposed accepted_values test on country with specific country codes"
+    match_pattern: "accepted_values.*country|country.*accepted_values"
+
+  # --- Custom data tests (SQL files) ---
+  - id: custom_test_sql_format
+    description: "Proposed custom tests as SQL SELECT that returns failing rows (dbt convention)"
+    match_pattern: "select.*from.*\\{\\{\\s*ref\\(.*dim_customers.*\\)\\s*\\}\\}.*where"
+
+  - id: lifetime_value_non_negative
+    description: "Test that lifetime_value >= 0 (not just not_null)"
+    match_pattern: "lifetime_value.*<.*0|lifetime_value.*negative|>= 0.*lifetime"
+
+  - id: date_consistency_test
+    description: "Test that first_order_date <= most_recent_order_date"
+    match_pattern: "first_order_date.*>.*most_recent|first_order.*after.*most_recent|date.*consistency"
+
+  - id: zero_orders_implies_null_dates
+    description: "Test invariant: customers with 0 orders have null order dates"
+    match_pattern: "number_of_orders.*=.*0.*first_order_date|zero.*order.*null.*date|no.*order.*implies"
+
+  # --- Deterministic seed-based assertions ---
+  - id: specific_customer_id_assertion
+    description: "Referenced a specific customer_id from seed data in a test assertion"
+    match_pattern: "customer_id\\s*=\\s*[0-9]+|customer_id\\s*in\\s*\\("
+
+  - id: null_email_customers_identified
+    description: "Identified the specific customers with NULL emails (IDs 4, 9, 17, or 34)"
+    match_pattern: "customer.*(4|9|17|34).*null.*email|(4|9|17|34).*email.*null"
+
+  - id: expected_lifetime_value
+    description: "Computed an expected lifetime_value for a specific customer from seed data"
+    match_pattern: "292\\.93|299\\.95|\\d{2,3}\\.\\d{2}.*customer_id.*=|customer_id.*=.*\\d+.*lifetime_value.*=.*\\d+\\.\\d{2}"
+
+  # --- Anti-gaming ---
+  - id: no_loose_count_assertion
+    description: "Does not rely on loose assertions like count > 0 or count(*) > 0 as a passing test"
+    match_pattern: "count\\(\\*\\)\\s*!=\\s*\\d+|having.*count|exactly.*\\d+.*row|50.*row"
+
+  - id: row_count_test
+    description: "Tests that dim_customers has exactly 50 rows (matching seed)"
+    match_pattern: "50.*row|row.*50|count.*!=.*50|having.*count.*50"
+
+quality_dimensions:
+  - id: dbt_idiomatic
+    description: "Uses schema tests + custom data tests, not raw SQL assertions or pytest"
+    weight: 2
+
+  - id: business_logic_coverage
+    description: "Tests the completed-only LTV calculation, not just schema constraints"
+    weight: 2
+
+  - id: edge_case_coverage
+    description: "Tests NULL emails, zero-order customers, date ordering"
+    weight: 1.5
+
+  - id: seed_determinism
+    description: "Assertions reference specific known values from seed data, not dynamic counts"
+    weight: 2
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

@@ -44,7 +44,7 @@ Files with zero inbound edges (no other module imports them):
 - `lib/session-summary.mjs` — session summary generator
 - `lib/source-manifest.mjs` — source manifest tool
 - `lib/issues/registry.mjs` — issue manager factory
-- `skills/test-write/detect-framework.mjs` — test framework detection
+- `skills/write-test/detect-framework.mjs` — test framework detection
 - `tests/helpers.mjs` — test helper utilities
 
 ## Architecture Decision Records

@@ -91,7 +91,7 @@ This scaffolds a `.context-index/` directory with your project's constitution, p
 | Issue Tracking | `/adev:issues` | Create, update, close issues and epics |
 | Status | `/adev:status` | Query project progress across specs and charters |
 | Assessment | `/adev:assess` | Score codebase readiness for agentic development |
-| Test Writing | `/adev:test-write` | Standalone TDD test authoring |
+| Test Writing | `/adev:write-test` | Standalone TDD test authoring |
 
 For a complete skill reference with dependencies and a lifecycle flowchart, see [docs/skills.md](docs/skills.md). New to adev? Start with the [quickstart guide](docs/quickstart.md).
 

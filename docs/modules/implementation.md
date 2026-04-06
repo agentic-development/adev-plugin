@@ -4,16 +4,16 @@
 
 ## Purpose
 
-Execute plans using TDD, specialist routing, and context packets. `/adev:implement` runs tasks through RED/GREEN/REFACTOR phases. `/adev:debug` provides structured debugging with hypothesis testing. `/adev:recover` handles session recovery and context restoration. Includes the `/adev:test-write` specialist skill with companion code for test framework detection, specification gaming prevention, and immutable handoff verification.
+Execute plans using TDD, specialist routing, and context packets. `/adev:implement` runs tasks through RED/GREEN/REFACTOR phases. `/adev:debug` provides structured debugging with hypothesis testing. `/adev:recover` handles session recovery and context restoration. Includes the `/adev:write-test` specialist skill with companion code for test framework detection, specification gaming prevention, and immutable handoff verification.
 
 ## Key Exports
 
 | Symbol | Kind | Location | References |
 |--------|------|----------|------------|
-| `detectFramework` | function | `skills/test-write/detect-framework.mjs` | 16 |
-| `writeHandoff` | function | `skills/test-write/write-handoff.mjs` | 15 |
-| `verifyHandoff` | function | `skills/test-write/write-handoff.mjs` | 10 |
-| `detectGaming` | function | `skills/test-write/detect-gaming.mjs` | 5 |
+| `detectFramework` | function | `skills/write-test/detect-framework.mjs` | 16 |
+| `writeHandoff` | function | `skills/write-test/write-handoff.mjs` | 15 |
+| `verifyHandoff` | function | `skills/write-test/write-handoff.mjs` | 10 |
+| `detectGaming` | function | `skills/write-test/detect-gaming.mjs` | 5 |
 
 | Skill | Invocation | Location |
 |-------|-----------|----------|
@@ -29,7 +29,7 @@ Execute plans using TDD, specialist routing, and context packets. `/adev:impleme
 ## Related Specs
 
 - [charter.md](../../.context-index/specs/features/implementation/charter.md)
-- [adev-test-write/charter.md](../../.context-index/specs/features/adev:test-write/charter.md)
+- [adev-write-test/charter.md](../../.context-index/specs/features/adev:write-test/charter.md)
 
 <!-- adev:generated -->
 

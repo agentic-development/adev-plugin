@@ -27,7 +27,7 @@ adev-plugin/
 │   ├── adev:recover/           # Agent recovery when stuck
 │   ├── adev:sample/            # Golden sample curation
 │   ├── adev:status/            # Project status dashboard across lifecycle artifacts
-│   ├── adev:test-write/        # Test generation with coverage analysis
+│   ├── adev:write-test/        # Test generation with coverage analysis
 │   ├── adev:retro/             # Sprint retrospective
 │   ├── adev:hygiene/           # Context staleness and drift audits
 │   ├── adev:repomap/           # AST-based symbol index generation
@@ -82,7 +82,7 @@ adev-plugin/
 
 ## Skill Lifecycle Order
 
-Skills follow a strict pipeline: init → brainstorm → specify → review-specs → plan → route → implement → validate → eval. Supporting skills (assess, debug, recover, sample, status, test-write, retro, hygiene, repomap, sync) can run at any point.
+Skills follow a strict pipeline: init → brainstorm → specify → review-specs → plan → route → implement → validate → eval. Supporting skills (assess, debug, recover, sample, status, write-test, retro, hygiene, repomap, sync) can run at any point.
 
 ## Key Design Decisions
 
