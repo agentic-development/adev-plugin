@@ -6,77 +6,55 @@
 
 set -uo pipefail
 
-# Read stdin JSON (hook protocol)
+# Read stdin JSON (hook protocol — contains tool_name, tool_input, session_id)
 STDIN_JSON=$(cat)
 
-# Determine provider: check stdin JSON first, then fall back to manifest.yaml
-PROVIDER=""
-if [ -n "$STDIN_JSON" ]; then
-  # Try to extract provider from stdin JSON using node (no external deps)
-  PROVIDER=$(printf '%s' "$STDIN_JSON" | node -e '
-    let d = "";
-    process.stdin.on("data", c => d += c);
-    process.stdin.on("end", () => {
+# Single node call: parse stdin, resolve provider, build JSONL line, append to file.
+# Exits with code 0 always (non-blocking). Outputs '{}' to stdout (hook protocol).
+printf '%s' "$STDIN_JSON" | node -e '
+  const fs = require("fs");
+  const path = require("path");
+
+  let d = "";
+  process.stdin.on("data", c => d += c);
+  process.stdin.on("end", () => {
+    let input = {};
+    try { input = JSON.parse(d); } catch {}
+
+    // Resolve provider: prefer stdin, fall back to manifest.yaml
+    let provider = input.provider || "";
+    if (!provider) {
       try {
-        const j = JSON.parse(d);
-        console.log(j.provider || "");
-      } catch { console.log(""); }
-    });
-  ' 2>/dev/null || echo "")
-fi
+        const manifest = fs.readFileSync(".context-index/manifest.yaml", "utf8");
+        const m = manifest.match(/provider:\s*(\S+)/);
+        if (m) provider = m[1];
+      } catch {}
+    }
 
-if [ -z "$PROVIDER" ] && [ -f ".context-index/manifest.yaml" ]; then
-  # Simple grep for provider line in manifest
-  PROVIDER=$(grep -m1 'provider:' .context-index/manifest.yaml 2>/dev/null | sed 's/^.*provider:[[:space:]]*//' | tr -d '[:space:]' || echo "")
-fi
+    if (provider !== "native") {
+      process.stdout.write("{}\n");
+      return;
+    }
 
-# Only track when provider is native
-if [ "$PROVIDER" != "native" ]; then
-  echo '{}'
-  exit 0
-fi
+    // Extract fields from stdin JSON (PostToolUse protocol)
+    const toolName = input.tool_name || "unknown";
+    const filePath = (input.tool_input && input.tool_input.file_path) || "";
+    const sessionId = input.session_id || "";
 
-# Extract tool name from env vars
-TOOL_NAME="${CLAUDE_TOOL_USE_NAME:-unknown}"
+    const entry = {
+      tool: toolName,
+      files: filePath ? [filePath] : [],
+      specs: [],
+      timestamp: new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
+    };
+    if (sessionId) entry.session_id = sessionId;
 
-# Extract file path from env var (if available)
-FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
+    // Ensure directory and append
+    const dir = ".context-index";
+    const file = path.join(dir, ".session-tracking.jsonl");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(file, JSON.stringify(entry) + "\n");
 
-# Build files array
-if [ -n "$FILE_PATH" ]; then
-  FILES_JSON=$(printf '%s' "$FILE_PATH" | node -e '
-    let d = "";
-    process.stdin.on("data", c => d += c);
-    process.stdin.on("end", () => console.log(JSON.stringify([d.trim()])));
-  ' 2>/dev/null || echo '[]')
-else
-  FILES_JSON="[]"
-fi
-
-# ISO timestamp
-TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-# Build JSONL line
-JSONL_LINE=$(node -e "
-  console.log(JSON.stringify({
-    tool: $(printf '%s' "$TOOL_NAME" | node -e 'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>console.log(JSON.stringify(d.trim())))'),
-    files: ${FILES_JSON},
-    specs: [],
-    timestamp: \"${TIMESTAMP}\"
-  }));
-" 2>/dev/null)
-
-if [ -z "$JSONL_LINE" ]; then
-  echo '{}'
-  exit 0
-fi
-
-# Ensure directory exists
-mkdir -p .context-index
-
-# Append to tracking file
-echo "$JSONL_LINE" >> .context-index/.session-tracking.jsonl
-
-# Output empty JSON (hook protocol)
-echo '{}'
-exit 0
+    process.stdout.write("{}\n");
+  });
+' 2>/dev/null || echo '{}'
