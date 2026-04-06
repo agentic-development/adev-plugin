@@ -1,6 +1,6 @@
 ---
 charter: session-awareness
-status: review-passed
+status: validated
 risk_level: low
 milestone: 1
 revision: 1
