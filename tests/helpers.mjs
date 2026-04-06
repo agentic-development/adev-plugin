@@ -80,6 +80,7 @@ export function createTempGitRepo({ branch = "main" } = {}) {
   execSync("git init -b main", { cwd: dir, stdio: "ignore" });
   execSync('git config user.email "test@test.com"', { cwd: dir, stdio: "ignore" });
   execSync('git config user.name "Test"', { cwd: dir, stdio: "ignore" });
+  execSync("git config commit.gpgsign false", { cwd: dir, stdio: "ignore" });
   // Create initial commit so branch exists
   writeFileSync(join(dir, "README.md"), "init\n");
   execSync("git add README.md && git commit -m init", { cwd: dir, stdio: "ignore" });
