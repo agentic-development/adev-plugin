@@ -16,6 +16,9 @@ skills/*/evals/
 .context-index/hygiene/
 .context-index/packets/
 
+# Context-preflight session flag (ephemeral, cleared each session)
+.context-index/.context-preflight-ok
+
 # Beads adapter ID mapping (local state, auto-recoverable)
 .beads-map.json
 

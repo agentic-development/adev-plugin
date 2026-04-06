@@ -1,6 +1,6 @@
 ---
 name: adev:debug
-description: "Context-aware systematic debugging. Checks ADRs for known issues, specs for expected behavior, and orientation for architecture context before investigating. Use when encountering any bug, test failure, or unexpected behavior. Trigger on 'something is broken', 'this test fails', 'unexpected error', 'why is this not working', or any debugging session where context from specs and ADRs would help root-cause analysis."
+description: "Context-aware systematic debugging. Checks ADRs for known issues, specs for expected behavior, and orientation for architecture context before investigating. Use when encountering any bug, test failure, or unexpected behavior. Trigger on 'fix this', 'fix the bug', 'something is broken', 'this test fails', 'unexpected error', 'why is this not working', 'this doesn't work', 'can you fix', 'there's an error', 'it's failing', or any request to fix, debug, or investigate a problem."
 ---
 
 # Debug an Issue
@@ -201,6 +201,29 @@ This is the key difference from generic debugging. Before diving into code, load
    - If yes, create a draft ADR in `.context-index/adrs/` with the next sequential number.
    - Use the template at `${CLAUDE_PLUGIN_ROOT}/templates/adr-template.md` if it exists.
 
+### Phase 7: Documentation Impact
+
+**Goal:** Check if the fix changes assumptions documented in specs, charters, or ADRs.
+
+1. **Review the fix against spec assumptions.**
+   - Re-read the relevant Live Spec (from Phase 2).
+   - Does the fix change the behavioral contract? (e.g., error handling now works differently, a default value changed, an edge case is now handled)
+   - If yes: update the spec's acceptance criteria to reflect the new behavior. Flag this to the user.
+
+2. **Review the fix against charter scope.**
+   - Does the fix reveal that a capability was missing from the charter's Capability Map?
+   - If yes: suggest adding it to the charter.
+
+3. **Review the fix against ADRs.**
+   - Does the fix contradict or extend a previous architectural decision?
+   - If yes: suggest updating the ADR or creating a new one (see Phase 6 step 4).
+
+4. **Summary.** Report what documentation changes (if any) are needed:
+   - "No documentation impact" (most common for isolated bug fixes)
+   - "Spec update needed: [spec path] — [what changed]"
+   - "ADR update needed: [ADR path] — [what changed]"
+   - "Charter update suggested: [charter path] — [what to add]"
+
 ## Red Flags
 
 If you catch yourself thinking any of these, STOP and return to Phase 1:
@@ -237,3 +260,4 @@ If you catch yourself thinking any of these, STOP and return to Phase 1:
 | **4. Verify** | Test minimally, one variable at a time | Hypothesis confirmed or new one formed |
 | **5. Fix** | Create failing test, implement single fix, verify | Root cause resolved, tests pass |
 | **6. Validate** | Run quality gates, check spec compliance, consider ADR | Fix is complete, insight captured |
+| **7. Doc Impact** | Check if fix changes spec/charter/ADR assumptions | Documentation updated or confirmed unchanged |
