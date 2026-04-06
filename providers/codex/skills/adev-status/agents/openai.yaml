@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Status"
-  short_description: "Query project status across charters, specs, and capabilities"
-  default_prompt: "Use $adev-status to show current project status dashboard."

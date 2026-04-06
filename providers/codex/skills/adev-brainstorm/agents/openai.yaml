@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Brainstorm"
-  short_description: "Draft a feature charter with adev"
-  default_prompt: "Use $adev-brainstorm to turn this idea into a reviewed feature charter."

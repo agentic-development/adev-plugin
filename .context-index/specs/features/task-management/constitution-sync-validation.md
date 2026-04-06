@@ -13,13 +13,13 @@
 - Typecheck: N/A (no type checker configured)
 
 ## Check 1.5: Source Manifest Verification — SKIP
-No source manifest found in spec frontmatter. Run /adev-implement to stamp one.
+No source manifest found in spec frontmatter. Run /adev:implement to stamp one.
 
 ## Check 2: Spec Compliance — PASS
 - `templates/constitution-template.md` includes Task Management section after Quality Gates: PASS (lines 111-130 — appears immediately after Quality Gates `bash` block)
 - Task Management section documents both file and beads backends: PASS (lines 117-129 — `When tasks.backend: beads` and `When tasks.backend: file (or unset)`)
 - Task Management section includes `br` command reference: PASS (lines 119-124 — `br ready`, `br list`, `br create`, `br close`)
-- `skills/adev-sync/SKILL.md` includes conditional Task Management block generation: PASS (lines 42-48 — conditional emission based on `tasks.backend`, line 73 — output block)
+- `skills/sync/SKILL.md` includes conditional Task Management block generation: PASS (lines 42-48 — conditional emission based on `tasks.backend`, line 73 — output block)
 - Sync block omitted when `tasks.backend` not configured: PASS (line 48 — "If constitution has no Task Management section, generate from" conditional)
 - Sync block content matches active backend: PASS (conditional generation per backend type)
 - User Additions preservation not affected: PASS (existing sync behavior unchanged; Task Management block inserted between Context Index and User Additions)

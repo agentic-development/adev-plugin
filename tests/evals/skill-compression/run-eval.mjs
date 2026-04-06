@@ -10,7 +10,7 @@
  * Usage:
  *   node tests/evals/skill-compression/run-eval.mjs
  *   node tests/evals/skill-compression/run-eval.mjs --variant baseline
- *   node tests/evals/skill-compression/run-eval.mjs --skill adev-brainstorm
+ *   node tests/evals/skill-compression/run-eval.mjs --skill adev:brainstorm
  */
 
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';

@@ -8,7 +8,7 @@ updated: 2026-03-31
 
 ## Business Intent
 
-The task-management module provides persistent, cross-skill issue tracking for the adev lifecycle. It replaces the ephemeral `TodoWrite` mechanism with a pluggable layer that persists issue state in the repository, supports an epic > issue hierarchy, and integrates with both a zero-setup file backend and the beads_rust CLI for scaling. Skills create, claim, update, and close issues programmatically via `lib/issues/`, while users manage epics and ad-hoc issues directly through `/adev-issues`.
+The task-management module provides persistent, cross-skill issue tracking for the adev lifecycle. It replaces the ephemeral `TodoWrite` mechanism with a pluggable layer that persists issue state in the repository, supports an epic > issue hierarchy, and integrates with both a zero-setup file backend and the beads_rust CLI for scaling. Skills create, claim, update, and close issues programmatically via `lib/issues/`, while users manage epics and ad-hoc issues directly through `/adev:issues`.
 
 ## Scope and Boundaries
 
@@ -19,12 +19,12 @@ The task-management module provides persistent, cross-skill issue tracking for t
 - beads_rust backend wrapping the `br` CLI with ID mapping and auto-fallback
 - Adapter registry with manifest-driven backend selection and detection
 - Issue CRUD operations via `lib/issues/` for programmatic use by skills
-- `/adev-issues` skill for user-facing epic/issue management, bug filing, and board viewing
-- Integration into `adev-plan` (epic + issue creation from plan tasks with plan-ref)
-- Integration into `adev-implement` (claim issues on start, close on completion)
-- Integration into `adev-validate` (record pass/fail outcome on issues)
+- `/adev:issues` skill for user-facing epic/issue management, bug filing, and board viewing
+- Integration into `adev:plan` (epic + issue creation from plan tasks with plan-ref)
+- Integration into `adev:implement` (claim issues on start, close on completion)
+- Integration into `adev:validate` (record pass/fail outcome on issues)
 - Constitution template section documenting task management
-- Sync block emitted by `adev-sync` into agent files
+- Sync block emitted by `adev:sync` into agent files
 
 ### Out of Scope
 
@@ -32,16 +32,16 @@ The task-management module provides persistent, cross-skill issue tracking for t
 - External tracker sync (Jira, Linear, GitHub Issues)
 - Issue assignment to specific agents or users
 - Time tracking or estimation
-- Integration into adev-status, adev-recover, adev-hygiene, or compaction hooks (Phase 2)
+- Integration into adev:status, adev:recover, adev:hygiene, or compaction hooks (Phase 2)
 
 ### Dependencies
 
 | Dependency | Type | Description |
 |-----------|------|-------------|
-| Planning | internal module | adev-plan creates epics and issues from plan files |
-| Implementation | internal module | adev-implement claims and closes issues during execution |
-| Validation | internal module | adev-validate records outcomes on issues |
-| Setup | internal module | adev-sync emits task management block in agent files |
+| Planning | internal module | adev:plan creates epics and issues from plan files |
+| Implementation | internal module | adev:implement claims and closes issues during execution |
+| Validation | internal module | adev:validate records outcomes on issues |
+| Setup | internal module | adev:sync emits task management block in agent files |
 | beads_rust | optional external CLI | `br` commands for the beads backend; not an npm dependency |
 
 ## Domain Model
@@ -79,15 +79,15 @@ The task-management module provides persistent, cross-skill issue tracking for t
 | File Backend | Single `tasks.md` markdown table storage with parse/serialize | must-have | 1 | validated |
 | Beads Backend | Wrap `br` CLI commands with ID mapping and auto-fallback | must-have | 1 | validated |
 | Backend Registry | Manifest-driven adapter selection with detection and fallback | must-have | 1 | validated |
-| Plan Integration | adev-plan creates epic + issues from plan tasks with plan-ref | must-have | 1 | validated |
-| Implement Integration | adev-implement claims issues on start, closes on completion | must-have | 1 | validated |
-| Validate Integration | adev-validate records pass/fail outcome on issues | must-have | 1 | validated |
-| User-Facing Skill | `/adev-issues` for ad-hoc epics, bug filing, board viewing | must-have | 1 | validated |
+| Plan Integration | adev:plan creates epic + issues from plan tasks with plan-ref | must-have | 1 | validated |
+| Implement Integration | adev:implement claims issues on start, closes on completion | must-have | 1 | validated |
+| Validate Integration | adev:validate records pass/fail outcome on issues | must-have | 1 | validated |
+| User-Facing Skill | `/adev:issues` for ad-hoc epics, bug filing, board viewing | must-have | 1 | validated |
 | Constitution Section | Task Management section in constitution template | should-have | 1 | validated |
-| Sync Block | Task management block emitted by adev-sync into agent files | should-have | 1 | validated |
-| Status Integration | adev-status reads issue board for progress dashboard | nice-to-have | 2 | — |
-| Recover Integration | adev-recover reads/resets stuck issues | nice-to-have | 2 | — |
-| Hygiene Audit | adev-hygiene audits stale issues, orphaned boards | nice-to-have | 2 | — |
+| Sync Block | Task management block emitted by adev:sync into agent files | should-have | 1 | validated |
+| Status Integration | adev:status reads issue board for progress dashboard | nice-to-have | 2 | — |
+| Recover Integration | adev:recover reads/resets stuck issues | nice-to-have | 2 | — |
+| Hygiene Audit | adev:hygiene audits stale issues, orphaned boards | nice-to-have | 2 | — |
 | Compaction Context | Inject claimed issue context on session compaction | nice-to-have | 2 | — |
 
 ## Interface Contracts
@@ -105,7 +105,7 @@ The task-management module provides persistent, cross-skill issue tracking for t
 | `IssueManager.updateEpic(id, changes)` | function | Update epic fields |
 | `IssueManager.addDependency(issueId, dependsOnId)` | function | Express a blocking dependency between issues |
 | `getIssueManager(manifest)` | function | Registry: returns active backend adapter based on manifest config |
-| `/adev-issues` | skill | User-facing skill for managing epics, issues, and viewing the board |
+| `/adev:issues` | skill | User-facing skill for managing epics, issues, and viewing the board |
 
 ### Consumed APIs
 

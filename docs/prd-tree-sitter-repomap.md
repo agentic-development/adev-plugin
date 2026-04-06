@@ -7,11 +7,11 @@
 
 ## Problem
 
-`/adev-repomap` currently uses regex-based pattern matching (Grep) to extract exported symbols. This approach:
+`/adev:repomap` currently uses regex-based pattern matching (Grep) to extract exported symbols. This approach:
 
 1. **Misses symbols** that regex cannot capture: re-exports (`export { foo } from './bar'`), default exports assigned after declaration, arrow function exports (`export const x = () => {}`), destructured exports, and nested definitions.
 2. **Cannot distinguish visibility**: private vs. public class methods look the same to regex. A `private validate()` and `async create()` are both captured as class methods.
-3. **Has no dependency graph**: blast radius in `/adev-route` is estimated by file count heuristic, not by tracing actual import chains. Spec-to-code drift in `/adev-hygiene` compares names but cannot detect structural changes (e.g., a function moved between files).
+3. **Has no dependency graph**: blast radius in `/adev:route` is estimated by file count heuristic, not by tracing actual import chains. Spec-to-code drift in `/adev:hygiene` compares names but cannot detect structural changes (e.g., a function moved between files).
 4. **Reference counting is noisy**: grepping for a symbol name like `db` produces false positives from comments, strings, and partial matches.
 
 Research on Blitzy, Devin, Augment Code, Greptile, Sourcegraph/Cody, and Aider confirms the industry is converging on AST-based structural indexing as the foundation for agentic codebase understanding. Aider's tree-sitter + PageRank approach produces an 8.5-13k token repo map that captures the full export surface of a codebase. This is the model we follow.
@@ -20,24 +20,24 @@ Research on Blitzy, Devin, Augment Code, Greptile, Sourcegraph/Cody, and Aider c
 
 ## Goals
 
-1. Replace regex extraction in `/adev-repomap` with tree-sitter AST parsing for accurate symbol discovery.
+1. Replace regex extraction in `/adev:repomap` with tree-sitter AST parsing for accurate symbol discovery.
 2. Build a file-level dependency graph from import/require statements.
 3. Apply PageRank-style ranking to symbols based on the dependency graph (not just grep hit counts).
-4. Feed the dependency graph into `/adev-route` for evidence-based blast radius scoring.
-5. Feed the structural index into `/adev-hygiene` for precise spec-to-code drift detection.
-6. Feed ranked symbols into `/adev-implement` context packet assembly.
+4. Feed the dependency graph into `/adev:route` for evidence-based blast radius scoring.
+5. Feed the structural index into `/adev:hygiene` for precise spec-to-code drift detection.
+6. Feed ranked symbols into `/adev:implement` context packet assembly.
 
 ## Non-Goals
 
 - Semantic embeddings or vector search (L3 layer, deferred to a future version).
-- Auto-generated module documentation / DeepWiki equivalent (see PRD: `/adev-document`).
+- Auto-generated module documentation / DeepWiki equivalent (see PRD: `/adev:document`).
 - MCP server for external tool access to the index (separate PRD).
 - Real-time incremental parsing on file save (batch mode only for v0.5).
 
 ## Design Principles
 
 1. **Do not fight Anthropic's architecture.** The tree output is consumed by the orchestration layer (plan, route, review, validate, hygiene, recover). Implementation subagents still use agentic search (Glob/Grep/Read). The tree tells the orchestration *where* to point agents, not replaces agent search.
-2. **Tree-sitter is a hard requirement, not optional.** The regex approach is being replaced, not supplemented. If tree-sitter is not installed, `/adev-repomap` must error with a clear installation message. No silent fallback. The user must explicitly acknowledge and install the dependency.
+2. **Tree-sitter is a hard requirement, not optional.** The regex approach is being replaced, not supplemented. If tree-sitter is not installed, `/adev:repomap` must error with a clear installation message. No silent fallback. The user must explicitly acknowledge and install the dependency.
 3. **Output format stays markdown + JSON.** The primary output is still `.context-index/hygiene/repo-map.md` (human-readable). Two new JSON files are added for machine consumption by other skills.
 
 ## Architecture
@@ -63,7 +63,7 @@ lib/
 
 ### Dependency Management
 
-Tree-sitter is a **hard runtime dependency** for `/adev-repomap` v0.5+. It is declared in `dependencies` (not `optionalDependencies`):
+Tree-sitter is a **hard runtime dependency** for `/adev:repomap` v0.5+. It is declared in `dependencies` (not `optionalDependencies`):
 
 ```json
 {
@@ -81,7 +81,7 @@ Tree-sitter is a **hard runtime dependency** for `/adev-repomap` v0.5+. It is de
 
 **Pre-flight check (`check-deps.mjs`):**
 
-When `/adev-repomap` runs, the first thing the skill does is execute:
+When `/adev:repomap` runs, the first thing the skill does is execute:
 
 ```bash
 node lib/repomap/check-deps.mjs
@@ -92,7 +92,7 @@ This script attempts to `import('tree-sitter')`. If it fails:
 ```
 ERROR: tree-sitter is not installed.
 
-/adev-repomap v0.5+ requires tree-sitter for AST-based code parsing.
+/adev:repomap v0.5+ requires tree-sitter for AST-based code parsing.
 The previous regex-based approach has been removed.
 
 To install:
@@ -113,10 +113,10 @@ The CLI `init` command is updated to:
 1. After scaffolding `.context-index/`, check if tree-sitter is installed.
 2. If not, prompt the user:
    ```
-   /adev-repomap requires tree-sitter for AST-based code analysis.
+   /adev:repomap requires tree-sitter for AST-based code analysis.
    Install now? (cd <plugin-dir> && npm install) [Y/n]
    ```
-3. If the user declines, warn: "You can install later, but /adev-repomap will not work until tree-sitter is installed."
+3. If the user declines, warn: "You can install later, but /adev:repomap will not work until tree-sitter is installed."
 4. If installation fails (native compilation error), show platform-specific build tool instructions and exit with error.
 
 ### Output Artifacts
@@ -125,9 +125,9 @@ All written to `.context-index/hygiene/` (gitignored):
 
 | File | Format | Consumer | Description |
 |------|--------|----------|-------------|
-| `repo-map.md` | Markdown | Humans, `/adev-hygiene` | Existing format, enhanced with dependency summary. Same structure as today. |
-| `dependency-graph.json` | JSON | `/adev-route`, `/adev-validate`, `/adev-recover` | Nodes (files) + edges (import relationships) with edge types. |
-| `symbol-ranks.json` | JSON | `/adev-implement` (context packets), `/adev-hygiene` | Every exported symbol with PageRank score, kind, file, line. |
+| `repo-map.md` | Markdown | Humans, `/adev:hygiene` | Existing format, enhanced with dependency summary. Same structure as today. |
+| `dependency-graph.json` | JSON | `/adev:route`, `/adev:validate`, `/adev:recover` | Nodes (files) + edges (import relationships) with edge types. |
+| `symbol-ranks.json` | JSON | `/adev:implement` (context packets), `/adev:hygiene` | Every exported symbol with PageRank score, kind, file, line. |
 
 ### dependency-graph.json Schema
 
@@ -268,7 +268,7 @@ This is the same algorithm Aider uses. It ranks files that are imported by many 
 
 ## Skill Changes
 
-### `/adev-repomap` (Modified)
+### `/adev:repomap` (Modified)
 
 Update the SKILL.md to:
 
@@ -292,7 +292,7 @@ Update the SKILL.md to:
 
 The regex patterns currently in the SKILL.md (Step 3) are removed entirely. They are not preserved as a fallback.
 
-### `/adev-route` (Modified)
+### `/adev:route` (Modified)
 
 Update Blast Radius scoring (Dimension 3) in the SKILL.md:
 
@@ -311,9 +311,9 @@ Update Blast Radius scoring (Dimension 3) in the SKILL.md:
 | Any | Yes | 2 (cross-boundary) |
 | 11+ | Yes | 1 (high blast radius) |
 
-If `dependency-graph.json` does not exist, warn: "Run /adev-repomap first for accurate blast radius scoring." Fall back to current file-count heuristic but annotate the score as "(estimated, no dependency graph)".
+If `dependency-graph.json` does not exist, warn: "Run /adev:repomap first for accurate blast radius scoring." Fall back to current file-count heuristic but annotate the score as "(estimated, no dependency graph)".
 
-### `/adev-implement` (Modified)
+### `/adev:implement` (Modified)
 
 Update context packet assembly (Step 2a) in the SKILL.md:
 
@@ -330,9 +330,9 @@ Also include a "Dependency Context" section:
 2. List files that import from the task's modified files (first-order dependents).
 3. Note: "These files import from your modified files. Verify they still work after your changes."
 
-If neither JSON file exists, warn: "Run /adev-repomap for richer context packets." Skip these sections but continue with the existing packet contents.
+If neither JSON file exists, warn: "Run /adev:repomap for richer context packets." Skip these sections but continue with the existing packet contents.
 
-### `/adev-hygiene` (Modified)
+### `/adev:hygiene` (Modified)
 
 Update Pass 5 (Spec-to-Code Drift) in the SKILL.md:
 
@@ -351,17 +351,17 @@ Add new Pass 12 (Dependency Integrity):
 2. For each module in manifest.yaml, check that no edges violate `governance/boundaries.yaml` rules (if governance is enabled).
 3. Report cross-boundary imports that are not explicitly allowed.
 
-If `symbol-ranks.json` or `dependency-graph.json` do not exist, BLOCK Pass 5 and Pass 12: "Run /adev-repomap before hygiene audit. Drift detection requires the symbol index."
+If `symbol-ranks.json` or `dependency-graph.json` do not exist, BLOCK Pass 5 and Pass 12: "Run /adev:repomap before hygiene audit. Drift detection requires the symbol index."
 
-### `/adev-validate` (Modified)
+### `/adev:validate` (Modified)
 
 Add Check 12 (Dependency Integrity) to the SKILL.md:
-1. Re-run `/adev-repomap` on the modified files only (pass `--path` for each changed directory).
+1. Re-run `/adev:repomap` on the modified files only (pass `--path` for each changed directory).
 2. Compare the new dependency graph against the pre-implementation snapshot.
 3. Report new edges. Flag any that cross module boundaries or violate governance boundaries.
 4. This check is informational (WARNING), not blocking (FAIL), unless governance boundaries are configured.
 
-### `/adev-recover` (Modified)
+### `/adev:recover` (Modified)
 
 Update MISSING_CONTEXT diagnosis:
 1. When a subagent fails, read the context packet from `.context-index/packets/<task-slug>.md`.
@@ -401,9 +401,9 @@ The `parser: auto | tree-sitter | regex` option is removed. Tree-sitter is the o
 
 | Test | Validates |
 |------|-----------|
-| `route-blast-radius.test.mjs` | `/adev-route` reads dependency-graph.json and produces correct blast radius scores |
-| `hygiene-drift.test.mjs` | `/adev-hygiene` compares spec declarations against symbol-ranks.json and reports drift correctly |
-| `hygiene-no-repomap.test.mjs` | `/adev-hygiene` blocks Pass 5 and Pass 12 with clear error when JSON files are missing |
+| `route-blast-radius.test.mjs` | `/adev:route` reads dependency-graph.json and produces correct blast radius scores |
+| `hygiene-drift.test.mjs` | `/adev:hygiene` compares spec declarations against symbol-ranks.json and reports drift correctly |
+| `hygiene-no-repomap.test.mjs` | `/adev:hygiene` blocks Pass 5 and Pass 12 with clear error when JSON files are missing |
 
 ### Fixture Project
 
@@ -420,7 +420,7 @@ Create `tests/fixtures/sample-project/` with:
 ### Phase 1: Core Parser (v0.5.0)
 
 - Implement `lib/repomap/` (parse, graph, rank, index, check-deps)
-- Update `/adev-repomap` SKILL.md (remove regex, add pre-flight check)
+- Update `/adev:repomap` SKILL.md (remove regex, add pre-flight check)
 - Add tree-sitter to `dependencies`
 - Update CLI init to prompt for tree-sitter installation
 - Unit tests for all parser modules
@@ -428,11 +428,11 @@ Create `tests/fixtures/sample-project/` with:
 
 ### Phase 2: Downstream Integration (v0.5.1)
 
-- Update `/adev-route` blast radius scoring
-- Update `/adev-implement` context packet assembly
-- Update `/adev-hygiene` drift detection (block without repomap)
-- Update `/adev-validate` dependency integrity check
-- Update `/adev-recover` diagnosis
+- Update `/adev:route` blast radius scoring
+- Update `/adev:implement` context packet assembly
+- Update `/adev:hygiene` drift detection (block without repomap)
+- Update `/adev:validate` dependency integrity check
+- Update `/adev:recover` diagnosis
 - Integration tests
 
 ### Phase 3: Manifest and Governance (v0.5.2)
@@ -445,10 +445,10 @@ Create `tests/fixtures/sample-project/` with:
 ## Success Metrics
 
 1. **Symbol accuracy:** Tree-sitter captures 95%+ of exported symbols in fixture project (vs. ~70% for the old regex on complex patterns like re-exports and arrow functions).
-2. **Blast radius precision:** `/adev-route` blast radius score changes in at least 30% of tasks compared to file-count heuristic (meaning the dependency graph provides new information).
-3. **Drift detection:** `/adev-hygiene` catches spec-declared symbols that do not exist in code and exports not covered by any spec, with zero false positives on fixture project.
+2. **Blast radius precision:** `/adev:route` blast radius score changes in at least 30% of tasks compared to file-count heuristic (meaning the dependency graph provides new information).
+3. **Drift detection:** `/adev:hygiene` catches spec-declared symbols that do not exist in code and exports not covered by any spec, with zero false positives on fixture project.
 4. **Performance:** Full repomap on 500-file project completes in under 60 seconds.
-5. **Fail-fast on missing deps:** If tree-sitter is not installed, `/adev-repomap` errors immediately with installation instructions. No partial results, no silent degradation.
+5. **Fail-fast on missing deps:** If tree-sitter is not installed, `/adev:repomap` errors immediately with installation instructions. No partial results, no silent degradation.
 
 ## Open Questions
 

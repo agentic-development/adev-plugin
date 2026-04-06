@@ -130,7 +130,7 @@ describe("CLI E2E - File System State", () => {
 
     const codexSkillsDir = join(tempDir, ".agents", "skills");
     assert.ok(existsSync(codexSkillsDir), "Should create user Codex skills directory");
-    assert.ok(existsSync(join(codexSkillsDir, "adev-init")), "Should link Codex skills");
+    assert.ok(existsSync(join(codexSkillsDir, "init")), "Should link Codex skills");
   });
 
   it("creates project-level Codex skills directory", () => {
@@ -141,7 +141,7 @@ describe("CLI E2E - File System State", () => {
 
       const codexSkillsDir = join(projectDir, ".agents", "skills");
       assert.ok(existsSync(codexSkillsDir), "Should create project Codex skills directory");
-      assert.ok(existsSync(join(codexSkillsDir, "adev-init", "agents", "openai.yaml")),
+      assert.ok(existsSync(join(codexSkillsDir, "init", "agents", "openai.yaml")),
         "Should expose full Codex skill directory");
     } finally {
       cleanupTempDir(projectDir);
@@ -174,7 +174,7 @@ describe("CLI E2E - Uninstall", () => {
     const result = runCLI("uninstall", ["--provider", "codex"], ["user"], { env: { HOME: tempDir } });
 
     assert.ok(result.exitCode === 0, "Should uninstall Codex cleanly");
-    assert.ok(!existsSync(join(tempDir, ".agents", "skills", "adev-init")),
+    assert.ok(!existsSync(join(tempDir, ".agents", "skills", "init")),
       "Should remove managed Codex skill symlink");
   });
 });

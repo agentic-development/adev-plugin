@@ -1,8 +1,8 @@
 # Rubric: data-debug — Debug a failing dbt test (NULL total_amount)
-# Target: tests/evals/adev-data-eval
+# Target: tests/evals/adev:data-eval
 # Difficulty: HARD — must follow systematic approach AND catch the subtle seed data nuance
 
-skill: adev-debug
+skill: adev:debug
 scenario: data-debug
 
 required_elements:

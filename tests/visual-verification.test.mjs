@@ -32,8 +32,8 @@ describe("visual verification in live-spec template", () => {
   });
 });
 
-describe("visual verification in adev-implement", () => {
-  const skill = readSkill("adev-implement");
+describe("visual verification in adev:implement", () => {
+  const skill = readSkill("implement");
 
   it("has a Visual Verification step", () => {
     assert.ok(skill.includes("#### 2e. Visual Verification"));
@@ -72,8 +72,8 @@ describe("visual verification in adev-implement", () => {
   });
 });
 
-describe("visual verification in adev-validate", () => {
-  const skill = readSkill("adev-validate");
+describe("visual verification in adev:validate", () => {
+  const skill = readSkill("validate");
 
   it("has Check 11: Visual Verification", () => {
     assert.ok(skill.includes("### Check 11: Visual Verification"));

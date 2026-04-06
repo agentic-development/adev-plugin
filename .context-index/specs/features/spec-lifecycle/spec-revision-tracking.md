@@ -21,7 +21,7 @@ updated: 2026-03-28
 
 ### Behaviors
 
-1. **When** `/adev-specify` creates a new spec **then** it sets `revision: 1`, `charter-revision: <current charter revision>`, and `updated: <today>` in the spec frontmatter.
+1. **When** `/adev:specify` creates a new spec **then** it sets `revision: 1`, `charter-revision: <current charter revision>`, and `updated: <today>` in the spec frontmatter.
 
 2. **When** any skill modifies a spec's content (behavioral contract, acceptance criteria, error cases) **then** it increments `revision` and sets `updated: <today>`.
 
@@ -29,9 +29,9 @@ updated: 2026-03-28
 
 4. **When** a spec has `status: review-passed` and only the `status` field itself changes (e.g., to `implemented` or `validated`) **then** `revision` does NOT increment — status-only transitions are not content changes.
 
-5. **When** the parent charter's `revision` is higher than a spec's `charter-revision` **then** `/adev-hygiene` and `/adev-status` report the spec as potentially stale against its charter.
+5. **When** the parent charter's `revision` is higher than a spec's `charter-revision` **then** `/adev:hygiene` and `/adev:status` report the spec as potentially stale against its charter.
 
-6. **When** `/adev-specify` creates a spec and the charter has `revision: N` **then** the spec's `charter-revision` is set to `N`, recording which charter version the spec was written against.
+6. **When** `/adev:specify` creates a spec and the charter has `revision: N` **then** the spec's `charter-revision` is set to `N`, recording which charter version the spec was written against.
 
 ### Postconditions
 
@@ -57,8 +57,8 @@ updated: 2026-03-28
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Update `adev-specify/SKILL.md` | Set `revision: 1`, `charter-revision`, `updated` on spec creation | small |
-| Update `adev-review-specs/SKILL.md` | Record revision at review time; do not increment on status-only changes | small |
+| Update `adev:specify/SKILL.md` | Set `revision: 1`, `charter-revision`, `updated` on spec creation | small |
+| Update `adev:review-specs/SKILL.md` | Record revision at review time; do not increment on status-only changes | small |
 | Update all content-modifying skills | Increment revision + auto-downgrade logic when editing reviewed specs | medium |
 | Update spec template | Add `revision`, `charter-revision`, `updated` fields | small |
 | Write tests | Test revision increment, auto-downgrade, charter-revision staleness | medium |

@@ -6,7 +6,7 @@
 > **Review:** PASS_WITH_NOTES (2026-03-31)
 > **Platform:** none, javascript (ESM), node:test
 
-**Goal:** Update adev-plan, adev-implement, and adev-validate SKILL.md files to use the issue board for task tracking instead of TodoWrite.
+**Goal:** Update adev:plan, adev:implement, and adev:validate SKILL.md files to use the issue board for task tracking instead of TodoWrite.
 
 **Architecture:** Pure skill markdown changes — no executable code. Skills reference `lib/issues/` functions and the `tasks.backend` manifest config. Changes are additive and backward compatible (no issue creation when `tasks.backend` is absent).
 
@@ -15,9 +15,9 @@
 ## File Structure
 
 **Modify:**
-- `skills/adev-plan/SKILL.md` — Add issue creation to Step 7 (Execution Handoff)
-- `skills/adev-implement/SKILL.md` — Replace 3 TodoWrite references with issue board operations
-- `skills/adev-validate/SKILL.md` — Add validation outcome recording
+- `skills/plan/SKILL.md` — Add issue creation to Step 7 (Execution Handoff)
+- `skills/implement/SKILL.md` — Replace 3 TodoWrite references with issue board operations
+- `skills/validate/SKILL.md` — Add validation outcome recording
 
 **Reference (read, do not modify):**
 - `.context-index/specs/features/task-management/issue-epic-crud.md` — Interface contract
@@ -27,15 +27,15 @@
 
 ### Task 1 Context
 - Spec: `lifecycle-integration.md` (Behaviors 1-4, Plan Integration)
-- Skill: `skills/adev-plan/SKILL.md` (Step 7: Execution Handoff, lines ~387-418)
+- Skill: `skills/plan/SKILL.md` (Step 7: Execution Handoff, lines ~387-418)
 
 ### Task 2 Context
 - Spec: `lifecycle-integration.md` (Behaviors 5-9, Implement Integration)
-- Skill: `skills/adev-implement/SKILL.md` (lines 53, 71, 329)
+- Skill: `skills/implement/SKILL.md` (lines 53, 71, 329)
 
 ### Task 3 Context
 - Spec: `lifecycle-integration.md` (Behaviors 10-11, Validate Integration)
-- Skill: `skills/adev-validate/SKILL.md` (lines ~325-340)
+- Skill: `skills/validate/SKILL.md` (lines ~325-340)
 
 ## Parallelization
 
@@ -43,11 +43,11 @@
 
 ---
 
-### Task 1: Update adev-plan Step 7 [specialist: none]
+### Task 1: Update adev:plan Step 7 [specialist: none]
 
 **Charter capability:** Plan Integration
 **Files:**
-- Modify: `skills/adev-plan/SKILL.md`
+- Modify: `skills/plan/SKILL.md`
 
 **Tests:** No test file — this is a markdown skill change. Acceptance verified by reading the file.
 
@@ -55,7 +55,7 @@
 
 Verify the current SKILL.md does NOT contain issue creation instructions:
 ```bash
-! grep -q "issue board\|createEpic\|tasks.backend" skills/adev-plan/SKILL.md
+! grep -q "issue board\|createEpic\|tasks.backend" skills/plan/SKILL.md
 ```
 
 - [ ] **Verify test fails** (grep returns no match — expected)
@@ -80,22 +80,22 @@ If `tasks.backend` is not configured in the manifest, skip issue creation entire
 - [ ] **Commit**
 
 ```bash
-git add skills/adev-plan/SKILL.md
-git commit -m "feat(task-management): add issue creation to adev-plan Step 7"
+git add skills/plan/SKILL.md
+git commit -m "feat(task-management): add issue creation to adev:plan Step 7"
 ```
 
-### Task 2: Replace TodoWrite in adev-implement [specialist: none]
+### Task 2: Replace TodoWrite in adev:implement [specialist: none]
 
 **Charter capability:** Implement Integration
 **Files:**
-- Modify: `skills/adev-implement/SKILL.md`
+- Modify: `skills/implement/SKILL.md`
 
 **Tests:** No test file — markdown change. Acceptance verified by grepping for zero TodoWrite references.
 
 - [ ] **Write failing test**
 
 ```bash
-grep -c "TodoWrite" skills/adev-implement/SKILL.md
+grep -c "TodoWrite" skills/implement/SKILL.md
 # Expected: 3 (current state)
 ```
 
@@ -109,7 +109,7 @@ Replace three TodoWrite references:
 ```markdown
 **Load or create issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
 - If issues exist matching this plan's `plan-ref`, load them.
-- If no issues exist, create them now (same procedure as adev-plan Step 7: create epic, then one issue per task with dependencies).
+- If no issues exist, create them now (same procedure as adev:plan Step 7: create epic, then one issue per task with dependencies).
 - Update the first task's issue status to `in_progress` via `update(id, { status: "in_progress" })`.
 
 If `tasks.backend` is not configured, skip issue board operations.
@@ -125,26 +125,26 @@ mark the issue status as `deferred` with note "MANUAL — requires human impleme
 1. Update the issue status to `closed` via `close(id, "Implemented and reviewed")`.
 ```
 
-- [ ] **Verify test passes** — `grep -c "TodoWrite" skills/adev-implement/SKILL.md` returns 0
+- [ ] **Verify test passes** — `grep -c "TodoWrite" skills/implement/SKILL.md` returns 0
 - [ ] **Commit**
 
 ```bash
-git add skills/adev-implement/SKILL.md
-git commit -m "feat(task-management): replace TodoWrite with issue board in adev-implement"
+git add skills/implement/SKILL.md
+git commit -m "feat(task-management): replace TodoWrite with issue board in adev:implement"
 ```
 
 ### Task 3: Add Validation Outcome Recording [specialist: none]
 
 **Charter capability:** Validate Integration
 **Files:**
-- Modify: `skills/adev-validate/SKILL.md`
+- Modify: `skills/validate/SKILL.md`
 
 **Tests:** No test file — markdown change. Acceptance verified by reading the file.
 
 - [ ] **Write failing test**
 
 ```bash
-! grep -q "issue board\|validation outcome" skills/adev-validate/SKILL.md
+! grep -q "issue board\|validation outcome" skills/validate/SKILL.md
 ```
 
 - [ ] **Verify test fails** (no match — expected)
@@ -168,8 +168,8 @@ If `tasks.backend` is not configured, skip.
 - [ ] **Commit**
 
 ```bash
-git add skills/adev-validate/SKILL.md
-git commit -m "feat(task-management): add validation outcome recording to adev-validate"
+git add skills/validate/SKILL.md
+git commit -m "feat(task-management): add validation outcome recording to adev:validate"
 ```
 
 ---
@@ -177,5 +177,5 @@ git commit -m "feat(task-management): add validation outcome recording to adev-v
 ## Quality Gates
 
 - [ ] Tests pass: `npm test`
-- [ ] Zero `TodoWrite` references in `skills/adev-implement/SKILL.md`
+- [ ] Zero `TodoWrite` references in `skills/implement/SKILL.md`
 - [ ] All acceptance criteria from spec satisfied

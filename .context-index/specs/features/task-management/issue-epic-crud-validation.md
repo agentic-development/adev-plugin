@@ -13,7 +13,7 @@
 - Typecheck: N/A (no type checker configured)
 
 ## Check 1.5: Source Manifest Verification — SKIP
-No source manifest found in spec frontmatter. Run /adev-implement to stamp one.
+No source manifest found in spec frontmatter. Run /adev:implement to stamp one.
 
 ## Check 2: Spec Compliance — PASS
 - `lib/issues/interface.mjs` exports `IssueManagerInterface` with all 9 methods (init, create, update, close, list, get, createEpic, updateEpic, addDependency): PASS (`lib/issues/interface.mjs:52-99`)

@@ -8,19 +8,19 @@ updated: 2026-03-28
 
 ## Business Intent
 
-The spec-lifecycle module improves how charters and specs track their status, revision history, and relationship to implementation code. Note: this charter introduces a new skill (`/adev-status`) which requires human approval per Architecture Boundaries — approved during brainstorm. It eliminates status drift by making skills auto-transition status fields, introduces revision counters for drift detection at plan gates, adds source manifests to map specs to their implementing files via content hashes, and provides automatic session capture to record why decisions were made. The goal is that any developer or agent can read a single spec file and immediately know: is it current, has it been reviewed, and does the code match.
+The spec-lifecycle module improves how charters and specs track their status, revision history, and relationship to implementation code. Note: this charter introduces a new skill (`/adev:status`) which requires human approval per Architecture Boundaries — approved during brainstorm. It eliminates status drift by making skills auto-transition status fields, introduces revision counters for drift detection at plan gates, adds source manifests to map specs to their implementing files via content hashes, and provides automatic session capture to record why decisions were made. The goal is that any developer or agent can read a single spec file and immediately know: is it current, has it been reviewed, and does the code match.
 
 ## Scope and Boundaries
 
 ### In Scope
 
 - Charter status field with lifecycle: `draft` → `approved` → `evolving` → `closed`
-- `closed` hard-blocks new spec creation via `/adev-specify`
+- `closed` hard-blocks new spec creation via `/adev:specify`
 - Spec status auto-transitions by skills (edit after `review-passed` → `review-pending`)
 - Revision counter in charter and spec frontmatter, auto-incremented on skill writes
 - `charter-revision` field in specs to track which charter version they were written against
 - Git-based drift detection for manual edits (plan gate compares file hash at review time vs current)
-- Source manifest in spec frontmatter: `sha`, `files`, `computed-at` — computed by `/adev-implement` after GREEN
+- Source manifest in spec frontmatter: `sha`, `files`, `computed-at` — computed by `/adev:implement` after GREEN
 - Capability Status column in charter Capability Map (`—`/`specified`/`review-passed`/`planned`/`implementing`/`implemented`/`validated`)
 - Plan tasks reference test files; test pass/fail is the source of truth for task completion
 - Structured commit message convention: `Spec:`, `Plan-task:`, `Session:` trailers
@@ -31,10 +31,10 @@ The spec-lifecycle module improves how charters and specs track their status, re
 - `lib/session-parser.mjs` — plugin-level helper for JSONL parsing and condensing
 - `lib/session-summary.mjs` — plugin-level helper for writing standardized summaries
 - `lib/source-manifest.mjs` — plugin-level helper for computing and verifying content hashes
-- Git native hooks (`.githooks/prepare-commit-msg`, `.githooks/post-commit`) installed by `/adev-init`
-- `/adev-hygiene` aggregation: queries git + tests + frontmatter + session summaries for project status report
+- Git native hooks (`.githooks/prepare-commit-msg`, `.githooks/post-commit`) installed by `/adev:init`
+- `/adev:hygiene` aggregation: queries git + tests + frontmatter + session summaries for project status report
 - Updated templates: charter template with status/revision/capability status, spec template with revision/charter-revision/source-manifest/tracker-ref, manifest template with `integrations:` section
-- `/adev-status` skill for querying spec-lifecycle data: per-spec, per-charter, and project-wide status reports
+- `/adev:status` skill for querying spec-lifecycle data: per-spec, per-charter, and project-wide status reports
 - Optional `tracker-ref` field in spec and charter frontmatter for linking to external trackers (metadata only, no API integration)
 
 ### Out of Scope
@@ -47,7 +47,7 @@ The spec-lifecycle module improves how charters and specs track their status, re
 - Auto-generating session summaries via LLM calls (v2)
 - Multi-agent adapters beyond Claude Code and Entire (v2)
 - PR-level session aggregation (v2)
-- New sidecar state files — all new lifecycle state lives in frontmatter. Exception: `.review.md` is a pre-existing pattern (used by `/adev-review-specs` since before this charter) and is retained for separation of concerns between spec authors and reviewers
+- New sidecar state files — all new lifecycle state lives in frontmatter. Exception: `.review.md` is a pre-existing pattern (used by `/adev:review-specs` since before this charter) and is retained for separation of concerns between spec authors and reviewers
 - State machine helper module — skills enforce transitions inline
 - Epic/task management — belongs in future adev-graph plugin
 - External tracker API integration (Jira, Linear, GitHub) — belongs in future adev-graph plugin or dedicated integration plugin
@@ -57,13 +57,13 @@ The spec-lifecycle module improves how charters and specs track their status, re
 
 | Dependency | Type | Description |
 |-----------|------|-------------|
-| Design (adev-brainstorm, adev-specify) | internal module | Must read/write charter status, revision, capability status |
-| Assessment (adev-review-specs) | internal module | Must record `last-reviewed-revision` in `.review.md` |
-| Planning (adev-plan) | internal module | Must check revision + git diff at plan gate |
-| Implementation (adev-implement) | internal module | Must compute source manifest, update capability status, write structured commits |
-| Validation (adev-validate) | internal module | Must verify source manifest SHA, update capability status to `validated` |
-| Maintenance (adev-hygiene) | internal module | Must aggregate status across charters/specs/plans/sessions |
-| Setup (adev-init) | internal module | Must scaffold `.githooks/`, updated templates, git config for hooksPath |
+| Design (adev:brainstorm, adev:specify) | internal module | Must read/write charter status, revision, capability status |
+| Assessment (adev:review-specs) | internal module | Must record `last-reviewed-revision` in `.review.md` |
+| Planning (adev:plan) | internal module | Must check revision + git diff at plan gate |
+| Implementation (adev:implement) | internal module | Must compute source manifest, update capability status, write structured commits |
+| Validation (adev:validate) | internal module | Must verify source manifest SHA, update capability status to `validated` |
+| Maintenance (adev:hygiene) | internal module | Must aggregate status across charters/specs/plans/sessions |
+| Setup (adev:init) | internal module | Must scaffold `.githooks/`, updated templates, git config for hooksPath |
 | Hooks | internal module | New session capture hooks (Claude Code + git native) |
 | Templates | internal module | Updated charter, spec, manifest templates |
 | Claude Code JSONL transcripts | external service | Session logs at `~/.claude/projects/*/sessions/` |
@@ -101,7 +101,7 @@ The spec-lifecycle module improves how charters and specs track their status, re
 - `charter-revision` on a spec must be ≤ the charter's current `revision`
 - A spec with `status: review-passed` whose `revision` > its Review Snapshot's `last-reviewed-revision` is stale — plan gate must block
 - A charter with `status: closed` must have all capabilities in `implemented` or `validated`
-- `closed` charter hard-blocks new spec creation via `/adev-specify`
+- `closed` charter hard-blocks new spec creation via `/adev:specify`
 - Source manifest `sha` is deterministic: same file contents always produce the same hash
 - A Capability Status cannot advance past its spec's status
 - Session Summaries are immutable once committed — corrections go in new sessions
@@ -119,12 +119,12 @@ The spec-lifecycle module improves how charters and specs track their status, re
 | Git Drift Detection | Plan gate compares spec `revision` vs `last-reviewed-revision` in `.review.md` AND checks `git diff` for manual edits; blocks on drift | must-have | v1 | implemented |
 | Session Capture Pipeline | Claude Code hooks (SessionStart, PostToolUse, Stop) + git native hooks (prepare-commit-msg, post-commit) capture session lifecycle; provider config in manifest (`entire`/`native`/`none`); `lib/session-parser.mjs` reads Claude Code JSONL transcripts and condenses to structured format; zero external deps | must-have | v1 | implemented |
 | Session Summary Persistence | `lib/session-summary.mjs` writes standardized summaries to `.context-index/sessions/` with intent/outcome/learnings/friction/open_items schema; `readSummary()` parses them back; summaries committed alongside code via post-commit hook | must-have | v1 | implemented |
-| Template Updates | Update charter, spec, and manifest templates with new fields; `/adev-init` scaffolds `.githooks/` and sets `core.hooksPath` | must-have | v1 | implemented |
+| Template Updates | Update charter, spec, and manifest templates with new fields; `/adev:init` scaffolds `.githooks/` and sets `core.hooksPath` | must-have | v1 | implemented |
 | Structured Commit Trailers | Git hooks inject `Spec:`, `Plan-task:`, `Session:` trailers into commit messages automatically | must-have | v1 | implemented |
 | Entire Provider Adapter | When `provider: entire`, read summaries from Entire's checkpoint branch; disable native hooks to avoid duplication | should-have | v1 | — |
-| Hygiene Lifecycle Auditing | `/adev-hygiene` extended with lifecycle-specific audit passes: detect specs whose frontmatter status contradicts source manifest evidence, flag charters with stale capability status, report specs with `charter-revision` behind current charter revision. Focuses on staleness, drift, and coverage gaps — not progress reporting (that is `/adev-status`). | should-have | v1 | implemented |
-| Status Query Skill | `/adev-status` skill queries spec-lifecycle data: per-spec status (revision, source manifest match, commits, sessions, test results), per-charter status (capability progress), project-wide aggregation. Composes git log, frontmatter, test results, and session summaries into a single report. | must-have | v1 | implemented |
-| Tracker Reference Field | Optional `tracker-ref` field in spec and charter frontmatter linking to external trackers (Jira, Linear, GitHub Issues). No API integration — metadata only. Displayed by `/adev-status`, queryable by future adev-graph plugin. | must-have | v1 | implemented |
+| Hygiene Lifecycle Auditing | `/adev:hygiene` extended with lifecycle-specific audit passes: detect specs whose frontmatter status contradicts source manifest evidence, flag charters with stale capability status, report specs with `charter-revision` behind current charter revision. Focuses on staleness, drift, and coverage gaps — not progress reporting (that is `/adev:status`). | should-have | v1 | implemented |
+| Status Query Skill | `/adev:status` skill queries spec-lifecycle data: per-spec status (revision, source manifest match, commits, sessions, test results), per-charter status (capability progress), project-wide aggregation. Composes git log, frontmatter, test results, and session summaries into a single report. | must-have | v1 | implemented |
+| Tracker Reference Field | Optional `tracker-ref` field in spec and charter frontmatter linking to external trackers (Jira, Linear, GitHub Issues). No API integration — metadata only. Displayed by `/adev:status`, queryable by future adev-graph plugin. | must-have | v1 | implemented |
 | Codex Adapter | Session parser adapter for Codex log format | nice-to-have | v2 | — |
 | PR Session Aggregation | Aggregate session summaries from branch commits into PR description | nice-to-have | v2 | — |
 | LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | nice-to-have | v2 | — |
@@ -144,7 +144,7 @@ The spec-lifecycle module improves how charters and specs track their status, re
 | `.githooks/prepare-commit-msg` | git hook | Injects `Spec:`, `Plan-task:`, `Session:` trailers into commit messages |
 | `.githooks/post-commit` | git hook | Calls session-summary writer to persist session summary on commit |
 | `hooks/session-capture.sh` | Claude Code PostToolUse hook | Logs tool name + files touched to lightweight session tracking file. Uses `.sh` (not `.mjs`) for consistency with existing Claude Code hooks (`session-start.sh`, `constitution-linter.sh`, `merge-guard.sh`, `sync-trigger.sh`) which all follow the bash hook protocol. |
-| `skills/adev-status/SKILL.md` | skill | Queries spec-lifecycle data. Arguments: `--spec <path>` (single spec status), `--charter <name>` (charter + capability progress), `--all` (project-wide aggregation). Composes git log, frontmatter, test results, session summaries, and tracker-ref into a structured report. |
+| `skills/status/SKILL.md` | skill | Queries spec-lifecycle data. Arguments: `--spec <path>` (single spec status), `--charter <name>` (charter + capability progress), `--all` (project-wide aggregation). Composes git log, frontmatter, test results, session summaries, and tracker-ref into a structured report. |
 
 ### Consumed APIs
 
@@ -167,7 +167,7 @@ The spec-lifecycle module improves how charters and specs track their status, re
 | Performance | Source manifest SHA computation < 1 second for up to 50 files. Session log parsing < 2 seconds for a typical session (~1000 JSONL lines). Git hook overhead < 500ms per commit. |
 | Zero Dependencies | All helpers (`session-parser.mjs`, `session-summary.mjs`, `source-manifest.mjs`) use only Node.js built-ins (`fs`, `path`, `crypto`). No external packages. |
 | Graceful Degradation | If session logs are missing or unreadable, hooks log a warning and proceed — never block a commit. If Entire is configured but not installed, fall back to `native` with a warning. If `provider: none`, all session hooks are no-ops. |
-| Idempotency | Source manifest recomputation always produces the same SHA for the same file contents. Session summary writes are safe to re-run. `/adev-init` hook installation is idempotent. |
+| Idempotency | Source manifest recomputation always produces the same SHA for the same file contents. Session summary writes are safe to re-run. `/adev:init` hook installation is idempotent. |
 | Non-blocking | Claude Code hooks (session-capture) must not block the agent's workflow. Git hooks run synchronously but stay under 500ms budget. |
 | Testability | All lib functions are pure (input → output, no global state). Git hooks testable via existing `runHook()` test helper. Session parser testable with fixture JSONL files. |
 | Portability | Session summary schema is agent-agnostic. Adding a new agent adapter requires only a new `parse` function, no changes to summary writer or hooks. |

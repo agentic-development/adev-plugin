@@ -3,7 +3,7 @@
 
 **Assessment Date:** March 30, 2026
 **Project:** adev-data-eval (E-commerce Data Platform)
-**Evaluator:** /adev-assess --domain data
+**Evaluator:** /adev:assess --domain data
 
 ## Executive Summary
 

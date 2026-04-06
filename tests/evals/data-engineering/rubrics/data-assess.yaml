@@ -1,8 +1,8 @@
-# Rubric: data-assess — Assess a dbt project with /adev-assess --domain data
-# Target: tests/evals/adev-data-eval
+# Rubric: data-assess — Assess a dbt project with /adev:assess --domain data
+# Target: tests/evals/adev:data-eval
 # Difficulty: HARD — requires specific structural output, not just keyword mentions
 
-skill: adev-assess
+skill: adev:assess
 scenario: data-assess
 
 required_elements:

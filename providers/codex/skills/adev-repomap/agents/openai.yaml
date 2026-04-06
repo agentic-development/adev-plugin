@@ -1,4 +1,0 @@
-interface:
-  display_name: "adev Repomap"
-  short_description: "Build a symbol map for the repo"
-  default_prompt: "Use $adev-repomap to generate or refresh the repository symbol index."

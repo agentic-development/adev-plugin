@@ -337,7 +337,7 @@ Add to `templates/manifest-template.yaml` after the `completion:` section:
 ```yaml
 # ============================================================================
 # Task Management
-# Controls how /adev-plan and /adev-implement track issue progress.
+# Controls how /adev:plan and /adev:implement track issue progress.
 # ============================================================================
 
 tasks:

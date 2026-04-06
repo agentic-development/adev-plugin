@@ -1,8 +1,8 @@
 # Rubric: data-test-write — Write dbt tests for dim_customers
-# Target: tests/evals/adev-data-eval/models/marts/dim_customers.sql
+# Target: tests/evals/adev:data-eval/models/marts/dim_customers.sql
 # Difficulty: HARD — must produce dbt-idiomatic tests with deterministic seed assertions
 
-skill: adev-test-write
+skill: adev:test-write
 scenario: data-test-write
 
 required_elements:

@@ -1,8 +1,8 @@
 # Rubric: data-document — Generate architecture docs for a dbt project
-# Target: tests/evals/adev-data-eval
+# Target: tests/evals/adev:data-eval
 # Difficulty: HARD — must produce accurate, structured docs with specific project details
 
-skill: adev-document
+skill: adev:document
 scenario: data-document
 
 required_elements:

@@ -27,7 +27,7 @@
 
 - **SEC-1** (warning) [Preconditions/Behavior #3]: Glob patterns from `manifest.yaml` could resolve paths outside the project root via symlinks. **Recommendation:** Add path containment check — all resolved paths must be within project root.
 
-- **SEC-2** (suggestion) [Output artifacts]: Confirm `.context-index/hygiene/` is gitignored by default to avoid exposing architecture details in public repos. **Recommendation:** Verify existing scaffolding covers this. (Note: `/adev-init` already adds this to `.gitignore`.)
+- **SEC-2** (suggestion) [Output artifacts]: Confirm `.context-index/hygiene/` is gitignored by default to avoid exposing architecture details in public repos. **Recommendation:** Verify existing scaffolding covers this. (Note: `/adev:init` already adds this to `.gitignore`.)
 
 - **SEC-3** (suggestion) [Error cases]: Error messages include file paths verbatim. Low risk in local context. **Recommendation:** No action needed for current scope.
 

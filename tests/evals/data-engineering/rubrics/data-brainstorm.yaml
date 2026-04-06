@@ -1,8 +1,8 @@
 # Rubric: data-brainstorm — Charter a Customer Lifetime Value analytics module
-# Target: tests/evals/adev-data-eval
+# Target: tests/evals/adev:data-eval
 # Difficulty: HARD — must demonstrate reuse of existing models and proper scoping
 
-skill: adev-brainstorm
+skill: adev:brainstorm
 scenario: data-brainstorm
 
 required_elements:

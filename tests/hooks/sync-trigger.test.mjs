@@ -26,8 +26,8 @@ describe("sync-trigger hook", () => {
     assert.equal(exitCode, 0);
     const parsed = JSON.parse(stdout);
     assert.ok(
-      parsed.hookSpecificOutput.additionalContext.includes("/adev-sync"),
-      "additionalContext should mention /adev-sync"
+      parsed.hookSpecificOutput.additionalContext.includes("/adev:sync"),
+      "additionalContext should mention /adev:sync"
     );
   });
 

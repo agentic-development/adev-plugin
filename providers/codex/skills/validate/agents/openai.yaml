@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Validate"
+  short_description: "Run post-implementation validation"
+  default_prompt: "Use $adev:validate to verify this implementation against specs and quality gates."
