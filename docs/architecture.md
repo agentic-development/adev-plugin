@@ -7,7 +7,7 @@
 | Module | Purpose | Key Exports (top 3) | Inbound | Outbound |
 |--------|---------|---------------------|---------|----------|
 | CLI | Entry point for `adev-cli` — installs plugin into Claude Code / OpenCode / Codex, manages providers, scaffolds `.context-index/` | `PLUGIN_ROOT`, `scaffoldContextKit`, `PLUGIN_VERSION` | 0 | 1 (lib-provider) |
-| Hooks | Bash hooks integrating with Claude Code's hook protocol: constitution linter, merge guard, session start injector, sync trigger | — (bash scripts, no JS exports) | 0 | 0 |
+| Hooks | Bash hooks integrating with Claude Code's hook protocol: constitution linter, merge guard, session start injector (with execution state resume), session capture, issue reminder (with idle nudge), context preflight, context read tracker, sync trigger | — (bash scripts + issue-reminder.mjs) | 0 | 2 (lib-execution-state, lib-issues) |
 | Setup | `/adev:init` (scaffold `.context-index/`) and `/adev:sync` (sync constitution to CLAUDE.md), plus project templates | — (markdown skills) | 0 | 0 |
 | Triage | `/adev:start` — pre-lifecycle triage that classifies incoming work and routes to the correct `/adev:*` skill | — (markdown skill) | 0 | 0 |
 | Design | `/adev:brainstorm` (Feature Charter authoring) and `/adev:specify` (Live Spec authoring) | — (markdown skills) | 0 | 0 |
@@ -25,7 +25,8 @@
 | lib-repomap | Tree-sitter AST parsing, dependency graphs, PageRank symbol ranking | `buildGraph`, `parseFile`, `computeRanks` | — | — |
 | lib-session | Session log parsing and summary generation | `parseSession`, `computeProjectHash`, `writeSummary` | — | — |
 | lib-source-manifest | Source file manifest computation and verification | `computeManifest`, `verifyManifest` | — | — |
-| lib-issues | Persistent issue tracking with pluggable backends (file, beads) | `validateIssue`, `getIssueManager`, `FileAdapter` | — | — |
+| lib-issues | Persistent issue tracking with pluggable backends (file, beads) | `validateIssue`, `getIssueManager`, `FileAdapter` | hooks | — |
+| lib-execution-state | Execution state file read/write/clear with atomic writes | `readExecutionState`, `writeExecutionState`, `clearExecutionState` | hooks | — |
 | providers-claude-code | Claude Code provider adapter | `ClaudeCodeAdapter` | lib-provider | — |
 | providers-opencode | OpenCode provider adapter and plugin | `OpenCodeAdapter`, `AdevPlugin` | lib-provider | — |
 | providers-codex | Codex provider adapter | `CodexAdapter` | lib-provider | — |
@@ -44,6 +45,7 @@ Files with zero inbound edges (no other module imports them):
 - `lib/session-summary.mjs` — session summary generator
 - `lib/source-manifest.mjs` — source manifest tool
 - `lib/issues/registry.mjs` — issue manager factory
+- `lib/execution-state.mjs` — execution state read/write/clear
 - `skills/write-test/detect-framework.mjs` — test framework detection
 - `tests/helpers.mjs` — test helper utilities
 

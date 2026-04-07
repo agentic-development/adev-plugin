@@ -1,6 +1,6 @@
 {
   "name": "adev-cli",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "CLI for the Agentic Development Framework — installs adev into Claude Code, OpenCode, and other AI coding assistants. Scaffolds .context-index/ with constitution, manifests, and templates.",
   "type": "module",
   "bin": {
