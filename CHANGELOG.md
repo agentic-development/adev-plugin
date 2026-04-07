@@ -177,7 +177,7 @@ Initial release.
 
 - **Plugin skeleton** — Claude Code plugin structure with `.claude-plugin/plugin.json`
 - **`/adev-init` skill** — Interactive onboarding wizard with plugin conflict detection
-- **CLI installer** — `npx adev-cli init` for plugin installation and project scaffolding
+- **CLI installer** — `npx @adev-org/adev-cli init` for plugin installation and project scaffolding
 - **9 core lifecycle skills** — brainstorm, specify, review-specs, plan, implement, validate, debug, hygiene, sync
 - **SessionStart hook** — Injects framework context at session start
 - **README** — Install guide, quick start, and lifecycle overview

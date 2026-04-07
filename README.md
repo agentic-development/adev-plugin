@@ -7,7 +7,7 @@ Based on the [Agentic Development Handbook](https://www.agentic-dev.org/en/handb
 ## Install
 
 ```bash
-npx adev-cli init
+npx @adev-org/adev-cli init
 ```
 
 The installer detects your AI assistant, scaffolds project context, and configures settings. Use `--provider claude-code|opencode|codex` to skip the prompt.

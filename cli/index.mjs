@@ -562,8 +562,8 @@ function cmdHelp() {
   adev — Agentic Development Framework CLI
 
   Usage:
-    npx adev-cli init              Interactive wizard (default: Claude Code)
-    npx adev-cli uninstall        Uninstall plugin(s)
+    npx @adev-org/adev-cli init              Interactive wizard (default: Claude Code)
+    npx @adev-org/adev-cli uninstall        Uninstall plugin(s)
 
   Provider Selection:
     --provider claude-code        Install for Claude Code only
@@ -573,11 +573,11 @@ function cmdHelp() {
     --provider claude-code --provider codex     Install for Claude + Codex
 
   Examples:
-    npx adev-cli init                          # Claude Code (default)
-    npx adev-cli init --provider opencode      # OpenCode only
-    npx adev-cli init --provider codex       # OpenAI Codex only
-    npx adev-cli init --provider both          # Both providers
-    npx adev-cli uninstall                     # Remove from selected providers
+    npx @adev-org/adev-cli init                          # Claude Code (default)
+    npx @adev-org/adev-cli init --provider opencode      # OpenCode only
+    npx @adev-org/adev-cli init --provider codex       # OpenAI Codex only
+    npx @adev-org/adev-cli init --provider both          # Both providers
+    npx @adev-org/adev-cli uninstall                     # Remove from selected providers
 
   Repository: https://github.com/agentic-development/adev:plugin
   `);

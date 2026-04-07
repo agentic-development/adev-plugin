@@ -68,7 +68,7 @@ adev-plugin/
 
 ## Data Flow
 
-1. **Installation**: User runs `npx adev-cli init` → CLI copies plugin to `~/.claude/plugins/cache/agentic-development/adev/<version>/` and makes hooks executable.
+1. **Installation**: User runs `npx @adev-org/adev-cli init` → CLI copies plugin to `~/.claude/plugins/cache/agentic-development/adev/<version>/` and makes hooks executable.
 
 2. **Session lifecycle**: On session start, `session-start.sh` reads `using-adev/SKILL.md` and injects it as context, establishing methodology awareness.
 

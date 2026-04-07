@@ -32,7 +32,7 @@ The existing regex-based repomap remains the zero-dependency default. Tree-sitte
 
 ## Alternatives Considered
 
-1. **Native tree-sitter (C bindings):** Faster but requires a C compiler (`xcode-select --install` on macOS, `build-essential` on Linux). Rejected because it breaks the zero-friction `npx adev-cli init` install experience.
+1. **Native tree-sitter (C bindings):** Faster but requires a C compiler (`xcode-select --install` on macOS, `build-essential` on Linux). Rejected because it breaks the zero-friction `npx @adev-org/adev-cli init` install experience.
 
 2. **Bundled WASM in repo:** Ship grammar WASM files directly in the plugin. Zero install friction but bloats the repo by 2-5MB, creates licensing concerns per grammar, and requires plugin releases for grammar updates. Rejected as over-engineering.
 
