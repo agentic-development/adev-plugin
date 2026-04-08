@@ -1,6 +1,6 @@
 ---
 name: adev:eval
-description: "Configure and run a graduated evaluation harness that scores agent output quality beyond pass/fail. Four layers from deterministic gates through LLM-as-a-Judge to human-in-the-loop checkpoints. Use when the user wants to evaluate output quality, score agent work, run evals, set up quality benchmarks, or measure how well agents perform against expectations."
+description: "Run a graduated evaluation harness (0-100) scoring implementation quality across four layers: deterministic, architectural, LLM-as-Judge, and human-in-the-loop."
 ---
 
 # Graduated Evaluation Harness
@@ -62,12 +62,14 @@ Dispatch a reviewer subagent with a rubric to score code quality on subjective d
 
 5. **Error handling (0-5):** Are errors handled at the right level? Are error messages useful? Does the happy path degrade gracefully?
 
-Dispatch the reviewer subagent (`reasoning` tier — read from `model_tiers` in `.context-index/platform-context.yaml`; fall back to the hardcoded default in `.context-index/specs/cross-cutting/model-routing.md` if unset, and log a one-time advisory) with:
+Dispatch the reviewer subagent (`reasoning` tier — read from `model_tiers` in `.context-index/platform-context.yaml`; fall back to the hardcoded default in `.context-index/specs/cross-cutting/model-routing.md` if unset, and log a one-time advisory). Prepend `ultrathink` as the first word of the subagent prompt to activate extended thinking. Provide:
 - The implementation diff (all files changed)
 - The Live Spec
 - The rubric (default or custom from `--rubric`)
 - Relevant golden samples for comparison
 - Instructions to score each dimension 0-5 with a one-sentence justification
+- A self-check instruction: "Before finalizing, verify every score has a justification grounded in the actual code, and no score is based on absence of information."
+- A return size constraint: "Keep your response under 1,500 tokens. Score each dimension concisely."
 
 - Overall Layer 3 score = sum of sub-scores (0-25)
 

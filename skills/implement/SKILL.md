@@ -1,6 +1,7 @@
 ---
 name: adev:implement
-description: "Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. Reads plans produced by /adev:plan and dispatches one fresh subagent per task. Use when the user says 'implement the plan', 'start coding', 'execute the tasks', 'build it', or wants to begin development after planning is complete."
+description: "Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. Use after planning to begin development."
+context: fork
 ---
 
 # Implement Plan
@@ -125,70 +126,10 @@ Build the implementer subagent prompt with these sections in order:
 1. **Role.** "You are implementing Task N: [title]." If routed to a specialist: "You are the [specialist name] specialist implementing Task N: [title]."
 2. **Constitution excerpt.** The Non-Negotiable Principles and Coding Standards sections. Keep under 60 lines. Do not include the full constitution.
 3. **Task description.** Full text of the task from the plan. Never make the subagent read the plan file.
-4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need.
+4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need. Before implementing, read the actual source files you will modify. Do not assume file contents based on the task description or plan. If a file has changed since the plan was written, work with the current state.
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
-6. **TDD mandate.** This section is non-negotiable:
-
-```
-## TDD: RED-GREEN-REFACTOR
-
-Every piece of production code requires a failing test first.
-
-1. RED: Write one failing test that captures the next behavior to implement.
-2. VERIFY RED: Run only the specific test file (e.g., `npx vitest run <path-to-test-file>`), not the full suite. Confirm it fails for the expected reason (missing feature, not a typo or import error). If it passes, you are testing existing behavior. Fix the test.
-3. GREEN: Write the minimal code to make the test pass. Nothing more.
-4. VERIFY GREEN: Run only the specific test file again. Confirm it passes. The full test suite runs at the quality-gate stage after review, not here.
-5. REFACTOR: Clean up while keeping the test file green.
-6. REPEAT for the next behavior.
-
-No production code without a failing test first. No exceptions.
-If you wrote code before the test, delete it and start over.
-
-### Test Integrity
-
-When a test fails unexpectedly:
-
-1. INVESTIGATE FIRST. Before changing any assertion, look at the actual behavior:
-   - For UI: take a browser snapshot, read the DOM, check console errors.
-   - For API: read the actual response body, status code, headers.
-   - For logic: add a console.log or debugger, read the actual value.
-   Understand WHY the test failed before deciding what to change.
-   Then check project context before proposing a fix:
-   - Read the Live Spec's acceptance criteria — is the test asserting
-     the right behavior, or is the spec different from what you assumed?
-   - Check `.context-index/adrs/` for known constraints or trade-offs
-     in the affected area.
-   - Check the Feature Charter's behavioral contract — the bug may be
-     "working as specified" (spec problem, not code problem).
-   If the context says the test is correct, fix the code. If the context
-   says the behavior is correct, the spec or test needs updating (escalate).
-
-2. KEEP ASSERTIONS STRICT. Never loosen a matcher to make a test pass:
-   - Do not change `getByText("Submit")` to `getByText(/submit/i)`.
-   - Do not change `toEqual(expected)` to `toContain(partial)`.
-   - Do not change `toBe(false)` to `toBeFalsy()`.
-   If the exact value is wrong, fix the code that produces it.
-
-3. NO CONDITIONAL SKIPS. Never write:
-   - `if (element.isVisible()) { ... } else { skip }`
-   - `try { assert(...) } catch { /* ignore */ }`
-   - `expect(items.length).toBeGreaterThanOrEqual(0)` (always passes)
-   If the element should be visible, assert it. If the data should exist, assert it.
-   A test that cannot fail is not a test.
-
-4. FIX THE APP, NOT THE TEST. When a test reveals a real issue:
-   - The test is doing its job. Do not punish it.
-   - Fix the application code so the test passes as originally written.
-   - Only change the test if the REQUIREMENT changed (and update the spec too).
-
-5. SEED BEFORE YOU ASSERT. Every test must control its own data:
-   - Set up deterministic seed data (fixtures, factories, builders) at the start
-     of the test. Do not rely on data left by other tests or existing in the DB.
-   - Assert against the exact seed values, not against "whatever came back."
-   - Bad: `expect(users.length).toBeGreaterThan(0)` (passes if DB has any row).
-   - Good: seed 3 users → `expect(users).toHaveLength(3)` and check names.
-   If you cannot assert exact values, you did not control the input.
-```
+6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them.
+7. **TDD mandate.** This section is non-negotiable. Include the full content of `tdd-mandate.md` from this skill directory.
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
@@ -208,6 +149,10 @@ When done, report:
 - **Missing context** (if NEEDS_CONTEXT: what you need and where you looked)
 - **Blocker** (if BLOCKED: what prevents progress and what you tried)
 ```
+
+Keep your report under 2,000 tokens. List files and results concisely. Do not restate the task description.
+
+**Cleanup before reporting.** Remove any debugging console.log, print, or debugger statements added during development. Remove commented-out exploration code. Verify all imports are used and no temporary files were left behind.
 
 **Spec traceability.** If Entire.io integration is configured (`integrations.session_capture.provider: entire` in `manifest.yaml`), prepend a traceability marker:
 
@@ -312,15 +257,7 @@ Dispatch a fresh code quality reviewer subagent with:
 - Any concerns from the implementer (if DONE_WITH_CONCERNS)
 - Secondary specialist matches from step 2a (so the reviewer checks those domains)
 
-The code quality reviewer checks:
-- Single responsibility per file, well-defined interfaces
-- Test quality: tests verify real behavior, not mock behavior
-- Test integrity: no loosened assertions, no conditional skips, no try/catch swallowing failures, no assertions against unseeded runtime data. Compare test assertions against spec requirements — if the assertion is weaker than the requirement, flag it. If any test was changed to fix a failure, verify the fix was grounded in spec/charter context, not just "make it green."
-- TDD was followed: test files exist, tests are meaningful, test-first evidence
-- Naming, readability, maintainability
-- Adherence to constitutional coding standards
-- No unnecessary complexity (YAGNI)
-- File sizes: did this task create large files or significantly grow existing ones?
+The code quality reviewer checks the items in `code-quality-checklist.md` from this skill directory.
 
 **Critical or Important issues:** The implementer fixes them. The reviewer reviews again. Repeat until approved.
 
