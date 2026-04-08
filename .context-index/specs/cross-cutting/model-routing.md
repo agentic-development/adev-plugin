@@ -9,9 +9,9 @@ mode: cross-cutting
 status: implemented
 risk_level: medium
 milestone: v1
-revision: 1
+revision: 2
 created: 2026-03-27
-updated: 2026-03-27
+updated: 2026-04-08
 affects:
   - implementation
   - validation
@@ -47,11 +47,19 @@ affects:
 
 6. **When** a skill determines the appropriate tier for a dispatch **then** it uses these tier assignments as defaults:
 
-   | Tier | Intended Use |
-   |------|-------------|
-   | `fast` | Pattern matching, diffs, semantic comparison, gaming detection, low-stakes judgment |
-   | `capable` | Code generation, test authoring, behavioral reasoning, spec compliance review |
-   | `reasoning` | Architecture review, cross-cutting analysis, highest-stakes quality judgment |
+   | Tier | Intended Use | Prompt Quality |
+   |------|-------------|----------------|
+   | `fast` | Pattern matching, diffs, semantic comparison, gaming detection, low-stakes judgment | Return ≤1,500 tokens |
+   | `capable` | Code generation, test authoring, behavioral reasoning, spec compliance review | Return ≤2,000 tokens (implementers), ≤1,500 tokens (reviewers). Include self-check. |
+   | `reasoning` | Architecture review, cross-cutting analysis, highest-stakes quality judgment | Prepend `ultrathink`. Return ≤1,500 tokens. Include self-check. |
+
+7. **When** a skill dispatches a subagent **then** the prompt includes a return size constraint appropriate to the role: reviewer subagents ≤1,500 tokens, implementer subagents ≤2,000 tokens. This prevents context pollution when results return to the coordinator.
+
+8. **When** a skill dispatches a `reasoning`-tier subagent **then** the prompt begins with the `ultrathink` keyword to activate extended thinking for deep architectural or quality assessment reasoning.
+
+9. **When** a skill dispatches a reviewer subagent **then** the prompt includes a "Before Finalizing" self-check section tailored to the reviewer's scope, instructing the reviewer to verify findings are grounded and not invented.
+
+10. **When** a skill dispatches an implementer subagent **then** the prompt includes a scope discipline instruction preventing out-of-scope refactoring: the subagent should only make changes directly required by the task and note other improvements in a Concerns section.
 
 ### Postconditions
 
@@ -110,5 +118,9 @@ affects:
 - [ ] `adev:eval` SKILL.md Layer 3 dispatch references `reasoning` tier, not a model name
 - [ ] `adev:review-specs` SKILL.md dispatches reference tier names
 - [ ] Each skill's fallback behavior (missing `model_tiers`) is documented in the skill
+- [ ] Every reviewer subagent prompt contains a "Before Finalizing" self-check section
+- [ ] Every implementer subagent prompt contains a scope discipline instruction
+- [ ] Every `reasoning`-tier dispatch prepends `ultrathink`
+- [ ] Every subagent prompt specifies a return size constraint
 - [ ] All quality gates pass (`npm test`)
 - [ ] No constitutional violations introduced

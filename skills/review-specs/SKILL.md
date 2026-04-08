@@ -1,6 +1,7 @@
 ---
 name: adev:review-specs
-description: "Architecture review using parallel specialist subagents. A structural architect, security reviewer, and consistency analyzer independently evaluate specs before planning begins. Use when the user says 'review the specs', 'architecture review', 'are the specs ready for planning', or when Live Specs need expert evaluation before decomposing into tasks."
+description: "Run parallel specialist reviews (structural, security, consistency) on Live Specs before planning. Use for architecture review and expert evaluation."
+allowed-tools: [Read, Glob, Grep, Agent]
 ---
 
 # Review Specs
@@ -82,6 +83,8 @@ Tier assignments for this skill: structural architect = `reasoning`, security re
 Task tool (general-purpose):
   description: "Structural architecture review of Live Spec"
   prompt: |
+    ultrathink
+
     <content of structural-architect-prompt.md from this skill directory>
 
     ---

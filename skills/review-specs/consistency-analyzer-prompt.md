@@ -38,3 +38,11 @@ Produce a list of findings. Each finding must include:
 - Do not flag intentional deviations that are documented in the spec (e.g., "This module uses snake_case because it wraps a Python API").
 - Consistency matters most at module boundaries (shared interfaces, events, types). Internal naming within a module is lower priority.
 - If the spec is fully consistent with its context, say so.
+
+## Before Finalizing
+
+Verify: (1) every finding cites the conflicting file and section, (2) you have not flagged intentional documented deviations.
+
+## Output Constraint
+
+Keep your response under 1,500 tokens. Focus on findings, not restating the input.

@@ -27,3 +27,11 @@ Produce a list of findings. Each finding must include:
 - Do not flag issues that are explicitly handled in the spec or constitution.
 - Consider the module's threat model: a public-facing API has different risks than an internal batch job.
 - If no security issues exist, say so. Do not manufacture findings.
+
+## Before Finalizing
+
+Verify: (1) every finding includes a specific mitigation, not generic advice, (2) you have not flagged issues explicitly handled in the spec or constitution.
+
+## Output Constraint
+
+Keep your response under 1,500 tokens. Focus on findings, not restating the input.
