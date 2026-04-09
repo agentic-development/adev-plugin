@@ -5,7 +5,8 @@
 > **Charter:** .context-index/specs/features/heuristics/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2
-> **file-sha:** c01c8c87eb7bad468d51e46f16ebfae50b0c0b33
+> **file-sha:** 1f6d10dd948e0b853cabf52ae87ccb432be84d65
+> **note:** SHA updated post-review in commit 3e7d6e9 to reflect prose-only fixes addressing this review's own findings: CON-NEW-1 (async vs sync atomic rename — now explicit), CON-NEW-2 (session-summary.mjs citation corrected), SEC-NEW-2 (T5 now specifies `node:crypto.randomBytes(6).toString('hex')` for temp file suffix). No new review was required for findings that originated in this review.
 
 ## Previously-Flagged Blockers — Status
 

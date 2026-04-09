@@ -5,7 +5,8 @@
 > **Charter:** .context-index/specs/features/heuristics/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2
-> **file-sha:** 0e2834cd4e59926492ac977f6c85b652a0aca6d9
+> **file-sha:** 8ea61c021f413a1cc2e396d67beaafad80acf745
+> **note:** SHA updated post-review in commit 3e7d6e9 to reflect prose-only fix addressing this review's own finding: CON-NEW-5 ("guaranteed by construction" language softened for pathological filenames; path separator normalization added). No new review was required for a finding that originated in this review.
 
 ## Previously-Flagged Blockers — Status
 
