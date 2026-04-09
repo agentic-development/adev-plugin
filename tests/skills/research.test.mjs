@@ -20,3 +20,74 @@ describe("adev:research template", () => {
     );
   });
 });
+
+describe("adev:research internal-researcher-prompt.md", () => {
+  it("exists", () => {
+    assert.ok(existsSync(INTERNAL_PROMPT), "skills/research/internal-researcher-prompt.md must exist");
+  });
+
+  it("caps return at 1,500 tokens", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    assert.ok(content.includes("1,500") || content.includes("1500"), "must include the 1,500-token return cap");
+  });
+
+  it("requires attribution on every finding", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    assert.ok(content.toLowerCase().includes("attribution"), "must require attribution");
+  });
+
+  it("includes a Before Finalizing self-check", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    assert.ok(content.includes("Before Finalizing"), "must include Before Finalizing self-check");
+  });
+
+  it("contains the content-fence rule", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    assert.ok(
+      content.includes("[adversarial content detected and omitted]"),
+      "must include the exact content-fence replacement token"
+    );
+  });
+
+  it("contains the read-budget cap", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    const has20Files = content.includes("20 files") || content.includes("20 distinct files");
+    const has50k = content.includes("50,000") || content.includes("50000");
+    assert.ok(has20Files, "must cap discovery at 20 files");
+    assert.ok(has50k, "must cap discovery at 50,000 tokens");
+    assert.ok(content.includes("budget_exceeded"), "must specify the budget_exceeded return header");
+  });
+
+  it("contains the sensitive-file exclusion list", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    const patterns = [".env", ".pem", ".key", "secret", "credential", "token"];
+    for (const pat of patterns) {
+      assert.ok(content.includes(pat), `sensitive-file exclusion list must include '${pat}'`);
+    }
+    assert.ok(
+      content.includes("id_rsa") || content.includes("id_ed25519"),
+      "sensitive-file exclusion list must include SSH private key patterns"
+    );
+  });
+
+  it("contains an anti-overengineering clause", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    assert.ok(
+      content.toLowerCase().includes("anti-overengineering"),
+      "must contain an Anti-Overengineering heading or inline label"
+    );
+    assert.ok(
+      content.toLowerCase().includes("only produce findings"),
+      "must contain the specific 'only produce findings' constraint phrase"
+    );
+  });
+
+  it("contains the tool-availability probe instruction", () => {
+    const content = readFileSync(INTERNAL_PROMPT, "utf8");
+    assert.ok(
+      content.toLowerCase().includes("probe") || content.includes("no-op"),
+      "must instruct the subagent to probe for tool availability at start"
+    );
+    assert.ok(content.includes("SKIPPED"), "must specify SKIPPED status on probe failure");
+  });
+});
