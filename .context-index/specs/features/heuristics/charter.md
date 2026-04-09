@@ -1,6 +1,6 @@
 ---
 status: approved
-revision: 2
+revision: 3
 updated: 2026-04-09
 ---
 
@@ -68,8 +68,8 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 
 - `confidence` is exactly one of `low`, `medium`, or `high`
 - A Heuristic with two or more `contradicted-by` entries cannot remain at `high` confidence
-- Promotion path: `low → medium` at two evidence entries; `medium → high` at three evidence entries from distinct tasks
-- Demotion path: one contradiction drops confidence one level; two contradictions archive the entry
+- Promotion path: auto-promotion thresholds are absolute and based on evidence count across distinct source paths — `low → medium` at two distinct-path evidence entries; `medium → high` at three distinct-path evidence entries; auto-promotion never decreases confidence
+- Demotion path: one contradiction drops confidence one level; two contradictions archive the entry regardless of prior confidence
 - `id` is unique within its scope file
 - Archived entries are read-only; retro may re-promote by copying back into the active file but never edits archived entries in place
 - Every heuristic links back to at least one EvidenceRef (no orphan entries)
@@ -91,7 +91,7 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 | Brainstorm Injection | Surface heuristics for the target module during charter drafting | should-have | 2 | — |
 | Specify Injection | Surface heuristics when writing acceptance criteria | should-have | 2 | — |
 | `/adev:learn` Skill | Explicit user-driven heuristic capture for lessons the lifecycle missed | should-have | 2 | — |
-| Format Documentation | Public schema doc at `.context-index/memory/heuristics/_format.md` | nice-to-have | 2 | — |
+| Format Documentation | Public schema doc at `.context-index/memory/heuristics/_format.md` | must-have | 1 | specified |
 
 ## Interface Contracts
 
