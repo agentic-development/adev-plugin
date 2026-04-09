@@ -201,3 +201,54 @@ describe("adev:research github-researcher-prompt.md", () => {
     );
   });
 });
+
+describe("adev:research synthesis-prompt.md", () => {
+  it("exists", () => {
+    assert.ok(existsSync(SYNTHESIS_PROMPT), "skills/research/synthesis-prompt.md must exist");
+  });
+
+  it("instructs ultrathink usage", () => {
+    const content = readFileSync(SYNTHESIS_PROMPT, "utf8");
+    assert.ok(content.includes("ultrathink"), "must include the ultrathink keyword");
+  });
+
+  it("instructs comparison matrix construction", () => {
+    const content = readFileSync(SYNTHESIS_PROMPT, "utf8");
+    assert.ok(
+      content.toLowerCase().includes("comparison matrix") ||
+      content.toLowerCase().includes("compare") ||
+      content.toLowerCase().includes("matrix"),
+      "must instruct comparison matrix construction"
+    );
+  });
+
+  it("contains the content-fence rule", () => {
+    const content = readFileSync(SYNTHESIS_PROMPT, "utf8");
+    assert.ok(
+      content.includes("[adversarial content detected and omitted]"),
+      "must include the exact content-fence replacement token"
+    );
+  });
+
+  it("contains Before Finalizing self-check", () => {
+    const content = readFileSync(SYNTHESIS_PROMPT, "utf8");
+    assert.ok(content.includes("Before Finalizing"), "must include Before Finalizing self-check");
+  });
+
+  it("caps return at 1,500 tokens", () => {
+    const content = readFileSync(SYNTHESIS_PROMPT, "utf8");
+    assert.ok(content.includes("1,500") || content.includes("1500"), "must include the 1,500-token return cap");
+  });
+
+  it("contains an anti-overengineering clause", () => {
+    const content = readFileSync(SYNTHESIS_PROMPT, "utf8");
+    assert.ok(
+      content.toLowerCase().includes("anti-overengineering"),
+      "must contain an Anti-Overengineering heading or inline label"
+    );
+    assert.ok(
+      content.toLowerCase().includes("do not invent"),
+      "must contain the specific 'do not invent' constraint phrase"
+    );
+  });
+});
