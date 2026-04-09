@@ -9,7 +9,7 @@ allowed-tools: [Read, Glob, Grep, Write, Agent]
 Turn a feature idea into a structured Feature Charter through collaborative dialogue. The charter defines WHAT a module does and its boundaries, grounded in the project constitution and existing specs. It does not define HOW the module is built (that is the job of Live Specs and implementation plans).
 
 <HARD-GATE>
-Complete the charter and review loop before invoking any implementation skill, writing code, or creating a Live Spec. This gate applies to all features regardless of perceived simplicity.
+Do NOT invoke any implementation skill, write any code, create any Live Spec, or take any implementation action until you have written the charter, passed the review loop, and the user has approved the final document. This applies to EVERY feature regardless of perceived simplicity.
 </HARD-GATE>
 
 ## Arguments
