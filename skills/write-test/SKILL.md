@@ -1,6 +1,6 @@
 ---
 name: adev:write-test
-description: "TDD test authoring specialist. Authors failing tests (RED phase), produces immutable handoff blocks, detects specification gaming, and verifies post-GREEN semantic integrity. Use when writing tests before implementation, verifying test integrity after GREEN, or as standalone TDD test authoring outside the /adev:implement pipeline."
+description: "TDD test authoring: write failing tests (RED phase), produce immutable handoff blocks, and detect specification gaming. Use before implementation."
 ---
 
 # adev:write-test

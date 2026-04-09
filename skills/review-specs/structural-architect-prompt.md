@@ -26,3 +26,11 @@ Produce a list of findings. Each finding must include:
 - Do not suggest implementation approaches. Focus on whether the spec is structurally sound.
 - A spec with no blockers and clear contracts is a good spec. Do not invent problems.
 - If the spec is well-structured, say so. A short review with zero findings is a valid outcome.
+
+## Before Finalizing
+
+Verify: (1) every finding references a specific section of the spec, (2) no finding suggests an implementation approach, (3) you have not invented problems where the spec is clear.
+
+## Output Constraint
+
+Keep your response under 1,500 tokens. Focus on findings, not restating the input.

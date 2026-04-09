@@ -48,3 +48,11 @@ Read all four documents before producing your review.
 **Recommendations (advisory, do not block approval):**
 - [suggestions for improvement]
 ```
+
+## Before Finalizing
+
+Verify: (1) every spec acceptance criterion maps to at least one task, (2) no issue is merely stylistic.
+
+## Output Constraint
+
+Keep your response under 1,500 tokens. Focus on issues and coverage, not restating the plan.

@@ -7,7 +7,7 @@ module_system: esm
 runtime: nodejs
 test_runner: "node:test"
 package_manager: npm
-deployment: npm registry  # npx adev-cli init
+deployment: npm registry  # npx @adev-org/adev-cli init
 plugin_target: claude-code
 
 # ============================================================================

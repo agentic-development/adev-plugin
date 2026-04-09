@@ -53,3 +53,36 @@ Task 2 ──┤── Task 3 (depends on 1+2 for GREEN)
 ```
 
 Tasks 1 and 2 are independent and can be implemented in parallel. Tasks 3 and 4 can be written (RED) at any time but will only pass (GREEN) after Tasks 1 and 2 are complete.
+
+---
+
+## Revision 2 Tasks (Subagent Prompt Quality)
+
+Added in revision 2 based on Anthropic best practices research (`.context-index/research/anthropic-skill-best-practices.md`).
+
+### Task 5: Add return size constraints to all subagent prompts
+- **Files:** All reviewer prompt files (`structural-architect-prompt.md`, `security-reviewer-prompt.md`, `consistency-analyzer-prompt.md`, `plan-reviewer-prompt.md`, `charter-reviewer-prompt.md`), `skills/implement/SKILL.md`, `skills/eval/SKILL.md`
+- **Description:** Add output size constraints (≤1,500 tokens for reviewers, ≤2,000 tokens for implementers) to prevent context pollution when results return to the coordinator.
+
+### Task 6: Add self-check sections to all reviewer prompts
+- **Files:** Same reviewer prompt files as Task 5, plus `skills/eval/SKILL.md`
+- **Description:** Add "Before Finalizing" self-check sections tailored to each reviewer's scope, instructing reviewers to verify findings are grounded and not invented.
+
+### Task 7: Add ultrathink to reasoning-tier dispatches
+- **Files:** `skills/review-specs/SKILL.md` (structural architect dispatch), `skills/eval/SKILL.md` (Layer 3 dispatch)
+- **Description:** Prepend `ultrathink` keyword to reasoning-tier subagent prompts to activate extended thinking for deep architectural and quality assessment reasoning.
+
+### Task 8: Add scope discipline to implementer prompts
+- **Files:** `skills/implement/SKILL.md`
+- **Description:** Add anti-overengineering instruction to the implementer subagent prompt template preventing out-of-scope refactoring. Subagents note improvements in Concerns section rather than acting on them.
+
+## Revision 2 Task Order
+
+```
+Task 5 ──┐
+Task 6 ──┤── All independent, can be implemented in parallel
+Task 7 ──┤
+Task 8 ──┘
+```
+
+Tasks 5-8 are independent of each other and of Tasks 1-4. Tasks 5-6 are implemented in this PR; Tasks 7-8 are implemented in Phase 2.

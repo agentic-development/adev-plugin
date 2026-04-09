@@ -1,6 +1,6 @@
 ---
 name: adev:plan
-description: "Constitution-gated planning. Decomposes reviewed Live Specs into ordered implementation tasks with TDD expectations and context routing hints. Use when the user says 'break this into tasks', 'create an implementation plan', 'plan the work', 'decompose the spec', or is ready to move from reviewed specs to actionable development tasks."
+description: "Decompose reviewed Live Specs into ordered implementation tasks with TDD expectations and context routing. Use to break specs into actionable tasks."
 ---
 
 # Plan Implementation
@@ -94,38 +94,35 @@ Before planning, verify the spec has passed architecture review.
 
 ## Step 2: Load Context
 
-Read these files in order. Each informs the planning decisions that follow.
+### Essential Context (load now)
 
-1. **Constitution:** Read `.context-index/constitution.md`. Extract:
-   - Non-negotiable principles (these constrain the plan)
-   - Architecture boundaries (these define what tasks must NOT do without human approval)
-   - Quality gate commands (these become the verification steps in each task)
-   - Coding standards (these inform implementation guidance)
+Read these files immediately. They are required for every planning decision.
 
-2. **Platform context:** Read `.context-index/platform-context.yaml`. Note the tech stack, framework versions, and deployment targets. These determine which libraries, patterns, and commands appear in the plan.
+1. **Constitution:** Read `.context-index/constitution.md`. Extract non-negotiable principles, architecture boundaries, quality gate commands, and coding standards.
 
-3. **Orientation:** Read `.context-index/orientation/architecture.md` if it exists. This tells you how the codebase is organized: where modules live, how they connect, where to find things.
+2. **Platform context:** Read `.context-index/platform-context.yaml`. Note the tech stack, framework versions, and deployment targets.
 
-4. **ADRs:** Read all files in `.context-index/adrs/`. Note any decisions relevant to the spec being planned. Reference specific ADRs in tasks where they apply.
+3. **Parent charter:** Read the feature charter (`.context-index/specs/features/<module>/charter.md`). Extract the capability map. Every task must trace to a capability listed here.
 
-5. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts. Note external interfaces this module must comply with.
+4. **The spec:** Read the Live Spec itself. Extract behavioral contract, acceptance criteria, and actionable task map (if present).
 
-6. **Parent charter:** Read the feature charter (`.context-index/specs/features/<module>/charter.md`). Extract the capability map. Every task in the plan must trace to a capability listed here.
+5. **Review report:** Read the `.review.md` file. Note any `PASS_WITH_NOTES` warnings. The plan should address or acknowledge them.
 
-7. **The spec:** Read the Live Spec itself. Extract:
-   - Behavioral contract (what the implementation must do)
-   - Acceptance criteria (the checklist the implementation must satisfy)
-   - Actionable task map (the spec's own decomposition, if present)
+### Reference Context (load when relevant)
 
-8. **Review report:** Read the `.review.md` file. Note any `PASS_WITH_NOTES` warnings. The plan should address or acknowledge them.
+Read these as needed during task writing. Do not load everything upfront — load when a task requires this context.
 
-9. **Cross-cutting specs:** Read relevant files from `.context-index/specs/cross-cutting/` that the spec depends on (error handling, auth flow, API versioning, etc.).
+6. **Orientation:** Read `.context-index/orientation/architecture.md` when determining file structure, module placement, or import patterns for tasks.
 
-10. **Samples:** If `.context-index/samples/` contains golden samples relevant to this spec's patterns, note them. Tasks should reference samples where applicable.
+7. **ADRs:** Read only the ADRs referenced in the spec or charter. Reference specific ADRs in tasks where they apply.
 
-11. **Boundary rules:** If `.context-index/governance/boundaries.yaml` exists, read it.
-    Extract all boundary rules as additional planning constraints alongside the
-    constitution's Architecture Boundaries. If it does not exist, skip.
+8. **External references:** Read `.context-index/references/**/*.md` only if the spec references external contracts or interfaces.
+
+9. **Cross-cutting specs:** Read files from `.context-index/specs/cross-cutting/` only those that the spec depends on (check spec frontmatter or behavioral contract for references).
+
+10. **Samples:** Read `.context-index/samples/` when writing context packets for tasks. Reference relevant golden samples in task guidance.
+
+11. **Boundary rules:** Read `.context-index/governance/boundaries.yaml` only if the directory exists. Extract boundary rules as additional planning constraints.
 
 ## Step 3: Constitution Validation
 

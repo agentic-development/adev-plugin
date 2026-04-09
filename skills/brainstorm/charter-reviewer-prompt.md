@@ -60,3 +60,11 @@ Task tool (general-purpose):
 - If Issues Found: fix the issues in the charter, then re-dispatch with updated content.
 - If the loop exceeds 3 iterations without approval, surface remaining issues to the user.
 - Do not ask the user about issues you can fix yourself (structural fixes, missing details that were discussed during brainstorming). Only escalate design decisions.
+
+## Before Finalizing
+
+The reviewer must verify: (1) every flagged issue would cause a real problem during specification, (2) no issue is a stylistic preference.
+
+## Output Constraint
+
+Keep the review response under 1,500 tokens. Focus on issues, not restating the charter.
