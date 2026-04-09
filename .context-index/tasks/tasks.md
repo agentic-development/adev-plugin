@@ -8,6 +8,8 @@
 | epic-2 | adev-codehealth: Full Lifecycle Implementation | closed |  |  | 2026-04-02T13:06:39.625Z | 2026-04-10T21:02:24.884Z |
 | epic-3 | Execution State File | closed | .context-index/specs/features/session-awareness/execution-state-file.plan.md |  | 2026-04-06T17:33:45.461Z | 2026-04-10T21:02:24.886Z |
 | epic-4 | Phase 0: Quick Wins & Eval Foundation | closed |  | work-tracking | 2026-04-10T21:00:35.828Z | 2026-04-10T21:09:18.621Z |
+| epic-5 | adev:research Multi-Agent Refactor | open | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md |  | 2026-04-09T12:58:46.483Z | 2026-04-09T12:58:46.483Z |
+| epic-6 | Heuristics Phase 1a: Store and Helper | open | .context-index/specs/features/heuristics/store-and-helper.plan.md |  | 2026-04-09T17:33:18.933Z | 2026-04-09T17:33:18.933Z |
 
 ## Issues
 
@@ -38,3 +40,25 @@
 | issue-23 | Write Scenario F rubric and scenario (issue chain tracing) | closed | 2 | task | epic-4 |  |  | issue-19 | Closed: Scenario F rubric: 11 required elements + 4 quality dimensions | 2026-04-10T21:01:09.338Z | 2026-04-10T21:08:26.837Z |
 | issue-24 | Write Scenario A rubric and scenario (full lifecycle trailers) | closed | 3 | task | epic-4 |  |  | issue-19 | Closed: Scenario A rubric: 8 required elements + 4 quality dimensions | 2026-04-10T21:01:09.340Z | 2026-04-10T21:08:26.839Z |
 | issue-25 | Write Scenario E rubric and scenario (implementation probe) | closed | 3 | task | epic-4 |  |  | issue-19 | Closed: Scenario E rubric: 7 required elements + 4 quality dimensions | 2026-04-10T21:01:09.342Z | 2026-04-10T21:08:26.841Z |
+| issue-26 | Scaffold test module + add injection_warnings to research template | open | 2 | task | epic-5 | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md | 1 |  |  | 2026-04-09T12:58:46.488Z | 2026-04-09T12:58:46.488Z |
+| issue-27 | Create internal-researcher-prompt.md with content fence, read budget, and sensitive-file exclusion | open | 2 | task | epic-5 | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md | 2 | issue-26 |  | 2026-04-09T12:58:46.489Z | 2026-04-09T12:58:46.496Z |
+| issue-28 | Create web-researcher-prompt.md with content-fence rule | open | 2 | task | epic-5 | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md | 3 | issue-27 |  | 2026-04-09T12:58:46.490Z | 2026-04-09T12:58:46.497Z |
+| issue-29 | Create github-researcher-prompt.md with content-fence rule and owner/repo validation | open | 2 | task | epic-5 | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md | 4 | issue-28 |  | 2026-04-09T12:58:46.491Z | 2026-04-09T12:58:46.499Z |
+| issue-30 | Create synthesis-prompt.md for --compare mode with ultrathink and Before Finalizing self-check | open | 2 | task | epic-5 | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md | 5 | issue-29 |  | 2026-04-09T12:58:46.493Z | 2026-04-09T12:58:46.500Z |
+| issue-31 | Rewrite SKILL.md as multi-agent orchestrator with Step 5.5 sanitization pass | open | 2 | task | epic-5 | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md | 6 | issue-26,issue-27,issue-28,issue-29,issue-30 |  | 2026-04-09T12:58:46.494Z | 2026-04-09T12:58:46.505Z |
+| issue-32 | JSDoc types and internal constants | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 1 |  |  | 2026-04-09T17:33:18.941Z | 2026-04-09T17:33:18.941Z |
+| issue-33 | parseHeuristicsFile (YAML parsing, skip malformed) | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 2 |  |  | 2026-04-09T17:33:18.943Z | 2026-04-09T17:33:18.943Z |
+| issue-34 | serializeHeuristic (camelCase kebab-case) | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 3 |  |  | 2026-04-09T17:33:18.945Z | 2026-04-09T17:33:18.945Z |
+| issue-35 | Schema validator (safe-slug, required, caps, enum) | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 4 |  |  | 2026-04-09T17:33:18.947Z | 2026-04-09T17:33:18.947Z |
+| issue-36 | Atomic write helper (temp + rename) | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 5 |  |  | 2026-04-09T17:33:18.949Z | 2026-04-09T17:33:18.949Z |
+| issue-37 | readHeuristics (module, confidence, limit, sort) | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 6 |  |  | 2026-04-09T17:33:18.951Z | 2026-04-09T17:33:18.951Z |
+| issue-38 | writeHeuristic (append-or-update, auto-promote, malformed overwrite) | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 7 |  |  | 2026-04-09T17:33:18.953Z | 2026-04-09T17:33:18.953Z |
+| issue-39 | promoteHeuristic, demoteHeuristic, archiveHeuristic | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 8 |  |  | 2026-04-09T17:33:18.955Z | 2026-04-09T17:33:18.955Z |
+| issue-40 | addContradiction (auto-demote, contradicted trumps underflow) | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 9 |  |  | 2026-04-09T17:33:18.958Z | 2026-04-09T17:33:18.958Z |
+| issue-41 | Write _format.md public schema doc | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 10 |  |  | 2026-04-09T17:33:18.960Z | 2026-04-09T17:33:18.960Z |
+| issue-42 | Tests: parse/serialize round-trip edge cases | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 11 |  |  | 2026-04-09T17:33:18.961Z | 2026-04-09T17:33:18.961Z |
+| issue-43 | Tests: read filtering, sorting, limit | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 12 |  |  | 2026-04-09T17:33:18.963Z | 2026-04-09T17:33:18.963Z |
+| issue-44 | Tests: write + auto-promotion at every threshold | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 13 |  |  | 2026-04-09T17:33:18.966Z | 2026-04-09T17:33:18.966Z |
+| issue-45 | Tests: contradiction + auto-demote + archive reasons | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 14 |  |  | 2026-04-09T17:33:18.969Z | 2026-04-09T17:33:18.969Z |
+| issue-46 | Tests: atomic write + import safety | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 15 |  |  | 2026-04-09T17:33:18.974Z | 2026-04-09T17:33:18.974Z |
+| issue-47 | Tests: error case full coverage | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 16 |  |  | 2026-04-09T17:33:18.978Z | 2026-04-09T17:33:18.978Z |
