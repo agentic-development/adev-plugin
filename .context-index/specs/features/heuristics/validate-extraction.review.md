@@ -1,54 +1,49 @@
-# Architecture Review: validate-extraction
+# Architecture Review: validate-extraction (re-review r2)
 
 > **Date:** 2026-04-09
 > **Spec:** .context-index/specs/features/heuristics/validate-extraction.md
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Verdict:** BLOCK
-> **last-reviewed-revision:** 1
-> **file-sha:** e55c1b3c667d87da575b46e1162938714eba42f7
+> **Verdict:** PASS_WITH_NOTES
+> **last-reviewed-revision:** 2
+> **file-sha:** 0e2834cd4e59926492ac977f6c85b652a0aca6d9
 
-## Structural Architect
+## Previously-Flagged Blockers — Status
 
-**Verdict:** BLOCK
+- **SA-10** (auto-promotion semantics, dual of SA-14) — **RESOLVED** via store-and-helper r2 Behaviors 9-13.
+- **CON-21** (missing title derivation) — **RESOLVED**. New Title Derivation Rule with explicit 117+`...` truncation.
 
-- **SA-10** [blocker] [Behaviors 4, 9] — Check 12 writes heuristics at `confidence: medium` directly. The store-and-helper spec does not explicitly allow callers to choose an initial confidence above `low`, and does not guarantee that auto-promotion thresholds apply at absolute evidence counts regardless of starting confidence. validate-extraction's Behavior 9 comment — "auto-promotes to `high` on the 3rd distinct-path recurrence" — is not guaranteed by the helper's current contract. Recommendation (on store-and-helper, not this spec): Add an explicit behavior clarifying that `writeHeuristic` accepts any initial confidence and that auto-promotion rules apply at absolute evidence counts regardless of starting confidence. (This is the same issue as SA-14 — fixing store-and-helper resolves it here.)
-- **SA-11** [warning] [Behavior 4] — Scope is read from the target spec's `charter:` frontmatter. The `charter:` value is a charter slug, not necessarily a `manifest.yaml modules[].slug`. Recommendation: Clarify the mapping and handle the case where a charter has no corresponding module slug (fall back to `_global`).
-- **SA-12** [warning] [Behavior 2] — First-run detection uses a sibling file pattern check. If a prior validation report was deleted and re-run, is that "first run"? Recommendation: Be explicit about the file pattern, location, and whether file absence after deletion is intentionally treated as first-run.
-- **SA-13** [suggestion] [Behavior 10] — Id prefix is spec-slug (vs. recover's category prefix). Scoped uniqueness means collision is unlikely. Good.
+## Structural Architect (r2)
 
-## Security Reviewer
+**Verdict:** PASS
+
+All SA-10, SA-11, SA-12, CON-21 RESOLVED. Three suggestions:
+- **SA-NEW-7** [suggestion] — Title truncation to 117 chars doesn't address mid-word or mid-multibyte-character splits. Fine for ASCII titles; implementation detail.
+- **SA-NEW-8** [suggestion] — Behavior 7 success-factor priority order: "first match wins; additional factors are ignored" would remove ambiguity.
+- **SA-NEW-9** [info] — Id derivation input asymmetry with recover is intentional; canonicalize in `_format.md`.
+
+## Security Reviewer (r2)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **SEC-9** [warning] [collision] — Same 6-char hash concern as SEC-6. Additionally, two specs with identical titles would produce the same id for the default pattern template. Recommendation: Include the spec's file path (not just title) in the id-generation input; apply 8-char hash.
-- **SEC-10** [suggestion] [data-exposure] — Patterns derived from context packets may capture environment-specific content. Recommendation: Distill to structural/behavioral lesson; do not copy packet content verbatim.
-- **SEC-11** [suggestion] [other] — `spec-slug` derivation rule (used in both the first-run gate and the id generation) is not defined. Inconsistency between the gate and id would cause duplicate heuristics on repeat validations that are intended to be gated out. Recommendation: Explicitly specify the slug derivation rule and ensure the same rule is used in Behavior 2 and Behavior 10.
+All SEC-9, SEC-10, SEC-11 RESOLVED. Three new notes:
+- **SEC-NEW-4** [medium] [file-path-safety] — ID hash input includes absolute file path lowercased; on non-POSIX systems path separators could differ from `path.basename()` output. Recommend normalizing `\` → `/` before hashing. Not operational today (POSIX target) but worth a portability note.
+- **SEC-NEW-5** [low] — Accidental deletion of a `-validation.md` file triggers re-extraction. Because `writeHeuristic` is upsert-keyed on `id`, this updates the existing entry rather than duplicating — invariant preserved; intentional behavior.
+- **SEC-NEW-6** [low] — Title derivation lifts the spec heading directly. Deliberate, and headings are already public in git.
 
-## Consistency Analyzer
+## Consistency Analyzer (r2)
 
-**Verdict:** BLOCK (CON-21 is a blocker affecting this spec)
+**Verdict:** PASS_WITH_NOTES
 
-- **CON-11** [suggestion] [contract] — Evidence shape matches charter and store-and-helper. Noted as positive.
-- **CON-12** [suggestion] [contract] — What happens when `writeHeuristic` is called with `confidence: medium` on an already-stored `medium` entry? Spec is silent. Recommendation (on store-and-helper): "On update, caller-supplied `confidence` is ignored; stored confidence (subject to auto-promotion) is authoritative."
-- **CON-13** [suggestion] [domain-model] — `anti-pattern` is left empty for success heuristics. Consistent with store-and-helper error table, but charter entity definition does not mark the field optional. Minor charter-level suggestion.
-- **CON-15** [suggestion] [pattern] — Same `projectRoot` resolution gap as CON-10.
-- **CON-21** [blocker] [contract] — Spec omits any `title` derivation rule, but `title` is a required field per schema validation. Recommendation: Add rule like `"First-run PASS: <spec-title>"` or `"Success pattern for <spec-slug>"`.
-
-## Cross-Spec Findings affecting this spec
-
-- **SA-14** [blocker] — Same API contract gap as SA-10 (same root cause, dual-listed). Fixing store-and-helper resolves both.
-- **SA-15** [warning] — Scope derivation divergence between recover and validate (see recover review).
-- **SA-16** [warning] — Derived scope validation against `manifest.yaml modules[].slug` should be explicit.
-- **SEC-12** [warning] [data-exposure] — Heuristics are git-tracked. Recommendation: see store-and-helper SEC-12.
+CON-12, CON-15, CON-17, CON-21 all RESOLVED. Two notes:
+- **CON-NEW-5** [warning] [contract] — "Guaranteed by construction" safe-slug claim is not strictly true for pathological filenames (e.g., `--foo.md` strips to empty → `-<hash>` fails pattern). The SKIP path covers it functionally. Recommend softening to "guaranteed for well-formed spec filenames; pathological cases fall back to SKIP via schema validation."
+- **CON-NEW-6** [note] [domain-model] — Same-slug specs in different directories: first-run detection is directory-scoped (safe); id derivation includes absolute path (safe). Documented for reviewers.
 
 ---
 
 ## Summary
 
-**Total findings:** 12 (2 blockers, 5 warnings, 5 suggestions)
+**Total findings (r2):** 8 (0 blockers, 1 warning, 7 notes/suggestions)
 
-**Blockers (must address before planning):**
-- **SA-10 / SA-14** — Resolved by updating store-and-helper to document absolute-threshold auto-promotion semantics. No change to this spec required once the helper spec is updated.
-- **CON-21** — Add `title` derivation rule to this spec (e.g., `"First-run PASS: <spec-title>"` or `"Success pattern for <spec-slug>"`).
+**Action required:** None blocking. Spec unlocks planning. CON-NEW-5 is the only warning worth a quick prose fix; all other findings are informational.
 
-**Action required:** Revise validate-extraction.md to add the `title` derivation rule. Revise store-and-helper.md to document absolute-threshold auto-promotion (resolves SA-10/SA-14). Re-run review once both are revised.
+**Status transition:** `review-blocked` → `review-passed`
