@@ -67,8 +67,8 @@ The heuristic `title` is composed as `"First-run PASS: <spec-title>"` where:
 
 The `id` is composed as `<spec-slug>-<hash>` where:
 - `<spec-slug>` is derived per the Spec-Slug Derivation Rule above
-- `<hash>` is the first 8 characters of the lowercase hex SHA-256 of a normalization input comprising: the spec's absolute file path (lowercased) + `|` + the pattern text. Including the file path prevents id collisions between two specs with identical titles.
-- The resulting id must match the safe-slug pattern `/^[_a-z0-9][_a-z0-9-]{0,63}$/` (guaranteed by construction)
+- `<hash>` is the first 8 characters of the lowercase hex SHA-256 of a normalization input comprising: the spec's absolute file path (lowercased, with path separators normalized to `/`) + `|` + the pattern text. Including the file path prevents id collisions between two specs with identical titles.
+- For well-formed spec filenames (at least one alphanumeric character in the filename stem), the resulting id matches the safe-slug pattern `/^[_a-z0-9][_a-z0-9-]{0,63}$/` by construction. For pathological filenames (e.g., all-punctuation stems that strip to empty), the id would fail the safe-slug check; `writeHeuristic` throws `HEURISTICS_SCHEMA_ERROR` and Check 12 falls back to `SKIP` per Behavior 13.
 
 ### Behaviors
 

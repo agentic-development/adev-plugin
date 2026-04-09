@@ -117,11 +117,11 @@ In-memory objects use `camelCase` keys (matching `lib/execution-state.mjs` and `
 
 ## System Constitution Reference
 
-- **Principle 1: Minimize external dependencies** — `lib/heuristics.mjs` imports only Node.js built-ins using the `node:` prefix: `node:fs/promises`, `node:path`, `node:crypto` (matching `lib/execution-state.mjs`, `lib/session-summary.mjs`, and `lib/source-manifest.mjs`). No new npm packages are required or added.
+- **Principle 1: Minimize external dependencies** — `lib/heuristics.mjs` imports only Node.js built-ins using the `node:` prefix: `node:fs/promises`, `node:path`, `node:crypto` (matching `lib/execution-state.mjs` and `lib/source-manifest.mjs`). No new npm packages are required or added. All write operations, including the atomic rename, use the async promise-based API from `node:fs/promises` (e.g., `writeFile`, `rename`, `mkdir`); there is no mixing of sync and async APIs within the helper.
 - **Principle 2: Skills are primarily markdown** — The helper is companion code, explicitly permitted by the constitution. Skills that read heuristics must degrade gracefully when the helper or its files are absent.
 - **Principle 3: Pure ESM** — The helper is `.mjs` with named exports only. No CommonJS.
-- **Coding Standards: camelCase functions, kebab-case files** — API function names and in-memory keys follow camelCase (`readHeuristics`, `writeHeuristic`, `antiPattern`, `contradictedBy`); on-disk file and directory names follow kebab-case (`heuristics/`, `_global.md`, `archive/`); YAML frontmatter keys are kebab-case on disk (`anti-pattern`, `contradicted-by`) per `lib/session-summary.mjs` convention.
-- **Logging convention** — The helper writes warnings to stderr as single-line messages prefixed with `heuristics: ` (matches the pattern in `lib/session-summary.mjs`).
+- **Coding Standards: camelCase functions, kebab-case files** — API function names and in-memory keys follow camelCase (`readHeuristics`, `writeHeuristic`, `antiPattern`, `contradictedBy`); on-disk file and directory names follow kebab-case (`heuristics/`, `_global.md`, `archive/`); YAML frontmatter keys are kebab-case on disk (`anti-pattern`, `contradicted-by`, `archived-reason`) — the helper's serializer converts between camelCase in-memory and kebab-case on-disk representations using the same `toKebab`/`toCamel` approach as `lib/session-summary.mjs`.
+- **Logging convention** — The helper writes warnings to stderr as single-line messages prefixed with `heuristics: ` (matching the stderr-warning pattern used across the adev lib helpers).
 - **Graceful degradation** — Importing the module never throws; file and directory access failures never propagate above the helper except for genuinely unrecoverable filesystem errors (EACCES, ENOSPC).
 
 ## Actionable Task Map
@@ -132,7 +132,7 @@ In-memory objects use `camelCase` keys (matching `lib/execution-state.mjs` and `
 | T2 | Implement `parseHeuristicsFile(path)` — split file on frontmatter blocks, parse YAML with `session-summary.mjs` kebab-to-camel conversion, return entry array, skip malformed entries with warning | medium |
 | T3 | Implement `serializeHeuristic(entry)` — produce the on-disk markdown block (frontmatter + body) using camel-to-kebab conversion | small |
 | T4 | Implement schema validator — checks required fields, confidence enum, safe-slug pattern for `scope` and `id`, and field length caps | small |
-| T5 | Implement atomic write helper (same-directory temp file + `renameSync`) shared across all write operations | small |
+| T5 | Implement atomic write helper: write to adjacent temp file (`<target>.tmp-<cryptoRandomSuffix>`) via `writeFile`, then `rename` to target — all async from `node:fs/promises`. Suffix generated via `node:crypto.randomBytes(6).toString('hex')` to prevent temp-file prediction | small |
 | T6 | Implement `readHeuristics(projectRoot, opts)` with module match, `minConfidence` filter, `limit` cap, and deterministic sort | medium |
 | T7 | Implement `writeHeuristic` with append-or-update semantics, caller-supplied confidence acceptance, absolute-threshold auto-promotion, and malformed-existing-entry overwrite | medium |
 | T8 | Implement `promoteHeuristic`, `demoteHeuristic`, `archiveHeuristic` with edge cases (high no-op, low underflow, archive conflict) | small |
