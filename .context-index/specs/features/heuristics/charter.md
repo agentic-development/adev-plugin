@@ -19,7 +19,7 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 - `lib/heuristics.mjs` — thin ESM helper exposing `readHeuristics`, `writeHeuristic`, `promoteHeuristic`, `demoteHeuristic`, `archiveHeuristic`, `addContradiction`
 - YAML frontmatter schema for each heuristic entry: `id`, `scope`, `confidence`, `created`, `updated`, `evidence[]`, `contradicted-by[]`
 - Three-state confidence lifecycle (`low` / `medium` / `high`) with recurrence-based promotion and contradiction-based demotion
-- Extraction steps added to `/adev:recover` (Step 6), `/adev:validate` (Step 12), and `/adev:debug` (Phase 7 extension)
+- Extraction steps added to `/adev:recover` (Step 7, placed after the existing Step 6 Enrich), `/adev:validate` (Check 12), and `/adev:debug` (Phase 7 extension)
 - New skill `/adev:learn` for explicit user capture of lessons the lifecycle missed
 - Injection of relevant heuristics into `/adev:implement`, `/adev:plan`, `/adev:brainstorm`, `/adev:specify`, and `/adev:debug` context packets
 - Consolidation step in `/adev:retro` — merge duplicates, promote recurring patterns, demote contradicted entries, archive stale ones
@@ -80,7 +80,7 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 |-----------|-------------|----------|-------|--------|
 | Heuristic Store Structure | Per-module files, `_global.md`, `archive/` subfolder, YAML frontmatter schema | must-have | 1 | review-passed |
 | `lib/heuristics.mjs` Helper | Thin ESM helper exposing read/write/promote/demote/archive/addContradiction | must-have | 1 | review-passed |
-| Recover Extraction | `/adev:recover` Step 6 distills a root-cause diagnosis into a heuristic entry | must-have | 1 | review-passed |
+| Recover Extraction | `/adev:recover` Step 7 distills a root-cause diagnosis into a heuristic entry (runs after Step 6 Enrich) | must-have | 1 | review-passed |
 | Validate Extraction | `/adev:validate` Step 12 extracts a positive pattern on first-run PASS | must-have | 1 | review-passed |
 | Implement Injection | `/adev:implement` Step 1 loads module heuristics into subagent context packets | must-have | 1 | — |
 | Plan Injection | `/adev:plan` includes relevant heuristics in per-task context packets | must-have | 1 | — |

@@ -10,7 +10,7 @@
 
 ---
 charter: heuristics
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: 1a
 revision: 3
