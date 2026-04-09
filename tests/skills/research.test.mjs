@@ -252,3 +252,129 @@ describe("adev:research synthesis-prompt.md", () => {
     );
   });
 });
+
+describe("adev:research SKILL.md", () => {
+  it("exists and starts with frontmatter", () => {
+    assert.ok(existsSync(SKILL_PATH), "skills/research/SKILL.md must exist");
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.startsWith("---\n"), "must start with YAML frontmatter");
+  });
+
+  it("frontmatter declares name: adev:research", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("name: adev:research"), "must declare name field");
+  });
+
+  it("frontmatter declares allowed-tools with Read, Glob, Grep, Agent, Write", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("allowed-tools"), "frontmatter must include allowed-tools");
+    for (const tool of ["Read", "Glob", "Grep", "Agent", "Write"]) {
+      assert.ok(content.includes(tool), `allowed-tools must include ${tool}`);
+    }
+    const frontmatterEnd = content.indexOf("---", 3);
+    const frontmatter = content.slice(0, frontmatterEnd);
+    assert.ok(!frontmatter.includes("WebSearch"), "orchestrator allowed-tools must NOT include WebSearch");
+    assert.ok(!frontmatter.includes("mcp__"), "orchestrator allowed-tools must NOT include MCP tools");
+  });
+
+  it("frontmatter declares context: fork", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("context: fork"), "frontmatter must declare context: fork");
+  });
+
+  it("declares all six argument flags", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    for (const flag of ["--web", "--github", "--internal", "--compare", "--issue"]) {
+      assert.ok(content.includes(flag), `must declare argument flag: ${flag}`);
+    }
+  });
+
+  it("references Agent tool dispatch and subagent_type: general-purpose", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("Agent"), "must reference the Agent tool");
+    assert.ok(
+      content.toLowerCase().includes("parallel") || content.toLowerCase().includes("subagent"),
+      "must describe parallel subagent dispatch"
+    );
+    assert.ok(
+      content.includes("subagent_type: general-purpose"),
+      "must specify subagent_type: general-purpose"
+    );
+  });
+
+  it("references all four researcher prompt files", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    for (const prompt of [
+      "internal-researcher-prompt.md",
+      "web-researcher-prompt.md",
+      "github-researcher-prompt.md",
+      "synthesis-prompt.md",
+    ]) {
+      assert.ok(content.includes(prompt), `must reference prompt file: ${prompt}`);
+    }
+  });
+
+  it("references tier names, not hardcoded model IDs", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    for (const tier of ["fast", "capable", "reasoning"]) {
+      assert.ok(content.includes(tier), `must reference tier name: ${tier}`);
+    }
+    const forbiddenModelIds = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"];
+    for (const id of forbiddenModelIds) {
+      assert.ok(!content.includes(id), `must NOT hardcode model ID: ${id}`);
+    }
+    assert.ok(content.includes("model_tiers"), "must reference model_tiers resolution from platform-context.yaml");
+  });
+
+  it("references ultrathink for synthesis dispatch", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("ultrathink"), "must reference ultrathink for synthesis dispatch");
+  });
+
+  it("describes the sanitization pass (Step 5.5)", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    const hasStep55 =
+      content.includes("Step 5.5") ||
+      content.toLowerCase().includes("sanitization pass") ||
+      content.toLowerCase().includes("sanitization");
+    assert.ok(hasStep55, "must include Step 5.5 sanitization pass");
+    assert.ok(
+      content.includes("[content redacted: potential injection]"),
+      "must include the orchestrator redaction token"
+    );
+  });
+
+  it("references injection_warnings as a conditional frontmatter field", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes("injection_warnings"), "must reference the injection_warnings frontmatter field");
+  });
+
+  it("declares the default source behavior (web + internal)", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    const hasDefault =
+      content.toLowerCase().includes("default") &&
+      content.toLowerCase().includes("web") &&
+      content.toLowerCase().includes("internal");
+    assert.ok(hasDefault, "must document default source behavior (web + internal)");
+  });
+
+  it("preserves the slug generation convention", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.toLowerCase().includes("lowercase"), "must document slug lowercase rule");
+    assert.ok(content.includes("50"), "must document slug max 50 chars");
+  });
+
+  it("preserves the graceful degradation principle", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    const hasDegradation =
+      content.toLowerCase().includes("graceful degradation") ||
+      content.toLowerCase().includes("skipped") ||
+      content.toLowerCase().includes("unavailable");
+    assert.ok(hasDegradation, "must preserve graceful degradation principle");
+  });
+
+  it("references the research artifact output path", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.ok(content.includes(".context-index/research/"), "must write artifacts to .context-index/research/");
+  });
+});
