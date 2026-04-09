@@ -10,6 +10,7 @@
 | epic-4 | Phase 0: Quick Wins & Eval Foundation | closed |  | work-tracking | 2026-04-10T21:00:35.828Z | 2026-04-10T21:09:18.621Z |
 | epic-5 | adev:research Multi-Agent Refactor | open | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md |  | 2026-04-09T12:58:46.483Z | 2026-04-09T12:58:46.483Z |
 | epic-6 | Heuristics Phase 1a: Store and Helper | open | .context-index/specs/features/heuristics/store-and-helper.plan.md |  | 2026-04-09T17:33:18.933Z | 2026-04-09T17:33:18.933Z |
+| epic-7 | Heuristics Phase 1a: Recover Extraction | open | .context-index/specs/features/heuristics/recover-extraction.plan.md |  | 2026-04-09T17:38:36.095Z | 2026-04-09T17:38:36.095Z |
 
 ## Issues
 
@@ -62,3 +63,15 @@
 | issue-45 | Tests: contradiction + auto-demote + archive reasons | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 14 |  |  | 2026-04-09T17:33:18.969Z | 2026-04-09T17:33:18.969Z |
 | issue-46 | Tests: atomic write + import safety | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 15 |  |  | 2026-04-09T17:33:18.974Z | 2026-04-09T17:33:18.974Z |
 | issue-47 | Tests: error case full coverage | open | 2 | task | epic-6 | .context-index/specs/features/heuristics/store-and-helper.plan.md | 16 |  |  | 2026-04-09T17:33:18.978Z | 2026-04-09T17:33:18.978Z |
+| issue-48 | Insert Step 7 skeleton after Step 6 Enrich | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 1 |  |  | 2026-04-09T17:38:36.099Z | 2026-04-09T17:38:36.099Z |
+| issue-49 | Document the 6 category-to-(pattern, antiPattern) mapping | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 2 |  |  | 2026-04-09T17:38:36.103Z | 2026-04-09T17:38:36.103Z |
+| issue-50 | Document Scope Derivation Rule | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 3 |  |  | 2026-04-09T17:38:36.106Z | 2026-04-09T17:38:36.106Z |
+| issue-51 | Document Title Derivation Rule | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 4 |  |  | 2026-04-09T17:38:36.118Z | 2026-04-09T17:38:36.118Z |
+| issue-52 | Document ID Derivation Rule with normalization | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 5 |  |  | 2026-04-09T17:38:36.121Z | 2026-04-09T17:38:36.121Z |
+| issue-53 | Document projectRoot resolution | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 6 |  |  | 2026-04-09T17:38:36.123Z | 2026-04-09T17:38:36.123Z |
+| issue-54 | Specify inline Node invocation pattern (writeHeuristic + try/catch) | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 7 |  |  | 2026-04-09T17:38:36.126Z | 2026-04-09T17:38:36.126Z |
+| issue-55 | Update final report to mention extracted heuristic id | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 8 |  |  | 2026-04-09T17:38:36.128Z | 2026-04-09T17:38:36.128Z |
+| issue-56 | Eval test exercising all 6 diagnosis categories | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 9 |  |  | 2026-04-09T17:38:36.130Z | 2026-04-09T17:38:36.130Z |
+| issue-57 | Integration test end-to-end recover with extraction | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 10 |  |  | 2026-04-09T17:38:36.134Z | 2026-04-09T17:38:36.134Z |
+| issue-58 | Integration test recurrence auto-promotion | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 11 |  |  | 2026-04-09T17:38:36.136Z | 2026-04-09T17:38:36.136Z |
+| issue-59 | Integration test distillation discipline | open | 2 | task | epic-7 | .context-index/specs/features/heuristics/recover-extraction.plan.md | 12 |  |  | 2026-04-09T17:38:36.139Z | 2026-04-09T17:38:36.139Z |
