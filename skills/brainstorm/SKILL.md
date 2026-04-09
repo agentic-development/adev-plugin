@@ -1,6 +1,7 @@
 ---
 name: adev:brainstorm
-description: "You MUST use this before building any new feature or module. Explores the idea interactively, validates against the project constitution and existing charters, and produces a Feature Charter. Use whenever the user mentions a new feature, wants to add a capability, discusses a module idea, or says 'let us build X', 'I want to add Y', or 'we need a new Z'. Also use when the user wants to explore or brainstorm an idea before committing to implementation."
+description: "Explore a feature idea interactively and produce a Feature Charter. Validates against constitution and existing charters. Use before building any new feature or module, when the user mentions a new capability, or says 'let us build X'."
+allowed-tools: [Read, Glob, Grep, Write, Agent]
 ---
 
 # Brainstorm a Feature Charter
@@ -44,15 +45,22 @@ Complete these steps in order. Do not skip steps.
 
 Read these files using Glob/Grep/Read. Do not ask the user for information that exists in these files.
 
-**Required:** `.context-index/constitution.md`, `.context-index/platform-context.yaml`, `.context-index/manifest.yaml`
+### Essential (load now)
 
-**Conditional (read if they exist):**
-- `.context-index/specs/product.md` — product vision and module map
-- `.context-index/specs/features/*/charter.md` — all existing charters (note scopes, dependencies, interfaces)
-- `.context-index/adrs/*.md` — decisions that constrain the design space
-- `.context-index/orientation/architecture.md` — module boundaries and codebase structure
-- `.context-index/specs/cross-cutting/*.md` — shared constraints
-- `.context-index/references/**/*.md` — external reference charters and contracts
+Read immediately — these are required for every brainstorm session:
+- `.context-index/constitution.md` — project principles and boundaries
+- `.context-index/platform-context.yaml` — tech stack and deployment targets
+- `.context-index/manifest.yaml` — module registry and configuration
+- `.context-index/specs/product.md` (if exists) — product vision and module map
+
+### Reference (load when relevant)
+
+Read on-demand as the conversation touches these areas:
+- `.context-index/specs/features/*/charter.md` — load Business Intent and Scope sections only for cross-charter conflict detection. Load the full charter only if a conflict is detected or the user's idea overlaps with an existing module.
+- `.context-index/adrs/*.md` — load titles and decision summaries. Load the full ADR only when the emerging design touches a relevant architectural decision.
+- `.context-index/orientation/architecture.md` — load only when the user's idea involves file structure or module placement decisions.
+- `.context-index/specs/cross-cutting/*.md` — load when checking interface compatibility or shared constraints.
+- `.context-index/references/**/*.md` — load when checking external contract compliance.
 
 **If `--module <name>`:** Also read `.context-index/specs/features/<name>/charter.md` and any Live Specs under that directory. When modifying an approved charter in `--module` mode, set `status: evolving`, increment `revision` by 1, and set `updated: <today's date YYYY-MM-DD>`. This signals that the charter is undergoing active changes and downstream specs should check for charter-revision staleness.
 
@@ -140,6 +148,8 @@ Generate the charter file using the template at `${CLAUDE_PLUGIN_ROOT}/templates
 ## Step 6: Charter Review Loop
 
 Dispatch a charter-reviewer subagent to validate the written charter.
+
+**Tier:** `capable` — read from `model_tiers` in `.context-index/platform-context.yaml`. Fall back to the hardcoded default in `.context-index/specs/cross-cutting/model-routing.md` if unset, and log a one-time advisory.
 
 **Subagent dispatch:**
 
