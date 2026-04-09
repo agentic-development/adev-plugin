@@ -9,13 +9,21 @@
 
 ---
 charter: heuristics
-status: review-passed
+status: validated
 risk_level: medium
 milestone: 1a
 revision: 2
 charter-revision: 3
 created: 2026-04-09
 updated: 2026-04-09
+source-manifest:
+  sha: "1879f07"
+  files:
+    - .context-index/memory/heuristics/_format.md
+    - lib/heuristics.mjs
+    - tests/lib/heuristics-format-doc.test.mjs
+    - tests/lib/heuristics.test.mjs
+  computed-at: "2026-04-09T23:39:18.512Z"
 ---
 
 ## Behavioral Contract
