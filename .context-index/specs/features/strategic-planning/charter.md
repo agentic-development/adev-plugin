@@ -79,7 +79,7 @@ Add product-level strategic planning, release sequencing, persistent research, a
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
 | Issue model milestone support | Add optional `milestone` field to Epic typedef, validation, and both adapters | must-have | v1 | — |
-| `/adev:research` skill | Persistent structured research using web, GitHub, and internal codebase sources | must-have | v1 | — |
+| `/adev:research` skill | Persistent structured research using web, GitHub, and internal codebase sources | must-have | v1 | planned |
 | `/adev:vision` skill | Interview-driven product vision and milestone planning, updates `product.md`, creates milestone epics | must-have | v1 | — |
 | `/adev:roadmap` skill | Release sequencing with cross-feature dependency analysis, critical path, risk assessment | must-have | v1 | — |
 | `/adev:issues` milestone extension | Add `--milestone` to epic creation and list filtering, group board display by milestone | must-have | v1 | — |
