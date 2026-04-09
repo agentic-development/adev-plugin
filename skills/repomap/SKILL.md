@@ -147,6 +147,73 @@ To keep this tractable for large codebases:
 
 ### Step 6: Generate Output
 
+Generate three artifacts in `.context-index/hygiene/`. All three share the same **Generated** timestamp and **Commit** hash.
+
+#### 6a: Symbol Ranks JSON
+
+Write `.context-index/hygiene/symbol-ranks.json` — the structured symbol index consumed by `/adev:codehealth` Pass 1 for dead export detection and line number enrichment.
+
+```json
+{
+  "generated": "2026-03-19T14:30:00.000Z",
+  "commit": "abc1234",
+  "symbols": [
+    { "name": "db", "kind": "constant", "file": "src/lib/db.ts", "line": 5, "references": 48, "module": "lib-db" },
+    { "name": "auth", "kind": "function", "file": "src/lib/auth/index.ts", "line": 12, "references": 35, "module": "lib-auth" }
+  ]
+}
+```
+
+Fields per symbol:
+- **name:** symbol identifier
+- **kind:** function, class, type, interface, enum, constant, trait, re-export
+- **file:** relative path from project root
+- **line:** line number of the definition
+- **references:** reference count from Step 4
+- **module:** module slug (directory grouping from manifest or inferred from path)
+
+Sort symbols by `references` descending (same order as the markdown table).
+
+#### 6b: Dependency Graph JSON
+
+Write `.context-index/hygiene/dependency-graph.json` — the module-level dependency graph consumed by `/adev:codehealth` Passes 1–2 for dead export and orphan file detection.
+
+```json
+{
+  "generated": "2026-03-19T14:30:00.000Z",
+  "commit": "abc1234",
+  "modules": {
+    "lib-db": {
+      "files": ["src/lib/db/index.ts", "src/lib/db/client.ts"],
+      "exports": 5,
+      "inbound": ["services", "app-api"],
+      "outbound": [],
+      "inbound_count": 2,
+      "outbound_count": 0
+    },
+    "services": {
+      "files": ["src/services/user.ts", "src/services/auth.ts"],
+      "exports": 12,
+      "inbound": ["app-api"],
+      "outbound": ["lib-db", "lib-auth"],
+      "inbound_count": 1,
+      "outbound_count": 2
+    }
+  }
+}
+```
+
+Fields per module:
+- **files:** list of source file paths belonging to this module
+- **exports:** total count of exported symbols across the module's files
+- **inbound:** list of module slugs that import from this module
+- **outbound:** list of module slugs this module imports from
+- **inbound_count / outbound_count:** convenience counts matching the array lengths
+
+Module slugs are derived from `manifest.yaml` `modules[].slug` when available, otherwise inferred from the directory path (e.g., `lib/auth/` → `lib-auth`).
+
+#### 6c: Markdown Repo Map
+
 Write the repo map to `.context-index/hygiene/repo-map.md` with this format:
 
 ```markdown
