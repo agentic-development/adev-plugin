@@ -11,6 +11,15 @@ sources:
   - "github:<owner/repo>"
 status: draft
 ---
+<!-- Optional frontmatter fields (emitted conditionally by the skill runtime):
+     injection_warnings: true  # Set by /adev:research when the sanitization
+                               # pass (SKILL.md Step 5.5) redacted any imperative
+                               # directives from researcher returns or synthesized
+                               # output, OR when any researcher return header
+                               # contained `injection_detected: true`. Absent
+                               # when no sanitization fired. Downstream consumers
+                               # (e.g., /adev:hygiene) can use this as an auditable
+                               # signal that the artifact touched untrusted content. -->
 
 ## Summary
 
