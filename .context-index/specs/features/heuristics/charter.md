@@ -80,8 +80,8 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 |-----------|-------------|----------|-------|--------|
 | Heuristic Store Structure | Per-module files, `_global.md`, `archive/` subfolder, YAML frontmatter schema | must-have | 1 | specified |
 | `lib/heuristics.mjs` Helper | Thin ESM helper exposing read/write/promote/demote/archive/addContradiction | must-have | 1 | specified |
-| Recover Extraction | `/adev:recover` Step 6 distills a root-cause diagnosis into a heuristic entry | must-have | 1 | — |
-| Validate Extraction | `/adev:validate` Step 12 extracts a positive pattern on first-run PASS | must-have | 1 | — |
+| Recover Extraction | `/adev:recover` Step 6 distills a root-cause diagnosis into a heuristic entry | must-have | 1 | specified |
+| Validate Extraction | `/adev:validate` Step 12 extracts a positive pattern on first-run PASS | must-have | 1 | specified |
 | Implement Injection | `/adev:implement` Step 1 loads module heuristics into subagent context packets | must-have | 1 | — |
 | Plan Injection | `/adev:plan` includes relevant heuristics in per-task context packets | must-have | 1 | — |
 | Retro Consolidation | `/adev:retro` merges duplicates, promotes recurring patterns, demotes contradicted entries, archives stale ones | must-have | 1 | — |
