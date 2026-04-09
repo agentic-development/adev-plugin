@@ -378,3 +378,30 @@ describe("adev:research SKILL.md", () => {
     assert.ok(content.includes(".context-index/research/"), "must write artifacts to .context-index/research/");
   });
 });
+
+describe("adev:research content-fence verbatim enforcement", () => {
+  // Smoke-test gap: a runtime subagent given the rev-3 prompt paraphrased the
+  // redaction marker ("content omitted per fence rules") instead of emitting
+  // the exact literal token. Each prompt must now explicitly instruct that
+  // the token be emitted verbatim, so downstream audit tooling can grep for it.
+  const prompts = [
+    ["internal-researcher-prompt.md", INTERNAL_PROMPT],
+    ["web-researcher-prompt.md", WEB_PROMPT],
+    ["github-researcher-prompt.md", GITHUB_PROMPT],
+    ["synthesis-prompt.md", SYNTHESIS_PROMPT],
+  ];
+
+  for (const [name, path] of prompts) {
+    it(`${name} requires the content-fence token be emitted verbatim`, () => {
+      const content = readFileSync(path, "utf8");
+      assert.ok(
+        content.includes("EXACT LITERAL token"),
+        `${name} must explicitly mark the content-fence token as EXACT LITERAL`
+      );
+      assert.ok(
+        content.toLowerCase().includes("verbatim"),
+        `${name} must use the word "verbatim" to enforce token fidelity`
+      );
+    });
+  }
+});
