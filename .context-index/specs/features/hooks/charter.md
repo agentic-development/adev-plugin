@@ -1,6 +1,6 @@
 ---
-status: evolving
-revision: 2
+status: approved
+revision: 3
 updated: 2026-04-09
 ---
 
