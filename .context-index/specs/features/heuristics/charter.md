@@ -78,10 +78,10 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Heuristic Store Structure | Per-module files, `_global.md`, `archive/` subfolder, YAML frontmatter schema | must-have | 1 | specified |
-| `lib/heuristics.mjs` Helper | Thin ESM helper exposing read/write/promote/demote/archive/addContradiction | must-have | 1 | specified |
-| Recover Extraction | `/adev:recover` Step 6 distills a root-cause diagnosis into a heuristic entry | must-have | 1 | specified |
-| Validate Extraction | `/adev:validate` Step 12 extracts a positive pattern on first-run PASS | must-have | 1 | specified |
+| Heuristic Store Structure | Per-module files, `_global.md`, `archive/` subfolder, YAML frontmatter schema | must-have | 1 | review-passed |
+| `lib/heuristics.mjs` Helper | Thin ESM helper exposing read/write/promote/demote/archive/addContradiction | must-have | 1 | review-passed |
+| Recover Extraction | `/adev:recover` Step 6 distills a root-cause diagnosis into a heuristic entry | must-have | 1 | review-passed |
+| Validate Extraction | `/adev:validate` Step 12 extracts a positive pattern on first-run PASS | must-have | 1 | review-passed |
 | Implement Injection | `/adev:implement` Step 1 loads module heuristics into subagent context packets | must-have | 1 | — |
 | Plan Injection | `/adev:plan` includes relevant heuristics in per-task context packets | must-have | 1 | — |
 | Retro Consolidation | `/adev:retro` merges duplicates, promotes recurring patterns, demotes contradicted entries, archives stale ones | must-have | 1 | — |
@@ -91,7 +91,7 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 | Brainstorm Injection | Surface heuristics for the target module during charter drafting | should-have | 2 | — |
 | Specify Injection | Surface heuristics when writing acceptance criteria | should-have | 2 | — |
 | `/adev:learn` Skill | Explicit user-driven heuristic capture for lessons the lifecycle missed | should-have | 2 | — |
-| Format Documentation | Public schema doc at `.context-index/memory/heuristics/_format.md` | must-have | 1 | specified |
+| Format Documentation | Public schema doc at `.context-index/memory/heuristics/_format.md` | must-have | 1 | review-passed |
 
 ## Interface Contracts
 
