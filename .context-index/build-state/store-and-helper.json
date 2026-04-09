@@ -1,0 +1,27 @@
+{
+  "spec": ".context-index/specs/features/heuristics/store-and-helper.md",
+  "phase": "1a",
+  "status": "in_progress",
+  "steps": [
+    {
+      "name": "review",
+      "status": "completed",
+      "timestamp": "2026-04-09T00:00:00Z",
+      "note": "Re-reviewed as PASS_WITH_NOTES in commit 50d1a81; post-review SHA updated in b95cfeb"
+    },
+    {
+      "name": "plan",
+      "status": "completed",
+      "timestamp": "2026-04-09T00:00:00Z",
+      "note": "16-task plan at store-and-helper.plan.md, plan reviewer Approved, commit 16aa1f9"
+    },
+    {
+      "name": "route",
+      "status": "skipped",
+      "timestamp": "2026-04-09T00:00:00Z",
+      "note": "No specialists registered in manifest; all tasks default to [specialist: none]"
+    }
+  ],
+  "started": "2026-04-09T00:00:00Z",
+  "updated": "2026-04-09T00:00:00Z"
+}
