@@ -10,7 +10,7 @@
 
 ---
 charter: strategic-planning
-status: review-passed
+status: implemented
 mode: refactor
 risk_level: medium
 milestone: v1
@@ -18,6 +18,17 @@ revision: 3
 charter-revision: 1
 created: 2026-04-05
 updated: 2026-04-09
+source-manifest:
+  sha: "0cad31d"
+  files:
+    - skills/research/SKILL.md
+    - skills/research/github-researcher-prompt.md
+    - skills/research/internal-researcher-prompt.md
+    - skills/research/synthesis-prompt.md
+    - skills/research/web-researcher-prompt.md
+    - templates/research-template.md
+    - tests/skills/research.test.mjs
+  computed-at: "2026-04-09T14:27:01.735Z"
 ---
 
 ## Current State
