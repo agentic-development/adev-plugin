@@ -78,8 +78,8 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Heuristic Store Structure | Per-module files, `_global.md`, `archive/` subfolder, YAML frontmatter schema | must-have | 1 | — |
-| `lib/heuristics.mjs` Helper | Thin ESM helper exposing read/write/promote/demote/archive/addContradiction | must-have | 1 | — |
+| Heuristic Store Structure | Per-module files, `_global.md`, `archive/` subfolder, YAML frontmatter schema | must-have | 1 | specified |
+| `lib/heuristics.mjs` Helper | Thin ESM helper exposing read/write/promote/demote/archive/addContradiction | must-have | 1 | specified |
 | Recover Extraction | `/adev:recover` Step 6 distills a root-cause diagnosis into a heuristic entry | must-have | 1 | — |
 | Validate Extraction | `/adev:validate` Step 12 extracts a positive pattern on first-run PASS | must-have | 1 | — |
 | Implement Injection | `/adev:implement` Step 1 loads module heuristics into subagent context packets | must-have | 1 | — |
