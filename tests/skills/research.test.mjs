@@ -142,3 +142,62 @@ describe("adev:research web-researcher-prompt.md", () => {
     );
   });
 });
+
+describe("adev:research github-researcher-prompt.md", () => {
+  it("exists", () => {
+    assert.ok(existsSync(GITHUB_PROMPT), "skills/research/github-researcher-prompt.md must exist");
+  });
+
+  it("caps return at 1,500 tokens", () => {
+    const content = readFileSync(GITHUB_PROMPT, "utf8");
+    assert.ok(content.includes("1,500") || content.includes("1500"), "must include the 1,500-token return cap");
+  });
+
+  it("requires attribution", () => {
+    const content = readFileSync(GITHUB_PROMPT, "utf8");
+    assert.ok(content.toLowerCase().includes("attribution"), "must require attribution");
+  });
+
+  it("includes a Before Finalizing self-check", () => {
+    const content = readFileSync(GITHUB_PROMPT, "utf8");
+    assert.ok(content.includes("Before Finalizing"), "must include Before Finalizing self-check");
+  });
+
+  it("contains the content-fence rule", () => {
+    const content = readFileSync(GITHUB_PROMPT, "utf8");
+    assert.ok(
+      content.includes("[adversarial content detected and omitted]"),
+      "must include the exact content-fence replacement token"
+    );
+  });
+
+  it("mentions mcp__github__ tools and includes a probe instruction", () => {
+    const content = readFileSync(GITHUB_PROMPT, "utf8");
+    assert.ok(content.includes("mcp__github__"), "must mention mcp__github__ tools");
+    assert.ok(
+      content.toLowerCase().includes("probe") || content.includes("no-op"),
+      "must instruct the subagent to probe for tool availability at start"
+    );
+    assert.ok(content.includes("SKIPPED"), "must specify SKIPPED status on probe failure");
+  });
+
+  it("mentions owner/repo validation", () => {
+    const content = readFileSync(GITHUB_PROMPT, "utf8");
+    assert.ok(
+      content.includes("owner/repo") || content.includes("<owner>/<repo>"),
+      "must mention owner/repo or <owner>/<repo> validation"
+    );
+  });
+
+  it("contains an anti-overengineering clause", () => {
+    const content = readFileSync(GITHUB_PROMPT, "utf8");
+    assert.ok(
+      content.toLowerCase().includes("anti-overengineering"),
+      "must contain an Anti-Overengineering heading or inline label"
+    );
+    assert.ok(
+      content.toLowerCase().includes("only produce findings"),
+      "must contain the specific 'only produce findings' constraint phrase"
+    );
+  });
+});
