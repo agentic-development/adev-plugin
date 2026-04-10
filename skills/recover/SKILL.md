@@ -301,6 +301,108 @@ Write a recovery record for retrospective analysis. This feeds into `/adev:hygie
 <What should change to prevent recurrence. Spec update, sample addition, constitution clarification, context packet improvement, etc.>
 ```
 
+### Step 7: Extract Heuristic
+
+After the recovery record is written in Step 6, extract a transferable heuristic from the root-cause diagnosis via `lib/heuristics.mjs` `writeHeuristic`. This step is non-blocking — extraction failures log a warning and allow `/adev:recover` to exit normally.
+
+#### Category Templates
+
+Map the confirmed diagnosis category to the heuristic's `pattern` and `antiPattern` fields using the table below.
+
+- **MISSING_CONTEXT** — `pattern`: the context that should be included in future packets for similar tasks. `antiPattern`: the assumption that failed. Distill, do not quote verbatim.
+- **AMBIGUOUS_SPEC** — `pattern`: the language clarification needed. `antiPattern`: paraphrased version of the ambiguous spec phrase — NEVER quote verbatim (avoids capturing credentials or env-specific strings).
+- **CONSTRAINT_CONFLICT** — `pattern`: the constraint ordering or precedence rule. `antiPattern`: the conflict that triggered the failure.
+- **NOVEL_PROBLEM** — `pattern`: the new pattern or tool introduced. `antiPattern`: empty (leave unset).
+- **TOOL_FAILURE** — `pattern`: the pre-flight check or setup that prevents the failure. `antiPattern`: the tool state that caused the crash.
+- **BUDGET_EXHAUSTION** — `pattern`: the task-splitting rule that should have been applied. `antiPattern`: the task-size signal that was missed.
+
+> **Warning:** Distill, do not quote verbatim. Raw source-document content (especially from AMBIGUOUS_SPEC) may contain credentials, API keys, or environment-specific strings that must not land in git-tracked heuristic files.
+
+#### Scope Derivation Rule
+
+Derive the heuristic `scope` from the active plan path:
+
+1. Read the active plan path from `.context-index/hygiene/.active-plan` or the recover invocation's `--task` argument.
+2. Split the path on `/` and find the segment immediately after `features/`.
+3. Apply `path.basename()` to strip any traversal sequences.
+4. Check the result against `manifest.yaml` `modules[].slug`.
+5. If the normalized segment matches a known module slug, use it as `scope`.
+6. Otherwise, fall back to `_global`.
+
+Worked example: `.context-index/specs/features/hooks/*.plan.md` → `hooks` (matches a module slug). `.context-index/specs/features/unknown/*.plan.md` → `_global` (fallback).
+
+#### Title Derivation Rule
+
+Compose the heuristic `title` as `"<category-label>: <short-summary>"` where:
+
+- `<category-label>` is one of: `"Missing context"`, `"Ambiguous spec"`, `"Constraint conflict"`, `"Novel problem"`, `"Tool failure"`, `"Budget exhaustion"`.
+- `<short-summary>` is a distilled 5-10 word summary of the root cause (generalized, not verbatim).
+- Total title length must not exceed 120 characters (matches the `writeHeuristic` schema cap).
+
+#### ID Derivation Rule
+
+Compose the heuristic `id` as `<category-slug>-<hash>` where:
+
+- `<category-slug>` is the lowercased diagnosis category with underscores replaced by hyphens (e.g., `missing-context`, `tool-failure`).
+- `<hash>` is the first 8 characters of the lowercase hex SHA-256 of the normalized root-cause text.
+- **Normalization:** lowercase, collapse consecutive whitespace to single spaces, strip leading/trailing whitespace, strip punctuation except `-` and `_`.
+- The resulting id must match `/^[_a-z0-9][_a-z0-9-]{0,63}$/`.
+- Purpose: recurrence detection — the same normalized root cause produces the same id across `/adev:recover` invocations, triggering the helper's auto-promotion path.
+
+Worked example: `MISSING_CONTEXT` + "Error: cache miss on third-party API" → normalized to `error cache miss on third-party api` → SHA-256 prefix `a1b2c3d4` → id `missing-context-a1b2c3d4`.
+
+#### projectRoot Resolution
+
+- Walk up from `process.cwd()` to find the nearest `.context-index/` directory — that is the project root.
+- Fallback to `process.env.CLAUDE_PROJECT_ROOT` if the walk-up finds nothing.
+- This matches the convention used by `lib/execution-state.mjs`.
+
+#### Inline Node Invocation
+
+Run the extraction via an inline Node invocation that imports `writeHeuristic` from `./lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a stderr warning without blocking the recovery workflow. The `evidence[]` array must contain exactly one entry: `{ source: "recovery", path: "<recovery-record-path>", date: "<today>" }`.
+
+On success, print a single confirmation line using the helper's return value (which reflects any auto-promotion):
+
+```
+Heuristic extracted: <id> (scope: <scope>, confidence: low)
+```
+
+On failure inside `writeHeuristic`, log to stderr and exit code 0 (non-blocking):
+
+```
+heuristics: extraction skipped — <error-message>
+```
+
+If the helper import itself fails (e.g., `lib/heuristics.mjs` is absent), log once and skip:
+
+```
+heuristics: helper unavailable, extraction skipped
+```
+
+Concrete invocation:
+
+```bash
+node --input-type=module -e "
+import { writeHeuristic } from './lib/heuristics.mjs';
+try {
+  const h = await writeHeuristic(projectRoot, {
+    id: 'missing-context-a1b2c3d4',
+    scope: 'hooks',
+    title: 'Missing context: cache layer assumptions',
+    pattern: 'Include cache invalidation docs in context packets for hook tasks',
+    antiPattern: 'Assuming cache behavior without reading the cache module',
+    confidence: 'low',
+    evidence: [{ path: '.context-index/hygiene/recoveries/2026-04-09-cache-task.md', date: '2026-04-09', source: 'recovery' }],
+  });
+  console.log(\`Heuristic extracted: \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
+} catch (err) {
+  process.stderr.write(\`heuristics: extraction skipped — \${err.message}\n\`);
+}
+"
+```
+
+Step 7's last printed output on success must be exactly: `Heuristic extracted: <id> (scope: <scope>, confidence: low)` — or whatever confidence the helper returns after auto-promotion, since the confidence value must come from the `writeHeuristic` return value rather than the caller-supplied input.
+
 ## Patterns Across Multiple Recoveries
 
 When writing the recovery record, check for patterns in existing records:
