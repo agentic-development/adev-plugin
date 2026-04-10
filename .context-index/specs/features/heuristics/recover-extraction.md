@@ -10,13 +10,21 @@
 
 ---
 charter: heuristics
-status: review-passed
+status: validated
 risk_level: low
 milestone: 1a
 revision: 3
 charter-revision: 3
 created: 2026-04-09
 updated: 2026-04-09
+source-manifest:
+  sha: "902e44b"
+  files:
+    - skills/recover/SKILL.md
+    - tests/skills/recover-extract-heuristic-harness.mjs
+    - tests/skills/recover-extract-heuristic.test.mjs
+    - tests/skills/recover-extraction.test.mjs
+  computed-at: "2026-04-10T00:08:54.070Z"
 ---
 
 ## Behavioral Contract
