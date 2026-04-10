@@ -173,50 +173,143 @@ From Agile/Scrum practices and project management research:
 
 ---
 
-## 4. Proposed Improvements
+## 4. Core Problem: Code Drifts Outside the Lifecycle
 
-### 4.1 Enhance Existing `/adev:status` Skill (Priority: HIGH)
+The gaps in Section 2 assume agents follow the lifecycle. In practice, they often don't — code gets written directly without specs, plans, or issues. When this happens, all top-down tracking (specs, plans, issue board) becomes stale documentation. The architecture says one thing, the code says another, and nobody knows which is true.
 
-`/adev:status` already exists at `skills/status/SKILL.md` with per-spec, per-charter, per-milestone, and `--all` dashboard modes. It already covers: charter/spec status counts, capability progress, drifted specs, specs needing re-review, milestone progress (when board configured), and recent sessions.
+**The fundamental tension:**
+- **Top-down artifacts** (charters → specs → plans → issues) describe *intent* — what should exist
+- **Bottom-up reality** (files → symbols → git history) describes *what actually exists*
+- **Source manifests** are the only bridge, but they only exist for the ~50% of specs that went through `/adev:implement`
 
-**What's missing — add these sections to `--all` mode:**
+The key insight: **git history is the only artifact that's always accurate and can never go stale**. Every line of code permanently knows which commit created it. If commits carry lifecycle metadata (trailers), the provenance chain is embedded in immutable history.
+
+### 4.1 Existing Infrastructure (Almost Ready)
+
+The plumbing for git-based traceability already exists but isn't fully active:
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| `prepare-commit-msg` hook | Exists but **inactive** (`core.hooksPath` not set) | `.githooks/prepare-commit-msg` |
+| `Spec:` trailer injection | Implemented in hook, reads session JSONL | `.githooks/prepare-commit-msg` |
+| `Plan-task:` trailer injection | Implemented in hook | `.githooks/prepare-commit-msg` |
+| `Session:` trailer injection | Implemented in hook | `.githooks/prepare-commit-msg` |
+| Session JSONL capture | Active, fires on every tool use | `hooks/session-capture.sh` |
+| Post-commit session summary | Implemented | `.githooks/post-commit` |
+| `Issue:` trailer | **Not implemented** | — |
+| `commit-msg` validation hook | **Not implemented** | — |
+| `Lifecycle: untracked` fallback marker | **Not implemented** | — |
+
+### 4.2 The Provenance Chain
+
+With trailers flowing, every line of code traces back to the full lifecycle context:
+
+```
+file:line
+  → git blame → commit SHA
+    → trailers → Spec: path/to/spec.md
+                 Plan-task: 3
+                 Session: 2026-04-06T18:11-a1b2c3d
+                 Issue: issue-15
+      → issue board → epic-3, status: closed
+        → spec → status: validated, charter: task-management
+```
+
+**Commits without trailers are the signal for lifecycle bypass.** No heuristics needed — the absence of metadata IS the detection.
+
+### 4.3 Strategy: Git-Blame Provenance (Priority: CRITICAL)
+
+#### Step 1: Activate the trailer pipeline
+
+- Configure `core.hooksPath` during `/adev:init` (the CLI already scaffolds `.githooks/` but doesn't always set the git config)
+- Add `Issue:` trailer to `prepare-commit-msg` (read from execution state's `issueBinding` field)
+
+#### Step 2: Add a `commit-msg` validation hook
+
+A hook that runs after the message is prepared and ensures lifecycle trailers are present. Two modes:
+
+- **If trailers exist**: pass through (exit 0)
+- **If no lifecycle trailers**: append `Lifecycle: untracked` to the commit message and pass through (exit 0)
+
+This is non-blocking — it never rejects a commit. But it ensures every commit in history is self-classifying: either lifecycle-tracked or explicitly marked as untracked. No ambiguity.
+
+#### Step 3: Add a provenance query to `/adev:hygiene` (new pass)
+
+A hygiene pass that scans source files and classifies them by git provenance:
+
+```
+## Code Provenance Audit
+
+Scanned: 45 source files, 312 commits
+
+### Fully Traced (28 files)
+All commits have Spec + Plan-task trailers → linked to charter/spec/issue
+  - lib/issues/file-adapter.mjs → spec-lifecycle/lifecycle-integration.md (issue-13, closed)
+  - lib/source-manifest.mjs → spec-lifecycle/source-manifest.md (issue-5, closed)
+  ...
+
+### Partially Traced (8 files)
+Some commits have trailers, later commits don't → post-implementation drift
+  - hooks/issue-reminder.mjs → session-awareness/idle-nudge.md, but 3 recent commits untracked
+  - lib/repomap/parse.mjs → tree-sitter-repomap/parser.md, but 1 recent commit untracked
+  ...
+
+### Untraced (9 files)
+No commits have lifecycle trailers → written entirely outside the lifecycle
+  - lib/foo.mjs — 5 commits, none with Spec: trailer
+  - hooks/new-hook.sh — 2 commits, none with Spec: trailer
+  ...
+
+**Actions:**
+- [ ] 8 files have post-implementation drift — review if specs need updating
+- [ ] 9 files have no lifecycle provenance — consider creating specs or marking as intentionally untracked
+```
+
+#### Step 4: Enhance `/adev:status` with provenance summary
+
+Add a "Code Provenance" section to `--all` mode that shows aggregate counts:
+
+```
+Code Provenance: 28 traced, 8 drifted, 9 untraced (45 total)
+```
+
+This gives immediate visibility into how much of the codebase is lifecycle-managed vs not.
+
+### 4.4 Enhance `/adev:status` with Board Cross-Referencing (Priority: HIGH)
+
+`/adev:status` already exists with per-spec, per-charter, per-milestone, and `--all` dashboard modes. Extend `--all` to also:
+
 - **Issue board summary**: Total epics/issues, counts by status (open/in_progress/closed/deferred)
 - **Deferred work**: All deferred issues with age and original deferral reason
 - **Stale work**: Open issues older than 30 days with no status change
-- **Unplanned specs**: Specs at `review-passed` with no `.plan.md` file (the 34-spec gap)
-- **Orphaned plans**: `.plan.md` files with no corresponding epic on the board
+- **Unplanned specs**: Specs at `review-passed` with no `.plan.md` file
 - **Epic completeness**: Epics where all issues are closed but epic status is still `open`
-- **Execution state**: Current active work from `.execution-state.md` (plan, task, blockers)
 
-**Key design principle:** Make `--all` the single answer to "what's left?" by bridging the spec pipeline and issue board views that currently exist in isolation.
+All computed at query time from existing artifacts — no new files to maintain.
 
-### 4.2 New Hygiene Pass: Issue Board Audit (Priority: HIGH)
+### 4.5 New Hygiene Pass: Issue Board Audit (Priority: HIGH)
 
-Add a Pass 14 to `/adev:hygiene` that cross-references specs, plans, and the issue board.
+Add a Pass 14 to `/adev:hygiene` that cross-references specs, plans, and the issue board:
 
-**Checks:**
 1. **Orphaned plans**: `.plan.md` files with no corresponding epic on the board
 2. **Orphaned issues**: Issues whose `planRef` points to a non-existent file
 3. **Partial epics**: Epics where issue count doesn't match plan task count
 4. **Stale deferred**: Deferred issues older than 14 days with no notes update
-5. **Stale open**: Open issues older than 30 days with no status change
-6. **Epic completeness**: Epics where all issues are closed but epic status is still `open`
-7. **Plan-spec consistency**: Plans whose parent spec has been modified since the plan was created (plan may be outdated)
+5. **Epic completeness**: Epics where all issues are closed but epic status is still `open`
+6. **Plan-spec consistency**: Plans whose parent spec has been modified since the plan was created
 
-### 4.3 New Skill: `/adev:reconcile` (Priority: HIGH)
+### 4.6 New Skill: `/adev:reconcile` (Priority: MEDIUM)
 
-An interactive skill that detects and offers to fix mismatches between specs, plans, and the issue board.
+Interactive repair for mismatches found by hygiene/status:
 
-**Reconciliation directions:**
-- **Spec → Board**: "Spec X is `review-passed` but has no plan. Create a plan?" 
+- **Spec → Board**: "Spec X is `review-passed` but has no plan. Create a plan?"
 - **Plan → Board**: "Plan Y has 6 tasks but only 4 issues. Create the missing issues?"
 - **Board → Spec**: "Issue Z's planRef points to a deleted spec. Close as obsolete?"
-- **Board → Board**: "Epic A has all issues closed. Close the epic?"
-- **Deferred → Board**: "3 deferred issues older than 14 days. Review and re-open or close?"
+- **Untraced code**: "9 files have no lifecycle provenance. Create specs or mark as intentionally untracked?"
 
-### 4.4 Enhance `/adev:implement` Completion (Priority: MEDIUM)
+### 4.7 Feature Completeness DoD in `/adev:implement` (Priority: MEDIUM)
 
-At the end of implementation (after all tasks complete), add a "feature completeness" checklist:
+At the end of implementation, add a "feature completeness" checklist:
 
 ```
 ## Feature Completeness Check
@@ -227,50 +320,27 @@ At the end of implementation (after all tasks complete), add a "feature complete
 - [ ] Epic status updated to `closed` (if all issues done)
 ```
 
-This is the "Definition of Done" embedded in the workflow.
-
-### 4.5 Enhance Execution State for Multi-Epic Awareness (Priority: MEDIUM)
-
-Extend `.execution-state.md` to optionally track a `recentWork` section:
-
-```yaml
-recentWork:
-  - epicId: epic-3
-    lastTask: 4
-    status: completed
-    completedAt: 2026-04-06T18:11:05.574Z
-  - epicId: epic-2  
-    lastTask: 6
-    status: completed
-    completedAt: 2026-04-02T14:07:28.099Z
-```
-
-This gives session-start hooks enough context to say "You recently completed epic-3 but epic-1 still has open issues."
-
-### 4.6 Scheduled Hygiene Nudge (Priority: LOW)
-
-A session-start hook check that detects if hygiene hasn't been run in N days and suggests it. Lightweight - just checks the timestamp on the last `drift-report.md`.
-
 ---
 
 ## 5. Prioritized Recommendations
 
 | # | Improvement | Impact | Effort | Priority |
 |---|------------|--------|--------|----------|
-| 1 | Enhance `/adev:status` with board cross-referencing | Immediate visibility into all work state | Medium | HIGH |
-| 2 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches | Medium | HIGH |
-| 3 | `/adev:reconcile` skill | Interactive fix for detected mismatches | Medium | HIGH |
-| 4 | Feature completeness DoD in `/adev:implement` | Prevents premature "done" declarations | Low | MEDIUM |
-| 5 | Multi-epic execution state | Better session resumption context | Low | MEDIUM |
-| 6 | Scheduled hygiene nudge hook | Proactive drift detection | Low | LOW |
+| 1 | Activate trailer pipeline + `commit-msg` hook | Foundation for all provenance tracking | Low | CRITICAL |
+| 2 | Code Provenance hygiene pass | Detects lifecycle bypass from code, not specs | Medium | HIGH |
+| 3 | Enhance `/adev:status` with board + provenance summary | Single "what's left?" answer | Medium | HIGH |
+| 4 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches | Medium | HIGH |
+| 5 | `/adev:reconcile` skill | Interactive fix for detected mismatches | Medium | MEDIUM |
+| 6 | Feature completeness DoD in `/adev:implement` | Prevents premature "done" declarations | Low | MEDIUM |
 
 ### Recommended Implementation Order
 
-1. **Enhance `/adev:status`** first - provides immediate diagnostic value with no mutations, builds on existing skill
-2. **Hygiene Pass 14** next - integrates into existing audit infrastructure
-3. **`/adev:reconcile`** third - uses status/hygiene findings to offer fixes
-4. **DoD checklist** in implement - small enhancement to existing skill
-5. **Multi-epic state** and **hygiene nudge** as polish
+1. **Activate trailer pipeline** first — without trailers flowing into commits, nothing downstream works. Fix `core.hooksPath` in init, add `Issue:` trailer, add `commit-msg` validation hook with `Lifecycle: untracked` fallback
+2. **Code Provenance hygiene pass** — the bottom-up complement to all existing top-down checks
+3. **Enhance `/adev:status`** — aggregate provenance + board data for the unified dashboard
+4. **Hygiene Pass 14** — top-down artifact reconciliation (specs ↔ plans ↔ issues)
+5. **`/adev:reconcile`** — interactive repair using findings from steps 2-4
+6. **DoD checklist** — embed completion verification in the workflow
 
 ---
 
@@ -291,3 +361,7 @@ A session-start hook check that detects if hygiene hasn't been run in N days and
 - [End-to-end Traceability - Azure DevOps](https://learn.microsoft.com/en-us/azure/devops/cross-service/end-to-end-traceability?view=azure-devops)
 - [Minimalist Claude Code Task Management Workflow](https://medium.com/nick-tune-tech-strategy-blog/minimalist-claude-code-task-management-workflow-7b7bdcbc4cc1)
 - [Status Tracking and Workflow State - BMAD Skills](https://deepwiki.com/aj-geddes/claude-code-bmad-skills/5.5-status-tracking-and-workflow-state)
+- [C4 Model](https://c4model.com/)
+- [Structurizr - Architecture as Code](https://structurizr.com/)
+- [Architecture-as-Code](https://arch-as-code.org/)
+- [Spec-Driven Development](https://dev.to/bobbyblaine/spec-driven-development-write-the-spec-not-the-code-2p5o)
