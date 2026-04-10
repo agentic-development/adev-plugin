@@ -197,6 +197,7 @@ The plumbing for git-based traceability already exists but isn't fully active:
 | Session JSONL capture | Active, fires on every tool use | `hooks/session-capture.sh` |
 | Post-commit session summary | Implemented | `.githooks/post-commit` |
 | `Issue:` trailer | **Not implemented** | — |
+| `Author-type:` trailer | **Not implemented** | — |
 | `commit-msg` validation hook | **Not implemented** | — |
 | `Lifecycle: untracked` fallback marker | **Not implemented** | — |
 
@@ -211,27 +212,82 @@ file:line
                  Plan-task: 3
                  Session: 2026-04-06T18:11-a1b2c3d
                  Issue: issue-15
+                 Author-type: agent/claude-code
       → issue board → epic-3, status: closed
         → spec → status: validated, charter: task-management
 ```
 
 **Commits without trailers are the signal for lifecycle bypass.** No heuristics needed — the absence of metadata IS the detection.
 
-### 4.3 Strategy: Git-Blame Provenance (Priority: CRITICAL)
+### 4.3 Author Attribution: Human vs Agent
+
+The `session_id` field in the session JSONL log is present when code is written inside a Claude Code (or other agent) session, and absent for human-only work. The `prepare-commit-msg` hook can use this to inject an `Author-type:` trailer:
+
+| Scenario | `session_id` in JSONL? | `Author-type:` trailer |
+|----------|----------------------|------------------------|
+| Agent commit (Claude Code) | Yes | `agent/claude-code` |
+| Agent commit (Codex) | Yes | `agent/codex` |
+| Agent commit (OpenCode) | Yes | `agent/opencode` |
+| Human commit (outside any agent) | No | `human` |
+| Human commit (inside agent session) | Yes | `agent/<provider>` |
+
+The provider is already resolved in `session-capture.sh` (from stdin or `manifest.yaml`). The `prepare-commit-msg` hook reads the same JSONL file and can extract the provider from the most recent entry with a `session_id`.
+
+**Example: lifecycle-tracked agent commit:**
+```
+feat(issues): add cycle detection
+
+Implement BFS-based cycle detection.
+
+Spec: .context-index/specs/features/task-management/lifecycle-integration.md
+Plan-task: 3
+Session: 2026-04-06T18:11-a1b2c3d
+Issue: issue-15
+Author-type: agent/claude-code
+```
+
+**Example: human quick-fix (no agent session):**
+```
+fix: typo in README
+
+Author-type: human
+Lifecycle: untracked
+```
+
+**Example: agent commit that bypassed the lifecycle:**
+```
+refactor: extract helper function
+
+Session: 2026-04-10T09:22-f4e5d6a
+Author-type: agent/claude-code
+Lifecycle: untracked
+```
+
+This enables queries like:
+- `git log --format='%(trailers:key=Author-type)' -- lib/` → who wrote each module?
+- `git shortlog` grouped by `Author-type` → what % of commits are agent vs human?
+- `git blame` + trailer lookup → per-line attribution of human vs agent authorship
+- Hygiene audits → "agent commits without Spec: trailer" = agent bypassed the lifecycle
+
+### 4.4 Strategy: Git-Blame Provenance (Priority: CRITICAL)
 
 #### Step 1: Activate the trailer pipeline
 
 - Configure `core.hooksPath` during `/adev:init` (the CLI already scaffolds `.githooks/` but doesn't always set the git config)
 - Add `Issue:` trailer to `prepare-commit-msg` (read from execution state's `issueBinding` field)
+- Add `Author-type:` trailer to `prepare-commit-msg` (read provider from session JSONL; `human` if no `session_id`)
 
 #### Step 2: Add a `commit-msg` validation hook
 
-A hook that runs after the message is prepared and ensures lifecycle trailers are present. Two modes:
+A hook that runs after the message is prepared, enforces lifecycle trailers, and attributes authorship. Behavior:
 
-- **If trailers exist**: pass through (exit 0)
-- **If no lifecycle trailers**: append `Lifecycle: untracked` to the commit message and pass through (exit 0)
+- **If `Spec:` trailer exists**: pass through (exit 0) — lifecycle-tracked commit
+- **If no `Spec:` trailer but staged files are all unclaimed** (not in any source manifest): append `Lifecycle: untracked` and pass through (exit 0) — new code, allowed without lifecycle
+- **If no `Spec:` trailer but staged files ARE claimed by a source manifest**: **block the commit** (exit 2) with message: "These files are tracked by a spec's source manifest. Add a Spec: trailer or use --no-verify to bypass."
 
-This is non-blocking — it never rejects a commit. But it ensures every commit in history is self-classifying: either lifecycle-tracked or explicitly marked as untracked. No ambiguity.
+This means: **once a file enters the lifecycle, it stays tracked.** Modifying lifecycle-managed code without referencing the spec is blocked. New files that no spec has claimed can be committed freely (but are marked `Lifecycle: untracked`).
+
+The `Author-type:` trailer is always appended regardless of blocking — even if the commit is allowed through, the authorship attribution is recorded.
 
 #### Step 3: Add a provenance query to `/adev:hygiene` (new pass)
 
@@ -326,17 +382,17 @@ At the end of implementation, add a "feature completeness" checklist:
 
 | # | Improvement | Impact | Effort | Priority |
 |---|------------|--------|--------|----------|
-| 1 | Activate trailer pipeline + `commit-msg` hook | Foundation for all provenance tracking | Low | CRITICAL |
-| 2 | Code Provenance hygiene pass | Detects lifecycle bypass from code, not specs | Medium | HIGH |
-| 3 | Enhance `/adev:status` with board + provenance summary | Single "what's left?" answer | Medium | HIGH |
-| 4 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches | Medium | HIGH |
-| 5 | `/adev:reconcile` skill | Interactive fix for detected mismatches | Medium | MEDIUM |
+| 1 | Activate trailer pipeline + `commit-msg` hook with selective blocking | Foundation for all provenance tracking; prevents lifecycle-managed code from drifting untracked | Low | CRITICAL |
+| 2 | Code Provenance hygiene pass | Detects lifecycle bypass from code, not specs; classifies all files by trace status and author type | Medium | HIGH |
+| 3 | Enhance `/adev:status` with board + provenance summary | Single "what's left?" answer including agent vs human attribution | Medium | HIGH |
+| 4 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches between specs/plans/issues | Medium | HIGH |
+| 5 | `/adev:reconcile` skill | Interactive fix for detected mismatches including untraced code | Medium | MEDIUM |
 | 6 | Feature completeness DoD in `/adev:implement` | Prevents premature "done" declarations | Low | MEDIUM |
 
 ### Recommended Implementation Order
 
-1. **Activate trailer pipeline** first — without trailers flowing into commits, nothing downstream works. Fix `core.hooksPath` in init, add `Issue:` trailer, add `commit-msg` validation hook with `Lifecycle: untracked` fallback
-2. **Code Provenance hygiene pass** — the bottom-up complement to all existing top-down checks
+1. **Activate trailer pipeline** first — without trailers flowing into commits, nothing downstream works. Fix `core.hooksPath` in init, add `Issue:` + `Author-type:` trailers, add `commit-msg` validation hook with selective blocking (block changes to source-manifest-claimed files without `Spec:` trailer) and `Lifecycle: untracked` fallback for unclaimed files
+2. **Code Provenance hygiene pass** — the bottom-up complement to all existing top-down checks; classify files as fully-traced / partially-traced / untraced, and by author type (agent vs human)
 3. **Enhance `/adev:status`** — aggregate provenance + board data for the unified dashboard
 4. **Hygiene Pass 14** — top-down artifact reconciliation (specs ↔ plans ↔ issues)
 5. **`/adev:reconcile`** — interactive repair using findings from steps 2-4
