@@ -405,20 +405,26 @@ At the end of implementation, add a "feature completeness" checklist:
 | # | Improvement | Impact | Effort | Priority |
 |---|------------|--------|--------|----------|
 | 1 | Close session→issue link + activate trailer pipeline + `commit-msg` hook with selective blocking | Foundation for all provenance tracking; full bidirectional chain from code to issues | Low-Medium | CRITICAL |
-| 2 | Code Provenance hygiene pass | Detects lifecycle bypass from code, not specs; classifies all files by trace status and author type | Medium | HIGH |
-| 3 | Enhance `/adev:status` with board + provenance summary | Single "what's left?" answer including agent vs human attribution | Medium | HIGH |
-| 4 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches between specs/plans/issues | Medium | HIGH |
-| 5 | `/adev:reconcile` skill | Interactive fix for detected mismatches including untraced code | Medium | MEDIUM |
-| 6 | Feature completeness DoD in `/adev:implement` | Prevents premature "done" declarations | Low | MEDIUM |
+| 2 | Reverse file→spec index (`buildReverseIndex()`) | Enables commit-msg hook, provenance audit, and all spec↔code queries | Low | CRITICAL |
+| 3 | Code Provenance hygiene pass | Detects lifecycle bypass from code, not specs; classifies all files by trace status and author type | Medium | HIGH |
+| 4 | Enhance `/adev:status` with `--issue`, `--epic`, `--file`, `--backlog` modes | Unified view: issue mapping, file provenance, and aggregated backlog from 7+ sources | Medium | HIGH |
+| 5 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches between specs/plans/issues | Medium | HIGH |
+| 6 | Structured Deferred Capabilities table in charter template | Makes backlog extraction reliable (vs parsing free-text Out of Scope sections) | Low | HIGH |
+| 7 | `/adev:reconcile` skill | Interactive fix for detected mismatches including untraced code and retroactive manifest stamping | Medium | MEDIUM |
+| 8 | Implementation probe in `/adev:implement` | Check if files already exist + tests pass before dispatching subagent (code-ahead-of-artifacts) | Low | MEDIUM |
+| 9 | Feature completeness DoD in `/adev:implement` | Prevents premature "done" declarations | Low | MEDIUM |
 
 ### Recommended Implementation Order
 
-1. **Close session→issue link + activate trailer pipeline** first — enrich session JSONL with `issue`/`epic` from execution state, fix `core.hooksPath` in init, add `Issue:` + `Author-type:` trailers to `prepare-commit-msg`, add `commit-msg` validation hook with selective blocking (block changes to source-manifest-claimed files without `Spec:` trailer) and `Lifecycle: untracked` fallback for unclaimed files
-2. **Code Provenance hygiene pass** — the bottom-up complement to all existing top-down checks; classify files as fully-traced / partially-traced / untraced, and by author type (agent vs human)
-3. **Enhance `/adev:status`** — aggregate provenance + board data for the unified dashboard
-4. **Hygiene Pass 14** — top-down artifact reconciliation (specs ↔ plans ↔ issues)
-5. **`/adev:reconcile`** — interactive repair using findings from steps 2-4
-6. **DoD checklist** — embed completion verification in the workflow
+1. **Close session→issue link + activate trailer pipeline** — enrich session JSONL with `issue`/`epic` from execution state, fix `core.hooksPath` in init, add `Issue:` + `Author-type:` trailers to `prepare-commit-msg`, add `commit-msg` validation hook with selective blocking and `Lifecycle: untracked` fallback
+2. **Reverse file→spec index** — `buildReverseIndex()` in `lib/source-manifest.mjs`, needed by commit-msg hook and all downstream queries
+3. **Code Provenance hygiene pass** — classify files as fully-traced / partially-traced / untraced, and by author type (agent vs human)
+4. **Enhance `/adev:status`** — add `--issue <id>`, `--epic <id>`, `--file <path>`, `--backlog` modes; aggregate provenance + board + charter deferred capabilities into unified views
+5. **Structured Deferred Capabilities table** — add to charter template, migrate existing charters for reliable backlog extraction
+6. **Hygiene Pass 14** — top-down artifact reconciliation (specs ↔ plans ↔ issues)
+7. **`/adev:reconcile`** — interactive repair, retroactive manifest stamping, issue generation from unplanned specs
+8. **Implementation probe** — check if code already exists before re-implementing
+9. **DoD checklist** — embed completion verification in the workflow
 
 ---
 
@@ -624,6 +630,127 @@ This already exists partially in `/adev:status --spec <path>` (checks manifest, 
 | No retroactive source manifest stamping | C, E | `/adev:reconcile` offers to stamp manifests when code matches plan file structure |
 | No end-to-end spec traceability view | F | `/adev:status --spec <path>` enhanced with issue board + provenance data |
 | Untraced files not cross-referenced with charter capabilities | D | Provenance audit matches untraced file names/paths against charter capability keywords |
+| No unified issue mapping view | F+ | `/adev:status --issue <id>` showing full chain: issue → plan task → spec → commits → files → current drift status |
+| No backlog aggregation across artifact types | D+ | `/adev:status --backlog` aggregating all 7+ sources of pending work into a single prioritized view |
+
+### Issue Mapping Gap (Scenario F+)
+
+Issues link to plans via `planRef`/`planTask`, and plans link to specs, and commits (will) link to issues via `Issue:` trailers. But there's **no single view** that joins an issue to its full context. You can't currently ask:
+
+- "For issue-15, show me the commits, files changed, spec it implements, and current drift status"
+- "For epic-3, which issues have code behind them and which are just paper?"
+- "Show me all issues whose implementing files have been modified since they were closed"
+
+**What needs to be added:** `/adev:status --issue <id>` and `/adev:status --epic <id>` modes that trace the full chain:
+
+```
+Issue: issue-15 — readExecutionState with Frontmatter Parsing
+Status: closed
+Epic: epic-3 — Execution State File
+Plan: execution-state-file.plan.md (Task 3 of 4)
+Spec: session-awareness/execution-state-file.md (status: validated)
+
+Commits (via git log --grep='Issue: issue-15'):
+  a1b2c3d feat(state): implement readExecutionState (Author-type: agent/claude-code)
+  d4e5f6a test(state): add frontmatter parsing tests (Author-type: agent/claude-code)
+
+Files touched:
+  lib/execution-state.mjs — OK (matches source manifest)
+  tests/lib/execution-state.test.mjs — DRIFT (1 commit after close)
+
+Post-close changes:
+  e7f8g9h fix: handle empty frontmatter edge case (Author-type: agent/claude-code, Lifecycle: untracked)
+  → This file was modified after issue-15 was closed, outside the lifecycle
+```
+
+The reverse direction also matters — `/adev:status --file <path>`:
+
+```
+File: lib/execution-state.mjs
+Claimed by: session-awareness/execution-state-file.md (source manifest)
+Issue: issue-15 (closed)
+Epic: epic-3
+Commits: 3 total (2 traced to issue-15, 1 untracked post-close)
+Drift: yes (modified after source manifest was stamped)
+```
+
+Both queries are computed on demand from git history + trailers + issue board + source manifests. No new files.
+
+### Backlog Aggregation Gap (Scenario D+)
+
+The "backlog" — all work that needs to be done — is currently scattered across **7+ artifact types** with no aggregation:
+
+| Source | Count | Example |
+|--------|-------|---------|
+| Charter "Out of Scope" / deferred sections | 12 charters with deferred work | "Migration from orientation/" (document charter) |
+| Charter Capability Map v2/future items | 12+ capabilities | `/adev:build` orchestrator, Codex Adapter, PR Aggregation |
+| Specs at `review-passed` with no plan | ~50 specs | Specs reviewed but never planned or implemented |
+| Specs at `draft` status | 2 specs | Not yet reviewed |
+| Open issues on the board | 3 issues | Remaining work from existing epics |
+| Open epics on the board | 3 epics | Partially complete feature tracks |
+| Deferred issues on the board | 0 currently | (but infrastructure exists for deferred status) |
+| Untraced code files | unknown | Code written outside lifecycle that may need specs |
+| Hygiene findings | varies | Uncharted high-churn code areas (Pass 2), missing ADRs (Pass 3) |
+
+There's no single command that answers "what's the full backlog?" A user currently needs to manually scan charters, check spec statuses, read the issue board, and run hygiene — across different skills and file formats.
+
+**What needs to be added:** `/adev:status --backlog` that aggregates all sources:
+
+```
+=== Backlog Summary ===
+
+Total items: 67
+
+### By Priority
+  Critical (must-have, no spec): 3
+  High (review-passed, no plan): 12
+  Medium (v2/future capabilities): 12
+  Low (nice-to-have, unphased): 8
+  Unclassified (untraced code needing specs): ~9 files
+
+### By Source
+
+Charter Deferred Capabilities (12 items):
+  task-management: Status Integration, Recover Integration, Hygiene Audit, Compaction Context
+  spec-lifecycle: Codex Adapter, PR Session Aggregation, LLM Auto-Summarization
+  strategic-planning: /adev:build orchestrator
+  document: Orientation migration (Phase 2), Incremental updates (Phase 2)
+  ...
+
+Unplanned Specs (50 items, grouped by charter):
+  spec-lifecycle: 8 specs at review-passed/validated with no .plan.md
+  session-awareness: 5 specs
+  task-management: 3 specs
+  ...
+
+Open Issues (3):
+  [No open issues currently unblocked]
+
+Open Epics (3 — all issues closed, epics still open):
+  epic-1: Source Manifests & Status Cleanup — all 7 issues closed, epic open
+  epic-2: adev-codehealth — all 5 issues closed, epic open
+  epic-3: Execution State File — all 4 issues closed, epic open
+
+Untraced Code (needs provenance audit):
+  Run /adev:hygiene --check provenance to identify files outside lifecycle
+
+### Cross-Reference: Backlog vs Codebase
+  Charter capabilities with matching untraced code: (requires provenance audit)
+  Specs at review-passed with code already existing: (requires reverse index)
+```
+
+**Implementation:** This is a read-only query that:
+1. Scans all charter files → extracts Capability Map rows where Status is `—` or capability is in "Out of Scope" section
+2. Scans all specs → filters by status (`draft`, `review-passed` without `.plan.md`)
+3. Reads issue board → filters by status (`open`, `deferred`)
+4. Reads provenance audit results (if available) → untraced files
+5. Ranks by priority: must-have unspecified > review-passed unplanned > v2 capabilities > nice-to-have
+
+The charter "Out of Scope" parsing is the hardest part — it's free-form markdown. Two approaches:
+- **Structured approach:** Add a `## Deferred Capabilities` table to the charter template (like the Capability Map but for explicitly deferred items). New charters get this automatically; existing ones can be migrated.
+- **Heuristic approach:** Parse the "Out of Scope" / "Non-Goals" sections for bullet points and treat each as a backlog item. Fragile but works without migration.
+
+The structured approach is better long-term. Adding a Deferred Capabilities table to the charter template would make backlog extraction reliable across all charters.
 
 ---
 
