@@ -1,6 +1,6 @@
 ---
 charter: hooks
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: v1
 revision: 2

@@ -41,7 +41,7 @@ Hook scripts that run at Claude Code lifecycle events. They enforce project rule
 
 ## Capability: Plan Mode Guard
 
-**Status:** specified — see [`plan-mode-guard.md`](plan-mode-guard.md)
+**Status:** review-passed — see [`plan-mode-guard.md`](plan-mode-guard.md)
 
 ### Motivation
 
