@@ -41,6 +41,8 @@ Hook scripts that run at Claude Code lifecycle events. They enforce project rule
 
 ## Capability: Plan Mode Guard (Revision 2)
 
+**Status:** specified — see [`plan-mode-guard.md`](plan-mode-guard.md)
+
 ### Motivation
 
 Claude Code's `ExitPlanMode` tool lets the agent present a plan to the user for approval before acting. In adev projects, plans should be expressed as a sequence of `/adev:*` skill invocations (e.g., `/adev:brainstorm` → `/adev:specify` → `/adev:plan` → `/adev:implement`), not as inline code-change checklists. When plans drift into inline edits, the lifecycle gates (HARD-GATEs in brainstorm, review-before-plan, TDD enforcement in implement) are bypassed. This capability provides a soft guardrail that nudges plans back into the adev lifecycle without hard-blocking legitimate non-adev work.
