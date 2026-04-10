@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 3
-updated: 2026-04-09
+revision: 4
+updated: 2026-04-10
 ---
 
 # Feature Charter: Hooks
@@ -18,7 +18,7 @@ Hook scripts that run at Claude Code lifecycle events. They enforce project rule
 | `constitution-linter.sh` | PreToolUse:Edit | guardrail | Validates constitution edits: ≤200 lines, required sections, valid file references |
 | `context-preflight.sh` | PreToolUse:Edit | guardrail | Warns when source code is edited without prior `.context-index/` reading |
 | `merge-guard.sh` | PreToolUse:Bash | guardrail | Parses `manifest.yaml` merge policy, blocks commits/merges/pushes to protected branches (exit 2) |
-| `plan-mode-guard.sh` | PreToolUse:ExitPlanMode | guardrail | Advisory check: warns via stderr when a plan lacks `/adev:*` skill invocations, suggesting rewrite as a skill-sequence. Exit 0 (non-blocking) |
+| `plan-mode-guard.sh` | PreToolUse:ExitPlanMode | guardrail | Advisory check: emits `hookSpecificOutput.additionalContext` JSON on stdout when a plan lacks `/adev:*` skill invocations, suggesting rewrite as a skill-sequence. Exit 0 (non-blocking) |
 | `context-read-tracker.sh` | PostToolUse:Read | infrastructure | Sets a session flag when `.context-index/` files are read (feeds context-preflight.sh) |
 | `sync-trigger.sh` | PostToolUse:Edit | infrastructure | Non-blocking notification to run `/adev:sync` after constitution edits |
 | `session-capture.sh` | PostToolUse:`.*` | infrastructure | Appends tool calls to `.context-index/.session-tracking.jsonl` |
@@ -37,9 +37,9 @@ Hook scripts that run at Claude Code lifecycle events. They enforce project rule
 - **No new dependencies.** Hooks — bash or .mjs — must use only Node.js built-ins (`fs`, `path`, `child_process`, `crypto`) and standard POSIX utilities. External npm packages are prohibited per constitutional principle 1.
 - **Hook protocol compliance.** Hooks read JSON from stdin + `CLAUDE_TOOL_INPUT_*` env vars, exit 0 (allow) / 2 (block), and emit optional JSON to stdout with `hookSpecificOutput` for context injection. Changing this protocol requires human approval (constitutional Architecture Boundary).
 - **Idempotent.** Hooks must be safe to run multiple times on the same input — no state leaks, no partial writes without atomic rename.
-- **Non-blocking by default for advisory hooks.** Guardrail hooks that are meant as nudges (not hard gates) should exit 0 and emit to stderr for visibility. Hard-block (exit 2) is reserved for enforcement of constitutional boundaries and merge policy.
+- **Non-blocking by default for advisory hooks.** Guardrail hooks that are meant as nudges (not hard gates) should exit 0 and emit advisory context via `hookSpecificOutput.additionalContext` JSON on stdout (matching the `context-preflight.sh` pattern). Hard-block (exit 2) is reserved for enforcement of constitutional boundaries and merge policy.
 
-## Capability: Plan Mode Guard (Revision 2)
+## Capability: Plan Mode Guard
 
 **Status:** specified — see [`plan-mode-guard.md`](plan-mode-guard.md)
 
@@ -52,7 +52,7 @@ Claude Code's `ExitPlanMode` tool lets the agent present a plan to the user for 
 **In scope:**
 
 - A `PreToolUse:ExitPlanMode` hook (`plan-mode-guard.sh`) that inspects the plan text and emits an advisory when no `/adev:*` invocation is present
-- Advisory-only behavior: the hook always exits 0 (non-blocking). It emits to stderr suggesting the agent rewrite the plan as a skill-sequence and reminding of the adev lifecycle ordering
+- Advisory-only behavior: the hook always exits 0 (non-blocking). It emits an advisory via `hookSpecificOutput.additionalContext` JSON on stdout (matching the `context-preflight.sh` pattern), suggesting the agent rewrite the plan as a skill-sequence
 - A "Plan Mode Rule" section added to `skills/using-adev/SKILL.md` as soft priming at session-start, documenting the expected plan shape and the existence of the advisory hook
 
 **Out of scope:**
@@ -62,14 +62,24 @@ Claude Code's `ExitPlanMode` tool lets the agent present a plan to the user for 
 - Validating the correctness or ordering of the `/adev:*` skills referenced (the hook only checks presence, not semantics)
 - Retroactive enforcement on plans already approved via ExitPlanMode before this hook existed
 
+### Architecture
+
+Three-layer split for harness-agnostic reuse:
+1. **Core check (harness-agnostic):** `lib/plan-mode-check.mjs` — pure function, no I/O, importable by any adapter
+2. **Claude Code adapter (Node):** `hooks/plan-mode-guard.mjs` — reads stdin JSON, calls core check, emits `hookSpecificOutput.additionalContext`
+3. **Claude Code wrapper (bash):** `hooks/plan-mode-guard.sh` — thin pipe to node with graceful degradation, matching the `issue-reminder.sh`/`.mjs` precedent
+
 ### Touchpoints
 
 | File | Change type |
 |------|-------------|
-| `hooks/plan-mode-guard.sh` | new |
+| `lib/plan-mode-check.mjs` | new — harness-agnostic core check |
+| `hooks/plan-mode-guard.mjs` | new — Claude Code Node adapter |
+| `hooks/plan-mode-guard.sh` | new — Claude Code bash wrapper |
 | `hooks/hooks.json` | modify — register new PreToolUse:ExitPlanMode entry |
 | `skills/using-adev/SKILL.md` | modify — add "Plan Mode Rule" section |
-| `tests/hooks/plan-mode-guard.test.mjs` | new |
+| `tests/plan-mode-check.test.mjs` | new — core check unit tests |
+| `tests/hooks/plan-mode-guard.test.mjs` | new — adapter integration tests |
 
 ### Dependencies
 
@@ -85,9 +95,11 @@ Claude Code's `ExitPlanMode` tool lets the agent present a plan to the user for 
 - `hooks/context-preflight.sh`
 - `hooks/context-read-tracker.sh`
 - `hooks/merge-guard.sh`
-- `hooks/plan-mode-guard.sh` *(new, revision 2)*
+- `lib/plan-mode-check.mjs` *(new, revision 4 — harness-agnostic core)*
+- `hooks/plan-mode-guard.mjs` *(new, revision 4 — Claude Code adapter)*
+- `hooks/plan-mode-guard.sh` *(new, revision 4 — Claude Code wrapper)*
 - `hooks/sync-trigger.sh`
 - `hooks/session-capture.sh`
 - `hooks/issue-reminder.sh` + `hooks/issue-reminder.mjs`
-- `skills/using-adev/SKILL.md` — session-start priming, now also owns the "Plan Mode Rule" section *(shared interface, revision 2)*
+- `skills/using-adev/SKILL.md` — session-start priming, also owns the "Plan Mode Rule" section *(shared interface)*
 - `tests/hooks/` (per-hook integration tests)

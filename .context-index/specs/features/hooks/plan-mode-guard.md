@@ -3,10 +3,10 @@ charter: hooks
 status: review-pending
 risk_level: low
 milestone: v1
-revision: 1
-charter-revision: 3
+revision: 2
+charter-revision: 4
 created: 2026-04-09
-updated: 2026-04-09
+updated: 2026-04-10
 ---
 
 # Live Spec: Plan Mode Guard
@@ -24,7 +24,7 @@ This capability provides a harness-agnostic check for whether an agent-authored 
 The capability is split across three layers:
 
 1. **Core check (harness-agnostic):** `lib/plan-mode-check.mjs` exports a pure function `checkPlanMode(planText)` that returns `{ hasAdevInvocation, advisoryMessage }`. Also exports the regex constant and the advisory message template so adapters can reference them without copy-paste. No I/O, no dependencies.
-2. **Claude Code adapter (Node):** `hooks/plan-mode-guard.mjs` reads stdin JSON, extracts `tool_input.plan`, calls `checkPlanMode`, and emits a `hookSpecificOutput.additionalContext` JSON payload to stdout when the plan lacks `/adev:*` invocations. Exit 0 on every code path except unexpected bash internal errors.
+2. **Claude Code adapter (Node):** `hooks/plan-mode-guard.mjs` reads stdin JSON, extracts `tool_input.plan`, calls `checkPlanMode`, and emits a `hookSpecificOutput.additionalContext` JSON payload to stdout (same envelope used by `context-preflight.sh`) when the plan lacks `/adev:*` invocations. Exit 0 on every code path except unexpected bash internal errors.
 3. **Claude Code wrapper (bash):** `hooks/plan-mode-guard.sh` is a thin wrapper that pipes stdin to `node hooks/plan-mode-guard.mjs` with graceful degradation (`|| echo '{}'`), matching the `issue-reminder.sh` / `issue-reminder.mjs` precedent.
 
 Future harness adapters (e.g., `providers/opencode/plugin.mjs`) can import `checkPlanMode` from `lib/plan-mode-check.mjs` directly — no duplication, no separate fork of the check logic.
@@ -40,14 +40,16 @@ Future harness adapters (e.g., `providers/opencode/plugin.mjs`) can import `chec
 ### Behaviors
 
 1. **When** `checkPlanMode(planText)` is called and `planText` contains at least one substring matching the regex `/\/adev:[a-z-]+/` **then** it returns `{ hasAdevInvocation: true, advisoryMessage: null }`.
-2. **When** `checkPlanMode(planText)` is called and `planText` contains no substring matching the regex **then** it returns `{ hasAdevInvocation: false, advisoryMessage: <template string> }` where the template recommends rewriting the plan as a skill-sequence in the canonical order `/adev:brainstorm → /adev:specify → /adev:review-specs → /adev:plan → /adev:implement → /adev:validate`.
-3. **When** `checkPlanMode` is called with `null`, `undefined`, or an empty string **then** it returns `{ hasAdevInvocation: false, advisoryMessage: <template string> }` (treats missing plan as non-adev).
+2. **When** `checkPlanMode(planText)` is called and `planText` contains no substring matching the regex **then** it returns `{ hasAdevInvocation: false, advisoryMessage: <static string> }` where the advisory is a fully-rendered static constant (no interpolation of `planText`) recommending rewriting the plan as a skill-sequence in the canonical order `/adev:brainstorm → /adev:specify → /adev:review-specs → /adev:plan → /adev:implement → /adev:validate`. The advisory message must never embed the user's plan text to avoid reflection of control characters or prompt-injection strings.
+3. **When** `checkPlanMode` is called with `null`, `undefined`, an empty string, or a non-string value (array, object, number) **then** it returns `{ hasAdevInvocation: false, advisoryMessage: <static string> }` (treats missing or invalid plan as non-adev). Type-check at entry: if `typeof planText !== 'string'`, return the advisory immediately without attempting regex matching.
 4. **When** Claude invokes `ExitPlanMode` and the Claude Code adapter (`hooks/plan-mode-guard.mjs`) reads stdin JSON containing `tool_input.plan` **then** it calls `checkPlanMode` on that plan text and, if `advisoryMessage` is present, emits `{"hookSpecificOutput": {"additionalContext": "<advisoryMessage>"}}` to stdout. Exit code 0.
 5. **When** the Claude Code adapter reads stdin and the JSON is malformed, missing `tool_input`, or missing `tool_input.plan` **then** it exits 0 without emitting any advisory (fail-open: do not disrupt `ExitPlanMode` on parse failure).
 6. **When** the Claude Code adapter runs and `checkPlanMode` returns `hasAdevInvocation: true` **then** it exits 0 with no stdout output (pass-through).
 7. **When** the bash wrapper (`hooks/plan-mode-guard.sh`) pipes stdin to node and node exits non-zero or is missing **then** the wrapper falls back to `echo '{}'` and exits 0 (graceful degradation, same pattern as `issue-reminder.sh`).
-8. **When** a fresh Claude Code session starts in an adev project **then** `session-start.sh` injects `skills/using-adev/SKILL.md` (which now includes the `## Plan Mode Rule` section) into the session context, priming Claude on the expected plan shape before any work begins.
-9. **When** a fresh OpenCode session starts in an adev project **then** `providers/opencode/plugin.mjs`'s `session.created` handler (which already reads `skills/using-adev/SKILL.md`) picks up the new `## Plan Mode Rule` section automatically — no OpenCode code changes required for soft priming.
+### Integration Notes (downstream consumers, not owned by this spec)
+
+- **Claude Code session-start:** `session-start.sh` injects `skills/using-adev/SKILL.md` (which now includes the `## Plan Mode Rule` section) into the session context, priming Claude on the expected plan shape before any work begins.
+- **OpenCode session-start:** `providers/opencode/plugin.mjs`'s `session.created` handler (which already reads `skills/using-adev/SKILL.md`) picks up the new `## Plan Mode Rule` section automatically — no OpenCode code changes required for soft priming.
 
 ### Postconditions
 
@@ -63,7 +65,7 @@ Future harness adapters (e.g., `providers/opencode/plugin.mjs`) can import `chec
 | Malformed stdin JSON | Adapter fails open — exit 0, no advisory | 0 |
 | Missing `tool_input` object | Adapter fails open — exit 0, no advisory | 0 |
 | Missing `tool_input.plan` field | Adapter fails open — exit 0, no advisory | 0 |
-| `tool_input.plan` is `null`, `undefined`, or empty string | `checkPlanMode` treats as non-adev — advisory emitted | 0 |
+| `tool_input.plan` is `null`, `undefined`, empty string, or non-string type | `checkPlanMode` treats as non-adev — advisory emitted | 0 |
 | `checkPlanMode` throws (should be impossible — pure function with no I/O) | Adapter catches, exits 0, no advisory (fail-open) | 0 |
 | Node.js not installed / script not found | Bash wrapper's `|| echo '{}'` fallback fires | 0 |
 | Unexpected bash internal error caught by `set -uo pipefail` | Non-zero exit; Claude Code tolerates non-2 exit codes as non-blocking | non-zero |
