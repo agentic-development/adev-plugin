@@ -128,16 +128,17 @@ A bidirectional mapping between requirements, design artifacts, implementation, 
 - **Coverage gaps are visible** (requirements with no implementation, implementations with no requirement)
 - **Status is tracked per link** (planned, in-progress, complete)
 
-**Relevance:** The adev system has forward tracing (spec → plan → issue → code via `planRef`/source-manifest) but lacks backward tracing and coverage gap detection.
+**Relevance:** The adev system has forward tracing (spec → plan → issue → code via `planRef`/source-manifest) but lacks backward tracing and coverage gap detection. Acceptance-criterion-level traceability (mapping `{criterion-id} → [{issue-id}]`) would let hygiene detect uncovered criteria without re-reading the full plan.
 
 ### 3.2 Drift Detection (from IaC patterns)
 
-Infrastructure-as-Code tools like Terraform define "drift" as any difference between desired state (configuration) and actual state (infrastructure). Key patterns:
+Infrastructure-as-Code tools like Terraform/Spacelift define "drift" as any difference between desired state (configuration) and actual state (infrastructure). Key patterns:
 - **Scheduled drift detection** runs periodically, not just on-demand
 - **Reconciliation** is a distinct action from detection (detect first, then choose to fix or ignore)
 - **Desired state is the source of truth**, actual state is compared against it
+- **Cascade invalidation**: when the desired state changes, all derived artifacts are flagged as potentially stale
 
-**Relevance:** Specs are the "desired state" and the issue board + code is the "actual state." The system should periodically detect drift between them.
+**Relevance:** Specs are the "desired state" and the issue board + code is the "actual state." When a spec's revision bumps, all issues derived from plans based on that spec version should be flagged. The system should periodically detect drift between them.
 
 ### 3.3 Definition of Done (DoD)
 
@@ -145,18 +146,30 @@ A shared checklist that defines when work is truly complete. Best practices:
 - Embed the DoD directly into work items so it's always visible
 - DoD should cover: code quality, tests, documentation, review, deployment readiness
 - Items not meeting DoD stay open, preventing premature closure
+- Per-issue DoD stamps (e.g., `"DoD: tests-pass, spec-review-pass, code-review-pass"`) make it possible to audit closed issues for completeness without re-reading session logs
 
-**Relevance:** Epics have no DoD. Issues can be closed individually, but there's no aggregate check that "the feature is done."
+**Relevance:** Epics have no DoD. Issues can be closed individually, but there's no aggregate check that "the feature is done." Epic auto-close on last issue closure would enforce completeness.
 
 ### 3.4 Agentic Workflow State Management
 
-From McKinsey and Google research on agentic development:
+From McKinsey, Google, and Microsoft research on agentic development:
 - **Git as the state store**: branches represent workflows, commits represent completed phases
 - **Deterministic workflow engines** are preferred over agent self-orchestration for tracking
-- **Execution tracing and retry/error handling** must be first-class concerns
+- **Checkpoint after every side effect**, use human-readable formats, support resume-from-checkpoint
 - **State should be explicit and inspectable**, not implicit in conversation history
+- **Dual-state reconciliation**: the execution state file and issue board are parallel state systems that can diverge — startup checks should verify they agree on what's `in_progress`
 
-**Relevance:** The execution state file is a good start, but it only tracks one active task. A broader "project state" view is needed.
+**Relevance:** The execution state file is a good start, but it only tracks one active task. A broader "project state" view is needed, and startup reconciliation between execution state and the board would prevent silent divergence.
+
+### 3.5 Deferred Work Anti-Patterns
+
+From Agile/Scrum practices and project management research:
+- **Deferred decay**: items deferred without periodic review become graveyards of forgotten work
+- **Deferred-with-reason**: requiring structured deferral reasons (e.g., MISSING_CONTEXT, AMBIGUOUS_SPEC) creates context for triage
+- **Deferred-until triggers**: linking deferral to a condition ("defer until dependency X merged") enables automated resurfacing
+- **Blocked as first-class status**: distinct from `deferred`, captures "stuck for reasons beyond the dependency graph" (missing context, tool failure, ambiguous spec)
+
+**Relevance:** The current `deferred` status has no reason field, no staleness alarm, and no distinction from `blocked`. The existing recovery categories from `/adev:recover` (MISSING_CONTEXT, AMBIGUOUS_SPEC, etc.) could serve as structured deferral reasons.
 
 ---
 
@@ -268,5 +281,13 @@ A session-start hook check that detects if hygiene hasn't been run in N days and
 - [Agentic Workflows for Software Development - McKinsey/QuantumBlack](https://medium.com/quantumblack/agentic-workflows-for-software-development-dc8e64f4a79d)
 - [Choose a Design Pattern for Agentic AI - Google Cloud](https://docs.google.com/architecture/choose-design-pattern-agentic-ai-system)
 - [Definition of Done in Agile - Atlassian](https://www.atlassian.com/agile/project-management/definition-of-done)
+- [Definition of Done: Examples & Checklist - Teaching Agile](https://teachingagile.com/scrum/psm-1/scrum-implementation/definition-of-done)
 - [Infrastructure Drift Detection and Reconciliation - Spacelift](https://spacelift.io/drift-detection)
+- [Drift Management in Cloud Infrastructure - Spacelift](https://spacelift.io/blog/drift-management)
 - [Top AI Agentic Workflow Patterns - ByteByteGo](https://blog.bytebytego.com/p/top-ai-agentic-workflow-patterns)
+- [AI Agent Workflow State Persistence Best Practices - Fastio](https://fast.io/resources/ai-agent-workflow-state-persistence/)
+- [Checkpointing and Resuming Workflows - Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/checkpointing-and-resuming)
+- [LangGraph State Machines for Agent Task Flows](https://dev.to/jamesli/langgraph-state-machines-managing-complex-agent-task-flows-in-production-36f4)
+- [End-to-end Traceability - Azure DevOps](https://learn.microsoft.com/en-us/azure/devops/cross-service/end-to-end-traceability?view=azure-devops)
+- [Minimalist Claude Code Task Management Workflow](https://medium.com/nick-tune-tech-strategy-blog/minimalist-claude-code-task-management-workflow-7b7bdcbc4cc1)
+- [Status Tracking and Workflow State - BMAD Skills](https://deepwiki.com/aj-geddes/claude-code-bmad-skills/5.5-status-tracking-and-workflow-state)
