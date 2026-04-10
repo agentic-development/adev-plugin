@@ -422,7 +422,212 @@ At the end of implementation, add a "feature completeness" checklist:
 
 ---
 
-## 6. Sources
+## 7. Scenario Analysis
+
+How does the proposed approach handle real-world workflows? For each scenario: what works, what's missing, and what needs to be added.
+
+### Scenario A: Full lifecycle (brainstorm → validate)
+
+**Situation:** Agent follows the full process — brainstorm, specify, review, plan, implement, validate.
+
+**What happens with the proposed approach:**
+
+1. `/adev:plan` creates epic + issues → `issueBinding` is set in execution state
+2. `/adev:implement` starts → session-capture writes JSONL entries with `{session_id, issue, epic}` ✓
+3. Each commit gets trailers via `prepare-commit-msg`: `Spec:`, `Plan-task:`, `Session:`, `Issue:`, `Author-type: agent/claude-code` ✓
+4. Source manifest stamped on spec after implementation ✓
+5. `/adev:validate` verifies source manifest SHA match ✓
+6. Provenance audit: all files classified as "fully traced" ✓
+7. `/adev:status` shows: epic progress, spec status, all issues closed ✓
+
+**Verdict: Fully covered.** Every link in the chain is populated. No gaps.
+
+### Scenario B: Code changes without following the process
+
+**Situation:** Agent or human modifies code directly — no spec, no plan, no issue. Just writes code.
+
+**What happens:**
+
+1. Session-capture writes JSONL with `{session_id}` but no `issue`/`epic` (execution state is idle) ✓
+2. At commit time, `prepare-commit-msg` injects `Session:` + `Author-type:` but no `Spec:`/`Issue:`/`Plan-task:` ✓
+3. `commit-msg` validation hook checks staged files:
+   - **If files are claimed by a source manifest** → commit blocked with message "These files are tracked by spec X. Add Spec: trailer or use --no-verify." ✓
+   - **If files are unclaimed** → commit allowed with `Lifecycle: untracked` appended ✓
+4. Provenance audit classifies these files as "untraced" (no lifecycle trailers) ✓
+5. `/adev:status` shows untraced file count ✓
+
+**Verdict: Covered.** Lifecycle bypass is either blocked (for managed files) or explicitly marked (for new files). The key question is discoverability — how easily can someone find these untraced files later? The provenance hygiene pass handles this.
+
+### Scenario C: Verify if code follows specs
+
+**Situation:** You want to quickly check — does the current code match what the specs say it should do?
+
+**What happens:**
+
+1. **Source-manifest-stamped specs (~50%):** Run `verifyManifest()` per spec → reports MATCH (unchanged), DRIFT (files modified), or MISSING (files deleted) ✓
+2. **For drifted files:** `git log --format='%(trailers)' -- <file>` shows which commits changed it, whether they had lifecycle trailers, and who authored them (agent/human) ✓
+3. **For unstamped specs (~50%):** No source manifest → can't verify code match automatically ✗
+
+**Gap: No reverse index from files to specs.** Currently source manifests map `spec → [files]` but there's no way to ask "which spec does `lib/foo.mjs` belong to?" without scanning all specs. This reverse lookup is needed for:
+- The `commit-msg` hook to check if a staged file is manifest-claimed
+- The provenance audit to classify files by spec ownership
+- Scenario C to quickly find "all files that should implement spec X and whether they've changed"
+
+**What needs to be added:** A **reverse file index** — computed at query time by scanning all spec frontmatter source manifests and building a `{file → spec}` map. This is cheap (scan ~65 specs, extract `source-manifest.files` arrays, build a Map). Not a cached file — computed on demand by any tool that needs it. The computation could live in `lib/source-manifest.mjs` as a `buildReverseIndex(specsDir, projectRoot)` function.
+
+**With reverse index, scenario C becomes:**
+```bash
+# "Does lib/issues/file-adapter.mjs follow its spec?"
+1. reverseIndex["lib/issues/file-adapter.mjs"] → spec-lifecycle/lifecycle-integration.md
+2. verifyManifest(spec.sourceManifest) → DRIFT (sha mismatch)
+3. git log --format='%(trailers:key=Spec)' -- lib/issues/file-adapter.mjs → shows which commits changed it and whether they referenced the spec
+```
+
+**Still missing for unstamped specs:** For the ~50% of specs without source manifests, there's no automated way to know which files implement them. Two options:
+- Accept this as a gap (these specs were implemented before the lifecycle was mature)
+- Run a one-time `/adev:reconcile` pass that retroactively stamps source manifests by matching spec capability descriptions to existing code (heuristic, not perfect)
+
+### Scenario D: What's missing from specs? (v2 / out-of-scope / future work)
+
+**Situation:** You want to see all work that's planned but not done, deferred to v2, or out of scope — and check whether the codebase already has some of it implemented.
+
+**What happens:**
+
+1. **Unplanned specs:** `/adev:status` shows specs at `review-passed` with no `.plan.md` ✓
+2. **Deferred issues:** `/adev:status` shows deferred issues with age ✓
+3. **Charter out-of-scope items:** Currently scattered in charter markdown "Out of Scope" sections ✗
+4. **v2/future capabilities:** In charter Capability Map tables with phase column, surfaced by `/adev:hygiene` Pass 11 (Phase Coverage) ✓
+5. **Cross-reference against codebase:** "Is the v2 feature already partially implemented?" ✗
+
+**Gap: No structured query for deferred/future charter capabilities.** Phase Coverage (hygiene pass 11) shows capabilities grouped by phase but doesn't correlate them with actual code. The provenance approach can help here:
+
+**With provenance + reverse index:**
+```
+1. Charter says "SSO Integration" is v2, no spec yet
+2. Grep codebase for SSO-related files → find lib/auth/sso.mjs
+3. reverseIndex["lib/auth/sso.mjs"] → no spec claims it
+4. git log --format='%(trailers)' -- lib/auth/sso.mjs → Lifecycle: untracked
+5. → "v2 capability 'SSO Integration' has untracked code at lib/auth/sso.mjs"
+```
+
+**What needs to be added:** The provenance audit (Step 4 in proposals) should cross-reference untraced files against charter capability names/keywords. When an untraced file's name or content matches a charter capability that's marked as future/v2, flag it: "This file may implement a deferred capability."
+
+Also: **charter capabilities should be queryable by phase.** `/adev:status --phase v2` could show all v2 capabilities across all charters with their spec/plan/issue/code status. This is mostly an enhancement to the existing `/adev:status` skill.
+
+### Scenario E: Understanding implementation status when code is ahead of artifacts
+
+**Situation:** Agent reads specs/plans and sees work marked as "not done," but the code is actually already there. The artifacts are stale — the code is ahead.
+
+**What happens:**
+
+1. **Spec says `review-passed` (not implemented)** but code exists → provenance audit finds files with `Lifecycle: untracked` or no trailers that match the spec's domain ✓ (partial)
+2. **Issue says `open`** but the work is done → checking source manifest would show files match spec expectations... but manifest doesn't exist yet ✗
+3. **No source manifest** on the spec → can't automatically verify implementation ✗
+
+**Gap: No bottom-up "is this spec already implemented?" check.** The provenance approach tells you WHERE code came from but not WHETHER it satisfies a spec. That's a semantic question.
+
+**What could help:**
+
+1. **Lightweight implementation probe:** Before `/adev:implement` starts a task, have it check if the target files already exist and pass the spec's acceptance criteria tests. If they do → mark the issue as closed with "Already implemented" instead of re-doing the work. This is cheap: just run the test suite for that spec's expected test files.
+
+2. **Source manifest retro-stamping:** `/adev:reconcile` could scan specs that have `status: review-passed` but no source manifest, look for files that match the spec's planned file structure (from an adjacent `.plan.md` if it exists), and if found, stamp a source manifest retroactively. This doesn't verify correctness, but it establishes the link.
+
+3. **The provenance audit's "untraced files" list** naturally surfaces code that exists outside the lifecycle. When cross-referenced with "unplanned specs," it identifies the overlap: specs that have untracked code that might satisfy them.
+
+**What needs to be added:** An **implementation probe** in `/adev:implement` that checks "does this code already exist and pass tests?" before dispatching a subagent. And `/adev:reconcile` should offer to retroactively stamp source manifests when code matches a plan's file structure.
+
+### Scenario F: Map issues to completed work, and generate missing issues from specs
+
+**Situation:** You look at a spec and want to see all required work that's still missing, then create an epic and issues for it.
+
+**What happens:**
+
+1. **Spec → existing plan?** Check for sibling `.plan.md` file ✓
+2. **Plan → existing issues?** Query issue board for `planRef` matching the plan path ✓
+3. **Issues → completed?** Check issue statuses (open/in_progress/closed/deferred) ✓
+4. **Issues → actual code?** Follow `planRef` + `planTask` → plan file → file list per task → check if files exist and match source manifest ✓ (when manifest exists)
+5. **No plan exists?** → No issues to map ✗
+6. **Plan exists but issues missing?** → `/adev:reconcile` detects partial issue creation ✓
+
+**For generating missing issues:**
+
+7. Run `/adev:plan` on the spec → creates `.plan.md` with tasks ✓
+8. Plan creates epic + issues automatically (when `tasks.backend` configured) ✓
+9. `/adev:reconcile` can also detect "plan has 6 tasks but only 4 issues" and create the missing ones ✓
+
+**Gap: No single command for "show me spec X end-to-end."** You currently need to:
+- Read the spec
+- Check for `.plan.md`
+- Query issue board for matching `planRef`
+- Check source manifest
+- Check provenance of implementing files
+
+**What needs to be added:** A **`/adev:status --spec <path>` enhancement** that shows the full traceability chain for one spec:
+
+```
+Spec: .context-index/specs/features/task-management/lifecycle-integration.md
+Status: validated
+Charter: task-management (capability: Lifecycle Integration, phase: v1)
+
+Plan: lifecycle-integration.plan.md (6 tasks)
+Epic: epic-3 — Execution State File
+
+Issues:
+  issue-13: Validation and Sanitization Helpers — closed ✓
+  issue-14: writeExecutionState with Atomic Writes — closed ✓
+  issue-15: readExecutionState with Frontmatter — closed ✓
+  issue-16: clearExecutionState and Round-Trip — closed ✓
+  (missing): Task 5 — no issue created ✗
+  (missing): Task 6 — no issue created ✗
+
+Source Manifest: sha 789c1a0 (3 files)
+  lib/source-manifest.mjs — OK (no drift)
+  tests/lib/source-manifest.test.mjs — DRIFT (modified after implementation)
+
+Code Provenance:
+  lib/source-manifest.mjs — fully traced (agent/claude-code, issue-13)
+  tests/lib/source-manifest.test.mjs — partially traced (2 untracked commits after implementation)
+
+Actions:
+- [ ] Create issues for plan tasks 5-6
+- [ ] Review drift in tests/lib/source-manifest.test.mjs
+```
+
+This already exists partially in `/adev:status --spec <path>` (checks manifest, revision, plan existence) but doesn't query the issue board or show provenance. The enhancement is connecting the dots.
+
+---
+
+## 8. Summary: What the Approach Covers and What's Still Needed
+
+### Covered by git-blame provenance + proposed improvements:
+
+| Capability | Mechanism |
+|-----------|-----------|
+| Track who wrote code (human vs agent) | `Author-type:` trailer |
+| Detect lifecycle bypass | `Lifecycle: untracked` marker + absence of `Spec:` trailer |
+| Block untracked changes to managed files | `commit-msg` hook selective blocking |
+| Link commits to issues bidirectionally | `Issue:` trailer + JSONL `issue` field |
+| Link commits to specs | `Spec:` trailer |
+| Link commits to sessions | `Session:` trailer |
+| Classify all files by lifecycle status | Provenance hygiene pass (fully/partially/untraced) |
+| Surface deferred and stale work | Enhanced `/adev:status` |
+| Detect orphaned artifacts | Hygiene Pass 14 |
+| Fix mismatches interactively | `/adev:reconcile` |
+
+### Needs to be added (discovered through scenario analysis):
+
+| Gap | Scenario | Proposed Fix |
+|-----|----------|-------------|
+| No reverse file→spec index | C, E | `buildReverseIndex()` function in `lib/source-manifest.mjs`, computed on demand |
+| No bottom-up "is spec implemented?" check | E | Implementation probe in `/adev:implement` (check if files exist + tests pass before dispatching subagent) |
+| No structured query for deferred charter capabilities | D | `/adev:status --phase <name>` enhancement |
+| No retroactive source manifest stamping | C, E | `/adev:reconcile` offers to stamp manifests when code matches plan file structure |
+| No end-to-end spec traceability view | F | `/adev:status --spec <path>` enhanced with issue board + provenance data |
+| Untraced files not cross-referenced with charter capabilities | D | Provenance audit matches untraced file names/paths against charter capability keywords |
+
+---
+
+## 9. Sources
 
 - [Requirements Traceability Matrix Guide - TestRail](https://www.testrail.com/blog/requirements-traceability-matrix/)
 - [Four Best Practices for Requirements Traceability - Jama Software](https://www.jamasoftware.com/requirements-management-guide/requirements-traceability/four-best-practices-for-requirements-traceability/)
