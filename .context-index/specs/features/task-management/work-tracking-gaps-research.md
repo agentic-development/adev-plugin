@@ -271,13 +271,35 @@ This enables queries like:
 
 ### 4.4 Strategy: Git-Blame Provenance (Priority: CRITICAL)
 
-#### Step 1: Activate the trailer pipeline
+#### Step 1: Close the Session → Issue link
+
+The session JSONL schema (`{tool, files, timestamp, session_id}`) has no issue field. The execution state has `issueBinding` but it's a separate mutable file — once cleared, the link is lost.
+
+**Fix: Enrich `session-capture.sh` to read `.execution-state.md` on each tool use** and include `issue` and `epic` fields in the JSONL entry when an active binding exists:
+
+```jsonl
+{"tool":"Edit","files":["/home/user/project/lib/issues/file-adapter.mjs"],"timestamp":"2026-04-06T18:49:01Z","session_id":"abc-123","issue":"issue-15","epic":"epic-3"}
+{"tool":"Bash","files":[],"timestamp":"2026-04-06T18:49:30Z","session_id":"abc-123","issue":"issue-15","epic":"epic-3"}
+```
+
+When no execution state is active (idle or no file), the fields are omitted — same as `session_id` today.
+
+This closes the full chain in both directions:
+- **Commit → Session → Issue**: commit's `Session:` trailer → JSONL entries with that `session_id` → `issue` field → issue board
+- **Issue → Session → Commits**: search JSONL for entries with `issue: "issue-15"` → `session_id` → `git log --grep='Session: <id>'` → commits
+
+And enables queries like:
+- "Which files were touched while working on issue-15?" → filter JSONL by issue
+- "How many tool uses did issue-15 take?" → count JSONL entries
+- "Which sessions contributed to epic-3?" → unique session IDs from JSONL entries with that epic
+
+#### Step 2: Activate the trailer pipeline
 
 - Configure `core.hooksPath` during `/adev:init` (the CLI already scaffolds `.githooks/` but doesn't always set the git config)
-- Add `Issue:` trailer to `prepare-commit-msg` (read from execution state's `issueBinding` field)
+- Add `Issue:` trailer to `prepare-commit-msg` (extract from JSONL entries with `issue` field, which was populated from execution state in Step 1)
 - Add `Author-type:` trailer to `prepare-commit-msg` (read provider from session JSONL; `human` if no `session_id`)
 
-#### Step 2: Add a `commit-msg` validation hook
+#### Step 3: Add a `commit-msg` validation hook
 
 A hook that runs after the message is prepared, enforces lifecycle trailers, and attributes authorship. Behavior:
 
@@ -289,7 +311,7 @@ This means: **once a file enters the lifecycle, it stays tracked.** Modifying li
 
 The `Author-type:` trailer is always appended regardless of blocking — even if the commit is allowed through, the authorship attribution is recorded.
 
-#### Step 3: Add a provenance query to `/adev:hygiene` (new pass)
+#### Step 4: Add a provenance query to `/adev:hygiene` (new pass)
 
 A hygiene pass that scans source files and classifies them by git provenance:
 
@@ -321,7 +343,7 @@ No commits have lifecycle trailers → written entirely outside the lifecycle
 - [ ] 9 files have no lifecycle provenance — consider creating specs or marking as intentionally untracked
 ```
 
-#### Step 4: Enhance `/adev:status` with provenance summary
+#### Step 5: Enhance `/adev:status` with provenance summary
 
 Add a "Code Provenance" section to `--all` mode that shows aggregate counts:
 
@@ -382,7 +404,7 @@ At the end of implementation, add a "feature completeness" checklist:
 
 | # | Improvement | Impact | Effort | Priority |
 |---|------------|--------|--------|----------|
-| 1 | Activate trailer pipeline + `commit-msg` hook with selective blocking | Foundation for all provenance tracking; prevents lifecycle-managed code from drifting untracked | Low | CRITICAL |
+| 1 | Close session→issue link + activate trailer pipeline + `commit-msg` hook with selective blocking | Foundation for all provenance tracking; full bidirectional chain from code to issues | Low-Medium | CRITICAL |
 | 2 | Code Provenance hygiene pass | Detects lifecycle bypass from code, not specs; classifies all files by trace status and author type | Medium | HIGH |
 | 3 | Enhance `/adev:status` with board + provenance summary | Single "what's left?" answer including agent vs human attribution | Medium | HIGH |
 | 4 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches between specs/plans/issues | Medium | HIGH |
@@ -391,7 +413,7 @@ At the end of implementation, add a "feature completeness" checklist:
 
 ### Recommended Implementation Order
 
-1. **Activate trailer pipeline** first — without trailers flowing into commits, nothing downstream works. Fix `core.hooksPath` in init, add `Issue:` + `Author-type:` trailers, add `commit-msg` validation hook with selective blocking (block changes to source-manifest-claimed files without `Spec:` trailer) and `Lifecycle: untracked` fallback for unclaimed files
+1. **Close session→issue link + activate trailer pipeline** first — enrich session JSONL with `issue`/`epic` from execution state, fix `core.hooksPath` in init, add `Issue:` + `Author-type:` trailers to `prepare-commit-msg`, add `commit-msg` validation hook with selective blocking (block changes to source-manifest-claimed files without `Spec:` trailer) and `Lifecycle: untracked` fallback for unclaimed files
 2. **Code Provenance hygiene pass** — the bottom-up complement to all existing top-down checks; classify files as fully-traced / partially-traced / untraced, and by author type (agent vs human)
 3. **Enhance `/adev:status`** — aggregate provenance + board data for the unified dashboard
 4. **Hygiene Pass 14** — top-down artifact reconciliation (specs ↔ plans ↔ issues)
