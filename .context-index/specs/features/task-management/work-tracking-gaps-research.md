@@ -162,20 +162,20 @@ From McKinsey and Google research on agentic development:
 
 ## 4. Proposed Improvements
 
-### 4.1 New Skill: `/adev:status` (Priority: HIGH)
+### 4.1 Enhance Existing `/adev:status` Skill (Priority: HIGH)
 
-A read-only skill that generates a unified work state dashboard. No mutations, just visibility.
+`/adev:status` already exists at `skills/status/SKILL.md` with per-spec, per-charter, per-milestone, and `--all` dashboard modes. It already covers: charter/spec status counts, capability progress, drifted specs, specs needing re-review, milestone progress (when board configured), and recent sessions.
 
-**What it would show:**
-- **Epic progress**: For each open epic, how many issues are open/in_progress/closed/deferred
-- **Spec pipeline**: Specs grouped by status (draft → review-pending → review-passed → planned → implemented → validated), highlighting bottlenecks
-- **Deferred work**: All deferred issues with age and original context
-- **Stale work**: Open issues older than N days with no activity
-- **Execution state**: Current active work (from `.execution-state.md`)
-- **Unplanned specs**: Specs at `review-passed` with no `.plan.md` file
-- **Planless issues**: Issues with no `planRef` (manually created, ad-hoc work)
+**What's missing — add these sections to `--all` mode:**
+- **Issue board summary**: Total epics/issues, counts by status (open/in_progress/closed/deferred)
+- **Deferred work**: All deferred issues with age and original deferral reason
+- **Stale work**: Open issues older than 30 days with no status change
+- **Unplanned specs**: Specs at `review-passed` with no `.plan.md` file (the 34-spec gap)
+- **Orphaned plans**: `.plan.md` files with no corresponding epic on the board
+- **Epic completeness**: Epics where all issues are closed but epic status is still `open`
+- **Execution state**: Current active work from `.execution-state.md` (plan, task, blockers)
 
-**Key design principle:** This is the "answer" to "what's left?" - a single command that shows the full picture.
+**Key design principle:** Make `--all` the single answer to "what's left?" by bridging the spec pipeline and issue board views that currently exist in isolation.
 
 ### 4.2 New Hygiene Pass: Issue Board Audit (Priority: HIGH)
 
@@ -244,7 +244,7 @@ A session-start hook check that detects if hygiene hasn't been run in N days and
 
 | # | Improvement | Impact | Effort | Priority |
 |---|------------|--------|--------|----------|
-| 1 | `/adev:status` skill | Immediate visibility into all work state | Medium | HIGH |
+| 1 | Enhance `/adev:status` with board cross-referencing | Immediate visibility into all work state | Medium | HIGH |
 | 2 | Hygiene Pass 14: Issue Board Audit | Catches orphans, stale items, mismatches | Medium | HIGH |
 | 3 | `/adev:reconcile` skill | Interactive fix for detected mismatches | Medium | HIGH |
 | 4 | Feature completeness DoD in `/adev:implement` | Prevents premature "done" declarations | Low | MEDIUM |
@@ -253,7 +253,7 @@ A session-start hook check that detects if hygiene hasn't been run in N days and
 
 ### Recommended Implementation Order
 
-1. **`/adev:status`** first - provides immediate diagnostic value with no mutations
+1. **Enhance `/adev:status`** first - provides immediate diagnostic value with no mutations, builds on existing skill
 2. **Hygiene Pass 14** next - integrates into existing audit infrastructure
 3. **`/adev:reconcile`** third - uses status/hygiene findings to offer fixes
 4. **DoD checklist** in implement - small enhancement to existing skill
