@@ -1,0 +1,66 @@
+# Rubric: scenario-a — Full lifecycle trailer flow and provenance classification
+# Target: tests/evals/work-tracking/fixture
+# Difficulty: MEDIUM — must correctly classify 5 files across 3 provenance states
+
+skill: provenance-audit
+scenario: scenario-a-full-lifecycle
+
+required_elements:
+  # --- Correct classification of fully traced files ---
+  - id: login_fully_traced
+    description: "lib/login.mjs classified as fully traced"
+    match_pattern: "login\\.mjs.*(fully|FULLY).*(traced|TRACED)|fully.traced.*login\\.mjs"
+
+  - id: test_fully_traced
+    description: "tests/login.test.mjs classified as fully traced"
+    match_pattern: "login\\.test\\.mjs.*(fully|FULLY).*(traced|TRACED)|fully.traced.*login\\.test\\.mjs"
+
+  # --- Correct classification of partially traced file ---
+  - id: drifted_partially_traced
+    description: "lib/drifted.mjs classified as partially traced"
+    match_pattern: "drifted\\.mjs.*(partial|PARTIAL).*(traced|TRACED)|partial.*traced.*drifted\\.mjs"
+
+  # --- Correct classification of untraced files ---
+  - id: untraced_untraced
+    description: "lib/untraced.mjs classified as untraced"
+    match_pattern: "untraced\\.mjs.*(untraced|UNTRACED|no.*trailer)|untraced.*untraced\\.mjs"
+
+  - id: orphan_untraced
+    description: "lib/orphan.mjs classified as untraced"
+    match_pattern: "orphan\\.mjs.*(untraced|UNTRACED|no.*lifecycle)|untraced.*orphan\\.mjs"
+
+  # --- No false positives ---
+  - id: no_false_positive_login
+    description: "lib/login.mjs NOT classified as untraced or partially traced"
+    match_pattern: "login\\.mjs.*(fully|FULLY)"
+
+  # --- Summary counts ---
+  - id: summary_counts
+    description: "Report includes aggregate counts (e.g., 2 fully traced, 1 partially, 2 untraced)"
+    match_pattern: "\\d+\\s*(fully|fully.traced).*\\d+\\s*(partial|partially).*\\d+\\s*(untraced)|traced.*\\d.*partial.*\\d.*untraced.*\\d"
+
+  # --- Trailer details ---
+  - id: shows_trailer_names
+    description: "References specific trailer names (Spec:, Plan-task:, Issue:, Author-type:)"
+    match_pattern: "Spec:|Plan-task:|Issue:|Author-type:"
+
+quality_dimensions:
+  - id: classification_accuracy
+    description: "All 5 files correctly classified with no errors"
+    weight: 3.0
+
+  - id: actionability
+    description: "Provides actionable next steps for partially traced and untraced files"
+    weight: 2.5
+
+  - id: commit_detail
+    description: "Shows relevant commit SHAs or messages for each finding"
+    weight: 2.0
+
+  - id: no_hallucination
+    description: "Does not invent files, commits, or trailers that don't exist in the fixture"
+    weight: 2.5
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

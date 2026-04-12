@@ -27,9 +27,6 @@ Create `/adev:document` skill that generates human-readable developer documentat
 
 ### Out of Scope
 
-- Migration from `.context-index/orientation/` (deferred to Phase 2)
-- Incremental update mode with diff presentation (Phase 2)
-- Updates to `/adev:hygiene`, `/adev:init`, constitution template (Phase 3)
 - API reference generation (JSDoc/TSDoc)
 - User-facing product documentation
 - Rendering/hosting (static site generators)
@@ -79,6 +76,14 @@ Create `/adev:document` skill that generates human-readable developer documentat
 | Argument: --check | Dry-run: show what would change without writing | must-have | v1 | — |
 | Argument: --force | Regenerate all sections ignoring diff | should-have | v1 | — |
 | Error on missing repomap | Clear error if dependency-graph.json or symbol-ranks.json missing | must-have | v1 | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Migration from `.context-index/orientation/` | Low priority, manual workaround exists | Phase 2 | — |
+| Incremental update mode with diff presentation | Requires base generation validated | Phase 2 | Phase 1 validated |
+| Updates to `/adev:hygiene`, `/adev:init`, constitution template | Downstream integration | Phase 3 | Phase 2 complete |
 
 ## Interface Contracts
 

@@ -26,7 +26,6 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 
 ### Out of Scope
 
-- Semantic embeddings or vector search (future version)
 - Auto-generated documentation / DeepWiki equivalent
 - MCP server for external tool access to the index
 - Real-time incremental parsing on file save (batch mode only)
@@ -90,6 +89,14 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 | Recovery diagnosis (recover) | Define artifact contract for `/adev:recover` to check packets against dependency graph. Consumption logic owned by implementation charter. | nice-to-have | v0.5.1 | — |
 | Multi-language support | TypeScript/JS, Python, Go, Rust, Java, Ruby grammar support | should-have | v0.5.0 | — |
 | Manifest output config | Add `repomap.output` section to manifest for enabling/disabling output formats | nice-to-have | v0.5.2 | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Semantic embeddings or vector search | Future version | v2 | — |
+| Recovery diagnosis (recover) | Define artifact contract for /adev:recover | v0.5.1 | — |
+| Manifest output config | Add repomap.output section to manifest | v0.5.2 | — |
 
 ## Interface Contracts
 

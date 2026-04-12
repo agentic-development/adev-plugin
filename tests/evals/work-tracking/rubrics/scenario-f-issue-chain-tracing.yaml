@@ -1,0 +1,76 @@
+# Rubric: scenario-f — Full lifecycle chain tracing via --issue, --epic, --file queries
+# Target: tests/evals/work-tracking/fixture
+# Difficulty: HARD — must join issue board, plans, specs, git trailers, and source manifests
+
+skill: adev-status-tracing
+scenario: scenario-f-issue-chain-tracing
+
+required_elements:
+  # --- --issue issue-2 ---
+  - id: issue2_title
+    description: "Shows issue-2 title (Auth logic)"
+    match_pattern: "issue.2.*[Aa]uth.*logic|[Aa]uth.*logic.*issue.2"
+
+  - id: issue2_plan_link
+    description: "Links issue-2 to plan task 2 in login.plan.md"
+    match_pattern: "issue.2.*[Tt]ask.*2|[Pp]lan.*[Tt]ask.*2.*issue.2|login\\.plan\\.md.*[Tt]ask.*2"
+
+  - id: issue2_spec_link
+    description: "Links issue-2 to spec auth/login.md"
+    match_pattern: "issue.2.*login\\.md|login\\.md.*issue.2"
+
+  - id: issue2_commit
+    description: "Shows commit(s) with Issue: issue-2 trailer"
+    match_pattern: "Issue:.*issue.2|issue.2.*commit|commit.*issue.2"
+
+  # --- --epic epic-1 ---
+  - id: epic1_all_closed
+    description: "Reports all 3 issues in epic-1 are closed"
+    match_pattern: "epic.1.*(3|all|every).*closed|(3|all|every).*closed.*epic.1"
+
+  - id: epic1_stale
+    description: "Flags epic-1 as stale or recommends closing"
+    match_pattern: "epic.1.*(stale|close|should.*close|all.*done)|recommend.*clos.*epic.1"
+
+  # --- --epic epic-2 ---
+  - id: epic2_orphaned_planref
+    description: "Flags issue-4 orphaned planRef (nonexistent file)"
+    match_pattern: "issue.4.*(orphan|missing|broken|nonexist).*plan|planRef.*(orphan|missing|not.*exist|broken)"
+
+  - id: epic2_deferred_stale
+    description: "Flags issue-5 as deferred with staleness warning"
+    match_pattern: "issue.5.*(deferred|stale|[0-9]+.*days)|deferred.*issue.5"
+
+  # --- --file lib/drifted.mjs ---
+  - id: file_drifted_spec
+    description: "Maps lib/drifted.mjs to dashboard/widgets.md"
+    match_pattern: "drifted\\.mjs.*widgets\\.md|widgets\\.md.*drifted\\.mjs"
+
+  - id: file_drifted_drift
+    description: "Reports drift for lib/drifted.mjs"
+    match_pattern: "drifted\\.mjs.*(drift|DRIFT|modified|changed)"
+
+  - id: file_drifted_untracked_commit
+    description: "Shows the untracked commit on drifted.mjs"
+    match_pattern: "(patch|fix).*metrics.*edge|untracked.*commit.*drifted"
+
+quality_dimensions:
+  - id: chain_completeness
+    description: "Each query shows the full chain (issue -> plan -> spec -> commit -> file)"
+    weight: 3.0
+
+  - id: cross_query_consistency
+    description: "Information is consistent across --issue, --epic, and --file views"
+    weight: 2.5
+
+  - id: problem_detection
+    description: "Correctly identifies orphaned refs, stale epics, and drift"
+    weight: 2.5
+
+  - id: no_hallucination
+    description: "Does not invent chain links or reference nonexistent artifacts"
+    weight: 2.0
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

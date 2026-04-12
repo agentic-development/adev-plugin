@@ -14,6 +14,11 @@ Query and display the current status of adev lifecycle artifacts. This skill is 
 - `--spec <path>`: Show detailed status for a single spec
 - `--charter <name>`: Show status for a charter and its specs/capabilities
 - `--milestone <name>`: Show detailed status for a single milestone (mutually exclusive with `--spec` and `--charter`)
+- `--issue <id>`: Trace full lifecycle chain for a single issue (issue → plan task → spec → commits → files → drift)
+- `--epic <id>`: Show epic status with all child issues, code coverage, and completeness
+- `--file <path>`: Reverse lookup — file → spec (via source manifest) → issue → commits → drift
+- `--backlog`: Aggregate all pending work from charters, specs, issue board, and code provenance
+- `--phase <name>`: Show all capabilities in a phase across all charters with spec/plan/issue/code status
 - `--all`: Show full project status dashboard (default when no args)
 
 ## Prerequisites
@@ -201,6 +206,154 @@ Milestone Progress:
 
 Recent sessions (last 10):
   - <date> [<type>] <summary>
+```
+
+### Mode: `--issue <id>`
+
+Trace the full lifecycle chain for a single issue.
+
+1. Read the issue from the issue board (via `getIssueManager(manifest)` from `lib/issues/registry.mjs`).
+2. If the issue has `planRef` and `planTask`, read the plan file and extract the task details.
+3. Follow the plan to its parent spec (the spec referenced in the plan frontmatter or adjacent spec with matching name).
+4. Search git history for commits with `Issue: <id>` trailer: `git log --all --format='%H %s %ai' --grep='Issue: <id>'`.
+5. For each commit, extract trailers and list files touched.
+6. If the spec has a source manifest, run `verifyManifest()` to check drift status.
+7. If the issue is closed, check for post-close changes: commits touching the same files after the issue's close date.
+
+**Output format:**
+```
+Issue: <id> — <title>
+Status: <status>
+Epic: <epic-id> — <epic-title>
+Plan: <plan-file> (Task <N> of <total>)
+Spec: <spec-path> (status: <spec-status>)
+
+Commits (via Issue: <id> trailer):
+  <sha> <subject> (<Author-type>, <date>)
+  ...
+
+Files touched:
+  <file> — <drift-status>
+
+Post-close changes: <N commits after close>
+```
+
+### Mode: `--epic <id>`
+
+Show comprehensive epic status with child issues and code coverage.
+
+1. Read the epic and all its child issues from the issue board.
+2. For each issue, determine if it has code behind it (check for commits with `Issue: <id>` trailer).
+3. Flag "paper" issues (no commits found).
+4. Check epic completeness: are all issues closed? If so and epic is still open, flag as stale.
+5. Show issue-level summary table.
+
+**Output format:**
+```
+Epic: <id> — <title> (<status>)
+
+| Issue | Title | Status | Has Code | Commits |
+|-------|-------|--------|----------|---------|
+| issue-1 | ... | closed | yes | 3 |
+| issue-2 | ... | open | no (paper) | 0 |
+
+Completeness: <closed>/<total> issues closed
+Recommendation: <close epic / create missing issues / review deferred>
+```
+
+### Mode: `--file <path>`
+
+Reverse lookup from a source file to its lifecycle context.
+
+1. Use `buildReverseIndex()` from `lib/source-manifest.mjs` to find which spec claims the file.
+2. If claimed: read the spec, find the plan, find the issue, check drift via `verifyManifest()`.
+3. If unclaimed: report as unclaimed, check git history for any lifecycle trailers.
+4. Show recent commits touching the file with their trailer status.
+
+**Output format:**
+```
+File: <path>
+Claimed by: <spec-path> (source manifest) — or "Unclaimed (no spec)"
+Drift: <match/drift/missing>
+Issue: <id> (<status>) — or "No issue linkage"
+Epic: <epic-id>
+
+Recent commits:
+  <sha> <subject> (Spec: <yes/no>, Author-type: <type>)
+  ...
+```
+
+### Mode: `--backlog`
+
+Aggregate all sources of pending work into a unified prioritized view.
+
+1. **Unplanned specs**: Scan specs with status `review-passed` that have no sibling `.plan.md` file.
+2. **Draft specs**: Scan specs with status `draft`.
+3. **Open issues**: Read issue board, filter by `status: open`.
+4. **Deferred issues**: Read issue board, filter by `status: deferred`. Flag staleness (> 14 days).
+5. **Stale epics**: Find epics with all issues closed but epic still `open`.
+6. **Charter deferred capabilities**: Scan charter Capability Map tables for entries with status `—` in phases marked v2/future/nice-to-have. Also scan "Out of Scope" sections.
+7. **Untraced code**: If provenance audit results exist (`.context-index/hygiene/drift-report.md`), include untraced file count.
+8. **Orphaned planRefs**: Issues whose `planRef` points to nonexistent files.
+
+**Prioritization:**
+- Critical: open issues with orphaned planRefs
+- High: review-passed specs with no plan
+- Medium: v2/future charter capabilities, deferred issues
+- Low: draft specs, nice-to-have capabilities
+
+**Cross-reference:** If an untraced code file's name or content matches a v2 charter capability keyword, flag it (e.g., "lib/orphan.mjs may implement SSO Integration from auth charter").
+
+**Output format:**
+```
+=== Backlog Summary ===
+
+Total items: <N>
+
+By Priority:
+  Critical: <n>
+  High: <n>
+  Medium: <n>
+  Low: <n>
+
+Unplanned Specs (<n>):
+  - <spec-path> (status: review-passed, charter: <name>)
+
+Draft Specs (<n>):
+  - <spec-path> (charter: <name>)
+
+Open Issues (<n>):
+  - <id>: <title> (epic: <epic-id>)
+
+Deferred Issues (<n>):
+  - <id>: <title> — deferred <N> days
+
+Stale Epics (<n>):
+  - <epic-id>: <title> — all <N> issues closed, epic still open
+
+Charter Deferred/Future Capabilities (<n>):
+  - <charter>: <capability> (<phase>, <priority>)
+
+Untraced Code: <N files> (run /adev:hygiene --check provenance for details)
+```
+
+### Mode: `--phase <name>`
+
+Show all capabilities in a specific phase across all charters.
+
+1. Scan all charters for Capability Map table entries.
+2. Filter to rows where Phase column matches `<name>` (e.g., "v1", "v2", "Phase 1").
+3. For each capability, check if a spec exists, if it has a plan, and the issue/code status.
+
+**Output format:**
+```
+=== Phase: <name> ===
+
+| Charter | Capability | Priority | Spec | Plan | Issues | Code |
+|---------|-----------|----------|------|------|--------|------|
+| auth | Password Login | must-have | validated | yes | 3/3 closed | traced |
+| auth | SSO Integration | should-have | — | — | — | untraced (lib/orphan.mjs) |
+| dashboard | Metrics Overview | must-have | draft | — | — | — |
 ```
 
 ## Important Notes

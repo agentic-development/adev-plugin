@@ -9,6 +9,24 @@ revision: 1
 charter-revision: 1
 created: 2026-03-23
 updated: 2026-03-23
+source-manifest:
+  sha: "fab36e5"
+  files:
+    - .context-index/adrs/0002-typescript-dev-dependency.md
+    - .gitignore
+    - lib/repomap/index.mjs
+    - package.json
+    - tests/evals/repomap/clone.mjs
+    - tests/evals/repomap/compare.mjs
+    - tests/evals/repomap/compare.test.mjs
+    - tests/evals/repomap/generate-ground-truth.mjs
+    - tests/evals/repomap/generate-ground-truth.test.mjs
+    - tests/evals/repomap/parse-repomap.mjs
+    - tests/evals/repomap/report.mjs
+    - tests/evals/repomap/repos.json
+    - tests/evals/repomap/run-eval.mjs
+    - tests/repomap/index.test.mjs
+  computed-at: "2026-04-12T11:48:02.741Z"
 ---
 
 ## Behavioral Contract

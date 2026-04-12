@@ -44,9 +44,6 @@ The spec-lifecycle module improves how charters and specs track their status, re
 - Amendment Log — git log with structured commits replaces this
 - Plan task checkboxes / status tracking — tests are source of truth
 - Custom verify commands per plan task — test runner replaces this
-- Auto-generating session summaries via LLM calls (v2)
-- Multi-agent adapters beyond Claude Code and Entire (v2)
-- PR-level session aggregation (v2)
 - New sidecar state files — all new lifecycle state lives in frontmatter. Exception: `.review.md` is a pre-existing pattern (used by `/adev:review-specs` since before this charter) and is retained for separation of concerns between spec authors and reviewers
 - State machine helper module — skills enforce transitions inline
 - Epic/task management — belongs in future adev-graph plugin
@@ -128,6 +125,16 @@ The spec-lifecycle module improves how charters and specs track their status, re
 | Codex Adapter | Session parser adapter for Codex log format | nice-to-have | v2 | — |
 | PR Session Aggregation | Aggregate session summaries from branch commits into PR description | nice-to-have | v2 | — |
 | LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | nice-to-have | v2 | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Codex Adapter | Session parser adapter for Codex log format | v2 | — |
+| PR Session Aggregation | Aggregate session summaries from branch commits into PR description | v2 | — |
+| LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | v2 | — |
+| Epic/task management | Belongs in future adev-graph plugin | — | adev-graph plugin |
+| External tracker API integration (Jira, Linear, GitHub) | Belongs in future adev-graph plugin or dedicated integration plugin | — | adev-graph plugin |
 
 ## Interface Contracts
 

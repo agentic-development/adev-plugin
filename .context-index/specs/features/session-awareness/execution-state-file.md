@@ -7,6 +7,14 @@ revision: 2
 charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
+source-manifest:
+  sha: "3f1ac2d"
+  files:
+    - lib/execution-state.mjs
+    - lib/issues/file-adapter.mjs
+    - lib/session-summary.mjs
+    - tests/lib/execution-state.test.mjs
+  computed-at: "2026-04-12T11:47:08.345Z"
 ---
 
 # Live Spec: Execution State File

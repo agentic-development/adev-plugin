@@ -52,6 +52,70 @@ printf '%s' "$STDIN_JSON" | node -e '
     };
     if (sessionId) entry.session_id = sessionId;
 
+    // Build operator identity: $USER/local or $USER/remote
+    const osUser = process.env.USER || process.env.USERNAME || "unknown";
+    const isRemote = process.env.CLAUDE_CODE_REMOTE === "true";
+    entry.operator = osUser + "/" + (isRemote ? "remote" : "local");
+
+    // Enrich with issue/epic from execution state (if active)
+    try {
+      const statePath = path.join(".context-index", ".execution-state.md");
+      const stateRaw = fs.readFileSync(statePath, "utf8");
+      const fmMatch = stateRaw.match(/^---\n([\s\S]*?)\n---/);
+      if (fmMatch) {
+        const fm = fmMatch[1];
+        const statusM = fm.match(/status:\s*(\S+)/);
+        if (statusM && statusM[1] === "active") {
+          const issueM = fm.match(/issueBinding:\s*(\S+)/);
+          if (issueM && issueM[1]) entry.issue = issueM[1];
+          // Extract epic from issue board if issue is bound
+          // Supports both file and beads backends
+          if (entry.issue) {
+            try {
+              let backend = "file";
+              try {
+                const manifest = fs.readFileSync(".context-index/manifest.yaml", "utf8");
+                const bm = manifest.match(/backend:\s*(\S+)/);
+                if (bm) backend = bm[1];
+              } catch {}
+
+              if (backend === "beads") {
+                // beads backend: epics stored in file adapter (hybrid)
+                // but issue→epic mapping is in .beads-map.json
+                try {
+                  const mapPath = path.join(".context-index", "tasks", ".beads-map.json");
+                  const map = JSON.parse(fs.readFileSync(mapPath, "utf8"));
+                  const issueEntry = map[entry.issue];
+                  if (issueEntry && issueEntry.epicId) entry.epic = issueEntry.epicId;
+                } catch {}
+                // Fallback: check file adapter board if map lacks entry
+                if (!entry.epic) {
+                  try {
+                    const boardPath = path.join(".context-index", "tasks", "tasks.md");
+                    const board = fs.readFileSync(boardPath, "utf8");
+                    const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
+                    if (issueBlock) {
+                      const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
+                      if (epicM && epicM[1]) entry.epic = epicM[1];
+                    }
+                  } catch {}
+                }
+              } else {
+                // file backend: read tasks.md directly
+                const boardPath = path.join(".context-index", "tasks", "tasks.md");
+                const board = fs.readFileSync(boardPath, "utf8");
+                const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
+                if (issueBlock) {
+                  const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
+                  if (epicM && epicM[1]) entry.epic = epicM[1];
+                }
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+
     // Ensure directory and append
     const dir = ".context-index";
     const file = path.join(dir, ".session-tracking.jsonl");

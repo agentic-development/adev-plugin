@@ -1,6 +1,6 @@
 ---
 name: adev:hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs thirteen audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
+description: "Audit all context for staleness, drift, and coverage gaps. Runs fifteen audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
 ---
 
 # Context Hygiene Audit
@@ -9,8 +9,8 @@ Audit the health of `.context-index/` and source code, generating actionable rep
 
 ## Arguments
 
-- No arguments: full audit (all thirteen passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health)
+- No arguments: full audit (all fifteen passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
 
@@ -38,7 +38,7 @@ Then exit (skip audit passes).
 **Otherwise (normal audit mode):**
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
-2. **Run audit passes:** Execute each of the eleven passes below. If `--check` was provided, run only that pass.
+2. **Run audit passes:** Execute each of the fifteen passes below. If `--check` was provided, run only that pass.
 3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
@@ -611,6 +611,108 @@ Findings: N high, N medium, N low
 | Code Health | WARN | 2 high, 3 medium, 1 low |
 ```
 
+## Audit Pass 14: Code Provenance
+
+**Goal:** Classify all source files by their git provenance — whether commits that touched them carry lifecycle trailers (`Spec:`, `Plan-task:`, `Issue:`, `Author-type:`).
+
+**Steps:**
+
+1. Identify all source files under `lib/`, `hooks/`, `cli/`, and `tests/` (or project-specific source directories from `platform-context.yaml`).
+2. For each file, run `git log --format='%(trailers)' -- <file>` to extract trailers from all commits.
+3. Classify each file into one of three categories:
+   - **Fully traced**: ALL commits have `Spec:` and `Plan-task:` trailers → linked to the lifecycle
+   - **Partially traced**: SOME commits have `Spec:` trailers, later ones don't → post-implementation drift
+   - **Untraced**: NO commits have `Spec:` trailers → written entirely outside the lifecycle
+4. For untraced files, cross-reference file names and content keywords against charter Capability Map entries marked as v2/future/nice-to-have. Flag potential matches.
+5. Use `buildReverseIndex()` from `lib/source-manifest.mjs` to identify which files are claimed by source manifests.
+6. For partially traced files, identify the most recent untracked commit and report it.
+
+**Bootstrapping note:** Distinguish between "pre-pipeline commits" (before trailers were active in the repo) and "post-pipeline untracked commits" (written after trailers were available). Use the first commit with any trailer as the cutoff date. Commits before this date are labeled "pre-pipeline" and excluded from the untracked count.
+
+**Status mapping:**
+
+| Condition | Status |
+|-----------|--------|
+| All files fully traced | PASS |
+| Some files partially traced (post-impl drift) | WARN |
+| Post-pipeline untraced files exist | FAIL |
+| Only pre-pipeline untraced files | WARN |
+
+**Output format:**
+```
+## Code Provenance
+
+Scanned: N source files, M commits
+
+| Category | Count | Files |
+|----------|-------|-------|
+| Fully traced | N | lib/login.mjs, ... |
+| Partially traced | N | lib/drifted.mjs (2 untracked commits), ... |
+| Untraced (post-pipeline) | N | lib/orphan.mjs, ... |
+| Untraced (pre-pipeline) | N | ... |
+
+**Capability matches for untraced files:**
+- lib/orphan.mjs → may implement "SSO Integration" (auth charter, v2)
+
+**Actions:**
+- [ ] Review N partially traced files for spec updates
+- [ ] Create specs or mark N untraced files as intentionally untracked
+```
+
+**Integration with summary table:**
+```
+| Code Provenance | WARN | 2 drifted, 3 untraced |
+```
+
+## Audit Pass 15: Issue Board Audit
+
+**Goal:** Cross-reference specs, plans, and the issue board to detect orphaned artifacts, stale items, and completeness gaps.
+
+**Prerequisites:** `tasks.backend` must be configured in `manifest.yaml`. If not configured, output SKIP.
+
+**Steps:**
+
+1. **Orphaned plans**: Find `.plan.md` files under `.context-index/specs/features/` that have no corresponding epic on the issue board (no epic has a matching `planRef`).
+2. **Orphaned issues**: Find issues whose `planRef` points to a file that no longer exists.
+3. **Partial epics**: Find epics where the issue count doesn't match the plan's task count (plan says 6 tasks but only 4 issues exist).
+4. **Stale deferred**: Find issues with `status: deferred` that are older than 14 days with no notes update.
+5. **Epic completeness**: Find epics where all child issues are `closed` but the epic status is still `open`.
+6. **Plan-spec consistency**: Find plans whose parent spec has been modified since the plan was created (spec has newer `updated` or `revision` in frontmatter).
+
+**Status mapping:**
+
+| Condition | Status |
+|-----------|--------|
+| No issues found | PASS |
+| Only stale deferred or epic completeness gaps | WARN |
+| Orphaned plans, orphaned issues, or partial epics | FAIL |
+| Backend not configured | SKIP |
+
+**Output format:**
+```
+## Issue Board Audit
+
+| Check | Count | Details |
+|-------|-------|---------|
+| Orphaned plans | N | plan-x.plan.md (no epic) |
+| Orphaned issues | N | issue-4 (planRef → nonexistent file) |
+| Partial epics | N | epic-2 (3/6 tasks have issues) |
+| Stale deferred | N | issue-5 (deferred 26 days) |
+| Epic completeness | N | epic-1 (all issues closed, epic open) |
+| Plan-spec consistency | N | plan-x (spec modified after plan) |
+
+**Actions:**
+- [ ] Close N stale epics
+- [ ] Create missing issues for N partial epics
+- [ ] Review N orphaned plans
+- [ ] Triage N stale deferred issues
+```
+
+**Integration with summary table:**
+```
+| Issue Board Audit | FAIL | 2 orphaned, 1 stale epic |
+```
+
 ## Report Format
 
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
@@ -637,6 +739,9 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Blocker Frequency Analysis | WARN | 1 stale blocker |
 | Phase Coverage | WARN | 1 unspecified, 2 unphased |
 | Lifecycle Audit | WARN | 2 revision drift, 1 charter stale |
+| Code Health | WARN | 2 high, 3 medium, 1 low |
+| Code Provenance | WARN | 2 drifted, 3 untraced |
+| Issue Board Audit | FAIL | 2 orphaned, 1 stale epic |
 
 ## Priority Actions
 

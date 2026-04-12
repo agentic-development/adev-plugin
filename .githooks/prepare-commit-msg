@@ -82,6 +82,56 @@ TASKS=$(node -e '
   for (const t of tasks) console.log(t);
 ' "$TRACKING_FILE" 2>/dev/null) || TASKS=""
 
+# Extract unique issue IDs (if present)
+ISSUES=$(node -e '
+  const fs = require("fs");
+  const lines = fs.readFileSync(process.argv[1], "utf8").trim().split("\n");
+  const issues = new Set();
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.issue) {
+        const clean = String(obj.issue).replace(/[\r\n]/g, "").trim();
+        if (clean && /^[\w\-]+$/.test(clean)) {
+          issues.add(clean);
+        }
+      }
+    } catch {}
+  }
+  for (const i of issues) console.log(i);
+' "$TRACKING_FILE" 2>/dev/null) || ISSUES=""
+
+# Determine author type from session JSONL
+AUTHOR_TYPE=$(node -e '
+  const fs = require("fs");
+  const lines = fs.readFileSync(process.argv[1], "utf8").trim().split("\n");
+  let hasSessionId = false;
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.session_id) { hasSessionId = true; break; }
+    } catch {}
+  }
+  console.log(hasSessionId ? "agent/claude-code" : "human");
+' "$TRACKING_FILE" 2>/dev/null) || AUTHOR_TYPE=""
+
+# Extract operator identity from JSONL (most recent entry with operator field)
+OPERATOR=$(node -e '
+  const fs = require("fs");
+  const lines = fs.readFileSync(process.argv[1], "utf8").trim().split("\n");
+  let op = "";
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.operator) {
+        const clean = String(obj.operator).replace(/[\r\n]/g, "").trim();
+        if (clean && /^[\w.\-]+\/[\w.\-]+$/.test(clean)) op = clean;
+      }
+    } catch {}
+  }
+  if (op) console.log(op);
+' "$TRACKING_FILE" 2>/dev/null) || OPERATOR=""
+
 # Function to check if a trailer already exists in the commit message
 trailer_exists() {
   local trailer="$1"
@@ -114,6 +164,28 @@ while IFS= read -r session; do
     TRAILERS="${TRAILERS}${TRAILER}"$'\n'
   fi
 done <<< "$SESSIONS"
+
+while IFS= read -r issue; do
+  [ -z "$issue" ] && continue
+  TRAILER="Issue: $issue"
+  if ! trailer_exists "$TRAILER"; then
+    TRAILERS="${TRAILERS}${TRAILER}"$'\n'
+  fi
+done <<< "$ISSUES"
+
+if [ -n "$AUTHOR_TYPE" ]; then
+  TRAILER="Author-type: $AUTHOR_TYPE"
+  if ! trailer_exists "$TRAILER"; then
+    TRAILERS="${TRAILERS}${TRAILER}"$'\n'
+  fi
+fi
+
+if [ -n "$OPERATOR" ]; then
+  TRAILER="Operator: $OPERATOR"
+  if ! trailer_exists "$TRAILER"; then
+    TRAILERS="${TRAILERS}${TRAILER}"$'\n'
+  fi
+fi
 
 # Append trailers if any
 if [ -n "$TRAILERS" ]; then

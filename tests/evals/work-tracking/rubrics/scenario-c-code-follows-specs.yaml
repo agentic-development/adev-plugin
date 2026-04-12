@@ -1,0 +1,63 @@
+# Rubric: scenario-c — Reverse file-to-spec index and manifest verification
+# Target: tests/evals/work-tracking/fixture
+# Difficulty: MEDIUM — must build reverse index from spec frontmatter and verify drift
+
+skill: reverse-index
+scenario: scenario-c-code-follows-specs
+
+required_elements:
+  # --- Reverse index correctness ---
+  - id: login_maps_to_auth_spec
+    description: "lib/login.mjs maps to auth/login.md in reverse index"
+    match_pattern: "login\\.mjs.*login\\.md|login\\.md.*login\\.mjs"
+
+  - id: test_maps_to_auth_spec
+    description: "tests/login.test.mjs maps to auth/login.md"
+    match_pattern: "login\\.test\\.mjs.*login\\.md|login\\.md.*login\\.test\\.mjs"
+
+  - id: drifted_maps_to_widgets_spec
+    description: "lib/drifted.mjs maps to dashboard/widgets.md"
+    match_pattern: "drifted\\.mjs.*widgets\\.md|widgets\\.md.*drifted\\.mjs"
+
+  - id: untraced_no_spec
+    description: "lib/untraced.mjs has no spec in reverse index"
+    match_pattern: "untraced\\.mjs.*(no.*spec|unclaimed|not.*claimed|no.*manifest)"
+
+  - id: orphan_no_spec
+    description: "lib/orphan.mjs has no spec in reverse index"
+    match_pattern: "orphan\\.mjs.*(no.*spec|unclaimed|not.*claimed|no.*manifest)"
+
+  # --- Drift detection ---
+  - id: drifted_reports_drift
+    description: "lib/drifted.mjs reports DRIFT (modified after manifest stamp)"
+    match_pattern: "drifted\\.mjs.*(DRIFT|drift|modified|changed|mismatch)"
+
+  # --- Summary counts ---
+  - id: claimed_count
+    description: "Reports count of claimed files (3: login.mjs, login.test.mjs, drifted.mjs)"
+    match_pattern: "3.*claimed|claimed.*3|3.*manifest"
+
+  - id: unclaimed_count
+    description: "Reports count of unclaimed files (2: untraced.mjs, orphan.mjs)"
+    match_pattern: "2.*unclaimed|unclaimed.*2|2.*(no.*spec|untraced)"
+
+quality_dimensions:
+  - id: index_completeness
+    description: "Reverse index covers all spec source manifests, no missing entries"
+    weight: 3.0
+
+  - id: drift_detail
+    description: "Shows what changed in drifted files (commit ref or description)"
+    weight: 2.5
+
+  - id: recommendation_quality
+    description: "Useful recommendations for unclaimed files"
+    weight: 2.0
+
+  - id: no_hallucination
+    description: "Does not invent file-to-spec mappings that don't exist"
+    weight: 2.5
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

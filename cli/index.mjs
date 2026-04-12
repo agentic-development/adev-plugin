@@ -100,6 +100,86 @@ async function selectProviders() {
   }
 }
 
+/**
+ * Detect the project state for init routing.
+ * @returns {{ mode: 'greenfield'|'brownfield-no-adev'|'brownfield-outdated'|'brownfield-current', version: string|null, hasGit: boolean, hasCode: boolean }}
+ */
+function detectProjectState() {
+  const cwd = process.cwd();
+  const contextIndex = join(cwd, ".context-index");
+  const manifestPath = join(contextIndex, "manifest.yaml");
+  const hasGit = existsSync(join(cwd, ".git"));
+  // Heuristic: has code if package.json, Cargo.toml, go.mod, pyproject.toml, or src/ exists
+  const codeMarkers = ["package.json", "Cargo.toml", "go.mod", "pyproject.toml", "requirements.txt", "Gemfile", "pom.xml"];
+  const hasCode = codeMarkers.some(m => existsSync(join(cwd, m))) || existsSync(join(cwd, "src"));
+
+  if (!existsSync(contextIndex)) {
+    return { mode: hasCode ? "brownfield-no-adev" : "greenfield", version: null, hasGit, hasCode };
+  }
+
+  // Context index exists — check version
+  let installedVersion = null;
+  if (existsSync(manifestPath)) {
+    try {
+      const manifest = readFileSync(manifestPath, "utf8");
+      const vm = manifest.match(/adev_version:\s*["']?([^"'\s]+)/);
+      if (vm) installedVersion = vm[1];
+    } catch {}
+  }
+
+  if (!installedVersion) {
+    // Has context-index but no version stamp — pre-versioning install
+    return { mode: "brownfield-outdated", version: null, hasGit, hasCode };
+  }
+
+  if (installedVersion === PLUGIN_VERSION) {
+    return { mode: "brownfield-current", version: installedVersion, hasGit, hasCode };
+  }
+
+  return { mode: "brownfield-outdated", version: installedVersion, hasGit, hasCode };
+}
+
+/**
+ * Compute what needs upgrading between installed version and current.
+ * @param {string|null} fromVersion
+ * @returns {{ hooks: boolean, templates: boolean, provenance: boolean, description: string[] }}
+ */
+function computeUpgradeDelta(fromVersion) {
+  const delta = { hooks: false, templates: false, provenance: false, description: [] };
+
+  if (!fromVersion) {
+    // Pre-versioning: everything is new
+    delta.hooks = true;
+    delta.templates = true;
+    delta.provenance = true;
+    delta.description.push("Git hooks (commit-msg lifecycle enforcement, trailer injection)");
+    delta.description.push("Provenance tracking (Author-type, Operator, Spec trailers)");
+    delta.description.push("Charter template (Deferred Capabilities table)");
+    return delta;
+  }
+
+  // Parse semver for comparison
+  const [fMaj, fMin] = fromVersion.split(".").map(Number);
+  const [tMaj, tMin] = PLUGIN_VERSION.split(".").map(Number);
+
+  // commit-msg hook added in 0.13.0
+  if (fMaj === 0 && fMin < 13) {
+    delta.hooks = true;
+    delta.provenance = true;
+    delta.description.push("commit-msg hook (lifecycle enforcement for manifest-claimed files)");
+    delta.description.push("Provenance config (Author-type, Operator trailers + CI gate)");
+    delta.description.push("Issue/Author-type/Operator trailers in prepare-commit-msg");
+  }
+
+  // Deferred Capabilities in charter template added in 0.13.0
+  if (fMaj === 0 && fMin < 13) {
+    delta.templates = true;
+    delta.description.push("Charter template updated (Deferred Capabilities table)");
+  }
+
+  return delta;
+}
+
 function scaffoldContextKit() {
   const root = join(process.cwd(), ".context-index");
   const created = [];
@@ -222,7 +302,7 @@ async function setupGitHooks() {
   const created = [];
   const cwd = process.cwd();
   const githooksDir = join(cwd, ".githooks");
-  const hookNames = ["pre-commit", "prepare-commit-msg", "post-commit"];
+  const hookNames = ["pre-commit", "prepare-commit-msg", "commit-msg", "post-commit"];
   const pluginHooksDir = join(PLUGIN_ROOT, ".githooks");
 
   // Detect existing core.hooksPath
@@ -391,6 +471,37 @@ async function cmdInit() {
   console.log("  ─────────────────────────────────────");
   console.log();
 
+  // --- Detect project state ---
+  const state = detectProjectState();
+
+  if (state.mode === "greenfield") {
+    log("Detected: new project (no existing code or context index)");
+  } else if (state.mode === "brownfield-no-adev") {
+    log("Detected: existing project without adev");
+    log("  Code found but no .context-index/ — will scaffold context alongside existing code.");
+  } else if (state.mode === "brownfield-outdated") {
+    const fromLabel = state.version || "pre-versioning";
+    log(`Detected: existing adev install (v${fromLabel}) — upgrade available`);
+    const delta = computeUpgradeDelta(state.version);
+    if (delta.description.length > 0) {
+      log("  New in v" + PLUGIN_VERSION + ":");
+      for (const d of delta.description) {
+        log(`    + ${d}`);
+      }
+    }
+    console.log();
+    const proceed = await ask(`Upgrade from v${fromLabel} to v${PLUGIN_VERSION}? (yes/no) [yes]`);
+    if (proceed === "no" || proceed === "n") {
+      log("Upgrade skipped.");
+      return;
+    }
+  } else if (state.mode === "brownfield-current") {
+    log(`Detected: adev v${state.version} (current) — checking for missing components`);
+  }
+
+  console.log();
+
+  // --- Provider installation ---
   const providerNames = await selectProviders();
 
   for (const providerName of providerNames) {
@@ -433,22 +544,22 @@ async function cmdInit() {
       const opencodeConfigPath = join(process.env.HOME || process.env.USERPROFILE, ".config", "opencode", "opencode.json");
       const opencodeConfigDir = join(process.env.HOME || process.env.USERPROFILE, ".config", "opencode");
       let config = { plugin: [] };
-      
+
       if (existsSync(opencodeConfigPath)) {
         try {
           config = JSON.parse(readFileSync(opencodeConfigPath, "utf8"));
         } catch {}
       }
-      
+
       const pluginEntry = `file://${pluginPath}/providers/opencode`;
       if (!config.plugin) {
         config.plugin = [];
       }
-      
-      const alreadyAdded = config.plugin.some(p => 
+
+      const alreadyAdded = config.plugin.some(p =>
         p.includes("adev") || p.includes("adev-plugin") || p === pluginEntry
       );
-      
+
       if (!alreadyAdded) {
         config.plugin.push(pluginEntry);
         ensureDir(opencodeConfigDir);
@@ -457,7 +568,7 @@ async function cmdInit() {
       } else {
         success("Plugin already registered in opencode.json");
       }
-      
+
       log("Skills are available via ~/.config/opencode/skills/");
     } else if (providerName === "codex") {
       const scope = await ask("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
@@ -474,35 +585,101 @@ async function cmdInit() {
     }
   }
 
-  const contextIndexExists = existsSync(join(process.cwd(), ".context-index"));
+  // --- Context index scaffolding ---
+  heading("Context Index");
   let scaffoldCreated = [];
 
-  if (contextIndexExists) {
-    log(".context-index/ already exists");
-    scaffoldCreated = scaffoldContextKit();
-    if (scaffoldCreated.length > 0) {
-      log("Added missing directories and files:");
-      for (const item of scaffoldCreated) {
-        success(item);
-      }
-    } else {
-      log("All files and directories already present.");
+  if (state.mode === "greenfield" || state.mode === "brownfield-no-adev") {
+    if (state.mode === "brownfield-no-adev") {
+      log("Scaffolding .context-index/ alongside existing codebase.");
+      log("Existing files will not be modified — only new context files are created.");
+      console.log();
     }
-    await handleDualSyncTargets(providerNames);
-  } else {
-    const scaffoldChoice = await ask("Create .context-index/ with templates? (yes/no)");
-    if (scaffoldChoice === "yes" || scaffoldChoice === "y") {
+    const scaffoldChoice = await ask("Create .context-index/ with templates? (yes/no) [yes]");
+    if (scaffoldChoice === "no" || scaffoldChoice === "n") {
+      log("Skipped. Run /adev:init to scaffold later.");
+    } else {
       scaffoldCreated = scaffoldContextKit();
       for (const item of scaffoldCreated) {
         success(item);
       }
       await handleDualSyncTargets(providerNames);
+    }
+  } else {
+    // brownfield-outdated or brownfield-current: fill in missing files
+    scaffoldCreated = scaffoldContextKit();
+    if (scaffoldCreated.length > 0) {
+      log("Added missing files:");
+      for (const item of scaffoldCreated) {
+        success(item);
+      }
     } else {
-      log("Skipped. Run /adev:init to scaffold later.");
+      log("All context files present.");
+    }
+    await handleDualSyncTargets(providerNames);
+  }
+
+  // --- Stamp adev_version in manifest ---
+  const manifestPath = join(process.cwd(), ".context-index", "manifest.yaml");
+  if (existsSync(manifestPath)) {
+    let manifest = readFileSync(manifestPath, "utf8");
+    const versionLine = `adev_version: "${PLUGIN_VERSION}"`;
+    if (manifest.includes("adev_version:")) {
+      manifest = manifest.replace(/adev_version:\s*["']?[^"'\s\n]+["']?/, versionLine);
+    } else {
+      // Insert after project.name or at top of project section
+      const projectMatch = manifest.match(/(project:\s*\n\s+name:\s*.+\n)/);
+      if (projectMatch) {
+        manifest = manifest.replace(projectMatch[1], projectMatch[1] + `  ${versionLine}\n`);
+      } else {
+        manifest = `${versionLine}\n${manifest}`;
+      }
+    }
+    writeFileSync(manifestPath, manifest);
+    success(`Stamped adev_version: ${PLUGIN_VERSION} in manifest.yaml`);
+  }
+
+  // --- Provenance config (for upgrades) ---
+  if (state.mode === "brownfield-outdated") {
+    const delta = computeUpgradeDelta(state.version);
+    if (delta.provenance && existsSync(manifestPath)) {
+      let manifest = readFileSync(manifestPath, "utf8");
+      if (!manifest.includes("provenance:")) {
+        heading("Provenance Tracking (new in v0.13.0)");
+        log("Adds Author-type + Operator trailers to every commit.");
+        log("CI gate rejects commits missing trailers on PRs.");
+        console.log();
+        const enableProv = await ask("Enable provenance enforcement? (yes/no) [yes]");
+        if (enableProv !== "no" && enableProv !== "n") {
+          const provenanceBlock = [
+            "",
+            "# ============================================================================",
+            "# Provenance Tracking",
+            "# ============================================================================",
+            "",
+            "provenance:",
+            "  require_hooks: true",
+            "  required_trailers:",
+            "    - Author-type",
+            "    - Operator",
+            "",
+          ].join("\n");
+          // Insert before tasks section or at end
+          if (manifest.includes("tasks:")) {
+            manifest = manifest.replace(/\ntasks:/, provenanceBlock + "tasks:");
+          } else {
+            manifest += provenanceBlock;
+          }
+          writeFileSync(manifestPath, manifest);
+          success("Added provenance config to manifest.yaml");
+        } else {
+          log("Skipped. Add manually later under provenance: in manifest.yaml");
+        }
+      }
     }
   }
 
-  // Set up git hooks (with conflict detection for existing core.hooksPath)
+  // --- Git hooks ---
   heading("Git Hooks");
   const hookItems = await setupGitHooks();
   if (hookItems.length > 0) {
@@ -513,26 +690,43 @@ async function cmdInit() {
     log("Git hooks already up to date.");
   }
 
+  // --- Summary ---
   heading(`Done! Your project is set up with adev v${PLUGIN_VERSION}.`);
-  console.log();
+
+  if (state.mode === "brownfield-outdated") {
+    const fromLabel = state.version || "pre-versioning";
+    log(`Upgraded from v${fromLabel} to v${PLUGIN_VERSION}`);
+    console.log();
+  }
+
   log("Next steps:");
   console.log();
-  if (providerNames.includes("claude-code")) {
-    log("  1. Open Claude Code:  claude");
-    log("  2. Configure context: /adev:init");
-    log("  3. Start working:    /adev:start");
-  }
-  if (providerNames.includes("opencode")) {
-    log("  1. Open OpenCode:    opencode");
-    log("  2. Configure context: /adev:init");
-  }
-  if (providerNames.includes("codex")) {
-    log("  1. Open Codex:       codex");
-    log("  2. Configure context: $adev:init");
+  if (state.mode === "brownfield-no-adev") {
+    log("  1. Run /adev:brainstorm to charter existing modules");
+    log("  2. Run /adev:specify --extract to reverse-engineer specs from code");
+    log("  3. Run /adev:hygiene to audit context coverage");
+  } else if (state.mode === "greenfield") {
+    if (providerNames.includes("claude-code")) {
+      log("  1. Open Claude Code:  claude");
+      log("  2. Configure context: /adev:init");
+      log("  3. Start working:    /adev:start");
+    }
+    if (providerNames.includes("opencode")) {
+      log("  1. Open OpenCode:    opencode");
+      log("  2. Configure context: /adev:init");
+    }
+    if (providerNames.includes("codex")) {
+      log("  1. Open Codex:       codex");
+      log("  2. Configure context: $adev:init");
+    }
+  } else {
+    log("  1. Run /adev:hygiene to check context health");
+    log("  2. Run /adev:status --all for project dashboard");
+    log("  3. Run /adev:start to begin work");
   }
   console.log();
   log("Docs:       https://agentic-dev.org");
-  log("Repository: https://github.com/agentic-development/adev:plugin");
+  log("Repository: https://github.com/agentic-development/adev-plugin");
   console.log();
 }
 
