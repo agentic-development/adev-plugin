@@ -1,54 +1,90 @@
 # Validation Report: Session Log Schema
 
-> **Date:** 2026-04-06
+> **Date:** 2026-04-12
 > **Spec:** .context-index/specs/features/session-awareness/session-log-schema.md
-> **Plan:** .context-index/specs/features/session-awareness/session-log-schema.plan.md
+> **Plan:** N/A (spec formalized existing implementation)
 > **Overall Status:** PASS
 
 ---
 
 ## Check 1: Quality Gates — PASS
-- Tests: PASS (`npm test` — 531 tests, 0 failures)
+- Tests: PASS (586/586 pass, 0 fail)
+- No lint or typecheck configured (Node.js + node:test project)
 
-## Check 1.5: Source Manifest — SKIP
-- No source manifest found. Run /adev:implement to stamp one.
+## Check 1.5: Source Manifest Verification — PASS
+- SHA: bc8902f (re-stamped after beads backend fix)
+- Files: hooks/session-capture.sh, tests/hooks/session-capture.test.mjs
+- Status: MATCH
 
 ## Check 2: Spec Compliance — PASS
-- Each line is valid JSON matching schema: PASS — test "each line is valid independent JSON"
-- tool field always present and non-empty: PASS — guard `if (!toolName)` exits without writing; test "does not write entry when tool_name is missing"
-- files field always present (empty array): PASS — `files: filePath ? [filePath] : []`; test "files is always an array"
-- timestamp ISO 8601 UTC truncated to seconds: PASS — `.replace(/\.\d{3}Z$/, "Z")`; test with regex validation
-- session_id omitted when not available: PASS — `if (sessionId) entry.session_id = sessionId`; test verifies key absence
-- Hook exits 0, no write when provider not native: PASS — tests for provider=none and provider=entire
-- File created on first write without header: PASS — test "creates .context-index directory if missing"
-- Implementation matches schema: PASS — removed `specs` field, added tool_name guard
-- No new dependencies: PASS — Node.js built-ins only
-- No constitutional violations: PASS
+- [x] Each line in .session-tracking.jsonl is valid JSON matching the schema — PASS (test: `each line is valid independent JSON`)
+- [x] `tool` field is always present and non-empty — PASS (test: `does not write entry when tool_name is missing`)
+- [x] `files` field is always present (empty array when no files) — PASS (test: `files is always an array even when no file_path`)
+- [x] `timestamp` is ISO 8601 UTC truncated to seconds — PASS (test: `timestamp is ISO 8601 UTC truncated to seconds`)
+- [x] `session_id` is omitted (not null) when not available — PASS (test: `session_id is omitted when not provided`)
+- [x] Hook exits 0 and writes nothing when provider is not "native" — PASS (tests: `exits 0 with empty JSON when provider=none/entire`)
+- [x] File is created on first write without header or preamble — PASS (test: `creates .context-index directory if missing`)
+- [x] Existing session-capture.sh implementation matches this schema — PASS
+- [x] All quality gates pass (`npm test`) — PASS (586/586)
+- [x] No new dependencies added — PASS
+- [x] No constitutional violations introduced — PASS
+
+### Extended validation (beyond spec): JSONL enrichment
+- issue field injected from execution state when active — PASS (eval test: `JSONL has entries with issue and epic fields`)
+- epic field resolved from issue board (file and beads backends) — PASS (code review: both backends handled)
+- Fields omitted when execution state is idle — PASS (eval test: `JSONL has entries without issue`)
 
 ## Check 3: Charter Consistency — PASS
-- Scope: PASS — changes limited to session-capture.sh hook (Session Log Schema capability)
-- Domain model: PASS — SessionLogEntry fields (tool, files, timestamp, session_id) match charter
+- Scope: session-capture.sh enrichment is within session-awareness charter scope
+- Domain model: JSONL entry schema extended with optional `issue` and `epic` fields — backward compatible
+- Interface contracts: Hook protocol unchanged (stdin JSON, stdout `{}`, exit 0)
 
 ## Check 4: Constitution Compliance — PASS
-- Principle 1 (minimize deps): PASS — built-ins only
-- Principle 4 (hook protocol): PASS — stdin JSON, stdout JSON, exit 0
-- Coding standards: PASS — follows bash + inline Node.js pattern
+- Architecture boundaries: No new services, databases, or auth flows
+- Non-negotiable principles:
+  - Principle 1 (Minimize dependencies): Uses only Node.js built-ins. PASS
+  - Principle 3 (Pure ESM): lib/source-manifest.mjs uses ESM. PASS
+  - Principle 4 (Hook protocol): session-capture.sh exits 0, outputs JSON. PASS
+  - Principle 5 (Version parity): 0.13.0 in both package.json and plugin.json. PASS
+- Coding standards: camelCase functions, kebab-case files. PASS
 
-## Check 5: ADR Compliance — N/A
+## Check 5: ADR Compliance — PASS
+- No ADRs relevant to session capture or source manifest changes
 
 ## Check 6: Cross-Cutting Specs — N/A
+- No cross-cutting specs relevant to these changes
 
 ## Check 7: Specialist Review — SKIPPED
-- No specialists registered
+- No specialists matched
 
-## Check 8: Boundary Compliance — N/A
+## Check 8: Boundary Compliance — PASS
+- No governance/boundaries.yaml configured
 
-## Check 9: Transition Gates — N/A
+## Check 9: Transition Gates — PASS
+- No transition rules configured
 
 ## Check 10: Platform Drift — PASS
-- language: javascript — PASS
-- module_system: esm — PASS (inline CJS in bash is established pattern)
-- runtime: nodejs — PASS
-- test_runner: node:test — PASS
+- package.json: 0.13.0, plugin.json: 0.13.0 — match
 
 ## Check 11: Visual Verification — N/A
+- No UI files touched
+
+---
+
+## Additional Validation: Work Tracking Infrastructure
+
+### buildReverseIndex (lib/source-manifest.mjs)
+- 4 unit tests: PASS
+- Real codebase: 90 files across 28 specs indexed
+- Frontmatter parsing: handles --- not at line 1
+
+### Eval Fixture (tests/evals/work-tracking/)
+- 31 tests across 6 scenarios: ALL PASS
+- Scenarios A-F: trailer flow, bypass detection, reverse index, backlog, impl probe, issue chain
+
+### commit-msg Hook (.githooks/commit-msg)
+- Blocks manifest-claimed files without Spec: trailer: VERIFIED (blocked real commit)
+- Appends Lifecycle: untracked for unclaimed files: VERIFIED (fixture)
+
+### prepare-commit-msg (.githooks/prepare-commit-msg)
+- Issue: + Author-type: trailers: VERIFIED (fixture commits)
