@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Context Index Visualization</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="toolbar">
+    <div class="toolbar-left">
+      <h1 id="project-name">Context Index</h1>
+      <span id="graph-stats" class="badge"></span>
+    </div>
+    <div class="toolbar-center" id="filter-chips"></div>
+    <div class="toolbar-right">
+      <input type="search" id="search-input" placeholder="Search nodes..." autocomplete="off">
+      <select id="layout-select">
+        <option value="fcose">Force-Directed</option>
+        <option value="dagre">Hierarchical</option>
+      </select>
+    </div>
+  </header>
+
+  <main id="workspace">
+    <div id="graph-container"></div>
+    <aside id="detail-panel" class="collapsed">
+      <div id="detail-header">
+        <h2 id="detail-title">Select a node</h2>
+        <button id="detail-close" aria-label="Close panel">&times;</button>
+      </div>
+      <div id="detail-body">
+        <p class="hint">Click a node in the graph to view its details.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="timeline-container">
+    <div id="timeline"></div>
+  </footer>
+
+  <!-- Vendored libraries loaded as ESM -->
+  <script type="importmap">
+  {
+    "imports": {
+      "cytoscape": "https://esm.sh/cytoscape@3.30.4",
+      "cytoscape-fcose": "https://esm.sh/cytoscape-fcose@2.2.0",
+      "cytoscape-dagre": "https://esm.sh/cytoscape-dagre@2.5.0"
+    }
+  }
+  </script>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

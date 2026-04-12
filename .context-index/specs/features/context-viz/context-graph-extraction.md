@@ -7,18 +7,18 @@
 
 ---
 charter: context-viz
-status: draft
+status: review-pending
 risk_level: medium
 milestone: v1
 created: 2026-04-11
-updated: 2026-04-11
+updated: 2026-04-13
 ---
 
 ## 1. Graph Data Model
 
 ### 1.1 Node Types
 
-The context index contains **11 distinct entity types** that become graph nodes:
+The context index contains **13 distinct entity types** that become graph nodes:
 
 | Node Type | Source Location | Key Attributes | Color | Shape |
 |-----------|----------------|----------------|-------|-------|
@@ -33,10 +33,12 @@ The context index contains **11 distinct entity types** that become graph nodes:
 | `session` | `sessions/*.md` | date, type, mode, agent, specs-touched[], commits[] | `#64748b` (slate) | round-rectangle |
 | `code-file` | Derived from source-manifest + repomap | path, module, exports[], imports[] | `#22c55e` (green) | rectangle |
 | `cross-cutting` | `specs/cross-cutting/*.md` | status, affects[], risk_level | `#a855f7` (purple) | star |
+| `heuristic` | `.context-index/memory/heuristics/<module>.md` | id, scope, confidence, created, updated, evidence[], contradicted-by[] | `#f43f5e` (rose) | triangle |
+| `provider` | `providers/*/adapter.mjs` | slug, name, platform | `#0ea5e9` (sky) | pentagon |
 
 ### 1.2 Edge Types
 
-The context index captures **17 relationship types** between entities:
+The context index captures **20 relationship types** between entities:
 
 | Edge Type | Source → Target | How Extracted | Style |
 |-----------|-----------------|---------------|-------|
@@ -57,6 +59,9 @@ The context index captures **17 relationship types** between entities:
 | `session-creates-commit` | session → code-file | Session frontmatter `commits:` + `git show --stat` | dashed |
 | `code-imports-code` | code-file → code-file | Repomap `dependency-graph.json` edges | solid, thin |
 | `code-belongs-to-module` | code-file → module | Manifest module paths + file path matching | solid, thin |
+| `heuristic-scoped-to` | heuristic → module | Heuristic file name matches module slug (or `_global.md` → all modules) | solid |
+| `heuristic-evidenced-by` | heuristic → spec | Heuristic frontmatter `evidence[]` references spec paths | dashed |
+| `provider-adapts` | provider → module | Provider adapter imports from module code paths | dashed, thin |
 
 ### 1.3 Graph JSON Schema
 
@@ -73,12 +78,17 @@ The build script emits a single `graph-data.json` with this structure:
   },
   "typeRegistry": {
     "nodeTypes": {
-      "module": { "label": "Module", "color": "#6366f1", "shape": "hexagon" },
-      "spec":   { "label": "Spec",   "color": "#3b82f6", "shape": "round-rectangle" }
+      "module":    { "label": "Module",    "color": "#6366f1", "shape": "hexagon" },
+      "spec":      { "label": "Spec",      "color": "#3b82f6", "shape": "round-rectangle" },
+      "heuristic": { "label": "Heuristic", "color": "#f43f5e", "shape": "triangle" },
+      "provider":  { "label": "Provider",  "color": "#0ea5e9", "shape": "pentagon" }
     },
     "edgeTypes": {
-      "charter-scopes-spec":  { "label": "scopes",     "color": "#888", "style": "solid" },
-      "issue-blocked-by":     { "label": "blocked by",  "color": "#ef4444", "style": "solid" }
+      "charter-scopes-spec":    { "label": "scopes",        "color": "#888",    "style": "solid" },
+      "issue-blocked-by":       { "label": "blocked by",    "color": "#ef4444", "style": "solid" },
+      "heuristic-scoped-to":    { "label": "scoped to",     "color": "#f43f5e", "style": "solid" },
+      "heuristic-evidenced-by": { "label": "evidenced by",  "color": "#f43f5e", "style": "dashed" },
+      "provider-adapts":        { "label": "adapts",        "color": "#0ea5e9", "style": "dashed" }
     }
   },
   "nodes": [
@@ -127,14 +137,14 @@ After mapping every entity and relationship in the current `.context-index/`, th
 
 ### 2.1 Critical Gaps (Must Fix for v1)
 
-| Gap | Current State | Required For | Proposed Fix |
-|-----|--------------|--------------|-------------|
-| **No `author` on specs** | Specs have no creator field | "Who built this?" query | Add optional `author:` to spec/plan frontmatter |
-| **No `assignee` on issues** | Issues have no assignment | "Who is working on this?" | Add `Assignee` column to tasks.md issue table |
-| **Commit-to-spec reverse index** | Commit trailers (`Spec:`, `Plan-task:`) exist in git log but aren't indexed | "What commits implemented this spec?" | Build script extracts commit trailers via `git log --format` |
-| **ADR cross-references** | ADRs mention specs in prose but no structured link | "Which ADRs govern this spec?" | Add optional `adrs:` array to spec frontmatter |
-| **Session-to-issue link** | Sessions track `specs-touched` and `commits` but not issues | "Which sessions worked on this issue?" | Add optional `issues-touched:` to session frontmatter |
-| **Charter status/revision frontmatter** | Some charters lack structured frontmatter | Consistent node metadata | Add YAML frontmatter to all charters: `status`, `revision`, `created`, `updated` |
+| Gap | Current State | Required For | Proposed Fix | Status |
+|-----|--------------|--------------|-------------|--------|
+| **No `author` on specs** | Specs have no creator field | "Who built this?" query | Add optional `author:` to spec/plan frontmatter | open |
+| **No `assignee` on issues** | Issues have no assignment | "Who is working on this?" | Add `Assignee` column to tasks.md issue table | open |
+| **Commit-to-spec reverse index** | Commit trailers (`Spec:`, `Plan-task:`) exist in git log but aren't indexed | "What commits implemented this spec?" | Build script extracts commit trailers via `git log --format` | partial — trailers present in git log, no build-time extraction yet |
+| **ADR cross-references** | ADRs mention specs in prose but no structured link | "Which ADRs govern this spec?" | Add optional `adrs:` array to spec frontmatter | open |
+| **Session-to-issue link** | Sessions track `specs-touched` and `commits` but not issues | "Which sessions worked on this issue?" | Add optional `issues-touched:` to session frontmatter | open |
+| ~~**Charter status/revision frontmatter**~~ | ~~Some charters lack structured frontmatter~~ | ~~Consistent node metadata~~ | ~~Add YAML frontmatter to all charters~~ | **fixed** — all charters now have `status`, `revision`, `updated` frontmatter |
 
 ### 2.2 Desirable Gaps (Should Fix for v1-v2)
 
@@ -169,32 +179,47 @@ viz/build.mjs
 ├── 4. extractTasks()          → epic, issue nodes + edges
 ├── 5. extractADRs()           → ADR nodes
 ├── 6. extractSessions()       → session nodes + edges
-├── 7. extractCodeFiles()      → code-file nodes from source-manifests
-├── 8. mergeRepomap()          → code→code import edges (if dependency-graph.json exists)
-├── 9. extractCommitTrailers() → session→spec, commit→spec edges from git log
-├── 10. deriveImplicitEdges()  → cross-cutting→spec, charter→spec (directory convention)
-├── 11. computeAnalytics()     → orphan nodes, staleness, coverage metrics
-└── 12. writeGraphData()       → graph-data.json
+├──  7. extractCodeFiles()      → code-file nodes from source-manifests
+├──  8. extractHeuristics()     → heuristic nodes + scoped-to/evidenced-by edges
+├──  9. extractProviders()      → provider nodes + adapts edges
+├── 10. mergeRepomap()          → code→code import edges (if dependency-graph.json exists)
+├── 11. extractCommitTrailers() → session→spec, commit→spec edges from git log
+├── 12. deriveImplicitEdges()   → cross-cutting→spec, charter→spec (directory convention)
+├── 13. computeAnalytics()      → orphan nodes, staleness, coverage metrics
+└── 14. writeGraphData()        → graph-data.json
 ```
 
 ### 3.2 Dependencies (Build Script — Node.js only)
 
 | Package | Purpose | Size | Justification |
 |---------|---------|------|---------------|
-| `js-yaml` | Parse YAML frontmatter in markdown files | ~50KB | Only YAML parser needed; already used by hooks |
 | `node:fs`, `node:path`, `node:child_process` | File I/O, git commands | 0 | Node.js built-ins |
 
-**No new runtime dependencies.** `js-yaml` is already used by the project's hooks. The build script runs in Node.js and produces a static JSON file.
+**No new runtime dependencies.** The build script uses a zero-dep YAML frontmatter parser (regex-based, see §3.3) that handles the simple key-value frontmatter used throughout `.context-index/`. No full YAML library is needed — frontmatter fields are flat scalars and arrays.
 
-### 3.3 Frontmatter Extraction (No Library)
+### 3.3 Frontmatter Extraction (Zero-Dep)
 
 ```javascript
 function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return { meta: {}, body: content };
-  return { meta: yaml.load(match[1]), body: content.slice(match[0].length) };
+  const meta = {};
+  for (const line of match[1].split('\n')) {
+    const kv = line.match(/^(\w[\w-]*):\s*(.*)$/);
+    if (!kv) continue;
+    const [, key, raw] = kv;
+    const val = raw.trim();
+    if (val.startsWith('[') && val.endsWith(']')) {
+      meta[key] = val.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+    } else {
+      meta[key] = val.replace(/^["']|["']$/g, '') || null;
+    }
+  }
+  return { meta, body: content.slice(match[0].length) };
 }
 ```
+
+This handles the flat key-value and inline-array frontmatter used across `.context-index/`. No nested YAML, no multi-line values — those patterns don't appear in the project's frontmatter.
 
 ### 3.4 Markdown Table Parsing (No Library)
 
@@ -223,7 +248,7 @@ function parseMarkdownTable(text) {
 | **Force layout** | cytoscape-fcose | ~10KB gzip | Fast compound spring embedder for free-form exploration |
 | **Timeline axis** | D3 (d3-scale + d3-axis + d3-brush) | ~8KB gzip | Best-in-class time scales. Range brush for time filtering. |
 | **Markdown rendering** | marked | ~13KB gzip | Render spec/issue content in detail panel. ESM-compatible. |
-| **YAML parsing (build)** | js-yaml | 0 (already a dep) | Parse frontmatter in build script |
+| **YAML parsing (build)** | Zero-dep parser (§3.3) | 0 | Regex-based frontmatter extraction — no external YAML library needed |
 | **Dev server** | `npx serve viz/dist` | 0 | No bundler needed for v1 |
 
 **Total browser bundle: ~156KB gzip** — well under the 350KB target.
@@ -335,8 +360,8 @@ The build script can compute and include in `graph-data.json`:
 ## Acceptance Criteria
 
 - [ ] Build script (`viz/build.mjs`) reads `.context-index/` and produces valid `graph-data.json`
-- [ ] All 11 node types are extracted with correct attributes
-- [ ] All 17 edge types are extracted with correct source/target
+- [ ] All 13 node types are extracted with correct attributes
+- [ ] All 20 edge types are extracted with correct source/target
 - [ ] `graph-data.json` schema is self-describing via `typeRegistry`
 - [ ] Adding a new node type requires only a registry entry (no renderer code changes)
 - [ ] Interactive graph renders 500 nodes at 30fps with zoom/pan/click
@@ -347,4 +372,4 @@ The build script can compute and include in `graph-data.json`:
 - [ ] Layout can switch between force-directed and hierarchical
 - [ ] Total browser bundle < 350KB minified
 - [ ] Works fully offline after initial page load
-- [ ] No external runtime dependencies (build script uses only js-yaml + Node built-ins)
+- [ ] No external runtime dependencies (build script uses only Node.js built-ins + zero-dep frontmatter parser)

@@ -12,7 +12,7 @@ The context-viz module provides an interactive web-based visualization of the `.
 ### In Scope
 
 - Static web app that visualizes the full context index as an interactive graph
-- Node types: modules, charters, specs, reviews, plans, epics, issues, ADRs, sessions, code files
+- Node types: modules, charters, specs, reviews, plans, epics, issues, ADRs, sessions, code files, heuristics, providers
 - Edge types: all cross-references between the above entities (ownership, dependency, traceability, temporal)
 - Build-time extraction: Node.js script that reads `.context-index/` and emits a `graph-data.json`
 - Interactive exploration: zoom, pan, click-to-expand, filter by type/status/time
@@ -37,9 +37,11 @@ The context-viz module provides an interactive web-based visualization of the `.
 | `lib/issues/file-adapter.mjs` | internal module | Issue/epic data model and storage format |
 | `lib/source-manifest.mjs` | internal module | Source manifest schema for spec-to-code traceability |
 | `lib/execution-state.mjs` | internal module | Current work-in-progress state |
+| `lib/heuristics.mjs` | internal module | Heuristic store read/write for per-module lessons learned |
+| `lib/provider/` | internal module | Provider adapter registry (claude-code, opencode, codex) |
+| `lib/repomap/` | internal module | AST-based symbol index and dependency graph |
 | Cytoscape.js | external library | Graph rendering and layout engine |
 | D3.js (d3-scale, d3-axis, d3-brush) | external library | Timeline axis and time-range filtering |
-| js-yaml | external library | YAML frontmatter parsing (build script only) |
 | marked | external library | Markdown rendering in detail panels (browser) |
 
 ## Domain Model
