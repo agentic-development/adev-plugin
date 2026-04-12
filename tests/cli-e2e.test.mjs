@@ -36,34 +36,34 @@ describe("CLI E2E - Provider Selection", () => {
   });
 
   it("shows wizard when no --provider flag", () => {
-    const result = runCLI("init", [], ["", "user", "no"], { env: { HOME: tempDir } });
+    const result = runCLI("init", [], ["", "user", "no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     assert.ok(result.stdout.includes("Which AI coding assistant"), "Should show wizard");
   });
 
   it("skips wizard with --provider flag", () => {
-    const result = runCLI("init", ["--provider", "claude-code"], ["user", "no", "no"], { env: { HOME: tempDir } });
+    const result = runCLI("init", ["--provider", "claude-code"], ["user", "no", "no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     assert.ok(!result.stdout.includes("Which AI coding assistant") || result.stdout.includes("Installing for"),
       "Should not show wizard or should install directly");
   });
 
   it("installs Claude Code with --provider claude-code", () => {
-    const result = runCLI("init", ["--provider", "claude-code"], ["user", "no", "no"], { env: { HOME: tempDir } });
+    const result = runCLI("init", ["--provider", "claude-code"], ["user", "no", "no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     assert.ok(result.stdout.includes("claude-code") || result.stdout.includes("Plugin installed"),
       "Should install for Claude Code");
   });
 
   it("installs OpenCode with --provider opencode", () => {
-    const result = runCLI("init", ["--provider", "opencode"], ["no"], { env: { HOME: tempDir } });
+    const result = runCLI("init", ["--provider", "opencode"], ["no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     assert.ok(result.stdout.includes("opencode") || result.stdout.includes("Plugin installed"),
       "Should install for OpenCode");
   });
 
   it("installs Codex with --provider codex", () => {
-    const result = runCLI("init", ["--provider", "codex"], ["user", "no"], { env: { HOME: tempDir } });
+    const result = runCLI("init", ["--provider", "codex"], ["user", "no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     assert.ok(result.stdout.includes("OpenAI Codex") || result.stdout.includes(".agents/skills"),
       "Should install for Codex");
@@ -110,7 +110,7 @@ describe("CLI E2E - File System State", () => {
   });
 
   it("creates Claude Code plugin directory", () => {
-    runCLI("init", ["--provider", "claude-code"], ["user", "no", "no"], { env: { HOME: tempDir } });
+    runCLI("init", ["--provider", "claude-code"], ["user", "no", "no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     const claudePluginDir = join(tempDir, ".claude", "plugins", "cache");
     assert.ok(existsSync(claudePluginDir) || readdirSync(join(tempDir, ".claude")).length >= 0,
@@ -118,7 +118,7 @@ describe("CLI E2E - File System State", () => {
   });
 
   it("creates OpenCode plugin directory", () => {
-    runCLI("init", ["--provider", "opencode"], ["no"], { env: { HOME: tempDir } });
+    runCLI("init", ["--provider", "opencode"], ["no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     const opencodePluginDir = join(tempDir, ".config", "opencode", "plugins");
     assert.ok(existsSync(opencodePluginDir) || readdirSync(join(tempDir, ".config", "opencode")).length >= 0,
@@ -126,7 +126,7 @@ describe("CLI E2E - File System State", () => {
   });
 
   it("creates user-level Codex skills directory", () => {
-    runCLI("init", ["--provider", "codex"], ["user", "no"], { env: { HOME: tempDir } });
+    runCLI("init", ["--provider", "codex"], ["user", "no"], { env: { HOME: tempDir }, cwd: tempDir });
 
     const codexSkillsDir = join(tempDir, ".agents", "skills");
     assert.ok(existsSync(codexSkillsDir), "Should create user Codex skills directory");
