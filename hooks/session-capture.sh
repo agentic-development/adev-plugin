@@ -64,14 +64,46 @@ printf '%s' "$STDIN_JSON" | node -e '
           const issueM = fm.match(/issueBinding:\s*(\S+)/);
           if (issueM && issueM[1]) entry.issue = issueM[1];
           // Extract epic from issue board if issue is bound
+          // Supports both file and beads backends
           if (entry.issue) {
             try {
-              const boardPath = path.join(".context-index", "tasks", "tasks.md");
-              const board = fs.readFileSync(boardPath, "utf8");
-              const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
-              if (issueBlock) {
-                const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
-                if (epicM && epicM[1]) entry.epic = epicM[1];
+              let backend = "file";
+              try {
+                const manifest = fs.readFileSync(".context-index/manifest.yaml", "utf8");
+                const bm = manifest.match(/backend:\s*(\S+)/);
+                if (bm) backend = bm[1];
+              } catch {}
+
+              if (backend === "beads") {
+                // beads backend: epics stored in file adapter (hybrid)
+                // but issue→epic mapping is in .beads-map.json
+                try {
+                  const mapPath = path.join(".context-index", "tasks", ".beads-map.json");
+                  const map = JSON.parse(fs.readFileSync(mapPath, "utf8"));
+                  const issueEntry = map[entry.issue];
+                  if (issueEntry && issueEntry.epicId) entry.epic = issueEntry.epicId;
+                } catch {}
+                // Fallback: check file adapter board if map lacks entry
+                if (!entry.epic) {
+                  try {
+                    const boardPath = path.join(".context-index", "tasks", "tasks.md");
+                    const board = fs.readFileSync(boardPath, "utf8");
+                    const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
+                    if (issueBlock) {
+                      const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
+                      if (epicM && epicM[1]) entry.epic = epicM[1];
+                    }
+                  } catch {}
+                }
+              } else {
+                // file backend: read tasks.md directly
+                const boardPath = path.join(".context-index", "tasks", "tasks.md");
+                const board = fs.readFileSync(boardPath, "utf8");
+                const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
+                if (issueBlock) {
+                  const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
+                  if (epicM && epicM[1]) entry.epic = epicM[1];
+                }
               }
             } catch {}
           }
