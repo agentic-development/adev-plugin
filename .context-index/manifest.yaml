@@ -92,6 +92,7 @@ modules:
       - skills/codehealth/
       - skills/sample/
       - skills/retro/
+      - skills/reconcile/
 
 # ============================================================================
 # External Contexts

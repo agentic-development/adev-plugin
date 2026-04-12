@@ -8,7 +8,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, unlinkSync } from "node:
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-import { computeManifest, verifyManifest } from "../../lib/source-manifest.mjs";
+import { computeManifest, verifyManifest, buildReverseIndex } from "../../lib/source-manifest.mjs";
 
 /**
  * Helper: create a temp project directory.
@@ -162,5 +162,93 @@ describe("verifyManifest", () => {
     const result = await verifyManifest(manifest, root);
     assert.equal(result.matches, true);
     assert.equal(result.currentSha, null);
+  });
+});
+
+describe("buildReverseIndex", () => {
+  let root;
+
+  before(() => {
+    root = makeTempProject();
+
+    // Spec with source manifest claiming two files
+    writeFile(root, "specs/features/auth/login.md", [
+      "---",
+      "type: live-spec",
+      "title: Login",
+      "source-manifest:",
+      '  sha: "abc1234"',
+      "  files:",
+      "    - lib/login.mjs",
+      "    - tests/login.test.mjs",
+      '  computed-at: "2026-04-01T12:00:00Z"',
+      "---",
+      "",
+      "# Login",
+    ].join("\n"));
+
+    // Spec with source manifest claiming one file
+    writeFile(root, "specs/features/dashboard/widgets.md", [
+      "---",
+      "type: live-spec",
+      "title: Widgets",
+      "source-manifest:",
+      '  sha: "def5678"',
+      "  files:",
+      "    - lib/widgets.mjs",
+      '  computed-at: "2026-04-02T10:00:00Z"',
+      "---",
+      "",
+      "# Widgets",
+    ].join("\n"));
+
+    // Spec without source manifest
+    writeFile(root, "specs/features/auth/session.md", [
+      "---",
+      "type: live-spec",
+      "title: Session",
+      "status: draft",
+      "---",
+      "",
+      "# Session",
+    ].join("\n"));
+
+    // Non-spec file (should be ignored)
+    writeFile(root, "specs/features/auth/charter.md", [
+      "---",
+      "type: charter",
+      "title: Auth",
+      "---",
+      "",
+      "# Auth Charter",
+    ].join("\n"));
+  });
+
+  after(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("maps claimed files to their spec paths", async () => {
+    const index = await buildReverseIndex(join(root, "specs/features"), root);
+    assert.equal(index.get("lib/login.mjs"), "specs/features/auth/login.md");
+    assert.equal(index.get("tests/login.test.mjs"), "specs/features/auth/login.md");
+    assert.equal(index.get("lib/widgets.mjs"), "specs/features/dashboard/widgets.md");
+  });
+
+  it("does not include files from specs without manifests", async () => {
+    const index = await buildReverseIndex(join(root, "specs/features"), root);
+    // session.md has no source-manifest, so nothing mapped from it
+    assert.equal(index.size, 3);
+  });
+
+  it("returns empty map for nonexistent directory", async () => {
+    const index = await buildReverseIndex(join(root, "nonexistent"), root);
+    assert.equal(index.size, 0);
+  });
+
+  it("returns empty map for directory with no manifests", async () => {
+    writeFile(root, "empty-specs/readme.md", "# No specs here\n");
+    const index = await buildReverseIndex(join(root, "empty-specs"), root);
+    assert.equal(index.size, 0);
   });
 });
