@@ -8,6 +8,13 @@ revision: 1
 charter-revision: 2
 created: 2026-03-31
 updated: 2026-04-01
+source-manifest:
+  sha: "5dc2f0a"
+  files:
+    - skills/implement/SKILL.md
+    - skills/plan/SKILL.md
+    - skills/validate/SKILL.md
+  computed-at: "2026-04-12T11:48:02.769Z"
 ---
 
 ## Behavioral Contract

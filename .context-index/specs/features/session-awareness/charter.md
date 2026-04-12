@@ -81,6 +81,12 @@ The session-awareness module provides continuous context about active work throu
 | Concurrent Access Safety | Atomic writes via temp-file-then-rename for execution state | should-have | 1 | validated |
 | Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | validated |
 
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Format Documentation | Document file formats as public contracts | Phase 2 | — |
+
 ## Interface Contracts
 
 ### Exposed APIs

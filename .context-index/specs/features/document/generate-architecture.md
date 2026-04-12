@@ -13,6 +13,13 @@ revision: 1
 charter-revision: 1
 created: 2026-03-23
 updated: 2026-03-23
+source-manifest:
+  sha: "9126351"
+  files:
+    - skills/document/SKILL.md
+    - skills/repomap/SKILL.md
+    - tests/skills/document.test.mjs
+  computed-at: "2026-04-12T11:48:02.737Z"
 ---
 
 ## Behavioral Contract
