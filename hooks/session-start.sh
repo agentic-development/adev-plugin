@@ -88,10 +88,54 @@ RESUME_BLOCK=$(node -e '
   }
 ' 2>/dev/null || true)
 
-# Combine skill content with resume block
-if [ -n "$RESUME_BLOCK" ]; then
+# Check for adev version updates
+UPDATE_BLOCK=""
+UPDATE_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" node -e '
+  const fs = require("fs");
+  const path = require("path");
+
+  try {
+    // Read installed plugin version
+    const pluginRoot = process.env.ADEV_PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT || ".";
+    const pkgPath = path.join(pluginRoot, "package.json");
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    const pluginVersion = pkg.version;
+
+    // Read project adev_version from manifest
+    const manifestPath = path.join(process.cwd(), ".context-index", "manifest.yaml");
+    const manifest = fs.readFileSync(manifestPath, "utf8");
+    const vm = manifest.match(/adev_version:\s*["\x27]?([^"\x27\s]+)/);
+    const projectVersion = vm ? vm[1] : null;
+
+    if (!projectVersion) {
+      // No version stamp — pre-versioning install
+      console.log("**adev update available:** This project has no adev version stamp. Run `npx @adev-org/adev-cli init` to upgrade to v" + pluginVersion + " (adds provenance tracking, commit-msg enforcement, and new hygiene passes).");
+    } else if (projectVersion !== pluginVersion) {
+      // Version mismatch
+      const [pMaj, pMin] = projectVersion.split(".").map(Number);
+      const [iMaj, iMin] = pluginVersion.split(".").map(Number);
+      if (iMaj > pMaj || (iMaj === pMaj && iMin > pMin)) {
+        console.log("**adev update available:** v" + projectVersion + " installed, v" + pluginVersion + " available. Run `npx @adev-org/adev-cli init` to upgrade.");
+      }
+    }
+  } catch {
+    // No manifest or no package.json — skip silently
+  }
+' 2>/dev/null || true)
+
+# Combine skill content with resume block and update notice
+if [ -n "$RESUME_BLOCK" ] && [ -n "$UPDATE_BLOCK" ]; then
+  COMBINED="${SKILL_CONTENT}
+${RESUME_BLOCK}
+
+${UPDATE_BLOCK}"
+elif [ -n "$RESUME_BLOCK" ]; then
   COMBINED="${SKILL_CONTENT}
 ${RESUME_BLOCK}"
+elif [ -n "$UPDATE_BLOCK" ]; then
+  COMBINED="${SKILL_CONTENT}
+
+${UPDATE_BLOCK}"
 else
   COMBINED="${SKILL_CONTENT}"
 fi
