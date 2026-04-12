@@ -73,44 +73,63 @@ Find specs with status `implemented` or `validated` that have no `source-manifes
 
 **Batch prioritization:** Process specs that have existing `.plan.md` files first (29 specs). Specs without plans require heuristic file matching and should be reviewed individually.
 
-### Step 2: Present Findings
+### Step 2: Present and Fix — One Category at a Time
 
-Display all findings grouped by type:
+Start with a one-line summary, then walk through each category sequentially. Present all items in a category as a numbered table, then prompt for each item individually. Apply fixes immediately after each confirmation before moving to the next item.
 
 ```
 === Lifecycle Reconciliation ===
 
-Found N mismatches across M categories:
-
-Stale Epics (N):
-  epic-1: Auth Implementation — all 3 issues closed, epic still open
-    → Fix: Close the epic? [Y/n]
-
-Unplanned Specs (N):
-  auth/session-mgmt.md — review-passed, no plan
-    → Fix: Run /adev:plan? [Y/n]
-
-Orphaned Issues (N):
-  issue-4: planRef → dashboard/nonexistent.plan.md (file missing)
-    → Fix: Close as obsolete? [Y/n]
-
-Missing Source Manifests (N):
-  auth/login.md — status: validated, no source-manifest
-    → Fix: Stamp manifest from plan file list? [Y/n]
-
-Untraced Code (N):
-  lib/orphan.mjs — no lifecycle trailers, matches SSO capability (auth charter, v2)
-    → Fix: Create spec? Mark as intentional? [S/m/skip]
+Found N mismatches across M categories.
+Walking through each category now.
 ```
 
-### Step 3: Apply Fixes
+**For each category that has findings:**
 
-For each confirmed fix:
-1. Execute the action.
-2. Report the result.
-3. If a fix fails, log the error and continue to the next finding.
+1. Print the category header and a table of all items in that category.
+2. Prompt for each item one at a time (using the item's row number).
+3. Apply the fix immediately on confirmation and report the result inline.
+4. After all items in the category are handled, print a brief tally and move to the next category.
 
-### Step 4: Summary
+**Category presentation format:**
+
+```
+---
+1a. Stale Epics (2)
+
+┌───┬──────┬─────────────────────────┬──────────────┐
+│ # │ Epic │ Title                   │ Children     │
+├───┼──────┼─────────────────────────┼──────────────┤
+│ 1 │ dqx  │ Session Orchestration   │ 4/4 closed   │
+├───┼──────┼─────────────────────────┼──────────────┤
+│ 2 │ z2b  │ LS-006 Integration      │ 13/13 closed │
+└───┴──────┴─────────────────────────┴──────────────┘
+
+→ Close dqx? [Y/n]
+  ✓ Closed.
+→ Close z2b? [Y/n]
+  ✓ Closed.
+
+Stale Epics: 2 fixed, 0 skipped.
+```
+
+**Prompt styles per category:**
+
+| Category | Prompt | Options |
+|---|---|---|
+| Stale Epics | "Close {id}?" | `[Y/n]` |
+| Unplanned Specs | "Plan {spec}?" | `[Y/n/skip]` — skip acknowledges without action |
+| Partial Epics | "Create {N} missing issues for {epicId}?" | `[Y/n]` |
+| Orphaned Issues | "Close {id} as obsolete?" | `[Y/n]` |
+| Orphaned Plans | "Create epic + issues for {plan}?" | `[Y/n]` |
+| Untraced Code | "Create spec for {file}?" | `[Y/n/ignore]` — ignore marks as intentional |
+| Missing Source Manifests | "Stamp manifest for {spec}?" | `[Y/n]` |
+
+**Skip empty categories entirely** — do not print headers for categories with zero findings.
+
+**Numbering is continuous across categories** (item 1-2 in stale epics, 3-6 in unplanned specs, etc.) so the user can refer back to items by number.
+
+### Step 3: Summary
 
 ```
 === Reconciliation Complete ===
