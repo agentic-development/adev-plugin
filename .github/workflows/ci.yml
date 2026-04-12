@@ -25,3 +25,39 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Check commit provenance trailers
+        if: github.event_name == 'pull_request'
+        run: |
+          # Read enforcement config from manifest
+          REQUIRE=$(grep -A1 'require_hooks:' .context-index/manifest.yaml | head -1 | grep -o 'true\|false' || echo "false")
+          if [ "$REQUIRE" != "true" ]; then
+            echo "Provenance enforcement disabled (provenance.require_hooks != true)"
+            exit 0
+          fi
+
+          echo "Checking commits for required trailers (Author-type, Operator)..."
+          FAILED=0
+
+          for SHA in $(git log --format='%H' origin/${{ github.base_ref }}..HEAD); do
+            MSG=$(git log --format='%B' -1 "$SHA")
+            SUBJECT=$(git log --format='%s' -1 "$SHA")
+            MISSING=""
+
+            echo "$MSG" | grep -q "^Author-type:" || MISSING="${MISSING} Author-type"
+            echo "$MSG" | grep -q "^Operator:" || MISSING="${MISSING} Operator"
+
+            if [ -n "$MISSING" ]; then
+              echo "::warning::Commit ${SHA:0:7} ($SUBJECT) missing trailers:$MISSING"
+              FAILED=$((FAILED + 1))
+            fi
+          done
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo ""
+            echo "::error::$FAILED commit(s) missing required provenance trailers."
+            echo "Ensure git hooks are active (run: npx adev-cli init) or add trailers manually."
+            exit 1
+          fi
+
+          echo "All commits have required provenance trailers."

@@ -109,4 +109,20 @@ if [ "$FIRST_LINE" = "UNTRACKED" ]; then
   fi
 fi
 
+# --- Fallback trailer injection ---
+# Ensure Author-type and Operator are always present on every commit.
+# prepare-commit-msg injects these from JSONL when available.
+# This fallback covers: raw git commits, missing JSONL, fresh clones.
+
+if ! grep -q "^Author-type:" "$COMMIT_MSG_FILE" 2>/dev/null; then
+  printf 'Author-type: human\n' >> "$COMMIT_MSG_FILE"
+fi
+
+if ! grep -q "^Operator:" "$COMMIT_MSG_FILE" 2>/dev/null; then
+  OS_USER="${USER:-${USERNAME:-unknown}}"
+  MODE="local"
+  [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] && MODE="remote"
+  printf "Operator: ${OS_USER}/${MODE}\n" >> "$COMMIT_MSG_FILE"
+fi
+
 exit 0
