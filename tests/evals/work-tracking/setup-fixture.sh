@@ -279,12 +279,12 @@ BOARD
 # Session JSONL — some entries with issue/epic, some without
 # ===========================================================================
 cat > .context-index/.session-tracking.jsonl << 'JSONL'
-{"tool":"Edit","files":["lib/login.mjs"],"timestamp":"2026-04-01T11:00:00Z","session_id":"sess-001","issue":"issue-1","epic":"epic-1"}
-{"tool":"Edit","files":["lib/login.mjs"],"timestamp":"2026-04-01T11:30:00Z","session_id":"sess-001","issue":"issue-2","epic":"epic-1"}
-{"tool":"Edit","files":["tests/login.test.mjs"],"timestamp":"2026-04-01T12:00:00Z","session_id":"sess-001","issue":"issue-3","epic":"epic-1"}
-{"tool":"Edit","files":["lib/untraced.mjs"],"timestamp":"2026-04-05T09:00:00Z","session_id":"sess-002"}
-{"tool":"Edit","files":["lib/drifted.mjs"],"timestamp":"2026-04-08T14:00:00Z","session_id":"sess-003"}
-{"tool":"Edit","files":["lib/orphan.mjs"],"timestamp":"2026-04-09T10:00:00Z"}
+{"tool":"Edit","files":["lib/login.mjs"],"timestamp":"2026-04-01T11:00:00Z","session_id":"sess-001","issue":"issue-1","epic":"epic-1","operator":"dev-user/local"}
+{"tool":"Edit","files":["lib/login.mjs"],"timestamp":"2026-04-01T11:30:00Z","session_id":"sess-001","issue":"issue-2","epic":"epic-1","operator":"dev-user/local"}
+{"tool":"Edit","files":["tests/login.test.mjs"],"timestamp":"2026-04-01T12:00:00Z","session_id":"sess-001","issue":"issue-3","epic":"epic-1","operator":"dev-user/local"}
+{"tool":"Edit","files":["lib/untraced.mjs"],"timestamp":"2026-04-05T09:00:00Z","session_id":"sess-002","operator":"dev-user/local"}
+{"tool":"Edit","files":["lib/drifted.mjs"],"timestamp":"2026-04-08T14:00:00Z","session_id":"sess-003","operator":"ci-bot/remote"}
+{"tool":"Edit","files":["lib/orphan.mjs"],"timestamp":"2026-04-09T10:00:00Z","operator":"dev-user/local"}
 JSONL
 
 # ===========================================================================

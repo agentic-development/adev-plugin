@@ -355,5 +355,18 @@ describe("Work Tracking Eval: Fixture Setup", () => {
       const withoutIssue = lines.filter(l => l.session_id && !l.issue);
       assert.ok(withoutIssue.length >= 1, "Should have session entries without issue");
     });
+
+    it("JSONL has operator field distinguishing local from remote", () => {
+      const jsonl = readFileSync(join(FIXTURE_DIR, ".context-index/.session-tracking.jsonl"), "utf-8");
+      const lines = jsonl.trim().split("\n").map(l => JSON.parse(l));
+      const withOperator = lines.filter(l => l.operator);
+      assert.ok(withOperator.length >= 5, "Most entries should have operator field");
+
+      const localOps = withOperator.filter(l => l.operator.endsWith("/local"));
+      const remoteOps = withOperator.filter(l => l.operator.endsWith("/remote"));
+      assert.ok(localOps.length >= 4, "Should have local operator entries");
+      assert.ok(remoteOps.length >= 1, "Should have remote operator entries");
+      assert.ok(remoteOps[0].operator.startsWith("ci-bot"), "Remote operator should be ci-bot");
+    });
   });
 });

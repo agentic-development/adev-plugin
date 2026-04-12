@@ -52,6 +52,11 @@ printf '%s' "$STDIN_JSON" | node -e '
     };
     if (sessionId) entry.session_id = sessionId;
 
+    // Build operator identity: $USER/local or $USER/remote
+    const osUser = process.env.USER || process.env.USERNAME || "unknown";
+    const isRemote = process.env.CLAUDE_CODE_REMOTE === "true";
+    entry.operator = osUser + "/" + (isRemote ? "remote" : "local");
+
     // Enrich with issue/epic from execution state (if active)
     try {
       const statePath = path.join(".context-index", ".execution-state.md");

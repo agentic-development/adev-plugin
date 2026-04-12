@@ -115,6 +115,23 @@ AUTHOR_TYPE=$(node -e '
   console.log(hasSessionId ? "agent/claude-code" : "human");
 ' "$TRACKING_FILE" 2>/dev/null) || AUTHOR_TYPE=""
 
+# Extract operator identity from JSONL (most recent entry with operator field)
+OPERATOR=$(node -e '
+  const fs = require("fs");
+  const lines = fs.readFileSync(process.argv[1], "utf8").trim().split("\n");
+  let op = "";
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.operator) {
+        const clean = String(obj.operator).replace(/[\r\n]/g, "").trim();
+        if (clean && /^[\w.\-]+\/[\w.\-]+$/.test(clean)) op = clean;
+      }
+    } catch {}
+  }
+  if (op) console.log(op);
+' "$TRACKING_FILE" 2>/dev/null) || OPERATOR=""
+
 # Function to check if a trailer already exists in the commit message
 trailer_exists() {
   local trailer="$1"
@@ -158,6 +175,13 @@ done <<< "$ISSUES"
 
 if [ -n "$AUTHOR_TYPE" ]; then
   TRAILER="Author-type: $AUTHOR_TYPE"
+  if ! trailer_exists "$TRAILER"; then
+    TRAILERS="${TRAILERS}${TRAILER}"$'\n'
+  fi
+fi
+
+if [ -n "$OPERATOR" ]; then
+  TRAILER="Operator: $OPERATOR"
   if ! trailer_exists "$TRAILER"; then
     TRAILERS="${TRAILERS}${TRAILER}"$'\n'
   fi
