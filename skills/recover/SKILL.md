@@ -303,7 +303,7 @@ Write a recovery record for retrospective analysis. This feeds into `/adev:hygie
 
 ### Step 7: Extract Heuristic
 
-After the recovery record is written in Step 6, extract a transferable heuristic from the root-cause diagnosis via `lib/heuristics.mjs` `writeHeuristic`. This step is non-blocking — extraction failures log a warning and allow `/adev:recover` to exit normally.
+After the recovery record is written in Step 6, extract a transferable heuristic from the root-cause diagnosis via `lib/heuristics.mjs`. This step is non-blocking — extraction failures log a warning and allow `/adev:recover` to exit normally.
 
 #### Category Templates
 
@@ -337,7 +337,7 @@ Compose the heuristic `title` as `"<category-label>: <short-summary>"` where:
 
 - `<category-label>` is one of: `"Missing context"`, `"Ambiguous spec"`, `"Constraint conflict"`, `"Novel problem"`, `"Tool failure"`, `"Budget exhaustion"`.
 - `<short-summary>` is a distilled 5-10 word summary of the root cause (generalized, not verbatim).
-- Total title length must not exceed 120 characters (matches the `writeHeuristic` schema cap).
+- Total title length must not exceed 120 characters (matches the heuristic schema cap).
 
 #### ID Derivation Rule
 
@@ -356,6 +356,17 @@ Worked example: `MISSING_CONTEXT` + "Error: cache miss on third-party API" → n
 - Walk up from `process.cwd()` to find the nearest `.context-index/` directory — that is the project root.
 - Fallback to `process.env.CLAUDE_PROJECT_ROOT` if the walk-up finds nothing.
 - This matches the convention used by `lib/execution-state.mjs`.
+
+#### Contradiction Scan (before write)
+
+Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
+
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
+3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<recovery-record-path>', date: '<today>', source: 'recovery' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
+4. If no contradiction is detected, proceed directly to writeHeuristic.
+
+This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `/adev:retro` consolidation is the backstop for missed contradictions.
 
 #### Inline Node Invocation
 

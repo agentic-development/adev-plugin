@@ -1780,6 +1780,210 @@ describe("writeHeuristic auto-promotion edge cases", () => {
   });
 });
 
+// ── Retrieval Filtering ─────────────────────────────────────────────────────
+
+describe("retrieveHeuristics", () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  function makeEntry(id, scope, confidence, pattern, extra = {}) {
+    return {
+      id,
+      scope,
+      title: `Title for ${id}`,
+      pattern,
+      confidence,
+      evidence: extra.evidence || [],
+      contradictedBy: [],
+      ...extra,
+    };
+  }
+
+  it("merges module and _global heuristics, deduplicates by id", async () => {
+    await writeHeuristic(tempDir, makeEntry("mod-1", "hooks", "high", "Pattern A"));
+    await writeHeuristic(tempDir, makeEntry("glob-1", "_global", "high", "Pattern B"));
+    // Write same id to both — module should win
+    await writeHeuristic(tempDir, makeEntry("dup-1", "hooks", "medium", "Module version"));
+    await writeHeuristic(tempDir, makeEntry("dup-1", "_global", "medium", "Global version"));
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    const ids = result.map((h) => h.id);
+    assert.ok(ids.includes("mod-1"));
+    assert.ok(ids.includes("glob-1"));
+    // dup-1 appears exactly once
+    assert.equal(ids.filter((id) => id === "dup-1").length, 1);
+    // module version wins
+    const dup = result.find((h) => h.id === "dup-1");
+    assert.equal(dup.pattern, "Module version");
+  });
+
+  it("sorts module-scoped before _global at same confidence", async () => {
+    await writeHeuristic(tempDir, makeEntry("glob-m", "_global", "medium", "Global med"));
+    await writeHeuristic(tempDir, makeEntry("mod-m", "hooks", "medium", "Module med"));
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    const mediums = result.filter((h) => h.confidence === "medium");
+    assert.ok(mediums.length >= 2);
+    const modIdx = result.findIndex((h) => h.id === "mod-m");
+    const globIdx = result.findIndex((h) => h.id === "glob-m");
+    assert.ok(modIdx < globIdx, "module-scoped should sort before _global");
+  });
+
+  it("applies default budget cap: 5 high + 3 medium, excludes all low", async () => {
+    // Write 7 high, 5 medium, 3 low to module
+    for (let i = 0; i < 7; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+    for (let i = 0; i < 5; i++) {
+      await writeHeuristic(tempDir, makeEntry(`m${i}`, "hooks", "medium", `Med ${i}`));
+    }
+    for (let i = 0; i < 3; i++) {
+      await writeHeuristic(tempDir, makeEntry(`l${i}`, "hooks", "low", `Low ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    const highCount = result.filter((h) => h.confidence === "high").length;
+    const medCount = result.filter((h) => h.confidence === "medium").length;
+    const lowCount = result.filter((h) => h.confidence === "low").length;
+    assert.equal(highCount, 5);
+    assert.equal(medCount, 3);
+    assert.equal(lowCount, 0);
+    assert.equal(result.length, 8);
+  });
+
+  it("scales budget proportionally with custom injectionLimit", async () => {
+    for (let i = 0; i < 10; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+    for (let i = 0; i < 10; i++) {
+      await writeHeuristic(tempDir, makeEntry(`m${i}`, "hooks", "medium", `Med ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", { injectionLimit: 3 });
+    // ceil(3 * 5/8) = ceil(1.875) = 2 high, 3-2 = 1 medium
+    const highCount = result.filter((h) => h.confidence === "high").length;
+    const medCount = result.filter((h) => h.confidence === "medium").length;
+    assert.equal(highCount, 2);
+    assert.equal(medCount, 1);
+    assert.equal(result.length, 3);
+  });
+
+  it("returns empty array when injectionLimit is 0", async () => {
+    await writeHeuristic(tempDir, makeEntry("h1", "hooks", "high", "Pattern"));
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", { injectionLimit: 0 });
+    assert.deepEqual(result, []);
+  });
+
+  it("returns empty array when no heuristics exist", async () => {
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    assert.deepEqual(result, []);
+  });
+
+  it("catches readHeuristics errors and returns empty array", async () => {
+    // Pass a relative path (triggers INVALID_PROJECT_ROOT) — should catch, not throw
+    const result = await heuristics.retrieveHeuristics("relative/path", "hooks", {});
+    assert.deepEqual(result, []);
+  });
+
+  it("treats non-integer injectionLimit as default 8", async () => {
+    for (let i = 0; i < 10; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", { injectionLimit: "abc" });
+    // Default budget: 5 high
+    assert.equal(result.filter((h) => h.confidence === "high").length, 5);
+  });
+
+  it("treats negative injectionLimit as default 8", async () => {
+    for (let i = 0; i < 10; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", { injectionLimit: -5 });
+    assert.equal(result.filter((h) => h.confidence === "high").length, 5);
+  });
+
+  it("end-to-end: module + global heuristics with budget", async () => {
+    // 3 high hooks, 2 high global, 4 medium hooks, 2 medium global
+    for (let i = 0; i < 3; i++) {
+      await writeHeuristic(tempDir, makeEntry(`hh${i}`, "hooks", "high", `Hook high ${i}`));
+    }
+    for (let i = 0; i < 2; i++) {
+      await writeHeuristic(tempDir, makeEntry(`gh${i}`, "_global", "high", `Global high ${i}`));
+    }
+    for (let i = 0; i < 4; i++) {
+      await writeHeuristic(tempDir, makeEntry(`hm${i}`, "hooks", "medium", `Hook med ${i}`));
+    }
+    for (let i = 0; i < 2; i++) {
+      await writeHeuristic(tempDir, makeEntry(`gm${i}`, "_global", "medium", `Global med ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    assert.equal(result.length, 8); // 5 high + 3 medium
+    // First 5 should be high
+    for (let i = 0; i < 5; i++) {
+      assert.equal(result[i].confidence, "high");
+    }
+    // Next 3 should be medium
+    for (let i = 5; i < 8; i++) {
+      assert.equal(result[i].confidence, "medium");
+    }
+  });
+});
+
+describe("renderHeuristic", () => {
+  it("renders a heuristic with pattern and antiPattern", () => {
+    const h = {
+      id: "test-001",
+      title: "Test Title",
+      confidence: "high",
+      pattern: "Do this",
+      antiPattern: "Avoid that",
+      evidence: [
+        { path: "a.md", date: "2026-01-01" },
+        { path: "b.md", date: "2026-01-02" },
+      ],
+    };
+    const result = heuristics.renderHeuristic(h);
+    assert.ok(result.includes("### Heuristic: Test Title (confidence: high)"));
+    assert.ok(result.includes("**Pattern:** Do this"));
+    assert.ok(result.includes("**Anti-pattern:** Avoid that"));
+    assert.ok(result.includes("**Evidence:** 2 observations"));
+  });
+
+  it("omits anti-pattern line when antiPattern is absent", () => {
+    const h = {
+      id: "test-002",
+      title: "No Anti",
+      confidence: "medium",
+      pattern: "Do this",
+      evidence: [{ path: "a.md", date: "2026-01-01" }],
+    };
+    const result = heuristics.renderHeuristic(h);
+    assert.ok(!result.includes("Anti-pattern"));
+  });
+
+  it("renders evidence count of 0 for missing evidence array", () => {
+    const h = {
+      id: "test-003",
+      title: "No Evidence",
+      confidence: "low",
+      pattern: "Something",
+    };
+    const result = heuristics.renderHeuristic(h);
+    assert.ok(result.includes("**Evidence:** 0 observations"));
+  });
+});
+
 describe("validateEntry scope edge cases", () => {
   function baseEntry() {
     return {

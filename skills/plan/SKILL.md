@@ -124,6 +124,8 @@ Read these as needed during task writing. Do not load everything upfront — loa
 
 11. **Boundary rules:** Read `.context-index/governance/boundaries.yaml` only if the directory exists. Extract boundary rules as additional planning constraints.
 
+12. **Heuristics:** Load module-scoped heuristics for inclusion in the plan. Derive the module slug from the spec's `charter:` frontmatter field. Run inline Node.js using `retrieveHeuristics` and `renderHeuristic` from `lib/heuristics.mjs`, passing the module slug and `heuristics.injection_limit` from manifest.yaml (if configured). If the call fails or returns empty, proceed without heuristics — heuristic injection is non-blocking. Store the rendered output for use in Step 5.
+
 ## Step 3: Constitution Validation
 
 Before writing any tasks, validate that the planned work stays within constitutional boundaries:
@@ -225,12 +227,28 @@ After the file structure and before individual tasks, include a context packet m
 - ADR: `.context-index/adrs/<relevant-adr>.md`
 - Cross-cutting: `.context-index/specs/cross-cutting/<relevant>.md`
 - Boundary rules: `governance/boundaries.yaml` (rules affecting task files)
+- Heuristics: <N> entries for module `<M>` (IDs: <id1>, <id2>, ...)
 
 ### Task 2 Context
 - ...
 ```
 
 Each packet entry lists the specific file AND the relevant section or criteria within it. `/adev:implement` assembles these packets before dispatching subagents and logs them to `.context-index/packets/` (gitignored) for debugging failed tasks. `/adev:recover` reads packets to diagnose root causes.
+
+### Heuristics Section
+
+If heuristics were loaded in Step 2, add a `## Heuristics` section to the plan after Context Packets and before Parallelization:
+
+```markdown
+## Heuristics
+
+> These heuristics are a snapshot from plan generation for review convenience.
+> At execution time, `/adev:implement` reads from the live heuristic store.
+
+<rendered heuristic blocks from Step 2>
+```
+
+If no heuristics are available, omit this section entirely.
 
 ### Parallelization Hints
 

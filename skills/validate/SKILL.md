@@ -245,7 +245,7 @@ Overall: PASS if all expectations met, FAIL if any expectation fails or if page 
 
 #### Overview
 
-On first-run PASS (all checks 1-11 passed and no prior validation report exists), extract a positive pattern heuristic at `medium` confidence via `lib/heuristics.mjs` `writeHeuristic`. This check is observational — it never blocks the overall validation result.
+On first-run PASS (all checks 1-11 passed and no prior validation report exists), extract a positive pattern heuristic at `medium` confidence via `lib/heuristics.mjs`. This check is observational — it never blocks the overall validation result.
 
 #### Spec-Slug Derivation Rule
 
@@ -306,7 +306,18 @@ Priority order, first match wins:
 
 #### Confidence Rationale
 
-Initial `confidence: medium` is used (a stronger signal than `/adev:recover`'s `low`) because first-run PASS validates all 11 checks at once. The helper's absolute-threshold auto-promotion will raise the entry to `high` at the 3rd distinct-path evidence entry — print whatever confidence the helper returns from `writeHeuristic`, not the caller-supplied input.
+Initial `confidence: medium` is used (a stronger signal than `/adev:recover`'s `low`) because first-run PASS validates all 11 checks at once. The helper's absolute-threshold auto-promotion will raise the entry to `high` at the 3rd distinct-path evidence entry — print whatever confidence the helper returns from the write call, not the caller-supplied input.
+
+#### Contradiction Scan (before write)
+
+Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
+
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
+3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<validation-report-path>', date: '<today>', source: 'validation' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
+4. If no contradiction is detected, proceed directly to writeHeuristic.
+
+This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `/adev:retro` consolidation is the backstop for missed contradictions.
 
 #### Inline Node Invocation
 

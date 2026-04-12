@@ -80,6 +80,14 @@ Read `.context-index/specs/features/**/*.plan.md` that were executed in the anal
 
 If `--charter <module>` was provided, only read plans under `.context-index/specs/features/<module>/`.
 
+### 1.7 Heuristics
+
+Read heuristics by iterating over module slugs from `manifest.yaml` `modules[].slug` plus `_global`. For each module, call `readHeuristics(projectRoot, { module: slug })` via inline Node.js (importing from `lib/heuristics.mjs`). Record each entry's `id`, `scope`, `confidence`, `evidence[]` count, `contradicted-by[]` count, `created`, and `updated` dates.
+
+Also scan `.context-index/memory/heuristics/archive/` for recently archived entries (where `archived` date falls within the analysis range). Record their `archivedReason` for the health analysis.
+
+If the heuristics directory does not exist or `readHeuristics` throws, note "No heuristics found" and proceed. The consolidation steps (Heuristic Health in Step 2 and Heuristic Consolidation in Step 3) are skipped when no heuristics are gathered.
+
 ## Step 2: Analyze Patterns
 
 Compute metrics and identify patterns from the gathered data.
@@ -128,6 +136,17 @@ Compute metrics and identify patterns from the gathered data.
 - **Plan adherence:** For each executed plan, compare the files listed in the plan's "File Structure" section against the files actually changed in commits.
 - **Unplanned files:** Files changed that were not listed in any plan. High counts indicate scope creep or incomplete planning.
 - **Plan accuracy:** Percentage of planned files that were actually touched vs. files touched that were not planned.
+
+### Heuristic Health
+
+If heuristics were gathered in Step 1.7, compute:
+
+- **Total heuristics** by scope and confidence level
+- **New heuristics in period:** entries whose `created` date falls within the analysis range
+- **Stale heuristics:** entries whose `updated` date is older than `heuristics.staleness_days` from manifest.yaml (default 90 days)
+- **Contradicted heuristics:** entries with 1+ items in `contradicted-by[]`
+- **Duplicate candidates:** entries within the same scope whose `title` or `pattern` text has high semantic overlap (look for entries describing the same lesson in different words)
+- **Promotion candidates:** entries with 2+ distinct-path evidence entries that remain at `low` confidence, or 3+ at `medium` (should have been auto-promoted — may indicate a store bug)
 
 ## Step 3: Generate Recommendations
 
@@ -178,6 +197,26 @@ If tasks in a particular domain had high failure rates and no specialist exists 
 
 Recommendation: "Consider creating a '<domain>' specialist — N tasks in this area had validation failures."
 
+### Heuristic Consolidation
+
+If heuristics were gathered in Step 1.7:
+
+**Stale heuristics:** For each stale heuristic found in Step 2:
+
+> Recommendation: "Archive stale heuristic '<id>' in scope '<scope>' — last updated <date>, <N> days ago. Reason: staleness."
+
+**Duplicate candidates:** For each pair of duplicate candidates:
+
+> Recommendation: "Merge duplicate heuristics '<id1>' and '<id2>' in scope '<scope>' — both describe: '<shared pattern summary>'. Keep the one with higher evidence count, archive the other with reason 'merged-duplicate'."
+
+**Contradicted heuristics:** For each heuristic with exactly 1 contradiction:
+
+> Recommendation: "Review contradicted heuristic '<id>' — 1 contradiction recorded. A second contradiction will auto-archive it. Verify whether the contradiction is valid."
+
+**Promotion candidates:** For each promotion anomaly:
+
+> Recommendation: "Heuristic '<id>' has <N> evidence entries but confidence is still '<level>'. Expected auto-promotion to '<expected>'. Investigate whether evidence paths are truly distinct."
+
 ## Step 4: Auto-Apply (if --auto-apply)
 
 When `--auto-apply` is passed, apply low-risk improvements that do not modify code or specs. These are informational updates only.
@@ -190,12 +229,17 @@ When `--auto-apply` is passed, apply low-risk improvements that do not modify co
 
 3. **Update hygiene report.** If `.context-index/hygiene/drift-report.md` exists, append a "Retro Findings" section with the key metrics and top recommendations. This makes retro findings visible to the next `/adev:hygiene` run.
 
+4. **Archive stale heuristics.** For each heuristic whose `updated` date is older than `heuristics.staleness_days` from manifest.yaml (default 90 days), call `archiveHeuristic(projectRoot, id, 'stale')` via inline Node.js (importing from `lib/heuristics.mjs`). Log progress: "Archived N/M stale heuristics". If `archiveHeuristic` throws (e.g., `HEURISTICS_ARCHIVE_CONFLICT`), log a warning per entry and continue.
+
 **Actions NOT taken (require explicit user action):**
 
 - Constitution amendments (too impactful for auto-apply)
 - Specialist creation (requires design decisions)
 - Spec template changes (affects future specs)
 - Any file modifications outside `.context-index/hygiene/`
+- Duplicate merging (requires human judgment to determine which entry to keep)
+- Heuristic promotion (may indicate a legitimate edge case, not a bug)
+- Contradiction resolution (requires domain knowledge)
 
 ## Step 5: Write Report
 
@@ -260,6 +304,16 @@ If `--charter <module>` was provided, save to `.context-index/hygiene/retros/<en
 ## Specialist Effectiveness
 
 <routed vs generic task comparison, quality correlation>
+
+## Heuristic Health
+
+- **Total heuristics:** N (by scope: <scope1>: N, <scope2>: N, _global: N)
+- **Confidence distribution:** high: N, medium: N, low: N
+- **New in period:** N
+- **Stale (>90d):** N (archived: N if --auto-apply)
+- **Contradicted:** N
+- **Duplicate candidates:** N
+- **Promotion anomalies:** N
 
 ## Recommendations
 
