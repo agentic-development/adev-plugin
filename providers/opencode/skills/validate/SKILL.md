@@ -132,6 +132,29 @@ If Playwright is available:
 4. Baseline check (page loads, no blank screen)
 5. Dark mode check (if applicable)
 
+### Check 12: Success Heuristic Extraction
+
+On first-run PASS (all checks 1-11 passed and no prior validation report exists), extract a positive pattern heuristic at `medium` confidence via `lib/heuristics.mjs`. This check is observational — it never blocks the overall validation result.
+
+Derive the heuristic `scope` from the spec's `charter:` frontmatter field. If absent, fall back to `_global`.
+
+Initial `confidence: medium` is used because first-run PASS validates all 11 checks at once. The helper's auto-promotion will raise the entry to `high` at the 3rd distinct-path evidence entry — use whatever confidence the helper returns from the write call.
+
+#### Contradiction Scan (before write)
+
+Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
+
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
+3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<validation-report-path>', date: '<today>', source: 'validation' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
+4. If no contradiction is detected, proceed directly to writeHeuristic.
+
+This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `adev:retro` consolidation is the backstop for missed contradictions.
+
+Run the extraction via an inline Node invocation that imports `writeHeuristic` from `./lib/heuristics.mjs` and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL.
+
+**Check 12 never changes the overall validation result.** SKIP is informational.
+
 ## Report Format
 
 Write to `.context-index/specs/features/<module>/<spec-slug>-validation.md`:

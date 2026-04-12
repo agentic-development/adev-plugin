@@ -57,6 +57,7 @@ Read these files in order:
 9. **Cross-cutting specs:** `.context-index/specs/cross-cutting/*.md`
 10. **Samples:** `.context-index/samples/` if it exists
 11. **Boundary rules:** `.context-index/governance/boundaries.yaml` if it exists
+12. **Heuristics:** Load module-scoped heuristics for inclusion in the plan. Derive the module slug from the spec's `charter:` frontmatter field. Run inline Node.js using `retrieveHeuristics` and `renderHeuristic` from `lib/heuristics.mjs`, passing the module slug and `heuristics.injection_limit` from manifest.yaml (if configured). If the call fails or returns empty, proceed without heuristics — heuristic injection is non-blocking. Store the rendered output for use in Step 5.
 
 ## Step 3: Constitution Validation
 
@@ -128,7 +129,23 @@ Save the plan adjacent to the spec:
 - Charter: `.context-index/specs/features/<module>/charter.md` (capability: <name>)
 - Sample: `.context-index/samples/<pattern>-sample.md`
 - ADR: `.context-index/adrs/<relevant-adr>.md`
+- Heuristics: <N> entries for module `<M>` (IDs: <id1>, <id2>, ...)
 ```
+
+### Heuristics Section
+
+If heuristics were loaded in Step 2, add a `## Heuristics` section to the plan after Context Packets and before Task Structure:
+
+```markdown
+## Heuristics
+
+> These heuristics are a snapshot from plan generation for review convenience.
+> At execution time, `adev:implement` reads from the live heuristic store.
+
+<rendered heuristic blocks from Step 2>
+```
+
+If no heuristics are available, omit this section entirely.
 
 ### Task Structure
 
