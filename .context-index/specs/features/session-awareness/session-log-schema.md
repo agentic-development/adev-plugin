@@ -8,11 +8,11 @@ charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
 source-manifest:
-  sha: "54826b2"
+  sha: "bc8902f"
   files:
     - hooks/session-capture.sh
     - tests/hooks/session-capture.test.mjs
-  computed-at: "2026-04-12T11:47:08.347Z"
+  computed-at: "2026-04-12T18:30:00.000Z"
 ---
 
 # Live Spec: Session Log Schema
