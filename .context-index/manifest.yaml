@@ -7,6 +7,7 @@
 
 project:
   name: "adev-plugin"
+  adev_version: "0.13.0"
   description: "Claude Code plugin and CLI implementing a full-lifecycle Agentic Development Framework"
   type: cli
 
@@ -92,6 +93,7 @@ modules:
       - skills/codehealth/
       - skills/sample/
       - skills/retro/
+      - skills/reconcile/
 
 # ============================================================================
 # External Contexts
@@ -129,6 +131,18 @@ completion:
 
 tasks:
   backend: file
+
+# ============================================================================
+# Provenance Tracking
+# ============================================================================
+
+provenance:
+  # require_hooks: when true, CI rejects commits missing Author-type or Operator trailers.
+  # Hooks inject these locally; this catches --no-verify and hookless clones at PR time.
+  require_hooks: true
+  required_trailers:
+    - Author-type
+    - Operator
 
 # ============================================================================
 # Repo Map Configuration

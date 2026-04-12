@@ -32,7 +32,7 @@ The task-management module provides persistent, cross-skill issue tracking for t
 - External tracker sync (Jira, Linear, GitHub Issues)
 - Issue assignment to specific agents or users
 - Time tracking or estimation
-- Integration into adev:status, adev:recover, adev:hygiene, or compaction hooks (Phase 2)
+
 
 ### Dependencies
 
@@ -89,6 +89,15 @@ The task-management module provides persistent, cross-skill issue tracking for t
 | Recover Integration | adev:recover reads/resets stuck issues | nice-to-have | 2 | — |
 | Hygiene Audit | adev:hygiene audits stale issues, orphaned boards | nice-to-have | 2 | — |
 | Compaction Context | Inject claimed issue context on session compaction | nice-to-have | 2 | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Status Integration | adev:status reads issue board for progress dashboard | Phase 2 | — |
+| Recover Integration | adev:recover reads/resets stuck issues | Phase 2 | — |
+| Hygiene Audit | adev:hygiene audits stale issues, orphaned boards | Phase 2 | — |
+| Compaction Context | Inject claimed issue context on session compaction | Phase 2 | — |
 
 ## Interface Contracts
 

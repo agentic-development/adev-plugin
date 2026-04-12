@@ -7,6 +7,12 @@ revision: 1
 charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
+source-manifest:
+  sha: "f078dad"
+  files:
+    - templates/manifest-template.yaml
+    - tests/templates/manifest-template.test.mjs
+  computed-at: "2026-04-12T11:47:08.344Z"
 ---
 
 # Live Spec: Configurable Reminder Interval

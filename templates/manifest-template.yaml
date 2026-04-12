@@ -154,6 +154,23 @@ completion:
 # Controls how /adev:plan and /adev:implement track issue progress.
 # ============================================================================
 
+# ============================================================================
+# Provenance Tracking
+# ============================================================================
+
+provenance:
+  # require_hooks: when true, CI rejects commits missing Author-type or Operator trailers.
+  # Hooks inject these locally; this catches --no-verify and hookless clones at PR time.
+  # Set to false to disable CI enforcement (hooks still inject trailers locally).
+  require_hooks: true
+  required_trailers:
+    - Author-type
+    - Operator
+
+# ============================================================================
+# Task Management
+# ============================================================================
+
 tasks:
   # Backend for issue tracking:
   #   file  — markdown table in .context-index/tasks/ (default, zero setup)

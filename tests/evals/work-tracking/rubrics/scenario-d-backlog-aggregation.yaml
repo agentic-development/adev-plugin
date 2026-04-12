@@ -1,0 +1,85 @@
+# Rubric: scenario-d — Backlog aggregation across 7+ artifact types
+# Target: tests/evals/work-tracking/fixture
+# Difficulty: HARD — must aggregate from charters, specs, issue board, and code provenance
+
+skill: adev-status-backlog
+scenario: scenario-d-backlog-aggregation
+
+required_elements:
+  # --- Unplanned specs ---
+  - id: session_mgmt_unplanned
+    description: "session-mgmt.md listed as unplanned (review-passed, no plan)"
+    match_pattern: "session.mgmt.*unplanned|session.mgmt.*no.*plan|session.management.*review.passed"
+
+  # --- Draft specs ---
+  - id: metrics_draft
+    description: "metrics.md listed as draft spec"
+    match_pattern: "metrics.*draft|draft.*metrics"
+
+  # --- Open issues ---
+  - id: issue_4_open
+    description: "issue-4 listed as open issue"
+    match_pattern: "issue.4.*(open|Metrics.*layout)|Metrics.*layout.*(open|issue.4)"
+
+  # --- Deferred issues ---
+  - id: issue_5_deferred_stale
+    description: "issue-5 listed as deferred with staleness indicator"
+    match_pattern: "issue.5.*(deferred|stale)|Chart.*widget.*(deferred|stale)|deferred.*(2[0-9]|stale|old)"
+
+  # --- Stale epics ---
+  - id: epic_1_stale
+    description: "epic-1 flagged as stale (all issues closed, epic still open)"
+    match_pattern: "epic.1.*(stale|all.*closed|should.*close)|Auth.*(stale|all.*closed)"
+
+  # --- Charter v2/future capabilities ---
+  - id: sso_v2
+    description: "SSO Integration listed as v2 capability from auth charter"
+    match_pattern: "SSO.*v2|SSO.*future|SSO.*deferred|SSO.*should.have"
+
+  - id: oauth_v2
+    description: "OAuth Providers listed as v2/nice-to-have"
+    match_pattern: "OAuth.*(v2|nice.to.have|future)"
+
+  - id: realtime_v2
+    description: "Real-time Streaming listed as v2 from dashboard charter"
+    match_pattern: "[Rr]eal.time.*v2|[Rr]eal.time.*future|[Ss]treaming.*v2"
+
+  - id: custom_dashboard_v2
+    description: "Custom Dashboard Builder listed as v2"
+    match_pattern: "[Cc]ustom.*[Dd]ashboard.*(v2|future)|[Dd]ashboard.*[Bb]uilder.*(v2|future)"
+
+  # --- Cross-reference: untraced code matches capability ---
+  - id: orphan_sso_crossref
+    description: "lib/orphan.mjs cross-referenced with SSO capability"
+    match_pattern: "orphan\\.mjs.*SSO|SSO.*orphan\\.mjs|sso.*untraced.*code|untraced.*sso"
+
+  # --- Orphaned planRef ---
+  - id: issue_4_orphaned_ref
+    description: "issue-4 flagged for orphaned planRef (file doesn't exist)"
+    match_pattern: "issue.4.*(orphan|missing|nonexistent|broken).*plan|planRef.*(orphan|missing|not.*exist)"
+
+  # --- Total count ---
+  - id: total_count
+    description: "Includes total count of backlog items"
+    match_pattern: "total.*\\d+|\\d+.*total|\\d+.*items|backlog.*\\d+"
+
+quality_dimensions:
+  - id: completeness
+    description: "Covers all 7+ source types without missing any category"
+    weight: 3.0
+
+  - id: prioritization
+    description: "Items grouped or ranked by priority/urgency"
+    weight: 2.5
+
+  - id: cross_referencing
+    description: "Connects related items across sources (e.g., orphan code + charter capability)"
+    weight: 2.5
+
+  - id: no_hallucination
+    description: "Does not invent backlog items not present in the fixture"
+    weight: 2.0
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

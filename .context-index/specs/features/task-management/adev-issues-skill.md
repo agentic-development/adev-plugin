@@ -8,6 +8,14 @@ revision: 1
 charter-revision: 2
 created: 2026-03-31
 updated: 2026-04-01
+source-manifest:
+  sha: "45734c6"
+  files:
+    - skills/debug/SKILL.md
+    - skills/issues/SKILL.md
+    - skills/status/SKILL.md
+    - skills/using-adev/SKILL.md
+  computed-at: "2026-04-12T11:48:02.760Z"
 ---
 
 ## Behavioral Contract

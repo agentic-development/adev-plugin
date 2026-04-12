@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Git commit-msg hook: Lifecycle enforcement
+#
+# Validates that commits touching manifest-claimed files include a Spec: trailer.
+# - Files claimed by a source manifest WITHOUT Spec: trailer → blocked (exit 1)
+# - Unclaimed files WITHOUT Spec: trailer → allowed, Lifecycle: untracked appended
+# - Files WITH Spec: trailer → always allowed
+#
+# Uses buildReverseIndex via a lightweight inline scan of spec frontmatter.
+
+set -uo pipefail
+
+COMMIT_MSG_FILE="${1:-}"
+
+if [ -z "$COMMIT_MSG_FILE" ] || [ ! -f "$COMMIT_MSG_FILE" ]; then
+  exit 0
+fi
+
+SPECS_DIR=".context-index/specs/features"
+
+# Exit silently if no specs directory
+if [ ! -d "$SPECS_DIR" ]; then
+  exit 0
+fi
+
+# Check if Spec: trailer already exists
+if grep -q "^Spec:" "$COMMIT_MSG_FILE" 2>/dev/null; then
+  exit 0
+fi
+
+# Get staged files (only tracked content, not deletes)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null) || STAGED_FILES=""
+
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+# Build reverse index and check staged files against it
+RESULT=$(node -e '
+  const fs = require("fs");
+  const path = require("path");
+
+  // Build reverse index: scan all spec .md files for source-manifest.files
+  const specsDir = process.argv[1];
+  const index = new Map();
+
+  function scanDir(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) { scanDir(full); continue; }
+      if (!e.name.endsWith(".md")) continue;
+      try {
+        const content = fs.readFileSync(full, "utf8");
+        const fm = content.match(/^---\n([\s\S]*?)\n---/);
+        if (!fm) continue;
+        const sm = fm[1].match(/source-manifest:\s*\n((?:\s{2,}.+\n?)*)/);
+        if (!sm) continue;
+        const files = [];
+        for (const m of sm[1].matchAll(/^\s+-\s+(.+)$/gm)) {
+          const val = m[1].trim();
+          if (!val.includes(":")) files.push(val);
+        }
+        for (const f of files) index.set(f, full);
+      } catch {}
+    }
+  }
+
+  scanDir(specsDir);
+
+  // Check staged files
+  const staged = process.argv[2].split("\n").filter(Boolean);
+  const claimed = [];
+  for (const f of staged) {
+    if (index.has(f)) {
+      claimed.push(f + " -> " + path.relative(".", index.get(f)));
+    }
+  }
+
+  if (claimed.length > 0) {
+    console.log("BLOCKED");
+    for (const c of claimed) console.log(c);
+  } else {
+    console.log("UNTRACKED");
+  }
+' "$SPECS_DIR" "$STAGED_FILES" 2>/dev/null) || RESULT="UNTRACKED"
+
+FIRST_LINE=$(echo "$RESULT" | head -1)
+
+if [ "$FIRST_LINE" = "BLOCKED" ]; then
+  echo ""
+  echo "COMMIT BLOCKED: These files are tracked by a spec's source manifest"
+  echo "but this commit has no Spec: trailer."
+  echo ""
+  echo "$RESULT" | tail -n +2
+  echo ""
+  echo "Either:"
+  echo "  1. Add a Spec: trailer to reference the relevant spec"
+  echo "  2. Use --no-verify to bypass (adds Lifecycle: untracked)"
+  echo ""
+  exit 1
+fi
+
+if [ "$FIRST_LINE" = "UNTRACKED" ]; then
+  # Append Lifecycle: untracked marker if not already present
+  if ! grep -q "^Lifecycle:" "$COMMIT_MSG_FILE" 2>/dev/null; then
+    printf '\nLifecycle: untracked\n' >> "$COMMIT_MSG_FILE"
+  fi
+fi
+
+# --- Fallback trailer injection ---
+# Ensure Author-type and Operator are always present on every commit.
+# prepare-commit-msg injects these from JSONL when available.
+# This fallback covers: raw git commits, missing JSONL, fresh clones.
+
+if ! grep -q "^Author-type:" "$COMMIT_MSG_FILE" 2>/dev/null; then
+  printf 'Author-type: human\n' >> "$COMMIT_MSG_FILE"
+fi
+
+if ! grep -q "^Operator:" "$COMMIT_MSG_FILE" 2>/dev/null; then
+  OS_USER="${USER:-${USERNAME:-unknown}}"
+  MODE="local"
+  [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] && MODE="remote"
+  printf "Operator: ${OS_USER}/${MODE}\n" >> "$COMMIT_MSG_FILE"
+fi
+
+exit 0

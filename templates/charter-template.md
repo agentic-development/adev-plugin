@@ -76,6 +76,16 @@ updated: {{ date }}
 |-----------|-------------|----------|-------|--------|
 | ... | ... | must-have / should-have / nice-to-have | | — |
 
+## Deferred Capabilities
+
+<!-- Capabilities explicitly deferred to later phases or out of scope with structured tracking.
+     Migrated from Out of Scope when a capability has a known target phase or dependency.
+     This table enables reliable backlog extraction by /adev:status --backlog. -->
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+<!-- | Example capability | Low priority, manual workaround exists | v2 | — | -->
+
 ## Interface Contracts
 
 <!-- How other modules interact with this one. Define the public surface area. -->

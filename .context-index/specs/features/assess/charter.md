@@ -69,6 +69,12 @@ Evaluate codebase readiness for agentic development using static file inspection
 | Detect Mode | Auto-detect if codebase has .context-index/ for mode selection | must-have | review-passed |
 | Configurable Weights | Allow adjusting dimension weights | nice-to-have | — |
 
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Configurable Weights | Allow adjusting dimension weights | v2 | Dimension definitions stable |
+
 ## Interface Contracts
 
 ### Exposed APIs
