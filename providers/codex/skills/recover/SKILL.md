@@ -119,6 +119,33 @@ Task too large for single dispatch.
 <What should change>
 ```
 
+### Step 7: Extract Heuristic
+
+After the recovery record is written in Step 6, extract a transferable heuristic from the root-cause diagnosis via `lib/heuristics.mjs`. This step is non-blocking — extraction failures log a warning and allow `$adev:recover` to exit normally.
+
+Derive scope from the active plan path (module slug from `features/<module>/` segment, fall back to `_global`). Initial confidence: `low`.
+
+Map the confirmed diagnosis category to `pattern` and `antiPattern` fields:
+- **MISSING_CONTEXT** — pattern: context that should be included in future packets. antiPattern: the assumption that failed.
+- **AMBIGUOUS_SPEC** — pattern: the language clarification needed. antiPattern: paraphrased ambiguous phrase (never verbatim).
+- **CONSTRAINT_CONFLICT** — pattern: constraint ordering rule. antiPattern: the conflict that triggered the failure.
+- **NOVEL_PROBLEM** — pattern: new pattern or tool introduced. antiPattern: empty.
+- **TOOL_FAILURE** — pattern: pre-flight check that prevents the failure. antiPattern: the tool state that caused the crash.
+- **BUDGET_EXHAUSTION** — pattern: task-splitting rule. antiPattern: the task-size signal that was missed.
+
+#### Contradiction Scan (before write)
+
+Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
+
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
+3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<recovery-record-path>', date: '<today>', source: 'recovery' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
+4. If no contradiction is detected, proceed directly to writeHeuristic.
+
+This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `$adev:retro` consolidation is the backstop for missed contradictions.
+
+Run extraction via inline Node.js importing `writeHeuristic` from `./lib/heuristics.mjs`, wrapped in try/catch so extraction failures degrade to a stderr warning without blocking the recovery workflow.
+
 ## After Recovery
 
 ```

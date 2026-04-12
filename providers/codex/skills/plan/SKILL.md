@@ -42,6 +42,7 @@ Read:
 8. Cross-cutting specs
 9. Samples
 10. Boundary rules
+11. **Heuristics:** Load module-scoped heuristics for inclusion in the plan. Derive the module slug from the spec's `charter:` frontmatter field. Run inline Node.js using `retrieveHeuristics` and `renderHeuristic` from `lib/heuristics.mjs`, passing the module slug and `heuristics.injection_limit` from manifest.yaml (if configured). If the call fails or returns empty, proceed without heuristics — heuristic injection is non-blocking. Store the rendered output for use in Step 5.
 
 ## Step 3: Constitution Validation
 
@@ -93,6 +94,35 @@ Each task follows TDD:
 - [ ] **Verify test passes**
 - [ ] **Commit**
 ```
+
+### Context Packets
+
+After the file structure and before individual tasks, include a context packet manifest per task:
+
+```markdown
+## Context Packets
+
+### Task 1 Context
+- Spec: `.context-index/specs/features/<module>/<task>.md` (criteria 1-3)
+- Charter: `.context-index/specs/features/<module>/charter.md` (capability: <name>)
+- Sample: `.context-index/samples/<pattern>-sample.md`
+- Heuristics: <N> entries for module `<M>` (IDs: <id1>, <id2>, ...)
+```
+
+### Heuristics Section
+
+If heuristics were loaded in Step 2, add a `## Heuristics` section to the plan after Context Packets and before Parallelization:
+
+```markdown
+## Heuristics
+
+> These heuristics are a snapshot from plan generation for review convenience.
+> At execution time, `$adev:implement` reads from the live heuristic store.
+
+<rendered heuristic blocks from Step 2>
+```
+
+If no heuristics are available, omit this section entirely.
 
 ## Step 6: Plan Review Loop
 

@@ -32,6 +32,16 @@ Read once at start:
 7. Boundary rules
 8. Routing tags
 9. Completion policy
+10. Model tier resolution: read `model_tiers` from `.context-index/platform-context.yaml`. Use `capable` tier for all subagent dispatches.
+11. **Heuristics:** Load module-scoped heuristics for injection into context packets.
+    Derive the module slug from the plan's spec `charter:` frontmatter field.
+    Run inline Node.js:
+    ```bash
+    node -e "import { retrieveHeuristics, renderHeuristic } from './lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    ```
+    Where `<module>` is the charter module slug and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
+    If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
+    Store the `rendered` output for use in Step 2a.
 
 ## Step 2: Per-Task Execution
 
@@ -41,6 +51,12 @@ For each task in dependency order:
 
 1. Read task's `context_packet` section
 2. Assemble packet, write to `.context-index/packets/<task-slug>.md`
+3. If no context_packet section exists in the plan, assemble a default packet from: constitution excerpt, spec acceptance criteria for this task, charter capability, and any samples matching the task's file patterns.
+4. **Heuristics injection:** If heuristics were loaded in Step 1 (count > 0), append a `## Heuristics` section to the context packet with the rendered blocks from Step 1. Prefix the section with the advisory preamble:
+
+   > The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules.
+
+   All tasks in the same plan receive the same heuristic set. If no heuristics are available, omit this section entirely — do not emit an empty placeholder.
 
 ### 2b. Specialist Routing
 
