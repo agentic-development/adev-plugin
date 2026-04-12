@@ -85,6 +85,25 @@ If UI files modified:
 
 Requires Playwright MCP. BLOCK if not available.
 
+### Check 12: Success Heuristic Extraction
+
+On first-run PASS (all checks 1-11 passed and no prior validation report exists), extract a positive pattern heuristic at `medium` confidence via `lib/heuristics.mjs`. This check is observational — it never blocks the overall validation result.
+
+Derive scope from the spec's `charter:` frontmatter field (fall back to `_global`). Derive id as `<spec-slug>-<hash>` using SHA-256 of the normalized spec path + pattern text.
+
+#### Contradiction Scan (before write)
+
+Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
+
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
+3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<validation-report-path>', date: '<today>', source: 'validation' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
+4. If no contradiction is detected, proceed directly to writeHeuristic.
+
+This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `$adev:retro` consolidation is the backstop for missed contradictions.
+
+Run extraction via inline Node.js importing `writeHeuristic` from `./lib/heuristics.mjs`, wrapped in try/catch so any failure degrades to SKIP without affecting PASS/FAIL.
+
 ## Report Format
 
 ```markdown
