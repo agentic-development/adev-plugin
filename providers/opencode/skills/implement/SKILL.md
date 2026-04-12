@@ -35,6 +35,16 @@ Read these files once at the start:
 7. **Boundary rules:** `.context-index/governance/boundaries.yaml` if it exists
 8. **Routing tags:** If tasks have routing annotations from `adev:route`
 9. **Completion policy:** Read `completion.merge_policy` from manifest.yaml
+10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`. All subagent dispatches use the `capable` tier. If absent, use hardcoded defaults and log a one-time advisory.
+11. **Heuristics:** Load module-scoped heuristics for injection into context packets.
+    Derive the module slug from the plan's spec `charter:` frontmatter field.
+    Run inline Node.js:
+    ```bash
+    node -e "import { retrieveHeuristics, renderHeuristic } from './lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    ```
+    Where `<module>` is the charter module slug and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
+    If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
+    Store the `rendered` output for use in Step 2a.
 
 Write the active plan path to `.context-index/hygiene/.active-plan`.
 
@@ -52,6 +62,11 @@ Before dispatching:
 2. For each listed file, read and extract the relevant section
 3. Write the assembled packet to `.context-index/packets/<task-slug>.md`
 4. If no context_packet section exists, assemble a default packet
+5. **Heuristics injection:** If heuristics were loaded in Step 1 (count > 0), append a `## Heuristics` section to the context packet with the rendered blocks from Step 1. Prefix the section with the advisory preamble:
+
+   > The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules.
+
+   All tasks in the same plan receive the same heuristic set. If no heuristics are available, omit this section entirely — do not emit an empty placeholder.
 
 **Routing tag check:**
 
