@@ -52,6 +52,33 @@ printf '%s' "$STDIN_JSON" | node -e '
     };
     if (sessionId) entry.session_id = sessionId;
 
+    // Enrich with issue/epic from execution state (if active)
+    try {
+      const statePath = path.join(".context-index", ".execution-state.md");
+      const stateRaw = fs.readFileSync(statePath, "utf8");
+      const fmMatch = stateRaw.match(/^---\n([\s\S]*?)\n---/);
+      if (fmMatch) {
+        const fm = fmMatch[1];
+        const statusM = fm.match(/status:\s*(\S+)/);
+        if (statusM && statusM[1] === "active") {
+          const issueM = fm.match(/issueBinding:\s*(\S+)/);
+          if (issueM && issueM[1]) entry.issue = issueM[1];
+          // Extract epic from issue board if issue is bound
+          if (entry.issue) {
+            try {
+              const boardPath = path.join(".context-index", "tasks", "tasks.md");
+              const board = fs.readFileSync(boardPath, "utf8");
+              const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
+              if (issueBlock) {
+                const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
+                if (epicM && epicM[1]) entry.epic = epicM[1];
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+
     // Ensure directory and append
     const dir = ".context-index";
     const file = path.join(dir, ".session-tracking.jsonl");

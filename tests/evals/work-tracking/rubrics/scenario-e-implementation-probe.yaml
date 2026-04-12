@@ -1,0 +1,60 @@
+# Rubric: scenario-e — Implementation probe detecting already-implemented tasks
+# Target: tests/evals/work-tracking/fixture
+# Difficulty: MEDIUM — must check file existence and test validity against plan tasks
+
+skill: adev-implement-probe
+scenario: scenario-e-implementation-probe
+
+required_elements:
+  # --- Login spec: already implemented ---
+  - id: login_files_exist
+    description: "Detects lib/login.mjs exists for login spec tasks"
+    match_pattern: "login\\.mjs.*(exist|found|present|already)|already.*(implement|exist).*login"
+
+  - id: login_tests_exist
+    description: "Detects tests/login.test.mjs exists for login spec task 3"
+    match_pattern: "login\\.test\\.mjs.*(exist|found|present|already)"
+
+  - id: login_recommend_skip
+    description: "Recommends skipping or marking login tasks as already implemented"
+    match_pattern: "(skip|already.*implement|mark.*closed|mark.*done).*login|login.*(skip|already.*implement)"
+
+  # --- Session mgmt: no plan, no code ---
+  - id: session_mgmt_no_plan
+    description: "Reports session-mgmt.md has no plan"
+    match_pattern: "session.mgmt.*(no.*plan|unplanned)|no.*plan.*session.mgmt"
+
+  - id: session_mgmt_no_code
+    description: "Reports no detectable implementation files for session-mgmt"
+    match_pattern: "session.mgmt.*(no.*code|no.*implementation|not.*implement)|no.*(code|implement).*session.mgmt"
+
+  # --- Metrics: draft, no code ---
+  - id: metrics_not_implemented
+    description: "Does NOT claim metrics spec is implemented"
+    match_pattern: "metrics.*(draft|no.*code|not.*implement|no.*plan)|draft.*metrics"
+
+  # --- Distinguishes code-exists from plan-exists ---
+  - id: distinguishes_code_vs_plan
+    description: "Distinguishes 'code exists and matches plan' from 'no plan exists'"
+    match_pattern: "(plan.*exist|has.*plan).*(code.*exist|file.*found)|(code.*exist|file.*found).*(no.*plan|plan.*miss)"
+
+quality_dimensions:
+  - id: probe_accuracy
+    description: "Correctly identifies which tasks are already implemented vs not"
+    weight: 3.0
+
+  - id: test_validation
+    description: "Checks test files exist or attempts to run them"
+    weight: 2.5
+
+  - id: no_false_positives
+    description: "Does not claim unimplemented specs are implemented"
+    weight: 2.5
+
+  - id: actionability
+    description: "Clear recommendation per spec: implement, skip, or needs plan first"
+    weight: 2.0
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

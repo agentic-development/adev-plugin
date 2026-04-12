@@ -1,0 +1,65 @@
+# Rubric: scenario-b — Lifecycle bypass detection via manifest cross-reference
+# Target: tests/evals/work-tracking/fixture
+# Difficulty: HARD — must distinguish manifest-claimed drift from unclaimed untracked
+
+skill: provenance-audit
+scenario: scenario-b-lifecycle-bypass
+
+required_elements:
+  # --- Manifest-claimed drift detection ---
+  - id: drifted_flagged
+    description: "lib/drifted.mjs flagged as drifted (manifest-claimed but post-impl commit lacks Spec:)"
+    match_pattern: "drifted\\.mjs.*(drift|DRIFT|manifest.*claim|claimed.*modified)"
+
+  - id: drifted_spec_link
+    description: "Identifies dashboard/widgets.md as the claiming spec for drifted.mjs"
+    match_pattern: "widgets\\.md|dashboard.*widgets"
+
+  - id: drifted_offending_commit
+    description: "Identifies the untracked commit on drifted.mjs (fix: patch metrics edge case)"
+    match_pattern: "patch metrics|fix:.*metrics|edge case"
+
+  # --- Unclaimed untracked detection ---
+  - id: untraced_flagged
+    description: "lib/untraced.mjs flagged as untracked with no spec claiming it"
+    match_pattern: "untraced\\.mjs.*(untrack|no.*spec|unclaimed|no.*manifest)"
+
+  - id: orphan_flagged
+    description: "lib/orphan.mjs flagged as untracked with explicit Lifecycle: untracked marker"
+    match_pattern: "orphan\\.mjs.*(untrack|Lifecycle.*untracked|explicit.*marker)"
+
+  # --- No false positives ---
+  - id: login_not_flagged
+    description: "lib/login.mjs NOT flagged (all commits properly traced)"
+    match_pattern: "login\\.mjs.*(traced|compliant|OK|pass|clean)"
+
+  # --- Distinguishes types ---
+  - id: distinguishes_drift_from_untracked
+    description: "Report clearly separates manifest-claimed drift from unclaimed untracked"
+    match_pattern: "(drift|claimed).*(untrack|unclaim)|(manifest.*claim|source.manifest).*(untrack|no.*spec)"
+
+  # --- Recommendations ---
+  - id: actionable_recommendations
+    description: "Provides specific recommendations (update spec, create spec, mark intentional)"
+    match_pattern: "(update|create|stamp).*spec|mark.*intentional|review.*drift"
+
+quality_dimensions:
+  - id: drift_vs_untracked_clarity
+    description: "Clearly explains the difference between manifest-claimed drift and unclaimed code"
+    weight: 3.0
+
+  - id: no_false_positives
+    description: "No traced files incorrectly flagged as bypassed"
+    weight: 3.0
+
+  - id: actionability
+    description: "Each finding has a concrete recommended action"
+    weight: 2.0
+
+  - id: no_hallucination
+    description: "Does not invent findings or reference nonexistent files/commits"
+    weight: 2.0
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

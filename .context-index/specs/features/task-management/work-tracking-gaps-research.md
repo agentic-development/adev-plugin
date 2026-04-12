@@ -180,7 +180,7 @@ The gaps in Section 2 assume agents follow the lifecycle. In practice, they ofte
 **The fundamental tension:**
 - **Top-down artifacts** (charters → specs → plans → issues) describe *intent* — what should exist
 - **Bottom-up reality** (files → symbols → git history) describes *what actually exists*
-- **Source manifests** are the only bridge, but they only exist for the ~50% of specs that went through `/adev:implement`
+- **Source manifests** are the only bridge, but they only exist for ~8% of specs (8/105) that went through `/adev:implement`
 
 The key insight: **git history is the only artifact that's always accurate and can never go stale**. Every line of code permanently knows which commit created it. If commits carry lifecycle metadata (trailers), the provenance chain is embedded in immutable history.
 
@@ -190,10 +190,10 @@ The plumbing for git-based traceability already exists but isn't fully active:
 
 | Component | Status | Location |
 |-----------|--------|----------|
-| `prepare-commit-msg` hook | Exists but **inactive** (`core.hooksPath` not set) | `.githooks/prepare-commit-msg` |
-| `Spec:` trailer injection | Implemented in hook, reads session JSONL | `.githooks/prepare-commit-msg` |
-| `Plan-task:` trailer injection | Implemented in hook | `.githooks/prepare-commit-msg` |
-| `Session:` trailer injection | Implemented in hook | `.githooks/prepare-commit-msg` |
+| `prepare-commit-msg` hook | **Active** (`core.hooksPath` set to `.githooks` by `cli/index.mjs`) | `.githooks/prepare-commit-msg` |
+| `Spec:` trailer injection | **Active**, reads session JSONL | `.githooks/prepare-commit-msg` |
+| `Plan-task:` trailer injection | **Active** | `.githooks/prepare-commit-msg` |
+| `Session:` trailer injection | **Active** | `.githooks/prepare-commit-msg` |
 | Session JSONL capture | Active, fires on every tool use | `hooks/session-capture.sh` |
 | Post-commit session summary | Implemented | `.githooks/post-commit` |
 | `Issue:` trailer | **Not implemented** | — |
@@ -295,7 +295,7 @@ And enables queries like:
 
 #### Step 2: Activate the trailer pipeline
 
-- Configure `core.hooksPath` during `/adev:init` (the CLI already scaffolds `.githooks/` but doesn't always set the git config)
+- `core.hooksPath` is **already configured** by `cli/index.mjs` during `/adev:init` — no action needed
 - Add `Issue:` trailer to `prepare-commit-msg` (extract from JSONL entries with `issue` field, which was populated from execution state in Step 1)
 - Add `Author-type:` trailer to `prepare-commit-msg` (read provider from session JSONL; `human` if no `session_id`)
 
@@ -404,7 +404,7 @@ At the end of implementation, add a "feature completeness" checklist:
 
 | # | Improvement | Impact | Effort | Priority |
 |---|------------|--------|--------|----------|
-| 1 | Close session→issue link + activate trailer pipeline + `commit-msg` hook with selective blocking | Foundation for all provenance tracking; full bidirectional chain from code to issues | Low-Medium | CRITICAL |
+| 1 | Close session→issue link + extend trailer pipeline + `commit-msg` hook with selective blocking | Foundation for all provenance tracking; full bidirectional chain from code to issues (pipeline already active, needs Issue: + Author-type: trailers + commit-msg hook) | Low-Medium | CRITICAL |
 | 2 | Reverse file→spec index (`buildReverseIndex()`) | Enables commit-msg hook, provenance audit, and all spec↔code queries | Low | CRITICAL |
 | 3 | Code Provenance hygiene pass | Detects lifecycle bypass from code, not specs; classifies all files by trace status and author type | Medium | HIGH |
 | 4 | Enhance `/adev:status` with `--issue`, `--epic`, `--file`, `--backlog` modes | Unified view: issue mapping, file provenance, and aggregated backlog from 7+ sources | Medium | HIGH |
@@ -416,7 +416,7 @@ At the end of implementation, add a "feature completeness" checklist:
 
 ### Recommended Implementation Order
 
-1. **Close session→issue link + activate trailer pipeline** — enrich session JSONL with `issue`/`epic` from execution state, fix `core.hooksPath` in init, add `Issue:` + `Author-type:` trailers to `prepare-commit-msg`, add `commit-msg` validation hook with selective blocking and `Lifecycle: untracked` fallback
+1. **Close session→issue link + extend trailer pipeline** — enrich session JSONL with `issue`/`epic` from execution state (`core.hooksPath` already active), add `Issue:` + `Author-type:` trailers to `prepare-commit-msg`, add `commit-msg` validation hook with selective blocking and `Lifecycle: untracked` fallback
 2. **Reverse file→spec index** — `buildReverseIndex()` in `lib/source-manifest.mjs`, needed by commit-msg hook and all downstream queries
 3. **Code Provenance hygiene pass** — classify files as fully-traced / partially-traced / untraced, and by author type (agent vs human)
 4. **Enhance `/adev:status`** — add `--issue <id>`, `--epic <id>`, `--file <path>`, `--backlog` modes; aggregate provenance + board + charter deferred capabilities into unified views
@@ -470,9 +470,9 @@ How does the proposed approach handle real-world workflows? For each scenario: w
 
 **What happens:**
 
-1. **Source-manifest-stamped specs (~50%):** Run `verifyManifest()` per spec → reports MATCH (unchanged), DRIFT (files modified), or MISSING (files deleted) ✓
+1. **Source-manifest-stamped specs (~8%, 8/105):** Run `verifyManifest()` per spec → reports MATCH (unchanged), DRIFT (files modified), or MISSING (files deleted) ✓
 2. **For drifted files:** `git log --format='%(trailers)' -- <file>` shows which commits changed it, whether they had lifecycle trailers, and who authored them (agent/human) ✓
-3. **For unstamped specs (~50%):** No source manifest → can't verify code match automatically ✗
+3. **For unstamped specs (~92%, 97/105):** No source manifest → can't verify code match automatically ✗
 
 **Gap: No reverse index from files to specs.** Currently source manifests map `spec → [files]` but there's no way to ask "which spec does `lib/foo.mjs` belong to?" without scanning all specs. This reverse lookup is needed for:
 - The `commit-msg` hook to check if a staged file is manifest-claimed
@@ -489,7 +489,7 @@ How does the proposed approach handle real-world workflows? For each scenario: w
 3. git log --format='%(trailers:key=Spec)' -- lib/issues/file-adapter.mjs → shows which commits changed it and whether they referenced the spec
 ```
 
-**Still missing for unstamped specs:** For the ~50% of specs without source manifests, there's no automated way to know which files implement them. Two options:
+**Still missing for unstamped specs:** For the ~92% of specs without source manifests, there's no automated way to know which files implement them. Two options:
 - Accept this as a gap (these specs were implemented before the lifecycle was mature)
 - Run a one-time `/adev:reconcile` pass that retroactively stamps source manifests by matching spec capability descriptions to existing code (heuristic, not perfect)
 
@@ -682,12 +682,12 @@ The "backlog" — all work that needs to be done — is currently scattered acro
 
 | Source | Count | Example |
 |--------|-------|---------|
-| Charter "Out of Scope" / deferred sections | 12 charters with deferred work | "Migration from orientation/" (document charter) |
-| Charter Capability Map v2/future items | 12+ capabilities | `/adev:build` orchestrator, Codex Adapter, PR Aggregation |
-| Specs at `review-passed` with no plan | ~50 specs | Specs reviewed but never planned or implemented |
+| Charter "Out of Scope" / deferred sections | 8 charters with deferred work | "Migration from orientation/" (document charter) |
+| Charter Capability Map v2/future items | 23 capabilities | `/adev:build` orchestrator, Codex Adapter, PR Aggregation |
+| Specs at `review-passed` with no plan | 35 specs (of 64 feature specs) | Specs reviewed but never planned or implemented |
 | Specs at `draft` status | 2 specs | Not yet reviewed |
-| Open issues on the board | 3 issues | Remaining work from existing epics |
-| Open epics on the board | 3 epics | Partially complete feature tracks |
+| Open issues on the board | 0 issues | All issues currently closed |
+| Open epics on the board | 3 epics | All issues closed but epics still marked open |
 | Deferred issues on the board | 0 currently | (but infrastructure exists for deferred status) |
 | Untraced code files | unknown | Code written outside lifecycle that may need specs |
 | Hygiene findings | varies | Uncharted high-churn code areas (Pass 2), missing ADRs (Pass 3) |
@@ -703,30 +703,30 @@ Total items: 67
 
 ### By Priority
   Critical (must-have, no spec): 3
-  High (review-passed, no plan): 12
-  Medium (v2/future capabilities): 12
+  High (review-passed, no plan): 35
+  Medium (v2/future capabilities): 23
   Low (nice-to-have, unphased): 8
   Unclassified (untraced code needing specs): ~9 files
 
 ### By Source
 
-Charter Deferred Capabilities (12 items):
+Charter Deferred Capabilities (8 charters, ~23 items):
   task-management: Status Integration, Recover Integration, Hygiene Audit, Compaction Context
   spec-lifecycle: Codex Adapter, PR Session Aggregation, LLM Auto-Summarization
   strategic-planning: /adev:build orchestrator
   document: Orientation migration (Phase 2), Incremental updates (Phase 2)
   ...
 
-Unplanned Specs (50 items, grouped by charter):
+Unplanned Specs (35 items, grouped by charter):
   spec-lifecycle: 8 specs at review-passed/validated with no .plan.md
   session-awareness: 5 specs
   task-management: 3 specs
   ...
 
-Open Issues (3):
-  [No open issues currently unblocked]
+Open Issues (0):
+  [All issues currently closed]
 
-Open Epics (3 — all issues closed, epics still open):
+Open Epics (3 — all issues closed, epics still marked open):
   epic-1: Source Manifests & Status Cleanup — all 7 issues closed, epic open
   epic-2: adev-codehealth — all 5 issues closed, epic open
   epic-3: Execution State File — all 4 issues closed, epic open

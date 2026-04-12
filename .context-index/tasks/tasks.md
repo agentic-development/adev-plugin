@@ -2,11 +2,12 @@
 
 ## Epics
 
-| ID | Title | Status | Plan-Ref | Created | Updated |
-|----|-------|--------|----------|---------|---------|
-| epic-1 | Source Manifests & Status Cleanup | open |  | 2026-04-01T13:40:40.880Z | 2026-04-01T13:40:40.880Z |
-| epic-2 | adev-codehealth: Full Lifecycle Implementation | open |  | 2026-04-02T13:06:39.625Z | 2026-04-02T13:06:39.625Z |
-| epic-3 | Execution State File | open | .context-index/specs/features/session-awareness/execution-state-file.plan.md | 2026-04-06T17:33:45.461Z | 2026-04-06T17:33:45.461Z |
+| ID | Title | Status | Plan-Ref | Milestone | Created | Updated |
+|----|-------|--------|----------|-----------|---------|---------|
+| epic-1 | Source Manifests & Status Cleanup | closed |  |  | 2026-04-01T13:40:40.880Z | 2026-04-10T21:02:24.881Z |
+| epic-2 | adev-codehealth: Full Lifecycle Implementation | closed |  |  | 2026-04-02T13:06:39.625Z | 2026-04-10T21:02:24.884Z |
+| epic-3 | Execution State File | closed | .context-index/specs/features/session-awareness/execution-state-file.plan.md |  | 2026-04-06T17:33:45.461Z | 2026-04-10T21:02:24.886Z |
+| epic-4 | Phase 0: Quick Wins & Eval Foundation | closed |  | work-tracking | 2026-04-10T21:00:35.828Z | 2026-04-10T21:09:18.621Z |
 
 ## Issues
 
@@ -28,3 +29,12 @@
 | issue-14 | writeExecutionState with Atomic Writes | closed | 2 | task | epic-3 | .context-index/specs/features/session-awareness/execution-state-file.plan.md | 2 | issue-13 | Closed: Implemented and reviewed | 2026-04-06T17:33:45.469Z | 2026-04-06T18:11:05.577Z |
 | issue-15 | readExecutionState with Frontmatter Parsing | closed | 2 | task | epic-3 | .context-index/specs/features/session-awareness/execution-state-file.plan.md | 3 | issue-14 | Closed: Implemented and reviewed | 2026-04-06T17:33:45.470Z | 2026-04-06T18:11:05.580Z |
 | issue-16 | clearExecutionState and Round-Trip Verification | closed | 2 | task | epic-3 | .context-index/specs/features/session-awareness/execution-state-file.plan.md | 4 | issue-15 | Closed: Implemented and reviewed | 2026-04-06T17:33:45.472Z | 2026-04-06T18:11:05.583Z |
+| issue-17 | Close 3 stale epics (epic-1, epic-2, epic-3) | closed | 1 | task | epic-4 |  |  |  | Closed: All 3 epics closed — all child issues were already closed | 2026-04-10T21:01:09.320Z | 2026-04-10T21:02:24.889Z |
+| issue-18 | Create work-tracking eval fixture repo with crafted git history | closed | 1 | task | epic-4 |  |  |  | Closed: Fixture repo created with 7 crafted commits across 5 lifecycle states | 2026-04-10T21:01:09.327Z | 2026-04-10T21:08:26.828Z |
+| issue-19 | Write setup-fixture.sh for deterministic fixture creation | closed | 1 | task | epic-4 |  |  | issue-18 | Closed: setup-fixture.sh creates deterministic fixture, verified working | 2026-04-10T21:01:09.329Z | 2026-04-10T21:08:26.831Z |
+| issue-20 | Write Scenario B rubric and scenario (lifecycle bypass detection) | closed | 2 | task | epic-4 |  |  | issue-19 | Closed: Scenario B rubric: 8 required elements + 4 quality dimensions | 2026-04-10T21:01:09.332Z | 2026-04-10T21:08:26.833Z |
+| issue-21 | Write Scenario C rubric and scenario (code-follows-specs verification) | closed | 2 | task | epic-4 |  |  | issue-19 | Closed: Scenario C rubric: 8 required elements + 4 quality dimensions | 2026-04-10T21:01:09.333Z | 2026-04-10T21:08:26.835Z |
+| issue-22 | Write Scenario D rubric and scenario (backlog aggregation) | closed | 2 | task | epic-4 |  |  | issue-19 | Closed: Scenario D rubric: 12 required elements + 4 quality dimensions | 2026-04-10T21:01:09.336Z | 2026-04-10T21:08:26.836Z |
+| issue-23 | Write Scenario F rubric and scenario (issue chain tracing) | closed | 2 | task | epic-4 |  |  | issue-19 | Closed: Scenario F rubric: 11 required elements + 4 quality dimensions | 2026-04-10T21:01:09.338Z | 2026-04-10T21:08:26.837Z |
+| issue-24 | Write Scenario A rubric and scenario (full lifecycle trailers) | closed | 3 | task | epic-4 |  |  | issue-19 | Closed: Scenario A rubric: 8 required elements + 4 quality dimensions | 2026-04-10T21:01:09.340Z | 2026-04-10T21:08:26.839Z |
+| issue-25 | Write Scenario E rubric and scenario (implementation probe) | closed | 3 | task | epic-4 |  |  | issue-19 | Closed: Scenario E rubric: 7 required elements + 4 quality dimensions | 2026-04-10T21:01:09.342Z | 2026-04-10T21:08:26.841Z |
