@@ -46,6 +46,15 @@ Read these files once at the start. Extract everything subagents will need so th
 10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
     All subagent dispatches in this skill use the `capable` tier (implementer, spec reviewer, code quality reviewer, visual verifier).
     If `model_tiers` is absent or a tier is unset, use the hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
+11. **Heuristics:** Load module-scoped heuristics for injection into context packets.
+    Derive the module slug from the plan's spec `charter:` frontmatter field.
+    Run inline Node.js:
+    ```bash
+    node -e "import { retrieveHeuristics, renderHeuristic } from './lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    ```
+    Where `<module>` is the charter module slug and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
+    If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
+    Store the `rendered` output for use in Step 2a.
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
@@ -90,6 +99,11 @@ Before routing or dispatching, assemble the task's context packet:
 2. For each listed file, read and extract the relevant section.
 3. Write the assembled packet to `.context-index/packets/<task-slug>.md` (gitignored). This log enables post-mortem debugging via `/adev:recover`.
 4. If no context_packet section exists in the plan, assemble a default packet from: constitution excerpt, spec acceptance criteria for this task, charter capability, and any samples matching the task's file patterns.
+5. **Heuristics injection:** If heuristics were loaded in Step 1 (count > 0), append a `## Heuristics` section to the context packet with the rendered blocks from Step 1. Prefix the section with the advisory preamble:
+
+   > The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules.
+
+   All tasks in the same plan receive the same heuristic set. If no heuristics are available, omit this section entirely — do not emit an empty placeholder.
 
 **Routing tag check:** If the task has a routing tag from `/adev:route`:
 - `auto-agent`: proceed with standard dispatch
