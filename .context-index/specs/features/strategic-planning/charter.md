@@ -31,7 +31,6 @@ Add product-level strategic planning, release sequencing, persistent research, a
 - Replacing existing skills (brainstorm, specify, plan, implement, validate remain unchanged)
 - Sprint/cycle time-boxing or velocity tracking (not relevant for single-developer agentic workflows)
 - External issue tracker sync (JIRA, Linear, GitHub Issues)
-- Multi-team coordination (future charter)
 - Burndown charts or visual dashboards
 
 ### Dependencies
@@ -86,6 +85,13 @@ Add product-level strategic planning, release sequencing, persistent research, a
 | `/adev:status` milestone view | Add milestone progress aggregation to `--all` mode and `--milestone` argument | should-have | v1 | — |
 | `/adev:start` intake mode | Add `--intake` for batch-processing incoming requests into categorized, prioritized issues | should-have | v1 | — |
 | `/adev:build` orchestrator | Chain review → route → plan → implement → validate with resume support and phase batching | must-have | v2 | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Multi-team coordination | Future charter scope | — | — |
+| `/adev:build` orchestrator | Chain review → route → plan → implement → validate | v2 | — |
 
 ## Interface Contracts
 

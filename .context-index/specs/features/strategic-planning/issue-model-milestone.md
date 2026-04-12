@@ -13,6 +13,18 @@ revision: 1
 charter-revision: 1
 created: 2026-04-05
 updated: 2026-04-05
+source-manifest:
+  sha: "70b0372"
+  files:
+    - lib/issues/beads-adapter.mjs
+    - lib/issues/file-adapter.mjs
+    - lib/issues/interface.mjs
+    - tests/helpers.mjs
+    - tests/lib/issues-beads-adapter.test.mjs
+    - tests/lib/issues-file-adapter.test.mjs
+    - tests/lib/issues-interface.test.mjs
+    - tests/lib/issues-milestone.test.mjs
+  computed-at: "2026-04-12T11:48:02.757Z"
 ---
 
 ## Behavioral Contract

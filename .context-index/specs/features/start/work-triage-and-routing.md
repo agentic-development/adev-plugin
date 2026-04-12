@@ -15,6 +15,18 @@ revision: 1
 charter-revision: 1
 created: 2026-03-29
 updated: 2026-03-29
+source-manifest:
+  sha: "1c1191d"
+  files:
+    - .context-index/manifest.yaml
+    - providers/codex/skills/start/SKILL.md
+    - providers/codex/skills/start/agents/openai.yaml
+    - providers/codex/skills/using-adev/SKILL.md
+    - skills/route/SKILL.md
+    - skills/start/SKILL.md
+    - skills/status/SKILL.md
+    - skills/using-adev/SKILL.md
+  computed-at: "2026-04-12T11:48:02.746Z"
 ---
 
 ## Behavioral Contract

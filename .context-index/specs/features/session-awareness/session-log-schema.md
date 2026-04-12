@@ -7,6 +7,12 @@ revision: 1
 charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
+source-manifest:
+  sha: "54826b2"
+  files:
+    - hooks/session-capture.sh
+    - tests/hooks/session-capture.test.mjs
+  computed-at: "2026-04-12T11:47:08.347Z"
 ---
 
 # Live Spec: Session Log Schema

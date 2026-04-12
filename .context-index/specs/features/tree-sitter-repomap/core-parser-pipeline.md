@@ -9,6 +9,30 @@ revision: 1
 charter-revision: 1
 created: 2026-03-23
 updated: 2026-03-23
+source-manifest:
+  sha: "34b531d"
+  files:
+    - .context-index/adrs/0001-web-tree-sitter-dependency.md
+    - lib/repomap/check-deps.mjs
+    - lib/repomap/graph.mjs
+    - lib/repomap/index.mjs
+    - lib/repomap/languages/typescript.mjs
+    - lib/repomap/parse.mjs
+    - lib/repomap/rank.mjs
+    - skills/repomap/SKILL.md
+    - tests/fixtures/sample-project/src/config.ts
+    - tests/fixtures/sample-project/src/db.ts
+    - tests/fixtures/sample-project/src/index.ts
+    - tests/fixtures/sample-project/src/services/task-service.ts
+    - tests/fixtures/sample-project/src/services/user-service.ts
+    - tests/fixtures/sample-project/src/types.ts
+    - tests/fixtures/sample-project/src/utils.ts
+    - tests/repomap/check-deps.test.mjs
+    - tests/repomap/graph.test.mjs
+    - tests/repomap/index.test.mjs
+    - tests/repomap/parse.test.mjs
+    - tests/repomap/rank.test.mjs
+  computed-at: "2026-04-12T11:48:02.771Z"
 ---
 
 ## Behavioral Contract

@@ -22,7 +22,6 @@ Automate quality gates (tests, lint, typecheck) on every PR and push, and publis
 ### Out of Scope
 
 - Other CI providers (GitLab, CircleCI)
-- Security scanning (npm audit can be added later)
 - Deployment to non-npm targets
 
 ### Dependencies
@@ -59,6 +58,12 @@ Automate quality gates (tests, lint, typecheck) on every PR and push, and publis
 | Block Bad Merges | Fail workflow if tests fail | must-have | review-passed |
 | Publish on Tags | Publish to npm on version tags | must-have | review-passed |
 | Cache Dependencies | Speed up workflow runs | should-have | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Security scanning (npm audit) | Can be added later | v2 | — |
 
 ## Interface Contracts
 

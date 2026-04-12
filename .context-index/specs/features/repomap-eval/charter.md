@@ -26,11 +26,8 @@ The repomap eval module measures the accuracy and stability of both the tree-sit
 
 ### Out of Scope
 
-- Evaluating non-TypeScript languages (future — only TS grammar exists today)
 - Evaluating downstream skills (route, hygiene, implement) — separate eval module
 - Full lifecycle evals (brainstorm → implement) — separate charter
-- Performance benchmarking (execution time) — nice-to-have for later
-- CI integration (running evals on every PR) — separate concern
 
 ### Dependencies
 
@@ -77,6 +74,14 @@ The repomap eval module measures the accuracy and stability of both the tree-sit
 | Repo config | Configurable target repos via JSON config file (name, URL, git ref) | must-have | v1 | — |
 | Multi-repo aggregation | Run eval across all configured repos, produce a summary table | should-have | v1 | — |
 | Eval test runner | A dedicated test command (`npm run eval`) separate from `npm test` | must-have | v1 | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+| Evaluating non-TypeScript languages | Only TS grammar exists today | v2 | Tree-sitter grammars |
+| Performance benchmarking (execution time) | Nice-to-have for later | v2 | — |
+| CI integration (running evals on every PR) | Separate concern | v2 | cicd module |
 
 ## Interface Contracts
 
