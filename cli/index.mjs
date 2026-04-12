@@ -222,7 +222,7 @@ async function setupGitHooks() {
   const created = [];
   const cwd = process.cwd();
   const githooksDir = join(cwd, ".githooks");
-  const hookNames = ["pre-commit", "prepare-commit-msg", "post-commit"];
+  const hookNames = ["pre-commit", "prepare-commit-msg", "commit-msg", "post-commit"];
   const pluginHooksDir = join(PLUGIN_ROOT, ".githooks");
 
   // Detect existing core.hooksPath
