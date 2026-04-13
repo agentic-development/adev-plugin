@@ -774,6 +774,13 @@ function writeGraphData(projectName, analytics) {
     commitHash = execSync('git rev-parse --short HEAD', { cwd: root, encoding: 'utf8' }).trim();
   } catch { /* not in git */ }
 
+  // Filter out edges referencing non-existent nodes
+  const validEdges = edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+  const droppedEdges = edges.length - validEdges.length;
+  if (droppedEdges > 0) {
+    console.log(`Dropped ${droppedEdges} edges with missing source/target nodes`);
+  }
+
   const data = {
     version: '1.0.0',
     metadata: {
@@ -781,14 +788,14 @@ function writeGraphData(projectName, analytics) {
       generated: new Date().toISOString(),
       commit: commitHash,
       nodeCount: nodes.length,
-      edgeCount: edges.length,
+      edgeCount: validEdges.length,
     },
     typeRegistry: {
       nodeTypes: nodeTypeRegistry,
       edgeTypes: edgeTypeRegistry,
     },
     nodes,
-    edges,
+    edges: validEdges,
     analytics,
   };
 

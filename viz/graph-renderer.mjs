@@ -2,15 +2,18 @@
  * Graph Renderer — Cytoscape.js setup, styles, and layout management.
  */
 
+let _cytoscape;
+
+export function setCytoscape(cy) { _cytoscape = cy; }
+
 export function createGraph(container, graphData, { onNodeSelect }) {
-  const cy = cytoscape({
+  const cy = _cytoscape({
     container,
     elements: buildElements(graphData),
     style: buildStyle(graphData.typeRegistry),
     layout: { name: 'preset' }, // we'll run layout after init
     minZoom: 0.1,
     maxZoom: 5,
-    wheelSensitivity: 0.3,
   });
 
   // Click handlers
