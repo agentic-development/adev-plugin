@@ -31,6 +31,36 @@ export function createGraph(container, graphData, { onNodeSelect }) {
     }
   });
 
+  // Keyboard navigation
+  let currentNodeIndex = -1;
+  document.addEventListener('keydown', evt => {
+    // Skip if user is typing in search
+    if (evt.target.tagName === 'INPUT' || evt.target.tagName === 'SELECT') return;
+
+    const visibleNodes = cy.nodes(':visible');
+    if (visibleNodes.length === 0) return;
+
+    if (evt.key === 'Tab') {
+      evt.preventDefault();
+      if (evt.shiftKey) {
+        currentNodeIndex = (currentNodeIndex - 1 + visibleNodes.length) % visibleNodes.length;
+      } else {
+        currentNodeIndex = (currentNodeIndex + 1) % visibleNodes.length;
+      }
+      const node = visibleNodes[currentNodeIndex];
+      cy.animate({ center: { eles: node }, duration: 200 });
+      highlightConnected(cy, node);
+      onNodeSelect(node.data());
+    } else if (evt.key === 'Enter' && currentNodeIndex >= 0) {
+      const node = visibleNodes[currentNodeIndex];
+      cy.animate({ center: { eles: node }, zoom: 2, duration: 300 });
+    } else if (evt.key === 'Escape') {
+      currentNodeIndex = -1;
+      clearHighlight(cy);
+      onNodeSelect(null);
+    }
+  });
+
   return cy;
 }
 

@@ -14,8 +14,8 @@
     </div>
     <div class="toolbar-center" id="filter-chips"></div>
     <div class="toolbar-right">
-      <input type="search" id="search-input" placeholder="Search nodes..." autocomplete="off">
-      <select id="layout-select">
+      <input type="search" id="search-input" placeholder="Search nodes..." autocomplete="off" aria-label="Search graph nodes">
+      <select id="layout-select" aria-label="Graph layout">
         <option value="fcose">Force-Directed</option>
         <option value="dagre">Hierarchical</option>
       </select>
@@ -39,16 +39,13 @@
     <div id="timeline"></div>
   </footer>
 
-  <!-- Vendored libraries loaded as ESM -->
-  <script type="importmap">
-  {
-    "imports": {
-      "cytoscape": "https://esm.sh/cytoscape@3.30.4",
-      "cytoscape-fcose": "https://esm.sh/cytoscape-fcose@2.2.0",
-      "cytoscape-dagre": "https://esm.sh/cytoscape-dagre@2.5.0"
-    }
-  }
-  </script>
+  <!-- Vendored libraries (fully offline, no CDN) -->
+  <script src="lib/cytoscape.min.js"></script>
+  <script src="lib/layout-base.js"></script>
+  <script src="lib/cose-base.js"></script>
+  <script src="lib/cytoscape-fcose.js"></script>
+  <script src="lib/dagre.js"></script>
+  <script src="lib/cytoscape-dagre.js"></script>
   <script type="module" src="app.mjs"></script>
 </body>
 </html>
