@@ -148,16 +148,22 @@ body {
 /* --- Detail Panel --- */
 
 #detail-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
   width: 340px;
+  height: 100%;
   background: var(--surface);
   border-left: 1px solid var(--border);
   overflow-y: auto;
-  transition: margin-right 0.2s;
+  transform: translateX(0);
+  transition: transform 0.2s;
   flex-shrink: 0;
+  z-index: 20;
 }
 
 #detail-panel.collapsed {
-  margin-right: -340px;
+  transform: translateX(100%);
 }
 
 #detail-header {

@@ -19,6 +19,7 @@ export function createGraph(container, graphData, { onNodeSelect }) {
   // Click handlers
   cy.on('tap', 'node', evt => {
     const node = evt.target;
+    console.log('Node clicked:', node.data('id'), node.data('fullTitle'));
     highlightConnected(cy, node);
     onNodeSelect(node.data());
   });
