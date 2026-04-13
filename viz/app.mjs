@@ -97,11 +97,8 @@ const cy = createGraph(container, graphData, {
   },
 });
 
-// Initial layout
-runLayout(cy, 'fcose');
-
 // ---------------------------------------------------------------------------
-// Filters
+// Filters (init before layout so hidden types don't affect positioning)
 // ---------------------------------------------------------------------------
 
 const { visibleTypes } = initFilters(graphData, {
@@ -109,6 +106,9 @@ const { visibleTypes } = initFilters(graphData, {
     filterByTypes(cy, types);
   },
 });
+
+// Initial layout (after filters applied)
+runLayout(cy, 'fcose');
 
 // ---------------------------------------------------------------------------
 // Search
