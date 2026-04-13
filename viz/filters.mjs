@@ -12,7 +12,12 @@ export function initFilters(graphData, { onFilterChange }) {
     counts[n.type] = (counts[n.type] || 0) + 1;
   }
 
-  const visibleTypes = new Set(Object.keys(typeRegistry.nodeTypes));
+  // Types with hidden: true start inactive
+  const visibleTypes = new Set(
+    Object.entries(typeRegistry.nodeTypes)
+      .filter(([, def]) => !def.hidden)
+      .map(([type]) => type)
+  );
 
   // Render chips
   for (const [type, def] of Object.entries(typeRegistry.nodeTypes)) {
@@ -20,7 +25,7 @@ export function initFilters(graphData, { onFilterChange }) {
     if (count === 0) continue;
 
     const chip = document.createElement('div');
-    chip.className = 'chip';
+    chip.className = 'chip' + (def.hidden ? ' inactive' : '');
     chip.dataset.type = type;
     chip.innerHTML = `<span class="dot" style="background:${def.color}"></span>${def.label} <span class="count">${count}</span>`;
 
@@ -37,6 +42,9 @@ export function initFilters(graphData, { onFilterChange }) {
 
     container.appendChild(chip);
   }
+
+  // Apply initial filter to hide hidden types
+  onFilterChange(new Set(visibleTypes));
 
   return { visibleTypes };
 }

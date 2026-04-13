@@ -113,10 +113,11 @@ const nodeTypeRegistry = {
   issue:         { label: 'Issue',         color: '#f97316', shape: 'ellipse' },
   adr:           { label: 'ADR',           color: '#14b8a6', shape: 'octagon' },
   session:       { label: 'Session',       color: '#64748b', shape: 'round-rectangle' },
-  'code-file':   { label: 'Code File',     color: '#22c55e', shape: 'rectangle' },
+  'code-file':   { label: 'Code File',     color: '#22c55e', shape: 'rectangle', hidden: true },
   'cross-cutting': { label: 'Cross-Cutting', color: '#a855f7', shape: 'star' },
   heuristic:     { label: 'Heuristic',     color: '#f43f5e', shape: 'triangle' },
   provider:      { label: 'Provider',      color: '#0ea5e9', shape: 'pentagon' },
+  commit:        { label: 'Commit',        color: '#a3e635', shape: 'round-rectangle', hidden: true },
 };
 
 const edgeTypeRegistry = {
@@ -140,6 +141,8 @@ const edgeTypeRegistry = {
   'heuristic-scoped-to':     { label: 'scoped to',      color: '#f43f5e', style: 'solid' },
   'heuristic-evidenced-by':  { label: 'evidenced by',   color: '#f43f5e', style: 'dashed' },
   'provider-adapts':         { label: 'adapts',         color: '#0ea5e9', style: 'dashed' },
+  'commit-touches-file':     { label: 'touches',        color: '#a3e635', style: 'dashed' },
+  'commit-references-spec':  { label: 'references',     color: '#a3e635', style: 'solid' },
 };
 
 // ---------------------------------------------------------------------------
@@ -647,33 +650,80 @@ function mergeRepomap() {
 }
 
 // ---------------------------------------------------------------------------
-// 11. extractCommitTrailers
+// 11. extractCommits
 // ---------------------------------------------------------------------------
 
-function extractCommitTrailers() {
+function extractCommits() {
   try {
-    const log = execSync('git log --format="%H%n%s%n%b%n---END---" --max-count=500', {
-      cwd: root, encoding: 'utf8', timeout: 10000,
-    });
+    // Get commits with stats and trailers
+    const log = execSync(
+      'git log --format="---COMMIT---%n%H%n%h%n%s%n%aI%n%an%n%b%n---FILES---" --stat --max-count=500',
+      { cwd: root, encoding: 'utf8', timeout: 15000 }
+    );
 
-    for (const entry of log.split('---END---')) {
-      const lines = entry.trim().split('\n');
-      if (lines.length < 2) continue;
-      const hash = lines[0];
-      const subject = lines[1];
-      const body = lines.slice(2).join('\n');
+    const entries = log.split('---COMMIT---').filter(e => e.trim());
 
-      // Look for Spec: and Plan-task: trailers
+    for (const entry of entries) {
+      const parts = entry.split('---FILES---');
+      const header = parts[0].trim().split('\n');
+      if (header.length < 5) continue;
+
+      const hash = header[0];
+      const shortHash = header[1];
+      const subject = header[2];
+      const date = header[3].slice(0, 10); // YYYY-MM-DD
+      const author = header[4];
+      const body = header.slice(5).join('\n');
+
+      // Stat lines are after ---FILES---
+      const statBlock = parts[1] || '';
+      const changedFiles = [];
+      for (const m of statBlock.matchAll(/^\s+([^\s|]+)\s+\|/gm)) {
+        changedFiles.push(m[1]);
+      }
+
+      // Create commit node
+      const commitId = `commit:${shortHash}`;
+      addNode({
+        id: commitId,
+        type: 'commit',
+        title: `${shortHash}: ${subject}`,
+        status: null,
+        created: date,
+        updated: date,
+        metadata: {
+          hash,
+          shortHash,
+          subject,
+          author,
+          filesChanged: changedFiles.length,
+        },
+      });
+
+      // session-creates-commit: link sessions that reference this commit
+      for (const node of nodes) {
+        if (node.type === 'session' && node.metadata.commits?.includes(hash)) {
+          addEdge(node.id, commitId, 'session-creates-commit');
+        }
+      }
+
+      // commit-touches-file: link to code files
+      for (const file of changedFiles) {
+        const codeId = `code-file:${file}`;
+        addNode({
+          id: codeId, type: 'code-file', title: basename(file),
+          status: null, created: null, updated: date,
+          metadata: { path: file },
+        });
+        addEdge(commitId, codeId, 'commit-touches-file');
+      }
+
+      // commit-references-spec: from Spec: trailers
       for (const m of body.matchAll(/^Spec:\s*(.+)/gm)) {
         const specRef = m[1].trim();
-        const specMatch = specRef.match(/features\/([^/]+)\/(.+)\.md/);
+        const specMatch = specRef.match(/features\/([^/]+)\/(.+?)(?:\.md)?$/);
         if (specMatch) {
-          // Find sessions that reference this commit
-          for (const node of nodes) {
-            if (node.type === 'session' && node.metadata.commits?.includes(hash)) {
-              addEdge(node.id, `spec:${specMatch[1]}/${specMatch[2].replace('.md', '')}`, 'session-touches-spec');
-            }
-          }
+          addEdge(commitId, `spec:${specMatch[1]}/${specMatch[2]}`, 'commit-references-spec');
         }
       }
     }
@@ -834,7 +884,7 @@ extractCodeFiles(modules);
 extractHeuristics();
 extractProviders();
 mergeRepomap();
-extractCommitTrailers();
+extractCommits();
 deriveImplicitEdges();
 const analytics = computeAnalytics();
 writeGraphData(projectName, analytics);
