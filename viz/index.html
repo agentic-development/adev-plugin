@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Context Index Visualization</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="toolbar">
+    <div class="toolbar-left">
+      <h1 id="project-name">Context Index</h1>
+      <span id="graph-stats" class="badge"></span>
+    </div>
+    <div class="toolbar-center" id="filter-chips"></div>
+    <div class="toolbar-right">
+      <input type="search" id="search-input" placeholder="Search nodes..." autocomplete="off" aria-label="Search graph nodes">
+      <select id="layout-select" aria-label="Graph layout">
+        <option value="fcose">Force-Directed</option>
+        <option value="dagre">Hierarchical</option>
+      </select>
+    </div>
+  </header>
+
+  <main id="workspace">
+    <div id="graph-container"></div>
+    <aside id="detail-panel" class="collapsed">
+      <div id="detail-header">
+        <h2 id="detail-title">Select a node</h2>
+        <button id="detail-close" aria-label="Close panel">&times;</button>
+      </div>
+      <div id="detail-body">
+        <p class="hint">Click a node in the graph to view its details.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="timeline-container">
+    <div id="timeline"></div>
+  </footer>
+
+  <!-- Vendored libraries (fully offline, no CDN) -->
+  <script src="lib/cytoscape.min.js"></script>
+  <script src="lib/layout-base.js"></script>
+  <script src="lib/cose-base.js"></script>
+  <script src="lib/cytoscape-fcose.js"></script>
+  <script src="lib/dagre.js"></script>
+  <script src="lib/cytoscape-dagre.js"></script>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

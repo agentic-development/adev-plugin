@@ -28,3 +28,6 @@ tests/evals/repomap/.cache/
 # Eval generated data (regenerate with: npm run eval / eval:skill-compression)
 tests/evals/repomap/*/
 tests/evals/skill-compression/outputs/
+
+# Viz build output (regenerate with: node viz/build.mjs)
+viz/dist/
