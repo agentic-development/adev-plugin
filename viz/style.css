@@ -142,6 +142,7 @@ body {
 #graph-container {
   flex: 1;
   position: relative;
+  min-height: 0; /* allow flex child to shrink */
 }
 
 /* --- Detail Panel --- */
@@ -338,6 +339,7 @@ body {
   display: flex;
   gap: 8px;
   z-index: 5;
+  pointer-events: none;
 }
 
 .analytics-badge .stat {
