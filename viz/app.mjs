@@ -7,7 +7,7 @@
 import cytoscape from 'cytoscape';
 import fcose from 'cytoscape-fcose';
 import dagre from 'cytoscape-dagre';
-import { createGraph, runLayout, filterByTypes, searchNodes } from './graph-renderer.mjs';
+import { setCytoscape, createGraph, runLayout, filterByTypes, searchNodes } from './graph-renderer.mjs';
 import { initDetailPanel } from './detail-panel.mjs';
 import { initFilters } from './filters.mjs';
 import { initTimeline } from './timeline.mjs';
@@ -16,8 +16,8 @@ import { initTimeline } from './timeline.mjs';
 cytoscape.use(fcose);
 cytoscape.use(dagre);
 
-// Expose cytoscape globally for graph-renderer.mjs
-window.cytoscape = cytoscape;
+// Pass cytoscape to renderer
+setCytoscape(cytoscape);
 
 // ---------------------------------------------------------------------------
 // Load data
