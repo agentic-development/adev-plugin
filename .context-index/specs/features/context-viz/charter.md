@@ -1,3 +1,9 @@
+---
+status: draft
+revision: 1
+updated: 2026-04-13
+---
+
 # Feature Charter: context-viz
 
 <!-- Feature Charter for the context-viz module.
