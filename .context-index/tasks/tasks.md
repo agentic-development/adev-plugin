@@ -4,9 +4,9 @@
 
 | ID | Title | Status | Plan-Ref | Milestone | Created | Updated |
 |----|-------|--------|----------|-----------|---------|---------|
-| epic-1 | Source Manifests & Status Cleanup | open |  |  | 2026-04-01T13:40:40.880Z | 2026-04-01T13:40:40.880Z |
-| epic-2 | adev-codehealth: Full Lifecycle Implementation | open |  |  | 2026-04-02T13:06:39.625Z | 2026-04-02T13:06:39.625Z |
-| epic-3 | Execution State File | open | .context-index/specs/features/session-awareness/execution-state-file.plan.md |  | 2026-04-06T17:33:45.461Z | 2026-04-06T17:33:45.461Z |
+| epic-1 | Source Manifests & Status Cleanup | closed |  |  | 2026-04-01T13:40:40.880Z | 2026-04-13T00:00:00.000Z |
+| epic-2 | adev-codehealth: Full Lifecycle Implementation | closed |  |  | 2026-04-02T13:06:39.625Z | 2026-04-13T00:00:00.000Z |
+| epic-3 | Execution State File | closed | .context-index/specs/features/session-awareness/execution-state-file.plan.md |  | 2026-04-06T17:33:45.461Z | 2026-04-13T00:00:00.000Z |
 | epic-4 | adev:research Multi-Agent Refactor | open | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md |  | 2026-04-09T12:58:46.483Z | 2026-04-09T12:58:46.483Z |
 | epic-5 | Heuristics Phase 1a: Store and Helper | open | .context-index/specs/features/heuristics/store-and-helper.plan.md |  | 2026-04-09T17:33:18.933Z | 2026-04-09T17:33:18.933Z |
 | epic-6 | Heuristics Phase 1a: Recover Extraction | open | .context-index/specs/features/heuristics/recover-extraction.plan.md |  | 2026-04-09T17:38:36.095Z | 2026-04-09T17:38:36.095Z |

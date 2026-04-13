@@ -11,7 +11,7 @@ adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). 
 ```
 adev-plugin/
 ├── cli/index.mjs              # Single-file CLI — install, scaffold, conflict detection
-├── skills/                     # 20 skill directories, each with a SKILL.md
+├── skills/                     # 29 skill directories, each with a SKILL.md
 │   ├── using-adev/             # Gateway skill — injected at session start
 │   ├── adev:init/              # This wizard
 │   ├── adev:brainstorm/        # Idea exploration → Feature Charter
@@ -31,15 +31,28 @@ adev-plugin/
 │   ├── adev:retro/             # Sprint retrospective
 │   ├── adev:hygiene/           # Context staleness and drift audits
 │   ├── adev:repomap/           # AST-based symbol index generation
-│   └── adev:sync/              # Sync constitution to agent files
-├── hooks/                      # 5 bash scripts + hooks.json config
+│   ├── adev:sync/              # Sync constitution to agent files
+│   ├── adev:start/             # Work triage and routing
+│   ├── adev:build/             # End-to-end build orchestrator
+│   ├── adev:issues/            # Issue and epic management
+│   ├── adev:vision/            # Product vision and milestones
+│   ├── adev:roadmap/           # Release sequencing with dependency analysis
+│   ├── adev:research/          # Structured multi-agent research
+│   ├── adev:document/          # Developer documentation generation
+│   ├── adev:reconcile/         # Interactive repair for lifecycle mismatches
+│   └── adev:codehealth/        # Dead code and orphan file detection
+├── hooks/                      # 9 hook files (8 .sh + 1 .mjs) + hooks.json config
 │   ├── hooks.json              # Hook registration (which events trigger which scripts)
 │   ├── session-start.sh        # SessionStart — injects using-adev skill
 │   ├── session-capture.sh      # PostToolUse — records session events to .context-index/sessions/
 │   ├── constitution-linter.sh  # PreToolUse:Edit — validates constitution constraints
 │   ├── merge-guard.sh          # PreToolUse:Bash — enforces merge policy from manifest
-│   └── sync-trigger.sh         # PostToolUse:Edit — notifies to run /adev:sync
-├── templates/                  # 13 scaffold templates consumed by /adev:init
+│   ├── sync-trigger.sh         # PostToolUse:Edit — notifies to run /adev:sync
+│   ├── context-preflight.sh    # PreToolUse:Edit — warns if editing source without reading context
+│   ├── context-read-tracker.sh # PostToolUse:Read — tracks context file reads
+│   ├── issue-reminder.sh       # PostToolUse — periodic issue board reminders
+│   └── issue-reminder.mjs      # Helper module for issue reminder logic
+├── templates/                  # 16 scaffold templates consumed by /adev:init
 ├── tests/                      # Node.js built-in test runner (node:test)
 │   ├── helpers.mjs             # Shared test utilities (temp dirs, fixtures, runHook)
 │   ├── cli.test.mjs            # CLI unit tests

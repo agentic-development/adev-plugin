@@ -78,7 +78,9 @@ adev-plugin is a Claude Code plugin and zero-dependency CLI that implements a fu
 | Test helpers | `tests/helpers.mjs` |
 | Plugin registration | `.claude-plugin/plugin.json` |
 | Project config | `package.json` |
-| Context index | `.context-index/` |
+| Research artifacts | `.context-index/research/` |
+| Roadmaps | `.context-index/specs/roadmap/` |
+| Build state | `.context-index/build-state/` |
 
 ## Quality Gates
 
