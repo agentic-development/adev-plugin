@@ -4,20 +4,21 @@
  * Orchestrates graph loading, rendering, filtering, and interaction.
  */
 
-import cytoscape from 'cytoscape';
-import fcose from 'cytoscape-fcose';
-import dagre from 'cytoscape-dagre';
 import { setCytoscape, createGraph, runLayout, filterByTypes, searchNodes } from './graph-renderer.mjs';
 import { initDetailPanel } from './detail-panel.mjs';
 import { initFilters } from './filters.mjs';
 import { initTimeline } from './timeline.mjs';
 
-// Register layout extensions
-cytoscape.use(fcose);
-cytoscape.use(dagre);
+// Cytoscape and plugins loaded via script tags (UMD globals)
+const cy = window.cytoscape;
+
+// Register layout extensions (UMD plugins auto-register if cytoscape is global,
+// but call use() explicitly for safety)
+if (typeof cytoscapeFcose !== 'undefined') cy.use(cytoscapeFcose);
+if (typeof cytoscapeDagre !== 'undefined') cy.use(cytoscapeDagre);
 
 // Pass cytoscape to renderer
-setCytoscape(cytoscape);
+setCytoscape(cy);
 
 // ---------------------------------------------------------------------------
 // Load data

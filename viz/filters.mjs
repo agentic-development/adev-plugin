@@ -27,17 +27,28 @@ export function initFilters(graphData, { onFilterChange }) {
     const chip = document.createElement('div');
     chip.className = 'chip' + (def.hidden ? ' inactive' : '');
     chip.dataset.type = type;
+    chip.setAttribute('role', 'checkbox');
+    chip.setAttribute('aria-checked', def.hidden ? 'false' : 'true');
+    chip.setAttribute('aria-label', `Toggle ${def.label} nodes (${count})`);
+    chip.setAttribute('tabindex', '0');
     chip.innerHTML = `<span class="dot" style="background:${def.color}"></span>${def.label} <span class="count">${count}</span>`;
 
-    chip.addEventListener('click', () => {
+    function toggleChip() {
       if (visibleTypes.has(type)) {
         visibleTypes.delete(type);
         chip.classList.add('inactive');
+        chip.setAttribute('aria-checked', 'false');
       } else {
         visibleTypes.add(type);
         chip.classList.remove('inactive');
+        chip.setAttribute('aria-checked', 'true');
       }
       onFilterChange(new Set(visibleTypes));
+    }
+
+    chip.addEventListener('click', toggleChip);
+    chip.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChip(); }
     });
 
     container.appendChild(chip);

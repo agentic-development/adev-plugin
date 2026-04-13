@@ -64,6 +64,20 @@ function readFileSafe(path) {
   try { return readFileSync(path, 'utf8'); } catch { return null; }
 }
 
+function contentPreview(body, maxLen = 500) {
+  if (!body) return null;
+  // Strip markdown headings, frontmatter artifacts, and excessive whitespace
+  const text = body
+    .replace(/^#{1,6}\s+.+$/gm, '')  // headings
+    .replace(/\|[^\n]+\|/g, '')       // table rows
+    .replace(/```[\s\S]*?```/g, '')   // code blocks
+    .replace(/<!--[\s\S]*?-->/g, '')  // HTML comments
+    .replace(/\n{3,}/g, '\n\n')       // collapse blank lines
+    .trim();
+  if (!text) return null;
+  return text.length > maxLen ? text.slice(0, maxLen - 3) + '...' : text;
+}
+
 function fileModTime(path) {
   try { return statSync(path).mtime.toISOString().slice(0, 10); } catch { return null; }
 }
@@ -203,6 +217,7 @@ function extractCharters(modules) {
       metadata: {
         module: dir.name,
         revision: meta.revision || null,
+        contentPreview: contentPreview(body),
       },
     });
 
@@ -280,6 +295,20 @@ function extractSpecs() {
         });
         addEdge(`spec:${specModule}/${specSlug}`, id, 'spec-has-plan');
 
+        // plan-references-spec: look for "> **Spec:**" or "Spec:" line in plan body
+        const specRef = body.match(/\*?\*?Spec:?\*?\*?\s*(.+)/m);
+        if (specRef) {
+          const refMatch = specRef[1].trim().match(/features\/([^/]+)\/(.+?)(?:\.md)?$/);
+          if (refMatch) addEdge(id, `spec:${refMatch[1]}/${refMatch[2]}`, 'plan-references-spec');
+        }
+
+        // plan-references-review: look for "> **Review:**" or "Review:" in plan body
+        const reviewRef = body.match(/\*?\*?Review:?\*?\*?\s*(.+)/m);
+        if (reviewRef) {
+          const refMatch = reviewRef[1].trim().match(/features\/([^/]+)\/(.+?)(?:\.review)?(?:\.md)?$/);
+          if (refMatch) addEdge(id, `review:${refMatch[1]}/${refMatch[2]}`, 'plan-references-review');
+        }
+
       } else if (file.endsWith('-validation.md')) {
         // Skip validation files (derived by convention, not a primary node type)
         continue;
@@ -299,6 +328,7 @@ function extractSpecs() {
             risk_level: meta.risk_level || null,
             milestone: meta.milestone || null,
             revision: meta.revision || null,
+            contentPreview: contentPreview(body),
           },
         });
         // charter-scopes-spec
@@ -442,6 +472,7 @@ function extractADRs() {
       updated: fileModTime(filePath),
       metadata: {
         slug,
+        contentPreview: contentPreview(body),
       },
     });
   }

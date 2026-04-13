@@ -77,9 +77,22 @@ function renderDetail(data, edges, onRelatedClick) {
     `);
   }
 
+  // Content preview
+  if (data.contentPreview) {
+    const escaped = data.contentPreview
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+    sections.push(`
+      <div class="detail-section">
+        <h3>Content Preview</h3>
+        <div style="font-size:12px;color:#cbd5e1;line-height:1.5;max-height:200px;overflow-y:auto;white-space:pre-wrap">${escaped}</div>
+      </div>
+    `);
+  }
+
   // Metadata
   const metaKeys = Object.keys(data).filter(k =>
-    !['id', 'label', 'fullTitle', 'type', 'status', 'created', 'updated', 'color'].includes(k)
+    !['id', 'label', 'fullTitle', 'type', 'status', 'created', 'updated', 'color', 'contentPreview'].includes(k)
     && data[k] != null && data[k] !== ''
   );
   if (metaKeys.length > 0) {
