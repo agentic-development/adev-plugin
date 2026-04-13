@@ -40,6 +40,7 @@ modules:
     paths:
       - skills/init/
       - skills/sync/
+      - skills/using-adev/
       - templates/
 
   - slug: triage
@@ -51,6 +52,7 @@ modules:
     name: Design
     paths:
       - skills/brainstorm/
+      - skills/adev-brainstorm/
       - skills/specify/
 
   - slug: assessment
@@ -58,18 +60,22 @@ modules:
     paths:
       - skills/review-specs/
       - skills/route/
+      - skills/assess/
 
   - slug: planning
     name: Planning
     paths:
       - skills/plan/
+      - skills/adev-plan/
 
   - slug: implementation
     name: Implementation
     paths:
       - skills/implement/
+      - skills/adev-implement/
       - skills/debug/
       - skills/recover/
+      - skills/write-test/
 
   - slug: validation
     name: Validation
@@ -84,6 +90,9 @@ modules:
       - skills/roadmap/
       - skills/research/
       - skills/build/
+      - skills/issues/
+      - skills/status/
+      - skills/document/
 
   - slug: maintenance
     name: Maintenance
