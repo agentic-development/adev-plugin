@@ -309,6 +309,33 @@ After both reviews pass:
 2. Record: specialist used (or "generic"), review cycles needed, concerns noted.
 3. Move to the next task.
 
+### Step 2-post: Integration Gate
+
+After all tasks are complete, run the integration tier gate if configured.
+
+1. Read `manifest.yaml` `gates:` section. If `gates.integration` is defined, resolve its commands using the tiered-gate-schema resolution rules.
+2. If `gates.integration` is not defined, skip this step silently (current behavior preserved — Step 3 follows Step 2 directly).
+3. If `--task <N>` was passed (single-task re-run), skip this step. Integration gates only run when all tasks complete in a full plan execution.
+4. **E2E exclusion:** Only the fast tier (per-task in Step 2) and integration tier (this step) execute during implementation. The E2E tier is excluded from `/adev:implement` — E2E gates execute only during `/adev:validate` Check 1c.
+5. This step reads from `manifest.yaml` only. `governance/gates.yaml` does not apply to the integration gate step (governance gates only apply to `/adev:validate` Check 1). This is orthogonal to the Step 2h per-task governance gates, which continue to operate independently.
+
+**Execute commands sequentially.** All commands within the integration tier share the tier's severity (default: `error`). Individual commands do not have their own severity.
+
+**If a command exits non-zero with `severity: error`:**
+- Emit a standalone failure report immediately with command output (truncated to last 8 KB per stream).
+- Steps 3 (Final Review), 4 (Completion), and all subsequent steps do not execute.
+- Write execution state: `status: "blocked"`, `blockers` set to the integration gate failure details, `nextAction` set to "Fix integration issues and re-run /adev:implement or /adev:validate."
+- Report: "Integration gates failed. Fix the integration issues and re-run `/adev:implement --task <last>` or `/adev:validate`."
+
+**If a command exits non-zero with `severity: warning`:**
+- Record the failure as WARN.
+- Step 3 (Final Review) proceeds.
+- The warning is included in the Step 4 completion report.
+
+**If all commands pass:** Proceed to Step 3.
+
+**Integration Gates section in completion report:** If integration gates were executed, the Step 4 completion report includes an "Integration Gates" section showing a GateResult per command: tier name, command, pass/fail/warn status, duration, and output for failures.
+
 ### Step 3: Final Review
 
 After all tasks are complete, dispatch a final code quality reviewer subagent that reviews the entire implementation across all tasks:

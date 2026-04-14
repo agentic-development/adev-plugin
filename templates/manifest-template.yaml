@@ -117,6 +117,28 @@ specialists: []
 # Quality Gates
 # Commands that must pass for implementation to be considered complete.
 # These are also recorded in the constitution but listed here for tooling.
+#
+# Flat format (simple projects — all gates run as a single Check 1):
+#   gates:
+#     test: "npm test"
+#     lint: "npm run lint"
+#     typecheck: "npx tsc --noEmit"
+#
+# Tiered format (progressive confidence — fail-fast between tiers):
+#   gates:
+#     fast:                          # Tier 1: runs during TDD loop and validate Check 1a
+#       test: "npm test"
+#       lint: "npm run lint"
+#       typecheck: "npx tsc --noEmit"
+#     integration:                   # Tier 2: runs after all tasks in /adev:implement
+#       test: "npm run test:integration"
+#     e2e:                           # Tier 3: runs during /adev:validate Check 1c only
+#       smoke: "npm run test:e2e:smoke"    # severity: error (default)
+#       full: "npm run test:e2e"           # severity: warning (default)
+#
+# Severity: error (blocks, default for fast/integration/e2e.smoke) or
+#           warning (reported only, default for e2e/e2e.full).
+# Override per tier: add severity: warning (or error) under the tier key.
 # ============================================================================
 
 gates:
