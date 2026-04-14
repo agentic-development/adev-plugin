@@ -65,7 +65,7 @@ Invoke `/adev:route --plan <plan-path>`.
 Invoke `/adev:implement <plan-path>`.
 
 - **Skip condition:** None. Implementation always runs unless the build was resumed past this step.
-- **Stop condition:** Quality gates fail (tests fail, lint errors, etc.). Save build state with the failure, report the failures to the user, and stop the build for this spec.
+- **Stop condition:** Quality gates fail (tests fail, lint errors, etc.) OR integration gates fail with `severity: error` (see implement SKILL.md Step 2-post). Save build state with the failure (including tier-specific context: tier name, failing command, severity), report the failures to the user, and stop the build for this spec.
 - **On success:** Record step as `completed` in build state.
 
 ### Step 5: Validate
@@ -73,8 +73,11 @@ Invoke `/adev:implement <plan-path>`.
 Invoke `/adev:validate --spec <path> --plan <plan-path>`.
 
 - **Skip condition:** None. Validation always runs as the final step.
-- **Outcome:** Report PASS or FAIL. A validation FAIL is recorded but does NOT retroactively block the build -- the implementation is already done. Validation is informational, indicating whether all acceptance criteria from the spec are met.
-- **On success or failure:** Record step as `completed` (with PASS/FAIL noted) in build state.
+- **Outcome:** Report PASS, PASS_WITH_WARNINGS, or FAIL.
+  - **PASS:** All quality gate tiers pass, all acceptance criteria met.
+  - **PASS_WITH_WARNINGS:** All error-severity tiers pass but one or more warning-severity tiers (e.g., E2E full suite) failed. Build state records the warnings but does NOT treat the result as a build failure.
+  - **FAIL:** An error-severity tier failed or acceptance criteria not met. Validation FAIL is recorded but does NOT retroactively block the build — the implementation is already done. Validation is informational.
+- **On success or failure:** Record step as `completed` (with PASS/PASS_WITH_WARNINGS/FAIL noted) in build state.
 
 ---
 
@@ -128,7 +131,7 @@ The build state file is written **after each step completes** (not just at the e
 - `spec`: path to the spec being built
 - `phase`: milestone name (if invoked via `--phase`) or `null`
 - `status`: `in_progress` while running, `completed` when all steps finish successfully, `failed` if any step fails
-- `steps`: array of step records, each with `name`, `status` (`completed`, `failed`, `skipped`), `timestamp` (ISO-8601), and optional `error` (string, only on failure)
+- `steps`: array of step records, each with `name`, `status` (`completed`, `failed`, `skipped`), `timestamp` (ISO-8601), and optional `error` (string, only on failure). On tier-specific failures, the `error` field includes tier context: `"Integration gate failure: tier=integration, command='npm run test:integration', severity=error"`
 - `started`: ISO-8601 timestamp of build start
 - `updated`: ISO-8601 timestamp of last state write
 
@@ -266,10 +269,14 @@ Dry Run: Build Pipeline for <spec or phase>
     Step 4: Implement — EXECUTE (5 tasks)
     Step 5: Validate  — EXECUTE
 
+  Gates: fast (test, lint), integration (test), e2e (smoke, full)
+
   ⚠ completed_with_warnings: <spec> passed review with notes — verify notes are addressed.
 
   Estimated effort: 5 tasks across 3 active steps.
 ```
+
+**Gate tier summary in dry-run:** Read the `gates:` section of `manifest.yaml` for display purposes only — show tier names and command key labels as declared in the YAML (e.g., "Gates: fast (test, lint), integration (test), e2e (smoke)"). This is a display-only read, not gate resolution — the orchestrator does not apply fallback rules, severity defaults, or tier ordering. If `gates:` has flat keys, show "Gates: flat (test, lint)". If `gates:` is absent or empty, show "Gates: none configured."
 
 `--dry-run` is strictly read-only. It never invokes a skill, writes a file, or modifies build state.
 
