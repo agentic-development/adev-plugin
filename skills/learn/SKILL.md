@@ -24,7 +24,7 @@ Explicit user-driven capture of lessons the automated lifecycle missed. Takes a 
 ## Prerequisites
 
 1. `.context-index/` must exist. If not, stop and suggest `/adev:init`.
-2. `lib/heuristics.mjs` must exist (it provides the storage API).
+2. The adev plugin's `lib/heuristics.mjs` must be accessible (it provides the storage API). Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Use `<ADEV_ROOT>/lib/heuristics.mjs` for imports.
 
 ## Step 1: Parse Input
 
