@@ -36,6 +36,8 @@ Before starting, verify:
 1. If `governance/gates.yaml` exists → read all gates. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only). Group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c.
 2. If `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found. Quality gates are not configured. Run `/adev:init` to set up gates."
 
+**Legacy gate detection:** If `manifest.yaml` contains a `gates:` section, emit a migration warning: "Legacy gates: section found in manifest.yaml. This is no longer used. Move gate definitions to governance/gates.yaml." This warning is informational and does not affect Check 1 execution.
+
 **Default rules:**
 - Gates without explicit `tier` default to `fast`
 - Gates without explicit `kind` default to `deterministic`
