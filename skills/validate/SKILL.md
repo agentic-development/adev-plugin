@@ -333,7 +333,7 @@ Initial `confidence: medium` is used (a stronger signal than `/adev:recover`'s `
 
 Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
 
-1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `<ADEV_ROOT>/lib/heuristics.mjs`, where `<ADEV_ROOT>` is the resolved plugin root).
 2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
 3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<validation-report-path>', date: '<today>', source: 'validation' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
 4. If no contradiction is detected, proceed directly to writeHeuristic.
@@ -342,17 +342,19 @@ This is a best-effort semantic comparison performed by you (the agent), not a pr
 
 #### Inline Node Invocation
 
-Run the extraction via an inline Node invocation that resolves `projectRoot`, imports `writeHeuristic` from `./lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL. The process always exits with code 0. The `evidence[]` array must contain exactly one entry: `{ source: "validation", path: "<validation-report-path>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence in the printed output must come from the `writeHeuristic` return value (which may auto-promote).
+Run the extraction via an inline Node invocation that resolves `projectRoot`, imports `writeHeuristic` from the adev plugin's `lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL. The process always exits with code 0. The `evidence[]` array must contain exactly one entry: `{ source: "validation", path: "<validation-report-path>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence in the printed output must come from the `writeHeuristic` return value (which may auto-promote).
+
+**Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. For example, if this skill's base directory is `/path/to/adev/0.10.0/skills/validate`, the plugin root is `/path/to/adev/0.10.0`. Use the absolute path in the import.
 
 On import failure: SKIP with reason `"helper unavailable"`.
 On `HEURISTICS_SCHEMA_ERROR` or any thrown error: SKIP with the error message.
 
-Concrete invocation:
+Concrete invocation (replace `<ADEV_ROOT>` with the resolved absolute plugin root path):
 
 ```bash
 node --input-type=module -e "
 try {
-  const { writeHeuristic } = await import('./lib/heuristics.mjs');
+  const { writeHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
   try {
     const h = await writeHeuristic(projectRoot, {
       id: 'foo-spec-a1b2c3d4',

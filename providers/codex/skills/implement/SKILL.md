@@ -37,7 +37,7 @@ Read once at start:
     Derive the module slug from the plan's spec `charter:` frontmatter field.
     Run inline Node.js:
     ```bash
-    node -e "import { retrieveHeuristics, renderHeuristic } from './lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    node -e "import { retrieveHeuristics, renderHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
     ```
     Where `<module>` is the charter module slug and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
     If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
