@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, readdirSync, rmSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -52,9 +52,12 @@ export const ClaudeCodeAdapter = {
   async install(opts = {}) {
     const scope = opts.scope || "user";
     const claudeHome = getClaudeHome();
-    const cacheDir = join(claudeHome, "plugins", "cache", "agentic-development", "adev", PLUGIN_VERSION);
+    const pluginCacheParent = join(claudeHome, "plugins", "cache", "agentic-development", "adev");
+    const cacheDir = join(pluginCacheParent, PLUGIN_VERSION);
 
     if (existsSync(cacheDir)) {
+      this.updateRegistry(claudeHome, cacheDir);
+      this.enable(scope);
       return { installed: false, path: cacheDir };
     }
 
@@ -77,9 +80,40 @@ export const ClaudeCodeAdapter = {
       }
     }
 
+    this.cleanOldVersions(pluginCacheParent);
+    this.updateRegistry(claudeHome, cacheDir);
     this.enable(scope);
 
     return { installed: true, path: cacheDir };
+  },
+
+  cleanOldVersions(pluginCacheParent) {
+    if (!existsSync(pluginCacheParent)) return;
+    for (const entry of readdirSync(pluginCacheParent)) {
+      if (entry !== PLUGIN_VERSION) {
+        rmSync(join(pluginCacheParent, entry), { recursive: true, force: true });
+      }
+    }
+  },
+
+  updateRegistry(claudeHome, cacheDir) {
+    const registryPath = join(claudeHome, "plugins", "installed_plugins.json");
+    const registry = readJson(registryPath) || { version: 2, plugins: {} };
+    const key = "adev@agentic-development";
+    const now = new Date().toISOString();
+    const existing = registry.plugins[key]?.[0];
+
+    registry.plugins[key] = [
+      {
+        scope: existing?.scope || "user",
+        installPath: cacheDir,
+        version: PLUGIN_VERSION,
+        installedAt: existing?.installedAt || now,
+        lastUpdated: now,
+      },
+    ];
+
+    writeJson(registryPath, registry);
   },
 
   enable(scope = "user") {
