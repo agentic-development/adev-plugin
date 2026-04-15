@@ -1,6 +1,6 @@
 ---
 charter: multi-repo-workspace
-status: review-passed
+status: validated
 risk_level: medium
 revision: 1
 charter-revision: 2
@@ -36,7 +36,7 @@ depends-on: ["workspace-foundation", "context-resolution"]
 
 6. **When** `/adev:review-specs` encounters a spec with `depends-on` containing cross-repo references **then** it resolves each reference using `resolveRef`. If any returns `null`, it flags: "Cross-repo reference '@repo/spec' could not be resolved — repo or spec not found."
 
-7. **When** a cross-repo reference resolves to a spec with `status: review-passed` **then** the reviewer emits a warning: "Cross-repo dependency '@repo/spec' is in draft status — may not be ready."
+7. **When** a cross-repo reference resolves to a spec with `status: validated` **then** the reviewer emits a warning: "Cross-repo dependency '@repo/spec' is in draft status — may not be ready."
 
 8. **When** a cross-repo reference resolves to a spec with `status: superseded` **then** the reviewer emits a warning: "Cross-repo dependency '@repo/spec' is superseded — check for replacement."
 

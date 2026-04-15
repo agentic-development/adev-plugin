@@ -77,15 +77,15 @@ The adev plugin assumes a single git repository per project. Teams working acros
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Workspace Detection | Walk up from `cwd` to find `adev-workspace.yaml`. Return workspace root path, parsed config, and current repo slug. No-op when absent. | must-have | 1 | — |
-| Workspace Schema | Define and validate `adev-workspace.yaml` structure: repo registry, dependencies, workspace metadata | must-have | 1 | — |
-| Init Workspace | `/adev:init --workspace` scaffolds `adev-workspace.yaml` and workspace `.context-index/`, optionally auto-discovers repos in child directories | must-have | 1 | — |
-| Context Resolution | Assemble WorkspaceContext at skill invocation — current repo context + read-only sibling repo contexts. Skills opt in via a resolver function. | must-have | 1 | — |
-| Cross-Repo Spec References | Specs declare `depends-on: ["@repo-slug/spec-slug"]` in frontmatter. References resolve to actual spec files in sibling repos. | must-have | 1 | — |
-| Reference Validation | `/adev:review-specs` verifies cross-repo `depends-on` targets exist and are in compatible status (not `draft`) | must-have | 1 | — |
-| Dependency-Aware Planning | `/adev:plan --phase` reads the workspace dependency graph to order repo-level plans (upstream repos first) | should-have | 1 | — |
-| Workspace-Level Charters | `/adev:brainstorm` in the workspace root creates charters in workspace `.context-index/` that decompose into repo-level specs | should-have | 1 | — |
-| Workspace Status | `/adev:status` in workspace root aggregates spec/charter status across all repos | nice-to-have | 1 | — |
+| Workspace Detection | Walk up from `cwd` to find `adev-workspace.yaml`. Return workspace root path, parsed config, and current repo slug. No-op when absent. | must-have | 1 | validated |
+| Workspace Schema | Define and validate `adev-workspace.yaml` structure: repo registry, dependencies, workspace metadata | must-have | 1 | validated |
+| Init Workspace | `/adev:init --workspace` scaffolds `adev-workspace.yaml` and workspace `.context-index/`, optionally auto-discovers repos in child directories | must-have | 1 | validated |
+| Context Resolution | Assemble WorkspaceContext at skill invocation — current repo context + read-only sibling repo contexts. Skills opt in via a resolver function. | must-have | 1 | validated |
+| Cross-Repo Spec References | Specs declare `depends-on: ["@repo-slug/spec-slug"]` in frontmatter. References resolve to actual spec files in sibling repos. | must-have | 1 | validated |
+| Reference Validation | `/adev:review-specs` verifies cross-repo `depends-on` targets exist and are in compatible status (not `draft`) | must-have | 1 | validated |
+| Dependency-Aware Planning | `/adev:plan --phase` reads the workspace dependency graph to order repo-level plans (upstream repos first) | should-have | 1 | validated |
+| Workspace-Level Charters | `/adev:brainstorm` in the workspace root creates charters in workspace `.context-index/` that decompose into repo-level specs | should-have | 1 | validated |
+| Workspace Status | `/adev:status` in workspace root aggregates spec/charter status across all repos | nice-to-have | 1 | validated |
 
 ## Deferred Capabilities
 
