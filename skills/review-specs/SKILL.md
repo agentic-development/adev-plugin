@@ -56,6 +56,33 @@ For each spec to be reviewed, gather the context package that all reviewers will
 
 If a charter or constitution file is missing, warn the user and ask whether to proceed with reduced context or abort.
 
+## Step 2b: Validate Cross-Repo `depends-on` References
+
+After loading the spec, inspect its `depends-on` frontmatter field for cross-repo references. A cross-repo reference uses the format `@repo-slug/spec-slug`.
+
+**Workspace detection:** Walk the directory tree upward from the spec file's location, looking for `adev-workspace.yaml`. If found, a workspace is active; use `resolveRef` from `lib/workspace.mjs` to resolve each cross-repo reference.
+
+**If cross-repo references are present and a workspace is detected:**
+
+For each `depends-on` entry that matches the `@repo-slug/spec-slug` pattern:
+
+1. Call `resolveRef(ref, workspaceConfig)` to locate the referenced spec.
+2. If the reference cannot be resolved (repo or spec not found), flag a **warning**:
+   `"Cross-repo reference '@repo-slug/spec-slug' could not be resolved — repo or spec not found."`
+3. If resolved successfully, read the referenced spec's `status` frontmatter field:
+   - If `status: draft`, flag a **warning**: `"Cross-repo dependency '@repo-slug/spec-slug' is in draft status"`
+   - If `status: superseded`, flag a **warning**: `"Cross-repo dependency '@repo-slug/spec-slug' is superseded"`
+4. Include all cross-repo reference warnings in the context package passed to reviewer subagents (Step 4), so the Structural Architect can factor them into the review.
+
+**If cross-repo references are present but no workspace detected:**
+
+Skip cross-repo validation with a note to the user:
+`"Cross-repo references found but no workspace detected — skipping validation."`
+
+Do not treat missing workspace as a blocking error; proceed with the rest of the review using only locally available context.
+
+**If no cross-repo references are present:** skip this step entirely.
+
 ## Step 3: Check Specialist Registry
 
 Read `.context-index/manifest.yaml` and check the `specialists` section. For each spec, match file patterns and keywords from the spec content against the specialist registry:
