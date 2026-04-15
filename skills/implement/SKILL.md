@@ -48,17 +48,18 @@ Read these files once at the start. Extract everything subagents will need so th
     If `model_tiers` is absent or a tier is unset, use the hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
 11. **Heuristics:** Load module-scoped heuristics for injection into context packets.
     Derive the module slug from the plan's spec `charter:` frontmatter field.
+    **Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Use the absolute path in imports. Replace `<ADEV_ROOT>` below with the resolved path.
     Run inline Node.js:
     ```bash
-    node -e "import { retrieveHeuristics, renderHeuristic } from './lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    node -e "import { retrieveHeuristics, renderHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
     ```
-    Where `<module>` is the charter module slug and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
+    Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<module>` is the charter module slug, and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
     If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
     Store the `rendered` output for use in Step 2a.
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
-**Execution State Check:** Read `.context-index/.execution-state.md` using inline Node.js: `node -e "import { readExecutionState } from './lib/execution-state.mjs'; ..."`. If the file exists with `status: "active"`, resume from the `currentTask` in the state file instead of task 1. If `status: "blocked"`, surface the blocker to the user and suggest running `/adev:recover` before continuing. If the file is missing or `status: "idle"`, start from task 1 as normal.
+**Execution State Check:** Read `.context-index/.execution-state.md` using inline Node.js: `node -e "import { readExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."` (where `<ADEV_ROOT>` is the resolved absolute plugin root path). If the file exists with `status: "active"`, resume from the `currentTask` in the state file instead of task 1. If `status: "blocked"`, surface the blocker to the user and suggest running `/adev:recover` before continuing. If the file is missing or `status: "idle"`, start from task 1 as normal.
 
 **Update charter Capability Map:** At the start of implementation, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `implementing`.
 
@@ -192,7 +193,7 @@ Keep your report under 2,000 tokens. List files and results concisely. Do not re
 <!-- entire:spec-trace spec=".context-index/specs/features/<module>/<task>.md" task="N" -->
 ```
 
-**Update Execution State:** Before dispatching the implementer subagent, write execution state using inline Node.js: `node -e "import { writeExecutionState } from './lib/execution-state.mjs'; ..."` with `status: "active"`, `planRef` set to the plan file path, `currentTask` set to the task number, `issueBinding` set to the issue ID (if `tasks.backend` is configured), `nextAction` set to the task description, and `progress` set to the full task checklist with completed tasks marked done. If `writeExecutionState` fails, log a warning and continue — do not block implementation.
+**Update Execution State:** Before dispatching the implementer subagent, write execution state using inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."` with `status: "active"`, `planRef` set to the plan file path, `currentTask` set to the task number, `issueBinding` set to the issue ID (if `tasks.backend` is configured), `nextAction` set to the task description, and `progress` set to the full task checklist with completed tasks marked done. If `writeExecutionState` fails, log a warning and continue — do not block implementation.
 
 #### 2d. Dispatch and Handle Status
 
@@ -212,7 +213,7 @@ Dispatch the subagent. Handle the returned status:
 
 **BLOCKED.** The subagent cannot proceed.
 - Present the blocker description to the user immediately.
-- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution. Use inline Node.js: `node -e "import { writeExecutionState } from './lib/execution-state.mjs'; ..."`.
+- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution. Use inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`.
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev:specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 
@@ -309,6 +310,33 @@ After both reviews pass:
 2. Record: specialist used (or "generic"), review cycles needed, concerns noted.
 3. Move to the next task.
 
+### Step 2-post: Integration Gate
+
+After all tasks are complete, run the integration tier gate if configured.
+
+1. Read `manifest.yaml` `gates:` section. If `gates.integration` is defined, resolve its commands using the tiered-gate-schema resolution rules.
+2. If `gates.integration` is not defined, skip this step silently (current behavior preserved — Step 3 follows Step 2 directly).
+3. If `--task <N>` was passed (single-task re-run), skip this step. Integration gates only run when all tasks complete in a full plan execution.
+4. **E2E exclusion:** Only the fast tier (per-task in Step 2) and integration tier (this step) execute during implementation. The E2E tier is excluded from `/adev:implement` — E2E gates execute only during `/adev:validate` Check 1c.
+5. This step reads from `manifest.yaml` only. `governance/gates.yaml` does not apply to the integration gate step (governance gates only apply to `/adev:validate` Check 1). This is orthogonal to the Step 2h per-task governance gates, which continue to operate independently.
+
+**Execute commands sequentially.** All commands within the integration tier share the tier's severity (default: `error`). Individual commands do not have their own severity.
+
+**If a command exits non-zero with `severity: error`:**
+- Emit a standalone failure report immediately with command output (truncated to last 8 KB per stream).
+- Steps 3 (Final Review), 4 (Completion), and all subsequent steps do not execute.
+- Write execution state: `status: "blocked"`, `blockers` set to the integration gate failure details, `nextAction` set to "Fix integration issues and re-run /adev:implement or /adev:validate."
+- Report: "Integration gates failed. Fix the integration issues and re-run `/adev:implement --task <last>` or `/adev:validate`."
+
+**If a command exits non-zero with `severity: warning`:**
+- Record the failure as WARN.
+- Step 3 (Final Review) proceeds.
+- The warning is included in the Step 4 completion report.
+
+**If all commands pass:** Proceed to Step 3.
+
+**Integration Gates section in completion report:** If integration gates were executed, the Step 4 completion report includes an "Integration Gates" section showing a GateResult per command: tier name, command, pass/fail/warn status, duration, and output for failures.
+
 ### Step 3: Final Review
 
 After all tasks are complete, dispatch a final code quality reviewer subagent that reviews the entire implementation across all tasks:
@@ -323,7 +351,7 @@ If `governance/boundaries.yaml` exists, run final boundary compliance check: gre
 
 Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
 
-**Clear Execution State:** After all tasks are complete, clear the execution state using inline Node.js: `node -e "import { clearExecutionState } from './lib/execution-state.mjs'; ..."`. This resets the state to `idle` so the next session starts fresh. If `clearExecutionState` fails, log a warning — implementation is still considered complete.
+**Clear Execution State:** After all tasks are complete, clear the execution state using inline Node.js: `node -e "import { clearExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`. This resets the state to `idle` so the next session starts fresh. If `clearExecutionState` fails, log a warning — implementation is still considered complete.
 
 Read the `completion.merge_policy` from manifest.yaml (default: "pr").
 
