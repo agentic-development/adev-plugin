@@ -26,6 +26,21 @@ This skill requires `.context-index/` to exist. If it does not, tell the user:
 
 Do not proceed without a constitution.
 
+## Workspace Root Handling
+
+Before starting Step 1, detect whether the skill is being invoked at a **workspace root** (a directory that contains a `workspace.yaml` or `.workspace/` configuration but is not itself one of the registered repos):
+
+- **At workspace root, `.context-index/` exists:** Save the charter to the workspace-level `.context-index/specs/features/<module>/charter.md`. This is a workspace-level charter that applies across repos. All other steps proceed normally using this workspace context index.
+
+- **At workspace root, `.context-index/` does not exist:** Do not proceed. Tell the user:
+
+  > You are at the workspace root, but no workspace context index has been initialized.
+  > Run `/adev:init --workspace` to set up the workspace-level context index, then come back to brainstorm.
+
+- **Inside a registered repo (not workspace root):** Use existing single-repo behavior unchanged. The charter is saved to the repo's own `.context-index/specs/features/<module>/charter.md`.
+
+**Detecting workspace root:** Check whether the current directory contains `workspace.yaml` (or `.workspace/config.yaml`) AND whether the current directory is NOT listed as a registered repo path within that config. If both conditions hold, treat the current location as workspace root.
+
 ## Checklist
 
 Complete these steps in order. Do not skip steps.

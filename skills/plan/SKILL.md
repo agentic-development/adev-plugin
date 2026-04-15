@@ -19,6 +19,23 @@ Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implem
 
 When `--phase <name>` is provided, the skill switches from single-spec planning to multi-spec phase planning:
 
+### Workspace Dependency Ordering
+
+When `--phase` is used inside a workspace (detected by the presence of a `workspace.yaml` or `.workspace/` configuration at an ancestor directory, or by `workspace` key in `manifest.yaml`):
+
+1. **Detect workspace:** Check whether the current repo is registered in a workspace by reading the workspace config. If no workspace is found, fall back to single-repo behavior (unchanged).
+2. **Read dependency graph:** Load the workspace dependency graph (e.g., `workspace.yaml` `dependencies` section or `.workspace/deps.json`). Each entry has the form `from: <repo> → to: <repo>`, meaning `from` depends on `to` (i.e., `to` is upstream of `from`).
+3. **Order repos topologically (upstream first):** Sort registered repos so that upstream repos (the `to` side) are planned before downstream repos (the `from` side). This ensures upstream specs are planned and available before repos that depend on them.
+   - Example: if `api` depends on `core`, plan `core` first, then `api`.
+   - Use Kahn's algorithm or depth-first topological sort on the dependency graph.
+4. **Circular dependencies → warning, fall back to declaration order:** If a cycle is detected in the dependency graph, emit a warning:
+   ```
+   Warning: circular dependency detected among workspace repos: <repo-A> → <repo-B> → <repo-A>
+   Falling back to declaration order. Resolve cycles in workspace config before relying on topological ordering.
+   ```
+   Then proceed using the order in which repos are declared in the workspace config.
+5. **No workspace → existing single-repo behavior:** If the current directory is not inside a workspace, or the workspace has only one registered repo, skip all workspace logic and apply the standard phase planning process below.
+
 1. **Scan all specs:** Read all `.md` files under `.context-index/specs/features/` (excluding `charter.md` and `*.plan.md` and `*.review.md`). Parse frontmatter for the `milestone` field.
 2. **Filter by phase:** Select specs whose `milestone` matches `<name>` (case-insensitive).
 3. **Report matching specs** before planning:

@@ -356,6 +356,42 @@ Show all capabilities in a specific phase across all charters.
 | dashboard | Metrics Overview | must-have | draft | — | — | — |
 ```
 
+### Mode: Workspace Aggregation (workspace root)
+
+When invoked at a **workspace root** (a directory that contains `workspace.yaml` or `.workspace/` config but is not itself one of the registered repos), aggregate charter and spec status across all registered repos:
+
+1. **Detect workspace root:** Check whether the current directory contains `workspace.yaml` (or `.workspace/config.yaml`) AND is NOT a registered repo path within that config.
+2. **Read workspace config:** Load the list of registered repos and their local paths.
+3. **Aggregate per repo:** For each registered repo, check for a `.context-index/` directory and read its charters and specs.
+   - If the repo directory does not exist or has no `.context-index/`: report `<slug>: no context configured`
+   - Otherwise: summarize charter and spec counts by status (same fields as `--all` mode)
+4. **Group output by repo**, sorted in topological dependency order (upstream first) when a dependency graph is available.
+
+**Output format:**
+
+```
+=== Workspace Status ===
+
+repo: core
+  Charters: 2 (1 active, 1 draft)
+  Specs: 5 (3 implemented, 1 review-passed, 1 draft)
+  Capabilities: 8/12 implemented
+
+repo: api
+  Charters: 1 (1 active)
+  Specs: 3 (2 review-passed, 1 draft)
+  Capabilities: 4/9 implemented
+
+repo: frontend
+  no context configured
+```
+
+**When invoked inside a repo (not workspace root):** Use existing single-repo behavior for the full status output. At the end, append a footer note if a workspace config is detected at an ancestor:
+
+```
+Note: this repo is part of workspace at <workspace-path>. Run /adev:status at the workspace root for an aggregated view.
+```
+
 ## Important Notes
 
 - This skill is **read-only**. It must never create, modify, or delete any file.
