@@ -2,7 +2,7 @@
 
 ---
 charter: unified-gates
-status: implemented
+status: validated
 risk_level: medium
 revision: 2
 charter-revision: 2

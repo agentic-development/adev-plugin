@@ -74,15 +74,15 @@ Unify governance gates and manifest tiered gates into a single gate system in `g
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Unified Gate Schema | Define the `governance/gates.yaml` schema with `tier` as a first-class gate property alongside `kind`, `scope`, `required`, `severity`, `triggers`, and `command` | must-have | | implemented |
-| Tiered Execution from Governance | Skills read `governance/gates.yaml`, group gates by tier, and execute in order (fast -> integration -> e2e) with fail-fast between error-severity tiers | must-have | | implemented |
-| Manifest Gates Removal | Remove `gates:` section from `manifest.yaml` schema, update manifest template, update `/adev:init` scaffolding to generate `governance/gates.yaml` instead | must-have | | implemented |
-| Skill Migration | Update consuming skills (validate Check 1, implement Step 2-post, build, hygiene Pass 8) to read from `governance/gates.yaml` only | must-have | | implemented |
-| Explicit Skip Reporting | Normalize skip behavior in validate: unconfigured checks report SKIP (not PASS), misconfigured checks report WARN. Checks 8 and 9 no longer silently pass when governance is absent. Report summary shows count of skipped checks with setup guidance. | must-have | | implemented |
-| Transition Gates | Preserve `transitions` section in `governance/gates.yaml` with `required_gates` referencing gate IDs — consumed by validate Check 9 and review-specs | should-have | | implemented |
-| Severity and Required Reconciliation | `required: false` forces `severity: warning`. Explicit `severity` on a gate overrides tier defaults. Default severity: `error` for fast/integration, `warning` for e2e | should-have | | implemented |
-| E2E Sub-keys | Support `smoke`/`full` groupings within e2e-tier gates, with independent severity defaults (`error` for smoke, `warning` for full) | should-have | | implemented |
-| Backward Compatibility Path | Projects with existing `manifest.yaml gates:` get a migration warning from `/adev:init` or `/adev:hygiene` suggesting they generate `governance/gates.yaml` | nice-to-have | | implemented |
+| Unified Gate Schema | Define the `governance/gates.yaml` schema with `tier` as a first-class gate property alongside `kind`, `scope`, `required`, `severity`, `triggers`, and `command` | must-have | | validated |
+| Tiered Execution from Governance | Skills read `governance/gates.yaml`, group gates by tier, and execute in order (fast -> integration -> e2e) with fail-fast between error-severity tiers | must-have | | validated |
+| Manifest Gates Removal | Remove `gates:` section from `manifest.yaml` schema, update manifest template, update `/adev:init` scaffolding to generate `governance/gates.yaml` instead | must-have | | validated |
+| Skill Migration | Update consuming skills (validate Check 1, implement Step 2-post, build, hygiene Pass 8) to read from `governance/gates.yaml` only | must-have | | validated |
+| Explicit Skip Reporting | Normalize skip behavior in validate: unconfigured checks report SKIP (not PASS), misconfigured checks report WARN. Checks 8 and 9 no longer silently pass when governance is absent. Report summary shows count of skipped checks with setup guidance. | must-have | | validated |
+| Transition Gates | Preserve `transitions` section in `governance/gates.yaml` with `required_gates` referencing gate IDs — consumed by validate Check 9 and review-specs | should-have | | validated |
+| Severity and Required Reconciliation | `required: false` forces `severity: warning`. Explicit `severity` on a gate overrides tier defaults. Default severity: `error` for fast/integration, `warning` for e2e | should-have | | validated |
+| E2E Sub-keys | Support `smoke`/`full` groupings within e2e-tier gates, with independent severity defaults (`error` for smoke, `warning` for full) | should-have | | validated |
+| Backward Compatibility Path | Projects with existing `manifest.yaml gates:` get a migration warning from `/adev:init` or `/adev:hygiene` suggesting they generate `governance/gates.yaml` | nice-to-have | | validated |
 
 ## Interface Contracts
 
