@@ -1,6 +1,6 @@
 ---
 charter: multi-repo-workspace
-status: review-passed
+status: validated
 risk_level: low
 revision: 1
 charter-revision: 2
