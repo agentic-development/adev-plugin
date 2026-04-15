@@ -29,28 +29,49 @@ Before starting, verify:
 
 ## The 12 Checks
 
-### Check 1: Quality Gates (fail-fast)
+### Check 1: Quality Gates (fail-fast, tiered)
 
-Gate source resolution order:
-1. If `.context-index/governance/gates.yaml` exists → primary source
+#### Gate Source Resolution
+
+1. If `.context-index/governance/gates.yaml` exists → primary source (flat execution)
    - Run gates where `kind: deterministic` and `command` is non-empty
    - `kind: probabilistic` → skip with note
    - No `command` → skip with note
    - Record `required` flag (non-required failures = warnings, not failures)
-2. If governance does not exist → fall back to constitution Quality Gates (existing behavior)
-3. Also check manifest.yaml `gates:` as secondary fallback
+   - Governance gates always execute as a flat Check 1 — they follow their own schema and do not support tiered sub-checks (1a/1b/1c).
+2. If governance does not exist → read `manifest.yaml` `gates:` section and resolve using tiered gate rules (see below)
 
-Typical commands:
-- Test suite: the `[test command]` from the constitution
-- Linter: the `[lint command]` from the constitution
-- Type checker: the `[type check command]` from the constitution
-- Any custom gates the project defines
+The constitution's Quality Gates section is the human-readable source from which `manifest.yaml` gate values are derived — it is not a separate runtime fallback. If both governance and manifest gates are absent, skip Check 1 entirely and emit: "No quality gates configured in manifest.yaml. Add a `gates:` section to enable automated test execution."
 
-**If `--fix` was passed:** Before reporting failures, attempt auto-fix for lint and formatting errors (e.g., `npx eslint --fix`, `npx prettier --write`). Re-run the failing gate after the fix. If it passes now, record it as PASS (auto-fixed). If it still fails, record it as FAIL.
+#### Tiered Gate Resolution (manifest.yaml)
 
-**If any gate fails (after auto-fix attempt if applicable):** Report the failures with the exact command output. Skip Checks 2 through 11. The report's overall status is FAIL.
+Read the `gates:` section from `manifest.yaml` and resolve into an ordered TierConfig:
 
-**If all gates pass:** Proceed to Check 2.
+- **Tiered mode:** If `gates.fast`, `gates.integration`, or `gates.e2e` keys exist, resolve each defined tier in order (fast → integration → e2e). Each tier contains its declared command keys (e.g., `test`, `lint`, `typecheck`).
+- **Flat fallback mode:** If `gates:` contains only flat keys (e.g., `gates.test: "npm test"`) without tier keys, auto-wrap all flat keys into `gates.fast`. Execute as a single "Check 1" (no sub-check notation). Report format is identical to the current single-gate model.
+- **Mixed keys:** If both flat keys and tier keys coexist, ignore flat keys and emit a warning listing the ignored keys.
+- **Severity defaults:** `error` for `fast` and `integration`; `warning` for `e2e`. If `e2e` contains `smoke`/`full` sub-keys: `error` for `smoke`, `warning` for `full`. Explicit `severity` on a tier overrides the default.
+- **Unrecognized keys:** Keys that are not `fast`, `integration`, or `e2e` and are not flat command strings are ignored with a warning.
+
+#### Tiered Execution (sub-checks 1a/1b/1c)
+
+When tiered gates are resolved, Check 1 splits into sub-checks:
+
+**Check 1a: Fast Tier** — Run all `gates.fast` commands sequentially. If a command exits non-zero with `severity: error`, skip remaining fast commands (intra-tier fail-fast), skip Checks 1b, 1c, and 2–10. Report FAIL. If `severity: warning`, record WARN and continue to next command.
+
+**Check 1b: Integration Tier** — Run all `gates.integration` commands sequentially. Same fail-fast and severity semantics as 1a. If not defined, skip with note: "Integration tier not configured — skipped."
+
+**Check 1c: E2E Tier** — Run all `gates.e2e` commands sequentially. If `e2e` contains direct command keys, all share the tier's severity (default: `warning`). If `e2e` contains `smoke`/`full` sub-keys, run `smoke` first (default `severity: error`), then `full` (default `severity: warning`). If `smoke` fails with error severity, skip `full`. If not defined, skip with note. E2E gate commands invoke Playwright (or any test runner) via shell — they are independent of Check 11's Playwright MCP visual verification.
+
+**Output truncation:** Command stdout/stderr in failure reports is truncated to the last 8 KB per stream.
+
+**`--fix` behavior:** Auto-fix applies only to the fast tier (Check 1a). If `--fix` was passed and a fast-tier lint or formatting gate fails, attempt auto-fix (e.g., `npx eslint --fix`). Re-run the gate. If it passes, record as PASS (auto-fixed). Integration and E2E commands are never auto-fixed.
+
+**Check 11 exception:** If an error-severity tier fails and Checks 2–10 are skipped, Check 11 (Visual Verification) still follows its existing independent trigger rules — if the spec references UI files, note that visual verification is pending.
+
+**Tier summary:** After Check 1 completes (all tiers pass or warning-only failures), include a tier summary in the report showing each tier's status, commands run, and duration per command. Use GateResult format: `Check 1a (fast): npm test — PASS (2.1s)`.
+
+**If all tiers pass (or only warning-severity tiers fail):** Proceed to Check 2.
 
 ### Check 1.5: Source Manifest Verification
 
@@ -312,7 +333,7 @@ Initial `confidence: medium` is used (a stronger signal than `/adev:recover`'s `
 
 Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
 
-1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `<ADEV_ROOT>/lib/heuristics.mjs`, where `<ADEV_ROOT>` is the resolved plugin root).
 2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
 3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<validation-report-path>', date: '<today>', source: 'validation' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
 4. If no contradiction is detected, proceed directly to writeHeuristic.
@@ -321,17 +342,19 @@ This is a best-effort semantic comparison performed by you (the agent), not a pr
 
 #### Inline Node Invocation
 
-Run the extraction via an inline Node invocation that resolves `projectRoot`, imports `writeHeuristic` from `./lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL. The process always exits with code 0. The `evidence[]` array must contain exactly one entry: `{ source: "validation", path: "<validation-report-path>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence in the printed output must come from the `writeHeuristic` return value (which may auto-promote).
+Run the extraction via an inline Node invocation that resolves `projectRoot`, imports `writeHeuristic` from the adev plugin's `lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL. The process always exits with code 0. The `evidence[]` array must contain exactly one entry: `{ source: "validation", path: "<validation-report-path>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence in the printed output must come from the `writeHeuristic` return value (which may auto-promote).
+
+**Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. For example, if this skill's base directory is `/path/to/adev/0.10.0/skills/validate`, the plugin root is `/path/to/adev/0.10.0`. Use the absolute path in the import.
 
 On import failure: SKIP with reason `"helper unavailable"`.
 On `HEURISTICS_SCHEMA_ERROR` or any thrown error: SKIP with the error message.
 
-Concrete invocation:
+Concrete invocation (replace `<ADEV_ROOT>` with the resolved absolute plugin root path):
 
 ```bash
 node --input-type=module -e "
 try {
-  const { writeHeuristic } = await import('./lib/heuristics.mjs');
+  const { writeHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
   try {
     const h = await writeHeuristic(projectRoot, {
       id: 'foo-spec-a1b2c3d4',

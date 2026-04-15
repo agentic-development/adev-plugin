@@ -361,7 +361,7 @@ Worked example: `MISSING_CONTEXT` + "Error: cache miss on third-party API" → n
 
 Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
 
-1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `lib/heuristics.mjs`).
+1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `<ADEV_ROOT>/lib/heuristics.mjs`, where `<ADEV_ROOT>` is the resolved plugin root).
 2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
 3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<recovery-record-path>', date: '<today>', source: 'recovery' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
 4. If no contradiction is detected, proceed directly to writeHeuristic.
@@ -370,7 +370,9 @@ This is a best-effort semantic comparison performed by you (the agent), not a pr
 
 #### Inline Node Invocation
 
-Run the extraction via an inline Node invocation that imports `writeHeuristic` from `./lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a stderr warning without blocking the recovery workflow. The `evidence[]` array must contain exactly one entry: `{ source: "recovery", path: "<recovery-record-path>", date: "<today>" }`.
+Run the extraction via an inline Node invocation that imports `writeHeuristic` from the adev plugin's `lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a stderr warning without blocking the recovery workflow. The `evidence[]` array must contain exactly one entry: `{ source: "recovery", path: "<recovery-record-path>", date: "<today>" }`.
+
+**Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` below with the resolved absolute path.
 
 On success, print a single confirmation line using the helper's return value (which reflects any auto-promotion):
 
@@ -394,7 +396,7 @@ Concrete invocation:
 
 ```bash
 node --input-type=module -e "
-import { writeHeuristic } from './lib/heuristics.mjs';
+import { writeHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs';
 try {
   const h = await writeHeuristic(projectRoot, {
     id: 'missing-context-a1b2c3d4',
