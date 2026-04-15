@@ -33,35 +33,33 @@ Before starting, verify:
 
 #### Gate Source Resolution
 
-1. If `.context-index/governance/gates.yaml` exists → primary source (flat execution)
-   - Run gates where `kind: deterministic` and `command` is non-empty
-   - `kind: probabilistic` → skip with note
-   - No `command` → skip with note
-   - Record `required` flag (non-required failures = warnings, not failures)
-   - Governance gates always execute as a flat Check 1 — they follow their own schema and do not support tiered sub-checks (1a/1b/1c).
-2. If governance does not exist → read `manifest.yaml` `gates:` section and resolve using tiered gate rules (see below)
+1. If `governance/gates.yaml` exists → read all gates. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only). Group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c.
+2. If `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found. Quality gates are not configured. Run `/adev:init` to set up gates."
 
-The constitution's Quality Gates section is the human-readable source from which `manifest.yaml` gate values are derived — it is not a separate runtime fallback. If both governance and manifest gates are absent, skip Check 1 entirely and emit: "No quality gates configured in manifest.yaml. Add a `gates:` section to enable automated test execution."
+**Default rules:**
+- Gates without explicit `tier` default to `fast`
+- Gates without explicit `kind` default to `deterministic`
+- Default severity: `error` for fast/integration, `warning` for e2e
+- `required: false` forces `severity: warning` regardless of other settings
+- `kind: probabilistic` gates → skip with note: "Gate '<id>' is probabilistic — requires manual or eval-based verification."
+- Probabilistic with `command` → ignore command, emit WARN: "Gate '<id>' is probabilistic but has a command — command ignored."
+- E2E `group: smoke` runs before `group: full`, with independent severity defaults (error for smoke, warning for full). If smoke fails with error severity, skip full.
 
-#### Tiered Gate Resolution (manifest.yaml)
-
-Read the `gates:` section from `manifest.yaml` and resolve into an ordered TierConfig:
-
-- **Tiered mode:** If `gates.fast`, `gates.integration`, or `gates.e2e` keys exist, resolve each defined tier in order (fast → integration → e2e). Each tier contains its declared command keys (e.g., `test`, `lint`, `typecheck`).
-- **Flat fallback mode:** If `gates:` contains only flat keys (e.g., `gates.test: "npm test"`) without tier keys, auto-wrap all flat keys into `gates.fast`. Execute as a single "Check 1" (no sub-check notation). Report format is identical to the current single-gate model.
-- **Mixed keys:** If both flat keys and tier keys coexist, ignore flat keys and emit a warning listing the ignored keys.
-- **Severity defaults:** `error` for `fast` and `integration`; `warning` for `e2e`. If `e2e` contains `smoke`/`full` sub-keys: `error` for `smoke`, `warning` for `full`. Explicit `severity` on a tier overrides the default.
-- **Unrecognized keys:** Keys that are not `fast`, `integration`, or `e2e` and are not flat command strings are ignored with a warning.
+**Misconfiguration warnings:**
+- Empty gates list → SKIP Check 1 with advisory.
+- Invalid severity value → default to `error` with WARN.
+- Invalid tier value → default to `fast` with WARN.
+- Duplicate gate IDs → second definition ignored with WARN.
 
 #### Tiered Execution (sub-checks 1a/1b/1c)
 
-When tiered gates are resolved, Check 1 splits into sub-checks:
+When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into sub-checks:
 
-**Check 1a: Fast Tier** — Run all `gates.fast` commands sequentially. If a command exits non-zero with `severity: error`, skip remaining fast commands (intra-tier fail-fast), skip Checks 1b, 1c, and 2–10. Report FAIL. If `severity: warning`, record WARN and continue to next command.
+**Check 1a: Fast Tier** — Run all fast-tier gates sequentially. If a gate exits non-zero with `severity: error`, skip remaining fast gates (intra-tier fail-fast), skip Checks 1b, 1c, and 2–10. Report FAIL. If `severity: warning`, record WARN and continue to next gate. If no gates are assigned to the fast tier, skip with note: "fast tier — no gates configured, skipped."
 
-**Check 1b: Integration Tier** — Run all `gates.integration` commands sequentially. Same fail-fast and severity semantics as 1a. If not defined, skip with note: "Integration tier not configured — skipped."
+**Check 1b: Integration Tier** — Run all integration-tier gates sequentially. Same fail-fast and severity semantics as 1a. If no gates are assigned to the integration tier, skip with note: "integration tier — no gates configured, skipped."
 
-**Check 1c: E2E Tier** — Run all `gates.e2e` commands sequentially. If `e2e` contains direct command keys, all share the tier's severity (default: `warning`). If `e2e` contains `smoke`/`full` sub-keys, run `smoke` first (default `severity: error`), then `full` (default `severity: warning`). If `smoke` fails with error severity, skip `full`. If not defined, skip with note. E2E gate commands invoke Playwright (or any test runner) via shell — they are independent of Check 11's Playwright MCP visual verification.
+**Check 1c: E2E Tier** — Run all e2e-tier gates sequentially. Gates in `group: smoke` run before `group: full`. Smoke default severity: `error`; full default severity: `warning`. If smoke fails with error severity, skip full. If no gates are assigned to the e2e tier, skip with note: "e2e tier — no gates configured, skipped." E2E gate commands invoke Playwright (or any test runner) via shell — they are independent of Check 11's Playwright MCP visual verification.
 
 **Output truncation:** Command stdout/stderr in failure reports is truncated to the last 8 KB per stream.
 
@@ -177,13 +175,16 @@ Record per specialist: PASS, FAIL (with specific findings), or SKIPPED (no speci
 
 ### Check 8: Boundary Compliance
 
-If `.context-index/governance/boundaries.yaml` exists, collect all files changed. For each boundary rule:
+If the `governance/` directory does not exist → SKIP: "No governance directory configured."
+
+If `governance/` exists but `.context-index/governance/boundaries.yaml` is missing → PASS (no rules configured).
+
+If `governance/boundaries.yaml` exists, collect all files changed. For each boundary rule:
 
 1. Run regex `pattern` against file contents, respecting `exclude` globs.
 2. `severity: error` → FAIL
 3. `severity: warning` → WARN (does not cause overall FAIL)
 4. Apply charter-specific overrides from `governance/overrides/<slug>.yaml` if present.
-5. If `boundaries.yaml` does not exist → PASS (no rules configured).
 
 ### Check 9: Transition Gates
 
@@ -192,7 +193,7 @@ If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merg
 1. Verify each `required_gates` was run and passed in Check 1.
 2. If a required gate was skipped (probabilistic/no command) → log "manual verification required."
 3. Note `approver_role` if present (informational).
-4. If no transitions defined or governance/ absent → PASS.
+4. If no transitions configured in `governance/gates.yaml` (or `governance/` absent) → SKIP: "No transitions configured."
 
 ### Check 10: Platform Drift
 
@@ -471,6 +472,10 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 ## Check 12: Success Heuristic Extraction — PASS | SKIP
 - [PASS case] Heuristic extracted: <id> (scope: <scope>, confidence: medium)
 - [SKIP case] SKIP: <reason> (e.g., "not first-run PASS", "non-PASS result", "helper unavailable", "no charter scope", "no report path", "invalid spec slug", "<HEURISTICS_SCHEMA_ERROR message>")
+
+---
+
+**Summary:** [N] passed, [N] failed, [N] skipped checks. [If any skipped due to missing configuration: "Run `/adev:init` to configure missing components."]
 ```
 
 ## Overall Status

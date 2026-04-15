@@ -276,7 +276,7 @@ Dry Run: Build Pipeline for <spec or phase>
   Estimated effort: 5 tasks across 3 active steps.
 ```
 
-**Gate tier summary in dry-run:** Read the `gates:` section of `manifest.yaml` for display purposes only — show tier names and command key labels as declared in the YAML (e.g., "Gates: fast (test, lint), integration (test), e2e (smoke)"). This is a display-only read, not gate resolution — the orchestrator does not apply fallback rules, severity defaults, or tier ordering. If `gates:` has flat keys, show "Gates: flat (test, lint)". If `gates:` is absent or empty, show "Gates: none configured."
+**Gate tier summary in dry-run:** Read `governance/gates.yaml` for display purposes only — show tier names and gate IDs grouped by tier (e.g., "Gates: fast (test, lint), integration (test), e2e (smoke)"). This is a display-only read, not gate resolution — the orchestrator does not apply severity defaults or tier ordering. If `governance/gates.yaml` does not exist or has no gates, show "Gates: none configured."
 
 `--dry-run` is strictly read-only. It never invokes a skill, writes a file, or modifies build state.
 
