@@ -1,18 +1,18 @@
 ---
-name: adev:start
-description: "Pre-lifecycle triage that classifies incoming work and routes to the correct /adev:* skill. Scans for in-progress plans, unreviewed specs, and recent sessions before classifying. Use when the user says 'I need to work on something', 'start', 'what should I do', 'I have a bug', 'implement the feature', or any time the user is unsure which adev skill to invoke."
+name: adev:work
+description: "Pre-lifecycle triage that classifies incoming work and routes to the correct /adev:* skill. Scans for in-progress plans, unreviewed specs, and recent sessions before classifying. Use when the user says 'I need to work on something', 'what should I work on', 'what should I do', 'I have a bug', 'implement the feature', or any time the user is unsure which adev skill to invoke."
 ---
 
 # Work Triage and Routing
 
 Classify incoming work, detect in-progress project state, and route to the correct `/adev:*` skill. This is the universal entry point — use it when you are unsure which skill to invoke.
 
-**Announce at start:** "I'm using the adev:start skill to triage your work and route to the right skill."
+**Announce at start:** "I'm using the adev:work skill to triage your work and route to the right skill."
 
 ## Arguments
 
 - No arguments: interactive triage (scans state, asks what you are working on)
-- Free-text description: classify the description and propose a route (e.g., `/adev:start fix the broken test in hooks`)
+- Free-text description: classify the description and propose a route (e.g., `/adev:work fix the broken test in hooks`)
 - `--intake [<description>]`: intake mode — classify and triage an incoming work request into an issue on the issue board
 - `--intake --file <path>`: batch intake mode — read a file containing multiple requests and process them all. File must be UTF-8 text, limited to 100KB
 

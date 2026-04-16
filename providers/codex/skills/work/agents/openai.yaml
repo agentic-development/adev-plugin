@@ -1,4 +1,4 @@
 interface:
-  display_name: "adev Start"
+  display_name: "adev Work"
   short_description: "Triage work and route to the right skill"
-  default_prompt: "Use $adev:start to classify my work and route to the correct adev skill."
+  default_prompt: "Use $adev:work to classify my work and route to the correct adev skill."
