@@ -1,6 +1,6 @@
 ---
 charter: customer-ltv
-status: draft
+status: review-passed
 risk_level: low
 revision: 1
 charter-revision: 2
