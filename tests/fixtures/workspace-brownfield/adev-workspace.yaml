@@ -1,0 +1,27 @@
+# adev-workspace.yaml — Multi-Repo Workspace Configuration
+# Scaffolded by /adev:init --workspace. Edit as needed.
+
+workspace:
+  name: workspace-brownfield
+
+# Registered repositories
+repos:
+  - slug: dbt-models
+    path: ./repos/dbt-models
+    role: transformation
+  - slug: data-api
+    path: ./repos/data-api
+    role: serving
+  - slug: airflow-dags
+    path: ./repos/airflow-dags
+    role: orchestration
+
+# Inter-repo dependencies
+# Convention: "from" depends on "to" — "to" is upstream.
+dependencies:
+  - from: data-api
+    to: dbt-models
+    type: consumes
+  - from: airflow-dags
+    to: dbt-models
+    type: orchestrates

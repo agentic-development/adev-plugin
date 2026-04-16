@@ -1,0 +1,8 @@
+# Platform Context — dbt-models
+
+framework: dbt
+language: sql
+runtime: dbt-core
+test_runner: dbt
+package_manager: pip
+database: postgresql  # adjust per environment
