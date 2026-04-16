@@ -1,0 +1,8 @@
+# Platform Context — airflow-dags
+
+framework: airflow
+version: "2"
+language: python
+runtime: python3.11
+test_runner: pytest
+package_manager: pip
