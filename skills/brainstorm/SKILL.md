@@ -17,6 +17,7 @@ Do NOT invoke any implementation skill, write any code, create any Live Spec, or
 - No arguments: freeform brainstorm (user describes the idea conversationally)
 - `--module <name>`: scope brainstorm to an existing module (extends or revises its charter)
 - `--from-blueprint <path>`: seed brainstorm from a blueprint file (skips early clarification, jumps to approach selection)
+- `--no-bootstrap`: suppress product.md bootstrap even on first-charter scenarios (charter is written without product.md modifications)
 
 ## Prerequisites
 
@@ -50,6 +51,7 @@ Complete these steps in order. Do not skip steps.
 3. **Propose 2-3 approaches** — present options with trade-offs, validate against constitution
 4. **Present design sections** — walk through each charter section, get approval per section
 5. **Write charter** — save to `.context-index/specs/features/<module>/charter.md`
+5b. **Product.md bootstrap** — bootstrap or update product.md (skipped with `--no-bootstrap` or `--module`)
 6. **Charter review loop** — dispatch charter-reviewer subagent, fix issues, max 3 iterations
 7. **User reviews** — ask user to review the written charter
 8. **Transition** — invoke `/adev:specify` to create Live Specs from the charter
@@ -156,9 +158,87 @@ Generate the charter file using the template at `${CLAUDE_PLUGIN_ROOT}/templates
 **Capability Map Status column:** The Capability Map table must include a `Status` column. Initialize every capability's Status to `—` (em dash). This column is updated by downstream skills as capabilities progress through the lifecycle.
 
 **After writing:**
-- Check if `.context-index/specs/product.md` has a module map — if this module is unlisted, tell the user.
 - Commit with message: `feat: add <module> feature charter`
 - Suggest branch name: `feat/<module>/<short-description>`
+- Then proceed to **Step 5b** below before starting the review loop.
+
+## Step 5b: Product.md Bootstrap
+
+> **Skip this step entirely if:** the user passed `--no-bootstrap`, OR if `--module <name>` was used (revision mode — no new charter is being created).
+
+This step runs immediately after the charter is written (Step 5). It keeps `product.md` in sync with the growing set of charters.
+
+### 5b-1: First Charter Detection
+
+Glob `.context-index/specs/features/*/charter.md`. Count the results.
+
+- **If this is the first charter** (count is 1 — only the charter just written exists): proceed to **5b-2: Bootstrap Flow**.
+- **If other charters already exist** (count > 1) AND `.context-index/specs/product.md` exists: proceed to **5b-4: Module Map Append**.
+- **If other charters already exist** AND `.context-index/specs/product.md` does NOT exist: treat as a first-vision opportunity — proceed to **5b-2: Bootstrap Flow**, and list all existing charters in the Module Map when writing product.md.
+
+### 5b-2: Bootstrap Flow
+
+**Check if `.context-index/specs/product.md` already exists.**
+
+- If it exists: skip bootstrap entirely (product.md is preserved as-is). Go to **5b-4: Module Map Append**.
+- If it does not exist: continue below.
+
+**Ask ONE question to the user:**
+
+> This is the first charter in the project. What is the product trying to do, in one sentence? (This becomes the product vision.)
+
+Wait for the user's response. Do not ask any follow-up questions.
+
+- If the user provides a sentence: use it as the Vision.
+- If the user declines or provides no response: write product.md with an empty Vision section and add an advisory comment: `<!-- TODO: fill in product vision -->`.
+
+### 5b-3: Write product.md
+
+Read `.context-index/constitution.md` to extract the project name from its Identity section. Use that as `<project name>`.
+
+Write the following to `.context-index/specs/product.md`:
+
+```markdown
+# Product Vision: <project name>
+
+## Vision
+
+<user's one-sentence response, or empty with TODO comment>
+
+## Module Map
+
+| Module | Description | Charter |
+|--------|-------------|---------|
+| <module-slug> | <one-line Business Intent from the charter just written> | [charter.md](./features/<module-slug>/charter.md) |
+```
+
+If other charters already existed (edge case from 5b-1), add a row for each existing charter as well. Extract their one-line Business Intent from each charter file.
+
+After writing, print:
+
+> Bootstrapped product.md from your one-sentence vision. Run /adev:plan --milestone <name> later to define milestones, or update product.md directly.
+
+### 5b-4: Module Map Append
+
+**When `product.md` exists,** append a row for the new module to the Module Map section after writing the charter.
+
+**Idempotency rule:** Before appending, scan the Module Map table for an existing row whose first cell matches `<module-slug>`. If found, update the description in that row in place. Do NOT add a duplicate row.
+
+**If `product.md` has no `## Module Map` section:**
+
+- Create the section. Insert it just before `## Milestones` if that section exists, or at the end of the file if Milestones is absent.
+- Add the table header and the new row.
+- Inform the user: `"Created Module Map section in product.md."`
+
+**If `product.md` exists but the Module Map table cannot be parsed** (e.g., the file is malformed or uses a non-standard format): skip the append and warn the user:
+
+> product.md exists but Module Map cannot be parsed; please update manually.
+
+**Row format:**
+
+```
+| <module-slug> | <one-line Business Intent from the charter> | [charter.md](./features/<module-slug>/charter.md) |
+```
 
 ## Step 6: Charter Review Loop
 
