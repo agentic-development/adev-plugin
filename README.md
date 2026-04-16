@@ -158,6 +158,7 @@ Hooks run automatically to enforce conventions:
 
 - [Quickstart guide](docs/quickstart.md) — your first 10 minutes with adev
 - [Skill reference](docs/skills.md) — all skills with prerequisites and lifecycle flow
+- [Multi-repo workspaces](docs/workspaces.md) — coordinate specs and planning across repos
 - [Architecture](docs/architecture.md) — design decisions and module boundaries
 - [Agentic Development Handbook](https://www.agentic-dev.org/en/handbook) — the methodology behind the framework
 - [Design document](https://github.com/agentic-development/agentic-dev-content/blob/main/docs/superpowers/specs/2026-03-19-adev-plugin-design.md) — full technical design
