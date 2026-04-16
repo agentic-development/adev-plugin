@@ -37,6 +37,15 @@ The workspace is **optional** for each repo. A repo can exist inside a workspace
 
 ## Setting up a workspace
 
+### Adopting on existing repos (brownfield)
+
+If your repos already exist without adev, do this in order:
+
+1. **Initialize each repo first.** `cd` into each repo and run `/adev:init` — this creates the repo's own `.context-index/`.
+2. **Then initialize the workspace.** Return to the parent directory and run `/adev:init --workspace` — auto-discovery picks up the repos you just initialized.
+
+If you run `/adev:init --workspace` first, auto-discovery finds nothing (no repos have adev context yet) and you'll have to register them manually later.
+
 ### 1. Initialize the workspace
 
 From your workspace root directory:
