@@ -1,13 +1,13 @@
 # Live Spec: Work Triage and Routing
 
-<!-- Live Spec within the adev:start charter.
-     This defines the behavioral contract for the /adev:start skill — a pre-lifecycle
+<!-- Live Spec within the adev:work charter.
+     This defines the behavioral contract for the /adev:work skill — a pre-lifecycle
      triage entry point that classifies work, detects project state, and routes to
      the correct /adev:* skill.
-     Parent Charter: .context-index/specs/features/adev:start/charter.md -->
+     Parent Charter: .context-index/specs/features/work/charter.md -->
 
 ---
-charter: adev:start
+charter: adev:work
 status: validated
 risk_level: low
 milestone: 1
@@ -19,11 +19,11 @@ source-manifest:
   sha: "1c1191d"
   files:
     - .context-index/manifest.yaml
-    - providers/codex/skills/start/SKILL.md
-    - providers/codex/skills/start/agents/openai.yaml
+    - providers/codex/skills/work/SKILL.md
+    - providers/codex/skills/work/agents/openai.yaml
     - providers/codex/skills/using-adev/SKILL.md
     - skills/route/SKILL.md
-    - skills/start/SKILL.md
+    - skills/work/SKILL.md
     - skills/status/SKILL.md
     - skills/using-adev/SKILL.md
   computed-at: "2026-04-12T11:48:02.746Z"
@@ -33,14 +33,14 @@ source-manifest:
 
 ### Preconditions
 
-- The user has invoked `/adev:start`, optionally with a free-text description of their work
+- The user has invoked `/adev:work`, optionally with a free-text description of their work
 - The skill is running inside a Claude Code session with access to Glob, Grep, and Read tools
 
 ### Behaviors
 
 #### Init Gate
 
-1. **When** `/adev:start` is invoked and `.context-index/` does not exist **then** the skill outputs a message directing the user to run `/adev:init` and stops. No other processing occurs.
+1. **When** `/adev:work` is invoked and `.context-index/` does not exist **then** the skill outputs a message directing the user to run `/adev:init` and stops. No other processing occurs.
 
 #### Project State Scan
 
@@ -113,7 +113,7 @@ source-manifest:
 
 ### Postconditions
 
-- Exactly one `/adev:*` skill is invoked per `/adev:start` session, unless the Init Gate fired (in which case the user is directed to `/adev:init` manually and no skill is invoked)
+- Exactly one `/adev:*` skill is invoked per `/adev:work` session, unless the Init Gate fired (in which case the user is directed to `/adev:init` manually and no skill is invoked)
 - The user confirmed (explicitly or implicitly) the route before invocation
 - Any in-progress work was surfaced before new work classification
 
@@ -129,7 +129,7 @@ source-manifest:
 
 ## System Constitution Reference
 
-- **Principle:** "Skills are primarily markdown — skill files are structured instructions for Claude. Companion code (helpers, validators) is allowed but must not be required for the skill to function." — Applies because `/adev:start` is a pure markdown skill. Classification and state detection use Glob/Grep/Read tool calls instructed by the SKILL.md, not companion code.
+- **Principle:** "Skills are primarily markdown — skill files are structured instructions for Claude. Companion code (helpers, validators) is allowed but must not be required for the skill to function." — Applies because `/adev:work` is a pure markdown skill. Classification and state detection use Glob/Grep/Read tool calls instructed by the SKILL.md, not companion code.
 
 - **Principle:** "Minimize external dependencies — prefer Node.js built-ins." — Applies because the skill introduces zero dependencies. All state detection uses file system reads against existing `.context-index/` files.
 
@@ -137,13 +137,13 @@ source-manifest:
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Create SKILL.md | Write the `/adev:start` skill markdown with all triage, scan, classification, and routing instructions | Medium |
-| Register in manifest | Add `adev:start` as a module entry in `manifest.yaml` (requires human approval per constitution — "Adding new skills to the lifecycle order") | Small |
-| Register in using-adev | Add `/adev:start` to the skill table in the `using-adev` SKILL.md gateway | Small |
+| Create SKILL.md | Write the `/adev:work` skill markdown with all triage, scan, classification, and routing instructions | Medium |
+| Register in manifest | Add `adev:work` as a module entry in `manifest.yaml` (requires human approval per constitution — "Adding new skills to the lifecycle order") | Small |
+| Register in using-adev | Add `/adev:work` to the skill table in the `using-adev` SKILL.md gateway | Small |
 
 ## Acceptance Criteria
 
-- [ ] `skills/start/SKILL.md` exists and contains all triage, classification, and routing instructions
+- [ ] `skills/work/SKILL.md` exists and contains all triage, classification, and routing instructions
 - [ ] The skill correctly gates on missing `.context-index/` (redirects to `/adev:init`)
 - [ ] The skill scans for incomplete plans, unreviewed specs, and recent sessions using parallel Glob/Grep
 - [ ] The work type classification table covers all 9 types from the charter
@@ -151,6 +151,6 @@ source-manifest:
 - [ ] Ambiguous descriptions trigger a clarifying question instead of a wrong guess
 - [ ] State-aware refinement overrides classification when in-progress work exists
 - [ ] The skill is registered in `manifest.yaml`
-- [ ] The `using-adev` gateway skill lists `/adev:start` in its skill table
+- [ ] The `using-adev` gateway skill lists `/adev:work` in its skill table
 - [ ] All quality gates pass (`npm test`)
 - [ ] No constitutional violations introduced

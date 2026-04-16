@@ -80,7 +80,7 @@
 
 ### New Features
 
-- **`/adev:start` skill** — Pre-lifecycle triage that classifies incoming work (feature, bug, spike, chore) and routes to the correct `/adev:*` skill. Scans for in-progress plans, unreviewed specs, and recent sessions before classifying (#16)
+- **`/adev:work` skill** — Pre-lifecycle triage that classifies incoming work (feature, bug, spike, chore) and routes to the correct `/adev:*` skill. Scans for in-progress plans, unreviewed specs, and recent sessions before classifying (#16)
 - **Canonical `/adev:document` SKILL.md** — Created provider-agnostic canonical skill from OpenCode version
 
 ### Other

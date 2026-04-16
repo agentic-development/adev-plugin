@@ -4,7 +4,7 @@
 
 ## Purpose
 
-`/adev:start` is a pre-lifecycle triage skill that classifies incoming work, detects in-progress project state, and routes the user to the correct `/adev:*` skill with context. It eliminates the need for users to know which skill to invoke, providing a single entry point for all work types.
+`/adev:work` is a pre-lifecycle triage skill that classifies incoming work, detects in-progress project state, and routes the user to the correct `/adev:*` skill with context. It eliminates the need for users to know which skill to invoke, providing a single entry point for all work types.
 
 ## Key Exports
 
@@ -17,7 +17,7 @@ No JavaScript exports — purely a markdown-based skill.
 
 ## Related Specs
 
-- [charter.md](../../.context-index/specs/features/adev:start/charter.md)
+- [charter.md](../../.context-index/specs/features/work/charter.md)
 
 <!-- adev:generated -->
 

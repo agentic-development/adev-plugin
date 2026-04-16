@@ -129,7 +129,7 @@ function formatIdleNudge(openIssues, executionState) {
     block += "\nPick one up with `/adev:issues update <id> --status in_progress`, or run `/adev:issues` to review the full board.";
   } else {
     block = "---\nname: idle-nudge\ndescription: \"All tracked issues are resolved.\"\n---\n\n# All Issues Resolved\n\n";
-    block += "All tracked issues are closed or deferred. If there is more work to do, run `/adev:start` to triage new tasks or `/adev:issues create` to file new issues.";
+    block += "All tracked issues are closed or deferred. If there is more work to do, run `/adev:work` to triage new tasks or `/adev:issues create` to file new issues.";
   }
 
   // Stale execution state warning

@@ -9,7 +9,7 @@
 | CLI | Entry point for `adev-cli` — installs plugin into Claude Code / OpenCode / Codex, manages providers, scaffolds `.context-index/` | `PLUGIN_ROOT`, `scaffoldContextKit`, `PLUGIN_VERSION` | 0 | 1 (lib-provider) |
 | Hooks | Bash hooks integrating with Claude Code's hook protocol: constitution linter, merge guard, session start injector (with execution state resume), session capture, issue reminder (with idle nudge), context preflight, context read tracker, sync trigger | — (bash scripts + issue-reminder.mjs) | 0 | 2 (lib-execution-state, lib-issues) |
 | Setup | `/adev:init` (scaffold `.context-index/`) and `/adev:sync` (sync constitution to CLAUDE.md), plus project templates | — (markdown skills) | 0 | 0 |
-| Triage | `/adev:start` — pre-lifecycle triage that classifies incoming work and routes to the correct `/adev:*` skill | — (markdown skill) | 0 | 0 |
+| Triage | `/adev:work` — pre-lifecycle triage that classifies incoming work and routes to the correct `/adev:*` skill | — (markdown skill) | 0 | 0 |
 | Design | `/adev:brainstorm` (Feature Charter authoring) and `/adev:specify` (Live Spec authoring) | — (markdown skills) | 0 | 0 |
 | Assessment | `/adev:review-specs` (architecture review) and `/adev:route` (task routing matrix) | — (markdown skills) | 0 | 0 |
 | Planning | `/adev:plan` — spec decomposition into implementation tasks | — (markdown skill) | 0 | 0 |

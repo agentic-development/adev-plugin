@@ -26,7 +26,7 @@ This creates a `.context-index/` directory — a structured knowledge base that 
 Then just tell the assistant what you want to build:
 
 ```
-/adev:start                 # Routes your request to the right skill
+/adev:work                  # Routes your request to the right skill
 ```
 
 Or use skills directly:
@@ -45,7 +45,7 @@ Skills are slash commands that guide your AI assistant through each phase of dev
 
 | Skill | What It Does |
 |-------|-------------|
-| `/adev:start` | Classifies your request and routes to the right skill |
+| `/adev:work` | Classifies your request and routes to the right skill |
 | `/adev:init` | Sets up `.context-index/` for a new or existing project |
 | `/adev:sync` | Syncs project principles to CLAUDE.md and other agent files |
 

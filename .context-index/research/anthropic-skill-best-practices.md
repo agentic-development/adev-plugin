@@ -51,7 +51,7 @@ Sources consulted:
 
 ## Skill-by-Skill Comparison
 
-### 1. adev:start (Triage)
+### 1. adev:work (Triage)
 
 | Dimension | Current State | Best Practice | Gap |
 |-----------|--------------|---------------|-----|

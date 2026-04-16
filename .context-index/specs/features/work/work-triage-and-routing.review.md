@@ -1,8 +1,8 @@
 # Architecture Review: work-triage-and-routing
 
 > **Date:** 2026-03-29
-> **Spec:** .context-index/specs/features/adev:start/work-triage-and-routing.md
-> **Charter:** .context-index/specs/features/adev:start/charter.md
+> **Spec:** .context-index/specs/features/work/work-triage-and-routing.md
+> **Charter:** .context-index/specs/features/work/charter.md
 > **Verdict:** PASS_WITH_NOTES
 
 ## Structural Architect

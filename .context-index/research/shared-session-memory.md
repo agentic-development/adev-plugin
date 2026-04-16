@@ -1,7 +1,7 @@
 ---
 topic: Shared Memory Between AI Coding Sessions
 date: 2026-04-06
-relates-to: [skills/start, skills/implement, skills/status, lib/session-summary.mjs]
+relates-to: [skills/work, skills/implement, skills/status, lib/session-summary.mjs]
 sources: [internal, web]
 status: complete
 ---
@@ -20,12 +20,12 @@ adev-plugin has a rich but **fragmented** persistence layer spread across multip
 
 | What Persists | Location | Written By | Read By |
 |---------------|----------|------------|---------|
-| Session snapshots | `.context-index/sessions/*.md` | `session-capture.sh` hook (post-commit) | `/adev:start`, `/adev:status` |
+| Session snapshots | `.context-index/sessions/*.md` | `session-capture.sh` hook (post-commit) | `/adev:work`, `/adev:status` |
 | Constitution (principles) | `.context-index/constitution.md` | Manual / `/adev:init` | Every skill (via CLAUDE.md injection) |
 | Manifest (project topology) | `.context-index/manifest.yaml` | Manual / `/adev:init` | Skills for routing, scoping, backend config |
 | Specs with status gates | `.context-index/specs/features/*/` | `/adev:specify`, `/adev:review-specs` | `/adev:plan`, `/adev:implement`, `/adev:validate` |
-| Plans with task checkboxes | `.context-index/specs/**/*.plan.md` | `/adev:plan` | `/adev:implement`, `/adev:start` |
-| Issue board | `.context-index/tasks/tasks.md` | `/adev:issues`, `/adev:plan`, `/adev:implement` | `/adev:status`, `/adev:start` |
+| Plans with task checkboxes | `.context-index/specs/**/*.plan.md` | `/adev:plan` | `/adev:implement`, `/adev:work` |
+| Issue board | `.context-index/tasks/tasks.md` | `/adev:issues`, `/adev:plan`, `/adev:implement` | `/adev:status`, `/adev:work` |
 | Active plan pointer | `.context-index/hygiene/.active-plan` | `/adev:implement` (start) | Scope guard hooks |
 | Drift reports | `.context-index/hygiene/drift-report.md` | `/adev:hygiene` | `/adev:retro` |
 | Blockers | `.context-index/hygiene/blockers/*.md` | `/adev:implement` (on failure) | `/adev:recover` |
@@ -34,7 +34,7 @@ adev-plugin has a rich but **fragmented** persistence layer spread across multip
 **Strengths:**
 - Everything is markdown/YAML, human-readable, git-tracked
 - Explicit status gates on specs prevent premature downstream work
-- Session summaries provide historical context for `/adev:start`
+- Session summaries provide historical context for `/adev:work`
 - Constitution sync ensures all agent surfaces get the same rules
 
 ### Industry Approaches
@@ -137,7 +137,7 @@ None
 Write LoginForm component following spec section 2.3
 ```
 - Written by `/adev:implement` per task start, updated per subtask
-- Read by `/adev:start` to detect and offer resumption
+- Read by `/adev:work` to detect and offer resumption
 - Cleared on task/plan completion
 
 **2. Session-Start Resume Injection**
@@ -153,7 +153,7 @@ Write LoginForm component following spec section 2.3
 - Risk: Auth module has no integration tests for OAuth flow
 ```
 - Skills append learnings during execution (opt-in, not mandatory)
-- `/adev:start` surfaces recent learnings for the relevant module
+- `/adev:work` surfaces recent learnings for the relevant module
 - `/adev:retro` consolidates and prunes periodically
 
 **4. Context Freshness Hash**
@@ -165,7 +165,7 @@ Write LoginForm component following spec section 2.3
 
 **5. Session-Issue Binding**
 - When `/adev:implement` starts a task, write the issue ID to `.execution-state.md`
-- `/adev:start` can then say: "You were working on issue-7 (LoginForm component)"
+- `/adev:work` can then say: "You were working on issue-7 (LoginForm component)"
 - `/adev:status --current` shows the bound issue
 
 **6. Memory Consolidation Skill** — `/adev:remember`
