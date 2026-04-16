@@ -173,7 +173,7 @@ Match each request to an existing epic using the following strategy (first match
 2. **Charter scope match:** Compare the request against charter scope sections for keyword overlap
 3. **Milestone feature list match:** Compare the request against milestone feature lists for keyword overlap
 
-If no match is found, propose creating a new epic or filing under "Unassigned." If no charters or epics exist, file all requests as "Unassigned" and suggest running `/adev:vision` first.
+If no match is found, propose creating a new epic or filing under "Unassigned." If no charters or epics exist, file all requests as "Unassigned" and suggest running `/adev:brainstorm` first to charter the work (which will bootstrap `product.md` on its first invocation).
 
 ### 6.4: Single Request Processing
 

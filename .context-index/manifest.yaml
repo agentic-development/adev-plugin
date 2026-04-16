@@ -86,8 +86,6 @@ modules:
   - slug: strategic-planning
     name: Strategic Planning
     paths:
-      - skills/vision/
-      - skills/roadmap/
       - skills/research/
       - skills/build/
       - skills/issues/
