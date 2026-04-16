@@ -11,9 +11,62 @@ Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implem
 
 ## Arguments
 
-- `--spec <path>`: plan a specific spec (required unless a spec path is obvious from conversation context)
+- `--spec <path>`: plan a specific spec (routes to Spec Mode)
+- `--feature <module>`: plan a feature charter (routes to Feature Mode)
+- `--release <name>`: plan a named release (routes to Release Mode)
+- `--milestone <name>`: create or update a milestone (routes to Milestone Mode)
+- `--epic <id>`: decompose an Epic into Features (routes to Epic Mode)
 - `--phase <name>`: plan all specs matching a phase/milestone across all modules (e.g., `--phase v1`)
 - `--dry-run`: show the plan structure without writing it
+
+Passing more than one of `--spec`, `--feature`, `--release`, `--milestone`, `--epic` in a single invocation throws **CONFLICTING_FLAGS** and the skill exits without action.
+
+## Step 0: Mode Detection
+
+Before any other steps, determine the operating mode. Explicit flag wins over keyword detection, which wins over project-state inference, which falls back to a multi-choice menu on ambiguity.
+
+### Detection Precedence
+
+1. **Explicit flag (highest priority):** If one of `--spec`, `--feature`, `--release`, `--milestone`, or `--epic` is present, enter that mode immediately. Skip keyword and state detection entirely.
+   - Error: if two or more mode flags are passed together, output `CONFLICTING_FLAGS` and exit.
+
+2. **Path argument:** If a single argument ends in `.md` and resembles a file path to a Live Spec (e.g., `multi-repo-workspace/init-workspace.md`), identify it as a spec path and route to **Spec Mode** with that path as the `--spec` value.
+
+3. **Keyword detection (free-text argument):** If a plain-text argument is provided, scan it for mode keywords:
+   - "release" or "launch" → **Release Mode** (extract release name from remaining text)
+   - "milestone" or "phase" → **Milestone Mode** (extract milestone name from remaining text)
+   - "feature" or "module" → **Feature Mode** (extract module name from remaining text)
+   - "epic" → **Epic Mode** (extract epic ID from remaining text)
+   - Example: "plan release v2" → Release Mode, `name: "v2"`
+
+4. **Project-state scan (no flag, no argument):** Read `.context-index/` to infer mode from current state:
+   - If exactly one reviewed spec (with `*.review.md` passing verdict) lacks a corresponding `*.plan.md` → propose **Spec Mode** for that spec.
+   - If multiple reviewed specs lack plans → present a multi-choice menu listing all pending specs plus other available modes.
+   - If no reviewed specs need plans, check whether any Feature charter has capabilities without specs → propose **Feature Mode**.
+
+5. **Ambiguity fallback (multi-choice menu):** When mode detection cannot resolve to a single mode, present a menu:
+   ```
+   What would you like to plan?
+
+   1. Spec — decompose a reviewed Live Spec into Tasks
+   2. Feature — identify missing specs for a charter module
+   3. Release — build a release plan from product.md
+   4. Milestone — create or update a milestone Epic
+   5. Epic — decompose an existing Epic into Features
+
+   Enter a number or describe what you want to plan:
+   ```
+   Await user selection and proceed. If the user dismisses without selecting, exit without action.
+
+### Mode Summary Table
+
+| Mode | Entry Condition | What it produces |
+|------|----------------|-----------------|
+| Spec | `--spec` / `.md` path / single reviewed spec lacking plan | Ordered Task list in a `*.plan.md` file |
+| Feature | `--feature <module>` / "feature" keyword | Feature work items under an Epic |
+| Release | `--release <name>` / "release" keyword | Sequenced release plan + child Epics |
+| Milestone | `--milestone <name>` / "milestone" keyword | Milestone Epic + Feature placeholders |
+| Epic | `--epic <id>` / "epic" keyword | Missing Feature proposals under an Epic |
 
 ## Phase Planning Mode (`--phase`)
 
@@ -70,6 +123,16 @@ When `--phase` is used inside a workspace (detected by the presence of a `worksp
    ```
 
 Without `--phase`, behavior is unchanged (single spec planning via `--spec`).
+
+---
+
+## Spec Mode
+
+Steps 1–7 below apply when operating in **Spec Mode**. This is the original single-spec planning flow. It is preserved unchanged. All other modes use their own dedicated sections below.
+
+### Spec Mode Error Codes
+
+- **REVIEW_GATE** — The spec has not been reviewed, or the review verdict is BLOCK, or the spec has drifted since its last review. Block with a clear message and tell the user to run `/adev:review-specs`.
 
 ## Step 1: Review Gate
 
@@ -458,3 +521,177 @@ Tasks:
 Spec coverage: <N> of <M> acceptance criteria mapped
 Constitution: no boundary violations detected
 ```
+
+---
+
+## Feature Mode
+
+Activated by `--feature <module>` or by keyword/state detection routing to this mode.
+
+### Precondition Gate (CHARTER_GATE)
+
+Read the charter at `.context-index/specs/features/<module>/charter.md`. If the charter does not exist, or its status is `draft` or `in-progress`, block:
+```
+CHARTER_GATE: Charter for module '<module>' must be approved before Feature Mode planning.
+Create or approve the charter with /adev:brainstorm --module <module>.
+```
+
+### Feature Mode Flow
+
+1. **Read the charter.** Extract the Capability Map (table of capabilities with status columns).
+2. **Identify gaps.** Find capabilities that lack a corresponding Live Spec (`*.md` in the module's spec directory). A capability lacks a spec if no spec file's frontmatter references it, or if no spec file exists at all for the module.
+3. **Propose Live Specs.** For each gap, produce a proposed spec entry:
+   - Title (derived from capability name)
+   - Scope (one sentence describing what the spec would cover)
+   - Suggested file path: `.context-index/specs/features/<module>/<slug>.md`
+   - `next_action` (from convention table): `"Run /adev:specify --module <module> to author this Feature"`
+4. **Present the proposed Feature plan** to the user for approval:
+   ```
+   Feature plan for module: <module>
+
+   Capabilities lacking specs:
+     1. <capability-name> → proposed spec: <path>
+        next_action: Run /adev:specify --module <module> to author this Feature
+     2. ...
+
+   Approve this plan to create Feature work items? (yes / edit / cancel)
+   ```
+5. **On approval**, create work items via the issue manager:
+   - If no Epic exists for this charter, create one first:
+     ```
+     create({ type: "epic", notes: "Charter: <module>" })
+     ```
+   - For each proposed spec, create a Feature work item:
+     ```
+     create({
+       parent_id: <epic-id>,
+       type: "feature",
+       spec_ref: null,
+       next_action: "Run /adev:specify --module <module> to author this Feature"
+     })
+     ```
+6. **Report:** "Created `<N>` Feature work items under Epic `<epic-id>`."
+
+---
+
+## Release Mode
+
+Activated by `--release <name>` or by keyword detection ("plan release v2" → `name: "v2"`).
+
+### Release Mode Flow
+
+1. **Read `product.md`.** Look for a milestone or release section matching `<release-name>` (case-insensitive). If no match is found, prompt the user to create the milestone or cancel:
+   ```
+   No milestone named '<release-name>' found in product.md.
+   Would you like to define it now? (yes / cancel)
+   ```
+2. **Identify release features.** Extract the list of features/modules named in the release milestone section.
+3. **Check existing work items.** If a release Epic already exists on the issue board, call `walkTree(<release-epic-id>)` to get its current child Epics. This is the source of truth for current state.
+4. **Build dependency graph.** For each feature:
+   - Read its charter's `Dependencies` table (if present).
+   - Read each feature's specs for `depends-on` frontmatter fields.
+   - Construct a directed graph: `feature A → feature B` means A depends on B (B must be planned/built first).
+5. **Sequence the release plan.** Perform a topological sort (upstream first). Identify the critical path. Note any cycles as warnings (fall back to declaration order for cyclic groups).
+6. **Produce a sequenced release plan** and present it to the user:
+   ```
+   Release plan: <release-name>
+
+   Sequenced feature order (upstream first):
+     1. <module-A> — no dependencies (start here)
+     2. <module-B> — depends on: <module-A>
+     3. ...
+
+   Critical path: <module-A> → <module-B> → ...
+   Risk: <any notes on missing specs or unreviewed specs>
+
+   Approve to create work items? (yes / edit / cancel)
+   ```
+7. **On approval**, create:
+   - A release umbrella Epic if not already present:
+     ```
+     create({ type: "epic", notes: "Release: <release-name>" })
+     ```
+   - A child Epic per feature (skip if already present in `walkTree` result):
+     ```
+     create({
+       parent_id: <release-epic-id>,
+       type: "epic",
+       notes: "Feature: <module>",
+       next_action: "Run /adev:plan --feature <module> to break into Features"
+     })
+     ```
+8. **Report:** "Release plan for `<release-name>` created with `<N>` Epics."
+
+---
+
+## Milestone Mode
+
+Activated by `--milestone <name>` or by keyword detection ("plan milestone Q3" → `name: "Q3"`).
+
+### Milestone Mode Flow
+
+1. **Read `product.md`.** Look for a milestone section matching `<name>`. If none found, prompt the user to define it:
+   - Ask for: target date, feature list, success criteria.
+   - Write the new milestone definition to `product.md`.
+2. **Create or update the milestone Epic:**
+   ```
+   create({ type: "epic", notes: "Milestone: <name>. Target: <date>" })
+   ```
+   If a milestone Epic already exists, update its `notes` field; do not create a duplicate.
+3. **Create Feature placeholders** for each feature named in the milestone:
+   ```
+   create({
+     parent_id: <milestone-epic-id>,
+     type: "feature",
+     spec_ref: null,
+     next_action: "Run /adev:plan --feature <module> to break into Features"
+   })
+   ```
+4. **Set target date** in the Epic's notes (or a dedicated field if the issue manager supports it).
+5. **Report:**
+   ```
+   Milestone '<name>' planned.
+   Epic: <epic-id>
+   Feature placeholders: <N>
+   Target date: <date>
+   ```
+
+---
+
+## Epic Mode
+
+Activated by `--epic <id>` or by keyword detection ("plan epic epic-3" → `id: "epic-3"`).
+
+### Epic Mode Flow
+
+1. **Read the named Epic** from the issue board. If the Epic does not exist, block with a clear error.
+2. **Call `walkTree(<epic-id>)`** to get existing child Features and Tasks.
+3. **Identify missing Features.** Compare the Epic's `notes` field (which may describe expected capabilities) and any associated charter against the actual child Features already in the tree.
+4. **Propose Feature creation** for each gap — behavior thereafter matches Feature Mode (Step 3 onward of Feature Mode).
+5. **On approval**, create missing Feature work items:
+   ```
+   create({
+     parent_id: <epic-id>,
+     type: "feature",
+     spec_ref: null,
+     next_action: "Run /adev:plan --feature <module> to break into Features"
+   })
+   ```
+6. **Report:** "Epic `<epic-id>` now has `<N>` Features (`<M>` newly created)."
+
+---
+
+## next_action Convention Table
+
+Every work item created in any mode must have its `next_action` field populated. Use the exact strings below. Token placeholders align with WorkItem field names (e.g., `<spec_ref>` is the Feature's `spec_ref` field value).
+
+| Work Item | State | next_action value |
+|-----------|-------|-------------------|
+| Task | any | `"Run /adev:implement to do RED-GREEN-REFACTOR for this Task"` |
+| Feature | without spec | `"Run /adev:specify --module <module> to author this Feature"` |
+| Feature | spec exists, needs review | `"Run /adev:review-specs --module <module>"` |
+| Feature | spec reviewed and passing | `"Run /adev:plan --spec <spec_ref> to decompose into Tasks"` |
+| Epic | no Features | `"Run /adev:plan --feature <module> to break into Features"` |
+| Epic | all Features planned | `"Run /adev:plan --epic <id> to verify decomposition"` |
+
+Substitute the actual value for each token at creation time. Do not leave literal `<module>`, `<spec_ref>`, or `<id>` in persisted work items — replace them with the real values.
