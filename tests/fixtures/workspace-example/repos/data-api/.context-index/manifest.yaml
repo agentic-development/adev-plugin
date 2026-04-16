@@ -1,0 +1,9 @@
+project:
+  name: "data-api"
+  type: single-app
+
+modules:
+  - slug: routes
+    name: Routes
+    paths:
+      - src/routes/

@@ -1,0 +1,24 @@
+# Workspace fixture for testing multi-repo behavior.
+# Models a simplified data platform: dbt-models (upstream), data-api and airflow-dags (downstream).
+
+workspace:
+  name: data-platform-fixture
+
+repos:
+  - slug: dbt-models
+    path: ./repos/dbt-models
+    role: transformation
+  - slug: data-api
+    path: ./repos/data-api
+    role: serving
+  - slug: airflow-dags
+    path: ./repos/airflow-dags
+    role: orchestration
+
+dependencies:
+  - from: data-api
+    to: dbt-models
+    type: consumes
+  - from: airflow-dags
+    to: dbt-models
+    type: orchestrates
