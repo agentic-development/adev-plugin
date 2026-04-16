@@ -1,14 +1,14 @@
 ---
 status: approved
-revision: 1
-updated: 2026-03-29
+revision: 2
+updated: 2026-04-16
 ---
 
-# Feature Charter: adev:start
+# Feature Charter: adev:work
 
 ## Business Intent
 
-`adev:start` is a pre-lifecycle triage skill that classifies incoming work, detects in-progress project state, and routes the user to the correct `/adev:*` skill with context. It eliminates the need for users to know which skill to invoke, providing a single entry point for all work types.
+`adev:work` is a pre-lifecycle triage skill that classifies incoming work, detects in-progress project state, and routes the user to the correct `/adev:*` skill with context. It eliminates the need for users to know which skill to invoke, providing a single entry point for all work types.
 
 ## Scope and Boundaries
 
@@ -26,6 +26,7 @@ updated: 2026-03-29
 - Does not replace `using-adev` as the educational gateway
 - Does not auto-invoke without user confirmation (always proposes, never silently dispatches)
 - Does not run as a hook or auto-inject at session start
+- Backward-compatible `/adev:start` alias — slash commands have no user alias mechanism; `/adev:start` is removed entirely in this revision
 
 ### Dependencies
 
@@ -75,7 +76,7 @@ updated: 2026-03-29
 
 | Interface | Type | Description |
 |-----------|------|-------------|
-| `/adev:start` | Skill invocation | Entry point — accepts optional free-text description of work to do |
+| `/adev:work` | Skill invocation | Entry point — accepts optional free-text description of work to do |
 
 ### Consumed APIs
 
@@ -94,3 +95,14 @@ updated: 2026-03-29
 | Latency | State scan completes within a single tool-call round (parallel Glob/Grep); total triage under 2 user round-trips for clear cases |
 | Accuracy | Correct classification for unambiguous requests (bug, new feature, implement plan); ambiguous cases must ask rather than guess wrong |
 | Simplicity | Pure markdown skill, no companion code, no new dependencies |
+
+## Migration Notes
+
+Renamed from `/adev:start` to `/adev:work` in revision 2 (2026-04-16) as part of strategic-planning consolidation (epic-9). Implementation steps:
+
+- Rename `skills/start/` → `skills/work/`
+- Rename charter directory `specs/features/start/` → `specs/features/work/`
+- Sweep `/adev:start` references across all SKILL.md files, README, docs, and the using-adev gateway
+- Update manifest module entry: `triage` module path `skills/start/` → `skills/work/`
+
+There is no backward-compatible alias — slash commands are not aliasable in Claude Code. Users invoking `/adev:start` after the rename will get a "skill not found" error and need to use `/adev:work`.
