@@ -205,6 +205,18 @@ tasks:
   #   Optional — override the storage root for issue data.
   #   Useful when multiple git worktrees need to share a single issue database.
   #   When omitted, the main repo root is auto-resolved via git.
+  #
+  # tier_prefixes: Custom prefix → tier label map for the tiered hierarchy.
+  #   Default (when omitted): { e: "Epic", f: "Feature", t: "Task" }
+  #   IDs use dotted notation: e1, e1.f2, e1.f2.t3
+  #   Rules:
+  #   - Prefixes must not conflict with legacy ID prefixes (epic, issue, bd)
+  #   - Each prefix must map to a unique tier label
+  #   Example — outcome-driven hierarchy:
+  # tier_prefixes:
+  #   x: "Outcome"
+  #   y: "Initiative"
+  #   z: "Step"
 
 # ============================================================================
 # Repo Map Configuration
