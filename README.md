@@ -55,10 +55,10 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 
 | Skill | What It Does |
 |-------|-------------|
-| `/adev:brainstorm` | Explore an idea interactively, produce a Feature Charter |
-| `/adev:specify` | Write a behavioral spec (preconditions, behaviors, error cases) |
+| `/adev:brainstorm` | Explore an idea interactively, produce a Feature Charter; bootstraps `product.md` on first charter |
+| `/adev:specify` | Write a behavioral spec (preconditions, behaviors, error cases); creates a Feature work item bound to the spec |
 | `/adev:review-specs` | Three specialist agents review your spec before coding begins |
-| `/adev:plan` | Break a spec into ordered tasks with TDD expectations |
+| `/adev:plan` | Decompose at any scope: spec→tasks (default), or `--feature`, `--release`, `--milestone`, `--epic` |
 | `/adev:route` | Score tasks: which can run autonomously vs. need human review |
 | `/adev:build` | Run the full pipeline end-to-end (review, plan, implement, validate) |
 | `/adev:implement` | Execute tasks with TDD — each in a fresh subagent |
@@ -78,8 +78,6 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 |-------|-------------|
 | `/adev:issues` | Create, update, and close issues and epics |
 | `/adev:status` | Dashboard view of project progress |
-| `/adev:vision` | Define product vision and milestones |
-| `/adev:roadmap` | Sequence releases with dependency analysis |
 
 ### Maintenance and Quality
 
