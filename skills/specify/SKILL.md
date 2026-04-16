@@ -206,9 +206,64 @@ created: 2026-03-24
 ---
 ```
 
+### Step 5.6: Create Feature Work Item
+
+After Step 5.5 flips the spec status to `review-pending`, bind the spec to a Feature work item on the issue board. This step is **idempotent**: re-running `/adev:specify` on an existing spec updates the Feature rather than creating a duplicate.
+
+#### 5.6-0: Guard — tasks.backend
+
+Check `manifest.yaml` for a `tasks.backend` entry. If absent, skip this entire step silently and add a one-line note to the Step 6 Summary output:
+
+```
+Issue board not configured; skipping Feature work item creation.
+```
+
+#### 5.6-1: Look Up Issue Manager
+
+Call `getIssueManager(manifest)` to obtain the configured issue board adapter.
+
+#### 5.6-2: Idempotency Check
+
+Query the issue board for any existing item where `spec_ref` equals the absolute path of the spec file just written (e.g., `.context-index/specs/features/<module>/<spec-slug>.md`). If exactly one Feature already exists with that `spec_ref`, skip creation and **update** it (refresh `next_action` and `updated`) — do not create a duplicate. If multiple items share the same `spec_ref`, update the most recently created one and log a warning.
+
+#### 5.6-3: Resolve Parent Epic
+
+Query the issue board for items with `type: "epic"` whose `notes` field begins with the literal string `"Charter: <module-slug>"` (where `<module-slug>` is the charter module name, e.g., `"Charter: task-boards"`). This convention is established when `/adev:plan --feature <module>` creates the Epic.
+
+- If exactly one matching Epic is found → use its `id` as `parent_id`.
+- If multiple matching Epics are found → use the most recently updated one and log a warning.
+- If zero matching Epics are found → create the Feature as a root item (no `parent_id`). A later `/adev:plan --feature <module>` invocation can create the Epic and re-parent the Feature.
+
+#### 5.6-4: Build Feature Fields
+
+Assemble the Feature work item fields:
+
+| Field | Value |
+|-------|-------|
+| `title` | Copied from the spec's `# Live Spec: <title>` heading |
+| `type` | `"feature"` |
+| `spec_ref` | Absolute path to the spec file |
+| `next_action` | `"Run /adev:review-specs --module <module>"` (for `review-pending` status) |
+| `parent_id` | Resolved Epic ID from 5.6-3, or absent for root |
+| `notes` | `"Bound 1:1 to spec at <spec_ref>. Created by /adev:specify on <date>."` |
+
+#### 5.6-5: Create or Update
+
+Call `getIssueManager(manifest).create({ title, type: "feature", spec_ref, next_action, parent_id, notes })` (or update if the idempotency check in 5.6-2 found an existing Feature).
+
+If the issue board adapter throws, log the error to the summary output but **do not block** spec completion — the spec is already written and status is already `review-pending`.
+
+#### 5.6 — Mode Variants
+
+**Cross-cutting specs** (`--cross-cutting`): The spec file lives at `.context-index/specs/cross-cutting/<slug>.md`. Skip the Epic lookup (5.6-3) — cross-cutting specs have no module Epic. Create the Feature with `parent_id` absent and append to `notes`: `"Cross-cutting spec. Affects: <affects-list from frontmatter>."`.
+
+**Refactor specs** (`--refactor`): Create the Feature with `type: "feature"` (refactors are still Features in the model). Append to `notes`: `"Refactoring spec. Review migration steps before planning."` and include a note in `next_action` referencing the migration steps if applicable.
+
+**Backfill (legacy specs)**: If `/adev:specify` is re-invoked on a spec file that was authored before this step landed (no bound Feature), Step 5.6-2 will find no existing Feature and 5.6-5 will create one. No automatic migration sweep — Features are created lazily as specs are touched.
+
 ### Step 6: Summary
 
-Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps.
+Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps. Include any notes from Step 5.6 (Feature created/updated, skipped, or failed).
 
 ---
 
