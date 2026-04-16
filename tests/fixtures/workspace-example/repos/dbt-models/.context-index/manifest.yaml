@@ -1,0 +1,9 @@
+project:
+  name: "dbt-models"
+  type: library
+
+modules:
+  - slug: transformations
+    name: Transformations
+    paths:
+      - models/
