@@ -81,10 +81,17 @@ describe("validateIssue", () => {
     );
   });
 
-  it("rejects invalid type", () => {
+  it("rejects empty string type with INVALID_TYPE", () => {
     assert.throws(
-      () => validateIssue({ title: "t", type: "epic" }),
-      (err) => err.code === "VALIDATION"
+      () => validateIssue({ title: "t", type: "" }),
+      (err) => err.code === "INVALID_TYPE"
+    );
+  });
+
+  it("rejects non-string type (number) with INVALID_TYPE", () => {
+    assert.throws(
+      () => validateIssue({ title: "t", type: 42 }),
+      (err) => err.code === "INVALID_TYPE"
     );
   });
 
