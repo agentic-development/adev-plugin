@@ -5,7 +5,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
 ## Lifecycle Flow
 
 ```
-  /adev:start ─── classify incoming work
+  /adev:work ─── classify incoming work
        │
        ├──► /adev:brainstorm ─── explore idea, produce charter
        │         │
@@ -35,7 +35,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
 
 | Skill | Purpose | Prerequisites |
 |-------|---------|---------------|
-| `/adev:start` | Classify work and route to the right skill | None |
+| `/adev:work` | Classify work and route to the right skill | None |
 
 ### Setup
 

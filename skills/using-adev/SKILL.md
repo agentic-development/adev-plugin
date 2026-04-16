@@ -33,7 +33,7 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
-| `/adev:start` | Triage | Classify incoming work and route to the right skill |
+| `/adev:work` | Triage | Classify incoming work and route to the right skill |
 | `/adev:vision` | Strategic Planning | Define product vision, milestones, and feature inventory |
 | `/adev:roadmap` | Strategic Planning | Sequence releases with dependency analysis and risk assessment |
 | `/adev:research` | Research | Persistent structured research using web, GitHub, and codebase sources |

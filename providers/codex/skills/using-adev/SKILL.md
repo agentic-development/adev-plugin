@@ -34,7 +34,7 @@ Invoke skills explicitly with `$adev:<skill>` or let Codex implicitly activate t
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
-| `$adev:start` | Triage | Classify incoming work and route to the right skill |
+| `$adev:work` | Triage | Classify incoming work and route to the right skill |
 | `$adev:init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
 | `$adev:sync` | Context Setup | Sync constitution to AGENTS.md and other agent files |
 | `$adev:brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
