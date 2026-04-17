@@ -154,6 +154,49 @@ Phase v1 planning:
   3. airflow-dags/ltv-schedule.md  ← depends on dbt-models
 ```
 
+### Workspace-level product bootstrap
+
+When you create the **first charter at the workspace root**, `/adev:brainstorm` automatically bootstraps a workspace `product.md`. It synthesises a project identity from the registered repos' constitutions and asks you for a one-sentence workspace vision:
+
+```
+This is the first workspace-level charter. The workspace 'data-platform' currently
+coordinates 3 repos:
+  - dbt-models: dbt project for data transformation and modeling
+  - data-api: REST API serving transformed data to consumers
+  - airflow-dags: Airflow DAGs for pipeline orchestration
+What is the workspace trying to do, in one sentence?
+```
+
+The workspace `product.md` Module Map tracks **workspace-level charters only** — each repo keeps its own `product.md` and Module Map separate.
+
+### Release and milestone planning
+
+At the workspace root, `/adev:plan --release` and `/adev:plan --milestone` work across all repos:
+
+```
+/adev:plan --release v1
+```
+
+This reads the workspace `product.md`, builds a combined feature list from workspace charters **and** per-repo charters (annotated with their source like `workspace/customer-ltv` or `data-api/ltv-endpoint`), and produces a dependency-ordered release plan.
+
+The dependency graph combines three sources:
+- Each feature charter's Dependencies table
+- Each spec's `depends-on` frontmatter (cross-repo-aware)
+- The workspace-level repo-to-repo edges from `adev-workspace.yaml`
+
+Workspace repo-to-repo edges are inherited at the feature level (all features in repo A depend on all features in repo B), but **not transitively** — only direct edges contribute.
+
+> **Note:** Epic-board sync is not yet available in workspace mode. Release plans and milestones are written to workspace `product.md` only. Cross-workspace issue tracking is planned for a future phase.
+
+### Running inside a registered repo
+
+When you run `/adev:brainstorm` or `/adev:plan` inside a registered repo (not at the workspace root), behavior is **repo-scoped** — identical to single-repo mode. You'll see a one-line advisory:
+
+```
+(Advisory: running repo-scoped inside workspace 'data-platform'. For
+workspace-level planning, cd to /path/to/data-platform and re-run.)
+```
+
 ### Workspace status
 
 Run `/adev:status` at the workspace root to see everything:
@@ -192,7 +235,8 @@ A platform repo (infrastructure, CI, shared tooling) and several service repos. 
 
 - **No automatic cross-repo implementation.** `/adev:implement` still runs in one repo at a time. When a cross-repo plan is ready, you move between repos yourself. (Auto-switching is planned for a future phase.)
 - **No workspace-level constitution.** Each repo keeps its own constitution and coding standards. The workspace doesn't override them.
-- **No shared issue tracking.** Each repo has its own issue board. Cross-repo issue linking is planned for a future phase.
+- **No shared issue tracking.** Each repo has its own issue board. Epic-board sync in workspace mode is deferred — release plans and milestones are written to workspace `product.md` only. Cross-repo issue linking is planned for a future phase.
+- **No cross-repo validation.** `/adev:validate` checks one repo at a time. Interface compatibility checks across repos are planned for a future phase.
 - **No git magic.** adev doesn't manage your git topology — whether your repos are separate clones, submodules, or subdirs is entirely your choice.
 
 ## Frequently asked questions
