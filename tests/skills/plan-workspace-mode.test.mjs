@@ -56,3 +56,56 @@ describe("adev:plan SKILL.md — Release Mode workspace-mode branching", () => {
       "Release Mode must reference readCappedText, MAX_CHARTER_FILES, or MAX_CHARTER_FILE_BYTES for size caps");
   });
 });
+
+describe("adev:plan SKILL.md — Milestone Mode workspace-mode branching", () => {
+  it("Milestone Mode branches on workspace detection", () => {
+    const section = skill.slice(
+      skill.indexOf("## Milestone Mode"),
+      skill.indexOf("## Epic Mode"),
+    );
+    assert.match(section, /detectWorkspace/);
+    assert.match(section, /workspace mode/i);
+  });
+
+  it("Milestone Mode reads workspace product.md", () => {
+    const section = skill.slice(
+      skill.indexOf("## Milestone Mode"),
+      skill.indexOf("## Epic Mode"),
+    );
+    assert.match(section, /resolveWorkspaceProductPath/);
+  });
+
+  it("Milestone Mode validates module-name tokens", () => {
+    const section = skill.slice(
+      skill.indexOf("## Milestone Mode"),
+      skill.indexOf("## Epic Mode"),
+    );
+    assert.match(section, /validateModuleName/);
+    assert.match(section, /INVALID_MODULE_NAME/);
+  });
+
+  it("Milestone Mode prompts for ambiguous module names", () => {
+    const section = skill.slice(
+      skill.indexOf("## Milestone Mode"),
+      skill.indexOf("## Epic Mode"),
+    );
+    assert.match(section, /disambiguat/i);
+  });
+
+  it("Milestone Mode unconditionally defers epic create() in workspace mode", () => {
+    const section = skill.slice(
+      skill.indexOf("## Milestone Mode"),
+      skill.indexOf("## Epic Mode"),
+    );
+    assert.match(section, /skip.*create\(\)|unconditionally defer|unconditionally skip/i);
+    assert.match(section, /Shared Issue Tracking|Phase 2/);
+  });
+
+  it("Milestone Mode never writes to registered repo product.md", () => {
+    const section = skill.slice(
+      skill.indexOf("## Milestone Mode"),
+      skill.indexOf("## Epic Mode"),
+    );
+    assert.match(section, /never writes.*repo.*product\.md|isolation/i);
+  });
+});
