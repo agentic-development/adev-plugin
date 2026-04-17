@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 1
-updated: 2026-04-05
+revision: 2
+updated: 2026-04-16
 ---
 
 # Feature Charter: strategic-planning
@@ -12,19 +12,22 @@ updated: 2026-04-05
 
 ## Business Intent
 
-Add product-level strategic planning, release sequencing, persistent research, and automated build orchestration to the adev lifecycle. Currently the framework handles single-feature development well (brainstorm → specify → review → plan → implement → validate) but lacks abstractions for planning larger work — releases, roadmaps, multi-feature coordination. This charter fills the gap between "I have an idea" and "I have a charter," and adds an end-to-end orchestrator for the post-specify pipeline.
+Strategic-planning provides three distinct concerns: persistent, structured research (`/adev:research`), end-to-end build orchestration (`/adev:build`), and the user-facing issue-board surface (`/adev:issues`). Strategic ceremony around product vision and release sequencing is folded into adjacent skills: vision identity into `/adev:brainstorm` (design module); milestone definition and release sequencing into `/adev:plan` (planning module). This module retains research, build orchestration, status reads, and issue management.
 
 ## Scope and Boundaries
 
 ### In Scope
 
-- Product vision definition and milestone planning (updates `product.md`)
-- Release sequencing with cross-feature dependency analysis
 - Persistent, structured research with internal and external sources
 - End-to-end build orchestration (review → route → plan → implement → validate)
-- Milestone field on epics in the issue model
-- Milestone-aware extensions to `/adev:issues`, `/adev:status`, `/adev:start`
-- Issue board integration at every state transition
+- Issue board integration at every state transition (downstream consumer of task-management module)
+- `/adev:status` aggregation reads of progress, milestones, and issues (read-only — does not define milestones)
+- Milestone-aware reads in `/adev:status` and `/adev:work` intake mode
+
+Notes:
+- Product vision identity bootstrap is delegated to `/adev:brainstorm` (design module)
+- Milestone definition and release sequencing are delegated to `/adev:plan` (planning module)
+- Issue model and tiered hierarchy are owned by task-management module
 
 ### Out of Scope
 
@@ -32,20 +35,22 @@ Add product-level strategic planning, release sequencing, persistent research, a
 - Sprint/cycle time-boxing or velocity tracking (not relevant for single-developer agentic workflows)
 - External issue tracker sync (JIRA, Linear, GitHub Issues)
 - Burndown charts or visual dashboards
+- Standalone `/adev:vision` skill — folded into `/adev:brainstorm` (identity bootstrap) and `/adev:plan --milestone` (milestone definition)
+- Standalone `/adev:roadmap` skill — folded into `/adev:plan --release` (release sequencing)
 
 ### Dependencies
 
 | Dependency | Type | Description |
 |-----------|------|-------------|
-| `lib/issues/` | shared library | Issue model for epics, issues, and dependencies |
-| `/adev:brainstorm` | internal skill | Vision output feeds into brainstorm as upstream context |
-| `/adev:specify` | internal skill | Roadmap informs which specs to write next |
+| `lib/issues/` | shared library | Issue model for tiered work items, hierarchy, dependencies |
+| task-management | internal module | Owns the issue model; this module is a downstream consumer |
+| `/adev:brainstorm` | internal skill | Receives bootstrap responsibility for `product.md` identity (formerly `/adev:vision`) |
+| `/adev:plan` | internal skill | Receives milestone definition and release sequencing (formerly `/adev:vision`/`/adev:roadmap`); build orchestrator chains plan as a step |
 | `/adev:review-specs` | internal skill | Build orchestrator chains this as first step |
 | `/adev:route` | internal skill | Build orchestrator chains this optionally |
-| `/adev:plan` | internal skill | Build orchestrator chains this |
 | `/adev:implement` | internal skill | Build orchestrator chains this |
 | `/adev:validate` | internal skill | Build orchestrator chains this as final step |
-| `product.md` | context artifact | Vision reads and updates this file |
+| `product.md` | context artifact | `/adev:status` reads this file (writes are owned by `/adev:brainstorm`) |
 
 ## Domain Model
 
@@ -53,37 +58,27 @@ Add product-level strategic planning, release sequencing, persistent research, a
 
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
-| Milestone | A named release target grouping features | name, targetDate, status (planned/active/completed), featureList |
 | ResearchArtifact | Persistent research document | slug, question, sources, findings, recommendations, relatesTo |
-| ReleasePhase | A sequenced stage within a roadmap | milestone, features, dependencies, riskLevel, implementationOrder |
-| Epic (extended) | Existing epic with milestone field | id, title, status, milestone, planRef |
 
 ### Relationships
 
-- A Milestone contains one or more ReleasePhases (or is a single phase for simple releases)
-- A ReleasePhase references one or more Feature Charters
-- An Epic is tagged with a Milestone name
 - A ResearchArtifact may relate to a spec, charter, or issue
+- `/adev:status` reads from product.md, charters, specs, and the issue board (no entities owned)
+- `/adev:build` orchestrates a sequence of skill invocations (no persistent entities owned)
 
 ### Invariants
 
-- A Milestone name must be unique within `product.md`
-- The `milestone` field on Epic is optional for backward compatibility
 - Research artifacts are immutable once created (append new findings, don't overwrite)
 - Build orchestrator must stop on failure — no partial builds that skip failing steps
-- Vision updates `product.md` but only proposes constitution amendments (never edits constitution directly)
+- Status reads do not mutate any state — pure read-only aggregation
 
 ## Capability Map
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Issue model milestone support | Add optional `milestone` field to Epic typedef, validation, and both adapters | must-have | v1 | — |
 | `/adev:research` skill | Persistent structured research using web, GitHub, and internal codebase sources | must-have | v1 | validated |
-| `/adev:vision` skill | Interview-driven product vision and milestone planning, updates `product.md`, creates milestone epics | must-have | v1 | — |
-| `/adev:roadmap` skill | Release sequencing with cross-feature dependency analysis, critical path, risk assessment | must-have | v1 | — |
-| `/adev:issues` milestone extension | Add `--milestone` to epic creation and list filtering, group board display by milestone | must-have | v1 | — |
-| `/adev:status` milestone view | Add milestone progress aggregation to `--all` mode and `--milestone` argument | should-have | v1 | — |
-| `/adev:start` intake mode | Add `--intake` for batch-processing incoming requests into categorized, prioritized issues | should-have | v1 | — |
+| `/adev:status` aggregation | Read-only progress dashboard reading product.md, charters, specs, issue board; supports milestone view | must-have | v1 | — |
+| `/adev:work` intake mode | `--intake` for batch-processing incoming requests into categorized, prioritized issues (renamed from `/adev:start intake mode` per start charter rev 2) | should-have | v1 | — |
 | `/adev:build` orchestrator | Chain review → route → plan → implement → validate with resume support and phase batching | must-have | v2 | — |
 
 ## Deferred Capabilities
@@ -91,7 +86,6 @@ Add product-level strategic planning, release sequencing, persistent research, a
 | Capability | Reason | Target Phase | Depends On |
 |-----------|--------|-------------|------------|
 | Multi-team coordination | Future charter scope | — | — |
-| `/adev:build` orchestrator | Chain review → route → plan → implement → validate | v2 | — |
 
 ## Interface Contracts
 
@@ -99,12 +93,6 @@ Add product-level strategic planning, release sequencing, persistent research, a
 
 | Interface | Type | Description |
 |-----------|------|-------------|
-| `/adev:vision` | Skill | Define/update product vision, milestones, feature inventory |
-| `/adev:vision --refresh` | Flag | Update existing vision rather than creating new |
-| `/adev:vision --milestone <name>` | Flag | Focus on a single milestone |
-| `/adev:roadmap` | Skill | Produce sequenced release plan from approved vision |
-| `/adev:roadmap --milestone <name>` | Flag | Plan a single milestone |
-| `/adev:roadmap --all` | Flag | Full roadmap across all milestones |
 | `/adev:research <topic>` | Skill | Research a topic and produce persistent artifact |
 | `/adev:research --web` | Flag | Include web search sources |
 | `/adev:research --github <repo>` | Flag | Include GitHub code search |
@@ -115,18 +103,20 @@ Add product-level strategic planning, release sequencing, persistent research, a
 | `/adev:build --phase <name>` | Flag | Batch build all specs in a milestone |
 | `/adev:build --resume` | Flag | Resume interrupted build |
 | `/adev:build --dry-run` | Flag | Preview build steps without executing |
-| `Epic.milestone` | Data field | Optional string field on Epic model |
+| `/adev:status` | Skill | Read-only progress aggregation across product, charters, specs, and issues |
+| `/adev:status --milestone <name>` | Flag | Aggregate by milestone |
+| `/adev:work --intake` | Flag | Batch intake mode (renamed from `/adev:start --intake`) |
 
 ### Consumed APIs
 
 | Interface | Source Module | Description |
 |-----------|-------------|-------------|
-| `getIssueManager(manifest)` | `lib/issues/registry.mjs` | Issue board access for epic/issue CRUD |
-| `createEpic()` / `updateEpic()` | Issue adapters | Epic management with milestone field |
-| `addDependency()` | Issue adapters | Cross-epic dependency tracking |
+| `getIssueManager(manifest)` | `lib/issues/registry.mjs` | Issue board access |
+| `IssueManager.create()` / `update()` / `walkTree()` | task-management | Tiered work item operations (replaces direct `createEpic`/`createIssue` calls) |
+| `addDependency()` | task-management | Cross-item dependency tracking |
 | `/adev:review-specs` | Assessment module | Build orchestrator invokes for spec review |
 | `/adev:route` | Assessment module | Build orchestrator invokes for task routing |
-| `/adev:plan` | Planning module | Build orchestrator invokes for task decomposition |
+| `/adev:plan` | Planning module | Build orchestrator invokes for task decomposition; receives milestone/release planning responsibilities |
 | `/adev:implement` | Implementation module | Build orchestrator invokes for execution |
 | `/adev:validate` | Validation module | Build orchestrator invokes for verification |
 
@@ -134,8 +124,20 @@ Add product-level strategic planning, release sequencing, persistent research, a
 
 | Attribute | Requirement |
 |-----------|-------------|
-| Backward Compatibility | Existing tasks.md files without Milestone column must parse correctly |
 | Graceful Degradation | Research skill works even if WebSearch or GitHub MCP tools are unavailable |
-| Idempotency | Vision and roadmap can be re-run safely (update, not duplicate) |
+| Idempotency | Status reads can be re-run safely (read-only); build orchestrator can resume |
 | Resumability | Build orchestrator can resume from last successful step after interruption |
 | Consistency | All skills follow the established issue board integration pattern (check tasks.backend, skip if unconfigured) |
+| Read-Only Status | `/adev:status` never mutates state — pure aggregation reads |
+
+## Migration Notes
+
+This is revision 2 (2026-04-16). Revision 1 owned `/adev:vision` and `/adev:roadmap` skills, plus milestone-related extensions and the Epic milestone field. Revision 2 sheds these responsibilities as part of the strategic-planning consolidation (epic-9):
+
+- `/adev:vision` is removed; identity bootstrap of `product.md` moves to `/adev:brainstorm` (design module rev 2); milestone definition moves to `/adev:plan --milestone` (planning module rev 2)
+- `/adev:roadmap` is removed; release sequencing moves to `/adev:plan --release`
+- The Epic milestone field and milestone-aware Issue extensions move to task-management module rev 3
+- `/adev:status` and `/adev:issues` consume the new tiered work item model from task-management rev 3
+- `/adev:start intake mode` becomes `/adev:work intake mode` per start charter rev 2
+
+Backward compatibility: legacy callers of `/adev:vision` or `/adev:roadmap` will need to migrate to the new skill destinations. There is no shim or alias — slash commands are not aliasable.

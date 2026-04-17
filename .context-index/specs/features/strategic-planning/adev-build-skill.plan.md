@@ -142,7 +142,7 @@ Create a new `skills/build/SKILL.md` — the end-to-end build orchestrator that 
 - `.context-index/specs/features/strategic-planning/adev:build-skill.review.md` — Review notes (SA-2, SA-3, SEC-1, CON-1)
 - `.context-index/specs/features/strategic-planning/charter.md` — Charter context
 - `skills/issues/SKILL.md` — Issue board integration patterns
-- `skills/start/SKILL.md` — Routing and classification patterns
+- `skills/work/SKILL.md` — Routing and classification patterns
 - `skills/assess/SKILL.md` — Frontmatter and structure reference for new skills
 - `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 

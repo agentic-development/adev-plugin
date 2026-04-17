@@ -97,7 +97,7 @@ If all checks pass, the spec is promoted to `validated`.
 
 ## What's next?
 
-- Run `/adev:start` any time — it classifies your work and routes to the right skill
+- Run `/adev:work` any time — it classifies your work and routes to the right skill
 - Use `/adev:issues` to track bugs and tasks
 - Use `/adev:status` to see project-wide progress
 - See [docs/skills.md](skills.md) for the full skill reference

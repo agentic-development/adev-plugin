@@ -709,7 +709,7 @@ async function cmdInit() {
     if (providerNames.includes("claude-code")) {
       log("  1. Open Claude Code:  claude");
       log("  2. Configure context: /adev:init");
-      log("  3. Start working:    /adev:start");
+      log("  3. Start working:    /adev:work");
     }
     if (providerNames.includes("opencode")) {
       log("  1. Open OpenCode:    opencode");
@@ -722,7 +722,7 @@ async function cmdInit() {
   } else {
     log("  1. Run /adev:hygiene to check context health");
     log("  2. Run /adev:status --all for project dashboard");
-    log("  3. Run /adev:start to begin work");
+    log("  3. Run /adev:work to begin work");
   }
   console.log();
   log("Docs:       https://agentic-dev.org");

@@ -12,6 +12,7 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 - No arguments: interactive wizard (detects greenfield vs. existing setup automatically)
 - `--brownfield`: adds reverse-chartering, ADR archaeology, and coverage analysis
 - `--dry-run`: shows what would be created without writing any files
+- `--workspace`: initialize a workspace root that aggregates multiple child repos under one `adev-workspace.yaml`
 
 ## Behavior by Project State
 
@@ -251,6 +252,67 @@ Step 10/10: Summary
   - Commit all files
 
   → Create everything? (yes / go back to step N / cancel)
+```
+
+## Workspace Mode (`--workspace`)
+
+Use this mode at a monorepo or multi-repo root to create a workspace that aggregates child repos under shared governance.
+
+### Guard: skip if already initialized
+
+Before doing anything, check whether `adev-workspace.yaml` already exists in the current directory. If it does:
+
+```
+adev-workspace.yaml already exists. Run /adev:init to diagnose individual repos,
+or edit adev-workspace.yaml directly to add/remove repos.
+```
+
+Exit without writing any files.
+
+### Step W1: Scaffold workspace files
+
+Scaffold `adev-workspace.yaml` from the workspace template at `${CLAUDE_PLUGIN_ROOT}/templates/workspace-template/adev-workspace.yaml`.
+
+Also create a workspace `.context-index/` directory with a minimal `manifest.yaml` scoped to the workspace root (no constitution sync targets — workspace-level CLAUDE.md is out of scope and will not be created).
+
+```
+Workspace initialized:
+  ✓ adev-workspace.yaml                   (from workspace-template)
+  ✓ .context-index/manifest.yaml          (workspace scope)
+```
+
+No workspace-level CLAUDE.md is created. Each child repo manages its own agent files independently.
+
+### Step W2: Auto-discover child repos
+
+Scan immediate subdirectories (depth 1) for `.context-index/manifest.yaml`. Present discovered repos to the user:
+
+```
+Auto-discover child repos
+
+  Found repos with .context-index/:
+  ✓ ./api          (.context-index/manifest.yaml — Next.js API)
+  ✓ ./web          (.context-index/manifest.yaml — React app)
+  ✓ ./infra        (.context-index/manifest.yaml — Terraform)
+  ? ./scripts      (no .context-index/ found)
+
+  → Register discovered repos? (yes / select / skip)
+```
+
+- **yes:** register all discovered repos in `adev-workspace.yaml` under the `repos:` key.
+- **select:** prompt for each repo individually — register or skip.
+- **skip:** leave `repos:` empty; the user can add entries manually.
+
+For each registered repo, write an entry:
+
+```yaml
+repos:
+  - path: ./api
+    name: api
+  - path: ./web
+    name: web
+  - path: ./infra
+    name: infra
 ```
 
 ### `.context-index/` already exists (Diagnostic Mode)

@@ -33,16 +33,14 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
-| `/adev:start` | Triage | Classify incoming work and route to the right skill |
-| `/adev:vision` | Strategic Planning | Define product vision, milestones, and feature inventory |
-| `/adev:roadmap` | Strategic Planning | Sequence releases with dependency analysis and risk assessment |
+| `/adev:work` | Triage | Classify incoming work and route to the right skill |
 | `/adev:research` | Research | Persistent structured research using web, GitHub, and codebase sources |
 | `/adev:init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
 | `/adev:sync` | Context Setup | Sync constitution to CLAUDE.md and other agent files |
-| `/adev:brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
-| `/adev:specify` | Specification | Write Live Specs within a charter's scope |
+| `/adev:brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter; bootstraps `product.md` identity on first charter |
+| `/adev:specify` | Specification | Write Live Specs within a charter's scope; binds each spec to a Feature work item |
 | `/adev:review-specs` | Architecture Review | Principal architect agents review specs before planning |
-| `/adev:plan` | Planning | Decompose specs into implementation tasks |
+| `/adev:plan` | Planning | Decompose at any scope: `--spec` (default), `--feature`, `--release`, `--milestone`, `--epic` |
 | `/adev:build` | Build | End-to-end orchestrator: review → plan → route → implement → validate |
 | `/adev:implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
 | `/adev:write-test` | Implementation | Standalone TDD test authoring with gaming detection |

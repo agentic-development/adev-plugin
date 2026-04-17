@@ -32,7 +32,7 @@ adev-plugin/
 │   ├── adev:hygiene/           # Context staleness and drift audits
 │   ├── adev:repomap/           # AST-based symbol index generation
 │   ├── adev:sync/              # Sync constitution to agent files
-│   ├── adev:start/             # Work triage and routing
+│   ├── adev:work/              # Work triage and routing
 │   ├── adev:build/             # End-to-end build orchestrator
 │   ├── adev:issues/            # Issue and epic management
 │   ├── adev:vision/            # Product vision and milestones

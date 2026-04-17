@@ -1,0 +1,9 @@
+project:
+  name: "airflow-dags"
+  type: single-app
+
+modules:
+  - slug: dags
+    name: DAGs
+    paths:
+      - dags/

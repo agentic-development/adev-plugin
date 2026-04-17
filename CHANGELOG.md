@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.16.0] - 2026-04-17
+
+### New Features
+
+- **Workspace-aware strategic planning** — `/adev:brainstorm` at the workspace root bootstraps `product.md` with per-repo identity synthesis; `/adev:plan --release` and `--milestone` plan across workspace + repo charters with non-transitive dependency inheritance. Epic-board sync deferred to Phase 2 Shared Issue Tracking (#65)
+- **Input-hardening helpers** — `assertPathInWorkspace` (PATH_ESCAPE), `validateModuleName` (INVALID_MODULE_NAME), `sanitizeIdentityOneLiner` (ANSI/control-char stripping), `readCappedText` (512 KB file cap), `resolveWorkspaceProductPath` added to `lib/workspace.mjs`
+- **Repo-mode advisory** — Both `/adev:brainstorm` and `/adev:plan` print a one-line stdout advisory when invoked inside a registered repo of a detected workspace
+
+### Breaking Changes
+
+- **`/adev:vision` and `/adev:roadmap` removed** (since 0.15.0) — Vision/identity bootstrap folded into `/adev:brainstorm` Step 5b; milestone/release planning folded into `/adev:plan --milestone` and `--release`
+
+### Other
+
+- 45 new tests (1045 total, 0 failures)
+- 1 Live Spec validated (workspace-aware-vision, 23 acceptance criteria)
+- Multi-repo workspace charter: all 11 capabilities at `validated` status
+
 ## [0.11.0] - 2026-04-06
 
 ### New Features
@@ -80,7 +98,7 @@
 
 ### New Features
 
-- **`/adev:start` skill** — Pre-lifecycle triage that classifies incoming work (feature, bug, spike, chore) and routes to the correct `/adev:*` skill. Scans for in-progress plans, unreviewed specs, and recent sessions before classifying (#16)
+- **`/adev:work` skill** — Pre-lifecycle triage that classifies incoming work (feature, bug, spike, chore) and routes to the correct `/adev:*` skill. Scans for in-progress plans, unreviewed specs, and recent sessions before classifying (#16)
 - **Canonical `/adev:document` SKILL.md** — Created provider-agnostic canonical skill from OpenCode version
 
 ### Other

@@ -1,4 +1,4 @@
-# Live Spec: adev:start Intake Extension
+# Live Spec: adev:work Intake Extension
 
 <!-- Live Spec within the strategic-planning charter.
      This defines a specific behavioral contract that drives implementation and testing.
@@ -18,7 +18,7 @@ source-manifest:
   files:
     - lib/issues/registry.mjs
     - skills/issues/SKILL.md
-    - skills/start/SKILL.md
+    - skills/work/SKILL.md
     - tests/skills/assess.test.mjs
   computed-at: "2026-04-12T11:48:02.754Z"
 ---
@@ -27,7 +27,7 @@ source-manifest:
 
 ### Preconditions
 
-- `skills/start/SKILL.md` exists
+- `skills/work/SKILL.md` exists
 - `.context-index/` exists with `manifest.yaml`
 
 ### Behaviors
@@ -53,7 +53,7 @@ source-manifest:
 | `.context-index/` missing | Print "Run `/adev:init` first" and stop | N/A |
 | `--intake --file <path>` but file not found | Print "File not found: <path>" and stop | N/A |
 | tasks.backend not configured | Print "Issue board not configured. Add `tasks.backend` to manifest.yaml." and stop | N/A |
-| No existing charters or epics | Process requests as "Unassigned" issues, suggest running `/adev:vision` first | N/A |
+| No existing charters or epics | Process requests as "Unassigned" issues, suggest running `/adev:brainstorm` first | N/A |
 
 ## System Constitution Reference
 
@@ -63,7 +63,7 @@ source-manifest:
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Add --intake argument | Document in Arguments section of adev:start SKILL.md | small |
+| Add --intake argument | Document in Arguments section of adev:work SKILL.md | small |
 | Add intake processing steps | New Step 6 (or branch after Step 2) for intake mode | medium |
 | Add batch file processing | Support --file flag for multi-request intake | small |
 
