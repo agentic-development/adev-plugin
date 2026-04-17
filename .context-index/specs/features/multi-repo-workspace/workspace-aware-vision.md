@@ -1,6 +1,6 @@
 ---
 charter: multi-repo-workspace
-status: review-passed
+status: validated
 risk_level: medium
 milestone: phase-2
 revision: 3
@@ -14,6 +14,16 @@ depends-on:
   - "@design/brainstorm-product-bootstrap"
   - "@planning/multi-scope-plan"
 tracker-ref: issue-65
+source-manifest:
+  sha: "9ffc1ad"
+  files:
+    - lib/workspace.mjs
+    - skills/brainstorm/SKILL.md
+    - skills/plan/SKILL.md
+    - tests/lib/workspace-hardening.test.mjs
+    - tests/skills/brainstorm-workspace-bootstrap.test.mjs
+    - tests/skills/plan-workspace-mode.test.mjs
+  computed-at: "2026-04-17T09:26:13.441Z"
 ---
 
 # Live Spec: Workspace-Aware Strategic Planning

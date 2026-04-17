@@ -92,6 +92,10 @@ Group C may run in parallel with Group B. Group A must complete before B, C, D (
 
 ## Task 1: Input-Hardening Helpers — Path Containment + Module-Name Validation [specialist: none]
 
+**Routing:** auto-agent (score: 19/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=5
+**Rationale:** Fully specified path-containment and regex validation helpers with explicit test expectations and a matching golden sample pattern.
+
 **Charter capability:** Workspace-Aware Product Bootstrap + Workspace-Aware Release & Milestone Planning (shared input-hardening behaviours).
 **Files:**
 - Modify: `lib/workspace.mjs` (append two exports)
@@ -240,6 +244,10 @@ Refs: issue-65"
 ---
 
 ## Task 2: Bootstrap Helpers — Size Caps + Identity Sanitisation + Workspace Product Path [specialist: none]
+
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Well-specified sanitisation and size-cap helpers following the established lib module pattern; minor novelty from ANSI stripping logic.
 
 **Charter capability:** Workspace-Aware Product Bootstrap (helpers consumed by brainstorm Step 5b).
 **Depends on:** Task 1 (same file; serial).
@@ -443,6 +451,10 @@ Refs: issue-65"
 
 ## Task 3: Brainstorm Step 5b — Workspace-Mode Identity Prompt [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=3
+**Rationale:** Detailed behavioral contract with explicit prompt text and extraction rules; novelty from composing workspace branching + identity synthesis + Module Map scoping in one SKILL.md edit.
+
 **Charter capability:** Workspace-Aware Product Bootstrap.
 **Depends on:** Task 2 (sanitizeIdentityOneLiner, resolveWorkspaceProductPath).
 **Files:**
@@ -561,6 +573,10 @@ Refs: issue-65"
 ---
 
 ## Task 4: Plan Release Mode — Workspace-Mode Branching [specialist: none]
+
+**Routing:** auto-agent (score: 16/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=3
+**Rationale:** Comprehensive spec coverage with explicit behavioral contracts; reduced pattern score (no golden sample for SKILL.md workspace branching) and novelty from non-transitive dependency inheritance + three-source edge assembly.
 
 **Charter capability:** Workspace-Aware Release & Milestone Planning.
 **Depends on:** Task 1 (`assertPathInWorkspace`, `validateModuleName`), Task 2 (`resolveWorkspaceProductPath`, `readCappedText`, cap constants).
@@ -685,6 +701,10 @@ Refs: issue-65"
 
 ## Task 5: Plan Milestone Mode — Workspace-Mode Branching [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Mirrors Task 4's pattern with simpler scope; feature name parsing and disambiguation are well-specified with explicit error codes.
+
 **Charter capability:** Workspace-Aware Release & Milestone Planning.
 **Depends on:** Task 1 (`validateModuleName`), Task 2 (`resolveWorkspaceProductPath`), Task 4 (same file).
 **Files:**
@@ -793,6 +813,10 @@ Refs: issue-65"
 
 ## Task 6: Repo-Mode-Inside-Workspace Advisory [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=4 novelty=5
+**Rationale:** Mechanical text insertion in two SKILL.md files with exact advisory text specified; slightly higher blast radius from touching two modules.
+
 **Charter capability:** Workspace-Aware Release & Milestone Planning (UX contract).
 **Depends on:** Task 4, Task 5 (same file).
 **Files:**
@@ -871,6 +895,10 @@ Refs: issue-65"
 ---
 
 ## Task 7: End-to-End Integration Tests [specialist: none]
+
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=4 pattern=4 blast=5 novelty=4
+**Rationale:** Integration tests using established tmpdir fixture pattern; slightly lower spec score as test expectations are distributed across prior tasks rather than a dedicated E2E spec section.
 
 **Charter capability:** All (verification).
 **Depends on:** Tasks 1–6.
