@@ -218,6 +218,70 @@ After writing, print:
 
 > Bootstrapped product.md from your one-sentence vision. Run /adev:plan --milestone <name> later to define milestones, or update product.md directly.
 
+### 5b-3a: Workspace-Mode Adjustments
+
+> **This subsection applies only when Step 5b is executing in workspace mode** (as detected by `detectWorkspace` — see Workspace Root Handling). In repo mode (existing behaviour), all paths and prompts remain unchanged.
+
+#### 1. Mode Branching
+
+When invoked at a workspace root, Step 5b's globbing path for first-charter detection becomes:
+
+```
+<workspaceRoot>/.context-index/specs/features/*/charter.md
+```
+
+And the write path for product.md becomes `resolveWorkspaceProductPath(workspaceRoot)` (from `lib/workspace.mjs`). In repo mode, paths remain unchanged.
+
+#### 2. Project Name Resolution
+
+In workspace mode, the project name for the `product.md` title is resolved as follows:
+
+- Prefer `workspace.name` from `adev-workspace.yaml`
+- Fall back to the workspace root directory basename (directory name)
+
+**No workspace-level `constitution.md` is required** (unlike repo mode, which reads the constitution for the project name).
+
+#### 3. Augmented Vision Prompt
+
+> **Supersession note:** This workspace-mode prompt supersedes the single-question contract from `@design/brainstorm-product-bootstrap` Behavior 3 when in workspace mode. The prompt remains a single question; only its preface changes.
+
+When bootstrapping at a workspace root for the first time, ask this ONE question:
+
+```
+This is the first workspace-level charter. The workspace '<name>' currently
+coordinates <N> repos:
+  - <slug>: <identity one-liner>
+  - ...
+What is the workspace trying to do, in one sentence? (This becomes the
+workspace product vision.)
+```
+
+Replace `<name>` with the resolved workspace name, `<N>` with the count of registered repos, and each `<slug>: <identity one-liner>` with the repo's slug and its extracted identity (see rule 4 below).
+
+#### 4. Identity Extraction Rule per Registered Repo
+
+Apply in order, stopping at the first success:
+
+1. First sentence of the `## Identity` section of the repo's `.context-index/constitution.md`
+2. If no `## Identity` section exists, use the first sentence of the constitution body (text after frontmatter and title)
+3. If the file is absent or empty, use the literal string `no constitution`
+
+#### 5. Sanitisation
+
+Before including an identity one-liner in the prompt, call `sanitizeIdentityOneLiner(raw)` from `lib/workspace.mjs`. This function strips control characters (`\x00-\x1F`, `\x7F`) and ANSI CSI sequences, and truncates to 200 UTF-8 characters with an ellipsis on overflow.
+
+#### 6. Missing Repo Path Handling
+
+If `detectWorkspace` flagged `missing: true` for a repo, OR if `assertPathInWorkspace(workspaceRoot, repoPath)` threw `PATH_ESCAPE`, skip that repo silently. All other repos continue to be processed.
+
+#### 7. Module Map in Workspace Mode
+
+In workspace mode, the Module Map table contains **workspace-charter rows only** — per-repo charters are NOT mixed in. Each repo retains its own `product.md` with its own Module Map. The workspace `product.md` tracks only workspace-level charters.
+
+#### 8. `--no-bootstrap` in Workspace Mode
+
+The `--no-bootstrap` flag suppresses Step 5b at the workspace root identically to single-repo mode — no product.md is written and no question is asked.
+
 ### 5b-4: Module Map Append
 
 **When `product.md` exists,** append a row for the new module to the Module Map section after writing the charter.
