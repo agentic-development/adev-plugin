@@ -1,6 +1,6 @@
 ---
 charter: tiered-test-gates
-status: review-passed
+status: superseded
 risk_level: low
 revision: 2
 charter-revision: 2

@@ -172,6 +172,25 @@ If yes:
 
 If no: skip. Governance/ is optional.
 
+**Legacy gate migration (brownfield/existing projects):**
+
+After the governance prompt, check for legacy gate definitions:
+- Check if `.context-index/manifest.yaml` exists and contains a `gates:` section
+- Check if `.context-index/governance/gates.yaml` already exists
+
+If `gates:` exists in `manifest.yaml` AND `governance/gates.yaml` does NOT exist, print a migration notice:
+
+```
+  ⚠ Legacy gates found in manifest.yaml. To adopt the unified gates system,
+    move your gate definitions to governance/gates.yaml.
+
+  → Scaffold governance/gates.yaml from template now? (yes / skip)
+```
+
+If the user says yes, create `.context-index/governance/` (if not present) and generate `governance/gates.yaml` from template. The agent should note that init no longer generates a `gates:` section in `manifest.yaml` — the manifest template handles gate configuration for new projects via `governance/gates.yaml`.
+
+If the user says skip, leave `manifest.yaml` unchanged and note: "You can migrate later by running `/adev:init` again."
+
 ```
 Step 8/10: Sync Targets
   Your constitution will be synced to agent-specific files so

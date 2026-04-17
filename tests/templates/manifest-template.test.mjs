@@ -17,6 +17,15 @@ describe("manifest-template.yaml", () => {
   it("has a comment explaining the reminder_interval field", () => {
     assert.match(content, /# .*reminder/i);
   });
+
+  it("should not contain a gates: section", () => {
+    const gatesLine = content.split("\n").find(line => /^gates:/.test(line.trim()));
+    assert.equal(gatesLine, undefined, "manifest-template should not contain a top-level gates: section");
+  });
+
+  it("should not reference governance precedence over manifest gates", () => {
+    assert.ok(!content.includes("take precedence over the gates:"), "Should not reference gates precedence");
+  });
 });
 
 describe("format-documentation.md template", () => {

@@ -334,17 +334,22 @@ If `.context-index/governance/` does not exist, SKIP this pass entirely. Print:
 ```
 ## Governance Policy Health
 
-Skipped — using manifest gates. No governance/ directory configured.
+Skipped — no governance/ directory configured. Run `/adev:init` to set up governance.
 ```
 
 **Steps (when governance/ exists):**
 
 1. **YAML parsing.** Parse each file (`gates.yaml`, `boundaries.yaml`, `risk-policies.yaml`). Flag PARSE_ERROR on failure.
-2. **Gate command validation.** For each gate with a non-empty `command`, check that the binary exists on PATH (e.g., `which npm`, `which pytest`). Do not run the command. Flag COMMAND_NOT_FOUND.
-3. **Regex validation.** For each boundary rule, compile the `pattern` as a regex. Flag INVALID_REGEX on failure.
-4. **Charter override references.** For each file in `governance/overrides/`, verify the charter exists at `.context-index/specs/features/<slug>/charter.md`. Flag ORPHAN_OVERRIDE if the charter does not exist.
-5. **Transition gate references.** For each gate ID in `transitions.*.required_gates`, verify it exists in the `gates` list. Flag MISSING_GATE_REF.
-6. **Risk policy completeness.** Verify all three levels (high, medium, low) are defined in `risk-policies.yaml`. Flag INCOMPLETE_POLICY.
+2. **Gate ID uniqueness.** Check that all gate `id` values in `gates.yaml` are unique. Flag DUPLICATE_GATE_ID if any two gates share an `id`: "Duplicate gate ID '<id>' — second definition ignored."
+3. **Tier value validation.** For each gate in `gates.yaml`, verify `tier` is one of `fast`, `integration`, or `e2e`. Flag INVALID_TIER: "Gate '<id>' has invalid tier '<value>', defaulting to fast."
+4. **Severity value validation.** For each gate in `gates.yaml`, verify `severity` (if present) is `error` or `warning`. Flag INVALID_SEVERITY: "Invalid severity '<value>' for gate '<id>', defaulting to error."
+5. **Empty gates list.** If `gates:` key exists in `gates.yaml` but is empty or null, flag EMPTY_GATES: "gates.yaml has an empty gates list."
+6. **Gate command validation.** For each gate with a non-empty `command`, check that the binary exists on PATH (e.g., `which npm`, `which pytest`). Do not run the command. Flag COMMAND_NOT_FOUND.
+7. **Regex validation.** For each boundary rule, compile the `pattern` as a regex. Flag INVALID_REGEX on failure.
+8. **Charter override references.** For each file in `governance/overrides/`, verify the charter exists at `.context-index/specs/features/<slug>/charter.md`. Flag ORPHAN_OVERRIDE if the charter does not exist.
+9. **Transition gate references.** For each gate ID in `transitions.*.required_gates`, verify it exists in the `gates` list. Flag MISSING_GATE_REF.
+10. **Risk policy completeness.** Verify all three levels (high, medium, low) are defined in `risk-policies.yaml`. Flag INCOMPLETE_POLICY.
+11. **Legacy manifest gates.** Read `manifest.yaml`. If a top-level `gates:` section exists, flag LEGACY_GATES: "Legacy gates: section found in manifest.yaml. This is no longer used. Move gate definitions to governance/gates.yaml."
 
 **Output format:**
 ```

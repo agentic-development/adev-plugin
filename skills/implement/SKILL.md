@@ -303,7 +303,7 @@ After both reviews pass, if `governance/gates.yaml` exists:
 2. For each gate with `kind: deterministic` and non-empty `command`: run it. If fail + `required: true` → task failure. If fail + `required: false` → log warning.
 3. `kind: probabilistic` or no `command` → log "Skipped (requires platform runtime)"
 4. `approver_role` → log informational note
-5. If `governance/gates.yaml` does not exist, fall back to manifest quality gates (existing behavior)
+5. If `governance/gates.yaml` does not exist, skip governance gate checks.
 
 After both reviews pass:
 1. Update the issue status to `closed` via `close(id, "Implemented and reviewed")`.
@@ -314,11 +314,10 @@ After both reviews pass:
 
 After all tasks are complete, run the integration tier gate if configured.
 
-1. Read `manifest.yaml` `gates:` section. If `gates.integration` is defined, resolve its commands using the tiered-gate-schema resolution rules.
-2. If `gates.integration` is not defined, skip this step silently (current behavior preserved — Step 3 follows Step 2 directly).
+1. Read `governance/gates.yaml`. Filter gates where `tier: integration`. If no integration-tier gates are defined, skip this step silently.
+2. If no integration-tier gates are defined in `governance/gates.yaml`, skip this step silently (current behavior preserved — Step 3 follows Step 2 directly).
 3. If `--task <N>` was passed (single-task re-run), skip this step. Integration gates only run when all tasks complete in a full plan execution.
 4. **E2E exclusion:** Only the fast tier (per-task in Step 2) and integration tier (this step) execute during implementation. The E2E tier is excluded from `/adev:implement` — E2E gates execute only during `/adev:validate` Check 1c.
-5. This step reads from `manifest.yaml` only. `governance/gates.yaml` does not apply to the integration gate step (governance gates only apply to `/adev:validate` Check 1). This is orthogonal to the Step 2h per-task governance gates, which continue to operate independently.
 
 **Execute commands sequentially.** All commands within the integration tier share the tier's severity (default: `error`). Individual commands do not have their own severity.
 
