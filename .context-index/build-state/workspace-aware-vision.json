@@ -1,0 +1,21 @@
+{
+  "spec": ".context-index/specs/features/multi-repo-workspace/workspace-aware-vision.md",
+  "phase": null,
+  "status": "in_progress",
+  "steps": [
+    {
+      "name": "review",
+      "status": "skipped",
+      "timestamp": "2026-04-16T00:00:00Z",
+      "note": "review.md exists with PASS_WITH_NOTES verdict; last-reviewed-revision (3) matches spec revision (3)"
+    },
+    {
+      "name": "plan",
+      "status": "completed",
+      "timestamp": "2026-04-16T00:10:00Z",
+      "note": "plan-reviewer returned Approved (0 issues, 4 advisories). 7 TDD tasks covering all 23 acceptance criteria."
+    }
+  ],
+  "started": "2026-04-16T00:00:00Z",
+  "updated": "2026-04-16T00:10:00Z"
+}
