@@ -48,7 +48,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
 
 | Skill | Purpose | Prerequisites |
 |-------|---------|---------------|
-| `/adev:brainstorm` | Explore an idea, produce a Feature Charter | `.context-index/` exists |
+| `/adev:brainstorm` | Explore an idea, produce a Feature Charter. At workspace root: bootstraps workspace `product.md` with per-repo identity synthesis | `.context-index/` exists |
 | `/adev:specify` | Write Live Specs within a charter's scope | Charter exists |
 
 ### Review
@@ -61,7 +61,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
 
 | Skill | Purpose | Prerequisites |
 |-------|---------|---------------|
-| `/adev:plan` | Decompose specs into ordered tasks with TDD | Spec at `review-passed` |
+| `/adev:plan` | Decompose specs into ordered tasks with TDD. At workspace root: `--release` and `--milestone` plan across repos with dependency inheritance | Spec at `review-passed` |
 | `/adev:route` | Score tasks for auto/assisted/human execution | Plan exists |
 
 ### Implementation
