@@ -77,3 +77,11 @@ describe("adev:brainstorm SKILL.md — workspace-mode bootstrap (Step 5b-3a)", (
     );
   });
 });
+
+describe("adev:brainstorm SKILL.md — repo-mode-inside-workspace advisory", () => {
+  it("brainstorm SKILL.md: repo-mode-inside-workspace advisory emits to stdout once", () => {
+    assert.match(skill, /Advisory: running repo-scoped inside workspace/);
+    assert.match(skill, /stdout/i);
+    assert.match(skill, /once per invocation/i);
+  });
+});

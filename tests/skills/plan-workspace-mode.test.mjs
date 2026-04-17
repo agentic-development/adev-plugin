@@ -109,3 +109,11 @@ describe("adev:plan SKILL.md — Milestone Mode workspace-mode branching", () =>
     assert.match(section, /never writes.*repo.*product\.md|isolation/i);
   });
 });
+
+describe("adev:plan SKILL.md — repo-mode-inside-workspace advisory", () => {
+  it("repo-mode-inside-workspace advisory emits to stdout once", () => {
+    assert.match(skill, /Advisory: running repo-scoped inside workspace/);
+    assert.match(skill, /stdout/i);
+    assert.match(skill, /once per invocation/i);
+  });
+});
