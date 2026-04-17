@@ -42,6 +42,17 @@ Before starting Step 1, detect whether the skill is being invoked at a **workspa
 
 **Detecting workspace root:** Check whether the current directory contains `workspace.yaml` (or `.workspace/config.yaml`) AND whether the current directory is NOT listed as a registered repo path within that config. If both conditions hold, treat the current location as workspace root.
 
+## Repo-Mode-Inside-Workspace Advisory
+
+**Repo-Mode-Inside-Workspace Advisory:** When the skill is invoked inside a registered repo (`detectWorkspace(cwd)` non-null AND `currentRepoSlug` is set), behaviour is repo-scoped (existing single-repo flow). Additionally, print this one-line advisory to **stdout** (same channel as existing skill messages — NOT stderr, logs, or hook channels), **exactly once per invocation**:
+
+```
+(Advisory: running repo-scoped inside workspace '<name>'. For
+workspace-level planning, cd to <workspace-root> and re-run.)
+```
+
+The advisory does not block; it does not appear when `detectWorkspace` returns `null`.
+
 ## Checklist
 
 Complete these steps in order. Do not skip steps.
