@@ -6,9 +6,31 @@
 
 set -uo pipefail
 
+# Walk up from a directory to find the nearest adev-workspace.yaml
+is_workspace_root() {
+  local dir="$1"
+  while true; do
+    if [ -f "$dir/adev-workspace.yaml" ]; then
+      echo "$dir"
+      return 0
+    fi
+    local parent
+    parent=$(dirname "$dir")
+    if [ "$parent" = "$dir" ]; then
+      return 1
+    fi
+    dir="$parent"
+  done
+}
+
 # Only trigger on constitution.md edits
 FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
 if [[ "$FILE_PATH" != *".context-index/constitution.md" ]]; then
+  exit 0
+fi
+
+# If we're at a workspace root, skip sync suggestion — no workspace-level CLAUDE.md to sync
+if is_workspace_root "$(pwd)" > /dev/null 2>&1; then
   exit 0
 fi
 
