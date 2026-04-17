@@ -34,7 +34,7 @@ Use the `skill` tool to invoke these skills. For example: `skill({ name: "adev:i
 
 | Skill | Phase | When to Use |
 |-------|-------|-------------|
-| `adev:start` | Triage | Classify incoming work and route to the right skill |
+| `adev:work` | Triage | Classify incoming work and route to the right skill |
 | `adev:init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
 | `adev:sync` | Context Setup | Sync constitution to AGENTS.md and other agent files |
 | `adev:brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter |
@@ -73,7 +73,7 @@ If any `adev-*` skill applies to the current task, invoke it before proceeding u
 
 ```javascript
 // Triage incoming work
-skill({ name: "adev:start" })
+skill({ name: "adev:work" })
 
 // Assess codebase readiness
 skill({ name: "adev:assess" })

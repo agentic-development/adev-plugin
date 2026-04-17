@@ -23,7 +23,7 @@ updated: 2026-04-06
 
 1. **When** the Issue Reminder Hook triggers and the issue board has zero `in_progress` issues but has `open` issues **then** the `additionalContext` includes an idle nudge listing up to 3 open issues sorted by priority, suggesting the agent pick one up or run `/adev:issues` to review the board.
 
-2. **When** the Issue Reminder Hook triggers and the issue board has zero `in_progress` issues and zero `open` issues **then** the `additionalContext` includes a nudge stating all tracked issues are resolved and suggesting the agent check for untracked work or run `/adev:start` for new tasks.
+2. **When** the Issue Reminder Hook triggers and the issue board has zero `in_progress` issues and zero `open` issues **then** the `additionalContext` includes a nudge stating all tracked issues are resolved and suggesting the agent check for untracked work or run `/adev:work` for new tasks.
 
 3. **When** the Issue Reminder Hook triggers and the issue board has zero `in_progress` issues and the execution state is `active` **then** the nudge also warns about a stale execution state: "Execution state shows active work but no issues are in_progress. Run /adev:issues to sync."
 
@@ -75,7 +75,7 @@ description: "All tracked issues are resolved."
 
 # All Issues Resolved
 
-All tracked issues are closed or deferred. If there is more work to do, run `/adev:start` to triage new tasks or `/adev:issues create` to file new issues.
+All tracked issues are closed or deferred. If there is more work to do, run `/adev:work` to triage new tasks or `/adev:issues create` to file new issues.
 ```
 
 ### Stale Execution State Warning

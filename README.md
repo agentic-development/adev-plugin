@@ -26,7 +26,7 @@ This creates a `.context-index/` directory — a structured knowledge base that 
 Then just tell the assistant what you want to build:
 
 ```
-/adev:start                 # Routes your request to the right skill
+/adev:work                  # Routes your request to the right skill
 ```
 
 Or use skills directly:
@@ -45,7 +45,7 @@ Skills are slash commands that guide your AI assistant through each phase of dev
 
 | Skill | What It Does |
 |-------|-------------|
-| `/adev:start` | Classifies your request and routes to the right skill |
+| `/adev:work` | Classifies your request and routes to the right skill |
 | `/adev:init` | Sets up `.context-index/` for a new or existing project |
 | `/adev:sync` | Syncs project principles to CLAUDE.md and other agent files |
 
@@ -55,10 +55,10 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 
 | Skill | What It Does |
 |-------|-------------|
-| `/adev:brainstorm` | Explore an idea interactively, produce a Feature Charter |
-| `/adev:specify` | Write a behavioral spec (preconditions, behaviors, error cases) |
+| `/adev:brainstorm` | Explore an idea interactively, produce a Feature Charter; bootstraps `product.md` on first charter |
+| `/adev:specify` | Write a behavioral spec (preconditions, behaviors, error cases); creates a Feature work item bound to the spec |
 | `/adev:review-specs` | Three specialist agents review your spec before coding begins |
-| `/adev:plan` | Break a spec into ordered tasks with TDD expectations |
+| `/adev:plan` | Decompose at any scope: spec→tasks (default), or `--feature`, `--release`, `--milestone`, `--epic` |
 | `/adev:route` | Score tasks: which can run autonomously vs. need human review |
 | `/adev:build` | Run the full pipeline end-to-end (review, plan, implement, validate) |
 | `/adev:implement` | Execute tasks with TDD — each in a fresh subagent |
@@ -78,8 +78,6 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 |-------|-------------|
 | `/adev:issues` | Create, update, and close issues and epics |
 | `/adev:status` | Dashboard view of project progress |
-| `/adev:vision` | Define product vision and milestones |
-| `/adev:roadmap` | Sequence releases with dependency analysis |
 
 ### Maintenance and Quality
 
@@ -158,6 +156,7 @@ Hooks run automatically to enforce conventions:
 
 - [Quickstart guide](docs/quickstart.md) — your first 10 minutes with adev
 - [Skill reference](docs/skills.md) — all skills with prerequisites and lifecycle flow
+- [Multi-repo workspaces](docs/workspaces.md) — coordinate specs and planning across repos
 - [Architecture](docs/architecture.md) — design decisions and module boundaries
 - [Agentic Development Handbook](https://www.agentic-dev.org/en/handbook) — the methodology behind the framework
 - [Design document](https://github.com/agentic-development/agentic-dev-content/blob/main/docs/superpowers/specs/2026-03-19-adev-plugin-design.md) — full technical design

@@ -1,0 +1,20 @@
+# adev-workspace.yaml — Multi-Repo Workspace Configuration
+# Scaffolded by /adev:init --workspace. Edit as needed.
+
+workspace:
+  name: workspace-blank
+
+# Registered repositories
+# Add entries here as you create or register repos.
+# Each repo should have its own .context-index/.
+repos: []
+  # - slug: my-repo              # Unique identifier
+  #   path: ./repos/my-repo      # Relative path from workspace root
+  #   role: transformation       # Free-form label (optional)
+
+# Inter-repo dependencies
+# Convention: "from" depends on "to" — "to" is upstream.
+dependencies: []
+  # - from: api-service
+  #   to: data-models
+  #   type: consumes

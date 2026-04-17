@@ -127,3 +127,12 @@ When `tasks.backend: file` (or unset):
 - The issue board lives at `.context-index/tasks/tasks.md`
 - Update the markdown table directly to change issue status
 - Use `/adev:issues` to manage issues interactively
+
+### next_action Convention
+
+Work items carry an optional `next_action` field that lifecycle skills update on each state transition to point at the next expected skill invocation (e.g. `"/adev:plan --spec foo.md"`).
+
+- Skills (`/adev:specify`, `/adev:plan`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`, `/adev:debug`) **should** update `next_action` when they complete a state change on a work item.
+- This is a convention, not enforced — the framework does not validate that `next_action` is set.
+- Consumers such as `/adev:work` and `/adev:status` use `next_action` as agent guidance; items without `next_action` fall back to existing routing logic.
+- `next_action` accepts any string; newlines are escaped to spaces in serialized storage.

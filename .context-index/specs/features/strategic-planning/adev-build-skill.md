@@ -19,7 +19,7 @@ source-manifest:
     - skills/assess/SKILL.md
     - skills/build/SKILL.md
     - skills/issues/SKILL.md
-    - skills/start/SKILL.md
+    - skills/work/SKILL.md
     - tests/skills/assess.test.mjs
   computed-at: "2026-04-12T11:48:02.749Z"
 ---
