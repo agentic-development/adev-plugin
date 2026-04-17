@@ -23,14 +23,25 @@ fi
 
 # --- Load configuration from manifest.yaml ---
 
-MANIFEST=""
-# Look for manifest in common locations
-for candidate in ".context-index/manifest.yaml" "../.context-index/manifest.yaml"; do
-  if [ -f "$candidate" ]; then
-    MANIFEST="$candidate"
-    break
-  fi
-done
+# Walk up from cwd to filesystem root looking for .context-index/manifest.yaml
+find_manifest() {
+  local dir
+  dir=$(pwd)
+  while true; do
+    if [ -f "$dir/.context-index/manifest.yaml" ]; then
+      echo "$dir/.context-index/manifest.yaml"
+      return 0
+    fi
+    local parent
+    parent=$(dirname "$dir")
+    if [ "$parent" = "$dir" ]; then
+      return 1
+    fi
+    dir="$parent"
+  done
+}
+
+MANIFEST=$(find_manifest) || MANIFEST=""
 
 # Default values
 MERGE_POLICY="pr"

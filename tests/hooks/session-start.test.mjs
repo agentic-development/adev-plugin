@@ -159,6 +159,37 @@ describe("session-start hook", () => {
     }
   });
 
+  it("finds execution state via walk-up from subdirectory", () => {
+    const tempDir = createTempDir();
+    try {
+      mkdirSync(join(tempDir, "skills", "using-adev"), { recursive: true });
+      writeFileSync(join(tempDir, "skills", "using-adev", "SKILL.md"), "# Test Skill");
+
+      // Write execution state at project root
+      mkdirSync(join(tempDir, "project", ".context-index"), { recursive: true });
+      writeFileSync(
+        join(tempDir, "project", ".context-index", ".execution-state.md"),
+        "---\nstatus: active\nplanRef: .context-index/specs/features/test/test.plan.md\ncurrentTask: 3\nissueBinding: issue-10\nblockers: \nnextAction: Write tests\nupdated: 2026-04-06T10:00:00Z\n---\n\n## Progress\n\n- [x] Task 1: Setup\n- [x] Task 2: Implement\n- [ ] Task 3: Write tests\n"
+      );
+
+      // Run from a subdirectory of the project
+      mkdirSync(join(tempDir, "project", "src", "lib"), { recursive: true });
+
+      const { exitCode, stdout } = runHook("session-start.sh", {
+        cwd: join(tempDir, "project", "src", "lib"),
+        env: { CLAUDE_PLUGIN_ROOT: tempDir },
+      });
+
+      assert.equal(exitCode, 0);
+      const parsed = JSON.parse(stdout);
+      const ctx = parsed.hookSpecificOutput.additionalContext;
+      assert.ok(ctx.includes("Session Resume"), "should find execution state via walk-up");
+      assert.ok(ctx.includes("Task 3"), "should include current task from walk-up");
+    } finally {
+      cleanupTempDir(tempDir);
+    }
+  });
+
   it("always exits 0 even when node fails", () => {
     const { exitCode } = runHook("session-start.sh", {
       env: { CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },

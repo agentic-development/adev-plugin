@@ -123,6 +123,32 @@ describe("constitution-linter hook", () => {
     assert.equal(exitCode, 0);
   });
 
+  it("skips validation at workspace root (adev-workspace.yaml present)", () => {
+    // Create a workspace root with adev-workspace.yaml
+    writeFixture(tempDir, "adev-workspace.yaml", "workspace:\n  name: test\nrepos: []\n");
+    // Create a constitution that would fail validation (missing sections)
+    const constitutionPath = `${tempDir}/.context-index/constitution.md`;
+    writeFixture(tempDir, ".context-index/constitution.md", "# Bad constitution\nNo sections.\n");
+
+    const { exitCode } = runHook("constitution-linter.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: constitutionPath },
+      cwd: tempDir,
+    });
+    assert.equal(exitCode, 0, "Should skip validation at workspace root");
+  });
+
+  it("still validates when no adev-workspace.yaml exists", () => {
+    // No adev-workspace.yaml — normal repo, should validate
+    const constitutionPath = `${tempDir}/.context-index/constitution.md`;
+    writeFixture(tempDir, ".context-index/constitution.md", "# Bad constitution\nNo sections.\n");
+
+    const { exitCode } = runHook("constitution-linter.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: constitutionPath },
+      cwd: tempDir,
+    });
+    assert.equal(exitCode, 2, "Should block invalid constitution when not at workspace root");
+  });
+
   it("reports multiple errors", () => {
     // Missing 2 sections AND over line limit
     const lines = ["## Identity", "We build things."];

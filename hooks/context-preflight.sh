@@ -10,6 +10,24 @@ set -uo pipefail
 # Read stdin (hook protocol)
 cat > /dev/null
 
+# Walk up from cwd to find the nearest directory containing .context-index/
+find_context_index() {
+  local dir
+  dir=$(pwd)
+  while true; do
+    if [ -d "$dir/.context-index" ]; then
+      echo "$dir"
+      return 0
+    fi
+    local parent
+    parent=$(dirname "$dir")
+    if [ "$parent" = "$dir" ]; then
+      return 1
+    fi
+    dir="$parent"
+  done
+}
+
 FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
 
 # No file path — nothing to check
@@ -45,8 +63,9 @@ case "$FILE_PATH" in
     ;;
 esac
 
-# Check if context was read this session
-if [ -f ".context-index/.context-preflight-ok" ]; then
+# Check if context was read this session (walk up to find .context-index/)
+CONTEXT_ROOT=$(find_context_index 2>/dev/null || true)
+if [ -n "$CONTEXT_ROOT" ] && [ -f "$CONTEXT_ROOT/.context-index/.context-preflight-ok" ]; then
   exit 0
 fi
 
