@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
+import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -270,5 +271,70 @@ describe("resolveWorkspaceProductPath", () => {
   it("works with a relative-looking root passed as string", () => {
     const result = resolveWorkspaceProductPath("projects/myapp");
     assert.equal(result, "projects/myapp/.context-index/specs/product.md");
+  });
+});
+
+describe("integration: workspace-hardening", () => {
+  it("rejects path-escape repo path", () => {
+    const tmp = createTempDir();
+    try {
+      assert.throws(
+        () => assertPathInWorkspace(tmp, "../../../etc"),
+        (e) => {
+          assert.equal(e.code, "PATH_ESCAPE");
+          return true;
+        }
+      );
+      // safe path passes
+      assert.doesNotThrow(() => assertPathInWorkspace(tmp, "repos/ok"));
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  it("sanitises ANSI + control chars from constitution identity", () => {
+    const tmp = createTempDir();
+    try {
+      writeFixture(
+        tmp,
+        "constitution.md",
+        "# Identity\n\x1b[31mEvilRepo\x1b[0m does \x07malicious\x00 things.\n"
+      );
+      const raw = readFileSync(`${tmp}/constitution.md`, "utf8");
+      const identityLine = raw.split("\n").find(l => l.includes("EvilRepo")) || "";
+      const sanitised = sanitizeIdentityOneLiner(identityLine);
+      assert.equal(sanitised.includes("\x1b"), false);
+      assert.equal(sanitised.includes("\x00"), false);
+      assert.equal(sanitised.includes("\x07"), false);
+      assert.match(sanitised, /EvilRepo does malicious things/);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  it("readCappedText skips oversized file", () => {
+    const tmp = createTempDir();
+    try {
+      writeFixture(tmp, "big.md", "x".repeat(MAX_CHARTER_FILE_BYTES + 1));
+      const result = readCappedText(`${tmp}/big.md`);
+      assert.equal(result.content, null);
+      assert.equal(result.truncated, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  it("resolveWorkspaceProductPath resolves under workspace root", () => {
+    const tmp = createTempDir();
+    try {
+      const p = resolveWorkspaceProductPath(tmp);
+      assert.equal(p.startsWith(tmp), true);
+      assert.ok(
+        p.endsWith(".context-index/specs/product.md") ||
+        p.endsWith(".context-index\\specs\\product.md")
+      );
+    } finally {
+      cleanupTempDir(tmp);
+    }
   });
 });
