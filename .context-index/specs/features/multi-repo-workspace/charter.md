@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 2
-updated: 2026-04-15
+revision: 4
+updated: 2026-04-16
 ---
 
 # Feature Charter: Multi-Repo Workspace
@@ -40,9 +40,9 @@ The adev plugin assumes a single git repository per project. Teams working acros
 |-----------|-----------|-------------|
 | setup | modifies | `/adev:init` gains `--workspace` flag |
 | cli | modifies | CLI detects workspace mode during project state resolution |
-| design | modifies | `/adev:brainstorm` and `/adev:specify` gain workspace context for cross-repo charters and specs |
+| design | modifies | `/adev:brainstorm` gains workspace context for cross-repo charters and for workspace-root `product.md` bootstrap (synthesises from per-repo constitutions); `/adev:specify` gains workspace context for cross-repo specs |
 | assessment | modifies | `/adev:review-specs` validates cross-repo `depends-on` references |
-| planning | modifies | `/adev:plan` reads workspace dependency graph for ordering |
+| planning | modifies | `/adev:plan` reads workspace dependency graph for ordering (via `--phase`); `/adev:plan --release` / `--milestone` invoked at the workspace root read workspace charters and write milestones to workspace `product.md` |
 | strategic-planning | modifies | `/adev:status` aggregates across repos in workspace mode |
 
 ## Domain Model
@@ -86,6 +86,8 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | Dependency-Aware Planning | `/adev:plan --phase` reads the workspace dependency graph to order repo-level plans (upstream repos first) | should-have | 1 | validated |
 | Workspace-Level Charters | `/adev:brainstorm` in the workspace root creates charters in workspace `.context-index/` that decompose into repo-level specs | should-have | 1 | validated |
 | Workspace Status | `/adev:status` in workspace root aggregates spec/charter status across all repos | nice-to-have | 1 | validated |
+| Workspace-Aware Product Bootstrap | At the workspace root, `/adev:brainstorm` Step 5b bootstraps `product.md` by synthesising identity from `workspace.name` and the registered repos' constitutions (where present). No workspace-level constitution or `manifest.yaml` is required. Subsequent workspace-level brainstorms append/update the Module Map with workspace-charter rows only (each repo retains its own `product.md` Module Map). | must-have | 2 | planned |
+| Workspace-Aware Release & Milestone Planning | At the workspace root, `/adev:plan --release` and `/adev:plan --milestone` read workspace charters (workspace + per-repo via `resolveWorkspaceContext`) and write milestones to workspace `.context-index/specs/product.md`. Repo-level specs may reference workspace milestones. Issue-board epic sync is **unconditionally deferred** to the Phase 2 Shared Issue Tracking capability — the workspace has no `manifest.yaml` per the Simplicity quality attribute. | must-have | 2 | planned |
 
 ## Deferred Capabilities
 
