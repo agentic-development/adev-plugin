@@ -53,7 +53,7 @@ source-manifest:
 | `.context-index/` missing | Print "Run `/adev:init` first" and stop | N/A |
 | `--intake --file <path>` but file not found | Print "File not found: <path>" and stop | N/A |
 | tasks.backend not configured | Print "Issue board not configured. Add `tasks.backend` to manifest.yaml." and stop | N/A |
-| No existing charters or epics | Process requests as "Unassigned" issues, suggest running `/adev:vision` first | N/A |
+| No existing charters or epics | Process requests as "Unassigned" issues, suggest running `/adev:brainstorm` first | N/A |
 
 ## System Constitution Reference
 
