@@ -1,6 +1,6 @@
 ---
 name: adev:validate
-description: "Post-implementation validation with 11 ordered checks including browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable. Use when the user says 'validate the implementation', 'check if it works', 'run validation', 'verify the feature', or after implementation is complete and needs quality assurance."
+description: "Post-implementation validation with 13 ordered checks including lifecycle reconciliation and browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable. Use when the user says 'validate the implementation', 'check if it works', 'run validation', 'verify the feature', or after implementation is complete and needs quality assurance."
 ---
 
 # Validate Implementation
@@ -23,11 +23,11 @@ Before starting, verify:
 
 ## Execution Strategy
 
-**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 11 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev:validate`. **Exception:** Check 11 (Visual Verification) is triggered independently for UI files. If quality gates fail but the implementation includes UI files, still note that visual verification is pending.
+**Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 13 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev:validate`. **Exception:** Check 11 (Visual Verification) is triggered independently for UI files. If quality gates fail but the implementation includes UI files, still note that visual verification is pending.
 
-**Checks 2 through 11 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
+**Checks 2 through 13 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
 
-## The 12 Checks
+## The 13 Checks
 
 ### Check 1: Quality Gates (fail-fast, tiered)
 
@@ -67,7 +67,7 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 
 **`--fix` behavior:** Auto-fix applies only to the fast tier (Check 1a). If `--fix` was passed and a fast-tier lint or formatting gate fails, attempt auto-fix (e.g., `npx eslint --fix`). Re-run the gate. If it passes, record as PASS (auto-fixed). Integration and E2E commands are never auto-fixed.
 
-**Check 11 exception:** If an error-severity tier fails and Checks 2–10 are skipped, Check 11 (Visual Verification) still follows its existing independent trigger rules — if the spec references UI files, note that visual verification is pending.
+**Check 11 exception:** If an error-severity tier fails and Checks 2–13 are skipped, Check 11 (Visual Verification) still follows its existing independent trigger rules — if the spec references UI files, note that visual verification is pending.
 
 **Tier summary:** After Check 1 completes (all tiers pass or warning-only failures), include a tier summary in the report showing each tier's status, commands run, and duration per command. Use GateResult format: `Check 1a (fast): npm test — PASS (2.1s)`.
 
@@ -265,11 +265,66 @@ Do not record SKIP. Do not proceed without it. UI code without visual verificati
 Record per visual expectation: PASS or FAIL with description.
 Overall: PASS if all expectations met, FAIL if any expectation fails or if page does not load.
 
-### Check 12: Success Heuristic Extraction
+### Check 12: Lifecycle Reconciliation
+
+Verify that lifecycle artifacts (issues, epics, spec status, charter capability map) are consistent with the implementation state. This check catches the drift that accumulates when implementation completes but bookkeeping is skipped.
+
+**If `tasks.backend` is not configured in `manifest.yaml`:** SKIP checks 12a–12c with note: "No task backend configured."
+
+#### 12a. Issue Status Alignment
+
+Find all issues with `plan-ref` matching the current spec's plan file.
+
+For each issue:
+1. Read the issue status.
+2. If the issue is still `open` or `in-progress` but all its plan tasks are implemented and tests pass → flag as WARN: "Issue `<id>` (`<title>`) is still `<status>` but implementation is complete."
+3. **`--fix` behavior:** Update the issue status to `closed` with note `"Auto-closed by validation: implementation complete and tests pass."`
+
+#### 12b. Epic Completion
+
+Find the epic associated with the current spec's plan (via `epicRef` on child issues or plan frontmatter).
+
+If an epic is found:
+1. Count total child issues vs closed child issues.
+2. If ALL child issues are closed (or will be closed by 12a fix) but the epic is still `open` → flag as WARN: "Epic `<id>` (`<title>`) has all children closed but is still open."
+3. **`--fix` behavior:** Update epic status to `closed`.
+
+If no epic is found, record PASS (no epic to reconcile).
+
+#### 12c. Spec Status Consistency
+
+Read the current spec's `status` frontmatter field.
+
+1. If the spec status is `implemented` but all checks 1–11 passed → this is expected (validation will update it to `validated` in the "After Validation" step). Record PASS.
+2. If the spec status is `draft` or `review-pending` → flag as WARN: "Spec status is `<status>` but implementation exists and passes validation. Status may not have been updated after implementation."
+3. **`--fix` behavior:** Update spec status to `implemented` (the "After Validation" step will then promote to `validated`).
+
+#### 12d. Charter Capability Map Sync
+
+Read the parent charter's Capability Map. For each capability covered by this spec:
+
+1. Check the `Status` column value.
+2. If the capability status is `planned` or `in-progress` but the spec is validated → flag as WARN: "Charter capability `<name>` is `<status>` but spec is validated."
+3. **`--fix` behavior:** Update the capability status to `validated`.
+
+If no charter is referenced in the spec's frontmatter, SKIP with note: "No charter reference found."
+
+**Output format:**
+```
+## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
+- Issue alignment: PASS | WARN [N issues still open]
+- Epic completion: PASS | WARN [epic still open] | N/A
+- Spec status: PASS | WARN [status is <current>]
+- Charter sync: PASS | WARN [N capabilities stale] | SKIP
+```
+
+**This check uses WARN severity, not FAIL.** Lifecycle drift does not invalidate the implementation — the code is correct. But warnings are prominently displayed so the user knows to run `/adev:reconcile` or apply `--fix` for automatic cleanup.
+
+### Check 13: Success Heuristic Extraction
 
 #### Overview
 
-On first-run PASS (all checks 1-11 passed and no prior validation report exists), extract a positive pattern heuristic at `medium` confidence via `lib/heuristics.mjs`. This check is observational — it never blocks the overall validation result.
+On first-run PASS (all checks 1-12 passed with no FAIL results, and no prior validation report exists), extract a positive pattern heuristic at `medium` confidence via `lib/heuristics.mjs`. This check is observational — it never blocks the overall validation result.
 
 #### Spec-Slug Derivation Rule
 
@@ -309,7 +364,7 @@ Format: `<spec-slug>-<hash>` where:
 - Absolute path separators are normalized to `/` before lowercasing.
 - Including the path prevents id collisions between specs with identical titles.
 - Worked example: spec at `/project/.context-index/specs/features/hooks/foo.md` with pattern `X` → hash input is `/project/.context-index/specs/features/hooks/foo.md|X`.
-- For pathological filenames that would produce an empty spec-slug, Check 12 falls back to SKIP with note `"invalid spec slug"`.
+- For pathological filenames that would produce an empty spec-slug, Check 13 falls back to SKIP with note `"invalid spec slug"`.
 
 #### projectRoot Resolution
 
@@ -330,7 +385,7 @@ Priority order, first match wins:
 
 #### Confidence Rationale
 
-Initial `confidence: medium` is used (a stronger signal than `/adev:recover`'s `low`) because first-run PASS validates all 11 checks at once. The helper's absolute-threshold auto-promotion will raise the entry to `high` at the 3rd distinct-path evidence entry — print whatever confidence the helper returns from the write call, not the caller-supplied input.
+Initial `confidence: medium` is used (a stronger signal than `/adev:recover`'s `low`) because first-run PASS validates all 12 checks at once. The helper's absolute-threshold auto-promotion will raise the entry to `high` at the 3rd distinct-path evidence entry — print whatever confidence the helper returns from the write call, not the caller-supplied input.
 
 #### Contradiction Scan (before write)
 
@@ -368,12 +423,12 @@ try {
       confidence: 'medium',
       evidence: [{ path: '.context-index/specs/features/hooks/foo-spec-validation.md', date: '2026-04-09', source: 'validation' }],
     });
-    console.log(\`Check 12: Success Heuristic Extracted — \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
+    console.log(\`Check 13: Success Heuristic Extracted — \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
   } catch (err) {
-    console.log(\`Check 12: SKIP — \${err.message}\`);
+    console.log(\`Check 13: SKIP — \${err.message}\`);
   }
 } catch (err) {
-  console.log('Check 12: SKIP — helper unavailable');
+  console.log('Check 13: SKIP — helper unavailable');
 }
 "
 ```
@@ -383,18 +438,18 @@ try {
 Explicit list of SKIP reasons:
 
 - `"not first-run PASS"` — prior `<spec-slug>-validation.md` exists.
-- `"non-PASS result"` — any of checks 1-11 FAILed.
+- `"non-PASS result"` — any of checks 1-12 FAILed.
 - `"helper unavailable"` — `lib/heuristics.mjs` import failed.
 - `"no charter scope"` — target spec has no `charter:` frontmatter field.
 - `"no report path"` — validation report path cannot be resolved.
 - `"invalid spec slug"` — spec filename produced empty slug.
 - `<HEURISTICS_SCHEMA_ERROR message>` — `writeHeuristic` validation failed.
 
-**Check 12 never changes the overall validation result.** SKIP is informational.
+**Check 13 never changes the overall validation result.** SKIP is informational.
 
 #### Final Confirmation
 
-On success, Check 12 prints exactly: `Check 12: Success Heuristic Extracted — <id> (scope: <scope>, confidence: medium)` — or whatever confidence the helper returns after auto-promotion, since the confidence value must come from the `writeHeuristic` return value rather than the caller-supplied input.
+On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — <id> (scope: <scope>, confidence: medium)` — or whatever confidence the helper returns after auto-promotion, since the confidence value must come from the `writeHeuristic` return value rather than the caller-supplied input.
 
 ## Report Format
 
@@ -416,7 +471,7 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Typecheck: PASS | FAIL [command output if failed]
 - [Custom gate]: PASS | FAIL
 
-[If FAIL: "Quality gates failed. Checks 2-10 skipped. Fix the above and re-run /adev:validate."]
+[If FAIL: "Quality gates failed. Checks 2-13 skipped. Fix the above and re-run /adev:validate."]
 
 ## Check 2: Spec Compliance — PASS | FAIL
 - [Criterion 1]: PASS | FAIL | PARTIAL
@@ -471,7 +526,13 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Responsive (1280px): PASS | FAIL [details]
 - Dark mode: PASS | FAIL | N/A [details]
 
-## Check 12: Success Heuristic Extraction — PASS | SKIP
+## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
+- Issue alignment: PASS | WARN [N issues still open]
+- Epic completion: PASS | WARN [epic still open] | N/A
+- Spec status: PASS | WARN [status is <current>]
+- Charter sync: PASS | WARN [N capabilities stale] | SKIP
+
+## Check 13: Success Heuristic Extraction — PASS | SKIP
 - [PASS case] Heuristic extracted: <id> (scope: <scope>, confidence: medium)
 - [SKIP case] SKIP: <reason> (e.g., "not first-run PASS", "non-PASS result", "helper unavailable", "no charter scope", "no report path", "invalid spec slug", "<HEURISTICS_SCHEMA_ERROR message>")
 
@@ -482,7 +543,7 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 
 ## Overall Status
 
-- **PASS:** All 11 checks passed. The implementation is validated.
+- **PASS:** All 13 checks passed (WARN-only in Check 12 counts as PASS). The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev:validate`.
 
 ## After Validation
@@ -510,7 +571,7 @@ If PASS:
 
 If "pr" (or target branch is in `completion.protected_branches`):
 ```
-Validation passed. All 11 checks green.
+Validation passed. All 13 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -521,7 +582,7 @@ Do NOT merge directly to protected branches.
 
 If "merge" (and target branch is NOT protected):
 ```
-Validation passed. All 11 checks green.
+Validation passed. All 13 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -531,7 +592,7 @@ Ready to merge or proceed to the next feature.
 
 If "ask":
 ```
-Validation passed. All 11 checks green.
+Validation passed. All 13 checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -551,8 +612,8 @@ Fix the issues above and re-run: /adev:validate --spec <path>
 ## Red Flags
 
 **Never:**
-- Continue to Checks 2-10 if Check 1 (Quality Gates) failed
-- Skip any of the 11 checks (except when fail-fast applies to Check 1)
+- Continue to Checks 2-13 if Check 1 (Quality Gates) failed
+- Skip any of the 13 checks (except when fail-fast applies to Check 1)
 - Report PASS when any check has unresolved failures
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code
