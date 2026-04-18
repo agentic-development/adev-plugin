@@ -26,6 +26,101 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Context hygiene check (advisory)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FINDINGS=""
+          ISSUES=0
+
+          add_finding() {
+            local icon="$1" msg="$2"
+            FINDINGS="${FINDINGS}\n| ${icon} | ${msg} |"
+            if [ "$icon" = "⚠️" ]; then
+              ISSUES=$((ISSUES + 1))
+            fi
+          }
+
+          # --- Check 1: Constitution sync drift ---
+          if [ -f .context-index/constitution.md ] && [ -f CLAUDE.md ]; then
+            CONST_HASH=$(sed -n '/^## Non-Negotiable/,/^## Context Index/p' .context-index/constitution.md | sha256sum | cut -d' ' -f1)
+            CLAUDE_HASH=$(sed -n '/^## Non-Negotiable/,/^## Context Index/p' CLAUDE.md | sha256sum | cut -d' ' -f1)
+            if [ "$CONST_HASH" != "$CLAUDE_HASH" ]; then
+              add_finding "⚠️" "**Constitution drift** — \`CLAUDE.md\` is out of sync with \`constitution.md\`. Run \`/adev:sync\` to fix."
+            else
+              add_finding "✅" "**Constitution sync** — \`CLAUDE.md\` is in sync"
+            fi
+          fi
+
+          # --- Check 2: Reviewed specs without plans ---
+          UNPLANNED=""
+          for spec in $(grep -rl '^status: review-passed' .context-index/specs/features/ 2>/dev/null || true); do
+            case "$spec" in
+              *.plan.md|*.review.md|*-validation.md|*template*) continue ;;
+            esac
+            plan="${spec%.md}.plan.md"
+            if [ ! -f "$plan" ]; then
+              UNPLANNED="${UNPLANNED}  - \`${spec}\`\n"
+            fi
+          done
+          if [ -n "$UNPLANNED" ]; then
+            add_finding "⚠️" "**Unplanned specs** — passed review but have no plan:\n${UNPLANNED}Run \`/adev:plan --spec <path>\` to fix."
+          else
+            add_finding "✅" "**Spec planning** — all reviewed specs have plans"
+          fi
+
+          # --- Check 3: Broken context routing pointers ---
+          BROKEN=""
+          if [ -f .context-index/constitution.md ]; then
+            while read -r ptr; do
+              case "$ptr" in
+                *\**|*\<*|npm*|node*|git*|"") continue ;;
+              esac
+              if [ ! -e "$ptr" ]; then
+                BROKEN="${BROKEN}  - \`${ptr}\`\n"
+              fi
+            done < <(sed -n '/^## Context Routing/,/^## /p' .context-index/constitution.md | grep -oE '`[^`]+`' | tr -d '`')
+          fi
+          if [ -n "$BROKEN" ]; then
+            add_finding "⚠️" "**Broken pointers** in constitution Context Routing:\n${BROKEN}"
+          else
+            add_finding "✅" "**Context routing** — all pointers resolve"
+          fi
+
+          # --- Check 4: Version parity (package.json vs plugin.json) ---
+          if [ -f package.json ] && [ -f .claude-plugin/plugin.json ]; then
+            PKG_VER=$(node -e "console.log(require('./package.json').version)")
+            PLUGIN_VER=$(node -e "console.log(require('./.claude-plugin/plugin.json').version)")
+            if [ "$PKG_VER" != "$PLUGIN_VER" ]; then
+              add_finding "⚠️" "**Version mismatch** — \`package.json\` ($PKG_VER) != \`plugin.json\` ($PLUGIN_VER)"
+            else
+              add_finding "✅" "**Version parity** — package.json and plugin.json match ($PKG_VER)"
+            fi
+          fi
+
+          # --- Build and post comment ---
+          if [ "$ISSUES" -gt 0 ]; then
+            HEADER="### 🔍 Context Hygiene — $ISSUES issue(s) found"
+          else
+            HEADER="### ✅ Context Hygiene — all checks passed"
+          fi
+
+          COMMENT=$(printf "%s\n\n| | Finding |\n|---|---|\n%b\n\n<sub>Advisory only — does not block merge. Run \`/adev:reconcile\` to fix issues interactively.</sub>" "$HEADER" "$FINDINGS")
+
+          # Delete previous hygiene comment if exists, then post new one
+          PREV_COMMENT_ID=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq '.[] | select(.body | startswith("### ✅ Context Hygiene") or startswith("### 🔍 Context Hygiene")) | .id' \
+            2>/dev/null | head -1)
+          if [ -n "$PREV_COMMENT_ID" ]; then
+            gh api -X DELETE "repos/${{ github.repository }}/issues/comments/$PREV_COMMENT_ID" 2>/dev/null || true
+          fi
+
+          gh pr comment "${{ github.event.pull_request.number }}" --body "$COMMENT"
+
+          echo "Context hygiene: $ISSUES issue(s) found (advisory, non-blocking)"
+
       - name: Check commit provenance trailers
         if: github.event_name == 'pull_request'
         run: |
