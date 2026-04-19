@@ -11,7 +11,7 @@ adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). 
 ```
 adev-plugin/
 ├── cli/index.mjs              # Single-file CLI — install, scaffold, conflict detection
-├── skills/                     # 29 skill directories, each with a SKILL.md
+├── skills/                     # 28 skill directories, each with a SKILL.md
 │   ├── using-adev/             # Gateway skill — injected at session start
 │   ├── adev:init/              # This wizard
 │   ├── adev:brainstorm/        # Idea exploration → Feature Charter
@@ -25,6 +25,7 @@ adev-plugin/
 │   ├── adev:eval/              # Graduated evaluation harness
 │   ├── adev:debug/             # Context-aware systematic debugging
 │   ├── adev:recover/           # Agent recovery when stuck
+│   ├── adev:learn/             # Knowledge capture from sessions
 │   ├── adev:sample/            # Golden sample curation
 │   ├── adev:status/            # Project status dashboard across lifecycle artifacts
 │   ├── adev:write-test/        # Test generation with coverage analysis
@@ -35,8 +36,6 @@ adev-plugin/
 │   ├── adev:work/              # Work triage and routing
 │   ├── adev:build/             # End-to-end build orchestrator
 │   ├── adev:issues/            # Issue and epic management
-│   ├── adev:vision/            # Product vision and milestones
-│   ├── adev:roadmap/           # Release sequencing with dependency analysis
 │   ├── adev:research/          # Structured multi-agent research
 │   ├── adev:document/          # Developer documentation generation
 │   ├── adev:reconcile/         # Interactive repair for lifecycle mismatches
@@ -52,7 +51,7 @@ adev-plugin/
 │   ├── context-read-tracker.sh # PostToolUse:Read — tracks context file reads
 │   ├── issue-reminder.sh       # PostToolUse — periodic issue board reminders
 │   └── issue-reminder.mjs      # Helper module for issue reminder logic
-├── templates/                  # 16 scaffold templates consumed by /adev:init
+├── templates/                  # 17 scaffold templates consumed by /adev:init
 ├── tests/                      # Node.js built-in test runner (node:test)
 │   ├── helpers.mjs             # Shared test utilities (temp dirs, fixtures, runHook)
 │   ├── cli.test.mjs            # CLI unit tests
