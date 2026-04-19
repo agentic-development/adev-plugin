@@ -35,7 +35,7 @@ The emerging design for configurable reviewer/check registries (ADR-0003) was ab
 - **Harness adapter layer:** `lib/profiles/adapters/<harness>.mjs` translates canonical categories to harness-specific tool lists, verifies MCP availability, applies env handling. Claude Code adapter is complete in v1; OpenCode adapter is a stub that errors on unsupported categories.
 - **V1 consumers:** `/adev:review-specs` reviewer dispatch and `/adev:validate` subagent checks. `/adev:implement` task dispatch and other skills migrate in a follow-up spec.
 - **Env handling:** profiles select specific keys from listed `.env*` files via an explicit allowlist (no wildcards in v1), with required/optional split. Values are exposed to the subagent's tool execution environment, never injected into the LLM prompt. Logged tool output is redacted at the value boundary.
-- **Multi-repo env resolution:** in workspace contexts (presence of `adev-workspace.yaml`), env paths default to **consumer-repo-local** (relative to the repo containing the spec being processed, not the directory the user invoked the skill from). An opt-in `@workspace/<path>` prefix resolves to the workspace root, enabling a shared `.env.shared` that profiles can reference explicitly. Cross-repo paths (`@<repo-slug>/<path>`) and workspace-level `profiles.yaml` files are deferred to v2.
+- **Multi-repo env resolution:** in workspace contexts (presence of `adev-workspace.yaml`), env paths default to **consumer-repo-local** (relative to the repo containing the spec being processed, not the directory the user invoked the skill from). An opt-in `$workspace/<path>` prefix resolves to the workspace root, enabling a shared `.env.shared` that profiles can reference explicitly. The `$` sigil is used (not `@`) because the `@` prefix is reserved by `multi-repo-workspace/charter.md` for cross-repo spec references (`@<repo-slug>/<spec-slug>`); env-file paths and spec references occupy disjoint grammars. Cross-repo env paths and workspace-level `profiles.yaml` files are deferred to v2.
 
 ### Alternatives Considered
 
@@ -78,7 +78,7 @@ The emerging design for configurable reviewer/check registries (ADR-0003) was ab
 
 - Profiles are scoped to subagent dispatch concerns. They do not replace `platform-context.yaml:model_tiers` (which maps tier names to concrete model IDs) or `governance/gates.yaml` (which defines deterministic shell gates). Profile `model.tier` references resolve via `platform-context.yaml`; the separation is intentional.
 - The `extends` resolution and abstract category mapping are runtime concerns; they don't change how SKILL.md files are written.
-- The multi-repo env model establishes a trust boundary: `@workspace/.env.shared` is a shared secret store accessible to every repo's profiles within the workspace. Projects opting into it accept that any reviewer or check in any participating repo can request those keys. Documented as a security consideration in the cross-cutting spec; not a default.
+- The multi-repo env model establishes a trust boundary: `$workspace/.env.shared` is a shared secret store accessible to every repo's profiles within the workspace. Projects opting into it accept that any reviewer or check in any participating repo can request those keys. Documented as a security consideration in the cross-cutting spec; not a default.
 
 ## Related
 
