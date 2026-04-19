@@ -1,7 +1,7 @@
 # Cross-Cutting Spec: Execution Profiles
 
 ---
-status: draft
+status: review-blocked
 risk_level: medium
 revision: 1
 created: 2026-04-19
