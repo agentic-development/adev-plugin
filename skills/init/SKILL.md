@@ -154,42 +154,263 @@ If no: skip, most projects start without this.
 Step 7/10: Governance Policies
 
   Declarative governance lets you define quality gates, architectural
-  boundary rules, and risk-based review policies as YAML files. Skills
-  enforce these automatically during planning, implementation, and
-  validation.
+  boundary rules, risk-based review policies, a project reviewer
+  registry, and a project validate check registry as YAML files.
+  Skills enforce these automatically during planning, implementation,
+  and validation.
 
-  Without governance files, adev uses the quality gate commands from
-  your constitution and requires review for all specs.
+  Without governance files, adev uses the bundled defaults — the three
+  reviewers (structural-architect, security-reviewer, consistency-
+  analyzer) and the 12 bundled validate checks ship enabled; quality
+  gates come from the constitution.
 
   → Set up governance? (yes / skip)
 ```
 
-If yes:
+If yes, walk the sub-steps in order. Sub-steps 7a-7e are independent — the user may opt in or skip each.
+
+### Step 7a: Foundation files
+
 - Create `.context-index/governance/` and `.context-index/governance/overrides/`
-- Generate `gates.yaml` from template, seeding gate commands from the quality gate values collected in Step 2 (Constitution wizard)
-- Copy `boundaries.yaml` from template (empty rules, commented examples)
-- Copy `risk-policies.yaml` from template (sensible defaults)
+- Generate `gates.yaml` from `templates/gates-template.yaml`, seeding gate commands from the quality-gate values collected in Step 2 (Constitution wizard)
+- Copy `boundaries.yaml` from `templates/boundaries-template.yaml` (empty rules, commented examples)
+- Copy `risk-policies.yaml` from `templates/risk-policies-template.yaml` (sensible defaults)
 
-If no: skip. Governance/ is optional.
+If no to Step 7 entirely: skip. Governance/ is optional.
 
-**Legacy gate migration (brownfield/existing projects):**
+### Step 7b: External-skill discovery
 
-After the governance prompt, check for legacy gate definitions:
-- Check if `.context-index/manifest.yaml` exists and contains a `gates:` section
-- Check if `.context-index/governance/gates.yaml` already exists
+Before proposing the review/validate registries, scan the project for pre-existing skills, commands, and agent definitions that could be adopted as reviewers, checks, or quality-gates. Surface them so the user does not rewrite work they already have.
 
-If `gates:` exists in `manifest.yaml` AND `governance/gates.yaml` does NOT exist, print a migration notice:
+**Search locations** (read-only probe; absent directories skip silently):
+
+- `.claude/commands/*.md` — project-scoped Claude Code slash commands
+- `.claude/agents/*.md` — project-scoped Claude Code subagents
+- `.claude/skills/*/SKILL.md` — project-scoped custom skills
+- `~/.claude/commands/*.md` + `~/.claude/agents/*.md` — user-scoped (read title + description only, never adopt without explicit user opt-in)
+- `.cursor/rules/*.md` and `.cursorrules` — Cursor rules
+- `.github/copilot-instructions.md` — Copilot instructions
+- `.continue/config.json`, `.windsurf/**` — other agent configs
+- Project-local `skills/**/SKILL.md` (adev convention)
+- Superpowers / Spec-kit artifacts if present (`.superpowers/**`, `.spec-kit/**`)
+
+**Classification heuristic.** For each discovered file, read the first ~200 lines. Classify by intent (keywords in title / frontmatter `description` / first paragraph):
+
+| Signal | Adopted as |
+|--------|-----------|
+| "review", "audit", "inspect", "critique", "check for" | **Package-mode reviewer** in `governance/review.yaml` |
+| "verify", "validate", "ensure compliance with", "confirm" | **`subagent-review` check** in `governance/validate.yaml` |
+| Shell command / test runner / linter / formatter | **`quality-gate` check** in `governance/validate.yaml` |
+| Documentation / planning / brainstorming / one-off | **Skip** — not a governance candidate |
+
+Ambiguous cases (intent unclear): default to **skip** and note the file in the summary so the user can revisit manually.
+
+**Prompt, per discovered candidate:**
 
 ```
-  ⚠ Legacy gates found in manifest.yaml. To adopt the unified gates system,
-    move your gate definitions to governance/gates.yaml.
+  Found .claude/commands/security-audit.md
+    Title: "Security Audit"
+    First line: "Audit the authentication flow for OWASP Top 10 risks."
+    Proposed role: package-mode reviewer
+      id: project.security-audit
+      dispatch: triggered on patterns you confirm below
+      profile: reviewer-capable
+
+  Adopt this? (yes / skip / re-classify as validate-check / show more)
+```
+
+If "show more": print the file's first 30 lines.
+
+If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguous files may also be left as "skip".
+
+**Collect all adopted candidates** into a working set. They're written in Steps 7c / 7d. Each adopted entry carries:
+- Source file path (for the `package.skill` field or the `prompt` field)
+- Proposed `id` (prefixed `project.<slug>`)
+- Proposed profile (`reviewer-capable` for reviewers, `read-only` for quality-gates)
+- Proposed triggers: for reviewers with no obvious path pattern, ask the user.
+
+**User-scoped files are NEVER auto-copied.** If a user-scoped file (`~/.claude/...`) is adopted, prompt whether to copy it into the project tree or reference it from its global location (with a caveat that global references don't survive `git clone`). Default: copy into `.context-index/skills/adopted/<slug>/SKILL.md`.
+
+### Step 7c: Review registry (`governance/review.yaml`)
+
+1. **Scan for existing charters.** Glob `.context-index/specs/features/*/charter.md`. If none exist, skip the "project-specific reviewers from charters" prompt.
+
+2. **Check for legacy specialists.** Read `.context-index/manifest.yaml`. If it contains a non-empty `specialists:` list AND `governance/review.yaml` does not yet exist:
+
+   ```
+   ⚠ Legacy specialists found in manifest.yaml (N entries):
+     - my-specialist (triggers: **/payment.md, stripe)
+     - another-spec (triggers: specs/features/auth/**)
+
+     These still work in 0.18.0 via a one-time deprecation advisory,
+     but support is scheduled for removal in 0.19.0.
+
+   → Migrate to governance/review.yaml now? (yes / later)
+   ```
+
+   If yes: convert each specialist in-memory to a reviewer entry under the `reviewer-capable` profile with `dispatch: triggered`, and remove the `specialists:` block from `manifest.yaml` at write time.
+
+3. **Bundled reviewer customization.**
+
+   ```
+   The three bundled reviewers run by default:
+     structural-architect  (reasoning tier, blocker cap)
+     security-reviewer     (capable tier,   blocker cap)
+     consistency-analyzer  (fast tier,      blocker cap)
+
+   Customize?
+     [d] disable one
+     [c] cap severity for one
+     [p] propose project reviewers from detected charters
+     [s] skip customization
+   ```
+
+   On **[d]** — list the three ids; user picks one. Write `enabled: false`.
+
+   On **[c]** — pick reviewer + new cap (`blocker` / `warning` / `suggestion`).
+
+   On **[p]** — for each charter found in step 1, propose:
+
+   ```
+     Module 'billing' (charter: specs/features/billing/charter.md)
+     Propose project reviewer?
+       id: project.billing-domain
+       dispatch.triggered:
+         patterns: ["specs/features/billing/**/*.md"]
+         keywords: (extracted from charter frontmatter + first section)
+         min_score: 1
+       profile: reviewer-capable
+       prompt: .context-index/prompts/billing-reviewer.md
+               (we'll scaffold a stub — edit after init)
+
+     → yes / skip / edit keywords
+   ```
+
+   If yes: scaffold the stub prompt at the shown path with a TODO framing. Add the entry to the working set.
+
+4. **Integrate adopted external skills.** For each "reviewer" entry adopted in Step 7b, confirm triggers + profile, then add it:
+
+   ```
+     Adopted external skill: .claude/agents/security-audit.md → project.security-audit
+     Triggers?
+       [a] always    [t] triggered (paths + keywords)    [s] skip
+   ```
+
+5. **Write the file.** If at least one customization / migration / adoption was selected, write `.context-index/governance/review.yaml` with:
+
+   - A `reviewers:` block containing all chosen entries.
+   - A commented `context_packs:` block seeded with `base: include: []` for easy extension.
+   - A pointer at the bottom: `# See templates/governance/review.example.yaml for more examples.`
+
+   If nothing was selected, DO NOT write the file — keep the repo on the zero-config path.
+
+### Step 7d: Validate registry (`governance/validate.yaml`)
+
+1. **Read platform-context.yaml** (captured in Step 3) plus detect stack signals at repo root: `package.json`, `pyproject.toml`, `Pipfile`, `go.mod`, `Cargo.toml`, `Gemfile`, `pom.xml`, `build.gradle`.
+
+2. **Propose quality-gate candidates.** Cross-reference the stack against available scripts. Only propose commands that actually exist.
+
+   | Detected | Propose (only if script/command exists) |
+   |----------|-----------------------------------------|
+   | `package.json` with scripts | `[npm, test]`, `[npm, run, lint]`, `[npm, run, typecheck]`, `[npm, run, build]` |
+   | `pyproject.toml` + `pytest` | `[pytest, -q]`, `[ruff, check, .]`, `[mypy, .]` |
+   | `go.mod` | `[go, test, ./...]`, `[go, vet, ./...]`, `[golangci-lint, run]` (if installed) |
+   | `Cargo.toml` | `[cargo, test]`, `[cargo, clippy, --, -D, warnings]`, `[cargo, fmt, --check]` |
+
+   ```
+     Detected stack: Node.js. Propose these quality-gates:
+       [ ] npm test         (you have a "test" script)
+       [x] npm run lint     (you have a "lint" script — recommend gating)
+       [x] npm run typecheck (you have a "typecheck" script — recommend gating)
+       [ ] npm run build    (long-running; skip unless you want it)
+
+     Select the ones to add (space-separated numbers, "all", or "none"):
+   ```
+
+   For each selected: write an entry with `profile: read-only` (note: read-only scopes the ADAPTER tool surface, not the subprocess — we ship an explicit acknowledgement), `command` in argv form, `severity: error`, and ask about `fail_fast: true`.
+
+3. **Integrate adopted external commands/validate-checks from Step 7b.** For each candidate classified as `subagent-review` or `quality-gate`, add it to the checks list with the confirmed profile and, for subagent-review, a resolved prompt path.
+
+4. **Offer to disable noisy bundled checks:**
+
+   ```
+     Disable any of these for this project?
+       [ ] validate.check-10-platform-drift    (false-positives on small repos)
+       [ ] validate.check-11-visual-verification (no UI — requires Playwright MCP)
+       [ ] validate.check-12-heuristic-extraction (observational; enabled by default)
+   ```
+
+   For each selection, write an entry with `enabled: false`.
+
+5. **Write the file** only if at least one selection was made (same zero-config preservation rule as 7c). Seed a commented block at the bottom pointing at `templates/governance/validate.example.yaml`.
+
+### Step 7e: Profile overlay (conditional)
+
+Only trigger this if any quality-gate added in 7d declared a required env key (e.g. an e2e gate that needs a `DATABASE_URL`). Ask which env keys are needed, which file supplies them, and generate:
+
+```
+  Quality-gate 'project.e2e-smoke' would run with env scoped to the
+  declared profile — no invoking-shell inheritance. Create
+  .context-index/profiles.yaml with a project-gate-profile that reads
+  the required keys from .env?
+
+  → yes / skip
+```
+
+If yes: write `.context-index/profiles.yaml`:
+
+```yaml
+profiles:
+  project-gate-profile:
+    description: "Declared posture for project quality-gate subprocesses."
+    extends: read-only
+    env:
+      files:
+        - ".env"
+        - "optional:.env.local"
+      allow:
+        required: [<keys the user names>]
+        optional: []
+```
+
+Then rewrite the relevant `governance/validate.yaml` entry to reference `profile: project-gate-profile`.
+
+### Step 7 summary
+
+After all sub-steps, print what was written:
+
+```
+  Governance setup complete.
+
+  Files written:
+    .context-index/governance/gates.yaml               (from constitution)
+    .context-index/governance/boundaries.yaml          (template)
+    .context-index/governance/risk-policies.yaml       (template)
+    .context-index/governance/review.yaml              (2 project reviewers + 1 migrated specialist)
+    .context-index/governance/validate.yaml            (2 project quality-gates, check-10 disabled)
+    .context-index/profiles.yaml                       (project-gate-profile)
+    .context-index/prompts/billing-reviewer.md         (stub — edit before first run)
+
+  Adopted skills from existing tools:
+    .claude/commands/security-audit.md → project.security-audit (reviewer)
+    .claude/agents/accessibility.md    → project.accessibility (validate-check)
+
+  Next: run /adev:review-specs --spec <path> to verify the registries load
+  cleanly. See docs/governance.md for customization beyond this wizard.
+```
+
+**Legacy gate migration (brownfield folded into Step 7a).** When running Step 7a on a project that already has a `gates:` block in `manifest.yaml` AND no `governance/gates.yaml`, print the legacy-gates notice before copying the template:
+
+```
+  ⚠ Legacy gates found in manifest.yaml. To adopt the unified gates
+    system, move your gate definitions to governance/gates.yaml.
 
   → Scaffold governance/gates.yaml from template now? (yes / skip)
 ```
 
-If the user says yes, create `.context-index/governance/` (if not present) and generate `governance/gates.yaml` from template. The agent should note that init no longer generates a `gates:` section in `manifest.yaml` — the manifest template handles gate configuration for new projects via `governance/gates.yaml`.
+On yes: create `governance/gates.yaml` from `templates/gates-template.yaml`, seeding from the legacy entries (not from the constitution values in this case — the legacy block is already more specific). Note that init no longer writes a `gates:` block into new `manifest.yaml` files — gates live in `governance/gates.yaml`.
 
-If the user says skip, leave `manifest.yaml` unchanged and note: "You can migrate later by running `/adev:init` again."
+On skip: leave `manifest.yaml` unchanged; note "you can migrate later by running `/adev:init` again".
 
 ```
 Step 8/10: Sync Targets
