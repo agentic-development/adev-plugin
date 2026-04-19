@@ -1,0 +1,26 @@
+# Rubric: scenario-d — path traversal rejection
+
+skill: adev:review-specs
+scenario: scenario-d-traversal-rejection
+
+required_elements:
+  - id: error_code_dot_dot
+    description: "Output contains PATH_DOT_DOT error code"
+    match_pattern: "PATH_DOT_DOT"
+
+  - id: offending_path_cited
+    description: "Error message includes the raw '..' path"
+    match_pattern: "\\.\\./\\.\\.|etc/passwd"
+
+  - id: no_fs_touch
+    description: "No content from /etc/passwd (or any host file) is present"
+    match_pattern: "^(?!.*root:x:0:0).*"
+
+quality_dimensions:
+  - id: pre_resolution_check
+    description: "Error indicates the rejection happened before filesystem resolution (not from a missing file)"
+    weight: 3.0
+
+scoring:
+  required_element_weight: 70
+  quality_dimension_weight: 30
