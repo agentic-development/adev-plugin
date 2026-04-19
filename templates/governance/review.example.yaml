@@ -1,0 +1,76 @@
+# governance/review.yaml — project overlay for /adev:review-specs
+#
+# This file is optional. When absent, /adev:review-specs runs the three
+# bundled reviewers (structural-architect, security-reviewer,
+# consistency-analyzer) against every spec under review.
+#
+# Entries match bundled reviewers by `id` and override field-by-field.
+# New `id` values are appended to the registry.
+
+reviewers:
+  # ----------------------------------------------------------------------
+  # Override a bundled default — e.g. cap the security reviewer at warning
+  # severity so a security blocker does not halt planning.
+  # ----------------------------------------------------------------------
+  # - id: security-reviewer
+  #   severity_cap: warning
+
+  # ----------------------------------------------------------------------
+  # Disable a bundled reviewer entirely.
+  # ----------------------------------------------------------------------
+  # - id: consistency-analyzer
+  #   enabled: false
+
+  # ----------------------------------------------------------------------
+  # Add a project-triggered reviewer with a subagent-mode prompt.
+  # ----------------------------------------------------------------------
+  # - id: project.billing-domain
+  #   name: "Billing Domain Reviewer"
+  #   dispatch:
+  #     triggered:
+  #       patterns: ["specs/features/billing/**/*.md"]
+  #       keywords: ["invoice", "payment", "currency"]
+  #       min_score: 1
+  #   prompt: "prompts/billing-reviewer.md"
+  #   profile: reviewer-capable
+  #   context_pack: base
+  #   severity_cap: blocker
+
+  # ----------------------------------------------------------------------
+  # Package-mode reviewer — wrap an external skill as a reviewer. The
+  # runner dispatches the skill under the declared profile; an adapter
+  # subagent extracts findings from its output.
+  # ----------------------------------------------------------------------
+  # - id: project.packaged-linter
+  #   name: "Packaged Linter"
+  #   dispatch: always
+  #   package:
+  #     skill: "skills/my-linter/SKILL.md"
+  #     args:
+  #       spec: "<target>"
+  #     # Adapter defaults to plugin:review-specs/adapters/generic.md.
+  #     # adapter: "prompts/my-linter-adapter.md"
+  #   profile: reviewer-capable
+  #   context_pack: base
+
+context_packs:
+  # ----------------------------------------------------------------------
+  # Context packs are reusable bundles of files appended to reviewer
+  # prompts. `extends` composes packs; `include` globs are concatenated.
+  # Denylist (.env*, *.pem, *.key, id_*, profiles.yaml, **/secrets/**)
+  # is enforced at load — matching globs fail load, not WARN.
+  # ----------------------------------------------------------------------
+  # base:
+  #   include:
+  #     - ".context-index/specs/features/billing/charter.md"
+  #     - ".context-index/references/api-contracts/*.md"
+
+  # billing:
+  #   extends: base
+  #   include:
+  #     - ".context-index/specs/features/billing/**/*.md"
+
+verdict_rules:
+  # Default: any blocker finding → BLOCK verdict. Raise the threshold to
+  # require multiple blockers before blocking (e.g. for early-stage specs).
+  # blocker_threshold: 1
