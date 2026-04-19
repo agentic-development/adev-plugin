@@ -36,8 +36,12 @@ import { parseYaml, YamlParseError } from "../../../lib/profiles/yaml.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SETUP_SCRIPT = join(__dirname, "setup-fixture.sh");
-const BASE_FIXTURE = join(__dirname, "fixture");
-const WS_FIXTURE = join(__dirname, "ws-fixture");
+// Each test file gets its own fixture path so parallel runs (node --test
+// runs files concurrently by default) don't race on setup-fixture.sh's
+// rm-rf of a shared directory. setup-fixture.sh mirrors the naming for
+// the adjacent workspace target (ws-<basename>).
+const BASE_FIXTURE = join(__dirname, "fixture-tier1");
+const WS_FIXTURE = join(__dirname, "ws-fixture-tier1");
 
 function hasCode(issues, code) {
   return issues.some((i) => i.code === code);
@@ -54,10 +58,10 @@ before(() => {
     execSync(`bash ${SETUP_SCRIPT} ${BASE_FIXTURE}`, { stdio: "pipe" });
   }
 });
-after(() => {
-  rmSync(BASE_FIXTURE, { recursive: true, force: true });
-  rmSync(WS_FIXTURE, { recursive: true, force: true });
-});
+// No after() teardown — the fixture persists across tests in the same run.
+// setup-fixture.sh deletes + recreates on every invocation so fresh runs
+// start clean. This avoids the race between parallel test files sharing
+// the same fixture/ directory.
 
 // ---------------------------------------------------------------------------
 // configurable-checks AC #5 — severity: warning never degrades to BLOCK.

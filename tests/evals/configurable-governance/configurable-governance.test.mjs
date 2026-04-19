@@ -48,7 +48,7 @@ import { renderPack } from "../../../lib/governance/context-pack.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SETUP_SCRIPT = join(__dirname, "setup-fixture.sh");
-const BASE_FIXTURE = join(__dirname, "fixture");
+const BASE_FIXTURE = join(__dirname, "fixture-base");
 
 /**
  * Clone the fixture into a fresh temp directory per test suite so mutations
@@ -78,11 +78,11 @@ function useNegativeValidateConfig(repo, variant) {
 
 describe("Configurable Governance Eval — Fixture Bootstrap", () => {
   before(() => {
-    execSync(`bash ${SETUP_SCRIPT} ${BASE_FIXTURE}`, { stdio: "pipe" });
+    if (!existsSync(BASE_FIXTURE)) {
+      execSync(`bash ${SETUP_SCRIPT} ${BASE_FIXTURE}`, { stdio: "pipe" });
+    }
   });
-  after(() => {
-    rmSync(BASE_FIXTURE, { recursive: true, force: true });
-  });
+  // No teardown — fixture persists across the run so tier tests can share it.
 
   it("fixture ships the expected top-level files", () => {
     assert.ok(existsSync(join(BASE_FIXTURE, ".context-index/constitution.md")));

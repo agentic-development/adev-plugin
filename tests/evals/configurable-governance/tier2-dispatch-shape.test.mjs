@@ -34,7 +34,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SETUP_SCRIPT = join(__dirname, "setup-fixture.sh");
-const BASE_FIXTURE = join(__dirname, "fixture");
+const BASE_FIXTURE = join(__dirname, "fixture-tier2");
 const GOLDEN_DIR = join(__dirname, "golden");
 
 function cloneDir(src) {
@@ -46,9 +46,7 @@ function cloneDir(src) {
 before(() => {
   if (!existsSync(BASE_FIXTURE)) execSync(`bash ${SETUP_SCRIPT} ${BASE_FIXTURE}`, { stdio: "pipe" });
 });
-after(() => {
-  rmSync(BASE_FIXTURE, { recursive: true, force: true });
-});
+// See tier1-library.test.mjs note: fixture persists across parallel test files.
 
 // ---------------------------------------------------------------------------
 // AC #14 — env values MUST NOT appear in prompt text.
