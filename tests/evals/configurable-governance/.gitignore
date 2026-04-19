@@ -1,0 +1,4 @@
+# Captured LLM-level skill outputs (generated per-run)
+outputs/
+# Fixture repo rebuilt by setup-fixture.sh before each test run
+fixture/

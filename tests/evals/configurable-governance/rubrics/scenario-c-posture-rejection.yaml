@@ -1,0 +1,34 @@
+# Rubric: scenario-c — reviewer posture enforcement
+
+skill: adev:review-specs
+scenario: scenario-c-posture-rejection
+
+required_elements:
+  - id: error_code_posture
+    description: "Output contains REVIEWER_PROFILE_POSTURE error code"
+    match_pattern: "REVIEWER_PROFILE_POSTURE"
+
+  - id: implementer_mentioned
+    description: "Error names the offending profile 'implementer'"
+    match_pattern: "implementer"
+
+  - id: read_only_compatible_language
+    description: "Error references 'read-only-compatible' or 'filesystem-write'/'shell'"
+    match_pattern: "read-only-compatible|filesystem-write|shell"
+
+  - id: no_dispatch
+    description: "Output does NOT claim the reviewer ran (no findings from security-reviewer)"
+    match_pattern: "abort|refuse|rejected|not dispatch|fail load"
+
+quality_dimensions:
+  - id: actionable_error
+    description: "Error tells the operator which profile to use instead"
+    weight: 3.0
+
+  - id: no_side_effects
+    description: "No subagent dispatch, no API spend, no partial report"
+    weight: 2.5
+
+scoring:
+  required_element_weight: 60
+  quality_dimension_weight: 40
