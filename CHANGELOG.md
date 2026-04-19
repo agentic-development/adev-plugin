@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1] - 2026-04-19
+
+### Bug Fixes
+
+- **fix(install): register custom marketplace on fresh machines** — `ClaudeCodeAdapter.enable()` now writes the `extraKnownMarketplaces` entry to user-level `~/.claude/settings.json` so Claude Code can resolve `adev@agentic-development` without manual setup.
+- **feat(plugin): add `marketplace.json`** — enables native installation via `/plugin marketplace add agentic-development/adev-plugin` followed by `/plugin install adev@agentic-development`.
+
 ## [0.18.0] - 2026-04-19
 
 > **Upgrading from 0.17.x?** See [`docs/governance.md`](docs/governance.md) — includes a five-recipe migration guide covering `manifest.yaml:specialists` → `governance/review.yaml`, shell-env-inheriting quality gates → profile `env.allow`, shell-form commands → argv, reviewer write-paths → package mode, and browser-automation reviewers. Zero-config projects need no changes; bundled defaults preserve pre-0.18.0 behavior. Copy-paste starter overlays ship at [`templates/governance/review.example.yaml`](templates/governance/review.example.yaml) and [`validate.example.yaml`](templates/governance/validate.example.yaml).

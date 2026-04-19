@@ -40,6 +40,14 @@ describe("ClaudeCodeAdapter", () => {
 
     const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
     assert.equal(settings.enabledPlugins["adev@agentic-development"], true);
+
+    // Verify custom marketplace is registered so Claude Code can resolve the plugin
+    assert.ok(settings.extraKnownMarketplaces, "extraKnownMarketplaces should exist");
+    assert.ok(settings.extraKnownMarketplaces["agentic-development"], "agentic-development marketplace should be registered");
+    assert.equal(
+      settings.extraKnownMarketplaces["agentic-development"].source.plugins[0].name,
+      "adev"
+    );
   });
 
   it("enables the plugin at project scope without moving the cache", async () => {
@@ -50,6 +58,12 @@ describe("ClaudeCodeAdapter", () => {
 
     assert.equal(projectSettings.enabledPlugins["adev@agentic-development"], true);
     assert.ok(existsSync(join(homeDir, ".claude", "plugins", "cache", "agentic-development", "adev", ClaudeCodeAdapter.version)));
+
+    // Marketplace registration should be in user settings, not project settings
+    const userSettingsPath = join(homeDir, ".claude", "settings.json");
+    const userSettings = JSON.parse(readFileSync(userSettingsPath, "utf8"));
+    assert.ok(userSettings.extraKnownMarketplaces?.["agentic-development"], "marketplace should be in user settings");
+    assert.equal(projectSettings.extraKnownMarketplaces, undefined, "marketplace should NOT be in project settings");
   });
 
   it("uninstalls the cached plugin and removes the enabled flag", async () => {
