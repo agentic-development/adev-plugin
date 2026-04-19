@@ -1,0 +1,38 @@
+# Rubric: scenario-e — quality-gate hardening
+
+skill: adev:validate
+scenario: scenario-e-quality-gate-hardening
+
+required_elements:
+  - id: shell_rejected
+    description: "Output surfaces QUALITY_GATE_COMMAND_SHELL for the string-form variant"
+    match_pattern: "QUALITY_GATE_COMMAND_SHELL"
+
+  - id: interpolation_rejected
+    description: "Output surfaces QUALITY_GATE_INTERPOLATION for the {{...}} variant"
+    match_pattern: "QUALITY_GATE_INTERPOLATION"
+
+  - id: deterministic_restricted
+    description: "Output surfaces DETERMINISTIC_PROJECT for project-registered deterministic-check"
+    match_pattern: "DETERMINISTIC_PROJECT"
+
+  - id: argv_form_accepted
+    description: "Happy-path gate with argv form runs to PASS"
+    match_pattern: "(project\\.npm-test.*PASS|PASS.*project\\.npm-test)"
+
+quality_dimensions:
+  - id: no_subprocess_on_reject
+    description: "Rejected variants do NOT actually spawn a subprocess"
+    weight: 3.0
+
+  - id: env_isolation
+    description: "LD_PRELOAD / NODE_OPTIONS from invoking shell do not appear in subprocess env"
+    weight: 3.0
+
+  - id: redaction_coverage
+    description: "Redaction applies to both stdout and stderr; no secret value appears in report"
+    weight: 3.0
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

@@ -1,0 +1,61 @@
+# Bundled Execution Profiles (v1)
+# See: .context-index/specs/cross-cutting/execution-profiles.md "Bundled Default Profiles".
+# Projects override by creating .context-index/profiles.yaml with the same top-level
+# "profiles:" key. Same name → project wins (full replacement). New name → appended.
+
+profiles:
+
+  read-only:
+    description: "Observer. No state modification."
+    permissions:
+      tools:
+        allow:
+          - { category: filesystem-read }
+          - { category: search }
+          - { category: agent }
+      filesystem: { write: deny, execute: deny }
+      network: deny
+
+  browser-review:
+    extends: read-only
+    description: "Read-only observation with browser navigation."
+    permissions:
+      tools:
+        allow_add:
+          - { mcp_server: playwright }
+          - { category: web-fetch }
+      network: read-only
+    limits:
+      timeout_seconds: 300
+
+  reviewer-fast:
+    extends: read-only
+    model:
+      tier: fast
+
+  reviewer-capable:
+    extends: read-only
+    model:
+      tier: capable
+
+  reviewer-reasoning:
+    extends: read-only
+    model:
+      tier: reasoning
+      thinking_budget: high
+
+  implementer:
+    description: "Full-access task subagent. Not consumed in v1; defined for future migration. Enumerates every seed category explicitly — no wildcards."
+    permissions:
+      tools:
+        allow:
+          - { category: filesystem-read }
+          - { category: search }
+          - { category: agent }
+          - { category: web-fetch }
+          - { category: filesystem-write }
+          - { category: shell }
+      filesystem: { write: allow, execute: allow }
+      network: allow
+    model:
+      tier: capable

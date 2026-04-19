@@ -1,0 +1,30 @@
+# Rubric: scenario-f — context-pack denylist
+
+skill: adev:review-specs
+scenario: scenario-f-context-pack-denylist
+
+required_elements:
+  - id: error_code_denylist
+    description: "Output contains CONTEXT_PACK_DENYLIST error code"
+    match_pattern: "CONTEXT_PACK_DENYLIST"
+
+  - id: offending_glob_cited
+    description: "Error message names the offending glob (.env*)"
+    match_pattern: "\\.env\\*?"
+
+  - id: no_secret_leak
+    description: "Rendered content does NOT contain API_TOKEN value"
+    match_pattern: "^(?!.*this-is-a-long-api-token-value).*"
+
+quality_dimensions:
+  - id: fail_closed_on_glob
+    description: "Glob rejection happens at load/render, not at subagent dispatch"
+    weight: 3.0
+
+  - id: glob_and_path_layers
+    description: "Denylist applied at both glob-string and resolved-path layers"
+    weight: 2.5
+
+scoring:
+  required_element_weight: 60
+  quality_dimension_weight: 40

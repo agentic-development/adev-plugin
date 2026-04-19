@@ -41,7 +41,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
 
 | Skill | Purpose | Prerequisites |
 |-------|---------|---------------|
-| `/adev:init` | Scaffold `.context-index/` interactively | None |
+| `/adev:init` | Scaffold `.context-index/` interactively. Step 7 proposes project reviewers + quality-gates, adopts existing `.claude/` / `.cursor/` skills, and migrates legacy `manifest.yaml:specialists`. See [governance.md](governance.md) for the files it produces. | None |
 | `/adev:sync` | Sync constitution to CLAUDE.md and agent files | `.context-index/` exists |
 
 ### Design

@@ -40,13 +40,39 @@ Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mj
 
 **Repo-mode-inside-workspace advisory:** When `detectWorkspace(cwd)` returns non-null but the spec has no cross-repo `depends-on` references, emit an advisory to stdout (once per invocation): `"Advisory: running repo-scoped inside workspace — cross-repo validation skipped (no cross-repo depends-on references)."` This is informational only and does not affect validation behaviour.
 
+## Step 0: Load Check Registry
+
+Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
+
+- Reads bundled defaults from `templates/validate/defaults.yaml` (12 entries covering Check 1.5 + Checks 2–12). Check 1 is not in this registry; it continues to be sourced from `governance/gates.yaml`.
+- Overlays `.context-index/governance/validate.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
+- Validates each entry's `kind` (quality-gate | subagent-review | deterministic-check | observational).
+- For `kind: quality-gate`: rejects string-form `command`; rejects any argv token containing `{{...}}`, `$VAR`, `${VAR}`, or `%VAR%` interpolation; requires an explicit `profile` (no implicit default — authors must positively acknowledge that profile permissions scope the adapter's tool surface, NOT the spawned subprocess).
+- For `kind: observational`: rejects `severity: error`.
+- For `kind: deterministic-check`: rejects project-registered entries (only bundled ids allowed).
+- Resolves each check's profile via `lib/profiles/` (MCP-missing fails load; required env missing fails load).
+- Topologically sorts by `after` with lex-by-id tie-break; cycles fail load; unknown `after` ids emit WARN.
+
+Abort on any loader error. Warnings surface in the report header.
+
 ## Execution Strategy
 
 **Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 13 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev:validate`. **Exception:** Check 11 (Visual Verification) is triggered independently for UI files. If quality gates fail but the implementation includes UI files, still note that visual verification is pending.
 
 **Checks 2 through 13 run in full regardless of individual failures.** Collect all issues across all checks so the user gets a complete picture in a single validation cycle. Do not stop at the first failure after Check 1.
 
-## The 13 Checks
+**Disabled and fail-fast handling:** For every check in the sorted registry:
+
+- If `enabled === false`, record `SKIPPED-DISABLED` with the disabled-note and continue without running. It does not contribute to the verdict.
+- Otherwise call `shouldSkipDueToFailFast(check, priorResults)`: if any `after`-predecessor ran with `fail_fast: true` + `severity: error` + `status: FAIL`, record `SKIP` with reason `"Skipped — prerequisite '<id>' failed."` and continue.
+
+**Project quality-gate checks:** invoke `runQualityGate(check, { env, redactor, cwd })` from `lib/governance/quality-gate.mjs`. The runner uses `execFile` with `shell: false`; the subprocess environment consists of the profile-resolved env plus a minimal startup whitelist (`PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TMPDIR`, `USER`, `LOGNAME`). `LD_PRELOAD`, `NODE_OPTIONS`, `PYTHONPATH`, `SSL_CERT_FILE`, and any other invoking-shell var is NOT inherited. stdout/stderr flow through the profile's redactor before report/display/dispatch-record use. Combined output is capped at 64 KiB with a tail-truncation marker.
+
+**Bundled `internal: true` subagent-review checks** (Checks 2–11): continue to execute via the per-check prose below. Each check's section begins with an `enabled` guard — if the registry marked it disabled, the check is skipped without running.
+
+**Check 12 (heuristic extraction) as observational**: never contributes to verdict per Behavior 9.
+
+## The 12 Checks
 
 ### Check 1: Quality Gates (fail-fast, tiered)
 

@@ -1,0 +1,38 @@
+# Bundled reviewer registry defaults.
+# See: .context-index/specs/features/review/configurable-reviewers.md rev 3.
+#
+# Projects override these via .context-index/governance/review.yaml. Matching
+# `id` overrides field-by-field; new `id` appends. Overriding a bundled
+# reviewer's `prompt` or `package` emits an informational WARN at load.
+
+reviewers:
+  - id: structural-architect
+    name: "Structural Architect"
+    dispatch: always
+    prompt: plugin:review-specs/structural-architect-prompt.md
+    profile: reviewer-reasoning
+    context_pack: base
+    severity_cap: blocker
+
+  - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
+
+  - id: consistency-analyzer
+    name: "Consistency Analyzer"
+    dispatch: always
+    prompt: plugin:review-specs/consistency-analyzer-prompt.md
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
+
+context_packs:
+  base:
+    include: []
+
+verdict_rules:
+  blocker_threshold: 1
