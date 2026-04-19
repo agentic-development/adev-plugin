@@ -2,7 +2,7 @@
 
 ---
 charter: review
-status: draft
+status: review-passed
 risk_level: medium
 revision: 3
 charter-revision: 1

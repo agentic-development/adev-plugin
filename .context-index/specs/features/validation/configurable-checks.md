@@ -2,7 +2,7 @@
 
 ---
 charter: validation
-status: draft
+status: review-passed
 risk_level: medium
 revision: 3
 charter-revision: 1
@@ -111,7 +111,7 @@ depends-on:
 
 24. **When** `/adev:validate` runs against a spec located in repo X within an `adev-workspace.yaml` context **then** env resolution for any check whose profile uses `env.files` follows the cross-cutting consumer-repo-local rule: paths resolve from repo X, regardless of the user's CWD.
 
-25. **When** a check uses `@workspace/` prefixed paths in its profile **then** they resolve via the workspace root per cross-cutting Behavior 29.
+25. **When** a check uses `$workspace/` prefixed paths in its profile **then** they resolve via the workspace root per cross-cutting Behavior 29. The `@` sigil is reserved for cross-repo spec references (`@<repo-slug>/<spec-slug>`, see `specs/features/multi-repo-workspace/charter.md`) and is never used for env-file paths.
 
 #### Quality-Gate Output Redaction
 
