@@ -1,0 +1,42 @@
+# Rubric: scenario-b — install and run /adev:validate with project overlay
+
+skill: adev:validate
+scenario: scenario-b-validate-install
+
+required_elements:
+  - id: disabled_check_surfaced
+    description: "check-10-platform-drift is reported as SKIPPED-DISABLED"
+    match_pattern: "(validate\\.check-10-platform-drift|check-10[^\\n]{0,60})[^\\n]*(SKIPPED-DISABLED|disabled by governance)"
+
+  - id: project_quality_gate_ran
+    description: "project.npm-test appears in the report as having executed"
+    match_pattern: "project\\.npm-test"
+
+  - id: billing_rules_after_spec_compliance
+    description: "project.billing-domain-rules runs after check-2-spec-compliance"
+    match_pattern: "(check-2-spec-compliance[\\s\\S]*?project\\.billing-domain-rules)|billing-domain-rules.*after.*check-2"
+
+  - id: observational_check_noted
+    description: "project.adoption-metric is recorded as observational (no verdict impact)"
+    match_pattern: "project\\.adoption-metric"
+
+  - id: stdout_redaction
+    description: "Report shows <REDACTED:API_TOKEN> where the quality-gate echoed the secret"
+    match_pattern: "<REDACTED:API_TOKEN>"
+
+quality_dimensions:
+  - id: verdict_ignores_observational
+    description: "Verdict is not degraded by the observational check's output"
+    weight: 3.0
+
+  - id: topological_order_respected
+    description: "Report entries appear in topo order; no fail-fast violations"
+    weight: 2.5
+
+  - id: no_env_leak
+    description: "Full API_TOKEN value never appears in committed report content"
+    weight: 3.0
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

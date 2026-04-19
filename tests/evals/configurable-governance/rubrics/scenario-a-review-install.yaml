@@ -1,0 +1,46 @@
+# Rubric: scenario-a — install and run /adev:review-specs with project overlay
+
+skill: adev:review-specs
+scenario: scenario-a-review-install
+
+required_elements:
+  - id: structural_architect_dispatched
+    description: "structural-architect appears in the dispatched reviewers list"
+    match_pattern: "structural-architect"
+
+  - id: security_reviewer_dispatched
+    description: "security-reviewer appears in the dispatched reviewers list"
+    match_pattern: "security-reviewer"
+
+  - id: consistency_analyzer_excluded
+    description: "consistency-analyzer is NOT in the dispatched list (it was disabled)"
+    match_pattern: "(?:Reviewers? Dispatched[\\s\\S]*?(?=###|^## |\\Z))"
+
+  - id: project_billing_reviewer_dispatched
+    description: "project.billing-domain appears in the dispatched reviewers list"
+    match_pattern: "project\\.billing-domain"
+
+  - id: severity_cap_override_surfaced
+    description: "Report surfaces the bundled-default override WARN for security-reviewer"
+    match_pattern: "(BUNDLED_DEFAULT_OVERRIDE|overrides bundled default|capped from)"
+
+  - id: verdict_line
+    description: "Report header includes a Verdict line"
+    match_pattern: "Verdict:\\s*(PASS|PASS_WITH_NOTES|BLOCK)"
+
+quality_dimensions:
+  - id: no_disabled_reviewer_dispatch
+    description: "consistency-analyzer does not actually run (no output appears under its heading)"
+    weight: 3.0
+
+  - id: dispatch_table_accuracy
+    description: "The dispatched-reviewers table lists exactly the three expected ids"
+    weight: 2.5
+
+  - id: no_hallucinated_reviewers
+    description: "No reviewer is invented that is not in the merged registry"
+    weight: 2.5
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

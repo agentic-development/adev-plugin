@@ -1,0 +1,11 @@
+# Captured LLM-level skill outputs (generated per-run)
+outputs/
+# Fixture repos rebuilt by setup-fixture.sh before each test run.
+# Each test file owns its own path (fixture-base, fixture-tier1, ...)
+# plus an adjacent workspace pair (ws-*).
+fixture/
+fixture-*/
+ws-fixture/
+ws-fixture-*/
+# Temp inline dispatchers written by the live runner tests
+dispatchers/.tmp-*.mjs

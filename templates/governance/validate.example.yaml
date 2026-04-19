@@ -1,0 +1,79 @@
+# governance/validate.yaml — project overlay for /adev:validate
+#
+# Controls Checks 1.5 through 12. Check 1 (quality gates) stays sourced
+# from governance/gates.yaml — it is NOT in this registry.
+#
+# Entries match bundled checks by `id` and override field-by-field.
+# Canonical IDs:
+#   validate.check-1.5-source-manifest       deterministic-check
+#   validate.check-2-spec-compliance         subagent-review
+#   validate.check-3-charter-consistency     subagent-review
+#   validate.check-4-constitution            subagent-review
+#   validate.check-5-adrs                    subagent-review
+#   validate.check-6-cross-cutting           subagent-review
+#   validate.check-7-specialist-review       subagent-review
+#   validate.check-8-boundaries              subagent-review
+#   validate.check-9-transition-gates        subagent-review
+#   validate.check-10-platform-drift         subagent-review
+#   validate.check-11-visual-verification    subagent-review (browser-review)
+#   validate.check-12-heuristic-extraction   observational
+
+checks:
+  # ----------------------------------------------------------------------
+  # Disable a bundled default check. The entry is retained in the report
+  # as SKIPPED-DISABLED and does not contribute to verdict.
+  # ----------------------------------------------------------------------
+  # - id: validate.check-10-platform-drift
+  #   enabled: false
+
+  # ----------------------------------------------------------------------
+  # Project quality-gate. REQUIRED fields for kind: quality-gate:
+  #   profile  — explicit; no implicit default. profile permissions scope
+  #              the ADAPTER tool surface, not the spawned subprocess;
+  #              select one that acknowledges the subprocess's OS-level
+  #              privilege surface.
+  #   command  — argv-form YAML list. STRING form is rejected. No
+  #              {{...}}, $VAR, ${VAR}, or %VAR% interpolation anywhere
+  #              in the argv tokens — the loader never substitutes.
+  # Subprocess env is the profile's resolved env PLUS a minimal startup
+  # whitelist (PATH, HOME, LANG, LC_ALL, LC_CTYPE, TMPDIR, USER, LOGNAME).
+  # LD_PRELOAD / NODE_OPTIONS / PYTHONPATH / etc. never inherit.
+  # stdout/stderr flow through the profile redactor; combined report
+  # output capped at 64 KiB.
+  # ----------------------------------------------------------------------
+  # - id: project.e2e-smoke
+  #   name: "E2E smoke"
+  #   kind: quality-gate
+  #   profile: read-only         # acknowledge subprocess privileges
+  #   command: [npm, run, e2e:smoke]
+  #   severity: error
+  #   fail_fast: true
+
+  # ----------------------------------------------------------------------
+  # Project subagent-review added after check-2-spec-compliance. profile
+  # and context_pack resolve via lib/profiles/ and lib/governance/
+  # context-pack.mjs respectively.
+  # ----------------------------------------------------------------------
+  # - id: project.billing-domain-rules
+  #   name: "Billing Domain Rules"
+  #   kind: subagent-review
+  #   profile: reviewer-capable
+  #   prompt: "prompts/billing-checker.md"
+  #   context_pack: base
+  #   after: [validate.check-2-spec-compliance]
+  #   severity: warning
+
+  # ----------------------------------------------------------------------
+  # Observational check — runs but never affects verdict (severity: info).
+  # severity: error on observational checks fails load.
+  # ----------------------------------------------------------------------
+  # - id: project.adoption-metric
+  #   name: "Adoption Metric"
+  #   kind: observational
+  #   severity: info
+
+  # ----------------------------------------------------------------------
+  # NOTE: project entries may NOT declare kind: deterministic-check.
+  # Only bundled IDs can register deterministic checks (they map to
+  # library functions). Project checks use subagent-review, quality-gate,
+  # or observational.
