@@ -37,7 +37,9 @@ Architecture review is the gate between specification and planning. This module 
 | spec-lifecycle | internal module | Provides the spec files this module reviews; consumes the review's status update. |
 | unified-gates | internal module | Shared governance-config precedent; `governance/gates.yaml` pattern informs `governance/review.yaml`. |
 | validation | internal module | Sibling capability with symmetric configuration shape (checks registry mirrors reviewer registry). |
-| platform-context.yaml | shared config | Provides `model_tiers` used by reviewer dispatch. |
+| execution-profiles (cross-cutting) | shared primitive | Profiles primitive (ADR-0004) governs how reviewers are dispatched: tool permissions, model tier, MCP requirements, env, limits. Reviewer entries reference profiles by name. |
+| multi-repo-workspace | internal module | Workspace context (`adev-workspace.yaml`) influences env resolution per consumer-repo-local rule. |
+| platform-context.yaml | shared config | Provides `model_tiers` used by execution profiles. |
 
 ## Domain Model
 
@@ -68,11 +70,14 @@ Architecture review is the gate between specification and planning. This module 
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Configurable reviewer registry | Project-level `governance/review.yaml` controls which reviewers run, their prompts, tiers, dispatch, and severity caps. | must-have | v1 | draft |
+| Configurable reviewer registry | Project-level `governance/review.yaml` controls which reviewers run, their dispatch, and severity caps. | must-have | v1 | draft |
 | Bundled defaults preservation | Plugin ships `plugin:review-specs/defaults.yaml` encoding today's three-reviewer flow; projects with no governance file see no change. | must-have | v1 | draft |
 | Context pack rendering | Named, reusable file bundles with `extends` resolve to concrete file contents at dispatch time. | must-have | v1 | draft |
+| Execution profile consumption | Reviewer entries reference execution profiles (ADR-0004) for tool permissions, MCP, model tier, env, limits. Dispatch concerns are not redefined inline. | must-have | v1 | draft |
+| External skill packaging (package mode) | A reviewer can wrap an existing skill as a package: runner subagent runs the skill verbatim under a profile; adapter subagent extracts findings. Skills stay unaware they are being used as reviewers. | must-have | v1 | draft |
+| Multi-repo env resolution | In a workspace context, env resolves consumer-repo-local (the spec's repo wins over CWD); `@workspace/` prefix opts into a shared env file. | must-have | v1 | draft |
 | Specialists migration | Deprecate `manifest.yaml:specialists` with a one-minor-version advisory; surface the new registry as the replacement. | should-have | v1 | draft |
-| Prompt URI scheme | `plugin:<skill>/<file>` resolves to bundled skill files; project-relative paths override. | must-have | v1 | draft |
+| Prompt URI scheme | `plugin:<skill>/<file>` resolves to bundled skill files; project-relative paths override. Cross-plugin form deferred to v2. | must-have | v1 | draft |
 
 ## Deferred Capabilities
 
@@ -80,6 +85,9 @@ Architecture review is the gate between specification and planning. This module 
 |-----------|--------|-------------|------------|
 | Reviewer reordering | Today's reviewers run in parallel; ordering affects only report rendering. Deferred until user demand emerges. | v2 | — |
 | Conditional verdict rules | Project-custom verdict math (e.g. "3 warnings = BLOCK"). Defaults from v1 will expose `blocker_threshold`; custom expressions deferred. | v2 | — |
+| Cross-plugin URI scheme (`plugin:<other-plugin>:<path>`) | Lets reviewers reference prompts and skills from other installed plugins. Requires harness plugin-registry integration. | v2 | Plugin registry adapter |
+| Cross-repo env paths (`@<repo-slug>/<path>`) | Lets profiles draw env from named sibling repos in a workspace. Ambiguity around key collisions and slug stability deferred the design. | v2 | execution-profiles primitive |
+| Workspace-level profiles file | Lets a workspace define profiles shared across all repos via `<workspace-root>/profiles.yaml`. v1 requires per-repo duplication. | v2 | execution-profiles primitive |
 | Reviewer composition / chaining | A reviewer whose input is another reviewer's findings. Out of scope for registry-level config. | post-launch | — |
 
 ## Interface Contracts
@@ -107,8 +115,9 @@ Architecture review is the gate between specification and planning. This module 
 
 | Attribute | Requirement |
 |-----------|-------------|
-| Performance | Reviewer dispatch is parallel; a review of one spec with three default reviewers completes in ≤ the slowest reviewer's latency plus config-load overhead (target: config load < 50 ms). |
+| Performance | Reviewer dispatch is parallel; a review of one spec with three default reviewers completes in ≤ the slowest reviewer's latency plus config-load overhead (target: config load < 50 ms). Package-mode reviewers add a second adapter subagent — ~2× per-reviewer latency for that subset. |
 | Determinism | Same spec + same config + same reviewer models → same dispatched prompts (findings may vary by model non-determinism, not by framework). |
 | Backward compatibility | Projects without `governance/review.yaml` see identical behavior to the current hardcoded flow. Projects with `manifest.yaml:specialists` continue to work for one minor version with advisory. |
-| Observability | Each reviewer's tier, prompt source (`plugin:` vs project path), and dispatch decision is reported in the review output. |
-| Security | Reviewer prompts from project-relative paths are read-only; no eval, no shell expansion. `plugin:` URIs resolve only within the plugin's `skills/` tree. |
+| Observability | Each reviewer's profile, dispatch mode, prompt source (`plugin:` vs project path), and (for package mode) skill source + adapter source is reported in the review output. |
+| Security | Reviewer prompts from project-relative paths are read-only; no eval, no shell expansion. `plugin:` URIs resolve only within the plugin's `skills/` tree. Tool, env, and MCP scoping are enforced by the execution profile, not by reviewer-entry conventions. Workspace-shared `.env` (`@workspace/`) is documented as a trust escalation. |
+| Auditability | Every env value used by a reviewer is auditable: it came from a named file, was on a declared allowlist, and was redacted from logged tool output. Required keys missing from configured env files cause load failure, not silent behavior change. |
