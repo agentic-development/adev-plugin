@@ -83,110 +83,60 @@ Do not treat missing workspace as a blocking error; proceed with the rest of the
 
 **If no cross-repo references are present:** skip this step entirely.
 
-## Step 3: Check Specialist Registry
+## Step 3: Load Reviewer Registry
 
-Read `.context-index/manifest.yaml` and check the `specialists` section. For each spec, match file patterns and keywords from the spec content against the specialist registry:
+Call `loadReviewConfig(repoRoot)` from `lib/governance/review-config.mjs`. The loader:
 
-- **Pattern match:** Check file paths mentioned in the spec (in "Files" sections, code blocks, or interface contracts) against each specialist's `trigger_patterns`.
-- **Keyword match:** Check the spec body text against each specialist's `trigger_keywords`.
+- Reads bundled defaults from `templates/review-specs/defaults.yaml` (the three core reviewers: structural-architect, security-reviewer, consistency-analyzer).
+- Overlays `.context-index/governance/review.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
+- Resolves each reviewer's execution profile via `lib/profiles/` and **rejects any reviewer whose profile is not read-only-compatible** (no `filesystem-write`/`shell` categories, no literal tools, fs write/execute must be `deny`, network must be `deny` or `read-only`). A reviewer referencing `implementer` fails load.
+- Validates `prompt` / `package.skill` / `package.adapter` paths: `plugin:<skill>/<file>` scheme resolves inside the plugin `skills/` tree; relative paths resolve under `.context-index/` with traversal guard (`..` rejected, `fs.realpath` used for symlink escape); absolute paths rejected; cross-plugin (`plugin:<other>:...`) deferred to v2.
+- Migrates `manifest.yaml:specialists` in-memory to `dispatch: triggered` reviewer entries and emits a deprecation note (scheduled for removal in 0.19.0).
 
-Scoring (used to determine which specialists to invoke):
-- 2 points per matching glob pattern. Deeper paths score higher (add 1 per path segment beyond root).
-- 1 point per matching keyword.
-- Any specialist with a score above 0 is invoked as an additional reviewer.
+If `loadReviewConfig` returns any errors, abort with the error list. Warnings are surfaced in the report header.
 
-## Step 4: Dispatch Parallel Review Subagents
+## Step 4: Dispatch Reviewers
 
-Launch all reviewer subagents in parallel. Each subagent gets a clean context window with only the context package from Step 2. Do not pass your session history.
+For each reviewer returned by the registry, call `shouldDispatch(reviewer, { targetSpecPath, specContent })` from the same module. Reviewers with `dispatch: always` always dispatch; `triggered` compute a score (2 points per matching glob + 1 per path segment beyond root, 1 point per keyword) and dispatch when score ≥ `min_score` (default 1); `never` are skipped.
 
-Before dispatching, read `model_tiers` from `.context-index/platform-context.yaml`. If absent or a tier is unset, use hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
+Launch all dispatched reviewers in parallel. Each runs in a clean context window.
 
-Tier assignments for this skill: structural architect = `reasoning`, security reviewer = `capable`, consistency analyzer = `fast`.
+### Subagent-mode reviewer (reviewer entry has `prompt`)
 
-### Core Reviewers (always dispatched)
+For each subagent-mode reviewer:
 
-**Structural Architect** (`reasoning` tier):
-```
-Task tool (general-purpose):
-  description: "Structural architecture review of Live Spec"
-  prompt: |
-    ultrathink
+1. Call `resolveProfile(reviewer.profile, { profiles, consumerRepoRoot, workspaceRoot, adapter, mcpAvailable })` from `lib/profiles/`.
+2. Render the reviewer's context pack via `renderPack(reviewer.context_pack, contextPacks, { repoRoot })`. The denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) is enforced — matching globs fail load, not WARN.
+3. Read `reviewer.promptPath` contents.
+4. Dispatch a subagent with:
+   - `description`: `"<reviewer.name> review of <spec-slug>"`
+   - `prompt`: `<prompt contents>\n\n---\n<rendered context pack>\n\n---\n## Target Spec\n<target spec contents>`
+   - Tool restrictions, model, env, redaction set all from the adapter's `prepareForDispatch` return.
 
-    <content of structural-architect-prompt.md from this skill directory>
+### Package-mode reviewer (reviewer entry has `package`)
 
-    ---
+Run the two-stage pipeline:
 
-    ## Constitution
-    <constitution content>
+1. **Stage 1 (runner):** dispatch a subagent under `reviewer.profile` with the resolved skill's `SKILL.md` contents plus a framing note (*"You are running as a reviewer subagent. Follow the instructions faithfully. The arguments and context for this run are appended."*) and the args from `package.args` (with `<target>` substituted for the spec path). Rendered context pack is appended. Tool restrictions from the profile apply.
+2. **Stage 2 (adapter):** dispatch a second subagent with the runner's full output + the adapter prompt (`reviewer.adapterPath`, defaults to `plugin:review-specs/adapters/generic.md`). The adapter extracts findings in the standard YAML format.
 
-    ## Platform Context
-    <platform-context.yaml content>
+### Severity cap and parse-failure fallback
 
-    ## Parent Charter
-    <charter content>
+After each reviewer returns, apply `applySeverityCap(finding, reviewer)` to every finding (from `lib/governance/review-config.mjs`). This clamps `finding.severity` to `reviewer.severity_cap` and prefixes demoted messages with `[capped from <orig> to <cap>]`.
 
-    ## ADRs
-    <all ADR contents, each prefixed with filename>
+If a package-mode adapter returns output that does not parse as the findings YAML block:
 
-    ## Target Spec
-    <the spec being reviewed>
-```
+- Apply the reviewer's `redactionSet` to the raw runner output via the redactor returned by `resolveProfile`.
+- Truncate to 8 KiB; replace the tail with `"…[truncated <N> bytes of adapter output — see dispatch record for full text]"`.
+- Normalize any absolute paths under `.context-index/`, plugin root, or `$HOME` to repo-relative or `plugin:` form.
+- Wrap as a single `suggestion` finding with message: `"Adapter did not parse output into structured findings — sanitized runner output below (redacted and truncated)."`
+- Write the full redacted (untruncated) output to the dispatch record, **never** to `.review.md`.
 
-**Security Reviewer** (`capable` tier):
-```
-Task tool (general-purpose):
-  description: "Security review of Live Spec"
-  prompt: |
-    <content of security-reviewer-prompt.md from this skill directory>
+If a subagent-mode or package-mode runner attempts a tool call disallowed by its profile (as surfaced by the harness), the reviewer is recorded as a `warning` finding.
 
-    ---
+### Tier note
 
-    ## Constitution
-    <constitution content>
-
-    ## Platform Context
-    <platform-context.yaml content>
-
-    ## Target Spec
-    <the spec being reviewed>
-```
-
-**Consistency Analyzer** (`fast` tier):
-```
-Task tool (general-purpose):
-  description: "Consistency analysis of Live Spec"
-  prompt: |
-    <content of consistency-analyzer-prompt.md from this skill directory>
-
-    ---
-
-    ## Constitution
-    <constitution content>
-
-    ## Parent Charter
-    <charter content>
-
-    ## Sibling Specs
-    <other specs from the same charter, each prefixed with filename>
-
-    ## Cross-Cutting Specs
-    <cross-cutting specs, each prefixed with filename>
-
-    ## External References
-    <external reference files from .context-index/references/, each prefixed with filename. If none exist, state "No external references configured.">
-
-    ## Target Spec
-    <the spec being reviewed>
-```
-
-### Domain Specialists (dispatched if matched in Step 3)
-
-For each matched specialist from the registry:
-
-- If `invoke: subagent`, load the prompt template from the specialist's `prompt_template` path and dispatch a subagent with that prompt plus the context package.
-- If `invoke: skill`, note the skill name in the review report but do not dispatch (skills require user invocation).
-
-All subagents run on the model specified in their registry entry (default: opus).
+Tier assignment now flows from each reviewer's `profile.model.tier` (resolved via `platform-context.yaml:model_tiers` as today). Bundled defaults continue to use reasoning/capable/fast for architect/security/consistency respectively.
 
 ## Step 5: Collect and Consolidate Findings
 
@@ -204,6 +154,8 @@ Determine the overall verdict for each spec:
 
 ### Consolidated Report Format
 
+Produce one section per dispatched reviewer, in registry order. For each reviewer record the dispatch mode (`subagent` or `package`), the resolved profile, and the prompt source (`plugin:` URI or repo-relative). For package-mode reviewers also record the skill path and the adapter path.
+
 ```markdown
 # Architecture Review: <spec-slug>
 
@@ -212,31 +164,20 @@ Determine the overall verdict for each spec:
 > **Charter:** <path to charter>
 > **Verdict:** PASS | PASS_WITH_NOTES | BLOCK
 
-## Structural Architect
+## Reviewers Dispatched
+
+| ID | Name | Mode | Profile | Prompt/Skill |
+|----|------|------|---------|--------------|
+| <reviewer-id> | <reviewer-name> | subagent | <profile-name> | <plugin: URI or repo-relative path> |
+| <package-id>  | <package-name>  | package  | <profile-name> | <skill path> (adapter: <adapter path>) |
+
+## <Reviewer Name> (<id>)
 
 **Verdict:** PASS | PASS_WITH_NOTES | BLOCK
 
 <findings list, or "No findings.">
 
-## Security Reviewer
-
-**Verdict:** PASS | PASS_WITH_NOTES | BLOCK
-
-<findings list, or "No findings.">
-
-## Consistency Analyzer
-
-**Verdict:** PASS | PASS_WITH_NOTES | BLOCK
-
-<findings list, or "No findings.">
-
-## Domain Specialists
-
-### <Specialist Name> (if any were dispatched)
-
-**Verdict:** PASS | PASS_WITH_NOTES | BLOCK
-
-<findings list>
+(repeat for each dispatched reviewer)
 
 ---
 
@@ -245,6 +186,8 @@ Determine the overall verdict for each spec:
 **Total findings:** N (B blockers, W warnings, S suggestions)
 **Action required:** <what the user must do next, based on verdict>
 ```
+
+Verdict consolidation uses `computeVerdict(findings, verdictRules)` from `lib/governance/review-config.mjs`. Default `verdictRules.blocker_threshold: 1` matches today's behavior.
 
 ## Step 6: Save Review Report
 
