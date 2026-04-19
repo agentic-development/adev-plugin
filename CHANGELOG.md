@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.19.0] - 2026-04-19
+
+### New Features
+
+- **Configurable reviewer registry** — `/adev:review-specs` is now governance-driven. Projects declare reviewers in `.context-index/governance/review.yaml`; bundled defaults ship at `templates/review-specs/defaults.yaml`. Subagent mode runs a prompt directly; package mode wraps an external skill as a two-stage runner+adapter pipeline. Severity caps, triggered dispatch (glob + keyword scoring), context-pack extends chains, and in-memory migration of legacy `manifest.yaml:specialists` all land at `loadReviewConfig(repoRoot)` in `lib/governance/review-config.mjs`. Zero-config behavior matches the prior hardcoded flow.
+- **Configurable validate check registry** — `/adev:validate` Checks 2-12 flow through `lib/governance/validate-config.mjs` + `templates/validate/defaults.yaml`. Projects add/disable/reorder checks via `.context-index/governance/validate.yaml`. Kinds: `quality-gate`, `subagent-review`, `deterministic-check`, `observational`. Topological sort by `after:` with lex-by-id tie-break; cycles fail load.
+- **Quality-gate runner** — `lib/governance/quality-gate.mjs` executes quality-gate commands via `execFile` with `shell: false`. Subprocess env scoped to profile-declared keys plus a minimal startup whitelist (`PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TMPDIR`, `USER`, `LOGNAME`) — `LD_PRELOAD`, `NODE_OPTIONS`, `PYTHONPATH`, and other invoking-shell vars do not leak. stdout/stderr pass through the profile's redactor; combined output capped at 64 KiB.
+- **Context-pack shared library** — `lib/governance/context-pack.mjs` resolves pack `extends` chains, expands globs, and enforces a hard denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) at both glob-string and resolved-path layers.
+- **Adapter parse-failure sanitization** — `sanitizeAdapterOutput(raw, ctx)` in `lib/governance/review-config.mjs` runs raw runner output through the profile's redactor, normalizes absolute paths under `.context-index/`, plugin root, and `$HOME`, and truncates to 8 KiB with a tail marker. Full redacted text retained only in the dispatch record.
+- **Dispatch-shape harness** — `lib/governance/dispatch-shape.mjs` exposes `buildReviewerDispatches()` and `renderReviewReport()` for LLM-free end-to-end testing: inspects the Task-tool structs the skill would send (prompt, env, redactionSet, allowedTools) and renders a byte-stable `.review.md` body suitable for golden-master verification.
+- **Security hardening — reviewer posture clamp** — reviewers rejected at load if their effective profile permits `filesystem-write` / `shell` / literal tools / non-deny filesystem / non-`{deny, read-only}` network. Referencing `implementer` from a reviewer fails load. Path traversal on `prompt` / `package.skill` / `package.adapter` rejected with `..` pre-resolution + `fs.realpath` symlink check.
+- **Security hardening — quality-gate** — string-form `command` rejected (`QUALITY_GATE_COMMAND_SHELL`); argv interpolation `{{...}}` / `$VAR` / `${VAR}` / `%VAR%` rejected syntactically (`QUALITY_GATE_INTERPOLATION`); explicit `profile` required with no implicit default; `shell: true` and `cwd` override blocked.
+- **Configurable-governance eval** — `tests/evals/configurable-governance/` with three tiers: Tier 1 library-level (workspace fixture, multi-repo env routing, cross-registry pack sharing, malformed-YAML line-citation, quality-gate missing-env), Tier 2 dispatch-shape (prompt-snapshot env-absence, audited-channel enumeration, package-mode two-stage, golden-master `.review.md`), Tier 3 live runner (`run-live.mjs` + pluggable dispatcher — `dispatchers/stub.mjs` default; `dispatchers/anthropic.mjs` template via dynamic import).
+
+### Fixes
+
+- **`TOOL_UNPORTABLE_WARN` at load** — profiles using `{ tool: <literal>, allow_unportable: true }` now emit a one-time load-level WARN per (profile, tool) pair per spec Behavior 14.
+- **Broadening WARNs surfaced at load** — `loadProfiles` eagerly walks every profile's `extends` chain and surfaces `BROADEN_*` warnings at load time instead of deferring to `resolveProfile`.
+
+### Specs
+
+- `.context-index/specs/features/review/configurable-reviewers.md` (rev 3, PASS_WITH_NOTES)
+- `.context-index/specs/features/validation/configurable-checks.md` (rev 3, PASS_WITH_NOTES)
+- `.context-index/adrs/0003-configurable-review-registry.md`
+
+### Other
+
+- 1179 tests pass, 0 failures. 208 suites.
+- 13 PARTIAL acceptance criteria from the /adev:validate reports closed across three eval tiers.
+- Zero new external dependencies. All modules ESM, Node built-ins only.
+
+## [0.18.0] - 2026-04-19
+
+### New Features
+
+- **Execution-profile primitive** — `lib/profiles/` ships a zero-dep cross-cutting subsystem for any skill that dispatches a subagent or a subprocess. A profile declares tool permissions (via portable categories, MCP servers, or opt-in tool literals), env-var allowlist with per-file resolution, model tier, limits, and a redaction contract.
+- **Bundled profiles** — six at `templates/governance/profiles.yaml`: `read-only`, `browser-review`, `reviewer-fast`, `reviewer-capable`, `reviewer-reasoning`, `implementer` (last is defined-but-unconsumed in v1 per ADR-0004).
+- **Seed tool categories** — six at `templates/governance/tool-categories.yaml`. Each adapter declares `IMPLEMENTED` + `UNSUPPORTED` + `AUDITED_CHANNELS` + `capabilities` exports.
+- **Claude Code adapter** — all six categories mapped; MCP servers surfaced via `mcp__<name>__*` expansion.
+- **OpenCode adapter (v1 partial)** — four categories implemented; `filesystem-write` and `shell` surface as `UNSUPPORTED_CATEGORY` so callers fail closed.
+- **Env resolution** — `env.files` supports bare paths (must exist) and `optional:` prefix (silent-skip on absence). Allowlist filters values; missing `required` keys fail load with file list cited. `$workspace/<rest>` resolves via the `adev-workspace.yaml`-anchored root. Per-key contributing-file mapping returned for dispatch-record audit.
+- **Redaction pipeline** — single adapter-owned chokepoint covering tool stdout/stderr, harness errors, adapter diagnostics, tool-argument echoing, pre-adapter transcript capture, and subprocess spawn errors. 8-char minimum length gate. Streaming lookback buffer catches cross-chunk matches. Shared-value placeholder `<REDACTED:<K1>|<K2>>` disambiguates shared values.
+- **Schema validation** — `{ category: "*" }` and wildcards rejected; `{ tool: <literal> }` requires explicit `allow_unportable: true`; `allow`/`allow_add` mix rejected.
+- **Public API** — `loadProfiles(repoRoot)`, `resolveProfile(name, ctx)`, `getEffectivePosture(name, profiles)` in `lib/profiles/index.mjs`.
+
+### Specs
+
+- `.context-index/specs/cross-cutting/execution-profiles.md` (rev 2, PASS_WITH_NOTES).
+- `.context-index/adrs/0004-execution-profiles.md`.
+
+### Other
+
+- 62 new tests in `tests/profiles/` (schema, extends, env, redaction, adapters, loader, YAML parser).
+- Zero new external dependencies.
+
 ## [0.16.0] - 2026-04-17
 
 ### New Features
