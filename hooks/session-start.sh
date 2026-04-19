@@ -9,8 +9,32 @@ set -euo pipefail
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 SKILL_FILE="${PLUGIN_ROOT}/skills/using-adev/SKILL.md"
 
+# Walk up from cwd to find the nearest directory containing .context-index/
+find_context_index() {
+  local dir
+  dir=$(pwd)
+  while true; do
+    if [ -d "$dir/.context-index" ]; then
+      echo "$dir"
+      return 0
+    fi
+    local parent
+    parent=$(dirname "$dir")
+    if [ "$parent" = "$dir" ]; then
+      return 1
+    fi
+    dir="$parent"
+  done
+}
+
+CONTEXT_ROOT=$(find_context_index 2>/dev/null || true)
+
 # Clear context-preflight flag so each session starts fresh
-rm -f .context-index/.context-preflight-ok
+if [ -n "$CONTEXT_ROOT" ]; then
+  rm -f "$CONTEXT_ROOT/.context-index/.context-preflight-ok"
+else
+  rm -f .context-index/.context-preflight-ok
+fi
 
 if [ ! -f "$SKILL_FILE" ]; then
   exit 0
@@ -21,12 +45,29 @@ SKILL_CONTENT=$(cat "$SKILL_FILE")
 
 # Build resume block from execution state (if available)
 RESUME_BLOCK=""
-RESUME_BLOCK=$(node -e '
+RESUME_BLOCK=$(ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" node -e '
   const fs = require("fs");
   const path = require("path");
 
+  // Walk up from cwd to find .context-index/.execution-state.md
+  function findExecutionState() {
+    const contextRoot = process.env.ADEV_CONTEXT_ROOT;
+    if (contextRoot) {
+      return path.join(contextRoot, ".context-index", ".execution-state.md");
+    }
+    let dir = process.cwd();
+    while (true) {
+      const candidate = path.join(dir, ".context-index", ".execution-state.md");
+      if (fs.existsSync(candidate)) return candidate;
+      const parent = path.dirname(dir);
+      if (parent === dir) return null;
+      dir = parent;
+    }
+  }
+
   try {
-    const stateFile = path.join(process.cwd(), ".context-index", ".execution-state.md");
+    const stateFile = findExecutionState();
+    if (!stateFile) process.exit(0);
     const raw = fs.readFileSync(stateFile, "utf-8");
 
     // Parse frontmatter
@@ -90,7 +131,7 @@ RESUME_BLOCK=$(node -e '
 
 # Check for adev version updates
 UPDATE_BLOCK=""
-UPDATE_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" node -e '
+UPDATE_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" node -e '
   const fs = require("fs");
   const path = require("path");
 
@@ -101,8 +142,9 @@ UPDATE_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" node -e '
     const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
     const pluginVersion = pkg.version;
 
-    // Read project adev_version from manifest
-    const manifestPath = path.join(process.cwd(), ".context-index", "manifest.yaml");
+    // Read project adev_version from manifest (use walk-up context root if available)
+    const ctxRoot = process.env.ADEV_CONTEXT_ROOT || process.cwd();
+    const manifestPath = path.join(ctxRoot, ".context-index", "manifest.yaml");
     const manifest = fs.readFileSync(manifestPath, "utf8");
     const vm = manifest.match(/adev_version:\s*["\x27]?([^"\x27\s]+)/);
     const projectVersion = vm ? vm[1] : null;

@@ -70,6 +70,19 @@ Write the active plan path to `.context-index/hygiene/.active-plan` so the scope
 
 If `tasks.backend` is not configured, skip issue board operations.
 
+12. **Workspace detection:** Call `detectWorkspace(cwd)` and store the returned workspace state for use in Steps 2a and 2c. Workspace detection is re-run fresh per task as defensive hygiene (ensures state is current if workspace config changed during a long implementation session), not as concurrency support. If `detectWorkspace` returns `null`, proceed with the existing single-repo flow unchanged.
+
+## Repo-Mode-Inside-Workspace Advisory
+
+**Repo-Mode-Inside-Workspace Advisory:** When the skill is invoked inside a registered repo (`detectWorkspace(cwd)` non-null AND `currentRepoSlug` is set), behaviour is repo-scoped (existing single-repo flow). Additionally, print this one-line advisory to **stdout** (same channel as existing skill messages — NOT stderr, logs, or hook channels), **exactly once per invocation**:
+
+```
+(Advisory: running repo-scoped inside workspace '<name>'. For
+workspace-level orchestration, cd to <workspace-root> and re-run.)
+```
+
+The advisory does not block; it does not appear when `detectWorkspace` returns null.
+
 ### Step 2: Per-Task Execution Loop
 
 For each task in dependency order:
@@ -105,6 +118,13 @@ Before routing or dispatching, assemble the task's context packet:
    > The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules.
 
    All tasks in the same plan receive the same heuristic set. If no heuristics are available, omit this section entirely — do not emit an empty placeholder.
+
+6. **Cross-repo reference resolution (workspace mode only):** If workspace state is non-null (from Step 1, item 12), parse the Live Spec's `depends-on` frontmatter for entries matching the `@repo-slug/spec-slug` pattern. For each cross-repo reference found:
+   - Call `resolveRef(workspaceRoot, config, ref)` to resolve the reference. `resolveRef` only searches `specs/features/` within the target repo's `.context-index/` directory.
+   - If resolution succeeds, read the resolved spec file's Behavioral Contract and Acceptance Criteria sections.
+   - If resolution fails (returns `null`), emit a non-blocking warning: "Cross-repo reference '@repo-slug/spec-slug' could not be resolved — skipping." Do not abort the task.
+   - Append all successfully resolved content under a `## Cross-Repo Reference Context` heading in the context packet. This section provides the implementer subagent with behavioral contracts from sibling repos that the current task depends on.
+   - If no cross-repo references exist in `depends-on`, or if workspace state is null, skip this step entirely.
 
 **Routing tag check:** If the task has a routing tag from `/adev:route`:
 - `auto-agent`: proceed with standard dispatch
@@ -159,9 +179,9 @@ Build the implementer subagent prompt with these sections in order:
 1. **Role.** "You are implementing Task N: [title]." If routed to a specialist: "You are the [specialist name] specialist implementing Task N: [title]."
 2. **Constitution excerpt.** The Non-Negotiable Principles and Coding Standards sections. Keep under 60 lines. Do not include the full constitution.
 3. **Task description.** Full text of the task from the plan. Never make the subagent read the plan file.
-4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need. Before implementing, read the actual source files you will modify. Do not assume file contents based on the task description or plan. If a file has changed since the plan was written, work with the current state.
+4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need. Before implementing, read the actual source files you will modify. Do not assume file contents based on the task description or plan. If a file has changed since the plan was written, work with the current state. If workspace state is non-null and the spec has a `target-repo:` frontmatter field, include an informational advisory: "This task targets repo '<target-repo>' within workspace '<workspace-name>'. All file paths are relative to that repo's root."
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
-6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them.
+6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them. **Cross-repo isolation constraint (workspace mode):** When operating inside a workspace, do NOT modify files in sibling repos. Cross-repo reference context is read-only — it informs your implementation but all changes must be confined to the current repo. If a task requires changes in a sibling repo, report it as NEEDS_CONTEXT with a note identifying the sibling repo and required changes.
 7. **TDD mandate.** This section is non-negotiable. Include the full content of `tdd-mandate.md` from this skill directory.
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.

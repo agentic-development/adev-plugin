@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 4
-updated: 2026-04-16
+revision: 5
+updated: 2026-04-17
 ---
 
 # Feature Charter: Multi-Repo Workspace
@@ -26,13 +26,13 @@ The adev plugin assumes a single git repository per project. Teams working acros
 
 ### Out of Scope
 
-- Cross-repo implementation orchestration — agent does not auto-switch repos during `/adev:implement` (Phase 2)
+- Cross-repo implementation orchestration — agent does not auto-switch repos during `/adev:implement` (Phase 3). Build sequencing across repos is supported via `/adev:build --phase`.
 - Workspace-level constitution — repos keep their own constitutions, no workspace override
 - Workspace-level CLAUDE.md or agent files — no sync across repos
-- Shared issue tracking / beads DB across repos (Phase 2)
+- Shared issue tracking / beads DB across repos (Phase 3)
 - Git submodule/subtree management — users own their git topology
 - Build system features (task caching, affected analysis)
-- Cross-repo `/adev:validate` (validating interface compatibility across repos — Phase 2)
+- Full cross-repo interface compatibility validation (Phase 3). Cross-repo `depends-on` reference resolution is supported in Phase 2.
 
 ### Dependencies
 
@@ -41,9 +41,11 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | setup | modifies | `/adev:init` gains `--workspace` flag |
 | cli | modifies | CLI detects workspace mode during project state resolution |
 | design | modifies | `/adev:brainstorm` gains workspace context for cross-repo charters and for workspace-root `product.md` bootstrap (synthesises from per-repo constitutions); `/adev:specify` gains workspace context for cross-repo specs |
-| assessment | modifies | `/adev:review-specs` validates cross-repo `depends-on` references |
+| assessment | modifies | `/adev:review-specs` validates cross-repo `depends-on` references; `/adev:validate` resolves cross-repo `depends-on` references |
 | planning | modifies | `/adev:plan` reads workspace dependency graph for ordering (via `--phase`); `/adev:plan --release` / `--milestone` invoked at the workspace root read workspace charters and write milestones to workspace `product.md` |
+| execution | modifies | `/adev:implement` loads cross-repo context in workspace mode; `/adev:build --phase` sequences across repos using dependency graph |
 | strategic-planning | modifies | `/adev:status` aggregates across repos in workspace mode |
+| hooks | modifies | `merge-guard`, `constitution-linter`, `sync-trigger`, `context-preflight`, `session-start` detect workspace mode |
 
 ## Domain Model
 
@@ -88,15 +90,24 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | Workspace Status | `/adev:status` in workspace root aggregates spec/charter status across all repos | nice-to-have | 1 | validated |
 | Workspace-Aware Product Bootstrap | At the workspace root, `/adev:brainstorm` Step 5b bootstraps `product.md` by synthesising identity from `workspace.name` and the registered repos' constitutions (where present). No workspace-level constitution or `manifest.yaml` is required. Subsequent workspace-level brainstorms append/update the Module Map with workspace-charter rows only (each repo retains its own `product.md` Module Map). | must-have | 2 | validated |
 | Workspace-Aware Release & Milestone Planning | At the workspace root, `/adev:plan --release` and `/adev:plan --milestone` read workspace charters (workspace + per-repo via `resolveWorkspaceContext`) and write milestones to workspace `.context-index/specs/product.md`. Repo-level specs may reference workspace milestones. Issue-board epic sync is **unconditionally deferred** to the Phase 2 Shared Issue Tracking capability — the workspace has no `manifest.yaml` per the Simplicity quality attribute. | must-have | 2 | validated |
+| Workspace-Aware Specify | `/adev:specify` at the workspace root detects workspace mode and prompts for `target-repo:`. Specs are written to the target repo's `.context-index/`, with cross-repo `depends-on` references resolved via `resolveWorkspaceContext`. | must-have | 2 | validated |
+| Workspace-Aware Implement | `/adev:implement` loads cross-repo context (sibling specs, dependency graph) when running inside a workspace. Does not auto-switch repos — orchestration remains manual. | must-have | 2 | validated |
+| Workspace-Aware Plan Decomposition | `/adev:plan` decomposes workspace-level specs into per-repo plans ordered by the workspace dependency graph. | must-have | 2 | validated |
+| Workspace-Aware Build Orchestration | `/adev:build --phase` at the workspace root sequences builds across repos using the dependency graph (upstream repos first). | should-have | 2 | validated |
+| Workspace-Aware Validate | `/adev:validate` resolves cross-repo `depends-on` references and checks interface compatibility across workspace boundaries. | should-have | 2 | validated |
+| Workspace-Aware Status Aggregation | `/adev:status` at the workspace root aggregates spec/charter status across all registered repos and tracks charter-revision staleness across workspace boundaries. | should-have | 2 | validated |
+| Workspace Hook Hardening | Hooks (`merge-guard`, `constitution-linter`, `sync-trigger`, `context-preflight`, `session-start`) detect workspace mode and handle workspace-vs-repo context correctly. | should-have | 2 | validated |
+| Workspace Path Containment | `lib/workspace.mjs` enforces path containment — repo paths escaping the workspace root are rejected. `assertPathInWorkspace()` is available for downstream consumers. | must-have | 2 | validated |
+| Workspace Isolation ADR | ADR-0003 documents the workspace-mode isolation invariant: skills never write to registered repo `.context-index/`. | nice-to-have | 2 | validated |
 
 ## Deferred Capabilities
 
 | Capability | Reason | Target Phase | Depends On |
 |-----------|--------|-------------|------------|
-| Cross-Repo Implementation Orchestration | Requires solving cwd switching and multi-repo execution state | 2 | Context Resolution |
-| Shared Issue Tracking | Requires workspace-level beads DB or cross-repo linking | 2 | Workspace Schema |
-| Cross-Repo Validation | Requires interface compatibility checking across repos | 2 | Reference Validation |
-| Workspace-Level Governance | Shared boundary rules and transition gates across repos | 2 | Context Resolution |
+| Cross-Repo Implementation Orchestration | Agent auto-switches repos during `/adev:implement` (cwd switching + multi-repo execution state). `/adev:build --phase` sequences across repos but does not auto-switch during implement. | 3 | Context Resolution, Workspace-Aware Build Orchestration |
+| Shared Issue Tracking | Requires workspace-level beads DB or cross-repo linking. Epic-board sync in workspace mode is unconditionally deferred to this capability. | 3 | Workspace Schema |
+| Cross-Repo Validation | Full interface compatibility checking across repos. Phase 2 added `depends-on` reference resolution; full type/contract compatibility remains deferred. | 3 | Workspace-Aware Validate |
+| Workspace-Level Governance | Shared boundary rules and transition gates across repos | 3 | Context Resolution |
 
 ## Interface Contracts
 
@@ -105,8 +116,13 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | Interface | Type | Description |
 |-----------|------|-------------|
 | `lib/workspace.mjs:detectWorkspace(startPath)` | function | Walks up from `startPath` looking for `adev-workspace.yaml`. Returns `{ root, config, currentRepoSlug }` or `null` if not found. |
-| `lib/workspace.mjs:resolveWorkspaceContext(workspaceRoot, currentRepoSlug)` | function | Assembles a read-only WorkspaceContext: current repo context, sibling repo `.context-index/` paths, parsed dependency graph. |
-| `lib/workspace.mjs:resolveRef(workspaceRoot, crossRepoRef)` | function | Resolves `@repo-slug/spec-slug` to an absolute file path. Returns `null` if repo or spec not found. |
+| `lib/workspace.mjs:resolveWorkspaceContext(workspaceRoot, config, currentRepoSlug)` | function | Assembles a read-only WorkspaceContext: current repo context, sibling repo `.context-index/` paths, parsed dependency graph. Enforces path containment on repo paths. |
+| `lib/workspace.mjs:resolveRef(workspaceRoot, config, ref)` | function | Resolves `@repo-slug/spec-slug` to an absolute file path. Returns `null` if repo or spec not found. |
+| `lib/workspace.mjs:assertPathInWorkspace(workspaceRoot, input)` | function | Throws if `input` resolves outside `workspaceRoot`. Used by skills and hooks to enforce isolation. |
+| `lib/workspace.mjs:validateModuleName(token)` | function | Returns `true` if `token` is a safe slug (lowercase alphanumeric + hyphens). |
+| `lib/workspace.mjs:sanitizeIdentityOneLiner(text, maxChars)` | function | Truncates and sanitizes a one-liner identity string for `product.md` bootstrap. |
+| `lib/workspace.mjs:readCappedText(filePath, maxBytes)` | function | Reads up to `maxBytes` from a file, returning truncated text. Default cap: 512 KB. |
+| `lib/workspace.mjs:resolveWorkspaceProductPath(workspaceRoot)` | function | Returns the path to the workspace-level `product.md`. |
 | `adev-workspace.yaml` | config | Workspace manifest consumed by skills and CLI. Declares repos, dependencies, workspace metadata. |
 | `--workspace` flag on `/adev:init` | CLI arg | Scaffolds workspace structure. |
 
@@ -119,6 +135,10 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | `/adev:plan` | planning | Extended to read workspace dependency graph for ordering |
 | `/adev:brainstorm` | design | Extended to support workspace-level charters |
 | `/adev:status` | strategic-planning | Extended to aggregate across repos |
+| `/adev:specify` | design | Extended with workspace-mode detection and `target-repo:` prompt |
+| `/adev:implement` | execution | Extended to load cross-repo context in workspace mode |
+| `/adev:build` | execution | Extended with `--phase` cross-repo sequencing via dependency graph |
+| `/adev:validate` | assessment | Extended to resolve cross-repo `depends-on` references |
 | `/adev:init` | setup | Extended with `--workspace` scaffolding |
 
 ## Quality Attributes

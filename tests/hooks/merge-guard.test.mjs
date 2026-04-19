@@ -1,5 +1,7 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { createTempDir, createTempGitRepo, cleanupTempDir, writeFixture, runHook } from "../helpers.mjs";
 
 describe("merge-guard hook", () => {
@@ -107,6 +109,34 @@ describe("merge-guard hook", () => {
       stdin: commandInput("git push origin main"),
     });
     assert.equal(allowResult.exitCode, 0);
+  });
+
+  it("finds manifest from a subdirectory of the repo", () => {
+    writeFixture(tempDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
+    const subDir = join(tempDir, "packages", "core");
+    mkdirSync(subDir, { recursive: true });
+
+    const { exitCode, stderr } = runHook("merge-guard.sh", {
+      cwd: subDir,
+      stdin: commandInput("git merge main"),
+    });
+    // ask policy => exit 0 with Advisory, proving the manifest was found
+    assert.equal(exitCode, 0);
+    assert.ok(stderr.includes("Advisory"), "should find manifest via walk-up and apply ask policy");
+  });
+
+  it("finds manifest from a workspace subdirectory", () => {
+    // Simulate workspace: manifest at workspace root, cwd is a nested repo dir
+    writeFixture(tempDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
+    const nestedRepo = join(tempDir, "repos", "my-app", "src");
+    mkdirSync(nestedRepo, { recursive: true });
+
+    const { exitCode, stderr } = runHook("merge-guard.sh", {
+      cwd: nestedRepo,
+      stdin: commandInput("git merge main"),
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(stderr.includes("Advisory"), "should find workspace-level manifest via walk-up");
   });
 
   it("blocks git checkout main && git merge", () => {
