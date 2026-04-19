@@ -52,7 +52,6 @@ modules:
     name: Design
     paths:
       - skills/brainstorm/
-      - skills/adev-brainstorm/
       - skills/specify/
 
   - slug: assessment
@@ -66,13 +65,11 @@ modules:
     name: Planning
     paths:
       - skills/plan/
-      - skills/adev-plan/
 
   - slug: implementation
     name: Implementation
     paths:
       - skills/implement/
-      - skills/adev-implement/
       - skills/debug/
       - skills/recover/
       - skills/write-test/
