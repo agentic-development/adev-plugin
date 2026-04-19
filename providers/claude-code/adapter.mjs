@@ -135,6 +135,42 @@ export const ClaudeCodeAdapter = {
     ensureDir(dirname(settingsPath));
     writeJson(settingsPath, settings);
 
+    // Register the custom marketplace in user-level settings so Claude Code
+    // can resolve adev@agentic-development on any machine.
+    const userSettingsPath = join(claudeHome, "settings.json");
+    const userSettings = settingsPath === userSettingsPath
+      ? settings
+      : (readJson(userSettingsPath) || {});
+
+    if (!userSettings.extraKnownMarketplaces) {
+      userSettings.extraKnownMarketplaces = {};
+    }
+
+    if (!userSettings.extraKnownMarketplaces["agentic-development"]) {
+      userSettings.extraKnownMarketplaces["agentic-development"] = {
+        source: {
+          source: "settings",
+          name: "agentic-development",
+          plugins: [
+            {
+              name: "adev",
+              source: {
+                source: "github",
+                repo: "agentic-development/adev-plugin",
+              },
+            },
+          ],
+        },
+      };
+
+      if (settingsPath !== userSettingsPath) {
+        ensureDir(dirname(userSettingsPath));
+        writeJson(userSettingsPath, userSettings);
+      } else {
+        writeJson(settingsPath, settings);
+      }
+    }
+
     return settingsPath;
   },
 

@@ -1,0 +1,31 @@
+{
+  "name": "agentic-development",
+  "owner": {
+    "name": "Agentic Development",
+    "email": "contact@agentic-dev.org"
+  },
+  "metadata": {
+    "description": "Agentic Development Framework plugins for AI-assisted software delivery",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "adev",
+      "source": ".",
+      "description": "Full-lifecycle Agentic Development Framework with context engineering, charter-native specs, constitution gating, and architecture review.",
+      "version": "0.18.1",
+      "author": {
+        "name": "Agentic Development"
+      },
+      "homepage": "https://agentic-dev.org",
+      "license": "MIT",
+      "keywords": [
+        "agentic-development",
+        "context-engineering",
+        "spec-driven",
+        "methodology"
+      ],
+      "category": "development"
+    }
+  ]
+}
