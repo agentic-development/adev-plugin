@@ -1,5 +1,5 @@
 /**
- * Eval tests for Check 12 "Success Heuristic Extraction" of /adev:validate.
+ * Eval tests for Check 13 "Success Heuristic Extraction" of /adev:validate.
  *
  * Covers the four observable SKIP/PASS paths documented in
  * `skills/validate/SKILL.md`:
@@ -26,7 +26,7 @@ const SPEC_TITLE = "Some Feature";
  * Seed a temp project with a manifest declaring one module and a target
  * spec at `.context-index/specs/features/<module>/some-feature.md`.
  *
- * Returns paths the test needs for the Check 12 context.
+ * Returns paths the test needs for the Check 13 context.
  *
  * @param {string} root
  * @returns {{ specAbs: string, specRel: string, reportRel: string }}
@@ -65,7 +65,7 @@ function allPassing() {
   return results;
 }
 
-describe("validate Check 12 — eval paths", () => {
+describe("validate Check 13 — eval paths", () => {
   let tempDir;
 
   beforeEach(() => {
@@ -127,7 +127,7 @@ describe("validate Check 12 — eval paths", () => {
   it("second-run SKIPs with 'not first-run PASS' when prior report exists", async () => {
     const { specAbs, reportRel } = seedFixture(tempDir);
 
-    // Create the sibling validation report BEFORE running Check 12.
+    // Create the sibling validation report BEFORE running Check 13.
     writeFileSync(join(tempDir, reportRel), `# Validation Report\n`);
 
     const result = await runCheck12(tempDir, {

@@ -1,8 +1,8 @@
 /**
- * Check 12 "Success Heuristic Extraction" harness.
+ * Check 13 "Success Heuristic Extraction" harness.
  *
  * Implements the derivation logic documented in
- * `skills/validate/SKILL.md` Check 12 as a reusable JavaScript function
+ * `skills/validate/SKILL.md` Check 13 as a reusable JavaScript function
  * so the contract can be exercised from tests. The harness is NOT wired
  * into `/adev:validate` at runtime — the skill documents the logic in
  * markdown and expects an inline Node invocation. This module exists to
@@ -193,9 +193,9 @@ function priorValidationReportExists(specPath, specSlug) {
 }
 
 /**
- * Run Check 12 per `skills/validate/SKILL.md`.
+ * Run Check 13 per `skills/validate/SKILL.md`.
  *
- * Returns a structured result rather than throwing, because Check 12 is
+ * Returns a structured result rather than throwing, because Check 13 is
  * observational and must never affect the overall validation verdict.
  *
  * @param {string} projectRoot - Absolute project root.

@@ -1,8 +1,8 @@
 /**
- * Integration tests for `/adev:validate` Check 12 "Success Heuristic
+ * Integration tests for `/adev:validate` Check 13 "Success Heuristic
  * Extraction".
  *
- * Exercise the Check 12 harness end-to-end:
+ * Exercise the Check 13 harness end-to-end:
  *
  *   1. End-to-end round-trip at `medium` confidence — writes a heuristic
  *      via the harness, reads it back through `readHeuristics`, and
@@ -15,7 +15,7 @@
  *      contains the raw literal, and that the empty `antiPattern` field
  *      is dropped by the serializer so it round-trips as absent.
  *
- * The distillation discipline for Check 12 is enforced by the harness's
+ * The distillation discipline for Check 13 is enforced by the harness's
  * INTERFACE: it takes `successFactor` as an explicit string, not a raw
  * context packet reference, which prevents the harness from accidentally
  * copying raw packet content into the heuristic. This test file proves
@@ -75,7 +75,7 @@ function allPassing() {
   return results;
 }
 
-describe("validate Check 12 integration — end-to-end round-trip", () => {
+describe("validate Check 13 integration — end-to-end round-trip", () => {
   let tempDir;
 
   beforeEach(() => {
@@ -129,7 +129,7 @@ describe("validate Check 12 integration — end-to-end round-trip", () => {
   });
 });
 
-describe("validate Check 12 integration — distillation discipline + antiPattern shape", () => {
+describe("validate Check 13 integration — distillation discipline + antiPattern shape", () => {
   let tempDir;
 
   beforeEach(() => {
@@ -213,7 +213,7 @@ describe("validate Check 12 integration — distillation discipline + antiPatter
     assert.equal(stored.confidence, "medium");
     // After round-trip through readHeuristics the antiPattern field
     // must NOT have been reintroduced as an empty string — the
-    // serializer drop is the contract that Check 12 relies on.
+    // serializer drop is the contract that Check 13 relies on.
     assert.equal(
       stored.antiPattern,
       undefined,

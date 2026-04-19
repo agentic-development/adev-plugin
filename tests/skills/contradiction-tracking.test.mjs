@@ -3,28 +3,28 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 describe("contradiction tracking in validate SKILL.md", () => {
-  it("Check 12 includes contradiction scan before writeHeuristic", async () => {
+  it("Check 13 includes contradiction scan before writeHeuristic", async () => {
     const content = await readFile("skills/validate/SKILL.md", "utf8");
     assert.ok(content.includes("addContradiction"), "Must reference addContradiction");
     assert.ok(content.includes("readHeuristics"), "Must read existing heuristics for comparison");
   });
 
-  it("contradiction scan appears before writeHeuristic in Check 12", async () => {
+  it("contradiction scan appears before writeHeuristic in Check 13", async () => {
     const content = await readFile("skills/validate/SKILL.md", "utf8");
-    const check12Start = content.indexOf("### Check 12");
-    const check12Content = content.slice(check12Start);
-    const contradictionIdx = check12Content.indexOf("Contradiction Scan");
-    const writeIdx = check12Content.indexOf("writeHeuristic");
+    const check13Start = content.indexOf("### Check 13");
+    const check13Content = content.slice(check13Start);
+    const contradictionIdx = check13Content.indexOf("Contradiction Scan");
+    const writeIdx = check13Content.indexOf("writeHeuristic");
     assert.ok(contradictionIdx > 0 && contradictionIdx < writeIdx,
-      "Contradiction Scan must appear before writeHeuristic in Check 12");
+      "Contradiction Scan must appear before writeHeuristic in Check 13");
   });
 
   it("documents non-blocking error handling", async () => {
     const content = await readFile("skills/validate/SKILL.md", "utf8");
-    const check12Start = content.indexOf("### Check 12");
-    const check12Content = content.slice(check12Start);
+    const check13Start = content.indexOf("### Check 13");
+    const check13Content = content.slice(check13Start);
     assert.ok(
-      check12Content.includes("try/catch") || check12Content.includes("catch"),
+      check13Content.includes("try/catch") || check13Content.includes("catch"),
       "Must document try/catch for addContradiction"
     );
   });

@@ -105,9 +105,9 @@ describe("visual verification in adev:validate", () => {
     assert.ok(reportSection.includes("Dark mode"));
   });
 
-  it("references 11 checks, not 10", () => {
-    assert.ok(!skill.includes("10 checks"), "should not reference 10 checks anymore");
-    assert.ok(skill.includes("11 checks"), "should reference 11 checks");
+  it("references 13 checks, not 11", () => {
+    assert.ok(!skill.includes("11 checks"), "should not reference 11 checks anymore");
+    assert.ok(skill.includes("13 checks"), "should reference 13 checks");
   });
 
   it("lists visual verification in red flags", () => {
