@@ -4,6 +4,8 @@
 
 Proposed
 
+> **Revised 2026-04-19**: Sandbox/tier/thinking-budget concerns originally proposed in this ADR have been promoted into a separate primitive — see ADR-0004 (Execution Profiles). This ADR now focuses solely on the reviewer/check **registry** decision; how each registered work unit *runs* is the job of execution profiles, which the registries reference by name.
+
 ## Date
 
 2026-04-19
@@ -30,11 +32,12 @@ Both files follow the same shape as `governance/gates.yaml`: a declarative list 
 
 ### Scope of change
 
-- **Reviewer registry** (`governance/review.yaml:reviewers[]`): unifies today's "core reviewers" and "domain specialists" into a single list. Each entry has `id`, `prompt`, `tier`, `dispatch` (`always` | `triggered` | `never`), `context_pack`, `severity_cap`. The three built-ins ship as defaults in `plugin:review-specs/defaults.yaml` and are referenced via a new `plugin:` URI scheme for prompts that live inside skill directories.
+- **Reviewer registry** (`governance/review.yaml:reviewers[]`): unifies today's "core reviewers" and "domain specialists" into a single list. Each entry has `id`, `dispatch` (`always` | `triggered` | `never`), `profile` (reference to an execution profile per ADR-0004), `context_pack`, `severity_cap`, and either `prompt` (subagent mode) or `package` (external-skill wrap mode — see configurable-reviewers spec). The three built-ins ship as defaults in `plugin:review-specs/defaults.yaml`. Prompts are referenced via a `plugin:` URI scheme.
 - **Context packs** (`governance/review.yaml:context_packs`): named, reusable file bundles (with `extends`) that reviewers reference by name instead of duplicating file lists per reviewer.
 - **Check registry** (`governance/validate.yaml:checks[]`): every Check 2-12 gets a canonical ID (e.g. `validate.check-2-spec-compliance`) and a `kind` (`quality-gate` | `subagent-review` | `deterministic-check` | `observational`). Check 1 remains sourced from `governance/gates.yaml` unchanged.
 - **Manifest deprecation**: `manifest.yaml:specialists` is deprecated in favor of `governance/review.yaml:reviewers`. A one-minor-version migration advisory emits on read; the field is then removed.
 - **Parser**: add `lib/governance/review-config.mjs` and `lib/governance/validate-config.mjs`. Stay zero-dependency per constitution; extend the existing line-based YAML parser or add a sibling parser for these shapes.
+- **External-skill packaging (configurable-reviewers spec, package mode)**: a reviewer can wrap an existing skill as a black-box package — runner subagent invokes the skill verbatim under a profile, adapter subagent extracts findings. No `review-safe` opt-in; the skill stays unaware. Tool/env/MCP scoping comes from the profile (ADR-0004).
 
 ### Alternatives Considered
 
@@ -77,8 +80,10 @@ Both files follow the same shape as `governance/gates.yaml`: a declarative list 
 
 ## Related
 
-- `.context-index/specs/features/review/configurable-reviewers.md` — reviewer registry spec
-- `.context-index/specs/features/validation/configurable-checks.md` — check registry spec
+- `.context-index/adrs/0004-execution-profiles.md` — promoted-out primitive that the registries consume
+- `.context-index/specs/cross-cutting/execution-profiles.md` — profile schema and behavior
+- `.context-index/specs/features/review/configurable-reviewers.md` — reviewer registry spec (rev 2)
+- `.context-index/specs/features/validation/configurable-checks.md` — check registry spec (rev 2)
 - `.context-index/specs/features/unified-gates/unified-gate-system.md` — precedent for `governance/` migration
 - `skills/review-specs/SKILL.md` — current hardcoded reviewer list
 - `skills/validate/SKILL.md` — current Check 2-12 prose
