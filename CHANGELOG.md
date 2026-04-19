@@ -2,6 +2,8 @@
 
 ## [0.18.0] - 2026-04-19
 
+> **Upgrading from 0.17.x?** See [`docs/governance.md`](docs/governance.md) — includes a five-recipe migration guide covering `manifest.yaml:specialists` → `governance/review.yaml`, shell-env-inheriting quality gates → profile `env.allow`, shell-form commands → argv, reviewer write-paths → package mode, and browser-automation reviewers. Zero-config projects need no changes; bundled defaults preserve pre-0.18.0 behavior. Copy-paste starter overlays ship at [`templates/governance/review.example.yaml`](templates/governance/review.example.yaml) and [`validate.example.yaml`](templates/governance/validate.example.yaml).
+
 ### New Features — Execution-profile primitive
 
 - **`lib/profiles/`** — zero-dep cross-cutting subsystem for any skill that dispatches a subagent or a subprocess. A profile declares tool permissions (via portable categories, MCP servers, or opt-in tool literals), env-var allowlist with per-file resolution, model tier, limits, and a redaction contract.
