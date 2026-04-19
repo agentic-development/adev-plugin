@@ -1,0 +1,40 @@
+# Tool Category Registry (v1 seed)
+# See: .context-index/specs/cross-cutting/execution-profiles.md Behaviors 11-12.
+# Each adapter under lib/profiles/adapters/ maps these abstract names to
+# harness-specific tool names. Adapters MUST implement every category in
+# IMPLEMENTED or UNSUPPORTED exports; unknown categories fail load closed.
+
+version: 1
+
+categories:
+  - name: filesystem-read
+    description: "Read files and list directory contents."
+    invariants:
+      - "No state mutation on the filesystem."
+      - "No network I/O."
+
+  - name: search
+    description: "Pattern or grep search across files."
+    invariants:
+      - "Read-only over the filesystem."
+      - "No network I/O."
+
+  - name: agent
+    description: "Spawn subagents for delegated work."
+    invariants:
+      - "Subagent runs with its own resolved profile; posture does not leak."
+
+  - name: web-fetch
+    description: "Read-only HTTP / web search."
+    invariants:
+      - "Outbound network only; no filesystem writes."
+
+  - name: filesystem-write
+    description: "Create, modify, or delete files."
+    invariants:
+      - "Privilege escalation class; never present in read-only-derived profiles."
+
+  - name: shell
+    description: "Execute arbitrary shell commands."
+    invariants:
+      - "Privilege escalation class; inherits OS user privileges."
