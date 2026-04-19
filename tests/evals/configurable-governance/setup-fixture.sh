@@ -357,12 +357,13 @@ EOF
 
 # ---------------------------------------------------------------------------
 # Workspace fixture (Tier 1 AC #12 / #13 / #10): two sibling repos under
-# a workspace root. Each has its own .context-index/. The workspace root
-# holds .env.shared that a profile can reach via $workspace/.
+# a workspace root. Placed adjacent to the target fixture so each test
+# file can own its own pair without racing.
 # ---------------------------------------------------------------------------
-mkdir -p ../ws-fixture
+WS_TARGET="${WS_TARGET:-$(dirname "$TARGET")/ws-$(basename "$TARGET")}"
+mkdir -p "$WS_TARGET"
 (
-  cd ../ws-fixture
+  cd "$WS_TARGET"
   rm -rf ./*
   cat > adev-workspace.yaml << 'WS'
 workspace:
