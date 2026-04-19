@@ -119,6 +119,20 @@ describe("context-preflight hook", () => {
     assert.ok(stdout.includes("Context-First Reminder"));
   });
 
+  it("finds .context-preflight-ok via walk-up from subdirectory", () => {
+    // Create .context-index at root with flag
+    writeFixture(tempDir, ".context-index/.context-preflight-ok", "");
+    // Create a subdirectory to simulate being deeper in the repo
+    writeFixture(tempDir, "src/lib/.gitkeep", "");
+
+    const { exitCode, stdout } = runHook("context-preflight.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: "src/lib/parser.mjs" },
+      cwd: `${tempDir}/src/lib`,
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(!stdout.includes("Context-First Reminder"), "Should find flag via walk-up");
+  });
+
   it("warns for lib files edited without context read", () => {
     const { exitCode, stdout } = runHook("context-preflight.sh", {
       env: { CLAUDE_TOOL_INPUT_file_path: "lib/utils/parser.mjs" },

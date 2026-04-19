@@ -41,6 +41,21 @@ describe("sync-trigger hook", () => {
     assert.equal(stdout.trim(), "");
   });
 
+  it("silent at workspace root (adev-workspace.yaml present)", () => {
+    writeFixture(tempDir, "adev-workspace.yaml", "workspace:\n  name: test\nrepos: []\n");
+    writeFixture(tempDir, ".context-index/manifest.yaml", "project_name: test\n");
+
+    const { exitCode, stdout } = runHook("sync-trigger.sh", {
+      env: {
+        CLAUDE_TOOL_INPUT_file_path: `${tempDir}/.context-index/constitution.md`,
+      },
+      cwd: tempDir,
+    });
+
+    assert.equal(exitCode, 0);
+    assert.equal(stdout.trim(), "", "Should not suggest sync at workspace root");
+  });
+
   it("silent when no manifest exists", () => {
     // Constitution path but no manifest.yaml in cwd
     const { exitCode, stdout } = runHook("sync-trigger.sh", {

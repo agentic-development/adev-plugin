@@ -183,6 +183,24 @@ Before planning, verify the spec has passed architecture review.
    - If the `.review.md` file does not contain `last-reviewed-revision` or `file-sha` fields (legacy review), fall back to the file modification time check in step 6.
 8. If verdict is `PASS` or `PASS_WITH_NOTES`, proceed. If `PASS_WITH_NOTES`, print the warnings for the user's awareness but do not block.
 
+### Spec Mode — Workspace-Aware Target-Repo Detection
+
+After the Review Gate passes (Step 1) and before loading context (Step 2), check whether the spec declares a `target-repo:` field in its YAML frontmatter:
+
+1. **Parse spec frontmatter** for the `target-repo:` field.
+2. **If `target-repo` is present AND `detectWorkspace(cwd)` returns non-null:** enter **workspace-aware Spec Mode**. The remaining steps (2-7) follow the workspace-aware branching documented below.
+3. **If `target-repo` is present but no workspace is detected (NO_WORKSPACE fallback):** emit a warning and fall back to the single-repo flow. Rationale: the `target-repo` field is only meaningful inside a workspace; outside a workspace, the spec is treated as a normal single-repo spec. The single-repo fallback ensures the skill remains functional for users who copy workspace specs into standalone repos.
+   ```
+   Warning: spec declares target-repo: '<value>' but no workspace detected.
+   Falling back to single-repo flow. To use workspace-aware planning,
+   run from a workspace root or a registered repo directory.
+   ```
+4. **Validate target-repo** against the workspace registry using `validateModuleName()` from `lib/workspace.mjs`. If validation fails, block with error code `INVALID_TARGET_REPO`:
+   ```
+   INVALID_TARGET_REPO: target-repo '<value>' is not a valid repo slug
+   in the workspace registry. Valid slugs: <list>.
+   ```
+
 ## Step 2: Load Context
 
 ### Essential Context (load now)
@@ -198,6 +216,28 @@ Read these files immediately. They are required for every planning decision.
 4. **The spec:** Read the Live Spec itself. Extract behavioral contract, acceptance criteria, and actionable task map (if present).
 
 5. **Review report:** Read the `.review.md` file. Note any `PASS_WITH_NOTES` warnings. The plan should address or acknowledge them.
+
+### Workspace-Aware Target-Repo Context Loading
+
+When in workspace-aware Spec Mode (target-repo detected), load context from the target repo instead of (or in addition to) the current repo:
+
+1. **Target repo constitution:** Read `<target-repo-path>/.context-index/constitution.md`. If the target repo's `.context-index/` directory is missing, handle gracefully — proceed without target repo constitution and note the gap in the plan header.
+2. **Target repo platform-context:** Read `<target-repo-path>/.context-index/platform-context.yaml`. This determines the target repo's tech stack for task structure.
+3. **Target repo orientation:** Read `<target-repo-path>/.context-index/orientation/architecture.md` for module placement and import patterns specific to the target repo.
+4. **Special case — `target-repo: workspace`:** When the spec's target-repo value is literally `workspace`, the spec targets the workspace root itself rather than any registered repo. In this case, load the workspace-level `.context-index/` constitution, platform-context, and orientation. There is no repo-specific constitution to load.
+
+### Workspace-Aware Cross-Repo Depends-On Resolution
+
+When in workspace-aware Spec Mode, parse the spec's `depends-on` frontmatter for cross-repo references in the `@repo-slug/spec-slug` format:
+
+1. **Identify cross-repo refs:** Entries matching the pattern `@<repo-slug>/<spec-slug>` are cross-repo dependencies.
+2. **Resolve each ref** via `resolveRef(workspaceRoot, config, ref)` from `lib/workspace.mjs`. This returns the absolute path to the referenced spec in the sibling repo.
+3. **Include resolved specs in Context Packets:** Add each resolved cross-repo spec as a Context Packet entry so subagents can read the dependency's behavioral contract.
+4. **Warn on unresolvable refs:** If a cross-repo ref cannot be resolved (repo not in workspace registry, spec file not found), emit a warning but do not block:
+   ```
+   Warning: cross-repo dependency @<repo-slug>/<spec-slug> could not be resolved.
+   The referenced spec may not exist or the repo may not be registered in the workspace.
+   ```
 
 ### Reference Context (load when relevant)
 
@@ -258,6 +298,8 @@ Save the plan adjacent to the spec:
 - Spec at `.context-index/specs/features/<module>/<task>.md` gets its plan at `.context-index/specs/features/<module>/<task>.plan.md`
 - Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its plan at `.context-index/specs/cross-cutting/<topic>.plan.md`
 
+**Workspace-aware plan save location:** When in workspace-aware Spec Mode, the plan is saved in the workspace `.context-index/`, not in the target repo's `.context-index/`. This keeps workspace-level planning artifacts co-located with the workspace-level specs that produced them.
+
 ### Plan Document Header
 
 Every plan starts with this header:
@@ -303,6 +345,14 @@ Before defining tasks, map out all files that will be created or modified:
 ```
 
 Design units with clear boundaries. Prefer smaller, focused files. Follow existing codebase patterns. If the codebase uses large files, do not unilaterally restructure.
+
+#### Workspace-Aware Repo-Relative File Paths
+
+When in workspace-aware Spec Mode, file paths in the File Structure and Task Structure sections must be repo-relative:
+
+- **When target-repo is a repo slug:** prefix all file paths with the target repo's path relative to the workspace root (e.g., `<repo-slug>/src/module.ts`). This makes paths unambiguous in a multi-repo workspace.
+- **When target-repo is `workspace`:** paths are workspace-relative (relative to the workspace root directory).
+- **Commit scope:** The commit scope in each task's commit step must include the target repo slug (e.g., `feat(<target-repo-slug>/<module>): ...`). When target-repo is `workspace`, use the workspace name as the scope prefix (e.g., `feat(<workspace-name>/<module>): ...`). Branch naming follows the same convention: `feat/<target-repo-slug>/<short-description>` or `feat/<workspace-name>/<short-description>` for workspace-scoped specs.
 
 ### Context Packet Section
 

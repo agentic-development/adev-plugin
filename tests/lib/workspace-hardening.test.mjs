@@ -12,6 +12,8 @@ import {
   resolveWorkspaceProductPath,
   MAX_CHARTER_FILES,
   MAX_CHARTER_FILE_BYTES,
+  detectWorkspace,
+  resolveWorkspaceContext,
 } from "../../lib/workspace.mjs";
 
 describe("assertPathInWorkspace", () => {
@@ -333,6 +335,122 @@ describe("integration: workspace-hardening", () => {
         p.endsWith(".context-index/specs/product.md") ||
         p.endsWith(".context-index\\specs\\product.md")
       );
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+});
+
+describe("parseWorkspaceFile path containment (issue-95)", () => {
+  it("marks repo with escaping path as missing with PATH_ESCAPE warning", () => {
+    const tmp = createTempDir();
+    try {
+      writeFixture(tmp, "adev-workspace.yaml", `
+workspace:
+  name: test-escape
+repos:
+  - slug: evil-repo
+    path: ../../escape
+  - slug: good-repo
+    path: ./repos/good
+`);
+      const result = detectWorkspace(tmp);
+      assert.ok(result, "detectWorkspace should return a result");
+      const evilRepo = result.config.repos.find(r => r.slug === "evil-repo");
+      assert.ok(evilRepo, "evil-repo should exist in config");
+      assert.equal(evilRepo.missing, true, "evil-repo should be marked as missing");
+      assert.ok(
+        result.config.warnings.some(w => w.includes("PATH_ESCAPE") && w.includes("evil-repo")),
+        `should have PATH_ESCAPE warning for evil-repo, got: ${JSON.stringify(result.config.warnings)}`
+      );
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  it("allows legitimate repo paths through", () => {
+    const tmp = createTempDir();
+    try {
+      const repoDir = join(tmp, "repos", "legit");
+      mkdtempSync; // unused, just use mkdirSync
+      writeFixture(tmp, "repos/legit/.keep", "");
+      writeFixture(tmp, "adev-workspace.yaml", `
+workspace:
+  name: test-legit
+repos:
+  - slug: legit
+    path: ./repos/legit
+`);
+      const result = detectWorkspace(tmp);
+      assert.ok(result);
+      const repo = result.config.repos.find(r => r.slug === "legit");
+      assert.ok(!repo.missing, "legit repo should not be missing");
+      assert.ok(
+        !result.config.warnings.some(w => w.includes("PATH_ESCAPE")),
+        "should have no PATH_ESCAPE warnings"
+      );
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+});
+
+describe("resolveWorkspaceContext path containment (issue-95)", () => {
+  it("skips repos whose paths escape the workspace root", () => {
+    const tmp = createTempDir();
+    try {
+      const config = {
+        workspace: { name: "test" },
+        repos: [
+          { slug: "escape-repo", path: "../../../etc" },
+          { slug: "good-repo", path: "./repos/good" },
+        ],
+        dependencies: [],
+        warnings: [],
+      };
+      // Create good-repo dir with .context-index
+      writeFixture(tmp, "repos/good/.context-index/.keep", "");
+
+      const ctx = resolveWorkspaceContext(tmp, config, null);
+      // escape-repo should be filtered out
+      assert.equal(
+        ctx.siblingRepos.some(r => r.slug === "escape-repo"),
+        false,
+        "escape-repo should be excluded from siblingRepos"
+      );
+      assert.ok(
+        ctx.warnings.some(w => w.includes("escape-repo") && w.includes("escapes workspace root")),
+        `should have escape warning, got: ${JSON.stringify(ctx.warnings)}`
+      );
+      // good-repo should still be present
+      assert.ok(
+        ctx.siblingRepos.some(r => r.slug === "good-repo"),
+        "good-repo should remain in siblingRepos"
+      );
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  it("does not skip repos with valid paths", () => {
+    const tmp = createTempDir();
+    try {
+      writeFixture(tmp, "repo-a/.context-index/.keep", "");
+      writeFixture(tmp, "repo-b/.context-index/.keep", "");
+
+      const config = {
+        workspace: { name: "test" },
+        repos: [
+          { slug: "repo-a", path: "./repo-a" },
+          { slug: "repo-b", path: "./repo-b" },
+        ],
+        dependencies: [],
+        warnings: [],
+      };
+
+      const ctx = resolveWorkspaceContext(tmp, config, null);
+      assert.equal(ctx.siblingRepos.length, 2);
+      assert.ok(!ctx.warnings.some(w => w.includes("PATH_ESCAPE") || w.includes("escapes")));
     } finally {
       cleanupTempDir(tmp);
     }

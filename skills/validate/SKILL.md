@@ -21,6 +21,25 @@ Before starting, verify:
 2. **Spec exists.** The target Live Spec must exist and be readable.
 3. **Implementation exists.** The files referenced in the spec or plan must exist. If the spec references files that do not exist, the implementation is incomplete. Report this immediately without running the full check suite.
 
+## Workspace-Aware Validation Mode
+
+Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mjs`.
+
+**If `detectWorkspace(cwd)` returns `null`** (no workspace detected), skip all workspace-aware logic. All 12 checks behave identically to single-repo behaviour. No new output, no new warnings, no performance overhead beyond the single `detectWorkspace()` call.
+
+**If a workspace is detected** and the spec's `depends-on` frontmatter array contains at least one cross-repo reference matching the pattern `@<repo-slug>/<spec-slug>`, enter **workspace-aware validation mode**:
+
+1. For each cross-repo reference in `depends-on`, call `resolveRef(workspaceRoot, ref)` to obtain the absolute path to the sibling spec file.
+2. Validate each resolved path with `assertPathInWorkspace(workspaceRoot, resolvedPath)` before reading. Any path that escapes the workspace root is rejected with a warning (not a blocking error).
+3. Read each resolved sibling spec (capped at 512 KB per file via `readCappedText` semantics — files exceeding the cap produce a warning and are skipped).
+4. Collect all successfully resolved specs into a `crossRepoDeps` context object for use by Checks 2 and 3.
+
+**Unresolvable cross-repo references:** If `resolveRef()` returns `null` for a cross-repo reference (repo not in workspace registry, or spec file not found), emit a **warning** — not a blocking error. The warning must include the unresolvable reference string. Validation continues with the remaining resolvable references.
+
+**Sibling repo content is read-only reference.** Cross-repo spec content is used strictly as read-only reference material. The validate skill must never write to, modify, or suggest modifications to files in sibling repos.
+
+**Repo-mode-inside-workspace advisory:** When `detectWorkspace(cwd)` returns non-null but the spec has no cross-repo `depends-on` references, emit an advisory to stdout (once per invocation): `"Advisory: running repo-scoped inside workspace — cross-repo validation skipped (no cross-repo depends-on references)."` This is informational only and does not affect validation behaviour.
+
 ## Execution Strategy
 
 **Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 13 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev:validate`. **Exception:** Check 11 (Visual Verification) is triggered independently for UI files. If quality gates fail but the implementation includes UI files, still note that visual verification is pending.
@@ -116,6 +135,8 @@ Record per criterion:
 - FAIL: code does not satisfy the criterion (with file:line references and explanation).
 - PARTIAL: code partially satisfies (describe what is missing).
 
+**Cross-repo interface verification (workspace-aware validation mode only):** When workspace-aware validation mode is active and `crossRepoDeps` is non-empty, Check 2 gains an additional sub-step: for each acceptance criterion that references behaviour defined in a cross-repo dependency spec, verify that the implementation respects the interface contracts (API signatures, data shapes, event payloads) described in the dependency spec. Record findings per criterion as PASS / FAIL / PARTIAL with references to both the local code and the cross-repo dependency spec.
+
 ### Check 3: Charter Consistency
 
 Load the Feature Charter referenced by the spec. Verify:
@@ -125,6 +146,8 @@ Load the Feature Charter referenced by the spec. Verify:
 - **Interface contracts.** API signatures, request/response shapes, and event payloads match the charter's Interface Contracts section (if defined).
 
 Record PASS or FAIL with specific references to charter sections and code locations.
+
+**Cross-repo dependency context (workspace-aware validation mode only):** When workspace-aware validation mode is active, Check 3 includes the cross-repo dependency specs as additional scope context. The validator must verify that the implementation does not assume interfaces or behaviours from sibling repos that are not documented in the dependency specs. Undocumented cross-repo assumptions are flagged as WARN.
 
 ### Check 4: Constitution Compliance
 
@@ -483,6 +506,11 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Scope: PASS | FAIL [details]
 - Domain model: PASS | FAIL [details]
 - Interface contracts: PASS | FAIL [details]
+
+## Cross-Repo Dependency Validation — PASS | WARN | N/A
+- [@repo-slug/spec-slug]: Resolved — interface contracts verified (PASS | FAIL | PARTIAL)
+- [@repo-slug/spec-slug]: WARN — reference unresolvable (repo not in workspace)
+- N/A — no cross-repo depends-on references
 
 ## Check 4: Constitution Compliance — PASS | FAIL
 - Architecture boundaries: PASS | FAIL [boundary violated, file:line]
