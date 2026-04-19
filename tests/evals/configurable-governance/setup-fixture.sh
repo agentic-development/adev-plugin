@@ -289,6 +289,127 @@ checks:
     kind: deterministic-check
 EOF
 
+# 8) malformed YAML (Tier 1 AC #6: line-citation in parse error)
+# Odd-indent (3 spaces) on the last key triggers the parser's indent guard
+# and forces a cited line number.
+cat > .context-index/negative/malformed.yaml << 'EOF'
+checks:
+  - id: project.broken
+    kind: quality-gate
+    profile: project-gate-profile
+     command: [echo, "hi"]
+EOF
+
+# 9) quality-gate profile declares a required env key that the .env file
+#    does not supply (Tier 1 AC #11)
+cat > .context-index/negative/quality-gate-missing-env.yaml << 'EOF'
+checks:
+  - id: project.missing-env-gate
+    kind: quality-gate
+    profile: strict-env-profile
+    command: [echo, "needs secret"]
+EOF
+
+# ---------------------------------------------------------------------------
+# Additional project profile with a required env key the fixture .env lacks
+# (used with quality-gate-missing-env.yaml).
+# ---------------------------------------------------------------------------
+cat >> .context-index/profiles.yaml << 'EOF'
+
+  strict-env-profile:
+    description: "Subprocess posture that needs a missing required key."
+    permissions:
+      tools:
+        allow:
+          - { category: filesystem-read }
+      filesystem: { write: deny, execute: deny }
+      network: deny
+    env:
+      files: [".env"]
+      allow:
+        required: ["STRICT_ONLY_KEY"]
+        optional: []
+EOF
+
+# ---------------------------------------------------------------------------
+# Cross-registry context-pack fixture (Tier 1 AC #9):
+# Pack defined in review.yaml and consumed by validate.yaml check.
+# Lives under .context-index/cross-pack/ and is loaded by the tier-1 tests,
+# not by the default happy-path tests.
+# ---------------------------------------------------------------------------
+mkdir -p .context-index/cross-pack
+cat > .context-index/cross-pack/review.yaml << 'EOF'
+reviewers: []
+context_packs:
+  shared-rules:
+    include:
+      - ".context-index/specs/features/billing/charter.md"
+EOF
+
+cat > .context-index/cross-pack/validate.yaml << 'EOF'
+checks:
+  - id: project.cross-pack-check
+    kind: subagent-review
+    profile: reviewer-capable
+    prompt: "prompts/billing-checker.md"
+    context_pack: shared-rules
+EOF
+
+# ---------------------------------------------------------------------------
+# Workspace fixture (Tier 1 AC #12 / #13 / #10): two sibling repos under
+# a workspace root. Each has its own .context-index/. The workspace root
+# holds .env.shared that a profile can reach via $workspace/.
+# ---------------------------------------------------------------------------
+mkdir -p ../ws-fixture
+(
+  cd ../ws-fixture
+  rm -rf ./*
+  cat > adev-workspace.yaml << 'WS'
+workspace:
+  name: eval-workspace
+repos:
+  - slug: repo-a
+    path: ./repo-a
+  - slug: repo-b
+    path: ./repo-b
+WS
+  cat > .env.shared << 'WS'
+SHARED_TOKEN=workspace-shared-value-12345
+WS
+
+  for repo in repo-a repo-b; do
+    mkdir -p $repo/.context-index/specs/features/demo
+    cat > $repo/.context-index/manifest.yaml << EOF
+project: $repo
+EOF
+    cat > $repo/.context-index/constitution.md << 'EOF'
+# Stub
+EOF
+    cat > $repo/.env << EOF
+REPO_TOKEN=repo-local-value-for-${repo}-1234
+EOF
+    cat > $repo/.context-index/profiles.yaml << 'EOF'
+profiles:
+  ws-consumer:
+    extends: read-only
+    env:
+      files: [".env", "$workspace/.env.shared"]
+      allow:
+        required: ["REPO_TOKEN", "SHARED_TOKEN"]
+        optional: []
+EOF
+    cat > $repo/.context-index/specs/features/demo/item.md << EOF
+---
+charter: demo
+status: review-pending
+risk_level: medium
+revision: 1
+---
+# Spec for $repo
+EOF
+  done
+)
+
 # ---------------------------------------------------------------------------
 # Initial commit
 # ---------------------------------------------------------------------------
