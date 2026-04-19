@@ -2,7 +2,11 @@
 
 Operator guide for customizing `/adev:review-specs` and `/adev:validate` via the project-local governance files. Shipped in 0.18.0.
 
-> If you just want the default behavior, do nothing — bundled defaults ship with the plugin and zero-config runs are byte-compatible with the pre-0.18.0 hardcoded flow.
+> **New projects:** `/adev:init` Step 7 walks you through this interactively — it scans for existing Claude/Cursor/Copilot skills to adopt as reviewers, proposes quality-gates based on your `package.json` / `pyproject.toml` / `go.mod`, migrates legacy `manifest.yaml:specialists`, and generates stub prompts. Read below if you prefer to edit the files by hand or if you want to make changes after init.
+>
+> **Brownfield projects that just upgraded:** run `/adev:init` again — it's idempotent and will surface adoption opportunities against files that already exist. Absent that, keep reading for the five migration recipes at the bottom.
+>
+> **Zero-config is fine.** Bundled defaults ship with the plugin and reproduce the pre-0.18.0 hardcoded flow byte-for-byte. Nothing below is required.
 
 ## The four governance files
 
