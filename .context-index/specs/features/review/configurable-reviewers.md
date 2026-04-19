@@ -2,9 +2,9 @@
 
 ---
 charter: review
-status: review-blocked
+status: draft
 risk_level: medium
-revision: 2
+revision: 3
 charter-revision: 1
 created: 2026-04-19
 updated: 2026-04-19
@@ -53,6 +53,16 @@ depends-on:
 
 11. **When** a reviewer's referenced profile does not exist **then** load fails per cross-cutting spec Behavior 4.
 
+11a. **When** a reviewer (subagent-mode or package-mode) references a profile whose effective posture is not read-only-compatible **then** load fails: `"Reviewer '<id>': profile '<profile>' is not read-only-compatible. Reviewer dispatch rejects profiles that permit 'filesystem-write', 'shell', or any tool literal not derived from 'read-only'. Use a profile that extends 'read-only' (e.g. reviewer-fast / reviewer-capable / reviewer-reasoning / browser-review) or declare a new one."`
+
+    **Read-only-compatible** means all of the following hold on the effective profile:
+    - No `{ category: filesystem-write }` or `{ category: shell }` in the resolved tool allowlist.
+    - No `{ tool: <literal> }` entry except via `browser-review`-style explicit allowances already present in a bundled read-only-derived profile.
+    - `permissions.filesystem.write` is `deny` and `permissions.filesystem.execute` is `deny`.
+    - `permissions.network` is `deny` or `read-only` (never `allow`).
+
+    The check runs at `loadReviewConfig` time, before any reviewer can dispatch, so a project cannot silently grant shell/write/network to a reviewer by selecting `implementer` or a custom permissive profile. A reviewer that legitimately needs additional read-only-compatible capability (e.g. browser navigation) MUST use a profile that extends `read-only` (such as `browser-review`) so the invariant is preserved.
+
 #### Schema Validation
 
 12. **When** required fields are missing **then** load fails with: `"Reviewer '<id>': missing required field '<field>'."`
@@ -67,7 +77,12 @@ depends-on:
 
 16. **When** a reviewer's `prompt` field begins with `plugin:<skill-name>/<file>` **then** the resolver maps it to `<plugin-root>/skills/<skill-name>/<file>`. Paths escaping the plugin `skills/` tree fail load with security error.
 
-17. **When** a reviewer's `prompt` field is a relative path (no scheme) **then** it is resolved relative to `<repo-root>/.context-index/`. Missing file fails load.
+17. **When** a reviewer's `prompt` field is a relative path (no scheme) **then** it is resolved relative to `<repo-root>/.context-index/`. The resolver MUST:
+    - Reject any path that, after `path.resolve`, does not remain under `<repo-root>/.context-index/` (no `..` escape, no symlink escape — `fs.realpath` is used to verify).
+    - Reject paths containing `..` segments before resolution.
+    - Reject symlinks whose target escapes `.context-index/`.
+
+    Escape attempts fail load: `"Reviewer '<id>': prompt path '<raw>' resolves outside .context-index/. Relative prompt paths may not traverse out of the context-index tree."` Missing file fails load with a distinct message.
 
 18. **When** a reviewer's `prompt` field is absolute **then** load fails: `"Reviewer '<id>': absolute prompt paths are not supported."`
 
@@ -112,7 +127,9 @@ depends-on:
 
 29. **When** the `skill` field uses `plugin:<skill>/SKILL.md` **then** it resolves within the current plugin's `skills/` tree per Behavior 16. Cross-plugin skill references (`plugin:<other-plugin>:<skill>/SKILL.md`) fail load in v1 with the same v2-deferral message as Behavior 19.
 
-30. **When** the `skill` field is a relative path **then** it is resolved relative to `.context-index/`. Allows project-local skills.
+30. **When** the `skill` field is a relative path **then** it is resolved relative to `<repo-root>/.context-index/` and the same traversal guard as Behavior 17 applies: `path.resolve` must remain under `.context-index/`, `..` segments are rejected pre-resolution, and `fs.realpath` is used to verify the resolved target has not escaped via symlink. Allows project-local skills. Escape attempts fail load: `"Reviewer '<id>': package.skill path '<raw>' resolves outside .context-index/. Relative skill paths may not traverse out of the context-index tree."`
+
+30a. **When** a `package.adapter` field is a relative path **then** the same traversal guard applies. `plugin:`-scheme paths continue to follow Behavior 16's rule (must remain under the plugin `skills/` tree).
 
 31. **When** package mode dispatches **then** it runs as a two-stage pipeline:
     - **Stage 1 (Runner):** launch a subagent under the reviewer's profile with:
@@ -125,7 +142,13 @@ depends-on:
 
 32. **When** the runner subagent attempts a tool call disallowed by its profile **then** the harness fails the call. The runner's output reflects the failure; the adapter surfaces it as a `warning` finding.
 
-33. **When** the adapter's output does not parse as the findings YAML block **then** the entire raw output is wrapped as a single `suggestion` finding with the message: `"Adapter did not parse output into structured findings — raw runner output below."` Quality degrades gracefully.
+33. **When** the adapter's output does not parse as the findings YAML block **then** the raw runner output is sanitized before being wrapped as a single `suggestion` finding. Sanitization rules:
+    - The reviewer's effective profile's `redactionSet` (cross-cutting Behavior 36) is applied to the raw bytes using the standard redaction pipeline — no channel bypass.
+    - After redaction the text is truncated to at most 8 KiB (8192 bytes); the tail is replaced with `"\n…[truncated <N> bytes of adapter output — see dispatch record for full text]"`. The full untruncated (but still redacted) output is written to the dispatch record only, not to `.review.md`.
+    - Any byte sequence matching an absolute filesystem path under `.context-index/`, the plugin root, or the user home directory is normalized to a repo-relative or `plugin:` form to avoid leaking internal layout.
+    - The finding message is: `"Adapter did not parse output into structured findings — sanitized runner output below (redacted and truncated)."`
+
+    Quality degrades gracefully without leaking env values, secrets, absolute paths, or unbounded tool output into the committed `.review.md`.
 
 34. **When** a reviewer entry's `package.skill` references a SKILL.md that does not exist **then** load fails.
 
@@ -198,7 +221,9 @@ depends-on:
 - [ ] A reviewer with `severity_cap: warning` whose subagent emits `blocker` produces `warning` in the report, prefixed `[capped from blocker to warning]`.
 - [ ] A reviewer's profile reference is resolved at load; a missing profile name fails load with a clear error before any dispatch.
 - [ ] A package-mode runner that attempts a profile-disallowed tool call has its failure surfaced by the adapter as a `warning` finding.
-- [ ] Adapter output that doesn't parse falls back to a single `suggestion` finding wrapping the raw runner output.
+- [ ] Adapter output that doesn't parse falls back to a single `suggestion` finding wrapping the sanitized runner output: `redactionSet` applied, 8 KiB truncation, absolute paths normalized. The full text (still redacted) is retained in the dispatch record only.
+- [ ] A reviewer `prompt` or `package.skill` path using `../` or a symlink escaping `.context-index/` fails load with the path-traversal message (Behaviors 17, 30).
+- [ ] A reviewer referencing a profile whose effective posture permits `filesystem-write`, `shell`, literal tools, write-allowed filesystem, or unrestricted network fails load with the read-only-compatibility message (Behavior 11a). Referencing `implementer` from a reviewer entry fails load.
 - [ ] `manifest.yaml:specialists` still works during deprecation; advisory emitted once per skill invocation.
 - [ ] Cross-plugin prompt and skill references (`plugin:<other-plugin>:...`) fail load with the v2-deferral message.
 - [ ] Multi-repo: reviewing a spec from another repo within an `adev-workspace.yaml` context resolves env via the spec's repo (consumer-repo-local), not CWD.

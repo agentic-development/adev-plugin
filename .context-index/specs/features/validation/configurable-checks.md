@@ -2,9 +2,9 @@
 
 ---
 charter: validation
-status: review-blocked
+status: draft
 risk_level: medium
-revision: 2
+revision: 3
 charter-revision: 1
 created: 2026-04-19
 updated: 2026-04-19
@@ -55,7 +55,13 @@ depends-on:
 
 #### Check Kinds
 
-6. **When** a check has `kind: quality-gate` **then** it executes `command` in a shell with the env resolved from its `profile` (cross-cutting Behavior 34). Treats exit code as PASS/FAIL. Exists for one-off gates outside the tiered fast/integration/e2e pipeline.
+6. **When** a check has `kind: quality-gate` **then** it executes `command` in **argv form** (via `child_process.execFile` or equivalent) — **never** via a shell. The `command` field is a YAML list: `[<executable>, <arg>, <arg>, ...]`. No string form is accepted; no shell metacharacters are interpreted. The resolved `profile`'s env (cross-cutting Behavior 34) is passed as the subprocess environment. Exit code 0 is PASS; non-zero is FAIL. Exists for one-off gates outside the tiered fast/integration/e2e pipeline.
+
+6a. **When** a `kind: quality-gate` entry's `command` is a string (not a list) **then** load fails: `"Check '<id>': quality-gate 'command' must be a YAML list of argv tokens (e.g. [npm, test, --, --silent]). Shell-form strings are rejected to prevent command injection."`
+
+6b. **When** any `command` argv token contains a `{{ ... }}` interpolation placeholder, an environment-variable reference (`$VAR`, `${VAR}`, `%VAR%`), or any other templating syntax **then** load fails: `"Check '<id>': quality-gate 'command' argv tokens may not interpolate spec-derived, env-derived, or templated values. Argv is treated as a static constant. Values the subprocess needs come from the profile's resolved env via the process environment, not from argv substitution."` This is enforced by syntactic inspection at load — the loader never performs interpolation.
+
+6c. **When** a `kind: quality-gate` entry attempts to set `shell: true`, `cwd` outside the repo root, or any other `child_process` option not explicitly whitelisted **then** load fails. The v1 whitelist is empty: the subprocess always runs with `shell: false`, `cwd` = consumer repo root, and `env` = profile-resolved env only (no inheritance from the invoking `.adev` shell beyond what the profile declares).
 
 7. **When** a check has `kind: subagent-review` **then** it resolves `prompt` (subject to the `plugin:` URI rules from the reviewer spec) and `context_pack`, dispatches a subagent under the resolved `profile`, and treats the returned verdict as PASS/FAIL/WARN. Used for Checks 2, 3, 4, 5, 6, 7, 8, 9, 10.
 
@@ -71,7 +77,9 @@ depends-on:
 
 12. **When** a `subagent-review` check omits `profile` **then** `reviewer-capable` is the default.
 
-13. **When** a `quality-gate` check omits `profile` **then** `read-only` is the default. Gates that need env access must specify a profile with `env.allow` declarations.
+13. **When** a `quality-gate` check omits `profile` **then** load fails: `"Check '<id>': kind 'quality-gate' requires an explicit 'profile'. Profiles describe subagent tool permissions; they do NOT sandbox the subprocess spawned by a quality-gate. Declare the subprocess privilege posture explicitly (e.g. profile: read-only if you acknowledge the subprocess will inherit OS-level privileges of the invoking user) to avoid a misleading default."` There is no implicit default — selecting `read-only` is a positive acknowledgement that the author understands profile permissions scope the adapter's tool surface, not the spawned subprocess.
+
+13a. **When** a `quality-gate` check's resolved profile declares `env.allow.required` keys **then** those keys (and only those keys) form the subprocess environment, augmented by the minimal PATH, HOME, and locale entries required for the subprocess to start. No other environment variables from the invoking shell are inherited. Projects that need additional keys declare them in the profile's `env.allow.optional` list.
 
 14. **When** a `subagent-review` check's profile requires an MCP server (e.g. `browser-review` for visual verification) and that server is not available in the current session **then** load fails per cross-cutting Behavior 17.
 
@@ -104,6 +112,12 @@ depends-on:
 24. **When** `/adev:validate` runs against a spec located in repo X within an `adev-workspace.yaml` context **then** env resolution for any check whose profile uses `env.files` follows the cross-cutting consumer-repo-local rule: paths resolve from repo X, regardless of the user's CWD.
 
 25. **When** a check uses `@workspace/` prefixed paths in its profile **then** they resolve via the workspace root per cross-cutting Behavior 29.
+
+#### Quality-Gate Output Redaction
+
+25a. **When** a `kind: quality-gate` check captures subprocess stdout and stderr **then** the captured bytes pass through the cross-cutting redaction pipeline (execution-profiles Behavior 36) before any use — specifically before any of: write to `.validate.md`, write to the dispatch record, display to the user, or inclusion in the check-status aggregation. The pipeline is applied using the `redactionSet` built from the check's resolved profile env. No channel bypass is permitted; the quality-gate output path is an audited channel per execution-profiles Behavior 36.
+
+25b. **When** redaction has been applied **then** the captured text is also bound to 64 KiB in the report (stdout and stderr combined); the tail is replaced with `"…[truncated <N> bytes — full redacted output in dispatch record]"`. The dispatch record retains the full (redacted) bytes.
 
 #### Registry Emission in Report
 
@@ -159,5 +173,10 @@ depends-on:
 - [ ] Context packs are shared between `governance/review.yaml` and `governance/validate.yaml`; a pack defined in one is resolvable from the other.
 - [ ] Multi-repo: validating a spec from another repo within an `adev-workspace.yaml` context resolves env per consumer-repo-local rule.
 - [ ] A `quality-gate` check with `profile` declaring `env.allow.required` fails load if a required key is absent — replacing today's silent shell-inheritance behavior.
+- [ ] A `quality-gate` check with string-form `command` fails load with the shell-form-rejected message (Behavior 6a).
+- [ ] A `quality-gate` check whose argv contains `{{ ... }}`, `$VAR`, or `${VAR}` fails load with the no-interpolation message (Behavior 6b). The loader never performs substitution.
+- [ ] A `quality-gate` check omitting `profile` fails load with the explicit-acknowledgement message (Behavior 13).
+- [ ] A `quality-gate` check's captured stdout and stderr pass through the cross-cutting redaction pipeline before being written to `.validate.md` or the dispatch record. A fixture with a secret in stdout produces `<REDACTED:<KEY>>` in the report.
+- [ ] A `quality-gate` check's subprocess runs with `shell: false` and an environment consisting only of profile-resolved keys plus the minimal startup set (Behavior 13a); a fixture verifies arbitrary invoking-shell env vars do not leak.
 - [ ] All quality gates pass.
 - [ ] No constitutional violations.
