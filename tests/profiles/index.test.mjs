@@ -86,6 +86,47 @@ describe("profiles/index loadProfiles", () => {
     const r = loadProfiles(repo);
     assert.ok(hasCode(r.warnings, "UNKNOWN_CATEGORY"));
   });
+
+  test("emits TOOL_UNPORTABLE_WARN once per (profile, literal-tool) on load", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/profiles.yaml",
+      `profiles:
+  custom-literal:
+    extends: read-only
+    permissions:
+      tools:
+        allow_add:
+          - { tool: CustomHarnessTool, allow_unportable: true }
+`
+    );
+    const r = loadProfiles(repo);
+    assert.equal(r.errors.length, 0);
+    const matches = r.warnings.filter(
+      (w) => w.code === "TOOL_UNPORTABLE_WARN" && w.message.includes("'CustomHarnessTool'")
+    );
+    assert.equal(matches.length, 1, "expected exactly one WARN per (profile, tool)");
+  });
+
+  test("eagerly surfaces BROADEN_* warnings at loadProfiles time", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/profiles.yaml",
+      `profiles:
+  risky-child:
+    extends: read-only
+    permissions:
+      network: allow
+`
+    );
+    const r = loadProfiles(repo);
+    assert.ok(
+      r.warnings.some((w) => w.code === "BROADEN_NETWORK"),
+      "expected BROADEN_NETWORK warning eagerly surfaced from loadProfiles"
+    );
+  });
 });
 
 describe("profiles/index resolveProfile", () => {

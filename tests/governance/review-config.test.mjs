@@ -6,7 +6,9 @@ import {
   shouldDispatch,
   applySeverityCap,
   computeVerdict,
+  sanitizeAdapterOutput,
 } from "../../lib/governance/review-config.mjs";
+import { createRedactor } from "../../lib/profiles/redaction.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 const tempDirs = [];
@@ -261,5 +263,53 @@ describe("review-config computeVerdict", () => {
       computeVerdict([{ severity: "blocker" }, { severity: "blocker" }], rules),
       "BLOCK"
     );
+  });
+});
+
+describe("review-config sanitizeAdapterOutput (Behavior 33 fallback)", () => {
+  test("redacts profile secrets before truncation", () => {
+    const redactor = createRedactor({ API_TOKEN: "this-is-a-long-secret-value" });
+    const raw = "runner said: this-is-a-long-secret-value in output";
+    const r = sanitizeAdapterOutput(raw, { redactor });
+    assert.match(r.visible, /<REDACTED:API_TOKEN>/);
+    assert.ok(!r.visible.includes("this-is-a-long-secret-value"));
+    assert.ok(!r.full.includes("this-is-a-long-secret-value"));
+  });
+
+  test("truncates visible output to 8192 bytes with tail marker; full retains post-redact bytes", () => {
+    const redactor = createRedactor({});
+    const big = "a".repeat(20_000);
+    const r = sanitizeAdapterOutput(big, { redactor });
+    assert.ok(r.visible.length < big.length);
+    assert.match(r.visible, /truncated \d+ bytes of adapter output/);
+    assert.equal(r.full.length, big.length);
+  });
+
+  test("normalizes absolute paths under contextIndexRoot / pluginRoot / homeDir", () => {
+    const redactor = createRedactor({});
+    const raw = [
+      "config at /tmp/repo/.context-index/governance/review.yaml",
+      "plugin file at /opt/adev-plugin/skills/review-specs/SKILL.md",
+      "user cache at /home/alice/.cache/adev/state.json",
+    ].join("\n");
+    const r = sanitizeAdapterOutput(raw, {
+      redactor,
+      contextIndexRoot: "/tmp/repo/.context-index",
+      pluginRoot: "/opt/adev-plugin",
+      homeDir: "/home/alice",
+    });
+    assert.ok(!r.visible.includes("/tmp/repo/.context-index"));
+    assert.ok(!r.visible.includes("/opt/adev-plugin"));
+    assert.ok(!r.visible.includes("/home/alice"));
+    assert.match(r.visible, /\.context-index\/governance\/review\.yaml/);
+    assert.match(r.visible, /plugin:\/skills\/review-specs\/SKILL\.md/);
+    assert.match(r.visible, /~\/\.cache\/adev\/state\.json/);
+  });
+
+  test("handles non-string / null input safely", () => {
+    const redactor = createRedactor({});
+    const r = sanitizeAdapterOutput(null, { redactor });
+    assert.equal(typeof r.visible, "string");
+    assert.equal(typeof r.full, "string");
   });
 });
