@@ -226,13 +226,17 @@ function scaffoldContextKit() {
 
   const gitignorePath = join(process.cwd(), ".gitignore");
   if (existsSync(gitignorePath)) {
-    const content = readFileSync(gitignorePath, "utf8");
+    let content = readFileSync(gitignorePath, "utf8");
     if (!content.includes(".context-index/hygiene")) {
-      writeFileSync(gitignorePath, content.trimEnd() + "\n\n# adev context index\n.context-index/hygiene/\n");
+      content = content.trimEnd() + "\n\n# adev context index\n.context-index/hygiene/\n.context-index/.token-cursor.json\n";
+      writeFileSync(gitignorePath, content);
+      created.push(".gitignore (updated)");
+    } else if (!content.includes(".token-cursor.json")) {
+      writeFileSync(gitignorePath, content.trimEnd() + "\n.context-index/.token-cursor.json\n");
       created.push(".gitignore (updated)");
     }
   } else {
-    writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n");
+    writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n.context-index/.token-cursor.json\n");
     created.push(".gitignore (created)");
   }
 
