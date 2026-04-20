@@ -356,12 +356,14 @@ describe('Profile loading with fixtures', () => {
     assert.strictEqual(result.fallback, false);
   });
 
-  it('unknown strategy falls back to unit', () => {
-    const result = getStrategyProfile('schema', PROFILES_DIR);
-    // schema profile doesn't exist yet (separate Live Spec)
-    assert.strictEqual(result.profile.strategy_id, 'unit');
-    assert.strictEqual(result.fallback, true);
-    assert.ok(result.warnings.length > 0);
+  it('all 8 profiles load without fallback', () => {
+    const ids = ['unit', 'schema', 'contract', 'fixture', 'policy', 'threshold', 'visual', 'smoke'];
+    for (const id of ids) {
+      const result = getStrategyProfile(id, PROFILES_DIR);
+      assert.strictEqual(result.profile.strategy_id, id, `Profile ${id} has wrong strategy_id`);
+      assert.strictEqual(result.fallback, false, `Profile ${id} should not fallback`);
+      assert.strictEqual(result.warnings.length, 0, `Profile ${id} has warnings: ${result.warnings}`);
+    }
   });
 
   it('UNIT_PROFILE has all required fields', () => {
