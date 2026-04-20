@@ -114,6 +114,45 @@ specialists: []
   #     - "*.css"
 
 # ============================================================================
+# Test Strategies
+# Declare which test strategies apply to this project.
+# Strategies customize how /adev:write-test and /adev:plan handle TDD
+# for different domains (migrations, IaC, data pipelines, etc.).
+# If omitted, all tasks default to the 'unit' strategy.
+# ============================================================================
+
+# test_strategies:
+#   - strategy_id: schema
+#     command: ["npm", "run", "test:migrations"]
+#     tier: integration
+#     paths: ["migrations/**", "prisma/migrations/**"]
+#
+#   - strategy_id: fixture
+#     command: ["dbt", "test"]
+#     tier: integration
+#     paths: ["models/**", "macros/**"]
+#
+#   - strategy_id: policy
+#     command: ["conftest", "test"]
+#     tier: fast
+#     paths: ["terraform/**", "k8s/**"]
+#
+#   - strategy_id: contract
+#     command: ["npx", "pact-verifier"]
+#     tier: integration
+#     paths: ["contracts/**", "*.proto"]
+#
+#   - strategy_id: visual
+#     command: ["npx", "playwright", "test", "--project=visual"]
+#     tier: e2e
+#     paths: ["src/components/**"]
+#
+#   - strategy_id: threshold
+#     command: ["npx", "k6", "run"]
+#     tier: e2e
+#     paths: ["k6/**", "*.bench.*"]
+
+# ============================================================================
 # Quality Gates
 # Gate definitions have moved to governance/gates.yaml.
 # Run /adev:init (Step 7) to scaffold governance files.

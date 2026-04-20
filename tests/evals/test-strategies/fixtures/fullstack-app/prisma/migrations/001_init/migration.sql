@@ -1,0 +1,1 @@
+CREATE TABLE "User" (id INTEGER PRIMARY KEY, name TEXT);

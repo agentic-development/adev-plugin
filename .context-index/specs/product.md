@@ -21,6 +21,7 @@ AI coding agents work best with structured context but most projects provide non
 | Hooks | 4 bash lifecycle guards (session, lint, merge, sync) | `hooks/` |
 | Templates | 13 scaffold files for `.context-index/` | `templates/` |
 | Plugin Registration | Metadata and version for Claude Code | `.claude-plugin/plugin.json` |
+| Test Strategies | Strategy abstraction layer decoupling TDD from unit-test assumptions across 8 domain-specific strategies | [charter.md](./features/test-strategies/charter.md) |
 
 ## Cross-Cutting Concerns
 

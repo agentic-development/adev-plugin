@@ -1,0 +1,7 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id Int @id
+}
