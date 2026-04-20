@@ -1,0 +1,1 @@
+{ "name": "node-api", "type": "module", "scripts": { "test": "node --test" } }

@@ -407,6 +407,31 @@ Groups B and C can run in parallel with Group A.
 
 This is informational for `/adev:implement --parallel` (future). Tasks within a group run sequentially; groups run concurrently.
 
+### Strategy Assignment
+
+For each task, resolve its test strategy using the priority chain defined in `lib/test-strategies/assignment.mjs`:
+
+1. Check if the parent spec declares `test_strategy` in its YAML frontmatter → use it (source: spec-declared, confidence: high)
+2. Check if `manifest.yaml` has a `test_strategies` entry whose path globs match the task's file paths → use it (source: manifest, confidence: high)
+3. Auto-detect from the task's file paths using `lib/test-strategies/detection.mjs` → use the detected strategy (source: detected, confidence from heuristic)
+4. Default to `unit` (source: fallback, confidence: high)
+
+Include the resolved strategy in each task's metadata. If any task uses a non-unit strategy, append a **Strategy Summary** section after the task list:
+
+```markdown
+## Strategy Summary
+
+| Strategy | Tasks | Source |
+|----------|-------|--------|
+| unit | 3 | fallback |
+| schema | 2 | manifest |
+
+⚠ Low confidence assignments:
+- Task 4: strategy=visual (detected, medium confidence) — verify before proceeding
+```
+
+Omit this section entirely when all tasks resolve to `unit` (backward compatible — no noise for projects not using test strategies).
+
 ### Task Structure
 
 Each task follows TDD. Steps are granular (2-5 minutes each).
@@ -415,6 +440,7 @@ Each task follows TDD. Steps are granular (2-5 minutes each).
 ### Task N: <Component Name> [specialist: <name|none>]
 
 **Charter capability:** <which capability from the charter this implements>
+**Strategy:** <strategy_id> (source: <source>, confidence: <level>)
 **Files:**
 - Create: `exact/path/to/file.ts`
 - Modify: `exact/path/to/existing.ts:123-145`
