@@ -80,6 +80,7 @@ The session-awareness module provides continuous context about active work throu
 | Execution State Lib | `lib/execution-state.mjs` — thin read/write abstraction over the state file | should-have | 1 | validated |
 | Concurrent Access Safety | Atomic writes via temp-file-then-rename for execution state | should-have | 1 | validated |
 | Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | validated |
+| Token Cost Logging | Extend session tracking JSONL with optional per-entry token usage and cost fields | should-have | 2 | validated |
 
 ## Deferred Capabilities
 

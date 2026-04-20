@@ -15,6 +15,7 @@
 | epic-9 | Strategic-Planning Consolidation | closed |  | strategic-planning-consolidation | 2026-04-16T14:54:29.179Z | 2026-04-17T00:00:00.000Z |
 | epic-10 | Workspace-Aware Strategic Planning | closed | .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.plan.md |  | 2026-04-17T09:03:03.648Z | 2026-04-17T09:24:29.396Z |
 | epic-11 | Unified Gate System | closed | .context-index/specs/features/unified-gates/unified-gate-system.plan.md |  | 2026-04-15T16:48:13.339Z | 2026-04-15T17:06:06.749Z |
+| epic-12 | Token Cost Logging | closed | .context-index/specs/features/session-awareness/token-cost-logging.plan.md |  | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
 
 ## Issues
 
@@ -129,3 +130,9 @@
 | issue-107 | target-repo Prompt and Validation | closed | 2 | task | epic-8 | .context-index/specs/features/multi-repo-workspace/workspace-aware-specify.plan.md | 2 | issue-106 | Run /adev:implement to do RED-GREEN-REFACTOR for this Task | 2026-04-17T00:00:00.000Z | 2026-04-17T00:00:00.000Z |
 | issue-108 | Frontmatter, Reference Context, and Isolation Guard | closed | 2 | task | epic-8 | .context-index/specs/features/multi-repo-workspace/workspace-aware-specify.plan.md | 3 | issue-107 | Run /adev:implement to do RED-GREEN-REFACTOR for this Task | 2026-04-17T00:00:00.000Z | 2026-04-17T00:00:00.000Z |
 | issue-109 | Full Test Suite and Quality Gate | closed | 2 | task | epic-8 | .context-index/specs/features/multi-repo-workspace/workspace-aware-specify.plan.md | 4 | issue-108 | Run /adev:implement to do RED-GREEN-REFACTOR for this Task | 2026-04-17T00:00:00.000Z | 2026-04-17T00:00:00.000Z |
+| issue-110 | Token Cost Logging | closed | 2 | feature | epic-12 |  |  |  | Implemented and reviewed. | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
+| issue-111 | Token Pricing Module | closed | 2 | task | epic-12 | .context-index/specs/features/session-awareness/token-cost-logging.plan.md | 1 |  | Implemented and reviewed | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
+| issue-112 | Token Cursor Module | closed | 2 | task | epic-12 | .context-index/specs/features/session-awareness/token-cost-logging.plan.md | 2 | issue-111 | Implemented and reviewed | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
+| issue-113 | Session File Reader Module | closed | 2 | task | epic-12 | .context-index/specs/features/session-awareness/token-cost-logging.plan.md | 3 | issue-111,issue-112 | Implemented and reviewed | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
+| issue-114 | Extend session-capture.sh with Usage Enrichment | closed | 2 | task | epic-12 | .context-index/specs/features/session-awareness/token-cost-logging.plan.md | 4 | issue-111,issue-112,issue-113 | Implemented and reviewed | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
+| issue-115 | Gitignore Scaffold Update | closed | 2 | task | epic-12 | .context-index/specs/features/session-awareness/token-cost-logging.plan.md | 5 |  | Implemented and reviewed | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
