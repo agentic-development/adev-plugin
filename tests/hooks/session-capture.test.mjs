@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { createTempDir, cleanupTempDir, writeFixture, runHook } from "../helpers.mjs";
+import { createTempDir, cleanupTempDir, writeFixture, runHook, PLUGIN_ROOT } from "../helpers.mjs";
 
 describe("session-capture hook", () => {
   let tempDir;
@@ -241,5 +241,92 @@ describe("session-capture hook", () => {
       assert.ok(Array.isArray(entry.files), "files field required");
       assert.ok(entry.timestamp, "timestamp field required");
     }
+  });
+
+  it("omits usage field when CLAUDE_PLUGIN_ROOT is not set", () => {
+    // When CLAUDE_PLUGIN_ROOT env var is absent, enrichment block is skipped
+    // and the entry should not have a usage field.
+    writeFixture(tempDir, ".context-index/.gitkeep", "");
+
+    const { exitCode, stdout } = runHook("session-capture.sh", {
+      cwd: tempDir,
+      env: { CLAUDE_PLUGIN_ROOT: "" },
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Edit",
+        tool_input: { file_path: "src/index.ts" },
+        session_id: "test-session-usage",
+      }),
+    });
+
+    assert.equal(exitCode, 0);
+    assert.deepEqual(JSON.parse(stdout.trim()), {});
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
+    assert.equal(entry.usage, undefined, "usage field should be absent when CLAUDE_PLUGIN_ROOT not set");
+  });
+
+  it("exits 0 when CLAUDE_PLUGIN_ROOT is set but session files are missing (graceful degradation)", () => {
+    // Even if CLAUDE_PLUGIN_ROOT is set to a valid plugin root, if there is no
+    // Claude session file the enrichment block should degrade gracefully and
+    // still write the entry without a usage field.
+    writeFixture(tempDir, ".context-index/.gitkeep", "");
+
+    const { exitCode, stdout } = runHook("session-capture.sh", {
+      cwd: tempDir,
+      env: { CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Bash",
+        tool_input: { command: "echo hi" },
+        session_id: "nonexistent-session-xyz",
+      }),
+    });
+
+    assert.equal(exitCode, 0);
+    assert.deepEqual(JSON.parse(stdout.trim()), {});
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    assert.ok(existsSync(trackingFile), "tracking file should still be created");
+    const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
+    assert.equal(entry.tool, "Bash");
+    // usage may or may not be present — what matters is no crash and exit 0
+  });
+
+  it("backward compatibility — entry schema matches pre-enrichment shape when no usage data", () => {
+    // Entries written without usage must have exactly: tool, files, timestamp,
+    // and optionally session_id, operator, issue, epic.
+    // No extra fields should appear.
+    writeFixture(tempDir, ".context-index/.gitkeep", "");
+
+    runHook("session-capture.sh", {
+      cwd: tempDir,
+      env: { CLAUDE_PLUGIN_ROOT: "" },
+      stdin: JSON.stringify({
+        provider: "native",
+        tool_name: "Read",
+        tool_input: { file_path: "foo.txt" },
+        session_id: "compat-session",
+      }),
+    });
+
+    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
+    const entry = JSON.parse(readFileSync(trackingFile, "utf8").trim());
+
+    // Core fields
+    assert.equal(entry.tool, "Read");
+    assert.deepEqual(entry.files, ["foo.txt"]);
+    assert.match(entry.timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    assert.equal(entry.session_id, "compat-session");
+
+    // No unexpected fields
+    const allowedKeys = new Set(["tool", "files", "timestamp", "session_id", "operator", "issue", "epic", "usage"]);
+    for (const key of Object.keys(entry)) {
+      assert.ok(allowedKeys.has(key), `unexpected field: ${key}`);
+    }
+
+    // usage absent since CLAUDE_PLUGIN_ROOT is empty
+    assert.equal(entry.usage, undefined, "usage should be absent without CLAUDE_PLUGIN_ROOT");
   });
 });

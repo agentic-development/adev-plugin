@@ -17,7 +17,7 @@ printf '%s' "$STDIN_JSON" | node -e '
 
   let d = "";
   process.stdin.on("data", c => d += c);
-  process.stdin.on("end", () => {
+  process.stdin.on("end", async () => {
     let input = {};
     try { input = JSON.parse(d); } catch {}
 
@@ -115,6 +115,75 @@ printf '%s' "$STDIN_JSON" | node -e '
         }
       }
     } catch {}
+
+    // ── Token usage enrichment (graceful degradation) ──
+    try {
+      const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
+      if (pluginRoot && sessionId) {
+        const [{ resolveSessionUsage }, { readCursor, writeCursor, resetCursor }, { computeCost }] = await Promise.all([
+          import(pluginRoot + "/lib/session-file-reader.mjs"),
+          import(pluginRoot + "/lib/token-cursor.mjs"),
+          import(pluginRoot + "/lib/token-pricing.mjs"),
+        ]);
+
+        const cwd = process.cwd();
+        const os = require("os");
+        const encoded = cwd.replace(/\//g, "-");
+        const sessionFile = path.join(os.homedir(), ".claude", "projects", encoded, sessionId + ".jsonl");
+
+        let fileSize = 0;
+        try { fileSize = fs.statSync(sessionFile).size; } catch {}
+
+        const cursor = readCursor(cwd);
+        const needsReset = !cursor
+          || cursor.session_id !== sessionId
+          || cursor.last_offset > fileSize;
+
+        if (needsReset) {
+          resetCursor(cwd, sessionId, fileSize);
+          // No usage for this entry — no prior baseline to compute delta from
+        } else {
+          const usage = resolveSessionUsage({
+            sessionId,
+            projectDir: cwd,
+            fromOffset: cursor.last_offset,
+          });
+
+          if (usage) {
+            const costUsd = computeCost(usage.model, {
+              inputTokens: usage.inputTokens,
+              outputTokens: usage.outputTokens,
+              cacheReadTokens: usage.cacheReadTokens,
+              cacheCreationTokens: usage.cacheCreationTokens,
+            });
+
+            entry.usage = {
+              input_tokens: usage.inputTokens,
+              output_tokens: usage.outputTokens,
+              cache_read_tokens: usage.cacheReadTokens,
+              cache_creation_tokens: usage.cacheCreationTokens,
+              cost_usd: costUsd,
+            };
+
+            const newCum = {
+              input_tokens: (cursor.cumulative?.input_tokens || 0) + usage.inputTokens,
+              output_tokens: (cursor.cumulative?.output_tokens || 0) + usage.outputTokens,
+              cache_read_tokens: (cursor.cumulative?.cache_read_tokens || 0) + usage.cacheReadTokens,
+              cache_creation_tokens: (cursor.cumulative?.cache_creation_tokens || 0) + usage.cacheCreationTokens,
+            };
+
+            writeCursor(cwd, {
+              session_id: sessionId,
+              last_offset: fileSize,
+              cumulative: newCum,
+              format_warning_emitted: cursor.format_warning_emitted || false,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Graceful degradation — entry is written without usage
+    }
 
     // Ensure directory and append
     const dir = ".context-index";
