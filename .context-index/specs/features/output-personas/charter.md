@@ -20,7 +20,8 @@ Output Personas is a presentation layer that adapts plugin outputs to the user's
 - Config resolution hierarchy: per-invocation flag → local project → global user → fallback (`developer`)
 - Session-start hook modification to resolve and inject persona directive
 - Persona-specific next-action guidance in outputs
-- `/adev:init` asks persona preference during setup and writes to global `user-config`
+- `/adev:init` offers optional local persona override for the current project and writes to `.context-index/user-config` (gitignored)
+- CLI install command prompts for default persona and writes to global `user-config` at `<PLUGIN_ROOT>/user-config`
 
 ### Out of Scope
 
@@ -64,14 +65,14 @@ Output Personas is a presentation layer that adapts plugin outputs to the user's
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Persona resolution | Resolve persona from hierarchy: flag → local → global → fallback | must-have | | specified |
-| User config file format | Define and parse `user-config` schema for both global and local paths | must-have | | specified |
-| Persona directive templates | Three markdown templates (`product.md`, `developer.md`, `architect.md`) defining output rules per dimension | must-have | | specified |
-| Session-start injection | Modify session-start hook to resolve persona and inject directive into conversation | must-have | | specified |
-| Init persona prompt | Ask persona preference during `/adev:init` and write to global `user-config` | must-have | | specified |
-| Gitignore management | Ensure `.context-index/user-config` is added to `.gitignore` during init | must-have | | specified |
-| Unknown persona fallback | Warn on unrecognized persona name and fall back to `developer` | must-have | | specified |
-| Per-invocation flag | Support `--persona <name>` argument in skill invocation text (e.g., `/adev:build --persona product`), parsed from slash-command arguments | must-have | | specified |
+| Persona resolution | Resolve persona from hierarchy: flag → local → global → fallback | must-have | | review-passed |
+| User config file format | Define and parse `user-config` schema for both global and local paths | must-have | | review-passed |
+| Persona directive templates | Three markdown templates (`product.md`, `developer.md`, `architect.md`) defining output rules per dimension | must-have | | review-passed |
+| Session-start injection | Modify session-start hook to resolve persona and inject directive into conversation | must-have | | review-passed |
+| Init persona prompt | Ask persona preference during `/adev:init` and write to global `user-config` | must-have | | review-passed |
+| Gitignore management | Ensure `.context-index/user-config` is added to `.gitignore` during init | must-have | | review-passed |
+| Unknown persona fallback | Warn on unrecognized persona name and fall back to `developer` | must-have | | review-passed |
+| Per-invocation flag | Support `--persona <name>` argument in skill invocation text (e.g., `/adev:build --persona product`), parsed from slash-command arguments | must-have | | review-passed |
 
 ## Deferred Capabilities
 
