@@ -232,11 +232,16 @@ function scaffoldContextKit() {
       writeFileSync(gitignorePath, content);
       created.push(".gitignore (updated)");
     } else if (!content.includes(".token-cursor.json")) {
-      writeFileSync(gitignorePath, content.trimEnd() + "\n.context-index/.token-cursor.json\n");
+      content = content.trimEnd() + "\n.context-index/.token-cursor.json\n";
+      writeFileSync(gitignorePath, content);
       created.push(".gitignore (updated)");
     }
+    if (!content.includes("user-config")) {
+      writeFileSync(gitignorePath, readFileSync(gitignorePath, "utf8").trimEnd() + "\n.context-index/user-config\n");
+      created.push(".gitignore (updated — user-config)");
+    }
   } else {
-    writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n.context-index/.token-cursor.json\n");
+    writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n.context-index/.token-cursor.json\n.context-index/user-config\n");
     created.push(".gitignore (created)");
   }
 
