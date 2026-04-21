@@ -232,11 +232,16 @@ function scaffoldContextKit() {
       writeFileSync(gitignorePath, content);
       created.push(".gitignore (updated)");
     } else if (!content.includes(".token-cursor.json")) {
-      writeFileSync(gitignorePath, content.trimEnd() + "\n.context-index/.token-cursor.json\n");
+      content = content.trimEnd() + "\n.context-index/.token-cursor.json\n";
+      writeFileSync(gitignorePath, content);
       created.push(".gitignore (updated)");
     }
+    if (!content.includes("user-config")) {
+      writeFileSync(gitignorePath, readFileSync(gitignorePath, "utf8").trimEnd() + "\n.context-index/user-config\n");
+      created.push(".gitignore (updated — user-config)");
+    }
   } else {
-    writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n.context-index/.token-cursor.json\n");
+    writeFileSync(gitignorePath, "# adev context index\n.context-index/hygiene/\n.context-index/.token-cursor.json\n.context-index/user-config\n");
     created.push(".gitignore (created)");
   }
 
@@ -693,6 +698,19 @@ async function cmdInit() {
   } else {
     log("Git hooks already up to date.");
   }
+
+  // --- Persona Configuration ---
+  heading("Persona Configuration");
+  log("Choose a default output persona:");
+  log("  1. product   — simplified summaries for PMs and designers");
+  log("  2. developer — balanced view with architecture and code details (default)");
+  log("  3. architect — full technical detail with trade-offs and review rationale");
+  console.log();
+  const personaChoice = await ask("Select persona [1/2/3]:");
+  const personaMap = { "1": "product", "2": "developer", "3": "architect" };
+  const selectedPersona = personaMap[personaChoice] || "developer";
+  writeFileSync(join(PLUGIN_ROOT, "user-config"), `# adev user config\npersona=${selectedPersona}\n`);
+  success(`Default persona set to: ${selectedPersona}`);
 
   // --- Summary ---
   heading(`Done! Your project is set up with adev v${PLUGIN_VERSION}.`);

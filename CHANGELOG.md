@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.20.0] - 2026-04-21
+
+### New Feature — Output Personas
+
+- **Role-adaptive outputs.** Plugin outputs now adapt to three user personas: `product` (PMs, designers), `developer` (default), and `architect` (senior technical). Internal processing, reviews, validations, and TDD cycles are unchanged — only the presentation layer adapts.
+- **Layered config hierarchy.** Persona resolves from: per-invocation `--persona` flag > local `.context-index/user-config` > global `<PLUGIN_ROOT>/user-config` > fallback (`developer`). Local config is gitignored so each collaborator has their own preference.
+- **Session-start injection.** The resolved persona directive is injected at session start via `session-start.sh`. All skills follow the directive automatically without modification.
+- **Three persona templates.** Each template defines output rules across 8 dimensions: verbosity, code references, review verdicts, test results, plan output, spec/ADR citations, error/debug output, and next actions.
+- **CLI install prompt.** `npx @adev-org/adev-cli init` now prompts for a default persona during installation.
+- **Project-level override.** `/adev:init` offers an optional local persona override per project.
+- **Per-invocation override.** Skills can accept `--persona <name>` to override the session default for a single invocation via a shared template section.
+- **Security.** Persona names are validated against actual directory listing. Path separators and `..` sequences are rejected with safe fallback to `developer`.
+
+### New modules
+
+- `lib/persona.mjs` — `parseUserConfig()`, `resolvePersona()`, `loadPersonaDirective()` with path traversal protection and warning messages
+- `templates/personas/{product,developer,architect}.md` — persona directive templates
+- `templates/persona-override-section.md` — shared `--persona` argument section for skills
+
+### Modified
+
+- `hooks/session-start.sh` — persona resolution block + refactored COMBINED assembly to array-join pattern
+- `cli/index.mjs` — persona prompt during install, `user-config` added to gitignore
+- `skills/init/SKILL.md` — optional local persona configuration step
+
+### Tests
+
+- 18 tests in `tests/persona.test.mjs` covering resolution hierarchy, path traversal rejection, unknown persona fallback, warning messages, and template loading
+
 ## [0.19.0] - 2026-04-21
 
 > **Upgrading?** No action required. Projects without `test_strategies` in their manifest behave identically to before. See [`docs/test-strategies.md`](docs/test-strategies.md) for the full adoption guide — covers auto-detection (zero config), manifest declarations, and spec-level overrides.

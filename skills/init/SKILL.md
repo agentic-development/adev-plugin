@@ -718,6 +718,27 @@ Would modify:
 Run /adev:init to proceed.
 ```
 
+## Persona Configuration (optional)
+
+After all context files are created, ask the user if they want a project-specific persona override:
+
+```
+Would you like to set a project-specific output persona? (product/developer/architect/skip)
+This creates .context-index/user-config with your persona preference for this project.
+Your global default will be used if you skip.
+```
+
+If the user selects a persona (`product`, `developer`, or `architect`), write `.context-index/user-config`:
+
+```
+# Project-specific adev user config
+persona=<selected>
+```
+
+If the user enters `skip` or presses enter without a value, do not create the file.
+
+Ensure `.context-index/user-config` is listed in the project's `.gitignore` (the CLI already handles this during installation, but verify it is present).
+
 ## After Initialization
 
 ```

@@ -129,6 +129,55 @@ RESUME_BLOCK=$(ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" node -e '
   }
 ' 2>/dev/null || true)
 
+# Resolve persona and load directive
+PERSONA_BLOCK=""
+PERSONA_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" node -e '
+  const fs = require("fs");
+  const path = require("path");
+
+  try {
+    const pluginRoot = process.env.ADEV_PLUGIN_ROOT || ".";
+    const contextRoot = process.env.ADEV_CONTEXT_ROOT || process.cwd();
+    const templatesDir = path.join(pluginRoot, "templates", "personas");
+
+    function parseConfig(filePath) {
+      try {
+        const lines = fs.readFileSync(filePath, "utf-8").split("\n");
+        const config = {};
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("#")) continue;
+          const idx = trimmed.indexOf("=");
+          if (idx === -1) continue;
+          config[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+        }
+        return config;
+      } catch { return {}; }
+    }
+
+    const localConfig = parseConfig(path.join(contextRoot, ".context-index", "user-config"));
+    const globalConfig = parseConfig(path.join(pluginRoot, "user-config"));
+
+    let persona = localConfig.persona || globalConfig.persona || "developer";
+
+    // Validate: reject path separators
+    if (/[\/\\]|\.\./.test(persona)) persona = "developer";
+
+    // Validate: check against actual templates
+    if (!fs.existsSync(templatesDir)) process.exit(0);
+    const available = fs.readdirSync(templatesDir)
+      .filter(f => f.endsWith(".md"))
+      .map(f => f.slice(0, -3));
+    if (!available.includes(persona)) persona = "developer";
+
+    // Load directive
+    const directivePath = path.join(templatesDir, persona + ".md");
+    if (!fs.existsSync(directivePath)) process.exit(0);
+    const directive = fs.readFileSync(directivePath, "utf-8");
+    console.log(directive);
+  } catch { process.exit(0); }
+' 2>/dev/null || true)
+
 # Check for adev version updates
 UPDATE_BLOCK=""
 UPDATE_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" node -e '
@@ -165,22 +214,22 @@ UPDATE_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROOT
   }
 ' 2>/dev/null || true)
 
-# Combine skill content with resume block and update notice
-if [ -n "$RESUME_BLOCK" ] && [ -n "$UPDATE_BLOCK" ]; then
-  COMBINED="${SKILL_CONTENT}
-${RESUME_BLOCK}
+# Combine all blocks
+BLOCKS=("$SKILL_CONTENT")
+[ -n "$PERSONA_BLOCK" ] && BLOCKS+=("$PERSONA_BLOCK")
+[ -n "$RESUME_BLOCK" ] && BLOCKS+=("$RESUME_BLOCK")
+[ -n "$UPDATE_BLOCK" ] && BLOCKS+=("$UPDATE_BLOCK")
 
-${UPDATE_BLOCK}"
-elif [ -n "$RESUME_BLOCK" ]; then
-  COMBINED="${SKILL_CONTENT}
-${RESUME_BLOCK}"
-elif [ -n "$UPDATE_BLOCK" ]; then
-  COMBINED="${SKILL_CONTENT}
+COMBINED=""
+for block in "${BLOCKS[@]}"; do
+  if [ -n "$COMBINED" ]; then
+    COMBINED="${COMBINED}
 
-${UPDATE_BLOCK}"
-else
-  COMBINED="${SKILL_CONTENT}"
-fi
+${block}"
+  else
+    COMBINED="$block"
+  fi
+done
 
 # Escape for JSON using python3
 COMBINED=$(printf '%s' "$COMBINED" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
