@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.19.0] - 2026-04-21
+
+> **Upgrading?** No action required. Projects without `test_strategies` in their manifest behave identically to before. See [`docs/test-strategies.md`](docs/test-strategies.md) for the full adoption guide — covers auto-detection (zero config), manifest declarations, and spec-level overrides.
+
+### New Feature — Test Strategies
+
+- **Domain-specific TDD.** The RED-GREEN-REFACTOR cycle now adapts to the type of work being done. Eight strategies ship: `unit`, `schema` (migrations), `fixture` (data pipelines), `policy` (IaC), `contract` (service integrations), `threshold` (performance), `visual` (UI), and `smoke` (deployments). Each strategy defines its own RED/GREEN semantics, gaming detection patterns, assertion rules, seed data requirements, and handoff format.
+- **Auto-detection.** `/adev:plan` inspects task file paths and project structure to assign the right strategy automatically. A Prisma migration gets `schema`, a dbt model gets `fixture`, a Terraform module gets `policy`, a React component gets `visual` — no configuration needed.
+- **Manifest override.** Projects can declare `test_strategies` in `manifest.yaml` with explicit commands, tiers, and path globs. Manifest entries override auto-detection; spec-level `test_strategy` frontmatter overrides everything.
+- **Strategy profiles.** Each strategy is a markdown profile at `lib/test-strategies/profiles/<strategy>.md` consumed by `/adev:write-test` as structured instructions. Profiles define domain-specific gaming blockers (e.g., "testing a migration on an empty database", "structure-only contract assertions", "trivially small fixtures").
+- **Plan integration.** Each task in plan output now includes a `Strategy:` field with the assigned strategy, source, and confidence level. A Strategy Summary table appears when any task uses a non-unit strategy.
+- **Write-test dispatch.** `/adev:write-test` loads the matching strategy profile before the RED phase, replacing hardcoded unit-test rules with domain-appropriate ones. Four shared cross-strategy gaming patterns (disabled tests, empty assertions, swallowed assertions, conditional assertions) apply to all strategies.
+- **Backward compatible.** Projects with no `test_strategies` config get `unit` for every task — identical to pre-0.19.0 behavior with no warnings.
+
+### New modules
+
+- `lib/test-strategies/registry.mjs` — 8 strategy type definitions
+- `lib/test-strategies/detection.mjs` — project-level and task-level auto-detection (2s timeout, no symlink following)
+- `lib/test-strategies/manifest.mjs` — manifest `test_strategies` parser with path traversal prevention and command-as-array enforcement
+- `lib/test-strategies/assignment.mjs` — `resolveStrategy()` with 4-level priority chain
+- `lib/test-strategies/profiles.mjs` — `getStrategyProfile()` with unit fallback chain
+- `lib/test-strategies/gaming.mjs` — 4 shared cross-strategy gaming patterns
+
+### Tests
+
+- 168 unit tests across 6 test files
+- 85 fixture-based eval tests across 9 project types (node-api, dbt, terraform, prisma, grpc, react, k6, fullstack, data-platform)
+
 ## [0.18.1] - 2026-04-19
 
 ### Bug Fixes
