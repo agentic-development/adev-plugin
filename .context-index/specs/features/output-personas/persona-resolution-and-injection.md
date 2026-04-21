@@ -2,7 +2,7 @@
 
 ---
 charter: output-personas
-status: review-passed
+status: implemented
 risk_level: medium
 milestone:
 revision: 2

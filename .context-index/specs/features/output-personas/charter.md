@@ -65,14 +65,14 @@ Output Personas is a presentation layer that adapts plugin outputs to the user's
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Persona resolution | Resolve persona from hierarchy: flag → local → global → fallback | must-have | | planned |
-| User config file format | Define and parse `user-config` schema for both global and local paths | must-have | | planned |
-| Persona directive templates | Three markdown templates (`product.md`, `developer.md`, `architect.md`) defining output rules per dimension | must-have | | planned |
-| Session-start injection | Modify session-start hook to resolve persona and inject directive into conversation | must-have | | planned |
-| Init persona prompt | Ask persona preference during `/adev:init` and write to global `user-config` | must-have | | planned |
-| Gitignore management | Ensure `.context-index/user-config` is added to `.gitignore` during init | must-have | | planned |
-| Unknown persona fallback | Warn on unrecognized persona name and fall back to `developer` | must-have | | planned |
-| Per-invocation flag | Support `--persona <name>` argument in skill invocation text (e.g., `/adev:build --persona product`), parsed from slash-command arguments | must-have | | planned |
+| Persona resolution | Resolve persona from hierarchy: flag → local → global → fallback | must-have | | implemented |
+| User config file format | Define and parse `user-config` schema for both global and local paths | must-have | | implemented |
+| Persona directive templates | Three markdown templates (`product.md`, `developer.md`, `architect.md`) defining output rules per dimension | must-have | | implemented |
+| Session-start injection | Modify session-start hook to resolve persona and inject directive into conversation | must-have | | implemented |
+| Init persona prompt | Ask persona preference during `/adev:init` and write to global `user-config` | must-have | | implemented |
+| Gitignore management | Ensure `.context-index/user-config` is added to `.gitignore` during init | must-have | | implemented |
+| Unknown persona fallback | Warn on unrecognized persona name and fall back to `developer` | must-have | | implemented |
+| Per-invocation flag | Support `--persona <name>` argument in skill invocation text (e.g., `/adev:build --persona product`), parsed from slash-command arguments | must-have | | implemented |
 
 ## Deferred Capabilities
 
