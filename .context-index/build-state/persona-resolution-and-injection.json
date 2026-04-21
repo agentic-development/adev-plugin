@@ -1,0 +1,14 @@
+{
+  "spec": ".context-index/specs/features/output-personas/persona-resolution-and-injection.md",
+  "phase": null,
+  "status": "in_progress",
+  "steps": [
+    {
+      "name": "review",
+      "status": "completed",
+      "timestamp": "2026-04-21T00:00:00Z"
+    }
+  ],
+  "started": "2026-04-21T00:00:00Z",
+  "updated": "2026-04-21T00:00:00Z"
+}
