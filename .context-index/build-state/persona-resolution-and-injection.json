@@ -3,12 +3,11 @@
   "phase": null,
   "status": "in_progress",
   "steps": [
-    {
-      "name": "review",
-      "status": "completed",
-      "timestamp": "2026-04-21T00:00:00Z"
-    }
+    { "name": "review", "status": "completed", "timestamp": "2026-04-21T00:00:00Z" },
+    { "name": "plan", "status": "completed", "timestamp": "2026-04-21T00:01:00Z" },
+    { "name": "route", "status": "skipped", "timestamp": "2026-04-21T00:01:01Z" },
+    { "name": "implement", "status": "completed", "timestamp": "2026-04-21T00:02:00Z" }
   ],
   "started": "2026-04-21T00:00:00Z",
-  "updated": "2026-04-21T00:00:00Z"
+  "updated": "2026-04-21T00:02:00Z"
 }
