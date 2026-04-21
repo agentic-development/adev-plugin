@@ -1,0 +1,1 @@
+{ "name": "fullstack-app", "type": "module", "dependencies": { "react": "^18.0.0", "@prisma/client": "^5.0.0" } }

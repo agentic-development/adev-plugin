@@ -76,6 +76,34 @@ Log a one-time advisory when fallback is active: "model_tiers not configured in 
 
 ---
 
+## Step 1b: Strategy Profile Resolution
+
+Before writing any tests, resolve the test strategy for this task:
+
+1. Read the task's `Strategy` field from the plan (set by `/adev:plan`'s Strategy Assignment step).
+2. Call `getStrategyProfile(strategyId, profilesDir)` from `lib/test-strategies/profiles.mjs` to load the matching strategy profile.
+3. If the profile loads successfully, use its rules for the remainder of this skill:
+   - `red_exit_condition` replaces the hardcoded "test runner fails for behavioral reasons" check in RED State Verification
+   - `gaming_blockers` replaces the 9 canonical blocking patterns in Gaming Violation Detection (strategy-specific patterns)
+   - `assertion_rules` replaces the Mocking Boundary Declaration rules
+   - `seed_data_rule` replaces the hardcoded seed data requirement
+   - `handoff_format` replaces the default Handoff Block structure
+   - `permitted_tools` informs which test frameworks are valid for this strategy
+4. If the profile falls back to unit (missing profile, invalid strategy ID), log an advisory: "Profile for '<strategy>' not found — using unit profile as fallback" and proceed with unit rules.
+5. When strategy is `unit`, behavior is identical to the existing hardcoded rules (the unit profile codifies all current write-test behavior).
+
+**Profile fields are descriptive instructions consumed by this skill — no profile field is passed directly to a shell or exec API.**
+
+In addition to the strategy-specific `gaming_blockers`, always check the 4 shared cross-strategy gaming patterns from `lib/test-strategies/gaming.mjs`:
+- `DISABLED_TESTS` — `.skip(`, `xit(`, `xdescribe(`, `.todo(`
+- `EMPTY_ASSERTIONS` — test bodies with no assertion calls
+- `SWALLOWED_ASSERTIONS` — `try { expect } catch {}` without rethrow
+- `CONDITIONAL_ASSERTIONS` — `if (cond) { expect }` without else
+
+Shared pattern violations use prefix `SHARED:`, strategy-specific violations use the strategy name as prefix (e.g., `SCHEMA:`). Both are reported independently.
+
+---
+
 ## Step 2: Framework Detection
 
 Run `detect-framework.sh` with the project root:
