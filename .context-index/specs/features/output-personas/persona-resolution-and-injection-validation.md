@@ -11,8 +11,9 @@
 - Tests: PASS (1365/1366 — 1 pre-existing failure in context-pack.test.mjs unrelated to this feature)
 - No lint or typecheck configured
 
-## Check 1.5: Source Manifest Verification — SKIP
-- No source manifest found. Run /adev:implement to stamp one.
+## Check 1.5: Source Manifest Verification — PASS
+- Source manifest stamped (sha: 1ffe0d4, 9 files)
+- All files present and unchanged
 
 ## Check 2: Spec Compliance — PASS (23/23 criteria)
 - AC 1: `resolvePersona()` returns `developer` with no config — PASS (`lib/persona.mjs:70`, `tests/persona.test.mjs:96`)
