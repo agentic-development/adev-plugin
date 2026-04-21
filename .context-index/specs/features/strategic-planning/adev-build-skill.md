@@ -6,22 +6,19 @@
 
 ---
 charter: strategic-planning
-status: review-pending
+status: validated
 risk_level: high
 milestone: v2
-revision: 1
+revision: 3
 charter-revision: 1
 created: 2026-04-05
-updated: 2026-04-05
+updated: 2026-04-21
 source-manifest:
-  sha: "472fd8e"
+  sha: "2d82a17"
   files:
-    - skills/assess/SKILL.md
     - skills/build/SKILL.md
-    - skills/issues/SKILL.md
-    - skills/work/SKILL.md
-    - tests/skills/assess.test.mjs
-  computed-at: "2026-04-12T11:48:02.749Z"
+    - templates/manifest-template.yaml
+  computed-at: "2026-04-21T15:18:29.025Z"
 ---
 
 ## Behavioral Contract
@@ -33,7 +30,7 @@ source-manifest:
 
 ### Behaviors
 
-1. **When** `--spec <path>` is invoked **then** the skill chains: review-specs → route → plan → implement → validate for that single spec
+1. **When** `--spec <path>` is invoked **then** the skill chains: review-specs → plan → route → implement → validate for that single spec
 2. **When** `--phase <name>` is invoked **then** the skill discovers all specs with `milestone: <name>` in frontmatter, filters to those with status `review-pending` or later, and builds each in dependency order
 3. **When** a step fails (e.g., review returns BLOCK) **then** the build stops immediately, reports the failure with context, and saves build state for resume
 4. **When** `--resume` is invoked **then** the skill reads `.context-index/build-state/<slug>.json`, identifies the last successful step, and resumes from the next step
@@ -44,26 +41,39 @@ source-manifest:
 9. **When** building multiple specs via `--phase` **then** each spec's build is independent — failure of one spec does not block others unless they have explicit dependencies
 10. **When** each phase completes **then** the build state file is updated with the completed step and timestamp
 11. **When** the full build completes successfully **then** the build state file is marked `status: completed` and a summary is printed
+12. **When** executing any pipeline step **then** the orchestrator MUST dispatch a fresh subagent via the Agent tool. The subagent's prompt includes a context packet (pipeline context + step context) and instructs it to invoke the target skill via the Skill tool, run it to completion, and return a structured STEP_RESULT. The orchestrator never calls the Skill tool directly for pipeline steps — only subagents do.
+13. **When** assembling a subagent prompt **then** the orchestrator includes two context sections: (a) pipeline context — spec path, spec title, phase, pipeline position, workspace state, issue board config — common to all steps; (b) step context — step-specific fields read from artifact files on disk (e.g., review verdict from `.review.md`, plan path from `.plan.md`, task count, route annotations). Step context is always read from disk, never from prior subagent results, to ensure correctness across resumed builds.
+14. **When** a subagent returns its STEP_RESULT **then** the orchestrator reads only the status, verdict, artifacts, summary, and error fields to make orchestration decisions (skip/stop/continue) and to persist in build state. The orchestrator does not parse or act on intermediate skill output.
+15. **When** the build skill is loaded **then** it runs in a forked context (`context: fork` in frontmatter) to isolate the entire build pipeline from the parent conversation. Each pipeline step is further isolated by running as a subagent within this fork.
+16. **When** validate returns FAIL and `build.max_retries` from user-config is > 0 and retry budget remains **then** the orchestrator enters a validate→implement retry loop: extracts specific failures from the validation report, re-dispatches implement scoped to those failures (with RETRY_CONTEXT in the prompt), then re-dispatches validate. The loop stops on: budget exhaustion, no progress (same checks failing), or regression (previously-passing check now fails).
+17. **When** `build.max_retries` is 0 or absent in user-config **then** validate FAIL is recorded as informational and the build completes without retry (fail-fast default behavior).
+18. **When** `build.max_retries` exceeds 3 **then** clamp to 3 with a warning.
+19. **When** resolving `build.max_retries` **then** follow the same hierarchy as persona resolution: local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default `0`. Uses `parseUserConfig()` from `lib/persona.mjs`.
 
 ### Build Pipeline Steps (per spec)
 
+Each step is dispatched as a fresh subagent via the Agent tool. The orchestrator checks skip/stop conditions on artifacts before dispatch and reads the subagent's STEP_RESULT after it returns.
+
 ```
-Step 1: Review    — invoke /adev:review-specs --spec <path>
+Step 1: Review    — Agent dispatch → subagent invokes /adev:review-specs --spec <path>
                      Skip if .review.md exists and is current
                      STOP if verdict is BLOCK
 
-Step 2: Plan      — invoke /adev:plan --spec <path>
+Step 2: Plan      — Agent dispatch → subagent invokes /adev:plan --spec <path>
                      Skip if .plan.md exists
                      STOP if constitution violation detected
 
-Step 3: Route     — invoke /adev:route --plan <plan-path>
+Step 3: Route     — Agent dispatch → subagent invokes /adev:route --plan <plan-path>
                      Optional: route annotations are advisory
                      Skip if --no-route flag set
 
-Step 4: Implement — invoke /adev:implement <plan-path>
+Step 4: Implement — Agent dispatch → subagent invokes /adev:implement <plan-path>
+                     Subagent's isolated context handles TDD, specialist routing,
+                     review, source manifest, commit trailers, DoD
                      STOP if quality gates fail
 
-Step 5: Validate  — invoke /adev:validate --spec <path> --plan <plan-path>
+Step 5: Validate  — Agent dispatch → subagent invokes /adev:validate --spec <path> --plan <plan-path>
+                     Subagent's isolated context runs full 13-check suite
                      Report PASS/FAIL
 ```
 
@@ -137,3 +147,16 @@ Step 5: Validate  — invoke /adev:validate --spec <path> --plan <plan-path>
 - [ ] Summary printed at end with pass/fail/skip counts
 - [ ] All quality gates pass (tests, lint, typecheck)
 - [ ] No constitutional violations introduced
+- [ ] Each pipeline step is dispatched as a fresh subagent via the Agent tool — orchestrator never calls Skill tool directly for pipeline steps
+- [ ] Subagent prompts include pipeline context (spec path, title, phase, position, workspace, issue board) and step-specific context (review verdict, plan path, route annotations, etc.)
+- [ ] Step context is assembled by reading artifact files on disk (`.review.md`, `.plan.md`, spec frontmatter), never from prior subagent result memory
+- [ ] Subagents invoke child skills via the Skill tool within their isolated context and return structured STEP_RESULT (status, verdict, artifacts, summary, error)
+- [ ] Child skills execute their full protocol within the subagent's context (implement runs all 6 steps including source manifest, commit trailers, DoD; validate runs all 13 checks)
+- [ ] Build skill uses `context: fork` to isolate the entire pipeline from the parent conversation
+- [ ] Orchestrator only reads STEP_RESULT fields to make orchestration decisions — does not read source code, run tests, or write reports directly
+- [ ] Resumed builds assemble step context from disk state, not from memory of previous sessions
+- [ ] `build.max_retries` in user-config controls validate→implement retry loop (default 0 = disabled, max 3), resolved via local → global → default hierarchy using `parseUserConfig()`
+- [ ] Retry loop extracts specific failures from validation report and scopes re-implementation to those failures
+- [ ] Retry stops on no progress (same checks failing), regression (previously-passing check fails), or budget exhaustion
+- [ ] Build state records retry history (cycle count, per-cycle verdict, failed checks)
+- [ ] Dry-run output shows retry policy from manifest
