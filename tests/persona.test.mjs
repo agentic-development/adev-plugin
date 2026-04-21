@@ -1,12 +1,10 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
+import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 
-// Will import from lib/persona.mjs once implemented
 let parseUserConfig, resolvePersona, loadPersonaDirective;
 
-// Lazy import to allow test file to exist before lib
 async function loadModule() {
   const mod = await import("../lib/persona.mjs");
   parseUserConfig = mod.parseUserConfig;
@@ -14,7 +12,6 @@ async function loadModule() {
   loadPersonaDirective = mod.loadPersonaDirective;
 }
 
-// Test fixtures
 const TMP = join(import.meta.dirname, ".tmp-persona-test");
 
 function setup() {
@@ -101,6 +98,7 @@ describe("resolvePersona", () => {
     });
     assert.equal(result.name, "developer");
     assert.equal(result.source, "fallback");
+    assert.equal(result.warnings.length, 0);
   });
 
   it("returns global config value when only global exists", () => {
@@ -126,7 +124,7 @@ describe("resolvePersona", () => {
     assert.equal(result.source, "local");
   });
 
-  it("rejects persona names with forward slash", () => {
+  it("rejects persona names with forward slash and warns", () => {
     writeFileSync(join(TMP, "local-config"), "persona=../../etc/passwd\n");
     const result = resolvePersona({
       localConfigPath: join(TMP, "local-config"),
@@ -135,9 +133,11 @@ describe("resolvePersona", () => {
     });
     assert.equal(result.name, "developer");
     assert.equal(result.source, "fallback");
+    assert.ok(result.warnings.length > 0);
+    assert.ok(result.warnings[0].includes("path separators"));
   });
 
-  it("rejects persona names with backslash", () => {
+  it("rejects persona names with backslash and warns", () => {
     writeFileSync(join(TMP, "local-config"), "persona=..\\etc\\passwd\n");
     const result = resolvePersona({
       localConfigPath: join(TMP, "local-config"),
@@ -146,6 +146,7 @@ describe("resolvePersona", () => {
     });
     assert.equal(result.name, "developer");
     assert.equal(result.source, "fallback");
+    assert.ok(result.warnings.length > 0);
   });
 
   it("rejects persona names with ..", () => {
@@ -159,7 +160,7 @@ describe("resolvePersona", () => {
     assert.equal(result.source, "fallback");
   });
 
-  it("falls back to developer for unknown persona names", () => {
+  it("falls back to developer for unknown persona names and warns", () => {
     writeFileSync(join(TMP, "local-config"), "persona=unknown-role\n");
     const result = resolvePersona({
       localConfigPath: join(TMP, "local-config"),
@@ -168,6 +169,9 @@ describe("resolvePersona", () => {
     });
     assert.equal(result.name, "developer");
     assert.equal(result.source, "fallback");
+    assert.ok(result.warnings.length > 0);
+    assert.ok(result.warnings[0].includes("Unknown persona"));
+    assert.ok(result.warnings[0].includes("unknown-role"));
   });
 
   it("treats empty persona value as absent", () => {
@@ -195,33 +199,40 @@ describe("loadPersonaDirective", () => {
       "developer",
       join(TMP, "templates", "personas")
     );
-    assert.ok(result);
-    assert.ok(result.includes("Developer Persona"));
+    assert.ok(result.content);
+    assert.ok(result.content.includes("Developer Persona"));
+    assert.equal(result.warnings.length, 0);
   });
 
-  it("falls back to developer.md when template missing", () => {
+  it("falls back to developer.md when template missing and warns", () => {
     const result = loadPersonaDirective(
       "nonexistent",
       join(TMP, "templates", "personas")
     );
-    assert.ok(result);
-    assert.ok(result.includes("Developer Persona"));
+    assert.ok(result.content);
+    assert.ok(result.content.includes("Developer Persona"));
+    assert.ok(result.warnings.length > 0);
+    assert.ok(result.warnings[0].includes("not found"));
   });
 
-  it("returns null when templates dir missing", () => {
+  it("returns null when templates dir missing and warns", () => {
     const result = loadPersonaDirective("developer", join(TMP, "no-such-dir"));
-    assert.equal(result, null);
+    assert.equal(result.content, null);
+    assert.ok(result.warnings.length > 0);
   });
 
   it("warning messages do not contain full filesystem paths", () => {
-    // Capture warnings by checking the return structure
-    // The function should handle missing templates gracefully
-    // and any warning text should not contain absolute paths
     const result = loadPersonaDirective(
       "nonexistent",
       join(TMP, "templates", "personas")
     );
-    // Should fall back gracefully without exposing paths
-    assert.ok(result !== undefined);
+    for (const w of result.warnings) {
+      // Warnings should not contain absolute paths (starting with /)
+      assert.ok(!w.startsWith("/"), `Warning contains absolute path: ${w}`);
+      assert.ok(
+        !w.includes(TMP),
+        `Warning contains temp dir path: ${w}`
+      );
+    }
   });
 });
