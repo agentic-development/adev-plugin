@@ -64,14 +64,14 @@ Output Personas is a presentation layer that adapts plugin outputs to the user's
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Persona resolution | Resolve persona from hierarchy: flag → local → global → fallback | must-have | | — |
-| User config file format | Define and parse `user-config` schema for both global and local paths | must-have | | — |
-| Persona directive templates | Three markdown templates (`product.md`, `developer.md`, `architect.md`) defining output rules per dimension | must-have | | — |
-| Session-start injection | Modify session-start hook to resolve persona and inject directive into conversation | must-have | | — |
-| Init persona prompt | Ask persona preference during `/adev:init` and write to global `user-config` | must-have | | — |
-| Gitignore management | Ensure `.context-index/user-config` is added to `.gitignore` during init | must-have | | — |
-| Unknown persona fallback | Warn on unrecognized persona name and fall back to `developer` | must-have | | — |
-| Per-invocation flag | Support `--persona <name>` argument in skill invocation text (e.g., `/adev:build --persona product`), parsed from slash-command arguments | must-have | | — |
+| Persona resolution | Resolve persona from hierarchy: flag → local → global → fallback | must-have | | specified |
+| User config file format | Define and parse `user-config` schema for both global and local paths | must-have | | specified |
+| Persona directive templates | Three markdown templates (`product.md`, `developer.md`, `architect.md`) defining output rules per dimension | must-have | | specified |
+| Session-start injection | Modify session-start hook to resolve persona and inject directive into conversation | must-have | | specified |
+| Init persona prompt | Ask persona preference during `/adev:init` and write to global `user-config` | must-have | | specified |
+| Gitignore management | Ensure `.context-index/user-config` is added to `.gitignore` during init | must-have | | specified |
+| Unknown persona fallback | Warn on unrecognized persona name and fall back to `developer` | must-have | | specified |
+| Per-invocation flag | Support `--persona <name>` argument in skill invocation text (e.g., `/adev:build --persona product`), parsed from slash-command arguments | must-have | | specified |
 
 ## Deferred Capabilities
 
