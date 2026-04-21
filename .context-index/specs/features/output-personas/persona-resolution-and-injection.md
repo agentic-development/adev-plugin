@@ -9,6 +9,19 @@ revision: 2
 charter-revision: 2
 created: 2026-04-21
 updated: 2026-04-21
+source-manifest:
+  sha: "1ffe0d4"
+  files:
+    - cli/index.mjs
+    - hooks/session-start.sh
+    - lib/persona.mjs
+    - skills/init/SKILL.md
+    - templates/persona-override-section.md
+    - templates/personas/architect.md
+    - templates/personas/developer.md
+    - templates/personas/product.md
+    - tests/persona.test.mjs
+  computed-at: "2026-04-21T13:05:58.708Z"
 ---
 
 ## Behavioral Contract
