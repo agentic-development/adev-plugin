@@ -79,7 +79,7 @@ Notes:
 | `/adev:research` skill | Persistent structured research using web, GitHub, and internal codebase sources | must-have | v1 | validated |
 | `/adev:status` aggregation | Read-only progress dashboard reading product.md, charters, specs, issue board; supports milestone view | must-have | v1 | — |
 | `/adev:work` intake mode | `--intake` for batch-processing incoming requests into categorized, prioritized issues (renamed from `/adev:start intake mode` per start charter rev 2) | should-have | v1 | — |
-| `/adev:build` orchestrator | Chain review → route → plan → implement → validate with resume support and phase batching | must-have | v2 | — |
+| `/adev:build` orchestrator | Chain review → plan → route → implement → validate with resume support and phase batching | must-have | v2 | validated |
 
 ## Deferred Capabilities
 

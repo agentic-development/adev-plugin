@@ -1,6 +1,7 @@
 ---
 name: adev:build
 description: "End-to-end build orchestrator. Chains review, plan, route, implement, and validate for one or more specs through a full lifecycle pipeline. Use when the user says 'build', 'end to end', 'full pipeline', 'build the spec', 'build the phase', 'run the whole pipeline', or wants to execute multiple lifecycle steps in sequence without manual handoffs."
+context: fork
 ---
 
 # Build Pipeline Orchestrator
@@ -26,6 +27,8 @@ Before starting, verify all conditions. If any fails, stop and tell the user wha
 2. **Spec provided or discoverable.** At least one spec must be specified via `--spec` or discoverable via `--phase`.
 3. **Valid arguments.** If `--spec` is provided, the file must exist. If `--phase` is provided, the milestone name must be a non-empty string.
 
+4. **Read build config.** Resolve `build.max_retries` from `user-config` (local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default `0`). Use `parseUserConfig()` from `lib/persona.mjs` to read both config files. Look for the key `build.max_retries`. Clamp to range 0-3 with a warning if out of range.
+
 If `.context-index/` does not exist, tell the user:
 
 > This project has not been initialized with the Agentic Development Framework. Run `/adev:init` first to set up the context index, then come back to build.
@@ -43,52 +46,318 @@ The advisory does not block; it does not appear when `detectWorkspace` returns `
 
 ---
 
+## Delegation Protocol
+
+**This is the most important section of this skill.**
+
+The build orchestrator is a coordinator. It decides *which* skill to run next, checks skip/stop conditions on artifacts, persists build state, and reports progress. It does NOT perform review, planning, routing, implementation, or validation itself — not even partially.
+
+### Subagent Dispatch Model
+
+**Every pipeline step MUST be dispatched as a fresh subagent using the Agent tool.** Each subagent gets a clean context with no prior knowledge of the build pipeline, and its prompt instructs it to invoke the target skill via the Skill tool. This provides two guarantees:
+
+1. **No pseudo-invocation.** A fresh subagent has no "knowledge" of what the child skill does. It must load the full SKILL.md via the Skill tool to execute it. It cannot summarize or shortcut.
+2. **Context isolation.** Each pipeline step runs in its own context. A 200K-token implement step does not pollute the orchestrator's context. The orchestrator only sees the result summary.
+
+### Context Packet Assembly
+
+The Agent tool only accepts a `prompt` string — there are no env vars, JSON params, or other channels. All context the subagent needs must be serialized into the prompt. The orchestrator assembles a **context packet** per step with two sections: **pipeline context** (common to all steps) and **step context** (specific to each step).
+
+#### Pipeline Context (included in every step's prompt)
+
+The orchestrator reads these once at build start and includes them in every subagent prompt:
+
+```
+PIPELINE_CONTEXT:
+  spec_path: <absolute path to the spec being built>
+  spec_title: <first heading from the spec>
+  phase: <milestone name if --phase, otherwise null>
+  pipeline_position: "Step <N> of 5 (<step-name>)"
+  workspace:
+    detected: true | false
+    name: <workspace name if detected>
+    repo_slug: <current repo slug if inside a repo, otherwise null>
+    root: <workspace root path if detected>
+  issue_board:
+    configured: true | false
+    backend: <tasks.backend value from manifest, e.g., "file">
+    epic_id: <epic ID for this spec's plan, if known>
+```
+
+To assemble pipeline context, the orchestrator reads:
+- The spec file (path and title)
+- `manifest.yaml` (for `tasks.backend`)
+- Workspace detection result (one-time call to `detectWorkspace(cwd)`)
+- Issue board state (if configured, look up epic for this spec)
+
+#### Step Context (varies per step)
+
+Each step adds its own section to the prompt. The orchestrator assembles this from **artifacts on disk** (files produced by prior steps), not from memory of what prior subagents reported. This is critical — if the build was resumed, prior steps may have run in a different session.
+
+| Step | Step Context |
+|------|-------------|
+| **Review** | (none — review is the first step) |
+| **Plan** | `review_verdict`: PASS or PASS_WITH_NOTES (read from `.review.md`). `review_notes`: any notes from the review (brief summary, not full report) |
+| **Route** | `plan_path`: absolute path to the `.plan.md` file. `task_count`: number of tasks in the plan (parsed from plan file) |
+| **Implement** | `plan_path`: absolute path to the `.plan.md` file. `route_annotations`: if a route output file exists, include the routing summary (which tasks are auto/assisted/human). `review_notes`: brief review notes (so implement can consider reviewer concerns) |
+| **Validate** | `plan_path`: absolute path to the `.plan.md` file. `implement_summary`: brief note on what was implemented (read from build state's Step 4 notes, or "full plan executed" if no notes). `source_manifest_stamped`: true/false (check spec frontmatter for `source-manifest` block) |
+
+#### Reading Step Context from Disk
+
+The orchestrator reads step context from **artifact files**, not from prior subagent results:
+
+- **Review verdict/notes:** Read the `.review.md` file adjacent to the spec. Parse the verdict line and any notes section.
+- **Plan path/task count:** Glob for `.plan.md` adjacent to the spec. Parse task headers (lines matching `### Task N:`) to count tasks.
+- **Route annotations:** If `/adev:route` produced output (check build state), read the route annotations from the plan file's frontmatter or inline annotations.
+- **Source manifest:** Read the spec's YAML frontmatter for a `source-manifest` block.
+
+This "read from disk" rule ensures correctness across resumed builds and avoids stale in-memory state.
+
+### Subagent Prompt Template
+
+Every pipeline step uses this prompt structure when dispatching via the Agent tool:
+
+```
+You are executing one step of a build pipeline.
+
+PIPELINE_CONTEXT:
+  spec_path: ...
+  spec_title: ...
+  phase: ...
+  pipeline_position: ...
+  workspace: ...
+  issue_board: ...
+
+STEP_CONTEXT:
+  <step-specific fields as defined above>
+
+---
+
+Your ONLY task: invoke the skill `/adev:<skill-name>` with args `<args>`
+using the Skill tool. Let it run to full completion — including all
+post-steps (source manifests, commit trailers, DoD checks, etc.).
+Then report the result.
+
+Do NOT attempt to perform the skill's work yourself. You MUST use the
+Skill tool to load and execute the full skill. The skill contains
+detailed multi-step protocols that you do not have access to without
+loading it.
+
+After the skill completes, report back with EXACTLY this format:
+
+STEP_RESULT:
+  status: COMPLETED | FAILED | BLOCKED
+  verdict: <skill-specific outcome, e.g., PASS, BLOCK, constitution-violation>
+  artifacts: <list of files created or modified by the skill>
+  summary: <1-3 sentence summary of what happened>
+  error: <if FAILED, the failure details including any tier/command/severity context>
+```
+
+### What the Orchestrator Does Directly
+
+The ONLY work the build orchestrator performs itself (not via subagent):
+
+- **Reads** `.context-index/build-state/*.json` for resume state
+- **Reads** spec frontmatter for `milestone` field (phase discovery) and `source-manifest` (validate step context)
+- **Reads** `.review.md` files for skip conditions and to extract review verdict/notes for step context
+- **Reads** `.plan.md` files for skip conditions and to extract task count for step context
+- **Reads** `governance/gates.yaml` for dry-run gate display only
+- **Reads** `manifest.yaml` for `tasks.backend` (issue board configuration)
+- **Reads** `user-config` files (local and global) via `parseUserConfig()` for `build.max_retries` (retry policy)
+- **Calls** `detectWorkspace(cwd)` once at build start for workspace context
+- **Writes** `.context-index/build-state/*.json` after each step
+- **Prints** progress headers and the final summary
+
+Everything else — reading source code, running tests, dispatching implementation subagents, checking spec compliance, writing reports — happens inside the subagent's context.
+
+---
+
 ## Build Pipeline
 
-The pipeline executes 5 steps per spec, in strict order. Each step invokes an existing skill. The build orchestrator never performs review, planning, routing, implementation, or validation directly -- it delegates to the corresponding skill.
+The pipeline executes 5 steps per spec, in strict order. For each step, the orchestrator: (1) checks the skip condition on artifacts, (2) dispatches a subagent via the Agent tool if not skipped, (3) reads the subagent's result, (4) checks the stop condition, and (5) persists build state.
 
 ### Step 1: Review
 
-Invoke `/adev:review-specs --spec <path>`.
+**Skip condition (checked by orchestrator before dispatch):** A `.review.md` file exists adjacent to the spec, contains a PASS or PASS_WITH_NOTES verdict, and is not stale (its modification date is equal to or newer than the spec's modification date). If skipped, record step as `skipped` in build state.
 
-- **Skip condition:** A `.review.md` file exists adjacent to the spec, contains a PASS or PASS_WITH_NOTES verdict, and is not stale (its modification date is equal to or newer than the spec's modification date).
-- **Stop condition:** The review verdict is BLOCK. Save build state with the failure, report the review findings to the user, and stop the build for this spec.
-- **On success:** Record step as `completed` in build state.
+**Subagent dispatch:**
+
+```
+Agent({
+  description: "Build Step 1: Review <spec-name>",
+  prompt: <subagent prompt template with skill="adev:review-specs" args="--spec <path>">
+})
+```
+
+**After subagent returns:**
+- If verdict is BLOCK: save build state with the failure, report the review findings to the user, and stop the build for this spec.
+- If verdict is PASS or PASS_WITH_NOTES: record step as `completed` in build state.
 
 ### Step 2: Plan
 
-Invoke `/adev:plan --spec <path>`.
+**Skip condition (checked by orchestrator before dispatch):** A `.plan.md` file exists adjacent to the spec. If skipped, record step as `skipped` in build state.
 
-- **Skip condition:** A `.plan.md` file exists adjacent to the spec.
-- **Stop condition:** The plan detects a constitution violation. Save build state with the failure and stop the build for this spec.
-- **On success:** Record step as `completed` in build state.
+**Subagent dispatch:**
+
+```
+Agent({
+  description: "Build Step 2: Plan <spec-name>",
+  prompt: <subagent prompt template with skill="adev:plan" args="--spec <path>">
+})
+```
+
+**After subagent returns:**
+- If verdict is constitution-violation: save build state with the failure and stop the build for this spec.
+- Otherwise: record step as `completed` in build state.
 
 ### Step 3: Route
 
-Invoke `/adev:route --plan <plan-path>`.
+**Skip condition (checked by orchestrator before dispatch):** The `--no-route` flag is set. Mark step as `skipped` in build state.
 
-- **Skip condition:** The `--no-route` flag is set. Mark step as `skipped` in build state.
-- **Nature:** Route annotations are advisory. This step does not produce a pass/fail verdict. If `/adev:route` is unavailable or errors, log a warning and continue.
-- **On success:** Record step as `completed` in build state.
+**Subagent dispatch:**
+
+```
+Agent({
+  description: "Build Step 3: Route <spec-name>",
+  prompt: <subagent prompt template with skill="adev:route" args="--plan <plan-path>">
+})
+```
+
+**After subagent returns:**
+- Route annotations are advisory. This step does not produce a pass/fail verdict. If the subagent reports FAILED or the skill is unavailable, log a warning and continue.
+- Record step as `completed` (or `skipped` on error) in build state.
 
 ### Step 4: Implement
 
-Invoke `/adev:implement <plan-path>`.
+**Skip condition:** None. Implementation always runs unless the build was resumed past this step.
 
-- **Skip condition:** None. Implementation always runs unless the build was resumed past this step.
-- **Stop condition:** Quality gates fail (tests fail, lint errors, etc.) OR integration gates fail with `severity: error` (see implement SKILL.md Step 2-post). Save build state with the failure (including tier-specific context: tier name, failing command, severity), report the failures to the user, and stop the build for this spec.
-- **On success:** Record step as `completed` in build state.
+**Subagent dispatch:**
+
+```
+Agent({
+  description: "Build Step 4: Implement <spec-name>",
+  prompt: <subagent prompt template with skill="adev:implement" args="<plan-path>">
+})
+```
+
+This is the longest-running step. The implement skill manages TDD loops, specialist routing, subagent dispatch, 2-stage review, visual verification, integration gates, source manifest stamping, commit trailers, and feature completeness DoD — all within the subagent's isolated context.
+
+**After subagent returns:**
+- If verdict indicates quality gate or integration gate failure: save build state with the failure details (including tier-specific context: tier name, failing command, severity), report the failures to the user, and stop the build for this spec.
+- Otherwise: record step as `completed` in build state.
 
 ### Step 5: Validate
 
-Invoke `/adev:validate --spec <path> --plan <plan-path>`.
+**Skip condition:** None. Validation always runs as the final step.
 
-- **Skip condition:** None. Validation always runs as the final step.
-- **Outcome:** Report PASS, PASS_WITH_WARNINGS, or FAIL.
-  - **PASS:** All quality gate tiers pass, all acceptance criteria met.
-  - **PASS_WITH_WARNINGS:** All error-severity tiers pass but one or more warning-severity tiers (e.g., E2E full suite) failed. Build state records the warnings but does NOT treat the result as a build failure.
-  - **FAIL:** An error-severity tier failed or acceptance criteria not met. Validation FAIL is recorded but does NOT retroactively block the build — the implementation is already done. Validation is informational.
-- **On success or failure:** Record step as `completed` (with PASS/PASS_WITH_WARNINGS/FAIL noted) in build state.
+**Subagent dispatch:**
+
+```
+Agent({
+  description: "Build Step 5: Validate <spec-name>",
+  prompt: <subagent prompt template with skill="adev:validate" args="--spec <path> --plan <plan-path>">
+})
+```
+
+The validate skill runs its full 13-check suite within the subagent's isolated context.
+
+**After subagent returns:**
+- **PASS:** All checks passed. Record in build state.
+- **PASS_WITH_WARNINGS:** Error-severity checks passed but warning-severity checks failed. Build state records the warnings but does NOT treat the result as a build failure.
+- **FAIL:** An error-severity check failed. If `build.max_retries` from user-config is > 0 and retry budget remains, enter the Validate→Implement Retry Loop (see below). Otherwise, record FAIL in build state. Validation FAIL does NOT retroactively block the build — the implementation is already done. Validation is informational.
+- Record step as `completed` (with PASS/PASS_WITH_WARNINGS/FAIL noted) in build state.
+
+### Validate→Implement Retry Loop
+
+**Configuration:** Resolve `build.max_retries` from `user-config` files (local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default `0`). Uses the same `parseUserConfig()` from `lib/persona.mjs` that resolves persona. Default is `0` (disabled — fail-fast behavior). Maximum allowed value is `3`. Values above 3 are clamped to 3 with a warning.
+
+Example `user-config` entry:
+```
+build.max_retries=2
+```
+
+When validate returns FAIL and retry budget remains (`current_retry < max_retries`):
+
+#### 1. Extract Failure Context
+
+Read the validation report written by the validate subagent (at `.context-index/specs/features/<module>/<spec-slug>-validation.md`). Extract:
+
+- Which checks failed (check number, name, severity)
+- Specific failure details (file:line references, acceptance criteria IDs, error messages)
+- Which checks passed (so the retry doesn't regress them)
+
+Assemble this into a `RETRY_CONTEXT` block:
+
+```
+RETRY_CONTEXT:
+  retry_cycle: <N> of <max_retries>
+  validation_report_path: <path to validation report>
+  failed_checks:
+    - check: "Check 2: Spec Compliance"
+      failures:
+        - criterion: "AC-3: Error messages include request ID"
+          detail: "src/api/handler.mjs:45 — error response missing requestId field"
+    - check: "Check 4: Constitution Compliance"
+      failures:
+        - principle: "Coding Standards — naming conventions"
+          detail: "src/lib/helper.mjs:12 — function 'processData' uses camelCase but constitution requires snake_case for this module"
+  passed_checks: [1, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+```
+
+#### 2. Re-dispatch Implement (scoped)
+
+Dispatch a new implement subagent with the standard context packet plus the `RETRY_CONTEXT`. The subagent prompt includes an additional directive:
+
+```
+IMPORTANT: This is a retry cycle. The previous implementation passed quality
+gates but failed validation on specific checks. Your task is to fix ONLY the
+validation failures listed in RETRY_CONTEXT. Do NOT re-implement the entire
+plan. Do NOT modify code that passed validation. Scope your changes to the
+minimum required to address each failed check.
+
+After fixing, invoke `/adev:implement --task <N>` for each affected task,
+or make targeted fixes and run the quality gates to verify no regressions.
+```
+
+The implement skill's internal logic handles the scoped re-implementation. The retry subagent gets the full implement SKILL.md via the Skill tool, so it follows all protocols (TDD, review, source manifest update).
+
+#### 3. Re-dispatch Validate
+
+After the implement retry subagent returns COMPLETED, dispatch a fresh validate subagent with the standard context packet plus:
+
+```
+RETRY_CONTEXT:
+  retry_cycle: <N> of <max_retries>
+  previous_failures: <list of checks that failed last cycle>
+  expect_regression_check: true
+```
+
+The validate subagent runs the full 13-check suite. It does not skip previously-passed checks — regression detection requires a full run.
+
+#### 4. Evaluate and Loop or Stop
+
+- **PASS or PASS_WITH_WARNINGS:** Retry succeeded. Record in build state with `retry_cycles: N`.
+- **FAIL with same failures:** No progress. Stop retrying regardless of budget. Record FAIL with note: "Retry cycle <N> made no progress — same checks still failing."
+- **FAIL with different failures:** Progress was made but new issues appeared. If budget remains, loop back to step 1. If budget exhausted, record FAIL with full details.
+- **FAIL with regression:** A previously-passing check now fails. Stop retrying immediately. Record FAIL with note: "Retry cycle <N> caused regression in Check <X>."
+
+#### Build State for Retries
+
+Retry cycles are recorded in build state under the validate step:
+
+```json
+{
+  "name": "validate",
+  "status": "completed",
+  "timestamp": "...",
+  "verdict": "PASS",
+  "retry_cycles": 2,
+  "retry_history": [
+    { "cycle": 1, "verdict": "FAIL", "failed_checks": [2, 4] },
+    { "cycle": 2, "verdict": "PASS" }
+  ]
+}
+```
 
 ---
 
@@ -368,6 +637,8 @@ Dry Run: Build Pipeline for <spec or phase>
 
   ⚠ completed_with_warnings: <spec> passed review with notes — verify notes are addressed.
 
+  Retry policy: max_retries=<N> (from user-config)
+
   Estimated effort: 5 tasks across 3 active steps.
 ```
 
@@ -399,7 +670,8 @@ Build complete.
     2. Plan      — completed | skipped | failed
     3. Route     — completed | skipped
     4. Implement — completed | failed
-    5. Validate  — PASS | FAIL
+    5. Validate  — PASS | FAIL | PASS (after N retry cycles)
+  Retry cycles: 0 | N of M (checks fixed: [...], regressions: [...])
 ```
 
 ---
@@ -414,7 +686,11 @@ Build complete.
 | `--resume` with no build state files | Print "No interrupted build found" and stop |
 | Review returns BLOCK | Stop build for that spec, save state, report findings |
 | Quality gates fail during implement | Stop build for that spec, save state, report failures |
-| Validation returns FAIL | Report FAIL but mark build as completed (informational) |
+| Validation returns FAIL (max_retries=0) | Report FAIL but mark build as completed (informational) |
+| Validation returns FAIL (max_retries>0) | Enter retry loop: extract failures, re-implement scoped to failures, re-validate. Stop on budget exhaustion, no progress, or regression |
+| Retry cycle causes regression | Stop retrying immediately, report regression. Do not exhaust remaining budget |
+| Retry cycle makes no progress | Stop retrying, report same failures persisting |
+| `build.max_retries` > 3 in user-config | Clamp to 3 with warning |
 | `--from <step>` with invalid step name | Print "Invalid step: `<name>`. Valid steps: review, plan, route, implement, validate" and stop |
 | Circular dependencies in phase mode | Print warning, proceed in discovery order |
 
@@ -422,9 +698,9 @@ Build complete.
 
 ## Key Principles
 
-1. **Delegate, never duplicate.** The build orchestrator invokes existing skills (`/adev:review-specs`, `/adev:plan`, `/adev:route`, `/adev:implement`, `/adev:validate`). It never performs review, planning, or implementation directly. Each skill owns its own domain.
+1. **Dispatch as subagent, never inline.** Every pipeline step MUST be dispatched as a fresh subagent via the Agent tool. The subagent invokes the child skill via the Skill tool. The orchestrator never performs review, planning, routing, implementation, or validation itself — not even partially. See the Delegation Protocol section.
 
-2. **Fail fast, resume gracefully.** When a step fails, stop immediately for that spec, save state, and report. The user can fix the issue and `--resume` without re-running completed steps.
+2. **Fail fast, retry smart, resume gracefully.** When a step fails, stop immediately for that spec, save state, and report. Exception: when `build.max_retries` in user-config is > 0 and validate fails, the orchestrator can retry the implement→validate loop with scoped failure context. Retries stop on budget exhaustion, no progress, or regression. The user can always fix issues manually and `--resume` without re-running completed steps.
 
 3. **Incremental state persistence.** Build state is saved after every step, not just at the end. An interrupted build (network failure, timeout, user abort) always has an accurate state file.
 
@@ -435,3 +711,19 @@ Build complete.
 6. **Pipeline order is fixed.** The 5-step order (review, plan, route, implement, validate) is invariant. Steps can be skipped based on conditions, but they are never reordered.
 
 7. **Issue board is optional.** All issue board operations are guarded by `tasks.backend` in the manifest. If unconfigured, the build runs identically but without issue tracking.
+
+---
+
+## Red Flags
+
+**Never:**
+- Execute a pipeline step directly from the orchestrator's context — every step MUST go through a subagent via the Agent tool
+- Call the Skill tool directly from the orchestrator for a pipeline step — the Skill tool is called by the subagent, not the orchestrator
+- Read source code, run tests, dispatch implementation subagents, or write reports from the orchestrator — these happen inside the step subagent's isolated context
+- Attempt to "summarize" what a child skill does and do it yourself — each skill has dozens of substeps you cannot see from this file
+- Skip the Agent tool dispatch because "it's just a small step" — even the route step (the lightest) must be a subagent to maintain the isolation guarantee
+- Inline implementation work (TDD, specialist routing, review) because it "seems simpler" — the subagent handles this when it loads `/adev:implement` via the Skill tool
+- Inline validation checks because it "seems faster" — the subagent runs the full 13-check suite when it loads `/adev:validate` via the Skill tool
+- Modify build state for a step before the subagent has returned its result
+- Continue to the next step if the subagent has not fully completed and returned its STEP_RESULT
+- Parse or act on intermediate output from the subagent — only the final STEP_RESULT matters for orchestration decisions

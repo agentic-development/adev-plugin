@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.21.0] - 2026-04-21
+
+### Fix — Build Skill Subagent Delegation (issue-124)
+
+The `/adev:build` orchestrator was pseudo-invoking child skills (review, plan, route, implement, validate) instead of properly delegating to them. The agent would inline a simplified version of each child skill, missing dozens of substeps (specialist routing, TDD, 2-stage review, source manifest stamping, commit trailers, DoD, 13-check validation suites, etc.).
+
+**Root cause:** The build SKILL.md said "Invoke `/adev:implement`" without specifying HOW — the agent interpreted this as "do what the skill does" rather than loading the full skill via the Skill tool.
+
+**Fix — Subagent coordinator model:**
+
+- **`context: fork`** added to build skill frontmatter — isolates the entire build pipeline from the parent conversation
+- **Subagent dispatch per step** — every pipeline step is dispatched as a fresh subagent via the Agent tool. The subagent invokes the child skill via the Skill tool in an isolated context. This structurally prevents pseudo-invocation: a fresh subagent has no "knowledge" of what the skill does and must load it properly.
+- **Context packet assembly** — each subagent receives a structured prompt with pipeline context (spec path, title, phase, workspace, issue board) and step-specific context (review verdict, plan path, route annotations) read from artifact files on disk.
+- **STEP_RESULT contract** — subagents return a structured result (status, verdict, artifacts, summary, error) that the orchestrator uses for skip/stop/continue decisions.
+- **Validate→implement retry loop** — configurable via `build.max_retries` in `user-config` (default 0 = disabled, max 3). Extracts specific validation failures, scopes re-implementation, stops on no-progress or regression.
+- **Red Flags section** — 10 anti-patterns focused on preventing pseudo-invocation and inline execution.
+
+### Modified
+
+- `skills/build/SKILL.md` — rewritten delegation protocol, context packet assembly, subagent dispatch per step, retry loop, red flags
+- `.context-index/specs/features/strategic-planning/adev-build-skill.md` — spec revision 3 with subagent dispatch behaviors, context packet contract, retry behaviors, 26 acceptance criteria
+- `.context-index/specs/features/strategic-planning/charter.md` — fixed stale pipeline ordering, capability status → validated
+- `.context-index/tasks/tasks.md` — issue-124 closed with updated root cause description
+
+### New
+
+- `.context-index/specs/features/strategic-planning/adev-build-skill-validation.md` — validation report (PASS)
+- `.context-index/specs/features/strategic-planning/adev-build-skill.review.md` — architecture review (PASS_WITH_NOTES, 0 blockers)
+
 ## [0.20.0] - 2026-04-21
 
 ### New Feature — Output Personas
