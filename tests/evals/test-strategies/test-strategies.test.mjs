@@ -376,6 +376,288 @@ describe('Profile loading with fixtures', () => {
 });
 
 // ============================================================================
+// Profile content validation — each profile has domain-appropriate rules
+// ============================================================================
+
+describe('Profile content: schema', () => {
+  const p = () => getStrategyProfile('schema', PROFILES_DIR).profile;
+
+  it('RED condition references migration assertions', () => {
+    assert.ok(p().red_exit_condition.toLowerCase().includes('migration'),
+      `Expected "migration" in red_exit_condition: ${p().red_exit_condition}`);
+  });
+
+  it('gaming blockers include empty database testing', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('empty database') || blockers.includes('empty db'),
+      `Expected empty database gaming blocker`);
+  });
+
+  it('gaming blockers include missing rollback', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('rollback'), `Expected rollback gaming blocker`);
+  });
+
+  it('seed data rule requires production-like data', () => {
+    assert.ok(p().seed_data_rule.toLowerCase().includes('production') ||
+      p().seed_data_rule.toLowerCase().includes('representative'),
+      `Expected production-like seed data requirement`);
+  });
+
+  it('permitted tools include migration frameworks', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('flyway') || tools.includes('prisma') || tools.includes('alembic'),
+      `Expected migration framework in permitted_tools`);
+  });
+});
+
+describe('Profile content: contract', () => {
+  const p = () => getStrategyProfile('contract', PROFILES_DIR).profile;
+
+  it('RED condition references consumer contract verification', () => {
+    assert.ok(p().red_exit_condition.toLowerCase().includes('consumer') ||
+      p().red_exit_condition.toLowerCase().includes('contract'),
+      `Expected contract reference in red_exit_condition`);
+  });
+
+  it('gaming blockers include structure-only assertions', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('structure') || blockers.includes('field existence'),
+      `Expected structure-only gaming blocker`);
+  });
+
+  it('gaming blockers include happy-path-only', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('happy') || blockers.includes('error'),
+      `Expected happy-path-only gaming blocker`);
+  });
+
+  it('assertion rules require semantic assertions', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('semantic'),
+      `Expected semantic assertion requirement`);
+  });
+
+  it('permitted tools include Pact', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('pact'), `Expected Pact in permitted_tools`);
+  });
+});
+
+describe('Profile content: fixture', () => {
+  const p = () => getStrategyProfile('fixture', PROFILES_DIR).profile;
+
+  it('RED condition references fixture output mismatch', () => {
+    const red = p().red_exit_condition.toLowerCase();
+    assert.ok(red.includes('fixture') || red.includes('output'),
+      `Expected fixture/output in red_exit_condition`);
+  });
+
+  it('gaming blockers include trivially small fixtures', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('trivial') || blockers.includes('fewer than'),
+      `Expected small fixture gaming blocker`);
+  });
+
+  it('assertion rules require exact output comparison', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('exact'),
+      `Expected exact comparison requirement`);
+  });
+
+  it('seed data rule requires hand-crafted fixtures', () => {
+    assert.ok(p().seed_data_rule.toLowerCase().includes('hand-crafted') ||
+      p().seed_data_rule.toLowerCase().includes('deterministic'),
+      `Expected hand-crafted seed data requirement`);
+  });
+
+  it('permitted tools include dbt', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('dbt'), `Expected dbt in permitted_tools`);
+  });
+});
+
+describe('Profile content: policy', () => {
+  const p = () => getStrategyProfile('policy', PROFILES_DIR).profile;
+
+  it('RED condition references policy/deny rule', () => {
+    const red = p().red_exit_condition.toLowerCase();
+    assert.ok(red.includes('policy') || red.includes('deny'),
+      `Expected policy/deny in red_exit_condition`);
+  });
+
+  it('gaming blockers include key-without-value checks', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('key') && blockers.includes('value'),
+      `Expected key-without-value gaming blocker`);
+  });
+
+  it('assertion rules require concrete values', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('concrete') ||
+      p().assertion_rules.toLowerCase().includes('value'),
+      `Expected concrete value assertion requirement`);
+  });
+
+  it('permitted tools include Conftest or OPA', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('conftest') || tools.includes('opa'),
+      `Expected Conftest/OPA in permitted_tools`);
+  });
+});
+
+describe('Profile content: threshold', () => {
+  const p = () => getStrategyProfile('threshold', PROFILES_DIR).profile;
+
+  it('RED condition references performance threshold', () => {
+    const red = p().red_exit_condition.toLowerCase();
+    assert.ok(red.includes('threshold') || red.includes('p95') || red.includes('latency'),
+      `Expected threshold/latency in red_exit_condition`);
+  });
+
+  it('gaming blockers include loose thresholds', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('loose') || blockers.includes('too'),
+      `Expected loose threshold gaming blocker`);
+  });
+
+  it('gaming blockers include missing error rate', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('error rate') || blockers.includes('latency without'),
+      `Expected error rate gaming blocker`);
+  });
+
+  it('assertion rules require percentile targets', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('percentile') ||
+      p().assertion_rules.toLowerCase().includes('p95'),
+      `Expected percentile assertion requirement`);
+  });
+
+  it('permitted tools include k6 or Gatling', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('k6') || tools.includes('gatling'),
+      `Expected k6/Gatling in permitted_tools`);
+  });
+});
+
+describe('Profile content: visual', () => {
+  const p = () => getStrategyProfile('visual', PROFILES_DIR).profile;
+
+  it('RED condition references screenshot diff', () => {
+    const red = p().red_exit_condition.toLowerCase();
+    assert.ok(red.includes('screenshot') || red.includes('diff') || red.includes('baseline'),
+      `Expected screenshot/diff in red_exit_condition`);
+  });
+
+  it('gaming blockers include high pixel threshold', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('pixel') || blockers.includes('threshold'),
+      `Expected pixel threshold gaming blocker`);
+  });
+
+  it('gaming blockers include default-state-only', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('default state') || blockers.includes('only render'),
+      `Expected default-state-only gaming blocker`);
+  });
+
+  it('seed data rule requires deterministic props', () => {
+    assert.ok(p().seed_data_rule.toLowerCase().includes('deterministic') ||
+      p().seed_data_rule.toLowerCase().includes('no random'),
+      `Expected deterministic seed data requirement`);
+  });
+
+  it('permitted tools include Playwright or Chromatic', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('playwright') || tools.includes('chromatic'),
+      `Expected Playwright/Chromatic in permitted_tools`);
+  });
+});
+
+describe('Profile content: smoke', () => {
+  const p = () => getStrategyProfile('smoke', PROFILES_DIR).profile;
+
+  it('RED condition references service not running', () => {
+    const red = p().red_exit_condition.toLowerCase();
+    assert.ok(red.includes('not running') || red.includes('not working') || red.includes('non-zero'),
+      `Expected service-down reference in red_exit_condition`);
+  });
+
+  it('gaming blockers include exit-code-only checks', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('exit code') || blockers.includes('process exit'),
+      `Expected exit-code-only gaming blocker`);
+  });
+
+  it('assertion rules require meaningful response property', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('meaningful') ||
+      p().assertion_rules.toLowerCase().includes('response property'),
+      `Expected meaningful response requirement`);
+  });
+
+  it('seed data rule is minimal', () => {
+    assert.ok(p().seed_data_rule.toLowerCase().includes('minimal'),
+      `Expected minimal seed data for smoke`);
+  });
+
+  it('permitted tools include curl or httpie', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('curl') || tools.includes('httpie'),
+      `Expected curl/httpie in permitted_tools`);
+  });
+});
+
+// ============================================================================
+// Profile consistency — all profiles follow the same contract
+// ============================================================================
+
+describe('Profile contract consistency across all 8 strategies', () => {
+  const ids = ['unit', 'schema', 'contract', 'fixture', 'policy', 'threshold', 'visual', 'smoke'];
+  const required = ['strategy_id', 'red_exit_condition', 'green_exit_condition',
+    'gaming_blockers', 'assertion_rules', 'seed_data_rule', 'handoff_format', 'permitted_tools'];
+
+  it('every profile has all 8 required fields', () => {
+    for (const id of ids) {
+      const { profile } = getStrategyProfile(id, PROFILES_DIR);
+      for (const field of required) {
+        assert.ok(field in profile, `Profile ${id} missing field: ${field}`);
+      }
+    }
+  });
+
+  it('every profile has non-empty gaming_blockers array', () => {
+    for (const id of ids) {
+      const { profile } = getStrategyProfile(id, PROFILES_DIR);
+      assert.ok(Array.isArray(profile.gaming_blockers), `${id} gaming_blockers not array`);
+      assert.ok(profile.gaming_blockers.length >= 3, `${id} has fewer than 3 gaming blockers`);
+    }
+  });
+
+  it('every profile has non-empty permitted_tools array', () => {
+    for (const id of ids) {
+      const { profile } = getStrategyProfile(id, PROFILES_DIR);
+      assert.ok(Array.isArray(profile.permitted_tools), `${id} permitted_tools not array`);
+      assert.ok(profile.permitted_tools.length >= 1, `${id} has no permitted tools`);
+    }
+  });
+
+  it('every profile has distinct red and green conditions', () => {
+    for (const id of ids) {
+      const { profile } = getStrategyProfile(id, PROFILES_DIR);
+      assert.notStrictEqual(profile.red_exit_condition, profile.green_exit_condition,
+        `${id} has identical red and green conditions`);
+    }
+  });
+
+  it('no two profiles share the same red_exit_condition', () => {
+    const conditions = new Set();
+    for (const id of ids) {
+      const { profile } = getStrategyProfile(id, PROFILES_DIR);
+      assert.ok(!conditions.has(profile.red_exit_condition),
+        `Duplicate red_exit_condition found in ${id}`);
+      conditions.add(profile.red_exit_condition);
+    }
+  });
+});
+
+// ============================================================================
 // Cross-cutting: Gaming detection on fixture test files
 // ============================================================================
 
