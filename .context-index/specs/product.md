@@ -22,6 +22,7 @@ AI coding agents work best with structured context but most projects provide non
 | Templates | 13 scaffold files for `.context-index/` | `templates/` |
 | Plugin Registration | Metadata and version for Claude Code | `.claude-plugin/plugin.json` |
 | Test Strategies | Strategy abstraction layer decoupling TDD from unit-test assumptions across 8 domain-specific strategies | [charter.md](./features/test-strategies/charter.md) |
+| Output Personas | Presentation layer adapting plugin outputs to user role and expertise level via layered persona config | [charter.md](./features/output-personas/charter.md) |
 
 ## Cross-Cutting Concerns
 
