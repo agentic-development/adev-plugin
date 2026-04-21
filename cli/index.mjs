@@ -694,6 +694,19 @@ async function cmdInit() {
     log("Git hooks already up to date.");
   }
 
+  // --- Persona Configuration ---
+  heading("Persona Configuration");
+  log("Choose a default output persona:");
+  log("  1. product   — simplified summaries for PMs and designers");
+  log("  2. developer — balanced view with architecture and code details (default)");
+  log("  3. architect — full technical detail with trade-offs and review rationale");
+  console.log();
+  const personaChoice = await ask("Select persona [1/2/3]:");
+  const personaMap = { "1": "product", "2": "developer", "3": "architect" };
+  const selectedPersona = personaMap[personaChoice] || "developer";
+  writeFileSync(join(PLUGIN_ROOT, "user-config"), `# adev user config\npersona=${selectedPersona}\n`);
+  success(`Default persona set to: ${selectedPersona}`);
+
   // --- Summary ---
   heading(`Done! Your project is set up with adev v${PLUGIN_VERSION}.`);
 
