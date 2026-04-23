@@ -370,7 +370,7 @@ async function setupGitHooks() {
         writeFileSync(destPath, wrapper);
         chmodSync(destPath, 0o755);
         created.push(`.githooks/${hookName} (chained with ${existingHooksPath}/${hookName})`);
-      } else {
+      } else if (resolve(srcPath) !== resolve(destPath)) {
         // No original hook for this name — just install the adev hook directly
         cpSync(srcPath, destPath);
         chmodSync(destPath, 0o755);
@@ -390,7 +390,7 @@ async function setupGitHooks() {
       chmodSync(altPath, 0o755);
       created.push(`.githooks/${hookName}.adev (existing hook preserved)`);
       warn(`.githooks/${hookName} already exists — wrote ${hookName}.adev instead`);
-    } else {
+    } else if (resolve(srcPath) !== resolve(destPath)) {
       cpSync(srcPath, destPath);
       chmodSync(destPath, 0o755);
       created.push(`.githooks/${hookName}`);
