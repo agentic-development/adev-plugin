@@ -7,7 +7,7 @@
 
 ---
 charter: heuristics
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: 2
 revision: 1
@@ -30,19 +30,19 @@ updated: 2026-04-23
 
 2. **When** a heuristic entry has no `tags` field **then** `parseHeuristicsFile` returns `tags` as an empty array (not `undefined`), ensuring callers can always iterate without null checks.
 
-3. **When** `tags` contains entries with uppercase letters, spaces, or characters outside `[a-z0-9-]` **then** `validateEntry` rejects with error code `INVALID_TAGS` and a message listing the offending tag values.
+3. **When** `tags` contains entries with uppercase letters, spaces, or characters outside `[a-z0-9-]` **then** `validateEntry` rejects with error code `INVALID_TAGS` and a message listing the offending tag values. Each tag is capped at 64 characters (matching the safe-slug length for `id` and `scope`). The `tags` array is capped at 20 entries. Exceeding either cap triggers `INVALID_TAGS`.
 
 4. **When** `writeHeuristic` is called with a `tags` array **then** `serializeHeuristic` writes `tags:` as a YAML flow sequence (e.g., `tags: [auth, middleware, database]`) in the frontmatter block.
 
 5. **When** `writeHeuristic` is called with an empty `tags` array or no `tags` field **then** `serializeHeuristic` omits the `tags:` line from the frontmatter (not written as `tags: []`).
 
-6. **When** `retrieveHeuristics` is called with `tier: 'index'` **then** `renderHeuristic` returns a single line per entry: `- <title> (<scope>, <confidence>)` — approximately 5 tokens per heuristic.
+6. **When** `retrieveHeuristics` is called with `tier: 'index'` **then** `renderHeuristic` returns a single line per entry: `- <title> (<scope>) — <pattern summary truncated to 80 chars>` — approximately 5-10 tokens per heuristic. This format is shared with the sync index (sync-index spec). Confidence is omitted at index tier because all indexed entries are already filtered by confidence.
 
 7. **When** `retrieveHeuristics` is called with `tier: 'summary'` or no `tier` parameter **then** `renderHeuristic` returns the existing format: heading with title and confidence, pattern line, anti-pattern line (if present), and evidence count — approximately 40 tokens per heuristic. This is the default tier for backward compatibility.
 
 8. **When** `retrieveHeuristics` is called with `tier: 'full'` **then** `renderHeuristic` returns all fields: title, confidence, scope, tags, pattern, anti-pattern, evidence list with paths and dates, and contradictions — approximately 100 tokens per heuristic.
 
-9. **When** `retrieveHeuristics` is called with `keywords: ['auth', 'middleware']` **then** entries whose `tags`, `title`, or `pattern` fields contain any of the keywords (case-insensitive substring match) receive a relevance boost and sort before non-matching entries at the same confidence level.
+9. **When** `retrieveHeuristics` is called with `keywords: ['auth', 'middleware']` **then** entries whose `tags`, `title`, or `pattern` fields contain any of the keywords (case-insensitive substring match) receive a relevance boost and sort before non-matching entries at the same confidence level. The keyword boost is applied after confidence ranking but before the module-before-global tiebreaker: a keyword-matching `_global` entry does NOT outrank a non-matching module-scoped entry at the same confidence. Keywords are capped at 10 entries and 200 characters each; excess entries or length are silently truncated.
 
 10. **When** keywords are provided but no entries match any keyword **then** retrieval falls back to the existing confidence/scope/recency sort without excluding any entries. Keywords refine ranking, they never filter.
 

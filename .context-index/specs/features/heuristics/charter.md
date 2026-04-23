@@ -104,15 +104,15 @@ Phase 2 extends the heuristic system from a lifecycle-internal memory layer to a
 | Retrieval Filtering | Confidence threshold + module match + context-budget cap | must-have | 1 | validated |
 | Contradiction Tracking | `contradicted-by` field population and auto-demotion logic per invariants | must-have | 1 | validated |
 | Format Documentation | Public schema doc at `.context-index/memory/heuristics/_format.md` | must-have | 1 | validated |
-| Keyword Tags | `tags` field on heuristic schema; free-form string array; extractors derive from task context | must-have | 2 | specified |
-| Tiered Retrieval | `tier` parameter on `retrieveHeuristics`: `index`, `summary` (default), `full`; keyword matching via optional `keywords` parameter | must-have | 2 | specified |
-| Sync Index | `/adev:sync` appends `## Learned Lessons` section to all sync targets with high-confidence heuristic index (one line per entry) | must-have | 2 | specified |
-| Hygiene Pass 16 | `/adev:hygiene` checks for index staleness (high-confidence entries missing from synced files) and orphan tags | must-have | 2 | specified |
-| Debug Injection | `/adev:debug` loads heuristics at `summary` tier with keyword matching before investigating | must-have | 2 | specified |
-| Brainstorm Injection | `/adev:brainstorm` surfaces module heuristics during charter drafting | must-have | 2 | specified |
-| Specify Injection | `/adev:specify` surfaces heuristics when writing acceptance criteria | must-have | 2 | specified |
-| Review-Specs Injection | `/adev:review-specs` reviewers receive relevant heuristics for the module under review | must-have | 2 | specified |
-| Validate Injection | `/adev:validate` loads heuristics at `summary` tier during validation checks | must-have | 2 | specified |
+| Keyword Tags | `tags` field on heuristic schema; free-form string array; extractors derive from task context | must-have | 2 | review-passed |
+| Tiered Retrieval | `tier` parameter on `retrieveHeuristics`: `index`, `summary` (default), `full`; keyword matching via optional `keywords` parameter | must-have | 2 | review-passed |
+| Sync Index | `/adev:sync` appends `## Learned Lessons` section to all sync targets with high-confidence heuristic index (one line per entry) | must-have | 2 | review-passed |
+| Hygiene Pass 16 | `/adev:hygiene` checks for index staleness (high-confidence entries missing from synced files) and orphan tags | must-have | 2 | review-passed |
+| Debug Injection | `/adev:debug` loads heuristics at `summary` tier with keyword matching before investigating | must-have | 2 | review-passed |
+| Brainstorm Injection | `/adev:brainstorm` surfaces module heuristics during charter drafting | must-have | 2 | review-passed |
+| Specify Injection | `/adev:specify` surfaces heuristics when writing acceptance criteria | must-have | 2 | review-passed |
+| Review-Specs Injection | `/adev:review-specs` reviewers receive relevant heuristics for the module under review | must-have | 2 | review-passed |
+| Validate Injection | `/adev:validate` loads heuristics at `summary` tier during validation checks | must-have | 2 | review-passed |
 | `/adev:learn` Skill | Explicit user-driven heuristic capture for lessons the lifecycle missed | must-have | 2 | — |
 
 ## Interface Contracts

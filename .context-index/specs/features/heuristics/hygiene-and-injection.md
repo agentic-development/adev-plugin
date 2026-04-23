@@ -7,7 +7,7 @@
 
 ---
 charter: heuristics
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: 2
 revision: 1
@@ -39,17 +39,17 @@ updated: 2026-04-23
 
 6. **When** `--check heuristics` is provided **then** only Pass 16 runs (skip all other passes).
 
-7. **When** the heuristic store directory does not exist **then** Pass 16 reports `PASS` with "No heuristic store found — nothing to audit."
+7. **When** the heuristic store directory does not exist **then** Pass 16 reports `SKIP` with "No heuristic store found — nothing to audit."
 
 ### Behaviors — Skill Injection
 
-8. **When** `/adev:debug` starts Phase 1 (context loading) **then** call `retrieveHeuristics` with `tier: 'summary'` for the module owning the buggy file, and `keywords` derived from the error message or bug description (extract nouns and technical terms, max 5 keywords).
+8. **When** `/adev:debug` starts Phase 1 (context loading) **then** call `retrieveHeuristics` with `tier: 'summary'` for the module owning the buggy file, and `keywords` derived from the error message or bug description. Keyword derivation: split the error message on whitespace and punctuation, filter to tokens of 3+ characters, remove common stop words (the, and, is, was, not, for, with, from, this, that, etc.), take the first 5 unique tokens as keywords. Example: `"ERR_FS_CP_EINVAL: src and dest cannot be the same"` → `['src', 'dest', 'same', 'err', 'einval']`. If fewer than 3 tokens are extracted, pass an empty keywords array and fall back to module-only retrieval.
 
 9. **When** `/adev:brainstorm` starts Step 1 (explore context) **then** call `retrieveHeuristics` with `tier: 'summary'` for the target module slug. If the module is new (no existing heuristics), fall back to `_global` only.
 
 10. **When** `/adev:specify` starts Step 2 (load context) **then** call `retrieveHeuristics` with `tier: 'summary'` for the charter module. Include the retrieved heuristics in the working context alongside the charter and existing specs.
 
-11. **When** `/adev:review-specs` dispatches reviewer subagents **then** include `retrieveHeuristics` output at `summary` tier for the spec's charter module in each reviewer's prompt, under a `## Heuristics` section with preamble: "The following lessons from past work may inform this review."
+11. **When** `/adev:review-specs` dispatches reviewer subagents **then** include `retrieveHeuristics` output at `summary` tier for the spec's charter module in each reviewer's prompt, under a `## Heuristics` section with the canonical preamble (same as Behavior 14).
 
 12. **When** `/adev:validate` starts validation checks **then** call `retrieveHeuristics` with `tier: 'summary'` for the spec's charter module. Include in the validation context so checks can reference learned patterns.
 
