@@ -10,6 +10,8 @@ Based on the [Agentic Development Handbook](https://www.agentic-dev.org/en/handb
 npx @adev-org/adev-cli init
 ```
 
+> **Note:** Always use `npx` to run the installer — do not `npm install` this package as a project dependency. The CLI sets up your AI assistant's plugin configuration and is not meant to be imported.
+
 The installer detects your AI assistant, scaffolds project context, and configures settings. Use `--provider claude-code|opencode|codex` to skip the prompt.
 
 ## Quick Start
