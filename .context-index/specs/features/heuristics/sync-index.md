@@ -7,7 +7,7 @@
 
 ---
 charter: heuristics
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: 2
 revision: 1
@@ -39,11 +39,11 @@ updated: 2026-04-23
 
 6. **When** the heuristic store is empty or contains only `low`/`medium`-confidence entries **then** no `## Learned Lessons` section appears. If a previous sync had written one, it is removed on the next sync.
 
-7. **When** the sync target format is `claude` (CLAUDE.md) **then** the section is placed between `## Context Index` and `# User Additions`. User Additions content below the marker is preserved unchanged.
+7. **When** the sync target format is `claude` (CLAUDE.md) **then** the section is placed immediately before the `# User Additions` marker, after all other generated sections (including `## Task Management` if present). User Additions content below the marker is preserved unchanged.
 
-8. **When** the sync target format is `opencode` (AGENTS.md) **then** the section is placed between `## Project Context` and the end of the synced content.
+8. **When** the sync target format is `opencode` (AGENTS.md) **then** the section is placed immediately before the `# User Additions` marker (or at the end of the synced content if no marker exists), after all other generated sections including `## Task Management`.
 
-9. **When** the sync target format is `cursor` (.cursorrules) or `copilot` (copilot-instructions.md) **then** the section is appended at the end of the synced content.
+9. **When** the sync target format is `cursor` (.cursorrules) or `copilot` (copilot-instructions.md) **then** the section is appended at the end of the synced content. On re-sync, the replacement algorithm detects the `## Learned Lessons` heading and removes everything from that heading to the next `##` heading or EOF, then writes the fresh section in its place.
 
 10. **When** `retrieveHeuristics` fails during sync (e.g., malformed heuristic file) **then** the sync proceeds without the `## Learned Lessons` section. A warning is printed but sync does not fail.
 
