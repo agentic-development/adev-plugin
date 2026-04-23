@@ -62,6 +62,25 @@ Six phases. Complete each before proceeding to the next.
    - Run `git diff` and `git log --oneline -10` in the affected area.
    - New dependencies, config changes, environmental differences.
 
+4. **Heuristics:** Load module-scoped heuristics for the buggy file's module.
+   Derive keywords from the error message or bug description: split on whitespace and punctuation,
+   filter to tokens of 3+ characters, remove common stop words (the, and, is, was, not, for, with,
+   from, this, that, are, has, have, its, etc.), take the first 5 unique tokens as keywords.
+   Example: `"ERR_FS_CP_EINVAL: src and dest cannot be the same"` → `['src', 'dest', 'same', 'err', 'einval']`.
+   If fewer than 3 tokens are extracted, pass an empty keywords array and fall back to module-only retrieval.
+   **Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix.
+   Run inline Node.js:
+   ```javascript
+   const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
+   const entries = await retrieveHeuristics(projectRoot, moduleSlug, { tier: 'summary', keywords });
+   const rendered = entries.map(renderHeuristic).join('\n\n');
+   ```
+   Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `moduleSlug` is the module owning
+   the buggy file, and `keywords` are the tokens derived above.
+   If the call fails or returns empty, proceed without heuristics — non-blocking.
+   When heuristics are present, prepend: "The following heuristics are lessons learned from past work
+   in this module. Use them as guidance, not as hard rules."
+
 ### Phase 2: Investigate (with Context)
 
 **Goal:** Understand the affected area using project context before forming hypotheses.

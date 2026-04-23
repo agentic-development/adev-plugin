@@ -117,6 +117,19 @@ Read these files and hold them in working memory:
 - Any existing specs in the same module directory — to avoid duplication
 - `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
+**Heuristics:** Load module-scoped heuristics for the charter module.
+Derive the module slug from the resolved Feature Charter's module name (the `charter:` field or directory name).
+**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
+Run inline Node.js:
+```javascript
+const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
+const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
+const rendered = entries.map(renderHeuristic).join('\n\n');
+```
+If the call fails or returns empty, proceed without heuristics — non-blocking.
+When heuristics are present, include them in the working context alongside the charter and existing specs.
+Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
 ## Shared: Frontmatter
 
 ```yaml

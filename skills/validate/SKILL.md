@@ -42,6 +42,19 @@ Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mj
 
 ## Step 0: Load Check Registry
 
+**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module.
+Derive the module slug from the spec's `charter:` frontmatter field.
+**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
+Run inline Node.js:
+```javascript
+const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
+const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
+const rendered = entries.map(renderHeuristic).join('\n\n');
+```
+If the call fails or returns empty, proceed without heuristics — non-blocking.
+When heuristics are present, include them in the validation context so checks can reference learned patterns.
+Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
 Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
 
 - Reads bundled defaults from `templates/validate/defaults.yaml` (12 entries covering Check 1.5 + Checks 2–12). Check 1 is not in this registry; it continues to be sourced from `governance/gates.yaml`.

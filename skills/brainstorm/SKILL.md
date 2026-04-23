@@ -96,6 +96,20 @@ Read on-demand as the conversation touches these areas:
 
 After reading, summarize findings in 3-5 bullet points covering: what the project builds, existing modules and boundaries, architectural constraints, tech stack, and cross-cutting concerns.
 
+**Heuristics:** Load module-scoped heuristics for the target module.
+Derive the module slug from the `--module <name>` argument if provided, or from the feature idea once identified.
+If the module is new (no existing scope file in `.context-index/memory/heuristics/`), use `_global` only.
+**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
+Run inline Node.js:
+```javascript
+const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
+const entries = await retrieveHeuristics(projectRoot, moduleSlug, { tier: 'summary' });
+const rendered = entries.map(renderHeuristic).join('\n\n');
+```
+If the call fails or returns empty, proceed without heuristics — non-blocking.
+When heuristics are present, prepend: "The following heuristics are lessons learned from past work
+in this module. Use them as guidance, not as hard rules."
+
 ## Step 2: Clarify
 
 Ask questions one at a time. Prefer multiple-choice when possible. Do not ask more than one question per message.
