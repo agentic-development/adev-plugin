@@ -51,6 +51,8 @@ If multiple providers are used, sync all enabled targets from the manifest.
     entire section (no empty block, no placeholder).]
    <!-- END TASK MANAGEMENT -->
 
+   ## Learned Lessons (conditional — see step 3)
+
    # User Additions
    <!-- Content below is preserved across syncs. Add Claude-specific instructions here. -->
 
@@ -82,13 +84,30 @@ If multiple providers are used, sync all enabled targets from the manifest.
    ### Cursor format (`.cursorrules`)
    Full constitution content. Convert Context Routing pointers to Cursor-compatible references where applicable.
 
-3. **Preserve User Additions:**
+3. **Inject Learned Lessons (conditional):**
+
+   Read high-confidence heuristics via inline Node.js using `retrieveHeuristics` and `renderHeuristic` from `lib/heuristics.mjs`. This step is non-blocking: if `retrieveHeuristics` throws, log a warning to stderr and proceed without the section.
+
+   ```js
+   import { retrieveHeuristics } from 'lib/heuristics.mjs';
+   const heuristics = await retrieveHeuristics(projectRoot, '_global');
+   const highOnly = heuristics.filter(h => h.confidence === 'high');
+   ```
+
+   - If no `high`-confidence entries exist, skip the section entirely. If a stale `## Learned Lessons` block is already present in the target file, remove it (replace from the heading to the next `##` heading or EOF, whichever comes first).
+   - If entries exist, group by scope alphabetically. The `_global` scope sorts last.
+   - Render each entry as: `- <title> (<scope>) — <pattern truncated to 80 chars>`
+   - **Placement in CLAUDE.md and AGENTS.md:** Place the `## Learned Lessons` section heading immediately before the `# User Additions` marker.
+   - **Placement in .cursorrules and copilot-instructions.md (`.github/copilot-instructions.md`):** Append the section at the end of the file.
+   - **On re-sync:** Detect an existing `## Learned Lessons` heading and remove the old block (from the heading to the next `##` or EOF), then write the fresh replacement in the correct position.
+
+4. **Preserve User Additions:**
    - Look for `# User Additions` marker in existing target file
    - If found, preserve everything below the marker
    - If marker missing, append the marker with empty section
    - If target file does not exist, create it fresh
 
-4. **Report:**
+5. **Report:**
    List which files were updated and their line counts.
 
 ## Dry-Run Mode
