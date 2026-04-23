@@ -10,6 +10,7 @@ charter: heuristics
 status: review-passed
 risk_level: medium
 milestone: 2
+test_strategy: unit
 revision: 1
 charter-revision: 5
 created: 2026-04-23

@@ -62,7 +62,7 @@
 ### Task 1: Tags Schema — Typedef, Validation, Constants [specialist: none]
 
 **Charter capability:** Keyword Tags
-**Strategy:** unit (source: fallback, confidence: high)
+**Strategy:** unit (source: spec-declared, confidence: high)
 **Files:**
 - Modify: `lib/heuristics.mjs:16-36` (Heuristic typedef)
 - Modify: `lib/heuristics.mjs:100-138` (validateEntry)
@@ -115,7 +115,7 @@ describe("tags validation", () => {
 ### Task 2: Tags Parse and Serialize [specialist: none]
 
 **Charter capability:** Keyword Tags
-**Strategy:** unit (source: fallback, confidence: high)
+**Strategy:** unit (source: spec-declared, confidence: high)
 **Depends on:** Task 1
 **Files:**
 - Modify: `lib/heuristics.mjs` (parseYamlBlock, serializeHeuristic)
@@ -134,7 +134,7 @@ describe("tags validation", () => {
 ### Task 3: Tiered Rendering in renderHeuristic [specialist: none]
 
 **Charter capability:** Tiered Retrieval
-**Strategy:** unit (source: fallback, confidence: high)
+**Strategy:** unit (source: spec-declared, confidence: high)
 **Files:**
 - Modify: `lib/heuristics.mjs:1114-1125` (renderHeuristic)
 - Test: `tests/lib/heuristics-tags-and-tiers.test.mjs`
@@ -152,7 +152,7 @@ describe("tags validation", () => {
 ### Task 4: Keyword Matching and Tier in retrieveHeuristics [specialist: none]
 
 **Charter capability:** Tiered Retrieval
-**Strategy:** unit (source: fallback, confidence: high)
+**Strategy:** unit (source: spec-declared, confidence: high)
 **Depends on:** Task 3
 **Files:**
 - Modify: `lib/heuristics.mjs:1036-1106` (retrieveHeuristics)
@@ -171,7 +171,7 @@ describe("tags validation", () => {
 ### Task 5: Update _format.md Documentation [specialist: none]
 
 **Charter capability:** Keyword Tags, Tiered Retrieval
-**Strategy:** unit (source: fallback, confidence: high)
+**Strategy:** unit (source: spec-declared, confidence: high)
 **Files:**
 - Modify: `.context-index/memory/heuristics/_format.md`
 - Test: `tests/lib/heuristics-format-doc.test.mjs`
