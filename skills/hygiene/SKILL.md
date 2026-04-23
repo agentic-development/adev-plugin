@@ -5,12 +5,12 @@ description: "Audit all context for staleness, drift, and coverage gaps. Runs fi
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and source code, generating actionable reports. Thirteen audit passes detect staleness, drift, coverage gaps, phase readiness, lifecycle consistency, operational patterns, and code health issues so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and source code, generating actionable reports. Sixteen audit passes detect staleness, drift, coverage gaps, phase readiness, lifecycle consistency, operational patterns, code health issues, and heuristic index health so the team can fix them before they become obstacles.
 
 ## Arguments
 
 - No arguments: full audit (all fifteen passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
 
@@ -718,6 +718,60 @@ Scanned: N source files, M commits
 | Issue Board Audit | FAIL | 2 orphaned, 1 stale epic |
 ```
 
+## Audit Pass 16: Heuristic Index Health
+
+**Goal:** Verify heuristic index in sync targets is current and tags are well-distributed.
+
+**Steps:**
+
+1. Check if `.context-index/memory/heuristics/` exists. If not, report SKIP:
+   "No heuristic store found — nothing to audit."
+
+2. **STALE_INDEX check:** Read all heuristics via `readHeuristics(projectRoot, { minConfidence: 'high' })`.
+   For each sync target in `manifest.yaml`, read the file and extract the `## Learned Lessons` section.
+   Compare: any high-confidence heuristic whose title is not present in any sync target's
+   Learned Lessons section is flagged as STALE_INDEX (severity: warn), listing the heuristic id,
+   title, and scope. If no sync targets are configured in the manifest, skip the STALE_INDEX check
+   and proceed to orphan tag detection only.
+
+3. **ORPHAN_TAG check:** Read all scope files in `.context-index/memory/heuristics/`.
+   Collect every `tags` entry across all heuristics.
+   Count occurrences of each tag. Any tag appearing exactly once is flagged as ORPHAN_TAG
+   (severity: info) with the tag, the heuristic id it belongs to, and a suggestion:
+   "Remove this tag or add it to related heuristics to normalize the tag vocabulary."
+
+4. If no STALE_INDEX and no ORPHAN_TAG findings: report PASS with count of indexed entries
+   and total unique tags.
+
+5. **--fix behavior:** If STALE_INDEX detected and `--fix` provided, invoke `/adev:sync`
+   to regenerate the index. After sync completes, re-check and report the fix result.
+   ORPHAN_TAG has no auto-fix — report:
+   "Orphan tags are advisory. Use `/adev:learn --promote` or edit heuristic files manually
+   to normalize tags."
+
+6. **--check heuristics:** When `--check heuristics` is provided, run only this pass
+   (skip passes 1–15).
+
+**Output format:**
+```
+## Heuristic Index Health
+
+- [x] Heuristic store: .context-index/memory/heuristics/ exists
+- [ ] STALE_INDEX (warn): heuristic "Avoid inline callbacks in hooks" (id: a1b2, scope: hooks)
+      not found in any sync target's ## Learned Lessons section
+- [ ] ORPHAN_TAG (info): tag "edge-case" appears on only 1 heuristic (id: a1b2)
+      Suggestion: remove this tag or add it to related heuristics
+
+**Actions:**
+- [ ] Run `/adev:sync` to regenerate the Learned Lessons index
+- [ ] Normalize or remove orphan tags manually
+```
+
+**Integration with summary table:**
+```
+| Heuristic Index Health | WARN | 1 stale index entry, 2 orphan tags |
+```
+
 ## Report Format
 
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
@@ -747,6 +801,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Code Health | WARN | 2 high, 3 medium, 1 low |
 | Code Provenance | WARN | 2 drifted, 3 untraced |
 | Issue Board Audit | FAIL | 2 orphaned, 1 stale epic |
+| Heuristic Index Health | WARN | 1 stale index entry, 2 orphan tags |
 
 ## Priority Actions
 
