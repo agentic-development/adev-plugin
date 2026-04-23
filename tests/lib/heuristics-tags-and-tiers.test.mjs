@@ -565,3 +565,59 @@ describe("retrieveHeuristics: keyword and tier options", () => {
     assert.ok(Array.isArray(results));
   });
 });
+
+// ── Regression: writeHeuristic tags round-trip ───────────────────────────────
+
+describe("writeHeuristic: tags round-trip", () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  it("preserves tags through writeHeuristic → readHeuristics round-trip", async () => {
+    const { readHeuristics } = await import("../../lib/heuristics.mjs");
+    await writeHeuristic(tempDir, {
+      id: "roundtrip-tags",
+      scope: "cli",
+      title: "Tags roundtrip test",
+      pattern: "Always include tags",
+      confidence: "low",
+      tags: ["auth", "middleware", "db"],
+      evidence: [{ path: "test.md", date: "2026-04-23", source: "manual" }],
+    });
+    const entries = await readHeuristics(tempDir, { module: "cli" });
+    const entry = entries.find((e) => e.id === "roundtrip-tags");
+    assert.ok(entry, "entry should exist after writeHeuristic");
+    assert.deepStrictEqual(entry.tags, ["auth", "middleware", "db"]);
+  });
+
+  it("preserves existing tags on update when new entry omits tags", async () => {
+    const { readHeuristics } = await import("../../lib/heuristics.mjs");
+    await writeHeuristic(tempDir, {
+      id: "update-tags",
+      scope: "cli",
+      title: "Original",
+      pattern: "Original pattern",
+      confidence: "low",
+      tags: ["auth", "config"],
+      evidence: [{ path: "v1.md", date: "2026-04-23", source: "manual" }],
+    });
+    await writeHeuristic(tempDir, {
+      id: "update-tags",
+      scope: "cli",
+      title: "Updated",
+      pattern: "Updated pattern",
+      confidence: "low",
+      evidence: [{ path: "v2.md", date: "2026-04-23", source: "manual" }],
+    });
+    const entries = await readHeuristics(tempDir, { module: "cli" });
+    const entry = entries.find((e) => e.id === "update-tags");
+    assert.ok(entry);
+    assert.deepStrictEqual(entry.tags, ["auth", "config"]);
+  });
+});
