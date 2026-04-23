@@ -39,7 +39,7 @@
 ### Task 1: Add Learned Lessons Section to Sync SKILL.md [specialist: none]
 
 **Charter capability:** Sync Index
-**Strategy:** schema (source: detected, confidence: high)
+**Strategy:** unit (source: fallback, confidence: high)
 **Files:**
 - Modify: `skills/sync/SKILL.md`
 - Test: `tests/skills/sync-heuristic-index.test.mjs`
