@@ -55,7 +55,7 @@
 ### Task 1: Hygiene Pass 16 — Heuristic Index Health [specialist: none]
 
 **Charter capability:** Hygiene Pass 16
-**Strategy:** unit (source: fallback, confidence: high)
+**Strategy:** unit (source: spec-declared, confidence: high)
 **Files:**
 - Modify: `skills/hygiene/SKILL.md`
 - Test: `tests/skills/hygiene-heuristic-pass.test.mjs`
@@ -144,7 +144,7 @@ Add `## Audit Pass 16: Heuristic Index Health` to `skills/hygiene/SKILL.md` afte
 ### Task 2: Widen Heuristic Injection to 5 Skills [specialist: none]
 
 **Charter capability:** Debug Injection, Brainstorm Injection, Specify Injection, Review-Specs Injection, Validate Injection
-**Strategy:** unit (source: fallback, confidence: high)
+**Strategy:** unit (source: spec-declared, confidence: high)
 **Files:**
 - Modify: `skills/debug/SKILL.md`
 - Modify: `skills/brainstorm/SKILL.md`
