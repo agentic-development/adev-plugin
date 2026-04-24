@@ -42,6 +42,19 @@ Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mj
 
 ## Step 0: Load Check Registry
 
+**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module.
+Derive the module slug from the spec's `charter:` frontmatter field.
+**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
+Run inline Node.js:
+```javascript
+const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
+const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
+const rendered = entries.map(renderHeuristic).join('\n\n');
+```
+If the call fails or returns empty, proceed without heuristics — non-blocking.
+When heuristics are present, include them in the validation context so checks can reference learned patterns.
+Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
 Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
 
 - Reads bundled defaults from `templates/validate/defaults.yaml` (12 entries covering Check 1.5 + Checks 2–12). Check 1 is not in this registry; it continues to be sourced from `governance/gates.yaml`.
@@ -358,6 +371,17 @@ Read the parent charter's Capability Map. For each capability covered by this sp
 
 If no charter is referenced in the spec's frontmatter, SKIP with note: "No charter reference found."
 
+#### 12e. Plan Checkbox Completion
+
+If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
+
+1. Read the plan file and find all task sections (`### Task N:`).
+2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
+3. If any task has unchecked checkboxes but the corresponding issue is closed (or all tests pass) → flag as WARN: "Plan task N has N unchecked checkboxes but implementation is complete."
+4. **`--fix` behavior:** Mark all `- [ ]` checkboxes in completed task sections as `- [x]`.
+
+If no plan file exists or can be inferred, SKIP with note: "No plan file found."
+
 **Output format:**
 ```
 ## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
@@ -365,6 +389,7 @@ If no charter is referenced in the spec's frontmatter, SKIP with note: "No chart
 - Epic completion: PASS | WARN [epic still open] | N/A
 - Spec status: PASS | WARN [status is <current>]
 - Charter sync: PASS | WARN [N capabilities stale] | SKIP
+- Plan checkboxes: PASS | WARN [N tasks with unchecked boxes] | SKIP
 ```
 
 **This check uses WARN severity, not FAIL.** Lifecycle drift does not invalidate the implementation — the code is correct. But warnings are prominently displayed so the user knows to run `/adev:reconcile` or apply `--fix` for automatic cleanup.
@@ -501,6 +526,8 @@ Explicit list of SKIP reasons:
 On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — <id> (scope: <scope>, confidence: medium)` — or whatever confidence the helper returns after auto-promotion, since the confidence value must come from the `writeHeuristic` return value rather than the caller-supplied input.
 
 ## Report Format
+
+**Persona adaptation:** The validation report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
 
 Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
 

@@ -178,6 +178,8 @@ None — this skill operates entirely through static file inspection.
 
 ## Output Format
 
+**Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules. The scorecard file written to disk always uses the full format.
+
 ### Markdown Scorecard
 
 ```

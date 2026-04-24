@@ -305,6 +305,8 @@ The `fast`-tier subagent compares original vs current line-by-line:
 
 ### 6d. Verdict and Report
 
+**Persona adaptation:** Verify report files written to disk use the full format. The chat summary presented to the user should follow the active persona's output rules.
+
 - **All changes cosmetic** → `PASS_WITH_COSMETIC_CHANGES`. Log what changed. No report file written.
 - **Any tamper found** → `TAMPERED`. Produce diff report.
 
