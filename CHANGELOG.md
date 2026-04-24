@@ -17,6 +17,8 @@ Extends the heuristic memory system from a lifecycle-internal layer to a project
 
 #### Fixes
 
+- **Plan task completion tracking** — `/adev:implement` Step 2h now marks plan file checkboxes (`- [x]`) after each task completes. Previously only the ephemeral execution state and issue board were updated, leaving plan files permanently showing all tasks unchecked. (issue-125)
+- **Validate plan checkbox check** — `/adev:validate` Check 12e detects stale unchecked checkboxes on completed tasks and auto-fixes them with `--fix`.
 - `writeHeuristic` now propagates `tags` field in both create and update paths (was silently dropping tags).
 
 #### Context Hygiene
@@ -33,7 +35,9 @@ Extends the heuristic memory system from a lifecycle-internal layer to a project
 - `lib/heuristics.mjs` — tags schema, tiered rendering, keyword matching, writeHeuristic fix
 - `skills/sync/SKILL.md` — Learned Lessons section injection
 - `skills/hygiene/SKILL.md` — Pass 16 heuristic index health
-- `skills/brainstorm/SKILL.md`, `skills/debug/SKILL.md`, `skills/specify/SKILL.md`, `skills/review-specs/SKILL.md`, `skills/validate/SKILL.md` — heuristic injection widening
+- `skills/implement/SKILL.md` — Step 2h plan checkbox completion on task done
+- `skills/validate/SKILL.md` — Check 12e plan checkbox reconciliation, heuristic injection widening
+- `skills/brainstorm/SKILL.md`, `skills/debug/SKILL.md`, `skills/specify/SKILL.md`, `skills/review-specs/SKILL.md` — heuristic injection widening
 - `.context-index/memory/heuristics/_format.md` — tags and tiered retrieval documentation
 
 ### New
