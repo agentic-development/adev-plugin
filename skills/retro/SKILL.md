@@ -251,6 +251,8 @@ If `--charter <module>` was provided, save to `.context-index/hygiene/retros/<en
 
 ### Report Format
 
+**Persona adaptation:** The report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
+
 ```markdown
 # Retrospective: <start-date> to <end-date>
 

@@ -64,7 +64,7 @@ The `session-capture.sh` hook (already merged and tested) demonstrates the exact
 **Rationale:**
 1. **Anthropic explicitly supports it.** The `command` field runs any executable. Node.js, Python, and bash are all first-class options.
 2. **Established internal precedent.** `session-capture.sh` already uses inline Node.js. `session-start.sh` already uses inline Python.
-3. **Node.js is a hard prerequisite.** This plugin installs via `npx adev-cli init`. Node.js is always available.
+3. **Node.js is a hard prerequisite.** This plugin installs via `npx adev-cli install`. Node.js is always available.
 4. **The lib module exists.** `readExecutionState` in `lib/execution-state.mjs` is already written and tested. Reimplementing its YAML parsing and progress body parsing in bash or Python would be duplication.
 5. **Constitution compliance.** "Minimize external dependencies" — reusing existing Node.js modules avoids adding bash YAML parsers or Python frontmatter libraries.
 

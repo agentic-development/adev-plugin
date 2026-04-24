@@ -214,7 +214,7 @@ If option 2, add `charter-extension: true` to frontmatter and a comment at the t
 
 ### Step 4: Interactive Spec Authoring
 
-Guide the user through each section. Do not dump a blank template.
+Guide the user through each section. Do not dump a blank template. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
 
 **Behavioral Contract:**
 Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors in the **When...then** format:
