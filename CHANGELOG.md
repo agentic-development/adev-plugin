@@ -6,6 +6,20 @@
 
 Extends the heuristic memory system from a lifecycle-internal layer to a project-wide context layer. Agents now see relevant lessons in every interaction — not just during plan/implement — at minimal token cost via tiered rendering.
 
+### CLI: Install/Upgrade Split
+
+- **`install` command** — new dedicated command for fresh installations. Handles provider selection, plugin registration, and context index scaffolding.
+- **`upgrade` command** — new dedicated command for existing installations. Detects installed version, computes diff, and applies incremental updates.
+- **Simplified flow** — the old `init` command (which handled both cases) is replaced by two focused commands with clearer intent.
+
+### Output Personas
+
+- **Persona-aware skill templates** — skill output templates now include persona directives so output adapts to the active persona (product, developer, architect).
+
+### Heuristics Phase 2: Progressive Disclosure
+
+Extends the heuristic memory system from a lifecycle-internal layer to a project-wide context layer. Agents now see relevant lessons in every interaction — not just during plan/implement — at minimal token cost via tiered rendering.
+
 #### Features
 
 - **Keyword tags** — `tags` field on heuristic schema (free-form `[a-z0-9-]` string array). Extractors derive tags from task context for relevance matching.
@@ -32,6 +46,7 @@ Extends the heuristic memory system from a lifecycle-internal layer to a project
 
 ### Modified
 
+- `cli/index.mjs` — split `init` into `install` and `upgrade` commands
 - `lib/heuristics.mjs` — tags schema, tiered rendering, keyword matching, writeHeuristic fix
 - `skills/sync/SKILL.md` — Learned Lessons section injection
 - `skills/hygiene/SKILL.md` — Pass 16 heuristic index health
