@@ -327,8 +327,9 @@ After both reviews pass, if `governance/gates.yaml` exists:
 
 After both reviews pass:
 1. Update the issue status to `closed` via `close(id, "Implemented and reviewed")`.
-2. Record: specialist used (or "generic"), review cycles needed, concerns noted.
-3. Move to the next task.
+2. **Update plan file checkboxes.** Read the plan file and mark all `- [ ]` checkboxes within the current task's section as `- [x]`. The task section starts at `### Task N:` and ends at the next `### Task` heading or end of file. Write the updated plan file back. This provides a persistent, human-readable record of completion that outlives the ephemeral execution state.
+3. Record: specialist used (or "generic"), review cycles needed, concerns noted.
+4. Move to the next task.
 
 ### Step 2-post: Integration Gate
 
