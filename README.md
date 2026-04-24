@@ -7,12 +7,12 @@ Based on the [Agentic Development Handbook](https://www.agentic-dev.org/en/handb
 ## Install
 
 ```bash
-npx @adev-org/adev-cli init
+npx @adev-org/adev-cli install
 ```
 
 > **Note:** Always use `npx` to run the installer — do not `npm install` this package as a project dependency. The CLI sets up your AI assistant's plugin configuration and is not meant to be imported.
 
-The installer detects your AI assistant, scaffolds project context, and configures settings. Use `--provider claude-code|opencode|codex` to skip the prompt.
+The installer registers the plugin, scaffolds a minimal `.context-index/`, and sets up git hooks. Run `/adev:init` inside your AI assistant to configure constitution, governance, and project context. Use `--provider claude-code|opencode|codex` to skip the prompt.
 
 ## Quick Start
 

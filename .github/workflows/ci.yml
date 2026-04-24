@@ -151,7 +151,7 @@ jobs:
           if [ "$FAILED" -gt 0 ]; then
             echo ""
             echo "::error::$FAILED commit(s) missing required provenance trailers."
-            echo "Ensure git hooks are active (run: npx adev-cli init) or add trailers manually."
+            echo "Ensure git hooks are active (run: npx adev-cli install) or add trailers manually."
             exit 1
           fi
 
