@@ -86,7 +86,7 @@ Two-stage review (spec compliance + code quality) runs after each task.
 /adev:validate
 ```
 
-11 ordered checks verify the implementation:
+13 ordered checks verify the implementation:
 - Quality gates (tests, lint, typecheck)
 - Spec compliance and charter consistency
 - Constitution and ADR compliance
