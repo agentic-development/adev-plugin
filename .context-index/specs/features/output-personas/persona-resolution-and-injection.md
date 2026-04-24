@@ -64,6 +64,7 @@ source-manifest:
 - The `user-config` file (when written) contains valid `key=value` format parseable by bash without external tools
 - The `.gitignore` includes `user-config` after `/adev:init` runs
 - All skill outputs follow the persona's dimension rules (verbosity, code refs, next actions) without any change to internal processing
+- Persona rules override skill output templates for user-facing chat responses. Skill output templates define the default format (Developer persona) and what to write to disk artifacts. Each skill's "Report to User" or "Output Format" section includes a persona-adaptation qualifier.
 
 ### Error Cases
 

@@ -36,7 +36,7 @@ If the issue board has not been initialized, call `init()` on the adapter to cre
 
 ### Board Display (no arguments)
 
-Read all epics and issues. Display grouped by epic, then by status:
+Read all epics and issues. Display grouped by epic, then by status. **Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat display to its output rules.
 
 1. **Open / In Progress** — active work (show first)
 2. **Deferred** — parked items

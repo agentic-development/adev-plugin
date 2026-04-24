@@ -101,6 +101,8 @@ Present the checklist to the user. User marks each item as: PASS (5 points), ACC
 
 ## Report Format
 
+**Persona adaptation:** The report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
+
 Write to `.context-index/evals/<spec-slug>-eval.md`:
 
 ```markdown

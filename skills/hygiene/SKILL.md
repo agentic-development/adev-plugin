@@ -774,6 +774,8 @@ Scanned: N source files, M commits
 
 ## Report Format
 
+**Persona adaptation:** The report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
+
 The full report is written to `.context-index/hygiene/drift-report.md` with this structure:
 
 ```markdown
