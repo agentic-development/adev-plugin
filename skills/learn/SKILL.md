@@ -186,7 +186,7 @@ When `--list` is provided:
 
 1. Read all heuristics using the store API.
 2. If `--scope` is provided, filter to that scope.
-3. Display as a table:
+3. Display as a table. **Persona adaptation:** If a different persona is active, adapt the display to its output rules.
 
 ```
 Heuristics (scope: hooks)

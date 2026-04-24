@@ -580,7 +580,7 @@ If `tasks.backend` is configured:
 
 If `tasks.backend` is not configured in the manifest, skip issue creation entirely.
 
-After the plan is saved and reviewed, present the user with next steps:
+After the plan is saved and reviewed, present the user with next steps. **Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules.
 
 ```
 Plan complete and saved to <path to plan file>.

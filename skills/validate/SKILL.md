@@ -515,6 +515,8 @@ On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — 
 
 ## Report Format
 
+**Persona adaptation:** The validation report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
+
 Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
 
 ```markdown
