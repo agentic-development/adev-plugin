@@ -371,6 +371,17 @@ Read the parent charter's Capability Map. For each capability covered by this sp
 
 If no charter is referenced in the spec's frontmatter, SKIP with note: "No charter reference found."
 
+#### 12e. Plan Checkbox Completion
+
+If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
+
+1. Read the plan file and find all task sections (`### Task N:`).
+2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
+3. If any task has unchecked checkboxes but the corresponding issue is closed (or all tests pass) → flag as WARN: "Plan task N has N unchecked checkboxes but implementation is complete."
+4. **`--fix` behavior:** Mark all `- [ ]` checkboxes in completed task sections as `- [x]`.
+
+If no plan file exists or can be inferred, SKIP with note: "No plan file found."
+
 **Output format:**
 ```
 ## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
@@ -378,6 +389,7 @@ If no charter is referenced in the spec's frontmatter, SKIP with note: "No chart
 - Epic completion: PASS | WARN [epic still open] | N/A
 - Spec status: PASS | WARN [status is <current>]
 - Charter sync: PASS | WARN [N capabilities stale] | SKIP
+- Plan checkboxes: PASS | WARN [N tasks with unchecked boxes] | SKIP
 ```
 
 **This check uses WARN severity, not FAIL.** Lifecycle drift does not invalidate the implementation — the code is correct. But warnings are prominently displayed so the user knows to run `/adev:reconcile` or apply `--fix` for automatic cleanup.
