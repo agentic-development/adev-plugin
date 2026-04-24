@@ -14,6 +14,12 @@ npx @adev-org/adev-cli install
 
 The installer registers the plugin, scaffolds a minimal `.context-index/`, and sets up git hooks. Run `/adev:init` inside your AI assistant to configure constitution, governance, and project context. Use `--provider claude-code|opencode|codex` to skip the prompt.
 
+To upgrade an existing installation:
+
+```bash
+npx @adev-org/adev-cli upgrade
+```
+
 ## Quick Start
 
 After installing, open your AI assistant in a project directory:
@@ -65,7 +71,7 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 | `/adev:build` | Run the full pipeline end-to-end (review, plan, implement, validate) |
 | `/adev:implement` | Execute tasks with TDD — each in a fresh subagent |
 | `/adev:write-test` | Standalone TDD test authoring with gaming detection |
-| `/adev:validate` | 11-check verification against specs, constitution, and ADRs |
+| `/adev:validate` | 13-check verification against specs, constitution, and ADRs |
 
 ### Fixing and Debugging
 
