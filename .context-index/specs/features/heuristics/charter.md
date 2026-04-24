@@ -104,9 +104,9 @@ Phase 2 extends the heuristic system from a lifecycle-internal memory layer to a
 | Retrieval Filtering | Confidence threshold + module match + context-budget cap | must-have | 1 | validated |
 | Contradiction Tracking | `contradicted-by` field population and auto-demotion logic per invariants | must-have | 1 | validated |
 | Format Documentation | Public schema doc at `.context-index/memory/heuristics/_format.md` | must-have | 1 | validated |
-| Keyword Tags | `tags` field on heuristic schema; free-form string array; extractors derive from task context | must-have | 2 | planned |
-| Tiered Retrieval | `tier` parameter on `retrieveHeuristics`: `index`, `summary` (default), `full`; keyword matching via optional `keywords` parameter | must-have | 2 | planned |
-| Sync Index | `/adev:sync` appends `## Learned Lessons` section to all sync targets with high-confidence heuristic index (one line per entry) | must-have | 2 | planned |
+| Keyword Tags | `tags` field on heuristic schema; free-form string array; extractors derive from task context | must-have | 2 | validated |
+| Tiered Retrieval | `tier` parameter on `retrieveHeuristics`: `index`, `summary` (default), `full`; keyword matching via optional `keywords` parameter | must-have | 2 | validated |
+| Sync Index | `/adev:sync` appends `## Learned Lessons` section to all sync targets with high-confidence heuristic index (one line per entry) | must-have | 2 | implemented |
 | Hygiene Pass 16 | `/adev:hygiene` checks for index staleness (high-confidence entries missing from synced files) and orphan tags | must-have | 2 | planned |
 | Debug Injection | `/adev:debug` loads heuristics at `summary` tier with keyword matching before investigating | must-have | 2 | planned |
 | Brainstorm Injection | `/adev:brainstorm` surfaces module heuristics during charter drafting | must-have | 2 | planned |

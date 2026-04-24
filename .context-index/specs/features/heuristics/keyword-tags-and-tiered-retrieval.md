@@ -7,7 +7,7 @@
 
 ---
 charter: heuristics
-status: review-passed
+status: validated
 risk_level: medium
 milestone: 2
 test_strategy: unit
