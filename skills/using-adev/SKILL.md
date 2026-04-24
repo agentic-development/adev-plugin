@@ -73,3 +73,12 @@ A context-preflight hook will warn if you edit source code without reading `.con
 If any `/adev:*` skill applies to the current task, invoke it before proceeding. Even a 1% chance it applies means you should check. The skill can always be skipped if it turns out to be irrelevant.
 
 Bug fixes are the most common case where agents skip skills. A "simple" fix without context risks violating spec assumptions or missing the root cause entirely.
+
+## Persona Output Override
+
+A persona directive (Product, Developer, or Architect) is injected at session start below this block. **Persona rules are a session-level overlay that applies to all user-facing chat output.** Skill SKILL.md files define what to *compute, review, and write to disk* — not what to *show the user in chat*.
+
+When a skill has a "Report to User", "Output Format", or similar section with prescriptive formatting (tables, code blocks, blocker codes), treat that format as the **default for the Developer persona**. If a different persona is active, adapt the chat summary to that persona's output rules:
+
+- **Artifacts written to disk** (`.review.md`, `.plan.md`, validation reports) always use the full technical format regardless of persona.
+- **Chat responses to the user** follow the active persona's dimension rules for verbosity, code references, review verdicts, test results, and next actions.

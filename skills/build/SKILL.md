@@ -623,6 +623,8 @@ Show:
 
 ### Output Format
 
+**Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules.
+
 ```
 Dry Run: Build Pipeline for <spec or phase>
 

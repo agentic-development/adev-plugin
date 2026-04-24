@@ -70,6 +70,41 @@ heuristic into multiple entries.
 
 ---
 
+## Tags Field
+
+The optional `tags` field is an array of short classification labels used to
+categorise heuristics and enable keyword-based retrieval boosting.
+
+### Constraints
+
+- Each tag must match `/^[a-z0-9][a-z0-9-]*$/` — lowercase ASCII letters,
+  digits, and hyphens only. No underscores, no uppercase, no spaces.
+- Maximum tag length: 64 characters.
+- Maximum number of tags per entry: 20.
+- An empty `tags` array is valid. The `tags` line is omitted from the
+  serialized file when the array is empty or the field is absent.
+
+### Serialization
+
+Tags are serialized as a YAML flow sequence on a single line:
+
+```yaml
+tags: [auth, middleware, security]
+```
+
+An entry with no tags or an empty tags array omits the line entirely:
+
+```yaml
+# No tags line emitted when tags is [] or absent
+```
+
+### Tag pattern
+
+Tags are placed between `anti-pattern` and `confidence` in the serialized
+field order.
+
+---
+
 ## Frontmatter Schema
 
 Each heuristic entry is a YAML frontmatter block. Field names on disk use
@@ -84,6 +119,7 @@ store translates between the two: `antiPattern` <-> `anti-pattern`,
 | `title`              | `title`               | string       | yes      | Human-readable label, <= 120 chars. |
 | `pattern`            | `pattern`             | string       | yes      | The "do this" rule, <= 500 chars. |
 | `anti-pattern`       | `antiPattern`         | string       | no       | Counter-rule ("don't do this"), <= 500 chars. |
+| `tags`               | `tags`                | string[]     | no       | Classification labels. Each tag: `[a-z0-9][a-z0-9-]*`, max 64 chars, max 20 tags. Omitted from file when empty. |
 | `confidence`         | `confidence`          | enum         | yes      | One of `low`, `medium`, `high`. |
 | `evidence`           | `evidence`            | array        | yes      | Array of `{path, date, source}` objects. May be empty. |
 | `contradicted-by`    | `contradictedBy`      | array        | yes      | Array of `{path, date, source}` objects. May be empty. |
@@ -201,6 +237,39 @@ Example: `charter-evolution-a1b2c3`
 
 ---
 
+## Tiered Retrieval and Rendering
+
+`retrieveHeuristics` and `renderHeuristic` support tiered output to fit
+different context budgets.
+
+### Render tiers
+
+Pass a `tier` argument to `renderHeuristic(heuristic, tier)`:
+
+| Tier      | Format                                                           | Use case                   |
+|-----------|------------------------------------------------------------------|----------------------------|
+| `index`   | `- <title> (<scope>) — <pattern truncated to 80 chars>`         | Compact list / table of contents |
+| `summary` | Multi-line markdown block: title, pattern, anti-pattern, evidence count | Default — balanced detail |
+| `full`    | Summary + scope and tags lines                                   | Deep inspection / debug    |
+
+If an invalid tier is provided, the function falls back to `summary` and
+writes a single-line warning to stderr.
+
+### Keyword boosting in `retrieveHeuristics`
+
+`retrieveHeuristics(projectRoot, module, { keywords, injectionLimit })` accepts
+an optional `keywords` array. Keyword matching is applied before sorting:
+
+- Each keyword is matched case-insensitively against the concatenation of
+  `tags`, `title`, and `pattern`.
+- Entries that match at least one keyword are sorted before non-matching
+  entries at the same confidence level (after confidence, before scope priority).
+- `keywords` is capped at **10 items**; the total combined character length of
+  all keywords is capped at **200 chars** (keywords beyond the cap are dropped).
+- The internal `_keywordMatch` flag is stripped from returned results.
+
+---
+
 ## Redaction Advisory
 
 **Heuristic fields must not contain raw credentials, tokens, or PII.**
@@ -292,6 +361,7 @@ scope: hooks
 title: Always verify config after edit
 pattern: After editing settings.json, run /config validate
 anti-pattern: Assume edit is valid without verification
+tags: [config, hooks, validation]
 confidence: high
 evidence:
   - path: sessions/2026-04-01-abc.md

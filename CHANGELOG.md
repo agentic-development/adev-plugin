@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.22.0] - 2026-04-24
+
+### Heuristics Phase 2: Progressive Disclosure
+
+Extends the heuristic memory system from a lifecycle-internal layer to a project-wide context layer. Agents now see relevant lessons in every interaction — not just during plan/implement — at minimal token cost via tiered rendering.
+
+### CLI: Install/Upgrade Split
+
+- **`install` command** — new dedicated command for fresh installations. Handles provider selection, plugin registration, and context index scaffolding.
+- **`upgrade` command** — new dedicated command for existing installations. Detects installed version, computes diff, and applies incremental updates.
+- **Simplified flow** — the old `init` command (which handled both cases) is replaced by two focused commands with clearer intent.
+
+### Output Personas
+
+- **Persona-aware skill templates** — skill output templates now include persona directives so output adapts to the active persona (product, developer, architect).
+
+### Heuristics Phase 2: Progressive Disclosure
+
+Extends the heuristic memory system from a lifecycle-internal layer to a project-wide context layer. Agents now see relevant lessons in every interaction — not just during plan/implement — at minimal token cost via tiered rendering.
+
+#### Features
+
+- **Keyword tags** — `tags` field on heuristic schema (free-form `[a-z0-9-]` string array). Extractors derive tags from task context for relevance matching.
+- **Tiered rendering** — `retrieveHeuristics` gains a `tier` parameter: `index` (~5 tok/entry), `summary` (~40 tok, default), `full` (~100 tok). Progressive disclosure scales context injection to the use case.
+- **Keyword matching** — optional `keywords` parameter boosts entries whose `tags`, `title`, or `pattern` match, without filtering non-matches.
+- **Sync index** — `/adev:sync` appends a `## Learned Lessons` section to all sync targets (CLAUDE.md, AGENTS.md, .cursorrules) containing high-confidence heuristic index.
+- **Hygiene Pass 16** — `/adev:hygiene` checks for heuristic index staleness and orphan tags.
+- **Wider injection** — heuristics now injected into `/adev:debug`, `/adev:brainstorm`, `/adev:specify`, `/adev:review-specs`, and `/adev:validate` at `summary` tier with keyword matching.
+
+#### Fixes
+
+- **Plan task completion tracking** — `/adev:implement` Step 2h now marks plan file checkboxes (`- [x]`) after each task completes. Previously only the ephemeral execution state and issue board were updated, leaving plan files permanently showing all tasks unchecked. (issue-125)
+- **Validate plan checkbox check** — `/adev:validate` Check 12e detects stale unchecked checkboxes on completed tasks and auto-fixes them with `--fix`.
+- `writeHeuristic` now propagates `tags` field in both create and update paths (was silently dropping tags).
+
+#### Context Hygiene
+
+- Renumbered duplicate ADR 0003 → 0005 (`configurable-review-registry`)
+- Added `Spec` to `required_trailers` for commit provenance enforcement
+- Populated capability maps for 9 empty charters (71 capabilities)
+- Backfilled `last-reviewed-revision` on 7 review files
+- Created 40 epics for orphaned plan files
+- Refreshed repo map and generated first retrospective report
+
+### Modified
+
+- `cli/index.mjs` — split `init` into `install` and `upgrade` commands
+- `lib/heuristics.mjs` — tags schema, tiered rendering, keyword matching, writeHeuristic fix
+- `skills/sync/SKILL.md` — Learned Lessons section injection
+- `skills/hygiene/SKILL.md` — Pass 16 heuristic index health
+- `skills/implement/SKILL.md` — Step 2h plan checkbox completion on task done
+- `skills/validate/SKILL.md` — Check 12e plan checkbox reconciliation, heuristic injection widening
+- `skills/brainstorm/SKILL.md`, `skills/debug/SKILL.md`, `skills/specify/SKILL.md`, `skills/review-specs/SKILL.md` — heuristic injection widening
+- `.context-index/memory/heuristics/_format.md` — tags and tiered retrieval documentation
+
+### New
+
+- `tests/lib/heuristics-tags-and-tiers.test.mjs` — 41 tests for tags, tiered rendering, keyword matching
+- `tests/skills/sync-heuristic-index.test.mjs`, `tests/skills/hygiene-heuristic-pass.test.mjs`, `tests/skills/heuristic-injection-widening.test.mjs`
+- `.context-index/hygiene/retros/2026-04-23.md` — first retrospective report
+
 ## [0.21.0] - 2026-04-21
 
 ### Fix — Build Skill Subagent Delegation (issue-124)

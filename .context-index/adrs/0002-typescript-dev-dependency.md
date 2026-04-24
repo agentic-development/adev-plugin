@@ -29,7 +29,7 @@ Add `typescript` as a devDependency. It is used only by the eval harness in `tes
 ## Consequences
 
 - Second dependency in the project (first: web-tree-sitter, optional runtime).
-- Only affects developers running evals, not end users running `npx @adev-org/adev-cli init`.
+- Only affects developers running evals, not end users running `npx @adev-org/adev-cli install`.
 - ~50MB package, but only in node_modules during development.
 - Enables quantitative precision/recall benchmarking against any TypeScript repo.
 - Ground truth is deterministic and reproducible (same compiler version, same repo, same output).

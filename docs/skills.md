@@ -22,7 +22,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
        │    /adev:implement ─── TDD execution with subagents
        │         │
        │         ▼
-       │    /adev:validate ─── 11-check quality verification
+       │    /adev:validate ─── 13-check quality verification
        │
        ├──► /adev:debug ─── systematic debugging with context
        │
@@ -77,7 +77,7 @@ All available `/adev:*` skills, organized by lifecycle phase.
 
 | Skill | Purpose | Prerequisites |
 |-------|---------|---------------|
-| `/adev:validate` | 11-check post-implementation verification | Spec at `implemented` |
+| `/adev:validate` | 13-check post-implementation verification | Spec at `implemented` |
 | `/adev:eval` | Graduated quality scoring beyond pass/fail | Eval config exists |
 
 ### Maintenance
