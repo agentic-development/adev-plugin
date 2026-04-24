@@ -5,10 +5,10 @@ This guide walks you through setting up the Agentic Development Framework and ru
 ## 1. Install the plugin
 
 ```bash
-npx @adev-org/adev-cli init
+npx @adev-org/adev-cli install
 ```
 
-Select your AI coding assistant (Claude Code is the default). The CLI scaffolds `.context-index/` with templates, sets up git hooks, and registers the plugin.
+Select your AI coding assistant (Claude Code is the default). The CLI registers the plugin, scaffolds a minimal `.context-index/`, and sets up git hooks.
 
 ## 2. Initialize your project context
 

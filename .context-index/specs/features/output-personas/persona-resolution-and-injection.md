@@ -56,7 +56,7 @@ source-manifest:
 
 8. **When** `/adev:init` runs in a project with `.context-index/` **then** it prompts the user to optionally create a local `.context-index/user-config` with a persona override for this project, and adds `user-config` to the project's `.gitignore`.
 
-9. **When** the CLI install command (`npx @adev-org/adev-cli init`) runs **then** it prompts the user to select a default persona (`product`, `developer`, or `architect`) and writes the selection to the global `user-config` file at `<PLUGIN_ROOT>/user-config`.
+9. **When** `/adev:init` runs (first run or diagnostic mode) **then** it prompts the user to select a default persona (`product`, `developer`, or `architect`) and writes the selection to the global `user-config` file at `<PLUGIN_ROOT>/user-config`. The CLI `install` command no longer handles persona configuration.
 
 ### Postconditions
 

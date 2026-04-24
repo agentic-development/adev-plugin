@@ -126,5 +126,5 @@ node --test tests/hooks/merge-guard.test.mjs
 claude --plugin-dir /path/to/adev-plugin
 
 # Install into Claude Code (production path)
-npx @adev-org/adev-cli init
+npx @adev-org/adev-cli install
 ```
