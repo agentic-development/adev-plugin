@@ -114,7 +114,7 @@ If no specialist is associated with the file, score based on general constitutio
 
 #### Present Results
 
-Rank candidates by total score. Present the top 10 (or fewer if less exist) to the user:
+Rank candidates by total score. Present the top 10 (or fewer if less exist) to the user. **Persona adaptation:** The format below is the default for the Developer persona. If a different persona is active, adapt the display to its output rules.
 
 ```
 ## Sample Candidates

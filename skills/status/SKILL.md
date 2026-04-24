@@ -9,6 +9,8 @@ Query and display the current status of adev lifecycle artifacts. This skill is 
 
 **Announcement:** "I'm using the adev:status skill to query project status."
 
+**Persona adaptation:** All output formats below are defaults for the Developer persona. If a different persona is active, adapt the chat output to its output rules (e.g., Product persona: show counts and status summaries only, omit file paths and technical detail).
+
 ## Arguments
 
 - `--spec <path>`: Show detailed status for a single spec

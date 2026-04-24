@@ -237,7 +237,7 @@ Log the status change to the user.
 
 ## Step 8: Report to User
 
-Present the consolidated verdict and findings summary.
+Present the consolidated verdict and findings summary. **Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules (e.g., Product persona: show pass/fail only, omit blocker codes and file paths). Artifacts written to disk (`.review.md`) always use the full technical format.
 
 **If PASS:**
 ```

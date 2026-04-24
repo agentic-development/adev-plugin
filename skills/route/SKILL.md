@@ -134,7 +134,7 @@ If the task already has routing annotations (from a previous run), replace them 
 
 ## Step 5: Report to User
 
-Present a summary table of all routed tasks:
+Present a summary table of all routed tasks. **Persona adaptation:** The format below is the default for the Developer persona. If a different persona is active, adapt the chat summary to its output rules (e.g., Product persona: show route distribution only, omit score columns and dimension breakdowns).
 
 ```
 Task Routing Summary for <plan file>

@@ -212,6 +212,8 @@ If unable to write:
 
 ### Report Format
 
+**Persona adaptation:** The report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
+
 ```yaml
 ---
 date: <ISO 8601 timestamp>
