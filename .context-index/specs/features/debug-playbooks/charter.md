@@ -69,9 +69,9 @@ Complex projects accumulate domain-specific debugging knowledge that doesn't fit
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Playbook file format and template | Structured markdown format for failure modes, triggers, steps, and escalation. Template at `templates/debug-playbook-template.md` | must-have | 1 | implemented |
-| Debug Phase 2 loading | `/adev:debug` loads module playbook + cross-cutting playbook in Phase 2, presents relevant failure modes to guide investigation | must-have | 1 | implemented |
-| Trigger matching | Match Phase 1 symptoms (error messages, behavioral descriptions) against playbook triggers to surface the most relevant failure modes | must-have | 1 | implemented |
+| Playbook file format and template | Structured markdown format for failure modes, triggers, steps, and escalation. Template at `templates/debug-playbook-template.md` | must-have | 1 | validated |
+| Debug Phase 2 loading | `/adev:debug` loads module playbook + cross-cutting playbook in Phase 2, presents relevant failure modes to guide investigation | must-have | 1 | validated |
+| Trigger matching | Match Phase 1 symptoms (error messages, behavioral descriptions) against playbook triggers to surface the most relevant failure modes | must-have | 1 | validated |
 | Learn skill routing | `/adev:learn` detects procedural lessons (multi-step) and routes to playbook entry creation instead of heuristic | should-have | 1 | — |
 | Hygiene staleness check | `/adev:hygiene` detects playbooks whose module has changed significantly since `last-verified` date | should-have | 2 | — |
 | Retro candidate detection | `/adev:retro` identifies repeated debug patterns across sessions and suggests new playbook entries | nice-to-have | 2 | — |
