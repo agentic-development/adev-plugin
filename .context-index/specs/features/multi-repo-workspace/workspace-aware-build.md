@@ -13,6 +13,13 @@ depends-on:
   - "workspace-aware-plan"
   - "workspace-aware-implement"
 tracker-ref: issue-69
+source-manifest:
+  sha: "c532710"
+  files:
+    - skills/build/SKILL.md
+    - lib/workspace.mjs
+    - tests/skills/build-workspace-mode.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Workspace-Aware Build
