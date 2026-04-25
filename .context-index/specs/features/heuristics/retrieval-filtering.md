@@ -16,6 +16,14 @@ revision: 1
 charter-revision: 3
 created: 2026-04-12
 updated: 2026-04-12
+source-manifest:
+  sha: "888c762"
+  files:
+    - lib/heuristics.mjs
+    - tests/lib/heuristics.test.mjs
+    - .context-index/specs/features/heuristics/store-and-helper.md
+    - .context-index/memory/heuristics/_format.md
+  computed-at: "2026-04-25T21:55:13.324Z"
 ---
 
 ## Behavioral Contract

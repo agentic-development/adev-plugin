@@ -1,6 +1,6 @@
 ---
 charter: task-management
-status: review-passed
+status: validated
 risk_level: low
 milestone: strategic-planning-consolidation
 revision: 1
