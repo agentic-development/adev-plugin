@@ -1,6 +1,6 @@
 ---
 charter: planning
-status: review-passed
+status: validated
 risk_level: medium
 milestone: strategic-planning-consolidation
 revision: 1

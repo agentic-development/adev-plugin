@@ -7,7 +7,7 @@
 | epic-1 | Source Manifests & Status Cleanup | closed |  |  | 2026-04-01T13:40:40.880Z | 2026-04-13T00:00:00.000Z |
 | epic-2 | adev-codehealth: Full Lifecycle Implementation | closed |  |  | 2026-04-02T13:06:39.625Z | 2026-04-13T00:00:00.000Z |
 | epic-3 | Execution State File | closed | .context-index/specs/features/session-awareness/execution-state-file.plan.md |  | 2026-04-06T17:33:45.461Z | 2026-04-13T00:00:00.000Z |
-| epic-4 | adev:research Multi-Agent Refactor | open | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md |  | 2026-04-09T12:58:46.483Z | 2026-04-09T12:58:46.483Z |
+| epic-4 | adev:research Multi-Agent Refactor | closed | .context-index/specs/features/strategic-planning/adev-research-skill.plan.md |  | 2026-04-09T12:58:46.483Z | 2026-04-24T00:00:00.000Z |
 | epic-5 | Heuristics Phase 1a: Store and Helper | closed | .context-index/specs/features/heuristics/store-and-helper.plan.md |  | 2026-04-09T17:33:18.933Z | 2026-04-17T00:00:00.000Z |
 | epic-6 | Heuristics Phase 1a: Recover Extraction | closed | .context-index/specs/features/heuristics/recover-extraction.plan.md |  | 2026-04-09T17:38:36.095Z | 2026-04-17T00:00:00.000Z |
 | epic-7 | Heuristics Phase 1a: Validate Extraction | closed | .context-index/specs/features/heuristics/validate-extraction.plan.md |  | 2026-04-09T17:42:27.714Z | 2026-04-17T00:00:00.000Z |
@@ -16,7 +16,24 @@
 | epic-10 | Workspace-Aware Strategic Planning | closed | .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.plan.md |  | 2026-04-17T09:03:03.648Z | 2026-04-17T09:24:29.396Z |
 | epic-11 | Unified Gate System | closed | .context-index/specs/features/unified-gates/unified-gate-system.plan.md |  | 2026-04-15T16:48:13.339Z | 2026-04-15T17:06:06.749Z |
 | epic-12 | Token Cost Logging | closed | .context-index/specs/features/session-awareness/token-cost-logging.plan.md |  | 2026-04-20T00:00:00.000Z | 2026-04-20T00:00:00.000Z |
-| epic-13 | Persona Resolution and Injection | open | .context-index/specs/features/output-personas/persona-resolution-and-injection.plan.md |  | 2026-04-21T00:00:00.000Z | 2026-04-21T00:00:00.000Z |
+| epic-13 | Persona Resolution and Injection | closed | .context-index/specs/features/output-personas/persona-resolution-and-injection.plan.md |  | 2026-04-21T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-14 | Cross-Cutting Concerns | open |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-15 | adev:assess Skill Implementation | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-16 | CI/CD Pipeline | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-17 | adev:codehealth Preconditions | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-18 | adev:document Skill Implementation | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-19 | Heuristics Lifecycle Integration | open |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-20 | Repomap Eval Pipeline | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-21 | Configurable Reviewers | open |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-22 | Session Awareness Extensions | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-23 | Spec Lifecycle Implementation | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-24 | Strategic Planning Milestone Extensions | open |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-25 | Task Management Implementation | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-26 | Test Strategies Framework | open |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-27 | Tree-Sitter Repomap | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-28 | Configurable Validation Checks | open |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-29 | adev:work Triage and Routing | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
+| epic-30 | adev:write-test Skill Implementation | closed |  |  | 2026-04-24T00:00:00.000Z | 2026-04-24T00:00:00.000Z |
 
 ## Issues
 
