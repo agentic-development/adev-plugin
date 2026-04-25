@@ -9,6 +9,11 @@ created: 2026-04-16
 updated: 2026-04-16
 depends-on: ["tiered-hierarchy-and-tree-walking", "unified-create-api", "next-action-and-type-fields"]
 tracker-ref: epic-9
+source-manifest:
+  files:
+    - path: skills/plan/SKILL.md
+    - path: skills/plan/mode-router.md
+    - path: skills/plan/plan-reviewer-prompt.md
 ---
 
 # Live Spec: Multi-Scope /adev:plan with Natural-Language Triage
