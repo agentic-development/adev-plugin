@@ -7,6 +7,12 @@ revision: 1
 charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
+source-manifest:
+  sha: "4c95543"
+  files:
+    - templates/format-documentation.md
+    - skills/init/SKILL.md
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Format Documentation

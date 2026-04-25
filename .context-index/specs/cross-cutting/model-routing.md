@@ -18,6 +18,16 @@ affects:
   - assessment
   - design
   - adev:write-test
+source-manifest:
+  sha: "08a5996"
+  files:
+    - templates/platform-context.yaml
+    - skills/implement/SKILL.md
+    - skills/eval/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/brainstorm/SKILL.md
+    - skills/write-test/SKILL.md
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 ## Behavioral Contract

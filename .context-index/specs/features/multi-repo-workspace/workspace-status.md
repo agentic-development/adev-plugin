@@ -7,6 +7,13 @@ charter-revision: 2
 created: 2026-04-15
 updated: 2026-04-15
 depends-on: ["workspace-foundation", "context-resolution"]
+source-manifest:
+  sha: "e286eb2"
+  files:
+    - skills/status/SKILL.md
+    - lib/workspace.mjs
+    - tests/skills/status-workspace-mode.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Workspace Status

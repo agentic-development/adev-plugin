@@ -13,6 +13,13 @@ depends-on:
   - "context-resolution"
   - "workspace-aware-specify"
 tracker-ref: issue-67
+source-manifest:
+  sha: "2e11ef8"
+  files:
+    - skills/implement/SKILL.md
+    - lib/workspace.mjs
+    - tests/skills/implement-workspace-mode.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Workspace-Aware /adev:implement

@@ -7,6 +7,12 @@ revision: 1
 charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
+source-manifest:
+  sha: "2e11ef8"
+  files:
+    - skills/implement/SKILL.md
+    - lib/execution-state.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Skill-Level State Instructions

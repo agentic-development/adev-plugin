@@ -12,6 +12,13 @@ revision: 1
 charter-revision: 1
 created: 2026-03-27
 updated: 2026-03-27
+source-manifest:
+  sha: "241a78f"
+  files:
+    - skills/write-test/detect-framework.mjs
+    - skills/write-test/detect-framework.sh
+    - tests/write-test/detect-framework.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 ## Behavioral Contract
