@@ -9,6 +9,11 @@ created: 2026-04-16
 updated: 2026-04-16
 depends-on: ["unified-create-api", "next-action-and-type-fields"]
 tracker-ref: epic-9
+source-manifest:
+  files:
+    - path: skills/specify/SKILL.md
+    - path: lib/issues/interface.mjs
+    - path: lib/issues/registry.mjs
 ---
 
 # Live Spec: /adev:specify Creates Feature Work Item (1:1 with Spec)

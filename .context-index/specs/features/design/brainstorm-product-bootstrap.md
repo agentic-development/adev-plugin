@@ -8,6 +8,9 @@ charter-revision: 2
 created: 2026-04-16
 updated: 2026-04-16
 tracker-ref: epic-9
+source-manifest:
+  files:
+    - path: skills/brainstorm/SKILL.md
 ---
 
 # Live Spec: Brainstorm product.md Identity Bootstrap

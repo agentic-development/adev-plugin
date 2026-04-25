@@ -8,6 +8,13 @@ charter-revision: 2
 created: 2026-04-16
 updated: 2026-04-16
 tracker-ref: epic-9
+source-manifest:
+  files:
+    - path: skills/work/SKILL.md
+    - path: .context-index/specs/features/work/charter.md
+    - path: .context-index/manifest.yaml
+    - path: .claude-plugin/plugin.json
+    - path: README.md
 ---
 
 # Live Spec: Rename /adev:start to /adev:work
