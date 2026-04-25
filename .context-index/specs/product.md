@@ -23,6 +23,7 @@ AI coding agents work best with structured context but most projects provide non
 | Plugin Registration | Metadata and version for Claude Code | `.claude-plugin/plugin.json` |
 | Test Strategies | Strategy abstraction layer decoupling TDD from unit-test assumptions across 8 domain-specific strategies | [charter.md](./features/test-strategies/charter.md) |
 | Output Personas | Presentation layer adapting plugin outputs to user role and expertise level via layered persona config | [charter.md](./features/output-personas/charter.md) |
+| Debug Playbooks | Module-scoped and cross-cutting diagnostic procedures guiding /adev:debug with domain-specific failure modes, ordered investigation steps, and escalation criteria | [charter.md](./features/debug-playbooks/charter.md) |
 
 ## Cross-Cutting Concerns
 
