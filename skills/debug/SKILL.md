@@ -111,7 +111,31 @@ This is the key difference from generic debugging. Before diving into code, load
    - Read `.context-index/hygiene/repo-map.md` to locate symbols and dependencies.
    - Identify which files import or depend on the broken component.
 
-6. **Gather evidence in multi-component systems.**
+6. **Load debug playbooks.**
+
+   Load structured diagnostic playbooks that map failure modes to ordered investigation procedures.
+
+   a. **Read playbook files.**
+      - Read `.context-index/specs/features/<module>/debug-playbook.md` if it exists (module determined in Phase 1).
+      - Read `.context-index/specs/cross-cutting/debug-playbook.md` if it exists.
+      - If no playbook exists for the affected module and no cross-cutting playbook exists, skip this step silently — no warnings, no degradation. Proceed with standard Phase 2.
+      - If a file exists but is malformed (missing YAML frontmatter with `last-verified`, or missing failure mode sections with `id`, `triggers`, `steps`, and `escalation`), log a warning and skip it.
+
+   b. **Match triggers against Phase 1 symptoms.**
+      - For each failure mode in the loaded playbooks, compare its trigger patterns semantically against the error messages, stack traces, and behavioral descriptions from Phase 1.
+      - This is an LLM-side operation — read each trigger's pattern text and compare it against the symptom descriptions. No helper library or code-based matcher is used.
+      - When both module and cross-cutting playbooks contain failure modes whose triggers match the same symptom, the module-scoped failure mode takes precedence — present only the module-scoped failure mode for that symptom. Non-overlapping cross-cutting failure modes are still included.
+      - If triggers match: present the matched failure modes with their ordered diagnostic steps as the recommended investigation path.
+      - If no triggers match but a playbook exists: present the full list of failure mode titles as a menu for the user to select from.
+
+   c. **Execute diagnostic steps.**
+      - For each matched failure mode, follow its ordered steps.
+      - If a step has a `command` field, execute it via the Bash tool. Command execution is subject to Claude Code's standard tool approval — the user sees and approves each command. Compare output against the `expected` field.
+      - Command output is ephemeral: used to inform the investigation but not written to disk or included in reports beyond a one-line summary.
+      - If a command fails or times out, report the failure as a diagnostic finding and continue to the next step.
+      - If the escalation condition is met, stop following the playbook and report the escalation target (human, ADR review, or architecture reassessment) before proceeding to Phase 3.
+
+7. **Gather evidence in multi-component systems.**
 
    WHEN the system has multiple components (API to service to database, CI to build to deploy):
 
@@ -128,7 +152,7 @@ This is the key difference from generic debugging. Before diving into code, load
    THEN investigate that specific component.
    ```
 
-7. **Trace data flow.**
+8. **Trace data flow.**
    - Where does the bad value originate?
    - What called this with the bad value?
    - Keep tracing backward until you find the source.
@@ -274,7 +298,7 @@ If you catch yourself thinking any of these, STOP and return to Phase 1:
 | Phase | Key Activities | Success Criteria |
 |-------|---------------|------------------|
 | **1. Reproduce** | Read errors, reproduce consistently, check recent changes | Problem is confirmed and repeatable |
-| **2. Investigate** | Load ADRs, specs, orientation, constitution, repo map | Affected area is understood in context |
+| **2. Investigate** | Load ADRs, specs, orientation, constitution, repo map, playbooks | Affected area is understood in context |
 | **3. Hypothesize** | Find working examples, compare, form single hypothesis | Specific, evidence-grounded theory |
 | **4. Verify** | Test minimally, one variable at a time | Hypothesis confirmed or new one formed |
 | **5. Fix** | Create failing test, implement single fix, verify | Root cause resolved, tests pass |
