@@ -1,6 +1,6 @@
 ---
 charter: task-management
-status: review-passed
+status: validated
 risk_level: medium
 milestone: strategic-planning-consolidation
 revision: 1
@@ -9,6 +9,12 @@ created: 2026-04-16
 updated: 2026-04-16
 depends-on: ["tiered-hierarchy-and-tree-walking", "next-action-and-type-fields"]
 tracker-ref: epic-9
+source-manifest:
+  files:
+    - path: lib/issues/interface.mjs
+    - path: lib/issues/file-adapter.mjs
+    - path: lib/issues/beads-adapter.mjs
+    - path: lib/issues/id-utils.mjs
 ---
 
 # Live Spec: Unified create() API

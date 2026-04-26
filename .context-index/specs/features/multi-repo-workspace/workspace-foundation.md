@@ -6,6 +6,14 @@ revision: 1
 charter-revision: 2
 created: 2026-04-15
 updated: 2026-04-15
+source-manifest:
+  sha: "3fb772e"
+  files:
+    - lib/workspace.mjs
+    - templates/workspace-template.yaml
+    - tests/lib/workspace.test.mjs
+    - tests/lib/workspace-fixture.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Workspace Foundation

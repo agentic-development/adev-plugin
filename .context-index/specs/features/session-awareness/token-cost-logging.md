@@ -15,6 +15,20 @@ revision: 2
 charter-revision: 2
 created: 2026-04-20
 updated: 2026-04-20
+source-manifest:
+  sha: "4700660"
+  files:
+    - lib/token-pricing.mjs
+    - lib/token-cursor.mjs
+    - lib/session-file-reader.mjs
+    - tests/lib/token-pricing.test.mjs
+    - tests/lib/token-cursor.test.mjs
+    - tests/lib/session-file-reader.test.mjs
+    - hooks/session-capture.sh
+    - tests/hooks/session-capture.test.mjs
+    - lib/execution-state.mjs
+    - hooks/hooks.json
+  computed-at: "2026-04-25T21:55:13.685Z"
 ---
 
 ## Behavioral Contract

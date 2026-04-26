@@ -9,6 +9,11 @@ revision: 1
 charter-revision: 1
 created: 2026-03-27
 updated: 2026-03-28
+source-manifest:
+  files:
+    - path: skills/status/SKILL.md
+    - path: .claude-plugin/plugin.json
+    - path: lib/source-manifest.mjs
 ---
 
 ## Behavioral Contract

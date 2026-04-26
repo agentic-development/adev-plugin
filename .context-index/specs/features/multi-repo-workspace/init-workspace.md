@@ -7,6 +7,13 @@ charter-revision: 2
 created: 2026-04-15
 updated: 2026-04-15
 depends-on: ["workspace-foundation"]
+source-manifest:
+  sha: "01702c0"
+  files:
+    - skills/init/SKILL.md
+    - templates/workspace-template.yaml
+    - tests/skills/init-workspace.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Init Workspace

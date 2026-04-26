@@ -13,6 +13,13 @@ depends-on:
   - "context-resolution"
   - "workspace-aware-specify"
 tracker-ref: issue-68
+source-manifest:
+  sha: "b079392"
+  files:
+    - skills/plan/SKILL.md
+    - lib/workspace.mjs
+    - tests/skills/plan-workspace-spec-mode.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Workspace-Aware /adev:plan (Spec Mode)

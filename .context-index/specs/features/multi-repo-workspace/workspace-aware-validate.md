@@ -12,6 +12,13 @@ depends-on:
   - "context-resolution"
   - "workspace-aware-specify"
 tracker-ref: issue-71
+source-manifest:
+  sha: "443737f"
+  files:
+    - skills/validate/SKILL.md
+    - lib/workspace.mjs
+    - tests/skills/validate-workspace-mode.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Workspace-Aware Validate

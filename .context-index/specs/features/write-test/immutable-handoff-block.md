@@ -12,6 +12,14 @@ revision: 1
 charter-revision: 1
 created: 2026-03-27
 updated: 2026-03-27
+source-manifest:
+  sha: "3a3626b"
+  files:
+    - skills/write-test/write-handoff.mjs
+    - skills/write-test/write-handoff.sh
+    - skills/write-test/SKILL.md
+    - tests/write-test/write-handoff.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 ## Behavioral Contract
