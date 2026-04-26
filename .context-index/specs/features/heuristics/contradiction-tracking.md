@@ -17,6 +17,15 @@ revision: 2
 charter-revision: 3
 created: 2026-04-12
 updated: 2026-04-12
+source-manifest:
+  sha: "443737f"
+  files:
+    - skills/validate/SKILL.md
+    - skills/recover/SKILL.md
+    - tests/skills/contradiction-tracking.test.mjs
+    - lib/heuristics.mjs
+    - .context-index/specs/features/heuristics/store-and-helper.md
+  computed-at: "2026-04-25T21:55:13.449Z"
 ---
 
 ## Behavioral Contract

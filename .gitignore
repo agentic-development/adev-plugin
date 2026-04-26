@@ -31,3 +31,6 @@ tests/evals/skill-compression/outputs/
 
 # Viz build output (regenerate with: node viz/build.mjs)
 viz/dist/
+
+.context-index/.token-cursor.json
+.context-index/user-config

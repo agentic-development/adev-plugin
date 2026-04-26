@@ -51,7 +51,7 @@ adev-plugin/
 │   ├── context-read-tracker.sh # PostToolUse:Read — tracks context file reads
 │   ├── issue-reminder.sh       # PostToolUse — periodic issue board reminders
 │   └── issue-reminder.mjs      # Helper module for issue reminder logic
-├── templates/                  # 17 scaffold templates consumed by /adev:init
+├── templates/                  # 31 scaffold template files consumed by /adev:init (includes governance/, personas/, review-specs/, validate/ subdirs)
 ├── tests/                      # Node.js built-in test runner (node:test)
 │   ├── helpers.mjs             # Shared test utilities (temp dirs, fixtures, runHook)
 │   ├── cli.test.mjs            # CLI unit tests
@@ -64,7 +64,37 @@ adev-plugin/
 │   │   ├── graph.mjs           # Dependency graph construction from import statements
 │   │   ├── rank.mjs            # PageRank-based symbol importance scoring
 │   │   └── languages/          # Tree-sitter grammar queries per language
+│   ├── governance/             # Registry parsers for review and validate skills
+│   │   ├── review-config.mjs   # Parse governance/review.yaml reviewer registry
+│   │   ├── validate-config.mjs # Parse governance/validate.yaml check registry
+│   │   ├── quality-gate.mjs    # Quality gate runner (governance/gates.yaml)
+│   │   ├── dispatch-shape.mjs  # Dispatch shape helpers for subagent calls
+│   │   └── context-pack.mjs    # Context pack resolver for reviewer bundles
+│   ├── issues/                 # Issue and epic management backend
+│   │   ├── registry.mjs        # getIssueManager() factory
+│   │   ├── file-adapter.mjs    # File-based backend (tasks.md)
+│   │   ├── beads-adapter.mjs   # Beads backend adapter
+│   │   ├── interface.mjs       # Shared interface contract
+│   │   ├── id-utils.mjs        # Tiered ID generation and walking
+│   │   └── resolve-root.mjs    # resolveStorageRoot() for worktree-safe paths
+│   ├── profiles/               # Execution profile primitives (ADR 0004)
+│   │   ├── index.mjs           # Profile loader and resolver
+│   │   ├── schema.mjs          # Profile schema validation
+│   │   ├── extends.mjs         # extends-chain resolution
+│   │   ├── tool-categories.mjs # Abstract tool category mapping
+│   │   ├── env.mjs             # Env var allowlist handling
+│   │   ├── redaction.mjs       # Secret redaction at tool output boundary
+│   │   ├── yaml.mjs            # Zero-dep YAML parser for profile files
+│   │   └── adapters/           # Harness-specific dispatch adapters (claude-code, opencode)
+│   ├── test-strategies/        # Test strategy abstraction layer for /adev:write-test
 │   ├── provider/               # Multi-provider support (claude-code, codex, opencode)
+│   ├── workspace.mjs           # detectWorkspace(), resolveWorkspaceContext(), assertPathInWorkspace()
+│   ├── heuristics.mjs          # readHeuristics(), writeHeuristic(), promoteHeuristic() — heuristic store
+│   ├── persona.mjs             # Persona resolution and injection helpers
+│   ├── execution-state.mjs     # writeExecutionState(), readExecutionState() — session state file
+│   ├── session-file-reader.mjs # Low-level session file reader for token cost logging
+│   ├── token-cursor.mjs        # Token cost cursor — tracks cumulative usage
+│   ├── token-pricing.mjs       # Model pricing table for cost estimation
 │   ├── session-parser.mjs      # Parse session data from native provider
 │   ├── session-summary.mjs     # Generate session summaries for /adev:status
 │   └── source-manifest.mjs     # Source file tracking for spec drift detection
@@ -101,4 +131,4 @@ Skills follow a strict pipeline: init → brainstorm → specify → review-spec
 - **Skills are markdown, not code** — they are portable across AI tools and contain no executable logic (companion code is allowed but not required).
 - **Hooks are bash** — they execute in the shell, read JSON from stdin and `CLAUDE_TOOL_INPUT_*` env vars, and communicate via exit codes and JSON stdout.
 - **Templates are static** — changes to templates only affect newly scaffolded projects, not existing ones.
-- **Single-file CLI** — all CLI logic lives in `cli/index.mjs` (~400 lines) to keep the codebase simple.
+- **Single-file CLI** — all CLI logic lives in `cli/index.mjs` (~911 lines, grown from ~400 with the install/upgrade split and provider routing).

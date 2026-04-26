@@ -14,6 +14,22 @@ supersedes:
   - .context-index/specs/features/tiered-test-gates/implement-integration-gate.md
   - .context-index/specs/features/tiered-test-gates/build-tier-passthrough.md
   - .context-index/specs/features/tiered-test-gates/e2e-playwright-scripts.md
+source-manifest:
+  sha: "7ceb782"
+  files:
+    - templates/gates-template.yaml
+    - templates/manifest-template.yaml
+    - skills/validate/SKILL.md
+    - skills/implement/SKILL.md
+    - skills/build/SKILL.md
+    - skills/hygiene/SKILL.md
+    - skills/init/SKILL.md
+    - tests/templates/gates-template.test.mjs
+    - tests/templates/manifest-template.test.mjs
+    - .context-index/specs/features/unified-gates/unified-gate-system.md
+    - .context-index/specs/features/unified-gates/charter.md
+    - .context-index/constitution.md
+  computed-at: "2026-04-25T21:55:13.860Z"
 ---
 
 ## Behavioral Contract

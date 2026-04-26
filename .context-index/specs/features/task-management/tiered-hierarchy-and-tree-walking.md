@@ -1,6 +1,6 @@
 ---
 charter: task-management
-status: review-passed
+status: validated
 risk_level: medium
 milestone: strategic-planning-consolidation
 revision: 1
@@ -8,6 +8,12 @@ charter-revision: 3
 created: 2026-04-16
 updated: 2026-04-16
 tracker-ref: epic-9
+source-manifest:
+  files:
+    - path: lib/issues/id-utils.mjs
+    - path: lib/issues/file-adapter.mjs
+    - path: lib/issues/beads-adapter.mjs
+    - path: lib/issues/interface.mjs
 ---
 
 # Live Spec: Tiered Hierarchy and Tree Walking
