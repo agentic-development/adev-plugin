@@ -244,6 +244,41 @@ Preliminary task breakdown (not the full plan — that is `/adev:plan`'s job). T
 **Acceptance Criteria:**
 Concrete, checkable criteria. Every behavior maps to at least one criterion. Always include: all quality gates pass, no constitutional violations.
 
+### Step 4.5: Infrastructure Requirements Prompt
+
+Before writing the spec, check whether this capability touches any external systems. Ask:
+
+```
+→ Does this capability interact with any external systems (cloud APIs, databases, message queues, third-party HTTP services)?
+  Examples: AWS S3, Postgres, Stripe API, SQS, Redis, BigQuery
+```
+
+**If yes:**
+```
+→ Which external systems? (list each, e.g. "AWS S3", "Postgres 15")
+→ What env vars are needed to connect? (names only — never record actual values)
+→ Is any state pre-provisioned (bucket, DB, queue) or created/destroyed by test setup?
+→ What IAM / permission scope is needed? (least privilege — avoid wildcards like s3:*)
+→ Should these tests be excluded from the default test run? (recommended: yes → ci_tag: integration)
+```
+
+Write the answers into the spec frontmatter as `infra_requirements:`:
+
+```yaml
+infra_requirements:
+  systems:
+    - name: "AWS S3"
+      env_vars: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION]
+      notes: "Dedicated test account. IAM scoped to specific actions/ARNs."
+  ci_tag: "integration"
+```
+
+**Security invariant:** `infra_requirements:` MUST contain only env var NAMES and human-readable guidance. Never record actual credential values, tokens, or connection strings with embedded passwords.
+
+**If the author skips or is unsure:** write `infra_requirements: unknown` and add a comment: `# Fill in before /adev:plan — plan will warn if missing`.
+
+**If the capability has no external systems:** proceed to Step 5 without writing the field.
+
 ### Step 5: Write the Spec
 
 1. Generate slug: lowercase, kebab-case, no special characters.
