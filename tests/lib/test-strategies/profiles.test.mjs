@@ -1,10 +1,14 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 import { UNIT_PROFILE, getStrategyProfile } from '../../../lib/test-strategies/profiles.mjs';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const REAL_PROFILES_DIR = resolve(__dirname, '../../../lib/test-strategies/profiles');
 
 // ---------------------------------------------------------------------------
 // UNIT_PROFILE constant
@@ -372,5 +376,38 @@ describe('getStrategyProfile — warnings array', () => {
     for (const w of warnings) {
       assert.equal(typeof w, 'string');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getStrategyProfile — integration profile (real file)
+// ---------------------------------------------------------------------------
+
+describe('getStrategyProfile — integration profile (real file)', () => {
+  test('loads integration profile without fallback', () => {
+    const { profile, warnings, fallback } = getStrategyProfile('integration', REAL_PROFILES_DIR);
+    assert.equal(fallback, false, `Should not fall back to unit profile. Warnings: ${warnings.join(', ')}`);
+    assert.deepEqual(warnings, []);
+    assert.equal(profile.strategy_id, 'integration');
+  });
+
+  test('integration profile has all required fields', () => {
+    const { profile } = getStrategyProfile('integration', REAL_PROFILES_DIR);
+    const REQUIRED = ['strategy_id', 'red_exit_condition', 'green_exit_condition', 'gaming_blockers', 'assertion_rules', 'seed_data_rule', 'handoff_format', 'permitted_tools'];
+    for (const field of REQUIRED) {
+      assert.ok(profile[field] !== undefined && profile[field] !== null, `Missing field: ${field}`);
+    }
+  });
+
+  test('integration profile gaming_blockers is non-empty', () => {
+    const { profile } = getStrategyProfile('integration', REAL_PROFILES_DIR);
+    assert.ok(Array.isArray(profile.gaming_blockers));
+    assert.ok(profile.gaming_blockers.length >= 3, 'Expected at least 3 gaming blockers');
+  });
+
+  test('integration profile permitted_tools is non-empty', () => {
+    const { profile } = getStrategyProfile('integration', REAL_PROFILES_DIR);
+    assert.ok(Array.isArray(profile.permitted_tools));
+    assert.ok(profile.permitted_tools.length > 0);
   });
 });
