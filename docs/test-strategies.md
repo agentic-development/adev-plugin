@@ -21,7 +21,7 @@ Traditional TDD assumes unit tests: write a failing test, implement the code, te
 
 Test strategies let `/adev:write-test` follow the right rules for each domain, including domain-specific gaming detection (e.g., "testing a migration on an empty database" is the schema equivalent of "using toBeTruthy() as the sole assertion").
 
-## The 8 strategies
+## The 9 strategies
 
 | Strategy | Domain | Typical tools |
 |----------|--------|---------------|
@@ -30,6 +30,7 @@ Test strategies let `/adev:write-test` follow the right rules for each domain, i
 | `fixture` | Data pipelines, ETL, dbt models | dbt tests, Great Expectations, Soda Core |
 | `policy` | IaC, K8s manifests, Dockerfiles | Conftest, OPA, Sentinel, Checkov, kubeconform |
 | `contract` | Service integrations, API boundaries | Pact, Spring Cloud Contract, Specmatic |
+| `integration` | External service adapters and connectors | AWS SDK v3, node-postgres, ioredis, kafkajs, undici |
 | `threshold` | Performance, load testing | k6, Gatling, Locust, Artillery, hyperfine |
 | `visual` | UI components, design systems | Chromatic, Percy, Playwright, Storybook |
 | `smoke` | Deployments, migrations, glue code | curl, Docker healthcheck, Testcontainers |
@@ -46,6 +47,9 @@ The framework auto-detects strategies from your project structure:
 - `*.proto`, `openapi.yaml`, `contracts/` &rarr; `contract`
 - `src/components/` with React/Vue/Svelte/Angular &rarr; `visual`
 - `k6/`, `locust/`, `artillery/` &rarr; `threshold`
+- `adapters/`, `integrations/`, `connectors/` directories &rarr; `integration`
+- `serverless.yml`, `pulumi.yaml`, `firebase.json` in the repo root &rarr; `integration`
+- Files named `*-adapter.*`, `*-client.*`, `*-gateway.*`, `*-connector.*` &rarr; `integration` (medium confidence)
 
 When `/adev:plan` decomposes a spec into tasks, it checks each task's file paths and assigns the strategy automatically. A migration task gets `schema`, a component task gets `visual`, an API task gets `unit`.
 
@@ -71,6 +75,11 @@ test_strategies:
     command: ["conftest", "test"]
     tier: fast
     paths: ["terraform/**", "k8s/**"]
+
+  - strategy_id: integration
+    command: ["node", "--test", "--test-name-pattern", "integration"]
+    tier: integration
+    paths: ["src/adapters/**", "lib/clients/**"]
 ```
 
 Each entry declares:
@@ -160,6 +169,149 @@ For a `unit` task, behavior is identical to before — the unit profile codifies
 - Handoff blocks are still immutable
 - All existing tests continue to pass
 
+## Adopting the integration strategy
+
+The `integration` strategy is for behavioral tests that run against **real external infrastructure** — cloud APIs, managed databases, message queues, and third-party HTTP services. It is the only strategy that prohibits mocking at the infrastructure layer.
+
+### The core rule
+
+If the module you are testing is designed to _wrap or adapt_ an external system (an S3 adapter, a Postgres repository, a Stripe gateway), the external system itself must not be mocked. Mocking it produces a test that doesn't verify the thing that matters.
+
+```
+Module purpose             Infrastructure boundary        Mocking allowed
+────────────────────────────────────────────────────────────────────────────
+S3 adapter (wraps S3)  →   AWS S3 API               →   Retry logic, helpers
+Order service (calls       The Order service's            The S3 adapter itself
+  S3 adapter)          →   behavior                 →   (mock uploadFile())
+Queue consumer         →   AWS SQS                  →   Message parsing,
+  (reads SQS)                                           downstream handlers
+```
+
+### Step 1 — Declare infrastructure requirements in the spec
+
+During `/adev:specify`, Step 4.5 prompts for infrastructure requirements when a capability touches external systems. The answers are written into the spec frontmatter:
+
+```yaml
+infra_requirements:
+  systems:
+    - name: "AWS S3"
+      env_vars: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, TEST_BUCKET]
+      notes: "Dedicated test account. Scope IAM to s3:PutObject, s3:GetObject, s3:DeleteObject, s3:ListBucket on test bucket ARN only."
+  ci_tag: "integration"
+```
+
+> **Security invariant:** This block contains env var _names_ only. Never record actual credential values, tokens, or connection strings with embedded passwords in spec files — they are committed to the repository.
+
+### Step 2 — Write tests with a credential guard
+
+Every integration test file must fail fast with a clear message when credentials are missing. Missing credentials are **not** RED — they are a setup error.
+
+```javascript
+// Credential guard — must appear before any test code
+const REQUIRED = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'TEST_BUCKET'];
+const missing = REQUIRED.filter(v => !process.env[v]);
+if (missing.length > 0) {
+  console.error(
+    `INTEGRATION_NO_CREDENTIALS: Integration tests require credentials.\n` +
+    `Missing: ${missing.join(', ')}\n` +
+    `Set the variables listed in the Infrastructure Requirements block before running.`
+  );
+  process.exit(1);
+}
+```
+
+Running the test without credentials produces:
+
+```
+INTEGRATION_NO_CREDENTIALS: Integration tests require credentials.
+Missing: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, TEST_BUCKET
+Set the variables listed in the Infrastructure Requirements block before running.
+Exit code: 1
+```
+
+### Step 3 — Use UUID suffixes and clean up in teardown
+
+Tests must not leave state behind, and must be safe to run in parallel.
+
+```javascript
+import { describe, it, before, after } from 'node:test';
+import { randomUUID } from 'node:crypto';
+
+describe('S3 adapter — integration', () => {
+  let testKey;
+
+  before(() => {
+    // UUID suffix prevents cross-run collisions
+    testKey = `adev-test/${randomUUID()}/file.txt`;
+  });
+
+  after(async () => {
+    // Idempotent teardown — always runs, even if tests fail
+    try { await remove(BUCKET, testKey); } catch { /* already gone */ }
+  });
+
+  it('integration: upload creates a real S3 object', async () => {
+    const result = await upload(BUCKET, testKey, 'payload');
+    assert.strictEqual(result.bucket, BUCKET);
+  });
+});
+```
+
+### Step 4 — Activate the integration gate
+
+In `governance/gates.yaml`, promote the integration gate from stub to active:
+
+```yaml
+- id: integration-test
+  name: Integration Tests
+  kind: deterministic
+  tier: integration
+  command: "node --test --test-name-pattern 'integration'"
+  required: true      # was: false
+  severity: error     # was: warning
+  triggers:
+    - post-implement
+    - pre-merge
+```
+
+The integration tier only runs `post-implement` and `pre-merge` — not on every task. This keeps `npm test` (fast tier) instant while still enforcing real-infra verification before merging.
+
+### Step 5 — Set CI secrets
+
+Add the variables listed in `infra_requirements.systems[].env_vars` as CI secrets (GitHub Actions, GitLab CI, etc.). Use a **dedicated test account** with scoped IAM permissions — not your production account.
+
+```yaml
+# .github/workflows/test.yml (excerpt)
+- name: Run integration tests
+  env:
+    AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
+    AWS_REGION: us-east-1
+    TEST_BUCKET: ${{ secrets.TEST_BUCKET }}
+  run: npm run test:integration
+```
+
+### Gaming violations that block the PR
+
+`/adev:validate` blocks the PR if any of these patterns are detected in integration test files:
+
+| Pattern | What triggers it | Why it's a violation |
+|---------|-----------------|---------------------|
+| `BOUNDARY_MOCKING` | `jest.mock('@aws-sdk/...')`, `nock(...)`, `sinon.stub(client, 'send')` | Mocks the external system the module wraps — the test no longer verifies real behavior |
+| `CI_BYPASS` | `if (process.env.CI) { skip() }` | Integration tests must run in CI when credentials are available |
+| `CREDENTIAL_ABSENT_PASS` | SDK client instantiated without an env var guard | Tests pass silently when credentials are missing — vacuous pass |
+
+### When NOT to use the integration strategy
+
+| Situation | Right strategy |
+|-----------|---------------|
+| You are testing business logic that _calls_ an adapter | `unit` — mock the adapter, not the infrastructure |
+| You are verifying that a migration script produces the right schema | `schema` |
+| You are verifying a service implements a consumer contract | `contract` |
+| You need a quick smoke check that a deployed service responds | `smoke` |
+
+Use `integration` when the module's _entire purpose_ is the infrastructure interaction itself.
+
 ## Extending with custom profiles
 
 Each strategy profile is a markdown file at `lib/test-strategies/profiles/<strategy>.md` with YAML frontmatter defining 8 fields:
@@ -174,7 +326,7 @@ Each strategy profile is a markdown file at `lib/test-strategies/profiles/<strat
 | `handoff_format` | Structure of the immutable handoff block |
 | `permitted_tools` | Which test frameworks are valid |
 
-To add a 9th strategy (e.g., `accessibility`), create the profile markdown and add a detection heuristic. No changes to the core abstraction required.
+To add a 10th strategy (e.g., `accessibility`), create the profile markdown and add a detection heuristic. No changes to the core abstraction required.
 
 ## Troubleshooting
 
@@ -182,6 +334,6 @@ To add a 9th strategy (e.g., `accessibility`), create the profile markdown and a
 
 **"Wrong strategy detected"** — Manifest entries override detection. Add an explicit entry with the correct strategy and path globs.
 
-**"Strategy profile not found — falling back to unit"** — The profile markdown file doesn't exist at `lib/test-strategies/profiles/<strategy>.md`. All 8 built-in profiles ship with the plugin.
+**"Strategy profile not found — falling back to unit"** — The profile markdown file doesn't exist at `lib/test-strategies/profiles/<strategy>.md`. All 9 built-in profiles ship with the plugin.
 
 **"Low confidence strategy assignment"** — The detection heuristic found a weak signal. Review the assignment in the plan output and override via manifest or spec frontmatter if needed.

@@ -1,0 +1,20 @@
+service: integration-service
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+
+functions:
+  upload:
+    handler: adapters/s3-client.upload
+    events:
+      - http:
+          path: /upload
+          method: post
+  charge:
+    handler: integrations/stripe-gateway.charge
+    events:
+      - http:
+          path: /charge
+          method: post

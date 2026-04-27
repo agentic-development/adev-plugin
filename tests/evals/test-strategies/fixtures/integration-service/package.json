@@ -1,0 +1,10 @@
+{
+  "name": "integration-service",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Service with S3 and Stripe adapters — integration strategy fixture",
+  "scripts": {
+    "test": "node --test tests/**/*.test.mjs",
+    "test:integration": "node --test --test-name-pattern 'integration'"
+  }
+}
