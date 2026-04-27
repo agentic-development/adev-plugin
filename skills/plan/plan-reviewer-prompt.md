@@ -25,6 +25,7 @@ This reviewer is invoked for plans produced at **any scope**: Spec Mode, Feature
 | **TDD Structure** | Every task follows the pattern: write failing test, verify fail, implement, verify pass, commit. No task skips the test-first step. |
 | **Buildability** | Could a developer with zero codebase context follow this plan without getting stuck? Are all referenced files, commands, and patterns explicit? |
 | **Specialist Tags** | Tasks touching specialist domains have correct `[specialist: X]` tags. Tags match the manifest registry entries. |
+| **Infrastructure Requirements** | If the plan includes non-unit strategies or the spec has `infra_requirements:`, verify the plan contains a `## Test Infrastructure Requirements` section. If the section is missing but should be present, flag as an issue. If present, verify it lists external systems with owning tasks, env var names (not values), CI run command, and an Unresolved Requirements table if any tasks are `PLAN_INFRA_UNKNOWN`. |
 
 ### Feature Mode Checks
 
