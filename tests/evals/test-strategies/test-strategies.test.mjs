@@ -8,7 +8,8 @@ import { resolveStrategy } from '../../../lib/test-strategies/assignment.mjs';
 import { getStrategy, listStrategies } from '../../../lib/test-strategies/registry.mjs';
 import { parseTestStrategies, matchStrategy } from '../../../lib/test-strategies/manifest.mjs';
 import { getStrategyProfile, UNIT_PROFILE } from '../../../lib/test-strategies/profiles.mjs';
-import { detectSharedGamingPatterns } from '../../../lib/test-strategies/gaming.mjs';
+import { detectSharedGamingPatterns, INTEGRATION_PATTERNS } from '../../../lib/test-strategies/gaming.mjs';
+import { readFileSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, 'fixtures');
@@ -294,6 +295,82 @@ describe('Scenario: data-platform (fixture + policy + schema + threshold + unit)
 });
 
 // ============================================================================
+// Scenario 10: Integration service — integration strategy
+// ============================================================================
+
+describe('Scenario: integration-service (cloud adapters + serverless)', () => {
+  const root = join(FIXTURES, 'integration-service');
+
+  it('project-level detection includes integration (from serverless.yml)', async () => {
+    const results = await detectStrategies(root);
+    const ids = results.map(r => r.strategyId);
+    assert.ok(ids.includes('integration'), `Expected integration in ${JSON.stringify(ids)}`);
+  });
+
+  it('integration from serverless.yml has high confidence', async () => {
+    const results = await detectStrategies(root);
+    const integration = results.find(r => r.strategyId === 'integration');
+    assert.strictEqual(integration.confidence, 'high');
+  });
+
+  it('unit is always present alongside integration', async () => {
+    const results = await detectStrategies(root);
+    const ids = results.map(r => r.strategyId);
+    assert.ok(ids.includes('unit'), `Expected unit in ${JSON.stringify(ids)}`);
+  });
+
+  it('task-level detection for adapters/ path returns integration', () => {
+    const result = detectTaskStrategy(['adapters/s3-client.mjs']);
+    assert.strictEqual(result.strategyId, 'integration');
+    assert.strictEqual(result.confidence, 'medium');
+  });
+
+  it('task-level detection for integrations/ path returns integration', () => {
+    const result = detectTaskStrategy(['integrations/stripe-gateway.mjs']);
+    assert.strictEqual(result.strategyId, 'integration');
+  });
+
+  it('task-level detection for clients/ path returns integration', () => {
+    const result = detectTaskStrategy(['src/clients/redis-client.mjs']);
+    assert.strictEqual(result.strategyId, 'integration');
+  });
+
+  it('task-level detection for providers/ path returns integration', () => {
+    const result = detectTaskStrategy(['lib/providers/twilio-provider.mjs']);
+    assert.strictEqual(result.strategyId, 'integration');
+  });
+
+  it('task-level detection for *-adapter.* filename returns integration', () => {
+    const result = detectTaskStrategy(['src/dynamo-adapter.mjs']);
+    assert.strictEqual(result.strategyId, 'integration');
+  });
+
+  it('task-level detection for *-client.* filename returns integration', () => {
+    const result = detectTaskStrategy(['src/postgres-client.ts']);
+    assert.strictEqual(result.strategyId, 'integration');
+  });
+
+  it('task-level detection for *-gateway.* filename returns integration', () => {
+    const result = detectTaskStrategy(['src/payment-gateway.mjs']);
+    assert.strictEqual(result.strategyId, 'integration');
+  });
+
+  it('task-level detection for *-connector.* filename returns integration', () => {
+    const result = detectTaskStrategy(['lib/kafka-connector.mjs']);
+    assert.strictEqual(result.strategyId, 'integration');
+  });
+
+  it('resolveStrategy routes adapter file to integration/detected', () => {
+    const assignment = resolveStrategy(
+      { id: 'task-1', filePaths: ['adapters/s3-client.mjs'] },
+      {}, {}
+    );
+    assert.strictEqual(assignment.strategyId, 'integration');
+    assert.strictEqual(assignment.source, 'detected');
+  });
+});
+
+// ============================================================================
 // Cross-cutting: Priority chain with manifest overrides
 // ============================================================================
 
@@ -356,8 +433,8 @@ describe('Profile loading with fixtures', () => {
     assert.strictEqual(result.fallback, false);
   });
 
-  it('all 8 profiles load without fallback', () => {
-    const ids = ['unit', 'schema', 'contract', 'fixture', 'policy', 'threshold', 'visual', 'smoke'];
+  it('all 9 profiles load without fallback', () => {
+    const ids = ['unit', 'schema', 'contract', 'fixture', 'integration', 'policy', 'threshold', 'visual', 'smoke'];
     for (const id of ids) {
       const result = getStrategyProfile(id, PROFILES_DIR);
       assert.strictEqual(result.profile.strategy_id, id, `Profile ${id} has wrong strategy_id`);
@@ -604,12 +681,64 @@ describe('Profile content: smoke', () => {
   });
 });
 
+describe('Profile content: integration', () => {
+  const p = () => getStrategyProfile('integration', PROFILES_DIR).profile;
+
+  it('RED condition references real infrastructure assertion failure', () => {
+    const red = p().red_exit_condition.toLowerCase();
+    assert.ok(red.includes('infrastructure') || red.includes('real') || red.includes('assertion'),
+      `Expected real-infrastructure reference in red_exit_condition: ${p().red_exit_condition}`);
+  });
+
+  it('RED condition explicitly excludes credential/connectivity failures as valid RED', () => {
+    const red = p().red_exit_condition.toLowerCase();
+    assert.ok(red.includes('credential') || red.includes('unreachable') || red.includes('setup error'),
+      `RED condition must distinguish behavioral failures from setup failures`);
+  });
+
+  it('GREEN condition references live external infrastructure', () => {
+    const green = p().green_exit_condition.toLowerCase();
+    assert.ok(green.includes('live') || green.includes('real') || green.includes('external'),
+      `Expected live infrastructure reference in green_exit_condition`);
+  });
+
+  it('gaming blockers include boundary mocking', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('mock') || blockers.includes('boundary') || blockers.includes('stub'),
+      `Expected boundary mocking gaming blocker`);
+  });
+
+  it('gaming blockers include credential-absent pass', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('credential') || blockers.includes('absent') || blockers.includes('env var'),
+      `Expected credential-absent gaming blocker`);
+  });
+
+  it('gaming blockers include CI bypass', () => {
+    const blockers = p().gaming_blockers.join(' ').toLowerCase();
+    assert.ok(blockers.includes('ci') || blockers.includes('bypass') || blockers.includes('skip'),
+      `Expected CI bypass gaming blocker`);
+  });
+
+  it('seed data rule requires UUID/random suffixes for isolation', () => {
+    const seed = p().seed_data_rule.toLowerCase();
+    assert.ok(seed.includes('uuid') || seed.includes('random') || seed.includes('unique'),
+      `Expected UUID/random suffix isolation requirement`);
+  });
+
+  it('permitted tools include cloud SDKs', () => {
+    const tools = p().permitted_tools.join(' ').toLowerCase();
+    assert.ok(tools.includes('aws') || tools.includes('sdk') || tools.includes('pg') || tools.includes('postgres'),
+      `Expected cloud SDK or database driver in permitted_tools`);
+  });
+});
+
 // ============================================================================
 // Profile consistency — all profiles follow the same contract
 // ============================================================================
 
-describe('Profile contract consistency across all 8 strategies', () => {
-  const ids = ['unit', 'schema', 'contract', 'fixture', 'policy', 'threshold', 'visual', 'smoke'];
+describe('Profile contract consistency across all 9 strategies', () => {
+  const ids = ['unit', 'schema', 'contract', 'fixture', 'integration', 'policy', 'threshold', 'visual', 'smoke'];
   const required = ['strategy_id', 'red_exit_condition', 'green_exit_condition',
     'gaming_blockers', 'assertion_rules', 'seed_data_rule', 'handoff_format', 'permitted_tools'];
 
@@ -713,15 +842,85 @@ test.skip('todo', () => {});
 });
 
 // ============================================================================
+// Cross-cutting: Integration gaming detection on fixture test files
+// ============================================================================
+
+describe('Integration gaming detection on fixture content', () => {
+  const GAMING_FIXTURE = join(FIXTURES, 'integration-service', 'tests', 's3-client-gaming.fixture.mjs');
+
+  it('INTEGRATION_PATTERNS array has 3 patterns', () => {
+    assert.strictEqual(INTEGRATION_PATTERNS.length, 3);
+  });
+
+  it('INTEGRATION_PATTERNS contains BOUNDARY_MOCKING, CI_BYPASS, CREDENTIAL_ABSENT_PASS', () => {
+    const ids = INTEGRATION_PATTERNS.map(p => p.id);
+    assert.ok(ids.includes('BOUNDARY_MOCKING'), 'Missing BOUNDARY_MOCKING');
+    assert.ok(ids.includes('CI_BYPASS'), 'Missing CI_BYPASS');
+    assert.ok(ids.includes('CREDENTIAL_ABSENT_PASS'), 'Missing CREDENTIAL_ABSENT_PASS');
+  });
+
+  it('gaming fixture file detects BOUNDARY_MOCKING from jest.mock on @aws-sdk', () => {
+    const content = readFileSync(GAMING_FIXTURE, 'utf8');
+    const pattern = INTEGRATION_PATTERNS.find(p => p.id === 'BOUNDARY_MOCKING');
+    const violations = pattern.detect(content);
+    assert.ok(violations.length > 0, 'Expected BOUNDARY_MOCKING violations');
+    assert.ok(violations.some(v => v.message.includes('@aws-sdk')),
+      `Expected @aws-sdk in violation message, got: ${violations.map(v => v.message).join(', ')}`);
+  });
+
+  it('gaming fixture file detects CI_BYPASS from if (process.env.CI)', () => {
+    const content = readFileSync(GAMING_FIXTURE, 'utf8');
+    const pattern = INTEGRATION_PATTERNS.find(p => p.id === 'CI_BYPASS');
+    const violations = pattern.detect(content);
+    assert.ok(violations.length > 0, 'Expected CI_BYPASS violations');
+  });
+
+  it('gaming fixture file detects CREDENTIAL_ABSENT_PASS (S3Client without env guard)', () => {
+    const content = readFileSync(GAMING_FIXTURE, 'utf8');
+    const pattern = INTEGRATION_PATTERNS.find(p => p.id === 'CREDENTIAL_ABSENT_PASS');
+    const violations = pattern.detect(content);
+    assert.ok(violations.length > 0, 'Expected CREDENTIAL_ABSENT_PASS violations');
+  });
+
+  it('clean integration test (with env guard, no mocks) produces no integration violations', () => {
+    const clean = `
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+if (!process.env.AWS_ACCESS_KEY_ID) throw new Error('AWS_ACCESS_KEY_ID is required');
+const s3 = new S3Client({ region: process.env.AWS_REGION });
+test('uploads a real file', async () => {
+  const result = await s3.send(new PutObjectCommand({ Bucket: 'test', Key: 'k', Body: 'v' }));
+  assert.ok(result.$metadata.httpStatusCode === 200);
+});
+`;
+    for (const pattern of INTEGRATION_PATTERNS) {
+      const violations = pattern.detect(clean);
+      assert.strictEqual(violations.length, 0,
+        `Pattern ${pattern.id} flagged clean integration test: ${violations.map(v => v.message).join(', ')}`);
+    }
+  });
+
+  it('nock usage is caught by BOUNDARY_MOCKING', () => {
+    const content = `
+const nock = require('nock');
+nock('https://s3.amazonaws.com').put('/').reply(200);
+test('upload', async () => { const r = await upload(); assert.ok(r); });
+`;
+    const pattern = INTEGRATION_PATTERNS.find(p => p.id === 'BOUNDARY_MOCKING');
+    const violations = pattern.detect(content);
+    assert.ok(violations.length > 0, 'Expected nock() to trigger BOUNDARY_MOCKING');
+  });
+});
+
+// ============================================================================
 // Cross-cutting: Registry completeness
 // ============================================================================
 
 describe('Registry covers all fixture scenarios', () => {
-  const expectedStrategies = ['contract', 'fixture', 'policy', 'schema', 'smoke', 'threshold', 'unit', 'visual'];
+  const expectedStrategies = ['contract', 'fixture', 'integration', 'policy', 'schema', 'smoke', 'threshold', 'unit', 'visual'];
 
-  it('registry has exactly 8 strategies', () => {
+  it('registry has exactly 9 strategies', () => {
     const all = listStrategies();
-    assert.strictEqual(all.length, 8);
+    assert.strictEqual(all.length, 9);
   });
 
   it('all expected strategy IDs exist', () => {

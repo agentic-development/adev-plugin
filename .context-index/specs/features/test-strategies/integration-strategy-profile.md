@@ -1,6 +1,6 @@
 ---
 charter: test-strategies
-status: implemented
+status: validated
 revision: 1
 charter-revision: 2
 created: 2026-04-27

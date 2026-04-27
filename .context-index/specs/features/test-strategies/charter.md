@@ -76,11 +76,12 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | Strategy Assignment Protocol | Rules for how plan assigns a strategy per task: spec-declared > manifest-declared > auto-detected > fallback to unit | must-have | | review-passed |
 | Strategy Profile Contract | Define what each profile Live Spec must contain: RED exit condition, GREEN exit condition, gaming blockers, assertion rules, seed data rule, handoff format | must-have | | review-passed |
 | Plan Integration | Extend plan output to include `strategy` field per task with assignment source and confidence | must-have | | review-passed |
+| Plan Infrastructure Requirements | When plan includes non-unit strategies or the spec has `infra_requirements:`, emit a consolidated Test Infrastructure Requirements section listing accounts, credentials, pre-provisioned state, and CI invocation | should-have | | validated |
 | Write-test Dispatch | Write-test loads the matching strategy profile and follows its rules instead of hardcoded unit-test rules | must-have | | review-passed |
 | Fallback Behavior | When no profile exists for an assigned strategy, fall back to unit profile with an advisory message | should-have | | review-passed |
 | Confidence Reporting | Strategy assignments include confidence level (high/medium/low) so humans can review low-confidence assignments before proceeding | nice-to-have | | review-passed |
 | Cross-strategy Gaming Patterns | Shared gaming detection patterns that apply across all strategies (e.g., disabled tests, empty assertions) | nice-to-have | | review-passed |
-| Integration Strategy Profile | Define the integration strategy profile — 9th strategy type for behavioral tests against real external infrastructure with no mocking at the infrastructure boundary | nice-to-have | | implemented |
+| Integration Strategy Profile | Define the integration strategy profile — 9th strategy type for behavioral tests against real external infrastructure with no mocking at the infrastructure boundary | nice-to-have | | validated |
 
 ## Deferred Capabilities
 
@@ -98,7 +99,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | `detectStrategies(projectRoot)` | function | Scans project files and returns a list of auto-detected strategy IDs with confidence levels. |
 | `detectTaskStrategy(filePaths)` | function | Resolves a single strategy ID from a task's file paths using path pattern matching. Used internally by `resolveStrategy`. |
 | `getStrategy(id)` | function | Returns a strategy type definition from the registry (summary traits, not the full profile). Returns null if not found. |
-| `listStrategies()` | function | Returns all 8 strategy types in stable alphabetical order. |
+| `listStrategies()` | function | Returns all 9 strategy types in stable alphabetical order. |
 | `test_strategies` manifest schema | config | YAML schema for declaring strategies in manifest.yaml. Consumed by plan, write-test, implement. |
 
 ### Consumed APIs
