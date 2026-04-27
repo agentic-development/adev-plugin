@@ -432,6 +432,84 @@ Include the resolved strategy in each task's metadata. If any task uses a non-un
 
 Omit this section entirely when all tasks resolve to `unit` (backward compatible — no noise for projects not using test strategies).
 
+### Infrastructure Requirements Section
+
+After the Strategy Summary (or in its place when no non-unit strategies exist), check whether the plan needs a `## Test Infrastructure Requirements` section.
+
+**Emission trigger (either condition):**
+- The spec frontmatter contains `infra_requirements:` (regardless of strategy), OR
+- One or more tasks are assigned a non-unit strategy
+
+When all tasks are `unit` AND the spec has no `infra_requirements:` field, skip this section entirely (backward compatible — no noise for pure unit-test tasks).
+
+**Derivation:**
+For each non-unit task (or for all tasks when `infra_requirements:` is in spec frontmatter):
+1. Read `infra_requirements:` from spec frontmatter — **if present, use as authoritative source and skip auto-detection (skip step 3)**
+2. Otherwise, auto-detect from task file paths using file-globbing heuristics (e.g., files under `src/adapters/aws/` → AWS credentials likely needed; task paths matching `**/s3-client.*` → AWS S3 credentials likely needed). Detection uses file globbing only — no import scanning or content parsing.
+3. Deduplicate requirements across tasks, grouped by external system.
+
+When auto-detection confidence is `low`, prepend an advisory: "⚠ Infrastructure requirements auto-detected with low confidence — review and confirm before proceeding."
+
+When `infra_requirements: unknown` is in spec frontmatter, emit `PLAN_INFRA_UNKNOWN` for all tasks in the spec.
+
+**Section format:**
+
+~~~markdown
+## Test Infrastructure Requirements
+
+> These requirements must be satisfied before integration/infrastructure tests can run.
+> Tasks without these prerequisites will produce setup errors, not test failures.
+> **Never record actual credential values in plan output or spec files — env var names only.**
+
+### External Systems
+
+| System | Required By | Strategy |
+|--------|-------------|----------|
+| AWS S3 | Task 1.2, Task 1.4 | integration |
+| Postgres 15 | Task 2.1, Task 2.3 | schema, integration |
+
+### Credentials / Environment Variables
+
+| Variable | Required For | Where to Get It |
+|----------|-------------|-----------------|
+| `AWS_ACCESS_KEY_ID` | AWS S3 | AWS IAM console — dedicated test account |
+| `DATABASE_URL` | Postgres | Provision test DB — inject as CI secret (contains password) |
+
+### Pre-Provisioned State
+
+- [ ] AWS test account with IAM permissions scoped to specific actions and test resource ARNs
+- [ ] Postgres 15 instance accessible from test runner
+
+### CI Configuration
+
+These tests are excluded from the default `npm test` run. To execute:
+```bash
+npm run test:integration
+# or: node --test --test-name-pattern "integration"
+```
+
+> **Local runs:** Create `.env.test` with credential values. `.env.test` MUST be listed in `.gitignore`.
+> In CI, inject credentials as secrets — never hardcode them in workflow files.
+
+### Unresolved Requirements
+
+| Task | Issue | Action Required |
+|------|-------|-----------------|
+| Task 3.1 | `PLAN_INFRA_UNKNOWN` — external system not identifiable | Declare `infra_requirements:` in spec frontmatter |
+~~~
+
+**Non-blocking:** Plan does NOT block when infra requirements are unresolved. It completes the task list and surfaces unresolved items in the `### Unresolved Requirements` table for human review before running `/adev:implement`.
+
+**Strategy Summary update (amends plan-integration Behavior 4):** When this section is emitted, extend the Strategy Distribution summary to include an "infrastructure" column:
+
+~~~
+Strategy Distribution:
+  unit        ·  8 tasks   (source: fallback)      — no external infra needed
+  integration ·  4 tasks   (source: detected/high)  — requires: AWS S3, SQS, Postgres
+  schema      ·  2 tasks   (source: detected/high)  — requires: Postgres
+  visual      ·  1 task    (source: spec-declared)  — requires: Storybook server (from infra_requirements:)
+~~~
+
 ### Task Structure
 
 Each task follows TDD. Steps are granular (2-5 minutes each).
