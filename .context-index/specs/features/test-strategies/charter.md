@@ -8,13 +8,13 @@ updated: 2026-04-20
 
 ## Business Intent
 
-Test Strategies provides a strategy abstraction layer that decouples the TDD lifecycle from unit-test assumptions. It defines 8 test strategies (unit, schema, contract, fixture, policy, threshold, visual, smoke) that the plan, write-test, implement, and validate skills consume to adapt RED-GREEN-REFACTOR semantics to the actual domain of work — whether that's business logic, database migrations, data pipelines, infrastructure-as-code, service integrations, performance requirements, or UI components.
+Test Strategies provides a strategy abstraction layer that decouples the TDD lifecycle from unit-test assumptions. It defines 9 test strategies (unit, schema, contract, fixture, integration, policy, threshold, visual, smoke) that the plan, write-test, implement, and validate skills consume to adapt RED-GREEN-REFACTOR semantics to the actual domain of work — whether that's business logic, database migrations, data pipelines, infrastructure-as-code, service integrations, performance requirements, or UI components.
 
 ## Scope and Boundaries
 
 ### In Scope
 
-- Strategy type definitions (8 strategies: unit, schema, contract, fixture, policy, threshold, visual, smoke)
+- Strategy type definitions (9 strategies: unit, schema, contract, fixture, integration, policy, threshold, visual, smoke)
 - Strategy detection heuristics (auto-detect from project files and task file paths)
 - Manifest schema extension (`test_strategies` section for project-level declaration and overrides)
 - Strategy assignment protocol (how plan assigns, how spec can override)
@@ -60,7 +60,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 
 ### Invariants
 
-- Every StrategyAssignment must resolve to a known strategy ID (one of the 8 defined types)
+- Every StrategyAssignment must resolve to a known strategy ID (one of the 9 defined types)
 - If no StrategyProfile exists for an assigned strategy, the `unit` profile is used as fallback
 - A spec-declared strategy always overrides a detected strategy
 - A manifest-declared strategy overrides an auto-detected strategy (but not a spec-declared one)
@@ -70,7 +70,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Strategy Type Registry | Define the 8 strategy types with summary traits (RED/GREEN semantics, domain, typical tools) | must-have | | review-passed |
+| Strategy Type Registry | Define the 9 strategy types with summary traits (RED/GREEN semantics, domain, typical tools) | must-have | | implemented |
 | Manifest Schema Extension | `test_strategies` section in manifest.yaml for declaring available strategies, commands, tiers, and path globs | must-have | | review-passed |
 | Strategy Detection Heuristics | Auto-detect available strategies from project files (dbt_project.yml -> fixture, Terraform -> policy, etc.) and task file paths (migrations/ -> schema) | must-have | | review-passed |
 | Strategy Assignment Protocol | Rules for how plan assigns a strategy per task: spec-declared > manifest-declared > auto-detected > fallback to unit | must-have | | review-passed |
@@ -80,6 +80,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | Fallback Behavior | When no profile exists for an assigned strategy, fall back to unit profile with an advisory message | should-have | | review-passed |
 | Confidence Reporting | Strategy assignments include confidence level (high/medium/low) so humans can review low-confidence assignments before proceeding | nice-to-have | | review-passed |
 | Cross-strategy Gaming Patterns | Shared gaming detection patterns that apply across all strategies (e.g., disabled tests, empty assertions) | nice-to-have | | review-passed |
+| Integration Strategy Profile | Define the integration strategy profile — 9th strategy type for behavioral tests against real external infrastructure with no mocking at the infrastructure boundary | nice-to-have | | implemented |
 
 ## Deferred Capabilities
 
