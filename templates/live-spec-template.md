@@ -19,6 +19,7 @@ updated: {{ date }}
 #       env_vars: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION]
 #       notes: "Dedicated test account. Scope IAM to specific actions/ARNs."
 #   ci_tag: "integration"
+#   on_fail: "fail"  # Optional: 'fail' (default) or 'skip'. 'skip' requires explicit user approval.
 # Security: env var names only — MUST NOT contain actual credential values.
 ---
 
