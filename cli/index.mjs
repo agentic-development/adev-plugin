@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, realpathSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -857,7 +857,7 @@ export const disableConflictingPlugin = getProvider("claude-code").disableConfli
 
 function resolveSymlink(p) {
   try {
-    return execSync("readlink -f '" + p.replace(/'/g, "'\\''") + "'", { encoding: "utf8", cwd: "/" }).trim();
+    return realpathSync(p);
   } catch {
     return p;
   }
