@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "${PGPORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: integration_sandbox
+      POSTGRES_USER: sandbox
+      POSTGRES_PASSWORD: sandbox_pass
+    volumes:
+      - ./seed/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sandbox -d integration_sandbox"]
+      interval: 2s
+      timeout: 5s
+      retries: 10

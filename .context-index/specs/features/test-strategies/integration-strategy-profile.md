@@ -107,6 +107,7 @@ The following patterns are explicitly prohibited when applied to the declared in
 - **In-process substitutes for the boundary system:** Using SQLite instead of Postgres, an in-memory queue instead of SQS, a local HTTP server instead of the real third-party API — unless the project has explicitly documented this as an accepted trade-off in the spec's `infra_requirements.notes` field and in team onboarding documentation.
 - **Credential-absent pass:** Tests that pass when the required env vars are unset. Tests must fail fast with a clear message when credentials are missing — they must not silently skip assertions.
 - **CI bypass:** `if (process.env.CI) { skip() }` or equivalent. Integration tests must run in CI when credentials are available.
+- **Agent-initiated skip:** `describe.skipIf(!canConnect)`, `describe.skip`, `skipUnless(hasCredentials)`, or any conditional skip tied to infrastructure availability. Integration tests must FAIL (not skip) when infrastructure is unavailable. Skipping requires explicit user configuration via `on_fail: skip` in the spec's `infra_requirements` block or direct user request. The agent must never add skip guards autonomously.
 - **Stale state dependency:** Tests that rely on state left by a prior test run (no `before`/`after` setup/teardown).
 - **Cross-test coupling:** Tests that fail when run in isolation because they depend on side effects of other integration tests in the same suite.
 
