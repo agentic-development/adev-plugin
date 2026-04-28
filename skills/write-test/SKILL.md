@@ -138,10 +138,14 @@ Read the spec's `infra_requirements:` frontmatter field if present (authoritativ
 ```
 
 **Infrastructure setup errors are NOT valid RED:**
-- Missing env vars → `INTEGRATION_NO_CREDENTIALS`: Block with "Integration tests require credentials. Set the variables listed in the Infrastructure Requirements block before running."
-- Unreachable host → `INTEGRATION_HOST_UNREACHABLE`: Block with "External host unreachable — this is a setup error, not a test failure. Verify network access before interpreting this as a behavioral defect."
+- Missing env vars → `INTEGRATION_NO_CREDENTIALS`: Fail with "Integration tests require credentials. Set the variables listed in the Infrastructure Requirements block before running."
+- Unreachable host → `INTEGRATION_HOST_UNREACHABLE`: Fail with "External host unreachable — this is a setup error, not a test failure. Verify network access before interpreting this as a behavioral defect."
 
 Resolve these setup errors before starting the TDD cycle.
+
+**Default behavior when infrastructure is unavailable is test FAILURE, not skip.** The test connects directly to the external system. If the connection fails for any reason (missing credentials, wrong credentials, host down, port closed), the test fails with a runtime error. This is correct behavior — a test that cannot reach its infrastructure is a failing test.
+
+**The agent must NEVER add skip guards** (`describe.skipIf`, `describe.skip`, `canConnect` checks, `skipUnless`, or `process.exit` before test blocks) to bypass infrastructure unavailability. Only the user may configure skip behavior — via an explicit `on_fail: skip` field in the spec's `infra_requirements` block or by direct request. Without that explicit configuration, the default is always hard failure.
 
 ---
 

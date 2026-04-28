@@ -5,8 +5,9 @@ green_exit_condition: "All behavioral assertions pass against live external infr
 gaming_blockers:
   - "Boundary mocking — mocking the specific external system this module wraps (e.g., jest.mock('S3Client') in an S3 adapter test, mocking the DB driver in a repository test)"
   - "In-process substitutes — using SQLite instead of Postgres, in-memory queue instead of SQS, local HTTP server instead of the real third-party API (unless explicitly documented in spec infra_requirements.notes)"
-  - "Credential-absent pass — tests that pass when required env vars are unset; tests must fail fast with a clear error message when credentials are missing"
+  - "Credential-absent pass — tests that pass when required env vars are unset; tests must fail (not skip) when credentials are missing or infrastructure is unreachable. Skipping requires explicit user configuration via `on_fail: skip` in the spec's `infra_requirements` block. The agent must never add skip guards (`describe.skipIf`, `canConnect`, `skipUnless`, `process.exit`) autonomously."
   - "CI bypass — if (process.env.CI) { skip() } or equivalent; integration tests must run in CI when credentials are available"
+  - "Agent-initiated skip — `describe.skipIf(!canConnect)`, `describe.skip`, `skipUnless(hasCredentials)`, or any conditional skip tied to infrastructure availability that was not explicitly requested by the user via `on_fail: skip` in infra_requirements"
   - "Stale state dependency — tests that rely on state left by a prior test run; setup/teardown must be idempotent"
   - "Cross-test coupling — tests that fail when run in isolation because they depend on side effects of other integration tests"
 assertion_rules: "Assert against real external state: actual database rows, actual S3 objects, actual queue message counts, actual HTTP response bodies from live endpoints. Cover at least one error path that only manifests with real infrastructure (constraint violations, rate limits, idempotency). Never assert against mocked or simulated responses."

@@ -152,6 +152,7 @@ infra_requirements:
       env_vars: [DATABASE_URL]
       notes: "DATABASE_URL contains credentials — inject as CI secret. Test DB must be migrated before running schema tests."
   ci_tag: "integration"
+  on_fail: "fail"  # Optional: 'fail' (default) or 'skip'. When 'fail', tests fail hard if infra is unavailable. 'skip' requires explicit user approval — the agent must never set this autonomously.
 ```
 
 > **Security invariant:** `infra_requirements:` MUST contain only env var NAMES and human-readable guidance. Actual credential values, tokens, connection strings with embedded passwords, or any secret material MUST NOT appear in this block. It is committed to the repository as part of the spec file.
