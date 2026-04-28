@@ -22,6 +22,9 @@ skills/*/evals/
 # Beads adapter ID mapping (local state, auto-recoverable)
 .beads-map.json
 
+# Build state files (ephemeral — resume across sessions but never committed)
+.context-index/build-state/*.json
+
 # Eval cached repos (cloned on demand, large)
 tests/evals/repomap/.cache/
 
