@@ -516,6 +516,30 @@ Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`.
 
 ---
 
+## Stale Build Detection
+
+When `--resume` is invoked, or at the start of a new `--spec` build, scan `.context-index/build-state/` for zombie builds.
+
+**Zombie build:** A state file where `status` is `in_progress` AND all recorded steps have `status: skipped`. This means the orchestrator ran, evaluated all skip conditions (`.review.md` present, `.plan.md` present, etc.), skipped every step, and exited without doing real work.
+
+**On `--resume`:** Report zombie builds found:
+```
+Found stale build: `<spec-slug>` (started: <date>, all steps skipped)
+Resume with: `/adev:build --resume --spec <path> --from implement`
+```
+
+**On new `--spec` build:** If the slug matches an existing zombie build for the same slug, warn and ask:
+```
+A stale build exists for `<spec-slug>` (started: <date>, all steps skipped).
+  - Resume it: /adev:build --resume --spec <path> --from implement
+  - Overwrite it: continue (resets build state for this spec)
+
+Proceed? (resume / overwrite)
+```
+Await user input. "overwrite" resets the build state and proceeds. "resume" applies `--from implement` resume logic. If the user dismisses without choosing, stop and let them decide.
+
+---
+
 ## Phase Mode
 
 When `--phase <name>` is invoked (without `--resume`), the skill discovers and builds multiple specs in batch.
@@ -525,7 +549,11 @@ When `--phase <name>` is invoked (without `--resume`), the skill discovers and b
 1. Scan all `.md` files under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`).
 2. Parse YAML frontmatter for the `milestone` field.
 3. Select specs whose `milestone` matches `<name>` (case-insensitive).
-4. Filter to specs with `status` of `review-pending` or later (skip `draft` specs).
+4. **Filter by pipeline mode:**
+   - **Implement Pipeline** (no `--full`): include only specs with `status` of `review-passed`, `implemented`, or `validated`. Skip specs with any other status with a visible note per spec:
+     > Skipped `<spec>` (status: `<status>`): not ready for Implement Pipeline. Run `/adev:review-specs` first, or use `--full` to include review.
+     Explicitly: `review-pending` and `review-blocked` specs are skipped in Implement Pipeline.
+   - **Full Pipeline** (`--full`): include specs with `status` of `review-pending`, `review-passed`, `implemented`, `validated`, and `review-blocked`. Specs with `review-blocked` status are included so the blocker-fix loop can attempt to resolve prior blockers. Skip only `draft` specs.
 5. If no specs are found, print:
 
    > No specs found for milestone '<name>'. Verify that your specs have `milestone: <name>` in their frontmatter.
