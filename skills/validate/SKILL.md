@@ -135,8 +135,8 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 
 If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:implement`), verify it:
 
-1. Call `verifyManifest(specPath)` from `lib/source-manifest.mjs`.
-2. For each file in the manifest, compare the recorded SHA against the current `git hash-object` output.
+1. Parse the `source-manifest` block from the spec's frontmatter. The block is an object with fields `sha`, `files`, and `computedAt`.
+2. Call `verifyManifest(manifest, projectRoot)` from `lib/source-manifest.mjs`, passing the parsed manifest object and the project root path (NOT the spec file path). The function returns `{ matches: bool, currentSha: string|null, missingFiles?: string[] }`. SHA comparison uses SHA-256 of file contents.
 3. Report results:
    - **Match:** All source files are unchanged since implementation. Record PASS.
    - **Drift:** One or more files have been modified since the manifest was stamped. List each drifted file with its expected and actual SHA. Record WARN (does not cause overall FAIL, but signals that source may have diverged from the spec contract).
@@ -150,9 +150,11 @@ This check runs after quality gates (Check 1) regardless of their result, since 
 
 Load the Live Spec and walk through every acceptance criterion.
 
+**Before citing any file:line reference, you MUST use the Read tool to read the actual file content.** Do not infer, assume, or fabricate file contents from the spec or plan. Every PASS/FAIL/PARTIAL verdict must cite at least one file that was explicitly read in this validation run. If a criterion cannot be verified because no relevant files were found with Glob/Grep, record PARTIAL with the note "Unable to locate implementation files — criterion unverified."
+
 For each criterion:
-1. Identify which files and tests address it.
-2. Read the relevant code. Verify the behavior matches the criterion.
+1. Use Glob and Grep to identify which files and tests address it.
+2. Use the Read tool to read the relevant code. Verify the behavior matches the criterion.
 3. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
 4. Verify test integrity: assertions must be strict and match the spec exactly.
    Flag any of these anti-patterns:
@@ -168,6 +170,8 @@ For each criterion:
    - Fixes applied to failing tests without evidence that the spec, charter,
      or ADRs were consulted (look for comments or commit messages referencing
      the context that justified the change)
+
+**Do NOT use plan file checkboxes (`[x]`) as evidence of completion.** A `[x]` checkbox in a `.plan.md` file means the implementer marked the step done — it does not prove the code was written correctly or at all. Check 2 must be grounded in reading actual source files and tests, not plan metadata.
 
 Record per criterion:
 - PASS: code and tests satisfy the criterion.
