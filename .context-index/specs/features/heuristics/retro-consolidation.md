@@ -17,6 +17,14 @@ revision: 1
 charter-revision: 3
 created: 2026-04-12
 updated: 2026-04-12
+source-manifest:
+  sha: "0d53fd6"
+  files:
+    - skills/retro/SKILL.md
+    - tests/skills/retro-consolidation.test.mjs
+    - lib/heuristics.mjs
+    - .context-index/manifest.yaml
+  computed-at: "2026-04-25T21:55:13.377Z"
 ---
 
 ## Behavioral Contract

@@ -1,101 +1,92 @@
 # Architecture Review: adev-build-skill
 
-> **Date:** 2026-04-21
+> **Date:** 2026-04-27
 > **Spec:** .context-index/specs/features/strategic-planning/adev-build-skill.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS_WITH_NOTES
-> **last-reviewed-revision:** 3
+> **last-reviewed-revision:** 6
+> **file-sha:** 13d916c3d8934d14d8a607e715edacb4542f2a52
 
 ## Reviewers Dispatched
 
 | ID | Name | Mode | Tier |
 |----|------|------|------|
-| structural-architect | Structural Architect | subagent | reasoning |
-| security-reviewer | Security Reviewer | subagent | capable |
-| consistency-analyzer | Consistency Analyzer | subagent | capable |
+| structural-architect | Structural Architect | inline | reasoning |
+| security-reviewer | Security Reviewer | inline | capable |
+| consistency-analyzer | Consistency Analyzer | inline | capable |
+
+---
+
+## Review History
+
+- **Revision 4** (2026-04-27): BLOCK — 2 blockers (invalid status, phase filter contradiction), 4 warnings
+- **Revision 5** (2026-04-27): PASS_WITH_NOTES — blockers and warnings resolved; 1 warning (review-blocked in phase filter), 2 suggestions
+- **Revision 6** (2026-04-27): PASS — all findings resolved
+- **Revision 6** (2026-04-27, re-review): PASS_WITH_NOTES — hash drift detected (status-field update artifact); re-review surfaces new warnings on B1 route omission, phase filter SKILL.md drift, prompt injection surface, model tier declaration gap
+
+---
 
 ## Structural Architect
 
 **Verdict:** PASS_WITH_NOTES
 
-### Findings
+**SA-1 (warning — downgraded from blocker):** The existing SKILL.md does not implement `--full` / Full Pipeline (specify → review → plan → route → implement → validate). Reviewer flagged as blocker; downgraded by consolidator because the SKILL.md is the *implementation target*, not the source of truth. The spec describes intended behavior; this gap is the reason a plan is needed. The plan must include Full Pipeline as first-class tasks. **Implementer note:** ensure plan tasks explicitly cover: `--full` flag, specify step dispatch, blocker-fix loop, `build.max_review_retries` config resolution.
 
-- **SA-1 (warning):** Pipeline order mismatch between charter and spec. Charter In Scope and Capability Map say "review → route → plan → implement → validate". Spec Behavior 1 and SKILL.md say "review → plan → route → implement → validate". The spec is correct — route operates on a plan file and must come after plan. The charter ordering is stale and should be updated. Spec is internally consistent; this is a charter maintenance issue, not a spec defect.
+**SA-2 (suggestion — downgraded from blocker):** Spec Behavior 5a defines `specify` as a valid `--from <step>` value; the existing SKILL.md omits it (Full Pipeline only step). Downgraded: the spec is internally consistent and the SKILL.md is the old implementation. Once Full Pipeline is implemented, `specify` will be a valid resume point. The plan should ensure `--from specify` is wired in the Full Pipeline path.
 
-- **SA-2 (warning):** Behavior 8 route skip condition is vague. Says "When routing is available" without defining what "available" means. SKILL.md is precise: route is skipped when `--no-route` flag is set. Behavior 8 should be rewritten to match.
+**SA-3 (warning):** Behavior B1 text reads "plan → implement → validate" — omits `route`. The canonical Implement Pipeline steps table (Step 2: Route) and acceptance criteria both correctly include route. B1 wording is misleading for implementers.
 
-- **SA-3 (warning):** `--from <step>` flag is fully specified in SKILL.md but absent from spec behaviors and error cases table.
+**SA-4 (warning):** Actionable Task Map contains only 3 tasks (Create SKILL.md, Define build state format, Create build-state directory). These are stale relative to the current spec scope (Full Pipeline, blocker-fix loop, zombie build detection, phase filter refinement, retry policy). The plan should not rely on this task map as a starting point.
 
-- **SA-4 (warning):** `--no-route` flag is fully specified in SKILL.md but absent from spec behaviors. Only indirectly referenced via the vague Behavior 8.
+**SA-5 (warning):** Phase Mode filter drift: the existing SKILL.md filters to `review-pending or later` for `--phase` (no `--full`), but the spec's Behavior 3 explicitly filters to `review-passed`, `implemented`, or `validated` — excluding `review-pending`. The plan must explicitly task correcting this filter to match the spec.
 
-- **SA-5 (warning):** `resolveWorkspaceContext` API call in SKILL.md uses wrong argument order — `(workspaceRoot, null)` but actual signature is `(workspaceRoot, config, currentRepoSlug)`. This is a SKILL.md implementation issue, not a spec defect.
+**SA-6 (suggestion):** Postconditions do not specify whether `/adev:build` updates the spec's `status` frontmatter (e.g., to `implemented` or `validated`) after a successful pipeline run, or whether child skills own that update.
 
-- **SA-6 (warning):** Validate FAIL semantics create an exception to Behavior 3 ("any step fails → build stops") and the charter invariant ("must stop on failure"). The spec should explicitly note that validate is informational-only when retries are disabled.
+**SA-7 (suggestion):** Workspace Build Mode section references `workspace-aware-vision spec` by name without a file path. If this spec has been renamed or superseded, the cross-reference is broken.
 
-- **SA-7 (suggestion):** Build state format section lacks retry_cycles and retry_history fields shown in the SKILL.md's retry state section.
-
-- **SA-8 (suggestion):** Workspace-mode build behaviors are absent from this spec (covered by separate workspace-aware-build.md). A cross-reference would help reviewers assess SKILL.md completeness.
-
-- **SA-9 (suggestion):** No behavior defined for concurrent `--spec` and `--phase` flags.
-
-- **SA-10 (suggestion):** Dry-run behavior (Behavior 5) doesn't explicitly mention retry policy display, but AC-26 requires it.
-
-- **SA-11 (suggestion):** Source manifest is consumed by the validate step context but not listed in consumed interfaces.
+---
 
 ## Security Reviewer
 
 **Verdict:** PASS_WITH_NOTES
 
-### Findings
+**SEC-1 (warning):** Prompt injection surface in blocker-context and RETRY_CONTEXT. B17 passes raw `.review.md` reviewer text as `--blocker-context <findings>` into a specify subagent prompt. The retry loop passes validation failure strings as RETRY_CONTEXT into the implement subagent prompt. Neither the spec nor SKILL.md requires sanitization or structural quoting before interpolation into the Agent() prompt. A maliciously crafted `.review.md` or validation report could embed directives that alter subagent behavior. The spec should require that extracted findings be enclosed in a fenced block (triple-backtick delimiters) to prevent interpretation as prompt directives.
 
-- **SEC-1 (warning):** Build state slug derived from spec filename without documented sanitization. A `--spec` path containing `../` could produce a slug that writes outside `.context-index/build-state/`. The slug algorithm should be documented (basename-only, alphanumeric + hyphens).
+**SEC-2 (suggestion):** Build state slug derivation is unspecified and lacks path traversal guards. A spec path containing `../../` could produce a slug like `../../evil` and result in writes outside `.context-index/build-state/`. The spec should require `path.basename()` derivation plus assertion that the final path remains within `.context-index/build-state/`.
 
-- **SEC-2 (warning):** RETRY_CONTEXT prompt block includes failure details from validation report files without sanitization. Content resembling skill instructions could influence subagent behavior (prompt injection via artifact). Recommend wrapping extracted content in code-fenced blocks.
+**SEC-3 (suggestion):** The `error` field in build state step records is unbounded. If reused in subagent prompts on resume, it becomes a secondary injection surface. Recommend capping at 512 bytes and documenting it as display-only.
 
-- **SEC-3 (warning):** Step context fields (review_notes, route_annotations) have no length bounds. A large `.review.md` could consume subagent context window. Recommend truncation rule (e.g., 500 chars).
+**SEC-4 (suggestion):** `parseUserConfig()` returns strings. The spec states clamping for `build.max_retries` (0–3) but does not require explicit non-integer handling. `parseInt(NaN)` passes the `< 0` and `> 3` checks silently. The skill should require explicit `Number.isInteger()` validation before clamping.
 
-- **SEC-4 (warning):** `--phase <name>` value is interpolated into messages and build state JSON without validation. Should be restricted to safe identifier characters.
+**SEC-5 (suggestion):** Build state files embed spec paths, milestone names, error details, and retry history. No access permission note or cleanup policy is stated beyond "not committed to git." On shared machines, the `.context-index/build-state/` directory should be created with restricted permissions.
 
-- **SEC-5 (suggestion):** Build state resume trusts the stored `spec` path without re-validating containment within the project tree.
-
-- **SEC-6 (suggestion):** `context: fork` isolation is behavioral (harness convention), not a hard sandbox. Spec should acknowledge this trust boundary.
-
-- **SEC-7 (suggestion):** Workspace cycle detection falls back to declaration order silently. Spec error cases should document this.
+---
 
 ## Consistency Analyzer
 
 **Verdict:** PASS_WITH_NOTES
 
-### Findings
+**CON-1 (warning):** B1 omits `route` from Implement Pipeline step list (duplicate of SA-3).
 
-- **CON-1 (warning):** Pipeline order mismatch between charter and spec (same as SA-1). Charter has route before plan; spec and SKILL.md have plan before route. Charter is stale.
+**CON-2 (warning):** The spec does not declare a model tier or cost-routing role for the build orchestrator. The `subagent-cost-routing` cross-cutting spec defines `build-orchestrator` as a named role with a `reasoning` default tier. The spec should reference this role so manifest-based tier overrides apply correctly (e.g., "This skill runs at the `build-orchestrator` role tier; see subagent-cost-routing spec for tier resolution.").
 
-- **CON-2 (warning):** AC-26 says "shows retry policy from manifest" but the retry policy comes from `user-config`, not manifest. Every other spec reference correctly says user-config. This is a typo.
+**CON-3 (suggestion):** AC for `--phase <name> --full` states "includes `review-pending` specs" but omits `review-blocked`. Behavior B3a explicitly includes both. The AC should enumerate both statuses.
 
-- **CON-3 (warning):** Behavior 8 route skip condition contradicts Step 3 skip condition (same as SA-2). Behavior 8 implies plan-availability gating; Step 3 uses `--no-route` flag gating.
-
-- **CON-4 (warning):** Error cases table missing retry-specific failure modes (no-progress, regression, budget exhaustion). These are covered by behaviors 16-18 and AC-21/22/23 but absent from the error table.
-
-- **CON-5 (warning):** Build state schema example omits the route step. SKILL.md shows all 5 steps.
-
-- **CON-6 (warning):** `--from` flag error case absent from spec error cases table (same as SA-3).
-
-- **CON-7 (suggestion):** `parseUserConfig()` returns a plain object, not `{ config, warnings }`. Warnings from config parsing are not propagated.
+**CON-4 (suggestion):** Build state JSON example array does not include a `validate` step entry. Valid step names line correctly lists it. Adding an example entry would make the format self-documenting.
 
 ---
 
 ## Summary
 
-**Total findings:** 25 (0 blockers, 15 warnings, 10 suggestions)
-**Verdict: PASS_WITH_NOTES**
+**Total findings:** 5 warnings, 9 suggestions (0 blockers)
 
-The spec is well-structured with strong coverage of the subagent dispatch model, context packet assembly, retry loop mechanics, and build state persistence. The architectural approach (Agent tool dispatch → Skill tool invocation → STEP_RESULT contract) is sound and addresses the original issue-124 root cause.
+**Warnings to address before or during implementation:**
+- SA-3 / CON-1: Fix B1 wording to include route
+- SA-5: Ensure plan task corrects phase filter from `review-pending or later` → `review-passed/implemented/validated`
+- SA-1: Plan must include Full Pipeline tasks explicitly
+- SEC-1: Add blocker-context / RETRY_CONTEXT fencing requirement to spec or SKILL.md
+- CON-2: Declare `build-orchestrator` role tier reference in spec
 
-**Key items to address before planning:**
+**Action required:** None blocking. Spec is ready for planning.
 
-1. **Charter stale ordering** (SA-1/CON-1): Update charter In Scope and Capability Map to say "review → plan → route" (plan before route)
-2. **AC-26 typo** (CON-2): Change "from manifest" to "from user-config"
-3. **Behavior 8 rewrite** (SA-2/CON-3): Replace vague "routing is available" with "--no-route flag is not set"
-4. **Error cases table gaps** (CON-4/CON-6): Add retry stop conditions and --from validation error
-5. **Build state schema** (CON-5): Add route step to example
-6. **Security hardening** (SEC-1/SEC-3): Document slug sanitization algorithm, add truncation bounds for context fields
+Run `/adev:plan --spec .context-index/specs/features/strategic-planning/adev-build-skill.md` to proceed.
