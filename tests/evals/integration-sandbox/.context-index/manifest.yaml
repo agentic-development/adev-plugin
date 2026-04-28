@@ -1,0 +1,11 @@
+project:
+  name: integration-sandbox
+
+sync:
+  - CLAUDE.md
+
+tasks:
+  backend: file
+
+completion:
+  mode: pr
