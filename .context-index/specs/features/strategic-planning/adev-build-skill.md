@@ -6,7 +6,7 @@
 
 ---
 charter: strategic-planning
-status: review-passed
+status: implemented
 risk_level: high
 milestone: v2
 revision: 6
@@ -14,11 +14,12 @@ charter-revision: 3
 created: 2026-04-05
 updated: 2026-04-27
 source-manifest:
-  sha: "2d82a17"
+  sha: "44ed75d"
   files:
     - skills/build/SKILL.md
-    - templates/manifest-template.yaml
-  computed-at: "2026-04-21T15:18:29.025Z"
+    - tests/skills/build-full-pipeline.test.mjs
+    - tests/skills/build-phase-and-stale.test.mjs
+  computed-at: "2026-04-28T02:01:25.174Z"
 ---
 
 ## Behavioral Contract
