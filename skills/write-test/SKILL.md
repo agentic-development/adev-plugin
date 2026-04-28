@@ -102,6 +102,47 @@ In addition to the strategy-specific `gaming_blockers`, always check the 4 share
 
 Shared pattern violations use prefix `SHARED:`, strategy-specific violations use the strategy name as prefix (e.g., `SCHEMA:`). Both are reported independently.
 
+### Integration Strategy: Mandatory Infrastructure Requirements Block
+
+When the resolved strategy is `integration`:
+
+**Before authoring any test code**, emit the following Infrastructure Requirements block. This is required by the spec (Behavior 3) and validated by `/adev:validate`. Proceeding to RED without this block triggers `INTEGRATION_NO_REQUIREMENTS_BLOCK`.
+
+Read the spec's `infra_requirements:` frontmatter field if present (authoritative). If absent, derive from the task's file paths and the Behavior 4 boundary table. Document env var names only — never record actual values, connection strings with embedded passwords, or any secret material.
+
+```
+## Infrastructure Requirements
+
+**Strategy:** integration
+**External systems:** <comma-separated list, e.g., "AWS S3, Postgres 15">
+
+### Credentials / Environment Variables
+> **Never record actual credential values here.** List env var names and descriptions only.
+> Note: connection-string variables like DATABASE_URL embed credentials — treat as secrets.
+
+| Variable | Description |
+|----------|-------------|
+| VAR_NAME | Purpose and where to obtain it (e.g., AWS IAM console — inject as CI secret) |
+
+### Pre-Provisioned State
+- [ ] <resource that must exist before tests run>
+
+### Connectivity Requirements
+- Test runner must reach <host/service> on <port/protocol>
+
+### CI Notes
+- These tests require real credentials — they CANNOT run without them
+- Use a dedicated test account with scoped permissions (least privilege)
+- Run with: `npm run test:integration` or `node --test --test-name-pattern "integration"`
+- Expected run time: 30–120 seconds (network I/O dominates)
+```
+
+**Infrastructure setup errors are NOT valid RED:**
+- Missing env vars → `INTEGRATION_NO_CREDENTIALS`: Block with "Integration tests require credentials. Set the variables listed in the Infrastructure Requirements block before running."
+- Unreachable host → `INTEGRATION_HOST_UNREACHABLE`: Block with "External host unreachable — this is a setup error, not a test failure. Verify network access before interpreting this as a behavioral defect."
+
+Resolve these setup errors before starting the TDD cycle.
+
 ---
 
 ## Step 2: Framework Detection

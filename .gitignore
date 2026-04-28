@@ -22,6 +22,9 @@ skills/*/evals/
 # Beads adapter ID mapping (local state, auto-recoverable)
 .beads-map.json
 
+# Build state files (ephemeral — resume across sessions but never committed)
+.context-index/build-state/*.json
+
 # Eval cached repos (cloned on demand, large)
 tests/evals/repomap/.cache/
 
@@ -31,3 +34,6 @@ tests/evals/skill-compression/outputs/
 
 # Viz build output (regenerate with: node viz/build.mjs)
 viz/dist/
+
+.context-index/.token-cursor.json
+.context-index/user-config

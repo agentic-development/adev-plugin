@@ -18,6 +18,7 @@ const REQUIRED_FIELDS = [
 const ALL_IDS = [
   'contract',
   'fixture',
+  'integration',
   'policy',
   'schema',
   'smoke',
@@ -26,8 +27,8 @@ const ALL_IDS = [
   'visual',
 ];
 
-test('registry has exactly 8 strategies', () => {
-  assert.equal(listStrategies().length, 8);
+test('registry has exactly 9 strategies', () => {
+  assert.equal(listStrategies().length, 9);
 });
 
 test('each strategy has all required fields', () => {
@@ -60,8 +61,16 @@ test('getStrategy returns correct object for each of the 8 ids', () => {
 
 test('getStrategy returns null for unknown id', () => {
   assert.equal(getStrategy('unknown'), null);
-  assert.equal(getStrategy('integration'), null);
   assert.equal(getStrategy('e2e'), null);
+});
+
+test('getStrategy returns valid object for integration', () => {
+  const s = getStrategy('integration');
+  assert.ok(s !== null, 'getStrategy("integration") should not return null');
+  assert.equal(s.id, 'integration');
+  assert.equal(typeof s.name, 'string');
+  assert.equal(typeof s.description, 'string');
+  assert.ok(Array.isArray(s.typicalTools));
 });
 
 test('getStrategy returns null for empty string', () => {

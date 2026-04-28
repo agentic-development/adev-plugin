@@ -1,10 +1,10 @@
 ---
 charter: test-strategies
 status: review-passed
-revision: 1
+revision: 2
 charter-revision: 2
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-04-27
 ---
 
 # SPEC 10: Cross-Strategy Gaming Patterns
@@ -17,7 +17,7 @@ Shared gaming detection patterns that apply across all strategies (e.g., disable
 
 ### Preconditions
 
-- A strategy profile is loaded (any of the 8 types)
+- A strategy profile is loaded (any registered strategy type)
 - Write-test is performing gaming detection during RED or GREEN phase
 
 ### Behaviors

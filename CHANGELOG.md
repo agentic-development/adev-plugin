@@ -1,5 +1,32 @@
 # Changelog
 
+## [Unreleased] — release/0.23.0
+
+### Integration Test Strategy (9th strategy)
+
+Adds the `integration` strategy for behavioral tests that run against real external infrastructure — cloud APIs, managed databases, message queues, and third-party HTTP services. Unlike all other strategies, `integration` prohibits mocking at the infrastructure boundary.
+
+- **9th strategy profile** — `lib/test-strategies/profiles/integration.md` defines RED/GREEN/gaming rules, assertion requirements, seed data rules (UUID suffixes, idempotent teardown), and credential guard requirements
+- **Gaming detection** — three new patterns exported as `INTEGRATION_PATTERNS` from `lib/test-strategies/gaming.mjs`: `BOUNDARY_MOCKING` (mocking the declared infra system), `CI_BYPASS` (`if CI skip()`), and `CREDENTIAL_ABSENT_PASS` (SDK instantiated without env guard)
+- **Auto-detection heuristics** — project-level signals (`serverless.yml`, `pulumi.yaml`, `firebase.json`) and path/filename patterns (`adapters/`, `integrations/`, `connectors/`, `*-adapter.*`, `*-client.*`, `*-gateway.*`, `*-connector.*`)
+- **`INTEGRATION_NO_CREDENTIALS` error code** — missing credentials exit with code 1 and a clear actionable message; NOT a valid RED phase
+- **Integration test fixture** — `tests/evals/test-strategies/fixtures/integration-service/` demonstrates correct credential guard, UUID isolation, and idempotent teardown; the gaming fixture demonstrates all three violation patterns
+- See [Adopting the integration strategy](docs/test-strategies.md#adopting-the-integration-strategy) for full adoption guide
+
+### Plan Infrastructure Requirements
+
+Surfaces infrastructure requirements from spec `infra_requirements:` frontmatter into the plan output and write-test handoff, ensuring integration tests are never written without first declaring what they depend on.
+
+- **`infra_requirements:` frontmatter** — `/adev:specify` Step 4.5 prompts for external system declarations (env var names only — never credential values); written into spec YAML
+- **Plan emission** — `/adev:plan` renders an Infrastructure Requirements section when any task uses the `integration` strategy
+- **Write-test enforcement** — `/adev:write-test` requires the `infra_requirements` block to be present before generating integration tests; missing block is a blocking error
+- **Integration gate stub** — `governance/gates.yaml` ships with a non-blocking (`required: false`) integration gate stub; promote to `required: true` after wiring real CI credentials
+
+### Fixes
+
+- Eval: updated strategy count assertions 8→9 and `expectedStrategies` array in `tests/evals/test-strategies/test-strategies.test.mjs`
+- Eval: added missing `docs/` directories to `sample-project-level3` and `sample-data-project-level3` assess fixtures
+
 ## [0.22.0] - 2026-04-24
 
 ### Heuristics Phase 2: Progressive Disclosure

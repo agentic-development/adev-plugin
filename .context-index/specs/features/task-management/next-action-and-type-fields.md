@@ -1,6 +1,6 @@
 ---
 charter: task-management
-status: review-passed
+status: validated
 risk_level: low
 milestone: strategic-planning-consolidation
 revision: 1
@@ -8,6 +8,11 @@ charter-revision: 3
 created: 2026-04-16
 updated: 2026-04-16
 tracker-ref: epic-9
+source-manifest:
+  files:
+    - path: lib/issues/interface.mjs
+    - path: lib/issues/file-adapter.mjs
+    - path: lib/issues/beads-adapter.mjs
 ---
 
 # Live Spec: next_action and Generic Type Fields

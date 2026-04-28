@@ -461,3 +461,107 @@ describe('detectTaskStrategy — task-level', () => {
     assert.deepEqual(result, { strategyId: 'unit', confidence: 'high' });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Project-level: integration
+// ---------------------------------------------------------------------------
+
+describe('detectStrategies — integration project-level', () => {
+  test('detects integration (high) when adapters/ directory exists', async () => {
+    const dir = createTempDir();
+    try {
+      mkdir(dir, 'adapters');
+      const results = await detectStrategies(dir);
+      const entry = results.find((r) => r.strategyId === 'integration');
+      assert.ok(entry, 'Expected integration to be detected');
+      assert.equal(entry.confidence, 'high');
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  test('detects integration (high) when integrations/ directory exists', async () => {
+    const dir = createTempDir();
+    try {
+      mkdir(dir, 'integrations');
+      const results = await detectStrategies(dir);
+      const entry = results.find((r) => r.strategyId === 'integration');
+      assert.ok(entry, 'Expected integration to be detected');
+      assert.equal(entry.confidence, 'high');
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  test('detects integration (high) when connectors/ directory exists', async () => {
+    const dir = createTempDir();
+    try {
+      mkdir(dir, 'connectors');
+      const results = await detectStrategies(dir);
+      const entry = results.find((r) => r.strategyId === 'integration');
+      assert.ok(entry, 'Expected integration to be detected');
+      assert.equal(entry.confidence, 'high');
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  test('detects integration (high) when serverless.yml exists', async () => {
+    const dir = createTempDir();
+    try {
+      touch(dir, 'serverless.yml');
+      const results = await detectStrategies(dir);
+      const entry = results.find((r) => r.strategyId === 'integration');
+      assert.ok(entry, 'Expected integration to be detected');
+      assert.equal(entry.confidence, 'high');
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task-level: integration
+// ---------------------------------------------------------------------------
+
+describe('detectTaskStrategy — integration task-level', () => {
+  test('detects integration (medium) for path under adapters/', () => {
+    const result = detectTaskStrategy(['src/adapters/s3-client.mjs']);
+    assert.equal(result.strategyId, 'integration');
+    assert.equal(result.confidence, 'medium');
+  });
+
+  test('detects integration (medium) for path under integrations/', () => {
+    const result = detectTaskStrategy(['lib/integrations/stripe.mjs']);
+    assert.equal(result.strategyId, 'integration');
+    assert.equal(result.confidence, 'medium');
+  });
+
+  test('detects integration (medium) for path under connectors/', () => {
+    const result = detectTaskStrategy(['src/connectors/kafka.mjs']);
+    assert.equal(result.strategyId, 'integration');
+    assert.equal(result.confidence, 'medium');
+  });
+
+  test('detects integration (medium) for *-adapter.* filename pattern', () => {
+    const result = detectTaskStrategy(['src/storage/s3-adapter.mjs']);
+    assert.equal(result.strategyId, 'integration');
+    assert.equal(result.confidence, 'medium');
+  });
+
+  test('detects integration (medium) for *-client.* filename pattern', () => {
+    const result = detectTaskStrategy(['lib/stripe-client.mjs']);
+    assert.equal(result.strategyId, 'integration');
+    assert.equal(result.confidence, 'medium');
+  });
+
+  test('integration does not override schema for migrations/ paths', () => {
+    const result = detectTaskStrategy(['db/migrations/001_create_users.sql']);
+    assert.equal(result.strategyId, 'schema', 'schema takes precedence over integration for migrations/');
+  });
+
+  test('contract takes precedence over integration for .proto files', () => {
+    const result = detectTaskStrategy(['proto/adapters/service.proto']);
+    assert.equal(result.strategyId, 'contract', 'contract takes precedence for .proto files');
+  });
+});

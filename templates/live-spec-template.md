@@ -13,6 +13,13 @@ revision: 1
 charter-revision: 1
 created: {{ date }}
 updated: {{ date }}
+# infra_requirements:   # Optional. Declare when this capability touches external systems.
+#   systems:
+#     - name: "AWS S3"
+#       env_vars: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION]
+#       notes: "Dedicated test account. Scope IAM to specific actions/ARNs."
+#   ci_tag: "integration"
+# Security: env var names only — MUST NOT contain actual credential values.
 ---
 
 <!-- # tracker-ref: -->

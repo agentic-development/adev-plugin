@@ -7,6 +7,13 @@ revision: 1
 charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
+source-manifest:
+  sha: "85a9e32"
+  files:
+    - hooks/issue-reminder.sh
+    - hooks/issue-reminder.mjs
+    - tests/hooks/issue-reminder.test.mjs
+  computed-at: "2025-04-25T00:00:00.000Z"
 ---
 
 # Live Spec: Idle Nudge

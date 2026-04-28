@@ -1,10 +1,10 @@
 ---
 charter: test-strategies
 status: review-passed
-revision: 1
+revision: 2
 charter-revision: 2
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-04-27
 ---
 
 # Spec: Strategy Profile Contract
@@ -18,8 +18,8 @@ Define what each profile Live Spec must contain: RED exit condition, GREEN exit 
 ### Preconditions
 
 - A strategy type exists in the registry
-- `strategyId` argument to `getStrategyProfile()` MUST be validated against the registry (one of the 8 known slugs matching `/^[a-z]+$/`) before constructing any file path
-- A strategy profile is being authored as a Live Spec for one of the 8 strategy types
+- `strategyId` argument to `getStrategyProfile()` MUST be validated against the strategy registry via `getStrategy(strategyId)` — any registered strategy ID is valid
+- A strategy profile is being authored as a Live Spec for one of the registered strategy types
 
 ### Behaviors
 
@@ -57,7 +57,7 @@ Define what each profile Live Spec must contain: RED exit condition, GREEN exit 
 ## Acceptance Criteria
 
 - [ ] Profile contract defines all 8 required fields with clear semantics
-- [ ] getStrategyProfile returns a valid profile for any of the 8 strategy IDs
+- [ ] getStrategyProfile returns a valid profile for any of the 9 strategy IDs
 - [ ] Missing or malformed profiles fall back to unit with warnings
 - [ ] The unit profile fully captures current write-test behavior (mocking boundaries, 9 gaming patterns, seed data rule, handoff block)
 - [ ] Profile schema is documented as a reference for future profile authors

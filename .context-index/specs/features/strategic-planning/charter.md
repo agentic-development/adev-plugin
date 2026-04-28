@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 2
-updated: 2026-04-16
+revision: 3
+updated: 2026-04-27
 ---
 
 # Feature Charter: strategic-planning
@@ -79,7 +79,7 @@ Notes:
 | `/adev:research` skill | Persistent structured research using web, GitHub, and internal codebase sources | must-have | v1 | validated |
 | `/adev:status` aggregation | Read-only progress dashboard reading product.md, charters, specs, issue board; supports milestone view | must-have | v1 | — |
 | `/adev:work` intake mode | `--intake` for batch-processing incoming requests into categorized, prioritized issues (renamed from `/adev:start intake mode` per start charter rev 2) | should-have | v1 | — |
-| `/adev:build` orchestrator | Chain review → plan → route → implement → validate with resume support and phase batching | must-have | v2 | validated |
+| `/adev:build` orchestrator | Two pipeline modes: Full (`--full`: specify → review → plan → route → implement → validate) and Implement (default: plan → route → implement → validate). Route runs by default. Resume support and phase batching. | must-have | v2 | implemented |
 
 ## Deferred Capabilities
 
@@ -99,9 +99,13 @@ Notes:
 | `/adev:research --internal` | Flag | Include internal codebase analysis |
 | `/adev:research --compare` | Flag | Comparative analysis mode |
 | `/adev:research --issue <id>` | Flag | Link research to an issue |
-| `/adev:build --spec <path>` | Skill | End-to-end build for a single spec |
-| `/adev:build --phase <name>` | Flag | Batch build all specs in a milestone |
+| `/adev:build --spec <path>` | Skill | End-to-end build for a single spec (Implement Pipeline) |
+| `/adev:build --spec <path> --full` | Flag | Full Pipeline: specify → review → plan → route → implement → validate |
+| `/adev:build --phase <name>` | Flag | Batch build all review-passed specs in a milestone |
+| `/adev:build --phase <name> --full` | Flag | Batch full pipeline including review-pending specs |
 | `/adev:build --resume` | Flag | Resume interrupted build |
+| `/adev:build --resume --from <step>` | Flag | Resume from a specific step (specify/review/plan/route/implement/validate) |
+| `/adev:build --no-route` | Flag | Disable route step for current build |
 | `/adev:build --dry-run` | Flag | Preview build steps without executing |
 | `/adev:status` | Skill | Read-only progress aggregation across product, charters, specs, and issues |
 | `/adev:status --milestone <name>` | Flag | Aggregate by milestone |
@@ -115,7 +119,8 @@ Notes:
 | `IssueManager.create()` / `update()` / `walkTree()` | task-management | Tiered work item operations (replaces direct `createEpic`/`createIssue` calls) |
 | `addDependency()` | task-management | Cross-item dependency tracking |
 | `/adev:review-specs` | Assessment module | Build orchestrator invokes for spec review |
-| `/adev:route` | Assessment module | Build orchestrator invokes for task routing |
+| `/adev:specify` | Design module | Build orchestrator invokes in Full Pipeline (--full) for spec authoring and revision |
+| `/adev:route` | Assessment module | Build orchestrator invokes for task routing — mandatory by default, disabled only via --no-route |
 | `/adev:plan` | Planning module | Build orchestrator invokes for task decomposition; receives milestone/release planning responsibilities |
 | `/adev:implement` | Implementation module | Build orchestrator invokes for execution |
 | `/adev:validate` | Validation module | Build orchestrator invokes for verification |
