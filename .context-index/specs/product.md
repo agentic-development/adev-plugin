@@ -24,6 +24,7 @@ AI coding agents work best with structured context but most projects provide non
 | Test Strategies | Strategy abstraction layer decoupling TDD from unit-test assumptions across 8 domain-specific strategies | [charter.md](./features/test-strategies/charter.md) |
 | Output Personas | Presentation layer adapting plugin outputs to user role and expertise level via layered persona config | [charter.md](./features/output-personas/charter.md) |
 | Debug Playbooks | Module-scoped and cross-cutting diagnostic procedures guiding /adev:debug with domain-specific failure modes, ordered investigation steps, and escalation criteria | [charter.md](./features/debug-playbooks/charter.md) |
+| Infrastructure Preflight | Runtime verification of external system availability before skills execute code or tests, blocking with actionable diagnostics when requirements are unmet | [charter.md](./features/infra-preflight/charter.md) |
 
 ## Cross-Cutting Concerns
 
