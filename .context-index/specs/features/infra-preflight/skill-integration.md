@@ -1,9 +1,9 @@
 ---
 charter: infra-preflight
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: 1
-revision: 2
+revision: 3
 charter-revision: 1
 created: 2026-05-01
 updated: 2026-05-01
@@ -52,7 +52,7 @@ updated: 2026-05-01
 The invocation pattern is:
 
 ```bash
-node -e "
+node --input-type=module -e "
 import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
 const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
 console.log(JSON.stringify(report));
@@ -148,6 +148,8 @@ Execution blocked. Options:
 
 **When** `ADEV_DISPATCHED_BY` is absent or has a value other than `implement` **then** write-test treats itself as standalone and runs the preflight step normally (if `infra_requirements` is present).
 
+> **Agent prohibition:** The agent must not set `ADEV_DISPATCHED_BY=implement` except when dispatching a write-test subagent from within the implement skill. Setting it in any other context to bypass preflight is prohibited, same as `--no-infra`. When `ADEV_DISPATCHED_BY=implement` is set, `ADEV_NO_INFRA` is irrelevant (dispatch detection already suppresses preflight) — the dispatch signal takes priority.
+
 **15. Strategy-aware trigger**
 
 **When** the resolved test strategy is `unit` **then** the preflight step is skipped regardless of whether `infra_requirements` is declared — unit tests do not exercise external infrastructure.
@@ -168,7 +170,7 @@ Execution blocked. Options:
 
 1. **Arguments:** If `--spec <path>` was passed, read `infra_requirements` from that spec. Attempt to locate its `.plan.md` sibling; if found, use both spec and plan paths. If no sibling exists, call `runPreflight(specPath, null, options)`.
 2. **Active plan:** If no `--spec` was passed, check `.context-index/hygiene/.active-plan`. If it contains a plan path, read the plan and its referenced spec for `infra_requirements`.
-3. **Inference:** If neither arguments nor active plan yield a result, check which module the buggy file belongs to (using `manifest.yaml` module paths). Glob for specs under that module's charter directory. For each spec found, attempt to locate its `.plan.md` sibling. If any spec has `infra_requirements`, use it (prefer the spec with the most relevant file path overlap).
+3. **Inference:** If neither arguments nor active plan yield a result, check which module the buggy file belongs to (using `manifest.yaml` module paths — validate that resolved paths are within the project root before globbing). Glob for specs under that module's charter directory (cap at 10 specs per inference attempt). For each spec found, attempt to locate its `.plan.md` sibling. If any spec has `infra_requirements`, use it (prefer the spec with the most relevant file path overlap).
 
 **When** none of the three tiers yields `infra_requirements` **then** the preflight step is skipped (the bug may not involve external infrastructure).
 
@@ -205,7 +207,7 @@ The skill pauses and waits for an explicit user response. The agent must not inf
 
 **21. Preflight step placement and execution**
 
-**When** `/adev:recover` runs **then** the preflight step is inserted after Step 1: Detect (which identifies the stuck task and its plan) and before Step 2: Classify (which diagnoses the root cause). The spec and plan paths are resolved from the detected task's plan reference. The preflight always runs at this point if `infra_requirements` is present — it is not deferred to classification.
+**When** `/adev:recover` runs **then** the preflight step is inserted after Step 1: Detect (which identifies the stuck task and its plan) and before Step 2: Gather Evidence. The spec and plan paths are resolved from the detected task's plan reference (available by the end of Step 1: Detect). The preflight always runs at this point if `infra_requirements` is present — it is not deferred to classification.
 
 **22. Root-cause-aware corrective context injection**
 
@@ -217,7 +219,7 @@ The skill pauses and waits for an explicit user response. The agent must not inf
 
 - Skills that encounter `infra_requirements` in their resolved spec/plan either pass preflight and proceed, or block with actionable diagnostics
 - Skills without `infra_requirements` in their resolved spec/plan behave identically to before (backward compatible)
-- The `--no-infra` flag is never set or suggested by the agent autonomously
+- The `--no-infra` flag and `ADEV_DISPATCHED_BY` are never set or suggested by the agent autonomously (except `ADEV_DISPATCHED_BY=implement` when implement dispatches write-test)
 - `lib/infra-preflight.mjs` never reads `process.env.ADEV_NO_INFRA` — it only honors `options.noInfra`
 
 ### Error Cases
@@ -266,10 +268,11 @@ The skill pauses and waits for an explicit user response. The agent must not inf
 - [ ] debug SKILL.md uses non-blocking advisory with hard user pause when infra_requirements was inferred (tier 3), blocks for tiers 1 and 2
 - [ ] eval SKILL.md contains preflight step after prerequisites, skips for `--layer 1` and `--layer 2`
 - [ ] eval SKILL.md resolves plan path via `.plan.md` sibling glob, passes `null` if absent
-- [ ] recover SKILL.md contains preflight step after Detect, before Classify (always runs if infra_requirements present)
+- [ ] recover SKILL.md contains preflight step after Detect, before Gather Evidence (always runs if infra_requirements present)
 - [ ] recover SKILL.md includes formatted preflight report (via `formatPreflightReport()`, not raw object) in corrective context for infra-related root causes
 - [ ] All 7 SKILL.md files document `--no-infra` in their Arguments section
 - [ ] All 7 SKILL.md files contain the instruction: "agent must never set --no-infra or ADEV_NO_INFRA autonomously"
+- [ ] write-test SKILL.md contains the instruction: "agent must not set ADEV_DISPATCHED_BY=implement except when dispatching from implement"
 - [ ] `ADEV_NO_INFRA` env var is documented: read once at skill entry, only `1` activates bypass, lib never reads process.env
 - [ ] Skills with no `infra_requirements` in resolved spec/plan behave identically to before (backward compatible)
 - [ ] Inline Node.js invocation pattern matches heuristics-loading pattern (plugin root resolution, JSON output parsing)
