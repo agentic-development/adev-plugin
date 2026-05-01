@@ -16,6 +16,7 @@ adev:write-test --red --spec <path>           # Author tests from a Live Spec
 adev:write-test --red --file <path>           # Author tests from a source file's interface
 adev:write-test --red "<description>"         # Author tests from free-form behavioral description
 adev:write-test --verify --packet <path>      # Post-GREEN tamper check against Handoff Block
+adev:write-test --red --spec <path> --no-infra  # Skip infrastructure preflight (user-only)
 ```
 
 Standalone invocation (any `--red` mode) presents a **pre-flight** summary before authoring.
@@ -73,6 +74,48 @@ The canonical hardcoded defaults for each tier are defined in `.context-index/sp
 Log a one-time advisory when fallback is active: "model_tiers not configured in platform-context.yaml — using hardcoded defaults. See .context-index/specs/cross-cutting/model-routing.md for default values."
 
 **This skill never contains hardcoded model names.** Use only tier names (`fast`, `capable`, `reasoning`) in all subagent dispatch instructions.
+
+---
+
+## Step 1a: Infrastructure Preflight
+
+After model tier resolution, check whether the spec declares `infra_requirements`. If so, run the infrastructure preflight before proceeding to strategy resolution.
+
+**Dispatch detection:** If `ADEV_DISPATCHED_BY=implement` is set in the environment, skip the preflight step entirely (implement already verified infrastructure). The agent must not set `ADEV_DISPATCHED_BY=implement` except when dispatching from implement.
+
+**Strategy-aware skip:** If the resolved test strategy is `unit`, skip the preflight step regardless of `infra_requirements`. Unit tests do not exercise external infrastructure.
+
+**`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
+
+**Invocation:** Run inline Node.js (same pattern as model tier resolution):
+
+```bash
+node --input-type=module -e "
+import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
+const report = await runPreflight('<specPath>', null, { timeout: 10, noInfra: <noInfra> });
+console.log(JSON.stringify(report));
+"
+```
+
+Where `<ADEV_ROOT>` is the resolved absolute plugin root path and `<specPath>` is the `--spec` argument.
+
+If `report.passed === false`, display the formatted report and block:
+
+```
+Infrastructure Preflight: FAILED
+
+<formatted report output>
+
+Execution blocked. Options:
+  1. Fix the issues above and retry
+  2. Re-run with --no-infra to bypass (user decision only)
+```
+
+If `report.passed === true` and `report.skipped === true`, emit: "Infrastructure preflight skipped (--no-infra)."
+
+If `report.passed === true` and `report.skipped === false`, proceed silently.
+
+If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure preflight library could not be loaded: <error>. Fix the library before proceeding."
 
 ---
 
