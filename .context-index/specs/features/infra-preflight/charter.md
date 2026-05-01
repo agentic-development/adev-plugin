@@ -66,12 +66,12 @@ Infrastructure Preflight provides runtime verification of external system availa
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Verification Runner | `lib/infra-preflight.mjs` — parse `infra_requirements`, run env var presence checks, CLI tool PATH checks, and probe commands; return structured PreflightReport | must-have | 1 | — |
-| Schema Extension | Extend `infra_requirements` with `cli_tools[]`, `probe`, and `check_level` fields | must-have | 1 | — |
+| Verification Runner | `lib/infra-preflight.mjs` — parse `infra_requirements`, run env var presence checks, CLI tool PATH checks, and probe commands; return structured PreflightReport | must-have | 1 | specified |
+| Schema Extension | Extend `infra_requirements` with `cli_tools[]`, `probe`, and `check_level` fields | must-have | 1 | specified |
 | Skill Integration (Mandatory) | Add preflight step to implement, validate, build, and write-test SKILL.md files with blocking semantics and `--no-infra` override | must-have | 1 | — |
 | Skill Integration (Conditional) | Add preflight step to debug, eval, and recover SKILL.md files — triggered only when referenced spec/plan has `infra_requirements` | should-have | 1 | — |
-| Per-System Check Level Override | Allow `check_level: presence-only` or `check_level: skip` per system in `infra_requirements` to downgrade verification | should-have | 1 | — |
-| Probe Timeout Configuration | Configurable timeout per probe (default 10s), declared in `infra_requirements` or manifest-level default | nice-to-have | 1 | — |
+| Per-System Check Level Override | Allow `check_level: presence-only` or `check_level: skip` per system in `infra_requirements` to downgrade verification | should-have | 1 | specified |
+| Probe Timeout Configuration | Configurable timeout per probe (default 10s), declared in `infra_requirements` or manifest-level default | nice-to-have | 1 | specified |
 
 ## Deferred Capabilities
 
