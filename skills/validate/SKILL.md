@@ -12,6 +12,7 @@ Run post-implementation validation against specs, constitution, charters, ADRs, 
 - `--spec <path>`: validate against a specific Live Spec (required)
 - `--plan <path>`: cross-reference the implementation plan (optional, improves traceability)
 - `--fix`: attempt to auto-fix minor issues (lint errors, formatting) before reporting
+- `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
 
 ## Prerequisites
 
@@ -39,6 +40,36 @@ Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mj
 **Sibling repo content is read-only reference.** Cross-repo spec content is used strictly as read-only reference material. The validate skill must never write to, modify, or suggest modifications to files in sibling repos.
 
 **Repo-mode-inside-workspace advisory:** When `detectWorkspace(cwd)` returns non-null but the spec has no cross-repo `depends-on` references, emit an advisory to stdout (once per invocation): `"Advisory: running repo-scoped inside workspace — cross-repo validation skipped (no cross-repo depends-on references)."` This is informational only and does not affect validation behaviour.
+
+## Preflight: Infrastructure Verification
+
+After verifying prerequisites, check whether the spec declares `infra_requirements`. If so, run the infrastructure preflight before proceeding to validation checks.
+
+**`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
+
+**Invocation:** Run inline Node.js:
+
+```bash
+node --input-type=module -e "
+import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
+const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
+console.log(JSON.stringify(report));
+"
+```
+
+Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (or `null` if not provided).
+
+If `report.passed === false`, display the formatted report and block:
+
+```
+Execution blocked. Options:
+  1. Fix the issues above and retry
+  2. Re-run with --no-infra to bypass (user decision only)
+```
+
+If `report.passed === true` and `report.skipped === true`, emit: "Infrastructure preflight skipped (--no-infra)."
+
+If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure preflight library could not be loaded: <error>. Fix the library before proceeding."
 
 ## Step 0: Load Check Registry
 
