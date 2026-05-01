@@ -36,7 +36,8 @@ Infrastructure Preflight provides runtime verification of external system availa
 |-----------|------|-------------|
 | test-strategies (plan-infra-requirements) | internal spec | Consumes `infra_requirements` schema defined there; extends it with verification fields |
 | implement, validate, build, write-test, debug, eval, recover | internal skills | Modified to include preflight step |
-| `child_process` (Node.js built-in) | runtime | Used for probe execution and CLI tool detection |
+| `child_process` (Node.js built-in) | runtime | Used for probe execution and CLI tool detection (via `execFileSync` — no shell) |
+| `@dotenvx/dotenvx` | dev dependency | Secure `.env` file loading. Requires ADR justification. |
 
 ## Domain Model
 
@@ -84,7 +85,7 @@ Infrastructure Preflight provides runtime verification of external system availa
 
 | Interface | Type | Description |
 |-----------|------|-------------|
-| `runPreflight(specPath, options)` | function | Reads `infra_requirements` from a spec or plan file, runs all verification checks, returns a PreflightReport. Options: `{ timeout, checkLevel }` |
+| `runPreflight(specPath, planPath, options)` | function | Reads `infra_requirements` from a spec and/or plan file, merges systems (plan wins on conflict), runs all verification checks, returns a PreflightReport. Either path may be `null`. Options: `{ timeout, noInfra }` |
 | `parseInfraRequirements(filePath)` | function | Parses the `infra_requirements` YAML block from a spec/plan frontmatter. Returns structured array of InfraRequirement objects, or `null` if none declared |
 | `formatPreflightReport(report)` | function | Renders a PreflightReport as human-readable markdown for skill output (pass/fail per system with actionable error messages) |
 
@@ -93,7 +94,8 @@ Infrastructure Preflight provides runtime verification of external system availa
 | Interface | Source Module | Description |
 |-----------|-------------|-------------|
 | `infra_requirements` frontmatter | test-strategies (plan-infra-requirements spec) | Schema for declaring systems, env vars, and notes. Extended here with `cli_tools[]`, `probe`, `check_level` |
-| `child_process.execSync` | Node.js built-in | Executes probe commands and `which` checks with timeout |
+| `child_process.execFileSync` | Node.js built-in | Executes probe commands (no shell — manual `$VAR` substitution) and `which`/`--version` checks with timeout |
+| `@dotenvx/dotenvx` | dev dependency | Secure `.env` file loading. Requires ADR justification (dev-only, no network calls, pinned version). |
 | Spec/plan file paths | implement, validate, build, write-test, debug, eval, recover | Each skill passes the relevant spec or plan path to `runPreflight()` |
 
 ## Quality Attributes
@@ -101,7 +103,7 @@ Infrastructure Preflight provides runtime verification of external system availa
 | Attribute | Requirement |
 |-----------|-------------|
 | Performance | Full preflight (env vars + CLI tools + probes) must complete within 30s for up to 10 declared systems. Individual probe timeout defaults to 10s. |
-| Security | PreflightReport must never contain secret values — only env var names and pass/fail status. Probe commands execute in a restricted shell (no pipes, no redirects unless declared). |
+| Security | PreflightReport must never contain secret values — only env var names and pass/fail status. Probe commands execute via `execFileSync` with no shell (manual `$VAR` substitution only). Probe output sanitized at capture time (200 char max, ANSI stripped). `env_file` paths validated to be within project root. |
 | Backward compatibility | Skills with no `infra_requirements` in their spec/plan behave identically to today — no preflight step runs, no new output, no performance overhead beyond parsing frontmatter. |
 | Transparency | Every check result is reported with system name, check type, and actionable error message (e.g., "Missing env var: DATABASE_URL — set it in .env.test or CI secrets"). |
 | Resilience | If `lib/infra-preflight.mjs` fails to load, the skill emits a warning and asks the user to proceed with `--no-infra` or fix the lib. Skill remains functional. |
