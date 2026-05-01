@@ -14,12 +14,19 @@ charter-revision: 1
 created: {{ date }}
 updated: {{ date }}
 # infra_requirements:   # Optional. Declare when this capability touches external systems.
+#   env_file: ".env.test"            # Optional. Path to env file (must be within project root). Default: .env.test
 #   systems:
 #     - name: "AWS S3"
 #       env_vars: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION]
+#       cli_tools:                   # Optional. CLI tools to verify on PATH.
+#         - aws                      # String form: existence check only
+#         - name: docker             # Object form: existence + version check
+#           version: ">=24"
+#       probe: "aws sts get-caller-identity"  # Optional. Connectivity command (exit 0 = pass). Only $VAR expansion — no pipes/redirects.
+#       check_level: full            # Optional. "full" (default) | "presence-only" | "skip"
+#       timeout: 10                  # Optional. Probe timeout in seconds (default: 10).
 #       notes: "Dedicated test account. Scope IAM to specific actions/ARNs."
 #   ci_tag: "integration"
-#   on_fail: "fail"  # Optional: 'fail' (default) or 'skip'. 'skip' requires explicit user approval.
 # Security: env var names only — MUST NOT contain actual credential values.
 ---
 
