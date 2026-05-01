@@ -1,9 +1,9 @@
 ---
 charter: infra-preflight
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: 1
-revision: 2
+revision: 3
 charter-revision: 1
 created: 2026-05-01
 updated: 2026-05-01
@@ -44,7 +44,7 @@ updated: 2026-05-01
 
 **3. Load environment variables via dotenvx**
 
-**When** `infra_requirements` declares a top-level `env_file` field **then** the runner validates that the resolved path (`path.resolve(projectRoot, env_file)`) is within the project root (the resolved path must start with `projectRoot`). If valid, it loads the file using dotenvx before running any checks. If the path escapes the project root, the runner rejects it with error code `PREFLIGHT_UNSAFE_ENV_FILE` and does not attempt to read the file.
+**When** `infra_requirements` declares a top-level `env_file` field **then** the runner validates that the resolved path (`path.resolve(projectRoot, env_file)`) is within the project root. The containment check requires that the resolved path starts with `projectRoot + path.sep`, or equals `projectRoot` exactly — this prevents prefix-collision bypasses (e.g., `/app-secrets/` falsely matching a `projectRoot` of `/app`). If valid, it loads the file using dotenvx before running any checks. If the path escapes the project root, the runner rejects it with error code `PREFLIGHT_UNSAFE_ENV_FILE` and does not attempt to read the file.
 
 **When** no `env_file` is declared **then** the runner defaults to loading `.env.test` from the project root if it exists. If `.env.test` does not exist, it proceeds with `process.env` only (no error).
 
@@ -66,7 +66,7 @@ updated: 2026-05-01
 
 **6. Probe command execution**
 
-**When** a system declares `probe: "pg_isready -h $DB_HOST"` **then** the runner executes the command using `child_process.execFileSync` with **no shell**. The probe string is split into argv tokens (split on whitespace), and `$VAR` references (matching `$[A-Z_][A-Z0-9_]*`) are substituted from the dotenvx-resolved environment before execution. The first token is the command, the rest are arguments. Exit code 0 = pass, non-zero = fail.
+**When** a system declares `probe: "pg_isready -h $DB_HOST"` **then** the runner executes the command using `child_process.execFileSync` with **no shell**. The probe string is first split on whitespace into argv tokens. Then `$VAR` references (matching `$[A-Z_][A-Z0-9_]*`) are substituted **per-token** (not on the full string before splitting), so that env var values containing spaces are treated as single arguments and cannot introduce new argv tokens. The first token is the command, the rest are arguments. Exit code 0 = pass, non-zero = fail.
 
 This approach eliminates the shell injection surface entirely. Only simple `$VAR` expansion is supported — no `${VAR:-default}`, no `$()`, no pipes, no redirects, no chaining. If a probe requires complex shell features, the user should wrap it in a script file and reference the script as the probe command.
 
