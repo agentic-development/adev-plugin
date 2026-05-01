@@ -19,6 +19,7 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 - `--no-route`: skip the route step (Step 3) in the pipeline
 - `--full`: run the Full Pipeline (specify → review → plan → route → implement → validate). Without `--full`, the default Implement Pipeline skips specify and review and requires a pre-existing `.review.md`.
 - `--from <step>`: override resume point — force restart from a specific step (`specify`, `review`, `plan`, `route`, `implement`, `validate`). Useful if build state is corrupted or stale.
+- `--no-infra`: skip infrastructure preflight in implement and validate steps (user-only — the agent must never set this flag). Propagated to sub-skills via `ADEV_NO_INFRA=1` env var.
 
 ## Prerequisites
 
@@ -288,6 +289,8 @@ Agent({
 - Record step as `completed` (or `skipped` on error) in build state.
 
 ### Step 4: Implement
+
+When `--no-infra` is passed to build, set `ADEV_NO_INFRA=1` in the environment for implement and validate invocations. Each sub-skill runs its own preflight independently — build does not add a separate preflight step.
 
 **Skip condition:** None. Implementation always runs unless the build was resumed past this step.
 
