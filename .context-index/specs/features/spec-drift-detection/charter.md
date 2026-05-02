@@ -78,13 +78,13 @@ When both signals are present on the same spec, both independently block `/adev:
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have | v1 | — |
-| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have | v1 | — |
-| Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have | v1 | — |
-| Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have | v1 | — |
-| Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have | v1 | — |
-| Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have | v1 | — |
-| Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have | v1 | — |
+| Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have | v1 | specified |
+| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have | v1 | specified |
+| Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have | v1 | specified |
+| Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have | v1 | specified |
+| Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have | v1 | specified |
+| Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have | v1 | specified |
+| Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have | v1 | specified |
 
 ## Deferred Capabilities
 
