@@ -13,6 +13,7 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 - `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>-plan.md`.
 - `--task <N>`: execute only task N (useful for re-running a single task after a fix)
 - `--dry-run`: show routing decisions and specialist matches without executing
+- `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
 
 ## Prerequisites
 
@@ -82,6 +83,47 @@ workspace-level orchestration, cd to <workspace-root> and re-run.)
 ```
 
 The advisory does not block; it does not appear when `detectWorkspace` returns null.
+
+### Step 1.5: Infrastructure Preflight
+
+After loading context, check whether the spec or plan declares `infra_requirements`. If so, run the infrastructure preflight.
+
+**`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
+
+**Invocation:** Run inline Node.js (same pattern as heuristics loading):
+
+```bash
+node --input-type=module -e "
+import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
+const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
+console.log(JSON.stringify(report));
+"
+```
+
+Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<specPath>` is extracted from the plan's `Spec:` header, and `<planPath>` is the `<plan-path>` argument.
+
+Parse the JSON output. If `report.passed === false`, display the formatted report and block:
+
+```
+Infrastructure Preflight: FAILED
+
+<formatted report output>
+
+Execution blocked. Options:
+  1. Fix the issues above and retry
+  2. Re-run with --no-infra to bypass (user decision only)
+  3. Use --task N to run only tasks that don't need this infrastructure
+```
+
+Option 3 is shown only when the plan has mixed strategies (some unit, some non-unit). Omit it when all tasks require the failed infrastructure.
+
+If `report.passed === true` and `report.skipped === true`, emit: "Infrastructure preflight skipped (--no-infra)."
+
+If `report.passed === true` and `report.skipped === false`, proceed silently.
+
+If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure preflight library could not be loaded: <error>. Fix the library before proceeding."
+
+If `runPreflight()` throws `PREFLIGHT_FILE_NOT_FOUND` or `PREFLIGHT_PARSE_ERROR`, block with the error message.
 
 ### Step 2: Per-Task Execution Loop
 
@@ -183,6 +225,8 @@ Build the implementer subagent prompt with these sections in order:
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
 6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them. **Cross-repo isolation constraint (workspace mode):** When operating inside a workspace, do NOT modify files in sibling repos. Cross-repo reference context is read-only — it informs your implementation but all changes must be confined to the current repo. If a task requires changes in a sibling repo, report it as NEEDS_CONTEXT with a note identifying the sibling repo and required changes.
 7. **TDD mandate.** This section is non-negotiable. Include the full content of `tdd-mandate.md` from this skill directory.
+
+   **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
