@@ -146,26 +146,26 @@ infra_requirements:
 // ---------------------------------------------------------------------------
 
 describe("loadEnvFile", () => {
-  test("rejects env_file path escaping project root", () => {
-    assert.throws(
-      () => loadEnvFile("../../etc/passwd", "/tmp/project"),
+  test("rejects env_file path escaping project root", async () => {
+    await assert.rejects(
+      async () => loadEnvFile("../../etc/passwd", "/tmp/project"),
       (err) => err.code === "PREFLIGHT_UNSAFE_ENV_FILE"
     );
   });
 
-  test("rejects prefix-collision bypass", () => {
+  test("rejects prefix-collision bypass", async () => {
     // /app vs /app-secrets
-    assert.throws(
-      () => loadEnvFile("../app-secrets/.env", "/app"),
+    await assert.rejects(
+      async () => loadEnvFile("../app-secrets/.env", "/app"),
       (err) => err.code === "PREFLIGHT_UNSAFE_ENV_FILE"
     );
   });
 
-  test("accepts env_file within project root", () => {
+  test("accepts env_file within project root", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(tmpDir, ".env.test", "DB_HOST=localhost\n");
-      const result = loadEnvFile(".env.test", tmpDir);
+      const result = await loadEnvFile(".env.test", tmpDir);
       assert.equal(result.loaded, true);
       assert.equal(result.env.DB_HOST, "localhost");
     } finally {
@@ -173,10 +173,10 @@ describe("loadEnvFile", () => {
     }
   });
 
-  test("returns warning when env_file not found", () => {
+  test("returns warning when env_file not found", async () => {
     const tmpDir = createTempDir();
     try {
-      const result = loadEnvFile(".env.missing", tmpDir);
+      const result = await loadEnvFile(".env.missing", tmpDir);
       assert.equal(result.loaded, false);
       assert.ok(result.warning.includes("env file not found"));
     } finally {
@@ -322,11 +322,11 @@ describe("executeProbe", () => {
 // ---------------------------------------------------------------------------
 
 describe("runPreflight", () => {
-  test("returns passed:true when no infra_requirements", () => {
+  test("returns passed:true when no infra_requirements", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(tmpDir, "spec.md", "---\nstatus: draft\n---\n# Spec\n");
-      const result = runPreflight(join(tmpDir, "spec.md"), null, {
+      const result = await runPreflight(join(tmpDir, "spec.md"), null, {
         projectRoot: tmpDir,
       });
       assert.deepEqual(result, { passed: true, systems: [], skipped: false });
@@ -335,7 +335,7 @@ describe("runPreflight", () => {
     }
   });
 
-  test("returns skipped:true when options.noInfra is true", () => {
+  test("returns skipped:true when options.noInfra is true", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(
@@ -350,7 +350,7 @@ infra_requirements:
 # Spec
 `
       );
-      const result = runPreflight(join(tmpDir, "spec.md"), null, {
+      const result = await runPreflight(join(tmpDir, "spec.md"), null, {
         noInfra: true,
         projectRoot: tmpDir,
       });
@@ -360,7 +360,7 @@ infra_requirements:
     }
   });
 
-  test("merges systems from spec and plan, plan wins on conflict", () => {
+  test("merges systems from spec and plan, plan wins on conflict", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(
@@ -389,7 +389,7 @@ infra_requirements:
 # Plan
 `
       );
-      const result = runPreflight(join(tmpDir, "spec.md"), join(tmpDir, "plan.md"), {
+      const result = await runPreflight(join(tmpDir, "spec.md"), join(tmpDir, "plan.md"), {
         projectRoot: tmpDir,
       });
       // Both Postgres and Redis should be present
@@ -402,7 +402,7 @@ infra_requirements:
     }
   });
 
-  test("check_level: skip skips all checks", () => {
+  test("check_level: skip skips all checks", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(
@@ -418,7 +418,7 @@ infra_requirements:
 # Spec
 `
       );
-      const result = runPreflight(join(tmpDir, "spec.md"), null, {
+      const result = await runPreflight(join(tmpDir, "spec.md"), null, {
         projectRoot: tmpDir,
       });
       assert.equal(result.passed, true);
@@ -429,7 +429,7 @@ infra_requirements:
     }
   });
 
-  test("check_level: presence-only skips probe", () => {
+  test("check_level: presence-only skips probe", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(
@@ -445,7 +445,7 @@ infra_requirements:
 # Spec
 `
       );
-      const result = runPreflight(join(tmpDir, "spec.md"), null, {
+      const result = await runPreflight(join(tmpDir, "spec.md"), null, {
         projectRoot: tmpDir,
       });
       const db = result.systems[0];
@@ -456,7 +456,7 @@ infra_requirements:
     }
   });
 
-  test("probe skipped when prerequisites fail", () => {
+  test("probe skipped when prerequisites fail", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(
@@ -472,7 +472,7 @@ infra_requirements:
 # Spec
 `
       );
-      const result = runPreflight(join(tmpDir, "spec.md"), null, {
+      const result = await runPreflight(join(tmpDir, "spec.md"), null, {
         projectRoot: tmpDir,
       });
       assert.equal(result.passed, false);
@@ -484,7 +484,7 @@ infra_requirements:
     }
   });
 
-  test("PreflightReport matches expected schema shape", () => {
+  test("PreflightReport matches expected schema shape", async () => {
     const tmpDir = createTempDir();
     try {
       writeFixture(
@@ -500,7 +500,7 @@ infra_requirements:
 # Spec
 `
       );
-      const result = runPreflight(join(tmpDir, "spec.md"), null, {
+      const result = await runPreflight(join(tmpDir, "spec.md"), null, {
         projectRoot: tmpDir,
       });
       assert.equal(typeof result.passed, "boolean");
