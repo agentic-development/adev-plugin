@@ -407,6 +407,31 @@ Groups B and C can run in parallel with Group A.
 
 This is informational for `/adev:implement --parallel` (future). Tasks within a group run sequentially; groups run concurrently.
 
+### Task Summary Table
+
+After the Parallelization section, emit a `## Task Summary` table that provides a quick-glance overview of all tasks. This is the first thing users and `/adev:implement` see before the detailed task sections.
+
+```markdown
+## Task Summary
+
+| # | Title | Complexity | Strategy | Depends On | Files |
+|---|-------|-----------|----------|------------|-------|
+| 1 | ADR for dotenvx dependency | small | unit | — | 2 create, 1 modify |
+| 2 | parseInfraRequirements | medium | unit | — | 1 create, 1 modify |
+| 3 | dotenvx env file loading | medium | unit | Task 2 | 0 create, 2 modify |
+| 4 | Env var presence checks | small | unit | Task 2 | 0 create, 2 modify |
+```
+
+**Column definitions:**
+- **#** — sequential task number
+- **Title** — short task name (from `### Task N: <title>`)
+- **Complexity** — small / medium / large (from spec's Actionable Task Map or inferred from file count and description)
+- **Strategy** — test strategy assigned to this task
+- **Depends On** — task dependencies (from `Depends on:` annotation) or `—` if none
+- **Files** — count of files to create and modify
+
+This table is always emitted, regardless of project complexity or strategy configuration.
+
 ### Strategy Assignment
 
 For each task, resolve its test strategy using the priority chain defined in `lib/test-strategies/assignment.mjs`:
