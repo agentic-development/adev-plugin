@@ -5,7 +5,7 @@
 > **Charter:** .context-index/specs/features/spec-drift-detection/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1
-> **file-sha:** a97f8db4eb30d107cb3c1e224852f654e0edacd9
+> **file-sha:** c48bb12e53d3d24223359590169167276d64c10c
 
 ## Reviewers Dispatched
 
