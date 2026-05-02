@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased] — release/0.24.0
+
+### Infrastructure Preflight
+
+Runtime verification of external system availability before skills execute code or tests. When a spec or plan declares `infra_requirements`, the preflight runs automatically and blocks execution with actionable diagnostics if any system is unavailable.
+
+- **`lib/infra-preflight.mjs`** — generic verification runner: env var presence checks, CLI tool PATH/version checks, and probe commands via `execFileSync` (no shell — manual `$VAR` substitution per-token)
+- **Extended `infra_requirements` schema** — new fields: `cli_tools` (string or `{name, version}` object form), `probe` (connectivity command), `check_level` (`full` | `presence-only` | `skip`), `timeout` (per-system probe timeout), `env_file` (path to `.env` file, validated within project root)
+- **Skill integration** — preflight step added to 7 skills:
+  - **Mandatory** (implement, validate, build, write-test): always run when `infra_requirements` present; block on failure
+  - **Conditional** (debug, eval, recover): run when spec/plan with `infra_requirements` can be located via arguments, active plan, or module inference
+- **`--no-infra` bypass** — user-only flag (agent prohibited from setting it); also accepts `ADEV_NO_INFRA=1` env var as fallback
+- **Zero new dependencies** — uses existing `parseDotenv` from `lib/profiles/env.mjs` (ADR 0006: rejected dotenvx in favor of internal parser)
+- **Security hardening** — probe output sanitized at capture time (200 char, ANSI stripped); `env_file` path traversal blocked; CLI tool names validated against `[a-zA-Z0-9._-]+`; dispatch detection via `ADEV_DISPATCHED_BY` env var
+- **70 new tests** (40 unit for lib, 30 content-presence for SKILL.md files)
+
 ## [Unreleased] — release/0.23.0
 
 ### Integration Test Strategy (9th strategy)
