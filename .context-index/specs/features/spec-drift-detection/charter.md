@@ -20,6 +20,16 @@ The spec-drift-detection module provides real-time awareness when implementation
 - Advisory warning message emitted via hook stdout when drift is detected
 - `drift_detected: true` frontmatter field stamped on affected spec(s)
 - Downstream skill integration: `/adev:plan` blocks on drift flag, `/adev:validate` warns, `/adev:implement` clears the flag after GREEN, `/adev:hygiene` reports drifted specs
+- All downstream skill changes are skill-markdown edits only (autonomous per Architecture Boundaries) — no hook protocol changes, no new skills added to lifecycle order
+
+### Relationship to spec-lifecycle Drift Detection
+
+This module complements — not replaces — spec-lifecycle's existing `git-drift-detection` capability. The two detect different directions of drift:
+
+- **spec-lifecycle (existing):** Detects *spec-side* drift — when a spec file is edited after review (revision drift, file drift). Guards `/adev:plan` against planning on stale reviews.
+- **spec-drift-detection (this module):** Detects *code-side* drift — when implementation code is edited after the source manifest was stamped. Guards against code diverging from its governing spec.
+
+When both signals are present on the same spec, both independently block `/adev:plan`. They are complementary checks, not redundant.
 
 ### Out of Scope
 
@@ -91,7 +101,7 @@ The spec-drift-detection module provides real-time awareness when implementation
 
 | Interface | Type | Description |
 |-----------|------|-------------|
-| `scanForDrift(filePath, contextIndexRoot)` | function | Scans all specs for source manifests containing `filePath`. Returns array of `{ specPath, specName }` matches |
+| `scanForDrift(filePath, contextIndexRoot)` | function | Delegates to `buildReverseIndex()` from `lib/source-manifest.mjs` to find specs whose source manifests track `filePath`. Returns array of `{ specPath, specName }` matches |
 | `stampDrift(specPath, driftSource)` | function | Writes `drift_detected: true`, `drift_source`, `drift_at` to spec frontmatter |
 | `clearDrift(specPath)` | function | Removes `drift_detected`, `drift_source`, `drift_at` from spec frontmatter |
 | `hasDrift(specPath)` | function | Reads spec frontmatter, returns boolean |
@@ -103,6 +113,8 @@ All exported from `lib/spec-drift.mjs`.
 | Interface | Source Module | Description |
 |-----------|-------------|-------------|
 | `CLAUDE_TOOL_INPUT_file_path` | Claude Code hook env | File path of the edited file, read by sync-trigger.sh |
+| `buildReverseIndex(specsDir, projectRoot)` | lib/source-manifest.mjs | Builds file-to-spec mapping from source manifest frontmatter |
+| `verifyManifest(manifest)` | lib/source-manifest.mjs | Recomputes SHA for skill-level fallback drift detection on non-Claude-Code hosts |
 | Source manifest frontmatter | spec-lifecycle | YAML `source-manifest.files[]` block in spec files |
 | Hook JSON stdout protocol | hooks module | Exit 0 + JSON stdout for advisory messages |
 
