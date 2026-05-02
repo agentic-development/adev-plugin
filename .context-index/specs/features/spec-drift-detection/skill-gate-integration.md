@@ -2,7 +2,7 @@
 
 ---
 charter: spec-drift-detection
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v1
 revision: 1
@@ -27,7 +27,7 @@ updated: 2026-05-02
 
 2. **When** `/adev:plan` is invoked for a spec and `hasDrift(specPath)` returns `false` **then** the drift check passes and planning proceeds to the next gate (existing git-drift-detection check).
 
-3. **When** `/adev:plan` is invoked on a non-Claude-Code host (no hook fired to set the flag) **then** the plan skill calls `verifyManifest()` as a fallback to detect code-side drift by SHA comparison. If the SHA mismatches, planning blocks with the same `CODE_DRIFT` message.
+3. **When** `/adev:plan` is invoked on a non-Claude-Code host (no hook fired to set the flag) **then** the plan skill calls `verifyManifest()` as a fallback to detect code-side drift by SHA comparison. If the SHA mismatches, planning blocks with the same `CODE_DRIFT` message. If `verifyManifest()` also fails (e.g., missing files), planning blocks with: `"CODE_DRIFT_VERIFY_ERROR: Cannot verify source manifest for spec \"<name>\" — <N> files missing. Run /adev:hygiene to diagnose, or /adev:implement to re-stamp the manifest."`
 
 #### Validate Integration (should-have)
 
@@ -54,13 +54,13 @@ updated: 2026-05-02
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| `hasDrift()` throws (malformed frontmatter) | Treat as no drift (fail-open for validate/hygiene, fail-closed for plan) | DRIFT_READ_ERROR |
-| `verifyManifest()` fails (missing files) | Report as drift — missing files indicate implementation divergence | MANIFEST_VERIFY_ERROR |
-| Spec has `drift_detected: true` but no `drift_source` | Block/warn with generic message: "drift detected, source unknown" | INCOMPLETE_DRIFT |
+| `hasDrift()` throws (malformed frontmatter) | Plan: fail-closed (blocks). Validate/hygiene: emit explicit warning "drift check skipped — frontmatter unreadable", then continue | CODE_DRIFT_READ_ERROR |
+| `verifyManifest()` fails (missing files) | Plan: block with recovery guidance (run /adev:hygiene or /adev:implement). Validate/hygiene: report as drift warning | CODE_DRIFT_VERIFY_ERROR |
+| Spec has `drift_detected: true` but missing `drift_source` or `drift_at` | Block/warn with generic message: "drift detected, source unknown". Treated as INCOMPLETE_DRIFT uniformly regardless of which field is missing | CODE_DRIFT_INCOMPLETE |
 
 ## System Constitution Reference
 
-- **Principle:** "Skills are primarily markdown" — All integration is done via skill-markdown edits to SKILL.md files. No new companion code is needed in the skills themselves; they call `hasDrift()` from `lib/spec-drift.mjs`.
+- **Principle:** "Skills are primarily markdown" — All integration is done via skill-markdown edits to SKILL.md files. The SKILL.md instructions direct the agent to invoke `hasDrift()` via inline Node.js or the existing `lib/spec-drift.mjs` interface. No new companion code files are introduced — the functions already exist in `lib/spec-drift.mjs`.
 - **Principle:** "Hook protocol compliance" — No hook changes. Skills read frontmatter directly.
 
 ## Actionable Task Map
@@ -81,6 +81,6 @@ updated: 2026-05-02
 - [ ] `/adev:hygiene` reports all specs with `drift_detected: true` in a Code Drift pass
 - [ ] `/adev:hygiene` reports PASS when no drifted specs exist
 - [ ] Plan gate is fail-closed on `hasDrift()` errors (blocks if unreadable)
-- [ ] Validate/hygiene are fail-open on `hasDrift()` errors (skip drift check if unreadable)
+- [ ] Validate/hygiene emit explicit "drift check skipped — frontmatter unreadable" warning on `hasDrift()` errors
 - [ ] All quality gates pass (tests, lint, typecheck)
 - [ ] No constitutional violations introduced

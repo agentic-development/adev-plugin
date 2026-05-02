@@ -2,7 +2,7 @@
 
 ---
 charter: spec-drift-detection
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v1
 revision: 1
@@ -19,12 +19,13 @@ updated: 2026-05-02
 - `sync-trigger.sh` is registered as a PostToolUse:Edit hook
 - `lib/spec-drift.mjs` is available at the plugin root
 - `lib/source-manifest.mjs` exports `buildReverseIndex()`
+- The edited file path from `CLAUDE_TOOL_INPUT_file_path` is resolved to an absolute path and validated to be within the project root before processing
 
 ### Behaviors
 
 1. **When** `sync-trigger.sh` fires on PostToolUse:Edit and the edited file path matches a file in any spec's `source-manifest.files[]` **then** `stampDrift()` writes `drift_detected: true`, `drift_source: <edited file>`, and `drift_at: <ISO timestamp>` to that spec's YAML frontmatter.
 
-2. **When** `stampDrift()` writes the drift flag **then** the hook emits an advisory warning to stdout: `"⚠ Spec drift: <file> is tracked by spec \"<spec-name>\". Consider updating the spec if behavior changed, or run /adev:hygiene to review."` The hook exits 0 (advisory, non-blocking).
+2. **When** `stampDrift()` writes the drift flag **then** the hook emits an advisory warning to stdout as JSON: `{ "type": "warning", "message": "Spec drift: <file> is tracked by spec \"<spec-name>\". Consider updating the spec if behavior changed, or run /adev:hygiene to review." }` The hook exits 0 (advisory, non-blocking).
 
 3. **When** the edited file is not tracked by any spec's source manifest **then** no drift flag is stamped and no warning is emitted. The hook exits 0.
 
@@ -32,7 +33,7 @@ updated: 2026-05-02
 
 5. **When** a spec already has `drift_detected: true` and the same or a different tracked file is edited **then** `drift_source` and `drift_at` are overwritten with the latest values. The flag remains `true`. This is an idempotent re-stamp.
 
-6. **When** a spec has no `source-manifest` block **then** the hook emits a one-time advisory per session: `"Spec \"<name>\" has no source manifest — drift detection unavailable. Run /adev:implement to stamp one."` The warning is suppressed for the remainder of the session after first emission, tracked via the execution state file.
+6. **When** a spec has no `source-manifest` block **then** the hook emits a one-time advisory per session as JSON: `{ "type": "warning", "message": "Spec \"<name>\" has no source manifest — drift detection unavailable. Run /adev:implement to stamp one." }` The warning is suppressed for the remainder of the session after first emission, tracked via an in-process Set within the hook invocation or the execution state file key `drift.no_manifest_warned_specs`.
 
 7. **When** `.context-index/` does not exist in the project root **then** the drift scan is skipped entirely (non-adev project). No warning emitted.
 
@@ -41,6 +42,7 @@ updated: 2026-05-02
 ### Postconditions
 
 - Every spec whose source manifest tracks the edited file has `drift_detected: true`, `drift_source`, and `drift_at` in its frontmatter
+- `drift_source` is stored as the project-root-relative canonical path (resolved via `path.resolve()`)
 - The advisory warning is visible to the agent in the same conversation turn as the edit
 - The hook always exits 0 (never blocks edits)
 - Specs without source manifests are warned about once per session
@@ -53,6 +55,7 @@ updated: 2026-05-02
 | Spec file is read-only or write fails | Log warning to stdout, do not stamp, continue with other specs | WRITE_ERROR |
 | `source-manifest.files` is not an array | Skip that spec, continue scanning | INVALID_MANIFEST |
 | Spec has no `source-manifest` block | Emit one-time advisory per session recommending `/adev:implement` | NO_MANIFEST |
+| Edited file path is outside project root | Skip drift scan entirely, no warning | PATH_OUTSIDE_ROOT |
 
 ## System Constitution Reference
 
