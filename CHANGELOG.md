@@ -16,6 +16,23 @@ Runtime verification of external system availability before skills execute code 
 - **Security hardening** — probe output sanitized at capture time (200 char, ANSI stripped); `env_file` path traversal blocked; CLI tool names validated against `[a-zA-Z0-9._-]+`; dispatch detection via `ADEV_DISPATCHED_BY` env var
 - **70 new tests** (40 unit for lib, 30 content-presence for SKILL.md files)
 
+### Reality Check (Confidence-Backed Lifecycle Verification)
+
+Verifies lifecycle artifact status fields against actual codebase state before trusting metadata. Prevents ghost validations and stale issue boards.
+
+- **`lib/reality-check.mjs`** — shared helper: `verifySpecImplemented()`, `verifyIssueCompleted()`, `verifyCapabilityStatus()`, `formatConfidenceNote()`
+- **Confidence levels** — HIGH (committed + tests pass), MEDIUM (committed), LOW (weak evidence), NONE (contradicts reality)
+- **validate** — Check 12 uses reality-check before flagging drift; "After Validation" closes issues only at HIGH confidence with audit-trail notes
+- **debug** — Phase 6 closes matching bug issue with confidence note when fix is verified (quality gates pass + spec compliant)
+- **hygiene** — Pass 12 step 8: new "Reality Drift" audit detects specs claiming done with no codebase evidence (REALITY_DRIFT, REALITY_WARN)
+- **reconcile** — verification guard before closing epics/issues; blocks auto-close when confidence is LOW/NONE
+- **26 new tests** (14 unit + 12 fixture integration against integration-sandbox)
+
+### Commit Trailers
+
+- **`Spec:` trailer requirement** — added to constitution and CLAUDE.md. Commits implementing spec-tracked work must include `Spec: <path>` trailer for traceability. `Plan-task:` trailer recommended alongside.
+- **Manifest** — `recommended_trailers: [Spec, Plan-task]` added to provenance section
+
 ## [Unreleased] — release/0.23.0
 
 ### Integration Test Strategy (9th strategy)
