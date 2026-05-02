@@ -539,6 +539,25 @@ Total blockers: 5
      - [ ] <charter-path>: STATUS_MISMATCH — capability "<name>" shows "<charter-status>" but spec status is "<spec-status>"
      ```
 
+8. **Reality drift check (codebase verification):** For each spec with status `implemented` or `validated`, verify the implementation actually exists in the codebase. Run via inline Node.js:
+   ```bash
+   node --input-type=module -e "
+   import { verifySpecImplemented } from '<ADEV_ROOT>/lib/reality-check.mjs';
+   const result = verifySpecImplemented('<specPath>', { projectRoot: '<projectRoot>' });
+   console.log(JSON.stringify(result));
+   "
+   ```
+   - If `confidence === "none"` (status claims implemented but no codebase evidence): flag as `REALITY_DRIFT`:
+     ```
+     - [ ] <spec-path>: REALITY_DRIFT — status is "<status>" but implementation not found in codebase (confidence: none)
+     ```
+   - If `confidence === "low"` (weak evidence): flag as `REALITY_WARN`:
+     ```
+     - [ ] <spec-path>: REALITY_WARN — status is "<status>" but implementation evidence is weak (files untracked or missing)
+     ```
+   - If `confidence === "medium"` or `"high"`: no finding (status matches reality).
+   - If `lib/reality-check.mjs` fails to import, skip this step with note: "Reality check unavailable — skipping codebase verification."
+
 **Output format:**
 ```
 ## Lifecycle Audit
@@ -559,10 +578,16 @@ Charters scanned: <N>
 ### Capability Status Inconsistencies
 - [ ] specs/features/auth/charter.md: STATUS_MISMATCH — capability "login" shows "planned" but spec status is "implemented"
 
+### Reality Drift (codebase verification)
+- [ ] specs/features/payments/checkout.md: REALITY_DRIFT — status is "implemented" but implementation not found (confidence: none)
+- [ ] specs/features/auth/session.md: REALITY_WARN — status is "validated" but files untracked (confidence: low)
+
 **Actions:**
 - [ ] Re-review specs with revision or file drift: /adev:review-specs
 - [ ] Update specs referencing stale charter revisions: check for charter changes that affect the spec
 - [ ] Fix capability status mismatches in charter Capability Map tables
+- [ ] Investigate REALITY_DRIFT specs: implementation may have been reverted, never committed, or incorrectly stamped
+- [ ] Commit or implement REALITY_WARN specs: files exist but are not git-tracked
 ```
 
 **Integration with summary table:** Add a row for Lifecycle Audit in the report summary:
