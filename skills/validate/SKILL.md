@@ -168,10 +168,12 @@ If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:
 
 1. Call `verifyManifest(specPath)` from `lib/source-manifest.mjs`.
 2. For each file in the manifest, compare the recorded SHA against the current `git hash-object` output.
-3. Report results:
-   - **Match:** All source files are unchanged since implementation. Record PASS.
+3. **Implementation existence check:** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed."
+4. Report results:
+   - **Match:** All source files are unchanged since implementation AND all files are git-tracked. Record PASS.
    - **Drift:** One or more files have been modified since the manifest was stamped. List each drifted file with its expected and actual SHA. Record WARN (does not cause overall FAIL, but signals that source may have diverged from the spec contract).
-   - **Missing files:** Source files in the manifest that no longer exist. Record FAIL.
+   - **Missing files:** Source files in the manifest that no longer exist on disk. Record FAIL.
+   - **Untracked files:** Source files exist but were never committed. Record FAIL (implementation incomplete).
 
 If the spec has no `source-manifest` block, skip this check with a note: "No source manifest found. Run /adev:implement to stamp one."
 
@@ -183,9 +185,10 @@ Load the Live Spec and walk through every acceptance criterion.
 
 For each criterion:
 1. Identify which files and tests address it.
-2. Read the relevant code. Verify the behavior matches the criterion.
-3. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
-4. Verify test integrity: assertions must be strict and match the spec exactly.
+2. **Read the actual file content** using the Read tool. You MUST read the file before making any claims about its contents. Do NOT infer code structure, line numbers, or behavior from the spec alone — verify against the actual source. If you cite `file:line`, that line number must come from reading the file, not from guessing.
+3. Verify the behavior matches the criterion based on what you read.
+4. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
+5. Verify test integrity: assertions must be strict and match the spec exactly.
    Flag any of these anti-patterns:
    - Loose matchers where exact values are expected (regex where string would do,
      `toContain` where `toEqual` is appropriate)
@@ -201,9 +204,11 @@ For each criterion:
      the context that justified the change)
 
 Record per criterion:
-- PASS: code and tests satisfy the criterion.
+- PASS: code and tests satisfy the criterion (cite file:line from actual file reads).
 - FAIL: code does not satisfy the criterion (with file:line references and explanation).
 - PARTIAL: code partially satisfies (describe what is missing).
+
+**Anti-fabrication rule:** Every file:line citation in the report MUST come from a Read tool call in this session. If you cannot read a file (it does not exist, is too large, etc.), say so explicitly rather than guessing its contents. A validation report with fabricated citations is worse than no report at all.
 
 **Cross-repo interface verification (workspace-aware validation mode only):** When workspace-aware validation mode is active and `crossRepoDeps` is non-empty, Check 2 gains an additional sub-step: for each acceptance criterion that references behaviour defined in a cross-repo dependency spec, verify that the implementation respects the interface contracts (API signatures, data shapes, event payloads) described in the dependency spec. Record findings per criterion as PASS / FAIL / PARTIAL with references to both the local code and the cross-repo dependency spec.
 
