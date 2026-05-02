@@ -78,13 +78,13 @@ When both signals are present on the same spec, both independently block `/adev:
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have | v1 | review-passed |
-| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have | v1 | review-passed |
-| Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have | v1 | review-passed |
-| Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have | v1 | review-passed |
-| Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have | v1 | review-passed |
-| Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have | v1 | review-passed |
-| Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have | v1 | review-passed |
+| Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have | v1 | planned |
+| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have | v1 | planned |
+| Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have | v1 | planned |
+| Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have | v1 | planned |
+| Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have | v1 | planned |
+| Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have | v1 | planned |
+| Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have | v1 | planned |
 
 ## Deferred Capabilities
 
