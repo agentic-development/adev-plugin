@@ -31,8 +31,17 @@ Run each detection check and collect findings:
 #### 1a. Stale Epics
 Find epics where ALL child issues are `closed` but the epic status is still `open`.
 
-**Fix offered:** "Close the epic?"
-**Action:** `updateEpic(epicId, { status: 'closed' })`
+**Reality verification before closing:** For each child issue with a `spec_ref` or `plan_ref`, run `verifyIssueCompleted()` from `lib/reality-check.mjs` via inline Node.js. If ANY child issue returns `confidence: "none"` (status claims closed but no codebase evidence), flag instead of offering to close:
+```
+⚠ Epic <id> has children marked closed but issue <child-id> has no codebase evidence (confidence: none).
+  Investigate before closing — implementation may have been reverted or never committed.
+```
+Only offer to close when all verified children have `confidence >= "medium"`.
+
+If `lib/reality-check.mjs` fails to import, proceed without verification (fall back to metadata-only check).
+
+**Fix offered:** "Close the epic? (verified: all children at medium+ confidence)"
+**Action:** `updateEpic(epicId, { status: 'closed', notes: formatConfidenceNote('Reconciled', confidence, {}) })`
 
 #### 1b. Unplanned Specs
 Find specs with status `review-passed` that have no sibling `.plan.md` file.
@@ -49,7 +58,16 @@ Find epics where the number of child issues doesn't match the plan's task count.
 #### 1d. Orphaned Issues
 Find issues whose `planRef` points to a file that no longer exists.
 
-**Fix offered:** "Close as obsolete?"
+**Reality verification before closing:** For each orphaned issue that has a `spec_ref`, run `verifySpecImplemented()` from `lib/reality-check.mjs`. If the spec's implementation IS found in the codebase (confidence: medium or high), the issue may not be truly orphaned — the plan file may have been moved or renamed. Flag for manual review instead of auto-closing:
+```
+⚠ Issue <id> has orphaned planRef but spec implementation exists (confidence: <level>).
+  Plan may have been moved. Verify before closing.
+```
+Only offer to close when `verifySpecImplemented` returns `confidence: "none"` or `"low"` (no implementation evidence).
+
+If `lib/reality-check.mjs` fails to import, proceed without verification.
+
+**Fix offered:** "Close as obsolete? (verified: no implementation found)"
 **Action:** `close(id, 'Closed by reconcile: planRef points to nonexistent file')`
 
 #### 1e. Orphaned Plans
@@ -154,6 +172,7 @@ Remaining:
 
 - **Interactive by default.** Each fix requires user confirmation unless `--batch` is used.
 - **Non-destructive.** Reconciliation never deletes files. It closes issues, creates artifacts, and stamps manifests.
+- **Verify before closing.** Before auto-closing any issue or epic, verify the implementation exists in the codebase using `lib/reality-check.mjs`. Only close at medium+ confidence. Low/none confidence → flag for manual review.
 - **Idempotent.** Running reconciliation twice with the same findings produces the same result.
 - **Detection before repair.** Always scan first, present findings, then fix. Never fix without showing what will change.
 - **Backend agnostic.** Works with any configured `tasks.backend`.
