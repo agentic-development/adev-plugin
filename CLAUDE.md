@@ -32,6 +32,16 @@ adev-plugin is a Claude Code plugin and zero-dependency CLI that implements a fu
 - **Error handling:** hooks use exit codes (0 = allow, 2 = block); CLI uses `process.exit(1)` for fatal errors
 - **Logging:** hooks output JSON to stdout; CLI uses `console.log` for user-facing output
 
+### Commit Trailers
+
+Commits implementing spec-tracked work **must** include a `Spec:` trailer:
+```
+feat(<module>): <description>
+
+Spec: .context-index/specs/features/<module>/<spec-slug>.md
+Plan-task: <task-number>
+```
+
 ### Patterns to Follow
 
 - Hook scripts read `CLAUDE_TOOL_INPUT_*` env vars and JSON from stdin

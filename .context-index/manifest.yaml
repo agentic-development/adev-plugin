@@ -147,6 +147,9 @@ provenance:
   required_trailers:
     - Author-type
     - Operator
+  recommended_trailers:
+    - Spec
+    - Plan-task
 
 # ============================================================================
 # Repo Map Configuration
