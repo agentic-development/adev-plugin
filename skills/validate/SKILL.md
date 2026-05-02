@@ -370,8 +370,11 @@ Find all issues with `plan-ref` matching the current spec's plan file.
 
 For each issue:
 1. Read the issue status.
-2. If the issue is still `open` or `in-progress` but all its plan tasks are implemented and tests pass → flag as WARN: "Issue `<id>` (`<title>`) is still `<status>` but implementation is complete."
-3. **`--fix` behavior:** Update the issue status to `closed` with note `"Auto-closed by validation: implementation complete and tests pass."`
+2. **Verify against codebase** (do NOT trust status fields alone): Run `verifyIssueCompleted(issue, { projectRoot })` from `lib/reality-check.mjs` via inline Node.js. This checks plan task checkboxes, file existence, and git-committed state.
+3. If the issue is still `open` or `in-progress` but `verifyIssueCompleted` returns `{ completed: true, confidence: "high" }` → flag as WARN: "Issue `<id>` (`<title>`) is still `<status>` but implementation verified (high confidence)."
+4. If `verifyIssueCompleted` returns `{ completed: true, confidence: "medium" }` → flag as INFO (not WARN): "Issue `<id>` appears complete but confidence is medium — manual check recommended."
+5. If `verifyIssueCompleted` returns `{ completed: false }` → the issue status is correct (still open). Record PASS.
+6. **`--fix` behavior:** Only auto-close issues with HIGH confidence. Update status to `closed` with confidence note from `formatConfidenceNote()`. MEDIUM confidence issues get a note added but remain open.
 
 #### 12b. Epic Completion
 
@@ -671,13 +674,24 @@ If PASS:
 
 2. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `validated`.
 
-3. **Record validation outcome on issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
+3. **Record validation outcome on issue board with confidence:** Read `tasks.backend` from `manifest.yaml`. If configured:
    - Find all issues with `plan-ref` matching the validated spec's plan file.
-   - For each issue, add a note with the validation result:
-     - PASS: `update(id, { notes: "Validated: PASS (YYYY-MM-DD) — <validation-report-path>" })`
+   - For each issue, run reality-check verification via inline Node.js:
+     ```bash
+     node --input-type=module -e "
+     import { verifyIssueCompleted, formatConfidenceNote } from '<ADEV_ROOT>/lib/reality-check.mjs';
+     const result = verifyIssueCompleted(issue, { projectRoot });
+     const note = formatConfidenceNote('Validated', result.confidence, { reportPath, filesVerified, testsPass });
+     console.log(JSON.stringify({ ...result, note }));
+     "
+     ```
+   - Update each issue with the confidence-annotated note:
+     - PASS + HIGH confidence: `update(id, { status: "closed", notes: "<confidence note>" })`
+     - PASS + MEDIUM confidence: `update(id, { notes: "<confidence note>. Manual verification recommended." })`
      - FAIL: `update(id, { notes: "Validated: FAIL (YYYY-MM-DD) — <validation-report-path>" })`
-   - Do not change issue status based on validation outcome.
+   - Only close issues automatically when confidence is HIGH (files committed, tests pass, spec criteria met). MEDIUM confidence adds a note but does not close.
    If `tasks.backend` is not configured, skip.
+   If `lib/reality-check.mjs` fails to import, fall back to the previous behavior (add note without confidence scoring).
 
 4. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 

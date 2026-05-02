@@ -303,6 +303,22 @@ This is the key difference from generic debugging. Before diving into code, load
    - If yes, create a draft ADR in `.context-index/adrs/` with the next sequential number.
    - Use the template at `${CLAUDE_PLUGIN_ROOT}/templates/adr-template.md` if it exists.
 
+5. **Update issue board with confidence.**
+   - Read `tasks.backend` from `manifest.yaml`. If not configured, skip.
+   - Search the issue board for a bug issue matching the error description or spec reference (by title keyword match or `spec_ref`).
+   - If a matching issue is found and quality gates pass (step 1 above), update it:
+     ```bash
+     node --input-type=module -e "
+     import { formatConfidenceNote } from '<ADEV_ROOT>/lib/reality-check.mjs';
+     const note = formatConfidenceNote('Bug fixed', 'high', { testsPass: true, specPath: '<specPath>' });
+     console.log(JSON.stringify({ note }));
+     "
+     ```
+   - Update the issue: `update(id, { status: "closed", notes: "<confidence note>" })`
+   - Only close with HIGH confidence (quality gates pass + fix verified against spec). If gates have not been run or fail, add a note but do not close: `update(id, { notes: "Fix applied but not yet validated — run /adev:validate" })`
+   - If `lib/reality-check.mjs` fails to import, skip this step (non-blocking).
+   - Report to user: "Updated issue `<id>` — closed with high confidence (tests pass, spec compliant)."
+
 ### Phase 7: Documentation Impact
 
 **Goal:** Check if the fix changes assumptions documented in specs, charters, or ADRs.
