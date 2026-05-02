@@ -51,6 +51,7 @@
     "web-tree-sitter": "^0.26.7"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "1.64.0",
     "typescript": "^5.9.3"
   }
 }
