@@ -266,6 +266,8 @@ After the Review Gate passes (Step 1) and before loading context (Step 2), check
 
 **Read these files in a single turn using parallel tool calls:**
 
+> **Meta-tool alternative (single Bash turn):** `node -e "import {loadSpecContext} from './lib/meta-tools.mjs'; console.log(await loadSpecContext('<spec-path>'))"` — returns spec + charter capability map + constitution in one call. Use when available; fall back to parallel Reads otherwise.
+
 1. **Constitution:** Read `.context-index/constitution.md`. Extract non-negotiable principles, architecture boundaries, quality gate commands, and coding standards.
 
 2. **Platform context:** Read `.context-index/platform-context.yaml`. Note the tech stack, framework versions, and deployment targets.
