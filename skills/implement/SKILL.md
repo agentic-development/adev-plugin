@@ -8,6 +8,17 @@ context: fork
 
 Execute an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, enforcing TDD, and running 2-stage review (spec compliance then code quality) after each task.
 
+## Execution Protocol
+
+**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
+- Chain steps continuously without intermediate commentary or narration.
+- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
+- Do NOT summarize intermediate findings between steps.
+- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
+- Report ONLY the final result in the structured format expected by the parent.
+
+This directive does NOT apply when the skill is invoked interactively by a user.
+
 ## Arguments
 
 - `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>-plan.md`.
@@ -28,7 +39,9 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 ### Step 1: Load Context
 
-Read these files once at the start. Extract everything subagents will need so they never have to re-read these files themselves.
+**Read these files in a single turn using parallel tool calls:**
+
+Extract everything subagents will need so they never have to re-read these files themselves.
 
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
@@ -240,6 +253,7 @@ If `--dry-run` was passed, print the routing table for every task and stop.
 Build the implementer subagent prompt with these sections in order:
 
 1. **Role.** "You are implementing Task N: [title]." If routed to a specialist: "You are the [specialist name] specialist implementing Task N: [title]."
+1b. **Execution directive.** "Execute silently — no intermediate narration. Chain all steps without commentary. Use parallel tool calls for multi-file reads. Report ONLY the final result in the Report Format below."
 2. **Constitution excerpt.** The Non-Negotiable Principles and Coding Standards sections. Keep under 60 lines. Do not include the full constitution.
 3. **Task description.** Full text of the task from the plan. Never make the subagent read the plan file.
 4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need. Before implementing, read the actual source files you will modify. Do not assume file contents based on the task description or plan. If a file has changed since the plan was written, work with the current state. If workspace state is non-null and the spec has a `target-repo:` frontmatter field, include an informational advisory: "This task targets repo '<target-repo>' within workspace '<workspace-name>'. All file paths are relative to that repo's root."
