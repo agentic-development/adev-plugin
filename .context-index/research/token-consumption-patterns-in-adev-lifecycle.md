@@ -651,17 +651,85 @@ adev already front-loads structured specs before implementation — this is the 
 
 **Implementation:** Use the `profile` system in execution profiles to restrict subagent tool access. Already partially implemented via `reviewer-*` profiles.
 
-### Combined "Fewer Turns" Savings Estimate
+### A/B Validated Results (Real Session JSONL)
 
-| Technique | Turns Saved | Cache Reads Avoided | Cost Saved |
-|-----------|:---:|:---:|:---:|
-| Parallel Read batching | 20 | 4M | $6.00 |
-| Eliminate confirmations | 16-80 | 4M-16M | $6-$24 |
-| Reduce commentary (chain steps) | ~72 | ~14M | ~$21 |
-| Meta-tools | ~15 | ~3M | ~$4.50 |
-| **Total** | **~125-190** | **~25-37M** | **~$37-55** |
+Dispatched 6 subagents (3 A/B pairs) doing real work against `tests/evals/integration-sandbox/`. Measured actual token consumption from subagent JSONL files.
 
-This is **$37-55 on a $225 session (16-24%)** — comparable to or larger than the 4 content strategies combined ($36, 16%). Together, content + turn optimization could save **32-40%**.
+**T1: Parallel Read Batching**
+
+| Metric | Sequential | Batched | Delta |
+|--------|:---:|:---:|:---:|
+| Turns | 17 | 9 | -47% |
+| No-tool turns | 9 | 1 | -89% |
+| Cache reads | 245,806 | 89,934 | -63% |
+| Cost | $1.29 | $0.86 | **-33%** |
+
+The batched variant loaded the same 7 files in fewer turns. Plan quality: 3.4KB vs 3.3KB on disk — near identical.
+
+**T2+T3: Verbose Narration vs Silent Execution**
+
+| Metric | Verbose | Silent | Delta |
+|--------|:---:|:---:|:---:|
+| Turns | 26 | 12 | -54% |
+| No-tool turns | 9 | 1 | -89% |
+| Cache reads | 613,938 | 169,289 | -72% |
+| Output tokens | 6,184 | 4,045 | -35% |
+| Cost | $3.60 | $1.20 | **-67%** |
+
+The verbose variant narrated every step ("Loaded constitution. The relevant principles are..."). The silent variant chained all steps and only reported the final result. Plan quality: 12.4KB vs 8.3KB — silent is more concise but covers all acceptance criteria.
+
+**T4: Individual Tool Calls vs Meta-tool**
+
+| Metric | Individual | Meta-tool | Delta |
+|--------|:---:|:---:|:---:|
+| Turns | 23 | 3 | -87% |
+| Tool turns | 15 | 1 | -93% |
+| Cache reads | 384,531 | 28,916 | -92% |
+| Cost | $1.17 | $0.31 | **-73%** |
+
+The individual variant used 15 separate Glob/Read/Grep calls. The meta-tool variant ran a single Bash with inline Node.js that did all the file scanning deterministically. Report tables contain identical data (3 specs, same status/manifest/review values).
+
+### Combined Turn Reduction Results
+
+| Technique | Baseline | Variant | Turns Saved | Cost Delta |
+|-----------|:---:|:---:|:---:|:---:|
+| T1: Parallel Read batching | $1.29 | $0.86 | 8 | **-33%** |
+| T2+T3: Silent execution | $3.60 | $1.20 | 14 | **-67%** |
+| T4: Meta-tools | $1.17 | $0.31 | 20 | **-73%** |
+| **Combined** | **$6.06** | **$2.37** | **42** | **-61%** |
+
+### Turn Reduction vs Content Optimization
+
+| Category | Strategies | A/B Validated Savings |
+|----------|-----------|:---:|
+| Content optimization (#1, #2, #3, #8) | 4 strategies | -35% |
+| **Turn reduction (T1, T2+T3, T4)** | **3 techniques** | **-61%** |
+
+Turn reduction is nearly **2x more effective** than content optimization because every eliminated turn avoids a full cache read of the accumulated prefix (~200K tokens at session midpoint).
+
+### Key Insights
+
+1. **Silent execution is the highest-value change.** -67% cost from simply not narrating intermediate steps. The model was explaining its work to nobody — subagent commentary never surfaces to the user. This is pure waste.
+
+2. **Meta-tools eliminate LLM reasoning for deterministic work.** File scanning, frontmatter extraction, status checks — these are `readFileSync` operations, not reasoning tasks. Using Node.js directly avoids 20 turns of "let me Read this file... now let me Grep for status...".
+
+3. **Parallel batching has the lowest overhead but modest savings.** -33% from batching Reads. The model still needs the same number of tool calls — it just groups them. Limited by Claude Code's parallel tool support.
+
+4. **Zero parallel tool use in current adev skills.** Of 1,153 turns in the full session, only 1 used multiple tools. The SKILL.md instructions never explicitly tell the agent to batch. Adding "Read these files in a single turn using parallel tool calls" is a one-line change per skill.
+
+### Revised Combined Savings Estimate (All Strategies)
+
+| Category | Technique | A/B Cost Delta | Quality Impact |
+|----------|-----------|:---:|:---:|
+| Content | #8 Artifact-to-disk | -36% | None (12/12 parity) |
+| Content | #1 Conditional loading | -27% | None (8/8 parity) |
+| Content | #2 Source-manifest context | -20-30% est | None if guided by manifests |
+| Content | #3 Review loop 3→2 | -22% | Low (2 minor issues left) |
+| **Turn** | **T2+T3 Silent execution** | **-67%** | **None (plan covers all ACs)** |
+| **Turn** | **T4 Meta-tools** | **-73%** | **None (identical data)** |
+| **Turn** | **T1 Parallel Read batching** | **-33%** | **None (same files loaded)** |
+
+**Note:** These percentages are measured on individual subagent tasks, not full sessions. Full-session impact depends on what fraction of turns each technique addresses. The 82% "untouchable" core cost remains — but turn reduction chips away at it by reducing the number of turns that generate that core cost.
 
 ## Recommendations (Prioritized by Impact)
 
