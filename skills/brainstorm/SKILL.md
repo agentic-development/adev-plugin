@@ -74,7 +74,7 @@ Complete these steps in order. Do not skip steps.
 4. **Present design sections** — walk through each charter section, get approval per section
 5. **Write charter** — save to `.context-index/specs/features/<module>/charter.md`
 5b. **Product.md bootstrap** — bootstrap or update product.md (skipped with `--no-bootstrap` or `--module`)
-6. **Charter review loop** — dispatch charter-reviewer subagent, fix issues, max 3 iterations
+6. **Charter review loop** — dispatch charter-reviewer subagent, fix issues, max 2 iterations
 7. **User reviews** — ask user to review the written charter
 8. **Transition** — invoke `/adev:specify` to create Live Specs from the charter
 
@@ -391,7 +391,7 @@ Task tool (general-purpose):
 
 - **Approved:** Proceed to Step 7.
 - **Issues Found:** Fix each issue, re-dispatch reviewer. Only escalate to user if fixing requires an unmade design decision.
-- **After 3 iterations without approval:** Present remaining issues to user. Ask: fix together, accept as-is, or abandon.
+- **After 2 iterations without approval:** Present remaining issues to user. Ask: fix together, accept as-is, or abandon.
 
 ## Step 7: User Reviews
 
