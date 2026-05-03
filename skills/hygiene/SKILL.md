@@ -16,7 +16,9 @@ Audit the health of `.context-index/` and source code, generating actionable rep
 - Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
 - Report ONLY the final result in the structured format expected by the parent.
 
-This directive does NOT apply when the skill is invoked interactively by a user.
+This directive does NOT apply when:
+- The skill is invoked interactively by a user.
+- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
 
 **Artifact-to-disk (output protocol):** When this skill writes an artifact to disk (plan file, review file, validation report, retro report), do NOT echo the full artifact content in conversation output. Instead:
 1. Write the complete artifact to its target file path.

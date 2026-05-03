@@ -19,7 +19,9 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 - Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
 - Report ONLY the final result in the structured format expected by the parent.
 
-This directive does NOT apply when the skill is invoked interactively by a user.
+This directive does NOT apply when:
+- The skill is invoked interactively by a user.
+- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
 
 ## Arguments
 
@@ -31,6 +33,7 @@ This directive does NOT apply when the skill is invoked interactively by a user.
 - `--full`: run the Full Pipeline (specify → review → plan → route → implement → validate). Without `--full`, the default Implement Pipeline skips specify and review and requires a pre-existing `.review.md`.
 - `--from <step>`: override resume point — force restart from a specific step (`specify`, `review`, `plan`, `route`, `implement`, `validate`). Useful if build state is corrupted or stale.
 - `--no-infra`: skip infrastructure preflight in implement and validate steps (user-only — the agent must never set this flag). Propagated to sub-skills via `ADEV_NO_INFRA=1` env var.
+- `--verbose`: disable silent execution for all subagents in this pipeline run. Subagent prompts include `VERBOSE: true`, causing skills to narrate each step. Useful for debugging pipeline failures.
 
 ## Prerequisites
 
@@ -168,8 +171,11 @@ using the Skill tool. Let it run to full completion — including all
 post-steps (source manifests, commit trailers, DoD checks, etc.).
 Then report the result.
 
+{{IF --verbose is NOT set:}}
 Execute silently — no intermediate narration. Chain all steps without
 commentary. Use parallel tool calls for multi-file reads.
+{{IF --verbose IS set, include instead:}}
+VERBOSE: true
 
 Do NOT attempt to perform the skill's work yourself. You MUST use the
 Skill tool to load and execute the full skill. The skill contains

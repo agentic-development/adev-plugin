@@ -18,7 +18,9 @@ description: "TDD test authoring: write failing tests (RED phase), produce immut
 - Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
 - Report ONLY the final result in the structured format expected by the parent.
 
-This directive does NOT apply when the skill is invoked interactively by a user.
+This directive does NOT apply when:
+- The skill is invoked interactively by a user.
+- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
 
 ## Invocation Modes
 
