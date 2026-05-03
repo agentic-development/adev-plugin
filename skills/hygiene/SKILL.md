@@ -10,7 +10,7 @@ Audit the health of `.context-index/` and source code, generating actionable rep
 ## Arguments
 
 - No arguments: full audit (all fifteen passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics, code-drift)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
 
@@ -795,6 +795,39 @@ Scanned: N source files, M commits
 **Integration with summary table:**
 ```
 | Heuristic Index Health | WARN | 1 stale index entry, 2 orphan tags |
+```
+
+## Audit Pass 17: Code Drift
+
+**Goal:** Detect specs with `drift_detected: true` in their frontmatter, indicating implementation source files have been modified since the source manifest was last stamped.
+
+**Steps:**
+
+1. Scan all specs matching `.context-index/specs/**/*.md` (excluding `charter.md`, `*.review.md`, `*.plan.md`).
+2. For each spec, read the YAML frontmatter and check if `drift_detected: true` is present.
+3. If drifted specs are found, report WARN with a list:
+   - Spec path
+   - `drift_source` (the file that triggered the drift)
+   - `drift_at` (timestamp of drift detection)
+4. If no drifted specs are found, report PASS.
+
+**Output format:**
+```
+## Code Drift
+
+- PASS: No specs with drift_detected flags (or)
+- WARN: N specs with code-side drift detected:
+  - .context-index/specs/features/auth/login.md — drift_source: lib/login.mjs, drift_at: 2026-05-01T10:00:00Z
+  - .context-index/specs/features/dashboard/widgets.md — drift_source: lib/widgets.mjs, drift_at: 2026-05-02T14:00:00Z
+
+**Actions:**
+- [ ] Run `/adev:validate --spec <path>` to verify spec still reflects implementation
+- [ ] Run `/adev:implement` to re-stamp source manifests and clear drift flags
+```
+
+**Integration with summary table:**
+```
+| Code Drift | WARN | 2 drifted specs |
 ```
 
 ## Report Format
