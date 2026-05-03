@@ -5,10 +5,13 @@ import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "plan", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
+const RELEASE_MODE_PATH = join(PLUGIN_ROOT, "skills", "plan", "release-mode.md");
+const MILESTONE_MODE_PATH = join(PLUGIN_ROOT, "skills", "plan", "milestone-mode.md");
+const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(RELEASE_MODE_PATH, "utf8") + "\n" + readFileSync(MILESTONE_MODE_PATH, "utf8");
 
-// Scope all assertions to the Release Mode section
-const releaseModeSection = skill.slice(skill.indexOf("## Release Mode"));
+// Scope assertions to companion file contents directly
+const releaseModeSection = readFileSync(RELEASE_MODE_PATH, "utf8");
+const milestoneModeSection = readFileSync(MILESTONE_MODE_PATH, "utf8");
 
 describe("adev:plan SKILL.md — Release Mode workspace-mode branching", () => {
   it("Release Mode branches on workspace detection", () => {
@@ -59,53 +62,35 @@ describe("adev:plan SKILL.md — Release Mode workspace-mode branching", () => {
 
 describe("adev:plan SKILL.md — Milestone Mode workspace-mode branching", () => {
   it("Milestone Mode branches on workspace detection", () => {
-    const section = skill.slice(
-      skill.indexOf("## Milestone Mode"),
-      skill.indexOf("## Epic Mode"),
-    );
+    const section = milestoneModeSection;
     assert.match(section, /detectWorkspace/);
     assert.match(section, /workspace mode/i);
   });
 
   it("Milestone Mode reads workspace product.md", () => {
-    const section = skill.slice(
-      skill.indexOf("## Milestone Mode"),
-      skill.indexOf("## Epic Mode"),
-    );
+    const section = milestoneModeSection;
     assert.match(section, /resolveWorkspaceProductPath/);
   });
 
   it("Milestone Mode validates module-name tokens", () => {
-    const section = skill.slice(
-      skill.indexOf("## Milestone Mode"),
-      skill.indexOf("## Epic Mode"),
-    );
+    const section = milestoneModeSection;
     assert.match(section, /validateModuleName/);
     assert.match(section, /INVALID_MODULE_NAME/);
   });
 
   it("Milestone Mode prompts for ambiguous module names", () => {
-    const section = skill.slice(
-      skill.indexOf("## Milestone Mode"),
-      skill.indexOf("## Epic Mode"),
-    );
+    const section = milestoneModeSection;
     assert.match(section, /disambiguat/i);
   });
 
   it("Milestone Mode unconditionally defers epic create() in workspace mode", () => {
-    const section = skill.slice(
-      skill.indexOf("## Milestone Mode"),
-      skill.indexOf("## Epic Mode"),
-    );
+    const section = milestoneModeSection;
     assert.match(section, /skip.*create\(\)|unconditionally defer|unconditionally skip/i);
     assert.match(section, /Shared Issue Tracking|Phase 2/);
   });
 
   it("Milestone Mode never writes to registered repo product.md", () => {
-    const section = skill.slice(
-      skill.indexOf("## Milestone Mode"),
-      skill.indexOf("## Epic Mode"),
-    );
+    const section = milestoneModeSection;
     assert.match(section, /never writes.*repo.*product\.md|isolation/i);
   });
 });
