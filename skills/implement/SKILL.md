@@ -486,8 +486,14 @@ After all tasks are complete and before reporting completion:
      computed-at: "2026-04-01T10:00:00.000Z"
    ```
 5. Write the spec file back
-6. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `implemented`.
-7. Log: "Updated spec status: review-passed → implemented"
+6. **Clear drift flag:** After re-stamping the source manifest, clear any drift flag on the spec:
+   ```javascript
+   const { clearDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
+   await clearDrift(specPath);
+   ```
+   If `clearDrift()` fails (e.g., write error), log a warning but do not block implementation completion.
+7. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `implemented`.
+8. Log: "Updated spec status: review-passed → implemented"
 
 ## Step 5.5: Commit Trailers
 
