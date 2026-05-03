@@ -9,6 +9,17 @@ Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implem
 
 **Announce at start:** "I'm using the adev:plan skill to create the implementation plan."
 
+## Execution Protocol
+
+**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
+- Chain steps continuously without intermediate commentary or narration.
+- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
+- Do NOT summarize intermediate findings between steps.
+- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
+- Report ONLY the final result in the structured format expected by the parent.
+
+This directive does NOT apply when the skill is invoked interactively by a user.
+
 ## Arguments
 
 - `--spec <path>`: plan a specific spec (routes to Spec Mode)
@@ -241,7 +252,7 @@ After the Review Gate passes (Step 1) and before loading context (Step 2), check
 
 ### Essential Context (load now)
 
-Read these files immediately. They are required for every planning decision.
+**Read these files in a single turn using parallel tool calls:**
 
 1. **Constitution:** Read `.context-index/constitution.md`. Extract non-negotiable principles, architecture boundaries, quality gate commands, and coding standards.
 
@@ -256,6 +267,8 @@ Read these files immediately. They are required for every planning decision.
 ### Workspace-Aware Target-Repo Context Loading
 
 When in workspace-aware Spec Mode (target-repo detected), load context from the target repo instead of (or in addition to) the current repo:
+
+**Read these files in a single turn using parallel tool calls:**
 
 1. **Target repo constitution:** Read `<target-repo-path>/.context-index/constitution.md`. If the target repo's `.context-index/` directory is missing, handle gracefully — proceed without target repo constitution and note the gap in the plan header.
 2. **Target repo platform-context:** Read `<target-repo-path>/.context-index/platform-context.yaml`. This determines the target repo's tech stack for task structure.
