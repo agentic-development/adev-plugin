@@ -369,14 +369,23 @@ When in workspace-aware Spec Mode, file paths in the File Structure and Task Str
 
 After the file structure and before individual tasks, include a context packet manifest per task. This makes subagent context explicit and inspectable.
 
+**Source-manifest-guided loading:** When the spec has a `source-manifest.files[]` in its frontmatter, use those files as the primary relevance signal for context packets:
+1. **Primary implementation file** (from source-manifest): include in full — the implementer needs to see existing patterns.
+2. **Test file** (from source-manifest): include function signatures only (`grep "^export\|^describe\|^it"`) — shows test structure without full content.
+3. **Sibling specs' source-manifest files** (same module): include export signatures only (`grep "^export"`) — shows available APIs.
+4. **ADRs referenced in spec**: include decision + rationale sections only, not full ADR.
+
+When no source-manifest exists (new spec), fall back to: charter Dependencies table for module boundaries, sibling specs' source manifests for shared directory patterns, and orientation file for module placement.
+
 ```markdown
 ## Context Packets
 
 ### Task 1 Context
 - Spec: `.context-index/specs/features/<module>/<task>.md` (criteria 1-3)
 - Charter: `.context-index/specs/features/<module>/charter.md` (capability: <name>)
+- Source files: <from spec source-manifest.files[], full read for primary, signatures for siblings>
 - Sample: `.context-index/samples/<pattern>-sample.md`
-- ADR: `.context-index/adrs/<relevant-adr>.md`
+- ADR: `.context-index/adrs/<relevant-adr>.md` (decision + rationale only)
 - Cross-cutting: `.context-index/specs/cross-cutting/<relevant>.md`
 - Boundary rules: `governance/boundaries.yaml` (rules affecting task files)
 - Heuristics: <N> entries for module `<M>` (IDs: <id1>, <id2>, ...)
