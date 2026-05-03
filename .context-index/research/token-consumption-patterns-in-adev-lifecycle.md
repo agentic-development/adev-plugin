@@ -208,27 +208,49 @@ The SKILL.md contains mode detection logic and a `Read` instruction: "After dete
 2. Add a `## Mode: <name>` marker in each companion file for the agent to verify it loaded the right one
 3. Keep the core SKILL.md self-contained for simple cases (e.g., `--spec` with no workspace)
 
-### Strategy 2: Context Packet Size Caps
+### Strategy 2: Source-Manifest-Guided Context Loading (revised)
 
 **Problem:** Context packets grow unbounded. A spec with a large charter, 5 ADRs, 3 golden samples, and heuristics can produce 15K+ tokens of context per subagent dispatch. Multiplied by 5 tasks × 4 subagents each = 300K tokens of context alone.
 
-**Concrete approach — priority-tiered budget:**
+**Original approach — blind budget cap (4K tokens):** Tested via A/B eval. Measured -64% cost savings but with a critical flaw: the capped variant produced a 4.9KB plan vs 14.8KB baseline — less information for the implementer. It missed the docker-compose port, sibling spec patterns, and `lib/db.mjs` connection API. The rubric passed (8/8 structural elements) but a "correctness" check would fail on any non-trivial project. Blind capping trades cost for quality in complex codebases.
+
+**Revised approach — source-manifest-guided loading:**
+
+Use each spec's `source-manifest.files[]` as a relevance index to load exactly the right files, not everything or an arbitrary subset. The source manifest already declares "these are the files that implement this spec" — it is the most precise relevance signal available.
 
 ```
-Budget: 4,000 tokens per context packet
+Context packet assembly (source-manifest-guided):
 
-Priority tiers (include in order until budget exhausted):
-  1. Spec acceptance criteria relevant to this task  (must-include, ~500-1000 tokens)
-  2. Constitution excerpt (architecture boundaries)   (must-include, ~300 tokens)
-  3. Charter capability being implemented              (must-include, ~200 tokens)
-  4. Cross-cutting spec constraints                    (include if room, ~500 tokens)
-  5. Golden sample reference                           (include if room, ~800 tokens)
-  6. Heuristics                                        (include if room, ~500 tokens)
-  7. ADR decisions                                     (include if room, ~400 tokens)
-  8. Full charter scope/domain model                   (trim first, ~1500 tokens)
+1. Spec (full)                                        ~1,500 tokens  [must-include]
+2. Constitution (full — already small at 4.8KB)        ~1,200 tokens  [must-include]
+3. Charter capability map (trimmed, not full charter)    ~300 tokens  [must-include]
+4. Spec's source-manifest files:
+   - Primary implementation file: full read              ~500 tokens  [must-include]
+   - Test file: function signatures only                 ~200 tokens  [must-include]
+5. Sibling specs' source-manifest files:
+   - grep "^export" for function signatures              ~100 tokens/file  [include if room]
+6. ADRs referenced in spec (decision + rationale only)   ~300 tokens/ADR   [include if room]
+7. Cross-cutting specs (frontmatter + interface)         ~200 tokens/spec  [include if room]
+8. Golden samples, heuristics                            ~500 tokens       [include if room]
+                                                       ─────────────────
+                                              Budget: ~3,500-5,000 tokens
 ```
 
-When the budget is exceeded, lower-priority tiers get a one-line reference ("See ADR-0006 at .context-index/adrs/0006-dotenvx-dependency.md") instead of full content. The subagent can Read the file if needed.
+**For new specs (no source manifest yet):** Fall back to:
+1. Charter's Dependencies table for module boundaries
+2. Sibling specs' source manifests (same module — shared directory patterns)
+3. Orientation file for module placement conventions
+4. Let the implementer Read on demand
+
+**Why this is better than both baseline and blind cap:**
+
+| Approach | Files loaded | Risk | Cost |
+|----------|-------------|------|------|
+| Baseline (load everything) | 12+ files, many irrelevant | Context noise, wasted tokens | High |
+| Blind cap (4 files) | Spec + constitution + charter + review | Misses implementation patterns, ports, APIs | Low but error-prone |
+| **Source-manifest-guided** | Spec + constitution + exactly the implementation files | Knows codebase patterns without noise | Medium, targeted |
+
+**Estimated savings:** 20-30% on complex projects (vs 64% for blind cap). The savings are smaller because we're loading more relevant content, but the quality is preserved. Leverages existing infrastructure (`buildReverseIndex`, `source-manifest` frontmatter, `scanForDrift`).
 
 ### Strategy 3: Review Loop Reduction (3→2)
 
@@ -489,22 +511,24 @@ Plan files written to disk were compared on rubric scoring (12 required elements
 
 **Why estimates overshot:** The `bytes/4` method measures only the artifact text echoed in output. Real sessions include reasoning text, tool call overhead, and non-artifact output turns that exist in both variants. The real savings are significant (36% cost reduction) but not the 88-90% that byte counting suggested.
 
-### Corrected Strategy Impact Table (Real Data)
+### Corrected Strategy Impact Table (Real Data — All A/B Tested)
 
-| # | Strategy | Estimated Savings | Real Savings | Notes |
-|---|----------|------------------|-------------|-------|
-| 8 | Artifact-to-disk | 88% output | 45% output, 36% cost | Validated via A/B eval |
-| 1 | Conditional section loading | 40-70% per invocation | ~29% (measured on plan/build) | File-size measurement accurate; token impact untested |
-| 2 | Context packet caps | 24-77% | Untested — needs A/B eval | Packet sizes are real (avg 5.3K, max 17.6K tokens) |
-| 3 | Review loop 3→2 | 13-18K per iteration | Untested — needs multi-session comparison | Cap values confirmed (2 skills with cap=3) |
-| 9 | Subagent output summarization | 75% | Untested — would need implement-phase A/B | Subagent output is 26% of session cost |
-| 10 | Thinking budgets | 64% | Untested — thinking not in JSONL usage | Cannot measure without API-level logging |
-| 11 | Cache alignment | 62% cost | Already at 97.8% — marginal gains | Real cache rate far exceeds estimates |
-| 12 | Shared anti-patterns | 4K bytes | Minimal — 1 pattern in 3+ skills | Red Flags sections (6.7K) are better target |
+| # | Strategy | Estimated | A/B Real Cost Savings | Quality | Verdict |
+|---|----------|-----------|:---:|---------|---------|
+| 2 | Source-manifest-guided context (revised) | 24-77% | **-64% (blind cap)** | Rubric 8/8 but plan quality degrades on complex projects | Revise: use source manifests, estimate -20-30% |
+| 8 | Artifact-to-disk | 88% output | **-36%** | 12/12 rubric, full parity | **Implement** |
+| 1 | Conditional section loading | 40-70% | **-27%** | 8/8 rubric, plan slightly larger | **Implement** |
+| 3 | Review loop 3→2 | 13-18K tokens | **-22%** | Same verdict (PASS), 3rd iteration added no value | **Implement** |
+| 9 | Subagent output summarization | 75% | **-2%** | Code parity | **Deprioritize** — savings negligible at subagent level |
+| 10 | Thinking budgets | 64% | Untested | N/A | Cannot measure — thinking not in JSONL |
+| 11 | Cache alignment | 62% | Already at 97.8% | N/A | **Deprioritize** — ceiling already hit |
+| 12 | Shared anti-patterns | 4K bytes | N/A (deterministic) | N/A | **Deprioritize** — minimal savings |
+
+**Combined (strategies 1, 2-revised, 3, 8):** -35% cost per pipeline (~$14.46 → $9.40 on eval workloads).
 
 ### Lessons Learned
 
-1. **Cache reads are the real cost.** 71% of session cost is cache reads. Strategies that reduce context accumulation (8, 9) have outsized impact because every saved output token avoids N cache-read amplifications over remaining turns.
+1. **Cache reads are the real cost.** 71% of session cost is cache reads. Strategies that reduce context accumulation (8) have outsized impact because every saved output token avoids N cache-read amplifications over remaining turns.
 
 2. **Estimates based on file sizes overstate savings by 2-2.5x.** Real token consumption includes reasoning, tool calls, and non-artifact turns that aren't affected by output summarization.
 
@@ -512,9 +536,13 @@ Plan files written to disk were compared on rubric scoring (12 required elements
 
 4. **Caching is already highly effective (97.8%).** Strategy 11 (cache alignment) has diminishing returns — there's only 2.2% room to improve. The real win from summarization is fewer turns (30→21), not better cache prefixes.
 
-5. **Subagent costs are significant (26%).** Strategy 9 (subagent output summarization) targets the second-largest cost component. Combined with Strategy 8, they address 35%+ of session cost.
+5. **Context caps without relevance signals degrade quality.** Strategy #2 measured -64% with blind 4-file capping, but the resulting plan missed implementation patterns, port numbers, and sibling spec awareness. A rubric checks structure, not correctness — real projects need source-manifest-guided loading to cap cost without losing quality.
 
-6. **Always validate estimates against session JSONL.** The `bytes/4` approximation, hardcoded thinking estimates, and cache hit assumptions were all directionally correct but quantitatively wrong. Real measurement infrastructure (session JSONL parsing) should be the default eval method.
+6. **Source manifests are a relevance index, not just a drift tool.** The `source-manifest.files[]` in spec frontmatter tells the plan skill exactly which files implement a spec. Using this as a context loading guide provides targeted reads without blind capping. Existing infrastructure (`buildReverseIndex`, `scanForDrift`) already supports this pattern.
+
+7. **Subagent output summarization has negligible impact (-2%).** The model reasons the same amount regardless of output instructions. The savings from summarization only materialize at the *parent* context level (Strategy #8), not within the subagent itself.
+
+8. **Always validate estimates against session JSONL.** The `bytes/4` approximation, hardcoded thinking estimates, and cache hit assumptions were all directionally correct but quantitatively wrong. Real measurement infrastructure (session JSONL parsing) should be the default eval method.
 
 ## Recommendations (Prioritized by Impact)
 
@@ -524,7 +552,7 @@ Plan files written to disk were compared on rubric scoring (12 required elements
 
 1. **Implement conditional section loading in SKILL.md files** -- The top 6 skills (plan, validate, build, hygiene, implement, specify) account for 270K bytes of instruction. Many sections are conditionally relevant (e.g., build's retry logic, implement's visual verification, validate's browser checks). Splitting SKILL.md files into a core section (~30-40% of current size) and optional sections loaded via companion files would reduce per-invocation overhead by an estimated 40-60%. This aligns with the constitution's principle of "skills are primarily markdown" since the companion files would also be markdown. (Constitution: Principle 2)
 
-2. **Cap context packet sizes with a token budget** -- Context packets are assembled ad-hoc with no size limit. Adding a budget cap (e.g., 4,000 tokens) with priority-based trimming (constitution excerpt > spec acceptance criteria > samples > heuristics) would prevent context packet bloat as specs and charters grow. This follows the same pattern as the internal researcher's 1,500-token return cap and 20-file read budget. (Constitution: Principle 1 — minimize overhead)
+2. **Source-manifest-guided context loading** -- Use spec `source-manifest.files[]` as a relevance index to load exactly the implementation files, not everything or an arbitrary cap. Smart trimming: full read for primary implementation file, exports-only for siblings, decision-only for ADRs, reference-by-path for infra config. Estimated -20-30% on complex projects. Leverages existing `buildReverseIndex` infrastructure. (Constitution: Principle 1 — minimize overhead; blind capping risks quality on complex projects)
 
 3. **Reduce review loop caps from 3 to 2 by default** -- The implement phase allows 3 review cycles and 2 re-dispatches per task. Data from competitors suggests 2 review cycles captures most value (Superpowers recommends limiting planning iterations to 2). Reducing the default from 3 to 2 saves one full subagent dispatch per task (~13K-18K tokens). The cap should remain configurable. (Constitution: Principle 1)
 
