@@ -1,7 +1,7 @@
 ---
 charter: orders
 status: review-passed
-revision: 1
+revision: 2
 created: 2026-04-28
 test_strategies:
   integration:
@@ -21,12 +21,16 @@ infra_requirements:
 
 `getOrdersByCustomer(customerId)` queries the `orders` table for all orders belonging to a given customer, returning them ordered by `id`.
 
+- **Input**: `customerId` — a numeric customer identifier.
+- **Output**: an array of order row objects, ordered by `id` ascending. Empty array if no orders exist for the given customer.
+- **Error propagation**: database errors (connection failures, query errors) propagate as-is — the function does not catch or wrap them.
+
 ## Acceptance Criteria
 
 1. Returns all orders for a customer, ordered by ID ascending
 2. Returns empty array when customer has no orders
 3. Returns rows with correct column types: `id` (number), `customer_id` (number), `total_cents` (number), `status` (string), `created_at` (Date)
-4. Query uses parameterized `$1` placeholder (no string interpolation — SQL injection protection)
+4. Query uses parameterized `$1` placeholder (no string interpolation — SQL injection protection). Verified by reading the source of `getOrdersByCustomer` and asserting the query string contains `$1` and no string concatenation of the customer ID.
 5. Works correctly with the deterministic seed data: customer 1 has 2 orders (101, 102), customer 2 has 1 order (103), customer 3 has 1 order (104)
 
 ## Test Requirements
