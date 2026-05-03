@@ -45,6 +45,12 @@ tracker-ref: issue-226
 - The parent orchestrator receives a structured result block (STEP_RESULT or equivalent) with status, verdict, artifacts list, and summary.
 - No intermediate narration tokens appear in the subagent's output history between the first and last tool-using turns.
 
+### Verbose Override
+
+7. **When** the subagent prompt contains `VERBOSE: true` **then** the silent execution directive is disabled and the skill narrates each step as if running interactively. This enables debugging pipeline failures by re-running with `--verbose`.
+
+8. **When** `/adev:build --verbose` or `/adev:implement --verbose` is invoked **then** the orchestrator includes `VERBOSE: true` in all subagent prompts, causing the entire pipeline to run in narrated mode.
+
 ### Error Cases
 
 | Condition | Expected Behavior | Error Code |

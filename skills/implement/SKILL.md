@@ -17,7 +17,9 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 - Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
 - Report ONLY the final result in the structured format expected by the parent.
 
-This directive does NOT apply when the skill is invoked interactively by a user.
+This directive does NOT apply when:
+- The skill is invoked interactively by a user.
+- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
 
 ## Arguments
 
@@ -25,6 +27,7 @@ This directive does NOT apply when the skill is invoked interactively by a user.
 - `--task <N>`: execute only task N (useful for re-running a single task after a fix)
 - `--dry-run`: show routing decisions and specialist matches without executing
 - `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
+- `--verbose`: disable silent execution for per-task subagents. Includes `VERBOSE: true` in subagent prompts so they narrate each step. Useful for debugging task failures.
 
 ## Prerequisites
 
@@ -253,7 +256,7 @@ If `--dry-run` was passed, print the routing table for every task and stop.
 Build the implementer subagent prompt with these sections in order:
 
 1. **Role.** "You are implementing Task N: [title]." If routed to a specialist: "You are the [specialist name] specialist implementing Task N: [title]."
-1b. **Execution directive.** "Execute silently — no intermediate narration. Chain all steps without commentary. Use parallel tool calls for multi-file reads. Report ONLY the final result in the Report Format below."
+1b. **Execution directive.** If `--verbose` is NOT set: "Execute silently — no intermediate narration. Chain all steps without commentary. Use parallel tool calls for multi-file reads. Report ONLY the final result in the Report Format below." If `--verbose` IS set: "VERBOSE: true" (enables step-by-step narration for debugging).
 2. **Constitution excerpt.** The Non-Negotiable Principles and Coding Standards sections. Keep under 60 lines. Do not include the full constitution.
 3. **Task description.** Full text of the task from the plan. Never make the subagent read the plan file.
 4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need. Before implementing, read the actual source files you will modify. Do not assume file contents based on the task description or plan. If a file has changed since the plan was written, work with the current state. If workspace state is non-null and the spec has a `target-repo:` frontmatter field, include an informational advisory: "This task targets repo '<target-repo>' within workspace '<workspace-name>'. All file paths are relative to that repo's root."
