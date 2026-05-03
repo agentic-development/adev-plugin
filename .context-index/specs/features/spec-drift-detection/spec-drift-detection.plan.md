@@ -83,7 +83,7 @@ Groups A/B must complete before C (SKILL.md edits reference functions from lib/s
 
 **Tests:** `tests/lib/spec-drift.test.mjs`
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 ```javascript
 import { describe, it, before, after } from 'node:test';
@@ -158,11 +158,11 @@ describe('hasDrift', () => {
 });
 ```
 
-- [ ] **Verify tests fail** — `node --test tests/lib/spec-drift.test.mjs`
+- [x] **Verify tests fail** — `node --test tests/lib/spec-drift.test.mjs`
 
 Expected: FAIL — `scanForDrift is not defined` (module does not exist)
 
-- [ ] **Implement** `lib/spec-drift.mjs`
+- [x] **Implement** `lib/spec-drift.mjs`
 
 Four exported functions:
 - `scanForDrift(filePath, contextIndexRoot)` — delegates to `buildReverseIndex()`, looks up filePath, returns `[{ specPath, specName }]`
@@ -177,9 +177,9 @@ Implementation notes:
 - `stampDrift` and `clearDrift` do atomic read-modify-write (read file, modify frontmatter string, write file)
 - Path validation: resolve to absolute, check within project root via `relative()` check
 
-- [ ] **Verify tests pass** — `node --test tests/lib/spec-drift.test.mjs`
+- [x] **Verify tests pass** — `node --test tests/lib/spec-drift.test.mjs`
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add lib/spec-drift.mjs tests/lib/spec-drift.test.mjs
@@ -202,7 +202,7 @@ Plan-task: 1"
 
 **Tests:** `tests/hooks/sync-trigger-drift.test.mjs`
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 ```javascript
 import { describe, it } from 'node:test';
@@ -249,9 +249,9 @@ describe('sync-trigger drift detection', () => {
 });
 ```
 
-- [ ] **Verify tests fail** — `node --test tests/hooks/sync-trigger-drift.test.mjs`
+- [x] **Verify tests fail** — `node --test tests/hooks/sync-trigger-drift.test.mjs`
 
-- [ ] **Implement**
+- [x] **Implement**
 
 Modify `hooks/sync-trigger.sh`:
 1. Keep existing constitution.md detection at the top
@@ -271,9 +271,9 @@ Modify `hooks/sync-trigger.sh`:
 6. NO_MANIFEST advisory: track via execution state file key `drift.no_manifest_warned_specs` (in-process Set will NOT persist across hook subprocess invocations)
 7. Always exit 0
 
-- [ ] **Verify tests pass** — `node --test tests/hooks/sync-trigger-drift.test.mjs`
+- [x] **Verify tests pass** — `node --test tests/hooks/sync-trigger-drift.test.mjs`
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add hooks/sync-trigger.sh tests/hooks/sync-trigger-drift.test.mjs
@@ -296,7 +296,7 @@ Plan-task: 2"
 
 **Tests:** `tests/skills/implement-drift-clearing.test.mjs`
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 ```javascript
 import { describe, it } from 'node:test';
@@ -318,9 +318,9 @@ describe('implement SKILL.md drift clearing instruction', () => {
 });
 ```
 
-- [ ] **Verify tests fail** — `node --test tests/skills/implement-drift-clearing.test.mjs`
+- [x] **Verify tests fail** — `node --test tests/skills/implement-drift-clearing.test.mjs`
 
-- [ ] **Implement**
+- [x] **Implement**
 
 Add instruction to `skills/implement/SKILL.md` after the source manifest re-stamp step (GREEN phase):
 
@@ -333,9 +333,9 @@ await clearDrift(specPath);
 If `clearDrift()` fails (e.g., write error), log a warning but do not block implementation completion.
 ```
 
-- [ ] **Verify tests pass** — `node --test tests/skills/implement-drift-clearing.test.mjs`
+- [x] **Verify tests pass** — `node --test tests/skills/implement-drift-clearing.test.mjs`
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add skills/implement/SKILL.md tests/skills/implement-drift-clearing.test.mjs
@@ -358,7 +358,7 @@ Plan-task: 3"
 
 **Tests:** `tests/skills/plan-drift-gate.test.mjs`
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 ```javascript
 import { describe, it } from 'node:test';
@@ -391,9 +391,9 @@ describe('plan SKILL.md drift gate', () => {
 });
 ```
 
-- [ ] **Verify tests fail** — `node --test tests/skills/plan-drift-gate.test.mjs`
+- [x] **Verify tests fail** — `node --test tests/skills/plan-drift-gate.test.mjs`
 
-- [ ] **Implement**
+- [x] **Implement**
 
 Add to plan SKILL.md Step 1 (Review Gate), before the existing dual drift check:
 
@@ -437,9 +437,9 @@ frontmatter may be malformed. Fix the spec frontmatter before planning.
 ```
 ```
 
-- [ ] **Verify tests pass** — `node --test tests/skills/plan-drift-gate.test.mjs`
+- [x] **Verify tests pass** — `node --test tests/skills/plan-drift-gate.test.mjs`
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add skills/plan/SKILL.md tests/skills/plan-drift-gate.test.mjs
@@ -464,7 +464,7 @@ Plan-task: 4"
 
 **Tests:** `tests/skills/validate-drift-warn.test.mjs`, `tests/skills/hygiene-drift-pass.test.mjs`
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 ```javascript
 // tests/skills/validate-drift-warn.test.mjs
@@ -516,9 +516,9 @@ describe('hygiene SKILL.md Code Drift pass', () => {
 });
 ```
 
-- [ ] **Verify tests fail** — `node --test tests/skills/validate-drift-warn.test.mjs tests/skills/hygiene-drift-pass.test.mjs`
+- [x] **Verify tests fail** — `node --test tests/skills/validate-drift-warn.test.mjs tests/skills/hygiene-drift-pass.test.mjs`
 
-- [ ] **Implement**
+- [x] **Implement**
 
 **Validate SKILL.md:** Add a drift warning step (non-blocking) to the validation checks:
 
@@ -559,9 +559,9 @@ Report:
 - WARN with list of drifted specs (path, drift_source, drift_at) if any found
 ```
 
-- [ ] **Verify tests pass** — `node --test tests/skills/validate-drift-warn.test.mjs tests/skills/hygiene-drift-pass.test.mjs`
+- [x] **Verify tests pass** — `node --test tests/skills/validate-drift-warn.test.mjs tests/skills/hygiene-drift-pass.test.mjs`
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add skills/validate/SKILL.md skills/hygiene/SKILL.md tests/skills/validate-drift-warn.test.mjs tests/skills/hygiene-drift-pass.test.mjs
@@ -587,6 +587,6 @@ Plan-task: 5"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from all 3 specs satisfied
-- [ ] No constitutional violations introduced
+- [x] Tests pass: `npm test`
+- [x] All acceptance criteria from all 3 specs satisfied
+- [x] No constitutional violations introduced
