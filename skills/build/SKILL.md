@@ -10,6 +10,17 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 
 **Announce at start:** "I'm using the adev:build skill to orchestrate a full build pipeline."
 
+## Execution Protocol
+
+**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
+- Chain steps continuously without intermediate commentary or narration.
+- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
+- Do NOT summarize intermediate findings between steps.
+- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
+- Report ONLY the final result in the structured format expected by the parent.
+
+This directive does NOT apply when the skill is invoked interactively by a user.
+
 ## Arguments
 
 - `--spec <path>`: build a single spec end-to-end through all pipeline steps
@@ -103,7 +114,7 @@ PIPELINE_CONTEXT:
   pipeline_mode: "full" | "implement"   # "full" when --full is set, "implement" otherwise
 ```
 
-To assemble pipeline context, the orchestrator reads:
+**Read these files in a single turn using parallel tool calls:**
 - The spec file (path and title)
 - `manifest.yaml` (for `tasks.backend`)
 - Workspace detection result (one-time call to `detectWorkspace(cwd)`)
@@ -156,6 +167,9 @@ Your ONLY task: invoke the skill `/adev:<skill-name>` with args `<args>`
 using the Skill tool. Let it run to full completion — including all
 post-steps (source manifests, commit trailers, DoD checks, etc.).
 Then report the result.
+
+Execute silently — no intermediate narration. Chain all steps without
+commentary. Use parallel tool calls for multi-file reads.
 
 Do NOT attempt to perform the skill's work yourself. You MUST use the
 Skill tool to load and execute the full skill. The skill contains

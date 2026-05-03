@@ -10,6 +10,17 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 
 **Announce at start:** "I'm using the adev:review-specs skill to run an architecture review."
 
+## Execution Protocol
+
+**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
+- Chain steps continuously without intermediate commentary or narration.
+- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
+- Do NOT summarize intermediate findings between steps.
+- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
+- Report ONLY the final result in the structured format expected by the parent.
+
+This directive does NOT apply when the skill is invoked interactively by a user.
+
 ## Arguments
 
 - No arguments: review all unreviewed specs (specs without a `.review.md` file, or where the spec is newer than the review)
