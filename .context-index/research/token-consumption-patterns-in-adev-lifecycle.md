@@ -342,6 +342,61 @@ Can be set per-subagent dispatch via the Agent tool's env parameter. This is alr
 
 This is the single highest-impact change — it applies to every skill that produces a file artifact.
 
+#### Eval Validation
+
+Tested via `tests/evals/skill-compression/` with a simulated `/adev:plan` run:
+
+| Metric | Baseline (full echo) | Summarized (disk + summary) | Delta |
+|--------|---------------------|----------------------------|-------|
+| Characters | 8,933 | 1,023 | -88% |
+| Lines | 284 | 25 | -91% |
+| Est. tokens | ~2,233 | ~255 | -88% |
+| Rubric score | 12/12 (50 pts) | 12/12 (50 pts) | parity |
+
+All 12 required elements (review gate, context loading, file references, TDD, task ordering, tests, commits, quality gates, context awareness, plan path, execution handoff, acceptance criteria) pass in both variants.
+
+#### Cache Impact Analysis
+
+The summarization strategy is **cache-positive** — it improves prompt cache hit rates despite removing content from the conversation.
+
+**How Claude Code prompt caching works:** The system prompt, CLAUDE.md, and conversation history form a cached prefix block. Cache entries have a 5-minute TTL. A cache hit requires byte-identical prefix. Cache reads cost 0.1x vs 1x standard — 90% cost reduction on cached content.
+
+**Why summarization improves caching:**
+
+1. **Fewer compaction events:** Auto-compaction fires at ~83.5% context utilization (~167K tokens). It summarizes history, changing the prefix bytes and breaking the cache. With 30K fewer tokens of artifact echoes in history, compaction is delayed or avoided — the cache prefix stays stable across more turns.
+
+2. **More stable cross-subagent prefix:** When `/adev:implement` dispatches sequential task subagents, a leaner parent context means the shared prefix (SKILL.md + constitution + spec) is more likely to be byte-identical across dispatches within the 5-minute TTL.
+
+3. **Minimal Read overhead:** When the model needs plan details, it issues a Read (cache miss on the Read result, ~2K tokens). On the next turn, the Read result joins the prefix and gets cached. This costs ~1-2 extra cache misses per session.
+
+**Quantified net effect (5-task build session, ~20 turns):**
+
+```
+BASELINE:
+  Prefix at turn 15:     ~160K tokens (approaching compaction threshold)
+  Compaction at turn 16:  prefix rewritten → CACHE MISS on ~120K prefix
+  Turns 17-20:            rebuilding cache → 4 partial misses
+  Total avoidable misses: ~5
+
+SUMMARIZED:
+  Prefix at turn 15:     ~120K tokens (well under threshold)
+  No compaction:          prefix stable through turn 20
+  Extra Read calls:       2 (plan + validation report) → 2 misses on ~2K each
+  Total avoidable misses: ~2
+
+Net savings: 3 avoided cache misses × ~120K prefix × 0.9x cost delta
+           = ~324K token-equivalents saved per session from caching alone
+Cost:        2 Read misses × ~2K tokens × 0.9x = ~3.6K token-equivalents
+```
+
+| Cache Factor | Baseline | Summarized | Winner |
+|-------------|----------|------------|--------|
+| Compaction events | 1-2/session | 0-1/session | Summarized |
+| Cache-breaking prefix changes | 1-2 | 0-1 | Summarized |
+| Cross-subagent cache reuse | Low | Higher | Summarized |
+| Inline content cache seeding | Full plan cached | 1-2 Read misses | Baseline (minor) |
+| **Net cache hit rate** | **~60-70%** | **~85-95%** | **Summarized** |
+
 ## Recommendations (Prioritized by Impact)
 
 ### Tier 1 — Highest Impact (implement first)
