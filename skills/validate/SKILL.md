@@ -177,6 +177,31 @@ If the spec has no `source-manifest` block, skip this check with a note: "No sou
 
 This check runs after quality gates (Check 1) regardless of their result, since it is a metadata check, not a code quality check.
 
+### Check 1.6: Code-Side Drift Warning
+
+Check for code-side drift via the `drift_detected` frontmatter flag. This check is **non-blocking** -- validation continues regardless of result.
+
+Run inline Node.js:
+```javascript
+const { hasDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
+try {
+  const drifted = await hasDrift(specPath);
+  if (drifted) {
+    // Read drift_source and drift_at from frontmatter
+    // Emit: "WARN: drift_detected flag set. Source file <drift_source>
+    // was modified at <drift_at>. Verify that spec still reflects
+    // implementation behavior."
+  }
+} catch {
+  // Emit: "WARN: drift check skipped — frontmatter unreadable"
+  // Record CODE_DRIFT_READ_ERROR
+}
+```
+
+Also run `verifyManifest()` as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
+
+This check is **non-blocking** — validation continues regardless. Record WARN if drift is detected, PASS otherwise.
+
 ### Check 2: Spec Compliance
 
 Load the Live Spec and walk through every acceptance criterion.
