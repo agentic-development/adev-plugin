@@ -504,38 +504,7 @@ On successful completion of all 5 steps, set `status` to `completed`. On any ste
 
 ## Resume Mode
 
-When `--resume` is invoked, the skill resumes an interrupted or failed build from the last successful step.
-
-### Resume without `--spec` or `--phase`
-
-Scan `.context-index/build-state/` for any JSON file with `"status": "in_progress"` or `"status": "failed"`. If multiple are found, list them and ask the user which to resume. If none are found, print:
-
-> No interrupted build found. Nothing to resume.
-
-### Resume with `--spec <path>`
-
-Read the build state file for the specified spec. Identify the last step with `status: completed` and resume from the next step in the pipeline.
-
-### Resume with `--phase <name>`
-
-Re-discover all specs with `milestone: <name>` in their frontmatter by scanning `.context-index/specs/`. Do NOT rely solely on cached build state files -- specs may have been added or modified between sessions. For each discovered spec, check if a build state file exists:
-
-- If build state exists with `status: in_progress` or `status: failed`, resume from the next step after the last completed one.
-- If build state exists with `status: completed`, skip that spec.
-- If no build state exists, start a fresh build for that spec.
-
-### The `--from <step>` Override
-
-When `--from <step>` is combined with `--resume`, force the build to restart from the specified step regardless of what the build state file says. Valid step names: `review`, `plan`, `route`, `implement`, `validate`.
-
-This is a safety valve for situations where:
-- The build state file is corrupted
-- External changes have invalidated a previously-completed step
-- The user wants to re-run a step that passed but produced suboptimal results
-
-When `--from` is used, all steps before the specified step are marked `skipped` in the new build state, and execution begins at the specified step.
-
-Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Note: `specify` is only applicable in Full Pipeline builds; using `--from specify` on an Implement Pipeline build dispatches specify (which may update the spec) — use with care.
+> **Conditional loading:** Read `skills/build/resume-mode.md` for the full Resume Mode instructions.
 
 ---
 
@@ -565,132 +534,13 @@ Await user input. "overwrite" resets the build state and proceeds. "resume" appl
 
 ## Phase Mode
 
-When `--phase <name>` is invoked (without `--resume`), the skill discovers and builds multiple specs in batch.
-
-### Spec Discovery
-
-1. Scan all `.md` files under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`).
-2. Parse YAML frontmatter for the `milestone` field.
-3. Select specs whose `milestone` matches `<name>` (case-insensitive).
-4. **Filter by pipeline mode:**
-   - **Implement Pipeline** (no `--full`): include only specs with `status` of `review-passed`, `implemented`, or `validated`. Skip specs with any other status with a visible note per spec:
-     > Skipped `<spec>` (status: `<status>`): not ready for Implement Pipeline. Run `/adev:review-specs` first, or use `--full` to include review.
-     Explicitly: `review-pending` and `review-blocked` specs are skipped in Implement Pipeline.
-   - **Full Pipeline** (`--full`): include specs with `status` of `review-pending`, `review-passed`, `implemented`, `validated`, and `review-blocked`. Specs with `review-blocked` status are included so the blocker-fix loop can attempt to resolve prior blockers. Skip only `draft` specs.
-5. If no specs are found, print:
-
-   > No specs found for milestone '<name>'. Verify that your specs have `milestone: <name>` in their frontmatter.
-
-   And stop.
-
-### Dependency Ordering
-
-Check each spec's frontmatter for a `depends-on` field (list of spec paths). Build specs in dependency order: specs with no dependencies first, then specs whose dependencies have been built.
-
-If circular dependencies are detected, print a warning and build in discovery order.
-
-### Independent Execution
-
-Each spec is built independently through the full pipeline. **Failure of one spec does not block others** unless they have an explicit `depends-on` referencing the failed spec. If a dependency failed:
-
-- Skip the dependent spec.
-- Mark it as `skipped` with reason: "Dependency `<spec>` failed."
-
-### Issue Board Integration
-
-If `tasks.backend` is configured in `manifest.yaml`:
-
-- At the start of phase mode, find the milestone epic on the issue board and mark it as `in_progress`.
-- During the build, delegate issue updates to child skills (each skill manages its own issue board interactions).
-- At the end of phase mode, do **not** automatically close the milestone epic. That is a manual decision.
-
-If `tasks.backend` is not configured, skip all issue board operations.
-
-### Phase Summary
-
-After all specs are processed, print:
-
-```
-Phase '<name>' complete.
-
-  N specs attempted, N passed, N failed, N skipped
-
-  Passed:
-    - <spec-path>
-    - <spec-path>
-
-  Failed:
-    - <spec-path>: <failure reason>
-
-  Skipped:
-    - <spec-path>: <skip reason>
-```
+> **Conditional loading:** Read `skills/build/phase-mode.md` for the full Phase Mode instructions.
 
 ---
 
 ## Workspace-Mode Build (`--phase` at Workspace Root)
 
-When `--phase <name>` is invoked at the workspace root (`detectWorkspace(cwd)` returns non-null AND `currentRepoSlug` is `null`), the skill enters workspace-mode build. This mode orchestrates builds across multiple repos using the workspace dependency graph. When no workspace is detected, or when `currentRepoSlug` is set, behaviour is unchanged — the existing single-repo phase mode applies, and single-repo behaviour is preserved identically.
-
-### Workspace Detection and Mode Entry
-
-1. **Detect workspace:** Call `detectWorkspace(cwd)`. If the result is non-null and `currentRepoSlug` is `null`, enter workspace-mode build. Otherwise, use the standard Phase Mode (above).
-2. **Read dependency graph:** Load the workspace dependency graph via `resolveWorkspaceContext(workspaceRoot, null).dependencyGraph`. Each edge has the form `{ from: <repo-slug>, to: <repo-slug> }`, meaning `from` depends on `to` (i.e., `to` is upstream of `from`).
-
-### Input Hardening
-
-Paths derived from `adev-workspace.yaml` (repo `path` values) are treated as untrusted input. Before reading any repo's `.context-index/`, apply `assertPathInWorkspace(workspaceRoot, repoPath)` from `lib/workspace.mjs`. On `PATH_ESCAPE`, skip the repo with a warning:
-
-```
-Warning: repo '<slug>' path escapes workspace root. Skipping.
-```
-
-### Topological Repo Ordering
-
-3. **Sort repos topologically (upstream first):** Order registered repos so that upstream repos (the `to` side of dependency edges) are built before downstream repos (the `from` side). Use Kahn's algorithm or depth-first topological sort on the dependencyGraph.
-   - Example: if `api` depends on `core`, build `core` first, then `api`.
-
-4. **Circular dependencies — warning, fall back to declaration order:** If a cycle is detected in the dependency graph, emit a warning:
-   ```
-   Warning: circular dependency detected among workspace repos: <repo-A> -> <repo-B> -> <repo-A>
-   Falling back to declaration order. Resolve cycles in workspace config before relying on topological ordering.
-   ```
-   Then proceed using the order in which repos are declared in `adev-workspace.yaml`.
-
-5. **No dependency graph → declaration order:** If the dependency graph is empty or absent, process repos in the order they are declared in `adev-workspace.yaml`.
-
-### Cross-Repo Build Execution
-
-6. **Per-repo build:** For each repo in topological order, execute the build pipeline within that repo's context. The orchestrator delegates to `/adev:plan --phase <name>` and `/adev:implement` within each repo's `.context-index/` directory. The 5-step pipeline (review, plan, route, implement, validate) runs per-spec within each repo, following the same rules as single-repo Phase Mode.
-
-7. **Upstream failure → skip dependents:** When a repo's build fails (any spec within that repo fails at any pipeline step), downstream repos that depend on the failed repo are skipped with reason: `"Upstream repo '<slug>' failed."` Repos that do not depend on the failed repo continue building.
-
-### Build Progress Reports
-
-8. **Repo start header:** When the workspace-mode build starts processing a repo, print:
-   ```
-   [<current>/<total>] Building repo: <repo-slug>
-   ```
-
-9. **Repo completion line:** When the workspace-mode build finishes processing a repo, print:
-   ```
-   [<current>/<total>] Repo <repo-slug>: <PASSED|FAILED> (<N> specs)
-   ```
-
-### Workspace Build Summary
-
-After all repos are processed, print the cross-repo summary:
-
-```
-Workspace build for phase '<name>' complete.
-
-  <N> repos attempted, <P> passed, <F> failed, <S> skipped
-
-  Repo results:
-    - <repo-slug>: PASSED (N specs passed)
-    - <repo-slug>: FAILED (N passed, M failed)
-    - <repo-slug>: SKIPPED (upstream '<dep-slug>' failed)
-```
+> **Conditional loading:** Read `skills/build/workspace-mode.md` for the full Workspace-Mode Build instructions.
 
 ---
 
