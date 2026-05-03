@@ -18,7 +18,9 @@ Classify incoming work, detect in-progress project state, and route to the corre
 - Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
 - Report ONLY the final result in the structured format expected by the parent.
 
-This directive does NOT apply when the skill is invoked interactively by a user.
+This directive does NOT apply when:
+- The skill is invoked interactively by a user.
+- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
 
 ## Arguments
 
