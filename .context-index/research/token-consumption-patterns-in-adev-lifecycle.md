@@ -544,6 +544,125 @@ Plan files written to disk were compared on rubric scoring (12 required elements
 
 8. **Always validate estimates against session JSONL.** The `bytes/4` approximation, hardcoded thinking estimates, and cache hit assumptions were all directionally correct but quantitatively wrong. Real measurement infrastructure (session JSONL parsing) should be the default eval method.
 
+## Fewer Turns: The Next Frontier
+
+### Why Turns Matter More Than Content
+
+Real session data shows that 82% of cost ($184 of $225) is core reasoning and tool calls. The 4 content-optimization strategies (#1, #2, #3, #8) combined save 16%. To go further, we need fewer turns — each turn incurs a full cache read of the accumulated prefix (~200K tokens at session midpoint).
+
+### Current Session Turn Profile (Real Data)
+
+```
+Total turns:              564 main + 589 subagent = 1,153
+Turns with no tools:      231 (41%) — pure text, full cache read for each
+Turns with 1 tool:        335 (59%) — one tool call per turn
+Turns with 2+ tools:      1 (0%) — almost never batching
+```
+
+**Tool call frequency (main session):**
+- Read: 73, Bash: 114, Edit: 60, Grep: 33, Agent: 21, Write: 16, Glob: 11
+
+**Subagent tool calls:**
+- Read: 188, Bash: 77, Grep: 29, Glob: 24, Write: 23, Edit: 23
+
+### Key Finding: Zero Parallel Tool Use
+
+Of 1,153 turns across main + subagents, only **1 turn** used multiple tools in parallel. Claude Code supports parallel tool calls natively, but the adev skills never instruct the agent to batch reads, greps, or globs into single turns.
+
+### Technique 1: Parallel Read Batching
+
+**Problem:** 14 sequential Read streaks found (2-5 consecutive single-Read turns). Each costs a full cache read of the prefix.
+
+**Opportunity:** Batch consecutive Reads into single parallel-tool turns.
+
+```
+CURRENT (5 turns, 5 cache reads):
+  Turn 1: Read constitution.md      → 200K cache read
+  Turn 2: Read charter.md           → 200K cache read
+  Turn 3: Read spec.md              → 200K cache read
+  Turn 4: Read platform-context.yaml → 200K cache read
+  Turn 5: Read review.md            → 200K cache read
+  Total: 1,000K cache reads
+
+BATCHED (1 turn, 1 cache read):
+  Turn 1: Read [constitution, charter, spec, platform, review]  → 200K cache read
+  Total: 200K cache reads
+```
+
+**Measured savings:** 20 turns saveable from Read batching alone = 4M cache reads = $6.00.
+
+**Implementation:** Add explicit batching instructions to SKILL.md context-loading steps:
+```
+Read these files in a single turn using parallel tool calls:
+- .context-index/constitution.md
+- .context-index/specs/features/<module>/charter.md
+- .context-index/specs/features/<module>/<spec>.md
+```
+
+### Technique 2: Eliminate No-Tool Confirmation Turns
+
+**Problem:** 231 turns (41%) have zero tool calls — pure text responses. 16 of these are tiny confirmations (<100 output tokens) that cost 3.7M cache reads ($5.57) for 222 tokens of output. A 16,734:1 cache:output ratio.
+
+**Examples:** "Good, proceeding to step 3." / "Yes, that looks right." / "Understood."
+
+**Opportunity:** SKILL.md instructions should chain steps without waiting for intermediate confirmation. Instead of:
+
+```
+Step 1: Read files
+→ "I've loaded the context." (no-tool turn)
+Step 2: Validate
+→ "No violations found." (no-tool turn)
+Step 3: Write plan
+```
+
+Do:
+```
+Steps 1-3: Read files, validate, write plan (continuous execution, no intermediate commentary)
+→ Only report results at the end
+```
+
+**Estimated savings:** Eliminating 16 small confirmations = $5.57. Reducing 144 medium-sized commentary turns by 50% = ~$42. Total: ~$47, the single largest opportunity.
+
+### Technique 3: Meta-Tools (Composite Skill Actions)
+
+**From research:** Anthropic and academic papers describe "meta-tools" — pre-composed sequences of tool calls that bypass intermediate LLM reasoning. For adev, common sequences:
+
+| Current (N turns) | Meta-tool (1 turn) |
+|---|---|
+| Read spec → Read charter → Read constitution → Read review (4 turns) | `loadSpecContext(specPath)` → returns all 4 files |
+| Glob specs → Read each frontmatter → Filter by status (3+ turns) | `findSpecsByStatus(module, status)` → returns filtered list |
+| Read plan → Count checkboxes → Report progress (3 turns) | `getPlanProgress(planPath)` → returns completion stats |
+
+**Implementation path:** These would be Node.js helper functions in `lib/` called via inline `node -e` in a single Bash turn, replacing 3-4 Read/Grep turns.
+
+**Caveat:** This conflicts with the constitution's "skills are primarily markdown" principle. The meta-tools would be companion code, not executable logic in SKILL.md — but they shift work from the model to deterministic code, which is the point.
+
+### Technique 4: Spec-Driven Pre-Planning (Already Done)
+
+adev already front-loads structured specs before implementation — this is the core methodology. The research confirms this is the highest-leverage turn reducer: 2,000 signal-rich tokens in a spec outperform 20,000 loose tokens and avoid implementing with the wrong approach.
+
+**No action needed** — adev's lifecycle gates (brainstorm → specify → review → plan → implement) already enforce this.
+
+### Technique 5: Task-Aware Skill Filtering
+
+**From research:** Exposing all tools/skills increases decision overhead and can cause hallucination. Claude Code already uses deferred tool loading (85% reduction).
+
+**For adev:** The 28 skill descriptions loaded at startup are only 2.3K tokens — already efficient. But subagents receive their parent's full tool list. If subagents received only the tools relevant to their task (e.g., implement subagent gets Read/Write/Edit/Bash, not Agent/WebSearch), it would reduce per-turn decision overhead.
+
+**Implementation:** Use the `profile` system in execution profiles to restrict subagent tool access. Already partially implemented via `reviewer-*` profiles.
+
+### Combined "Fewer Turns" Savings Estimate
+
+| Technique | Turns Saved | Cache Reads Avoided | Cost Saved |
+|-----------|:---:|:---:|:---:|
+| Parallel Read batching | 20 | 4M | $6.00 |
+| Eliminate confirmations | 16-80 | 4M-16M | $6-$24 |
+| Reduce commentary (chain steps) | ~72 | ~14M | ~$21 |
+| Meta-tools | ~15 | ~3M | ~$4.50 |
+| **Total** | **~125-190** | **~25-37M** | **~$37-55** |
+
+This is **$37-55 on a $225 session (16-24%)** — comparable to or larger than the 4 content strategies combined ($36, 16%). Together, content + turn optimization could save **32-40%**.
+
 ## Recommendations (Prioritized by Impact)
 
 ### Tier 1 — Highest Impact (implement first)
