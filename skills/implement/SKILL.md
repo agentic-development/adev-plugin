@@ -189,9 +189,9 @@ This probe prevents re-implementing work that was done outside the lifecycle or 
 Before routing or dispatching, assemble the task's context packet:
 
 1. Read the task's `context_packet` section from the plan (if present).
-2. For each listed file, read and extract the relevant section.
+2. For each listed file, read and extract the relevant section. **Source-manifest-guided loading:** When the spec has `source-manifest.files[]`, prioritize those files — read the primary implementation file in full, read test files and siblings as signatures only (`grep "^export"`). This provides targeted context without loading everything.
 3. Write the assembled packet to `.context-index/packets/<task-slug>.md` (gitignored). This log enables post-mortem debugging via `/adev:recover`.
-4. If no context_packet section exists in the plan, assemble a default packet from: constitution excerpt, spec acceptance criteria for this task, charter capability, and any samples matching the task's file patterns.
+4. If no context_packet section exists in the plan, assemble a default packet from: constitution excerpt, spec acceptance criteria for this task, charter capability, and any samples matching the task's file patterns. If the spec has `source-manifest.files[]`, include those as the primary context source.
 5. **Heuristics injection:** If heuristics were loaded in Step 1 (count > 0), append a `## Heuristics` section to the context packet with the rendered blocks from Step 1. Prefix the section with the advisory preamble:
 
    > The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules.
