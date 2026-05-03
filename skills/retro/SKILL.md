@@ -20,6 +20,16 @@ Analyze completed work across a date range to extract patterns, compute delivery
 
 This directive does NOT apply when the skill is invoked interactively by a user.
 
+**Artifact-to-disk (output protocol):** When this skill writes an artifact to disk (plan file, review file, validation report, retro report), do NOT echo the full artifact content in conversation output. Instead:
+1. Write the complete artifact to its target file path.
+2. Present ONLY a structured summary to the user/parent:
+   - Status line (e.g., PASS/FAIL, task count, coverage)
+   - Key metrics (N tasks, M criteria, P findings)
+   - File path to the full artifact
+   - Actionable next steps
+3. The full artifact content must NOT be repeated in conversation after being written to disk.
+
+
 ## Arguments
 
 - `--since <date>`: start date for the analysis period (default: 2 weeks ago from today). Accepts ISO format (YYYY-MM-DD) or relative expressions ("2 weeks ago", "1 month ago").
