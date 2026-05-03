@@ -168,7 +168,43 @@ Before planning, verify the spec has passed architecture review.
    The spec has been modified since its last review.
    Run /adev:review-specs --spec <path> to re-review the updated spec.
    ```
-7. **Dual drift check.** Detect spec changes that bypassed the review process:
+7. **Code-Side Drift Check (CODE_DRIFT gate).** Before checking spec-side drift, check for code-side drift:
+
+   Run inline Node.js to check the drift flag:
+   ```javascript
+   const { hasDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
+   const drifted = await hasDrift(specPath);
+   ```
+
+   - If `hasDrift()` returns `true`, **block**:
+     ```
+     CODE_DRIFT: Spec "<name>" has drift_detected: true. Source file <drift_source>
+     was modified since last validation. Run /adev:validate or update the spec
+     before planning new work.
+     ```
+
+   - If `hasDrift()` returns `false`, also run `verifyManifest()` as a fallback
+     (catches drift on non-Claude-Code hosts where the hook never fired):
+     ```javascript
+     const { verifyManifest } = await import('<ADEV_ROOT>/lib/source-manifest.mjs');
+     const result = await verifyManifest(manifest, projectRoot);
+     if (!result.matches) { /* block with CODE_DRIFT message */ }
+     ```
+
+   - If `verifyManifest()` also fails (missing files), block with:
+     ```
+     CODE_DRIFT_VERIFY_ERROR: Cannot verify source manifest for spec "<name>" —
+     <N> files missing. Run /adev:hygiene to diagnose, or /adev:implement to
+     re-stamp the manifest.
+     ```
+
+   - If `hasDrift()` throws (malformed frontmatter), **block** (fail-closed):
+     ```
+     CODE_DRIFT_READ_ERROR: Cannot read drift status for spec "<name>" —
+     frontmatter may be malformed. Fix the spec frontmatter before planning.
+     ```
+
+8. **Dual drift check.** Detect spec changes that bypassed the review process:
    - **Revision drift:** Compare the spec's `revision` frontmatter field against the `.review.md` file's `last-reviewed-revision` value. If the spec's revision is greater, **block**:
      ```
      Spec revision drift detected: spec is at revision <N>, but review was performed at revision <M>.
@@ -181,7 +217,7 @@ Before planning, verify the spec has passed architecture review.
      Run /adev:review-specs --spec <path> to re-review.
      ```
    - If the `.review.md` file does not contain `last-reviewed-revision` or `file-sha` fields (legacy review), fall back to the file modification time check in step 6.
-8. If verdict is `PASS` or `PASS_WITH_NOTES`, proceed. If `PASS_WITH_NOTES`, print the warnings for the user's awareness but do not block.
+9. If verdict is `PASS` or `PASS_WITH_NOTES`, proceed. If `PASS_WITH_NOTES`, print the warnings for the user's awareness but do not block.
 
 ### Spec Mode — Workspace-Aware Target-Repo Detection
 

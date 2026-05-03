@@ -2,7 +2,7 @@
 
 ---
 charter: spec-drift-detection
-status: review-passed
+status: validated
 risk_level: medium
 milestone: v1
 revision: 1
