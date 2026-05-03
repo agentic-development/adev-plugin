@@ -6,7 +6,8 @@ import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
+const PHASE_PATH = join(PLUGIN_ROOT, "skills", "build", "phase-mode.md");
+const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(PHASE_PATH, "utf8");
 
 describe("adev:build SKILL.md — phase filter and stale build detection", () => {
   it("Implement Pipeline phase filter lists review-passed, implemented, validated explicitly", () => {

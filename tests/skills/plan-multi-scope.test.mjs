@@ -7,19 +7,35 @@ import { PLUGIN_ROOT } from "../helpers.mjs";
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "plan", "SKILL.md");
 const MODE_ROUTER_PATH = join(PLUGIN_ROOT, "skills", "plan", "mode-router.md");
 const REVIEWER_PATH = join(PLUGIN_ROOT, "skills", "plan", "plan-reviewer-prompt.md");
+const COMPANION_DIR = join(PLUGIN_ROOT, "skills", "plan");
+
+/** Read SKILL.md + all companion mode files */
+function readFullSkill() {
+  let content = readFileSync(SKILL_PATH, "utf8");
+  for (const f of ["feature-mode.md", "release-mode.md", "milestone-mode.md", "epic-mode.md", "phase-mode.md"]) {
+    const p = join(COMPANION_DIR, f);
+    if (existsSync(p)) content += "\n" + readFileSync(p, "utf8");
+  }
+  return content;
+}
 
 describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows", () => {
   let content;
 
   it("SKILL.md exists at the correct path", () => {
     assert.ok(existsSync(SKILL_PATH), "skills/plan/SKILL.md must exist");
+    // Load SKILL.md + all companion mode files for content assertions
     content = readFileSync(SKILL_PATH, "utf8");
+    for (const f of ["feature-mode.md", "release-mode.md", "milestone-mode.md", "epic-mode.md", "phase-mode.md"]) {
+      const p = join(COMPANION_DIR, f);
+      if (existsSync(p)) content += "\n" + readFileSync(p, "utf8");
+    }
   });
 
   // --- Mode detection section ---
 
   it("SKILL.md has a Mode Detection section before the Review Gate", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     const modeIdx = c.indexOf("## Mode Detection") !== -1
       ? c.indexOf("## Mode Detection")
       : c.indexOf("## Step 0");
@@ -39,7 +55,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md documents all five explicit flags in the Arguments or Mode Detection section", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(c.includes("--spec"), "Must document --spec flag");
     assert.ok(c.includes("--feature"), "Must document --feature flag");
     assert.ok(c.includes("--release"), "Must document --release flag");
@@ -48,7 +64,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md documents mode detection precedence: explicit flag wins", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("Explicit flag") || c.includes("explicit flag") || c.includes("flag wins"),
       "Must state that explicit flags win over keyword/state detection"
@@ -56,7 +72,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md documents keyword-based mode detection (e.g. 'plan release v2')", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("keyword") || c.includes("free-text"),
       "Must describe keyword or free-text detection"
@@ -68,7 +84,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md documents path-argument detection routing to spec mode", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes(".md") && (c.includes("path argument") || c.includes("file path") || c.includes("spec path")),
       "Must describe path-argument detection for spec mode"
@@ -76,7 +92,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md documents project-state scan when no flag and no argument", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("project state") || c.includes("scan"),
       "Must describe project-state scanning when no flag and no argument"
@@ -84,7 +100,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md documents multi-choice menu fallback on ambiguity", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("multi-choice") || c.includes("menu") || c.includes("ambiguous"),
       "Must document multi-choice menu fallback for ambiguous input"
@@ -92,7 +108,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md documents CONFLICTING_FLAGS error when multiple mode flags are passed", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("CONFLICTING_FLAGS"),
       "Must document CONFLICTING_FLAGS error code"
@@ -102,7 +118,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   // --- Per-mode sections ---
 
   it("SKILL.md has a Spec Mode section", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("Spec Mode") || c.includes("### Spec Mode"),
       "Must include a Spec Mode section"
@@ -110,7 +126,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md has a Feature Mode section", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("Feature Mode") || c.includes("### Feature Mode"),
       "Must include a Feature Mode section"
@@ -118,7 +134,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md has a Release Mode section", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("Release Mode") || c.includes("### Release Mode"),
       "Must include a Release Mode section"
@@ -126,7 +142,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md has a Milestone Mode section", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("Milestone Mode") || c.includes("### Milestone Mode"),
       "Must include a Milestone Mode section"
@@ -134,7 +150,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md has an Epic Mode section", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("Epic Mode") || c.includes("### Epic Mode"),
       "Must include an Epic Mode section"
@@ -144,7 +160,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   // --- next_action convention table ---
 
   it("SKILL.md includes the next_action convention table", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("next_action") && (c.includes("convention") || c.includes("Convention")),
       "Must include next_action convention table or section"
@@ -152,7 +168,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md next_action table includes Task placeholder token", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("/adev:implement") && c.includes("RED-GREEN-REFACTOR"),
       "Task next_action must reference /adev:implement and RED-GREEN-REFACTOR"
@@ -160,7 +176,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md next_action table includes Feature without spec placeholder token", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("/adev:specify") && c.includes("<module>"),
       "Feature-without-spec next_action must reference /adev:specify and <module>"
@@ -168,7 +184,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md next_action table includes Feature with reviewed spec placeholder using <spec_ref>", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("<spec_ref>"),
       "Must use <spec_ref> token (not <path>) in next_action convention table"
@@ -176,7 +192,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md next_action table includes Epic placeholders using <id> token", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("<id>") || c.includes("--epic <id>"),
       "Must use <id> token for Epic next_action entries"
@@ -186,7 +202,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   // --- Spec mode gate preserved ---
 
   it("SKILL.md Spec Mode gate still requires *.review.md to exist and pass", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("review.md") || c.includes(".review.md"),
       "Spec mode must still gate on review file"
@@ -198,7 +214,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   });
 
   it("SKILL.md Feature Mode documents CHARTER_GATE error for missing or draft charters", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     assert.ok(
       c.includes("CHARTER_GATE"),
       "Must document CHARTER_GATE error code in Feature Mode"
@@ -208,7 +224,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   // --- Feature mode create() calls ---
 
   it("SKILL.md Feature Mode documents create() calls with next_action", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     // Find the dedicated "## Feature Mode" heading (not the Arguments mention)
     const featureModeHeadingIdx = c.indexOf("## Feature Mode");
     assert.ok(featureModeHeadingIdx !== -1, "## Feature Mode section must exist");
@@ -223,7 +239,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   // --- Release mode ---
 
   it("SKILL.md Release Mode references product.md and walkTree", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readFullSkill();
     const releaseModeHeadingIdx = c.indexOf("## Release Mode");
     assert.ok(releaseModeHeadingIdx !== -1, "## Release Mode must exist");
     // Slice from the heading to end of file
