@@ -28,6 +28,20 @@ Verifies lifecycle artifact status fields against actual codebase state before t
 - **reconcile** — verification guard before closing epics/issues; blocks auto-close when confidence is LOW/NONE
 - **26 new tests** (14 unit + 12 fixture integration against integration-sandbox)
 
+### Spec Drift Detection (Real-Time Code-Side Drift)
+
+Real-time awareness when implementation code diverges from its governing spec. Inspired by Kiro's living specs, but implemented as an advisory hook rather than a blocking gate. Complements the existing spec-lifecycle git-drift-detection (spec-side drift) with code-side drift detection.
+
+- **`lib/spec-drift.mjs`** — four functions: `scanForDrift` (scans all spec source manifests for a given file path), `stampDrift` (writes `drift_detected`, `drift_source`, `drift_at` to spec frontmatter), `clearDrift` (removes drift fields), `hasDrift` (reads drift flag). Zero external dependencies.
+- **`hooks/sync-trigger.sh` extended** — detects edits to source-manifest-tracked files on every `PostToolUse:Edit` event. Emits advisory JSON warning to stdout; never blocks (exit 0). Path validation ensures edited file is within project root.
+- **Downstream skill integration:**
+  - **plan** — `CODE_DRIFT` gate blocks planning when `drift_detected: true`; `verifyManifest()` fallback for non-Claude-Code hosts
+  - **validate** — non-blocking warning when drift flag is set
+  - **hygiene** — new "Code Drift" audit pass (Pass 17) reports all drifted specs
+  - **implement** — `clearDrift()` called after source manifest re-stamp in GREEN phase
+- **Host portability** — drift flag is an acceleration for Claude Code hooks; on other hosts, skills detect drift via existing `verifyManifest()` SHA comparison
+- **34 new tests** (16 unit for lib, 6 hook integration, 12 content-presence for SKILL.md files)
+
 ### Commit Trailers
 
 - **`Spec:` trailer requirement** — added to constitution and CLAUDE.md. Commits implementing spec-tracked work must include `Spec: <path>` trailer for traceability. `Plan-task:` trailer recommended alongside.
