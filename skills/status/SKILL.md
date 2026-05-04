@@ -145,6 +145,14 @@ Summary:
 
 ### Mode: `--all` (default)
 
+**Optimization:** Use `findSpecsByStatus` from `<ADEV_ROOT>/lib/meta-tools.mjs` to scan specs by status in a single Bash call instead of reading each file individually:
+
+```bash
+node -e "import {findSpecsByStatus} from '<ADEV_ROOT>/lib/meta-tools.mjs'; for (const s of ['draft','review-pending','review-passed','implemented','validated']) { const r = await findSpecsByStatus('*', s); console.log(JSON.stringify({status: s, count: r.length, specs: r})); }"
+```
+
+If the meta-tool call fails, fall back to the manual scan below.
+
 1. Scan all charters under `.context-index/specs/features/` and `.context-index/specs/cross-cutting/`
 2. Scan all specs under the same directories
 3. For each charter, read frontmatter status
