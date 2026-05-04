@@ -1,11 +1,11 @@
 ---
 charter: test-strategies
 charter-extension: true
-status: review-passed
+status: validated
 revision: 1
 charter-revision: 2
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-05-04
 ---
 
 # Spec: Fixture Strategy Profile

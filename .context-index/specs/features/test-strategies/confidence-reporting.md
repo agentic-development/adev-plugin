@@ -1,10 +1,10 @@
 ---
 charter: test-strategies
-status: review-passed
+status: validated
 revision: 1
 charter-revision: 2
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-05-04
 ---
 
 # SPEC 9: Confidence Reporting
