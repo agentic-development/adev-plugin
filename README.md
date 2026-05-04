@@ -157,7 +157,7 @@ Hooks run automatically to enforce conventions:
 
 ## Integrations
 
-- **Session capture:** [Entire.io](https://github.com/entireio/cli) for session capture and checkpoint/rewind, or a built-in JSONL logger. Configure `integrations.session_capture.provider` in `manifest.yaml`.
+- **Session capture:** Built-in JSONL session logger via hooks. Configure `integrations.session_capture.provider` in `manifest.yaml`.
 - **Blueprints:** adev is a methodology choice in the [claude-blueprints-plugin](https://github.com/agentic-development/claude-blueprints-plugin) scaffold workflow.
 
 ## Learn More

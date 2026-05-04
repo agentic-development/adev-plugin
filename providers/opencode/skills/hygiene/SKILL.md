@@ -244,10 +244,9 @@ Orientation: last updated 2026-03-01
    ## Session Analysis
 
    Skipped — no session capture provider configured in manifest.yaml.
-   To enable, set integrations.session_capture.provider to "entire" or "jsonl".
+   To enable, set integrations.session_capture.provider to "jsonl".
    ```
-3. If `provider: entire`, look for session data via the Entire checkpoint branch configured in `checkpoint_branch`.
-4. If `provider: jsonl`, read session logs from `.context-index/hygiene/sessions/`.
+3. If `provider: jsonl`, read session logs from `.context-index/hygiene/sessions/`.
 
 **Steps (when session data is available):**
 
