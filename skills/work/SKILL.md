@@ -9,19 +9,6 @@ Classify incoming work, detect in-progress project state, and route to the corre
 
 **Announce at start:** "I'm using the adev:work skill to triage your work and route to the right skill."
 
-## Execution Protocol
-
-**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
-- Chain steps continuously without intermediate commentary or narration.
-- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
-- Do NOT summarize intermediate findings between steps.
-- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
-- Report ONLY the final result in the structured format expected by the parent.
-
-This directive does NOT apply when:
-- The skill is invoked interactively by a user.
-- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
-
 ## Arguments
 
 - No arguments: interactive triage (scans state, asks what you are working on)
