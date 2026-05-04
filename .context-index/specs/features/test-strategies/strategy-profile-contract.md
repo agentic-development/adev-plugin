@@ -1,10 +1,10 @@
 ---
 charter: test-strategies
-status: review-passed
+status: validated
 revision: 2
 charter-revision: 2
 created: 2026-04-20
-updated: 2026-04-27
+updated: 2026-05-04
 ---
 
 # Spec: Strategy Profile Contract

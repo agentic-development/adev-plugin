@@ -1,11 +1,11 @@
 # Cross-Cutting Spec: Execution Profiles
 
 ---
-status: review-passed
+status: validated
 risk_level: medium
 revision: 2
 created: 2026-04-19
-updated: 2026-04-19
+updated: 2026-05-04
 depends-on:
   - .context-index/adrs/0004-execution-profiles.md
 ---
