@@ -460,7 +460,7 @@ Total blockers: 5
 **Steps:**
 
 1. **Scan all charters.** Read every `.context-index/specs/features/*/charter.md`. For each charter, parse the Capability Map table. Extract each capability's name, priority, and phase.
-2. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`). Parse frontmatter for `charter`, `milestone`, and `status`.
+2. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`, `*-research.md`, `*-summary.md`, `*-findings.md`, `CONSISTENCY-REVIEW.md`). Parse frontmatter for `charter`, `milestone`, and `status`.
 3. **Match capabilities to specs.** For each charter capability, find the corresponding spec by:
    - Matching `milestone` in the spec to the capability's phase, AND
    - Matching the spec's `charter` field to the charter's module name.
@@ -505,7 +505,7 @@ Total blockers: 5
 
 **Steps:**
 
-1. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`). Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
+1. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`, `*-research.md`, `*-summary.md`, `*-findings.md`, `CONSISTENCY-REVIEW.md`). Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
 2. **Scan all review files.** Read every `.review.md` file. Parse `last-reviewed-revision` and `file-sha` fields.
 3. **Scan all charters.** Read every `charter.md`. Parse `revision` and the Capability Map table (including the `Status` column).
 
