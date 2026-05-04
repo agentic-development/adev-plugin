@@ -154,7 +154,7 @@ node -e "import {findSpecsByStatus} from '<ADEV_ROOT>/lib/meta-tools.mjs'; for (
 If the meta-tool call fails, fall back to the manual scan below.
 
 1. Scan all charters under `.context-index/specs/features/` and `.context-index/specs/cross-cutting/`
-2. Scan all specs under the same directories (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`)
+2. Scan all specs under the same directories (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`, `*-research.md`, `*-summary.md`, `*-findings.md`, `CONSISTENCY-REVIEW.md`)
 3. For each charter, read frontmatter status
 4. For each spec, read frontmatter status
 
