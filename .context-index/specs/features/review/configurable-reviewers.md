@@ -2,12 +2,12 @@
 
 ---
 charter: review
-status: review-passed
+status: validated
 risk_level: medium
 revision: 3
 charter-revision: 1
 created: 2026-04-19
-updated: 2026-04-19
+updated: 2026-05-04
 depends-on:
   - .context-index/adrs/0003-configurable-review-registry.md
   - .context-index/adrs/0004-execution-profiles.md

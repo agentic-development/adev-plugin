@@ -6,13 +6,13 @@
 
 ---
 charter: adev:write-test
-status: implemented
+status: validated
 risk_level: low
 milestone: v1
 revision: 1
 charter-revision: 1
 created: 2026-03-27
-updated: 2026-03-27
+updated: 2026-05-04
 cross-cutting-refs:
   - .context-index/specs/cross-cutting/model-routing.md
 source-manifest:
