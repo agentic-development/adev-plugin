@@ -8,8 +8,8 @@ Order management: querying, creating, and aggregating orders against a PostgreSQ
 
 | # | Capability | Spec | Status |
 |---|-----------|------|--------|
-| 1 | Query orders by customer | customer-orders.md | draft |
-| 2 | Revenue aggregation | revenue-by-customer.md | draft |
+| 1 | Query orders by customer | customer-orders.md | review-passed |
+| 2 | Revenue aggregation | revenue-by-customer.md | planned |
 
 ## Domain Model
 
