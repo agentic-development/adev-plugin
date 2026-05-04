@@ -9,29 +9,6 @@ Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implem
 
 **Announce at start:** "I'm using the adev:plan skill to create the implementation plan."
 
-## Execution Protocol
-
-**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
-- Chain steps continuously without intermediate commentary or narration.
-- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
-- Do NOT summarize intermediate findings between steps.
-- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
-- Report ONLY the final result in the structured format expected by the parent.
-
-This directive does NOT apply when:
-- The skill is invoked interactively by a user.
-- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
-
-**Artifact-to-disk (output protocol):** When this skill writes an artifact to disk (plan file, review file, validation report, retro report), do NOT echo the full artifact content in conversation output. Instead:
-1. Write the complete artifact to its target file path.
-2. Present ONLY a structured summary to the user/parent:
-   - Status line (e.g., PASS/FAIL, task count, coverage)
-   - Key metrics (N tasks, M criteria, P findings)
-   - File path to the full artifact
-   - Actionable next steps
-3. The full artifact content must NOT be repeated in conversation after being written to disk.
-
-
 ## Arguments
 
 - `--spec <path>`: plan a specific spec (routes to Spec Mode)
@@ -212,10 +189,6 @@ After the Review Gate passes (Step 1) and before loading context (Step 2), check
 
 ### Essential Context (load now)
 
-**Read these files in a single turn using parallel tool calls:**
-
-> **Meta-tool alternative (single Bash turn):** `node -e "import {loadSpecContext} from './lib/meta-tools.mjs'; console.log(await loadSpecContext('<spec-path>'))"` — returns spec + charter capability map + constitution in one call. Use when available; fall back to parallel Reads otherwise.
-
 1. **Constitution:** Read `.context-index/constitution.md`. Extract non-negotiable principles, architecture boundaries, quality gate commands, and coding standards.
 
 2. **Platform context:** Read `.context-index/platform-context.yaml`. Note the tech stack, framework versions, and deployment targets.
@@ -229,8 +202,6 @@ After the Review Gate passes (Step 1) and before loading context (Step 2), check
 ### Workspace-Aware Target-Repo Context Loading
 
 When in workspace-aware Spec Mode (target-repo detected), load context from the target repo instead of (or in addition to) the current repo:
-
-**Read these files in a single turn using parallel tool calls:**
 
 1. **Target repo constitution:** Read `<target-repo-path>/.context-index/constitution.md`. If the target repo's `.context-index/` directory is missing, handle gracefully — proceed without target repo constitution and note the gap in the plan header.
 2. **Target repo platform-context:** Read `<target-repo-path>/.context-index/platform-context.yaml`. This determines the target repo's tech stack for task structure.
@@ -703,7 +674,7 @@ If `tasks.backend` is configured:
 
 If `tasks.backend` is not configured in the manifest, skip issue creation entirely.
 
-After the plan is saved and reviewed, present the user with next steps. **Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules.
+After the plan is saved and reviewed, present the user with next steps. **Do NOT echo the full plan content in the conversation** — the plan is already on disk at the file path. Present ONLY this summary:
 
 ```
 Plan complete and saved to <path to plan file>.
@@ -715,6 +686,8 @@ To implement: /adev:implement --plan <path>
 To review the plan: open <path to plan file>
 To re-plan after spec changes: /adev:plan --spec <path>
 ```
+
+**Persona adaptation:** The format above is the default for the Developer persona. If a different persona is active, adapt accordingly — but never repeat the full plan content.
 
 ## Dry-Run Mode
 

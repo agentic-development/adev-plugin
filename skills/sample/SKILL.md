@@ -7,19 +7,6 @@ description: "Scan the codebase for high-quality implementations, score them aga
 
 Scan the codebase for exemplary implementations, score candidates against the constitution and declared patterns, and extract annotated golden samples into `.context-index/samples/`. Golden samples are the "show, do not tell" layer of the context index: they give subagents a concrete reference for how to write code in this project.
 
-## Execution Protocol
-
-**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
-- Chain steps continuously without intermediate commentary or narration.
-- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
-- Do NOT summarize intermediate findings between steps.
-- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
-- Report ONLY the final result in the structured format expected by the parent.
-
-This directive does NOT apply when:
-- The skill is invoked interactively by a user.
-- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
-
 ## Arguments
 
 - `--pattern <name>`: extract a golden sample for a specific specialist pattern (e.g., `--pattern api-route`)
