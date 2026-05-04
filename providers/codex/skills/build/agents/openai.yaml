@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Build"
+  short_description: "Run adev:build"
+  default_prompt: "Use $adev:build to run this skill."

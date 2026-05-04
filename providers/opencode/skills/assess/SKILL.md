@@ -1,6 +1,6 @@
 ---
 name: adev:assess
-description: "Assess codebase readiness for agentic development. Scans the codebase using static file inspection and outputs maturity scores across 8 structural dimensions (raw mode) or 11 dimensions (adev mode). Use when you want to evaluate how well-suited a codebase is for AI-assisted development, identify improvement areas, or track progress over time. In OpenCode, invoke with skill({ name: 'adev:assess' })."
+description: "Assess codebase readiness for agentic development. Scans the codebase using static file inspection and outputs maturity scores across 8 structural dimensions (raw mode) or 11 dimensions (adev mode). Use when you want to evaluate how well-suited a codebase is for AI-assisted development, identify improvement areas, or track progress over time. In OpenCode, invoke with skill({ name: 'adev:assess' })"
 ---
 
 # Codebase Readiness Assessment
@@ -177,6 +177,8 @@ None — this skill operates entirely through static file inspection.
 | L5 | 81-100 | Optimized — excellent agentic readiness |
 
 ## Output Format
+
+**Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules. The scorecard file written to disk always uses the full format.
 
 ### Markdown Scorecard
 

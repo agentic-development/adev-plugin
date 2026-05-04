@@ -1,6 +1,6 @@
 ---
 name: adev:write-test
-description: "TDD test authoring with gaming detection. Authors failing tests (RED phase), produces immutable handoff blocks, detects specification gaming, enforces mocking boundaries, and verifies post-GREEN test tamper. In OpenCode, invoke with skill({ name: 'adev:write-test' })."
+description: "TDD test authoring: write failing tests (RED phase), produce immutable handoff blocks, and detect specification gaming. Use before implementation. In OpenCode, invoke with skill({ name: 'adev:write-test' })"
 ---
 
 # adev:write-test
@@ -16,6 +16,7 @@ adev:write-test --red --spec <path>           # Author tests from a Live Spec
 adev:write-test --red --file <path>           # Author tests from a source file's interface
 adev:write-test --red "<description>"         # Author tests from free-form behavioral description
 adev:write-test --verify --packet <path>      # Post-GREEN tamper check against Handoff Block
+adev:write-test --red --spec <path> --no-infra  # Skip infrastructure preflight (user-only)
 ```
 
 Standalone invocation (any `--red` mode) presents a **pre-flight** summary before authoring.
@@ -73,6 +74,121 @@ The canonical hardcoded defaults for each tier are defined in `.context-index/sp
 Log a one-time advisory when fallback is active: "model_tiers not configured in platform-context.yaml — using hardcoded defaults. See .context-index/specs/cross-cutting/model-routing.md for default values."
 
 **This skill never contains hardcoded model names.** Use only tier names (`fast`, `capable`, `reasoning`) in all subagent dispatch instructions.
+
+---
+
+## Step 1a: Infrastructure Preflight
+
+After model tier resolution, check whether the spec declares `infra_requirements`. If so, run the infrastructure preflight before proceeding to strategy resolution.
+
+**Dispatch detection:** If `ADEV_DISPATCHED_BY=implement` is set in the environment, skip the preflight step entirely (implement already verified infrastructure). The agent must not set `ADEV_DISPATCHED_BY=implement` except when dispatching from implement.
+
+**Strategy-aware skip:** If the resolved test strategy is `unit`, skip the preflight step regardless of `infra_requirements`. Unit tests do not exercise external infrastructure.
+
+**`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
+
+**Invocation:** Run inline Node.js (same pattern as model tier resolution):
+
+```bash
+node --input-type=module -e "
+import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
+const report = await runPreflight('<specPath>', null, { timeout: 10, noInfra: <noInfra> });
+console.log(JSON.stringify(report));
+"
+```
+
+Where `<ADEV_ROOT>` is the resolved absolute plugin root path and `<specPath>` is the `--spec` argument.
+
+If `report.passed === false`, display the formatted report and block:
+
+```
+Infrastructure Preflight: FAILED
+
+<formatted report output>
+
+Execution blocked. Options:
+  1. Fix the issues above and retry
+  2. Re-run with --no-infra to bypass (user decision only)
+```
+
+If `report.passed === true` and `report.skipped === true`, emit: "Infrastructure preflight skipped (--no-infra)."
+
+If `report.passed === true` and `report.skipped === false`, proceed silently.
+
+If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure preflight library could not be loaded: <error>. Fix the library before proceeding."
+
+---
+
+## Step 1b: Strategy Profile Resolution
+
+Before writing any tests, resolve the test strategy for this task:
+
+1. Read the task's `Strategy` field from the plan (set by `/adev:plan`'s Strategy Assignment step).
+2. Call `getStrategyProfile(strategyId, profilesDir)` from `lib/test-strategies/profiles.mjs` to load the matching strategy profile.
+3. If the profile loads successfully, use its rules for the remainder of this skill:
+   - `red_exit_condition` replaces the hardcoded "test runner fails for behavioral reasons" check in RED State Verification
+   - `gaming_blockers` replaces the 9 canonical blocking patterns in Gaming Violation Detection (strategy-specific patterns)
+   - `assertion_rules` replaces the Mocking Boundary Declaration rules
+   - `seed_data_rule` replaces the hardcoded seed data requirement
+   - `handoff_format` replaces the default Handoff Block structure
+   - `permitted_tools` informs which test frameworks are valid for this strategy
+4. If the profile falls back to unit (missing profile, invalid strategy ID), log an advisory: "Profile for '<strategy>' not found — using unit profile as fallback" and proceed with unit rules.
+5. When strategy is `unit`, behavior is identical to the existing hardcoded rules (the unit profile codifies all current write-test behavior).
+
+**Profile fields are descriptive instructions consumed by this skill — no profile field is passed directly to a shell or exec API.**
+
+In addition to the strategy-specific `gaming_blockers`, always check the 4 shared cross-strategy gaming patterns from `lib/test-strategies/gaming.mjs`:
+- `DISABLED_TESTS` — `.skip(`, `xit(`, `xdescribe(`, `.todo(`
+- `EMPTY_ASSERTIONS` — test bodies with no assertion calls
+- `SWALLOWED_ASSERTIONS` — `try { expect } catch {}` without rethrow
+- `CONDITIONAL_ASSERTIONS` — `if (cond) { expect }` without else
+
+Shared pattern violations use prefix `SHARED:`, strategy-specific violations use the strategy name as prefix (e.g., `SCHEMA:`). Both are reported independently.
+
+### Integration Strategy: Mandatory Infrastructure Requirements Block
+
+When the resolved strategy is `integration`:
+
+**Before authoring any test code**, emit the following Infrastructure Requirements block. This is required by the spec (Behavior 3) and validated by `/adev:validate`. Proceeding to RED without this block triggers `INTEGRATION_NO_REQUIREMENTS_BLOCK`.
+
+Read the spec's `infra_requirements:` frontmatter field if present (authoritative). If absent, derive from the task's file paths and the Behavior 4 boundary table. Document env var names only — never record actual values, connection strings with embedded passwords, or any secret material.
+
+```
+## Infrastructure Requirements
+
+**Strategy:** integration
+**External systems:** <comma-separated list, e.g., "AWS S3, Postgres 15">
+
+### Credentials / Environment Variables
+> **Never record actual credential values here.** List env var names and descriptions only.
+> Note: connection-string variables like DATABASE_URL embed credentials — treat as secrets.
+
+| Variable | Description |
+|----------|-------------|
+| VAR_NAME | Purpose and where to obtain it (e.g., AWS IAM console — inject as CI secret) |
+
+### Pre-Provisioned State
+- [ ] <resource that must exist before tests run>
+
+### Connectivity Requirements
+- Test runner must reach <host/service> on <port/protocol>
+
+### CI Notes
+- These tests require real credentials — they CANNOT run without them
+- Use a dedicated test account with scoped permissions (least privilege)
+- Run with: `npm run test:integration` or `node --test --test-name-pattern "integration"`
+- Expected run time: 30–120 seconds (network I/O dominates)
+```
+
+**Infrastructure setup errors are NOT valid RED:**
+- Missing env vars → `INTEGRATION_NO_CREDENTIALS`: Fail with "Integration tests require credentials. Set the variables listed in the Infrastructure Requirements block before running."
+- Unreachable host → `INTEGRATION_HOST_UNREACHABLE`: Fail with "External host unreachable — this is a setup error, not a test failure. Verify network access before interpreting this as a behavioral defect."
+
+Resolve these setup errors before starting the TDD cycle.
+
+**Default behavior when infrastructure is unavailable is test FAILURE, not skip.** The test connects directly to the external system. If the connection fails for any reason (missing credentials, wrong credentials, host down, port closed), the test fails with a runtime error. This is correct behavior — a test that cannot reach its infrastructure is a failing test.
+
+**The agent must NEVER add skip guards** (`describe.skipIf`, `describe.skip`, `canConnect` checks, `skipUnless`, or `process.exit` before test blocks) to bypass infrastructure unavailability. Only the user may configure skip behavior — via an explicit `on_fail: skip` field in the spec's `infra_requirements` block or by direct request. Without that explicit configuration, the default is always hard failure.
 
 ---
 
@@ -276,6 +392,8 @@ The `fast`-tier subagent compares original vs current line-by-line:
 **Cosmetic changes (not tamper):** whitespace, comments, variable renames that do not affect assertion logic.
 
 ### 6d. Verdict and Report
+
+**Persona adaptation:** Verify report files written to disk use the full format. The chat summary presented to the user should follow the active persona's output rules.
 
 - **All changes cosmetic** → `PASS_WITH_COSMETIC_CHANGES`. Log what changed. No report file written.
 - **Any tamper found** → `TAMPERED`. Produce diff report.
