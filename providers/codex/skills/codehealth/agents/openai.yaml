@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Codehealth"
+  short_description: "Run adev:codehealth"
+  default_prompt: "Use $adev:codehealth to run this skill."

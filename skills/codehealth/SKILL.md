@@ -15,9 +15,9 @@ Scan source code for dead exports, orphan files, unused dependencies, stale code
 |----------|----------|-------------|
 | *(none)* | — | Full scan: all passes against all `hygiene.source_roots` |
 | `--module <slug>` | No | Restrict scan to a single manifest module's paths |
-| `--pass <name>` | No | Comma-separated pass filter. Valid: `dead-exports`, `orphan-files`, `unused-deps`, `stale-code`, `duplicate-logic` |
+| `--check <name>` | No | Comma-separated check filter. Valid: `dead-exports`, `orphan-files`, `unused-deps`, `stale-code`, `duplicate-logic` |
 
-Both `--module` and `--pass` may be combined (intersection: only named passes, only files in the module).
+Both `--module` and `--check` may be combined (intersection: only named checks, only files in the module).
 
 ## Prerequisites
 
@@ -51,9 +51,9 @@ If `--module <slug>` is provided, resolve against `manifest.yaml` `modules[].slu
 
 > **UNKNOWN_MODULE:** Unknown module '`<slug>`'. Available modules: `<comma-separated list of slugs>`.
 
-If `--pass <name>` is provided, validate each name against the allowlist: `dead-exports`, `orphan-files`, `unused-deps`, `stale-code`, `duplicate-logic`. If any is unrecognized:
+If `--check <name>` is provided, validate each name against the allowlist: `dead-exports`, `orphan-files`, `unused-deps`, `stale-code`, `duplicate-logic`. If any is unrecognized:
 
-> **UNKNOWN_PASS:** Unknown pass '`<name>`'. Valid passes: dead-exports, orphan-files, unused-deps, stale-code, duplicate-logic.
+> **UNKNOWN_CHECK:** Unknown pass '`<name>`'. Valid passes: dead-exports, orphan-files, unused-deps, stale-code, duplicate-logic.
 
 ### 4. File Scope Resolution
 
@@ -68,7 +68,7 @@ Resolve the set of files to scan:
 
 ## Detection Passes
 
-Execute passes in this fixed order. If `--pass` is provided, skip passes not in the filter.
+Execute passes in this fixed order. If `--check` is provided, skip passes not in the filter.
 
 **Scope types:** Passes 1 and 2 are *dependency-graph-scoped* (analyze only files present in `dependency-graph.json` nodes). Passes 3 and 4 are *file-system-scoped* (scan all files within resolved `source_roots`). Pass 5 requires tree-sitter at runtime.
 
@@ -218,7 +218,7 @@ If unable to write:
 ---
 date: <ISO 8601 timestamp>
 module_filter: <--module value or "all">
-pass_filter: <--pass value or "all">
+check_filter: <--pass value or "all">
 total_findings: <count>
 summary:
   high: <count>

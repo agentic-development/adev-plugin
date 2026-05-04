@@ -1,6 +1,6 @@
 ---
 name: adev:document
-description: "Generate human-readable developer documentation in docs/ from repomap output. In OpenCode, invoke with skill({ name: 'adev:document' })"
+description: "Generate human-readable developer documentation in docs/ from repomap output. Reads dependency-graph.json and symbol-ranks.json from /adev:repomap, plus charters and manifest. Use when the user says 'generate docs', 'document the codebase', 'create architecture docs', or wants to produce docs/architecture.md and per-module documentation. In OpenCode, invoke with skill({ name: 'adev:document' })"
 ---
 
 # Generate Developer Documentation
@@ -175,5 +175,5 @@ Documentation generated:
   docs/modules/<slug>.md     — per-module purpose, exports, dependencies, specs
   docs/GENERATED.md          — manifest of all generated doc files
 
-Run skill({ name: "adev:document", args: { check: true } }) to preview changes.
+Run /adev:document --check to preview changes.
 ```
