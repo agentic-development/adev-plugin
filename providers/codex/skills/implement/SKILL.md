@@ -31,6 +31,14 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 Extract everything subagents will need so they never have to re-read these files themselves.
 
+**Optimization:** Load spec + charter + constitution in a single Bash call using `loadSpecContext` from `<ADEV_ROOT>/lib/meta-tools.mjs` (replaces items 2, 4, and 5 below with one turn). Use `getPlanProgress` to get plan completion status for resume detection:
+
+```bash
+node -e "import {loadSpecContext, getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; const [ctx, progress] = await Promise.all([loadSpecContext('<spec-path>'), getPlanProgress('<plan-path>')]); console.log(JSON.stringify({context: ctx, progress}))"
+```
+
+If the meta-tool call fails, fall back to reading each file individually.
+
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
 3. `.context-index/manifest.yaml`. Extract the `specialists` registry.

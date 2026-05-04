@@ -6,7 +6,7 @@
 
 ---
 mode: cross-cutting
-status: review-pending
+status: implemented
 risk_level: low
 revision: 1
 created: 2026-05-03
@@ -116,13 +116,13 @@ node -e "import {getPlanProgress} from './lib/meta-tools.mjs'; console.log(JSON.
 
 ## Acceptance Criteria
 
-- [ ] AC-1: `lib/meta-tools.mjs` exports three named functions: `loadSpecContext`, `findSpecsByStatus`, `getPlanProgress`.
-- [ ] AC-2: All functions use only Node.js built-ins (fs, path) — no external dependencies.
-- [ ] AC-3: `loadSpecContext` returns concatenated spec + charter capability map + constitution principles, with `---` delimiters.
-- [ ] AC-4: `findSpecsByStatus` parses YAML frontmatter via regex (no external YAML library) and filters correctly.
-- [ ] AC-5: `getPlanProgress` correctly counts `- [ ]` and `- [x]` checkboxes and groups by task headings.
-- [ ] AC-6: Error cases return appropriate exit codes (0 for graceful degradation, 1 for hard failures).
-- [ ] AC-7: Tests in `tests/lib/meta-tools.test.mjs` cover all 8 behaviors and 6 error cases (minimum 14 test cases).
-- [ ] AC-8: At least one SKILL.md file includes the inline invocation pattern as an optional optimization note.
-- [ ] AC-9: All quality gates pass (`npm test`).
-- [ ] AC-10: No constitutional violations introduced.
+- [x] AC-1: `lib/meta-tools.mjs` exports three named functions: `loadSpecContext`, `findSpecsByStatus`, `getPlanProgress`.
+- [x] AC-2: All functions use only Node.js built-ins (fs, path) — no external dependencies.
+- [x] AC-3: `loadSpecContext` returns concatenated spec + charter capability map + constitution principles, with `---` delimiters.
+- [x] AC-4: `findSpecsByStatus` parses YAML frontmatter via regex (no external YAML library) and filters correctly.
+- [x] AC-5: `getPlanProgress` correctly counts `- [ ]` and `- [x]` checkboxes and groups by task headings.
+- [x] AC-6: Error cases return appropriate exit codes (0 for graceful degradation, 1 for hard failures).
+- [x] AC-7: Tests in `tests/lib/meta-tools.test.mjs` cover all 8 behaviors and 6 error cases (minimum 14 test cases).
+- [x] AC-8: At least one SKILL.md file includes the inline invocation pattern as an optional optimization note.
+- [x] AC-9: All quality gates pass (`npm test`).
+- [x] AC-10: No constitutional violations introduced.

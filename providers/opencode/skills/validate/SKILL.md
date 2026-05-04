@@ -434,6 +434,14 @@ If no charter is referenced in the spec's frontmatter, SKIP with note: "No chart
 
 If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
 
+**Optimization:** Use `getPlanProgress` from `<ADEV_ROOT>/lib/meta-tools.mjs` to get plan completion in a single call:
+
+```bash
+node -e "import {getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(JSON.stringify(await getPlanProgress('<plan-path>')))"
+```
+
+If the meta-tool call fails, fall back to the manual scan below.
+
 1. Read the plan file and find all task sections (`### Task N:`).
 2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
 3. If any task has unchecked checkboxes but the corresponding issue is closed (or all tests pass) → flag as WARN: "Plan task N has N unchecked checkboxes but implementation is complete."
