@@ -14,9 +14,9 @@ Explicit user-driven capture of lessons the automated lifecycle missed. Takes a 
 - *(positional)*: Free-text lesson or rule. Examples:
   - `/adev:learn "always run tests before committing hook changes"`
   - `/adev:learn "the repomap parser chokes on re-exports — use named exports"`
-- `--scope <module>`: Target module scope (e.g., `hooks`, `cli`). If omitted, infer from context or ask.
+- `--module <module>`: Target module scope (e.g., `hooks`, `cli`). If omitted, infer from context or ask.
 - `--anti-pattern <text>`: Explicit counter-rule ("don't do this"). If omitted, attempt to derive one.
-- `--list`: List all heuristics, optionally filtered by `--scope`.
+- `--list`: List all heuristics, optionally filtered by `--module`.
 - `--promote <id>`: Promote a heuristic's confidence one level up.
 - `--demote <id>`: Demote a heuristic's confidence one level down.
 - `--archive <id> --reason <text>`: Archive a heuristic with a reason.
@@ -44,7 +44,7 @@ Wait for the user's response.
 
 The scope maps to a module slug from `manifest.yaml`. Heuristics scoped to a module are injected into agent context when working on that module.
 
-**If `--scope` was provided**, validate it exists as a module in the manifest or use `_global`. Proceed.
+**If `--module` was provided**, validate it exists as a module in the manifest or use `_global`. Proceed.
 
 **If no scope**, infer from the lesson text:
 1. Check if the lesson mentions a module name, skill name, or file path that maps to a manifest module.
@@ -185,7 +185,7 @@ To remove it:     /adev:learn --archive <id> --reason "no longer relevant"
 When `--list` is provided:
 
 1. Read all heuristics using the store API.
-2. If `--scope` is provided, filter to that scope.
+2. If `--module` is provided, filter to that scope.
 3. Display as a table. **Persona adaptation:** If a different persona is active, adapt the display to its output rules.
 
 ```
