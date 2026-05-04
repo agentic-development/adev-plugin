@@ -34,13 +34,23 @@ adev-plugin is a Claude Code plugin and zero-dependency CLI that implements a fu
 
 ### Commit Trailers
 
-Commits implementing spec-tracked work **must** include a `Spec:` trailer:
+Commits that implement or fix spec-tracked work **must** include a `Spec:` trailer linking back to the spec file. This enables `/adev:retro` and `/adev:hygiene` to trace commits to lifecycle artifacts.
+
+**Required format:**
 ```
 feat(<module>): <description>
 
 Spec: .context-index/specs/features/<module>/<spec-slug>.md
-Plan-task: <task-number>
+Plan-task: <task-number>          # when implementing a plan task
 ```
+
+**When to add trailers:**
+- `/adev:implement` — always (Spec + Plan-task)
+- `/adev:debug` — when fixing a bug tracked by a spec (Spec only)
+- `/adev:validate` — when auto-fixing issues (Spec only)
+- Manual commits touching spec-tracked code — Spec trailer recommended
+
+**Existing required trailers** (from manifest `provenance` section): `Author-type`, `Operator` — injected by hooks.
 
 ### Patterns to Follow
 

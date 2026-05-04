@@ -97,7 +97,14 @@ adev-plugin/
 │   ├── token-pricing.mjs       # Model pricing table for cost estimation
 │   ├── session-parser.mjs      # Parse session data from native provider
 │   ├── session-summary.mjs     # Generate session summaries for /adev:status
-│   └── source-manifest.mjs     # Source file tracking for spec drift detection
+│   ├── source-manifest.mjs     # Source file tracking for spec drift detection
+│   ├── meta-tools.mjs          # Deterministic multi-file operations helper (single-call read/write/patch)
+│   ├── spec-drift.mjs          # Specification drift detection and stamping
+│   ├── reality-check.mjs       # Codebase-verified confidence scoring for lifecycle artifacts
+│   └── infra-preflight.mjs     # Infrastructure requirements validation before skill execution
+├── scripts/                    # Build and release utilities
+│   ├── stamp-manifests.mjs     # Version stamping across package.json and plugin.json
+│   └── sync-provider-skills.mjs # Synchronize skill definitions across provider configs
 ├── providers/                  # Provider-specific configuration
 │   ├── claude-code/            # Claude Code plugin config
 │   ├── codex/                  # OpenAI Codex provider config

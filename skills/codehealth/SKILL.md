@@ -112,10 +112,11 @@ Execute passes in this fixed order. If `--check` is provided, skip passes not in
    - Files matching `**/cli.*` or `**/main.*` (CLI entry points)
    - Files listed as hook scripts in `hooks/hooks.json`
    - Test files matching `hygiene.coverage_exclude` patterns
-4. **Severity classification:**
+4. **Verify candidates against hook scripts:** Before reporting an orphan, grep hook shell scripts (`hooks/*.sh`) for the module's filename or its exported symbol names. Hooks often contain inline Node.js blocks with dynamic `import()` calls that reference library modules — these are invisible in the static `.mjs` dependency graph but are real consumers.
+5. **Severity classification:**
    - **high:** The orphan file has no outgoing edges either (imports nothing and is imported by nothing — fully isolated).
    - **medium:** The orphan file has outgoing edges (imports others but nobody imports it — possible unused entry point).
-5. Emit findings: `{ pass: "orphan-files", severity, file_path, description }`.
+6. Emit findings: `{ pass: "orphan-files", severity, file_path, description }`.
 
 ### Pass 3: Unused Dependency Detection (`unused-deps`)
 
