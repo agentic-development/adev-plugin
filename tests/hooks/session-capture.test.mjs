@@ -82,20 +82,6 @@ describe("session-capture hook", () => {
     assert.ok(!existsSync(trackingFile), "tracking file should NOT be created");
   });
 
-  it("exits 0 with empty JSON when provider=entire", () => {
-    const { exitCode, stdout } = runHook("session-capture.sh", {
-      cwd: tempDir,
-      stdin: JSON.stringify({ provider: "entire", tool_name: "Edit" }),
-    });
-
-    assert.equal(exitCode, 0);
-    const parsed = JSON.parse(stdout.trim());
-    assert.deepEqual(parsed, {});
-
-    const trackingFile = join(tempDir, ".context-index", ".session-tracking.jsonl");
-    assert.ok(!existsSync(trackingFile), "tracking file should NOT be created");
-  });
-
   it("creates .context-index directory if missing", () => {
     // No .context-index directory at all
     const { exitCode } = runHook("session-capture.sh", {

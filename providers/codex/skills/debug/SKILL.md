@@ -291,19 +291,13 @@ This is the key difference from generic debugging. Before diving into code, load
    - Compare the fixed behavior against the spec's behavioral contract.
    - The fix must not violate any constitutional principles.
 
-3. **Check for checkpoint rewind (if Entire is installed).**
-   - Read `.context-index/manifest.yaml` for `integrations.session_capture.provider`.
-   - If `provider: entire`, check whether the issue was introduced during the current session.
-   - If so, suggest reverting to a checkpoint before the deviation using the Entire checkpoint branch.
-   - Format: "The issue was introduced at [approximate point]. You can rewind to a checkpoint before that change if the fix is complex."
-
-4. **Consider drafting an ADR.**
+3. **Consider drafting an ADR.**
    - If the root cause reveals an architectural insight (unexpected coupling, missing abstraction, violated assumption, technology constraint), suggest drafting an ADR.
    - Prompt the user: "The root cause was [X]. This reveals [architectural insight]. Want me to draft an ADR to document this decision/constraint?"
    - If yes, create a draft ADR in `.context-index/adrs/` with the next sequential number.
    - Use the template at `${CLAUDE_PLUGIN_ROOT}/templates/adr-template.md` if it exists.
 
-5. **Update issue board with confidence.**
+4. **Update issue board with confidence.**
    - Read `tasks.backend` from `manifest.yaml`. If not configured, skip.
    - Search the issue board for a bug issue matching the error description or spec reference (by title keyword match or `spec_ref`).
    - If a matching issue is found and quality gates pass (step 1 above), update it:
