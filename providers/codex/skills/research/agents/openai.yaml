@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Research"
+  short_description: "Run adev:research"
+  default_prompt: "Use $adev:research to run this skill."

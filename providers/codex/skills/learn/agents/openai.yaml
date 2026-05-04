@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Learn"
+  short_description: "Run adev:learn"
+  default_prompt: "Use $adev:learn to run this skill."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Issues"
+  short_description: "Run adev:issues"
+  default_prompt: "Use $adev:issues to run this skill."
