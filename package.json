@@ -47,7 +47,6 @@
   "homepage": "https://github.com/agentic-development/adev-plugin#readme",
   "dependencies": {
     "tree-sitter-typescript": "^0.23.2",
-    "tree-sitter-wasms": "^0.1.13",
     "web-tree-sitter": "^0.26.7"
   },
   "devDependencies": {

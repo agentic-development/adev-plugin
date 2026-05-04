@@ -5,7 +5,7 @@ charter: task-management
 status: validated
 milestone: 1
 revision: 1
-charter-revision: 2
+charter-revision: 3
 created: 2026-03-31
 updated: 2026-04-01
 source-manifest:

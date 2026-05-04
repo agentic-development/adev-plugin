@@ -14,7 +14,7 @@ status: validated
 risk_level: low
 milestone: 1
 revision: 1
-charter-revision: 3
+charter-revision: 5
 created: 2026-04-12
 updated: 2026-04-12
 source-manifest:
