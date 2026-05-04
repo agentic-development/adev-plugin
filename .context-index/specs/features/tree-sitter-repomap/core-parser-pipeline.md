@@ -2,13 +2,13 @@
 
 ---
 charter: tree-sitter-repomap
-status: implemented
+status: validated
 risk_level: medium
 milestone: v0.5.0
 revision: 1
 charter-revision: 1
 created: 2026-03-23
-updated: 2026-03-23
+updated: 2026-05-04
 source-manifest:
   sha: "34b531d"
   files:

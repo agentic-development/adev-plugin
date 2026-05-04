@@ -2,13 +2,13 @@
 
 ---
 charter: repomap-eval
-status: implemented
+status: validated
 risk_level: medium
 milestone: v1
 revision: 1
 charter-revision: 1
 created: 2026-03-23
-updated: 2026-03-23
+updated: 2026-05-04
 source-manifest:
   sha: "fab36e5"
   files:
