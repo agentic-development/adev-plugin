@@ -130,7 +130,7 @@ For each symbol, record:
 
 For each extracted symbol, count how many files reference it:
 
-1. For each symbol name, run a Grep across the project source files (including test files this time) counting files that contain the symbol name.
+1. For each symbol name, run a Grep across the project source files (including test files this time) counting files that contain the symbol name. **Include hook scripts (`.sh`) in the search scope** — hooks often contain inline Node.js blocks with dynamic `import()` calls that reference library modules.
 2. Subtract 1 (the definition file itself).
 3. This gives a rough "importance" score: symbols referenced by many files are more central to the codebase.
 
