@@ -1,12 +1,12 @@
 ---
 charter: infra-preflight
-status: review-passed
+status: validated
 risk_level: medium
 milestone: 1
 revision: 3
 charter-revision: 1
 created: 2026-05-01
-updated: 2026-05-01
+updated: 2026-05-04
 ---
 
 # Live Spec: Skill Integration

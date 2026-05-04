@@ -6,11 +6,11 @@
 
 ---
 mode: cross-cutting
-status: implemented
+status: validated
 risk_level: low
 revision: 1
 created: 2026-05-03
-updated: 2026-05-03
+updated: 2026-05-04
 tracker-ref: issue-228
 affects:
   - planning

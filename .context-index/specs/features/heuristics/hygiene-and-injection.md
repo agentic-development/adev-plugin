@@ -7,14 +7,14 @@
 
 ---
 charter: heuristics
-status: review-passed
+status: validated
 risk_level: low
 milestone: 2
 test_strategy: unit
 revision: 1
 charter-revision: 5
 created: 2026-04-23
-updated: 2026-04-23
+updated: 2026-05-04
 ---
 
 ## Behavioral Contract

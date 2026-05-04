@@ -5,13 +5,13 @@
 
 ---
 charter: adev:write-test
-status: implemented
+status: validated
 risk_level: medium
 milestone: v1
 revision: 1
 charter-revision: 1
 created: 2026-03-27
-updated: 2026-03-27
+updated: 2026-05-04
 source-manifest:
   sha: "c2d7e43"
   files:
