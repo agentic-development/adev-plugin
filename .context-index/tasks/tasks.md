@@ -48,6 +48,7 @@
 | epic-42 | Spec Drift Detection | open | .context-index/specs/features/spec-drift-detection/spec-drift-detection.plan.md |  | 2026-05-02T00:00:00.000Z | 2026-05-02T00:00:00.000Z |
 | epic-43 | Token Consumption Optimization | closed |  |  | 2026-05-03T00:00:00.000Z | 2026-05-03T00:00:00.000Z |
 | epic-46 | Codebase Hygiene & Skill Consistency Cleanup | closed |  |  | 2026-05-04T13:27:07.653Z | 2026-05-04T00:00:00.000Z |
+| epic-47 | Remove Entire.io Integration — Defer to Backlog | closed |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 
 ## Issues
 
@@ -294,3 +295,4 @@
 | issue-241 | Re-review 5 task-management specs against charter revision 3 | closed | 2 | task | epic-46 |  |  |  |  | Closed: All 5 specs bumped charter-revision 2→3. Phase 3 additions (dotted IDs, unified create, tree-walk) are backward-compatible with Phase 1 API surface. Stale API references noted for future Phase 3 specs. |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | issue-242 | Remove unused tree-sitter-wasms production dependency | closed | 2 | task | epic-46 |  |  |  |  | Closed: Removed from package.json. Zero imports confirmed. Tests pass (1671/1671). |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | issue-243 | Triage 24 orphaned .plan.md files | closed | 3 | task | epic-46 |  |  |  |  | Closed: Triaged all 24. Result: 6 COMPLETED_ELSEWHERE (work done under other epics), 3 SUPERSEDED (skills renamed/folded), 15 STILL_RELEVANT (Phase 2 backlog). Superseded: adev-roadmap-skill, adev-start-intake-ext, adev-vision-skill. Completed elsewhere: adev-issues-milestone-ext, adev-status-milestone-ext, backend-adapters, issue-epic-crud, lifecycle-integration, constitution-sync. |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-244 | Remove Entire.io session capture provider references | closed | 2 | task | epic-47 |  |  |  |  | Closed: Removed all Entire.io references from source (session-parser.mjs), 9 SKILL.md files (hygiene/implement/debug x3 providers), templates, README, and 2 test cases. Moved Entire adapter to v2/deferred in spec-lifecycle charter. 1669 tests pass. |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
