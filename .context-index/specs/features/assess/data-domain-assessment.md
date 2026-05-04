@@ -6,13 +6,13 @@
 
 ---
 charter: adev:assess
-status: implemented
+status: validated
 risk_level: low
 milestone: v2
 revision: 1
 charter-revision: 1
 created: 2026-03-24
-updated: 2026-03-24
+updated: 2026-05-04
 charter-extension: true
 source-manifest:
   sha: "5202d88"
