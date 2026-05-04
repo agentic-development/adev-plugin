@@ -75,10 +75,10 @@ const EVAL_TASKS = [
     description: 'Run specialist reviews on a spec',
   },
   {
-    id: 'status',
-    name: '/adev:status',
-    prompt: '/adev:status',
-    description: 'Query project status (exercises meta-tool-compatible file scanning)',
+    id: 'validate',
+    name: '/adev:validate',
+    prompt: '/adev:validate --spec .context-index/specs/features/orders/customer-orders.md',
+    description: 'Validate a spec (exercises artifact-to-disk for validation report)',
   },
 ];
 
