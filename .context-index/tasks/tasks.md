@@ -36,12 +36,12 @@
 | epic-30 | adev:write-test Skill Implementation | closed | .context-index/specs/features/write-test/adev-write-test.plan.md |  | 2026-04-24T00:00:00.000Z | 2026-04-25T00:00:00.000Z |
 | epic-31 | Playbook Format and Debug Loading | closed | .context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.plan.md |  | 2026-04-24T00:00:00.000Z | 2026-04-24T23:01:10.205Z |
 | epic-32 | Retro Actions 2026-04-26 | open |  |  | 2026-04-26T00:00:00.000Z | 2026-04-26T00:00:00.000Z |
-| epic-33 | Model Routing — Cost Optimization | open |  |  | 2026-04-26T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| epic-33 | Model Routing — Cost Optimization | closed |  |  | 2026-04-26T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | epic-34 | Subagent Cost Routing | closed | .context-index/specs/cross-cutting/subagent-cost-routing.plan.md |  | 2026-04-26T00:00:00.000Z | 2026-04-26T00:00:00.000Z |
-| epic-35 | Production Confidence Layer — Extend adev lifecycle beyond /adev:validate | open |  |  | 2026-04-27T00:00:00.000Z | 2026-04-27T00:00:00.000Z |
+| epic-35 | Production Confidence Layer — Extend adev lifecycle beyond /adev:validate | closed |  |  | 2026-04-27T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | epic-36 | Plan Infrastructure Requirements | closed | .context-index/specs/features/test-strategies/plan-infra-requirements.plan.md |  | 2026-04-27T00:00:00.000Z | 2026-04-27T00:00:00.000Z |
 | epic-37 | Integration Strategy Profile | closed | .context-index/specs/features/test-strategies/integration-strategy-profile.plan.md |  | 2026-04-27T00:00:00.000Z | 2026-04-27T00:00:00.000Z |
-| epic-38 | adev:build Skill Refactor | open | .context-index/specs/features/strategic-planning/adev-build-skill.plan.md |  | 2026-04-27T00:00:00.000Z | 2026-04-27T00:00:00.000Z |
+| epic-38 | adev:build Skill Refactor | closed | .context-index/specs/features/strategic-planning/adev-build-skill.plan.md |  | 2026-04-27T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | epic-39 | adev:build Full Pipeline and Phase Filter | closed | .context-index/specs/features/strategic-planning/adev-build-skill.plan.md |  | 2026-04-28T01:48:06.983Z | 2026-04-27T00:00:00.000Z |
 | epic-40 | Skill Integration — Infrastructure Preflight | closed | .context-index/specs/features/infra-preflight/skill-integration.plan.md |  | 2026-05-01T23:39:46.880Z | 2026-05-01T23:39:46.880Z |
 | epic-41 | Feature Ideas — Competitor-Inspired Improvements | open |  |  | 2026-05-02T00:00:00.000Z | 2026-05-02T00:00:00.000Z |
