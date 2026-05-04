@@ -6,13 +6,13 @@
 
 ---
 charter: strategic-planning
-status: review-pending
+status: superseded
 risk_level: low
 milestone: v1
 revision: 1
 charter-revision: 1
 created: 2026-04-05
-updated: 2026-04-05
+updated: 2026-05-04
 source-manifest:
   sha: "8f89ee8"
   files:
