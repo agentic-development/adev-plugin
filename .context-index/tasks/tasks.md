@@ -49,7 +49,7 @@
 | epic-43 | Token Consumption Optimization | closed |  |  | 2026-05-03T00:00:00.000Z | 2026-05-03T00:00:00.000Z |
 | epic-44 | Revenue By Customer Aggregation | open | .context-index/specs/features/orders/revenue-by-customer.plan.md |  | 2026-05-04T00:39:23.463Z | 2026-05-04T00:39:23.463Z |
 | epic-45 | Revenue By Customer Aggregation | open | .context-index/specs/features/orders/revenue-by-customer.plan.md |  | 2026-05-04T01:21:31.690Z | 2026-05-04T01:21:31.690Z |
-| epic-46 | Codebase Hygiene & Skill Consistency Cleanup | open |  |  | 2026-05-04T13:27:07.653Z | 2026-05-04T13:27:07.653Z |
+| epic-46 | Codebase Hygiene & Skill Consistency Cleanup | closed |  |  | 2026-05-04T13:27:07.653Z | 2026-05-04T14:05:44.486Z |
 
 ## Issues
 
