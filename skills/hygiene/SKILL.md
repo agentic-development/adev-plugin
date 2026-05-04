@@ -7,29 +7,6 @@ description: "Audit all context for staleness, drift, and coverage gaps. Runs fi
 
 Audit the health of `.context-index/` and source code, generating actionable reports. Sixteen audit passes detect staleness, drift, coverage gaps, phase readiness, lifecycle consistency, operational patterns, code health issues, and heuristic index health so the team can fix them before they become obstacles.
 
-## Execution Protocol
-
-**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
-- Chain steps continuously without intermediate commentary or narration.
-- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
-- Do NOT summarize intermediate findings between steps.
-- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
-- Report ONLY the final result in the structured format expected by the parent.
-
-This directive does NOT apply when:
-- The skill is invoked interactively by a user.
-- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
-
-**Artifact-to-disk (output protocol):** When this skill writes an artifact to disk (plan file, review file, validation report, retro report), do NOT echo the full artifact content in conversation output. Instead:
-1. Write the complete artifact to its target file path.
-2. Present ONLY a structured summary to the user/parent:
-   - Status line (e.g., PASS/FAIL, task count, coverage)
-   - Key metrics (N tasks, M criteria, P findings)
-   - File path to the full artifact
-   - Actionable next steps
-3. The full artifact content must NOT be repeated in conversation after being written to disk.
-
-
 ## Arguments
 
 - No arguments: full audit (all fifteen passes)

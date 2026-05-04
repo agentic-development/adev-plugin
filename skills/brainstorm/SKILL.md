@@ -12,19 +12,6 @@ Turn a feature idea into a structured Feature Charter through collaborative dial
 Do NOT invoke any implementation skill, write any code, create any Live Spec, or take any implementation action until you have written the charter, passed the review loop, and the user has approved the final document. This applies to EVERY feature regardless of perceived simplicity.
 </HARD-GATE>
 
-## Execution Protocol
-
-**Silent execution (subagent mode):** When this skill is invoked as a subagent (via the Agent tool from a parent orchestrator), execute all steps silently:
-- Chain steps continuously without intermediate commentary or narration.
-- Do NOT emit confirmations like "Loaded the context" or "Proceeding to step N."
-- Do NOT summarize intermediate findings between steps.
-- Use parallel tool calls (multiple Read/Grep/Glob in one turn) for context-loading phases.
-- Report ONLY the final result in the structured format expected by the parent.
-
-This directive does NOT apply when:
-- The skill is invoked interactively by a user.
-- The subagent prompt contains `VERBOSE: true` (debug mode — narrate all steps).
-
 ## Arguments
 
 - No arguments: freeform brainstorm (user describes the idea conversationally)
