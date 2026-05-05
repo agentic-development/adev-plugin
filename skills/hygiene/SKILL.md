@@ -12,7 +12,7 @@ Audit the health of `.context-index/` and source code, generating actionable rep
 - No arguments: full audit (all fifteen passes)
 - `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics, code-drift)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
-- `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
+- `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
 
   Valid status values: `draft`, `review-pending`, `review-passed`, `review-blocked`, `implemented`, `validated`
 
@@ -567,13 +567,13 @@ Reviews scanned: <N>
 Charters scanned: <N>
 
 ### Revision Drift
-- [ ] specs/features/auth/login.md: REVISION_DRIFT — spec revision 3, last reviewed revision 1
+- [ ] specs/features/auth/login.spec.md: REVISION_DRIFT — spec revision 3, last reviewed revision 1
 
 ### File Drift
-- [ ] specs/features/auth/login.md: FILE_DRIFT — file hash changed since last review
+- [ ] specs/features/auth/login.spec.md: FILE_DRIFT — file hash changed since last review
 
 ### Charter-Revision Staleness
-- [ ] specs/features/auth/login.md: CHARTER_STALE — spec references charter revision 1, charter is now at revision 3
+- [ ] specs/features/auth/login.spec.md: CHARTER_STALE — spec references charter revision 1, charter is now at revision 3
 
 ### Capability Status Inconsistencies
 - [ ] specs/features/auth/charter.md: STATUS_MISMATCH — capability "login" shows "planned" but spec status is "implemented"
@@ -817,8 +817,8 @@ Scanned: N source files, M commits
 
 - PASS: No specs with drift_detected flags (or)
 - WARN: N specs with code-side drift detected:
-  - .context-index/specs/features/auth/login.md — drift_source: lib/login.mjs, drift_at: 2026-05-01T10:00:00Z
-  - .context-index/specs/features/dashboard/widgets.md — drift_source: lib/widgets.mjs, drift_at: 2026-05-02T14:00:00Z
+  - .context-index/specs/features/auth/login.spec.md — drift_source: lib/login.mjs, drift_at: 2026-05-01T10:00:00Z
+  - .context-index/specs/features/dashboard/widgets.spec.md — drift_source: lib/widgets.mjs, drift_at: 2026-05-02T14:00:00Z
 
 **Actions:**
 - [ ] Run `/adev:validate --spec <path>` to verify spec still reflects implementation
