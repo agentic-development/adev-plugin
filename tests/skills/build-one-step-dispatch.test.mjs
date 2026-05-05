@@ -63,4 +63,24 @@ describe("adev:build SKILL.md — One-Step-Per-Invocation Dispatch", () => {
     assert.match(skill, /dispatch.loop|read state.*determine.*dispatch.*record|narrow task.*dispatch/i,
       "Orchestrator prompt must be limited to dispatch-loop instructions");
   });
+
+  it("subagent prompts include pipeline context fields (spec_path, title, phase, mode, position)", () => {
+    assert.match(skill, /spec_path.*spec_title.*phase.*pipeline_mode|PIPELINE_CONTEXT/i,
+      "Subagent prompts must include pipeline context");
+  });
+
+  it("step context assembled from disk artifacts, never from prior subagent memory", () => {
+    assert.match(skill, /from disk|artifact.*on disk|never.*from.*memory|not from.*prior.*subagent/i,
+      "Step context must be assembled from disk artifacts");
+  });
+
+  it("subagents return structured STEP_RESULT with status, verdict, artifacts, summary, error", () => {
+    assert.match(skill, /STEP_RESULT.*status.*verdict|status.*COMPLETED.*FAILED.*BLOCKED/i,
+      "Subagents must return STEP_RESULT structure");
+  });
+
+  it("resumed builds assemble step context from disk, not from session memory", () => {
+    assert.match(skill, /resumed.*disk|resume.*artifact|read from disk.*ensure/i,
+      "Resumed builds must read context from disk");
+  });
 });
