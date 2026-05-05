@@ -8,6 +8,9 @@ import { PLUGIN_ROOT } from "../helpers.mjs";
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
 const skill = readFileSync(SKILL_PATH, "utf8");
 
+const RESUME_PATH = join(PLUGIN_ROOT, "skills", "build", "resume-mode.md");
+const resumeMode = readFileSync(RESUME_PATH, "utf8");
+
 describe("adev:build SKILL.md — One-Step-Per-Invocation Dispatch", () => {
   it("declares one-step-per-invocation as a named section or principle", () => {
     assert.match(skill, /[Oo]ne.?[Ss]tep.?[Pp]er.?[Ii]nvocation|one step per turn|exactly one.*step.*per turn/i,
@@ -82,5 +85,15 @@ describe("adev:build SKILL.md — One-Step-Per-Invocation Dispatch", () => {
   it("resumed builds assemble step context from disk, not from session memory", () => {
     assert.match(skill, /resumed.*disk|resume.*artifact|read from disk.*ensure/i,
       "Resumed builds must read context from disk");
+  });
+});
+
+describe("resume-mode.md — valid step names consistency", () => {
+  it("all occurrences of valid step names include specify", () => {
+    const stepListMatches = resumeMode.match(/[Vv]alid step names:.*$/gm);
+    for (const match of stepListMatches || []) {
+      assert.match(match, /specify/,
+        `All valid step name lists must include specify: "${match}"`);
+    }
   });
 });
