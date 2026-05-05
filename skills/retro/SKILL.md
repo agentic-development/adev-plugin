@@ -37,7 +37,7 @@ Extract:
 
 ### 1.2 Validation Reports
 
-Read `.context-index/specs/features/**/*-validation.md` files. For each validation report:
+Read `.context-index/specs/features/**/*.validate.md` files. For each validation report:
 - Check the `Date` field in the header. Include only reports within the date range.
 - Extract the overall status (PASS or FAIL).
 - If FAIL, extract which checks failed and the specific failure reasons.

@@ -21,7 +21,7 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 Determine which specs need review:
 
 1. If `--spec <path>` is provided, use that file directly.
-2. If `--charter <module>` is provided, glob `.context-index/specs/features/<module>/*.md` excluding `charter.md` and any `*.review.md` files.
+2. If `--charter <module>` is provided, glob `.context-index/specs/features/<module>/*.spec.md`.
 3. If no arguments, scan all `.context-index/specs/features/` and `.context-index/specs/cross-cutting/` directories. A spec needs review if:
    - No adjacent `.review.md` file exists (e.g., `card-ordering.md` expects `card-ordering.review.md`)
    - The spec file is newer than its `.review.md` file (spec was modified after last review)
@@ -207,7 +207,7 @@ Verdict consolidation uses `computeVerdict(findings, verdictRules)` from `lib/go
 Write the consolidated report to a `.review.md` file adjacent to the spec:
 
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
-- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
+- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.spec.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
 **Lifecycle tracking fields:** In the `.review.md` file, also record:
 - `last-reviewed-revision: <spec's current revision value>` — the spec's `revision` frontmatter field at the time of review.
