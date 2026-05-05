@@ -22,7 +22,7 @@ Re-discover all specs with `milestone: <name>` in their frontmatter by scanning 
 
 ### The `--from <step>` Override
 
-When `--from <step>` is combined with `--resume`, force the build to restart from the specified step regardless of what the build state file says. Valid step names: `review`, `plan`, `route`, `implement`, `validate`.
+When `--from <step>` is combined with `--resume`, force the build to restart from the specified step regardless of what the build state file says. Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`.
 
 This is a safety valve for situations where:
 - The build state file is corrupted
