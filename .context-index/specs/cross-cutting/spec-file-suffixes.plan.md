@@ -56,7 +56,7 @@
 
 **Steps:**
 
-- [ ] **Generate rename script**
+- [x] **Generate rename script**
 
 ```bash
 # Rename live specs in features/
@@ -77,7 +77,7 @@ find .context-index/specs/cross-cutting -name '*.md' \
 done
 ```
 
-- [ ] **Verify renames**
+- [x] **Verify renames**
 
 Run: `find .context-index/specs/features .context-index/specs/cross-cutting -name '*.spec.md' | wc -l`
 Expected: 132 (or current count)
@@ -85,7 +85,7 @@ Expected: 132 (or current count)
 Run: `git status --short | grep '^R' | wc -l`
 Expected: all renames show as R (rename), not D+A (delete+add)
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git commit -m "refactor: rename live specs to .spec.md suffix (Task 1/7)"
@@ -103,7 +103,7 @@ git commit -m "refactor: rename live specs to .spec.md suffix (Task 1/7)"
 
 **Steps:**
 
-- [ ] **Rename validation reports**
+- [x] **Rename validation reports**
 
 ```bash
 find .context-index/specs/features -name '*.validate.md' | while IFS= read -r f; do
@@ -113,7 +113,7 @@ find .context-index/specs/features -name '*.validate.md' | while IFS= read -r f;
 done
 ```
 
-- [ ] **Verify renames**
+- [x] **Verify renames**
 
 Run: `find .context-index/specs -name '*.validate.md' | wc -l`
 Expected: 0
@@ -121,7 +121,7 @@ Expected: 0
 Run: `find .context-index/specs -name '*.validate.md' | wc -l`
 Expected: 42 (39 renamed + 3 existing)
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git commit -m "refactor: normalize validation reports to .validate.md suffix (Task 2/7)"
@@ -139,7 +139,7 @@ git commit -m "refactor: normalize validation reports to .validate.md suffix (Ta
 
 **Steps:**
 
-- [ ] **Update spec references in plans**
+- [x] **Update spec references in plans**
 
 For each `.plan.md` file, replace spec path references from `<name>.md` to `<name>.spec.md`:
 ```bash
@@ -149,11 +149,11 @@ find .context-index/specs -name '*.plan.md' -exec sed -i '' \
   's|/specs/cross-cutting/\([^.]*\)\.md|/specs/cross-cutting/\1.spec.md|g' {} +
 ```
 
-- [ ] **Update spec references in reviews**
+- [x] **Update spec references in reviews**
 
 Same pattern for `.review.md` files.
 
-- [ ] **Update validation report references**
+- [x] **Update validation report references**
 
 In any file referencing `.validate.md`, update to `.validate.md`:
 ```bash
@@ -161,18 +161,18 @@ find .context-index/specs -name '*.plan.md' -o -name '*.review.md' | \
   xargs sed -i '' 's|-validation\.md|.validate.md|g'
 ```
 
-- [ ] **Update issue board spec paths**
+- [x] **Update issue board spec paths**
 
 In `.context-index/tasks/tasks.md`, update any Spec-Ref column paths.
 
-- [ ] **Verify no broken references**
+- [x] **Verify no broken references**
 
 ```bash
 rg '\.context-index/specs/features/[^/]*/[^/]*[^.]\.md' .context-index/specs/ --glob '*.plan.md' --glob '*.review.md' | grep -v '.spec.md\|.plan.md\|.review.md\|.validate.md\|charter.md'
 ```
 Expected: 0 matches (no old-style references remain)
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git commit -m "refactor: update cross-references in plans, reviews, and issue board (Task 3/7)"
@@ -195,7 +195,7 @@ git commit -m "refactor: update cross-references in plans, reviews, and issue bo
 
 **Steps:**
 
-- [ ] **Update lib/meta-tools.mjs**
+- [x] **Update lib/meta-tools.mjs**
 
 Change the spec filter at lines 155-157:
 ```javascript
@@ -204,32 +204,32 @@ Change the spec filter at lines 155-157:
 if (!file.endsWith('.spec.md')) continue;
 ```
 
-- [ ] **Update lib/source-manifest.mjs**
+- [x] **Update lib/source-manifest.mjs**
 
 Change the `.endsWith(".md")` filter at line 145 to `.endsWith(".spec.md")`.
 
-- [ ] **Update lib/spec-drift.mjs**
+- [x] **Update lib/spec-drift.mjs**
 
 Change `.endsWith(".md")` at line 58 to `.endsWith(".spec.md")`.
 Update `.replace(/\.md$/, "")` at line 64 to `.replace(/\.spec\.md$/, "")`.
 
-- [ ] **Update lib/reality-check.mjs**
+- [x] **Update lib/reality-check.mjs**
 
 Lines 288-289: Replace negative exclusion list with `if (!f.endsWith(".spec.md")) continue;`
 Line 296: Update `.replace(/\.md$/, ".review.md")` to `.replace(/\.spec\.md$/, ".review.md")`
 Lines 299, 321: Update `.validate.md` references to `.validate.md`
 Line 88: Update `.replace(/\.md$/, ".plan.md")` to `.replace(/\.spec\.md$/, ".plan.md")`
 
-- [ ] **Update constitution and CLAUDE.md**
+- [x] **Update constitution and CLAUDE.md**
 
 Change `Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md` to `Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md` in both files.
 
-- [ ] **Run tests**
+- [x] **Run tests**
 
 Run: `npm test`
 Expected: 1669 pass, 0 fail
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git commit -m "refactor: update source code spec path patterns to .spec.md (Task 4/7)"
@@ -248,29 +248,29 @@ git commit -m "refactor: update source code spec path patterns to .spec.md (Task
 
 **Steps:**
 
-- [ ] **Replace negative exclusion lists with positive glob**
+- [x] **Replace negative exclusion lists with positive glob**
 
 In all skills that currently use `(excluding charter.md, *.plan.md, *.review.md, *.validate.md, *.validate.md, *-research.md, *-summary.md, *-findings.md, CONSISTENCY-REVIEW.md)`:
 
 Replace with: `(matching *.spec.md)`
 
-- [ ] **Update spec output naming in specify SKILL.md**
+- [x] **Update spec output naming in specify SKILL.md**
 
 Change output file naming from `<slug>.md` to `<slug>.spec.md`.
 
-- [ ] **Update validation report naming in validate SKILL.md**
+- [x] **Update validation report naming in validate SKILL.md**
 
 Change output from `<slug>.validate.md` to `<slug>.validate.md`.
 
-- [ ] **Update spec path references in all skills**
+- [x] **Update spec path references in all skills**
 
 Any hardcoded path like `.context-index/specs/features/<module>/<name>.spec.md` becomes `.spec.md`.
 
-- [ ] **Mirror all changes to provider copies**
+- [x] **Mirror all changes to provider copies**
 
 Apply identical changes to `providers/codex/skills/` and `providers/opencode/skills/`.
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git commit -m "refactor: update SKILL.md files to use *.spec.md positive matching (Task 5/7)"
@@ -290,15 +290,15 @@ git commit -m "refactor: update SKILL.md files to use *.spec.md positive matchin
 
 **Steps:**
 
-- [ ] **Update spec path examples in templates**
+- [x] **Update spec path examples in templates**
 
 Change any example paths referencing `<name>.md` to `<name>.spec.md`.
 
-- [ ] **Update validation report examples**
+- [x] **Update validation report examples**
 
 Change any example paths referencing `<name>.validate.md` to `<name>.validate.md`.
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git commit -m "refactor: update templates with .spec.md naming convention (Task 6/7)"
@@ -314,12 +314,12 @@ git commit -m "refactor: update templates with .spec.md naming convention (Task 
 
 **Steps:**
 
-- [ ] **Run full test suite**
+- [x] **Run full test suite**
 
 Run: `npm test`
 Expected: 1669 pass, 0 fail
 
-- [ ] **Verify no old-style spec references remain**
+- [x] **Verify no old-style spec references remain**
 
 ```bash
 # Should find ZERO matches of bare .md spec paths (not .spec.md, .plan.md, .review.md, .validate.md, charter.md)
@@ -329,21 +329,21 @@ rg '\.context-index/specs/features/[^/]*/[^/]*[^.]\.md' \
 ```
 Expected: 0 matches
 
-- [ ] **Verify git mv integrity**
+- [x] **Verify git mv integrity**
 
 ```bash
 git status --short | grep -v '^R' | grep -v '^\?' | grep -v '^ M'
 ```
 Expected: no unexpected D (delete) entries without matching renames
 
-- [ ] **Verify positive matching works**
+- [x] **Verify positive matching works**
 
 ```bash
 find .context-index/specs -name '*.spec.md' | wc -l
 ```
 Expected: 132
 
-- [ ] **Final commit**
+- [x] **Final commit**
 
 ```bash
 git commit -m "refactor: verify spec suffix migration complete (Task 7/7)"
@@ -355,7 +355,7 @@ git commit -m "refactor: verify spec suffix migration complete (Task 7/7)"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
-- [ ] No broken spec path references (verified by grep in Task 7)
-- [ ] Git history shows only renames (verified in Task 7)
+- [x] Tests pass: `npm test`
+- [x] All acceptance criteria from spec satisfied
+- [x] No broken spec path references (verified by grep in Task 7)
+- [x] Git history shows only renames (verified in Task 7)
