@@ -1,7 +1,7 @@
 # Architecture Review: session-capture-pipeline
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/session-capture-pipeline.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/session-capture-pipeline.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

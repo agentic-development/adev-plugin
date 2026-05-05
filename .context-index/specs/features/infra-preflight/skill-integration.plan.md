@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/infra-preflight/charter.md
-> **Spec:** .context-index/specs/features/infra-preflight/skill-integration.md
+> **Spec:** .context-index/specs/features/infra-preflight/skill-integration.spec.md
 > **Review:** PASS_WITH_NOTES (2026-05-01)
 > **Platform:** Node.js, JavaScript (ESM), node:test
 
@@ -28,43 +28,43 @@
 
 **Reference (read, do not modify):**
 - `lib/infra-preflight.mjs` — API: `runPreflight()`, `parseInfraRequirements()`, `formatPreflightReport()`
-- `.context-index/specs/features/infra-preflight/skill-integration.md` — Behavioral contract
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` — Behavioral contract
 - `tests/skills/specify-feature-binding.test.mjs` — Test pattern reference
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-8)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-8)
 - Charter: `.context-index/specs/features/infra-preflight/charter.md` (capability: Skill Integration — Mandatory)
 - Reference: `skills/implement/SKILL.md` (current structure for insertion point)
 - Reference: `lib/infra-preflight.mjs` (API signatures for invocation pattern)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 9-10)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 9-10)
 - Reference: `skills/validate/SKILL.md` (current structure for insertion point)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 11-12)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 11-12)
 - Reference: `skills/build/SKILL.md` (current Arguments section)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 13-15)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 13-15)
 - Reference: `skills/write-test/SKILL.md` (current Step 1 for insertion point)
 
 ### Task 5 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 16-18)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 16-18)
 - Reference: `skills/debug/SKILL.md` (Phase 1 end for insertion point)
 
 ### Task 6 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 19-20)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 19-20)
 - Reference: `skills/eval/SKILL.md` (prerequisites section for insertion point)
 
 ### Task 7 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 21-22)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 21-22)
 - Reference: `skills/recover/SKILL.md` (Step 1 Detect for insertion point)
 
 ### Task 8 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (all Behaviors — full AC list)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (all Behaviors — full AC list)
 - Reference: `tests/skills/specify-feature-binding.test.mjs` (test pattern)
 - Reference: all 7 SKILL.md files (content to assert against)
 
@@ -92,7 +92,7 @@ Tasks 1-7 modify independent files with no shared dependencies. They can all run
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-8)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-8)
 - `lib/infra-preflight.mjs` (API for invocation pattern)
 
 - [ ] **Write failing test**
@@ -162,7 +162,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to implem
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 9-10)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 9-10)
 
 - [ ] **Write failing test**
 
@@ -218,7 +218,7 @@ git commit -m "feat(validation): add infrastructure preflight step to validate S
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 11-12)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 11-12)
 
 - [ ] **Write failing test**
 
@@ -274,7 +274,7 @@ git commit -m "feat(strategic-planning): add --no-infra passthrough to build SKI
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 13-15)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 13-15)
 
 - [ ] **Write failing test**
 
@@ -332,7 +332,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to write-
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 16-18)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 16-18)
 
 - [ ] **Write failing test**
 
@@ -402,7 +402,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to debug 
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 19-20)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 19-20)
 
 - [ ] **Write failing test**
 
@@ -462,7 +462,7 @@ git commit -m "feat(validation): add infrastructure preflight step to eval SKILL
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 21-22)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 21-22)
 
 - [ ] **Write failing test**
 
@@ -524,7 +524,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to recove
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (all acceptance criteria)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (all acceptance criteria)
 - `tests/skills/specify-feature-binding.test.mjs` (test pattern reference)
 
 - [ ] **Write failing test**

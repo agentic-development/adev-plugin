@@ -1,7 +1,7 @@
 # Architecture Review: git-drift-detection
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/git-drift-detection.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/git-drift-detection.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

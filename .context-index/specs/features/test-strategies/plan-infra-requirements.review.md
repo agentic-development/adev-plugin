@@ -1,7 +1,7 @@
 # Architecture Review: plan-infra-requirements
 
 > **Date:** 2026-04-27
-> **Spec:** .context-index/specs/features/test-strategies/plan-infra-requirements.md
+> **Spec:** .context-index/specs/features/test-strategies/plan-infra-requirements.spec.md
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2
@@ -92,4 +92,4 @@ Behavior 5 allows free-form `notes:` field. Behavior 7's specify prompt asks "Wh
 
 **Blockers to resolve:** SA-2 (Behavior 7 ownership — extract to cross-cutting spec), SA-3/CON-2 (import scanning contradiction), SEC-1 (no credential prohibition), CON-1 (behavior numbering)
 
-**Action required:** Resolve blockers, then re-run `/adev:review-specs --spec .context-index/specs/features/test-strategies/plan-infra-requirements.md`
+**Action required:** Resolve blockers, then re-run `/adev:review-specs --spec .context-index/specs/features/test-strategies/plan-infra-requirements.spec.md`

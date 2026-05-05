@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/cicd/charter.md
-> **Spec:** .context-index/specs/features/cicd/publish-on-tags.md
+> **Spec:** .context-index/specs/features/cicd/publish-on-tags.spec.md
 > **Review:** PASS (2026-03-24)
 > **Platform:** GitHub Actions, npm
 
@@ -15,7 +15,7 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/cicd/publish-on-tags.md` (all acceptance criteria)
+- Spec: `.context-index/specs/features/cicd/publish-on-tags.spec.md` (all acceptance criteria)
 - Charter: `.context-index/specs/features/cicd/charter.md` (capability: Publish on Tags)
 - Constitution: `.context-index/constitution.md` (principle: Version parity)
 

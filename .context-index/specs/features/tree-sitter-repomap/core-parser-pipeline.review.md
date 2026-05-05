@@ -1,7 +1,7 @@
 # Architecture Review: core-parser-pipeline
 
 > **Date:** 2026-03-23
-> **Spec:** .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.md
+> **Spec:** .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.spec.md
 > **Charter:** .context-index/specs/features/tree-sitter-repomap/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

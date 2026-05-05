@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/multi-repo-workspace/charter.md
-> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.md
+> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-16)
 > **Platform:** Node.js ESM (`.mjs`), `node:test`, npm. Zero-runtime-dependency CLI plugin.
 
@@ -30,11 +30,11 @@
 - `skills/plan/SKILL.md` — update Release Mode (lines 577+) and Milestone Mode (lines 627+) with workspace-mode branches, unconditional epic-sync defer, feature-source annotation, dependency-inheritance rule, module-name validation, and repo-inside-workspace advisory
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/multi-repo-workspace/workspace-aware-vision.md` — target spec (23 behaviours, 23 acceptance criteria)
+- `.context-index/specs/features/multi-repo-workspace/workspace-aware-vision.spec.md` — target spec (23 behaviours, 23 acceptance criteria)
 - `.context-index/specs/features/multi-repo-workspace/charter.md` — charter (rev 4)
 - `.context-index/specs/features/multi-repo-workspace/workspace-aware-vision.review.md` — review report (PASS_WITH_NOTES)
-- `.context-index/specs/features/design/brainstorm-product-bootstrap.md` — upstream contract (one-question bootstrap, Module Map append rule)
-- `.context-index/specs/features/planning/multi-scope-plan.md` — upstream contract (Release Mode, Milestone Mode flows)
+- `.context-index/specs/features/design/brainstorm-product-bootstrap.spec.md` — upstream contract (one-question bootstrap, Module Map append rule)
+- `.context-index/specs/features/planning/multi-scope-plan.spec.md` — upstream contract (Release Mode, Milestone Mode flows)
 - `lib/workspace.mjs` — existing `detectWorkspace`, `resolveWorkspaceContext`, `resolveRef` (do not modify)
 - `tests/lib/workspace.test.mjs` — existing helper test patterns
 - `tests/skills/brainstorm-bootstrap.test.mjs` — SKILL.md assertion pattern (regex-based)

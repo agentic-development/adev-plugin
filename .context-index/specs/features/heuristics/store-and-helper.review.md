@@ -1,7 +1,7 @@
 # Architecture Review: store-and-helper (re-review r2)
 
 > **Date:** 2026-04-09
-> **Spec:** .context-index/specs/features/heuristics/store-and-helper.md
+> **Spec:** .context-index/specs/features/heuristics/store-and-helper.spec.md
 > **Charter:** .context-index/specs/features/heuristics/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2

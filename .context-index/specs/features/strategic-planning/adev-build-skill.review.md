@@ -1,7 +1,7 @@
 # Architecture Review: adev-build-skill
 
 > **Date:** 2026-04-27
-> **Spec:** .context-index/specs/features/strategic-planning/adev-build-skill.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 6
@@ -89,4 +89,4 @@
 
 **Action required:** None blocking. Spec is ready for planning.
 
-Run `/adev:plan --spec .context-index/specs/features/strategic-planning/adev-build-skill.md` to proceed.
+Run `/adev:plan --spec .context-index/specs/features/strategic-planning/adev-build-skill.spec.md` to proceed.

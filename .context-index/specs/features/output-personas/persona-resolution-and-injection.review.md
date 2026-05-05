@@ -1,7 +1,7 @@
 # Architecture Review: persona-resolution-and-injection
 
 > **Date:** 2026-04-21
-> **Spec:** .context-index/specs/features/output-personas/persona-resolution-and-injection.md
+> **Spec:** .context-index/specs/features/output-personas/persona-resolution-and-injection.spec.md
 > **Charter:** .context-index/specs/features/output-personas/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2
@@ -55,4 +55,4 @@ No new findings.
 ## Summary
 
 **Total findings:** 0 remaining (6 resolved across 2 rounds)
-**Action required:** Spec is ready for planning. Run `/adev:plan --spec .context-index/specs/features/output-personas/persona-resolution-and-injection.md` to proceed.
+**Action required:** Spec is ready for planning. Run `/adev:plan --spec .context-index/specs/features/output-personas/persona-resolution-and-injection.spec.md` to proceed.

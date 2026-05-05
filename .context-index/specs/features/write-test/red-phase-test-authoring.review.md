@@ -1,6 +1,6 @@
 # Architecture Review: red-phase-test-authoring
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/adev:write-test/red-phase-test-authoring.md
+> **Spec:** .context-index/specs/features/adev:write-test/red-phase-test-authoring.spec.md
 > **Charter:** .context-index/specs/features/adev:write-test/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

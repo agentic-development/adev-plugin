@@ -1,7 +1,7 @@
 # Architecture Review: configurable-checks
 
 > **Date:** 2026-04-19
-> **Spec:** .context-index/specs/features/validation/configurable-checks.md
+> **Spec:** .context-index/specs/features/validation/configurable-checks.spec.md
 > **Charter:** .context-index/specs/features/validation/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

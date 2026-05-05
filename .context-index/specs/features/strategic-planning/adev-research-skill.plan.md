@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** `.context-index/specs/features/strategic-planning/charter.md`
-> **Spec:** `.context-index/specs/features/strategic-planning/adev-research-skill.md` (rev 3)
+> **Spec:** `.context-index/specs/features/strategic-planning/adev-research-skill.spec.md` (rev 3)
 > **Review:** PASS_WITH_NOTES (2026-04-09, all 12 prior-round findings resolved)
 > **Platform:** Node.js (ESM, `.mjs`), npm, `node:test` runner, zero runtime deps
 
@@ -39,9 +39,9 @@ This plan covers a single, cohesive refactor of one skill. All 6 tasks are neede
   - Context packet composition: includes `charter: <module-name or null>` (null for ad-hoc research).
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev-research-skill.md` — rev 3 spec (source of truth for all behavioral requirements)
+- `.context-index/specs/features/strategic-planning/adev-research-skill.spec.md` — rev 3 spec (source of truth for all behavioral requirements)
 - `.context-index/specs/features/strategic-planning/adev-research-skill.review.md` — rev 3 review (PASS_WITH_NOTES with 6 documentation suggestions; SA-8 + SA-9 noted as "defer to implementation")
-- `.context-index/specs/cross-cutting/model-routing.md` — rev 2 cross-cutting spec (tier naming, return caps, `ultrathink` placement, self-check, scope discipline — authoritative for every subagent dispatch)
+- `.context-index/specs/cross-cutting/model-routing.spec.md` — rev 2 cross-cutting spec (tier naming, return caps, `ultrathink` placement, self-check, scope discipline — authoritative for every subagent dispatch)
 - `skills/review-specs/SKILL.md` — precedent pattern reference for multi-agent dispatch structure. Specifically `skills/review-specs/SKILL.md:71-163` (parallel subagent dispatch block with per-tier model selection).
 - `skills/review-specs/structural-architect-prompt.md`, `security-reviewer-prompt.md`, `consistency-analyzer-prompt.md` — precedent pattern reference for subagent prompt file shape (role → scope → output format → rules → "Before Finalizing" → output constraint).
 - `skills/research/SKILL.md` (current rev 1 single-agent version, 195 lines) — baseline for the rewrite; preserve Step 1 (arg parsing), Step 2 (slug + collision), Step 3 (load context), Step 7 (issue linking), Step 8 (report), and all "Key Principles" that are still relevant (graceful degradation, attribution, constitution-aware recommendations, no silent overwrites, read-only discipline).
@@ -775,7 +775,7 @@ Rewrite `skills/research/SKILL.md`. Preserve existing content for Steps 1, 2, 3,
    >
    > **Tool-surface verification.** Researcher subagents dispatched via the `Agent` tool (`subagent_type: general-purpose`) inherit the harness tool surface, not this skill's `allowed-tools` list. Each researcher prompt therefore instructs the subagent to probe its required tool with a no-op call at startup and return `status: SKIPPED, reason: "<tool> unavailable"` on failure. This probe is the single defined trigger point for graceful degradation. All researcher subagents use `subagent_type: general-purpose`; do not switch to specialized routing without an explicit spec revision (CON-7).
    >
-   > **Model tier resolution.** Read `model_tiers` from `.context-index/platform-context.yaml`. If absent or a tier is unset, fall back to hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory. Tier assignments for this skill:
+   > **Model tier resolution.** Read `model_tiers` from `.context-index/platform-context.yaml`. If absent or a tier is unset, fall back to hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.spec.md` and log a one-time advisory. Tier assignments for this skill:
    > - Internal researcher = `fast`
    > - Web researcher = `capable`
    > - GitHub researcher = `capable`

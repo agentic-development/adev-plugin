@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
-> **Spec:** .context-index/specs/features/test-strategies/integration-strategy-profile.md
+> **Spec:** .context-index/specs/features/test-strategies/integration-strategy-profile.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-27)
 > **Platform:** JavaScript (ESM), Node.js, node:test
 
@@ -26,9 +26,9 @@
 - `tests/lib/test-strategies/registry.test.mjs` — update count 8→9, add integration to ALL_IDS, remove integration from null assertions
 - `tests/lib/test-strategies/detection.test.mjs` — add tests for integration project-level and task-level detection
 - `tests/lib/test-strategies/profiles.test.mjs` — add test for integration profile loading
-- `.context-index/specs/features/test-strategies/strategy-type-registry.md` — update count and add integration entry
-- `.context-index/specs/features/test-strategies/strategy-profile-contract.md` — update "8 known slugs" to registry-dynamic validation
-- `.context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.md` — update "any of the 8 types" wording
+- `.context-index/specs/features/test-strategies/strategy-type-registry.spec.md` — update count and add integration entry
+- `.context-index/specs/features/test-strategies/strategy-profile-contract.spec.md` — update "8 known slugs" to registry-dynamic validation
+- `.context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.spec.md` — update "any of the 8 types" wording
 
 **Reference (read, do not modify):**
 - `lib/test-strategies/profiles/contract.md` — follow this profile frontmatter structure
@@ -40,36 +40,36 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.md` (Behavior 7 — detection; Actionable Task Map: "Update strategy-type-registry")
+- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.spec.md` (Behavior 7 — detection; Actionable Task Map: "Update strategy-type-registry")
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Strategy Type Registry)
 - Reference: `lib/test-strategies/registry.mjs` — understand STRATEGIES array structure and alphabetical ordering
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.md` (Behaviors 2, 3, 4, 5, 6, 8 — full profile)
+- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.spec.md` (Behaviors 2, 3, 4, 5, 6, 8 — full profile)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Strategy Profile Contract)
 - Reference: `lib/test-strategies/profiles/contract.md` — exact frontmatter format to follow
 - Reference: `lib/test-strategies/profiles.mjs:42-53` — REQUIRED_FIELDS and ARRAY_FIELDS for validation
 - **Depends on Task 1** (registry must include `integration` before `getStrategyProfile` can load the profile without fallback)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.md` (Behavior 7 — detection heuristics)
+- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.spec.md` (Behavior 7 — detection heuristics)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Strategy Detection Heuristics)
 - Reference: `lib/test-strategies/detection.mjs` — existing detection patterns and helper functions
 - Reference: `tests/lib/test-strategies/detection.test.mjs` — existing test helper `touch()` and `mkdir()` patterns
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.md` (Behavior 4 — gaming rules; Error Cases: INTEGRATION_NO_CREDENTIALS, INTEGRATION_HOST_UNREACHABLE)
+- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.spec.md` (Behavior 4 — gaming rules; Error Cases: INTEGRATION_NO_CREDENTIALS, INTEGRATION_HOST_UNREACHABLE)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Cross-strategy Gaming Patterns)
 - Reference: `lib/test-strategies/gaming.mjs` — existing SHARED_PATTERNS structure and `lineMatches` helper
 - Reference: `tests/lib/test-strategies/gaming.test.mjs` — existing test patterns for describe/test blocks
 
 ### Task 5 Context
-- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.md` (Behaviors 2, 3 — RED/GREEN definition, mandatory infra block; Error Cases: INTEGRATION_NO_REQUIREMENTS_BLOCK)
+- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.spec.md` (Behaviors 2, 3 — RED/GREEN definition, mandatory infra block; Error Cases: INTEGRATION_NO_REQUIREMENTS_BLOCK)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Write-test Dispatch)
 - Reference: `skills/write-test/SKILL.md:81-103` — existing strategy profile loading section to extend
 
 ### Task 6 Context
-- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.md` (charter extension note)
+- Spec: `.context-index/specs/features/test-strategies/integration-strategy-profile.spec.md` (charter extension note)
 - Reference: `strategy-type-registry.md`, `strategy-profile-contract.md`, `cross-strategy-gaming-patterns.md` — sections to update
 
 ---
@@ -880,9 +880,9 @@ git commit -m "feat(test-strategies): add mandatory infra block instruction to w
 **Charter capability:** Strategy Type Registry (and cross-cutting spec maintenance)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
-- Modify: `.context-index/specs/features/test-strategies/strategy-type-registry.md`
-- Modify: `.context-index/specs/features/test-strategies/strategy-profile-contract.md`
-- Modify: `.context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.md`
+- Modify: `.context-index/specs/features/test-strategies/strategy-type-registry.spec.md`
+- Modify: `.context-index/specs/features/test-strategies/strategy-profile-contract.spec.md`
+- Modify: `.context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.spec.md`
 
 **Tests:** No executable tests — these are spec documents. Verify by reading each file after edit.
 
@@ -920,9 +920,9 @@ Read each of the three files and confirm the updates are correct and no other co
 
 ```bash
 git add \
-  .context-index/specs/features/test-strategies/strategy-type-registry.md \
-  .context-index/specs/features/test-strategies/strategy-profile-contract.md \
-  .context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.md
+  .context-index/specs/features/test-strategies/strategy-type-registry.spec.md \
+  .context-index/specs/features/test-strategies/strategy-profile-contract.spec.md \
+  .context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.spec.md
 git commit -m "docs(test-strategies): update sibling specs for integration as 9th strategy"
 ```
 

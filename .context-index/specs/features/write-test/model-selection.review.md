@@ -1,6 +1,6 @@
 # Architecture Review: model-selection
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/adev:write-test/model-selection.md
+> **Spec:** .context-index/specs/features/adev:write-test/model-selection.spec.md
 > **Charter:** .context-index/specs/features/adev:write-test/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

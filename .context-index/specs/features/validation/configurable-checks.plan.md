@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/validation/charter.md
-> **Spec:** .context-index/specs/features/validation/configurable-checks.md
+> **Spec:** .context-index/specs/features/validation/configurable-checks.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-19)
 > **Platform:** JavaScript (ESM), Node.js, npm, node:test
 

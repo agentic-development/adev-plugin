@@ -1,7 +1,7 @@
 # Plan: adev:vision Skill
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev:vision-skill.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:vision-skill.spec.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
@@ -86,7 +86,7 @@ Create the `/adev:vision` skill as a markdown-based SKILL.md that guides product
 - None
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev:vision-skill.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:vision-skill.spec.md` — Behavioral contract
 - `.context-index/specs/features/strategic-planning/adev:vision-skill.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
 - `.context-index/constitution.md` — Identity section (used for product.md bootstrap)
 - `skills/assess/SKILL.md` — Pattern reference for skill file structure

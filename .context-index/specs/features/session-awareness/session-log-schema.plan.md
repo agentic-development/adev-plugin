@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
-> **Spec:** .context-index/specs/features/session-awareness/session-log-schema.md
+> **Spec:** .context-index/specs/features/session-awareness/session-log-schema.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-06)
 > **Platform:** JavaScript ESM, Node.js, node:test
 
@@ -19,18 +19,18 @@
 - `tests/hooks/session-capture.test.mjs` — Update existing tests, add schema validation tests
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/session-awareness/session-log-schema.md` — Schema contract
+- `.context-index/specs/features/session-awareness/session-log-schema.spec.md` — Schema contract
 - `.context-index/samples/hook-sessionstart-session-start.md` — Hook pattern reference
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/session-awareness/session-log-schema.md` (Schema Definition, Error Cases)
+- Spec: `.context-index/specs/features/session-awareness/session-log-schema.spec.md` (Schema Definition, Error Cases)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Session Log Schema)
 - Constitution: `.context-index/constitution.md` (Principle 4: Hook protocol compliance)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/session-awareness/session-log-schema.md` (Acceptance Criteria, Field Constraints)
+- Spec: `.context-index/specs/features/session-awareness/session-log-schema.spec.md` (Acceptance Criteria, Field Constraints)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Session Log Schema)
 
 ## Parallelization

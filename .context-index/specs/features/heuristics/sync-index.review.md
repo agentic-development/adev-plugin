@@ -1,7 +1,7 @@
 # Architecture Review: sync-index
 
 > **Date:** 2026-04-23
-> **Spec:** `.context-index/specs/features/heuristics/sync-index.md`
+> **Spec:** `.context-index/specs/features/heuristics/sync-index.spec.md`
 > **Charter:** `.context-index/specs/features/heuristics/charter.md`
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

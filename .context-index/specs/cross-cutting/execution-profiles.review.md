@@ -1,7 +1,7 @@
 # Architecture Review: execution-profiles
 
 > **Date:** 2026-04-19
-> **Spec:** .context-index/specs/cross-cutting/execution-profiles.md
+> **Spec:** .context-index/specs/cross-cutting/execution-profiles.spec.md
 > **Charter:** (cross-cutting — no parent charter)
 > **Verdict:** PASS_WITH_NOTES
 

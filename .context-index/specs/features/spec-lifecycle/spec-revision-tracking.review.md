@@ -1,7 +1,7 @@
 # Architecture Review: spec-revision-tracking
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/spec-revision-tracking.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/spec-revision-tracking.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS
 

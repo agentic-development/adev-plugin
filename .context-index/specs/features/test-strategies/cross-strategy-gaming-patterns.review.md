@@ -1,7 +1,7 @@
 # Architecture Review: cross-strategy-gaming-patterns
 
 > **Date:** 2026-04-20
-> **Spec:** .context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.md
+> **Spec:** .context-index/specs/features/test-strategies/cross-strategy-gaming-patterns.spec.md
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1
