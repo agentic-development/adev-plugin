@@ -1,7 +1,7 @@
 # Architecture Review: template-updates
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/template-updates.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/template-updates.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

@@ -1,7 +1,7 @@
 # Architecture Review: session-log-schema
 
 > **Date:** 2026-04-06
-> **Spec:** .context-index/specs/features/session-awareness/session-log-schema.md
+> **Spec:** .context-index/specs/features/session-awareness/session-log-schema.spec.md
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

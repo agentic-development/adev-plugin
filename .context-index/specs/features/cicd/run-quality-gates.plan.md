@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/cicd/charter.md
-> **Spec:** .context-index/specs/features/cicd/run-quality-gates.md
+> **Spec:** .context-index/specs/features/cicd/run-quality-gates.spec.md
 > **Review:** PASS (2026-03-24)
 > **Platform:** GitHub Actions, Node.js, npm
 
@@ -22,7 +22,7 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/cicd/run-quality-gates.md` (all acceptance criteria)
+- Spec: `.context-index/specs/features/cicd/run-quality-gates.spec.md` (all acceptance criteria)
 - Charter: `.context-index/specs/features/cicd/charter.md` (capability: Run Quality Gates)
 - Constitution: `.context-index/constitution.md` (principle: minimize external dependencies - CI config is exempt)
 

@@ -1,7 +1,7 @@
 # Architecture Review: structured-commit-trailers
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/structured-commit-trailers.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/structured-commit-trailers.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

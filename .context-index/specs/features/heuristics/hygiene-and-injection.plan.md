@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/hygiene-and-injection.md
+> **Spec:** .context-index/specs/features/heuristics/hygiene-and-injection.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-23)
 > **Platform:** Node.js, JavaScript ESM, node:test
 

@@ -1,7 +1,7 @@
 # Architecture Review: implement-integration-gate
 
 > **Date:** 2026-04-15
-> **Spec:** .context-index/specs/features/tiered-test-gates/implement-integration-gate.md
+> **Spec:** .context-index/specs/features/tiered-test-gates/implement-integration-gate.spec.md
 > **Charter:** .context-index/specs/features/tiered-test-gates/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2

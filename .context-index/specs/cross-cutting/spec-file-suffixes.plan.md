@@ -1,7 +1,7 @@
 # Implementation Plan: Standardize Spec File Suffixes
 
 > **Methodology:** adev
-> **Spec:** .context-index/specs/cross-cutting/spec-file-suffixes.md
+> **Spec:** .context-index/specs/cross-cutting/spec-file-suffixes.spec.md
 > **Review:** PASS_WITH_NOTES (2026-05-04)
 > **Platform:** JavaScript (ESM), Node.js, npm
 
@@ -14,11 +14,11 @@
 ## File Structure
 
 **Rename (132 live specs):**
-- `.context-index/specs/features/**/<name>.md` → `<name>.spec.md`
-- `.context-index/specs/cross-cutting/<name>.md` → `<name>.spec.md`
+- `.context-index/specs/features/**/<name>.spec.md` → `<name>.spec.md`
+- `.context-index/specs/cross-cutting/<name>.spec.md` → `<name>.spec.md`
 
 **Rename (39 validation reports):**
-- `.context-index/specs/features/**/<name>-validation.md` → `<name>.validate.md`
+- `.context-index/specs/features/**/<name>.validate.md` → `<name>.validate.md`
 
 **Modify (source code):**
 - `lib/meta-tools.mjs:155-157` — spec filter logic
@@ -34,7 +34,7 @@
 - All skills referencing spec paths or using exclusion-list scanning
 
 **Reference (read, do not modify):**
-- `.context-index/specs/cross-cutting/spec-file-suffixes.md` — the spec
+- `.context-index/specs/cross-cutting/spec-file-suffixes.spec.md` — the spec
 - `.context-index/specs/cross-cutting/spec-file-suffixes.review.md` — review report
 
 ---
@@ -62,7 +62,7 @@
 # Rename live specs in features/
 find .context-index/specs/features -name '*.md' \
   -not -name 'charter.md' -not -name '*.plan.md' -not -name '*.review.md' \
-  -not -name '*-validation.md' -not -name '*.validate.md' \
+  -not -name '*.validate.md' -not -name '*.validate.md' \
   -not -name '*-research.md' -not -name '*-summary.md' -not -name '*-findings.md' \
   -not -name '.*' -not -name '*-template*' | while IFS= read -r f; do
   git mv "$f" "${f%.md}.spec.md"
@@ -99,23 +99,23 @@ git commit -m "refactor: rename live specs to .spec.md suffix (Task 1/7)"
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 1
 **Files:**
-- Rename: 39 files matching `*-validation.md`
+- Rename: 39 files matching `*.validate.md`
 
 **Steps:**
 
 - [ ] **Rename validation reports**
 
 ```bash
-find .context-index/specs/features -name '*-validation.md' | while IFS= read -r f; do
+find .context-index/specs/features -name '*.validate.md' | while IFS= read -r f; do
   dir=$(dirname "$f")
-  base=$(basename "$f" -validation.md)
+  base=$(basename "$f" .validate.md)
   git mv "$f" "$dir/${base}.validate.md"
 done
 ```
 
 - [ ] **Verify renames**
 
-Run: `find .context-index/specs -name '*-validation.md' | wc -l`
+Run: `find .context-index/specs -name '*.validate.md' | wc -l`
 Expected: 0
 
 Run: `find .context-index/specs -name '*.validate.md' | wc -l`
@@ -155,7 +155,7 @@ Same pattern for `.review.md` files.
 
 - [ ] **Update validation report references**
 
-In any file referencing `-validation.md`, update to `.validate.md`:
+In any file referencing `.validate.md`, update to `.validate.md`:
 ```bash
 find .context-index/specs -name '*.plan.md' -o -name '*.review.md' | \
   xargs sed -i '' 's|-validation\.md|.validate.md|g'
@@ -217,12 +217,12 @@ Update `.replace(/\.md$/, "")` at line 64 to `.replace(/\.spec\.md$/, "")`.
 
 Lines 288-289: Replace negative exclusion list with `if (!f.endsWith(".spec.md")) continue;`
 Line 296: Update `.replace(/\.md$/, ".review.md")` to `.replace(/\.spec\.md$/, ".review.md")`
-Lines 299, 321: Update `-validation.md` references to `.validate.md`
+Lines 299, 321: Update `.validate.md` references to `.validate.md`
 Line 88: Update `.replace(/\.md$/, ".plan.md")` to `.replace(/\.spec\.md$/, ".plan.md")`
 
 - [ ] **Update constitution and CLAUDE.md**
 
-Change `Spec: .context-index/specs/features/<module>/<spec-slug>.md` to `Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md` in both files.
+Change `Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md` to `Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md` in both files.
 
 - [ ] **Run tests**
 
@@ -250,7 +250,7 @@ git commit -m "refactor: update source code spec path patterns to .spec.md (Task
 
 - [ ] **Replace negative exclusion lists with positive glob**
 
-In all skills that currently use `(excluding charter.md, *.plan.md, *.review.md, *-validation.md, *.validate.md, *-research.md, *-summary.md, *-findings.md, CONSISTENCY-REVIEW.md)`:
+In all skills that currently use `(excluding charter.md, *.plan.md, *.review.md, *.validate.md, *.validate.md, *-research.md, *-summary.md, *-findings.md, CONSISTENCY-REVIEW.md)`:
 
 Replace with: `(matching *.spec.md)`
 
@@ -260,11 +260,11 @@ Change output file naming from `<slug>.md` to `<slug>.spec.md`.
 
 - [ ] **Update validation report naming in validate SKILL.md**
 
-Change output from `<slug>-validation.md` to `<slug>.validate.md`.
+Change output from `<slug>.validate.md` to `<slug>.validate.md`.
 
 - [ ] **Update spec path references in all skills**
 
-Any hardcoded path like `.context-index/specs/features/<module>/<name>.md` becomes `.spec.md`.
+Any hardcoded path like `.context-index/specs/features/<module>/<name>.spec.md` becomes `.spec.md`.
 
 - [ ] **Mirror all changes to provider copies**
 
@@ -296,7 +296,7 @@ Change any example paths referencing `<name>.md` to `<name>.spec.md`.
 
 - [ ] **Update validation report examples**
 
-Change any example paths referencing `<name>-validation.md` to `<name>.validate.md`.
+Change any example paths referencing `<name>.validate.md` to `<name>.validate.md`.
 
 - [ ] **Commit**
 

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
-> **Spec:** .context-index/specs/features/strategic-planning/adev-build-skill.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-27)
 > **Platform:** JavaScript (ESM), Node.js, node:test, no framework
 
@@ -31,7 +31,7 @@
 - `tests/skills/build-phase-and-stale.test.mjs` — assertions for phase filter and zombie build detection
 
 **Modify (editorial):**
-- `.context-index/specs/features/strategic-planning/adev-build-skill.md` — fix B1 wording (add `route`), add `validate` to build state JSON example
+- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` — fix B1 wording (add `route`), add `validate` to build state JSON example
 
 **Reference (read, do not modify):**
 - `tests/skills/build-dry-run-gates.test.mjs` — follow this pattern for new test files
@@ -43,17 +43,17 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.md` (Behaviors 2, 3a, 8, 8a, 16, 17, 18; AC sections: Pipeline Modes, Review Blocker-Fix Loop, Subagent and Fork Isolation)
+- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 2, 3a, 8, 8a, 16, 17, 18; AC sections: Pipeline Modes, Review Blocker-Fix Loop, Subagent and Fork Isolation)
 - Charter: `.context-index/specs/features/strategic-planning/charter.md` (capability: `/adev:build` orchestrator)
-- Cross-cutting: `.context-index/specs/cross-cutting/subagent-cost-routing.md` (build-orchestrator role = reasoning tier)
+- Cross-cutting: `.context-index/specs/cross-cutting/subagent-cost-routing.spec.md` (build-orchestrator role = reasoning tier)
 - Sample: `tests/skills/build-dry-run-gates.test.mjs` (test file pattern to follow)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.md` (Behaviors 3, 3a; AC: Phase filter, Resume and Stale Builds; Stale Build Detection section)
+- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 3, 3a; AC: Phase filter, Resume and Stale Builds; Stale Build Detection section)
 - Sample: `tests/skills/build-workspace-mode.test.mjs` (test file pattern to follow)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.md` (B1 wording, build state JSON example)
+- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (B1 wording, build state JSON example)
 - Review: `.context-index/specs/features/strategic-planning/adev-build-skill.review.md` (SA-3, CON-2, CON-4 findings)
 
 ---
@@ -88,8 +88,8 @@ All tasks share `skills/build/SKILL.md` or the sibling spec `.md` file and must 
 **Tests:** `tests/skills/build-full-pipeline.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/strategic-planning/adev-build-skill.md` (Behaviors 2, 8, 8a, 17, 18; AC: Pipeline Modes, Review Blocker-Fix Loop)
-- `.context-index/specs/cross-cutting/subagent-cost-routing.md` (build-orchestrator role)
+- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 2, 8, 8a, 17, 18; AC: Pipeline Modes, Review Blocker-Fix Loop)
+- `.context-index/specs/cross-cutting/subagent-cost-routing.spec.md` (build-orchestrator role)
 - `tests/skills/build-dry-run-gates.test.mjs` (test pattern)
 
 - [x] **Write failing test**
@@ -341,7 +341,7 @@ git commit -m "feat(strategic-planning): add Full Pipeline (--full) and blocker-
 **Tests:** `tests/skills/build-phase-and-stale.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/strategic-planning/adev-build-skill.md` (Behavior 3, 3a; AC: Phase filter; Stale Build Detection section)
+- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behavior 3, 3a; AC: Phase filter; Stale Build Detection section)
 - `tests/skills/build-workspace-mode.test.mjs` (test file pattern)
 
 - [x] **Write failing test**
@@ -484,7 +484,7 @@ git commit -m "feat(strategic-planning): fix phase filter and add zombie build d
 **Charter capability:** `/adev:build` orchestrator — spec accuracy
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
-- Modify: `.context-index/specs/features/strategic-planning/adev-build-skill.md`
+- Modify: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md`
 
 **Tests:** `tests/skills/build-full-pipeline.test.mjs` (already covers `build-orchestrator` and `"validate"` assertions from Task 1)
 
@@ -498,13 +498,13 @@ No new test file needed. Verify the spec `.md` file has the correct text by read
 
 Confirm Behavior 1 in spec currently reads `plan → implement → validate` (missing route):
 ```bash
-grep "plan → implement → validate" .context-index/specs/features/strategic-planning/adev-build-skill.md
+grep "plan → implement → validate" .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
 ```
 Expected: match found (confirming the B1 bug)
 
 - [x] **Implement**
 
-Edit `.context-index/specs/features/strategic-planning/adev-build-skill.md`:
+Edit `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md`:
 
 **1. Fix Behavior 1** — change `plan → implement → validate` to `plan → route → implement → validate`:
 ```
@@ -524,7 +524,7 @@ Expected: PASS — all tests pass including `build-full-pipeline.test.mjs` and `
 - [x] **Commit**
 
 ```bash
-git add .context-index/specs/features/strategic-planning/adev-build-skill.md
+git add .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
 git commit -m "fix(strategic-planning): fix B1 route omission and add validate to build state example in spec"
 ```
 

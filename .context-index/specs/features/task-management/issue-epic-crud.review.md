@@ -1,7 +1,7 @@
 # Architecture Review: issue-epic-crud
 
 > **Date:** 2026-03-31
-> **Spec:** .context-index/specs/features/task-management/issue-epic-crud.md
+> **Spec:** .context-index/specs/features/task-management/issue-epic-crud.spec.md
 > **Charter:** .context-index/specs/features/task-management/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

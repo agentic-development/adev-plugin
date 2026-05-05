@@ -1,7 +1,7 @@
 # Architecture Review: plan-test-mapping
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/plan-test-mapping.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/plan-test-mapping.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

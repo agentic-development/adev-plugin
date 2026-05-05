@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/tree-sitter-repomap/charter.md
-> **Spec:** .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.md
+> **Spec:** .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-23)
 > **Platform:** Node.js, JavaScript (ESM), npm, node:test
 

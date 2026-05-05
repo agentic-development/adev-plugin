@@ -1,7 +1,7 @@
 # Architecture Review: verification-runner-and-schema
 
 > **Date:** 2026-05-01
-> **Spec:** .context-index/specs/features/infra-preflight/verification-runner-and-schema.md
+> **Spec:** .context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md
 > **Charter:** .context-index/specs/features/infra-preflight/charter.md
 > **Verdict:** PASS
 > **last-reviewed-revision:** 3
@@ -43,4 +43,4 @@ No findings. All previous blockers (CON-1, CON-2, CON-4, CON-7) and warnings (CO
 
 **Total findings (final round):** 0 (all resolved)
 **Findings resolved across 2 review rounds:** 18 (7 blockers, 8 warnings, 3 suggestions)
-**Action required:** Spec is ready for planning. Run `/adev:plan --spec .context-index/specs/features/infra-preflight/verification-runner-and-schema.md` to proceed.
+**Action required:** Spec is ready for planning. Run `/adev:plan --spec .context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` to proceed.

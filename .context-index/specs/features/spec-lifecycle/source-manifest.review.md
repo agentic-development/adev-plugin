@@ -1,7 +1,7 @@
 # Architecture Review: source-manifest
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/source-manifest.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/source-manifest.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

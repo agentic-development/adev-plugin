@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/adev:codehealth/charter.md
-> **Spec:** .context-index/specs/features/adev:codehealth/preconditions-and-arguments.md (primary), detection-passes.md, report-generation.md, hygiene-integration.md
+> **Spec:** .context-index/specs/features/adev:codehealth/preconditions-and-arguments.spec.md (primary), detection-passes.md, report-generation.md, hygiene-integration.md
 > **Review:** PASS_WITH_NOTES (2026-04-02)
 > **Platform:** JavaScript ESM, Node.js, node:test, npm
 
