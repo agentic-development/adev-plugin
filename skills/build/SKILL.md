@@ -198,6 +198,36 @@ Everything else — reading source code, running tests, dispatching implementati
 
 ---
 
+## One-Step-Per-Invocation Dispatch
+
+The build orchestrator executes **exactly one pipeline step per turn**, then yields control. This is the primary structural mechanism preventing the agent from skipping steps or inlining work due to accumulated context.
+
+### Dispatch Loop (the only thing the orchestrator does)
+
+On every invocation (whether fresh `--spec` or `--resume`), the orchestrator performs this dispatch loop exactly once:
+
+1. **Read build state.** Read `.context-index/build-state/<slug>.json` BEFORE taking any action. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history, not prior subagent results. If no state file exists (fresh build), create one with all steps pending.
+
+2. **Determine next step.** Scan the `steps` array for the first step without `status: completed` or `status: skipped`. Evaluate that step's skip conditions against disk artifacts. If skip conditions are met, mark it `skipped` and advance to the next — but dispatch at most ONE non-skipped step.
+
+3. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
+
+4. **Record result.** Write the STEP_RESULT to build state (step status, timestamp, verdict, error if any). Update `status` and `updated` fields.
+
+5. **Re-invoke or stop.**
+   - If more steps remain AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn.
+   - If all steps are complete (or a stop condition is met): do NOT re-invoke. Print the final summary and exit without re-invocation.
+
+### Why One Step Per Turn
+
+This model prevents the "finish the work" failure mode where accumulated context causes the agent to skip lifecycle steps. By executing one step per turn and re-invoking with a fresh context, the orchestrator never accumulates enough context to feel compelled to shortcut. Each turn has a single, narrow task: read state, determine next step, dispatch one subagent, record result.
+
+### Verbose Mode
+
+When `--verbose` is set, the orchestrator prints its reasoning before each dispatch: which step was selected, why it was not skipped, what context packet was assembled. This is diagnostic output only — `--verbose` does not change the one-step-per-turn behavior. The orchestrator still dispatches exactly one step and re-invokes.
+
+---
+
 ## Build Pipeline
 
 The pipeline executes 5 steps per spec, in strict order. For each step, the orchestrator: (1) checks the skip condition on artifacts, (2) dispatches a subagent via the Agent tool if not skipped, (3) reads the subagent's result, (4) checks the stop condition, and (5) persists build state.
@@ -663,6 +693,8 @@ Build complete.
 6. **Pipeline order is fixed.** The 5-step order (review, plan, route, implement, validate) is invariant. Steps can be skipped based on conditions, but they are never reordered.
 
 7. **Issue board is optional.** All issue board operations are guarded by `tasks.backend` in the manifest. If unconfigured, the build runs identically but without issue tracking.
+
+8. **One step per turn.** The orchestrator dispatches exactly one pipeline step per invocation, persists state, and re-invokes itself for the next step. It never runs two or more steps in a single turn. This prevents context accumulation from causing step-skipping. See the One-Step-Per-Invocation Dispatch section.
 
 ---
 
