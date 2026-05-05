@@ -49,6 +49,7 @@
 | epic-43 | Token Consumption Optimization | closed |  |  | 2026-05-03T00:00:00.000Z | 2026-05-03T00:00:00.000Z |
 | epic-46 | Codebase Hygiene & Skill Consistency Cleanup | closed |  |  | 2026-05-04T13:27:07.653Z | 2026-05-04T00:00:00.000Z |
 | epic-47 | Remove Entire.io Integration — Defer to Backlog | closed |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| epic-48 | Standardize Spec File Suffixes | open | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 
 ## Issues
 
@@ -297,3 +298,10 @@
 | issue-243 | Triage 24 orphaned .plan.md files | closed | 3 | task | epic-46 |  |  |  |  | Closed: Triaged all 24. Result: 6 COMPLETED_ELSEWHERE (work done under other epics), 3 SUPERSEDED (skills renamed/folded), 15 STILL_RELEVANT (Phase 2 backlog). Superseded: adev-roadmap-skill, adev-start-intake-ext, adev-vision-skill. Completed elsewhere: adev-issues-milestone-ext, adev-status-milestone-ext, backend-adapters, issue-epic-crud, lifecycle-integration, constitution-sync. |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | issue-244 | Remove Entire.io session capture provider references | closed | 2 | task | epic-47 |  |  |  |  | Closed: Removed all Entire.io references from source (session-parser.mjs), 9 SKILL.md files (hygiene/implement/debug x3 providers), templates, README, and 2 test cases. Moved Entire adapter to v2/deferred in spec-lifecycle charter. 1669 tests pass. |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | issue-245 | Status and hygiene skills count validation reports as draft specs | closed | 2 | bug | epic-46 |  |  |  |  | Closed: Added *-validation.md to exclusion lists in hygiene SKILL.md (3 locations), status SKILL.md, and all provider copies (codex/opencode hygiene + status). Actual draft count is 2, not 45. |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-246 | Rename live specs to .spec.md | open | 2 | task | epic-48 | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md | 1 |  |  |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-247 | Normalize validation reports to .validate.md | open | 2 | task | epic-48 | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md | 2 |  | issue-246 |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-248 | Update cross-references in plans and reviews | open | 2 | task | epic-48 | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md | 3 |  | issue-246,issue-247 |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-249 | Update source code spec path patterns | open | 2 | task | epic-48 | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md | 4 |  | issue-246 |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-250 | Update SKILL.md files and provider copies | open | 2 | task | epic-48 | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md | 5 |  | issue-246 |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-251 | Update templates | open | 3 | task | epic-48 | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md | 6 |  | issue-246 |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
+| issue-252 | Verification and cleanup | open | 2 | task | epic-48 | .context-index/specs/cross-cutting/spec-file-suffixes.plan.md | 7 |  | issue-248,issue-249,issue-250,issue-251 |  |  | 2026-05-04T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
