@@ -1,5 +1,5 @@
 # Bundled validate check registry defaults.
-# See: .context-index/specs/features/validation/configurable-checks.md rev 3.
+# See: .context-index/specs/features/validation/configurable-checks.spec.md rev 3.
 #
 # Check 1 (quality gates) is sourced from governance/gates.yaml by a separate
 # flow in skills/validate/SKILL.md and is not represented here. All other
