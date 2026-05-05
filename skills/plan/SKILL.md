@@ -286,7 +286,7 @@ These tags tell `/adev:implement` which subagent to dispatch for each task.
 
 Save the plan adjacent to the spec:
 - Spec at `.context-index/specs/features/<module>/<task>.md` gets its plan at `.context-index/specs/features/<module>/<task>.plan.md`
-- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its plan at `.context-index/specs/cross-cutting/<topic>.plan.md`
+- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.spec.md` gets its plan at `.context-index/specs/cross-cutting/<topic>.plan.md`
 
 **Workspace-aware plan save location:** When in workspace-aware Spec Mode, the plan is saved in the workspace `.context-index/`, not in the target repo's `.context-index/`. This keeps workspace-level planning artifacts co-located with the workspace-level specs that produced them.
 
@@ -299,7 +299,7 @@ Every plan starts with this header:
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/<module>/charter.md
-> **Spec:** .context-index/specs/features/<module>/<task>.md
+> **Spec:** .context-index/specs/features/<module>/<task>.spec.md
 > **Review:** <PASS|PASS_WITH_NOTES> (YYYY-MM-DD)
 > **Platform:** <framework> <version>, <language>, <key deps>
 
@@ -360,12 +360,12 @@ When no source-manifest exists (new spec), fall back to: charter Dependencies ta
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/<module>/<task>.md` (criteria 1-3)
+- Spec: `.context-index/specs/features/<module>/<task>.spec.md` (criteria 1-3)
 - Charter: `.context-index/specs/features/<module>/charter.md` (capability: <name>)
 - Source files: <from spec source-manifest.files[], full read for primary, signatures for siblings>
 - Sample: `.context-index/samples/<pattern>-sample.md`
 - ADR: `.context-index/adrs/<relevant-adr>.md` (decision + rationale only)
-- Cross-cutting: `.context-index/specs/cross-cutting/<relevant>.md`
+- Cross-cutting: `.context-index/specs/cross-cutting/<relevant>.spec.md`
 - Boundary rules: `governance/boundaries.yaml` (rules affecting task files)
 - Heuristics: <N> entries for module `<M>` (IDs: <id1>, <id2>, ...)
 
