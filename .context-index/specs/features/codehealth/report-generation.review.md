@@ -1,7 +1,7 @@
 # Architecture Review: report-generation
 
 > **Date:** 2026-04-02
-> **Spec:** .context-index/specs/features/adev:codehealth/report-generation.md
+> **Spec:** .context-index/specs/features/adev:codehealth/report-generation.spec.md
 > **Charter:** .context-index/specs/features/adev:codehealth/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

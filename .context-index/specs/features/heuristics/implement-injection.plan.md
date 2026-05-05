@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/implement-injection.md
+> **Spec:** .context-index/specs/features/heuristics/implement-injection.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-12)
 > **Platform:** Node.js, JavaScript (ESM), node:test
 
@@ -22,21 +22,21 @@
 
 **Reference (read, do not modify):**
 - `lib/heuristics.mjs` — `retrieveHeuristics`, `renderHeuristic` (from retrieval-filtering plan)
-- `.context-index/specs/features/heuristics/retrieval-filtering.md` — Budget and format conventions
+- `.context-index/specs/features/heuristics/retrieval-filtering.spec.md` — Budget and format conventions
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/heuristics/implement-injection.md` (Behaviors 1-2, 6-7)
+- Spec: `.context-index/specs/features/heuristics/implement-injection.spec.md` (Behaviors 1-2, 6-7)
 - Charter: `.context-index/specs/features/heuristics/charter.md` (capability: Implement Injection)
 - Current SKILL.md: `skills/implement/SKILL.md` (Step 1, lines 28-50)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/heuristics/implement-injection.md` (Behaviors 3-5, 7)
+- Spec: `.context-index/specs/features/heuristics/implement-injection.spec.md` (Behaviors 3-5, 7)
 - Current SKILL.md: `skills/implement/SKILL.md` (Step 2a, lines 85-97)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/heuristics/implement-injection.md` (all Behaviors, all AC)
+- Spec: `.context-index/specs/features/heuristics/implement-injection.spec.md` (all Behaviors, all AC)
 
 ## Parallelization
 

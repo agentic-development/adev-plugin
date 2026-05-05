@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/adev:document/charter.md
-> **Spec:** .context-index/specs/features/adev:document/generate-module-docs.md
+> **Spec:** .context-index/specs/features/adev:document/generate-module-docs.spec.md
 > **Review:** PASS (2026-03-23)
 > **Platform:** Node.js, JavaScript ESM (.mjs), no framework
 
@@ -21,7 +21,7 @@
 - `tests/skills/document.test.mjs` — Add tests for module docs and slug validation
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/adev:document/generate-module-docs.md` — Source of truth for behaviors
+- `.context-index/specs/features/adev:document/generate-module-docs.spec.md` — Source of truth for behaviors
 - `skills/document/SKILL.md` — Extend this file (already created)
 
 ---
@@ -29,13 +29,13 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/adev:document/generate-module-docs.md` (all behaviors, error cases, acceptance criteria)
+- Spec: `.context-index/specs/features/adev:document/generate-module-docs.spec.md` (all behaviors, error cases, acceptance criteria)
 - Charter: `.context-index/specs/features/adev:document/charter.md` (capability: Generate module docs, Argument: --module)
 - ADR: `.context-index/adrs/0001-web-tree-sitter-dependency.md` (symbol-ranks.json is the optional enhanced data source)
 - Constitution: `.context-index/constitution.md` (principle: minimize external dependencies — slug validation uses Node.js `path` module only)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/adev:document/generate-module-docs.md` (acceptance criteria for slug validation and --module behavior)
+- Spec: `.context-index/specs/features/adev:document/generate-module-docs.spec.md` (acceptance criteria for slug validation and --module behavior)
 - Reference: `tests/skills/document.test.mjs` (extend this test file)
 
 ---
@@ -53,7 +53,7 @@
 - Modify: `skills/document/SKILL.md` (append Step 2 section)
 
 **Context to load:**
-- `.context-index/specs/features/adev:document/generate-module-docs.md` — behaviors 1-9 become instructions
+- `.context-index/specs/features/adev:document/generate-module-docs.spec.md` — behaviors 1-9 become instructions
 
 - [ ] **Write failing test**
 
@@ -175,7 +175,7 @@ Glob `.context-index/specs/features/<slug>/`. For each `.md` file found (excludi
 ## Related Specs
 
 - [charter.md](.context-index/specs/features/<slug>/charter.md)
-- [spec-name.md](.context-index/specs/features/<slug>/spec-name.md)
+- [spec-name.md](.context-index/specs/features/<slug>/spec-name.spec.md)
 
 <!-- adev:generated -->
 <!-- adev:human -->

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/output-personas/charter.md
-> **Spec:** .context-index/specs/features/output-personas/persona-resolution-and-injection.md
+> **Spec:** .context-index/specs/features/output-personas/persona-resolution-and-injection.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-21)
 > **Platform:** Node.js, JavaScript (ESM .mjs), npm, node:test
 

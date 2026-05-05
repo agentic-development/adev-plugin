@@ -1,7 +1,7 @@
 # Plan: Output Markdown
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/adev:assess/output-markdown.md`
+- Spec: `.context-index/specs/features/adev:assess/output-markdown.spec.md`
 - Charter: `.context-index/specs/features/adev:assess/charter.md`
 - Review: PASS
 

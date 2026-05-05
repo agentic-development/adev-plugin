@@ -1,7 +1,7 @@
 # Architecture Review: workspace-aware-implement
 
 > **Date:** 2026-04-17
-> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-implement.md
+> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-implement.spec.md
 > **Charter:** .context-index/specs/features/multi-repo-workspace/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

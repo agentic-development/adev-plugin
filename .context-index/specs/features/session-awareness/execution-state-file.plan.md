@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
-> **Spec:** .context-index/specs/features/session-awareness/execution-state-file.md
+> **Spec:** .context-index/specs/features/session-awareness/execution-state-file.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-06)
 > **Platform:** JavaScript (ESM), Node.js, node:test
 
@@ -26,22 +26,22 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Preconditions, Error Cases, Serialization Safety)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Preconditions, Error Cases, Serialization Safety)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Execution State File)
 - Sample: `.context-index/samples/general-library-module-graph.md`
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Behaviors 1, 6, 7; File Format; Serialization Safety)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Behaviors 1, 6, 7; File Format; Serialization Safety)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Execution State File, Concurrent Access Safety)
 - Reference: `lib/issues/file-adapter.mjs` (atomic write pattern)
 - Reference: `lib/session-summary.mjs` (frontmatter serialization pattern)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Behaviors 2, 3, 4; Progress Body)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Behaviors 2, 3, 4; Progress Body)
 - Reference: `lib/session-summary.mjs` (frontmatter parsing pattern)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Behavior 5; Acceptance Criteria: round-trip, clearExecutionState)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Behavior 5; Acceptance Criteria: round-trip, clearExecutionState)
 
 ## Parallelization
 

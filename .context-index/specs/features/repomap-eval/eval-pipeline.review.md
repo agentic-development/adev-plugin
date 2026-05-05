@@ -1,7 +1,7 @@
 # Architecture Review: eval-pipeline
 
 > **Date:** 2026-03-23
-> **Spec:** .context-index/specs/features/repomap-eval/eval-pipeline.md
+> **Spec:** .context-index/specs/features/repomap-eval/eval-pipeline.spec.md
 > **Charter:** .context-index/specs/features/repomap-eval/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

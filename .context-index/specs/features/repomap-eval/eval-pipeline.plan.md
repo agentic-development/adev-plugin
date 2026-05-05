@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/repomap-eval/charter.md
-> **Spec:** .context-index/specs/features/repomap-eval/eval-pipeline.md
+> **Spec:** .context-index/specs/features/repomap-eval/eval-pipeline.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-23)
 > **Platform:** Node.js, JavaScript (ESM), npm, node:test, typescript (devDep)
 

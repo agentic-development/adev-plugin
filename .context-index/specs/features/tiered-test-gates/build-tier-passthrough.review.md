@@ -1,7 +1,7 @@
 # Architecture Review: build-tier-passthrough
 
 > **Date:** 2026-04-15
-> **Spec:** .context-index/specs/features/tiered-test-gates/build-tier-passthrough.md
+> **Spec:** .context-index/specs/features/tiered-test-gates/build-tier-passthrough.spec.md
 > **Charter:** .context-index/specs/features/tiered-test-gates/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2

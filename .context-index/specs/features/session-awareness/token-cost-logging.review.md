@@ -1,7 +1,7 @@
 # Architecture Review: token-cost-logging
 
 > **Date:** 2026-04-20
-> **Spec:** .context-index/specs/features/session-awareness/token-cost-logging.md
+> **Spec:** .context-index/specs/features/session-awareness/token-cost-logging.spec.md
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2

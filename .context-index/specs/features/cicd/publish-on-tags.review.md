@@ -1,7 +1,7 @@
 # Architecture Review: publish-on-tags
 
 > **Date:** 2026-03-24
-> **Spec:** .context-index/specs/features/cicd/publish-on-tags.md
+> **Spec:** .context-index/specs/features/cicd/publish-on-tags.spec.md
 > **Charter:** .context-index/specs/features/cicd/charter.md
 > **Verdict:** PASS
 
