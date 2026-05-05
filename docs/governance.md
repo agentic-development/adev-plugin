@@ -380,7 +380,7 @@ reviewers:
 ## Further reading
 
 - Cross-cutting spec: [`.context-index/specs/cross-cutting/execution-profiles.md`](../.context-index/specs/cross-cutting/execution-profiles.md)
-- Reviewer spec: [`.context-index/specs/features/review/configurable-reviewers.md`](../.context-index/specs/features/review/configurable-reviewers.md)
-- Check spec: [`.context-index/specs/features/validation/configurable-checks.md`](../.context-index/specs/features/validation/configurable-checks.md)
+- Reviewer spec: [`.context-index/specs/features/review/configurable-reviewers.spec.md`](../.context-index/specs/features/review/configurable-reviewers.spec.md)
+- Check spec: [`.context-index/specs/features/validation/configurable-checks.spec.md`](../.context-index/specs/features/validation/configurable-checks.spec.md)
 - Eval harness (deterministic, no LLM): `tests/evals/configurable-governance/README.md`
 - ADRs: [`0003-configurable-review-registry`](../.context-index/adrs/0003-configurable-review-registry.md), [`0004-execution-profiles`](../.context-index/adrs/0004-execution-profiles.md)
