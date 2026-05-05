@@ -10,7 +10,7 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 
 ## Arguments
 
-- `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>-plan.md`.
+- `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>.plan.md`.
 - `--task <N>`: execute only task N (useful for re-running a single task after a fix)
 - `--dry-run`: show routing decisions and specialist matches without executing
 - `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
@@ -506,7 +506,7 @@ When committing implementation work, include structured trailers in commit messa
 ```
 feat(<module>): implement <description>
 
-Spec: .context-index/specs/features/<module>/<spec-slug>.md
+Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md
 Plan-task: <task-number>
 Session: <session-id or timestamp>
 ```

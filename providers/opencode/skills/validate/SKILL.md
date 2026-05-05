@@ -478,7 +478,7 @@ This rule is used consistently in (a) First-Run Detection, (b) id generation, an
 
 #### First-Run Detection Rule
 
-A validation is "first run" if and only if no file matching `<spec-slug>-validation.md` exists in the same directory as the target spec. Explicit deletion followed by re-validation IS treated as a first run (intentional: deletion signals the user wants to re-extract).
+A validation is "first run" if and only if no file matching `<spec-slug>.validate.md` exists in the same directory as the target spec. Explicit deletion followed by re-validation IS treated as a first run (intentional: deletion signals the user wants to re-extract).
 
 #### Scope Derivation Rule
 
@@ -562,7 +562,7 @@ try {
       pattern: 'First-run PASS for Foo Spec: implementation matched all acceptance criteria without revision',
       antiPattern: '',
       confidence: 'medium',
-      evidence: [{ path: '.context-index/specs/features/hooks/foo-spec-validation.md', date: '2026-04-09', source: 'validation' }],
+      evidence: [{ path: '.context-index/specs/features/hooks/foo-spec.validate.md', date: '2026-04-09', source: 'validation' }],
     });
     console.log(\`Check 13: Success Heuristic Extracted — \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
   } catch (err) {
@@ -578,7 +578,7 @@ try {
 
 Explicit list of SKIP reasons:
 
-- `"not first-run PASS"` — prior `<spec-slug>-validation.md` exists.
+- `"not first-run PASS"` — prior `<spec-slug>.validate.md` exists.
 - `"non-PASS result"` — any of checks 1-12 FAILed.
 - `"helper unavailable"` — `lib/heuristics.mjs` import failed.
 - `"no charter scope"` — target spec has no `charter:` frontmatter field.
@@ -596,7 +596,7 @@ On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — 
 
 **Persona adaptation:** The validation report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
 
-Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
+Write the validation report to `.context-index/specs/features/<module>/<spec-slug>.validate.md`.
 
 ```markdown
 # Validation Report: [Spec Title]
