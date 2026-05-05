@@ -172,7 +172,7 @@ describe("buildReverseIndex", () => {
     root = makeTempProject();
 
     // Spec with source manifest claiming two files
-    writeFile(root, "specs/features/auth/login.md", [
+    writeFile(root, "specs/features/auth/login.spec.md", [
       "---",
       "type: live-spec",
       "title: Login",
@@ -188,7 +188,7 @@ describe("buildReverseIndex", () => {
     ].join("\n"));
 
     // Spec with source manifest claiming one file
-    writeFile(root, "specs/features/dashboard/widgets.md", [
+    writeFile(root, "specs/features/dashboard/widgets.spec.md", [
       "---",
       "type: live-spec",
       "title: Widgets",
@@ -203,7 +203,7 @@ describe("buildReverseIndex", () => {
     ].join("\n"));
 
     // Spec without source manifest
-    writeFile(root, "specs/features/auth/session.md", [
+    writeFile(root, "specs/features/auth/session.spec.md", [
       "---",
       "type: live-spec",
       "title: Session",
@@ -230,9 +230,9 @@ describe("buildReverseIndex", () => {
 
   it("maps claimed files to their spec paths", async () => {
     const index = await buildReverseIndex(join(root, "specs/features"), root);
-    assert.equal(index.get("lib/login.mjs"), "specs/features/auth/login.md");
-    assert.equal(index.get("tests/login.test.mjs"), "specs/features/auth/login.md");
-    assert.equal(index.get("lib/widgets.mjs"), "specs/features/dashboard/widgets.md");
+    assert.equal(index.get("lib/login.mjs"), "specs/features/auth/login.spec.md");
+    assert.equal(index.get("tests/login.test.mjs"), "specs/features/auth/login.spec.md");
+    assert.equal(index.get("lib/widgets.mjs"), "specs/features/dashboard/widgets.spec.md");
   });
 
   it("does not include files from specs without manifests", async () => {
