@@ -26,7 +26,7 @@ deployment:
 # ============================================================================
 
 # Set these to your provider's model IDs.
-# If absent, all skills fall back to built-in defaults (see .context-index/specs/cross-cutting/model-routing.md).
+# If absent, all skills fall back to built-in defaults (see .context-index/specs/cross-cutting/model-routing.spec.md).
 
 model_tiers:
   fast:       # low-stakes: pattern matching, diffs, semantic comparison, gaming detection
