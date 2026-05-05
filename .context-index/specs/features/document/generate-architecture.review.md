@@ -1,7 +1,7 @@
 # Architecture Review: generate-architecture.md
 
 > **Date:** 2026-03-23
-> **Spec:** .context-index/specs/features/adev:document/generate-architecture.md
+> **Spec:** .context-index/specs/features/adev:document/generate-architecture.spec.md
 > **Charter:** .context-index/specs/features/adev:document/charter.md
 > **Verdict:** PASS
 

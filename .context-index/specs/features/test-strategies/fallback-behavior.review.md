@@ -1,7 +1,7 @@
 # Architecture Review: fallback-behavior
 
 > **Date:** 2026-04-20
-> **Spec:** .context-index/specs/features/test-strategies/fallback-behavior.md
+> **Spec:** .context-index/specs/features/test-strategies/fallback-behavior.spec.md
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

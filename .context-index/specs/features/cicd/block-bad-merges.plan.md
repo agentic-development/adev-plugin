@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/cicd/charter.md
-> **Spec:** .context-index/specs/features/cicd/block-bad-merges.md
+> **Spec:** .context-index/specs/features/cicd/block-bad-merges.spec.md
 > **Review:** PASS (2026-03-24)
 > **Platform:** GitHub
 
@@ -15,7 +15,7 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/cicd/block-bad-merges.md` (all acceptance criteria)
+- Spec: `.context-index/specs/features/cicd/block-bad-merges.spec.md` (all acceptance criteria)
 - Charter: `.context-index/specs/features/cicd/charter.md` (capability: Block Bad Merges)
 - Constitution: `.context-index/constitution.md`
 

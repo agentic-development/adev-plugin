@@ -1,7 +1,7 @@
 # Architecture Review: execution-state-file
 
 > **Date:** 2026-04-06
-> **Spec:** .context-index/specs/features/session-awareness/execution-state-file.md
+> **Spec:** .context-index/specs/features/session-awareness/execution-state-file.spec.md
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

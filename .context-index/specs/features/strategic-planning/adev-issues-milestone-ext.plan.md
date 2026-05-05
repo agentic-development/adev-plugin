@@ -1,7 +1,7 @@
 # Plan: adev:issues Milestone Extension
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.spec.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
@@ -69,7 +69,7 @@ Extend the existing `skills/issues/SKILL.md` to support milestone-based workflow
 - `skills/issues/SKILL.md` — Add milestone support to arguments, board display, and epic creation
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.spec.md` — Behavioral contract
 - `.context-index/specs/features/strategic-planning/adev:issues-milestone-ext.review.md` — Review notes (CON-1 re: flag interaction)
 - `lib/issues/registry.mjs` — Issue model API reference
 - `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests

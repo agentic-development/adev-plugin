@@ -1,7 +1,7 @@
 # Architecture Review: keyword-tags-and-tiered-retrieval
 
 > **Date:** 2026-04-23
-> **Spec:** `.context-index/specs/features/heuristics/keyword-tags-and-tiered-retrieval.md`
+> **Spec:** `.context-index/specs/features/heuristics/keyword-tags-and-tiered-retrieval.spec.md`
 > **Charter:** `.context-index/specs/features/heuristics/charter.md`
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

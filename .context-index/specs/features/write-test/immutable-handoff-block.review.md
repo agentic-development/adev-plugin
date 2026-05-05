@@ -1,7 +1,7 @@
 # Architecture Review: immutable-handoff-block
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/adev:write-test/immutable-handoff-block.md
+> **Spec:** .context-index/specs/features/adev:write-test/immutable-handoff-block.spec.md
 > **Charter:** .context-index/specs/features/adev:write-test/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

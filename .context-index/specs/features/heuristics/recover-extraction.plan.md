@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/recover-extraction.md (r3)
+> **Spec:** .context-index/specs/features/heuristics/recover-extraction.spec.md (r3)
 > **Review:** PASS_WITH_NOTES (2026-04-09, r3 targeted re-review)
 > **Platform:** JavaScript ESM, Node.js, node:test, bash skill markdown
 
@@ -20,7 +20,7 @@
 
 **Modify:**
 - `skills/recover/SKILL.md` — Insert "### Step 7: Extract Heuristic" after the existing "### Step 6: Enrich" (line 267-319) and before the "## Patterns Across Multiple Recoveries" section (line 304)
-- `.context-index/specs/features/heuristics/recover-extraction.md` — `/adev:implement` stamps a `source-manifest` block in frontmatter after implementation
+- `.context-index/specs/features/heuristics/recover-extraction.spec.md` — `/adev:implement` stamps a `source-manifest` block in frontmatter after implementation
 - `.context-index/specs/features/heuristics/charter.md` — Capability Map: "Recover Extraction" → `implemented`
 
 **Reference (read, do not modify):**

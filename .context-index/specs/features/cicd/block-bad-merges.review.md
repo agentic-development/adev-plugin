@@ -1,7 +1,7 @@
 # Architecture Review: block-bad-merges
 
 > **Date:** 2026-03-24
-> **Spec:** .context-index/specs/features/cicd/block-bad-merges.md
+> **Spec:** .context-index/specs/features/cicd/block-bad-merges.spec.md
 > **Charter:** .context-index/specs/features/cicd/charter.md
 > **Verdict:** PASS
 

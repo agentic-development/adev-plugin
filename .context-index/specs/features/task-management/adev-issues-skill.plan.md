@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/task-management/charter.md
-> **Spec:** .context-index/specs/features/task-management/adev:issues-skill.md
+> **Spec:** .context-index/specs/features/task-management/adev:issues-skill.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-31)
 > **Platform:** none, javascript (ESM), node:test
 
@@ -23,7 +23,7 @@
 **Reference (read, do not modify):**
 - `skills/status/SKILL.md` — Pattern reference for read/query skill structure
 - `skills/debug/SKILL.md` — Pattern reference for supporting skill structure
-- `.context-index/specs/features/task-management/adev:issues-skill.md` — Spec with all 10 behaviors
+- `.context-index/specs/features/task-management/adev:issues-skill.spec.md` — Spec with all 10 behaviors
 
 ## Context Packets
 

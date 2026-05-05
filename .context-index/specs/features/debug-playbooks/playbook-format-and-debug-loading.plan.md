@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/debug-playbooks/charter.md
-> **Spec:** .context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.md
+> **Spec:** .context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-24)
 > **Platform:** JavaScript (ESM), Node.js, node:test
 
@@ -23,23 +23,23 @@
 
 **Reference (read, do not modify):**
 - `.context-index/specs/features/debug-playbooks/charter.md` — Domain model and quality attributes
-- `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.md` — Behavioral contract
+- `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md` — Behavioral contract
 - `templates/blocker-template.md` — Pattern reference for template structure
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.md` (Diagnostic Step Schema, Playbook Structure, criteria 1-2)
+- Spec: `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md` (Diagnostic Step Schema, Playbook Structure, criteria 1-2)
 - Charter: `.context-index/specs/features/debug-playbooks/charter.md` (Domain Model entities)
 - Reference: `templates/blocker-template.md` (existing template pattern)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.md` (Behaviors 1-8, Error Cases, criteria 3-10)
+- Spec: `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md` (Behaviors 1-8, Error Cases, criteria 3-10)
 - Charter: `.context-index/specs/features/debug-playbooks/charter.md` (Quality Attributes: graceful absence, token efficiency)
 - Reference: `skills/debug/SKILL.md` (Phase 2, steps 1-7 — insertion point between step 5 and step 6)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.md` (Playbook Structure, Diagnostic Step Schema)
+- Spec: `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md` (Playbook Structure, Diagnostic Step Schema)
 - Reference: `tests/templates/gates-template.test.mjs` (existing template test pattern)
 - Reference: `tests/templates/manifest-template.test.mjs` (existing template test pattern)
 
@@ -153,7 +153,7 @@ git commit -m "feat(debug-playbooks): add debug playbook template"
 **Tests:** `tests/skills/debug-playbook-loading.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.md` (all 8 behaviors + error cases)
+- `.context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md` (all 8 behaviors + error cases)
 - `skills/debug/SKILL.md` (current Phase 2 structure — steps 1-7)
 
 - [x] **Write failing test**
@@ -240,8 +240,8 @@ Expected: FAIL — SKILL.md does not yet contain playbook-related content
 Edit `skills/debug/SKILL.md` Phase 2 to add a new step between current step 5 (repo map) and step 6 (gather evidence). Renumber steps 6 and 7 to 7 and 8. The new step 6 should contain:
 
 1. **Load debug playbooks.**
-   - Read `.context-index/specs/features/<module>/debug-playbook.md` if it exists (module determined in Phase 1).
-   - Read `.context-index/specs/cross-cutting/debug-playbook.md` if it exists.
+   - Read `.context-index/specs/features/<module>/debug-playbook.spec.md` if it exists (module determined in Phase 1).
+   - Read `.context-index/specs/cross-cutting/debug-playbook.spec.md` if it exists.
    - If neither file exists, skip this step silently — no warnings, no degradation.
    - If a file exists but is malformed (missing YAML frontmatter with `last-verified`, or missing failure mode sections with `id`, `triggers`, `steps`, and `escalation`), log a warning and skip it.
 

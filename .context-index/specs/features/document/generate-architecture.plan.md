@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/adev:document/charter.md
-> **Spec:** .context-index/specs/features/adev:document/generate-architecture.md
+> **Spec:** .context-index/specs/features/adev:document/generate-architecture.spec.md
 > **Review:** PASS (2026-03-23)
 > **Platform:** Node.js, JavaScript ESM (.mjs), no framework
 
@@ -22,7 +22,7 @@
 
 **Reference (read, do not modify):**
 - `skills/repomap/SKILL.md` — Reference pattern for skill structure and frontmatter format
-- `.context-index/specs/features/adev:document/generate-architecture.md` — Source of truth for behaviors
+- `.context-index/specs/features/adev:document/generate-architecture.spec.md` — Source of truth for behaviors
 - `.context-index/specs/features/adev:document/charter.md` — Charter interface contracts and invariants
 
 ---
@@ -30,13 +30,13 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/adev:document/generate-architecture.md` (all behaviors and acceptance criteria)
+- Spec: `.context-index/specs/features/adev:document/generate-architecture.spec.md` (all behaviors and acceptance criteria)
 - Charter: `.context-index/specs/features/adev:document/charter.md` (capability: Generate architecture.md)
 - Reference: `skills/repomap/SKILL.md` (frontmatter format and step structure pattern)
 - Constitution: `.context-index/constitution.md` (principle: skills are primarily markdown)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/adev:document/generate-architecture.md` (acceptance criteria)
+- Spec: `.context-index/specs/features/adev:document/generate-architecture.spec.md` (acceptance criteria)
 - Reference: `tests/cli.test.mjs` (test file patterns: describe/it, node:test, assert/strict)
 - Reference: `tests/helpers.mjs` (PLUGIN_ROOT export for path resolution)
 
@@ -56,7 +56,7 @@
 
 **Context to load:**
 - `skills/repomap/SKILL.md` — follow this frontmatter and step-naming pattern
-- `.context-index/specs/features/adev:document/generate-architecture.md` — all behaviors are instructions
+- `.context-index/specs/features/adev:document/generate-architecture.spec.md` — all behaviors are instructions
 
 - [ ] **Write failing test**
 
@@ -255,7 +255,7 @@ git commit -m "feat(adev:document): add skill base and architecture generation"
 - Modify: `skills/document/SKILL.md` (if any assertions fail)
 
 **Context to load:**
-- `.context-index/specs/features/adev:document/generate-architecture.md` (acceptance criteria #5–#10)
+- `.context-index/specs/features/adev:document/generate-architecture.spec.md` (acceptance criteria #5–#10)
 
 - [ ] **Write failing test**
 

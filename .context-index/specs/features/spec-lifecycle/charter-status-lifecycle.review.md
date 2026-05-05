@@ -1,7 +1,7 @@
 # Architecture Review: charter-status-lifecycle
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/charter-status-lifecycle.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/charter-status-lifecycle.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS
 

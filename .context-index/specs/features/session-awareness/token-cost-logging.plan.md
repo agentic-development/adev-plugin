@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
-> **Spec:** .context-index/specs/features/session-awareness/token-cost-logging.md
+> **Spec:** .context-index/specs/features/session-awareness/token-cost-logging.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-20)
 > **Platform:** JavaScript (ESM), Node.js, node:test
 

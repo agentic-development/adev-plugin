@@ -1,7 +1,7 @@
 # Architecture Review: idle-nudge
 
 > **Date:** 2026-04-06
-> **Spec:** .context-index/specs/features/session-awareness/idle-nudge.md
+> **Spec:** .context-index/specs/features/session-awareness/idle-nudge.spec.md
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1
