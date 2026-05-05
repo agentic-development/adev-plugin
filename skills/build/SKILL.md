@@ -350,7 +350,7 @@ When validate returns FAIL and retry budget remains (`current_retry < max_retrie
 
 #### 1. Extract Failure Context
 
-Read the validation report written by the validate subagent (at `.context-index/specs/features/<module>/<spec-slug>-validation.md`). Extract:
+Read the validation report written by the validate subagent (at `.context-index/specs/features/<module>/<spec-slug>.validate.md`). Extract:
 
 - Which checks failed (check number, name, severity)
 - Specific failure details (file:line references, acceptance criteria IDs, error messages)
@@ -443,7 +443,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 
 ```json
 {
-  "spec": ".context-index/specs/features/<module>/<spec>.md",
+  "spec": ".context-index/specs/features/<module>/<spec>.spec.md",
   "phase": "<milestone-name or null>",
   "status": "in_progress",
   "steps": [
@@ -578,7 +578,7 @@ Show:
 ```
 Dry Run: Build Pipeline for <spec or phase>
 
-  Spec: .context-index/specs/features/<module>/<spec>.md
+  Spec: .context-index/specs/features/<module>/<spec>.spec.md
     Step 1: Review    — SKIP (review.md exists, current)
     Step 2: Plan      — SKIP (plan.md exists, 5 tasks)
     Step 3: Route     — EXECUTE
