@@ -230,6 +230,8 @@ When `--verbose` is set, the orchestrator prints its reasoning before each dispa
 
 ## Build Pipeline
 
+The orchestrator executes exactly one of these steps per invocation. After dispatch and state persistence, it re-invokes itself for the next step. See One-Step-Per-Invocation Dispatch above.
+
 The pipeline executes 5 steps per spec, in strict order. For each step, the orchestrator: (1) checks the skip condition on artifacts, (2) dispatches a subagent via the Agent tool if not skipped, (3) reads the subagent's result, (4) checks the stop condition, and (5) persists build state.
 
 ### Step 0: Specify (Full Pipeline only)
