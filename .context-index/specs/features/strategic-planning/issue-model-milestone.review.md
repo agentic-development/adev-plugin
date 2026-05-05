@@ -1,7 +1,7 @@
 # Architecture Review: issue-model-milestone
 
 > **Date:** 2026-04-05
-> **Spec:** .context-index/specs/features/strategic-planning/issue-model-milestone.md
+> **Spec:** .context-index/specs/features/strategic-planning/issue-model-milestone.spec.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS
 

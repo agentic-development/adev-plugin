@@ -1,7 +1,7 @@
 # Plan: Model Routing
 
 ## Spec Reference
-- Spec: `.context-index/specs/cross-cutting/model-routing.md`
+- Spec: `.context-index/specs/cross-cutting/model-routing.spec.md`
 - Review: PASS_WITH_NOTES
 
 ## Current State
@@ -30,7 +30,7 @@ Remaining work:
 - **Files:** `skills/init/SKILL.md`
 - **Tests:** `tests/model-routing/init-routing.test.mjs`
 - **TDD:** RED — write test asserting SKILL.md does not contain `claude-sonnet`, `claude-haiku`, `claude-opus`, `gpt-4`, or `gemini` as literal model IDs. Then update the skill.
-- **Description:** Replace the hardcoded model names in the model tier prompt (lines 98-100) with a reference to the model-routing spec's default table. Change the prompt text to say "Defaults are defined in `.context-index/specs/cross-cutting/model-routing.md`" and instruct the init flow to read defaults from the spec rather than embedding model names. This keeps the init skill provider-agnostic while still offering sensible defaults.
+- **Description:** Replace the hardcoded model names in the model tier prompt (lines 98-100) with a reference to the model-routing spec's default table. Change the prompt text to say "Defaults are defined in `.context-index/specs/cross-cutting/model-routing.spec.md`" and instruct the init flow to read defaults from the spec rather than embedding model names. This keeps the init skill provider-agnostic while still offering sensible defaults.
 
 ### Task 3: Add cross-skill model routing compliance test
 - **Files:** (no source changes)

@@ -1,7 +1,7 @@
 # Architecture Review: playbook-format-and-debug-loading
 
 > **Date:** 2026-04-24
-> **Spec:** .context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.md
+> **Spec:** .context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md
 > **Charter:** .context-index/specs/features/debug-playbooks/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2

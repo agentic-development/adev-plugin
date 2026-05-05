@@ -1,7 +1,7 @@
 # Architecture Review: lifecycle-integration
 
 > **Date:** 2026-03-31
-> **Spec:** .context-index/specs/features/task-management/lifecycle-integration.md
+> **Spec:** .context-index/specs/features/task-management/lifecycle-integration.spec.md
 > **Charter:** .context-index/specs/features/task-management/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

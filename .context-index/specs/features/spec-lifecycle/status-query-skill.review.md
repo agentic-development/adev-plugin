@@ -1,7 +1,7 @@
 # Architecture Review: status-query-skill
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/status-query-skill.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/status-query-skill.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

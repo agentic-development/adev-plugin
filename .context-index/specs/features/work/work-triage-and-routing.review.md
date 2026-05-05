@@ -1,7 +1,7 @@
 # Architecture Review: work-triage-and-routing
 
 > **Date:** 2026-03-29
-> **Spec:** .context-index/specs/features/work/work-triage-and-routing.md
+> **Spec:** .context-index/specs/features/work/work-triage-and-routing.spec.md
 > **Charter:** .context-index/specs/features/work/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

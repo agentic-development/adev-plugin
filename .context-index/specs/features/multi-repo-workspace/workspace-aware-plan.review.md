@@ -1,7 +1,7 @@
 # Architecture Review: workspace-aware-plan
 
 > **Date:** 2026-04-17
-> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-plan.md
+> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-plan.spec.md
 > **Charter:** .context-index/specs/features/multi-repo-workspace/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1
@@ -21,7 +21,7 @@
 
 - **SA-5** (warning) — **Error case NO_WORKSPACE:** Spec has `target-repo:` but no workspace detected — silently falls back to single-repo mode. Could discard intentional workspace context. **Recommendation:** Consider escalating to a blocking error when `target-repo:` is present, or document the fallback rationale.
 
-- **SA-6** (not applicable, overridden) — **depends-on `context-resolution`:** Originally flagged as referencing a non-existent spec. **Factual correction:** `context-resolution.md` exists at `.context-index/specs/features/multi-repo-workspace/context-resolution.md` (status: validated).
+- **SA-6** (not applicable, overridden) — **depends-on `context-resolution`:** Originally flagged as referencing a non-existent spec. **Factual correction:** `context-resolution.md` exists at `.context-index/specs/features/multi-repo-workspace/context-resolution.spec.md` (status: validated).
 
 ---
 

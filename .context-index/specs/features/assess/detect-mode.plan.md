@@ -1,7 +1,7 @@
 # Plan: Detect Mode
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/adev:assess/detect-mode.md`
+- Spec: `.context-index/specs/features/adev:assess/detect-mode.spec.md`
 - Charter: `.context-index/specs/features/adev:assess/charter.md`
 - Review: PASS
 

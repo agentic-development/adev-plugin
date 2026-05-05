@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/work/charter.md
-> **Spec:** .context-index/specs/features/work/work-triage-and-routing.md
+> **Spec:** .context-index/specs/features/work/work-triage-and-routing.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-29)
 > **Platform:** none (CLI plugin), javascript (ESM), node:test
 
@@ -25,7 +25,7 @@
 - `providers/codex/skills/using-adev/SKILL.md` — Add `/adev:work` to Codex copy of skill table
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/work/work-triage-and-routing.md` — Behavioral contract
+- `.context-index/specs/features/work/work-triage-and-routing.spec.md` — Behavioral contract
 - `.context-index/specs/features/work/charter.md` — Charter scope
 - `skills/route/SKILL.md` — Existing skill pattern reference
 - `skills/status/SKILL.md` — Similar read-only-then-act pattern reference
@@ -33,22 +33,22 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/work/work-triage-and-routing.md` (all behaviors)
+- Spec: `.context-index/specs/features/work/work-triage-and-routing.spec.md` (all behaviors)
 - Charter: `.context-index/specs/features/work/charter.md` (all capabilities)
 - Pattern: `skills/route/SKILL.md` (frontmatter format, section structure)
 - Pattern: `skills/status/SKILL.md` (state scanning pattern)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/work/work-triage-and-routing.md` (acceptance criteria 8-9)
+- Spec: `.context-index/specs/features/work/work-triage-and-routing.spec.md` (acceptance criteria 8-9)
 - Pattern: `providers/codex/skills/debug/agents/openai.yaml` (openai.yaml format)
 - Pattern: `providers/codex/skills/debug/SKILL.md` (codex copy pattern)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/work/work-triage-and-routing.md` (acceptance criteria 8)
+- Spec: `.context-index/specs/features/work/work-triage-and-routing.spec.md` (acceptance criteria 8)
 - File: `.context-index/manifest.yaml` (modules section)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/work/work-triage-and-routing.md` (acceptance criteria 9)
+- Spec: `.context-index/specs/features/work/work-triage-and-routing.spec.md` (acceptance criteria 9)
 - File: `skills/using-adev/SKILL.md` (skill table)
 - File: `providers/codex/skills/using-adev/SKILL.md` (codex copy)
 
@@ -69,7 +69,7 @@ Groups B and C can run in parallel with each other and after Task 1 completes.
 - Create: `skills/work/SKILL.md`
 
 **Context to load:**
-- `.context-index/specs/features/work/work-triage-and-routing.md` (full behavioral contract)
+- `.context-index/specs/features/work/work-triage-and-routing.spec.md` (full behavioral contract)
 - `skills/route/SKILL.md` (frontmatter and structure pattern)
 
 - [ ] **Write failing test**
@@ -101,7 +101,7 @@ Create `skills/work/SKILL.md` with:
 5. **Prerequisites section:** Check for `.context-index/` — if missing, redirect to `/adev:init` and stop (Behavior 1)
 6. **Step 1: Project State Scan** — instructions to run parallel Glob/Grep:
    - Glob `.context-index/specs/features/*/*.plan.md`, grep for `- [ ]` to find incomplete plans
-   - Glob `.context-index/specs/features/**/*.md` (excluding charter.md, *.review.md, *.plan.md), check for specs without sibling `.review.md`
+   - Glob `.context-index/specs/features/**/*.spec.md` (excluding charter.md, *.review.md, *.plan.md), check for specs without sibling `.review.md`
    - Glob `.context-index/sessions/*.md`, read 3 most recent by date prefix
    - If in-progress work found, surface it and ask: "Want to resume one of these, or start something new?" (Behavior 3)
    - If nothing found, proceed to classification (Behavior 4)

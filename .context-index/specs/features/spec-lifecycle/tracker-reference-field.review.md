@@ -1,7 +1,7 @@
 # Architecture Review: tracker-reference-field
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/tracker-reference-field.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/tracker-reference-field.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS
 

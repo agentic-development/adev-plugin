@@ -1,6 +1,6 @@
 # Architecture Review: mocking-boundary-declaration
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/adev:write-test/mocking-boundary-declaration.md
+> **Spec:** .context-index/specs/features/adev:write-test/mocking-boundary-declaration.spec.md
 > **Charter:** .context-index/specs/features/adev:write-test/charter.md
 > **Verdict:** PASS_WITH_NOTES
 
