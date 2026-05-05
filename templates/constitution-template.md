@@ -130,7 +130,7 @@ When `tasks.backend: file` (or unset):
 
 ### next_action Convention
 
-Work items carry an optional `next_action` field that lifecycle skills update on each state transition to point at the next expected skill invocation (e.g. `"/adev:plan --spec foo.md"`).
+Work items carry an optional `next_action` field that lifecycle skills update on each state transition to point at the next expected skill invocation (e.g. `"/adev:plan --spec foo.spec.md"`).
 
 - Skills (`/adev:specify`, `/adev:plan`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`, `/adev:debug`) **should** update `next_action` when they complete a state change on a work item.
 - This is a convention, not enforced — the framework does not validate that `next_action` is set.

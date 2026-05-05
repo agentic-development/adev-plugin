@@ -1,5 +1,5 @@
 # Tool Category Registry (v1 seed)
-# See: .context-index/specs/cross-cutting/execution-profiles.md Behaviors 11-12.
+# See: .context-index/specs/cross-cutting/execution-profiles.spec.md Behaviors 11-12.
 # Each adapter under lib/profiles/adapters/ maps these abstract names to
 # harness-specific tool names. Adapters MUST implement every category in
 # IMPLEMENTED or UNSUPPORTED exports; unknown categories fail load closed.
