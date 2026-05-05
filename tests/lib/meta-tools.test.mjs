@@ -40,7 +40,7 @@ Task management with boards.
 `);
 
   // Spec with charter reference
-  writeFileSync(join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.md'), `---
+  writeFileSync(join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.spec.md'), `---
 charter: task-boards
 status: review-pending
 milestone: v1
@@ -57,7 +57,7 @@ When a user drags a card then it moves.
 `);
 
   // Spec with different status
-  writeFileSync(join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'filters.md'), `---
+  writeFileSync(join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'filters.spec.md'), `---
 charter: task-boards
 status: draft
 milestone: v2
@@ -74,7 +74,7 @@ When a user filters then cards are filtered.
 `);
 
   // Cross-cutting spec
-  writeFileSync(join(TEMP_ROOT, '.context-index', 'specs', 'cross-cutting', 'auth.md'), `---
+  writeFileSync(join(TEMP_ROOT, '.context-index', 'specs', 'cross-cutting', 'auth.spec.md'), `---
 mode: cross-cutting
 status: review-pending
 revision: 1
@@ -127,7 +127,7 @@ describe('meta-tools', () => {
 
   describe('loadSpecContext', () => {
     it('returns spec + charter capability map + constitution principles (Behavior 1)', async () => {
-      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.md');
+      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.spec.md');
       const result = await loadSpecContext(specPath);
 
       assert.ok(result.includes('## Spec'));
@@ -139,7 +139,7 @@ describe('meta-tools', () => {
     });
 
     it('resolves charter from spec frontmatter (Behavior 2)', async () => {
-      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.md');
+      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.spec.md');
       const result = await loadSpecContext(specPath);
 
       assert.ok(result.includes('Charter Capability Map'));
@@ -147,7 +147,7 @@ describe('meta-tools', () => {
     });
 
     it('skips charter for cross-cutting specs (Behavior 2)', async () => {
-      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'cross-cutting', 'auth.md');
+      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'cross-cutting', 'auth.spec.md');
       const result = await loadSpecContext(specPath);
 
       assert.ok(result.includes('## Spec'));
@@ -165,7 +165,7 @@ describe('meta-tools', () => {
 
     it('handles missing charter gracefully (Error Case 2)', async () => {
       // Create spec with non-existent charter reference
-      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'orphan.md');
+      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'orphan.spec.md');
       writeFileSync(specPath, `---
 charter: nonexistent-module
 status: draft
@@ -180,7 +180,7 @@ status: draft
     });
 
     it('uses --- delimiters between sections (Behavior 1)', async () => {
-      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.md');
+      const specPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.spec.md');
       const result = await loadSpecContext(specPath);
 
       const delimiters = result.split('\n---\n').length - 1;
@@ -195,7 +195,7 @@ status: draft
       try {
         const results = await findSpecsByStatus('task-boards', 'review-pending');
         assert.equal(results.length, 1);
-        assert.ok(results[0].path.includes('drag-drop.md'));
+        assert.ok(results[0].path.includes('drag-drop.spec.md'));
         assert.equal(results[0].status, 'review-pending');
         assert.equal(results[0].milestone, 'v1');
       } finally {
@@ -210,8 +210,8 @@ status: draft
         const results = await findSpecsByStatus('*', 'review-pending');
         assert.equal(results.length, 2); // drag-drop + auth cross-cutting
         const paths = results.map(r => r.path);
-        assert.ok(paths.some(p => p.includes('drag-drop.md')));
-        assert.ok(paths.some(p => p.includes('auth.md')));
+        assert.ok(paths.some(p => p.includes('drag-drop.spec.md')));
+        assert.ok(paths.some(p => p.includes('auth.spec.md')));
       } finally {
         process.chdir(origCwd);
       }
@@ -223,7 +223,7 @@ status: draft
       try {
         const results = await findSpecsByStatus(null, 'draft');
         assert.equal(results.length, 1);
-        assert.ok(results[0].path.includes('filters.md'));
+        assert.ok(results[0].path.includes('filters.spec.md'));
       } finally {
         process.chdir(origCwd);
       }
@@ -242,7 +242,7 @@ status: draft
 
     it('skips files with malformed frontmatter (Error Case 5)', async () => {
       writeFileSync(
-        join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'malformed.md'),
+        join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'malformed.spec.md'),
         'this has no frontmatter at all\n# Just a heading'
       );
       const origCwd = process.cwd();

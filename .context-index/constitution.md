@@ -39,7 +39,7 @@ Commits that implement or fix spec-tracked work **must** include a `Spec:` trail
 ```
 feat(<module>): <description>
 
-Spec: .context-index/specs/features/<module>/<spec-slug>.md
+Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md
 Plan-task: <task-number>          # when implementing a plan task
 ```
 

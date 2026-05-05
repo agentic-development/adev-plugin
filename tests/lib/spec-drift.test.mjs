@@ -33,7 +33,7 @@ describe("scanForDrift", () => {
     root = makeTempProject();
 
     // Spec with source manifest tracking lib/foo.mjs
-    writeFile(root, ".context-index/specs/features/auth/login.md", [
+    writeFile(root, ".context-index/specs/features/auth/login.spec.md", [
       "---",
       "type: live-spec",
       "title: Login",
@@ -49,7 +49,7 @@ describe("scanForDrift", () => {
     ].join("\n"));
 
     // Second spec also tracking lib/foo.mjs (shared file)
-    writeFile(root, ".context-index/specs/features/dashboard/widgets.md", [
+    writeFile(root, ".context-index/specs/features/dashboard/widgets.spec.md", [
       "---",
       "type: live-spec",
       "title: Widgets",
@@ -65,7 +65,7 @@ describe("scanForDrift", () => {
     ].join("\n"));
 
     // Spec without source-manifest
-    writeFile(root, ".context-index/specs/features/auth/session.md", [
+    writeFile(root, ".context-index/specs/features/auth/session.spec.md", [
       "---",
       "type: live-spec",
       "title: Session",
@@ -76,7 +76,7 @@ describe("scanForDrift", () => {
     ].join("\n"));
 
     // Spec with malformed frontmatter
-    writeFile(root, ".context-index/specs/features/auth/broken.md", [
+    writeFile(root, ".context-index/specs/features/auth/broken.spec.md", [
       "---",
       "type: live-spec",
       "title: Broken",
@@ -95,7 +95,7 @@ describe("scanForDrift", () => {
     const results = await scanForDrift("lib/foo.mjs", root);
     assert.ok(results.length >= 1);
     const specPaths = results.map(r => r.specPath);
-    assert.ok(specPaths.some(p => p.includes("login.md")));
+    assert.ok(specPaths.some(p => p.includes("login.spec.md")));
   });
 
   it("returns empty array when file is not tracked", async () => {
@@ -107,8 +107,8 @@ describe("scanForDrift", () => {
     const results = await scanForDrift("lib/foo.mjs", root);
     assert.equal(results.length, 2);
     const specPaths = results.map(r => r.specPath);
-    assert.ok(specPaths.some(p => p.includes("login.md")));
-    assert.ok(specPaths.some(p => p.includes("widgets.md")));
+    assert.ok(specPaths.some(p => p.includes("login.spec.md")));
+    assert.ok(specPaths.some(p => p.includes("widgets.spec.md")));
   });
 
   it("skips specs with malformed frontmatter", async () => {
