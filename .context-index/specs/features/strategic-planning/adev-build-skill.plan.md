@@ -1,41 +1,28 @@
-# Implementation Plan: adev:build Orchestrator — Full Pipeline & Phase Filter
+# Implementation Plan: adev:build Orchestrator — One-Step-Per-Invocation Dispatch
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Spec:** .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
-> **Review:** PASS_WITH_NOTES (2026-04-27)
+> **Review:** PASS_WITH_NOTES (2026-05-05)
 > **Platform:** JavaScript (ESM), Node.js, node:test, no framework
 
-**Goal:** Extend the existing `skills/build/SKILL.md` to add the Full Pipeline (`--full` flag with specify→review→plan→route→implement→validate and blocker-fix loop), correct the Implement Pipeline phase filter, add zombie build detection, and fix editorial gaps flagged in the review.
+**Goal:** Implement the One-Step-Per-Invocation dispatch model so the build orchestrator executes exactly one pipeline step per turn, persists state, and re-invokes itself for the next step via the Skill tool — preventing context accumulation from causing step-skipping.
 
-**Architecture:** The build skill is a pure markdown SKILL.md — no compiled code is changed. Tests follow the existing pattern (`tests/skills/build-*.test.mjs`): read the SKILL.md as text and assert it contains required strings/patterns. The existing Implement Pipeline (plan → route → implement → validate) is preserved in full; the Full Pipeline adds a new code path triggered by `--full`. The blocker-fix loop and `build.max_review_retries` config are scoped entirely within the Full Pipeline section. Phase filter correction is a targeted string change in the Phase Mode spec discovery step.
-
-> **Plan reviewer note:** Reviewer flagged validation retry loop, `--no-route`, `--dry-run`, `--resume` logic, build state "completed" marking, phase summary, and `context: fork` as uncovered. All of these already exist in the current `skills/build/SKILL.md`. This plan targets only the delta (Full Pipeline, blocker-fix loop, phase filter correction, zombie build detection) — not a full rewrite. Disagreement logged per review-loop protocol.
-
-> **PASS_WITH_NOTES warnings addressed by this plan:**
-> - SA-1: Plan explicitly includes Full Pipeline as Task 1
-> - SA-3/CON-1: B1 step list typo fixed in Task 3
-> - SA-5: Phase filter corrected in Task 2
-> - SEC-1: Blocker-context / RETRY_CONTEXT fencing requirement added in Task 1
-> - CON-2: `build-orchestrator` role tier reference added in Task 3
+**Architecture:** The build skill is a pure markdown SKILL.md. The change restructures the orchestrator's main loop from a sequential "run all steps" model to a "dispatch one, persist, re-invoke" model. The orchestrator reads build state from disk at start, determines the next step, dispatches one subagent, records the result, then either re-invokes `/adev:build --resume --spec <path>` via the Skill tool (if more steps remain) or prints the final summary and exits. Tests assert the SKILL.md contains the required structural instructions. No compiled code changes.
 
 ---
 
 ## File Structure
 
 **Modify:**
-- `skills/build/SKILL.md` — add `--full` flag, Full Pipeline section, blocker-fix loop, phase filter correction, stale build detection, pipeline_mode context field, `--from specify` step name, Implement Pipeline no-.review.md guard, build-orchestrator role reference, validate in build state JSON example
+- `skills/build/SKILL.md` — add One-Step-Per-Invocation section, modify the Build Pipeline section to enforce one-step-per-turn semantics, add self-re-invocation protocol, add verbose reasoning output instruction
+- `skills/build/resume-mode.md` — fix inconsistent valid step names list (line 25 vs line 34)
 
 **Create:**
-- `tests/skills/build-full-pipeline.test.mjs` — assertions for `--full` / Full Pipeline behaviors
-- `tests/skills/build-phase-and-stale.test.mjs` — assertions for phase filter and zombie build detection
-
-**Modify (editorial):**
-- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` — fix B1 wording (add `route`), add `validate` to build state JSON example
+- `tests/skills/build-one-step-dispatch.test.mjs` — assertions for one-step-per-invocation behaviors
 
 **Reference (read, do not modify):**
-- `tests/skills/build-dry-run-gates.test.mjs` — follow this pattern for new test files
-- `tests/skills/build-workspace-mode.test.mjs` — follow this pattern for new test files
+- `tests/skills/build-full-pipeline.test.mjs` — follow test pattern
 - `tests/helpers.mjs` — use `PLUGIN_ROOT` import
 
 ---
@@ -43,29 +30,17 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 2, 3a, 8, 8a, 16, 17, 18; AC sections: Pipeline Modes, Review Blocker-Fix Loop, Subagent and Fork Isolation)
+- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 22-28; AC section: One-Step-Per-Invocation Dispatch)
 - Charter: `.context-index/specs/features/strategic-planning/charter.md` (capability: `/adev:build` orchestrator)
-- Cross-cutting: `.context-index/specs/cross-cutting/subagent-cost-routing.spec.md` (build-orchestrator role = reasoning tier)
-- Sample: `tests/skills/build-dry-run-gates.test.mjs` (test file pattern to follow)
+- Sample: `tests/skills/build-full-pipeline.test.mjs` (test file pattern to follow)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 3, 3a; AC: Phase filter, Resume and Stale Builds; Stale Build Detection section)
-- Sample: `tests/skills/build-workspace-mode.test.mjs` (test file pattern to follow)
+- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 13-15, 26; AC section: Subagent and Fork Isolation)
+- Existing: `skills/build/SKILL.md` — Delegation Protocol and Build Pipeline sections
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (B1 wording, build state JSON example)
-- Review: `.context-index/specs/features/strategic-planning/adev-build-skill.review.md` (SA-3, CON-2, CON-4 findings)
-
----
-
-## Heuristics
-
-> These heuristics are a snapshot from plan generation for review convenience.
-> At execution time, `/adev:implement` reads from the live heuristic store.
-
-### Heuristic: First-run PASS: Subagent Cost Routing (confidence: medium)
-- **Pattern:** Cross-cutting specs can be implemented as pure markdown SKILL.md edits with no new dependencies. Model tier selection separates into independent concerns per skill.
-- **Evidence:** 1 observation
+- Spec: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behavior 5a, valid step names)
+- Existing: `skills/build/resume-mode.md` — line 25 inconsistency
 
 ---
 
@@ -73,29 +48,28 @@
 
 - Group A (sequential): Task 1 → Task 2 → Task 3
 
-All tasks share `skills/build/SKILL.md` or the sibling spec `.md` file and must run sequentially.
+All tasks share `skills/build/SKILL.md` and must run sequentially.
 
 ---
 
-## Task 1: Full Pipeline Mode and Blocker-Fix Loop [specialist: none]
+## Task 1: One-Step-Per-Invocation Dispatch Model [specialist: none]
 
-**Charter capability:** `/adev:build` orchestrator — Full Pipeline (specify → review → plan → route → implement → validate)
+**Charter capability:** `/adev:build` orchestrator — resumability and context isolation
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
 - Modify: `skills/build/SKILL.md`
-- Create: `tests/skills/build-full-pipeline.test.mjs`
+- Create: `tests/skills/build-one-step-dispatch.test.mjs`
 
-**Tests:** `tests/skills/build-full-pipeline.test.mjs`
+**Tests:** `tests/skills/build-one-step-dispatch.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 2, 8, 8a, 17, 18; AC: Pipeline Modes, Review Blocker-Fix Loop)
-- `.context-index/specs/cross-cutting/subagent-cost-routing.spec.md` (build-orchestrator role)
-- `tests/skills/build-dry-run-gates.test.mjs` (test pattern)
+- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 22-28; AC: One-Step-Per-Invocation Dispatch)
+- `tests/skills/build-full-pipeline.test.mjs` (test pattern)
 
 - [x] **Write failing test**
 
 ```javascript
-// tests/skills/build-full-pipeline.test.mjs
+// tests/skills/build-one-step-dispatch.test.mjs
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
@@ -105,427 +79,274 @@ import { PLUGIN_ROOT } from "../helpers.mjs";
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
 const skill = readFileSync(SKILL_PATH, "utf8");
 
-describe("adev:build SKILL.md — Full Pipeline and blocker-fix loop", () => {
-  it("declares --full flag in Arguments section", () => {
-    assert.match(skill, /--full/,
-      "Arguments must include --full flag");
+describe("adev:build SKILL.md — One-Step-Per-Invocation Dispatch", () => {
+  it("declares one-step-per-invocation as a named section or principle", () => {
+    assert.match(skill, /[Oo]ne.?[Ss]tep.?[Pp]er.?[Ii]nvocation|one step per turn|exactly one.*step.*per turn/i,
+      "Must name One-Step-Per-Invocation as a structural concept");
   });
 
-  it("describes Full Pipeline step sequence including specify and review", () => {
-    assert.match(skill, /[Ff]ull [Pp]ipeline/,
-      "Must name Full Pipeline as a mode");
-    assert.match(skill, /specify.*review.*plan.*route.*implement.*validate/is,
-      "Full Pipeline must list all 6 steps in order");
+  it("states orchestrator executes exactly ONE step per turn", () => {
+    assert.match(skill, /exactly one|exactly ONE|one step per turn/i,
+      "Must state that only one step is dispatched per turn");
   });
 
-  it("describes Implement Pipeline as the default mode", () => {
-    assert.match(skill, /[Ii]mplement [Pp]ipeline/,
-      "Must name Implement Pipeline as the default mode");
+  it("describes self-re-invocation via Skill tool after step completion", () => {
+    assert.match(skill, /re-invok|re.invoke.*Skill tool|Skill tool.*resume/i,
+      "Must describe re-invocation via Skill tool for continuation");
   });
 
-  it("includes pipeline_mode in pipeline context", () => {
-    assert.match(skill, /pipeline_mode/,
-      "Pipeline context must include pipeline_mode field");
+  it("re-invocation uses --resume to continue from persisted state", () => {
+    assert.match(skill, /re-invok.*--resume|--resume.*re-invok|invoke.*build.*--resume/i,
+      "Re-invocation must use --resume flag to read state from disk");
   });
 
-  it("Full Pipeline Step 0 dispatches /adev:specify", () => {
-    assert.match(skill, /adev:specify/,
-      "Full Pipeline must dispatch /adev:specify");
+  it("each re-invocation starts with fresh context (no memory of prior turns)", () => {
+    assert.match(skill, /fresh context|clean context|no memory.*prior|context.*fork/i,
+      "Must state that re-invocation has a fresh/clean context");
   });
 
-  it("Full Pipeline Step 0 uses --revise when spec exists but no .review.md", () => {
-    assert.match(skill, /--revise/,
-      "Step 0 must dispatch specify with --revise when spec file already exists");
+  it("pipeline position determined solely from build state file on disk", () => {
+    assert.match(skill, /build.state.*source of truth|state file.*determines|read.*build.state.*before/i,
+      "Pipeline position must come from build state file, not conversation context");
   });
 
-  it("Full Pipeline Step 0 skipped when .review.md with PASS exists", () => {
-    assert.match(skill, /[Ss]kip.*specify|specify.*[Ss]kip/i,
-      "Step 0 must be skipped when a passing review already exists");
+  it("orchestrator MUST read build state before taking any action", () => {
+    assert.match(skill, /read.*build.state.*before|MUST.*determine.*step.*reading|state file.*first/i,
+      "Must read state file before any dispatch action");
   });
 
-  it("includes blocker-fix loop for review BLOCK in Full Pipeline", () => {
-    assert.match(skill, /blocker.fix loop|blocker.fix|re-specify|re-dispatch.*review/i,
-      "Must describe a blocker-fix loop when review returns BLOCK");
+  it("final step (or stop condition) exits without re-invocation", () => {
+    assert.match(skill, /does NOT re-invok|without re-invok|exit.*without.*re-invok|stop.*re-invok/i,
+      "Final step must exit without re-invoking");
   });
 
-  it("blocker-context is enclosed in a fenced block to prevent prompt injection", () => {
-    assert.match(skill, /blocker.context/i,
-      "Must reference --blocker-context flag");
-    assert.match(skill, /fenced|```|code fence/i,
-      "Must require blocker-context to be enclosed in a fenced block (SEC-1)");
+  it("prints one-line progress report between steps", () => {
+    assert.match(skill, /progress report|Step.*completed.*Next|one-line.*progress/i,
+      "Must print a progress report between steps");
   });
 
-  it("resolves build.max_review_retries from user-config with default 2", () => {
-    assert.match(skill, /max_review_retries/,
-      "Must resolve build.max_review_retries");
-    assert.match(skill, /default.*2|2.*default/,
-      "Default for max_review_retries must be 2");
+  it("--verbose causes reasoning output but does not change one-step-per-turn", () => {
+    assert.match(skill, /--verbose.*reasoning|verbose.*does not change|verbose.*one.*step/i,
+      "--verbose must add reasoning output without changing dispatch model");
   });
 
-  it("max_review_retries=0 stops immediately on BLOCK without auto-fix", () => {
-    assert.match(skill, /max_review_retries.*0|0.*max_review_retries/i,
-      "max_review_retries=0 must stop build immediately on BLOCK");
-  });
-
-  it("Implement Pipeline warns when no .review.md found", () => {
-    assert.match(skill, /[Nn]o \.review\.md|no.*review.*found/i,
-      "Implement Pipeline must warn and stop when no .review.md exists");
-  });
-
-  it("--from valid step names include specify", () => {
-    assert.match(skill, /specify.*valid|valid.*specify|--from.*specify/i,
-      "--from must list specify as a valid step name");
-  });
-
-  it("references build-orchestrator role tier", () => {
-    assert.match(skill, /build-orchestrator/,
-      "Must reference build-orchestrator role tier from subagent-cost-routing spec");
-  });
-
-  it("build state JSON example includes a validate step entry", () => {
-    assert.match(skill, /"validate"/,
-      "Build state JSON example must include a validate step entry");
+  it("orchestrator prompt contains only dispatch-loop instructions", () => {
+    assert.match(skill, /dispatch.loop|read state.*determine.*dispatch.*record|narrow task.*dispatch/i,
+      "Orchestrator prompt must be limited to dispatch-loop instructions");
   });
 });
 ```
 
 - [x] **Verify test fails**
 
-Run: `node --test tests/skills/build-full-pipeline.test.mjs`
-Expected: FAIL — `--full`, `pipeline_mode`, `blocker-fix loop`, `max_review_retries`, `--revise`, `--from specify`, `build-orchestrator`, and `"validate"` step are absent or incomplete in current SKILL.md
+Run: `node --test tests/skills/build-one-step-dispatch.test.mjs`
+Expected: FAIL — the one-step-per-invocation dispatch model is not yet described in the SKILL.md
 
 - [x] **Implement**
 
-Edit `skills/build/SKILL.md` with the following changes:
-
-**1. Arguments section** — add `--full` entry after `--no-route`:
-```
-- `--full`: run the Full Pipeline (specify → review → plan → route → implement → validate). Without `--full`, the default Implement Pipeline skips specify and review and requires a pre-existing .review.md.
-```
-
-**2. Prerequisites section** — add `build.max_review_retries` as item 5:
-```
-5. **Read review config.** Resolve `build.max_review_retries` from `user-config` (local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default `2`). Use `parseUserConfig()` from `lib/persona.mjs`. Values above 3 are clamped to 3 with a warning. Set to `0` to disable the blocker-fix loop entirely.
-```
-
-**3. Add Pipeline Modes section** before the Delegation Protocol section:
+Edit `skills/build/SKILL.md` — add a new section `## One-Step-Per-Invocation Dispatch` after the `## Delegation Protocol` section (before the `## Build Pipeline` section). This is the core structural mechanism:
 
 ```markdown
-## Pipeline Modes
+## One-Step-Per-Invocation Dispatch
 
-**Implement Pipeline** (default, no `--full`): `plan → route → implement → validate`
+The build orchestrator executes **exactly one pipeline step per turn**, then yields control. This is the primary structural mechanism preventing the agent from skipping steps or inlining work due to accumulated context.
 
-Use when the spec already exists with a valid `.review.md` (PASS or PASS_WITH_NOTES verdict). Skips specify and review. If no `.review.md` is found, the skill warns and stops. Includes the validate→implement retry loop if `build.max_retries > 0`.
+### Dispatch Loop (the only thing the orchestrator does)
 
-**Full Pipeline** (`--full`): `specify → review (with blocker-fix loop) → plan → route → implement → validate`
+On every invocation (whether fresh `--spec` or `--resume`), the orchestrator performs this loop exactly once:
 
-Use when starting from scratch or when the spec needs authoring or revision. Step 0 dispatches `/adev:specify`; if the spec file already exists without a valid review, it dispatches with `--revise` (revision mode, not overwrite). Step 1 runs `/adev:review-specs`; on BLOCK, the blocker-fix loop re-specifies and re-reviews up to `build.max_review_retries` times (default 2). Includes the validate→implement retry loop if `build.max_retries > 0`.
+1. **Read build state.** Read `.context-index/build-state/<slug>.json` BEFORE taking any action. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history, not prior subagent results. If no state file exists (fresh build), create one with all steps pending.
+
+2. **Determine next step.** Scan the `steps` array for the first step without `status: completed` or `status: skipped`. Evaluate that step's skip conditions against disk artifacts. If skip conditions are met, mark it `skipped` and advance to the next — but dispatch at most ONE non-skipped step.
+
+3. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
+
+4. **Record result.** Write the STEP_RESULT to build state (step status, timestamp, verdict, error if any). Update `status` and `updated` fields.
+
+5. **Re-invoke or stop.**
+   - If more steps remain AND no stop condition is met: print a one-line progress report (`"Step N (<name>) — <verdict>. Next: Step N+1 (<name>)."`) and re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean forked context — it has no memory of the current turn.
+   - If all steps are complete (or a stop condition is met): do NOT re-invoke. Print the final summary and exit.
+
+### Why One Step Per Turn
+
+This model prevents the "finish the work" failure mode where accumulated context causes the agent to skip lifecycle steps. By executing one step per turn and re-invoking with a fresh context, the orchestrator never accumulates enough context to feel compelled to shortcut. Each turn has a single, narrow task: dispatch one subagent.
+
+### Verbose Mode
+
+When `--verbose` is set, the orchestrator prints its reasoning before each dispatch: which step was selected, why it was not skipped, what context packet was assembled. This is diagnostic output only — it does NOT change the one-step-per-turn behavior. The orchestrator still dispatches exactly one step and re-invokes.
 ```
 
-**4. Pipeline context block** — add `pipeline_mode` field (inside `PIPELINE_CONTEXT:` block):
-```
-  pipeline_mode: "full" | "implement"   # "full" when --full is set, "implement" otherwise
-```
-
-**5. Add Step 0 (Specify) to Build Pipeline** before the existing Step 1 (Review):
+Additionally, update the `## Key Principles` section to add principle 8:
 
 ```markdown
-### Step 0: Specify (Full Pipeline only)
-
-**Skip conditions:**
-- `--full` NOT set → skip unconditionally (Implement Pipeline does not run specify).
-- `.review.md` exists adjacent to the spec with PASS or PASS_WITH_NOTES verdict and is not stale → skip (spec already reviewed). Record as `skipped` in build state.
-
-**Dispatch (when not skipped):**
-- Spec file does NOT exist: dispatch `/adev:specify --spec <path>` in creation mode.
-- Spec file EXISTS but no current passing `.review.md`: dispatch `/adev:specify --spec <path> --revise` (revision mode — avoids clobbering the existing spec).
-
-```
-Agent({
-  description: "Build Step 0: Specify <spec-name>",
-  prompt: <subagent prompt template with skill="adev:specify" args="--spec <path> [--revise]">
-})
+8. **One step per turn.** The orchestrator dispatches exactly one pipeline step per invocation, persists state, and re-invokes itself for the next step. It never runs two or more steps in a single turn. This prevents context accumulation from causing step-skipping. See the One-Step-Per-Invocation Dispatch section.
 ```
 
-**After subagent returns:** Record step as `completed` or `skipped` in build state.
+- [x] **Verify test passes**
+
+Run: `node --test tests/skills/build-one-step-dispatch.test.mjs`
+Expected: PASS — all 11 assertions pass
+
+- [x] **Commit**
+
+Branch (if not already created): `feat/strategic-planning/build-one-step-dispatch`
+
+```bash
+git add skills/build/SKILL.md tests/skills/build-one-step-dispatch.test.mjs
+git commit -m "feat(strategic-planning): add One-Step-Per-Invocation dispatch model to adev:build
+
+Spec: .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
+Plan-task: 1"
 ```
 
-**6. Modify Step 1 (Review) — add blocker-fix loop** after the existing "After subagent returns" block:
+---
+
+## Task 2: Reinforce Subagent Isolation and State-First Protocol [specialist: none]
+
+**Depends on:** Task 1
+
+**Charter capability:** `/adev:build` orchestrator — subagent and fork isolation
+**Strategy:** unit (source: fallback, confidence: high)
+**Files:**
+- Modify: `skills/build/SKILL.md`
+
+**Tests:** `tests/skills/build-one-step-dispatch.test.mjs` (existing assertions cover state-first reading)
+
+**Context to load:**
+- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behaviors 13-15, 26; AC: Subagent and Fork Isolation)
+
+- [x] **Write failing test**
+
+Add to existing test file `tests/skills/build-one-step-dispatch.test.mjs`:
+
+```javascript
+  it("subagent prompts include pipeline context fields (spec_path, title, phase, mode, position)", () => {
+    assert.match(skill, /spec_path.*spec_title.*phase.*pipeline_mode|PIPELINE_CONTEXT/i,
+      "Subagent prompts must include pipeline context");
+  });
+
+  it("step context assembled from disk artifacts, never from prior subagent memory", () => {
+    assert.match(skill, /from disk|artifact.*on disk|never.*from.*memory|not from.*prior.*subagent/i,
+      "Step context must be assembled from disk artifacts");
+  });
+
+  it("subagents return structured STEP_RESULT with status, verdict, artifacts, summary, error", () => {
+    assert.match(skill, /STEP_RESULT.*status.*verdict|status.*COMPLETED.*FAILED.*BLOCKED/i,
+      "Subagents must return STEP_RESULT structure");
+  });
+
+  it("resumed builds assemble step context from disk, not from session memory", () => {
+    assert.match(skill, /resumed.*disk|resume.*artifact|read from disk.*ensure/i,
+      "Resumed builds must read context from disk");
+  });
+```
+
+- [x] **Verify test fails**
+
+Run: `node --test tests/skills/build-one-step-dispatch.test.mjs`
+Expected: Some assertions may already pass (the existing SKILL.md has PIPELINE_CONTEXT and STEP_RESULT). Verify which ones fail, if any.
+
+- [x] **Implement**
+
+Review existing SKILL.md content. The existing Delegation Protocol section already covers:
+- Pipeline context (PIPELINE_CONTEXT block with spec_path, spec_title, phase, pipeline_mode, etc.)
+- Step context from disk artifacts
+- STEP_RESULT format (status, verdict, artifacts, summary, error)
+- "Read from disk" rule
+
+If all assertions already pass against existing content, this task requires no SKILL.md changes — mark as verified. If any fail, add the missing language to the relevant section.
+
+Additionally, in the `## Build Pipeline` section introductory paragraph, add explicit language reinforcing the one-step model:
 
 ```markdown
-**Blocker-Fix Loop (Full Pipeline only):**
-
-When review returns BLOCK, `--full` is set, and `build.max_review_retries > 0`:
-
-1. Extract blocking issues from `.review.md` (read each reviewer section, collect `blocker` findings).
-2. Serialize findings as a fenced code block (triple-backtick delimiters) — **never interpolate raw finding text directly into prose instructions** (SEC-1: prevents prompt injection from malicious `.review.md` content).
-3. Dispatch specify subagent with `--revise --blocker-context` and the fenced findings block.
-4. Dispatch review subagent for the revised spec.
-5. Evaluate the new verdict:
-   - **PASS or PASS_WITH_NOTES:** exit loop, proceed to Step 2.
-   - **BLOCK with same blockers as previous cycle:** no progress → stop loop, record FAILED, stop build.
-   - **BLOCK with different blockers:** progress made → increment counter, retry if budget remains.
-6. If `current_retry >= build.max_review_retries`: stop loop, record FAILED, stop build with summary of all fix attempts.
-
-When `build.max_review_retries = 0` (or `--full` NOT set): review BLOCK stops the build immediately without entering the loop.
+The orchestrator executes exactly one of these steps per invocation. After dispatch and state persistence, it re-invokes itself for the next step. See One-Step-Per-Invocation Dispatch above.
 ```
 
-**7. Implement Pipeline guard** — in Single Spec Mode section, add before step 2:
+- [x] **Verify test passes**
 
-```markdown
-When `--full` is NOT set and the spec file exists but no adjacent `.review.md` is found (or the review is stale/BLOCK):
-> Warning: No `.review.md` found for `<spec>`. Run `/adev:review-specs --spec <path>` first, or use `--full` to include review in the build.
+Run: `node --test tests/skills/build-one-step-dispatch.test.mjs`
+Expected: PASS — all assertions pass
 
-Stop the build. Do not proceed to plan.
+- [x] **Commit**
+
+```bash
+git add skills/build/SKILL.md tests/skills/build-one-step-dispatch.test.mjs
+git commit -m "feat(strategic-planning): reinforce subagent isolation and state-first protocol in adev:build
+
+Spec: .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
+Plan-task: 2"
 ```
 
-**8. `--from` resume valid step names** — update the list in the Resume section and in the Error Cases table:
+---
 
-In Resume section, change:
+## Task 3: Fix Resume Mode Valid Step Names Inconsistency [specialist: none]
+
+**Depends on:** Task 2
+
+**Charter capability:** `/adev:build` orchestrator — resume support
+**Strategy:** unit (source: fallback, confidence: high)
+**Files:**
+- Modify: `skills/build/resume-mode.md`
+
+**Tests:** `tests/skills/build-full-pipeline.test.mjs` (existing assertion: `--from valid step names include specify`)
+
+**Context to load:**
+- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behavior 5a)
+- `skills/build/resume-mode.md` (line 25 inconsistency)
+
+- [x] **Write failing test**
+
+No new test file needed. Verify with existing test `build-full-pipeline.test.mjs` (which reads the main SKILL.md, not resume-mode.md). Add a focused assertion to the one-step test file:
+
+```javascript
+// Add to tests/skills/build-one-step-dispatch.test.mjs
+import { readFileSync } from "fs";
+const RESUME_PATH = join(PLUGIN_ROOT, "skills", "build", "resume-mode.md");
+const resumeMode = readFileSync(RESUME_PATH, "utf8");
+
+describe("resume-mode.md — valid step names consistency", () => {
+  it("all occurrences of valid step names include specify", () => {
+    const stepListMatches = resumeMode.match(/[Vv]alid step names:.*$/gm);
+    for (const match of stepListMatches || []) {
+      assert.match(match, /specify/,
+        `All valid step name lists must include specify: "${match}"`);
+    }
+  });
+});
+```
+
+- [x] **Verify test fails**
+
+Run: `node --test tests/skills/build-one-step-dispatch.test.mjs`
+Expected: FAIL — line 25 in resume-mode.md lists `review, plan, route, implement, validate` without `specify`
+
+- [x] **Implement**
+
+Edit `skills/build/resume-mode.md` line 25 — change:
 ```
 Valid step names: `review`, `plan`, `route`, `implement`, `validate`.
 ```
 To:
 ```
-Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Note: `specify` is only applicable in Full Pipeline builds; using `--from specify` on an Implement Pipeline build dispatches specify (which may update the spec) — use with care.
-```
-
-In Error Cases table, update the `--from <step>` with invalid name row:
-```
-| `--from <step>` with invalid step name | Print "Invalid step: `<name>`. Valid steps: specify, review, plan, route, implement, validate" and stop |
-```
-
-**9. Add `build-orchestrator` role tier reference** in Key Principles section (or a new "Model Tier" note before the Delegation Protocol):
-
-```markdown
-**Model tier:** The build orchestrator runs at the `build-orchestrator` role tier (`reasoning` by default, per the subagent-cost-routing spec). Override via `model_routing.subagent_overrides.build-orchestrator` in `manifest.yaml`.
-```
-
-**10. Build state JSON example** — add `validate` step entry after the `implement` step in the State File Format section:
-
-```json
-    {
-      "name": "validate",
-      "status": "completed",
-      "timestamp": "2026-04-05T10:25:00Z",
-      "verdict": "PASS"
-    }
+Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`.
 ```
 
 - [x] **Verify test passes**
 
-Run: `node --test tests/skills/build-full-pipeline.test.mjs`
-Expected: PASS — all 15 assertions pass
+Run: `node --test tests/skills/build-one-step-dispatch.test.mjs`
+Expected: PASS
 
-- [x] **Commit**
-
-Branch (if not already created): `feat/strategic-planning/adev-build-full-pipeline`
-
-```bash
-git add skills/build/SKILL.md tests/skills/build-full-pipeline.test.mjs
-git commit -m "feat(strategic-planning): add Full Pipeline (--full) and blocker-fix loop to adev:build"
-```
-
----
-
-## Task 2: Phase Filter Correction and Stale Build Detection [specialist: none]
-
-**Depends on:** Task 1
-
-**Charter capability:** `/adev:build` orchestrator — phase batching and resume support
-**Strategy:** unit (source: fallback, confidence: high)
-**Files:**
-- Modify: `skills/build/SKILL.md`
-- Create: `tests/skills/build-phase-and-stale.test.mjs`
-
-**Tests:** `tests/skills/build-phase-and-stale.test.mjs`
-
-**Context to load:**
-- `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md` (Behavior 3, 3a; AC: Phase filter; Stale Build Detection section)
-- `tests/skills/build-workspace-mode.test.mjs` (test file pattern)
-
-- [x] **Write failing test**
-
-```javascript
-// tests/skills/build-phase-and-stale.test.mjs
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "fs";
-import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
-
-const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
-
-describe("adev:build SKILL.md — phase filter and stale build detection", () => {
-  it("Implement Pipeline phase filter lists review-passed, implemented, validated explicitly", () => {
-    assert.match(skill, /review-passed.*implemented.*validated|review-passed[^.]*implemented[^.]*validated/is,
-      "Implement Pipeline phase filter must explicitly list review-passed, implemented, validated");
-  });
-
-  it("Implement Pipeline phase filter does NOT use 'review-pending or later'", () => {
-    assert.doesNotMatch(skill, /review-pending or later/,
-      "Must not use the old 'review-pending or later' filter text");
-  });
-
-  it("Implement Pipeline shows visible skip note for review-pending specs", () => {
-    assert.match(skill, /[Ss]kipped.*review-pending|review-pending.*[Ss]kipp/i,
-      "Must display a visible note when skipping review-pending specs");
-  });
-
-  it("Implement Pipeline shows visible skip note for review-blocked specs", () => {
-    assert.match(skill, /[Ss]kipped.*review-blocked|review-blocked.*[Ss]kipp/i,
-      "Must display a visible note when skipping review-blocked specs");
-  });
-
-  it("--phase --full includes review-pending specs", () => {
-    assert.match(skill, /--full.*review-pending|review-pending.*--full/i,
-      "--phase --full must include review-pending specs in the filter");
-  });
-
-  it("--phase --full includes review-blocked specs", () => {
-    assert.match(skill, /--full.*review-blocked|review-blocked.*--full/i,
-      "--phase --full must include review-blocked specs (Full Pipeline can auto-fix them)");
-  });
-
-  it("detects zombie builds (in_progress + all steps skipped)", () => {
-    assert.match(skill, /zombie|stale build/i,
-      "Must include zombie / stale build detection logic");
-  });
-
-  it("zombie detection checks for all recorded steps having status skipped", () => {
-    assert.match(skill, /all.*steps.*skipped|all recorded steps.*skipped/i,
-      "Zombie detection must check that all steps are skipped");
-  });
-
-  it("reports zombie build with a suggested --from resume command", () => {
-    assert.match(skill, /--from implement|--from.*resume|resume.*--from/i,
-      "Zombie build report must include a --from resume suggestion");
-  });
-
-  it("new --spec build warns if a zombie build exists for the same slug", () => {
-    assert.match(skill, /zombie.*slug|slug.*stale|overwrite|same slug/i,
-      "New --spec build must ask user to resume or overwrite when zombie exists for the same slug");
-  });
-});
-```
-
-- [x] **Verify test fails**
-
-Run: `node --test tests/skills/build-phase-and-stale.test.mjs`
-Expected: FAIL — phase filter still says `review-pending or later`, zombie detection absent
-
-- [x] **Implement**
-
-Edit `skills/build/SKILL.md`:
-
-**1. Phase Mode spec discovery — replace Step 4**:
-
-Replace:
-```
-4. Filter to specs with `status` of `review-pending` or later (skip `draft` specs).
-```
-With:
-```
-4. **Filter by pipeline mode:**
-   - **Implement Pipeline** (no `--full`): include only specs with `status` of `review-passed`, `implemented`, or `validated`. Skip specs with any other status with a visible note per spec:
-     > Skipped `<spec>` (status: `<status>`): not ready for Implement Pipeline. Run `/adev:review-specs` first, or use `--full` to include review.
-     Explicitly: `review-pending` and `review-blocked` specs are skipped in Implement Pipeline.
-   - **Full Pipeline** (`--full`): include specs with `status` of `review-pending`, `review-passed`, `implemented`, `validated`, and `review-blocked`. Specs with `review-blocked` status are included so the blocker-fix loop can attempt to resolve prior blockers. Skip only `draft` specs.
-```
-
-**2. Add Stale Build Detection section** after the Resume Mode section (before Phase Mode):
-
-```markdown
-## Stale Build Detection
-
-When `--resume` is invoked, or at the start of a new `--spec` build, scan `.context-index/build-state/` for zombie builds.
-
-**Zombie build:** A state file where `status` is `in_progress` AND all recorded steps have `status: skipped`. This means the orchestrator ran, evaluated all skip conditions (`.review.md` present, `.plan.md` present, etc.), skipped every step, and exited without doing real work.
-
-**On `--resume`:** Report zombie builds found:
-```
-Found stale build: `<spec-slug>` (started: <date>, all steps skipped)
-Resume with: `/adev:build --resume --spec <path> --from implement`
-```
-
-**On new `--spec` build:** If the slug matches an existing zombie build, warn and ask:
-```
-A stale build exists for `<spec-slug>` (started: <date>, all steps skipped).
-  - Resume it: /adev:build --resume --spec <path> --from implement
-  - Overwrite it: continue (resets build state for this spec)
-
-Proceed? (resume / overwrite)
-```
-Await user input. "overwrite" resets the build state and proceeds. "resume" applies `--from implement` resume logic. If the user dismisses without choosing, stop and let them decide.
-```
-
-- [x] **Verify test passes**
-
-Run: `node --test tests/skills/build-phase-and-stale.test.mjs`
-Expected: PASS — all 10 assertions pass
-
-Run: `node --test tests/skills/build-full-pipeline.test.mjs`
-Expected: still PASS (no regressions from Task 1)
+Run full suite: `npm test`
+Expected: PASS — no regressions
 
 - [x] **Commit**
 
 ```bash
-git add skills/build/SKILL.md tests/skills/build-phase-and-stale.test.mjs
-git commit -m "feat(strategic-planning): fix phase filter and add zombie build detection to adev:build"
-```
+git add skills/build/resume-mode.md tests/skills/build-one-step-dispatch.test.mjs
+git commit -m "fix(strategic-planning): fix resume-mode valid step names to include specify
 
----
-
-## Task 3: Spec Editorial Alignment [specialist: none]
-
-**Depends on:** Task 2
-
-**Charter capability:** `/adev:build` orchestrator — spec accuracy
-**Strategy:** unit (source: fallback, confidence: high)
-**Files:**
-- Modify: `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md`
-
-**Tests:** `tests/skills/build-full-pipeline.test.mjs` (already covers `build-orchestrator` and `"validate"` assertions from Task 1)
-
-> This task makes no behavioral changes. It fixes three editorial issues in the spec `.md` file flagged during review: the B1 route omission (SA-3), the validate step missing from the build state JSON example (CON-4), and the spec's own build state example needing the validate step. All SKILL.md content was already corrected in Tasks 1 and 2.
-
-- [x] **Write failing test**
-
-No new test file needed. Verify the spec `.md` file has the correct text by reading it (implementation verification only).
-
-- [x] **Verify current state**
-
-Confirm Behavior 1 in spec currently reads `plan → implement → validate` (missing route):
-```bash
-grep "plan → implement → validate" .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
-```
-Expected: match found (confirming the B1 bug)
-
-- [x] **Implement**
-
-Edit `.context-index/specs/features/strategic-planning/adev-build-skill.spec.md`:
-
-**1. Fix Behavior 1** — change `plan → implement → validate` to `plan → route → implement → validate`:
-```
-1. **When** `--spec <path>` is invoked without `--full` **then** the skill runs the Implement Pipeline: plan → route → implement → validate for that single spec
-```
-
-**2. Fix Build State File Format JSON example** — add `validate` step entry after `implement`:
-```json
-    { "name": "validate", "status": "completed", "timestamp": "ISO-8601" }
-```
-
-- [x] **Verify test passes**
-
-Run full test suite: `npm test`
-Expected: PASS — all tests pass including `build-full-pipeline.test.mjs` and `build-phase-and-stale.test.mjs`. No regressions in `build-dry-run-gates.test.mjs` or `build-workspace-mode.test.mjs`.
-
-- [x] **Commit**
-
-```bash
-git add .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
-git commit -m "fix(strategic-planning): fix B1 route omission and add validate to build state example in spec"
+Spec: .context-index/specs/features/strategic-planning/adev-build-skill.spec.md
+Plan-task: 3"
 ```
 
 ---
@@ -536,15 +357,15 @@ After all tasks are complete, run the full quality gate suite:
 
 - [ ] Tests pass: `npm test`
 - [ ] All acceptance criteria from spec satisfied:
-  - `--spec --full` runs Full Pipeline: specify → review → plan → route → implement → validate
-  - `--phase` (no `--full`) filters to `review-passed`/`implemented`/`validated` only, skips others with visible note
-  - `--phase --full` includes `review-pending` and `review-blocked` specs
-  - Blocker-fix loop dispatches specify with `--revise --blocker-context <fenced-findings>`
-  - `build.max_review_retries` defaults to 2; `0` disables auto-fix
-  - Implement Pipeline warns and stops if no `.review.md` found
-  - `--from specify` is a valid resume step name
-  - Zombie build detection reports stale builds with `--from implement` resume hint
-  - New `--spec` build warns if zombie exists for same slug
-  - `pipeline_mode` in pipeline context
-  - `build-orchestrator` role tier referenced
-  - B1 in spec correctly lists `plan → route → implement → validate`
+  - Orchestrator executes exactly ONE pipeline step per turn
+  - After dispatching one subagent and recording result, orchestrator re-invokes itself via Skill tool
+  - Each re-invocation starts with a fresh forked context — no memory of prior turns
+  - Pipeline position is determined solely from build state file on disk
+  - Orchestrator prompt contains only dispatch-loop instructions
+  - Final step (or stop condition) exits without re-invocation and prints summary
+  - `--verbose` causes reasoning output but does not change one-step-per-turn behavior
+  - Subagent prompts include pipeline context (spec path, title, phase, pipeline mode, position, workspace, issue board)
+  - Step context assembled from disk artifacts, never from prior subagent memory
+  - Subagents return structured STEP_RESULT
+  - Resumed builds assemble step context from disk
+  - Valid step names consistently include `specify` across all files
