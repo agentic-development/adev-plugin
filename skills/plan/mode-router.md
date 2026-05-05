@@ -21,7 +21,7 @@ An explicit flag (`--spec`, `--feature`, `--release`, `--milestone`, `--epic`) o
 Error case: if two or more mode flags are supplied together, emit `CONFLICTING_FLAGS` and exit.
 
 **Examples:**
-- `/adev:plan --spec auth/login.md` → Spec Mode, path `auth/login.md`
+- `/adev:plan --spec auth/login.spec.md` → Spec Mode, path `auth/login.spec.md`
 - `/adev:plan --feature auth` → Feature Mode, module `auth`
 - `/adev:plan --release v2.0` → Release Mode, name `v2.0`
 - `/adev:plan --milestone Q3` → Milestone Mode, name `Q3`
@@ -33,8 +33,8 @@ Error case: if two or more mode flags are supplied together, emit `CONFLICTING_F
 If a single bare argument ends in `.md` and looks like a file path (contains `/` or refers to a file under `.context-index/specs/`), treat it as a spec path and route to Spec Mode.
 
 **Examples:**
-- `/adev:plan multi-repo-workspace/init-workspace.md` → Spec Mode, path resolves to `.context-index/specs/features/multi-repo-workspace/init-workspace.md`
-- `/adev:plan .context-index/specs/features/auth/login.md` → Spec Mode, absolute path used as-is
+- `/adev:plan multi-repo-workspace/init-workspace.spec.md` → Spec Mode, path resolves to `.context-index/specs/features/multi-repo-workspace/init-workspace.spec.md`
+- `/adev:plan .context-index/specs/features/auth/login.spec.md` → Spec Mode, absolute path used as-is
 
 ### Step 3 — Keyword Detection
 
@@ -69,7 +69,7 @@ When invoked with no flags and no arguments, scan `.context-index/` to infer int
 | No obvious pending work | Multi-choice menu (Step 5) |
 
 **Concrete state examples:**
-- `.context-index/specs/features/auth/login.md` has `login.review.md` (PASS) but no `login.plan.md` → propose Spec Mode for `login.md`
+- `.context-index/specs/features/auth/login.spec.md` has `login.review.md` (PASS) but no `login.plan.md` → propose Spec Mode for `login.md`
 - Three specs all have passing reviews but no plans → present menu listing all three plus Feature/Release/Milestone/Epic options
 - All specs have plans; `payments/charter.md` has 2 capabilities with no corresponding spec files → propose Feature Mode for `payments`
 
@@ -98,7 +98,7 @@ Enter a number or describe what you want to plan:
 1. Always show all five options — do not hide modes based on project state (state is only used to pre-suggest, not to restrict).
 2. If Step 4 identified a specific pending item, highlight it in the menu as the suggested default:
    ```
-   > 1. Spec — decompose auth/login.md (suggested — review passed, no plan yet)
+   > 1. Spec — decompose auth/login.spec.md (suggested — review passed, no plan yet)
    ```
 3. After the user selects, ask for the required argument (module, release name, epic ID) if it was not already provided.
 4. A maximum of one round of re-prompting is allowed. If the user's second response is still ambiguous, emit a clear "I could not determine the planning scope" message and exit.
