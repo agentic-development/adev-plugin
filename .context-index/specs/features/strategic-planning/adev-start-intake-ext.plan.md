@@ -1,7 +1,7 @@
 # Plan: adev:work Intake Extension
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev:work-intake-ext.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:work-intake-ext.spec.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
@@ -94,7 +94,7 @@ Extend the existing `skills/work/SKILL.md` to add an `--intake` mode for triagin
 - `skills/work/SKILL.md` — Add --intake argument, classification table, processing steps, and batch file mode
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev:work-intake-ext.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:work-intake-ext.spec.md` — Behavioral contract
 - `.context-index/specs/features/strategic-planning/adev:work-intake-ext.review.md` — Review notes (SA-1, SA-2, SEC-1, CON-1)
 - `skills/issues/SKILL.md` — Issue creation patterns (create, createEpic)
 - `lib/issues/registry.mjs` — Issue model API reference

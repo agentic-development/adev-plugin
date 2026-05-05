@@ -1,7 +1,7 @@
 # Architecture Review: spec-file-suffixes
 
 > **Date:** 2026-05-04
-> **Spec:** .context-index/specs/cross-cutting/spec-file-suffixes.md
+> **Spec:** .context-index/specs/cross-cutting/spec-file-suffixes.spec.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2
 > **file-sha:** ca9d787cca37ee84be66a734c617db5d99668df7

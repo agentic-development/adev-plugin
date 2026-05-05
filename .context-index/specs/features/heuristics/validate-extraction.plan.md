@@ -2,13 +2,13 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/validate-extraction.md (r2)
+> **Spec:** .context-index/specs/features/heuristics/validate-extraction.spec.md (r2)
 > **Review:** PASS_WITH_NOTES (2026-04-09, r2)
 > **Platform:** JavaScript ESM, Node.js, node:test, bash skill markdown
 
 **Goal:** Add "Check 12: Success Heuristic Extraction" to `skills/validate/SKILL.md`, placed after the existing Check 11 (Visual Verification) and before the "## Report Format" section. The check runs only on first-run PASS and extracts a positive pattern via `lib/heuristics.mjs` `writeHeuristic` at `medium` confidence.
 
-**Architecture:** This is a skill-markdown change, not code. The new Check 12 documents: (1) when it runs (first-run PASS only, detected via sibling `-validation.md` absence), (2) how spec-slug is derived consistently across the first-run gate and id generation, (3) how scope is derived from the spec's `charter:` frontmatter, (4) how title is derived with truncation, (5) how id incorporates the absolute path to prevent same-title collisions, (6) the success-factor priority order (sample → ADR → packet → default), (7) the inline Node invocation with SKIP semantics. Eval tests under `skills/validate/evals/` verify first-run PASS, second-run SKIP, partial-FAIL SKIP, and helper-unavailable SKIP.
+**Architecture:** This is a skill-markdown change, not code. The new Check 12 documents: (1) when it runs (first-run PASS only, detected via sibling `.validate.md` absence), (2) how spec-slug is derived consistently across the first-run gate and id generation, (3) how scope is derived from the spec's `charter:` frontmatter, (4) how title is derived with truncation, (5) how id incorporates the absolute path to prevent same-title collisions, (6) the success-factor priority order (sample → ADR → packet → default), (7) the inline Node invocation with SKIP semantics. Eval tests under `skills/validate/evals/` verify first-run PASS, second-run SKIP, partial-FAIL SKIP, and helper-unavailable SKIP.
 
 ---
 
@@ -20,7 +20,7 @@
 
 **Modify:**
 - `skills/validate/SKILL.md` — Insert "### Check 12: Success Heuristic Extraction" after Check 11 (line 242) and before "## Report Format" (line 244). Also extend the report template to include Check 12 output with SKIP reason support.
-- `.context-index/specs/features/heuristics/validate-extraction.md` — `/adev:implement` stamps a `source-manifest` block after implementation
+- `.context-index/specs/features/heuristics/validate-extraction.spec.md` — `/adev:implement` stamps a `source-manifest` block after implementation
 - `.context-index/specs/features/heuristics/charter.md` — Capability Map: "Validate Extraction" → `implemented`
 
 **Reference (read, do not modify):**
@@ -130,7 +130,7 @@
 
 **Tests:** `skills/validate/evals/success-heuristic.test.mjs`
 
-- [ ] **Write failing test**: assert Check 12 section contains a "First-Run Detection Rule" sub-heading explaining that `<spec-slug>-validation.md` sibling file absence = first run, including the explicit note that deletion followed by re-validation counts as first run
+- [ ] **Write failing test**: assert Check 12 section contains a "First-Run Detection Rule" sub-heading explaining that `<spec-slug>.validate.md` sibling file absence = first run, including the explicit note that deletion followed by re-validation counts as first run
 - [ ] **Verify fail**
 - [ ] **Implement**: Add the rule sub-section
 - [ ] **Verify pass**
@@ -214,7 +214,7 @@
 
 **Tests:** `skills/validate/evals/success-heuristic.test.mjs`
 
-- [ ] **Write failing test**: in a temp dir with a mock `.context-index/`, a target spec, and no existing `<spec-slug>-validation.md`, simulate Checks 1-11 all PASS, run Check 12 logic, assert `writeHeuristic` was called with `confidence: "medium"`, assert the written heuristic's `title` starts with `"First-run PASS: "`, assert `source: "validation"`, assert `evidence[0].date` is today
+- [ ] **Write failing test**: in a temp dir with a mock `.context-index/`, a target spec, and no existing `<spec-slug>.validate.md`, simulate Checks 1-11 all PASS, run Check 12 logic, assert `writeHeuristic` was called with `confidence: "medium"`, assert the written heuristic's `title` starts with `"First-run PASS: "`, assert `source: "validation"`, assert `evidence[0].date` is today
 - [ ] **Verify fail**
 - [ ] **Implement**: Build a test harness that drives Check 12 logic given the preconditions
 - [ ] **Verify pass**
@@ -228,7 +228,7 @@
 
 **Tests:** `skills/validate/evals/success-heuristic.test.mjs`
 
-- [ ] **Write failing test**: same setup as T10 but a prior `<spec-slug>-validation.md` sibling file already exists. Simulate Checks 1-11 PASS, run Check 12 logic, assert Check 12 is reported as SKIP with note `"not first-run PASS"`, assert no heuristic was written
+- [ ] **Write failing test**: same setup as T10 but a prior `<spec-slug>.validate.md` sibling file already exists. Simulate Checks 1-11 PASS, run Check 12 logic, assert Check 12 is reported as SKIP with note `"not first-run PASS"`, assert no heuristic was written
 - [ ] **Verify fail**
 - [ ] **Implement**: extend the harness to detect the sibling file per the First-Run Detection Rule
 - [ ] **Verify pass**

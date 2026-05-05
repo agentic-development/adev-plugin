@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/store-and-helper.md
+> **Spec:** .context-index/specs/features/heuristics/store-and-helper.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-09, r2)
 > **Platform:** JavaScript ESM, Node.js, node:test, npm
 
@@ -20,7 +20,7 @@
 - `.context-index/memory/heuristics/_format.md` — Public schema documentation (frontmatter fields, confidence lifecycle, id namespace convention, redaction advisory)
 
 **Modify:**
-- `.context-index/specs/features/heuristics/store-and-helper.md` — `/adev:implement` stamps a `source-manifest` block in the frontmatter after implementation
+- `.context-index/specs/features/heuristics/store-and-helper.spec.md` — `/adev:implement` stamps a `source-manifest` block in the frontmatter after implementation
 - `.context-index/specs/features/heuristics/charter.md` — Capability Map status transitions (Heuristic Store Structure, `lib/heuristics.mjs` Helper, Format Documentation → `implemented`)
 
 **Reference (read, do not modify):**

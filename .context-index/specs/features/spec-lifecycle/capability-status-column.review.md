@@ -1,7 +1,7 @@
 # Architecture Review: capability-status-column
 
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/spec-lifecycle/capability-status-column.md
+> **Spec:** .context-index/specs/features/spec-lifecycle/capability-status-column.spec.md
 > **Charter:** .context-index/specs/features/spec-lifecycle/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

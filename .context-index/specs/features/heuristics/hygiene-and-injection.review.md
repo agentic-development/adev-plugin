@@ -1,7 +1,7 @@
 # Architecture Review: hygiene-and-injection
 
 > **Date:** 2026-04-23
-> **Spec:** `.context-index/specs/features/heuristics/hygiene-and-injection.md`
+> **Spec:** `.context-index/specs/features/heuristics/hygiene-and-injection.spec.md`
 > **Charter:** `.context-index/specs/features/heuristics/charter.md`
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

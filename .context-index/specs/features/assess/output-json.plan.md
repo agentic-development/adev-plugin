@@ -1,7 +1,7 @@
 # Plan: Output JSON
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/adev:assess/output-json.md`
+- Spec: `.context-index/specs/features/adev:assess/output-json.spec.md`
 - Charter: `.context-index/specs/features/adev:assess/charter.md`
 - Review: PASS
 

@@ -1,7 +1,7 @@
 # Architecture Review: retrieval-filtering
 
 > **Date:** 2026-04-12
-> **Spec:** .context-index/specs/features/heuristics/retrieval-filtering.md
+> **Spec:** .context-index/specs/features/heuristics/retrieval-filtering.spec.md
 > **Charter:** .context-index/specs/features/heuristics/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

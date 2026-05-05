@@ -1,6 +1,6 @@
 # Architecture Review: gaming-violation-detection
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/adev:write-test/gaming-violation-detection.md
+> **Spec:** .context-index/specs/features/adev:write-test/gaming-violation-detection.spec.md
 > **Charter:** .context-index/specs/features/adev:write-test/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
-> **Spec:** .context-index/specs/features/test-strategies/plan-infra-requirements.md
+> **Spec:** .context-index/specs/features/test-strategies/plan-infra-requirements.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-27)
 > **Platform:** JavaScript (ESM), Node.js, node:test, npm
 
@@ -26,7 +26,7 @@
 - `skills/plan/plan-reviewer-prompt.md` — Add infrastructure requirements completeness check to Spec Mode Checks table
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/test-strategies/plan-infra-requirements.md` — Source of truth for all behaviors
+- `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` — Source of truth for all behaviors
 - `tests/skills/specify-feature-binding.test.mjs` — Follow this test pattern for specify SKILL.md tests
 - `tests/skills/plan-heuristic-injection.test.mjs` — Follow this test pattern for plan SKILL.md tests
 - `tests/templates/gates-template.test.mjs` — Follow this test pattern for template tests
@@ -36,26 +36,26 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (Behavior 6: spec-level infra declaration)
+- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (Behavior 6: spec-level infra declaration)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Plan Infrastructure Requirements)
 - Reference: `tests/templates/gates-template.test.mjs` (test pattern to follow)
 - Reference: `templates/live-spec-template.md` (file to modify)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (Behavior 5: specify phase integration)
+- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (Behavior 5: specify phase integration)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Plan Infrastructure Requirements)
 - Reference: `tests/skills/specify-feature-binding.test.mjs` (test pattern to follow)
 - Reference: `skills/specify/SKILL.md` (file to modify — Step 4 / Step 5 boundary)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (Behaviors 1, 2, 3, 4, 7)
+- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (Behaviors 1, 2, 3, 4, 7)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (capability: Plan Infrastructure Requirements)
 - Reference: `tests/skills/plan-heuristic-injection.test.mjs` (test pattern to follow)
 - Reference: `skills/plan/SKILL.md` (file to modify — Strategy Assignment section)
-- Cross-cutting: `.context-index/specs/features/test-strategies/plan-integration.md` (Behavior 4 being amended by Behavior 7)
+- Cross-cutting: `.context-index/specs/features/test-strategies/plan-integration.spec.md` (Behavior 4 being amended by Behavior 7)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (acceptance criterion: plan-reviewer-prompt update)
+- Spec: `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (acceptance criterion: plan-reviewer-prompt update)
 - Reference: `skills/plan/plan-reviewer-prompt.md` (file to modify — Spec Mode Checks table)
 
 ---
@@ -94,7 +94,7 @@ All tasks touch `skills/` and `templates/` paths — no strategy detection heuri
 **Context to load:**
 - `templates/live-spec-template.md` (current frontmatter structure)
 - `tests/templates/gates-template.test.mjs` (test pattern)
-- `.context-index/specs/features/test-strategies/plan-infra-requirements.md` Behavior 6 (frontmatter schema)
+- `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` Behavior 6 (frontmatter schema)
 
 - [x] **Write failing test**
 
@@ -190,7 +190,7 @@ git commit -m "feat(test-strategies): add infra_requirements field to live spec 
 **Context to load:**
 - `skills/specify/SKILL.md` (Step 4 and Step 5 boundaries — where Step 4.5 inserts)
 - `tests/skills/specify-feature-binding.test.mjs` (test pattern)
-- `.context-index/specs/features/test-strategies/plan-infra-requirements.md` Behavior 5 (prompt questions and frontmatter write)
+- `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` Behavior 5 (prompt questions and frontmatter write)
 
 - [x] **Write failing test**
 
@@ -341,8 +341,8 @@ git commit -m "feat(test-strategies): add infra requirements prompt to specify S
 **Context to load:**
 - `skills/plan/SKILL.md` (Strategy Assignment section — insertion target)
 - `tests/skills/plan-heuristic-injection.test.mjs` (test pattern)
-- `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (Behaviors 1-4, 7 — full spec)
-- `.context-index/specs/features/test-strategies/plan-integration.md` (Behavior 4 — the amendment target for strategy summary)
+- `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (Behaviors 1-4, 7 — full spec)
+- `.context-index/specs/features/test-strategies/plan-integration.spec.md` (Behavior 4 — the amendment target for strategy summary)
 
 - [x] **Write failing test**
 
@@ -557,7 +557,7 @@ git commit -m "feat(test-strategies): add infra requirements section emission to
 
 **Context to load:**
 - `skills/plan/plan-reviewer-prompt.md` (current Spec Mode Checks table — insertion target)
-- `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (acceptance criterion: plan-reviewer-prompt updated)
+- `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (acceptance criterion: plan-reviewer-prompt updated)
 
 **Depends on:** Task 3 (test file already created)
 

@@ -1,7 +1,7 @@
 # Architecture Review: strategy-profile-contract
 
 > **Date:** 2026-04-20
-> **Spec:** .context-index/specs/features/test-strategies/strategy-profile-contract.md
+> **Spec:** .context-index/specs/features/test-strategies/strategy-profile-contract.spec.md
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

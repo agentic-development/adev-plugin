@@ -1,7 +1,7 @@
 # Architecture Review: validate-tiered-execution
 
 > **Date:** 2026-04-15
-> **Spec:** .context-index/specs/features/tiered-test-gates/validate-tiered-execution.md
+> **Spec:** .context-index/specs/features/tiered-test-gates/validate-tiered-execution.spec.md
 > **Charter:** .context-index/specs/features/tiered-test-gates/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2
