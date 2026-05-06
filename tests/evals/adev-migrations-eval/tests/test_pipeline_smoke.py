@@ -42,3 +42,15 @@ def test_dbt_pipeline_produces_output():
     assert result2.returncode == 0, f"Export failed: {result2.stderr}"
     output_path = os.path.join(PROJECT_ROOT, 'data', 'output', 'modern', 'order_summary.csv')
     assert os.path.exists(output_path)
+
+
+def test_compare_outputs_runs():
+    result = subprocess.run(
+        [sys.executable, 'compare_outputs.py'],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, f"Compare tool failed: {result.stderr}"
+    # Should report row count difference
+    assert 'row' in result.stdout.lower() or 'difference' in result.stdout.lower()
