@@ -92,3 +92,15 @@ def test_unit_tests_pass_despite_planted_bug():
         text=True,
     )
     assert result.returncode == 0, f"Unit tests should pass despite bug: {result.stdout}"
+
+
+def test_readme_follows_shared_conventions():
+    """Verify README has exactly 6 sections in the required order."""
+    readme_path = os.path.join(PROJECT_ROOT, 'README.md')
+    assert os.path.exists(readme_path)
+    with open(readme_path) as f:
+        content = f.read()
+    # Must have these 6 sections in order
+    sections = ['# ', '## Overview', '## Quick Start', '## Architecture', '## TODO Features', '## License']
+    for section in sections:
+        assert section in content, f"Missing section: {section}"
