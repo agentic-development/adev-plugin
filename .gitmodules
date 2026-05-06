@@ -1,3 +1,6 @@
 [submodule "tests/evals/adev-data-eval"]
 	path = tests/evals/adev-data-eval
 	url = https://github.com/agentic-development/adev-data-eval.git
+[submodule "tests/evals/adev-pipeline-eval"]
+	path = tests/evals/adev-pipeline-eval
+	url = ./tests/evals/adev-pipeline-eval
