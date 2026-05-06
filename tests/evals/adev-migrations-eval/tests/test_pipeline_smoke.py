@@ -54,3 +54,41 @@ def test_compare_outputs_runs():
     assert result.returncode == 0, f"Compare tool failed: {result.stderr}"
     # Should report row count difference
     assert 'row' in result.stdout.lower() or 'difference' in result.stdout.lower()
+
+
+def test_planted_bug_legacy_drops_null_region_customers():
+    """Verify the planted bug: legacy output has fewer rows than modern."""
+    # Run both pipelines
+    subprocess.run([sys.executable, 'run_legacy.py'], cwd=PROJECT_ROOT, check=True)
+
+    dbt_exe = os.path.join(PROJECT_ROOT, '.venv', 'bin', 'dbt')
+    dbt_project = os.path.join(PROJECT_ROOT, 'dbt_project')
+    subprocess.run(
+        [dbt_exe, 'run', '--project-dir', dbt_project, '--profiles-dir', dbt_project],
+        cwd=PROJECT_ROOT, check=True,
+    )
+    subprocess.run([sys.executable, 'export_dbt_output.py'], cwd=PROJECT_ROOT, check=True)
+
+    legacy_path = os.path.join(PROJECT_ROOT, 'data', 'output', 'legacy', 'order_summary.csv')
+    modern_path = os.path.join(PROJECT_ROOT, 'data', 'output', 'modern', 'order_summary.csv')
+
+    with open(legacy_path) as f:
+        legacy_rows = list(csv.DictReader(f))
+    with open(modern_path) as f:
+        modern_rows = list(csv.DictReader(f))
+
+    # Modern has all 25 customers, legacy has 22 (3 dropped due to NULL region)
+    assert len(modern_rows) == 25
+    assert len(legacy_rows) == 22
+    assert len(modern_rows) - len(legacy_rows) == 3
+
+
+def test_unit_tests_pass_despite_planted_bug():
+    """Verify that unit tests pass even though the planted bug exists."""
+    result = subprocess.run(
+        [sys.executable, '-m', 'pytest', 'tests/test_transforms.py', 'tests/test_loaders.py', '-v'],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, f"Unit tests should pass despite bug: {result.stdout}"
