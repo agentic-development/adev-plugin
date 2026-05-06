@@ -4,3 +4,6 @@
 [submodule "tests/evals/adev-pipeline-eval"]
 	path = tests/evals/adev-pipeline-eval
 	url = ./tests/evals/adev-pipeline-eval
+[submodule "tests/evals/adev-api-eval"]
+	path = tests/evals/adev-api-eval
+	url = ./tests/evals/adev-api-eval
