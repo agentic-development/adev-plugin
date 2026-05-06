@@ -1,8 +1,0 @@
-data/output/
-__pycache__/
-*.pyc
-.pytest_cache/
-dbt_project/target/
-dbt_project/logs/
-dbt_project/dbt_packages/
-.venv/

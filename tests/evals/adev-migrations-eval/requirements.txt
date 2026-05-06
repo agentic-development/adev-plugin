@@ -1,4 +1,0 @@
-duckdb
-dbt-duckdb
-pyyaml
-pytest
