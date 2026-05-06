@@ -1,0 +1,15 @@
+name: 'adev_migrations_eval'
+version: '1.0.0'
+
+profile: 'adev_migrations_eval'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
