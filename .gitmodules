@@ -7,3 +7,6 @@
 [submodule "tests/evals/adev-api-eval"]
 	path = tests/evals/adev-api-eval
 	url = ./tests/evals/adev-api-eval
+[submodule "tests/evals/adev-migrations-eval"]
+	path = tests/evals/adev-migrations-eval
+	url = ./tests/evals/adev-migrations-eval
