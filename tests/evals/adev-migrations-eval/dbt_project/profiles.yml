@@ -1,6 +1,0 @@
-adev_migrations_eval:
-  outputs:
-    dev:
-      type: duckdb
-      path: "dbt_project/target/dev.duckdb"
-  target: dev
