@@ -1,0 +1,228 @@
+{
+  "project": "adev-pipeline-eval",
+  "domain": "data-pipeline",
+  "branches": {
+    "plain_claude": {
+      "commit": "e5e5771"
+    },
+    "adev_built": {
+      "commit": "d0555a8"
+    }
+  },
+  "dimensions": {
+    "code_quality": {
+      "plain_claude": {
+        "score": 75,
+        "metrics": {
+          "files_changed": 13,
+          "lines_added": 1342,
+          "lines_removed": 500,
+          "lines_per_file": 103,
+          "score": 75
+        },
+        "blended_score": 77
+      },
+      "adev_built": {
+        "score": 90,
+        "metrics": {
+          "files_changed": 23,
+          "lines_added": 1730,
+          "lines_removed": 502,
+          "lines_per_file": 75,
+          "score": 90
+        },
+        "blended_score": 85
+      }
+    },
+    "test_coverage": {
+      "plain_claude": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "test_file_count": 9,
+          "test_case_count": 33,
+          "tests_added": 22,
+          "baseline_test_count": 11
+        }
+      },
+      "adev_built": {
+        "score": 75,
+        "metrics": {
+          "score": 75,
+          "test_file_count": 7,
+          "test_case_count": 25,
+          "tests_added": 14,
+          "baseline_test_count": 11
+        }
+      }
+    },
+    "bug_handling": {
+      "plain_claude": {
+        "score": 75,
+        "metrics": {
+          "status": "fixed_incidentally",
+          "score": 75
+        }
+      },
+      "adev_built": {
+        "score": 75,
+        "metrics": {
+          "status": "fixed_incidentally",
+          "score": 75
+        }
+      }
+    },
+    "architectural_coherence": {
+      "plain_claude": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "directory_structure": true,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 13,
+          "files_in_new_dirs": 0,
+          "source_files_evaluated": 13
+        },
+        "blended_score": 96
+      },
+      "adev_built": {
+        "score": 70,
+        "metrics": {
+          "score": 70,
+          "directory_structure": true,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 14,
+          "files_in_new_dirs": 6,
+          "source_files_evaluated": 20
+        },
+        "blended_score": 71
+      }
+    },
+    "commit_hygiene": {
+      "plain_claude": {
+        "score": 75,
+        "metrics": {
+          "score": 75,
+          "commit_count": 1,
+          "atomic": false,
+          "has_trailers": false,
+          "trailers_ratio": 0
+        },
+        "blended_score": 61
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "commit_count": 10,
+          "atomic": true,
+          "has_trailers": true,
+          "trailers_ratio": 50
+        },
+        "blended_score": 94
+      }
+    },
+    "spec_compliance": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "plain-claude has no specs by design"
+        }
+      },
+      "adev_built": {
+        "score": 50,
+        "metrics": {
+          "score": 50,
+          "status": "partial",
+          "context_index_exists": true,
+          "has_specs": true,
+          "has_plans": false,
+          "has_build_state": false
+        }
+      }
+    },
+    "cost": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "no cost metadata available"
+        }
+      },
+      "adev_built": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "no cost metadata available"
+        }
+      }
+    }
+  },
+  "composite": {
+    "plain_claude": 82,
+    "adev_built": 81
+  },
+  "diff_summary": {
+    "plain_claude": {
+      "files_changed": 13,
+      "lines_added": 1342,
+      "lines_removed": 500
+    },
+    "adev_built": {
+      "files_changed": 23,
+      "lines_added": 1730,
+      "lines_removed": 502
+    }
+  },
+  "bug_handling": {
+    "plain_claude": "fixed_incidentally",
+    "adev_built": "fixed_incidentally"
+  },
+  "generated_at": "2026-05-07T00:46:56.380Z",
+  "llm_judge": {
+    "assignment": {
+      "A": "adev-built",
+      "B": "plain-claude"
+    },
+    "plain_claude": {
+      "naming_consistency": {
+        "score": 82,
+        "reasoning": "Follows existing snake_case conventions well; files like anomaly_alert.py, weekly_rollup.py match project patterns, and function names like run_weekly_rollup are consistent."
+      },
+      "directory_structure": {
+        "score": 90,
+        "reasoning": "All new files placed in existing stages/ and tests/ directories with no new directories created, perfectly matching the project layout."
+      },
+      "commit_message_quality": {
+        "score": 40,
+        "reasoning": "Single monolithic commit 'feat: implement all TODO features' provides no granularity or traceability for individual features."
+      },
+      "overall_code_quality": {
+        "score": 80,
+        "reasoning": "Clean implementation with defensive column existence checks (DESCRIBE readings), good separation of concerns, and thorough error handling in anomaly detection."
+      }
+    },
+    "adev_built": {
+      "naming_consistency": {
+        "score": 78,
+        "reasoning": "Mostly consistent snake_case naming, but some abbreviated names (alerts.py vs anomaly_alert.py, weekly.py vs weekly_rollup.py) are less descriptive than existing patterns."
+      },
+      "directory_structure": {
+        "score": 72,
+        "reasoning": "Source files correctly placed in stages/ and tests/, but .context-index/ spec files add directory noise; source organization itself is clean."
+      },
+      "commit_message_quality": {
+        "score": 85,
+        "reasoning": "Granular commits per feature with conventional prefixes (feat(stages), feat(pipeline)), though some commits are lifecycle artifacts rather than code changes."
+      },
+      "overall_code_quality": {
+        "score": 78,
+        "reasoning": "Solid implementation with idempotency checksums and deduplication, but the alerts stage uses a large monolithic UNION ALL query rather than the cleaner incremental INSERT approach."
+      }
+    }
+  }
+}
