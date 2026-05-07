@@ -1,0 +1,57 @@
+{
+  "projects": [
+    "adev-pipeline-eval",
+    "adev-api-eval",
+    "adev-migrations-eval",
+    "adev-automation-eval"
+  ],
+  "aggregate_scores": {
+    "plain_claude": {
+      "mean": 81,
+      "min": 76,
+      "max": 88
+    },
+    "adev_built": {
+      "mean": 82,
+      "min": 78,
+      "max": 84
+    }
+  },
+  "dimension_breakdown": {
+    "code_quality": {
+      "plain_claude_avg": 77,
+      "adev_built_avg": 79
+    },
+    "test_coverage": {
+      "plain_claude_avg": 100,
+      "adev_built_avg": 94
+    },
+    "bug_handling": {
+      "plain_claude_avg": 69,
+      "adev_built_avg": 69
+    },
+    "architectural_coherence": {
+      "plain_claude_avg": 93,
+      "adev_built_avg": 68
+    },
+    "commit_hygiene": {
+      "plain_claude_avg": 67,
+      "adev_built_avg": 95
+    },
+    "spec_compliance": {
+      "plain_claude_avg": 0,
+      "adev_built_avg": 63
+    },
+    "cost": {
+      "plain_claude_avg": 0,
+      "adev_built_avg": 0
+    }
+  },
+  "notable_findings": [
+    "LLM judge blending applied (0.6 deterministic + 0.4 LLM) for code_quality, architectural_coherence, and commit_hygiene",
+    "plain-claude mean composite: 81, adev-built mean composite: 82",
+    "plain-claude fixed planted bugs in 3/4 projects",
+    "adev-built fixed planted bugs in 3/4 projects"
+  ],
+  "generated_at": "2026-05-07T12:51:23.317Z"
+}
