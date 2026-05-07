@@ -212,10 +212,10 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
 
 3. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
 
-4. **Record result.** Write the STEP_RESULT to build state (step status, timestamp, verdict, error if any). Update `status` and `updated` fields.
+4. **Record result.** Write the STEP_RESULT to build state (step status, timestamp, verdict, error if any). Update `status` and `updated` fields. **This step is MANDATORY even if the subagent reported ALREADY_COMPLETE or similar — any COMPLETED status means the step succeeded.**
 
-5. **Re-invoke or stop.**
-   - If more steps remain AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn.
+5. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
+   - If more steps remain AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
    - If all steps are complete (or a stop condition is met): do NOT re-invoke. Print the final summary and exit without re-invocation.
 
 ### Why One Step Per Turn
@@ -251,7 +251,7 @@ Agent({
 })
 ```
 
-**After subagent returns:** Record step as `completed` or `skipped` in build state.
+**After subagent returns:** Record step as `completed` or `skipped` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
 
 ---
 
@@ -275,7 +275,7 @@ Agent({
 
 **After subagent returns:**
 - If verdict is BLOCK: see Blocker-Fix Loop below.
-- If verdict is PASS or PASS_WITH_NOTES: record step as `completed` in build state.
+- If verdict is PASS or PASS_WITH_NOTES: record step as `completed` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
 
 **Blocker-Fix Loop (Full Pipeline only):**
 
@@ -308,7 +308,7 @@ Agent({
 
 **After subagent returns:**
 - If verdict is constitution-violation: save build state with the failure and stop the build for this spec.
-- Otherwise: record step as `completed` in build state.
+- Otherwise: record step as `completed` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
 
 ### Step 3: Route
 
@@ -325,7 +325,7 @@ Agent({
 
 **After subagent returns:**
 - Route annotations are advisory. This step does not produce a pass/fail verdict. If the subagent reports FAILED or the skill is unavailable, log a warning and continue.
-- Record step as `completed` (or `skipped` on error) in build state.
+- Record step as `completed` (or `skipped` on error) in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
 
 ### Step 4: Implement
 
@@ -346,7 +346,7 @@ This is the longest-running step. The implement skill manages TDD loops, special
 
 **After subagent returns:**
 - If verdict indicates quality gate or integration gate failure: save build state with the failure details (including tier-specific context: tier name, failing command, severity), report the failures to the user, and stop the build for this spec.
-- Otherwise: record step as `completed` in build state.
+- Otherwise: record step as `completed` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
 
 ### Step 5: Validate
 
