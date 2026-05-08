@@ -29,6 +29,7 @@ AI coding agents work best with structured context but most projects provide non
 | Eval Projects | Suite of four realistic project repos (pipeline, API, migration, automation) serving as eval targets and onboarding demos for the adev lifecycle | [charter.md](./features/eval-projects/charter.md) |
 | Domain Profiles | Configurable domain layer adapting charters, specs, reviewers, quality gates, and verification to different development domains via overlay files and deterministic resolution | [charter.md](./features/domain-profiles/charter.md) |
 | Extensions | Distribution and installation mechanism for adev customizations — bundles templates, reviewers, strategies, samples, hooks, governance overlays, domain profiles, and standalone skills into installable packages | [charter.md](./features/extensions/charter.md) |
+| Milestone Lifecycle | Structured milestone definitions with lifecycle management, ship criteria evaluation, and release tagging — extending `/adev:issues` with a `milestones.yaml` source of truth | [charter.md](./features/milestone-lifecycle/charter.md) |
 
 ## Cross-Cutting Concerns
 
