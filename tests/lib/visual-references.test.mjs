@@ -324,3 +324,185 @@ describe('createVisualReferenceTracker', () => {
     assert.equal(tracker.count(), 1); // internal array unchanged
   });
 });
+
+// ─── validateSourcePath — additional edge cases ───────────────────────────────
+
+describe('validateSourcePath — edge cases', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tmpDir);
+  });
+
+  it('returns resolvedPath and size for valid files', () => {
+    const imgFile = join(tmpDir, 'photo.webp');
+    writeFileSync(imgFile, Buffer.alloc(256));
+
+    const result = validateSourcePath(imgFile, tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.resolvedPath, resolve(imgFile));
+    assert.equal(result.size, 256);
+    assert.equal(result.ext, '.webp');
+  });
+
+  it('accepts file exactly at 10 MB limit', () => {
+    const imgFile = join(tmpDir, 'exact.png');
+    writeFileSync(imgFile, Buffer.alloc(10 * 1024 * 1024)); // exactly 10 MB
+
+    const result = validateSourcePath(imgFile, tmpDir);
+    assert.equal(result.valid, true);
+  });
+
+  it('rejects bmp format', () => {
+    const bmpFile = join(tmpDir, 'image.bmp');
+    writeFileSync(bmpFile, Buffer.alloc(10));
+
+    const result = validateSourcePath(bmpFile, tmpDir);
+    assert.equal(result.valid, false);
+    assert.equal(result.code, 'UNSUPPORTED_FORMAT');
+  });
+
+  it('accepts .jpeg extension', () => {
+    const jpegFile = join(tmpDir, 'photo.jpeg');
+    writeFileSync(jpegFile, Buffer.alloc(50));
+
+    const result = validateSourcePath(jpegFile, tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.ext, '.jpeg');
+  });
+});
+
+// ─── copyVisualReference — error edge cases ───────────────────────────────────
+
+describe('copyVisualReference — error edge cases', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tmpDir);
+  });
+
+  it('handles .webp source files', () => {
+    const srcFile = join(tmpDir, 'hero.webp');
+    writeFileSync(srcFile, Buffer.from('WEBP-CONTENT'));
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'mod',
+      description: 'webp hero',
+      projectRoot: tmpDir,
+    });
+
+    assert.ok(result.destinationPath.endsWith('.webp'));
+    const copied = readFileSync(result.destinationPath);
+    assert.deepEqual(copied, Buffer.from('WEBP-CONTENT'));
+  });
+
+  it('handles .jpeg source files', () => {
+    const srcFile = join(tmpDir, 'photo.jpeg');
+    writeFileSync(srcFile, Buffer.alloc(20));
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'mod',
+      description: 'jpeg photo',
+      projectRoot: tmpDir,
+    });
+
+    assert.ok(result.destinationPath.endsWith('.jpeg'));
+  });
+});
+
+// ─── integration: full capture flow ───────────────────────────────────────────
+
+describe('integration: full capture flow', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tmpDir);
+  });
+
+  it('validates, copies, deduplicates, and tracks in one flow', () => {
+    // Set up source images
+    const img1 = join(tmpDir, 'hero.png');
+    const img2 = join(tmpDir, 'nav.jpg');
+    writeFileSync(img1, Buffer.from('IMG1'));
+    writeFileSync(img2, Buffer.from('IMG2'));
+
+    const projectRoot = join(tmpDir, 'project');
+    mkdirSync(projectRoot);
+
+    const tracker = createVisualReferenceTracker();
+
+    // Validate and copy first image
+    const v1 = validateSourcePath(img1, projectRoot);
+    assert.equal(v1.valid, true);
+    assert.equal(v1.external, true); // outside projectRoot
+
+    const c1 = copyVisualReference({
+      sourcePath: img1,
+      module: 'test-mod',
+      description: 'Hero Banner',
+      projectRoot,
+    });
+    assert.equal(c1.source, 'user-upload');
+    tracker.add({ path: c1.destinationPath, description: 'Hero Banner' });
+
+    // Validate and copy second image
+    const v2 = validateSourcePath(img2, projectRoot);
+    assert.equal(v2.valid, true);
+
+    const c2 = copyVisualReference({
+      sourcePath: img2,
+      module: 'test-mod',
+      description: 'Navigation Bar',
+      projectRoot,
+    });
+    tracker.add({ path: c2.destinationPath, description: 'Navigation Bar' });
+
+    // Verify tracker state
+    assert.equal(tracker.count(), 2);
+    const arr = tracker.toArray();
+    assert.equal(arr.length, 2);
+    assert.equal(arr[0].description, 'Hero Banner');
+    assert.equal(arr[1].description, 'Navigation Bar');
+
+    // Verify summary
+    const summary = tracker.summary('test-mod');
+    assert.ok(summary.includes('Captured 2 visual reference(s)'));
+    assert.ok(summary.includes('Hero Banner'));
+    assert.ok(summary.includes('Navigation Bar'));
+
+    // Verify files exist on disk
+    assert.ok(existsSync(c1.destinationPath));
+    assert.ok(existsSync(c2.destinationPath));
+
+    // Verify the target directory structure
+    const expectedDir = join(projectRoot, '.context-index', 'references', 'test-mod', 'visuals');
+    assert.ok(existsSync(expectedDir));
+  });
+
+  it('no directory created when no references captured', () => {
+    const projectRoot = join(tmpDir, 'project');
+    mkdirSync(projectRoot);
+
+    const tracker = createVisualReferenceTracker();
+    assert.equal(tracker.count(), 0);
+    assert.equal(tracker.summary('mod'), '');
+
+    // References directory should not exist
+    const refsDir = join(projectRoot, '.context-index', 'references', 'mod', 'visuals');
+    assert.equal(existsSync(refsDir), false);
+  });
+});
