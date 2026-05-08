@@ -6,13 +6,15 @@ context: fork
 
 # Build Pipeline Orchestrator
 
-Chain review, plan, route, implement, and validate into a single end-to-end pipeline for one or more specs. Supports resuming from failure, batch processing by milestone phase, and dry-run preview.
+Chain review, plan, route, implement, and validate into a single end-to-end pipeline for one or more specs. Supports resuming from failure, batch processing by charter module or milestone phase, and dry-run preview.
 
 **Announce at start:** "I'm using the adev:build skill to orchestrate a full build pipeline."
 
 ## Arguments
 
 - `--spec <path>`: build a single spec end-to-end through all pipeline steps
+- `--charter <module>`: discover and build all specs under `.context-index/specs/features/<module>/`
+- `--module <module>`: alias for `--charter`
 - `--phase <name>`: discover and build all specs with matching `milestone` frontmatter
 - `--resume`: resume an interrupted build from the last successful step
 - `--dry-run`: show the pipeline plan without executing any skill or writing any file
@@ -27,8 +29,8 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 Before starting, verify all conditions. If any fails, stop and tell the user what to fix.
 
 1. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-2. **Spec provided or discoverable.** At least one spec must be specified via `--spec` or discoverable via `--phase`.
-3. **Valid arguments.** If `--spec` is provided, the file must exist. If `--phase` is provided, the milestone name must be a non-empty string.
+2. **Spec provided or discoverable.** At least one spec must be specified via `--spec` or discoverable via `--charter` or `--phase`.
+3. **Valid arguments.** If `--spec` is provided, the file must exist. If `--charter` (or `--module`) is provided, the module name must be a non-empty string and `.context-index/specs/features/<module>/` must be a directory. If `--phase` is provided, the milestone name must be a non-empty string.
 
 4. **Read build config.** Resolve `build.max_retries` from `user-config` (local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default `0`). Use `parseUserConfig()` from `lib/persona.mjs` to read both config files. Look for the key `build.max_retries`. Clamp to range 0-3 with a warning if out of range.
 
@@ -551,6 +553,12 @@ Await user input. "overwrite" resets the build state and proceeds. "resume" appl
 
 ---
 
+## Charter Mode
+
+> **Conditional loading:** Read `skills/build/charter-mode.md` for the full Charter Mode instructions.
+
+---
+
 ## Phase Mode
 
 > **Conditional loading:** Read `skills/build/phase-mode.md` for the full Phase Mode instructions.
@@ -575,6 +583,15 @@ Show:
 3. If a `.plan.md` exists, show the estimated task count from the plan.
 4. If a build state file exists, note whether `--resume` would change the pipeline.
 5. Flag any `completed_with_warnings` conditions -- specs that may need attention even after previously passing review.
+
+### Dry Run with `--charter <module>`
+
+Show:
+1. All discovered specs under `.context-index/specs/features/<module>/` (with their frontmatter status).
+2. Dependency order (from `depends-on` frontmatter or charter Capability Map order).
+3. Per-spec step breakdown: which steps would execute vs skip.
+4. Total estimated tasks across all specs (from existing plans).
+5. Specs that would be skipped entirely (draft status, not ready for pipeline mode).
 
 ### Dry Run with `--phase <name>` (Workspace Mode)
 
@@ -634,7 +651,7 @@ Dry Run: Build Pipeline for <spec or phase>
 
 ## Single Spec Mode (`--spec`)
 
-When `--spec <path>` is invoked without `--resume`, `--phase`, or `--dry-run`:
+When `--spec <path>` is invoked without `--resume`, `--charter`, `--phase`, or `--dry-run`:
 
 1. Verify the spec file exists. If not, print: "Spec not found: `<path>`" and stop.
 2. Create or reset the build state file for this spec.
@@ -666,6 +683,8 @@ Build complete.
 |-----------|-------------------|
 | `.context-index/` missing | Print "Run `/adev:init` first" and stop |
 | `--spec` file not found | Print "Spec not found: `<path>`" and stop |
+| `--charter` module directory not found | Print "Module directory not found: `.context-index/specs/features/<module>/`" and stop |
+| `--charter` finds no specs in module | Print "No specs found under `.context-index/specs/features/<module>/`" and stop |
 | `--phase` finds no matching specs | Print "No specs found for milestone `<name>`" and stop |
 | `--resume` with no build state files | Print "No interrupted build found" and stop |
 | Review returns BLOCK | Stop build for that spec, save state, report findings |

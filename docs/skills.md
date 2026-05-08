@@ -24,6 +24,9 @@ All available `/adev:*` skills, organized by lifecycle phase.
        │         ▼
        │    /adev:validate ─── 13-check quality verification
        │
+       ├──► /adev:build ─── orchestrate the full pipeline above
+       │         (--spec, --charter, --phase)
+       │
        ├──► /adev:debug ─── systematic debugging with context
        │
        └──► /adev:issues ─── manage bugs and tasks directly
@@ -63,6 +66,12 @@ All available `/adev:*` skills, organized by lifecycle phase.
 |-------|---------|---------------|
 | `/adev:plan` | Decompose specs into ordered tasks with TDD. At workspace root: `--release` and `--milestone` plan across repos with dependency inheritance | Spec at `review-passed` |
 | `/adev:route` | Score tasks for auto/assisted/human execution | Plan exists |
+
+### Build (Orchestrator)
+
+| Skill | Purpose | Prerequisites |
+|-------|---------|---------------|
+| `/adev:build` | End-to-end pipeline orchestrator — chains review, plan, route, implement, and validate for one or more specs. Supports `--spec`, `--charter`/`--module` (all specs in a charter), and `--phase` (all specs in a milestone). Each step dispatched as an isolated subagent. | Spec exists (or `--full` to start from specify) |
 
 ### Implementation
 
