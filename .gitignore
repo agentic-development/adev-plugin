@@ -39,3 +39,6 @@ viz/dist/
 .context-index/.reminder-counter
 .context-index/.session-tracking.jsonl
 .context-index/user-config
+
+# Prototype artifacts (adev)
+.adev/
