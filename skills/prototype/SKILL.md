@@ -25,6 +25,85 @@ When invoked from `/adev:brainstorm`, the module name and approach context are p
 
 ## Process
 
+### Brainstorm Context Reception
+
+If brainstorm context is provided (a `BRAINSTORM_CONTEXT` block), skip Step 0 entirely and proceed directly to Step 1 with the provided context:
+
+- `module` is used directly — no charter discovery needed, no `--module` argument required
+- `approach_summary` is used to seed the initial prototype generation — it guides what the prototype demonstrates and what design direction to explore
+- `platform_context` sets framework defaults for the functional tier (e.g., if platform context specifies React, pre-select React as the framework)
+- `constitution_constraints` are used to validate generated prototype code against constitutional principles
+
+When brainstorm context is present, skip the charter lookup in Step 0 entirely — the brainstorm already loaded the charter and extracted the relevant context.
+
+**Error handling:** If brainstorm context is provided but missing required fields (`module` or `approach_summary`), report an error and stop. Error code: `INCOMPLETE_CONTEXT`.
+
+> Incomplete brainstorm context. Required: module, approach_summary. Received: `<fields>`.
+
+### Step 0: Standalone Entry
+
+This step runs only when `/adev:prototype` is invoked directly (not dispatched from `/adev:brainstorm`). When brainstorm context is provided, skip to Step 1.
+
+#### 0a. Module Resolution
+
+**When `--module` is provided:**
+
+Validate the module name. Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
+
+```bash
+node -e "import { validateModuleName } from '<ADEV_ROOT>/lib/prototype-args.mjs'; console.log(validateModuleName('<module>'));"
+```
+
+If validation returns `false`: error and stop.
+
+> Invalid module name: `<value>`. Must be kebab-case (lowercase letters, numbers, hyphens). Error code: `INVALID_MODULE_NAME`.
+
+If validation returns `true`: locate the charter at `.context-index/specs/features/<module>/charter.md`. If the charter file does not exist:
+
+> No charter found at `.context-index/specs/features/<module>/charter.md`. Error code: `CHARTER_NOT_FOUND`.
+
+**When `--module` is NOT provided:**
+
+Discover available charters:
+
+```bash
+node -e "import { discoverCharters } from '<ADEV_ROOT>/lib/prototype-args.mjs'; console.log(JSON.stringify(discoverCharters(process.cwd())));"
+```
+
+Handle the result based on the number of charters found:
+
+- **Zero charters:** Error and stop. Error code: `NO_CHARTERS`.
+  > No charters found under `.context-index/specs/features/`. Run `/adev:brainstorm` first to create a charter.
+
+- **One charter:** Auto-select with confirmation:
+  > Using charter: `<module>` — `<charter title>`. Proceed? (yes / pick a different one)
+  
+  If the user confirms, use that charter. If they decline, stop (no other charters to pick from).
+
+- **Multiple charters:** List and prompt:
+  > Available charters:
+  >   1. `<module>` — `<charter title>`
+  >   2. `<module>` — `<charter title>`
+  > → Which module should this prototype target? (number or name)
+
+#### 0b. Context Construction
+
+Once a module is resolved:
+
+1. Load the charter at `.context-index/specs/features/<module>/charter.md`. Extract approach context from the **Business Intent** and **Capability Map** sections.
+2. Load `.context-index/constitution.md` for constraint validation. If missing: error and stop. Error code: `NO_CONSTITUTION`.
+   > Constitution not found. Run `/adev:init` to set up the context index.
+3. Load `.context-index/platform-context.yaml` for framework defaults. If missing: warn and proceed. Error code: `NO_PLATFORM_CONTEXT`.
+   > No platform context found. Framework defaults will not be pre-selected.
+
+#### 0c. Closed Charter Warning
+
+Check the charter's YAML frontmatter for `status: closed`. If closed, warn but do not block:
+
+> Note: The `<module>` charter is closed. You can still prototype against it, but consider whether a new charter is needed.
+
+Proceed to Step 1.
+
 ### Step 1: Load Context and Heuristics
 
 1. Read the charter at `.context-index/specs/features/<module>/charter.md`.
@@ -46,7 +125,19 @@ If `retrieveHeuristics()` fails or returns empty, proceed silently. Do not block
 
 ### Step 2: Tier Selection
 
-Present three tier options:
+**If `--tier` was provided as an argument:**
+
+Validate that the value is one of `wireframe`, `mockup`, or `functional`. If valid, use it directly — skip the interactive prompt. If invalid: error and stop (do NOT re-prompt). Error code: `INVALID_TIER`.
+
+> Invalid tier: `<value>`. Options: wireframe, mockup, functional.
+
+**If `--framework` was provided as an argument:**
+
+- If `--tier functional` (or functional tier was selected interactively): validate that the value is one of `react`, `vue`, `svelte`, or `vanilla`. If valid, skip the framework prompt. If invalid: error and stop (do NOT re-prompt). Error code: `INVALID_FRAMEWORK`.
+- If the tier is NOT functional: ignore `--framework` with a note. Error code: `FRAMEWORK_IGNORED`.
+  > Note: `--framework` only applies to the functional tier. Ignoring for `<tier>` tier.
+
+**If `--tier` was NOT provided,** present three tier options:
 
 > **Choose a prototype tier:**
 >
@@ -143,6 +234,13 @@ Continue with the feedback loop regardless. Error codes: `SERVER_PORT_EXHAUSTED`
 
 This is a conversational loop. The initial generation counts as iteration 1.
 
+**Visual Reference Tracker:** At the start of the feedback loop, create a visual reference tracker. Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
+
+```javascript
+import { createVisualReferenceTracker } from '<ADEV_ROOT>/lib/visual-references.mjs';
+const tracker = createVisualReferenceTracker();
+```
+
 **On each feedback round:**
 
 1. Wait for user input.
@@ -160,6 +258,52 @@ This is a conversational loop. The initial generation counts as iteration 1.
    - Notify user:
      > Prototype updated (iteration <N>). Refresh your browser to see the changes.
    - Continue the loop.
+5. **Visual reference detection:** If the user's input contains a file path ending in `.png`, `.jpg`, `.jpeg`, or `.webp`, handle it as a visual reference capture (see Step 5a below). Visual reference capture can happen alongside change feedback — process both the reference and any design feedback in the same round.
+
+### Step 5a: Visual Reference Capture
+
+Visual references can be captured at any point during the active session — during the feedback loop, at session start, or after approval. When a user provides an image file path:
+
+1. **Validate the source path.** Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
+
+```javascript
+import { validateSourcePath, copyVisualReference } from '<ADEV_ROOT>/lib/visual-references.mjs';
+const result = validateSourcePath(sourcePath, projectRoot);
+```
+
+   - If `result.valid === false`:
+     - `IMAGE_NOT_FOUND`: "File not found: `<path>`. Please check the path and try again."
+     - `IMAGE_SYMLINK`: "Path is a symlink. Please provide a direct file path."
+     - `IMAGE_TOO_LARGE`: "Image is too large (`<size>` MB, max 10 MB). Please resize and retry."
+     - `UNSUPPORTED_FORMAT`: "Unsupported image format: `.<ext>`. Supported formats: PNG, JPG, WebP. Please convert and re-provide."
+     - Do not save the image. Continue the feedback loop.
+   - If `result.external === true`: Prompt the user:
+     > Image is outside the project directory. Proceed? (yes/no)
+     If the user declines, skip the capture and continue.
+
+2. **Prompt for description if not provided.** If the user did not include a description with the image path:
+   > What does this image show? (used for the filename, e.g., 'homepage-hero-layout')
+   Wait for the user's description before proceeding.
+
+3. **Copy the reference.**
+
+```javascript
+const copyResult = copyVisualReference({
+  sourcePath,
+  module,
+  description,
+  projectRoot,
+});
+```
+
+4. **Track and confirm.**
+
+```javascript
+tracker.add({ path: copyResult.destinationPath, description });
+```
+
+   Confirm to the user:
+   > Saved visual reference to `<copyResult.destinationPath>`
 
 ### Step 6: Persistence Choice
 
@@ -213,20 +357,97 @@ node -e "
 
 ### Step 8: Heuristics Capture
 
-After the prototype session completes (keep or discard), suggest capturing design decisions:
+After the prototype session completes (keep or discard), prompt for design decisions:
 
-> Would you like to save any design learnings from this prototype session? (Invokes `/adev:learn`)
+> What design decisions should be carried forward? Identify 2-4 key decisions from this session. (e.g., "sidebar navigation works better than top-nav for this data density", "users expect inline editing, not modal forms")
+>
+> Enter your decisions, or say "none" / "skip" to proceed without saving.
 
-If the user agrees, invoke `/adev:learn` to persist 2-4 key design decisions as module-scoped heuristics.
+**Handling responses:**
+
+- **User provides "none", "skip", or empty response:** Proceed to Step 8b (Return to Brainstorm) or Step 9 (Session Summary) without saving heuristics. This is not an error — not every session produces reusable insights.
+
+- **User provides 1-4 design decisions:** For each decision, invoke `/adev:learn` to persist it as a module-scoped heuristic:
+  - The decision text as the heuristic content
+  - Module scope set to the current `<module>` (from brainstorm context or `--module` argument)
+  - Tag with `source: prototype` to identify the heuristic's origin
+  - Include the prototype tier and iteration number where the decision emerged (if identifiable)
+  - Track `heuristics_saved` count for the return contract (Step 8b)
+
+  If `/adev:learn` fails for any heuristic (import error, write error), this is non-blocking:
+  - Log the error
+  - Report: "Heuristic capture failed — you can save these manually with `/adev:learn` later"
+  - Proceed to session completion (do not block the prototype session). Error code: `HEURISTIC_SAVE_ERROR`.
+
+- **User provides more than 4 design decisions:** Ask the user to prioritize:
+
+  > You've identified N decisions. To keep heuristics focused, please select the 4 most important ones, or confirm you want to save all N.
+
+  If the user confirms saving all, proceed. If the user narrows to 4, save only the selected ones.
+
+- **User provides 0 decisions after the prompt (blank input):** Same as "skip" — proceed without saving heuristics.
+
+### Step 8b: Return to Brainstorm
+
+This step runs only when the prototype was invoked from `/adev:brainstorm` (brainstorm context was provided). When invoked standalone, skip this step — the session ends at Step 9 (Session Summary).
+
+Return control to `/adev:brainstorm` with a structured result:
+
+```
+PROTOTYPE_RESULT:
+  status: "completed" | "discarded"
+  tier: "wireframe" | "mockup" | "functional"
+  visual_references: tracker.toArray()   # [{ path: string, description: string }]
+  heuristics_saved: <count>
+  persistence: "project" | "ephemeral"
+```
+
+Where:
+- `status` — `"completed"` if the user approved the prototype (chose "keep" or "done"), `"discarded"` if the user chose to discard
+- `tier` — the prototype tier used during the session
+- `visual_references` — array of captured images with their slugified descriptions (may be empty if no images were captured)
+- `heuristics_saved` — count of design decisions saved as heuristics via `/adev:learn` in Step 8
+- `persistence` — `"project"` if files were kept at `.adev/prototype/<module>/`, `"ephemeral"` if temp files were removed
+
+After returning the result, the brainstorm skill handles presentation and continues to Step 4 (Present Design Sections).
+
+### Step 9: Session Summary (Standalone Only)
+
+When invoked standalone (not from brainstorm), output a session summary after heuristics capture. When invoked from brainstorm, skip this step — the return-to-brainstorm contract handles the result.
+
+> **Prototype Session Complete**
+>
+> - **Module:** `<module>`
+> - **Tier:** `<wireframe|mockup|functional>`
+> - **Iterations:** `<iteration_count>` (number of Feedback Iteration cycles including the initial generation)
+> - **Persistence:** `"project"` (kept at `.adev/prototype/<module>/`) | `"ephemeral"` (discarded)
+> - **Visual references:** `<count>` captured
+> - **Heuristics saved:** `<count>`
+
+If visual references were captured during the session (tracker.count() > 0), append the tracker summary:
+
+```
+tracker.summary(module)
+```
+
+This outputs: "Captured N visual reference(s) in `.context-index/references/<module>/visuals/`:" followed by a list of `{ path, description }` pairs.
+
+No return-to-brainstorm step is performed. The session ends here.
 
 ## Error Reference
 
 | Condition | Behavior | Code |
 |-----------|----------|------|
+| `--module` value fails validation | Error with format hint | INVALID_MODULE_NAME |
+| `--module` references non-existent charter | Error with path hint | CHARTER_NOT_FOUND |
+| No charters exist (no `--module`) | Error with `/adev:brainstorm` suggestion | NO_CHARTERS |
+| `constitution.md` missing | Error; block session | NO_CONSTITUTION |
+| `platform-context.yaml` missing | Warning; proceed without framework defaults | NO_PLATFORM_CONTEXT |
+| `--framework` without functional tier | Warning note; argument ignored | FRAMEWORK_IGNORED |
 | Invalid tier (interactive) | Re-prompt with options | INVALID_TIER |
 | Invalid tier (CLI `--tier`) | Error, do not re-prompt | INVALID_TIER |
 | Invalid framework (interactive) | Re-prompt with options | INVALID_FRAMEWORK |
-| No charter found (standalone) | Error with path hint | CHARTER_NOT_FOUND |
+| Invalid framework (CLI `--framework`) | Error, do not re-prompt | INVALID_FRAMEWORK |
 | All server ports fail (3210-3219) | Fall back to file-path mode | SERVER_PORT_EXHAUSTED |
 | Server bind fails (EACCES) | Fall back to file-path mode | SERVER_PERMISSION_ERROR |
 | File write fails (disk full, perms) | Error with normalized message | FILE_WRITE_ERROR |
