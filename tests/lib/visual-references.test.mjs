@@ -14,6 +14,7 @@ import {
   isSupportedFormat,
   copyVisualReference,
   resolveTargetPath,
+  createVisualReferenceTracker,
 } from '../../lib/visual-references.mjs';
 
 // ─── validateSourcePath ───────────────────────────────────────────────────────
@@ -282,5 +283,44 @@ describe('copyVisualReference', () => {
 
     const copied = readFileSync(result.destinationPath);
     assert.deepEqual(copied, content);
+  });
+});
+
+// ─── createVisualReferenceTracker ─────────────────────────────────────────────
+
+describe('createVisualReferenceTracker', () => {
+  it('tracks captured references', () => {
+    const tracker = createVisualReferenceTracker();
+    tracker.add({ path: '/dest/img.png', description: 'hero layout' });
+    assert.equal(tracker.count(), 1);
+  });
+
+  it('generates summary with path and description pairs', () => {
+    const tracker = createVisualReferenceTracker();
+    tracker.add({ path: '/dest/img.png', description: 'hero layout' });
+    tracker.add({ path: '/dest/nav.jpg', description: 'navigation bar' });
+    const summary = tracker.summary('my-module');
+    assert.ok(summary.includes('Captured 2 visual reference(s)'));
+    assert.ok(summary.includes('hero layout'));
+    assert.ok(summary.includes('navigation bar'));
+    assert.ok(summary.includes('.context-index/references/my-module/visuals/'));
+  });
+
+  it('returns empty array when no references captured', () => {
+    const tracker = createVisualReferenceTracker();
+    assert.deepEqual(tracker.toArray(), []);
+  });
+
+  it('returns empty string summary when no references captured', () => {
+    const tracker = createVisualReferenceTracker();
+    assert.equal(tracker.summary('mod'), '');
+  });
+
+  it('toArray returns copies, not the internal array', () => {
+    const tracker = createVisualReferenceTracker();
+    tracker.add({ path: '/a.png', description: 'a' });
+    const arr = tracker.toArray();
+    arr.push({ path: '/b.png', description: 'b' });
+    assert.equal(tracker.count(), 1); // internal array unchanged
   });
 });
