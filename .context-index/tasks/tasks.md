@@ -404,9 +404,9 @@
 | issue-340 | Fix review-specs SHA drift (issue-187) | open | 0 | bug | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.731Z | 2026-05-08T00:00:53.731Z |
 | issue-341 | Fix or remove context-pack.test.mjs failure (issue-165) | closed | 1 | bug | epic-57 |  |  |  |  | Closed: Fixed in commit 20805b1, already in main and feat/v1-charters |  | 2026-05-08T00:00:53.739Z | 2026-05-08T00:02:23.935Z |
 | issue-342 | Complete test strategies manifest schema (issue-149) | open | 1 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.746Z | 2026-05-08T00:00:53.746Z |
-| issue-343 | Complete adev:build SKILL.md rewrite (issue-186) | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.752Z | 2026-05-08T00:00:53.752Z |
-| issue-344 | Wire heuristic extraction into validation/recovery | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.759Z | 2026-05-08T00:00:53.759Z |
-| issue-345 | Complete execution state resume in session-start | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.765Z | 2026-05-08T00:00:53.765Z |
+| issue-343 | Complete adev:build SKILL.md rewrite (issue-186) | closed | 2 | task | epic-57 |  |  |  |  | Closed: SKILL.md documents both --full and --phase modes, on release/0.24.0 |  | 2026-05-08T00:00:53.752Z | 2026-05-07T00:00:00.000Z |
+| issue-344 | Wire heuristic extraction into validation/recovery | closed | 2 | task | epic-57 |  |  |  |  | Closed: Wired into validate, recover, implement, debug, brainstorm, specify, review-specs |  | 2026-05-08T00:00:53.759Z | 2026-05-07T00:00:00.000Z |
+| issue-345 | Complete execution state resume in session-start | closed | 2 | task | epic-57 |  |  |  |  | Closed: Implemented in session-start.sh, landed in main |  | 2026-05-08T00:00:53.765Z | 2026-05-07T00:00:00.000Z |
 | issue-346 | Version bump to 1.0.0 | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.772Z | 2026-05-08T00:00:53.772Z |
 | issue-347 | Add input validation (Step 0) to lifecycle skills | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:07:36.817Z | 2026-05-08T00:07:36.817Z |
 | issue-348 | Apply Anthropic skill best practices P1 (ultrathink, anti-overengineering, return-size) | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:10:02.254Z | 2026-05-08T00:10:02.254Z |
