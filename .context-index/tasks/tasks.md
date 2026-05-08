@@ -412,3 +412,4 @@
 | issue-348 | Apply Anthropic skill best practices P1 (ultrathink, anti-overengineering, return-size) | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:10:02.254Z | 2026-05-08T00:10:02.254Z |
 | issue-349 | Add Gemini CLI provider support | open | 3 | feature | epic-57 |  |  |  |  |  |  | 2026-05-08T00:14:14.615Z | 2026-05-08T00:14:14.615Z |
 | issue-350 | Add Cursor provider support | open | 3 | feature | epic-57 |  |  |  |  |  |  | 2026-05-08T00:14:14.625Z | 2026-05-08T00:14:14.625Z |
+| issue-351 | Improve OpenAI Codex provider support | open | 3 | feature | epic-57 |  |  |  |  |  |  | 2026-05-07T00:00:00.000Z | 2026-05-07T00:00:00.000Z |
