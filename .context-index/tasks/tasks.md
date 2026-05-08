@@ -58,6 +58,7 @@
 | epic-54 | Automation Eval Project | closed | .context-index/specs/features/eval-projects/automation-eval-project.plan.md |  | 2026-05-06T16:54:52.418Z | 2026-05-06T17:15:19.454Z |
 | epic-55 | Migration Eval Project | closed | .context-index/specs/features/eval-projects/migration-eval-project.plan.md |  | 2026-05-06T16:56:35.938Z | 2026-05-06T17:20:07.093Z |
 | epic-56 | API Eval Project | closed | .context-index/specs/features/eval-projects/api-eval-project.plan.md | v1 | 2026-05-06T17:00:13.462Z | 2026-05-06T17:13:01.835Z |
+| epic-57 | Version 1.0.0 Release | open |  | v1.0.0 | 2026-05-08T00:00:42.428Z | 2026-05-08T00:00:42.428Z |
 
 ## Issues
 
@@ -397,3 +398,17 @@
 | issue-334 | Task 10: README and LICENSE | closed | 2 | task | epic-56 | .context-index/specs/features/eval-projects/api-eval-project.plan.md | 10 |  | issue-325 | Closed: Implemented and reviewed |  | 2026-05-06T17:00:13.523Z | 2026-05-06T17:13:01.826Z |
 | issue-335 | Task 11: Submodule registration and eval harness scaffold | closed | 2 | task | epic-56 | .context-index/specs/features/eval-projects/api-eval-project.plan.md | 11 |  | issue-334 | Closed: Implemented and reviewed |  | 2026-05-06T17:00:13.530Z | 2026-05-06T17:13:01.829Z |
 | issue-336 | Task 12: Create with-context branch | closed | 2 | task | epic-56 | .context-index/specs/features/eval-projects/api-eval-project.plan.md | 12 |  | issue-333 | Closed: Implemented and reviewed |  | 2026-05-06T17:00:13.535Z | 2026-05-06T17:13:01.832Z |
+| issue-337 | Domain Profiles — charter and specs | open | 1 | feature | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.697Z | 2026-05-08T00:00:53.697Z |
+| issue-338 | Extensions — charter and specs | open | 1 | feature | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.713Z | 2026-05-08T00:00:53.713Z |
+| issue-339 | Fix ghost validation (issue-184) | open | 0 | bug | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.723Z | 2026-05-08T00:00:53.723Z |
+| issue-340 | Fix review-specs SHA drift (issue-187) | open | 0 | bug | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.731Z | 2026-05-08T00:00:53.731Z |
+| issue-341 | Fix or remove context-pack.test.mjs failure (issue-165) | closed | 1 | bug | epic-57 |  |  |  |  | Closed: Fixed in commit 20805b1, already in main and feat/v1-charters |  | 2026-05-08T00:00:53.739Z | 2026-05-08T00:02:23.935Z |
+| issue-342 | Complete test strategies manifest schema (issue-149) | open | 1 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.746Z | 2026-05-08T00:00:53.746Z |
+| issue-343 | Complete adev:build SKILL.md rewrite (issue-186) | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.752Z | 2026-05-08T00:00:53.752Z |
+| issue-344 | Wire heuristic extraction into validation/recovery | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.759Z | 2026-05-08T00:00:53.759Z |
+| issue-345 | Complete execution state resume in session-start | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.765Z | 2026-05-08T00:00:53.765Z |
+| issue-346 | Version bump to 1.0.0 | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:00:53.772Z | 2026-05-08T00:00:53.772Z |
+| issue-347 | Add input validation (Step 0) to lifecycle skills | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:07:36.817Z | 2026-05-08T00:07:36.817Z |
+| issue-348 | Apply Anthropic skill best practices P1 (ultrathink, anti-overengineering, return-size) | open | 2 | task | epic-57 |  |  |  |  |  |  | 2026-05-08T00:10:02.254Z | 2026-05-08T00:10:02.254Z |
+| issue-349 | Add Gemini CLI provider support | open | 3 | feature | epic-57 |  |  |  |  |  |  | 2026-05-08T00:14:14.615Z | 2026-05-08T00:14:14.615Z |
+| issue-350 | Add Cursor provider support | open | 3 | feature | epic-57 |  |  |  |  |  |  | 2026-05-08T00:14:14.625Z | 2026-05-08T00:14:14.625Z |
