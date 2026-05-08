@@ -60,6 +60,7 @@ Complete these steps in order. Do not skip steps.
 1. **Explore context** — load constitution, platform context, existing charters, ADRs, orientation
 2. **Clarify** — ask questions one at a time to understand the feature idea
 3. **Propose 2-3 approaches** — present options with trade-offs, validate against constitution
+3b. **Offer prototype** — after user selects approach, offer `/adev:prototype` before detailed design
 4. **Present design sections** — walk through each charter section, get approval per section
 5. **Write charter** — save to `.context-index/specs/features/<module>/charter.md`
 5b. **Product.md bootstrap** — bootstrap or update product.md (skipped with `--no-bootstrap` or `--module`)
@@ -152,7 +153,7 @@ Once you understand the feature, propose 2-3 design approaches. For each:
 
 Lead with your recommended approach. Wait for user to choose before proceeding.
 
-## Step 3b: Prototype Dispatch (Optional)
+## Step 3b: Offer Prototype
 
 After the user selects an approach, offer the option to prototype before proceeding to detailed design:
 
