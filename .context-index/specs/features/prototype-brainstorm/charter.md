@@ -78,7 +78,7 @@ The `/adev:prototype` skill exists to validate design direction through working 
 | Local HTTP serving | Serve prototype files via zero-dep Node.js HTTP server with auto-refresh on regeneration | must-have | 1 | validated |
 | Conversational feedback loop | Accept user feedback in chat, regenerate prototype, repeat until user approves | must-have | 1 | validated |
 | File persistence choice | Ask user whether to keep prototype files (project-scoped, gitignored) or discard (temp dir, cleaned up) | must-have | 1 | validated |
-| Visual reference capture | Save user-provided screenshots and images to `.context-index/references/<module>/visuals/` with descriptive filenames | must-have | 1 | implemented |
+| Visual reference capture | Save user-provided screenshots and images to `.context-index/references/<module>/visuals/` with descriptive filenames | must-have | 1 | validated |
 | Heuristics capture | After prototype loop, save 2-4 key design decisions as module-scoped heuristics via `/adev:learn` | must-have | 1 | planned |
 | Brainstorm integration | Accept structured context from `/adev:brainstorm` Step 3 (approach, module, platform) and return control after completion | must-have | 1 | planned |
 | Standalone invocation | Invocable independently outside brainstorm for ad-hoc prototyping against an existing charter. Uses `--module <name>` to locate charter at `.context-index/specs/features/<module>/charter.md`. | should-have | 1 | validated |
