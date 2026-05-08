@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
 
 describe('prototype-args', () => {
   describe('validateModuleName', () => {
@@ -32,6 +33,63 @@ describe('prototype-args', () => {
     it('exports discoverCharters function', async () => {
       const { discoverCharters } = await import('../../lib/prototype-args.mjs');
       assert.equal(typeof discoverCharters, 'function');
+    });
+
+    it('returns empty array when no charters exist', async () => {
+      const { discoverCharters } = await import('../../lib/prototype-args.mjs');
+      const tmpDir = createTempDir();
+      const result = discoverCharters(tmpDir);
+      assert.deepEqual(result, []);
+      cleanupTempDir(tmpDir);
+    });
+
+    it('discovers single charter with title', async () => {
+      const { discoverCharters } = await import('../../lib/prototype-args.mjs');
+      const tmpDir = createTempDir();
+      writeFixture(tmpDir, '.context-index/specs/features/task-boards/charter.md',
+        '# Feature Charter: Task Management Boards\n\nContent here.');
+      const result = discoverCharters(tmpDir);
+      assert.equal(result.length, 1);
+      assert.equal(result[0].module, 'task-boards');
+      assert.equal(result[0].title, 'Task Management Boards');
+      cleanupTempDir(tmpDir);
+    });
+
+    it('discovers multiple charters', async () => {
+      const { discoverCharters } = await import('../../lib/prototype-args.mjs');
+      const tmpDir = createTempDir();
+      writeFixture(tmpDir, '.context-index/specs/features/task-boards/charter.md',
+        '# Feature Charter: Tasks\n');
+      writeFixture(tmpDir, '.context-index/specs/features/notifications/charter.md',
+        '# Feature Charter: Notifications\n');
+      const result = discoverCharters(tmpDir);
+      assert.equal(result.length, 2);
+      cleanupTempDir(tmpDir);
+    });
+
+    it('skips directories without charter.md', async () => {
+      const { discoverCharters } = await import('../../lib/prototype-args.mjs');
+      const tmpDir = createTempDir();
+      writeFixture(tmpDir, '.context-index/specs/features/task-boards/charter.md',
+        '# Feature Charter: Tasks\n');
+      writeFixture(tmpDir, '.context-index/specs/features/orphan/some-spec.md',
+        '# Not a charter\n');
+      const result = discoverCharters(tmpDir);
+      assert.equal(result.length, 1);
+      assert.equal(result[0].module, 'task-boards');
+      cleanupTempDir(tmpDir);
+    });
+
+    it('falls back to directory name when charter has no heading', async () => {
+      const { discoverCharters } = await import('../../lib/prototype-args.mjs');
+      const tmpDir = createTempDir();
+      writeFixture(tmpDir, '.context-index/specs/features/my-module/charter.md',
+        'No heading here, just content.');
+      const result = discoverCharters(tmpDir);
+      assert.equal(result.length, 1);
+      assert.equal(result[0].module, 'my-module');
+      assert.equal(result[0].title, 'my-module');
+      cleanupTempDir(tmpDir);
     });
   });
 });
