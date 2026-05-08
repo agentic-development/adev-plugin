@@ -22,7 +22,11 @@ Milestones provide structured lifecycle management for release planning within t
 - Ship criteria evaluation: auto-checks (`all_issues_closed`, `gates_pass`) and manual confirms
 - Version bump prompt at ship time when milestone name matches semver
 - Git tag creation and optional GitHub release draft on ship
-- Milestone name validation in lifecycle skills (brainstorm, specify, plan, hygiene) against `milestones.yaml`
+- Milestone name validation in lifecycle skills (brainstorm, specify, plan, hygiene) against `milestones.yaml` — advisory warnings only, never blocking
+
+### Ownership Note
+
+This module supersedes `/adev:plan --milestone` as the entrypoint for milestone *definition*. `/adev:plan --milestone` retains its role of decomposing a milestone into epics and feature placeholders, but reads milestone metadata from `milestones.yaml` rather than prompting inline. The `strategic-planning` and `planning` charters should be updated to reference this module for milestone definitions.
 
 ### Out of Scope
 
@@ -67,7 +71,7 @@ Milestones provide structured lifecycle management for release planning within t
 ### Invariants
 
 - Milestone names must be unique within `milestones.yaml`
-- A Milestone's `epic_id` must reference an existing epic on the issue board. If the epic is deleted externally, `milestone list` warns about the broken link.
+- A Milestone's `epic_id` must reference an existing epic on the issue board. If the epic is deleted externally, `milestone list` warns about the broken link and `milestone ship` blocks with an error requiring the epic to be recreated or the milestone updated.
 - `milestone ship` blocks unless all auto-checks pass and all manual confirms are accepted
 - `milestone ship` is idempotent — shipping an already-shipped milestone is a no-op with a message
 - Only one milestone can transition to `shipped` per invocation — no batch shipping
@@ -77,8 +81,7 @@ Milestones provide structured lifecycle management for release planning within t
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Milestone YAML Schema | `milestones.yaml` format with name, status, target_date, epic_id, release, ship_criteria | Must-have | v1 | — |
-| Milestone Create | `milestone create <name>` — writes to `milestones.yaml`, auto-creates linked epic via issue manager | Must-have | v1 | — |
+| Milestone Create | `milestone create <name>` — defines `milestones.yaml` schema (name, status, target_date, epic_id, release, ship_criteria), writes the entry, and auto-creates linked epic via issue manager | Must-have | v1 | — |
 | Milestone List | `milestone list` — displays all milestones with status, target date, and issue progress summary | Must-have | v1 | — |
 | Ship Criteria Evaluation | Run auto-checks (`all_issues_closed`, `gates_pass`) then manual confirms. Collect pass/fail for each. | Must-have | v1 | — |
 | Milestone Ship | `milestone ship <name>` — evaluate criteria, prompt version bump if semver, git tag, optional GitHub release | Must-have | v1 | — |
@@ -104,7 +107,7 @@ Milestones provide structured lifecycle management for release planning within t
 | `loadMilestones(projectRoot)` | function | Reads and parses `milestones.yaml`, returns array of Milestone objects |
 | `saveMilestones(projectRoot, milestones)` | function | Writes Milestone array back to `milestones.yaml` |
 | `findMilestone(projectRoot, name)` | function | Returns a single Milestone by name, or null if not found |
-| `evaluateShipCriteria(milestone, issueManager, manifest)` | function | Runs auto-checks and returns results array with pass/fail per criterion. Does not run manual confirms. |
+| `evaluateShipCriteria(milestone, issueManager, manifest)` | function | Runs auto-checks (`all_issues_closed`, `gates_pass`) and returns results array with pass/fail per criterion. Does not run manual confirms. GitHub release availability is not a ship criterion — it is a post-ship step handled separately by `milestone ship` with graceful degradation. |
 | `milestone create <name> [--target <date>]` | CLI subcommand | Creates milestone definition and linked epic |
 | `milestone list` | CLI subcommand | Displays milestones with status and progress |
 | `milestone ship <name>` | CLI subcommand | Evaluates criteria, prompts version bump, tags, releases |
@@ -129,5 +132,5 @@ Milestones provide structured lifecycle management for release planning within t
 | Backend Agnostic | All epic operations go through the issue manager abstraction. Milestone management works identically with file-based and beads backends. |
 | Graceful Degradation | If `gh` CLI is not available, `milestone ship` completes the git tag but skips GitHub release with a warning. If no `ship_criteria` are defined, ship proceeds with only the interactive version bump prompt. |
 | Safety | `milestone ship` never force-pushes tags. Blocks if the tag already exists. Version bump requires explicit confirmation. |
-| Backward Compatibility | Projects without `milestones.yaml` behave identically to today. Existing freeform milestone strings on epics continue to work — validation is advisory in hygiene, not blocking in other skills. |
+| Backward Compatibility | Projects without `milestones.yaml` behave identically to today. Existing freeform milestone strings on epics continue to work. Milestone name validation in all integrated skills (brainstorm, specify, plan, hygiene) is advisory — a warning is printed but the operation is never blocked. |
 | Testability | `loadMilestones`, `saveMilestones`, `findMilestone`, and `evaluateShipCriteria` are pure functions operating on file paths and issue manager instances. Testable with fixture YAML and mock issue managers using existing test helpers. |
