@@ -4,7 +4,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, symlinkSync, chmodSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, symlinkSync, chmodSync, readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
@@ -12,6 +12,8 @@ import {
   validateSourcePath,
   slugifyDescription,
   isSupportedFormat,
+  copyVisualReference,
+  resolveTargetPath,
 } from '../../lib/visual-references.mjs';
 
 // ─── validateSourcePath ───────────────────────────────────────────────────────
@@ -159,5 +161,126 @@ describe('isSupportedFormat', () => {
   it('accepts uppercase extensions', () => {
     assert.equal(isSupportedFormat('.PNG'), true);
     assert.equal(isSupportedFormat('.JPG'), true);
+  });
+});
+
+// ─── copyVisualReference ──────────────────────────────────────────────────────
+
+describe('copyVisualReference', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tmpDir);
+  });
+
+  it('copies file to references directory with slugified name', () => {
+    const sourceContent = Buffer.from('PNG-FAKE-CONTENT');
+    const srcFile = join(tmpDir, 'source.png');
+    writeFileSync(srcFile, sourceContent);
+    mkdirSync(join(tmpDir, '.context-index'), { recursive: true });
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'my-module',
+      description: 'Hero Layout',
+      projectRoot: tmpDir,
+    });
+
+    const expectedDir = join(tmpDir, '.context-index', 'references', 'my-module', 'visuals');
+    assert.ok(result.destinationPath.startsWith(expectedDir));
+    assert.equal(result.slug, 'hero-layout');
+    assert.equal(result.source, 'user-upload');
+
+    // Verify file was actually copied
+    const copied = readFileSync(result.destinationPath);
+    assert.deepEqual(copied, sourceContent);
+  });
+
+  it('creates references directory recursively if missing', () => {
+    const srcFile = join(tmpDir, 'img.png');
+    writeFileSync(srcFile, Buffer.alloc(10));
+    // No .context-index directory exists
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'test-mod',
+      description: 'test image',
+      projectRoot: tmpDir,
+    });
+
+    assert.ok(existsSync(result.destinationPath));
+  });
+
+  it('appends numeric suffix on filename collision', () => {
+    const srcFile = join(tmpDir, 'img.png');
+    writeFileSync(srcFile, Buffer.alloc(10));
+
+    // Create existing file at the target location
+    const targetDir = join(tmpDir, '.context-index', 'references', 'mod', 'visuals');
+    mkdirSync(targetDir, { recursive: true });
+    writeFileSync(join(targetDir, 'test.png'), Buffer.alloc(5));
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'mod',
+      description: 'test',
+      projectRoot: tmpDir,
+    });
+
+    assert.ok(result.destinationPath.endsWith('test-2.png'));
+  });
+
+  it('increments suffix when multiple collisions exist', () => {
+    const srcFile = join(tmpDir, 'img.png');
+    writeFileSync(srcFile, Buffer.alloc(10));
+
+    const targetDir = join(tmpDir, '.context-index', 'references', 'mod', 'visuals');
+    mkdirSync(targetDir, { recursive: true });
+    writeFileSync(join(targetDir, 'test.png'), Buffer.alloc(5));
+    writeFileSync(join(targetDir, 'test-2.png'), Buffer.alloc(5));
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'mod',
+      description: 'test',
+      projectRoot: tmpDir,
+    });
+
+    assert.ok(result.destinationPath.endsWith('test-3.png'));
+  });
+
+  it('falls back to reference.<ext> when slug is empty', () => {
+    const srcFile = join(tmpDir, 'img.png');
+    writeFileSync(srcFile, Buffer.alloc(10));
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'mod',
+      description: '\u{1F389}',
+      projectRoot: tmpDir,
+    });
+
+    assert.ok(result.destinationPath.includes('reference.png'));
+    assert.equal(result.slug, 'reference');
+  });
+
+  it('preserves original file content (no resizing/conversion)', () => {
+    const content = Buffer.from('EXACT-BYTES-12345-ABCDE');
+    const srcFile = join(tmpDir, 'photo.jpg');
+    writeFileSync(srcFile, content);
+
+    const result = copyVisualReference({
+      sourcePath: srcFile,
+      module: 'mod',
+      description: 'photo test',
+      projectRoot: tmpDir,
+    });
+
+    const copied = readFileSync(result.destinationPath);
+    assert.deepEqual(copied, content);
   });
 });
