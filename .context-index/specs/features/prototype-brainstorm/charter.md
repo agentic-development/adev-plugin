@@ -74,14 +74,14 @@ The `/adev:prototype` skill exists to validate design direction through working 
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Tiered prototype generation | Generate prototype files at three complexity levels: wireframe (HTML structure), mockup (styled HTML/CSS), functional (interactive app with user-chosen framework) | must-have | 1 | implemented |
-| Local HTTP serving | Serve prototype files via zero-dep Node.js HTTP server with auto-refresh on regeneration | must-have | 1 | implemented |
-| Conversational feedback loop | Accept user feedback in chat, regenerate prototype, repeat until user approves | must-have | 1 | implemented |
-| File persistence choice | Ask user whether to keep prototype files (project-scoped, gitignored) or discard (temp dir, cleaned up) | must-have | 1 | implemented |
-| Visual reference capture | Save user-provided screenshots and images to `.context-index/references/<module>/visuals/` with descriptive filenames | must-have | 1 | review-passed |
-| Heuristics capture | After prototype loop, save 2-4 key design decisions as module-scoped heuristics via `/adev:learn` | must-have | 1 | review-passed |
-| Brainstorm integration | Accept structured context from `/adev:brainstorm` Step 3 (approach, module, platform) and return control after completion | must-have | 1 | review-passed |
-| Standalone invocation | Invocable independently outside brainstorm for ad-hoc prototyping against an existing charter. Uses `--module <name>` to locate charter at `.context-index/specs/features/<module>/charter.md`. | should-have | 1 | review-passed |
+| Tiered prototype generation | Generate prototype files at three complexity levels: wireframe (HTML structure), mockup (styled HTML/CSS), functional (interactive app with user-chosen framework) | must-have | 1 | validated |
+| Local HTTP serving | Serve prototype files via zero-dep Node.js HTTP server with auto-refresh on regeneration | must-have | 1 | validated |
+| Conversational feedback loop | Accept user feedback in chat, regenerate prototype, repeat until user approves | must-have | 1 | validated |
+| File persistence choice | Ask user whether to keep prototype files (project-scoped, gitignored) or discard (temp dir, cleaned up) | must-have | 1 | validated |
+| Visual reference capture | Save user-provided screenshots and images to `.context-index/references/<module>/visuals/` with descriptive filenames | must-have | 1 | implemented |
+| Heuristics capture | After prototype loop, save 2-4 key design decisions as module-scoped heuristics via `/adev:learn` | must-have | 1 | planned |
+| Brainstorm integration | Accept structured context from `/adev:brainstorm` Step 3 (approach, module, platform) and return control after completion | must-have | 1 | planned |
+| Standalone invocation | Invocable independently outside brainstorm for ad-hoc prototyping against an existing charter. Uses `--module <name>` to locate charter at `.context-index/specs/features/<module>/charter.md`. | should-have | 1 | validated |
 | Multi-framework support | Structured templates for generating functional-tier prototypes in React, Vue, Svelte, or vanilla JS. In Phase 1, the agent generates framework code freeform; Phase 2 adds curated templates for consistency. | should-have | 2 | — |
 | Live reload | Auto-refresh browser when prototype files are regenerated during feedback loop | nice-to-have | 2 | — |
 
