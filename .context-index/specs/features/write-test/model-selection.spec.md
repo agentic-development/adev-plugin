@@ -45,7 +45,7 @@ source-manifest:
    |------|-------------------|
    | `capable` | `claude-sonnet-4-6` |
    | `fast` | `claude-haiku-4-5` |
-   | `reasoning` | `claude-opus-4-6` |
+   | `reasoning` | `claude-opus-4-7` |
 
 5. **When** a tier key exists in `model_tiers` but its value is empty or null **then** the skill falls back to the `capable` tier value; if `capable` is also empty, falls back to the hardcoded default `claude-sonnet-4-6`. Resolution order: tier-specific value → `capable` value → hardcoded default `claude-sonnet-4-6`.
 
