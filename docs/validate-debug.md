@@ -24,7 +24,7 @@ Use `--fix` to auto-fix minor issues (lint errors, formatting) before reporting.
 
 **Output:** A structured validation report with PASS/FAIL per check, file references for failures, and a summary verdict.
 
-See the [Skill Reference](skills.md) for full details on the 13 checks and fail-fast behavior.
+See the [Skill Reference](skill-reference.md) for full details on the 13 checks and fail-fast behavior.
 
 ## Debug
 
@@ -46,7 +46,7 @@ You can scope debugging to a specific spec's domain with `--spec <path>`, or app
 
 **Output:** A root cause analysis with a targeted fix. If the fix touches spec-tracked code, the relevant spec and ADR artifacts are updated.
 
-See the [Skill Reference](skills.md) for full details on the investigation phases and root cause classification.
+See the [Skill Reference](skill-reference.md) for full details on the investigation phases and root cause classification.
 
 ## Eval
 
@@ -68,7 +68,7 @@ Use `--layer <N>` to run only a specific evaluation layer (1-4), or `--configure
 
 **Output:** A graduated quality score (0-100) with per-layer breakdowns and improvement recommendations.
 
-See the [Skill Reference](skills.md) for full details on evaluation layers and rubric configuration.
+See the [Skill Reference](skill-reference.md) for full details on evaluation layers and rubric configuration.
 
 ## Recover
 
@@ -90,7 +90,7 @@ You can also recover from a specific blocker file (`--blocker <path>`) or run in
 
 **Output:** A recovery record documenting the root cause classification, corrective context injected, and the result of the re-dispatch.
 
-See the [Skill Reference](skills.md) for full details on root cause categories and recovery strategies.
+See the [Skill Reference](skill-reference.md) for full details on root cause categories and recovery strategies.
 
 ## Next: Maintain
 

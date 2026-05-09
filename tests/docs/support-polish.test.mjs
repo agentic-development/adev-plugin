@@ -153,3 +153,34 @@ describe('Breadcrumb and next/previous navigation', () => {
     }
   });
 });
+
+describe('Dead link validation — all docs/', () => {
+  it('should have zero dead links across all docs files', () => {
+    const allFiles = readdirSync(DOCS_DIR).filter(f => f.endsWith('.md'));
+    const deadLinks = [];
+
+    for (const file of allFiles) {
+      const content = readFileSync(join(DOCS_DIR, file), 'utf-8');
+      const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+      let match;
+      while ((match = linkPattern.exec(content)) !== null) {
+        const target = match[2];
+        // Skip external links and anchor links
+        if (target.startsWith('http') || target.startsWith('#') || target.startsWith('mailto:')) continue;
+        // Strip anchor from relative links
+        const filePart = target.split('#')[0];
+        if (filePart) {
+          const targetPath = join(DOCS_DIR, filePart);
+          if (!existsSync(targetPath)) {
+            deadLinks.push(`${file}: broken link to ${target}`);
+          }
+        }
+      }
+    }
+
+    assert.strictEqual(
+      deadLinks.length, 0,
+      `Found dead links:\n${deadLinks.join('\n')}`
+    );
+  });
+});
