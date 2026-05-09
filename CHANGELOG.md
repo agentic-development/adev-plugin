@@ -81,6 +81,28 @@ Tiered prototype generation from Feature Charters. Generates wireframe, mockup, 
 - **`Spec:` trailer requirement** — added to constitution and CLAUDE.md. Commits implementing spec-tracked work must include `Spec: <path>` trailer for traceability. `Plan-task:` trailer recommended alongside.
 - **Manifest** — `recommended_trailers: [Spec, Plan-task]` added to provenance section
 
+### Upgrading from 0.23.x
+
+**Automatic (handled by `npx @adev-org/adev-cli upgrade`):**
+- Plugin files, hooks, templates, and lib modules are updated in-place. No manual action needed for the plugin itself.
+
+**New hooks (active immediately after upgrade):**
+- **Lifecycle gate hooks** — three new hooks registered in `hooks/hooks.json`: `lifecycle-gate-edit.sh` (PostToolUse:Edit), `lifecycle-gate-bash.sh` (PostToolUse:Bash), `lifecycle-gate-advisory.sh` (Notification). These warn when source code is edited without first reading `.context-index/` context. Default enforcement level: `warn`. Configure via `lifecycle.gate` in your project's `.context-index/user-config` or global `<PLUGIN_ROOT>/user-config` (`off` / `warn` / `confirm` / `block`).
+- **Spec drift detection** — `hooks/sync-trigger.sh` now fires on ALL file edits (not just constitution.md). When an edited file is tracked in a spec's `source-manifest`, the hook stamps `drift_detected: true` in the spec's frontmatter. This is advisory only (exit 0, never blocks).
+
+**Optional — run `/adev:init` (Step 7) to set up governance:**
+- `.context-index/governance/gates.yaml` — declarative quality gate definitions (replaces the legacy `gates:` section in `manifest.yaml`). Skills that read gates (`/adev:validate` Check 1, `/adev:build`) will use this file if present, otherwise fall back to the constitution's `## Quality Gates` section.
+- `.context-index/governance/boundaries.yaml` — architectural boundary rules checked by `/adev:validate` Check 8.
+- `.context-index/governance/review.yaml` — configurable reviewer registry for `/adev:review-specs`.
+- `.context-index/governance/validate.yaml` — configurable validation check registry for `/adev:validate`.
+
+**If you have `gates:` in `manifest.yaml`:** The manifest `gates:` section is now legacy. `/adev:validate` emits a migration warning. Run `/adev:init` Step 7a to migrate to `governance/gates.yaml` — the init wizard detects the legacy section and offers one-click migration.
+
+**No action required for:**
+- Existing specs, charters, plans, and ADRs — all work as before
+- Projects without governance files — skills fall back to bundled defaults
+- The `@dotenvx/dotenvx` dev dependency — only affects the plugin, not your project
+
 ## [Unreleased] — release/0.23.0
 
 ### Integration Test Strategy (9th strategy)
