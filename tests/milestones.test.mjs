@@ -12,6 +12,9 @@ import {
   validateTargetDate,
   milestoneCreate,
   milestoneList,
+  milestoneDefer,
+  evaluateShipCriteria,
+  milestoneShip,
 } from "../lib/milestones.mjs";
 
 // --- Task 1: YAML I/O ---
@@ -306,5 +309,272 @@ describe("milestone create + list integration", () => {
     assert.equal(typeof milestoneList, "function");
     assert.equal(typeof validateMilestoneName, "function");
     assert.equal(typeof validateTargetDate, "function");
+    assert.equal(typeof milestoneDefer, "function");
+    assert.equal(typeof evaluateShipCriteria, "function");
+    assert.equal(typeof milestoneShip, "function");
+  });
+});
+
+// --- milestoneDefer ---
+
+describe("milestoneDefer", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-defer-test-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("defers milestone with reason", async () => {
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: null, ship_criteria: [] }]);
+    const mockManager = { updateEpic: async () => {} };
+    const result = await milestoneDefer(dir, "v1", "Pushed to Q3", { issueManager: mockManager });
+    assert.equal(result.status, "deferred");
+    assert.equal(result.defer_reason, "Pushed to Q3");
+    const ms = findMilestone(dir, "v1");
+    assert.equal(ms.status, "deferred");
+    assert.equal(ms.defer_reason, "Pushed to Q3");
+  });
+
+  it("rejects shipped milestone with ALREADY_SHIPPED", async () => {
+    saveMilestones(dir, [{ name: "v2", status: "shipped", epic_id: "epic-2", target_date: null, ship_criteria: [] }]);
+    await assert.rejects(() => milestoneDefer(dir, "v2", "Too late", {}), { code: "ALREADY_SHIPPED" });
+  });
+
+  it("idempotently re-defers with updated reason", async () => {
+    saveMilestones(dir, [{ name: "v3", status: "deferred", epic_id: "epic-3", target_date: null, ship_criteria: [], defer_reason: "Old reason" }]);
+    const mockManager = { updateEpic: async () => {} };
+    const result = await milestoneDefer(dir, "v3", "New reason", { issueManager: mockManager });
+    assert.equal(result.defer_reason, "New reason");
+    const ms = findMilestone(dir, "v3");
+    assert.equal(ms.defer_reason, "New reason");
+  });
+
+  it("rejects missing reason with MISSING_REASON", async () => {
+    await assert.rejects(() => milestoneDefer(dir, "v1", "", {}), { code: "MISSING_REASON" });
+  });
+
+  it("rejects not-found milestone", async () => {
+    await assert.rejects(() => milestoneDefer(dir, "nope", "reason", {}), { code: "MILESTONE_NOT_FOUND" });
+  });
+
+  it("defers without epic update when no issue manager", async () => {
+    saveMilestones(dir, [{ name: "v4", status: "planned", epic_id: "epic-4", target_date: null, ship_criteria: [] }]);
+    const result = await milestoneDefer(dir, "v4", "No backend", {});
+    assert.equal(result.status, "deferred");
+  });
+
+  it("warns but does not roll back when epic update fails", async () => {
+    saveMilestones(dir, [{ name: "v5", status: "planned", epic_id: "epic-5", target_date: null, ship_criteria: [] }]);
+    const mockManager = { updateEpic: async () => { throw new Error("backend down"); } };
+    const result = await milestoneDefer(dir, "v5", "Epic fail", { issueManager: mockManager });
+    assert.equal(result.status, "deferred");
+  });
+
+  it("defer_reason round-trips through save/load", () => {
+    const ms = [{ name: "rt", status: "deferred", epic_id: null, target_date: null, ship_criteria: [], defer_reason: "Test: special chars & colons" }];
+    saveMilestones(dir, ms);
+    const loaded = loadMilestones(dir);
+    const found = loaded.find((m) => m.name === "rt");
+    assert.equal(found.defer_reason, "Test: special chars & colons");
+  });
+});
+
+// --- evaluateShipCriteria ---
+
+describe("evaluateShipCriteria", () => {
+  it("returns passed: true when all issues closed", async () => {
+    const milestone = { name: "v1", epic_id: "epic-1", ship_criteria: [{ check: "all_issues_closed" }] };
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [{ id: "issue-1", status: "closed" }, { id: "issue-2", status: "closed" }],
+    };
+    const results = await evaluateShipCriteria(milestone, mockManager, {});
+    assert.equal(results[0].passed, true);
+  });
+
+  it("returns passed: false when issues still open", async () => {
+    const milestone = { name: "v1", epic_id: "epic-1", ship_criteria: [{ check: "all_issues_closed" }] };
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [{ id: "issue-1", status: "open" }, { id: "issue-2", status: "closed" }],
+    };
+    const results = await evaluateShipCriteria(milestone, mockManager, {});
+    assert.equal(results[0].passed, false);
+    assert.ok(results[0].detail.includes("1"));
+  });
+
+  it("returns passed: null for confirm entries", async () => {
+    const milestone = { name: "v1", epic_id: "epic-1", ship_criteria: [{ confirm: "CHANGELOG updated" }] };
+    const mockManager = { listEpics: async () => [{ id: "epic-1" }] };
+    const results = await evaluateShipCriteria(milestone, mockManager, {});
+    assert.equal(results[0].passed, null);
+    assert.equal(results[0].confirm, "CHANGELOG updated");
+  });
+
+  it("returns empty array when no ship_criteria", async () => {
+    const milestone = { name: "v1", epic_id: "epic-1", ship_criteria: [] };
+    const mockManager = { listEpics: async () => [{ id: "epic-1" }] };
+    const results = await evaluateShipCriteria(milestone, mockManager, {});
+    assert.deepStrictEqual(results, []);
+  });
+
+  it("throws BROKEN_EPIC when epic_id is null", async () => {
+    const milestone = { name: "v1", epic_id: null, ship_criteria: [{ check: "all_issues_closed" }] };
+    await assert.rejects(() => evaluateShipCriteria(milestone, {}, {}), { code: "BROKEN_EPIC" });
+  });
+
+  it("throws BROKEN_EPIC when epic not found", async () => {
+    const milestone = { name: "v1", epic_id: "epic-999", ship_criteria: [{ check: "all_issues_closed" }] };
+    const mockManager = { listEpics: async () => [] };
+    await assert.rejects(() => evaluateShipCriteria(milestone, mockManager, {}), { code: "BROKEN_EPIC" });
+  });
+
+  it("returns failed for gates_pass when no test command configured", async () => {
+    const milestone = { name: "v1", epic_id: "epic-1", ship_criteria: [{ check: "gates_pass" }] };
+    const mockManager = { listEpics: async () => [{ id: "epic-1" }] };
+    const results = await evaluateShipCriteria(milestone, mockManager, {});
+    assert.equal(results[0].passed, false);
+    assert.ok(results[0].detail.includes("No test command"));
+  });
+});
+
+// --- milestoneShip ---
+
+describe("milestoneShip", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-test-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("ships milestone: updates status, closes epic, creates tag", async () => {
+    saveMilestones(dir, [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, ship_criteria: [] }]);
+    const closedEpics = [];
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [],
+      close: async (id, reason) => { closedEpics.push({ id, reason }); },
+    };
+    let tagCreated = null;
+    const result = await milestoneShip(dir, "v1.0.0", {
+      issueManager: mockManager,
+      manifest: {},
+      execGit: (args) => { tagCreated = args[1]; },
+      confirmFn: async () => true,
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.tag, "v1.0.0");
+    assert.equal(tagCreated, "v1.0.0");
+    assert.equal(closedEpics[0].id, "epic-1");
+    const ms = findMilestone(dir, "v1.0.0");
+    assert.equal(ms.status, "shipped");
+  });
+
+  it("adds v prefix for semver names without it", async () => {
+    saveMilestones(dir, [{ name: "2.0.0", status: "planned", epic_id: "epic-10", target_date: null, ship_criteria: [] }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-10" }],
+      list: async () => [],
+      close: async () => {},
+    };
+    let tagCreated = null;
+    const result = await milestoneShip(dir, "2.0.0", {
+      issueManager: mockManager,
+      manifest: {},
+      execGit: (args) => { tagCreated = args[1]; },
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.tag, "v2.0.0");
+    assert.equal(tagCreated, "v2.0.0");
+  });
+
+  it("skips tagging for non-semver names", async () => {
+    saveMilestones(dir, [{ name: "beta-1", status: "planned", epic_id: "epic-11", target_date: null, ship_criteria: [] }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-11" }],
+      list: async () => [],
+      close: async () => {},
+    };
+    const result = await milestoneShip(dir, "beta-1", {
+      issueManager: mockManager,
+      manifest: {},
+      execGit: () => { throw new Error("should not be called"); },
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.tag, null);
+  });
+
+  it("is a no-op when already shipped", async () => {
+    saveMilestones(dir, [{ name: "v0.9.0", status: "shipped", epic_id: "epic-2", target_date: null, ship_criteria: [] }]);
+    const result = await milestoneShip(dir, "v0.9.0", { issueManager: {}, manifest: {} });
+    assert.equal(result.shipped, true);
+    assert.equal(result.skipped, true);
+  });
+
+  it("blocks when criteria fail", async () => {
+    saveMilestones(dir, [{ name: "v2.1.0", status: "planned", epic_id: "epic-3", target_date: null, ship_criteria: [{ check: "all_issues_closed" }] }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-3" }],
+      list: async () => [{ id: "issue-1", status: "open" }],
+    };
+    const result = await milestoneShip(dir, "v2.1.0", { issueManager: mockManager, manifest: {} });
+    assert.equal(result.shipped, false);
+  });
+
+  it("rejects missing name", async () => {
+    await assert.rejects(() => milestoneShip(dir, "", {}), { code: "MISSING_NAME" });
+  });
+
+  it("rejects not-found milestone", async () => {
+    await assert.rejects(() => milestoneShip(dir, "nonexistent", { issueManager: {}, manifest: {} }), { code: "MILESTONE_NOT_FOUND" });
+  });
+
+  it("blocks when tag exists", async () => {
+    saveMilestones(dir, [{ name: "v3.0.0", status: "planned", epic_id: "epic-4", target_date: null, ship_criteria: [] }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-4" }],
+      list: async () => [],
+      close: async () => {},
+    };
+    const result = await milestoneShip(dir, "v3.0.0", {
+      issueManager: mockManager,
+      manifest: {},
+      execGit: () => {
+        const e = new Error("tag exists");
+        e.stderr = Buffer.from("fatal: tag 'v3.0.0' already exists");
+        throw e;
+      },
+      confirmFn: async () => true,
+    });
+    assert.equal(result.shipped, false);
+    assert.equal(result.error, "TAG_EXISTS");
+  });
+
+  it("handles epic close failure gracefully", async () => {
+    saveMilestones(dir, [{ name: "v4.0.0", status: "planned", epic_id: "epic-5", target_date: null, ship_criteria: [] }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-5" }],
+      list: async () => [],
+      close: async () => { throw new Error("close failed"); },
+    };
+    const result = await milestoneShip(dir, "v4.0.0", {
+      issueManager: mockManager,
+      manifest: {},
+      execGit: () => {},
+    });
+    assert.equal(result.shipped, true);
+    const ms = findMilestone(dir, "v4.0.0");
+    assert.equal(ms.status, "shipped");
+  });
+
+  it("blocks when confirm is rejected", async () => {
+    saveMilestones(dir, [{ name: "v5.0.0", status: "planned", epic_id: "epic-6", target_date: null, ship_criteria: [{ confirm: "CHANGELOG updated" }] }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-6" }],
+      list: async () => [],
+    };
+    const result = await milestoneShip(dir, "v5.0.0", {
+      issueManager: mockManager,
+      manifest: {},
+      confirmFn: async () => false,
+    });
+    assert.equal(result.shipped, false);
+    assert.equal(result.confirmRejected, "CHANGELOG updated");
   });
 });
