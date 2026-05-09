@@ -2,7 +2,7 @@
 
 ---
 charter: user-docs
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: 1
 revision: 1
@@ -33,7 +33,7 @@ updated: 2026-05-09
 
 6. **When** any page in this spec links to another docs page **then** the link target exists and resolves correctly via relative markdown links.
 
-7. **When** the Table of Contents is rendered **then** every page created by any user-docs spec is reachable within 2 clicks from the TOC.
+7. **When** the Table of Contents is rendered **then** every page created by this spec is reachable from the TOC. (Full cross-spec TOC completeness is verified by the Support & Polish spec.)
 
 ### Postconditions
 
@@ -65,7 +65,7 @@ updated: 2026-05-09
 | Write docs/installation.md | Prerequisites, install command, greenfield/brownfield paths, provider flags, verification | medium |
 | Write docs/getting-started.md | Absorb quickstart.md, expand to 8-step lifecycle walkthrough with examples | large |
 | Remove docs/quickstart.md | Delete after content is absorbed | small |
-| Cross-link all pages | Add navigation breadcrumbs and next/previous links | small |
+| Add next-page links | Add "Next: X" links at bottom of each page created by this spec | small |
 
 ## Acceptance Criteria
 

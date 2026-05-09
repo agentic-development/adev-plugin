@@ -2,7 +2,7 @@
 
 ---
 charter: user-docs
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: 1
 revision: 1
@@ -39,9 +39,9 @@ updated: 2026-05-09
 
 ### Postconditions
 
-- `docs/skill-reference.md` exists with one entry per skill (all 30+ skills)
+- `docs/skill-reference.md` exists with one entry per skill (enumerated from the `skills/` directory)
 - `docs/configuration.md` exists with field-level docs for manifest, constitution, and platform-context
-- `docs/hooks.md` exists with entries for all 11 hooks
+- `docs/hooks.md` exists with entries for every hook registered in `hooks/hooks.json`
 - All three pages are linked from the Table of Contents under "Reference"
 
 ### Error Cases
@@ -62,6 +62,7 @@ updated: 2026-05-09
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
+| Enumerate skills from filesystem | Scan `skills/` directory to produce authoritative skill list | small |
 | Write skill reference structure | Create docs/skill-reference.md with phase groupings and table format | small |
 | Write skill entries — setup & triage | Entries for work, init, sync | medium |
 | Write skill entries — design | Entries for brainstorm, specify, review-specs, prototype | medium |
@@ -81,7 +82,7 @@ updated: 2026-05-09
 - [ ] `docs/configuration.md` documents every section of constitution.md
 - [ ] `docs/configuration.md` documents every field of platform-context.yaml
 - [ ] Default values are documented for all configuration fields that have them
-- [ ] `docs/hooks.md` covers all hooks in hooks.json
+- [ ] `docs/hooks.md` covers every hook in hooks.json (count derived from registry, not hardcoded)
 - [ ] Blocking hooks document trigger conditions and resolution steps
 - [ ] All three pages are reachable from docs/README.md
 - [ ] No constitutional violations introduced
