@@ -123,6 +123,59 @@ Call `addDependency(issueId, dependsOnId)`. If a circular dependency would be cr
 
 Call `list({ status: "open" })`, then filter out issues whose dependencies include any unclosed issues. Display as "Actionable issues — open and unblocked."
 
+### Milestone Create
+
+`milestone create <name> [--target <YYYY-MM-DD>] [--check <type>]... [--confirm "<text>"]...`
+
+Create or update a milestone in `.context-index/milestones.yaml` with an auto-linked epic.
+
+**Arguments:**
+- `<name>` (required) — milestone name, must match `[a-zA-Z0-9._-]+`
+- `--target <YYYY-MM-DD>` (optional) — target date for the milestone
+- `--check <type>` (repeatable) — ship criteria check (e.g., `all_issues_closed`, `gates_pass`)
+- `--confirm "<text>"` (repeatable) — ship criteria confirmation prompt (e.g., `"CHANGELOG updated"`)
+
+**Behavior:**
+1. Validate name and optional target date
+2. Load existing milestones from `.context-index/milestones.yaml` (creates file if absent)
+3. If a milestone with the same name exists, update it idempotently (no new epic created)
+4. If new, create a linked epic via `issueManager.createEpic({ title: name, milestone: name })`
+5. Write milestone entry: `{ name, status: "planned", epic_id, target_date, ship_criteria }`
+6. Report the created/updated milestone
+
+**Implementation:** Call `milestoneCreate(projectRoot, name, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
+
+**Error cases:**
+
+| Condition | Message | Code |
+|-----------|---------|------|
+| No name argument | Print usage hint | MISSING_NAME |
+| Invalid name | "Invalid milestone name" | INVALID_NAME |
+| Unparseable date | "Invalid date format. Use YYYY-MM-DD." | INVALID_DATE |
+| No backend configured | Warn, still write YAML | NO_BACKEND |
+| Epic creation fails | Write with `epic_id: null`, warn | EPIC_CREATE_FAILED |
+
+### Milestone List
+
+`milestone list`
+
+Display all milestones with status, target date, linked epic, and issue progress.
+
+**Behavior:**
+1. Load milestones from `.context-index/milestones.yaml`
+2. For each milestone, query the issue manager for the linked epic and its child issues
+3. Display a table: Name, Status, Target Date, Epic, Progress (open/total)
+4. If a milestone's `epic_id` references a non-existent epic, show `epic-N (broken)` as a warning
+5. If no milestones exist, display: "No milestones defined. Run `milestone create <name>` to create one."
+
+**Implementation:** Call `milestoneList(projectRoot, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
+
+**Error cases:**
+
+| Condition | Message | Code |
+|-----------|---------|------|
+| Malformed YAML | "milestones.yaml is malformed — cannot parse" | PARSE_ERROR |
+
 ## Key Principles
 
 - **Read-modify-write.** Always read current state before modifying. Do not cache.
