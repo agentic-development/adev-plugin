@@ -79,19 +79,19 @@ User-facing documentation that serves as the complete guide to adopting and usin
 | Concepts Overview | Brief explanation of the four pillars and the context-first approach | must-have | 1 | validated |
 | Installation Guide | Step-by-step setup covering greenfield, brownfield, and provider selection | must-have | 1 | validated |
 | Getting Started Tutorial | Expanded walkthrough taking a user from init through their first validated feature | must-have | 1 | validated |
-| Project Types Guide | Worked examples showing how to use adev with different project types, using eval fixture/submodule projects as demos | must-have | 1 | review-passed |
-| Design Phase Guide | How to brainstorm, write charters, author specs, run reviews, and prototype | must-have | 1 | review-passed |
-| Build Phase Guide | How to plan, route, implement, write tests, and orchestrate builds | must-have | 1 | review-passed |
-| Validate & Debug Guide | How to validate work, debug issues, and run evals | must-have | 1 | review-passed |
-| Maintain Phase Guide | How to track issues, run hygiene, retrospectives, and keep context healthy | must-have | 1 | review-passed |
-| Skill Reference | One entry per skill with purpose, prerequisites, arguments, and usage | must-have | 1 | review-passed |
-| Configuration Reference | Field-level docs for manifest.yaml, constitution.md, platform-context.yaml | should-have | 1 | review-passed |
-| Hooks Reference | What each hook does, when it fires, how to customize | should-have | 1 | review-passed |
-| Troubleshooting & FAQ | Common issues, error messages, and recovery steps | should-have | 1 | review-passed |
-| Workspaces Guide | Multi-repo coordination setup and usage (absorbs existing content) | should-have | 1 | implemented |
-| Governance Guide | Customizing review and validation gates (absorbs existing content) | should-have | 1 | implemented |
-| Test Strategies Guide | Domain-specific TDD configuration (absorbs existing content) | should-have | 1 | implemented |
-| README Update | Update README.md to point to the new docs structure | nice-to-have | 1 | review-passed |
+| Project Types Guide | Worked examples showing how to use adev with different project types, using eval fixture/submodule projects as demos | must-have | 1 | validated |
+| Design Phase Guide | How to brainstorm, write charters, author specs, run reviews, and prototype | must-have | 1 | validated |
+| Build Phase Guide | How to plan, route, implement, write tests, and orchestrate builds | must-have | 1 | validated |
+| Validate & Debug Guide | How to validate work, debug issues, and run evals | must-have | 1 | validated |
+| Maintain Phase Guide | How to track issues, run hygiene, retrospectives, and keep context healthy | must-have | 1 | validated |
+| Skill Reference | One entry per skill with purpose, prerequisites, arguments, and usage | must-have | 1 | validated |
+| Configuration Reference | Field-level docs for manifest.yaml, constitution.md, platform-context.yaml | should-have | 1 | validated |
+| Hooks Reference | What each hook does, when it fires, how to customize | should-have | 1 | validated |
+| Troubleshooting & FAQ | Common issues, error messages, and recovery steps | should-have | 1 | validated |
+| Workspaces Guide | Multi-repo coordination setup and usage (absorbs existing content) | should-have | 1 | validated |
+| Governance Guide | Customizing review and validation gates (absorbs existing content) | should-have | 1 | validated |
+| Test Strategies Guide | Domain-specific TDD configuration (absorbs existing content) | should-have | 1 | validated |
+| README Update | Update README.md to point to the new docs structure | nice-to-have | 1 | validated |
 
 ## Deferred Capabilities
 

@@ -1,6 +1,8 @@
 # adev — Agentic Development Framework
 
-A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), and [OpenAI Codex](https://openai.com/index/codex/) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
+A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenCode](https://github.com/opencode-ai/opencode) (alpha), and [OpenAI Codex](https://openai.com/index/codex/) (alpha) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
+
+> **Harness support:** Claude Code is the fully supported harness with complete skill and hook coverage. OpenCode and Codex support is in alpha — basic lifecycle skills work via AGENTS.md, but hooks, session capture, and some advanced features are not yet available.
 
 Based on the [Agentic Development Handbook](https://www.agentic-dev.org/en/handbook). Zero dependencies.
 

@@ -2,7 +2,7 @@
 
 ---
 charter: user-docs
-status: review-passed
+status: validated
 risk_level: low
 milestone: 1
 revision: 1
@@ -62,10 +62,10 @@ updated: 2026-05-09
 
 ## Acceptance Criteria
 
-- [ ] `docs/project-types.md` exists with at least 3 project type examples
-- [ ] Each example uses a real eval fixture project, not hypothetical code
-- [ ] Each example shows charter, spec, and implementation artifacts for that project type
-- [ ] Fixture paths are documented so readers can explore the source
-- [ ] All fixture references point to existing projects
-- [ ] The guide is reachable from docs/README.md
-- [ ] No constitutional violations introduced
+- [x] `docs/project-types.md` exists with at least 3 project type examples
+- [x] Each example uses a real eval fixture project, not hypothetical code
+- [x] Each example shows charter, spec, and implementation artifacts for that project type
+- [x] Fixture paths are documented so readers can explore the source
+- [x] All fixture references point to existing projects
+- [x] The guide is reachable from docs/README.md
+- [x] No constitutional violations introduced

@@ -66,6 +66,18 @@ brainstorm --> specify --> review --> plan --> implement --> validate
 
 This lifecycle is not rigid — you can enter at any point, skip phases for simple changes, or iterate within a phase. But for new features, following the full lifecycle produces the most reliable results.
 
+## Output Personas
+
+adev adapts its communication style based on who is reading the output. When you initialize a project with `/adev:init`, you can configure an **output persona** that controls how skills present their results in conversation. The persona does not change what the framework does — it changes how it talks to you.
+
+Three personas are available:
+
+- **Product** — For product managers, designers, and non-technical stakeholders. Skills summarize outcomes in plain language, omit file paths and code snippets, and suggest next actions in terms of decisions rather than commands.
+- **Developer** (default) — For engineers actively building. Skills show file paths, code references, test results, and technical details. This is the full-detail view.
+- **Architect** — For technical leads reviewing design decisions. Skills emphasize architectural trade-offs, boundary compliance, and cross-cutting concerns.
+
+The persona is set in the manifest and injected at session start. You can change it at any time by editing `manifest.yaml` or re-running `/adev:init`. Artifacts written to disk (validation reports, review files, plans) always use the full technical format regardless of persona — only the conversation output adapts.
+
 ## Key Terms
 
 | Term | Definition |

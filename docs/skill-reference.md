@@ -91,6 +91,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:using-adev`
 
+> **Internal skill.** Injected automatically at session start by a hook. You rarely need to invoke this manually.
+
 **Purpose:** Gateway skill for the Agentic Development Framework. Establishes the methodology, lists available skills, and explains context routing. Injected automatically at session start.
 
 **Prerequisites:** `.context-index/` must be initialized.
@@ -218,6 +220,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:prototype`
 
+> **Utility skill.** Can be invoked by `/adev:brainstorm` when a visual prototype would help clarify scope. Also available standalone for rapid UI sketching.
+
 **Purpose:** Rapidly sketch UI screens, user flows, and API surface from Feature Charters. Bridges the gap between chartering and implementation with tiered prototypes (wireframe, mockup, functional). Optionally uses a live browser preview for interactive design.
 
 **Prerequisites:** A Feature Charter must exist for the target module.
@@ -271,6 +275,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:route`
 
+> **Utility skill.** Primarily invoked by `/adev:build` as part of the end-to-end pipeline. You can also use it standalone to preview routing decisions before implementation.
+
 **Purpose:** Score each task in an implementation plan on four dimensions (spec completeness, pattern coverage, blast radius, novelty) and recommend a routing mode: auto-agent, assisted-agent, or human-only. Routing annotations integrate with `/adev:implement` to adjust execution per task.
 
 **Prerequisites:** A plan file must exist (produced by `/adev:plan`).
@@ -319,6 +325,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 ---
 
 ### `/adev:write-test`
+
+> **Utility skill.** Primarily invoked by `/adev:implement` during the RED phase of TDD. You can also use it standalone when you want to write tests independently of a full implementation cycle.
 
 **Purpose:** TDD test authoring specialist. Writes failing tests (RED phase), produces immutable handoff blocks, and detects specification gaming. Use before implementation to establish the test contract.
 
@@ -425,6 +433,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:eval`
 
+> **Utility skill.** Used for deeper quality assessment beyond `/adev:validate`. Useful when you want a quantitative score or need to compare implementations.
+
 **Purpose:** Run a graduated evaluation harness scoring implementation quality across four layers: deterministic (automated checks), architectural (pattern compliance), LLM-as-Judge (behavioral reasoning), and human-in-the-loop (manual review). Produces a quality score from 0 to 100.
 
 **Prerequisites:** Implementation must be complete.
@@ -449,6 +459,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 ---
 
 ### `/adev:recover`
+
+> **Utility skill.** Primarily invoked by `/adev:implement` when a subagent reports BLOCKED. You can also use it standalone to diagnose and resume stuck tasks.
 
 **Purpose:** Structured diagnosis-correction-resume cycle when agents get stuck during implementation. Classifies root causes into six categories, injects corrective context, and re-dispatches with enriched prompts. Writes recovery records for retrospective analysis.
 
