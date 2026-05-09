@@ -69,3 +69,33 @@ describe('docs/troubleshooting.md — Troubleshooting & FAQ', () => {
     );
   });
 });
+
+describe('README.md — Documentation Links', () => {
+  it('should link to docs/README.md as primary documentation entry', () => {
+    const content = readFileSync(join(ROOT_DIR, 'README.md'), 'utf-8');
+    assert.ok(
+      content.includes('docs/README.md'),
+      'README.md should link to docs/README.md'
+    );
+  });
+
+  it('should not have dangling links to removed docs files', () => {
+    const content = readFileSync(join(ROOT_DIR, 'README.md'), 'utf-8');
+    const linkPattern = /\[([^\]]+)\]\((docs\/(?:skills|architecture)\.md)\)/g;
+    const danglingLinks = [];
+    let match;
+    while ((match = linkPattern.exec(content)) !== null) {
+      danglingLinks.push(match[2]);
+    }
+    assert.strictEqual(
+      danglingLinks.length, 0,
+      `README.md has dangling links to removed files: ${danglingLinks.join(', ')}`
+    );
+  });
+
+  it('should retain the skills table', () => {
+    const content = readFileSync(join(ROOT_DIR, 'README.md'), 'utf-8');
+    assert.ok(content.includes('/adev:work'), 'Skills table should still reference /adev:work');
+    assert.ok(content.includes('/adev:brainstorm'), 'Skills table should still reference /adev:brainstorm');
+  });
+});
