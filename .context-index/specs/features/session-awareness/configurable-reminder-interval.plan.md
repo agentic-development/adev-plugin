@@ -70,5 +70,5 @@ Expected: PASS
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria satisfied
+- Tests pass: `npm test`
+- All acceptance criteria satisfied

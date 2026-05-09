@@ -285,10 +285,10 @@ status: draft
       const planPath = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards', 'drag-drop.plan.md');
       const result = await getPlanProgress(planPath);
 
-      assert.equal(result.total, 9); // 4 checked + 5 unchecked
-      assert.equal(result.completed, 4);
+      assert.equal(result.total, 8); // 3 checked + 5 unchecked (excludes pre-task Review Gate checkbox)
+      assert.equal(result.completed, 3);
       assert.equal(result.remaining, 5);
-      assert.equal(result.percent, 44);
+      assert.equal(result.percent, 38);
     });
 
     it('groups by task headings (Behavior 6)', async () => {
@@ -311,6 +311,37 @@ status: draft
         () => getPlanProgress(join(TEMP_ROOT, 'nonexistent.plan.md')),
         /Plan not found/
       );
+    });
+
+    it('excludes checkboxes in Quality Gates section from task progress', async () => {
+      const planWithQG = join(TEMP_ROOT, 'plan-with-qg.plan.md');
+      writeFileSync(planWithQG, `# Plan
+
+### Task 1: Do the thing
+
+- [x] Write test
+- [x] Implement
+
+### Task 2: Another thing
+
+- [x] Write test
+- [x] Implement
+
+## Quality Gates
+
+- [ ] Tests pass
+- [ ] Lint passes
+- [ ] All acceptance criteria satisfied
+`);
+      const result = await getPlanProgress(planWithQG);
+
+      assert.equal(result.total, 4); // only task checkboxes, not QG
+      assert.equal(result.completed, 4);
+      assert.equal(result.remaining, 0);
+      assert.equal(result.percent, 100);
+      assert.equal(result.tasks.length, 2);
+      assert.equal(result.tasks[0].done, true);
+      assert.equal(result.tasks[1].done, true);
     });
 
     it('returns zeros for plan with no checkboxes (Error Case 6)', async () => {

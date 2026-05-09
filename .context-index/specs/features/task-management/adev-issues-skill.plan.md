@@ -195,5 +195,5 @@ git commit -m "feat(task-management): register /adev:issues in gateway skill"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

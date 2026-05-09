@@ -746,10 +746,10 @@ Plan-task: 11"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test` (adev-plugin quality gate)
-- [ ] Python tests pass: `cd tests/evals/adev-automation-eval && python -m pytest tests/ -v`
-- [ ] End-to-end processing: `cd tests/evals/adev-automation-eval && python run_processor.py`
-- [ ] Planted bug verified: Report "Total Rows Processed" exceeds actual row count
-- [ ] All acceptance criteria from spec satisfied
-- [ ] Shared conventions compliance: README has 6 sections in order, 5 TODO features with format
-- [ ] Branch invariants: `main` has no `.context-index/`, `with-context` differs only in `.context-index/`
+- Tests pass: `npm test` (adev-plugin quality gate)
+- Python tests pass: `cd tests/evals/adev-automation-eval && python -m pytest tests/ -v`
+- End-to-end processing: `cd tests/evals/adev-automation-eval && python run_processor.py`
+- Planted bug verified: Report "Total Rows Processed" exceeds actual row count
+- All acceptance criteria from spec satisfied
+- Shared conventions compliance: README has 6 sections in order, 5 TODO features with format
+- Branch invariants: `main` has no `.context-index/`, `with-context` differs only in `.context-index/`

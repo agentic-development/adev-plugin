@@ -626,5 +626,5 @@ git commit -m "test(implementation): add content-presence tests for skill integr
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied
