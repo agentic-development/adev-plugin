@@ -75,10 +75,10 @@ User-facing documentation that serves as the complete guide to adopting and usin
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Table of Contents | Root index page organizing all docs into a linear reading path | must-have | 1 | review-passed |
-| Concepts Overview | Brief explanation of the four pillars and the context-first approach | must-have | 1 | review-passed |
-| Installation Guide | Step-by-step setup covering greenfield, brownfield, and provider selection | must-have | 1 | review-passed |
-| Getting Started Tutorial | Expanded walkthrough taking a user from init through their first validated feature | must-have | 1 | review-passed |
+| Table of Contents | Root index page organizing all docs into a linear reading path | must-have | 1 | implemented |
+| Concepts Overview | Brief explanation of the four pillars and the context-first approach | must-have | 1 | implemented |
+| Installation Guide | Step-by-step setup covering greenfield, brownfield, and provider selection | must-have | 1 | implemented |
+| Getting Started Tutorial | Expanded walkthrough taking a user from init through their first validated feature | must-have | 1 | implemented |
 | Project Types Guide | Worked examples showing how to use adev with different project types, using eval fixture/submodule projects as demos | must-have | 1 | review-passed |
 | Design Phase Guide | How to brainstorm, write charters, author specs, run reviews, and prototype | must-have | 1 | review-passed |
 | Build Phase Guide | How to plan, route, implement, write tests, and orchestrate builds | must-have | 1 | review-passed |
