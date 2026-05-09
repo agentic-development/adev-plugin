@@ -23,9 +23,9 @@ Guides organized by lifecycle phase, covering the skills you use day-to-day.
 
 Detailed reference documentation for every skill, configuration file, and hook.
 
-- Skill Reference (coming soon) — One entry per skill with usage, arguments, and examples
-- Configuration Reference (coming soon) — manifest.yaml, constitution.md, platform-context.yaml
-- Hooks Reference (coming soon) — What each hook does, when it fires, how to customize
+- [Skill Reference](skill-reference.md) — One entry per skill with usage, arguments, and examples
+- [Configuration Reference](configuration.md) — manifest.yaml, constitution.md, platform-context.yaml
+- [Hooks Reference](hooks.md) — What each hook does, when it fires, how to customize
 
 ## Advanced
 

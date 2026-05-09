@@ -2,7 +2,7 @@
 
 ---
 charter: user-docs
-status: review-passed
+status: implemented
 risk_level: low
 milestone: 1
 revision: 1
