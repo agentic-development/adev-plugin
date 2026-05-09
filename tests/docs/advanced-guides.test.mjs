@@ -144,3 +144,77 @@ describe('docs/governance.md — Governance Guide', () => {
     assert.ok(!content.match(/AKIA[A-Z0-9]{16}/), 'Contains real-looking AWS access key');
   });
 });
+
+describe('docs/test-strategies.md — Test Strategies Guide', () => {
+  it('should exist', () => {
+    assert.ok(existsSync(join(DOCS_DIR, 'test-strategies.md')));
+  });
+
+  it('should have a prerequisites section', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(
+      content.includes('Prerequisites') || content.includes('prerequisites') || content.includes('Before you begin'),
+      'Missing prerequisites section'
+    );
+  });
+
+  it('should document all 9 strategies', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    const strategies = ['unit', 'schema', 'fixture', 'policy', 'contract', 'integration', 'threshold', 'visual', 'smoke'];
+    for (const strategy of strategies) {
+      assert.ok(
+        content.includes(`\`${strategy}\``),
+        `Missing strategy: ${strategy}`
+      );
+    }
+  });
+
+  it('should explain auto-detection', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(
+      content.includes('auto-detect') || content.includes('Auto-detect') || content.includes('auto-discovery'),
+      'Missing auto-detection explanation'
+    );
+  });
+
+  it('should explain manual configuration via manifest', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(content.includes('manifest.yaml') || content.includes('test_strategies'), 'Missing manifest configuration');
+  });
+
+  it('should include the integration strategy deep dive', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(content.includes('integration strategy') || content.includes('Integration strategy') || content.includes('Adopting the integration strategy'), 'Missing integration strategy deep dive');
+  });
+
+  it('should preserve the priority chain from original', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(content.includes('priority') || content.includes('Priority'), 'Missing priority chain');
+  });
+
+  it('should preserve credential guard pattern from integration deep dive', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(
+      content.includes('INTEGRATION_NO_CREDENTIALS') || content.includes('credential guard'),
+      'Missing credential guard pattern'
+    );
+  });
+
+  it('should preserve gaming violation patterns from original', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(content.includes('BOUNDARY_MOCKING'), 'Missing BOUNDARY_MOCKING gaming violation');
+  });
+
+  it('should preserve troubleshooting section from original', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(content.includes('Troubleshooting') || content.includes('troubleshooting'), 'Missing troubleshooting section');
+  });
+
+  it('should preserve custom profiles extension documentation from original', () => {
+    const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
+    assert.ok(
+      content.includes('custom profile') || content.includes('Extending') || content.includes('extending'),
+      'Missing custom profiles/extending section'
+    );
+  });
+});
