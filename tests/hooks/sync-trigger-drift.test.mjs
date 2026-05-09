@@ -33,7 +33,7 @@ describe("sync-trigger drift detection", () => {
     writeFile(root, ".context-index/manifest.yaml", "project:\n  name: test\n");
 
     // Create spec with source-manifest tracking lib/foo.mjs
-    writeFile(root, ".context-index/specs/features/auth/login.spec.md", [
+    writeFile(root, ".context-index/specs/features/auth/login.md", [
       "---",
       "type: live-spec",
       "title: Login",

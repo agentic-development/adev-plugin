@@ -1,7 +1,7 @@
 # Architecture Review: drift-flag-clearing
 
 > **Date:** 2026-05-02
-> **Spec:** .context-index/specs/features/spec-drift-detection/drift-flag-clearing.spec.md
+> **Spec:** .context-index/specs/features/spec-drift-detection/drift-flag-clearing.md
 > **Charter:** .context-index/specs/features/spec-drift-detection/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

@@ -287,8 +287,8 @@ infra_requirements:
    - `updated: <today's date YYYY-MM-DD>`
    - (Optional) Ask the user if there is an external tracker reference. If so, add `tracker-ref: <value>` to frontmatter.
 4. Save location:
-   - **Workspace mode:** Save to workspace `.context-index/specs/features/<module>/<spec-slug>.spec.md`. Include `target-repo: <slug>` (or `target-repo: workspace`) in the YAML frontmatter.
-   - **Repo mode / single-repo:** Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md` as before. No `target-repo:` field.
+   - **Workspace mode:** Save to workspace `.context-index/specs/features/<module>/<spec-slug>.md`. Include `target-repo: <slug>` (or `target-repo: workspace`) in the YAML frontmatter.
+   - **Repo mode / single-repo:** Save to `.context-index/specs/features/<module>/<spec-slug>.md` as before. No `target-repo:` field.
 5. **Update charter Capability Map:** Read the parent charter, find the capability row that this spec covers in the Capability Map table, and update its `Status` column to `specified`.
 
 ### Step 5.5: Update Spec Status
@@ -328,7 +328,7 @@ Call `getIssueManager(manifest)` to obtain the configured issue board adapter.
 
 #### 5.6-2: Idempotency Check
 
-Query the issue board for any existing item where `spec_ref` equals the absolute path of the spec file just written (e.g., `.context-index/specs/features/<module>/<spec-slug>.spec.md`). If exactly one Feature already exists with that `spec_ref`, skip creation and **update** it (refresh `next_action` and `updated`) — do not create a duplicate. If multiple items share the same `spec_ref`, update the most recently created one and log a warning.
+Query the issue board for any existing item where `spec_ref` equals the absolute path of the spec file just written (e.g., `.context-index/specs/features/<module>/<spec-slug>.md`). If exactly one Feature already exists with that `spec_ref`, skip creation and **update** it (refresh `next_action` and `updated`) — do not create a duplicate. If multiple items share the same `spec_ref`, update the most recently created one and log a warning.
 
 #### 5.6-3: Resolve Parent Epic
 
@@ -359,7 +359,7 @@ If the issue board adapter throws, log the error to the summary output but **do 
 
 #### 5.6 — Mode Variants
 
-**Cross-cutting specs** (`--cross-cutting`): The spec file lives at `.context-index/specs/cross-cutting/<slug>.spec.md`. Skip the Epic lookup (5.6-3) — cross-cutting specs have no module Epic. Create the Feature with `parent_id` absent and append to `notes`: `"Cross-cutting spec. Affects: <affects-list from frontmatter>."`.
+**Cross-cutting specs** (`--cross-cutting`): The spec file lives at `.context-index/specs/cross-cutting/<slug>.md`. Skip the Epic lookup (5.6-3) — cross-cutting specs have no module Epic. Create the Feature with `parent_id` absent and append to `notes`: `"Cross-cutting spec. Affects: <affects-list from frontmatter>."`.
 
 **Refactor specs** (`--refactor`): Create the Feature with `type: "feature"` (refactors are still Features in the model). Append to `notes`: `"Refactoring spec. Review migration steps before planning."` and include a note in `next_action` referencing the migration steps if applicable.
 
@@ -428,7 +428,7 @@ Produce a Live Spec where:
 
 Add `mode: extract` and `extracted-from: [<file list>]` to frontmatter per the shared section.
 
-Load context per the shared section above. Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md`.
+Load context per the shared section above. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 4.5: Update Spec Status
 
@@ -547,7 +547,7 @@ Define the target behavior (what the system does AFTER refactoring). This gives 
 
 1. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/refactoring-spec-template.md`.
 2. Set frontmatter per the shared section with `mode: refactor`.
-3. Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md`.
+3. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 7.5: Update Spec Status
 
@@ -634,7 +634,7 @@ Produce a Live Spec where:
   - [ ] Test coverage for priority engine (no tests found in diff)
   ```
 
-Set frontmatter per the shared section with `mode: from-diff` and `diff-source`. Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md`.
+Set frontmatter per the shared section with `mode: from-diff` and `diff-source`. Save to `.context-index/specs/features/<module>/<spec-slug>.md`.
 
 ### Step 4.5: Update Spec Status
 
@@ -704,7 +704,7 @@ Same process as standard mode (behavioral contract, constitution reference, task
 1. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
 2. Add Module Impact and Integration Points after the standard template sections.
 3. Set frontmatter per the shared section with `mode: cross-cutting` and `affects: [<modules>]` instead of `charter:`.
-4. Save to `.context-index/specs/cross-cutting/<spec-slug>.spec.md`.
+4. Save to `.context-index/specs/cross-cutting/<spec-slug>.md`.
 
 ### Step 5.5: Update Spec Status
 

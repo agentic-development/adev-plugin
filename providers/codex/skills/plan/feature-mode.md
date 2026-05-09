@@ -19,7 +19,7 @@ Create or approve the charter with /adev:brainstorm --module <module>.
 3. **Propose Live Specs.** For each gap, produce a proposed spec entry:
    - Title (derived from capability name)
    - Scope (one sentence describing what the spec would cover)
-   - Suggested file path: `.context-index/specs/features/<module>/<slug>.spec.md`
+   - Suggested file path: `.context-index/specs/features/<module>/<slug>.md`
    - `next_action` (from convention table): `"Run /adev:specify --module <module> to author this Feature"`
 4. **Present the proposed Feature plan** to the user for approval:
    ```
