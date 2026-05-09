@@ -141,3 +141,9 @@ describe('docs/getting-started.md — Getting Started Tutorial', () => {
     assert.ok(firstParagraph.length > 50, 'Should have an introductory paragraph explaining what the tutorial covers');
   });
 });
+
+describe('docs/quickstart.md — Removal', () => {
+  it('should not exist (replaced by getting-started.md)', () => {
+    assert.ok(!existsSync(join(DOCS_DIR, 'quickstart.md')), 'quickstart.md should be removed');
+  });
+});
