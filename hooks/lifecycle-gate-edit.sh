@@ -104,13 +104,10 @@ if [[ "$RESULT" == "pass" ]]; then
   exit 0
 fi
 
-# Extract spec path from enforcement decision
-SPEC_PATH="${RESULT#enforce:}"
-
 # Apply enforcement based on level
 case "$LEVEL" in
   warn)
-    MESSAGE="Spec exists at \`${SPEC_PATH}\` but no plan found. Run \`/adev:plan --spec ${SPEC_PATH}\` before editing."
+    MESSAGE="No active lifecycle session. Run \`/adev:work\` to classify this task, or \`/adev:debug\` for a bug fix, before editing source files."
     MSG_JSON=$(printf '%s' "$MESSAGE" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || printf '"%s"' "$MESSAGE")
     MSG_JSON="${MSG_JSON:1:${#MSG_JSON}-2}"
     cat <<JSONEOF
@@ -123,7 +120,7 @@ JSONEOF
     exit 0
     ;;
   confirm)
-    STOP_MSG="STOP. You MUST run \`/adev:plan --spec ${SPEC_PATH}\` before proceeding. If this is a bug fix, invoke \`/adev:debug\`. If this is exploratory, run \`/adev:standalone\`. Only proceed for trivial non-tracked changes."
+    STOP_MSG="STOP. No active lifecycle session. You MUST run \`/adev:work\` to classify this task before editing source files. If this is a bug fix, invoke \`/adev:debug\`. If this is exploratory, run \`/adev:standalone\` to disable enforcement for this session."
     MSG_JSON=$(printf '%s' "$STOP_MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || printf '"%s"' "$STOP_MSG")
     MSG_JSON="${MSG_JSON:1:${#MSG_JSON}-2}"
     cat <<JSONEOF
@@ -136,7 +133,7 @@ JSONEOF
     exit 0
     ;;
   block)
-    MESSAGE="Blocked: Spec exists at \`${SPEC_PATH}\` but no plan found. Run \`/adev:plan --spec ${SPEC_PATH}\` before editing."
+    MESSAGE="Blocked: No active lifecycle session. Run \`/adev:work\` to enter the lifecycle before editing source files."
     MSG_JSON=$(printf '%s' "$MESSAGE" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || printf '"%s"' "$MESSAGE")
     MSG_JSON="${MSG_JSON:1:${#MSG_JSON}-2}"
     cat <<JSONEOF

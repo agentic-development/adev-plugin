@@ -80,8 +80,8 @@ describe("lifecycle-gate integration", () => {
     cleanupTempDir(tmp);
   });
 
-  // Module with plan passes
-  it("module with existing plan passes even at block level", () => {
+  // Source file blocked at block level even when module has plan (no execution state)
+  it("blocks source file at block level even if module has plan (no execution state)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: app\n    paths:\n      - src/\n");
@@ -92,7 +92,7 @@ describe("lifecycle-gate integration", () => {
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
-    assert.equal(result.exitCode, 0);
+    assert.equal(result.exitCode, 2);
     cleanupTempDir(tmp);
   });
 
