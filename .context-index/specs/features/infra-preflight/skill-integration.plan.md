@@ -85,6 +85,10 @@ Tasks 1-7 modify independent files with no shared dependencies. They can all run
 
 ### Task 1: Add preflight step to implement SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=5
+**Rationale:** Well-specified mandatory skill integration with explicit behavioral contracts (Behaviors 1-8), single-file SKILL.md edit, and mechanical insertion pattern.
+
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -155,6 +159,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to implem
 
 ### Task 2: Add preflight step to validate SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=5
+**Rationale:** Well-specified mandatory skill integration with explicit placement and blocking message (Behaviors 9-10), single-file edit.
+
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -211,6 +219,10 @@ git commit -m "feat(validation): add infrastructure preflight step to validate S
 
 ### Task 3: Add --no-infra passthrough to build SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=5
+**Rationale:** Simplest task -- document --no-infra arg and ADEV_NO_INFRA passthrough, no preflight step to insert, single-file edit.
+
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -266,6 +278,10 @@ git commit -m "feat(strategic-planning): add --no-infra passthrough to build SKI
 ---
 
 ### Task 4: Add preflight step to write-test SKILL.md [specialist: none]
+
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=4
+**Rationale:** Well-specified with dispatch detection (ADEV_DISPATCHED_BY) and strategy-aware skip adding minor novelty over basic insertion.
 
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -324,6 +340,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to write-
 ---
 
 ### Task 5: Add preflight step to debug SKILL.md [specialist: none]
+
+**Routing:** auto-agent (score: 16/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=3
+**Rationale:** Three-tier resolution strategy (args > active plan > inference) with non-blocking advisory adds composition novelty, but all tiers are well-specified.
 
 **Charter capability:** Skill Integration (Conditional)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -395,6 +415,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to debug 
 
 ### Task 6: Add preflight step to eval SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=4
+**Rationale:** Layer-aware skip logic adds minor novelty; otherwise straightforward conditional skill integration with single-file edit.
+
 **Charter capability:** Skill Integration (Conditional)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -454,6 +478,10 @@ git commit -m "feat(validation): add infrastructure preflight step to eval SKILL
 ---
 
 ### Task 7: Add preflight step to recover SKILL.md [specialist: none]
+
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=4
+**Rationale:** Corrective context injection for infra root causes adds minor novelty; well-specified behavior with formatPreflightReport integration.
 
 **Charter capability:** Skill Integration (Conditional)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -515,6 +543,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to recove
 ---
 
 ### Task 8: Write comprehensive content-presence tests [specialist: none]
+
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=3
+**Rationale:** Test file follows specify-feature-binding.test.mjs golden sample pattern; cross-cutting assertions combine 7 skill checks but each is mechanical string matching.
 
 **Charter capability:** Skill Integration (Mandatory), Skill Integration (Conditional)
 **Depends on:** Task 1, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7

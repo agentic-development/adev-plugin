@@ -42,3 +42,9 @@ viz/dist/
 
 # Prototype artifacts (adev)
 .adev/
+
+# Claude Code worktrees (ephemeral agent workspaces)
+.claude/worktrees/
+
+# Lifecycle gate advisory counter (runtime state)
+.context-index/.advisory-counter
