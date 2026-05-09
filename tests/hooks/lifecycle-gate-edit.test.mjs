@@ -76,11 +76,10 @@ describe("lifecycle-gate-edit hook", () => {
     cleanupTempDir(tmp);
   });
 
-  it("exits 2 when level=block and module has specs but no plan", () => {
+  it("exits 2 when level=block and no execution state (source file)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
-    writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: cli\n    paths:\n      - src/cli/\n");
-    writeFixture(tmp, ".context-index/specs/features/cli/something.spec.md", "# spec");
+    writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     writeFixture(tmp, "src/cli/main.mjs", "");
     const result = runHook("lifecycle-gate-edit.sh", {
       cwd: tmp,
@@ -90,7 +89,7 @@ describe("lifecycle-gate-edit hook", () => {
     cleanupTempDir(tmp);
   });
 
-  it("exits 0 when module has a plan file", () => {
+  it("exits 2 when level=block even if module has plan (no execution state)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: cli\n    paths:\n      - src/cli/\n");
@@ -101,7 +100,7 @@ describe("lifecycle-gate-edit hook", () => {
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/cli/main.mjs` }
     });
-    assert.equal(result.exitCode, 0);
+    assert.equal(result.exitCode, 2);
     cleanupTempDir(tmp);
   });
 
@@ -115,14 +114,13 @@ describe("lifecycle-gate-edit hook", () => {
     cleanupTempDir(tmp);
   });
 
-  it("exits 0 when module has no specs (untracked code)", () => {
+  it("exits 0 for excluded files (README.md)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
-    writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: cli\n    paths:\n      - src/cli/\n");
-    writeFixture(tmp, "src/cli/main.mjs", "");
+    writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-edit.sh", {
       cwd: tmp,
-      env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/cli/main.mjs` }
+      env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/README.md` }
     });
     assert.equal(result.exitCode, 0);
     cleanupTempDir(tmp);
