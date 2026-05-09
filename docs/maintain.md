@@ -22,7 +22,7 @@ The maintain phase covers ongoing project health. These skills help you track wo
 
 Use `create "<title>"` to file an issue, `ready` to see actionable items, or `list --epic <id>` to filter.
 
-See the [Skill Reference](skills.md) for full details on commands and filtering options.
+See the [Skill Reference](skill-reference.md) for full details on commands and filtering options.
 
 ## Status
 
@@ -42,7 +42,7 @@ See the [Skill Reference](skills.md) for full details on commands and filtering 
 
 Use `--charter <name>` for a specific feature, `--milestone <name>` for milestone progress, or `--backlog` for all pending work.
 
-See the [Skill Reference](skills.md) for full details on query options and output formats.
+See the [Skill Reference](skill-reference.md) for full details on query options and output formats.
 
 ## Hygiene
 
@@ -62,7 +62,7 @@ See the [Skill Reference](skills.md) for full details on query options and outpu
 
 Use `--check <type>` for a single audit pass (e.g., `--check drift`), or `--fix` to auto-fix issues where possible.
 
-See the [Skill Reference](skills.md) for full details on audit passes and auto-fix capabilities.
+See the [Skill Reference](skill-reference.md) for full details on audit passes and auto-fix capabilities.
 
 ## Retro
 
@@ -82,7 +82,7 @@ See the [Skill Reference](skills.md) for full details on audit passes and auto-f
 
 Use `--since <date>` to set the analysis window, or `--charter <module>` to scope to a specific feature.
 
-See the [Skill Reference](skills.md) for full details on data sources and metric computation.
+See the [Skill Reference](skill-reference.md) for full details on data sources and metric computation.
 
 ## Codehealth
 
@@ -102,7 +102,7 @@ See the [Skill Reference](skills.md) for full details on data sources and metric
 
 Use `--module <slug>` to restrict to a single module, or `--check <name>` for specific checks (e.g., `--check dead-exports,orphan-files`).
 
-See the [Skill Reference](skills.md) for full details on checks and severity tiers.
+See the [Skill Reference](skill-reference.md) for full details on checks and severity tiers.
 
 ## Repomap
 
@@ -122,7 +122,7 @@ See the [Skill Reference](skills.md) for full details on checks and severity tie
 
 Use `--path <dir>` to map a specific directory, or `--depth <n>` to limit tree depth.
 
-See the [Skill Reference](skills.md) for full details on language support and output format.
+See the [Skill Reference](skill-reference.md) for full details on language support and output format.
 
 ## Reconcile
 
@@ -142,7 +142,7 @@ See the [Skill Reference](skills.md) for full details on language support and ou
 
 Use `--check <type>` for a specific reconciliation check, `--batch` to apply fixes without confirmation, or `--dry-run` to preview changes.
 
-See the [Skill Reference](skills.md) for full details on detection checks and repair actions.
+See the [Skill Reference](skill-reference.md) for full details on detection checks and repair actions.
 
 ## Sample
 
@@ -162,4 +162,4 @@ See the [Skill Reference](skills.md) for full details on detection checks and re
 
 Use `--pattern <name>` for a specific pattern, `--from <file>` to promote a file directly, or `--refresh` to re-score and update existing samples.
 
-See the [Skill Reference](skills.md) for full details on discovery, scoring, and curation.
+See the [Skill Reference](skill-reference.md) for full details on discovery, scoring, and curation.

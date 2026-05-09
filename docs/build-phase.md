@@ -26,7 +26,7 @@ You can also plan an entire feature (`--feature <module>`), a release (`--releas
 
 **Output:** A plan file at `.context-index/specs/features/<module>/<spec>.plan.md` with task breakdown, file lists, context packets, and dependency ordering.
 
-See the [Skill Reference](skills.md) for full details on modes and task structure.
+See the [Skill Reference](skill-reference.md) for full details on modes and task structure.
 
 ## Route
 
@@ -46,7 +46,7 @@ See the [Skill Reference](skills.md) for full details on modes and task structur
 
 **Output:** Routing annotations added to the plan file with scores and recommendations per task.
 
-See the [Skill Reference](skills.md) for full details on the scoring matrix and routing modes.
+See the [Skill Reference](skill-reference.md) for full details on the scoring matrix and routing modes.
 
 ## Write Test
 
@@ -66,7 +66,7 @@ See the [Skill Reference](skills.md) for full details on the scoring matrix and 
 
 **Output:** Failing test files with immutable handoff blocks that `/adev:implement` uses to verify the GREEN phase.
 
-See the [Skill Reference](skills.md) for full details on invocation modes and tamper detection.
+See the [Skill Reference](skill-reference.md) for full details on invocation modes and tamper detection.
 
 ## Implement
 
@@ -88,7 +88,7 @@ You can re-run a single task with `--task <N>` or preview routing decisions with
 
 **Output:** Implemented code with passing tests, commit trailers linking back to specs and tasks, and updated plan checkboxes showing completion status.
 
-See the [Skill Reference](skills.md) for full details on the TDD mandate, review stages, and specialist routing.
+See the [Skill Reference](skill-reference.md) for full details on the TDD mandate, review stages, and specialist routing.
 
 ### TDD Workflow
 
@@ -120,7 +120,7 @@ Use `--full` to start from review, or `--phase <name>` to build all specs in a m
 
 **Output:** A fully implemented and validated feature with all lifecycle artifacts updated.
 
-See the [Skill Reference](skills.md) for full details on pipeline steps and resume behavior.
+See the [Skill Reference](skill-reference.md) for full details on pipeline steps and resume behavior.
 
 ## Moving to Validation
 

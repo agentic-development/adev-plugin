@@ -24,7 +24,7 @@ You can also scope to an existing module (`--module <name>`) or seed from a blue
 
 **Output:** A Feature Charter at `.context-index/specs/features/<name>/charter.md` containing scope boundaries, a capability map, and success criteria.
 
-See the [Skill Reference](skills.md) for full details on arguments and behavior.
+See the [Skill Reference](skill-reference.md) for full details on arguments and behavior.
 
 ## Specify
 
@@ -44,7 +44,7 @@ See the [Skill Reference](skills.md) for full details on arguments and behavior.
 
 **Output:** A Live Spec at `.context-index/specs/features/<name>/<spec>.spec.md` with a behavioral contract, acceptance criteria, and error cases.
 
-See the [Skill Reference](skills.md) for full details on arguments and modes.
+See the [Skill Reference](skill-reference.md) for full details on arguments and modes.
 
 ## Review Specs
 
@@ -66,7 +66,7 @@ You can target a specific spec (`--spec <path>`) or all specs under a charter (`
 
 **Output:** A review file (`.review.md`) adjacent to the spec with a PASS, PASS_WITH_NOTES, or BLOCK verdict from each reviewer.
 
-See the [Skill Reference](skills.md) for full details on the review process and specialist profiles.
+See the [Skill Reference](skill-reference.md) for full details on the review process and specialist profiles.
 
 ## Prototype
 
@@ -86,7 +86,7 @@ See the [Skill Reference](skills.md) for full details on the review process and 
 
 **Output:** UI mockups and flow diagrams served at localhost, with the option to persist or discard.
 
-See the [Skill Reference](skills.md) for full details on tiers and framework options.
+See the [Skill Reference](skill-reference.md) for full details on tiers and framework options.
 
 ## Moving to Build
 

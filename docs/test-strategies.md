@@ -2,7 +2,7 @@
 
 # Test Strategies
 
-Guide for configuring domain-specific TDD in your project. Test strategies customize how [`/adev:plan`](skills.md) and [`/adev:write-test`](skills.md) handle the RED-GREEN-REFACTOR cycle for different types of work.
+Guide for configuring domain-specific TDD in your project. Test strategies customize how [`/adev:plan`](skill-reference.md) and [`/adev:write-test`](skill-reference.md) handle the RED-GREEN-REFACTOR cycle for different types of work.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ Before reading this guide, you should be familiar with:
 
 - [Core Concepts](concepts.md) — the four pillars and context-first approach
 - [Build Phase workflow](build-phase.md) — how planning, implementation, and testing fit together
-- The planning and testing skills: [`/adev:plan`](skills.md), [`/adev:write-test`](skills.md), [`/adev:implement`](skills.md)
+- The planning and testing skills: [`/adev:plan`](skill-reference.md), [`/adev:write-test`](skill-reference.md), [`/adev:implement`](skill-reference.md)
 
 You should have completed at least one feature build using the default `unit` strategy before customizing test strategies.
 
@@ -31,7 +31,7 @@ Traditional TDD assumes unit tests: write a failing test, implement the code, te
 | A UI component | A screenshot comparison | Visual diff from baseline |
 | A deployment | A smoke health check | Service doesn't respond |
 
-Test strategies let [`/adev:write-test`](skills.md) follow the right rules for each domain, including domain-specific gaming detection (e.g., "testing a migration on an empty database" is the schema equivalent of "using toBeTruthy() as the sole assertion").
+Test strategies let [`/adev:write-test`](skill-reference.md) follow the right rules for each domain, including domain-specific gaming detection (e.g., "testing a migration on an empty database" is the schema equivalent of "using toBeTruthy() as the sole assertion").
 
 ## The 9 strategies
 
@@ -63,9 +63,9 @@ The framework auto-detects strategies from your project structure:
 - `serverless.yml`, `pulumi.yaml`, `firebase.json` in the repo root &rarr; `integration`
 - Files named `*-adapter.*`, `*-client.*`, `*-gateway.*`, `*-connector.*` &rarr; `integration` (medium confidence)
 
-When [`/adev:plan`](skills.md) decomposes a spec into tasks, it checks each task's file paths and assigns the strategy automatically. A migration task gets `schema`, a component task gets `visual`, an API task gets `unit`.
+When [`/adev:plan`](skill-reference.md) decomposes a spec into tasks, it checks each task's file paths and assigns the strategy automatically. A migration task gets `schema`, a component task gets `visual`, an API task gets `unit`.
 
-**You don't need to change anything.** Just run `/adev:plan` and [`/adev:implement`](skills.md) as usual — strategy detection happens transparently.
+**You don't need to change anything.** Just run `/adev:plan` and [`/adev:implement`](skill-reference.md) as usual — strategy detection happens transparently.
 
 ### Option 2: Manifest declaration (explicit control)
 
@@ -118,7 +118,7 @@ This overrides both manifest declarations and auto-detection for all tasks in th
 
 ## Priority chain
 
-When [`/adev:plan`](skills.md) assigns a strategy to a task, it follows this priority (highest wins):
+When [`/adev:plan`](skill-reference.md) assigns a strategy to a task, it follows this priority (highest wins):
 
 1. **Spec-declared** — `test_strategy` in the spec frontmatter (confidence: high)
 2. **Manifest** — first matching `test_strategies` entry by path glob (confidence: high)
@@ -129,7 +129,7 @@ Every assignment logs its source so you can audit why a task got a particular st
 
 ## For new projects
 
-Run [`/adev:init`](skills.md). The manifest template includes a commented `test_strategies` section. Uncomment the entries that match your stack.
+Run [`/adev:init`](skill-reference.md). The manifest template includes a commented `test_strategies` section. Uncomment the entries that match your stack.
 
 If your project is purely business logic (Node.js API, Python service, Go CLI), you don't need to configure anything — `unit` is the default and covers standard TDD.
 
@@ -164,7 +164,7 @@ When any task uses a non-unit strategy, the plan includes a Strategy Summary:
 
 ### In `/adev:write-test`
 
-Instead of always using the 9 hardcoded gaming patterns and mocking boundary rules, [`/adev:write-test`](skills.md) loads the profile for the assigned strategy. For a `schema` task:
+Instead of always using the 9 hardcoded gaming patterns and mocking boundary rules, [`/adev:write-test`](skill-reference.md) loads the profile for the assigned strategy. For a `schema` task:
 
 - **RED means:** migration assertion script exits non-zero because the schema change doesn't exist yet
 - **Gaming detection catches:** testing on empty database, migration-runs-only assertions, missing rollback verification
@@ -201,7 +201,7 @@ Queue consumer         →   AWS SQS                  →   Message parsing,
 
 ### Step 1 — Declare infrastructure requirements in the spec
 
-During [`/adev:specify`](skills.md), Step 4.5 prompts for infrastructure requirements when a capability touches external systems. The answers are written into the spec frontmatter:
+During [`/adev:specify`](skill-reference.md), Step 4.5 prompts for infrastructure requirements when a capability touches external systems. The answers are written into the spec frontmatter:
 
 ```yaml
 infra_requirements:
@@ -305,7 +305,7 @@ Add the variables listed in `infra_requirements.systems[].env_vars` as CI secret
 
 ### Gaming violations that block the PR
 
-[`/adev:validate`](skills.md) blocks the PR if any of these patterns are detected in integration test files:
+[`/adev:validate`](skill-reference.md) blocks the PR if any of these patterns are detected in integration test files:
 
 | Pattern | What triggers it | Why it's a violation |
 |---------|-----------------|---------------------|

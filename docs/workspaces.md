@@ -12,7 +12,7 @@ Before reading this guide, you should be familiar with:
 
 - [Core Concepts](concepts.md) — the four pillars and context-first approach
 - [Getting Started Tutorial](getting-started.md) — building your first feature end-to-end
-- The lifecycle skills: [`/adev:brainstorm`](skills.md), [`/adev:specify`](skills.md), [`/adev:plan`](skills.md)
+- The lifecycle skills: [`/adev:brainstorm`](skill-reference.md), [`/adev:specify`](skill-reference.md), [`/adev:plan`](skill-reference.md)
 
 You should have completed `/adev:init` in at least one repository before setting up a workspace.
 
@@ -53,7 +53,7 @@ The workspace is **optional** for each repo. A repo can exist inside a workspace
 
 If your repos already exist without adev, do this in order:
 
-1. **Initialize each repo first.** `cd` into each repo and run [`/adev:init`](skills.md) — this creates the repo's own `.context-index/`.
+1. **Initialize each repo first.** `cd` into each repo and run [`/adev:init`](skill-reference.md) — this creates the repo's own `.context-index/`.
 2. **Then initialize the workspace.** Return to the parent directory and run `/adev:init --workspace` — auto-discovery picks up the repos you just initialized.
 
 If you run `/adev:init --workspace` first, auto-discovery finds nothing (no repos have adev context yet) and you'll have to register them manually later.
@@ -147,7 +147,7 @@ depends-on: ["@dbt-models/customer-ltv"]
 
 ### Cross-repo reference validation
 
-When you run [`/adev:review-specs`](skills.md), cross-repo references are automatically checked:
+When you run [`/adev:review-specs`](skill-reference.md), cross-repo references are automatically checked:
 
 - If the referenced spec can't be found → warning
 - If the referenced spec is still `draft` → warning ("may not be ready")
@@ -157,7 +157,7 @@ These are advisory. They help you catch broken references early without enforcin
 
 ### Dependency-aware planning
 
-When you run [`/adev:plan --phase <name>`](skills.md) in a workspace, specs are planned in **dependency order** — upstream repos first:
+When you run [`/adev:plan --phase <name>`](skill-reference.md) in a workspace, specs are planned in **dependency order** — upstream repos first:
 
 ```
 Phase v1 planning:
@@ -168,7 +168,7 @@ Phase v1 planning:
 
 ### Workspace-level product bootstrap
 
-When you create the **first charter at the workspace root**, [`/adev:brainstorm`](skills.md) automatically bootstraps a workspace `product.md`. It synthesises a project identity from the registered repos' constitutions and asks you for a one-sentence workspace vision:
+When you create the **first charter at the workspace root**, [`/adev:brainstorm`](skill-reference.md) automatically bootstraps a workspace `product.md`. It synthesises a project identity from the registered repos' constitutions and asks you for a one-sentence workspace vision:
 
 ```
 This is the first workspace-level charter. The workspace 'data-platform' currently
@@ -183,7 +183,7 @@ The workspace `product.md` Module Map tracks **workspace-level charters only** �
 
 ### Release and milestone planning
 
-At the workspace root, [`/adev:plan --release`](skills.md) and `/adev:plan --milestone` work across all repos:
+At the workspace root, [`/adev:plan --release`](skill-reference.md) and `/adev:plan --milestone` work across all repos:
 
 ```
 /adev:plan --release v1
@@ -202,7 +202,7 @@ Workspace repo-to-repo edges are inherited at the feature level (all features in
 
 ### Running inside a registered repo
 
-When you run [`/adev:brainstorm`](skills.md) or [`/adev:plan`](skills.md) inside a registered repo (not at the workspace root), behavior is **repo-scoped** — identical to single-repo mode. You'll see a one-line advisory:
+When you run [`/adev:brainstorm`](skill-reference.md) or [`/adev:plan`](skill-reference.md) inside a registered repo (not at the workspace root), behavior is **repo-scoped** — identical to single-repo mode. You'll see a one-line advisory:
 
 ```
 (Advisory: running repo-scoped inside workspace 'data-platform'. For
@@ -211,7 +211,7 @@ workspace-level planning, cd to /path/to/data-platform and re-run.)
 
 ### Workspace status
 
-Run [`/adev:status`](skills.md) at the workspace root to see everything:
+Run [`/adev:status`](skill-reference.md) at the workspace root to see everything:
 
 ```
 Workspace: data-platform
@@ -245,10 +245,10 @@ A platform repo (infrastructure, CI, shared tooling) and several service repos. 
 
 ## What workspaces do NOT do
 
-- **No automatic cross-repo implementation.** [`/adev:implement`](skills.md) still runs in one repo at a time. When a cross-repo plan is ready, you move between repos yourself. (Auto-switching is planned for a future phase.)
+- **No automatic cross-repo implementation.** [`/adev:implement`](skill-reference.md) still runs in one repo at a time. When a cross-repo plan is ready, you move between repos yourself. (Auto-switching is planned for a future phase.)
 - **No workspace-level constitution.** Each repo keeps its own constitution and coding standards. The workspace doesn't override them.
 - **No shared issue tracking.** Each repo has its own issue board. Epic-board sync in workspace mode is deferred — release plans and milestones are written to workspace `product.md` only. Cross-repo issue linking is planned for a future phase.
-- **No cross-repo validation.** [`/adev:validate`](skills.md) checks one repo at a time. Interface compatibility checks across repos are planned for a future phase.
+- **No cross-repo validation.** [`/adev:validate`](skill-reference.md) checks one repo at a time. Interface compatibility checks across repos are planned for a future phase.
 - **No git magic.** adev doesn't manage your git topology — whether your repos are separate clones, submodules, or subdirs is entirely your choice.
 
 ## Frequently asked questions
