@@ -67,10 +67,14 @@ Tiered prototype generation from Feature Charters. Generates wireframe, mockup, 
 
 ### Fixes
 
+- **Ghost validation prevention (issue-184)** — Check 1.5 now verifies files are git-tracked (not just existing on disk) and uses the correct two-argument `verifyManifest(manifest, projectRoot)` API with SHA-256 comparison. Check 2 requires explicit Read tool calls before citing file:line references, with anti-fabrication rule preventing inferred citations.
+- **Review-specs file-sha ordering (issue-187)** — Step 6 writes `file-sha: <PENDING>` placeholder, new Step 6b stamps final SHA after Step 7 updates the spec status. Fixes false hash drift on next planning invocation.
 - **Plan Quality Gates checkbox bug** — `getPlanProgress` now stops at `## Quality Gates` heading boundary instead of attributing QG checkboxes to the last task. All 63 existing plans migrated from checkboxes to plain bullets in QG sections.
 - **Lifecycle gate hook scripts** — committed missing hook scripts for lifecycle enforcement
 - **Brainstorm prototype offer** — added Step 3b to checklist so prototype offer is not skipped
 - **Heuristics in prototype** — agent proposes heuristics instead of asking user to recall them
+- **ADR 0005 title** — fixed header incorrectly labelled as "ADR 0003"
+- **Model IDs** — updated stale `claude-opus-4-6` → `claude-opus-4-7` in platform-context, init skill, and cross-cutting spec fallback tables
 
 ### Commit Trailers
 
