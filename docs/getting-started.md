@@ -28,9 +28,9 @@ npx @adev-org/adev-cli install
 
 The installer prompts you to select your AI coding assistant:
 
-- **Claude Code** (default) — Registers as a Claude Code plugin with skills and hooks
-- **OpenCode** — Generates an AGENTS.md configuration file
-- **Codex** — Generates an AGENTS.md configuration file
+- **Claude Code** (default, fully supported) — Registers as a Claude Code plugin with skills and hooks
+- **OpenCode** (alpha) — Generates an AGENTS.md configuration file
+- **Codex** (alpha) — Generates an AGENTS.md configuration file
 
 The CLI registers the plugin, scaffolds a minimal `.context-index/` directory, and sets up git hooks for provenance tracking.
 

@@ -223,17 +223,17 @@ describe('Cross-links to reference pages', () => {
   it('workspaces.md should link to skill reference for mentioned skills', () => {
     const content = readFileSync(join(DOCS_DIR, 'workspaces.md'), 'utf-8');
     // Skills mentioned: brainstorm, specify, review-specs, plan, status
-    assert.ok(content.includes('skills.md'), 'workspaces.md should link to skill reference');
+    assert.ok(content.includes('skill-reference.md'), 'workspaces.md should link to skill reference');
   });
 
   it('governance.md should link to skill reference for mentioned skills', () => {
     const content = readFileSync(join(DOCS_DIR, 'governance.md'), 'utf-8');
-    assert.ok(content.includes('skills.md'), 'governance.md should link to skill reference');
+    assert.ok(content.includes('skill-reference.md'), 'governance.md should link to skill reference');
   });
 
   it('test-strategies.md should link to skill reference for mentioned skills', () => {
     const content = readFileSync(join(DOCS_DIR, 'test-strategies.md'), 'utf-8');
-    assert.ok(content.includes('skills.md'), 'test-strategies.md should link to skill reference');
+    assert.ok(content.includes('skill-reference.md'), 'test-strategies.md should link to skill reference');
   });
 });
 

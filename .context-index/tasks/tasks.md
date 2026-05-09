@@ -62,6 +62,7 @@
 | epic-58 | Standalone Invocation | open | .context-index/specs/features/prototype-brainstorm/standalone-invocation.plan.md |  | 2026-05-08T10:59:01.272Z | 2026-05-08T10:59:01.272Z |
 | epic-59 | Brainstorm Integration | open | .context-index/specs/features/prototype-brainstorm/brainstorm-integration.plan.md |  | 2026-05-08T13:15:14.164Z | 2026-05-08T13:15:14.164Z |
 | epic-60 | Visual Reference Capture | open | .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md |  | 2026-05-08T13:59:18.739Z | 2026-05-08T13:59:18.739Z |
+| epic-61 | Foundation & Onboarding Documentation | closed | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | Reconciled: validated (2026-05-09) | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
 
 ## Issues
 
@@ -432,3 +433,9 @@
 | issue-365 | Session tracker and summary generation | open | 2 | task | epic-60 | .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md | 3 |  | issue-364 |  |  | 2026-05-08T13:59:18.765Z | 2026-05-08T13:59:18.782Z |
 | issue-366 | Unit tests for visual-references library | open | 2 | task | epic-60 | .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md | 4 |  | issue-365 |  |  | 2026-05-08T13:59:18.783Z | 2026-05-08T13:59:18.796Z |
 | issue-367 | SKILL.md integration — visual reference capture in prototype loop | open | 2 | task | epic-60 | .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md | 5 |  | issue-366 |  |  | 2026-05-08T13:59:18.797Z | 2026-05-08T13:59:18.813Z |
+| issue-368 | Write docs/README.md — Table of Contents | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 1 |  |  | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
+| issue-369 | Write docs/concepts.md — Four Pillars Overview | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 2 |  |  | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
+| issue-370 | Write docs/installation.md — Setup Guide | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 3 |  |  | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
+| issue-371 | Write docs/getting-started.md — Lifecycle Tutorial | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 4 |  |  | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
+| issue-372 | Remove docs/quickstart.md | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 5 |  | issue-371 | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
+| issue-373 | Verify cross-page links and add next-page navigation | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 6 |  | issue-368,issue-369,issue-370,issue-371 | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |

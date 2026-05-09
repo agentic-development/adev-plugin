@@ -49,7 +49,7 @@ describe('docs/design-phase.md — Design Phase Guide', () => {
 
   it('should link to skill reference entries', () => {
     const content = readFileSync(join(DOCS_DIR, 'design-phase.md'), 'utf-8');
-    assert.ok(content.includes('skills.md'), 'Missing link to skill reference');
+    assert.ok(content.includes('skill-reference.md'), 'Missing link to skill reference');
   });
 
   it('should link to build-phase.md as next phase', () => {
@@ -95,7 +95,7 @@ describe('docs/build-phase.md — Build Phase Guide', () => {
 
   it('should link to skill reference entries', () => {
     const content = readFileSync(join(DOCS_DIR, 'build-phase.md'), 'utf-8');
-    assert.ok(content.includes('skills.md'), 'Missing link to skill reference');
+    assert.ok(content.includes('skill-reference.md'), 'Missing link to skill reference');
   });
 
   it('should link to validate-debug.md as next phase', () => {
@@ -139,7 +139,7 @@ describe('docs/validate-debug.md — Validate & Debug Guide', () => {
 
   it('should link to skill reference entries', () => {
     const content = readFileSync(join(DOCS_DIR, 'validate-debug.md'), 'utf-8');
-    assert.ok(content.includes('skills.md'), 'Missing link to skill reference');
+    assert.ok(content.includes('skill-reference.md'), 'Missing link to skill reference');
   });
 
   it('should link to maintain.md as next phase', () => {
@@ -195,7 +195,7 @@ describe('docs/maintain.md — Maintain Phase Guide', () => {
 
   it('should link to skill reference entries', () => {
     const content = readFileSync(join(DOCS_DIR, 'maintain.md'), 'utf-8');
-    assert.ok(content.includes('skills.md'), 'Missing link to skill reference');
+    assert.ok(content.includes('skill-reference.md'), 'Missing link to skill reference');
   });
 });
 

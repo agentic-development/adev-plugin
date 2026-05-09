@@ -11,9 +11,9 @@ Before you begin, ensure you have:
 - **Node.js** (v18 or later) and **npm**
 - **Git** (any recent version)
 - **An AI coding assistant** — one of:
-  - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (default and recommended)
-  - OpenCode
-  - Codex
+  - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (default and recommended — fully supported)
+  - OpenCode (alpha)
+  - Codex (alpha)
 
 ## Install the Plugin
 
@@ -25,9 +25,9 @@ npx @adev-org/adev-cli install
 
 The CLI will prompt you to select your AI coding assistant. Choose the one you use:
 
-- **Claude Code** — Registers as a Claude Code plugin with skills and hooks
-- **OpenCode** — Generates an AGENTS.md file for OpenCode compatibility
-- **Codex** — Generates an AGENTS.md file for Codex compatibility
+- **Claude Code** (fully supported) — Registers as a Claude Code plugin with skills and hooks
+- **OpenCode** (alpha) — Generates an AGENTS.md file. Basic lifecycle skills work, but hooks and session capture are not yet available.
+- **Codex** (alpha) — Generates an AGENTS.md file. Basic lifecycle skills work, but hooks and session capture are not yet available.
 
 The installer registers the plugin, scaffolds a minimal `.context-index/` directory, and configures git hooks for provenance tracking.
 
