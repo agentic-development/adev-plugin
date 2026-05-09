@@ -1,0 +1,228 @@
+{
+  "project": "adev-migrations-eval",
+  "domain": "data-migration",
+  "branches": {
+    "plain_claude": {
+      "commit": "40fc17d"
+    },
+    "adev_built": {
+      "commit": "a65fd22"
+    }
+  },
+  "dimensions": {
+    "code_quality": {
+      "plain_claude": {
+        "score": 90,
+        "metrics": {
+          "files_changed": 15,
+          "lines_added": 990,
+          "lines_removed": 61,
+          "lines_per_file": 66,
+          "score": 90
+        },
+        "blended_score": 88
+      },
+      "adev_built": {
+        "score": 80,
+        "metrics": {
+          "files_changed": 26,
+          "lines_added": 1741,
+          "lines_removed": 29,
+          "lines_per_file": 67,
+          "score": 80
+        },
+        "blended_score": 80
+      }
+    },
+    "test_coverage": {
+      "plain_claude": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "test_file_count": 8,
+          "test_case_count": 38,
+          "tests_added": 22,
+          "baseline_test_count": 16
+        }
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "test_file_count": 9,
+          "test_case_count": 46,
+          "tests_added": 30,
+          "baseline_test_count": 16
+        }
+      }
+    },
+    "bug_handling": {
+      "plain_claude": {
+        "score": 75,
+        "metrics": {
+          "status": "fixed_incidentally",
+          "score": 75
+        }
+      },
+      "adev_built": {
+        "score": 75,
+        "metrics": {
+          "status": "fixed_incidentally",
+          "score": 75
+        }
+      }
+    },
+    "architectural_coherence": {
+      "plain_claude": {
+        "score": 93,
+        "metrics": {
+          "score": 93,
+          "directory_structure": true,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 14,
+          "files_in_new_dirs": 1,
+          "source_files_evaluated": 15
+        },
+        "blended_score": 90
+      },
+      "adev_built": {
+        "score": 61,
+        "metrics": {
+          "score": 61,
+          "directory_structure": false,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 14,
+          "files_in_new_dirs": 9,
+          "source_files_evaluated": 23
+        },
+        "blended_score": 65
+      }
+    },
+    "commit_hygiene": {
+      "plain_claude": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "commit_count": 2,
+          "atomic": true,
+          "has_trailers": false,
+          "trailers_ratio": 0
+        },
+        "blended_score": 84
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "commit_count": 7,
+          "atomic": true,
+          "has_trailers": true,
+          "trailers_ratio": 71
+        },
+        "blended_score": 94
+      }
+    },
+    "spec_compliance": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "plain-claude has no specs by design"
+        }
+      },
+      "adev_built": {
+        "score": 50,
+        "metrics": {
+          "score": 50,
+          "status": "partial",
+          "context_index_exists": true,
+          "has_specs": true,
+          "has_plans": false,
+          "has_build_state": false
+        }
+      }
+    },
+    "cost": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "no cost metadata available"
+        }
+      },
+      "adev_built": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "no cost metadata available"
+        }
+      }
+    }
+  },
+  "composite": {
+    "plain_claude": 88,
+    "adev_built": 83
+  },
+  "diff_summary": {
+    "plain_claude": {
+      "files_changed": 15,
+      "lines_added": 990,
+      "lines_removed": 61
+    },
+    "adev_built": {
+      "files_changed": 26,
+      "lines_added": 1741,
+      "lines_removed": 29
+    }
+  },
+  "bug_handling": {
+    "plain_claude": "fixed_incidentally",
+    "adev_built": "fixed_incidentally"
+  },
+  "generated_at": "2026-05-07T00:46:58.578Z",
+  "llm_judge": {
+    "assignment": {
+      "A": "adev-built",
+      "B": "plain-claude"
+    },
+    "plain_claude": {
+      "naming_consistency": {
+        "score": 85,
+        "reasoning": "Follows project conventions well; snake_case files, function names match existing patterns (compute_diffs, load_output), config additions use existing YAML structure."
+      },
+      "directory_structure": {
+        "score": 85,
+        "reasoning": "Files placed logically: validation.py under legacy/, new dbt model alongside existing models, separate incremental model file is a reasonable approach."
+      },
+      "commit_message_quality": {
+        "score": 60,
+        "reasoning": "Two commits with the main one being a generic 'feat: implement all TODO features', plus a separate bug fix commit showing some awareness of atomic changes."
+      },
+      "overall_code_quality": {
+        "score": 84,
+        "reasoning": "Well-structured HTML dashboard with responsive card layout, clean dbt SQL with CTEs, separate incremental model preserves backward compatibility; validation module is self-contained."
+      }
+    },
+    "adev_built": {
+      "naming_consistency": {
+        "score": 82,
+        "reasoning": "Mostly follows conventions; function names are descriptive (find_dbt_models, map_sources, compute_diff), but some inconsistency between module naming approaches."
+      },
+      "directory_structure": {
+        "score": 70,
+        "reasoning": "Source files placed correctly, but validation/ as a new package with __init__.py and rules.yaml adds directory depth; .context-index/ specs add 9 new directories."
+      },
+      "commit_message_quality": {
+        "score": 85,
+        "reasoning": "Per-feature commits with clear conventional prefixes (feat(reconciliation), feat(deprecation), feat(incremental)), good granularity."
+      },
+      "overall_code_quality": {
+        "score": 80,
+        "reasoning": "Good implementation overall; validation uses YAML rules for extensibility, deprecation report has thorough mapping logic, but incremental loading modifies existing stg_orders rather than adding a separate model."
+      }
+    }
+  }
+}

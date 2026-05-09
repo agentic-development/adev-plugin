@@ -112,16 +112,16 @@ Create the `/adev:vision` skill as a markdown-based SKILL.md that guides product
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] Interview pattern asks one question at a time
-  - [ ] Reads constitution, product.md, and all existing charters before proposing
-  - [ ] Writes Milestones section to product.md with correct structure
-  - [ ] Creates epics with milestone field on issue board
-  - [ ] Does not duplicate epics on re-run (idempotent)
-  - [ ] `--refresh` mode updates existing milestones without full interview
-  - [ ] `--milestone <name>` focuses on single milestone
-  - [ ] Constitution amendments are proposed, not applied directly
-  - [ ] Missing charters are identified and suggested for brainstorm
-  - [ ] All quality gates pass (tests, lint, typecheck)
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - Interview pattern asks one question at a time
+  - Reads constitution, product.md, and all existing charters before proposing
+  - Writes Milestones section to product.md with correct structure
+  - Creates epics with milestone field on issue board
+  - Does not duplicate epics on re-run (idempotent)
+  - `--refresh` mode updates existing milestones without full interview
+  - `--milestone <name>` focuses on single milestone
+  - Constitution amendments are proposed, not applied directly
+  - Missing charters are identified and suggested for brainstorm
+  - All quality gates pass (tests, lint, typecheck)
+  - No constitutional violations introduced

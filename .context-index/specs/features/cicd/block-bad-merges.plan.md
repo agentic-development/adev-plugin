@@ -62,10 +62,10 @@
 
 After all tasks are complete:
 
-- [ ] Branch protection enabled on main branch
-- [ ] CI workflow required to pass before merge
-- [ ] Merge blocked when tests fail
-- [ ] Merge allowed when tests pass
+- Branch protection enabled on main branch
+- CI workflow required to pass before merge
+- Merge blocked when tests fail
+- Merge allowed when tests pass
 
 ---
 

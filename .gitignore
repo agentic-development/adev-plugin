@@ -39,3 +39,12 @@ viz/dist/
 .context-index/.reminder-counter
 .context-index/.session-tracking.jsonl
 .context-index/user-config
+
+# Prototype artifacts (adev)
+.adev/
+
+# Claude Code worktrees (ephemeral agent workspaces)
+.claude/worktrees/
+
+# Lifecycle gate advisory counter (runtime state)
+.context-index/.advisory-counter

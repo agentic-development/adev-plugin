@@ -1,6 +1,7 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { join } from "node:path";
 import { createTempDir, createTempGitRepo, cleanupTempDir, writeFixture, runHook } from "../helpers.mjs";
 
@@ -63,80 +64,109 @@ describe("merge-guard hook", () => {
   });
 
   it("advisory mode with ask policy", () => {
-    writeFixture(tempDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
+    const gitDir = createTempGitRepo({ branch: "main" });
+    try {
+      writeFixture(gitDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
 
-    const { exitCode, stderr } = runHook("merge-guard.sh", {
-      cwd: tempDir,
-      stdin: commandInput("git merge main"),
-    });
-    assert.equal(exitCode, 0);
-    assert.ok(stderr.includes("Advisory"), "stderr should contain advisory message");
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git merge main"),
+      });
+      assert.equal(exitCode, 0);
+      assert.ok(stderr.includes("Advisory"), "stderr should contain advisory message");
+    } finally {
+      cleanupTempDir(gitDir);
+    }
   });
 
   it("blocks protected branch even with merge policy", () => {
-    writeFixture(tempDir, ".context-index/manifest.yaml", "merge_policy: merge\n");
+    const gitDir = createTempGitRepo({ branch: "main" });
+    try {
+      writeFixture(gitDir, ".context-index/manifest.yaml", "merge_policy: merge\n");
 
-    const { exitCode, stderr } = runHook("merge-guard.sh", {
-      cwd: tempDir,
-      stdin: commandInput("git push origin main"),
-    });
-    assert.equal(exitCode, 2);
-    assert.ok(stderr.includes("protected"), "stderr should mention protected branch");
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git push origin main"),
+      });
+      assert.equal(exitCode, 2);
+      assert.ok(stderr.includes("protected"), "stderr should mention protected branch");
+    } finally {
+      cleanupTempDir(gitDir);
+    }
   });
 
   it("respects custom protected_branches", () => {
-    writeFixture(
-      tempDir,
-      ".context-index/manifest.yaml",
-      [
-        "merge_policy: pr",
-        "protected_branches:",
-        "  - production",
-        "  - staging",
-      ].join("\n") + "\n"
-    );
+    const gitDir = createTempGitRepo({ branch: "main" });
+    try {
+      writeFixture(
+        gitDir,
+        ".context-index/manifest.yaml",
+        [
+          "merge_policy: pr",
+          "protected_branches:",
+          "  - production",
+          "  - staging",
+        ].join("\n") + "\n"
+      );
 
-    // Should block push to production
-    const blockResult = runHook("merge-guard.sh", {
-      cwd: tempDir,
-      stdin: commandInput("git push origin production"),
-    });
-    assert.equal(blockResult.exitCode, 2);
+      // Should block push to production
+      const blockResult = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git push origin production"),
+      });
+      assert.equal(blockResult.exitCode, 2);
 
-    // Should allow push to main (not in custom list)
-    const allowResult = runHook("merge-guard.sh", {
-      cwd: tempDir,
-      stdin: commandInput("git push origin main"),
-    });
-    assert.equal(allowResult.exitCode, 0);
+      // Should allow push to main (not in custom list)
+      const allowResult = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git push origin main"),
+      });
+      assert.equal(allowResult.exitCode, 0);
+    } finally {
+      cleanupTempDir(gitDir);
+    }
   });
 
   it("finds manifest from a subdirectory of the repo", () => {
-    writeFixture(tempDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
-    const subDir = join(tempDir, "packages", "core");
-    mkdirSync(subDir, { recursive: true });
+    const gitDir = createTempGitRepo({ branch: "main" });
+    try {
+      writeFixture(gitDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
+      const subDir = join(gitDir, "packages", "core");
+      mkdirSync(subDir, { recursive: true });
 
-    const { exitCode, stderr } = runHook("merge-guard.sh", {
-      cwd: subDir,
-      stdin: commandInput("git merge main"),
-    });
-    // ask policy => exit 0 with Advisory, proving the manifest was found
-    assert.equal(exitCode, 0);
-    assert.ok(stderr.includes("Advisory"), "should find manifest via walk-up and apply ask policy");
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: subDir,
+        stdin: commandInput("git merge main"),
+      });
+      // ask policy => exit 0 with Advisory, proving the manifest was found
+      assert.equal(exitCode, 0);
+      assert.ok(stderr.includes("Advisory"), "should find manifest via git repo root and apply ask policy");
+    } finally {
+      cleanupTempDir(gitDir);
+    }
   });
 
-  it("finds manifest from a workspace subdirectory", () => {
-    // Simulate workspace: manifest at workspace root, cwd is a nested repo dir
-    writeFixture(tempDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
-    const nestedRepo = join(tempDir, "repos", "my-app", "src");
-    mkdirSync(nestedRepo, { recursive: true });
+  it("does not leak parent repo manifest into child repo", () => {
+    // Simulate parent repo with manifest and a child submodule repo without one
+    const parentDir = createTempGitRepo({ branch: "main" });
+    try {
+      writeFixture(parentDir, ".context-index/manifest.yaml", "merge_policy: ask\n");
+      const childDir = join(parentDir, "tests", "evals", "child-repo");
+      mkdirSync(childDir, { recursive: true });
+      // Initialize child as its own git repo
+      execSync("git init && git checkout -b main", { cwd: childDir, stdio: "ignore" });
 
-    const { exitCode, stderr } = runHook("merge-guard.sh", {
-      cwd: nestedRepo,
-      stdin: commandInput("git merge main"),
-    });
-    assert.equal(exitCode, 0);
-    assert.ok(stderr.includes("Advisory"), "should find workspace-level manifest via walk-up");
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: childDir,
+        stdin: commandInput("git push origin main"),
+      });
+      // Child has no manifest, so default pr policy applies (blocks main push)
+      // But crucially, it does NOT pick up the parent's "ask" policy
+      assert.equal(exitCode, 2);
+      assert.ok(!stderr.includes("Advisory"), "should not inherit parent repo manifest");
+    } finally {
+      cleanupTempDir(parentDir);
+    }
   });
 
   it("blocks git checkout main && git merge", () => {

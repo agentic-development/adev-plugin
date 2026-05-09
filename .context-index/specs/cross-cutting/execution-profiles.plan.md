@@ -134,6 +134,6 @@ Order: data foundation → pure logic → env/workspace integration → adapter 
 
 ## Quality Gates
 
-- [ ] `npm test` passes
-- [ ] No new external dependencies
-- [ ] Version bumped in `package.json` + `.claude-plugin/plugin.json` (parity)
+- `npm test` passes
+- No new external dependencies
+- Version bumped in `package.json` + `.claude-plugin/plugin.json` (parity)

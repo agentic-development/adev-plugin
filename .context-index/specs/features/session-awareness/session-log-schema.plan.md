@@ -244,15 +244,15 @@ git commit -m "test(hooks): add schema validation tests for session-log-schema"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [x] Each line in `.session-tracking.jsonl` is valid JSON matching the schema
-  - [x] `tool` field is always present and non-empty
-  - [x] `files` field is always present (empty array when no files)
-  - [x] `timestamp` is ISO 8601 UTC truncated to seconds
-  - [x] `session_id` is omitted (not null) when not available
-  - [x] Hook exits 0 and writes nothing when provider is not "native"
-  - [x] File is created on first write without header or preamble
-  - [x] Existing `session-capture.sh` implementation matches this schema (or is updated to match)
-  - [x] No new dependencies added
-  - [x] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - Each line in `.session-tracking.jsonl` is valid JSON matching the schema
+  - `tool` field is always present and non-empty
+  - `files` field is always present (empty array when no files)
+  - `timestamp` is ISO 8601 UTC truncated to seconds
+  - `session_id` is omitted (not null) when not available
+  - Hook exits 0 and writes nothing when provider is not "native"
+  - File is created on first write without header or preamble
+  - Existing `session-capture.sh` implementation matches this schema (or is updated to match)
+  - No new dependencies added
+  - No constitutional violations introduced

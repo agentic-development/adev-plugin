@@ -120,18 +120,18 @@ Create the `/adev:roadmap` skill as a markdown-based SKILL.md that analyzes prod
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] Reads product.md milestones and all feature charters
-  - [ ] Builds cross-feature dependency graph from charter Dependencies tables
-  - [ ] Determines critical path through dependency chain
-  - [ ] Produces topologically sorted implementation order
-  - [ ] Includes risk assessment per feature
-  - [ ] Identifies parallelization opportunities
-  - [ ] Flags charters without specs as "specs needed"
-  - [ ] Saves roadmap to `.context-index/specs/roadmap/`
-  - [ ] Updates epic dependencies on issue board
-  - [ ] Detects and reports circular dependencies
-  - [ ] `--milestone` mode works for single milestone
-  - [ ] All quality gates pass (tests, lint, typecheck)
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - Reads product.md milestones and all feature charters
+  - Builds cross-feature dependency graph from charter Dependencies tables
+  - Determines critical path through dependency chain
+  - Produces topologically sorted implementation order
+  - Includes risk assessment per feature
+  - Identifies parallelization opportunities
+  - Flags charters without specs as "specs needed"
+  - Saves roadmap to `.context-index/specs/roadmap/`
+  - Updates epic dependencies on issue board
+  - Detects and reports circular dependencies
+  - `--milestone` mode works for single milestone
+  - All quality gates pass (tests, lint, typecheck)
+  - No constitutional violations introduced

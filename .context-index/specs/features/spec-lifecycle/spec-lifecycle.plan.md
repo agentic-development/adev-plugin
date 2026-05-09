@@ -415,7 +415,7 @@
 
 After all tasks are complete:
 
-- [ ] Tests pass: `npm test`
-- [ ] All 12 specs' acceptance criteria satisfied
-- [ ] No constitutional violations introduced
-- [ ] Charter Capability Map updated with correct statuses
+- Tests pass: `npm test`
+- All 12 specs' acceptance criteria satisfied
+- No constitutional violations introduced
+- Charter Capability Map updated with correct statuses

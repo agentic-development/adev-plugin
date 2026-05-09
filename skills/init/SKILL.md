@@ -98,7 +98,7 @@ After saving the stack, prompt for model tiers:
 
     fast:      claude-haiku-4-5-20251001  # diffs, pattern matching, gaming detection
     capable:   claude-sonnet-4-6          # code generation, test authoring
-    reasoning: claude-opus-4-6            # architecture review, cross-cutting analysis
+    reasoning: claude-opus-4-7            # architecture review, cross-cutting analysis
 
   → Accept defaults / enter custom model IDs / skip
 ```

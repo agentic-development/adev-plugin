@@ -135,5 +135,5 @@ git commit -m "feat(heuristics): add heuristic injection to plan SKILL.md"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

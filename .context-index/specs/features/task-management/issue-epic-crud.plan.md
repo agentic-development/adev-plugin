@@ -289,5 +289,5 @@ git commit -m "feat(task-management): add dependency cycle detection and close g
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied
