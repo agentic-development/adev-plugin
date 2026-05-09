@@ -139,5 +139,5 @@ git commit -m "feat(task-management): add conditional task management block to a
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

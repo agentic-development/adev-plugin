@@ -179,15 +179,15 @@ Plan-task: 1
 
 ## Quality Gates
 
-- [ ] All 5 test cases pass against a running PostgreSQL instance with seed data
-- [ ] Tests skip honestly when PostgreSQL is not available (exit 0 with skip message)
-- [ ] No mocking of `pg`, `Pool`, or `pool.query`
-- [ ] `closePool()` called in `after()` for clean teardown
-- [ ] Assertions verify LEFT JOIN behavior (Bob and Charlie appear with zeroes)
-- [ ] Assertions verify COALESCE behavior (0 not NULL)
-- [ ] Assertions verify aggregate sum (Alice: 4999 + 1250 = 6249)
-- [ ] Assertions verify status filter (only `completed` contributes)
-- [ ] `npm test` passes
+- All 5 test cases pass against a running PostgreSQL instance with seed data
+- Tests skip honestly when PostgreSQL is not available (exit 0 with skip message)
+- No mocking of `pg`, `Pool`, or `pool.query`
+- `closePool()` called in `after()` for clean teardown
+- Assertions verify LEFT JOIN behavior (Bob and Charlie appear with zeroes)
+- Assertions verify COALESCE behavior (0 not NULL)
+- Assertions verify aggregate sum (Alice: 4999 + 1250 = 6249)
+- Assertions verify status filter (only `completed` contributes)
+- `npm test` passes
 
 ## Task Summary
 

@@ -1,12 +1,20 @@
 [submodule "tests/evals/adev-data-eval"]
 	path = tests/evals/adev-data-eval
 	url = https://github.com/agentic-development/adev-data-eval.git
+	ignore = dirty
 [submodule "tests/evals/adev-pipeline-eval"]
 	path = tests/evals/adev-pipeline-eval
 	url = ./tests/evals/adev-pipeline-eval
+	ignore = dirty
 [submodule "tests/evals/adev-api-eval"]
 	path = tests/evals/adev-api-eval
 	url = ./tests/evals/adev-api-eval
+	ignore = dirty
 [submodule "tests/evals/adev-migrations-eval"]
 	path = tests/evals/adev-migrations-eval
 	url = ./tests/evals/adev-migrations-eval
+	ignore = dirty
+[submodule "tests/evals/adev-automation-eval"]
+	path = tests/evals/adev-automation-eval
+	url = ./tests/evals/adev-automation-eval
+	ignore = dirty

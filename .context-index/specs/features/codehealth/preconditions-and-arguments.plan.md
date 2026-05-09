@@ -528,10 +528,10 @@ git commit -m "feat(adev:codehealth): register in maintenance module, bump versi
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from all 4 specs satisfied:
+- Tests pass: `npm test`
+- All acceptance criteria from all 4 specs satisfied:
   - Preconditions: MISSING_REPOMAP, INVALID_MANIFEST, UNKNOWN_MODULE, UNKNOWN_PASS errors defined
   - Detection: All 5 passes documented with severity rules, tree-sitter degradation
   - Report: frontmatter schema, summary table, per-pass sections, idempotency
   - Hygiene: Pass 13 added, --check code-health, PASS/WARN/FAIL/SKIP thresholds
-- [ ] No constitutional violations (no external deps, markdown-first skill, pure ESM)
+- No constitutional violations (no external deps, markdown-first skill, pure ESM)

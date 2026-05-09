@@ -97,5 +97,5 @@ Add Step 0: call `loadValidateConfig(repoRoot)`. Filter out `enabled: false`; pr
 
 ## Quality Gates
 
-- [ ] `npm test` passes
-- [ ] No new external dependencies
+- `npm test` passes
+- No new external dependencies

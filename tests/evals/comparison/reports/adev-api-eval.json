@@ -1,0 +1,228 @@
+{
+  "project": "adev-api-eval",
+  "domain": "web-api",
+  "branches": {
+    "plain_claude": {
+      "commit": "e63c8b7"
+    },
+    "adev_built": {
+      "commit": "a3b8a96"
+    }
+  },
+  "dimensions": {
+    "code_quality": {
+      "plain_claude": {
+        "score": 65,
+        "metrics": {
+          "files_changed": 12,
+          "lines_added": 966,
+          "lines_removed": 17,
+          "lines_per_file": 81,
+          "score": 65
+        },
+        "blended_score": 72
+      },
+      "adev_built": {
+        "score": 80,
+        "metrics": {
+          "files_changed": 29,
+          "lines_added": 2026,
+          "lines_removed": 19,
+          "lines_per_file": 70,
+          "score": 80
+        },
+        "blended_score": 81
+      }
+    },
+    "test_coverage": {
+      "plain_claude": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "test_file_count": 5,
+          "test_case_count": 41,
+          "tests_added": 31,
+          "baseline_test_count": 10
+        }
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "test_file_count": 5,
+          "test_case_count": 48,
+          "tests_added": 38,
+          "baseline_test_count": 10
+        }
+      }
+    },
+    "bug_handling": {
+      "plain_claude": {
+        "score": 75,
+        "metrics": {
+          "status": "fixed_incidentally",
+          "score": 75
+        }
+      },
+      "adev_built": {
+        "score": 75,
+        "metrics": {
+          "status": "fixed_incidentally",
+          "score": 75
+        }
+      }
+    },
+    "architectural_coherence": {
+      "plain_claude": {
+        "score": 92,
+        "metrics": {
+          "score": 92,
+          "directory_structure": true,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 11,
+          "files_in_new_dirs": 1,
+          "source_files_evaluated": 12
+        },
+        "blended_score": 90
+      },
+      "adev_built": {
+        "score": 58,
+        "metrics": {
+          "score": 58,
+          "directory_structure": false,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 14,
+          "files_in_new_dirs": 10,
+          "source_files_evaluated": 24
+        },
+        "blended_score": 65
+      }
+    },
+    "commit_hygiene": {
+      "plain_claude": {
+        "score": 75,
+        "metrics": {
+          "score": 75,
+          "commit_count": 1,
+          "atomic": false,
+          "has_trailers": false,
+          "trailers_ratio": 0
+        },
+        "blended_score": 61
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "commit_count": 10,
+          "atomic": true,
+          "has_trailers": true,
+          "trailers_ratio": 60
+        },
+        "blended_score": 95
+      }
+    },
+    "spec_compliance": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "plain-claude has no specs by design"
+        }
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "status": "complete",
+          "context_index_exists": true,
+          "has_specs": true,
+          "has_plans": true,
+          "has_build_state": true
+        }
+      }
+    },
+    "cost": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "no cost metadata available"
+        }
+      },
+      "adev_built": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "cost metadata parsing not yet implemented"
+        }
+      }
+    }
+  },
+  "composite": {
+    "plain_claude": 79,
+    "adev_built": 84
+  },
+  "diff_summary": {
+    "plain_claude": {
+      "files_changed": 12,
+      "lines_added": 966,
+      "lines_removed": 17
+    },
+    "adev_built": {
+      "files_changed": 29,
+      "lines_added": 2026,
+      "lines_removed": 19
+    }
+  },
+  "bug_handling": {
+    "plain_claude": "fixed_incidentally",
+    "adev_built": "fixed_incidentally"
+  },
+  "generated_at": "2026-05-07T00:46:57.410Z",
+  "llm_judge": {
+    "assignment": {
+      "A": "plain-claude",
+      "B": "adev-built"
+    },
+    "plain_claude": {
+      "naming_consistency": {
+        "score": 88,
+        "reasoning": "Excellent adherence to existing TypeScript/Express patterns; kebab-case files (reading-lists.ts), camelCase variables, consistent route naming with project conventions."
+      },
+      "directory_structure": {
+        "score": 88,
+        "reasoning": "Single consolidated migration file and all routes in src/routes/ follow the existing project structure cleanly with minimal new directories."
+      },
+      "commit_message_quality": {
+        "score": 40,
+        "reasoning": "Single commit 'feat: implement all TODO features' lacks any granularity or conventional commit scoping."
+      },
+      "overall_code_quality": {
+        "score": 82,
+        "reasoning": "Clean route handlers with proper validation, error handling for unique constraint violations, reading list share via UUID; the /search route is correctly placed before /:id to avoid route conflicts."
+      }
+    },
+    "adev_built": {
+      "naming_consistency": {
+        "score": 86,
+        "reasoning": "Consistent with project conventions; kebab-case files, camelCase variables, conventional Express router patterns throughout new route files."
+      },
+      "directory_structure": {
+        "score": 75,
+        "reasoning": "Source files well-organized in existing directories, but separate migrations (003, 004, 005) plus numerous .context-index files add structural overhead."
+      },
+      "commit_message_quality": {
+        "score": 88,
+        "reasoning": "Excellent per-feature commits with conventional prefixes (feat(books), feat(genres), feat(reviews)), clear scoping and progression."
+      },
+      "overall_code_quality": {
+        "score": 83,
+        "reasoning": "Well-structured with pagination returning total count, genre filtering via dynamic query building, share tokens using crypto.randomBytes; slightly more complex pagination with separate paginated/non-paginated paths."
+      }
+    }
+  }
+}

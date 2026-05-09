@@ -206,8 +206,8 @@ Plan-task: 1"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
   1. Returns one row per customer, ordered by customer ID ✓
   2. Only completed orders contribute to revenue ✓
   3. Customers with no completed orders appear with 0 ✓

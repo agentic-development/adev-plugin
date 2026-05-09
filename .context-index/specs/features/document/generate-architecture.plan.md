@@ -375,5 +375,5 @@ git commit -m "test(adev:document): add full acceptance criteria coverage for ar
 
 After all tasks are complete:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from `generate-architecture.md` satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from `generate-architecture.md` satisfied

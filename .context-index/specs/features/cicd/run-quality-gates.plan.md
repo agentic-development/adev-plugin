@@ -80,14 +80,14 @@
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] GitHub Actions workflow exists at `.github/workflows/ci.yml`
-- [ ] Workflow runs on push to any branch
-- [ ] Workflow runs on pull request events
-- [ ] Workflow executes `npm test`
-- [ ] Workflow passes when tests pass
-- [ ] Workflow fails when tests fail
-- [ ] Test results visible in GitHub PR check
-- [ ] All acceptance criteria from spec satisfied
+- GitHub Actions workflow exists at `.github/workflows/ci.yml`
+- Workflow runs on push to any branch
+- Workflow runs on pull request events
+- Workflow executes `npm test`
+- Workflow passes when tests pass
+- Workflow fails when tests fail
+- Test results visible in GitHub PR check
+- All acceptance criteria from spec satisfied
 
 ---
 

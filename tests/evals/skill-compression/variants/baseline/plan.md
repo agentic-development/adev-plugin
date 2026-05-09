@@ -656,12 +656,12 @@ End the plan with the full quality gate check from the constitution:
 
 ## Quality Gates
 
-After all tasks are complete, run the full quality gate suite:
+After all tasks are complete, `/adev:validate` verifies the full quality gate suite. Results are recorded in the validation report (`.validate.md`), not in this plan.
 
-- [ ] Tests pass: `<test command>`
-- [ ] Lint passes: `<lint command>`
-- [ ] Type check passes: `<typecheck command>`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `<test command>`
+- Lint passes: `<lint command>`
+- Type check passes: `<typecheck command>`
+- All acceptance criteria from spec satisfied
 
 If `governance/gates.yaml` exists, use its gate definitions instead of constitution Quality Gates. List deterministic gates with commands. Note probabilistic/no-command gates as skipped.
 ```

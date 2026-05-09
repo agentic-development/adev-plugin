@@ -284,14 +284,14 @@
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All 18 acceptance criteria from the spec satisfied
-- [ ] `skills/validate/SKILL.md` contains a "### Check 12: Success Heuristic Extraction" section placed after Check 11 and before "## Report Format"
-- [ ] Report Format template updated to include Check 12 output with SKIP reason support
-- [ ] Eval tests cover first-run PASS, second-run SKIP, partial FAIL SKIP, helper-unavailable SKIP
-- [ ] Integration test verifies end-to-end round-trip at `medium` confidence
-- [ ] Check 12 never changes the overall validation PASS/FAIL result
-- [ ] No constitutional violations (skill remains markdown-primary)
+- Tests pass: `npm test`
+- All 18 acceptance criteria from the spec satisfied
+- `skills/validate/SKILL.md` contains a "### Check 12: Success Heuristic Extraction" section placed after Check 11 and before "## Report Format"
+- Report Format template updated to include Check 12 output with SKIP reason support
+- Eval tests cover first-run PASS, second-run SKIP, partial FAIL SKIP, helper-unavailable SKIP
+- Integration test verifies end-to-end round-trip at `medium` confidence
+- Check 12 never changes the overall validation PASS/FAIL result
+- No constitutional violations (skill remains markdown-primary)
 
 ## Notes
 

@@ -122,14 +122,14 @@
 
 After all tasks are complete:
 
-- [ ] Release workflow triggers on version tags (v*.*.*)
-- [ ] Release workflow runs tests before publishing
-- [ ] Package published to npm on successful workflow
-- [ ] Workflow fails if tests fail
-- [ ] Workflow fails if npm publish fails
-- [ ] Published package installable via npm
-- [ ] Version in npm matches git tag
-- [ ] All acceptance criteria from spec satisfied
+- Release workflow triggers on version tags (v*.*.*)
+- Release workflow runs tests before publishing
+- Package published to npm on successful workflow
+- Workflow fails if tests fail
+- Workflow fails if npm publish fails
+- Published package installable via npm
+- Version in npm matches git tag
+- All acceptance criteria from spec satisfied
 
 ---
 
