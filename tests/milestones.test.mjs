@@ -15,6 +15,8 @@ import {
   milestoneDefer,
   evaluateShipCriteria,
   milestoneShip,
+  warnIfMilestoneUndefined,
+  getMilestoneStatusData,
 } from "../lib/milestones.mjs";
 
 // --- Task 1: YAML I/O ---
@@ -576,5 +578,92 @@ describe("milestoneShip", () => {
     });
     assert.equal(result.shipped, false);
     assert.equal(result.confirmRejected, "CHANGELOG updated");
+  });
+});
+
+// --- warnIfMilestoneUndefined ---
+
+describe("warnIfMilestoneUndefined", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-warn-test-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("returns null when milestone exists", () => {
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: null, target_date: null, ship_criteria: [] }]);
+    assert.equal(warnIfMilestoneUndefined(dir, "v1"), null);
+  });
+
+  it("returns warning when milestone not found", () => {
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: null, target_date: null, ship_criteria: [] }]);
+    const result = warnIfMilestoneUndefined(dir, "v2");
+    assert.ok(result.includes("Warning"));
+    assert.ok(result.includes("v2"));
+  });
+
+  it("returns null when milestones.yaml does not exist", () => {
+    const emptyDir = mkdtempSync(join(tmpdir(), "milestone-warn-empty-"));
+    try {
+      assert.equal(warnIfMilestoneUndefined(emptyDir, "v1"), null);
+    } finally {
+      rmSync(emptyDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns null when milestones.yaml is malformed (fail-open)", () => {
+    const badDir = mkdtempSync(join(tmpdir(), "milestone-warn-bad-"));
+    try {
+      mkdirSync(join(badDir, ".context-index"), { recursive: true });
+      writeFileSync(join(badDir, ".context-index", "milestones.yaml"), "  bad:\n    - :\n  : broken\n");
+      assert.equal(warnIfMilestoneUndefined(badDir, "v1"), null);
+    } finally {
+      rmSync(badDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// --- getMilestoneStatusData ---
+
+describe("getMilestoneStatusData", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-status-test-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("returns milestone data when found", () => {
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: "2026-06-01", ship_criteria: [{ check: "gates_pass" }] }]);
+    const result = getMilestoneStatusData(dir, "v1");
+    assert.equal(result.found, true);
+    assert.equal(result.milestone.name, "v1");
+    assert.equal(result.milestone.target_date, "2026-06-01");
+    assert.equal(result.milestone.ship_criteria.length, 1);
+  });
+
+  it("returns not-found when milestone missing", () => {
+    const result = getMilestoneStatusData(dir, "nonexistent");
+    assert.equal(result.found, false);
+    assert.equal(result.milestone, null);
+  });
+
+  it("returns not-found when file missing", () => {
+    const emptyDir = mkdtempSync(join(tmpdir(), "milestone-status-empty-"));
+    try {
+      const result = getMilestoneStatusData(emptyDir, "v1");
+      assert.equal(result.found, false);
+      assert.equal(result.milestone, null);
+    } finally {
+      rmSync(emptyDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns not-found when file malformed", () => {
+    const badDir = mkdtempSync(join(tmpdir(), "milestone-status-bad-"));
+    try {
+      mkdirSync(join(badDir, ".context-index"), { recursive: true });
+      writeFileSync(join(badDir, ".context-index", "milestones.yaml"), "  bad:\n    - :\n  : broken\n");
+      const result = getMilestoneStatusData(badDir, "v1");
+      assert.equal(result.found, false);
+      assert.equal(result.milestone, null);
+    } finally {
+      rmSync(badDir, { recursive: true, force: true });
+    }
   });
 });
