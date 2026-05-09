@@ -236,3 +236,44 @@ describe('Cross-links to reference pages', () => {
     assert.ok(content.includes('skills.md'), 'test-strategies.md should link to skill reference');
   });
 });
+
+describe('TOC links and navigation', () => {
+  it('docs/README.md should link to all three advanced guides under Advanced', () => {
+    const content = readFileSync(join(DOCS_DIR, 'README.md'), 'utf-8');
+    assert.ok(content.includes('workspaces.md'), 'README.md missing link to workspaces.md');
+    assert.ok(content.includes('governance.md'), 'README.md missing link to governance.md');
+    assert.ok(content.includes('test-strategies.md'), 'README.md missing link to test-strategies.md');
+  });
+
+  it('advanced guide relative links should resolve to existing files', () => {
+    const guides = ['workspaces.md', 'governance.md', 'test-strategies.md'];
+    for (const guide of guides) {
+      const content = readFileSync(join(DOCS_DIR, guide), 'utf-8');
+      const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+      let match;
+      while ((match = linkPattern.exec(content)) !== null) {
+        const target = match[2];
+        if (target.startsWith('http') || target.startsWith('#') || target.startsWith('..')) continue;
+        const filePart = target.split('#')[0];
+        if (filePart) {
+          const targetPath = join(DOCS_DIR, filePart);
+          assert.ok(
+            existsSync(targetPath),
+            `${guide}: broken link to ${target} (expected file at ${targetPath})`
+          );
+        }
+      }
+    }
+  });
+
+  it('each advanced guide should state prerequisites', () => {
+    const guides = ['workspaces.md', 'governance.md', 'test-strategies.md'];
+    for (const guide of guides) {
+      const content = readFileSync(join(DOCS_DIR, guide), 'utf-8');
+      assert.ok(
+        content.includes('Prerequisites') || content.includes('prerequisites') || content.includes('Before you begin'),
+        `${guide}: missing prerequisites section`
+      );
+    }
+  });
+});
