@@ -1,3 +1,5 @@
+[adev docs](README.md) > Reference
+
 # Hooks Reference
 
 adev uses hooks to enforce governance, track context reads, and capture session activity. Hooks fire automatically during Claude Code sessions based on trigger points and tool matchers. For background on how hooks fit into gate-based governance, see [Core Concepts](concepts.md).

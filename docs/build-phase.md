@@ -1,3 +1,5 @@
+[adev docs](README.md) > Workflow Guides
+
 # Build Phase
 
 The build phase turns reviewed specifications into working code. You decompose specs into ordered tasks, optionally score them for human vs agent execution, implement each task with test-driven development, and optionally orchestrate the entire pipeline end-to-end.

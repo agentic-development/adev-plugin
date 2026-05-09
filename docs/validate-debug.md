@@ -1,3 +1,5 @@
+[adev docs](README.md) > Workflow Guides
+
 # Validate & Debug
 
 This phase covers quality assurance and troubleshooting. After implementation, you validate the finished work against specs and quality gates. When things go wrong, you debug systematically with full project context. You can also score implementation quality with graduated evaluations and recover stuck agents.

@@ -1,3 +1,5 @@
+[adev docs](README.md) > Workflow Guides
+
 # Design Phase
 
 The design phase is where every feature begins. You explore an idea, define its boundaries, formalize the behavioral contract, validate it with specialist reviewers, and optionally sketch the user experience. The artifacts produced here become the foundation for everything that follows.

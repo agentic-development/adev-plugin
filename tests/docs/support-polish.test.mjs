@@ -1,5 +1,5 @@
 import { describe, it } from 'node:test';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import assert from 'node:assert';
 
@@ -114,4 +114,42 @@ describe('Superseded docs removal', () => {
       );
     });
   }
+});
+
+describe('Breadcrumb and next/previous navigation', () => {
+  const docsFiles = readdirSync(DOCS_DIR).filter(f => f.endsWith('.md'));
+
+  for (const file of docsFiles) {
+    it(`docs/${file} should have a breadcrumb`, () => {
+      const content = readFileSync(join(DOCS_DIR, file), 'utf-8');
+      assert.ok(
+        content.includes('README.md') || file === 'README.md',
+        `docs/${file} should have a breadcrumb linking to README.md`
+      );
+    });
+  }
+
+  it('sequential pages should have next/previous links', () => {
+    const readingOrder = [
+      'concepts.md',
+      'installation.md',
+      'getting-started.md',
+    ];
+
+    for (let i = 0; i < readingOrder.length; i++) {
+      const content = readFileSync(join(DOCS_DIR, readingOrder[i]), 'utf-8');
+      if (i < readingOrder.length - 1) {
+        assert.ok(
+          content.includes(readingOrder[i + 1]),
+          `${readingOrder[i]} should have a next link to ${readingOrder[i + 1]}`
+        );
+      }
+      if (i > 0) {
+        assert.ok(
+          content.includes(readingOrder[i - 1]),
+          `${readingOrder[i]} should have a previous link to ${readingOrder[i - 1]}`
+        );
+      }
+    }
+  });
 });

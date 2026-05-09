@@ -1,3 +1,5 @@
+[adev docs](README.md) > Getting Started
+
 # Getting Started
 
 This tutorial walks you through the complete adev lifecycle — from initializing your project to validating a finished feature. By the end, you will have used every core skill and understand how the framework fits together. No prior experience with adev is required.
@@ -166,4 +168,8 @@ You have completed your first full lifecycle pass. Here are the skills you will 
 - `/adev:debug` — Context-aware debugging that checks specs and ADRs before investigating.
 - `/adev:hygiene` — Audit your context for staleness, drift, and coverage gaps.
 
-For the complete list of skills with usage details, see [Skill Reference](skills.md).
+For the complete list of skills with usage details, see [Skill Reference](skill-reference.md).
+
+---
+
+[Previous: Installation & Setup](installation.md)

@@ -1,3 +1,5 @@
+[adev docs](README.md) > Reference
+
 # Configuration Reference
 
 adev uses three configuration files that live in the `.context-index/` directory (or project root). Together they define your project's identity, principles, tech stack, and framework behavior. For background on how configuration fits into the context-first architecture, see [Core Concepts](concepts.md).
