@@ -860,6 +860,6 @@ Review each AC from the spec against the implemented changes:
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All 31 acceptance criteria from spec satisfied
-- [ ] No constitutional violations introduced (Principles 1, 2, 3, 4, 5 upheld — no new deps, skills remain markdown, ESM maintained, hook protocol unchanged, version parity unaffected)
+- Tests pass: `npm test`
+- All 31 acceptance criteria from spec satisfied
+- No constitutional violations introduced (Principles 1, 2, 3, 4, 5 upheld — no new deps, skills remain markdown, ESM maintained, hook protocol unchanged, version parity unaffected)

@@ -460,9 +460,9 @@ git commit -m "feat(eval): add eval pipeline runner orchestrator"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test` (existing tests unaffected)
-- [ ] Eval runs: `npm run eval` produces eval-report.md for Zod
-- [ ] Ground truth generate: `npm run eval:generate` produces JSON files without running parsers
-- [ ] All 25 acceptance criteria from spec satisfied
-- [ ] All `.mjs` files use ESM imports
-- [ ] No constitutional violations introduced
+- Tests pass: `npm test` (existing tests unaffected)
+- Eval runs: `npm run eval` produces eval-report.md for Zod
+- Ground truth generate: `npm run eval:generate` produces JSON files without running parsers
+- All 25 acceptance criteria from spec satisfied
+- All `.mjs` files use ESM imports
+- No constitutional violations introduced

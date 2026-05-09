@@ -262,5 +262,5 @@ N. **Heuristics:** Load module-scoped heuristics for the spec's charter module.
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

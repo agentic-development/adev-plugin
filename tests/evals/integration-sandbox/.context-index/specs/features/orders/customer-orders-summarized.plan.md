@@ -296,12 +296,12 @@ Plan-task: 3"
 
 ## Quality Gates
 
-- [ ] All tests pass: `npm test` (from project root: `tests/evals/integration-sandbox/`)
-- [ ] PostgreSQL must be running: `npm run db:up`
-- [ ] No skip guards, no mocks, no conditional bypasses in test code
-- [ ] All 5 acceptance criteria covered by at least one test
-- [ ] `lib/orders.mjs` uses parameterized `$1` placeholder (no string concatenation)
-- [ ] `after()` hook calls `closePool()` for clean teardown
+- All tests pass: `npm test` (from project root: `tests/evals/integration-sandbox/`)
+- PostgreSQL must be running: `npm run db:up`
+- No skip guards, no mocks, no conditional bypasses in test code
+- All 5 acceptance criteria covered by at least one test
+- `lib/orders.mjs` uses parameterized `$1` placeholder (no string concatenation)
+- `after()` hook calls `closePool()` for clean teardown
 
 ## Execution Handoff
 

@@ -127,15 +127,15 @@ Extend the existing `skills/work/SKILL.md` to add an `--intake` mode for triagin
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] `--intake` mode processes a single request interactively
-  - [ ] `--intake "<description>"` processes a single request from argument
-  - [ ] `--intake --file <path>` batch-processes multiple requests
-  - [ ] Each request is classified by type (bug/feature/task)
-  - [ ] Each request is assigned a priority estimate
-  - [ ] Requests are matched to existing epics by charter scope
-  - [ ] Unmatched requests are flagged for new epic creation or "Unassigned"
-  - [ ] Summary table shown before creating issues
-  - [ ] User confirmation required before batch creation
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `--intake` mode processes a single request interactively
+  - `--intake "<description>"` processes a single request from argument
+  - `--intake --file <path>` batch-processes multiple requests
+  - Each request is classified by type (bug/feature/task)
+  - Each request is assigned a priority estimate
+  - Requests are matched to existing epics by charter scope
+  - Unmatched requests are flagged for new epic creation or "Unassigned"
+  - Summary table shown before creating issues
+  - User confirmation required before batch creation
+  - No constitutional violations introduced

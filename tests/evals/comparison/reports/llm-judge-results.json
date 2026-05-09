@@ -1,0 +1,182 @@
+{
+  "judge_model": "claude-opus-4-6",
+  "generated_at": "2026-05-07T12:51:23.292Z",
+  "projects": {
+    "adev-pipeline-eval": {
+      "assignment": {
+        "A": "adev-built",
+        "B": "plain-claude"
+      },
+      "scores": {
+        "plain_claude": {
+          "naming_consistency": {
+            "score": 82,
+            "reasoning": "Follows existing snake_case conventions well; files like anomaly_alert.py, weekly_rollup.py match project patterns, and function names like run_weekly_rollup are consistent."
+          },
+          "directory_structure": {
+            "score": 90,
+            "reasoning": "All new files placed in existing stages/ and tests/ directories with no new directories created, perfectly matching the project layout."
+          },
+          "commit_message_quality": {
+            "score": 40,
+            "reasoning": "Single monolithic commit 'feat: implement all TODO features' provides no granularity or traceability for individual features."
+          },
+          "overall_code_quality": {
+            "score": 80,
+            "reasoning": "Clean implementation with defensive column existence checks (DESCRIBE readings), good separation of concerns, and thorough error handling in anomaly detection."
+          }
+        },
+        "adev_built": {
+          "naming_consistency": {
+            "score": 78,
+            "reasoning": "Mostly consistent snake_case naming, but some abbreviated names (alerts.py vs anomaly_alert.py, weekly.py vs weekly_rollup.py) are less descriptive than existing patterns."
+          },
+          "directory_structure": {
+            "score": 72,
+            "reasoning": "Source files correctly placed in stages/ and tests/, but .context-index/ spec files add directory noise; source organization itself is clean."
+          },
+          "commit_message_quality": {
+            "score": 85,
+            "reasoning": "Granular commits per feature with conventional prefixes (feat(stages), feat(pipeline)), though some commits are lifecycle artifacts rather than code changes."
+          },
+          "overall_code_quality": {
+            "score": 78,
+            "reasoning": "Solid implementation with idempotency checksums and deduplication, but the alerts stage uses a large monolithic UNION ALL query rather than the cleaner incremental INSERT approach."
+          }
+        }
+      }
+    },
+    "adev-api-eval": {
+      "assignment": {
+        "A": "plain-claude",
+        "B": "adev-built"
+      },
+      "scores": {
+        "plain_claude": {
+          "naming_consistency": {
+            "score": 88,
+            "reasoning": "Excellent adherence to existing TypeScript/Express patterns; kebab-case files (reading-lists.ts), camelCase variables, consistent route naming with project conventions."
+          },
+          "directory_structure": {
+            "score": 88,
+            "reasoning": "Single consolidated migration file and all routes in src/routes/ follow the existing project structure cleanly with minimal new directories."
+          },
+          "commit_message_quality": {
+            "score": 40,
+            "reasoning": "Single commit 'feat: implement all TODO features' lacks any granularity or conventional commit scoping."
+          },
+          "overall_code_quality": {
+            "score": 82,
+            "reasoning": "Clean route handlers with proper validation, error handling for unique constraint violations, reading list share via UUID; the /search route is correctly placed before /:id to avoid route conflicts."
+          }
+        },
+        "adev_built": {
+          "naming_consistency": {
+            "score": 86,
+            "reasoning": "Consistent with project conventions; kebab-case files, camelCase variables, conventional Express router patterns throughout new route files."
+          },
+          "directory_structure": {
+            "score": 75,
+            "reasoning": "Source files well-organized in existing directories, but separate migrations (003, 004, 005) plus numerous .context-index files add structural overhead."
+          },
+          "commit_message_quality": {
+            "score": 88,
+            "reasoning": "Excellent per-feature commits with conventional prefixes (feat(books), feat(genres), feat(reviews)), clear scoping and progression."
+          },
+          "overall_code_quality": {
+            "score": 83,
+            "reasoning": "Well-structured with pagination returning total count, genre filtering via dynamic query building, share tokens using crypto.randomBytes; slightly more complex pagination with separate paginated/non-paginated paths."
+          }
+        }
+      }
+    },
+    "adev-migrations-eval": {
+      "assignment": {
+        "A": "adev-built",
+        "B": "plain-claude"
+      },
+      "scores": {
+        "plain_claude": {
+          "naming_consistency": {
+            "score": 85,
+            "reasoning": "Follows project conventions well; snake_case files, function names match existing patterns (compute_diffs, load_output), config additions use existing YAML structure."
+          },
+          "directory_structure": {
+            "score": 85,
+            "reasoning": "Files placed logically: validation.py under legacy/, new dbt model alongside existing models, separate incremental model file is a reasonable approach."
+          },
+          "commit_message_quality": {
+            "score": 60,
+            "reasoning": "Two commits with the main one being a generic 'feat: implement all TODO features', plus a separate bug fix commit showing some awareness of atomic changes."
+          },
+          "overall_code_quality": {
+            "score": 84,
+            "reasoning": "Well-structured HTML dashboard with responsive card layout, clean dbt SQL with CTEs, separate incremental model preserves backward compatibility; validation module is self-contained."
+          }
+        },
+        "adev_built": {
+          "naming_consistency": {
+            "score": 82,
+            "reasoning": "Mostly follows conventions; function names are descriptive (find_dbt_models, map_sources, compute_diff), but some inconsistency between module naming approaches."
+          },
+          "directory_structure": {
+            "score": 70,
+            "reasoning": "Source files placed correctly, but validation/ as a new package with __init__.py and rules.yaml adds directory depth; .context-index/ specs add 9 new directories."
+          },
+          "commit_message_quality": {
+            "score": 85,
+            "reasoning": "Per-feature commits with clear conventional prefixes (feat(reconciliation), feat(deprecation), feat(incremental)), good granularity."
+          },
+          "overall_code_quality": {
+            "score": 80,
+            "reasoning": "Good implementation overall; validation uses YAML rules for extensibility, deprecation report has thorough mapping logic, but incremental loading modifies existing stg_orders rather than adding a separate model."
+          }
+        }
+      }
+    },
+    "adev-automation-eval": {
+      "assignment": {
+        "A": "plain-claude",
+        "B": "adev-built"
+      },
+      "scores": {
+        "plain_claude": {
+          "naming_consistency": {
+            "score": 80,
+            "reasoning": "Good snake_case naming throughout; deduplicator.py, InboxWatcher, AuditLogger follow Python conventions, though 'deduplicator' vs existing 'validator' style is slightly verbose."
+          },
+          "directory_structure": {
+            "score": 88,
+            "reasoning": "All modules placed in processor/ directory matching existing layout, config.yaml at project root, no unnecessary new directories created."
+          },
+          "commit_message_quality": {
+            "score": 40,
+            "reasoning": "Single monolithic commit with no feature-level granularity."
+          },
+          "overall_code_quality": {
+            "score": 78,
+            "reasoning": "Class-based AuditLogger and InboxWatcher are well-designed with query capabilities, but the custom YAML parser (202 lines) is over-engineered when the project could use a simpler JSON config."
+          }
+        },
+        "adev_built": {
+          "naming_consistency": {
+            "score": 84,
+            "reasoning": "Consistent naming with dedup.py, audit.py, watcher.py using shorter module names; function names like log_event, check_duplicate, compute_hash follow project patterns."
+          },
+          "directory_structure": {
+            "score": 72,
+            "reasoning": "Source modules correctly in processor/, but .context-index/ adds 6 new directories; the README.md was deleted which is unusual."
+          },
+          "commit_message_quality": {
+            "score": 90,
+            "reasoning": "Excellent per-feature commits with clear conventional prefixes (feat(notifier), feat(validator), feat(dedup), feat(watcher), feat(audit)), each covering exactly one TODO feature."
+          },
+          "overall_code_quality": {
+            "score": 80,
+            "reasoning": "Clean functional approach with JSONL audit trail, SHA-256 dedup manifest, config.json-based validation rules; the Watcher class is well-structured with graceful shutdown and summary stats."
+          }
+        }
+      }
+    }
+  }
+}

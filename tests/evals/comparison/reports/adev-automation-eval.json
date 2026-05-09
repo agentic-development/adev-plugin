@@ -1,0 +1,228 @@
+{
+  "project": "adev-automation-eval",
+  "domain": "process-automation",
+  "branches": {
+    "plain_claude": {
+      "commit": "388c5f9"
+    },
+    "adev_built": {
+      "commit": "c42e539"
+    }
+  },
+  "dimensions": {
+    "code_quality": {
+      "plain_claude": {
+        "score": 65,
+        "metrics": {
+          "files_changed": 14,
+          "lines_added": 1461,
+          "lines_removed": 25,
+          "lines_per_file": 104,
+          "score": 65
+        },
+        "blended_score": 70
+      },
+      "adev_built": {
+        "score": 65,
+        "metrics": {
+          "files_changed": 21,
+          "lines_added": 2057,
+          "lines_removed": 78,
+          "lines_per_file": 98,
+          "score": 65
+        },
+        "blended_score": 71
+      }
+    },
+    "test_coverage": {
+      "plain_claude": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "test_file_count": 9,
+          "test_case_count": 83,
+          "tests_added": 54,
+          "baseline_test_count": 29
+        }
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "test_file_count": 9,
+          "test_case_count": 100,
+          "tests_added": 71,
+          "baseline_test_count": 29
+        }
+      }
+    },
+    "bug_handling": {
+      "plain_claude": {
+        "score": 50,
+        "metrics": {
+          "status": "untouched",
+          "score": 50
+        }
+      },
+      "adev_built": {
+        "score": 50,
+        "metrics": {
+          "status": "untouched",
+          "score": 50
+        }
+      }
+    },
+    "architectural_coherence": {
+      "plain_claude": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "directory_structure": true,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 14,
+          "files_in_new_dirs": 0,
+          "source_files_evaluated": 14
+        },
+        "blended_score": 95
+      },
+      "adev_built": {
+        "score": 67,
+        "metrics": {
+          "score": 67,
+          "directory_structure": false,
+          "import_hygiene": true,
+          "files_in_existing_dirs": 12,
+          "files_in_new_dirs": 6,
+          "source_files_evaluated": 18
+        },
+        "blended_score": 69
+      }
+    },
+    "commit_hygiene": {
+      "plain_claude": {
+        "score": 75,
+        "metrics": {
+          "score": 75,
+          "commit_count": 1,
+          "atomic": false,
+          "has_trailers": false,
+          "trailers_ratio": 0
+        },
+        "blended_score": 61
+      },
+      "adev_built": {
+        "score": 100,
+        "metrics": {
+          "score": 100,
+          "commit_count": 6,
+          "atomic": true,
+          "has_trailers": true,
+          "trailers_ratio": 83
+        },
+        "blended_score": 96
+      }
+    },
+    "spec_compliance": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "plain-claude has no specs by design"
+        }
+      },
+      "adev_built": {
+        "score": 50,
+        "metrics": {
+          "score": 50,
+          "status": "partial",
+          "context_index_exists": true,
+          "has_specs": true,
+          "has_plans": false,
+          "has_build_state": false
+        }
+      }
+    },
+    "cost": {
+      "plain_claude": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "no cost metadata available"
+        }
+      },
+      "adev_built": {
+        "score": null,
+        "metrics": {
+          "score": null,
+          "status": "N/A",
+          "reason": "no cost metadata available"
+        }
+      }
+    }
+  },
+  "composite": {
+    "plain_claude": 76,
+    "adev_built": 78
+  },
+  "diff_summary": {
+    "plain_claude": {
+      "files_changed": 14,
+      "lines_added": 1461,
+      "lines_removed": 25
+    },
+    "adev_built": {
+      "files_changed": 21,
+      "lines_added": 2057,
+      "lines_removed": 78
+    }
+  },
+  "bug_handling": {
+    "plain_claude": "untouched",
+    "adev_built": "untouched"
+  },
+  "generated_at": "2026-05-07T00:46:59.859Z",
+  "llm_judge": {
+    "assignment": {
+      "A": "plain-claude",
+      "B": "adev-built"
+    },
+    "plain_claude": {
+      "naming_consistency": {
+        "score": 80,
+        "reasoning": "Good snake_case naming throughout; deduplicator.py, InboxWatcher, AuditLogger follow Python conventions, though 'deduplicator' vs existing 'validator' style is slightly verbose."
+      },
+      "directory_structure": {
+        "score": 88,
+        "reasoning": "All modules placed in processor/ directory matching existing layout, config.yaml at project root, no unnecessary new directories created."
+      },
+      "commit_message_quality": {
+        "score": 40,
+        "reasoning": "Single monolithic commit with no feature-level granularity."
+      },
+      "overall_code_quality": {
+        "score": 78,
+        "reasoning": "Class-based AuditLogger and InboxWatcher are well-designed with query capabilities, but the custom YAML parser (202 lines) is over-engineered when the project could use a simpler JSON config."
+      }
+    },
+    "adev_built": {
+      "naming_consistency": {
+        "score": 84,
+        "reasoning": "Consistent naming with dedup.py, audit.py, watcher.py using shorter module names; function names like log_event, check_duplicate, compute_hash follow project patterns."
+      },
+      "directory_structure": {
+        "score": 72,
+        "reasoning": "Source modules correctly in processor/, but .context-index/ adds 6 new directories; the README.md was deleted which is unusual."
+      },
+      "commit_message_quality": {
+        "score": 90,
+        "reasoning": "Excellent per-feature commits with clear conventional prefixes (feat(notifier), feat(validator), feat(dedup), feat(watcher), feat(audit)), each covering exactly one TODO feature."
+      },
+      "overall_code_quality": {
+        "score": 80,
+        "reasoning": "Clean functional approach with JSONL audit trail, SHA-256 dedup manifest, config.json-based validation rules; the Watcher class is well-structured with graceful shutdown and summary stats."
+      }
+    }
+  }
+}

@@ -268,15 +268,15 @@ Plan-task: 2
 ## Quality Gates
 
 ### Pre-Implementation
-- [ ] PostgreSQL is running: `npm run db:up`
-- [ ] Seed data is loaded: verified by `SELECT count(*) FROM orders` returning 4
+- PostgreSQL is running: `npm run db:up`
+- Seed data is loaded: verified by `SELECT count(*) FROM orders` returning 4
 
 ### Post-Implementation
-- [ ] All 7 integration tests pass: `npm run test:integration`
-- [ ] No skip guards or mocks in test file
-- [ ] `closePool()` called in `after()` hook
-- [ ] Query uses `$1` parameterized placeholder (no string interpolation)
-- [ ] Function is exported from `lib/orders.mjs`
+- All 7 integration tests pass: `npm run test:integration`
+- No skip guards or mocks in test file
+- `closePool()` called in `after()` hook
+- Query uses `$1` parameterized placeholder (no string interpolation)
+- Function is exported from `lib/orders.mjs`
 
 ### Full Test Suite
 ```bash

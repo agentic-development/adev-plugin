@@ -254,13 +254,13 @@
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All 16 acceptance criteria from the spec satisfied
-- [ ] `skills/recover/SKILL.md` contains a "### Step 7: Extract Heuristic" section placed after the existing Step 6 (Enrich)
-- [ ] Eval test exercises all 6 diagnosis categories
-- [ ] Integration tests cover end-to-end extraction, recurrence auto-promotion, and distillation discipline
-- [ ] No modification to the existing Step 6 Enrich section beyond adding Step 7 after it
-- [ ] No constitutional violations (skill remains markdown-primary; helper call is via inline Node per convention)
+- Tests pass: `npm test`
+- All 16 acceptance criteria from the spec satisfied
+- `skills/recover/SKILL.md` contains a "### Step 7: Extract Heuristic" section placed after the existing Step 6 (Enrich)
+- Eval test exercises all 6 diagnosis categories
+- Integration tests cover end-to-end extraction, recurrence auto-promotion, and distillation discipline
+- No modification to the existing Step 6 Enrich section beyond adding Step 7 after it
+- No constitutional violations (skill remains markdown-primary; helper call is via inline Node per convention)
 
 ## Notes
 
