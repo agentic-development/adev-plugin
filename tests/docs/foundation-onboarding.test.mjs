@@ -62,3 +62,35 @@ describe('docs/concepts.md — Concepts Overview', () => {
     assert.ok(!content.includes('hooks.json'), 'Should not reference hooks.json');
   });
 });
+
+describe('docs/installation.md — Installation Guide', () => {
+  it('should exist', () => {
+    assert.ok(existsSync(join(DOCS_DIR, 'installation.md')));
+  });
+
+  it('should cover greenfield setup', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('greenfield') || content.includes('Greenfield') || content.includes('new project'), 'Missing greenfield path');
+  });
+
+  it('should cover brownfield setup', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('brownfield') || content.includes('Brownfield') || content.includes('existing'), 'Missing brownfield path');
+  });
+
+  it('should cover provider selection', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('Claude Code'), 'Missing Claude Code provider');
+  });
+
+  it('should include verification steps', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('verify') || content.includes('Verify') || content.includes('verification'), 'Missing verification steps');
+  });
+
+  it('should use synthetic placeholder values for any credentials (SEC-1)', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    // Should not contain real-looking API keys or tokens
+    assert.ok(!content.match(/sk-[a-zA-Z0-9]{32,}/), 'Contains real-looking API key');
+  });
+});
