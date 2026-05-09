@@ -166,8 +166,8 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 
 If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:implement`), verify it:
 
-1. Call `verifyManifest(specPath)` from `lib/source-manifest.mjs`.
-2. For each file in the manifest, compare the recorded SHA against the current `git hash-object` output.
+1. Parse the `source-manifest` block from the spec's frontmatter. The block is an object with fields `sha`, `files`, and `computedAt`.
+2. Call `verifyManifest(manifest, projectRoot)` from `lib/source-manifest.mjs`, passing the parsed manifest object and the project root path (NOT the spec file path). The function returns `{ matches: bool, currentSha: string|null, missingFiles?: string[] }`. SHA comparison uses SHA-256 of file contents.
 3. **Implementation existence check:** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed."
 4. Report results:
    - **Match:** All source files are unchanged since implementation AND all files are git-tracked. Record PASS.
@@ -208,8 +208,10 @@ This check is **non-blocking** — validation continues regardless. Record WARN 
 
 Load the Live Spec and walk through every acceptance criterion.
 
+**Before citing any file:line reference, you MUST use the Read tool to read the actual file content.** Do not infer, assume, or fabricate file contents from the spec or plan. Every PASS/FAIL/PARTIAL verdict must cite at least one file that was explicitly read in this validation run. If a criterion cannot be verified because no relevant files were found with Glob/Grep, record PARTIAL with the note "Unable to locate implementation files — criterion unverified."
+
 For each criterion:
-1. Identify which files and tests address it.
+1. Use Glob and Grep to identify which files and tests address it.
 2. **Read the actual file content** using the Read tool. You MUST read the file before making any claims about its contents. Do NOT infer code structure, line numbers, or behavior from the spec alone — verify against the actual source. If you cite `file:line`, that line number must come from reading the file, not from guessing.
 3. Verify the behavior matches the criterion based on what you read.
 4. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
@@ -227,6 +229,8 @@ For each criterion:
    - Fixes applied to failing tests without evidence that the spec, charter,
      or ADRs were consulted (look for comments or commit messages referencing
      the context that justified the change)
+
+**Do NOT use plan file checkboxes (`[x]`) as evidence of completion.** A `[x]` checkbox in a `.plan.md` file means the implementer marked the step done — it does not prove the code was written correctly or at all. Check 2 must be grounded in reading actual source files and tests, not plan metadata.
 
 Record per criterion:
 - PASS: code and tests satisfy the criterion (cite file:line from actual file reads).
