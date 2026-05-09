@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/infra-preflight/charter.md
-> **Spec:** .context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md
+> **Spec:** .context-index/specs/features/infra-preflight/verification-runner-and-schema.md
 > **Review:** PASS (2026-05-01)
 > **Platform:** Node.js, JavaScript (ESM), node:test, npm
 
@@ -24,7 +24,7 @@
 - `templates/live-spec-template.md` — Add `cli_tools`, `probe`, `check_level`, `timeout`, `env_file` as commented examples in `infra_requirements` block
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` — Existing schema for `infra_requirements` (this spec extends it)
+- `.context-index/specs/features/test-strategies/plan-infra-requirements.md` — Existing schema for `infra_requirements` (this spec extends it)
 - `lib/source-manifest.mjs` — Follow this module's pattern for path validation and error handling
 - `lib/test-strategies/detection.mjs` — Follow this module's pattern for file-based detection
 - `tests/lib/test-strategies/detection.test.mjs` — Follow this test pattern for temp dir setup/teardown
@@ -33,39 +33,39 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (ADR prerequisite section, System Constitution Reference)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (ADR prerequisite section, System Constitution Reference)
 - Charter: `.context-index/specs/features/infra-preflight/charter.md` (Dependencies table — dotenvx entry)
 - Constitution: `.context-index/constitution.md` (Non-Negotiable Principles #1 — minimize external dependencies)
 - ADR reference: `.context-index/adrs/0001-web-tree-sitter-dependency.md` (follow ADR format)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behaviors 1, Extended Schema)
-- Spec dependency: `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (existing schema)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behaviors 1, Extended Schema)
+- Spec dependency: `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (existing schema)
 - Sample: `lib/source-manifest.mjs` (path validation pattern)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behaviors 3, Error Cases — PREFLIGHT_UNSAFE_ENV_FILE, PREFLIGHT_NO_DOTENVX)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behaviors 3, Error Cases — PREFLIGHT_UNSAFE_ENV_FILE, PREFLIGHT_NO_DOTENVX)
 - Constitution: `.context-index/constitution.md` (Non-Negotiable Principles #1)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 4)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 4)
 
 ### Task 5 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 5, Error Cases — PREFLIGHT_INVALID_TOOL, PREFLIGHT_INVALID_VERSION)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 5, Error Cases — PREFLIGHT_INVALID_TOOL, PREFLIGHT_INVALID_VERSION)
 
 ### Task 6 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 6, Error Cases)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 6, Error Cases)
 - Security: Behavior 11 (output sanitization at capture time)
 
 ### Task 7 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behaviors 2, 7, 8, 9)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behaviors 2, 7, 8, 9)
 - Charter: `.context-index/specs/features/infra-preflight/charter.md` (Invariants — noInfra, timeout, PreflightReport)
 
 ### Task 8 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 10, Behavior 11)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 10, Behavior 11)
 
 ### Task 9 Context
-- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Extended Schema — commented examples)
+- Spec: `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Extended Schema — commented examples)
 - Template: `templates/live-spec-template.md` (existing infra_requirements block)
 
 ## Parallelization
@@ -95,7 +95,7 @@ Group B can run in parallel with Group A after Task 1 completes.
 
 **Context to load:**
 - `.context-index/adrs/0001-web-tree-sitter-dependency.md` (follow ADR format)
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (ADR prerequisite section)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (ADR prerequisite section)
 
 - [ ] **Write failing test**
 
@@ -160,8 +160,8 @@ git commit -m "feat(infra-preflight): add ADR for dotenvx dependency and dev dep
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 1, Extended Schema)
-- `.context-index/specs/features/test-strategies/plan-infra-requirements.spec.md` (existing schema)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 1, Extended Schema)
+- `.context-index/specs/features/test-strategies/plan-infra-requirements.md` (existing schema)
 
 - [ ] **Write failing test**
 
@@ -285,7 +285,7 @@ git commit -m "feat(infra-preflight): add parseInfraRequirements with YAML front
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 3, Error Cases)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 3, Error Cases)
 
 - [ ] **Write failing test**
 
@@ -385,7 +385,7 @@ git commit -m "feat(infra-preflight): add env file loading with path containment
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 4)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 4)
 
 - [ ] **Write failing test**
 
@@ -454,7 +454,7 @@ git commit -m "feat(infra-preflight): add environment variable presence checks"
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 5, Error Cases — PREFLIGHT_INVALID_TOOL, PREFLIGHT_INVALID_VERSION)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 5, Error Cases — PREFLIGHT_INVALID_TOOL, PREFLIGHT_INVALID_VERSION)
 
 - [ ] **Write failing test**
 
@@ -555,7 +555,7 @@ git commit -m "feat(infra-preflight): add CLI tool existence and version checks"
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 6, Behavior 11)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 6, Behavior 11)
 
 - [ ] **Write failing test**
 
@@ -656,7 +656,7 @@ git commit -m "feat(infra-preflight): add probe command execution with per-token
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behaviors 1, 2, 7, 8, 9)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behaviors 1, 2, 7, 8, 9)
 - `.context-index/specs/features/infra-preflight/charter.md` (Invariants)
 
 - [ ] **Write failing test**
@@ -896,7 +896,7 @@ git commit -m "feat(infra-preflight): add runPreflight orchestrator with check_l
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Behavior 10, Behavior 11)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Behavior 10, Behavior 11)
 
 - [ ] **Write failing test**
 
@@ -1036,7 +1036,7 @@ git commit -m "feat(infra-preflight): add formatPreflightReport for human-readab
 **Tests:** `tests/lib/infra-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.spec.md` (Extended Schema)
+- `.context-index/specs/features/infra-preflight/verification-runner-and-schema.md` (Extended Schema)
 - `templates/live-spec-template.md` (existing infra_requirements block)
 
 - [ ] **Write failing test**

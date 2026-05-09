@@ -506,7 +506,7 @@ When committing implementation work, include structured trailers in commit messa
 ```
 feat(<module>): implement <description>
 
-Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md
+Spec: .context-index/specs/features/<module>/<spec-slug>.md
 Plan-task: <task-number>
 Session: <session-id or timestamp>
 ```
