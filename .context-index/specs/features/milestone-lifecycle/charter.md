@@ -86,8 +86,8 @@ This module supersedes `/adev:plan --milestone` as the entrypoint for milestone 
 | Ship Criteria Evaluation | Run auto-checks (`all_issues_closed`, `gates_pass`) then manual confirms. Collect pass/fail for each. | Must-have | v1 | specified |
 | Milestone Ship | `milestone ship <name>` — evaluate criteria, prompt version bump if semver, git tag, optional GitHub release | Must-have | v1 | specified |
 | Milestone Defer | `milestone defer <name>` — set status to deferred, add reason to milestone entry | Should-have | v1 | specified  |
-| Name Validation in Lifecycle Skills | Brainstorm, specify, plan, and hygiene validate milestone names against `milestones.yaml` | Should-have | v1 | specified |
-| Status Integration | `/adev:status --milestone <name>` reads `milestones.yaml` for metadata alongside issue progress | Nice-to-have | v1 | — |
+| Name Validation in Lifecycle Skills | Brainstorm, specify, plan, and hygiene validate milestone names against `milestones.yaml` | Should-have | v1 | planned |
+| Status Integration | `/adev:status --milestone <name>` reads `milestones.yaml` for metadata alongside issue progress | Nice-to-have | v1 | planned |
 
 ## Deferred Capabilities
 
