@@ -1,3 +1,5 @@
+[adev docs](README.md) > Getting Started
+
 # Core Concepts
 
 adev is built on four pillars that shape how humans and AI agents collaborate to build software. Understanding these pillars helps you make the most of the framework.

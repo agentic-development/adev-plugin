@@ -1,3 +1,5 @@
+[adev docs](README.md) > Advanced
+
 # Multi-Repo Workspaces
 
 If your project spans multiple git repositories — for example, a data platform with separate repos for dbt models, API services, Airflow DAGs, and infrastructure — adev workspaces let you coordinate specs, planning, and context across all of them.

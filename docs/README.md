@@ -34,5 +34,5 @@ Specialized guides for power users and complex setups.
 - [Workspaces](workspaces.md) — Multi-repo coordination and workspace configuration
 - [Governance](governance.md) — Customizing review and validation gates
 - [Test Strategies](test-strategies.md) — Domain-specific TDD configuration and patterns
-- Project Types (coming soon) — Worked examples for different project architectures
-- Troubleshooting & FAQ (coming soon) — Common issues and recovery steps
+- [Project Types](project-types.md) — Worked examples for different project architectures
+- [Troubleshooting & FAQ](troubleshooting.md) — Common issues and recovery steps

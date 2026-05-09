@@ -1,3 +1,5 @@
+[adev docs](README.md) > Getting Started
+
 # Installation & Setup
 
 This guide walks you through installing the adev plugin and initializing your project's context.
@@ -126,4 +128,4 @@ If `--brownfield` detection misses your stack:
 
 ---
 
-Next: [Getting Started](getting-started.md)
+[Previous: Core Concepts](concepts.md) | [Next: Getting Started](getting-started.md)

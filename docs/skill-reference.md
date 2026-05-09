@@ -1,3 +1,5 @@
+[adev docs](README.md) > Reference
+
 # Skill Reference
 
 adev provides skills as slash commands that guide you through each phase of the development lifecycle. Each skill is a structured set of instructions that Claude follows when invoked. For background on how skills fit into the framework, see [Core Concepts](concepts.md).

@@ -1,3 +1,5 @@
+[adev docs](README.md) > Advanced
+
 # Troubleshooting & FAQ
 
 This page covers common issues you may encounter when using adev, organized by symptom. Each entry describes what you see, why it happens, and how to fix it. The FAQ section at the end answers frequently asked questions.

@@ -1,3 +1,5 @@
+[adev docs](README.md) > Workflow Guides
+
 # Maintain
 
 The maintain phase covers ongoing project health. These skills help you track work items, monitor project status, audit context for drift and staleness, run retrospectives, detect dead code, map your codebase, repair lifecycle mismatches, and curate reference implementations.

@@ -1,3 +1,5 @@
+[adev docs](README.md) > Advanced
+
 # Governance Reference
 
 Operator guide for customizing [`/adev:review-specs`](skills.md) and [`/adev:validate`](skills.md) via the project-local governance files. Shipped in 0.18.0.
