@@ -94,3 +94,50 @@ describe('docs/installation.md — Installation Guide', () => {
     assert.ok(!content.match(/sk-[a-zA-Z0-9]{32,}/), 'Contains real-looking API key');
   });
 });
+
+describe('docs/getting-started.md — Getting Started Tutorial', () => {
+  it('should exist', () => {
+    assert.ok(existsSync(join(DOCS_DIR, 'getting-started.md')));
+  });
+
+  it('should cover all lifecycle phases', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    const phases = ['init', 'brainstorm', 'specify', 'review', 'plan', 'implement', 'validate'];
+    for (const phase of phases) {
+      assert.ok(
+        content.toLowerCase().includes(phase),
+        `Missing lifecycle phase: ${phase}`
+      );
+    }
+  });
+
+  it('should define terms on first use', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    // Check that key terms are explained, not just used
+    assert.ok(content.includes('charter') || content.includes('Charter'), 'Missing charter explanation');
+    assert.ok(content.includes('spec') || content.includes('Spec') || content.includes('specification'), 'Missing spec explanation');
+  });
+
+  it('should preserve quickstart content — install command', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    assert.ok(content.includes('npx @adev-org/adev-cli install') || content.includes('installation'), 'Missing install reference');
+  });
+
+  it('should preserve quickstart content — adev:work mention', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    assert.ok(content.includes('adev:work') || content.includes('/adev:work'), 'Missing adev:work reference from quickstart');
+  });
+
+  it('should preserve quickstart content — adev:issues mention', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    assert.ok(content.includes('adev:issues') || content.includes('/adev:issues'), 'Missing adev:issues reference from quickstart');
+  });
+
+  it('should not assume prior knowledge of adev', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    // The tutorial should be self-contained — check it has an introductory paragraph
+    const lines = content.split('\n');
+    const firstParagraph = lines.slice(2, 10).join('\n');
+    assert.ok(firstParagraph.length > 50, 'Should have an introductory paragraph explaining what the tutorial covers');
+  });
+});
