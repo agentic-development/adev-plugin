@@ -75,23 +75,23 @@ User-facing documentation that serves as the complete guide to adopting and usin
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Table of Contents | Root index page organizing all docs into a linear reading path | must-have | 1 | specified |
-| Concepts Overview | Brief explanation of the four pillars and the context-first approach | must-have | 1 | specified |
-| Installation Guide | Step-by-step setup covering greenfield, brownfield, and provider selection | must-have | 1 | specified |
-| Getting Started Tutorial | Expanded walkthrough taking a user from init through their first validated feature | must-have | 1 | specified |
-| Project Types Guide | Worked examples showing how to use adev with different project types, using eval fixture/submodule projects as demos | must-have | 1 | specified |
-| Design Phase Guide | How to brainstorm, write charters, author specs, and run reviews | must-have | 1 | specified |
-| Build Phase Guide | How to plan, route, implement, and write tests | must-have | 1 | specified |
-| Validate & Debug Guide | How to validate work, debug issues, and run evals | must-have | 1 | specified |
-| Maintain Phase Guide | How to track issues, run hygiene, retrospectives, and keep context healthy | must-have | 1 | specified |
-| Skill Reference | One entry per skill with purpose, prerequisites, arguments, and usage | must-have | 1 | specified |
-| Configuration Reference | Field-level docs for manifest.yaml, constitution.md, platform-context.yaml | should-have | 1 | specified |
-| Hooks Reference | What each hook does, when it fires, how to customize | should-have | 1 | specified |
-| Troubleshooting & FAQ | Common issues, error messages, and recovery steps | should-have | 1 | specified |
-| Workspaces Guide | Multi-repo coordination setup and usage (absorbs existing content) | should-have | 1 | specified |
-| Governance Guide | Customizing review and validation gates (absorbs existing content) | should-have | 1 | specified |
-| Test Strategies Guide | Domain-specific TDD configuration (absorbs existing content) | should-have | 1 | specified |
-| README Update | Update README.md to point to the new docs structure | nice-to-have | 1 | specified |
+| Table of Contents | Root index page organizing all docs into a linear reading path | must-have | 1 | review-passed |
+| Concepts Overview | Brief explanation of the four pillars and the context-first approach | must-have | 1 | review-passed |
+| Installation Guide | Step-by-step setup covering greenfield, brownfield, and provider selection | must-have | 1 | review-passed |
+| Getting Started Tutorial | Expanded walkthrough taking a user from init through their first validated feature | must-have | 1 | review-passed |
+| Project Types Guide | Worked examples showing how to use adev with different project types, using eval fixture/submodule projects as demos | must-have | 1 | review-passed |
+| Design Phase Guide | How to brainstorm, write charters, author specs, run reviews, and prototype | must-have | 1 | review-passed |
+| Build Phase Guide | How to plan, route, implement, write tests, and orchestrate builds | must-have | 1 | review-passed |
+| Validate & Debug Guide | How to validate work, debug issues, and run evals | must-have | 1 | review-passed |
+| Maintain Phase Guide | How to track issues, run hygiene, retrospectives, and keep context healthy | must-have | 1 | review-passed |
+| Skill Reference | One entry per skill with purpose, prerequisites, arguments, and usage | must-have | 1 | review-passed |
+| Configuration Reference | Field-level docs for manifest.yaml, constitution.md, platform-context.yaml | should-have | 1 | review-passed |
+| Hooks Reference | What each hook does, when it fires, how to customize | should-have | 1 | review-passed |
+| Troubleshooting & FAQ | Common issues, error messages, and recovery steps | should-have | 1 | review-passed |
+| Workspaces Guide | Multi-repo coordination setup and usage (absorbs existing content) | should-have | 1 | review-passed |
+| Governance Guide | Customizing review and validation gates (absorbs existing content) | should-have | 1 | review-passed |
+| Test Strategies Guide | Domain-specific TDD configuration (absorbs existing content) | should-have | 1 | review-passed |
+| README Update | Update README.md to point to the new docs structure | nice-to-have | 1 | review-passed |
 
 ## Deferred Capabilities
 

@@ -2,7 +2,7 @@
 
 ---
 charter: user-docs
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: 1
 revision: 1
@@ -21,7 +21,7 @@ updated: 2026-05-09
 
 ### Behaviors
 
-1. **When** a user reads `docs/design-phase.md` **then** they understand how to use `/adev:brainstorm` to create charters, `/adev:specify` to write specs, `/adev:review-specs` to run architecture reviews, and `/adev:prototype` to sketch UI — including when to use each and how they connect.
+1. **When** a user reads `docs/design-phase.md` **then** they understand how to use `/adev:brainstorm` to create charters, `/adev:specify` to write specs, `/adev:review-specs` to run architecture reviews, and optionally `/adev:prototype` to sketch UI — including when to use each and how they connect.
 
 2. **When** a user reads `docs/build-phase.md` **then** they understand how to use `/adev:plan` to decompose specs into tasks, `/adev:route` to decide agent vs human execution, `/adev:implement` to execute with TDD, `/adev:write-test` for standalone test authoring, and `/adev:build` for end-to-end orchestration.
 
@@ -72,10 +72,10 @@ updated: 2026-05-09
 
 ## Acceptance Criteria
 
-- [ ] `docs/design-phase.md` covers all 4 design skills with examples
-- [ ] `docs/build-phase.md` covers all 5 build skills with examples
-- [ ] `docs/validate-debug.md` covers all 4 validation/debug skills with examples
-- [ ] `docs/maintain.md` covers all 8 maintenance skills with examples
+- [ ] `docs/design-phase.md` covers design skills (brainstorm, specify, review-specs, prototype) with examples
+- [ ] `docs/build-phase.md` covers build skills (plan, route, implement, write-test, build) with examples
+- [ ] `docs/validate-debug.md` covers validation skills (validate, debug, eval, recover) with examples
+- [ ] `docs/maintain.md` covers maintenance skills (issues, status, hygiene, retro, codehealth, repomap, reconcile, sample) with examples
 - [ ] Each skill mention includes what it does, when to use it, and a link to reference
 - [ ] Phase transitions and gates are documented
 - [ ] All four guides are reachable from docs/README.md
