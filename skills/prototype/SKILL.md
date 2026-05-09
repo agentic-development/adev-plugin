@@ -357,17 +357,23 @@ node -e "
 
 ### Step 8: Heuristics Capture
 
-After the prototype session completes (keep or discard), prompt for design decisions:
+After the prototype session completes (keep or discard), **propose** design decisions based on what you observed during the session. Review the prototyping iterations, user feedback, and design choices made, then present a numbered list:
 
-> What design decisions should be carried forward? Identify 2-4 key decisions from this session. (e.g., "sidebar navigation works better than top-nav for this data density", "users expect inline editing, not modal forms")
+> **Design decisions from this session:**
 >
-> Enter your decisions, or say "none" / "skip" to proceed without saving.
+> 1. [decision derived from prototyping — e.g., "dark theme works well for developer tutorials"]
+> 2. [decision derived from prototyping — e.g., "nav bar with step numbers is clear navigation"]
+> 3. ...
+>
+> Would you like to save these as heuristics? You can edit, remove, add, or say "skip" to proceed without saving.
+
+Propose 2-4 decisions. Base them on concrete observations: layout choices that worked, user feedback during iterations, visual patterns that were confirmed or rejected, interaction patterns that emerged. Do not ask the user to recall — you were present for the entire session.
 
 **Handling responses:**
 
 - **User provides "none", "skip", or empty response:** Proceed to Step 8b (Return to Brainstorm) or Step 9 (Session Summary) without saving heuristics. This is not an error — not every session produces reusable insights.
 
-- **User provides 1-4 design decisions:** For each decision, invoke `/adev:learn` to persist it as a module-scoped heuristic:
+- **User confirms or edits the proposed decisions (1-4 total):** For each decision, invoke `/adev:learn` to persist it as a module-scoped heuristic:
   - The decision text as the heuristic content
   - Module scope set to the current `<module>` (from brainstorm context or `--module` argument)
   - Tag with `source: prototype` to identify the heuristic's origin

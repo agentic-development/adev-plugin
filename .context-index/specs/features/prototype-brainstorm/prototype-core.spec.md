@@ -6,7 +6,7 @@
 
 ---
 charter: prototype-brainstorm
-status: implemented
+status: validated
 risk_level: medium
 milestone: 1
 revision: 3
