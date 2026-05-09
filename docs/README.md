@@ -14,10 +14,10 @@ Start here if you are new to adev.
 
 Guides organized by lifecycle phase, covering the skills you use day-to-day.
 
-- Design Phase (coming soon) — Brainstorm, charter, specify, review, and prototype
-- Build Phase (coming soon) — Plan, route, implement, write tests, and orchestrate
-- Validate & Debug (coming soon) — Validate work, debug issues, and run evals
-- Maintain (coming soon) — Track issues, run hygiene, retrospectives, and keep context healthy
+- [Design Phase](design-phase.md) — Brainstorm, charter, specify, review, and prototype
+- [Build Phase](build-phase.md) — Plan, route, implement, write tests, and orchestrate
+- [Validate & Debug](validate-debug.md) — Validate work, debug issues, and run evals
+- [Maintain](maintain.md) — Track issues, run hygiene, retrospectives, and keep context healthy
 
 ## Reference
 
