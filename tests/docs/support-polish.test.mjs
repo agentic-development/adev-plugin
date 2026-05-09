@@ -99,3 +99,19 @@ describe('README.md — Documentation Links', () => {
     assert.ok(content.includes('/adev:brainstorm'), 'Skills table should still reference /adev:brainstorm');
   });
 });
+
+describe('Superseded docs removal', () => {
+  const supersededFiles = [
+    'skills.md',
+    'architecture.md',
+  ];
+
+  for (const file of supersededFiles) {
+    it(`docs/${file} should not exist (superseded)`, () => {
+      assert.ok(
+        !existsSync(join(DOCS_DIR, file)),
+        `docs/${file} should be removed — its content is now covered by the new docs structure`
+      );
+    });
+  }
+});
