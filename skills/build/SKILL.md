@@ -21,6 +21,7 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 - `--from <step>`: override resume point — force restart from a specific step (`specify`, `review`, `plan`, `route`, `implement`, `validate`). Useful if build state is corrupted or stale.
 - `--no-infra`: skip infrastructure preflight in implement and validate steps (user-only — the agent must never set this flag). Propagated to sub-skills via `ADEV_NO_INFRA=1` env var.
 - `--verbose`: disable silent execution for all subagents in this pipeline run. Subagent prompts include `VERBOSE: true`, causing skills to narrate each step. Useful for debugging pipeline failures.
+- `--auto`: run the entire pipeline without prompting the user for input. Stale builds are overwritten (not prompted). Subagent prompts include `AUTO: true`, instructing sub-skills to make autonomous decisions instead of asking the user (e.g., accept default choices, skip confirmations). The build stops on errors rather than asking for guidance. Useful for CI, scheduled builds, and batch operations.
 
 ## Prerequisites
 
@@ -102,6 +103,7 @@ PIPELINE_CONTEXT:
     backend: <tasks.backend value from manifest, e.g., "file">
     epic_id: <epic ID for this spec's plan, if known>
   pipeline_mode: "full" | "implement"   # "full" when --full is set, "implement" otherwise
+  auto: true | false                    # true when --auto is set — subagents must not prompt the user
 ```
 
 **Read these files in a single turn using parallel tool calls:**
@@ -164,6 +166,14 @@ commentary. Use parallel tool calls for multi-file reads.
 {{IF --verbose IS set, include instead:}}
 VERBOSE: true
 
+{{IF --auto IS set, include:}}
+AUTO: true
+Do NOT prompt the user for any input. Make autonomous decisions:
+accept defaults, skip confirmations, choose the most conservative
+option when ambiguous. If you encounter a situation that would
+normally require user input and no safe default exists, report
+FAILED with the details rather than blocking on input.
+
 Do NOT attempt to perform the skill's work yourself. You MUST use the
 Skill tool to load and execute the full skill. The skill contains
 detailed multi-step protocols that you do not have access to without
@@ -183,7 +193,8 @@ STEP_RESULT:
 
 The ONLY work the build orchestrator performs itself (not via subagent):
 
-- **Reads** `.context-index/build-state/*.json` for resume state
+- **Uses** `lib/build-state.mjs` helper (`readBuildState`, `createBuildState`, `recordStepResult`, `getNextStep`) for all build state operations — never writes build state JSON manually
+- **Reads** `.context-index/build-state/*.json` for resume state (via the helper)
 - **Reads** spec frontmatter for `milestone` field (phase discovery) and `source-manifest` (validate step context)
 - **Reads** `.review.md` files for skip conditions and to extract review verdict/notes for step context
 - **Reads** `.plan.md` files for skip conditions and to extract task count for step context
@@ -191,7 +202,7 @@ The ONLY work the build orchestrator performs itself (not via subagent):
 - **Reads** `manifest.yaml` for `tasks.backend` (issue board configuration)
 - **Reads** `user-config` files (local and global) via `parseUserConfig()` for `build.max_retries` (retry policy)
 - **Calls** `detectWorkspace(cwd)` once at build start for workspace context
-- **Writes** `.context-index/build-state/*.json` after each step
+- **Writes** `.context-index/build-state/*.json` after each step (via `recordStepResult()` — atomic writes with validation)
 - **Prints** progress headers and the final summary
 
 Everything else — reading source code, running tests, dispatching implementation subagents, checking spec compliance, writing reports — happens inside the subagent's context.
@@ -206,17 +217,63 @@ The build orchestrator executes **exactly one pipeline step per turn**, then yie
 
 On every invocation (whether fresh `--spec` or `--resume`), the orchestrator performs this dispatch loop exactly once:
 
-1. **Read build state.** Read `.context-index/build-state/<slug>.json` BEFORE taking any action. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history, not prior subagent results. If no state file exists (fresh build), create one with all steps pending.
+1. **Read build state BEFORE taking any action.** Use `lib/build-state.mjs` to read or create state. Run inline Node.js:
 
-2. **Determine next step.** Scan the `steps` array for the first step without `status: completed` or `status: skipped`. Evaluate that step's skip conditions against disk artifacts. If skip conditions are met, mark it `skipped` and advance to the next — but dispatch at most ONE non-skipped step.
+   ```bash
+   node --input-type=module -e "
+   import { readBuildState, createBuildState, getNextStep } from '<ADEV_ROOT>/lib/build-state.mjs';
+   const projectRoot = '<PROJECT_ROOT>';
+   const specPath = '<SPEC_PATH>';
+   let state = readBuildState(projectRoot, specPath);
+   if (!state) {
+     state = createBuildState(projectRoot, specPath, { phase: <PHASE>, full: <FULL> });
+   }
+   const next = getNextStep(state);
+   console.log(JSON.stringify({ state, next }));
+   "
+   ```
+
+   Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<PROJECT_ROOT>` is the absolute project root, `<SPEC_PATH>` is the spec path, `<PHASE>` is the milestone name or `null`, and `<FULL>` is `true` when `--full` is set. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history, not prior subagent results.
+
+2. **Determine next step.** Use the `next` field from step 1's output. If `next` is `null`, all steps are done — print the final summary and exit. Otherwise, evaluate the step's skip conditions against disk artifacts. If skip conditions are met, record a skip and re-read:
+
+   ```bash
+   node --input-type=module -e "
+   import { recordStepResult, getNextStep, readBuildState } from '<ADEV_ROOT>/lib/build-state.mjs';
+   recordStepResult('<PROJECT_ROOT>', '<SPEC_PATH>', '<STEP_NAME>', { status: 'skipped' });
+   const state = readBuildState('<PROJECT_ROOT>', '<SPEC_PATH>');
+   const next = getNextStep(state);
+   console.log(JSON.stringify({ state, next }));
+   "
+   ```
+
+   Repeat skip evaluation until a non-skipped step is found or all steps are done. Dispatch at most ONE non-skipped step.
 
 3. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
 
-4. **Record result.** Write the STEP_RESULT to build state (step status, timestamp, verdict, error if any). Update `status` and `updated` fields. **This step is MANDATORY even if the subagent reported ALREADY_COMPLETE or similar — any COMPLETED status means the step succeeded.**
+4. **Record result. (MANDATORY — this step uses a programmatic helper to prevent skipping.)**
+
+   After the subagent returns its STEP_RESULT, **immediately** run this inline Node.js call to persist the result. Do NOT print anything to the user, do NOT summarize, do NOT respond — run this call FIRST:
+
+   ```bash
+   node --input-type=module -e "
+   import { recordStepResult, getNextStep, readBuildState } from '<ADEV_ROOT>/lib/build-state.mjs';
+   const updated = recordStepResult('<PROJECT_ROOT>', '<SPEC_PATH>', '<STEP_NAME>', {
+     status: '<COMPLETED_OR_FAILED>',
+     verdict: '<VERDICT>',
+     error: '<ERROR_OR_EMPTY>',
+     notes: '<SUMMARY>'
+   });
+   const next = getNextStep(updated);
+   console.log(JSON.stringify({ buildStatus: updated.status, next }));
+   "
+   ```
+
+   This is MANDATORY even if the subagent reported ALREADY_COMPLETE or similar — any COMPLETED status means the step succeeded. The helper atomically writes the state file and recalculates build status.
 
 5. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
-   - If more steps remain AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
-   - If all steps are complete (or a stop condition is met): do NOT re-invoke. Print the final summary and exit without re-invocation.
+   - If `next` from step 4 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
+   - If `next` is null or `buildStatus` is `"completed"` or `"failed"`: do NOT re-invoke. Print the final summary and exit without re-invocation.
 
 ### Why One Step Per Turn
 
@@ -251,7 +308,7 @@ Agent({
 })
 ```
 
-**After subagent returns:** Record step as `completed` or `skipped` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
+**After subagent returns:** Run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="specify"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ---
 
@@ -275,7 +332,7 @@ Agent({
 
 **After subagent returns:**
 - If verdict is BLOCK: see Blocker-Fix Loop below.
-- If verdict is PASS or PASS_WITH_NOTES: record step as `completed` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
+- If verdict is PASS or PASS_WITH_NOTES: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="review"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 **Blocker-Fix Loop (Full Pipeline only):**
 
@@ -307,8 +364,8 @@ Agent({
 ```
 
 **After subagent returns:**
-- If verdict is constitution-violation: save build state with the failure and stop the build for this spec.
-- Otherwise: record step as `completed` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
+- If verdict is constitution-violation: run `recordStepResult()` with `status: "failed"` and the violation details. Stop the build for this spec.
+- Otherwise: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="plan"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ### Step 3: Route
 
@@ -325,7 +382,7 @@ Agent({
 
 **After subagent returns:**
 - Route annotations are advisory. This step does not produce a pass/fail verdict. If the subagent reports FAILED or the skill is unavailable, log a warning and continue.
-- Record step as `completed` (or `skipped` on error) in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
+- Run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="route"` (use `status: "completed"` or `status: "skipped"` on error). Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ### Step 4: Implement
 
@@ -345,8 +402,8 @@ Agent({
 This is the longest-running step. The implement skill manages TDD loops, specialist routing, subagent dispatch, 2-stage review, visual verification, integration gates, source manifest stamping, commit trailers, and feature completeness DoD — all within the subagent's isolated context.
 
 **After subagent returns:**
-- If verdict indicates quality gate or integration gate failure: save build state with the failure details (including tier-specific context: tier name, failing command, severity), report the failures to the user, and stop the build for this spec.
-- Otherwise: record step as `completed` in build state. Then **re-invoke** `/adev:build --resume --spec <path>` via the Skill tool to advance to the next step. Do NOT stop here.
+- If verdict indicates quality gate or integration gate failure: run `recordStepResult()` with `status: "failed"` and the failure details (including tier-specific context: tier name, failing command, severity). Report the failures to the user and stop the build for this spec.
+- Otherwise: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="implement"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ### Step 5: Validate
 
@@ -508,7 +565,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 
 ### Incremental Persistence
 
-The build state file is written **after each step completes** (not just at the end). This ensures that if the build is interrupted at any point, the state file reflects exactly which steps finished. Fields:
+The build state file is written **after each step completes** via `recordStepResult()` from `lib/build-state.mjs` (not just at the end). The helper handles atomic writes, timestamp generation, and build status recalculation automatically. This ensures that if the build is interrupted at any point, the state file reflects exactly which steps finished. Fields:
 
 - `spec`: path to the spec being built
 - `phase`: milestone name (if invoked via `--phase`) or `null`
@@ -517,7 +574,7 @@ The build state file is written **after each step completes** (not just at the e
 - `started`: ISO-8601 timestamp of build start
 - `updated`: ISO-8601 timestamp of last state write
 
-On successful completion of all 5 steps, set `status` to `completed`. On any step failure, set `status` to `failed`.
+Build status recalculation is handled automatically by `recordStepResult()`: when a step fails, `status` is set to `"failed"`; when all steps are completed or skipped, `status` is set to `"completed"`; otherwise it remains `"in_progress"`.
 
 ---
 
@@ -548,6 +605,8 @@ A stale build exists for `<spec-slug>` (started: <date>, all steps skipped).
 Proceed? (resume / overwrite)
 ```
 Await user input. "overwrite" resets the build state and proceeds. "resume" applies `--from implement` resume logic. If the user dismisses without choosing, stop and let them decide.
+
+**`--auto` behavior:** When `--auto` is set, skip the prompt and overwrite the stale build automatically. Log: "Auto mode: overwriting stale build for `<spec-slug>`."
 
 ---
 
