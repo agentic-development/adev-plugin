@@ -176,6 +176,73 @@ Display all milestones with status, target date, linked epic, and issue progress
 |-----------|---------|------|
 | Malformed YAML | "milestones.yaml is malformed — cannot parse" | PARSE_ERROR |
 
+### Milestone Ship
+
+`milestone ship <name>`
+
+Evaluate ship criteria, create a git tag (for semver names), update status to `shipped`, close the linked epic, and optionally create a GitHub release draft.
+
+**Arguments:**
+- `<name>` (required) — milestone name to ship
+
+**Behavior:**
+1. Validate name, load milestone from `milestones.yaml`
+2. If already shipped, report no-op and exit
+3. Run `evaluateShipCriteria(milestone, issueManager, manifest)` — evaluates `all_issues_closed` and `gates_pass` auto-checks
+4. If any auto-check fails, report failures and block ship
+5. For each manual `confirm` criterion, prompt the user: "<text>? (yes/no)". If any rejected, block ship
+6. For semver names (with or without `v` prefix): create git tag. Name `v1.0.0` → tag `v1.0.0`; name `1.0.0` → tag `v1.0.0`
+7. Update milestone status to `shipped` in `milestones.yaml`
+8. Close linked epic via `issueManager.close(epicId, "Milestone shipped")`
+9. If `gh` CLI available, create GitHub release draft: `gh release create <tag> --generate-notes --draft`
+
+**Implementation:** Call `milestoneShip(projectRoot, name, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)` and the parsed manifest. For interactive confirms, implement `confirmFn` that prompts the user in chat.
+
+**Error cases:**
+
+| Condition | Message | Code |
+|-----------|---------|------|
+| No name argument | Print usage hint | MISSING_NAME |
+| Invalid name | "Invalid milestone name" | INVALID_NAME |
+| Name not found | "Milestone '<name>' not found" | MILESTONE_NOT_FOUND |
+| No valid epic | "No valid linked epic" | BROKEN_EPIC |
+| Auto-check fails | Report failure detail, block | CRITERIA_FAILED |
+| Confirm rejected | "Ship cancelled" | CONFIRM_REJECTED |
+| Tag already exists | "Tag already exists" | TAG_EXISTS |
+| Epic close fails | Warn, do not roll back | EPIC_CLOSE_FAILED |
+| No test command | "No test command configured" | NO_TEST_COMMAND |
+
+### Milestone Defer
+
+`milestone defer <name> --reason "<text>"`
+
+Set a milestone's status to `deferred` with a required reason.
+
+**Arguments:**
+- `<name>` (required) — milestone name to defer
+- `--reason "<text>"` (required) — reason for deferral
+
+**Behavior:**
+1. Validate name and reason (both required)
+2. Load milestone — reject if not found
+3. Reject if milestone is already shipped (ALREADY_SHIPPED)
+4. If already deferred, update the reason idempotently
+5. Set status to `deferred`, save `defer_reason` to `milestones.yaml`
+6. If issue manager available, update linked epic status to `deferred`
+
+**Implementation:** Call `milestoneDefer(projectRoot, name, reason, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
+
+**Error cases:**
+
+| Condition | Message | Code |
+|-----------|---------|------|
+| No name argument | Print usage hint | MISSING_NAME |
+| Invalid name | "Invalid milestone name" | INVALID_NAME |
+| Name not found | "Milestone '<name>' not found" | MILESTONE_NOT_FOUND |
+| No reason | "Reason is required" | MISSING_REASON |
+| Milestone shipped | "Cannot defer a shipped milestone" | ALREADY_SHIPPED |
+| Epic update fails | Warn, do not roll back | EPIC_UPDATE_FAILED |
+
 ## Key Principles
 
 - **Read-modify-write.** Always read current state before modifying. Do not cache.
