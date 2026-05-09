@@ -20,4 +20,4 @@ plugin_target: claude-code
 model_tiers:
   fast:      claude-haiku-4-5-20251001  # pattern matching, diffs, gaming detection
   capable:   claude-sonnet-4-6          # code generation, test authoring, behavioral reasoning
-  reasoning: claude-opus-4-6            # architecture review, cross-cutting analysis
+  reasoning: claude-opus-4-7            # architecture review, cross-cutting analysis

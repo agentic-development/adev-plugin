@@ -226,9 +226,9 @@ Plan-task: 1"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] Integration tests pass: `npm run test:integration`
-- [ ] All 5 acceptance criteria from spec satisfied:
+- Tests pass: `npm test`
+- Integration tests pass: `npm run test:integration`
+- All 5 acceptance criteria from spec satisfied:
   - AC 1: One row per customer, ordered by ID ✓
   - AC 2: Only completed orders in revenue ✓
   - AC 3: Zero-revenue customers present ✓

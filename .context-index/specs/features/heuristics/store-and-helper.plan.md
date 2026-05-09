@@ -325,11 +325,11 @@ Each task's subagent packet includes the constitution excerpt, the spec excerpt 
 
 After all 16 tasks complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All 22 acceptance criteria from spec satisfied
-- [ ] `lib/heuristics.mjs` is importable without throwing when `.context-index/memory/heuristics/` does not exist
-- [ ] No constitutional violations introduced (zero new external deps, pure ESM with `node:` prefix imports, markdown-primary skill unaffected)
-- [ ] Source manifest stamped in spec frontmatter by `/adev:implement` Step 5
+- Tests pass: `npm test`
+- All 22 acceptance criteria from spec satisfied
+- `lib/heuristics.mjs` is importable without throwing when `.context-index/memory/heuristics/` does not exist
+- No constitutional violations introduced (zero new external deps, pure ESM with `node:` prefix imports, markdown-primary skill unaffected)
+- Source manifest stamped in spec frontmatter by `/adev:implement` Step 5
 
 ## Addresses Review Notes (PASS_WITH_NOTES from r2 re-review)
 

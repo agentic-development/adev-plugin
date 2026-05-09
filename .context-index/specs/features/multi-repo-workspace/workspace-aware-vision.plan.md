@@ -1024,11 +1024,11 @@ Refs: issue-65"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All 23 acceptance criteria from the spec satisfied (mapped below)
-- [ ] No new external dependencies introduced (Principle 1)
-- [ ] All SKILL.md changes are markdown instructions only — no executable logic (Principle 2)
-- [ ] `package.json` and `.claude-plugin/plugin.json` versions remain in sync (Principle 5 — bump both if releasing)
+- Tests pass: `npm test`
+- All 23 acceptance criteria from the spec satisfied (mapped below)
+- No new external dependencies introduced (Principle 1)
+- All SKILL.md changes are markdown instructions only — no executable logic (Principle 2)
+- `package.json` and `.claude-plugin/plugin.json` versions remain in sync (Principle 5 — bump both if releasing)
 
 ### Acceptance Criteria → Task Mapping
 

@@ -909,11 +909,11 @@ conditional injection_warnings frontmatter signal."
 
 After Task 6 completes, run the full quality gate suite from `.context-index/constitution.md`:
 
-- [ ] Tests pass: `npm test`
-- [ ] All content-assertion acceptance criteria from the spec satisfied (the test suite added across Tasks 1-6 covers every file-content criterion)
-- [ ] **Scenario A (mandatory):** `.env` exclusion smoke test from Task 6 passed — confirmed zero fake API key leakage in artifact
-- [ ] **Scenario B (mandatory):** Injection redaction smoke test from Task 6 passed — confirmed `injection_warnings: true` in frontmatter AND injection payload absent AND benign facts preserved
-- [ ] Version parity check: this is a feature addition, so bump `package.json` and `.claude-plugin/plugin.json` together as a final step (outside the TDD task loop). Per constitution autonomous scope, the agent may decide this.
+- Tests pass: `npm test`
+- All content-assertion acceptance criteria from the spec satisfied (the test suite added across Tasks 1-6 covers every file-content criterion)
+- **Scenario A (mandatory):** `.env` exclusion smoke test from Task 6 passed — confirmed zero fake API key leakage in artifact
+- **Scenario B (mandatory):** Injection redaction smoke test from Task 6 passed — confirmed `injection_warnings: true` in frontmatter AND injection payload absent AND benign facts preserved
+- Version parity check: this is a feature addition, so bump `package.json` and `.claude-plugin/plugin.json` together as a final step (outside the TDD task loop). Per constitution autonomous scope, the agent may decide this.
 
 ## Known Limitations and Deferred Items
 

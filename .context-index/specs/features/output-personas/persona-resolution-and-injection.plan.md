@@ -548,7 +548,7 @@ git commit -m "feat(output-personas): add shared --persona override section for 
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
-- [ ] No constitutional violations introduced (no external deps, pure ESM in lib/, CJS only in hook inline scripts, no hardcoded `~/.claude/` paths)
-- [ ] Version bumped in both `package.json` and `.claude-plugin/plugin.json` (must stay in sync per constitution)
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied
+- No constitutional violations introduced (no external deps, pure ESM in lib/, CJS only in hook inline scripts, no hardcoded `~/.claude/` paths)
+- Version bumped in both `package.json` and `.claude-plugin/plugin.json` (must stay in sync per constitution)

@@ -227,10 +227,10 @@ Plan-task: 1"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [x] AC1: Returns one row per customer, ordered by customer ID
-  - [x] AC2: Only completed orders contribute to revenue
-  - [x] AC3: Customers with no completed orders appear with 0/0
-  - [x] AC4: Revenue is summed in cents (integer)
-  - [x] AC5: Seed data assertions (Alice=6249, Bob=0, Charlie=0)
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - AC1: Returns one row per customer, ordered by customer ID
+  - AC2: Only completed orders contribute to revenue
+  - AC3: Customers with no completed orders appear with 0/0
+  - AC4: Revenue is summed in cents (integer)
+  - AC5: Seed data assertions (Alice=6249, Bob=0, Charlie=0)

@@ -355,8 +355,8 @@ Plan-task: 3"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
   - Orchestrator executes exactly ONE pipeline step per turn
   - After dispatching one subagent and recording result, orchestrator re-invokes itself via Skill tool
   - Each re-invocation starts with a fresh forked context — no memory of prior turns
