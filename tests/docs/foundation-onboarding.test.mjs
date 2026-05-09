@@ -147,3 +147,38 @@ describe('docs/quickstart.md — Removal', () => {
     assert.ok(!existsSync(join(DOCS_DIR, 'quickstart.md')), 'quickstart.md should be removed');
   });
 });
+
+describe('Cross-page links and navigation', () => {
+  const pages = ['README.md', 'concepts.md', 'installation.md', 'getting-started.md'];
+
+  it('should have all relative links resolve to existing files', () => {
+    for (const page of pages) {
+      const content = readFileSync(join(DOCS_DIR, page), 'utf-8');
+      const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+      let match;
+      while ((match = linkPattern.exec(content)) !== null) {
+        const target = match[2];
+        // Skip external links and anchor links
+        if (target.startsWith('http') || target.startsWith('#')) continue;
+        // Strip anchor from relative links
+        const filePart = target.split('#')[0];
+        if (filePart) {
+          const targetPath = join(DOCS_DIR, filePart);
+          assert.ok(
+            existsSync(targetPath),
+            `${page}: broken link to ${target} (expected file at ${targetPath})`
+          );
+        }
+      }
+    }
+  });
+
+  it('should have next-page links at the bottom of sequential pages', () => {
+    // concepts -> installation -> getting-started
+    const concepts = readFileSync(join(DOCS_DIR, 'concepts.md'), 'utf-8');
+    assert.ok(concepts.includes('installation.md'), 'concepts.md should link to installation.md as next page');
+
+    const installation = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(installation.includes('getting-started.md'), 'installation.md should link to getting-started.md as next page');
+  });
+});
