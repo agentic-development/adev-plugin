@@ -58,6 +58,8 @@
 | epic-54 | Automation Eval Project | closed | .context-index/specs/features/eval-projects/automation-eval-project.plan.md |  | 2026-05-06T16:54:52.418Z | 2026-05-06T17:15:19.454Z |
 | epic-55 | Migration Eval Project | closed | .context-index/specs/features/eval-projects/migration-eval-project.plan.md |  | 2026-05-06T16:56:35.938Z | 2026-05-06T17:20:07.093Z |
 | epic-56 | API Eval Project | closed | .context-index/specs/features/eval-projects/api-eval-project.plan.md | v1 | 2026-05-06T17:00:13.462Z | 2026-05-06T17:13:01.835Z |
+| epic-57 | Milestone Create and List | open | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 1.0.0 | 2026-05-09T15:04:43.526Z | 2026-05-09T17:25:24.818Z |
+| epic-58 | 1.0.0 | closed |  | 1.0.0 | 2026-05-09T17:21:41.965Z | 2026-05-09T17:25:29.785Z |
 
 ## Issues
 
@@ -397,3 +399,11 @@
 | issue-334 | Task 10: README and LICENSE | closed | 2 | task | epic-56 | .context-index/specs/features/eval-projects/api-eval-project.plan.md | 10 |  | issue-325 | Closed: Implemented and reviewed |  | 2026-05-06T17:00:13.523Z | 2026-05-06T17:13:01.826Z |
 | issue-335 | Task 11: Submodule registration and eval harness scaffold | closed | 2 | task | epic-56 | .context-index/specs/features/eval-projects/api-eval-project.plan.md | 11 |  | issue-334 | Closed: Implemented and reviewed |  | 2026-05-06T17:00:13.530Z | 2026-05-06T17:13:01.829Z |
 | issue-336 | Task 12: Create with-context branch | closed | 2 | task | epic-56 | .context-index/specs/features/eval-projects/api-eval-project.plan.md | 12 |  | issue-333 | Closed: Implemented and reviewed |  | 2026-05-06T17:00:13.535Z | 2026-05-06T17:13:01.832Z |
+| issue-337 | Build orchestrator drops continuation after specify step — build state never updated | open | 1 | bug |  |  |  |  |  |  |  | 2026-05-09T11:53:03.625Z | 2026-05-09T11:53:03.625Z |
+| issue-338 | Build orchestrator drops continuation after specify step — build state never updated | closed | 1 | bug |  |  |  |  |  | Closed: Fixed: created lib/build-state.mjs programmatic helper with readBuildState, createBuildState, recordStepResult, getNextStep. Updated SKILL.md dispatch loop to use inline Node.js calls to the helper instead of manual JSON writing. 26 new tests, all 1850 tests pass. |  | 2026-05-09T11:55:24.469Z | 2026-05-09T14:54:49.667Z |
+| issue-339 | Milestone YAML schema and I/O | open | 2 | task | epic-57 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 1 |  |  |  |  | 2026-05-09T15:04:43.531Z | 2026-05-09T15:04:43.531Z |
+| issue-340 | milestone create command logic | open | 2 | task | epic-57 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 2 |  | issue-339 |  |  | 2026-05-09T15:04:43.541Z | 2026-05-09T15:04:43.579Z |
+| issue-341 | milestone list command logic | open | 2 | task | epic-57 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 3 |  | issue-339 |  |  | 2026-05-09T15:04:43.549Z | 2026-05-09T15:04:43.587Z |
+| issue-342 | SKILL.md subcommand documentation | open | 2 | task | epic-57 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 4 |  |  |  |  | 2026-05-09T15:04:43.557Z | 2026-05-09T15:04:43.557Z |
+| issue-343 | Integration tests for milestone commands | open | 2 | task | epic-57 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 5 |  | issue-339,issue-340,issue-341 |  |  | 2026-05-09T15:04:43.565Z | 2026-05-09T15:04:43.606Z |
+| issue-344 | Plan QG checkboxes never checked off + getPlanProgress boundary bug | open | 2 | bug |  |  |  |  |  | Two compounding issues: (1) The plan template emits Quality Gates as checkboxes but nothing checks them off — validate writes results to .validate.md, not back to the plan. (2) getPlanProgress in lib/meta-tools.mjs does not stop at ## Quality Gates heading, so QG checkboxes get attributed to the last task, inflating totals and marking it incomplete. Fix: (A) Plan template emits QG as plain bullets. (B) getPlanProgress only counts checkboxes within ### Task N: sections. |  | 2026-05-09T16:48:53.411Z | 2026-05-09T16:48:53.411Z |

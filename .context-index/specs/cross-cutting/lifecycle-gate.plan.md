@@ -1002,9 +1002,9 @@ Plan-task: 9"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
-- [ ] Hook protocol compliance: all hooks read stdin, use env vars, exit 0 or 2, output JSON to stdout
-- [ ] No constitutional violations introduced (no external dependencies, pure ESM, hook protocol)
-- [ ] All three hooks registered in hooks.json
-- [ ] Version parity: package.json and .claude-plugin/plugin.json versions match (bump if releasing)
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied
+- Hook protocol compliance: all hooks read stdin, use env vars, exit 0 or 2, output JSON to stdout
+- No constitutional violations introduced (no external dependencies, pure ESM, hook protocol)
+- All three hooks registered in hooks.json
+- Version parity: package.json and .claude-plugin/plugin.json versions match (bump if releasing)

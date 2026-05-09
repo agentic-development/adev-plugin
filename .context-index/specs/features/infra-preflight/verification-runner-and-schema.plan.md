@@ -1101,5 +1101,5 @@ git commit -m "feat(infra-preflight): extend live-spec template with verificatio
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

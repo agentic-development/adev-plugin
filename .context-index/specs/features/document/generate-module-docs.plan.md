@@ -266,5 +266,5 @@ git commit -m "test(adev:document): add test coverage for module docs acceptance
 
 After all tasks are complete:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from `generate-module-docs.md` satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from `generate-module-docs.md` satisfied

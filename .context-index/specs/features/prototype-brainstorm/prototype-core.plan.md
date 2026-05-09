@@ -532,15 +532,15 @@ Plan-task: 4"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] Heuristics surfaced before tier selection (B1)
-  - [ ] Tier selection with three options (B2-5)
-  - [ ] HTTP server binds to 127.0.0.1 with port scanning (B6, B8)
-  - [ ] MIME allowlist with security pipeline (B7)
-  - [ ] Server fallback to file-path mode (B8-9)
-  - [ ] Clean-slate feedback regeneration with iteration counting (B10)
-  - [ ] Approval ends loop, server stays active during persistence prompt (B11)
-  - [ ] Keep/discard persistence with gitignore management (B12-14)
-  - [ ] Server always stopped on session end (B15)
-  - [ ] No prototype files committed to git
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - Heuristics surfaced before tier selection (B1)
+  - Tier selection with three options (B2-5)
+  - HTTP server binds to 127.0.0.1 with port scanning (B6, B8)
+  - MIME allowlist with security pipeline (B7)
+  - Server fallback to file-path mode (B8-9)
+  - Clean-slate feedback regeneration with iteration counting (B10)
+  - Approval ends loop, server stays active during persistence prompt (B11)
+  - Keep/discard persistence with gitignore management (B12-14)
+  - Server always stopped on session end (B15)
+  - No prototype files committed to git

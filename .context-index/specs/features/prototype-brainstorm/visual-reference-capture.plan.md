@@ -527,19 +527,19 @@ Plan-task: 5"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] Source paths validated (regular file, not symlink, supported format, max 10 MB)
-  - [ ] External paths trigger confirmation prompt
-  - [ ] `source: user-upload` recorded for each capture
-  - [ ] Images copied to `.context-index/references/<module>/visuals/` with slugified names
-  - [ ] Description prompted when missing
-  - [ ] Slugification rules correct (lowercase, hyphens, max 60 chars, empty fallback)
-  - [ ] Directory created recursively if missing
-  - [ ] Numeric suffix deduplication (no overwrites)
-  - [ ] Original resolution preserved (no resizing/conversion)
-  - [ ] Unsupported formats rejected with message
-  - [ ] Session-end summary with `{ path, description }` pairs
-  - [ ] No `git add`/`git commit` performed by the skill
-  - [ ] No directory created when no references captured
-  - [ ] Capture accepted at any session point
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - Source paths validated (regular file, not symlink, supported format, max 10 MB)
+  - External paths trigger confirmation prompt
+  - `source: user-upload` recorded for each capture
+  - Images copied to `.context-index/references/<module>/visuals/` with slugified names
+  - Description prompted when missing
+  - Slugification rules correct (lowercase, hyphens, max 60 chars, empty fallback)
+  - Directory created recursively if missing
+  - Numeric suffix deduplication (no overwrites)
+  - Original resolution preserved (no resizing/conversion)
+  - Unsupported formats rejected with message
+  - Session-end summary with `{ path, description }` pairs
+  - No `git add`/`git commit` performed by the skill
+  - No directory created when no references captured
+  - Capture accepted at any session point

@@ -387,6 +387,6 @@ git commit -m "test(specify): finalize workspace-mode test coverage"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All 11 acceptance criteria from spec satisfied
-- [ ] No constitutional violations introduced (Principle 2: skills are primarily markdown — no runtime code added)
+- Tests pass: `npm test`
+- All 11 acceptance criteria from spec satisfied
+- No constitutional violations introduced (Principle 2: skills are primarily markdown — no runtime code added)

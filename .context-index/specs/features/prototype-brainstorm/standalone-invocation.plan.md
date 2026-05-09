@@ -496,21 +496,21 @@ Plan-task: 4"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] `--module` value validated against `^[a-z0-9][a-z0-9-]*$` (max 64 chars)
-  - [ ] Charter discovery uses glob-equivalent `.context-index/specs/features/*/charter.md`
-  - [ ] `/adev:prototype --module <name>` loads charter and constructs context without brainstorm
-  - [ ] Approach context extracted from charter Business Intent and Capability Map
-  - [ ] No `--module` with one charter: auto-selects with confirmation
-  - [ ] No `--module` with multiple charters: lists and prompts
-  - [ ] No `--module` with no charters: errors with `/adev:brainstorm` suggestion
-  - [ ] `--tier` argument skips tier selection prompt
-  - [ ] `--framework` argument skips framework prompt (functional tier only)
-  - [ ] `--framework` without functional tier produces warning and is ignored
-  - [ ] Closed charter produces warning but does not block
-  - [ ] Session ends with summary (no brainstorm return)
-  - [ ] Existing module heuristics surfaced before tier selection
-  - [ ] Missing `platform-context.yaml` produces warning, does not block
-  - [ ] Missing `constitution.md` produces error and blocks
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `--module` value validated against `^[a-z0-9][a-z0-9-]*$` (max 64 chars)
+  - Charter discovery uses glob-equivalent `.context-index/specs/features/*/charter.md`
+  - `/adev:prototype --module <name>` loads charter and constructs context without brainstorm
+  - Approach context extracted from charter Business Intent and Capability Map
+  - No `--module` with one charter: auto-selects with confirmation
+  - No `--module` with multiple charters: lists and prompts
+  - No `--module` with no charters: errors with `/adev:brainstorm` suggestion
+  - `--tier` argument skips tier selection prompt
+  - `--framework` argument skips framework prompt (functional tier only)
+  - `--framework` without functional tier produces warning and is ignored
+  - Closed charter produces warning but does not block
+  - Session ends with summary (no brainstorm return)
+  - Existing module heuristics surfaced before tier selection
+  - Missing `platform-context.yaml` produces warning, does not block
+  - Missing `constitution.md` produces error and blocks
+  - No constitutional violations introduced

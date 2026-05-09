@@ -188,6 +188,6 @@ describe("tags validation", () => {
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
-- [ ] Existing heuristic tests still pass (backward compatibility)
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied
+- Existing heuristic tests still pass (backward compatibility)
