@@ -21,6 +21,7 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 - `--from <step>`: override resume point — force restart from a specific step (`specify`, `review`, `plan`, `route`, `implement`, `validate`). Useful if build state is corrupted or stale.
 - `--no-infra`: skip infrastructure preflight in implement and validate steps (user-only — the agent must never set this flag). Propagated to sub-skills via `ADEV_NO_INFRA=1` env var.
 - `--verbose`: disable silent execution for all subagents in this pipeline run. Subagent prompts include `VERBOSE: true`, causing skills to narrate each step. Useful for debugging pipeline failures.
+- `--auto`: run the entire pipeline without prompting the user for input. Stale builds are overwritten (not prompted). Subagent prompts include `AUTO: true`, instructing sub-skills to make autonomous decisions instead of asking the user (e.g., accept default choices, skip confirmations). The build stops on errors rather than asking for guidance. Useful for CI, scheduled builds, and batch operations.
 
 ## Prerequisites
 
@@ -102,6 +103,7 @@ PIPELINE_CONTEXT:
     backend: <tasks.backend value from manifest, e.g., "file">
     epic_id: <epic ID for this spec's plan, if known>
   pipeline_mode: "full" | "implement"   # "full" when --full is set, "implement" otherwise
+  auto: true | false                    # true when --auto is set — subagents must not prompt the user
 ```
 
 **Read these files in a single turn using parallel tool calls:**
@@ -163,6 +165,14 @@ Execute silently — no intermediate narration. Chain all steps without
 commentary. Use parallel tool calls for multi-file reads.
 {{IF --verbose IS set, include instead:}}
 VERBOSE: true
+
+{{IF --auto IS set, include:}}
+AUTO: true
+Do NOT prompt the user for any input. Make autonomous decisions:
+accept defaults, skip confirmations, choose the most conservative
+option when ambiguous. If you encounter a situation that would
+normally require user input and no safe default exists, report
+FAILED with the details rather than blocking on input.
 
 Do NOT attempt to perform the skill's work yourself. You MUST use the
 Skill tool to load and execute the full skill. The skill contains
@@ -350,7 +360,7 @@ When validate returns FAIL and retry budget remains (`current_retry < max_retrie
 
 #### 1. Extract Failure Context
 
-Read the validation report written by the validate subagent (at `.context-index/specs/features/<module>/<spec-slug>-validation.md`). Extract:
+Read the validation report written by the validate subagent (at `.context-index/specs/features/<module>/<spec-slug>.validate.md`). Extract:
 
 - Which checks failed (check number, name, severity)
 - Specific failure details (file:line references, acceptance criteria IDs, error messages)
@@ -443,7 +453,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 
 ```json
 {
-  "spec": ".context-index/specs/features/<module>/<spec>.md",
+  "spec": ".context-index/specs/features/<module>/<spec>.spec.md",
   "phase": "<milestone-name or null>",
   "status": "in_progress",
   "steps": [
@@ -517,6 +527,8 @@ Proceed? (resume / overwrite)
 ```
 Await user input. "overwrite" resets the build state and proceeds. "resume" applies `--from implement` resume logic. If the user dismisses without choosing, stop and let them decide.
 
+**`--auto` behavior:** When `--auto` is set, skip the prompt and overwrite the stale build automatically. Log: "Auto mode: overwriting stale build for `<spec-slug>`."
+
 ---
 
 ## Phase Mode
@@ -578,7 +590,7 @@ Show:
 ```
 Dry Run: Build Pipeline for <spec or phase>
 
-  Spec: .context-index/specs/features/<module>/<spec>.md
+  Spec: .context-index/specs/features/<module>/<spec>.spec.md
     Step 1: Review    — SKIP (review.md exists, current)
     Step 2: Plan      — SKIP (plan.md exists, 5 tasks)
     Step 3: Route     — EXECUTE

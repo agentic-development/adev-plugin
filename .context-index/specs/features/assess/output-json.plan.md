@@ -100,9 +100,9 @@ The module uses only `JSON.stringify` (Node.js built-in) and produces output mat
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] JSON output is valid and parseable
-  - [ ] Contains all required fields (version, timestamp, mode, totalScore, level, dimensions)
-  - [ ] Each dimension includes name, score, weight, evidence
-  - [ ] No files are modified
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - JSON output is valid and parseable
+  - Contains all required fields (version, timestamp, mode, totalScore, level, dimensions)
+  - Each dimension includes name, score, weight, evidence
+  - No files are modified

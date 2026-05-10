@@ -102,11 +102,11 @@ Extend the existing `skills/status/SKILL.md` to add milestone progress views. Th
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] `--all` mode shows Milestone Progress section when milestones exist
-  - [ ] `--all` mode is unchanged when no milestones exist
-  - [ ] `--milestone <name>` shows detailed single-milestone view
-  - [ ] Missing milestone shows available milestones
-  - [ ] Gracefully handles unconfigured tasks.backend
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `--all` mode shows Milestone Progress section when milestones exist
+  - `--all` mode is unchanged when no milestones exist
+  - `--milestone <name>` shows detailed single-milestone view
+  - Missing milestone shows available milestones
+  - Gracefully handles unconfigured tasks.backend
+  - No constitutional violations introduced

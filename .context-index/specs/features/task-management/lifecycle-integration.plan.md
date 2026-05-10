@@ -176,6 +176,6 @@ git commit -m "feat(task-management): add validation outcome recording to adev:v
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] Zero `TodoWrite` references in `skills/implement/SKILL.md`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- Zero `TodoWrite` references in `skills/implement/SKILL.md`
+- All acceptance criteria from spec satisfied

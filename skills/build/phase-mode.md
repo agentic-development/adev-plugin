@@ -4,7 +4,7 @@ When `--phase <name>` is invoked (without `--resume`), the skill discovers and b
 
 ### Spec Discovery
 
-1. Scan all `.md` files under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`).
+1. Scan all `*.spec.md` files under `.context-index/specs/features/`.
 2. Parse YAML frontmatter for the `milestone` field.
 3. Select specs whose `milestone` matches `<name>` (case-insensitive).
 4. **Filter by pipeline mode:**

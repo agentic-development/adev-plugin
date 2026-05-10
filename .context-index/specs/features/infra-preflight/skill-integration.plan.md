@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/infra-preflight/charter.md
-> **Spec:** .context-index/specs/features/infra-preflight/skill-integration.md
+> **Spec:** .context-index/specs/features/infra-preflight/skill-integration.spec.md
 > **Review:** PASS_WITH_NOTES (2026-05-01)
 > **Platform:** Node.js, JavaScript (ESM), node:test
 
@@ -28,43 +28,43 @@
 
 **Reference (read, do not modify):**
 - `lib/infra-preflight.mjs` — API: `runPreflight()`, `parseInfraRequirements()`, `formatPreflightReport()`
-- `.context-index/specs/features/infra-preflight/skill-integration.md` — Behavioral contract
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` — Behavioral contract
 - `tests/skills/specify-feature-binding.test.mjs` — Test pattern reference
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-8)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-8)
 - Charter: `.context-index/specs/features/infra-preflight/charter.md` (capability: Skill Integration — Mandatory)
 - Reference: `skills/implement/SKILL.md` (current structure for insertion point)
 - Reference: `lib/infra-preflight.mjs` (API signatures for invocation pattern)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 9-10)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 9-10)
 - Reference: `skills/validate/SKILL.md` (current structure for insertion point)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 11-12)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 11-12)
 - Reference: `skills/build/SKILL.md` (current Arguments section)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 13-15)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 13-15)
 - Reference: `skills/write-test/SKILL.md` (current Step 1 for insertion point)
 
 ### Task 5 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 16-18)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 16-18)
 - Reference: `skills/debug/SKILL.md` (Phase 1 end for insertion point)
 
 ### Task 6 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 19-20)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 19-20)
 - Reference: `skills/eval/SKILL.md` (prerequisites section for insertion point)
 
 ### Task 7 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 21-22)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 21-22)
 - Reference: `skills/recover/SKILL.md` (Step 1 Detect for insertion point)
 
 ### Task 8 Context
-- Spec: `.context-index/specs/features/infra-preflight/skill-integration.md` (all Behaviors — full AC list)
+- Spec: `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (all Behaviors — full AC list)
 - Reference: `tests/skills/specify-feature-binding.test.mjs` (test pattern)
 - Reference: all 7 SKILL.md files (content to assert against)
 
@@ -85,6 +85,10 @@ Tasks 1-7 modify independent files with no shared dependencies. They can all run
 
 ### Task 1: Add preflight step to implement SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=5
+**Rationale:** Well-specified mandatory skill integration with explicit behavioral contracts (Behaviors 1-8), single-file SKILL.md edit, and mechanical insertion pattern.
+
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -92,7 +96,7 @@ Tasks 1-7 modify independent files with no shared dependencies. They can all run
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-8)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-8)
 - `lib/infra-preflight.mjs` (API for invocation pattern)
 
 - [ ] **Write failing test**
@@ -155,6 +159,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to implem
 
 ### Task 2: Add preflight step to validate SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=5
+**Rationale:** Well-specified mandatory skill integration with explicit placement and blocking message (Behaviors 9-10), single-file edit.
+
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -162,7 +170,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to implem
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 9-10)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 9-10)
 
 - [ ] **Write failing test**
 
@@ -211,6 +219,10 @@ git commit -m "feat(validation): add infrastructure preflight step to validate S
 
 ### Task 3: Add --no-infra passthrough to build SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=5
+**Rationale:** Simplest task -- document --no-infra arg and ADEV_NO_INFRA passthrough, no preflight step to insert, single-file edit.
+
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -218,7 +230,7 @@ git commit -m "feat(validation): add infrastructure preflight step to validate S
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 11-12)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 11-12)
 
 - [ ] **Write failing test**
 
@@ -267,6 +279,10 @@ git commit -m "feat(strategic-planning): add --no-infra passthrough to build SKI
 
 ### Task 4: Add preflight step to write-test SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=4
+**Rationale:** Well-specified with dispatch detection (ADEV_DISPATCHED_BY) and strategy-aware skip adding minor novelty over basic insertion.
+
 **Charter capability:** Skill Integration (Mandatory)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -274,7 +290,7 @@ git commit -m "feat(strategic-planning): add --no-infra passthrough to build SKI
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 13-15)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 13-15)
 
 - [ ] **Write failing test**
 
@@ -325,6 +341,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to write-
 
 ### Task 5: Add preflight step to debug SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 16/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=3
+**Rationale:** Three-tier resolution strategy (args > active plan > inference) with non-blocking advisory adds composition novelty, but all tiers are well-specified.
+
 **Charter capability:** Skill Integration (Conditional)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -332,7 +352,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to write-
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 16-18)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 16-18)
 
 - [ ] **Write failing test**
 
@@ -395,6 +415,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to debug 
 
 ### Task 6: Add preflight step to eval SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=4
+**Rationale:** Layer-aware skip logic adds minor novelty; otherwise straightforward conditional skill integration with single-file edit.
+
 **Charter capability:** Skill Integration (Conditional)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -402,7 +426,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to debug 
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 19-20)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 19-20)
 
 - [ ] **Write failing test**
 
@@ -455,6 +479,10 @@ git commit -m "feat(validation): add infrastructure preflight step to eval SKILL
 
 ### Task 7: Add preflight step to recover SKILL.md [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=3 blast=5 novelty=4
+**Rationale:** Corrective context injection for infra root causes adds minor novelty; well-specified behavior with formatPreflightReport integration.
+
 **Charter capability:** Skill Integration (Conditional)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -462,7 +490,7 @@ git commit -m "feat(validation): add infrastructure preflight step to eval SKILL
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (Behaviors 1-5, 21-22)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (Behaviors 1-5, 21-22)
 
 - [ ] **Write failing test**
 
@@ -516,6 +544,10 @@ git commit -m "feat(implementation): add infrastructure preflight step to recove
 
 ### Task 8: Write comprehensive content-presence tests [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=3
+**Rationale:** Test file follows specify-feature-binding.test.mjs golden sample pattern; cross-cutting assertions combine 7 skill checks but each is mechanical string matching.
+
 **Charter capability:** Skill Integration (Mandatory), Skill Integration (Conditional)
 **Depends on:** Task 1, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7
 **Strategy:** unit (source: fallback, confidence: high)
@@ -524,7 +556,7 @@ git commit -m "feat(implementation): add infrastructure preflight step to recove
 - Test: `tests/skills/skill-integration-preflight.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/infra-preflight/skill-integration.md` (all acceptance criteria)
+- `.context-index/specs/features/infra-preflight/skill-integration.spec.md` (all acceptance criteria)
 - `tests/skills/specify-feature-binding.test.mjs` (test pattern reference)
 
 - [ ] **Write failing test**
@@ -594,5 +626,5 @@ git commit -m "test(implementation): add content-presence tests for skill integr
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

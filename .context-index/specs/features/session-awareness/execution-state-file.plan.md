@@ -608,15 +608,15 @@ git commit -m "feat(session-awareness): implement clearExecutionState and verify
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [x] `writeExecutionState` produces a file parseable by `readExecutionState` (round-trip) — Task 4
-  - [x] `readExecutionState` returns `null` for missing or malformed files, never throws — Task 3
-  - [x] `clearExecutionState` resets to idle with empty bindings — Task 4
-  - [x] Active state without `planRef` or `currentTask` throws `MISSING_PLAN_REF` / `MISSING_CURRENT_TASK` — Task 1
-  - [x] Atomic write leaves no `.tmp` files on success — Task 2
-  - [x] Failed atomic write cleans up temp file — Task 2
-  - [x] `.context-index/` directory is created if missing on write — Task 2
-  - [x] All quality gates pass (`npm test`) — Quality Gates
-  - [x] No new dependencies added — verified (only `fs`, `path`, `crypto`)
-  - [x] No constitutional violations introduced — verified
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `writeExecutionState` produces a file parseable by `readExecutionState` (round-trip) — Task 4
+  - `readExecutionState` returns `null` for missing or malformed files, never throws — Task 3
+  - `clearExecutionState` resets to idle with empty bindings — Task 4
+  - Active state without `planRef` or `currentTask` throws `MISSING_PLAN_REF` / `MISSING_CURRENT_TASK` — Task 1
+  - Atomic write leaves no `.tmp` files on success — Task 2
+  - Failed atomic write cleans up temp file — Task 2
+  - `.context-index/` directory is created if missing on write — Task 2
+  - All quality gates pass (`npm test`) — Quality Gates
+  - No new dependencies added — verified (only `fs`, `path`, `crypto`)
+  - No constitutional violations introduced — verified

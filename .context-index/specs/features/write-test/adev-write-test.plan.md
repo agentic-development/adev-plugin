@@ -792,10 +792,10 @@ git commit -m "feat(adev:write-test): add model_tiers to platform-context.yaml t
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] All tests pass: `npm test`
-- [ ] No CommonJS syntax in any new file (`require`, `module.exports`)
-- [ ] No hardcoded model IDs in `SKILL.md`
-- [ ] All acceptance criteria from all 10 specs satisfied (review each spec's checklist)
+- All tests pass: `npm test`
+- No CommonJS syntax in any new file (`require`, `module.exports`)
+- No hardcoded model IDs in `SKILL.md`
+- All acceptance criteria from all 10 specs satisfied (review each spec's checklist)
 
 ### Acceptance Criteria Cross-check
 

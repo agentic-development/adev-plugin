@@ -12,7 +12,7 @@ Audit the health of `.context-index/` and source code, generating actionable rep
 - No arguments: full audit (all fifteen passes)
 - `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics, code-drift)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
-- `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
+- `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
 
   Valid status values: `draft`, `review-pending`, `review-passed`, `review-blocked`, `implemented`, `validated`
 
@@ -460,7 +460,7 @@ Total blockers: 5
 **Steps:**
 
 1. **Scan all charters.** Read every `.context-index/specs/features/*/charter.md`. For each charter, parse the Capability Map table. Extract each capability's name, priority, and phase.
-2. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`, `*-research.md`, `*-summary.md`, `*-findings.md`, `CONSISTENCY-REVIEW.md`). Parse frontmatter for `charter`, `milestone`, and `status`.
+2. **Scan all specs.** Read every `*.spec.md` file under `.context-index/specs/features/`. Parse frontmatter for `charter`, `milestone`, and `status`.
 3. **Match capabilities to specs.** For each charter capability, find the corresponding spec by:
    - Matching `milestone` in the spec to the capability's phase, AND
    - Matching the spec's `charter` field to the charter's module name.
@@ -505,7 +505,7 @@ Total blockers: 5
 
 **Steps:**
 
-1. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`, `*-research.md`, `*-summary.md`, `*-findings.md`, `CONSISTENCY-REVIEW.md`). Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
+1. **Scan all specs.** Read every `*.spec.md` file under `.context-index/specs/features/`. Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
 2. **Scan all review files.** Read every `.review.md` file. Parse `last-reviewed-revision` and `file-sha` fields.
 3. **Scan all charters.** Read every `charter.md`. Parse `revision` and the Capability Map table (including the `Status` column).
 
@@ -566,13 +566,13 @@ Reviews scanned: <N>
 Charters scanned: <N>
 
 ### Revision Drift
-- [ ] specs/features/auth/login.md: REVISION_DRIFT — spec revision 3, last reviewed revision 1
+- [ ] specs/features/auth/login.spec.md: REVISION_DRIFT — spec revision 3, last reviewed revision 1
 
 ### File Drift
-- [ ] specs/features/auth/login.md: FILE_DRIFT — file hash changed since last review
+- [ ] specs/features/auth/login.spec.md: FILE_DRIFT — file hash changed since last review
 
 ### Charter-Revision Staleness
-- [ ] specs/features/auth/login.md: CHARTER_STALE — spec references charter revision 1, charter is now at revision 3
+- [ ] specs/features/auth/login.spec.md: CHARTER_STALE — spec references charter revision 1, charter is now at revision 3
 
 ### Capability Status Inconsistencies
 - [ ] specs/features/auth/charter.md: STATUS_MISMATCH — capability "login" shows "planned" but spec status is "implemented"
@@ -802,7 +802,7 @@ Scanned: N source files, M commits
 
 **Steps:**
 
-1. Scan all specs matching `.context-index/specs/**/*.md` (excluding `charter.md`, `*.review.md`, `*.plan.md`).
+1. Scan all specs matching `.context-index/specs/**/*.spec.md`.
 2. For each spec, read the YAML frontmatter and check if `drift_detected: true` is present.
 3. If drifted specs are found, report WARN with a list:
    - Spec path
@@ -816,8 +816,8 @@ Scanned: N source files, M commits
 
 - PASS: No specs with drift_detected flags (or)
 - WARN: N specs with code-side drift detected:
-  - .context-index/specs/features/auth/login.md — drift_source: lib/login.mjs, drift_at: 2026-05-01T10:00:00Z
-  - .context-index/specs/features/dashboard/widgets.md — drift_source: lib/widgets.mjs, drift_at: 2026-05-02T14:00:00Z
+  - .context-index/specs/features/auth/login.spec.md — drift_source: lib/login.mjs, drift_at: 2026-05-01T10:00:00Z
+  - .context-index/specs/features/dashboard/widgets.spec.md — drift_source: lib/widgets.mjs, drift_at: 2026-05-02T14:00:00Z
 
 **Actions:**
 - [ ] Run `/adev:validate --spec <path>` to verify spec still reflects implementation

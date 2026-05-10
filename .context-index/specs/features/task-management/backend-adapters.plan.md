@@ -366,5 +366,5 @@ git commit -m "feat(task-management): add tasks config to manifest template"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

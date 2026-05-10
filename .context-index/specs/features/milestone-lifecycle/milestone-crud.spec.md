@@ -2,13 +2,13 @@
 
 ---
 charter: milestone-lifecycle
-status: review-pending
+status: review-passed
 risk_level: medium
-milestone: v1.0.0
-revision: 1
+milestone: v1
+revision: 2
 charter-revision: 2
 created: 2026-05-08
-updated: 2026-05-08
+updated: 2026-05-09
 tracker-ref: issue-355
 ---
 
@@ -56,7 +56,7 @@ tracker-ref: issue-355
 
 ## System Constitution Reference
 
-- **Principle:** "Minimize external dependencies — prefer Node.js built-ins" — YAML parsing uses a simple parser or regex-based approach, no external YAML library. If existing project code already parses YAML (e.g., for manifest.yaml), reuse that pattern.
+- **Principle:** "Minimize external dependencies — prefer Node.js built-ins" — YAML parsing reuses the existing `parseSimpleYaml()` pattern from `lib/workspace.mjs` or the `readManifest()` helper from `lib/repomap/index.mjs`. No external YAML library needed.
 - **Principle:** "Skills are primarily markdown" — the `/adev:issues` SKILL.md additions are markdown instructions; the `lib/milestones.mjs` module is companion code.
 - **Principle:** "Pure ESM" — all new files use `.mjs` extension with ES module imports.
 
@@ -64,7 +64,7 @@ tracker-ref: issue-355
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| 1. Milestone YAML schema and I/O | Implement `loadMilestones()`, `saveMilestones()`, `findMilestone()` in `lib/milestones.mjs`. Define the YAML structure. Reuse existing YAML parsing pattern from manifest loading. | medium |
+| 1. Milestone YAML schema and I/O | Implement `loadMilestones()`, `saveMilestones()`, `findMilestone()` in `lib/milestones.mjs`. Define the YAML structure. Reuse the existing `parseSimpleYaml()` pattern from `lib/workspace.mjs`. | medium |
 | 2. `milestone create` command | Parse arguments (name, --target, --check, --confirm). Validate inputs. Write to milestones.yaml. Call `createEpic()` through issue manager. Handle idempotent updates. | medium |
 | 3. `milestone list` command | Load milestones. For each, query issue manager for epic and child issue counts. Format and display table. Handle broken epic references. | small |
 | 4. SKILL.md updates | Add `milestone create` and `milestone list` subcommand documentation to `/adev:issues` SKILL.md. | small |

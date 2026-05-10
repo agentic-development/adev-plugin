@@ -62,13 +62,13 @@ updated: 2026-04-16
 
 | Capability | Description | Priority | Phase | Status |
 |-----------|-------------|----------|-------|--------|
-| Work Classification | Classify user's description into a known work type using intent + keywords | must-have | 1 | — |
-| Project State Scan | Glob/Grep for incomplete plans, unreviewed specs, recent sessions | must-have | 1 | — |
-| Route Proposal | Combine classification + state into a single recommendation with reasoning | must-have | 1 | — |
-| Confirmation Flow | Present proposal, accept confirmation or ask clarifying question if ambiguous | must-have | 1 | — |
-| Skill Invocation | Invoke the target `/adev:*` skill with relevant context | must-have | 1 | — |
-| Init Gate | Detect missing `.context-index/` and redirect to `/adev:init` | must-have | 1 | — |
-| Resume Detection | Surface in-progress work before classifying new work | should-have | 1 | — |
+| Work Classification | Classify user's description into a known work type using intent + keywords | must-have | 1 | validated |
+| Project State Scan | Glob/Grep for incomplete plans, unreviewed specs, recent sessions | must-have | 1 | validated |
+| Route Proposal | Combine classification + state into a single recommendation with reasoning | must-have | 1 | validated |
+| Confirmation Flow | Present proposal, accept confirmation or ask clarifying question if ambiguous | must-have | 1 | validated |
+| Skill Invocation | Invoke the target `/adev:*` skill with relevant context | must-have | 1 | validated |
+| Init Gate | Detect missing `.context-index/` and redirect to `/adev:init` | must-have | 1 | validated |
+| Resume Detection | Surface in-progress work before classifying new work | should-have | 1 | validated |
 
 ## Interface Contracts
 

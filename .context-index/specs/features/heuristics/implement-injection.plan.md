@@ -202,5 +202,5 @@ git commit -m "test(heuristics): add implement injection eval tests"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

@@ -149,6 +149,8 @@ created: <today's date YYYY-MM-DD>
 → Keep milestone "v1", or override? (enter to confirm / type new value)
 ```
 
+**Advisory milestone validation:** After the milestone value is confirmed (inherited or overridden), call `warnIfMilestoneUndefined(projectRoot, name)` from `lib/milestones.mjs`. If it returns a warning string, print it to the user. This is advisory only — never block spec creation based on this check.
+
 ## Shared: Summary Template
 
 After writing any spec, output the path, mode-specific stats (see each mode), and next steps: review the spec, `/adev:review-specs`, or write another spec.

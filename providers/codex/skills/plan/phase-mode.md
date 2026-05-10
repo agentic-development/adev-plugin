@@ -21,7 +21,7 @@ When `--phase` is used inside a workspace (detected by the presence of a `worksp
    Then proceed using the order in which repos are declared in the workspace config.
 5. **No workspace -> existing single-repo behavior:** If the current directory is not inside a workspace, or the workspace has only one registered repo, skip all workspace logic and apply the standard phase planning process below.
 
-1. **Scan all specs:** Read all `.md` files under `.context-index/specs/features/` (excluding `charter.md` and `*.plan.md` and `*.review.md`). Parse frontmatter for the `milestone` field.
+1. **Scan all specs:** Read all `*.spec.md` files under `.context-index/specs/features/`. Parse frontmatter for the `milestone` field.
 2. **Filter by phase:** Select specs whose `milestone` matches `<name>` (case-insensitive).
 3. **Report matching specs** before planning:
    ```
