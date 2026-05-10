@@ -37,7 +37,7 @@
 | epic-31 | Playbook Format and Debug Loading | closed | .context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.plan.md |  | 2026-04-24T00:00:00.000Z | 2026-04-24T23:01:10.205Z |
 | epic-32 | Retro Actions 2026-04-26 | open |  |  | 2026-04-26T00:00:00.000Z | 2026-04-26T00:00:00.000Z |
 | epic-33 | Model Routing — Cost Optimization | closed |  |  | 2026-04-26T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
-| epic-34 | Subagent Cost Routing | closed | .context-index/specs/cross-cutting/subagent-cost-routing.plan.md |  | 2026-04-26T00:00:00.000Z | 2026-04-26T00:00:00.000Z |
+| epic-34 | Subagent Cost Routing | closed |  |  | 2026-04-26T00:00:00.000Z | 2026-04-26T00:00:00.000Z |
 | epic-35 | Production Confidence Layer — Extend adev lifecycle beyond /adev:validate | closed |  |  | 2026-04-27T00:00:00.000Z | 2026-05-04T00:00:00.000Z |
 | epic-36 | Plan Infrastructure Requirements | closed | .context-index/specs/features/test-strategies/plan-infra-requirements.plan.md |  | 2026-04-27T00:00:00.000Z | 2026-04-27T00:00:00.000Z |
 | epic-37 | Integration Strategy Profile | closed | .context-index/specs/features/test-strategies/integration-strategy-profile.plan.md |  | 2026-04-27T00:00:00.000Z | 2026-04-27T00:00:00.000Z |
@@ -54,16 +54,16 @@
 | epic-50 | Lifecycle Gate Implementation | closed | .context-index/specs/cross-cutting/lifecycle-gate.plan.md |  | 2026-05-05T12:44:39.311Z | 2026-05-05T00:00:00.000Z |
 | epic-51 | adev:build One-Step-Per-Invocation Dispatch | closed | .context-index/specs/features/strategic-planning/adev-build-skill.plan.md |  | 2026-05-05T00:00:00.000Z | 2026-05-05T00:00:00.000Z |
 | epic-52 | API Eval Project | open | .context-index/specs/features/eval-projects/api-eval-project.plan.md |  | 2026-05-06T16:54:35.127Z | 2026-05-06T16:54:35.127Z |
-| epic-53 | Pipeline Eval Project | open | .context-index/specs/features/eval-projects/pipeline-eval-project.plan.md |  | 2026-05-06T16:54:35.660Z | 2026-05-06T16:54:35.660Z |
+| epic-53 | Pipeline Eval Project | closed | .context-index/specs/features/eval-projects/pipeline-eval-project.plan.md |  | 2026-05-06T16:54:35.660Z | 2026-05-06T16:54:35.660Z |
 | epic-54 | Automation Eval Project | closed | .context-index/specs/features/eval-projects/automation-eval-project.plan.md |  | 2026-05-06T16:54:52.418Z | 2026-05-06T17:15:19.454Z |
 | epic-55 | Migration Eval Project | closed | .context-index/specs/features/eval-projects/migration-eval-project.plan.md |  | 2026-05-06T16:56:35.938Z | 2026-05-06T17:20:07.093Z |
 | epic-56 | API Eval Project | closed | .context-index/specs/features/eval-projects/api-eval-project.plan.md | v1 | 2026-05-06T17:00:13.462Z | 2026-05-06T17:13:01.835Z |
 | epic-57 | Prototype Core Implementation | open | .context-index/specs/features/prototype-brainstorm/prototype-core.plan.md |  | 2026-05-08T10:03:33.044Z | 2026-05-08T10:03:33.044Z |
-| epic-58 | Standalone Invocation | open | .context-index/specs/features/prototype-brainstorm/standalone-invocation.plan.md |  | 2026-05-08T10:59:01.272Z | 2026-05-08T10:59:01.272Z |
+| epic-58 | Standalone Invocation | closed | .context-index/specs/features/prototype-brainstorm/standalone-invocation.plan.md |  | 2026-05-08T10:59:01.272Z | 2026-05-08T10:59:01.272Z |
 | epic-59 | Brainstorm Integration | open | .context-index/specs/features/prototype-brainstorm/brainstorm-integration.plan.md |  | 2026-05-08T13:15:14.164Z | 2026-05-08T13:15:14.164Z |
 | epic-60 | Visual Reference Capture | open | .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md |  | 2026-05-08T13:59:18.739Z | 2026-05-08T13:59:18.739Z |
 | epic-61 | Foundation & Onboarding Documentation | closed | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | Reconciled: validated (2026-05-09) | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
-| epic-62 | Milestone Create and List | open | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 1.0.0 | 2026-05-09T15:04:43.526Z | 2026-05-09T17:25:24.818Z |
+| epic-62 | Milestone Create and List | open |  | 1.0.0 | 2026-05-09T15:04:43.526Z | 2026-05-09T17:25:24.818Z |
 | epic-63 | 1.0.0 | closed |  | 1.0.0 | 2026-05-09T17:21:41.965Z | 2026-05-09T17:25:29.785Z |
 
 ## Issues
@@ -443,11 +443,11 @@
 | issue-373 | Verify cross-page links and add next-page navigation | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 6 |  | issue-368,issue-369,issue-370,issue-371 | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
 | issue-374 | Build orchestrator drops continuation after specify step — build state never updated | open | 1 | bug |  |  |  |  |  |  |  | 2026-05-09T11:53:03.625Z | 2026-05-09T11:53:03.625Z |
 | issue-375 | Build orchestrator drops continuation after specify step — build state never updated | closed | 1 | bug |  |  |  |  |  | Closed: Fixed: created lib/build-state.mjs programmatic helper with readBuildState, createBuildState, recordStepResult, getNextStep. Updated SKILL.md dispatch loop to use inline Node.js calls to the helper instead of manual JSON writing. 26 new tests, all 1850 tests pass. |  | 2026-05-09T11:55:24.469Z | 2026-05-09T14:54:49.667Z |
-| issue-376 | Milestone YAML schema and I/O | open | 2 | task | epic-62 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 1 |  |  |  |  | 2026-05-09T15:04:43.531Z | 2026-05-09T15:04:43.531Z |
-| issue-377 | milestone create command logic | open | 2 | task | epic-62 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 2 |  | issue-376 |  |  | 2026-05-09T15:04:43.541Z | 2026-05-09T15:04:43.579Z |
-| issue-378 | milestone list command logic | open | 2 | task | epic-62 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 3 |  | issue-376 |  |  | 2026-05-09T15:04:43.549Z | 2026-05-09T15:04:43.587Z |
-| issue-379 | SKILL.md subcommand documentation | open | 2 | task | epic-62 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 4 |  |  |  |  | 2026-05-09T15:04:43.557Z | 2026-05-09T15:04:43.557Z |
-| issue-380 | Integration tests for milestone commands | open | 2 | task | epic-62 | .context-index/specs/features/milestone-lifecycle/milestone-crud.plan.md | 5 |  | issue-376,issue-377,issue-378 |  |  | 2026-05-09T15:04:43.565Z | 2026-05-09T15:04:43.606Z |
+| issue-376 | Milestone YAML schema and I/O | open | 2 | task | epic-62 |  | 1 |  |  |  |  | 2026-05-09T15:04:43.531Z | 2026-05-09T15:04:43.531Z |
+| issue-377 | milestone create command logic | open | 2 | task | epic-62 |  | 2 |  | issue-376 |  |  | 2026-05-09T15:04:43.541Z | 2026-05-09T15:04:43.579Z |
+| issue-378 | milestone list command logic | open | 2 | task | epic-62 |  | 3 |  | issue-376 |  |  | 2026-05-09T15:04:43.549Z | 2026-05-09T15:04:43.587Z |
+| issue-379 | SKILL.md subcommand documentation | open | 2 | task | epic-62 |  | 4 |  |  |  |  | 2026-05-09T15:04:43.557Z | 2026-05-09T15:04:43.557Z |
+| issue-380 | Integration tests for milestone commands | open | 2 | task | epic-62 |  | 5 |  | issue-376,issue-377,issue-378 |  |  | 2026-05-09T15:04:43.565Z | 2026-05-09T15:04:43.606Z |
 | issue-381 | Plan QG checkboxes never checked off + getPlanProgress boundary bug | open | 2 | bug |  |  |  |  |  | Two compounding issues: (1) The plan template emits Quality Gates as checkboxes but nothing checks them off — validate writes results to .validate.md, not back to the plan. (2) getPlanProgress in lib/meta-tools.mjs does not stop at ## Quality Gates heading, so QG checkboxes get attributed to the last task, inflating totals and marking it incomplete. Fix: (A) Plan template emits QG as plain bullets. (B) getPlanProgress only counts checkboxes within ### Task N: sections. |  | 2026-05-09T16:48:53.411Z | 2026-05-09T16:48:53.411Z |
 | issue-382 | Research and implement a deploy skill (/adev:deploy) | open | 2 | feature | epic-62 |  |  |  |  |  |  | 2026-05-09T17:28:40.442Z | 2026-05-09T17:28:40.442Z |
 | issue-387 | Lifecycle gate hook does not block source edits when lifecycle.gate=block | open | 1 | bug |  |  |  |  |  |  |  | 2026-05-09T23:30:09.171Z | 2026-05-09T23:30:09.171Z |
