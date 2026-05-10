@@ -1,0 +1,11 @@
+permitted_tools:
+  - "pytest"
+  - "dbt test"
+  - "node:test"
+
+max_test_file_size: 1048576
+
+skip_patterns:
+  - "@pytest.mark.skip"
+  - "pytest.skip\\("
+  - "enabled: false"

@@ -1,0 +1,27 @@
+merge_strategy: append
+blocker_threshold: 1
+
+reviewers:
+  - id: structural-architect
+    name: "Structural Architect"
+    dispatch: always
+    prompt: "plugin:review-specs/structural-architect-prompt.md"
+    profile: reviewer-reasoning
+    context_pack: base
+    severity_cap: blocker
+
+  - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/security-reviewer-prompt.md"
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
+
+  - id: consistency-analyzer
+    name: "Consistency Analyzer"
+    dispatch: always
+    prompt: "plugin:review-specs/consistency-analyzer-prompt.md"
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
