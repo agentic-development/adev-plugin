@@ -50,3 +50,71 @@ Here are quick notes on how adev adapts for project types not shown above:
 ### The Key Principle
 
 adev does not prescribe how your project should be built. It provides a consistent process — brainstorm, charter, specify, plan, implement, validate — that adapts to whatever quality gates and conventions your project needs. The constitution and manifest are where that adaptation happens. Everything else follows from them.
+
+## Bundled Domain Profiles
+
+Domain profiles provide domain-specific lifecycle configuration. Each profile ships as a set of 7 overlay files that customize charters, specs, reviewers, gates, verification, and test tooling for a particular domain. Set `domain: <name>` in your manifest or charter frontmatter to activate a profile.
+
+### software (default)
+
+The `software` profile is the default. Projects with no `domain:` declaration use this profile automatically. It contains the framework's standard configuration extracted into overlay files:
+
+- **Charter overlay** — Standard sections: Business Intent, Scope and Boundaries, Domain Model (Entities, Relationships, Invariants), Capability Map, Interface Contracts, Quality Attributes (latency p50/p95/p99, throughput, availability, error rate, test coverage).
+- **Spec overlay** — Standard sections: Behavioral Contract, Preconditions, Behaviors, Postconditions, Error Cases (Condition / Expected Behavior / Error Code), Visual Expectations, Acceptance Criteria.
+- **Reviewers** — Three reviewers: structural-architect, security-reviewer, consistency-analyzer. `merge_strategy: append`, `blocker_threshold: 1`.
+- **Gates** — Standard quality gate running `npm test`.
+- **Verification** — Visual verification with Playwright at breakpoints 375, 768, 1280. Triggers on `*.html`, `*.jsx`, `*.tsx`, `*.vue`, `*.svelte`.
+- **Gate config** — 27 file exclusion patterns and 31 bash passthrough commands covering standard development tooling.
+- **Test config** — Permitted tools: node:test, jest, vitest, mocha, pytest, go test, cargo test. Max test file size: 512 KB. 7 skip patterns for gaming detection.
+
+### data-engineering
+
+The `data-engineering` profile is designed for data pipeline projects using tools like dbt, DuckDB, and Python data tooling:
+
+- **Charter overlay** — Uses data domain vocabulary: Data Contract (instead of Interface Contracts), Data Model (Sources, Transformations, Outputs instead of Entities/Relationships), Data Lineage, Pipeline Stages. Quality attributes: freshness SLA, completeness (null rate), accuracy, row count stability, schema drift detection.
+- **Spec overlay** — Error cases use Failure Mode / Recovery Action columns. Replaces Visual Expectations with Data Quality Expectations. Adds Output Schema section.
+- **Reviewers** — Data Contract Reviewer focused on schema completeness, SLA definitions, and data quality thresholds. `merge_strategy: append`.
+- **Gates** — Data quality gate checking schema validation and data fixture definitions.
+- **Verification** — Output-based verification (assertion-based output comparison). Triggers on `*.parquet`, `*.csv`, `*.json`, `*.yaml`. No browser tool required.
+- **Gate config** — Includes data-specific file exclusions (`*.parquet`, `*.duckdb`, `seeds/**`, `target/**`) and passthrough commands (`dbt run`, `dbt test`, `dbt build`, `python -m pytest`).
+- **Test config** — Permitted tools: pytest, dbt test, node:test. Max test file size: 1 MB (data test files can be larger). Python/dbt-specific skip patterns.
+
+### process-automation
+
+The `process-automation` profile is designed for workflow and process automation projects:
+
+- **Charter overlay** — Uses workflow domain vocabulary: Integration Points (instead of Interface Contracts), Workflow Steps (instead of generic capabilities), Recovery & Compensation. Quality attributes: end-to-end latency, retry success rate, dead-letter rate, recovery time objective (RTO).
+- **Spec overlay** — Error cases use Trigger / Outcome columns. Adds Integration Points section for external system touchpoints. Adds Recovery Actions section for compensation logic.
+- **Reviewers** — Integration Reviewer focused on integration point completeness and recovery action coverage. `merge_strategy: append`.
+- **Gates** — Flow coverage gate checking integration point tests and recovery action tests.
+- **Verification** — Flow-based verification. Triggers on `*.workflow.yaml`, `*.flow.json`, `*.bpmn`. No browser tool required.
+- **Gate config** — Includes automation-specific file exclusions (`*.workflow.yaml`, `*.bpmn`, `flows/**`) and passthrough commands (`python -m pytest`, `npm test`, `npx jest`).
+- **Test config** — Permitted tools: pytest, node:test, jest. Max test file size: 512 KB. Python/JS skip patterns.
+
+### Customizing a Bundled Profile
+
+To customize a bundled profile without modifying it directly, create a custom domain that extends the bundled one:
+
+1. Create `.context-index/domains/<custom-name>/domain.yaml` with `extends: <bundled-name>`.
+2. Place only the overlay files you want to override in your custom domain directory. Missing files are inherited from the parent profile.
+3. Set `domain: <custom-name>` in your manifest or charter frontmatter.
+
+Example:
+
+```yaml
+# .context-index/domains/my-api/domain.yaml
+extends: software
+```
+
+```yaml
+# .context-index/domains/my-api/reviewers.yaml
+merge_strategy: append
+reviewers:
+  - id: api-reviewer
+    name: "API Reviewer"
+    dispatch: always
+    prompt: "Review API design for RESTful conventions and backward compatibility."
+    profile: reviewer-capable
+```
+
+To reset all customizations, change `domain: <custom-name>` back to `domain: <bundled-name>` in your manifest. The bundled profile is always pristine and unmodified.

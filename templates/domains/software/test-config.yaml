@@ -1,0 +1,19 @@
+permitted_tools:
+  - "node:test"
+  - "jest"
+  - "vitest"
+  - "mocha"
+  - "pytest"
+  - "go test"
+  - "cargo test"
+
+max_test_file_size: 512000
+
+skip_patterns:
+  - "\\.skip\\("
+  - "xit\\("
+  - "xdescribe\\("
+  - "\\.todo\\("
+  - "test\\.skip\\("
+  - "it\\.skip\\("
+  - "describe\\.skip\\("
