@@ -27,6 +27,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 | `/adev:debug` | Validation | Context-aware systematic debugging | Bug or test failure |
 | `/adev:eval` | Validation | Graduated evaluation harness scoring 0-100 | Implementation complete |
 | `/adev:recover` | Validation | Structured diagnosis when agents get stuck | Active implementation |
+| `/adev:deploy` | Operations | Run a structured deployment pipeline from deploy.yaml | deploy.yaml exists |
 | `/adev:issues` | Maintenance | Manage project issues and epics | Task backend configured |
 | `/adev:status` | Maintenance | Query project status dashboard (read-only) | Context index exists |
 | `/adev:hygiene` | Maintenance | Audit context for staleness, drift, and coverage gaps | Context index exists |
@@ -482,6 +483,46 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 **Expected Output:** A recovery diagnosis with root cause classification, corrective context injection, and re-dispatch of the stuck subagent with enriched prompts. A recovery record is written for retrospective analysis.
 
 **Related Guides:** [Validate & Debug](validate-debug.md), [Build Phase](build-phase.md)
+
+---
+
+## Operations
+
+### `/adev:deploy`
+
+**Purpose:** Execute a structured deployment pipeline defined in `.context-index/deploy.yaml`. Runs shell commands, manual steps, verifications, gates, and CI triggers in order with fail-fast behavior, output redaction, and rollback guidance on failure.
+
+**Prerequisites:** `.context-index/deploy.yaml` must exist and pass validation. A version must be resolvable via `--version` or from a shipped milestone in `milestones.yaml`.
+
+**Arguments:**
+- `--version <tag>`: explicit version/tag for this deploy (bypasses milestone lookup)
+- `--env <name>`: target environment name (uses default if omitted)
+- `--dry-run`: print what would execute without running anything
+
+**Example:**
+```
+/adev:deploy
+/adev:deploy --version v1.2.0 --env production
+/adev:deploy --dry-run
+```
+
+**Step types:**
+
+| Type | Behavior |
+|------|----------|
+| `shell` | Run a command via `execFile` (no shell interpolation) |
+| `manual` | Print instructions, wait for user input (done/skip/abort) |
+| `verify` | Run a verification command, fail deploy if it fails |
+| `gate` | Poll a command at an interval until success or timeout |
+| `ci-trigger` | Dispatch a CI job and poll for completion |
+
+**On failure:** The pipeline stops immediately, reports which steps succeeded and which failed, and surfaces any configured rollback steps in reverse order. Rollback steps are never auto-executed — each requires explicit user confirmation.
+
+**Security:** Shell commands use `execFile` with `shell: false`. Output is redacted for declared environment variable values. Config is validated for inline secrets before execution. `deploy.yaml` is never modified by the skill.
+
+**Companion code:** All deploy logic lives in `lib/deploy.mjs` (config loading, validation, step execution, rollback, version resolution, output formatting).
+
+**Related Guides:** [Build Phase](build-phase.md)
 
 ---
 
