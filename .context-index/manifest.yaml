@@ -150,6 +150,23 @@ provenance:
   recommended_trailers:
     - Spec
     - Plan-task
+  # Conventional commit types accepted by commit-msg hook and CI.
+  # Types not in this list are rejected. Scopes are optional and unconstrained.
+  # Format: <type>[(<scope>)][!]: <description>
+  conventional_commit_types:
+    - feat       # New feature (bumps minor)
+    - fix        # Bug fix (bumps patch)
+    - docs       # Documentation only
+    - style      # Formatting, no logic change
+    - refactor   # Code restructuring, no behavior change
+    - perf       # Performance improvement
+    - test       # Adding or updating tests
+    - build      # Build system or external dependencies
+    - ci         # CI/CD configuration
+    - chore      # Maintenance, tooling, housekeeping
+    - revert     # Reverts a previous commit
+    - deps       # Dependency updates
+    - research   # Research artifacts
 
 # ============================================================================
 # Repo Map Configuration

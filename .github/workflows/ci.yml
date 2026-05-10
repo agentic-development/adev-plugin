@@ -131,7 +131,19 @@ jobs:
             exit 0
           fi
 
-          echo "Checking commits for required trailers (Author-type, Operator)..."
+          # Extract allowed conventional commit types from manifest
+          ALLOWED_TYPES=""
+          if [ -f .context-index/manifest.yaml ]; then
+            ALLOWED_TYPES=$(sed -n '/conventional_commit_types:/,/^[^ ]/p' .context-index/manifest.yaml \
+              | grep '^[[:space:]]*- ' \
+              | sed 's/^[[:space:]]*- //' \
+              | sed 's/[[:space:]]*#.*//' \
+              | sed 's/[[:space:]]*$//' \
+              | tr '\n' '|' \
+              | sed 's/|$//')
+          fi
+
+          echo "Checking commits for required trailers (Author-type, Operator) and conventional commit format..."
           FAILED=0
 
           for SHA in $(git log --format='%H' origin/${{ github.base_ref }}..HEAD); do
@@ -146,13 +158,26 @@ jobs:
               echo "::warning::Commit ${SHA:0:7} ($SUBJECT) missing trailers:$MISSING"
               FAILED=$((FAILED + 1))
             fi
+
+            # Validate conventional commit format (skip merge/fixup commits)
+            if [ -n "$ALLOWED_TYPES" ]; then
+              case "$SUBJECT" in
+                Merge\ *|fixup!\ *|squash!\ *|amend!\ *) ;;
+                *)
+                  if ! echo "$SUBJECT" | grep -qE "^($ALLOWED_TYPES)(\([a-zA-Z0-9_./-]+\))?\!?:"; then
+                    echo "::warning::Commit ${SHA:0:7} ($SUBJECT) does not follow conventional commit format. Allowed types: $(echo "$ALLOWED_TYPES" | tr '|' ', ')"
+                    FAILED=$((FAILED + 1))
+                  fi
+                  ;;
+              esac
+            fi
           done
 
           if [ "$FAILED" -gt 0 ]; then
             echo ""
-            echo "::error::$FAILED commit(s) missing required provenance trailers."
+            echo "::error::$FAILED commit(s) failed provenance checks."
             echo "Ensure git hooks are active (run: npx adev-cli install) or add trailers manually."
             exit 1
           fi
 
-          echo "All commits have required provenance trailers."
+          echo "All commits pass provenance checks."
