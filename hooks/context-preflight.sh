@@ -7,8 +7,8 @@
 
 set -uo pipefail
 
-# Read stdin (hook protocol)
-cat > /dev/null
+# Read stdin and populate CLAUDE_TOOL_INPUT_* env vars
+source "$(dirname "$0")/_parse-stdin.sh"
 
 # Walk up from cwd to find the nearest directory containing .context-index/
 find_context_index() {

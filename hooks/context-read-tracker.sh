@@ -7,8 +7,8 @@
 
 set -uo pipefail
 
-# Read stdin (hook protocol)
-cat > /dev/null
+# Read stdin and populate CLAUDE_TOOL_INPUT_* env vars
+source "$(dirname "$0")/_parse-stdin.sh"
 
 FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
 
