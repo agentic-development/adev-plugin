@@ -171,6 +171,7 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 | Refactor `lib/lifecycle-gate-config.mjs` | Remove `DEFAULT_FILE_EXCLUSIONS` and `DEFAULT_BASH_PASSTHROUGH`; delegate to domain profile | medium |
 | Refactor `lib/test-strategies/profiles.mjs` | Remove hardcoded `UNIT_PROFILE` and `permitted_tools`; delegate to domain profile | medium |
 | Write integration tests | Test each skill with and without overlays, verify governance wins on conflict, verify no hardcoded fallbacks remain | large |
+| Update `docs/configuration.md` and `docs/hooks.md` | Document config merge order per skill, domain-aware lifecycle gate config | small |
 
 ## Acceptance Criteria
 
@@ -194,5 +195,7 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 - [ ] Lifecycle gate hooks use domain gate-config for file exclusions and bash passthrough
 - [ ] Write-test/implement use domain test-config for permitted tools and gaming thresholds
 - [ ] Immutability: merge functions return new objects, never mutate inputs (verified by tests)
+- [ ] `docs/configuration.md` documents the config merge order (domain profile -> governance) for each skill integration point
+- [ ] `docs/hooks.md` documents domain-aware lifecycle gate config (file exclusions, bash passthrough)
 - [ ] All quality gates pass (tests, lint)
 - [ ] No constitutional violations introduced
