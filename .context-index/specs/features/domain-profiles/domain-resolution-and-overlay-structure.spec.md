@@ -6,11 +6,11 @@
 
 ---
 charter: domain-profiles
-status: review-pending
+status: validated
 risk_level: medium
 milestone: v1
-revision: 5
-charter-revision: 3
+revision: 6
+charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
 ---
@@ -52,13 +52,15 @@ Both fields are optional. Existing manifests without these fields behave identic
 
 | Overlay Type Constant | Filename | Return Type |
 |----------------------|----------|-------------|
-| `"charter-overlay"` | `charter-overlay.md` | `string` |
-| `"spec-overlay"` | `spec-overlay.md` | `string` |
+| `"charter-template"` | `charter-template.md` | `string` |
+| `"spec-template"` | `spec-template.md` | `string` |
 | `"reviewers"` | `reviewers.yaml` | `object` |
 | `"gates"` | `gates.yaml` | `object` |
 | `"verification"` | `verification.yaml` | `object` |
 | `"gate-config"` | `gate-config.yaml` | `object` |
 | `"test-config"` | `test-config.yaml` | `object` |
+
+**Deprecated type names:** The old type names `"charter-overlay"` and `"spec-overlay"` are recognized by `loadOverlay()` but emit a deprecation warning (`OVERLAY_TYPE_DEPRECATED`) and return `null`. Use `"charter-template"` and `"spec-template"` instead.
 
 ### Schema Responsibility Boundary
 
@@ -133,7 +135,7 @@ When multiple layers provide the same overlay type, they merge in this order (la
 
 9. **When** `loadOverlay()` detects a `.context-index/domains/<name>/` directory where `<name>` matches a bundled domain name (`software`, `data-engineering`, `process-automation`) **then** it throws with error code `BUNDLED_OVERRIDE_BLOCKED` and the message: `"Cannot override bundled domain '<name>'. Create a custom domain with 'extends: <name>' instead."` This check runs before any file reads.
 
-10. **When** `loadOverlay()` reads a markdown overlay (`charter-overlay` or `spec-overlay` type) **then** it returns the file contents as a string.
+10. **When** `loadOverlay()` reads a markdown template (`charter-template` or `spec-template` type) **then** it returns the file contents as a string.
 
 11. **When** `loadOverlay()` reads a structured overlay (`reviewers`, `gates`, `verification`, `gate-config`, or `test-config` type) **then** it parses the YAML and returns the parsed object. No semantic schema validation is performed — that is the consuming skill's responsibility.
 

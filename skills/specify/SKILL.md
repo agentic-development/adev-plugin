@@ -128,6 +128,18 @@ If the call fails or returns empty, proceed without heuristics — non-blocking.
 When heuristics are present, include them in the working context alongside the charter and existing specs.
 Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
+**Domain-Aware Spec Template:** After loading context, resolve the active domain and load the domain-specific spec template. This provides the complete spec section structure for the project's domain.
+Run inline Node.js:
+```javascript
+const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
+const { loadOverlay } = await import('<ADEV_ROOT>/lib/domains/overlay.mjs');
+const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
+const domainTemplate = loadOverlay(domain.resolved_domain, 'spec-template', repoRoot, pluginRoot);
+// domainTemplate is the complete spec template for the resolved domain
+```
+If `loadOverlay()` returns `null`, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
+The loaded template defines the spec's section structure. Use the template's H2 headings and table columns as the structure for this spec. Do not use hardcoded section names -- the template is the single source of truth for section structure.
+
 ## Shared: Frontmatter
 
 ```yaml
@@ -214,7 +226,7 @@ If option 2, add `charter-extension: true` to frontmatter and a comment at the t
 
 ### Step 4: Interactive Spec Authoring
 
-Guide the user through each section. Do not dump a blank template. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
+Guide the user through each section defined in the loaded domain template. Do not dump a blank template. Use the template's section names and structure -- do not substitute or rename sections. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
 
 **Behavioral Contract:**
 Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors in the **When...then** format:
@@ -282,7 +294,7 @@ infra_requirements:
 ### Step 5: Write the Spec
 
 1. Generate slug: lowercase, kebab-case, no special characters.
-2. Fill `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
+2. Fill the domain template loaded in Step 2. If no domain template was loaded, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
 3. Set frontmatter per shared section (including milestone inheritance). Additionally set:
    - `revision: 1`
    - `charter-revision: <the parent charter's current revision value>`
@@ -703,7 +715,7 @@ Same process as standard mode (behavioral contract, constitution reference, task
 
 ### Step 5: Write the Spec
 
-1. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
+1. Fill the domain template loaded in Step 2. If no domain template was loaded, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
 2. Add Module Impact and Integration Points after the standard template sections.
 3. Set frontmatter per the shared section with `mode: cross-cutting` and `affects: [<modules>]` instead of `charter:`.
 4. Save to `.context-index/specs/cross-cutting/<spec-slug>.spec.md`.

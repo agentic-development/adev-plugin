@@ -1,3 +1,17 @@
+---
+status: draft
+revision: 1
+updated: {{ date }}
+---
+
+# Feature Charter: {{ module_name }}
+
+<!-- Feature Charter for the {{ module_name }} module.
+     This defines WHAT the module does and its boundaries, not HOW it is built.
+     Live Specs within this charter define specific behavioral contracts. -->
+
+<!-- # tracker-ref: -->
+
 ## Business Intent
 
 <!-- Why does this feature exist? What user or business problem does it solve? -->
@@ -28,6 +42,16 @@
 
 | Capability | Description | Status |
 |------------|-------------|--------|
+
+## Deferred Capabilities
+
+<!-- Capabilities explicitly deferred to later phases or out of scope with structured tracking.
+     Migrated from Out of Scope when a capability has a known target phase or dependency.
+     This table enables reliable backlog extraction by /adev:status --backlog. -->
+
+| Capability | Reason | Target Phase | Depends On |
+|-----------|--------|-------------|------------|
+<!-- | Example capability | Low priority, manual workaround exists | v2 | — | -->
 
 ## Interface Contracts
 
