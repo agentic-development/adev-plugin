@@ -6,6 +6,11 @@ charter-revision: 2
 created: 2026-04-27
 updated: 2026-04-27
 charter-extension: true
+source-manifest:
+  files:
+    - lib/test-strategies/profiles/integration.md
+    - lib/test-strategies/profiles.mjs
+  computed-at: "2026-05-10T23:51:01.456Z"
 ---
 
 # Live Spec: Integration Strategy Profile

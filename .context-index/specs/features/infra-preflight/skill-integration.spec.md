@@ -7,6 +7,16 @@ revision: 3
 charter-revision: 1
 created: 2026-05-01
 updated: 2026-05-04
+source-manifest:
+  files:
+    - skills/implement/SKILL.md
+    - skills/validate/SKILL.md
+    - skills/build/SKILL.md
+    - skills/write-test/SKILL.md
+    - skills/debug/SKILL.md
+    - skills/eval/SKILL.md
+    - skills/recover/SKILL.md
+  computed-at: "2026-05-10T23:51:01.456Z"
 ---
 
 # Live Spec: Skill Integration

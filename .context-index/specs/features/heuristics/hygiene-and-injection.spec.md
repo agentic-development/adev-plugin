@@ -15,6 +15,16 @@ revision: 1
 charter-revision: 5
 created: 2026-04-23
 updated: 2026-05-04
+source-manifest:
+  files:
+    - skills/hygiene/SKILL.md
+    - skills/debug/SKILL.md
+    - skills/brainstorm/SKILL.md
+    - skills/specify/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/validate/SKILL.md
+    - lib/heuristics.mjs
+  computed-at: "2026-05-10T23:51:54.631Z"
 ---
 
 ## Behavioral Contract

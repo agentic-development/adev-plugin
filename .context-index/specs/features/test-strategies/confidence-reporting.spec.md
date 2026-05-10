@@ -5,6 +5,11 @@ revision: 1
 charter-revision: 2
 created: 2026-04-20
 updated: 2026-05-04
+source-manifest:
+  files:
+    - lib/test-strategies/assignment.mjs
+    - lib/test-strategies/detection.mjs
+  computed-at: "2026-05-10T23:51:01.456Z"
 ---
 
 # SPEC 9: Confidence Reporting
