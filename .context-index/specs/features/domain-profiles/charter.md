@@ -1,7 +1,7 @@
 ---
-status: draft
-revision: 3
-updated: 2026-05-08
+status: approved
+revision: 4
+updated: 2026-05-10
 ---
 
 # Feature Charter: Domain Profiles
@@ -57,40 +57,48 @@ Domain Profiles make the Agentic Development Framework domain-agnostic by introd
 | ReviewerSet | List of reviewer entries to use for a domain, merged into review.yaml | `domain`, `reviewers[]`, `merge_strategy` (replace/append) |
 | GateSet | Quality gate entries for a domain, merged by `id` into the base gate registry | `domain`, `gates[]` (each entry: `id`, `command`, `description`) |
 | VerificationConfig | Domain-specific verification approach for the implement skill | `domain`, `type` (visual/output/flow), `trigger_patterns[]` (file globs that activate verification), `tool` (mcp server name or `none` — e.g., `playwright` for visual, `none` for output comparison via assertions) |
+| GateHookConfig | Lifecycle gate hook config: file exclusion patterns and bash passthrough commands | `domain`, `file_exclusions[]`, `bash_passthrough[]` |
+| TestConfig | Test framework config: permitted tools, gaming detection thresholds, skip patterns | `domain`, `permitted_tools[]`, `max_test_file_size`, `skip_patterns[]` |
 | DomainResolution | The resolved domain string for a given charter/module context | `resolved_domain`, `source_level` (charter/module/project/default) |
 
 ### Relationships
 
-- A DomainProfile contains exactly one TemplateOverlay (charter), one TemplateOverlay (spec), one ReviewerSet, one GateSet, and one VerificationConfig. All are optional — missing files fall back to base.
+- A DomainProfile contains exactly one TemplateOverlay (charter), one TemplateOverlay (spec), one ReviewerSet, one GateSet, one VerificationConfig, one GateHookConfig, and one TestConfig — 7 files total. All are optional — missing files in custom domains fall back to the parent via `extends`.
 - A charter references zero or one DomainProfile via its `domain` frontmatter field.
 - A module references zero or one DomainProfile via its `domain` field in manifest.
 - A project references zero or one DomainProfile via `project.domain` in manifest.
+- A custom domain can extend exactly one bundled domain via `extends` in `domain.yaml`.
 - Extensions can provide one or more DomainProfiles in their package.
 
 ### Invariants
 
 - Domain resolution is deterministic: given the same manifest and charter, `resolveDomain()` always returns the same string.
-- `"software"` is a reserved domain name. When no domain is declared at any level, the base templates are used as-is (equivalent to software behavior). The base templates are not a "software domain overlay" — they reflect the framework's original defaults. Declaring `domain: software` explicitly behaves identically to no declaration. No `domains/software/` overlay directory is shipped or consulted — the base templates ARE the software behavior. Users must not create a `domains/software/` directory; `loadOverlay()` will never be called with `domain: "software"`.
+- `"software"` is the default domain. When no domain is declared at any level, `resolveDomain()` returns `"software"`. The `software` profile is a real bundled profile (`templates/domains/software/`) containing all current framework defaults extracted into config files. It is not special-cased — it follows the same resolution path as any other domain.
+- Bundled domain profiles (`software`, `data-engineering`, `process-automation`) are immutable. Users cannot create `.context-index/domains/<bundled-name>/` to override them directly. To customize, users create a new domain with `extends: <bundled-name>` in `.context-index/domains/<custom-name>/domain.yaml`.
 - Domain values must match the pattern `/^[a-z0-9][a-z0-9-]*$/` (lowercase alphanumeric and hyphens). Values containing path separators, dot-sequences, or other characters are rejected by `resolveDomain()` to prevent path traversal.
-- An overlay file either exists completely or not at all — no partial overlays.
+- An overlay file either exists completely or not at all — no partial overlays within a single file. Custom domains may provide only a subset of overlay files; missing files are inherited from the parent via `extends`.
+- The `extends` chain is exactly one level deep: a custom domain can extend a bundled domain, but a bundled domain cannot extend another domain.
 - Domain resolution runs exactly once per skill invocation, at the start, and the result is passed downstream as a concrete value.
 - Overlay merge never mutates the base template — it produces a new in-memory result.
-- Overlay resolution has two-level precedence: project-local (`.context-index/domains/<domain>/`) wins over bundled (`<plugin-root>/templates/domains/<domain>/`).
+- Config merge order: domain profile (resolved via extends) -> governance overlay (governance wins on conflict).
 
 ## Capability Map
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Domain Resolution Function | `resolveDomain()` — 4-level precedence chain returning a domain string | Must-have | v1 | review-passed |
-| Overlay File Structure | `domains/<domain>/` directory convention with charter-overlay, spec-overlay, reviewers, gates, verification files | Must-have | v1 | review-passed |
-| Charter Template Overlay | Domain-specific section names and vocabulary merged into base charter template | Must-have | v1 | review-passed |
-| Spec Template Overlay | Domain-specific error case columns, expectations section replacement | Must-have | v1 | review-passed |
-| Domain-Aware Reviewer Dispatch | Review-specs loads domain-specific reviewer set from overlay | Must-have | v1 | review-passed |
-| Domain-Aware Quality Gates | Validate runs domain-specific gate commands | Should-have | v1 | review-passed |
-| Domain-Aware Verification | Implement loads domain-specific verification config (visual/output/flow) | Should-have | v1 | review-passed |
-| Bundled Data-Engineering Profile | Overlay set for data pipelines: data contracts, fixture strategies, output verification | Should-have | v1 | review-passed |
-| Bundled Process-Automation Profile | Overlay set for workflows: integration points, recovery actions, flow verification | Nice-to-have | v1 | review-passed |
-| Custom Domain Support | Users create `domains/<name>/` with their own overlays | Should-have | v1 | specified |
+| Domain Resolution Function | `resolveDomain()` — 4-level precedence chain returning a domain string | Must-have | v1 | specified |
+| Overlay File Structure | `domains/<domain>/` directory convention with 7 overlay types (charter-overlay, spec-overlay, reviewers, gates, verification, gate-config, test-config) | Must-have | v1 | specified |
+| Charter Template Overlay | Domain-specific section names and vocabulary merged into base charter template | Must-have | v1 | specified |
+| Spec Template Overlay | Domain-specific error case columns, expectations section replacement | Must-have | v1 | specified |
+| Domain-Aware Reviewer Dispatch | Review-specs loads domain-specific reviewer set from overlay | Must-have | v1 | specified |
+| Domain-Aware Quality Gates | Validate runs domain-specific gate commands | Should-have | v1 | specified |
+| Domain-Aware Verification | Implement loads domain-specific verification config (visual/output/flow) | Should-have | v1 | specified |
+| Domain-Aware Lifecycle Gates | Hooks load domain-specific file exclusions and bash passthrough commands | Must-have | v1 | specified |
+| Domain-Aware Test Config | Write-test/implement load domain-specific permitted tools and gaming thresholds | Must-have | v1 | specified |
+| Bundled Software Profile | Default profile extracting all current hardcoded framework defaults into config files | Must-have | v1 | specified |
+| Bundled Data-Engineering Profile | Overlay set for data pipelines: data contracts, fixture strategies, output verification | Should-have | v1 | specified |
+| Bundled Process-Automation Profile | Overlay set for workflows: integration points, recovery actions, flow verification | Nice-to-have | v1 | specified |
+| Custom Domain Support | Users create `domains/<name>/` with `extends: <parent>` for clone-based customization | Should-have | v1 | specified |
 
 ## Interface Contracts
 
@@ -98,9 +106,9 @@ Domain Profiles make the Agentic Development Framework domain-agnostic by introd
 
 | Name | Type | Description |
 |------|------|-------------|
-| `resolveDomain(manifest, charterFrontmatter, moduleSlug, pluginRoot)` | function | Returns `{ resolved_domain, source_level }`. Single entry point for all skills. `pluginRoot` is reserved for future extensibility. |
-| `loadOverlay(domain, overlayType, repoRoot, pluginRoot)` | function | Reads and returns parsed overlay for a given domain and type. `repoRoot` locates `.context-index/domains/`; `pluginRoot` locates `templates/domains/`. For markdown overlays (charter/spec): returns a string. For structured overlays (reviewers/gates/verification): returns a parsed object. Returns `null` if no overlay file exists for the given domain and type. |
-| `domains/<domain>/` | directory convention | Well-known path where domain profiles are stored. Bundled profiles live in the plugin's `templates/domains/`. User/extension profiles live in `.context-index/domains/`. |
+| `resolveDomain(manifest, charterFrontmatter, moduleSlug)` | function | Returns `{ resolved_domain, source_level }`. Single entry point for all skills. Pure function operating on pre-parsed inputs. |
+| `loadOverlay(domain, overlayType, repoRoot, pluginRoot)` | function | Reads and returns parsed overlay for a given domain and type, following the `extends` chain for custom domains. `repoRoot` locates `.context-index/domains/`; `pluginRoot` locates `templates/domains/`. For markdown overlays (charter/spec): returns a string. For structured overlays (reviewers/gates/verification/gate-config/test-config): returns a parsed object. Returns `null` if no overlay file exists. |
+| `domains/<domain>/` | directory convention | Well-known path where domain profiles are stored. Bundled profiles live in the plugin's `templates/domains/`. Custom profiles live in `.context-index/domains/` with a `domain.yaml` containing `extends: <parent>`. |
 
 ### Consumed
 
@@ -117,7 +125,7 @@ Domain Profiles make the Agentic Development Framework domain-agnostic by introd
 | Attribute | Requirement |
 |-----------|-------------|
 | Backward Compatibility | Projects without a `domain` field behave identically to today. No existing workflow breaks. |
-| Performance | Domain resolution adds at most 2 file reads (manifest + charter frontmatter) per skill invocation. Overlay loading adds at most 5 file reads (one per overlay type). No measurable latency impact. |
+| Performance | Domain resolution adds at most 2 file reads (manifest + charter frontmatter) per skill invocation. Overlay loading adds at most 7 file reads (one per overlay type). No measurable latency impact. |
 | Simplicity | A user declares `domain: data-engineering` in manifest and gets adapted templates, reviewers, and gates without further configuration. Zero-config for bundled domains. |
 | Extensibility | New domains require only a directory with overlay files. No code changes, no registry updates, no CLI commands. Extensions ship domains as directories. |
 | Testability | `resolveDomain()` is a pure function — deterministic output from inputs, no side effects. Overlay loading is file-based — testable with fixture directories. |

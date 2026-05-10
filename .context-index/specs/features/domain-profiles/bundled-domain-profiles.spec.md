@@ -55,9 +55,9 @@ The `software` profile contains all current hardcoded framework defaults extract
 
 5. **When** `domain: software` is active and implement loads the verification config **then** verification uses `type: visual` with `trigger_patterns: ["*.html", "*.jsx", "*.tsx", "*.vue", "*.svelte"]` and `tool: playwright`. Breakpoints: 375 (mobile), 768 (tablet), 1280 (desktop).
 
-6. **When** `domain: software` is active and lifecycle gate hooks load gate-config **then** the current 44 file exclusion patterns are loaded (`.context-index/**`, `*.test.*`, `*.spec.*`, `node_modules/**`, etc.) and the current 32 bash passthrough commands are loaded (`npm test`, `npx jest`, `npx vitest`, `npm run lint`, etc.).
+6. **When** `domain: software` is active and lifecycle gate hooks load gate-config **then** the current 27 file exclusion patterns are loaded (`.context-index/**`, `*.test.*`, `*.spec.*`, `node_modules/**`, etc.) and the current 31 bash passthrough commands are loaded (`npm test`, `npx jest`, `npx vitest`, `npm run lint`, etc.).
 
-7. **When** `domain: software` is active and write-test/implement load test-config **then** `permitted_tools: ["node:test", "jest", "vitest", "mocha", "pytest", "go test", "cargo test"]`, `max_test_file_size: 524288` (512 KB), and JavaScript-specific skip patterns (`\.skip\(`, `xit\(`, `xdescribe\(`, `\.todo\(`) are loaded.
+7. **When** `domain: software` is active and write-test/implement load test-config **then** `permitted_tools: ["node:test", "jest", "vitest", "mocha", "pytest", "go test", "cargo test"]`, `max_test_file_size: 512000` (500 KB), and JavaScript-specific skip patterns (`\.skip\(`, `xit\(`, `xdescribe\(`, `\.todo\(`, `test\.skip\(`, `it\.skip\(`, `describe\.skip\(`) are loaded.
 
 **Data-Engineering Profile**
 
@@ -150,8 +150,8 @@ The `software` profile contains all current hardcoded framework defaults extract
 - [ ] `templates/domains/data-engineering/` contains all 7 overlay files
 - [ ] `templates/domains/process-automation/` contains all 7 overlay files
 - [ ] Software profile reviewer config matches current hardcoded defaults exactly (structural-architect, security-reviewer, consistency-analyzer)
-- [ ] Software profile gate-config matches current `DEFAULT_FILE_EXCLUSIONS` and `DEFAULT_BASH_PASSTHROUGH` exactly
-- [ ] Software profile test-config matches current `permitted_tools` and `MAX_FILE_SIZE` exactly
+- [ ] Software profile gate-config matches current `DEFAULT_FILE_EXCLUSIONS` (27 patterns) and `DEFAULT_BASH_PASSTHROUGH` (31 commands) exactly
+- [ ] Software profile test-config matches current `permitted_tools`, `MAX_FILE_SIZE` (512000), and `SKIP_RE` (7 patterns) exactly
 - [ ] Software profile verification config matches current Playwright visual verification defaults
 - [ ] Backward-compatibility tests pass: software profile produces identical behavior to pre-domain-profiles framework
 - [ ] Data-engineering charter overlay uses domain vocabulary (Data Contract, Pipeline Stages, Data Lineage)
