@@ -16,6 +16,49 @@ if [ -z "$COMMIT_MSG_FILE" ] || [ ! -f "$COMMIT_MSG_FILE" ]; then
   exit 0
 fi
 
+# --- Conventional commit subject validation ---
+# Reads allowed types from manifest. Skips merge/revert commits.
+# Runs first so ALL commits are validated regardless of spec status.
+
+SUBJECT=$(head -1 "$COMMIT_MSG_FILE")
+
+case "$SUBJECT" in
+  Merge\ *|fixup!\ *|squash!\ *|amend!\ *) ;;
+  *)
+    MANIFEST=".context-index/manifest.yaml"
+    if [ -f "$MANIFEST" ]; then
+      ALLOWED_TYPES=$(sed -n '/conventional_commit_types:/,/^[^ ]/p' "$MANIFEST" \
+        | grep '^[[:space:]]*- ' \
+        | sed 's/^[[:space:]]*- //' \
+        | sed 's/[[:space:]]*#.*//' \
+        | sed 's/[[:space:]]*$//' \
+        | tr '\n' '|' \
+        | sed 's/|$//')
+
+      if [ -n "$ALLOWED_TYPES" ]; then
+        if ! echo "$SUBJECT" | grep -qE "^($ALLOWED_TYPES)(\([a-zA-Z0-9_./-]+\))?\!?:"; then
+          echo ""
+          echo "COMMIT BLOCKED: Subject does not follow conventional commit format."
+          echo ""
+          echo "  Got:      $SUBJECT"
+          echo "  Expected: <type>[(<scope>)][!]: <description>"
+          echo ""
+          echo "  Allowed types: $(echo "$ALLOWED_TYPES" | tr '|' ', ')"
+          echo ""
+          echo "  Examples:"
+          echo "    feat: add infrastructure preflight"
+          echo "    fix(hooks): handle missing manifest"
+          echo "    feat!: redesign spec format (breaking)"
+          echo ""
+          exit 1
+        fi
+      fi
+    fi
+    ;;
+esac
+
+# --- Spec lifecycle enforcement ---
+
 SPECS_DIR=".context-index/specs/features"
 
 # Exit silently if no specs directory
