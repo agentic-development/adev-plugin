@@ -3,9 +3,9 @@
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/spec-drift-detection/charter.md
 > **Specs:**
->   - .context-index/specs/features/spec-drift-detection/hook-side-drift-detection.md
->   - .context-index/specs/features/spec-drift-detection/drift-flag-clearing.md
->   - .context-index/specs/features/spec-drift-detection/skill-gate-integration.md
+>   - .context-index/specs/features/spec-drift-detection/hook-side-drift-detection.spec.md
+>   - .context-index/specs/features/spec-drift-detection/drift-flag-clearing.spec.md
+>   - .context-index/specs/features/spec-drift-detection/skill-gate-integration.spec.md
 > **Review:** PASS_WITH_NOTES (2026-05-02)
 > **Platform:** JavaScript (ESM), Node.js, node:test
 
@@ -185,7 +185,7 @@ Implementation notes:
 git add lib/spec-drift.mjs tests/lib/spec-drift.test.mjs
 git commit -m "feat(spec-drift-detection): add lib/spec-drift.mjs with scan, stamp, clear, hasDrift
 
-Spec: .context-index/specs/features/spec-drift-detection/hook-side-drift-detection.md
+Spec: .context-index/specs/features/spec-drift-detection/hook-side-drift-detection.spec.md
 Plan-task: 1"
 ```
 
@@ -279,7 +279,7 @@ Modify `hooks/sync-trigger.sh`:
 git add hooks/sync-trigger.sh tests/hooks/sync-trigger-drift.test.mjs
 git commit -m "feat(spec-drift-detection): extend sync-trigger.sh with drift detection
 
-Spec: .context-index/specs/features/spec-drift-detection/hook-side-drift-detection.md
+Spec: .context-index/specs/features/spec-drift-detection/hook-side-drift-detection.spec.md
 Plan-task: 2"
 ```
 
@@ -341,7 +341,7 @@ If `clearDrift()` fails (e.g., write error), log a warning but do not block impl
 git add skills/implement/SKILL.md tests/skills/implement-drift-clearing.test.mjs
 git commit -m "feat(spec-drift-detection): add clearDrift instruction to implement SKILL.md
 
-Spec: .context-index/specs/features/spec-drift-detection/drift-flag-clearing.md
+Spec: .context-index/specs/features/spec-drift-detection/drift-flag-clearing.spec.md
 Plan-task: 3"
 ```
 
@@ -445,7 +445,7 @@ frontmatter may be malformed. Fix the spec frontmatter before planning.
 git add skills/plan/SKILL.md tests/skills/plan-drift-gate.test.mjs
 git commit -m "feat(spec-drift-detection): add CODE_DRIFT gate to plan SKILL.md
 
-Spec: .context-index/specs/features/spec-drift-detection/skill-gate-integration.md
+Spec: .context-index/specs/features/spec-drift-detection/skill-gate-integration.spec.md
 Plan-task: 4"
 ```
 
@@ -567,7 +567,7 @@ Report:
 git add skills/validate/SKILL.md skills/hygiene/SKILL.md tests/skills/validate-drift-warn.test.mjs tests/skills/hygiene-drift-pass.test.mjs
 git commit -m "feat(spec-drift-detection): add drift integration to validate and hygiene SKILL.md
 
-Spec: .context-index/specs/features/spec-drift-detection/skill-gate-integration.md
+Spec: .context-index/specs/features/spec-drift-detection/skill-gate-integration.spec.md
 Plan-task: 5"
 ```
 

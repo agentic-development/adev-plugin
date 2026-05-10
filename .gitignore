@@ -40,6 +40,11 @@ viz/dist/
 .context-index/.session-tracking.jsonl
 .context-index/user-config
 
-# Session logs and reports (transient per-session artifacts)
-.context-index/sessions/
-.context-index/reports/
+# Prototype artifacts (adev)
+.adev/
+
+# Claude Code worktrees (ephemeral agent workspaces)
+.claude/worktrees/
+
+# Lifecycle gate advisory counter (runtime state)
+.context-index/.advisory-counter

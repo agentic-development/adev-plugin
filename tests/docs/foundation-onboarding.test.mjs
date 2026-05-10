@@ -1,0 +1,184 @@
+import { describe, it } from 'node:test';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import assert from 'node:assert';
+
+const DOCS_DIR = join(import.meta.dirname, '..', '..', 'docs');
+
+describe('docs/README.md — Table of Contents', () => {
+  it('should exist', () => {
+    assert.ok(existsSync(join(DOCS_DIR, 'README.md')));
+  });
+
+  it('should contain Getting Started section with link to concepts, installation, and getting-started', () => {
+    const content = readFileSync(join(DOCS_DIR, 'README.md'), 'utf-8');
+    assert.ok(content.includes('concepts.md'), 'Missing link to concepts.md');
+    assert.ok(content.includes('installation.md'), 'Missing link to installation.md');
+    assert.ok(content.includes('getting-started.md'), 'Missing link to getting-started.md');
+  });
+
+  it('should contain Workflow Guides section', () => {
+    const content = readFileSync(join(DOCS_DIR, 'README.md'), 'utf-8');
+    assert.ok(content.includes('Workflow'), 'Missing Workflow Guides section');
+  });
+
+  it('should contain Reference section', () => {
+    const content = readFileSync(join(DOCS_DIR, 'README.md'), 'utf-8');
+    assert.ok(content.includes('Reference'), 'Missing Reference section');
+  });
+
+  it('should contain Advanced section', () => {
+    const content = readFileSync(join(DOCS_DIR, 'README.md'), 'utf-8');
+    assert.ok(content.includes('Advanced'), 'Missing Advanced section');
+  });
+});
+
+describe('docs/concepts.md — Concepts Overview', () => {
+  it('should exist', () => {
+    assert.ok(existsSync(join(DOCS_DIR, 'concepts.md')));
+  });
+
+  it('should explain the four pillars', () => {
+    const content = readFileSync(join(DOCS_DIR, 'concepts.md'), 'utf-8');
+    assert.ok(content.includes('Context-First'), 'Missing Context-First Architecture');
+    assert.ok(content.includes('Ephemeral Infrastructure'), 'Missing Ephemeral Infrastructure');
+    assert.ok(content.includes('Gate-Based Governance'), 'Missing Gate-Based Governance');
+    assert.ok(content.includes('Hybrid Engineering'), 'Missing Hybrid Engineering');
+  });
+
+  it('should describe the context index', () => {
+    const content = readFileSync(join(DOCS_DIR, 'concepts.md'), 'utf-8');
+    assert.ok(content.includes('context index') || content.includes('Context Index'), 'Missing context index description');
+  });
+
+  it('should include a lifecycle overview', () => {
+    const content = readFileSync(join(DOCS_DIR, 'concepts.md'), 'utf-8');
+    assert.ok(content.includes('lifecycle') || content.includes('Lifecycle'), 'Missing lifecycle overview');
+  });
+
+  it('should not reference internal implementation details', () => {
+    const content = readFileSync(join(DOCS_DIR, 'concepts.md'), 'utf-8');
+    assert.ok(!content.includes('SKILL.md'), 'Should not reference SKILL.md files');
+    assert.ok(!content.includes('hooks.json'), 'Should not reference hooks.json');
+  });
+});
+
+describe('docs/installation.md — Installation Guide', () => {
+  it('should exist', () => {
+    assert.ok(existsSync(join(DOCS_DIR, 'installation.md')));
+  });
+
+  it('should cover greenfield setup', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('greenfield') || content.includes('Greenfield') || content.includes('new project'), 'Missing greenfield path');
+  });
+
+  it('should cover brownfield setup', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('brownfield') || content.includes('Brownfield') || content.includes('existing'), 'Missing brownfield path');
+  });
+
+  it('should cover provider selection', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('Claude Code'), 'Missing Claude Code provider');
+  });
+
+  it('should include verification steps', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(content.includes('verify') || content.includes('Verify') || content.includes('verification'), 'Missing verification steps');
+  });
+
+  it('should use synthetic placeholder values for any credentials (SEC-1)', () => {
+    const content = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    // Should not contain real-looking API keys or tokens
+    assert.ok(!content.match(/sk-[a-zA-Z0-9]{32,}/), 'Contains real-looking API key');
+  });
+});
+
+describe('docs/getting-started.md — Getting Started Tutorial', () => {
+  it('should exist', () => {
+    assert.ok(existsSync(join(DOCS_DIR, 'getting-started.md')));
+  });
+
+  it('should cover all lifecycle phases', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    const phases = ['init', 'brainstorm', 'specify', 'review', 'plan', 'implement', 'validate'];
+    for (const phase of phases) {
+      assert.ok(
+        content.toLowerCase().includes(phase),
+        `Missing lifecycle phase: ${phase}`
+      );
+    }
+  });
+
+  it('should define terms on first use', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    // Check that key terms are explained, not just used
+    assert.ok(content.includes('charter') || content.includes('Charter'), 'Missing charter explanation');
+    assert.ok(content.includes('spec') || content.includes('Spec') || content.includes('specification'), 'Missing spec explanation');
+  });
+
+  it('should preserve quickstart content — install command', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    assert.ok(content.includes('npx @adev-org/adev-cli install') || content.includes('installation'), 'Missing install reference');
+  });
+
+  it('should preserve quickstart content — adev:work mention', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    assert.ok(content.includes('adev:work') || content.includes('/adev:work'), 'Missing adev:work reference from quickstart');
+  });
+
+  it('should preserve quickstart content — adev:issues mention', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    assert.ok(content.includes('adev:issues') || content.includes('/adev:issues'), 'Missing adev:issues reference from quickstart');
+  });
+
+  it('should not assume prior knowledge of adev', () => {
+    const content = readFileSync(join(DOCS_DIR, 'getting-started.md'), 'utf-8');
+    // The tutorial should be self-contained — check it has an introductory paragraph
+    const lines = content.split('\n');
+    const firstParagraph = lines.slice(2, 10).join('\n');
+    assert.ok(firstParagraph.length > 50, 'Should have an introductory paragraph explaining what the tutorial covers');
+  });
+});
+
+describe('docs/quickstart.md — Removal', () => {
+  it('should not exist (replaced by getting-started.md)', () => {
+    assert.ok(!existsSync(join(DOCS_DIR, 'quickstart.md')), 'quickstart.md should be removed');
+  });
+});
+
+describe('Cross-page links and navigation', () => {
+  const pages = ['README.md', 'concepts.md', 'installation.md', 'getting-started.md'];
+
+  it('should have all relative links resolve to existing files', () => {
+    for (const page of pages) {
+      const content = readFileSync(join(DOCS_DIR, page), 'utf-8');
+      const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+      let match;
+      while ((match = linkPattern.exec(content)) !== null) {
+        const target = match[2];
+        // Skip external links and anchor links
+        if (target.startsWith('http') || target.startsWith('#')) continue;
+        // Strip anchor from relative links
+        const filePart = target.split('#')[0];
+        if (filePart) {
+          const targetPath = join(DOCS_DIR, filePart);
+          assert.ok(
+            existsSync(targetPath),
+            `${page}: broken link to ${target} (expected file at ${targetPath})`
+          );
+        }
+      }
+    }
+  });
+
+  it('should have next-page links at the bottom of sequential pages', () => {
+    // concepts -> installation -> getting-started
+    const concepts = readFileSync(join(DOCS_DIR, 'concepts.md'), 'utf-8');
+    assert.ok(concepts.includes('installation.md'), 'concepts.md should link to installation.md as next page');
+
+    const installation = readFileSync(join(DOCS_DIR, 'installation.md'), 'utf-8');
+    assert.ok(installation.includes('getting-started.md'), 'installation.md should link to getting-started.md as next page');
+  });
+});

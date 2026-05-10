@@ -47,8 +47,8 @@ describe("verifySpecImplemented", () => {
   test("returns low confidence when no plan and no source-manifest", () => {
     const tmp = createTempDir();
     try {
-      writeFixture(tmp, "spec.md", "---\nstatus: implemented\n---\n# Spec\n");
-      const result = verifySpecImplemented(join(tmp, "spec.md"), { projectRoot: tmp });
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n");
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
       assert.equal(result.implemented, false);
       assert.equal(result.confidence, CONFIDENCE.LOW);
     } finally {
@@ -59,7 +59,7 @@ describe("verifySpecImplemented", () => {
   test("returns high confidence when plan files exist and are committed", () => {
     const tmp = createTempGitDir();
     try {
-      writeFixture(tmp, "spec.md", "---\nstatus: implemented\n---\n# Spec\n\nTests at tests/feature.test.mjs\n");
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n\nTests at tests/feature.test.mjs\n");
       writeFixture(tmp, "spec.plan.md", `# Plan
 
 **Create:**
@@ -75,7 +75,7 @@ describe("verifySpecImplemented", () => {
       // Commit all files
       execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
 
-      const result = verifySpecImplemented(join(tmp, "spec.md"), { projectRoot: tmp });
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
       assert.equal(result.confidence, CONFIDENCE.HIGH);
       assert.equal(result.implemented, true);
     } finally {
@@ -86,7 +86,7 @@ describe("verifySpecImplemented", () => {
   test("returns medium confidence when files committed but no tests found", () => {
     const tmp = createTempGitDir();
     try {
-      writeFixture(tmp, "spec.md", "---\nstatus: implemented\n---\n# Spec\n");
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n");
       writeFixture(tmp, "spec.plan.md", `# Plan
 
 **Create:**
@@ -99,7 +99,7 @@ describe("verifySpecImplemented", () => {
 
       execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
 
-      const result = verifySpecImplemented(join(tmp, "spec.md"), { projectRoot: tmp });
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
       assert.equal(result.confidence, CONFIDENCE.MEDIUM);
       assert.equal(result.implemented, true);
     } finally {
@@ -110,7 +110,7 @@ describe("verifySpecImplemented", () => {
   test("returns none confidence when plan files are missing from disk", () => {
     const tmp = createTempGitDir();
     try {
-      writeFixture(tmp, "spec.md", "---\nstatus: implemented\n---\n# Spec\n");
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n");
       writeFixture(tmp, "spec.plan.md", `# Plan
 
 **Create:**
@@ -125,7 +125,7 @@ describe("verifySpecImplemented", () => {
 
       execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
 
-      const result = verifySpecImplemented(join(tmp, "spec.md"), { projectRoot: tmp });
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
       assert.equal(result.confidence, CONFIDENCE.NONE);
       assert.equal(result.implemented, false);
     } finally {
@@ -141,7 +141,7 @@ describe("verifySpecImplemented", () => {
       execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
 
       // Add spec and plan
-      writeFixture(tmp, "spec.md", "---\nstatus: implemented\n---\n# Spec\n");
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n");
       writeFixture(tmp, "spec.plan.md", `# Plan
 
 **Create:**
@@ -153,7 +153,7 @@ describe("verifySpecImplemented", () => {
       writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
       // NOT committed — only on disk
 
-      const result = verifySpecImplemented(join(tmp, "spec.md"), { projectRoot: tmp });
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
       assert.equal(result.confidence, CONFIDENCE.LOW);
       assert.equal(result.implemented, false);
     } finally {

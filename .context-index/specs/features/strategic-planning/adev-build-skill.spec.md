@@ -6,20 +6,22 @@
 
 ---
 charter: strategic-planning
-status: validated
+status: implemented
 risk_level: high
 milestone: v2
-revision: 6
+revision: 7
 charter-revision: 3
 created: 2026-04-05
-updated: 2026-05-04
+updated: 2026-05-05
 source-manifest:
-  sha: "44ed75d"
+  sha: "83090b0"
   files:
     - skills/build/SKILL.md
+    - skills/build/resume-mode.md
+    - tests/skills/build-one-step-dispatch.test.mjs
     - tests/skills/build-full-pipeline.test.mjs
     - tests/skills/build-phase-and-stale.test.mjs
-  computed-at: "2026-04-28T02:01:25.174Z"
+  computed-at: "2026-05-05T00:00:00.000Z"
 ---
 
 ## Behavioral Contract
@@ -69,6 +71,28 @@ Both modes support `--phase <name>` to batch-build multiple specs. Route runs by
 19. **When** validate returns FAIL and `build.max_retries > 0` and retry budget remains **then** the orchestrator enters a validate→implement retry loop — see Appendix: Retry Policy
 20. **When** `build.max_retries` is 0 or absent in user-config **then** validate FAIL is recorded and the build completes without retry (fail-fast default)
 21. **When** resolving `build.max_retries` or `build.max_review_retries` **then** follow the same hierarchy as persona resolution: local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default. Uses `parseUserConfig()` from `lib/persona.mjs`
+
+### One-Step-Per-Invocation Dispatch Model
+
+The build orchestrator executes **exactly one pipeline step per turn**, then yields control. This is the primary structural mechanism preventing the agent from skipping steps or inlining work.
+
+22. **When** the orchestrator determines the next step to execute **then** it dispatches exactly ONE subagent for that step, records the result in build state, and STOPS. It does not proceed to the next step in the same turn. The next step is executed on the following orchestrator turn (via self-re-invocation or user-triggered resume).
+
+23. **When** a subagent returns its STEP_RESULT and the build is not complete **then** the orchestrator writes updated build state, prints a one-line progress report (`"Step N (<name>) — <verdict>. Next: Step N+1 (<name>)."`), and re-invokes `/adev:build --resume --spec <path>` via the Skill tool to continue the pipeline in a fresh turn.
+
+24. **When** the orchestrator re-invokes itself **then** the new invocation starts with a clean context (per `context: fork`), reads build state from disk, and determines the next incomplete step — it has no memory of prior turns. This creates a hard context boundary between steps.
+
+25. **When** the orchestrator identifies that all steps are complete (or a stop condition is met) **then** it does NOT re-invoke. It prints the final summary and exits.
+
+26. **When** the orchestrator loads **then** it MUST determine its current step by reading `.context-index/build-state/<slug>.json` BEFORE taking any action. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history.
+
+27. **When** the orchestrator's prompt is assembled **then** it contains ONLY the instructions for the dispatch loop (read state → determine next step → dispatch ONE subagent → record result → re-invoke or stop). It does NOT contain the full behavioral details of child skills. The orchestrator sees step names and dispatch instructions, never implementation details.
+
+28. **When** the `--verbose` flag is set **then** the orchestrator prints its reasoning before each dispatch (which step, why not skipped, what context packet was assembled) but still executes only one step per turn.
+
+#### Rationale
+
+This model prevents the "finish the work" failure mode where accumulated context causes the agent to skip lifecycle steps. By executing one step per turn and re-invoking with a fresh context, the orchestrator never accumulates enough context to feel compelled to shortcut. Each turn has a single, narrow task: dispatch one subagent.
 
 ### Stale Build Detection
 
@@ -257,6 +281,15 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 - [ ] `--resume --from <invalid-step>` prints an error and stops
 - [ ] On `--resume`, stale build detection scans for zombie builds (in_progress + all steps skipped) and reports them with suggested resume command
 - [ ] On new `--spec` build, warns if a zombie build exists for the same slug
+
+### One-Step-Per-Invocation Dispatch
+- [ ] Orchestrator executes exactly ONE pipeline step per turn — never two or more steps in a single invocation
+- [ ] After dispatching one subagent and recording result, orchestrator re-invokes itself via Skill tool for the next step
+- [ ] Each re-invocation starts with a fresh forked context — no memory of prior turns
+- [ ] Pipeline position is determined solely from build state file on disk, never from conversation context
+- [ ] Orchestrator prompt contains only dispatch-loop instructions, not child skill implementation details
+- [ ] Final step (or stop condition) exits without re-invocation and prints summary
+- [ ] `--verbose` causes reasoning output but does not change one-step-per-turn behavior
 
 ### Subagent and Fork Isolation
 - [ ] Each pipeline step dispatched as a fresh subagent via Agent tool with forked context

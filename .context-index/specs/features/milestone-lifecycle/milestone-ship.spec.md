@@ -1,111 +1,97 @@
-# Live Spec: Milestone Ship, Criteria Evaluation, and Defer
+# Live Spec: Milestone Ship and Ship Criteria Evaluation
 
 ---
 charter: milestone-lifecycle
-status: review-pending
-risk_level: high
-milestone: v1.0.0
+status: review-passed
+risk_level: medium
+milestone: v1
 revision: 1
 charter-revision: 2
-created: 2026-05-08
-updated: 2026-05-08
-tracker-ref: issue-355
+created: 2026-05-09
+updated: 2026-05-09
 ---
 
 ## Behavioral Contract
 
 ### Preconditions
 
-- `milestones.yaml` exists with at least one milestone entry
-- The target milestone has a valid `epic_id` referencing an existing epic on the issue board
-- `manifest.yaml` exists (for `gates.test` in `gates_pass` check)
+- `.context-index/milestones.yaml` exists with at least one milestone entry
+- `manifest.yaml` exists with `tasks.backend` and `gates.test` entries
+- The milestone's `epic_id` may reference an existing epic, or may be `null` / reference a deleted epic (handled via BROKEN_EPIC error)
+- `lib/milestones.mjs` provides `loadMilestones()`, `saveMilestones()`, `findMilestone()`, `validateMilestoneName()` (from milestone-crud spec)
 
 ### Behaviors
 
-#### Ship Criteria Evaluation
+1. **When** `evaluateShipCriteria(milestone, issueManager, manifest)` is called with a milestone that has `ship_criteria` containing `{ check: "all_issues_closed" }` **then** it queries all issues under the milestone's linked epic and returns `{ check: "all_issues_closed", passed: true }` if every issue has status `closed`, or `{ check: "all_issues_closed", passed: false, detail: "3 issues still open" }` otherwise.
 
-1. **When** `evaluateShipCriteria()` is called with a milestone that has `check: all_issues_closed` **then** it queries the issue manager for all issues under the milestone's epic and returns `pass` if all are closed, `fail` with open issue count otherwise.
+2. **When** `evaluateShipCriteria()` is called with a milestone that has `ship_criteria` containing `{ check: "gates_pass" }` **then** it reads `manifest.gates.test` (e.g., `"npm test"`), executes the command via `child_process.execSync`, and returns `{ check: "gates_pass", passed: true }` if exit code is 0, or `{ check: "gates_pass", passed: false, detail: "<stderr excerpt>" }` otherwise.
 
-2. **When** `evaluateShipCriteria()` is called with a milestone that has `check: gates_pass` **then** it runs the command from `manifest.gates.test` (e.g., `npm test`) and returns `pass` if exit code is 0, `fail` with the error output otherwise.
+3. **When** `evaluateShipCriteria()` is called with a milestone that has `ship_criteria` containing `{ confirm: "<text>" }` **then** it skips those entries (manual confirms are not auto-evaluable) and returns them as `{ confirm: "<text>", passed: null }` to signal the caller must prompt interactively.
 
-3. **When** `evaluateShipCriteria()` is called with a milestone that has no `ship_criteria` **then** it returns an empty results array (all pass — no criteria to evaluate).
+4. **When** `evaluateShipCriteria()` is called with a milestone that has no `ship_criteria` **then** it returns an empty array (no criteria to evaluate).
 
-4. **When** `evaluateShipCriteria()` encounters an unknown `check` type **then** it returns `fail` for that criterion with message "Unknown check type: <type>".
+5. **When** `milestone ship <name>` is invoked **then** it validates the name, loads the milestone, runs `evaluateShipCriteria()`, reports results, and blocks if any auto-check failed. Returns a result object with `{ shipped: boolean, results: [...], tag: string|null }`.
 
-#### Milestone Ship
+6. **When** `milestone ship <name>` is invoked and all auto-checks pass **then** the skill prompts the user for each manual `confirm` criterion ("CHANGELOG updated? (yes/no)"). If any confirm is rejected, shipping is blocked.
 
-5. **When** `milestone ship <name>` is invoked **then** auto-checks are evaluated first. If any fail, results are displayed and the command stops without prompting for manual confirms.
+7. **When** `milestone ship <name>` succeeds (all checks pass, all confirms accepted) **then** the milestone status is updated to `shipped` in `milestones.yaml`, the linked epic is closed via `issueManager.close(epicId, "Milestone shipped")`, and a success message is returned.
 
-6. **When** all auto-checks pass and the milestone has `confirm:` criteria **then** each confirm prompt is presented one by one. If any is rejected, the command stops.
+8. **When** `milestone ship <name>` succeeds and the milestone name matches semver (with or without `v` prefix, regex `/^v?\d+\.\d+\.\d+/`) **then** a git tag is created. If the name already starts with `v`, the tag uses the name as-is (e.g., name `v1.0.0` → tag `v1.0.0`). If not, the tag is `v<name>` (e.g., name `1.0.0` → tag `v1.0.0`). If `gh` CLI is available, a GitHub release draft is created with `gh release create <tag> --generate-notes --draft`. Implementation note: use `execFileSync('git', ['tag', tagName])` — never shell interpolation.
 
-7. **When** all criteria pass and the milestone name matches a semver pattern **then** the user is prompted: "Version in package.json is <current>. Bump to <milestone-name>? (y/n)". If yes, `package.json` and `.claude-plugin/plugin.json` are both updated.
+9. **When** `milestone ship <name>` is invoked and the milestone already has `status: shipped` **then** it is a no-op: returns `{ shipped: true, skipped: true }` with message "Milestone '<name>' is already shipped."
 
-8. **When** all criteria pass and `release.tag` is set (or defaults to the milestone name) **then** a git tag is created. If `gh` CLI is available, a GitHub release is drafted with `--generate-notes`. If `gh` is unavailable, the tag is still created and a warning is printed.
-
-9. **When** `milestone ship` completes successfully **then** the milestone status is updated to `shipped` in `milestones.yaml`, and the linked epic is closed via the issue manager.
-
-10. **When** `milestone ship <name>` is invoked on an already-shipped milestone **then** it prints "Milestone '<name>' is already shipped" and exits (no-op, idempotent).
-
-#### Milestone Defer
-
-11. **When** `milestone defer <name> --reason "<text>"` is invoked **then** the milestone status is updated to `deferred` in `milestones.yaml` and the reason is stored in a `deferred_reason` field.
-
-12. **When** `milestone defer` is invoked on an already-shipped milestone **then** it rejects with "Cannot defer a shipped milestone."
-
-13. **When** `milestone defer` is invoked without `--reason` **then** the user is prompted interactively for a reason.
+10. **When** `milestone ship <name>` succeeds and `gh` CLI is not available **then** the git tag is still created but the GitHub release is skipped with a warning: "GitHub release skipped — `gh` CLI not found."
 
 ### Postconditions
 
-- After successful `milestone ship`: milestone status is `shipped`, epic is closed, git tag exists, GitHub release exists (if `gh` available), version files updated (if user confirmed bump).
-- After `milestone defer`: milestone status is `deferred`, `deferred_reason` is set. Epic status is unchanged (remains open for potential reactivation).
+- After successful ship: git tag is created first, then `milestones.yaml` entry is updated to `status: shipped`, then the linked epic is closed. If epic close fails, tag and status are already committed — the epic remains open with a warning (partial success).
+- After failed ship (criteria not met): no state is mutated — `milestones.yaml` and the issue board are unchanged.
+- `evaluateShipCriteria` is a pure query — it never mutates state. It validates `epic_id` and throws BROKEN_EPIC if the epic does not exist or `epic_id` is null.
 
 ### Error Cases
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | `milestone ship` with no name argument | Print usage hint and exit | MISSING_NAME |
-| `milestone ship <name>` where name not found in milestones.yaml | "Milestone '<name>' not found" | NOT_FOUND |
-| `milestone ship` when `epic_id` references a non-existent epic | "Epic <id> not found. Recreate the epic or update the milestone before shipping." | BROKEN_EPIC |
-| `milestone ship` when git tag already exists | "Tag '<tag>' already exists. Delete it or change the release.tag." | TAG_EXISTS |
-| `milestone ship` when `gates_pass` check fails | Display test output and stop. Do not proceed to manual confirms. | GATES_FAILED |
-| `milestone ship` when working directory has uncommitted changes | "Uncommitted changes detected. Commit or stash before shipping." | DIRTY_WORKTREE |
-| `milestone defer` on a shipped milestone | "Cannot defer a shipped milestone." | ALREADY_SHIPPED |
-| `milestone defer` with no name argument | Print usage hint and exit | MISSING_NAME |
+| `milestone ship` with invalid name | Reject with "Invalid milestone name" | INVALID_NAME |
+| `milestone ship <name>` where name not found in `milestones.yaml` | "Milestone '<name>' not found" | MILESTONE_NOT_FOUND |
+| Milestone has `epic_id: null` or references non-existent epic | "Milestone '<name>' has no valid linked epic — cannot evaluate ship criteria" | BROKEN_EPIC |
+| `all_issues_closed` check fails | Report open issue count, block ship | CRITERIA_FAILED |
+| `gates_pass` check fails (test command exits non-zero) | Report failure detail, block ship | CRITERIA_FAILED |
+| Manual confirm rejected by user | "Ship cancelled — '<confirm text>' not confirmed" | CONFIRM_REJECTED |
+| Git tag `v<name>` already exists | "Tag v<name> already exists — cannot ship" | TAG_EXISTS |
+| `issueManager.close()` throws during epic close | Warn but do not roll back — tag is created, milestone is shipped, epic close failed | EPIC_CLOSE_FAILED |
+| `manifest.gates.test` not configured when `gates_pass` criterion exists | Treat as failed: "No test command configured in manifest.gates.test" | NO_TEST_COMMAND |
 
 ## System Constitution Reference
 
-- **Principle:** "Version parity — package.json and .claude-plugin/plugin.json versions must always match" — the version bump step updates both files atomically. If one write fails, neither is committed.
-- **Principle:** "Minimize external dependencies" — `gh` CLI is invoked as an optional subprocess, not a code dependency. Git operations use `child_process.execSync`.
-- **Principle:** "Hook protocol compliance" — ship does not modify the hook protocol. The version bump follows the same pattern as existing version parity enforcement.
+- **Principle:** "Minimize external dependencies" — `evaluateShipCriteria` uses `child_process.execSync` for test command execution and `child_process.execSync` for git tag. `gh` CLI is optional with graceful degradation.
+- **Principle:** "Skills are primarily markdown" — `milestone ship` subcommand is documented in SKILL.md; `evaluateShipCriteria` and `milestoneShip` are companion code in `lib/milestones.mjs`.
+- **Principle:** "Pure ESM" — all new code uses `.mjs` extension.
 
 ## Actionable Task Map
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| 1. Ship criteria evaluator | Implement `evaluateShipCriteria()` with `all_issues_closed` and `gates_pass` check handlers. Return structured results array. | medium |
-| 2. `milestone ship` command | Parse args, load milestone, run criteria, prompt manual confirms, prompt version bump, create git tag, optionally create GitHub release, update milestone status, close epic. | large |
-| 3. Version bump logic | Read package.json + plugin.json, update version field, write both. Atomic — if one fails, revert the other. | small |
-| 4. Git tag and GitHub release | Create annotated git tag via `git tag -a`. Detect `gh` CLI availability. If present, run `gh release create --generate-notes`. | medium |
-| 5. `milestone defer` command | Parse args, validate state, prompt for reason if missing, update milestones.yaml. | small |
-| 6. SKILL.md updates | Add `milestone ship` and `milestone defer` documentation to `/adev:issues` SKILL.md. | small |
-| 7. Tests | Unit tests for `evaluateShipCriteria`. Integration tests for ship flow (mock issue manager, mock git). Test idempotency, error cases, dirty worktree detection. | large |
+| 1. `evaluateShipCriteria` function | Implement `evaluateShipCriteria(milestone, issueManager, manifest)` in `lib/milestones.mjs`. Handles `all_issues_closed` (query issues), `gates_pass` (exec test command), and `confirm` (passthrough). | medium |
+| 2. `milestoneShip` command logic | Implement `milestoneShip(projectRoot, name, options)` in `lib/milestones.mjs`. Orchestrates: validate → load → evaluate criteria → prompt confirms → update status → close epic → git tag → optional GH release. | large |
+| 3. SKILL.md `milestone ship` documentation | Add `milestone ship` subcommand section to `skills/issues/SKILL.md`. | small |
+| 4. Tests for ship criteria and milestone ship | Unit tests for `evaluateShipCriteria` with mock issue manager. Integration tests for `milestoneShip` covering success, criteria failure, idempotency, tag conflict, and graceful degradation. | medium |
 
 ## Acceptance Criteria
 
-- [ ] `evaluateShipCriteria` returns pass/fail for `all_issues_closed` check
-- [ ] `evaluateShipCriteria` returns pass/fail for `gates_pass` check (runs `npm test`)
-- [ ] `evaluateShipCriteria` with no criteria returns empty (all pass)
-- [ ] `milestone ship` stops on first failing auto-check without prompting confirms
-- [ ] `milestone ship` prompts manual confirms one by one after auto-checks pass
-- [ ] `milestone ship` prompts version bump when milestone name matches semver
-- [ ] Version bump updates both `package.json` and `.claude-plugin/plugin.json`
-- [ ] `milestone ship` creates a git tag
-- [ ] `milestone ship` creates a GitHub release when `gh` is available, warns when not
-- [ ] `milestone ship` updates status to `shipped` and closes the epic
-- [ ] `milestone ship` on already-shipped milestone is a no-op
-- [ ] `milestone ship` blocks on dirty worktree
-- [ ] `milestone defer` sets status to `deferred` with reason
-- [ ] `milestone defer` rejects on shipped milestone
-- [ ] All error cases return expected messages
-- [ ] All quality gates pass (tests, lint)
+- [ ] `evaluateShipCriteria` returns correct pass/fail for `all_issues_closed` check
+- [ ] `evaluateShipCriteria` executes `manifest.gates.test` for `gates_pass` check
+- [ ] `evaluateShipCriteria` passes through `confirm` entries as `passed: null`
+- [ ] `evaluateShipCriteria` returns empty array when no ship criteria defined
+- [ ] `milestone ship v1.0.0` blocks when any auto-check fails
+- [ ] `milestone ship v1.0.0` prompts for each manual confirm
+- [ ] `milestone ship v1.0.0` updates status to `shipped` and closes epic on success
+- [ ] `milestone ship v1.0.0` creates git tag `v1.0.0` for semver names
+- [ ] `milestone ship v1.0.0` on already-shipped milestone is a no-op
+- [ ] `milestone ship v1.0.0` skips GitHub release when `gh` CLI unavailable
+- [ ] `milestone ship v1.0.0` blocks when tag already exists
+- [ ] All error cases return expected error codes
+- [ ] `evaluateShipCriteria` is exported and independently testable
+- [ ] All quality gates pass
 - [ ] No constitutional violations introduced

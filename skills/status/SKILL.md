@@ -111,12 +111,13 @@ Specs (<N total>):
 ### Mode: `--milestone <name>`
 
 1. Read `tasks.backend` from `.context-index/manifest.yaml`. If not configured, print "Issue board not configured. Add `tasks.backend` to manifest.yaml." and stop.
-2. Query the issue board for all epics with `milestone` matching `<name>`
-3. If no epics match, print "No epics found for milestone '<name>'. Available milestones: <list of known milestones>" and stop
-4. For each matching epic, list all child issues with their statuses
-5. For each epic, find related specs (by matching charter or plan references) and report their statuses (draft / review-passed / implemented / validated)
-6. Compute aggregate progress: total issues, issues by status, percentage complete (closed / total)
-7. Display the milestone name, associated epics, issue breakdown, and spec statuses
+2. **Milestone metadata:** Call `getMilestoneStatusData(projectRoot, name)` from `lib/milestones.mjs`. If `found` is true, display milestone metadata (status, target_date, ship_criteria count, defer_reason if deferred) before the epic/issue breakdown. If not found but `milestones.yaml` exists, print advisory: "Note: milestone '<name>' is not defined in milestones.yaml."
+3. Query the issue board for all epics with `milestone` matching `<name>`
+4. If no epics match, print "No epics found for milestone '<name>'. Available milestones: <list of known milestones>" and stop
+5. For each matching epic, list all child issues with their statuses
+6. For each epic, find related specs (by matching charter or plan references) and report their statuses (draft / review-passed / implemented / validated)
+7. Compute aggregate progress: total issues, issues by status, percentage complete (closed / total)
+8. Display the milestone name, associated epics, issue breakdown, and spec statuses
 
 **Output format:**
 
@@ -154,7 +155,7 @@ node -e "import {findSpecsByStatus} from '<ADEV_ROOT>/lib/meta-tools.mjs'; for (
 If the meta-tool call fails, fall back to the manual scan below.
 
 1. Scan all charters under `.context-index/specs/features/` and `.context-index/specs/cross-cutting/`
-2. Scan all specs under the same directories (excluding `charter.md`, `*.plan.md`, `*.review.md`, `*-validation.md`, `*.validate.md`, `*-research.md`, `*-summary.md`, `*-findings.md`, `CONSISTENCY-REVIEW.md`)
+2. Scan all `*.spec.md` files under the same directories
 3. For each charter, read frontmatter status
 4. For each spec, read frontmatter status
 
@@ -184,6 +185,7 @@ If `tasks.backend` is configured in `manifest.yaml`, scan all epics for `milesto
 - Total issues across those epics
 - Issue counts by status: open / in_progress / closed
 - Percentage complete (closed issues / total issues)
+- **Milestone metadata** (from `milestones.yaml` if available): call `getMilestoneStatusData(projectRoot, name)` from `lib/milestones.mjs` for each milestone name. If found, include target_date, status, and ship_criteria count alongside the issue board aggregation.
 
 If no epics have milestones, skip this section entirely (unchanged behavior). If `tasks.backend` is not configured, skip this section silently.
 

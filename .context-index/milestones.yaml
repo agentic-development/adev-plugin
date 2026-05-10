@@ -1,0 +1,11 @@
+milestones:
+  - name: 1.0.0
+    status: planned
+    epic_id: epic-57
+    target_date: 2026-05-14
+    release: null
+    ship_criteria:
+      - check: all_issues_closed
+      - check: gates_pass
+      - confirm: "CHANGELOG updated"
+      - confirm: "README updated"

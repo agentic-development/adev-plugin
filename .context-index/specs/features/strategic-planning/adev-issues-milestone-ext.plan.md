@@ -98,11 +98,11 @@ Extend the existing `skills/issues/SKILL.md` to support milestone-based workflow
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] `epic` command accepts `--milestone <name>`
-  - [ ] `list` command accepts `--milestone <name>` filter
-  - [ ] `update` command accepts `--milestone <name>` for epics
-  - [ ] Board display groups by milestone when milestones exist
-  - [ ] Board display is unchanged when no milestones exist
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `epic` command accepts `--milestone <name>`
+  - `list` command accepts `--milestone <name>` filter
+  - `update` command accepts `--milestone <name>` for epics
+  - Board display groups by milestone when milestones exist
+  - Board display is unchanged when no milestones exist
+  - No constitutional violations introduced

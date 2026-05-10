@@ -286,9 +286,9 @@ git commit -m "fix(adev:document): address issues found in full quality gate run
 
 After all tasks are complete:
 
-- [ ] Tests pass: `npm test`
-- [ ] `skills/document/SKILL.md` exists and has correct frontmatter
-- [ ] All acceptance criteria from all three specs satisfied:
+- Tests pass: `npm test`
+- `skills/document/SKILL.md` exists and has correct frontmatter
+- All acceptance criteria from all three specs satisfied:
   - `generate-architecture.md` — 12 criteria
   - `generate-module-docs.md` — 14 criteria
   - `generate-generated-manifest.md` — 10 criteria

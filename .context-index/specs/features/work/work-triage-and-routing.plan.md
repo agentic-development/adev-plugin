@@ -278,15 +278,15 @@ git commit -m "feat(adev:work): register in using-adev gateway skill"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] `skills/work/SKILL.md` exists with all triage, classification, and routing instructions
-  - [ ] Init gate for missing `.context-index/`
-  - [ ] Parallel Glob/Grep state scan instructions
-  - [ ] 9 work type classification table
-  - [ ] Route proposal with confirmation flow
-  - [ ] Ambiguous case handling with clarifying questions
-  - [ ] State-aware routing refinement
-  - [ ] Registered in `manifest.yaml`
-  - [ ] Listed in `using-adev` gateway skill table (both `skills/` and `providers/codex/skills/` copies)
-  - [ ] No constitutional violations
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `skills/work/SKILL.md` exists with all triage, classification, and routing instructions
+  - Init gate for missing `.context-index/`
+  - Parallel Glob/Grep state scan instructions
+  - 9 work type classification table
+  - Route proposal with confirmation flow
+  - Ambiguous case handling with clarifying questions
+  - State-aware routing refinement
+  - Registered in `manifest.yaml`
+  - Listed in `using-adev` gateway skill table (both `skills/` and `providers/codex/skills/` copies)
+  - No constitutional violations

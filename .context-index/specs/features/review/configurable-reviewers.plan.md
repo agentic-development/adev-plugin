@@ -93,5 +93,5 @@ Update `skills/review-specs/SKILL.md` Step 3 (specialist registry) and Step 4 (d
 
 ## Quality Gates
 
-- [ ] `npm test` passes
-- [ ] No new external dependencies
+- `npm test` passes
+- No new external dependencies

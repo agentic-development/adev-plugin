@@ -238,5 +238,5 @@ git commit -m "test(heuristics): add contradiction tracking eval tests"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied
