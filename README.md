@@ -1,6 +1,9 @@
 # adev — Agentic Development Framework
+> Last updated: 2026-05-09
 
-A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), and [OpenAI Codex](https://openai.com/index/codex/) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
+A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenCode](https://github.com/opencode-ai/opencode) (alpha), and [OpenAI Codex](https://openai.com/index/codex/) (alpha) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
+
+> **Harness support:** Claude Code is the fully supported harness with complete skill and hook coverage. OpenCode and Codex support is in alpha — basic lifecycle skills work via AGENTS.md, but hooks, session capture, and some advanced features are not yet available.
 
 Based on the [Agentic Development Handbook](https://www.agentic-dev.org/en/handbook). Zero dependencies.
 
@@ -100,7 +103,7 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 | `/adev:retro` | Sprint retrospective with delivery metrics |
 | `/adev:research` | Structured research across web, GitHub, and codebase |
 
-For the full skill reference with prerequisites and a lifecycle flowchart, see [docs/skills.md](docs/skills.md).
+For the full skill reference with prerequisites and a lifecycle flowchart, see the [documentation](docs/README.md).
 
 ## How It Works
 
@@ -157,15 +160,15 @@ Hooks run automatically to enforce conventions:
 
 ## Integrations
 
-- **Session capture:** [Entire.io](https://github.com/entireio/cli) for session capture and checkpoint/rewind, or a built-in JSONL logger. Configure `integrations.session_capture.provider` in `manifest.yaml`.
+- **Session capture:** Built-in JSONL session logger via hooks. Configure `integrations.session_capture.provider` in `manifest.yaml`.
 - **Blueprints:** adev is a methodology choice in the [claude-blueprints-plugin](https://github.com/agentic-development/claude-blueprints-plugin) scaffold workflow.
 
 ## Learn More
 
-- [Quickstart guide](docs/quickstart.md) — your first 10 minutes with adev
-- [Skill reference](docs/skills.md) — all skills with prerequisites and lifecycle flow
+- [Documentation](docs/README.md) — concepts, installation, and getting started guides
+- [Getting started](docs/getting-started.md) — end-to-end tutorial for your first feature
 - [Multi-repo workspaces](docs/workspaces.md) — coordinate specs and planning across repos
-- [Architecture](docs/architecture.md) — design decisions and module boundaries
+- [Troubleshooting & FAQ](docs/troubleshooting.md) — common issues and recovery steps
 - [Agentic Development Handbook](https://www.agentic-dev.org/en/handbook) — the methodology behind the framework
 - [Design document](https://github.com/agentic-development/agentic-dev-content/blob/main/docs/superpowers/specs/2026-03-19-adev-plugin-design.md) — full technical design
 

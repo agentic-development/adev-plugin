@@ -1,7 +1,7 @@
 # Architecture Review: tiered-gate-schema
 
 > **Date:** 2026-04-14
-> **Spec:** .context-index/specs/features/tiered-test-gates/tiered-gate-schema.md
+> **Spec:** .context-index/specs/features/tiered-test-gates/tiered-gate-schema.spec.md
 > **Charter:** .context-index/specs/features/tiered-test-gates/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2

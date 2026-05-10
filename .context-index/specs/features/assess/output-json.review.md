@@ -1,7 +1,7 @@
 # Architecture Review: output-json
 
 > **Date:** 2026-03-24
-> **Spec:** .context-index/specs/features/adev:assess/output-json.md
+> **Spec:** .context-index/specs/features/adev:assess/output-json.spec.md
 > **Charter:** .context-index/specs/features/adev:assess/charter.md
 > **Verdict:** PASS
 

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/retro-consolidation.md
+> **Spec:** .context-index/specs/features/heuristics/retro-consolidation.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-12)
 > **Platform:** Node.js, JavaScript (ESM), node:test
 
@@ -27,19 +27,19 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/heuristics/retro-consolidation.md` (Behaviors 1-2)
+- Spec: `.context-index/specs/features/heuristics/retro-consolidation.spec.md` (Behaviors 1-2)
 - Current SKILL.md: `skills/retro/SKILL.md` (Step 1, lines 22-81)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/heuristics/retro-consolidation.md` (Behaviors 3-7)
+- Spec: `.context-index/specs/features/heuristics/retro-consolidation.spec.md` (Behaviors 3-7)
 - Current SKILL.md: `skills/retro/SKILL.md` (Steps 2-3, lines 83-179)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/heuristics/retro-consolidation.md` (Behaviors 8-11)
+- Spec: `.context-index/specs/features/heuristics/retro-consolidation.spec.md` (Behaviors 8-11)
 - Current SKILL.md: `skills/retro/SKILL.md` (Steps 4-5, lines 181-296)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/heuristics/retro-consolidation.md` (all AC)
+- Spec: `.context-index/specs/features/heuristics/retro-consolidation.spec.md` (all AC)
 
 ## Parallelization
 
@@ -254,5 +254,5 @@ git commit -m "test(heuristics): add retro consolidation eval tests"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

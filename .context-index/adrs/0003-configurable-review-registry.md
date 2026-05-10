@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed
+Accepted
+
+> **Accepted 2026-05-09**: Implementation has landed. Key artifacts exist: `governance/review.yaml`, `governance/validate.yaml`, `lib/governance/review-config.mjs`, `lib/governance/validate-config.mjs`.
 
 > **Revised 2026-04-19**: Sandbox/tier/thinking-budget concerns originally proposed in this ADR have been promoted into a separate primitive — see ADR-0004 (Execution Profiles). This ADR now focuses solely on the reviewer/check **registry** decision; how each registered work unit *runs* is the job of execution profiles, which the registries reference by name.
 

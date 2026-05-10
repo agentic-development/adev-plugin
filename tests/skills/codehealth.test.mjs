@@ -54,7 +54,7 @@ describe("adev:codehealth skill", () => {
       "MISSING_REPOMAP",
       "INVALID_MANIFEST",
       "UNKNOWN_MODULE",
-      "UNKNOWN_PASS",
+      "UNKNOWN_CHECK",
       "FORMAT_ERROR",
       "MISSING_PACKAGE_JSON",
       "GIT_UNAVAILABLE",
@@ -119,10 +119,10 @@ describe("adev:codehealth skill", () => {
     );
   });
 
-  it("should document --module and --pass arguments", () => {
+  it("should document --module and --check arguments", () => {
     const content = readFileSync(SKILL_PATH, "utf8");
     assert.ok(content.includes("--module"), "Must document --module argument");
-    assert.ok(content.includes("--pass"), "Must document --pass argument");
+    assert.ok(content.includes("--check"), "Must document --check argument");
   });
 
   it("should document file scope resolution order", () => {

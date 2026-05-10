@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/plan-injection.md
+> **Spec:** .context-index/specs/features/heuristics/plan-injection.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-12)
 > **Platform:** Node.js, JavaScript (ESM), node:test
 
@@ -22,16 +22,16 @@
 
 **Reference:**
 - `lib/heuristics.mjs` — `retrieveHeuristics`, `renderHeuristic`
-- `.context-index/specs/features/heuristics/retrieval-filtering.md` — Protocol conventions
+- `.context-index/specs/features/heuristics/retrieval-filtering.spec.md` — Protocol conventions
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/heuristics/plan-injection.md` (Behaviors 1-6)
+- Spec: `.context-index/specs/features/heuristics/plan-injection.spec.md` (Behaviors 1-6)
 - Current SKILL.md: `skills/plan/SKILL.md` (Step 2, Step 5 Context Packet Section)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/heuristics/plan-injection.md` (all AC)
+- Spec: `.context-index/specs/features/heuristics/plan-injection.spec.md` (all AC)
 
 ---
 
@@ -135,5 +135,5 @@ git commit -m "feat(heuristics): add heuristic injection to plan SKILL.md"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

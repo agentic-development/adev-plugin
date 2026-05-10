@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
-> **Spec:** .context-index/specs/features/session-awareness/execution-state-file.md
+> **Spec:** .context-index/specs/features/session-awareness/execution-state-file.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-06)
 > **Platform:** JavaScript (ESM), Node.js, node:test
 
@@ -26,22 +26,22 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Preconditions, Error Cases, Serialization Safety)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Preconditions, Error Cases, Serialization Safety)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Execution State File)
 - Sample: `.context-index/samples/general-library-module-graph.md`
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Behaviors 1, 6, 7; File Format; Serialization Safety)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Behaviors 1, 6, 7; File Format; Serialization Safety)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Execution State File, Concurrent Access Safety)
 - Reference: `lib/issues/file-adapter.mjs` (atomic write pattern)
 - Reference: `lib/session-summary.mjs` (frontmatter serialization pattern)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Behaviors 2, 3, 4; Progress Body)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Behaviors 2, 3, 4; Progress Body)
 - Reference: `lib/session-summary.mjs` (frontmatter parsing pattern)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/session-awareness/execution-state-file.md` (Behavior 5; Acceptance Criteria: round-trip, clearExecutionState)
+- Spec: `.context-index/specs/features/session-awareness/execution-state-file.spec.md` (Behavior 5; Acceptance Criteria: round-trip, clearExecutionState)
 
 ## Parallelization
 
@@ -608,15 +608,15 @@ git commit -m "feat(session-awareness): implement clearExecutionState and verify
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [x] `writeExecutionState` produces a file parseable by `readExecutionState` (round-trip) — Task 4
-  - [x] `readExecutionState` returns `null` for missing or malformed files, never throws — Task 3
-  - [x] `clearExecutionState` resets to idle with empty bindings — Task 4
-  - [x] Active state without `planRef` or `currentTask` throws `MISSING_PLAN_REF` / `MISSING_CURRENT_TASK` — Task 1
-  - [x] Atomic write leaves no `.tmp` files on success — Task 2
-  - [x] Failed atomic write cleans up temp file — Task 2
-  - [x] `.context-index/` directory is created if missing on write — Task 2
-  - [x] All quality gates pass (`npm test`) — Quality Gates
-  - [x] No new dependencies added — verified (only `fs`, `path`, `crypto`)
-  - [x] No constitutional violations introduced — verified
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `writeExecutionState` produces a file parseable by `readExecutionState` (round-trip) — Task 4
+  - `readExecutionState` returns `null` for missing or malformed files, never throws — Task 3
+  - `clearExecutionState` resets to idle with empty bindings — Task 4
+  - Active state without `planRef` or `currentTask` throws `MISSING_PLAN_REF` / `MISSING_CURRENT_TASK` — Task 1
+  - Atomic write leaves no `.tmp` files on success — Task 2
+  - Failed atomic write cleans up temp file — Task 2
+  - `.context-index/` directory is created if missing on write — Task 2
+  - All quality gates pass (`npm test`) — Quality Gates
+  - No new dependencies added — verified (only `fs`, `path`, `crypto`)
+  - No constitutional violations introduced — verified

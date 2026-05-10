@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/repomap-eval/charter.md
-> **Spec:** .context-index/specs/features/repomap-eval/eval-pipeline.md
+> **Spec:** .context-index/specs/features/repomap-eval/eval-pipeline.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-23)
 > **Platform:** Node.js, JavaScript (ESM), npm, node:test, typescript (devDep)
 
@@ -460,9 +460,9 @@ git commit -m "feat(eval): add eval pipeline runner orchestrator"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test` (existing tests unaffected)
-- [ ] Eval runs: `npm run eval` produces eval-report.md for Zod
-- [ ] Ground truth generate: `npm run eval:generate` produces JSON files without running parsers
-- [ ] All 25 acceptance criteria from spec satisfied
-- [ ] All `.mjs` files use ESM imports
-- [ ] No constitutional violations introduced
+- Tests pass: `npm test` (existing tests unaffected)
+- Eval runs: `npm run eval` produces eval-report.md for Zod
+- Ground truth generate: `npm run eval:generate` produces JSON files without running parsers
+- All 25 acceptance criteria from spec satisfied
+- All `.mjs` files use ESM imports
+- No constitutional violations introduced

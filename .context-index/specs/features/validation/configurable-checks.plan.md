@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/validation/charter.md
-> **Spec:** .context-index/specs/features/validation/configurable-checks.md
+> **Spec:** .context-index/specs/features/validation/configurable-checks.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-19)
 > **Platform:** JavaScript (ESM), Node.js, npm, node:test
 
@@ -97,5 +97,5 @@ Add Step 0: call `loadValidateConfig(repoRoot)`. Filter out `enabled: false`; pr
 
 ## Quality Gates
 
-- [ ] `npm test` passes
-- [ ] No new external dependencies
+- `npm test` passes
+- No new external dependencies

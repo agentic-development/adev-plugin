@@ -1,7 +1,7 @@
 # Architecture Review: adev:issues-milestone-ext
 
 > **Date:** 2026-04-05
-> **Spec:** .context-index/specs/features/strategic-planning/adev:issues-milestone-ext.md
+> **Spec:** .context-index/specs/features/strategic-planning/adev:issues-milestone-ext.spec.md
 > **Charter:** .context-index/specs/features/strategic-planning/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

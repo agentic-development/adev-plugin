@@ -46,30 +46,30 @@
 
 **Reference (read, do not modify):**
 - `tests/helpers.mjs` — Provides `createTempDir()`, `cleanupTempDir()`, `writeFixture()`, `runHook()`
-- `.context-index/specs/features/adev:write-test/gaming-violation-detection.md` (Canonical Violation Patterns table)
-- `.context-index/specs/features/adev:write-test/framework-detection.md` (Supported Frameworks table)
-- `.context-index/specs/features/adev:write-test/immutable-handoff-block.md` (Handoff Block Format section)
-- `.context-index/specs/cross-cutting/model-routing.md` (fallback tier table)
+- `.context-index/specs/features/adev:write-test/gaming-violation-detection.spec.md` (Canonical Violation Patterns table)
+- `.context-index/specs/features/adev:write-test/framework-detection.spec.md` (Supported Frameworks table)
+- `.context-index/specs/features/adev:write-test/immutable-handoff-block.spec.md` (Handoff Block Format section)
+- `.context-index/specs/cross-cutting/model-routing.spec.md` (fallback tier table)
 
 ---
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/adev:write-test/framework-detection.md` (all behaviors and Supported Frameworks table)
+- Spec: `.context-index/specs/features/adev:write-test/framework-detection.spec.md` (all behaviors and Supported Frameworks table)
 - Charter: `.context-index/specs/features/adev:write-test/charter.md` (capability: Framework Detection)
 - Test helpers: `tests/helpers.mjs` (createTempDir, writeFixture)
 - Constitution: non-negotiable principles 1 (no external deps), 3 (pure ESM)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/adev:write-test/gaming-violation-detection.md` (all behaviors and Canonical Violation Patterns table)
+- Spec: `.context-index/specs/features/adev:write-test/gaming-violation-detection.spec.md` (all behaviors and Canonical Violation Patterns table)
 - Charter: `.context-index/specs/features/adev:write-test/charter.md` (capability: Gaming Violation Detection)
 - Test helpers: `tests/helpers.mjs`
 - Constitution: non-negotiable principles 1, 3
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/adev:write-test/immutable-handoff-block.md` (Handoff Block Format, all behaviors and acceptance criteria)
-- Spec: `.context-index/specs/features/adev:write-test/post-green-semantic-verification.md` (Behavior 1: hash recheck)
+- Spec: `.context-index/specs/features/adev:write-test/immutable-handoff-block.spec.md` (Handoff Block Format, all behaviors and acceptance criteria)
+- Spec: `.context-index/specs/features/adev:write-test/post-green-semantic-verification.spec.md` (Behavior 1: hash recheck)
 - Charter: `.context-index/specs/features/adev:write-test/charter.md` (capabilities: Immutable Handoff Block, Post-GREEN Semantic Verification)
 - Test helpers: `tests/helpers.mjs`
 - Constitution: non-negotiable principles 1, 3
@@ -77,13 +77,13 @@
 ### Task 4 Context
 - All 10 specs in `.context-index/specs/features/adev:write-test/` (behavioral contracts, acceptance criteria)
 - Charter: `.context-index/specs/features/adev:write-test/charter.md` (full capability map)
-- Cross-cutting: `.context-index/specs/cross-cutting/model-routing.md` (tier assignments and fallback table)
+- Cross-cutting: `.context-index/specs/cross-cutting/model-routing.spec.md` (tier assignments and fallback table)
 - Constitution: all principles, especially "skills are primarily markdown"
 - Platform: `.context-index/platform-context.yaml` (node:test, ESM)
 
 ### Task 5 Context
-- Spec: `.context-index/specs/features/adev:write-test/model-selection.md` (Behavior 4-6: template requirements)
-- Cross-cutting: `.context-index/specs/cross-cutting/model-routing.md` (Behavior 5: template scaffolding)
+- Spec: `.context-index/specs/features/adev:write-test/model-selection.spec.md` (Behavior 4-6: template requirements)
+- Cross-cutting: `.context-index/specs/cross-cutting/model-routing.spec.md` (Behavior 5: template scaffolding)
 - File: `templates/platform-context.yaml` (current content)
 
 ---
@@ -109,7 +109,7 @@ Task 5 can run in parallel with Tasks 1-3. Task 4 must wait for Tasks 1-3 to com
 - Test: `tests/adev:write-test/detect-framework.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/adev:write-test/framework-detection.md` (Supported Frameworks table, all behaviors)
+- `.context-index/specs/features/adev:write-test/framework-detection.spec.md` (Supported Frameworks table, all behaviors)
 - `tests/helpers.mjs` (writeFixture for fixture setup)
 
 - [ ] **Write failing test**
@@ -241,7 +241,7 @@ git commit -m "feat(adev:write-test): add detect-framework.mjs helper with tests
 - Test: `tests/adev:write-test/detect-gaming.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/adev:write-test/gaming-violation-detection.md` (Canonical Violation Patterns table, all 9 patterns)
+- `.context-index/specs/features/adev:write-test/gaming-violation-detection.spec.md` (Canonical Violation Patterns table, all 9 patterns)
 
 - [ ] **Write failing test**
 
@@ -376,8 +376,8 @@ git commit -m "feat(adev:write-test): add detect-gaming.mjs helper with canonica
 - Test: `tests/adev:write-test/write-handoff.test.mjs`
 
 **Context to load:**
-- `.context-index/specs/features/adev:write-test/immutable-handoff-block.md` (Handoff Block Format section, all behaviors)
-- `.context-index/specs/features/adev:write-test/post-green-semantic-verification.md` (Behavior 1: hash recheck algorithm)
+- `.context-index/specs/features/adev:write-test/immutable-handoff-block.spec.md` (Handoff Block Format section, all behaviors)
+- `.context-index/specs/features/adev:write-test/post-green-semantic-verification.spec.md` (Behavior 1: hash recheck algorithm)
 
 - [ ] **Write failing test**
 
@@ -565,7 +565,7 @@ git commit -m "feat(adev:write-test): add write-handoff.mjs with SHA-256 hashing
 
 **Context to load:**
 - All 10 specs in `.context-index/specs/features/adev:write-test/` (behavioral contracts and acceptance criteria)
-- `.context-index/specs/cross-cutting/model-routing.md` (tier assignments: capable=RED, fast=verify/gaming)
+- `.context-index/specs/cross-cutting/model-routing.spec.md` (tier assignments: capable=RED, fast=verify/gaming)
 - `.context-index/specs/features/adev:write-test/charter.md` (capability map and invariants)
 
 - [ ] **Write failing test**
@@ -712,8 +712,8 @@ git commit -m "feat(adev:write-test): add SKILL.md covering all 10 behavioral sp
 - Modify: `templates/platform-context.yaml`
 
 **Context to load:**
-- `.context-index/specs/features/adev:write-test/model-selection.md` (Behavior 4: template requirements)
-- `.context-index/specs/cross-cutting/model-routing.md` (Behavior 5: template scaffolding)
+- `.context-index/specs/features/adev:write-test/model-selection.spec.md` (Behavior 4: template requirements)
+- `.context-index/specs/cross-cutting/model-routing.spec.md` (Behavior 5: template scaffolding)
 
 - [ ] **Write failing test**
 
@@ -792,10 +792,10 @@ git commit -m "feat(adev:write-test): add model_tiers to platform-context.yaml t
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] All tests pass: `npm test`
-- [ ] No CommonJS syntax in any new file (`require`, `module.exports`)
-- [ ] No hardcoded model IDs in `SKILL.md`
-- [ ] All acceptance criteria from all 10 specs satisfied (review each spec's checklist)
+- All tests pass: `npm test`
+- No CommonJS syntax in any new file (`require`, `module.exports`)
+- No hardcoded model IDs in `SKILL.md`
+- All acceptance criteria from all 10 specs satisfied (review each spec's checklist)
 
 ### Acceptance Criteria Cross-check
 

@@ -1,0 +1,81 @@
+# Rubric: adev:plan skill evaluation
+# Scores skill output on required elements (binary) and quality dimensions (1-5)
+
+skill: adev:plan
+scenario: plan-scenario
+
+# Required elements — binary pass/fail
+required_elements:
+  - id: review_gate
+    description: "Confirmed review gate passed (PASS verdict)"
+    match_pattern: "review.*gate|Review Gate|PASS|review.*passed|verdict.*PASS"
+
+  - id: context_loading
+    description: "Loaded constitution, charter, spec, and platform context"
+    match_pattern: "constitution|charter|spec|platform.*context|context.*load"
+
+  - id: file_structure
+    description: "File structure info — either full section or file references in task table"
+    match_pattern: "File Structure|Create:|Modify:|file.*structure|\\.mjs|create.*modify"
+
+  - id: tdd_structure
+    description: "Tasks follow TDD pattern (write test, verify fail, implement, verify pass) — in output or on disk"
+    match_pattern: "Write failing test|Verify test fail|Implement|Verify test pass|failing test|TDD|test.*fail|RED.*GREEN"
+
+  - id: task_ordering
+    description: "Tasks are ordered with dependencies explicit"
+    match_pattern: "Task [12345]|Depends on|task.*order|Depends On"
+
+  - id: test_file_per_task
+    description: "Every task references a test file"
+    match_pattern: "tests/.*\\.test\\.mjs|Tests?:|test.*file"
+
+  - id: commit_convention
+    description: "References conventional commit messages or git workflow"
+    match_pattern: "git commit|feat\\(|commit.*message|conventional|commit"
+
+  - id: quality_gates
+    description: "Quality Gates section with test command"
+    match_pattern: "Quality Gates|npm test|quality.*gate"
+
+  - id: context_awareness
+    description: "Context loading or context packet references"
+    match_pattern: "Context Packet|context.*packet|context.*load|Loading context|constitution.*charter"
+
+  - id: plan_file_path
+    description: "Plan saved to correct path"
+    match_pattern: "\\.plan\\.md|plan.*saved|Plan saved"
+
+  - id: execution_handoff
+    description: "Execution handoff with /adev:implement next step"
+    match_pattern: "/adev:implement"
+
+  - id: acceptance_criteria_coverage
+    description: "Maps acceptance criteria to tasks or reports coverage count"
+    match_pattern: "acceptance criteria|Acceptance Criteria|criteria.*covered|recordUsage|readUsage|\\d+ acceptance criteria|\\d+/\\d+ criteria"
+
+# Quality dimensions — scored 1-5 by LLM judge
+quality_dimensions:
+  - id: task_granularity
+    description: "Tasks are small enough to implement in 2-5 minutes each"
+    weight: 2
+
+  - id: charter_traceability
+    description: "Each task traces to a charter capability"
+    weight: 1.5
+
+  - id: spec_coverage
+    description: "All acceptance criteria from spec are covered by tasks"
+    weight: 2
+
+  - id: buildability
+    description: "A developer with no context could follow this plan without getting stuck"
+    weight: 1.5
+
+  - id: token_efficiency
+    description: "Plan output is concise — no unnecessary repetition or verbose explanations"
+    weight: 1
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

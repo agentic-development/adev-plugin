@@ -122,14 +122,26 @@ describe("session-start hook", () => {
   });
 
   it("does not include resume block when execution state file is missing", () => {
-    const { exitCode, stdout } = runHook("session-start.sh", {
-      env: { CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
-    });
+    const tempDir = createTempDir();
+    try {
+      mkdirSync(join(tempDir, "skills", "using-adev"), { recursive: true });
+      writeFileSync(join(tempDir, "skills", "using-adev", "SKILL.md"), "# Test Skill");
 
-    assert.equal(exitCode, 0);
-    const parsed = JSON.parse(stdout);
-    const ctx = parsed.hookSpecificOutput.additionalContext;
-    assert.ok(!ctx.includes("Session Resume"), "should NOT include resume block when file missing");
+      // Create a project dir with .context-index but NO .execution-state.md
+      mkdirSync(join(tempDir, "project", ".context-index"), { recursive: true });
+
+      const { exitCode, stdout } = runHook("session-start.sh", {
+        cwd: join(tempDir, "project"),
+        env: { CLAUDE_PLUGIN_ROOT: tempDir },
+      });
+
+      assert.equal(exitCode, 0);
+      const parsed = JSON.parse(stdout);
+      const ctx = parsed.hookSpecificOutput.additionalContext;
+      assert.ok(!ctx.includes("Session Resume"), "should NOT include resume block when file missing");
+    } finally {
+      cleanupTempDir(tempDir);
+    }
   });
 
   it("shows warning when execution state file is malformed", () => {

@@ -1,7 +1,7 @@
 # Architecture Review: recover-extraction (r3 — targeted re-review)
 
 > **Date:** 2026-04-09
-> **Spec:** .context-index/specs/features/heuristics/recover-extraction.md
+> **Spec:** .context-index/specs/features/heuristics/recover-extraction.spec.md
 > **Charter:** .context-index/specs/features/heuristics/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 3
@@ -55,4 +55,4 @@ This is a prose-only change that does not touch any of the security-relevant con
 
 **Status transition:** `review-pending` → `review-passed`
 
-**Planning gate:** UNLOCKED. Proceed to `/adev:plan --spec .context-index/specs/features/heuristics/recover-extraction.md`.
+**Planning gate:** UNLOCKED. Proceed to `/adev:plan --spec .context-index/specs/features/heuristics/recover-extraction.spec.md`.

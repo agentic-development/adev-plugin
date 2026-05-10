@@ -1,7 +1,7 @@
 # Architecture Review: configurable-reviewers
 
 > **Date:** 2026-04-19
-> **Spec:** .context-index/specs/features/review/configurable-reviewers.md
+> **Spec:** .context-index/specs/features/review/configurable-reviewers.spec.md
 > **Charter:** .context-index/specs/features/review/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

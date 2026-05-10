@@ -1,0 +1,18 @@
+# risk-policies.yaml — Risk level to gate escalation mapping
+# This file lives at .context-index/governance/risk-policies.yaml
+# Specs declare risk_level in frontmatter (high | medium | low).
+# If not declared, default is "medium".
+
+policies:
+  high:
+    require_review: true
+    require_hitl_approval: true
+    additional_gates: []           # gate IDs from gates.yaml
+  medium:
+    require_review: true
+    require_hitl_approval: false
+    additional_gates: []
+  low:
+    require_review: false
+    require_hitl_approval: false
+    additional_gates: []

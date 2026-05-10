@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/unified-gates/charter.md
-> **Spec:** .context-index/specs/features/unified-gates/unified-gate-system.md
+> **Spec:** .context-index/specs/features/unified-gates/unified-gate-system.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-15)
 > **Platform:** Node.js, JavaScript (ESM), node:test, npm
 
@@ -28,58 +28,58 @@
 - `tests/templates/manifest-template.test.mjs` — Update: verify `gates:` section is absent
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/unified-gates/unified-gate-system.md` — Behavioral contract
+- `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` — Behavioral contract
 - `.context-index/specs/features/unified-gates/charter.md` — Capability map
 - `.context-index/constitution.md` — Principles and quality gates
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behaviors 1-7, 27; AC: gates-template uses unified schema)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behaviors 1-7, 27; AC: gates-template uses unified schema)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capability: Unified Gate Schema)
 - Current file: `templates/gates-template.yaml`
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behaviors 22-23; AC: manifest-template no gates section)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behaviors 22-23; AC: manifest-template no gates section)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capability: Manifest Gates Removal)
 - Current file: `templates/manifest-template.yaml`
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behaviors 8-12, 18-21; AC: Check 1 splits 1a/1b/1c, skip reporting, fail-fast)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behaviors 8-12, 18-21; AC: Check 1 splits 1a/1b/1c, skip reporting, fail-fast)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capabilities: Tiered Execution from Governance, Explicit Skip Reporting, Severity and Required Reconciliation, E2E Sub-keys)
 - Current file: `skills/validate/SKILL.md` (lines 32-72 Check 1, lines 180-195 Checks 8-9)
 
 ### Task 4 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behaviors 13-15; AC: implement reads integration-tier from governance)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behaviors 13-15; AC: implement reads integration-tier from governance)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capability: Skill Migration)
 - Current file: `skills/implement/SKILL.md` (lines 301-338 Step 2-post)
 
 ### Task 5 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behaviors 16-17; AC: build dry-run displays from governance)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behaviors 16-17; AC: build dry-run displays from governance)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capability: Skill Migration)
 - Current file: `skills/build/SKILL.md` (lines 238-281 dry-run)
 
 ### Task 6 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behavior 26; AC: hygiene validates unified schema)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behavior 26; AC: hygiene validates unified schema)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capability: Skill Migration)
 - Current file: `skills/hygiene/SKILL.md` (lines 327-361 Pass 8)
 
 ### Task 7 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behaviors 22-23b; AC: init scaffolds governance/gates.yaml, legacy migration detection)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behaviors 22-23b; AC: init scaffolds governance/gates.yaml, legacy migration detection)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capabilities: Manifest Gates Removal, Backward Compatibility Path)
 - Current file: `skills/init/SKILL.md` (lines 153-172 Step 7)
 
 ### Task 8 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (Behavior 23; AC: legacy gates detection)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (Behavior 23; AC: legacy gates detection)
 - Charter: `.context-index/specs/features/unified-gates/charter.md` (capability: Backward Compatibility Path)
 - Current files: `skills/validate/SKILL.md`, `skills/hygiene/SKILL.md`
 
 ### Task 9 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (AC: all 5 tiered-test-gates specs marked superseded)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (AC: all 5 tiered-test-gates specs marked superseded)
 - Already verified: all 5 specs have `status: superseded`
 
 ### Task 10 Context
-- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.md` (AC: all quality gates pass)
+- Spec: `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` (AC: all quality gates pass)
 - Tests: `tests/templates/gates-template.test.mjs`, `tests/templates/manifest-template.test.mjs`
 
 ## Parallelization
@@ -771,7 +771,7 @@ git commit -m "feat(unified-gates): add legacy manifest gates detection to valid
 
 **Charter capability:** (housekeeping — spec Acceptance Criterion: all 5 tiered-test-gates specs marked superseded)
 **Files:**
-- Reference: `.context-index/specs/features/tiered-test-gates/*.md`
+- Reference: `.context-index/specs/features/tiered-test-gates/*.spec.md`
 - Test: `tests/skills/superseded-specs.test.mjs`
 
 **Tests:** `tests/skills/superseded-specs.test.mjs`
@@ -860,6 +860,6 @@ Review each AC from the spec against the implemented changes:
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All 31 acceptance criteria from spec satisfied
-- [ ] No constitutional violations introduced (Principles 1, 2, 3, 4, 5 upheld — no new deps, skills remain markdown, ESM maintained, hook protocol unchanged, version parity unaffected)
+- Tests pass: `npm test`
+- All 31 acceptance criteria from spec satisfied
+- No constitutional violations introduced (Principles 1, 2, 3, 4, 5 upheld — no new deps, skills remain markdown, ESM maintained, hook protocol unchanged, version parity unaffected)

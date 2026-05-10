@@ -1,7 +1,7 @@
 # Plan: Issue Model Milestone Extension
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/issue-model-milestone.md`
+- Spec: `.context-index/specs/features/strategic-planning/issue-model-milestone.spec.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS
 
@@ -102,7 +102,7 @@ Add an optional `milestone` string field to the Epic data model across the entir
 - `tests/lib/issues-file-adapter.test.mjs` — File adapter milestone tests
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/issue-model-milestone.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/issue-model-milestone.spec.md` — Behavioral contract
 - `.context-index/specs/features/strategic-planning/issue-model-milestone.review.md` — Review (PASS, no findings)
 - `tests/helpers.mjs` — Test helper utilities
 
@@ -139,13 +139,13 @@ Add an optional `milestone` string field to the Epic data model across the entir
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] `milestone` field round-trips through `createEpic` / `list` / `updateEpic` on file adapter
-  - [ ] `milestone` field round-trips through `createEpic` / `list` / `updateEpic` on beads adapter
-  - [ ] Existing tasks.md without Milestone column parses without error
-  - [ ] After re-serialization, tasks.md includes the Milestone column
-  - [ ] `validateEpic()` accepts and returns milestone field
-  - [ ] Filtering epics by milestone returns correct results
-  - [ ] All quality gates pass (tests, lint, typecheck)
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `milestone` field round-trips through `createEpic` / `list` / `updateEpic` on file adapter
+  - `milestone` field round-trips through `createEpic` / `list` / `updateEpic` on beads adapter
+  - Existing tasks.md without Milestone column parses without error
+  - After re-serialization, tasks.md includes the Milestone column
+  - `validateEpic()` accepts and returns milestone field
+  - Filtering epics by milestone returns correct results
+  - All quality gates pass (tests, lint, typecheck)
+  - No constitutional violations introduced

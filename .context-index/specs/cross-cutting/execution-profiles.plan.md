@@ -1,7 +1,7 @@
 # Implementation Plan: Execution Profiles
 
 > **Methodology:** adev
-> **Spec:** .context-index/specs/cross-cutting/execution-profiles.md
+> **Spec:** .context-index/specs/cross-cutting/execution-profiles.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-19)
 > **Platform:** JavaScript (ESM), Node.js, npm, node:test
 
@@ -36,7 +36,7 @@
 - `package.json` + `.claude-plugin/plugin.json` — version bump to 0.18.0 (parity invariant)
 
 **Reference (read, do not modify):**
-- `.context-index/specs/cross-cutting/execution-profiles.md` — the contract
+- `.context-index/specs/cross-cutting/execution-profiles.spec.md` — the contract
 - `lib/workspace.mjs` — for `detectWorkspace` pattern + simple YAML parse style
 - `lib/source-manifest.mjs` — for ESM style, JSDoc conventions
 
@@ -134,6 +134,6 @@ Order: data foundation → pure logic → env/workspace integration → adapter 
 
 ## Quality Gates
 
-- [ ] `npm test` passes
-- [ ] No new external dependencies
-- [ ] Version bumped in `package.json` + `.claude-plugin/plugin.json` (parity)
+- `npm test` passes
+- No new external dependencies
+- Version bumped in `package.json` + `.claude-plugin/plugin.json` (parity)

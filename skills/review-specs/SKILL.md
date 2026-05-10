@@ -21,7 +21,7 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 Determine which specs need review:
 
 1. If `--spec <path>` is provided, use that file directly.
-2. If `--charter <module>` is provided, glob `.context-index/specs/features/<module>/*.md` excluding `charter.md` and any `*.review.md` files.
+2. If `--charter <module>` is provided, glob `.context-index/specs/features/<module>/*.spec.md`.
 3. If no arguments, scan all `.context-index/specs/features/` and `.context-index/specs/cross-cutting/` directories. A spec needs review if:
    - No adjacent `.review.md` file exists (e.g., `card-ordering.md` expects `card-ordering.review.md`)
    - The spec file is newer than its `.review.md` file (spec was modified after last review)
@@ -207,11 +207,11 @@ Verdict consolidation uses `computeVerdict(findings, verdictRules)` from `lib/go
 Write the consolidated report to a `.review.md` file adjacent to the spec:
 
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
-- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
+- Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.spec.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
 **Lifecycle tracking fields:** In the `.review.md` file, also record:
 - `last-reviewed-revision: <spec's current revision value>` — the spec's `revision` frontmatter field at the time of review.
-- `file-sha: <git hash-object output>` — run `git hash-object <spec-file-path>` and record the SHA. This enables drift detection: if the file changes without a revision bump, `/adev:plan` can detect it.
+- `file-sha: <PENDING>` — write a placeholder at this stage. The final SHA is recorded in Step 6b, after Step 7 has written the status update back to the spec.
 
 ## Step 7: Update Spec Status
 
@@ -235,9 +235,18 @@ Log the status change to the user.
 
 **Note:** Do not increment the spec's `revision` field on status-only changes. The `revision` field tracks content changes, not workflow transitions.
 
+## Step 6b: Stamp Final file-sha
+
+After Step 7 has written the status update to the spec file, compute the final SHA and update the `.review.md`:
+
+1. Run `git hash-object <spec-file-path>` to get the SHA of the spec in its final on-disk state (after the status update).
+2. Replace the `file-sha: <PENDING>` placeholder in the `.review.md` with the real SHA: `file-sha: <computed-sha>`.
+
+**Why after Step 7:** Step 7 writes `review-pending → review-passed` (or `review-blocked`) back to the spec file, which changes the file's content and hash. If the SHA were captured in Step 6 (before Step 7), the stored SHA would immediately diverge from the on-disk spec, causing `/adev:plan` to report false drift on the very next invocation.
+
 ## Step 8: Report to User
 
-Present the consolidated verdict and findings summary. **Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules (e.g., Product persona: show pass/fail only, omit blocker codes and file paths). Artifacts written to disk (`.review.md`) always use the full technical format.
+Present the consolidated verdict and findings summary. **Do NOT echo the full .review.md content** — it is already on disk. Present ONLY the summary format below. **Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules (e.g., Product persona: show pass/fail only, omit blocker codes and file paths). Artifacts written to disk (`.review.md`) always use the full technical format.
 
 **If PASS:**
 ```

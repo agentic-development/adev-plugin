@@ -10,9 +10,9 @@ Audit the health of `.context-index/` and source code, generating actionable rep
 ## Arguments
 
 - No arguments: full audit (all fifteen passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics, code-drift)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
-- `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.md validated`
+- `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
 
   Valid status values: `draft`, `review-pending`, `review-passed`, `review-blocked`, `implemented`, `validated`
 
@@ -244,9 +244,9 @@ Orientation: last updated 2026-03-01
    ## Session Analysis
 
    Skipped — no session capture provider configured in manifest.yaml.
-   To enable, set integrations.session_capture.provider to "entire" or "jsonl".
+   To enable, set integrations.session_capture.provider to "native" or "jsonl".
    ```
-3. If `provider: entire`, look for session data via the Entire checkpoint branch configured in `checkpoint_branch`.
+3. If `provider: native`, read session tracking data from `.context-index/.session-tracking.jsonl` and session summaries from `.context-index/sessions/`. This is the default provider when hooks handle session capture directly.
 4. If `provider: jsonl`, read session logs from `.context-index/hygiene/sessions/`.
 
 **Steps (when session data is available):**
@@ -461,7 +461,7 @@ Total blockers: 5
 **Steps:**
 
 1. **Scan all charters.** Read every `.context-index/specs/features/*/charter.md`. For each charter, parse the Capability Map table. Extract each capability's name, priority, and phase.
-2. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`). Parse frontmatter for `charter`, `milestone`, and `status`.
+2. **Scan all specs.** Read every `*.spec.md` file under `.context-index/specs/features/`. Parse frontmatter for `charter`, `milestone`, and `status`.
 3. **Match capabilities to specs.** For each charter capability, find the corresponding spec by:
    - Matching `milestone` in the spec to the capability's phase, AND
    - Matching the spec's `charter` field to the charter's module name.
@@ -506,7 +506,7 @@ Total blockers: 5
 
 **Steps:**
 
-1. **Scan all specs.** Read every spec file under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`). Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
+1. **Scan all specs.** Read every `*.spec.md` file under `.context-index/specs/features/`. Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
 2. **Scan all review files.** Read every `.review.md` file. Parse `last-reviewed-revision` and `file-sha` fields.
 3. **Scan all charters.** Read every `charter.md`. Parse `revision` and the Capability Map table (including the `Status` column).
 
@@ -539,6 +539,25 @@ Total blockers: 5
      - [ ] <charter-path>: STATUS_MISMATCH — capability "<name>" shows "<charter-status>" but spec status is "<spec-status>"
      ```
 
+8. **Reality drift check (codebase verification):** For each spec with status `implemented` or `validated`, verify the implementation actually exists in the codebase. Run via inline Node.js:
+   ```bash
+   node --input-type=module -e "
+   import { verifySpecImplemented } from '<ADEV_ROOT>/lib/reality-check.mjs';
+   const result = verifySpecImplemented('<specPath>', { projectRoot: '<projectRoot>' });
+   console.log(JSON.stringify(result));
+   "
+   ```
+   - If `confidence === "none"` (status claims implemented but no codebase evidence): flag as `REALITY_DRIFT`:
+     ```
+     - [ ] <spec-path>: REALITY_DRIFT — status is "<status>" but implementation not found in codebase (confidence: none)
+     ```
+   - If `confidence === "low"` (weak evidence): flag as `REALITY_WARN`:
+     ```
+     - [ ] <spec-path>: REALITY_WARN — status is "<status>" but implementation evidence is weak (files untracked or missing)
+     ```
+   - If `confidence === "medium"` or `"high"`: no finding (status matches reality).
+   - If `lib/reality-check.mjs` fails to import, skip this step with note: "Reality check unavailable — skipping codebase verification."
+
 **Output format:**
 ```
 ## Lifecycle Audit
@@ -548,21 +567,27 @@ Reviews scanned: <N>
 Charters scanned: <N>
 
 ### Revision Drift
-- [ ] specs/features/auth/login.md: REVISION_DRIFT — spec revision 3, last reviewed revision 1
+- [ ] specs/features/auth/login.spec.md: REVISION_DRIFT — spec revision 3, last reviewed revision 1
 
 ### File Drift
-- [ ] specs/features/auth/login.md: FILE_DRIFT — file hash changed since last review
+- [ ] specs/features/auth/login.spec.md: FILE_DRIFT — file hash changed since last review
 
 ### Charter-Revision Staleness
-- [ ] specs/features/auth/login.md: CHARTER_STALE — spec references charter revision 1, charter is now at revision 3
+- [ ] specs/features/auth/login.spec.md: CHARTER_STALE — spec references charter revision 1, charter is now at revision 3
 
 ### Capability Status Inconsistencies
 - [ ] specs/features/auth/charter.md: STATUS_MISMATCH — capability "login" shows "planned" but spec status is "implemented"
+
+### Reality Drift (codebase verification)
+- [ ] specs/features/payments/checkout.md: REALITY_DRIFT — status is "implemented" but implementation not found (confidence: none)
+- [ ] specs/features/auth/session.md: REALITY_WARN — status is "validated" but files untracked (confidence: low)
 
 **Actions:**
 - [ ] Re-review specs with revision or file drift: /adev:review-specs
 - [ ] Update specs referencing stale charter revisions: check for charter changes that affect the spec
 - [ ] Fix capability status mismatches in charter Capability Map tables
+- [ ] Investigate REALITY_DRIFT specs: implementation may have been reverted, never committed, or incorrectly stamped
+- [ ] Commit or implement REALITY_WARN specs: files exist but are not git-tracked
 ```
 
 **Integration with summary table:** Add a row for Lifecycle Audit in the report summary:
@@ -770,6 +795,39 @@ Scanned: N source files, M commits
 **Integration with summary table:**
 ```
 | Heuristic Index Health | WARN | 1 stale index entry, 2 orphan tags |
+```
+
+## Audit Pass 17: Code Drift
+
+**Goal:** Detect specs with `drift_detected: true` in their frontmatter, indicating implementation source files have been modified since the source manifest was last stamped.
+
+**Steps:**
+
+1. Scan all specs matching `.context-index/specs/**/*.spec.md`.
+2. For each spec, read the YAML frontmatter and check if `drift_detected: true` is present.
+3. If drifted specs are found, report WARN with a list:
+   - Spec path
+   - `drift_source` (the file that triggered the drift)
+   - `drift_at` (timestamp of drift detection)
+4. If no drifted specs are found, report PASS.
+
+**Output format:**
+```
+## Code Drift
+
+- PASS: No specs with drift_detected flags (or)
+- WARN: N specs with code-side drift detected:
+  - .context-index/specs/features/auth/login.spec.md — drift_source: lib/login.mjs, drift_at: 2026-05-01T10:00:00Z
+  - .context-index/specs/features/dashboard/widgets.spec.md — drift_source: lib/widgets.mjs, drift_at: 2026-05-02T14:00:00Z
+
+**Actions:**
+- [ ] Run `/adev:validate --spec <path>` to verify spec still reflects implementation
+- [ ] Run `/adev:implement` to re-stamp source manifests and clear drift flags
+```
+
+**Integration with summary table:**
+```
+| Code Drift | WARN | 2 drifted specs |
 ```
 
 ## Report Format

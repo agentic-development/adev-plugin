@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Reconcile"
+  short_description: "Run adev:reconcile"
+  default_prompt: "Use $adev:reconcile to run this skill."

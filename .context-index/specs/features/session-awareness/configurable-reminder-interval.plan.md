@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
-> **Spec:** .context-index/specs/features/session-awareness/configurable-reminder-interval.md
+> **Spec:** .context-index/specs/features/session-awareness/configurable-reminder-interval.spec.md
 > **Review:** PASS (2026-04-06)
 > **Platform:** JavaScript ESM, Node.js, node:test
 
@@ -23,7 +23,7 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/session-awareness/configurable-reminder-interval.md` (Manifest Schema, Behaviors 1-5)
+- Spec: `.context-index/specs/features/session-awareness/configurable-reminder-interval.spec.md` (Manifest Schema, Behaviors 1-5)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Configurable Reminder Interval)
 
 ## Parallelization
@@ -70,5 +70,5 @@ Expected: PASS
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria satisfied
+- Tests pass: `npm test`
+- All acceptance criteria satisfied

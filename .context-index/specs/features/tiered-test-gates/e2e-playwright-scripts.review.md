@@ -1,7 +1,7 @@
 # Architecture Review: e2e-playwright-scripts
 
 > **Date:** 2026-04-15
-> **Spec:** .context-index/specs/features/tiered-test-gates/e2e-playwright-scripts.md
+> **Spec:** .context-index/specs/features/tiered-test-gates/e2e-playwright-scripts.spec.md
 > **Charter:** .context-index/specs/features/tiered-test-gates/charter.md
 > **Verdict:** PASS
 > **last-reviewed-revision:** 2

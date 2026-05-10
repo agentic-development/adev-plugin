@@ -40,7 +40,7 @@ adev-plugin/
 │   ├── adev:document/          # Developer documentation generation
 │   ├── adev:reconcile/         # Interactive repair for lifecycle mismatches
 │   └── adev:codehealth/        # Dead code and orphan file detection
-├── hooks/                      # 9 hook files (8 .sh + 1 .mjs) + hooks.json config
+├── hooks/                      # 12 hook files (11 .sh + 1 .mjs) + hooks.json config
 │   ├── hooks.json              # Hook registration (which events trigger which scripts)
 │   ├── session-start.sh        # SessionStart — injects using-adev skill
 │   ├── session-capture.sh      # PostToolUse — records session events to .context-index/sessions/
@@ -49,6 +49,10 @@ adev-plugin/
 │   ├── sync-trigger.sh         # PostToolUse:Edit — notifies to run /adev:sync
 │   ├── context-preflight.sh    # PreToolUse:Edit — warns if editing source without reading context
 │   ├── context-read-tracker.sh # PostToolUse:Read — tracks context file reads
+│   ├── lifecycle-gate-advisory.sh # PostToolUse — advisory warnings when no lifecycle session is active
+│   ├── lifecycle-gate-bash.sh  # PreToolUse:Bash — blocks shell commands outside lifecycle scope
+│   ├── lifecycle-gate-edit.sh  # PreToolUse:Edit — blocks source edits outside lifecycle scope
+│   ├── _parse-stdin.sh         # Shared stdin JSON parser sourced by other hooks
 │   ├── issue-reminder.sh       # PostToolUse — periodic issue board reminders
 │   └── issue-reminder.mjs      # Helper module for issue reminder logic
 ├── templates/                  # 31 scaffold template files consumed by /adev:init (includes governance/, personas/, review-specs/, validate/ subdirs)
@@ -97,7 +101,25 @@ adev-plugin/
 │   ├── token-pricing.mjs       # Model pricing table for cost estimation
 │   ├── session-parser.mjs      # Parse session data from native provider
 │   ├── session-summary.mjs     # Generate session summaries for /adev:status
-│   └── source-manifest.mjs     # Source file tracking for spec drift detection
+│   ├── source-manifest.mjs     # Source file tracking for spec drift detection
+│   ├── meta-tools.mjs          # Deterministic multi-file operations: loadSpecContext(), findSpecsByStatus(), getPlanProgress(). Used by plan and implement skills
+│   ├── spec-drift.mjs          # Specification drift detection and stamping
+│   ├── reality-check.mjs       # Codebase-verified confidence scoring: verifySpecImplemented(), verifyIssueCompleted(), verifyCapabilityStatus(), formatConfidenceNote(). Prevents ghost validations
+│   ├── build-state.mjs         # Build pipeline state management: readBuildState(), createBuildState(), recordStepResult(), getNextStep(). State stored in .context-index/build-state/
+│   ├── visual-references.mjs   # Visual reference capture for prototype skill: validateSourcePath(), copyVisualReference(), createVisualReferenceTracker()
+│   ├── lifecycle-gate-config.mjs # Gate configuration: resolveGateConfig(), matchesFileExclusion(), matchesBashPassthrough(). Defines DEFAULT_FILE_EXCLUSIONS and DEFAULT_BASH_PASSTHROUGH patterns
+│   ├── lifecycle-gate-helpers.mjs # Gate enforcement helpers: isFileExcluded(), isBashPassthrough(), loadMergedConfig(), resolveModule(), checkModuleLifecycle(). Used by hooks/lifecycle-gate-*.sh
+│   └── infra-preflight.mjs     # Infrastructure requirements validation before skill execution
+├── viz/                        # Context visualization subsystem (browser-based)
+│   ├── app.mjs                 # Entry point — launches interactive dependency graph viewer
+│   ├── build.mjs               # Static site builder for offline viewing
+│   ├── detail-panel.mjs        # Detail panel UI for selected nodes
+│   ├── filters.mjs             # Filter controls for graph exploration
+│   ├── graph-renderer.mjs      # Cytoscape.js graph rendering engine
+│   └── timeline.mjs            # Timeline view of lifecycle events
+├── scripts/                    # Build and release utilities
+│   ├── stamp-manifests.mjs     # Version stamping across package.json and plugin.json
+│   └── sync-provider-skills.mjs # Synchronize skill definitions across provider configs
 ├── providers/                  # Provider-specific configuration
 │   ├── claude-code/            # Claude Code plugin config
 │   ├── codex/                  # OpenAI Codex provider config
@@ -122,6 +144,12 @@ adev-plugin/
 
 6. **Session capture**: After tool calls, `session-capture.sh` records session events. Session data is parsed by `lib/session-parser.mjs` and summarized by `lib/session-summary.mjs` for `/adev:status` queries.
 
+7. **Lifecycle gating**: `lifecycle-gate-edit.sh` and `lifecycle-gate-bash.sh` block source edits and shell commands when no lifecycle session is active. `lifecycle-gate-advisory.sh` issues warnings for lesser violations. Gate configuration (exclusion patterns, bash passthroughs) is defined in `lib/lifecycle-gate-config.mjs` and enforced by `lib/lifecycle-gate-helpers.mjs`.
+
+8. **Build pipeline**: `/adev:build` orchestrates multi-step builds using `lib/build-state.mjs` to persist pipeline state (current step, results) in `.context-index/build-state/`, enabling resumable builds across sessions.
+
+9. **Context visualization**: `viz/` provides a browser-based interactive dependency graph viewer built on Cytoscape.js. `viz/build.mjs` generates a static site; `viz/app.mjs` serves it with filters, detail panels, and a timeline view.
+
 ## Skill Lifecycle Order
 
 Skills follow a strict pipeline: init → brainstorm → specify → review-specs → plan → route → implement → validate → eval. Supporting skills (assess, debug, recover, sample, status, write-test, retro, hygiene, repomap, sync) can run at any point.
@@ -131,4 +159,4 @@ Skills follow a strict pipeline: init → brainstorm → specify → review-spec
 - **Skills are markdown, not code** — they are portable across AI tools and contain no executable logic (companion code is allowed but not required).
 - **Hooks are bash** — they execute in the shell, read JSON from stdin and `CLAUDE_TOOL_INPUT_*` env vars, and communicate via exit codes and JSON stdout.
 - **Templates are static** — changes to templates only affect newly scaffolded projects, not existing ones.
-- **Single-file CLI** — all CLI logic lives in `cli/index.mjs` (~911 lines, grown from ~400 with the install/upgrade split and provider routing).
+- **Single-file CLI** — all CLI logic lives in `cli/index.mjs` (~913 lines, grown from ~400 with the install/upgrade split and provider routing).

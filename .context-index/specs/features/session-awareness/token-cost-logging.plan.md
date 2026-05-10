@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
-> **Spec:** .context-index/specs/features/session-awareness/token-cost-logging.md
+> **Spec:** .context-index/specs/features/session-awareness/token-cost-logging.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-20)
 > **Platform:** JavaScript (ESM), Node.js, node:test
 
@@ -513,17 +513,17 @@ git commit -m "feat(cli): add .token-cursor.json to gitignore scaffold"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [x] JSONL entries include `usage` object when session data accessible (Task 4)
-  - [x] JSONL entries omit `usage` when unavailable (Task 4)
-  - [x] `cost_usd` is `null` when model unknown (Task 1, Task 4)
-  - [x] Delta computation produces non-negative values (Task 4)
-  - [x] Cursor file lifecycle correct (Task 2, Task 4)
-  - [x] Hook exits 0 in ALL error scenarios (Task 4)
-  - [x] Backward-compatible (Task 4)
-  - [x] No new external dependencies (all tasks)
-  - [x] Stderr warning on format change, once per session (Task 3, Task 4)
-  - [x] Price table covers opus/sonnet/haiku (Task 1)
-  - [x] All quality gates pass (this section)
-  - [x] No constitutional violations (all tasks)
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - JSONL entries include `usage` object when session data accessible (Task 4)
+  - JSONL entries omit `usage` when unavailable (Task 4)
+  - `cost_usd` is `null` when model unknown (Task 1, Task 4)
+  - Delta computation produces non-negative values (Task 4)
+  - Cursor file lifecycle correct (Task 2, Task 4)
+  - Hook exits 0 in ALL error scenarios (Task 4)
+  - Backward-compatible (Task 4)
+  - No new external dependencies (all tasks)
+  - Stderr warning on format change, once per session (Task 3, Task 4)
+  - Price table covers opus/sonnet/haiku (Task 1)
+  - All quality gates pass (this section)
+  - No constitutional violations (all tasks)

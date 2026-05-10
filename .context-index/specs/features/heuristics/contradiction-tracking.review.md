@@ -1,7 +1,7 @@
 # Architecture Review: contradiction-tracking
 
 > **Date:** 2026-04-12
-> **Spec:** .context-index/specs/features/heuristics/contradiction-tracking.md
+> **Spec:** .context-index/specs/features/heuristics/contradiction-tracking.spec.md
 > **Charter:** .context-index/specs/features/heuristics/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

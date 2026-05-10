@@ -6,6 +6,9 @@
 
 set -uo pipefail
 
+# Read stdin and populate CLAUDE_TOOL_INPUT_* env vars
+source "$(dirname "$0")/_parse-stdin.sh"
+
 # Walk up from a directory to find the nearest adev-workspace.yaml
 is_workspace_root() {
   local dir="$1"

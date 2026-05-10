@@ -1,0 +1,11 @@
+# validate.yaml — Validate check overrides
+# This file lives at .context-index/governance/validate.yaml
+# Only checks that differ from defaults need to appear here.
+# See templates/governance/validate.example.yaml for more examples.
+
+checks:
+  - id: validate.check-10-platform-drift
+    enabled: false
+
+  - id: validate.check-11-visual-verification
+    enabled: false

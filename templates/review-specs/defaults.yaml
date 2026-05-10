@@ -1,5 +1,5 @@
 # Bundled reviewer registry defaults.
-# See: .context-index/specs/features/review/configurable-reviewers.md rev 3.
+# See: .context-index/specs/features/review/configurable-reviewers.spec.md rev 3.
 #
 # Projects override these via .context-index/governance/review.yaml. Matching
 # `id` overrides field-by-field; new `id` appends. Overriding a bundled

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/task-management/charter.md
-> **Spec:** .context-index/specs/features/task-management/constitution-sync.md
+> **Spec:** .context-index/specs/features/task-management/constitution-sync.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-31)
 > **Platform:** none, javascript (ESM), node:test
 
@@ -20,7 +20,7 @@
 
 **Reference (read, do not modify):**
 - `.context-index/constitution.md` — Current constitution for reference
-- `.context-index/specs/features/task-management/constitution-sync.md` — Spec
+- `.context-index/specs/features/task-management/constitution-sync.spec.md` — Spec
 
 ## Context Packets
 
@@ -139,5 +139,5 @@ git commit -m "feat(task-management): add conditional task management block to a
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

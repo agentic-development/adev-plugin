@@ -1,7 +1,7 @@
 # Architecture Review: run-assessment
 
 > **Date:** 2026-03-24
-> **Spec:** .context-index/specs/features/adev:assess/run-assessment.md
+> **Spec:** .context-index/specs/features/adev:assess/run-assessment.spec.md
 > **Charter:** .context-index/specs/features/adev:assess/charter.md
 > **Verdict:** PASS
 

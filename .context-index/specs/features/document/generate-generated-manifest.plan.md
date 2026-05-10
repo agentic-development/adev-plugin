@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/adev:document/charter.md
-> **Spec:** .context-index/specs/features/adev:document/generate-generated-manifest.md
+> **Spec:** .context-index/specs/features/adev:document/generate-generated-manifest.spec.md
 > **Review:** PASS (2026-03-23)
 > **Platform:** Node.js, JavaScript ESM (.mjs), no framework
 
@@ -21,19 +21,19 @@
 - `tests/skills/document.test.mjs` — Add tests for manifest section
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/adev:document/generate-generated-manifest.md` — Source of truth for behaviors
+- `.context-index/specs/features/adev:document/generate-generated-manifest.spec.md` — Source of truth for behaviors
 
 ---
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/adev:document/generate-generated-manifest.md` (all behaviors and error cases)
+- Spec: `.context-index/specs/features/adev:document/generate-generated-manifest.spec.md` (all behaviors and error cases)
 - Charter: `.context-index/specs/features/adev:document/charter.md` (capability: GENERATED.md manifest)
 - Constitution: `.context-index/constitution.md` (principle: minimize external dependencies — git SHA via child_process, no external libs)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/adev:document/generate-generated-manifest.md` (acceptance criteria)
+- Spec: `.context-index/specs/features/adev:document/generate-generated-manifest.spec.md` (acceptance criteria)
 - Reference: `tests/skills/document.test.mjs` (extend this file)
 
 ### Task 3 Context
@@ -55,7 +55,7 @@
 - Modify: `skills/document/SKILL.md` (append Step 3 section)
 
 **Context to load:**
-- `.context-index/specs/features/adev:document/generate-generated-manifest.md` — behaviors 1-6 become instructions
+- `.context-index/specs/features/adev:document/generate-generated-manifest.spec.md` — behaviors 1-6 become instructions
 
 - [ ] **Write failing test**
 
@@ -286,9 +286,9 @@ git commit -m "fix(adev:document): address issues found in full quality gate run
 
 After all tasks are complete:
 
-- [ ] Tests pass: `npm test`
-- [ ] `skills/document/SKILL.md` exists and has correct frontmatter
-- [ ] All acceptance criteria from all three specs satisfied:
+- Tests pass: `npm test`
+- `skills/document/SKILL.md` exists and has correct frontmatter
+- All acceptance criteria from all three specs satisfied:
   - `generate-architecture.md` — 12 criteria
   - `generate-module-docs.md` — 14 criteria
   - `generate-generated-manifest.md` — 10 criteria

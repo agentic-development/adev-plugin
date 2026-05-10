@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/contradiction-tracking.md
+> **Spec:** .context-index/specs/features/heuristics/contradiction-tracking.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-12)
 > **Platform:** Node.js, JavaScript (ESM), node:test
 
@@ -23,20 +23,20 @@
 
 **Reference:**
 - `lib/heuristics.mjs` — `readHeuristics`, `addContradiction`
-- `.context-index/specs/features/heuristics/store-and-helper.md` — addContradiction invariants
+- `.context-index/specs/features/heuristics/store-and-helper.spec.md` — addContradiction invariants
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/heuristics/contradiction-tracking.md` (Behaviors 1-2, 4-7)
+- Spec: `.context-index/specs/features/heuristics/contradiction-tracking.spec.md` (Behaviors 1-2, 4-7)
 - Current SKILL.md: `skills/validate/SKILL.md` (Check 12, lines 244-360)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/heuristics/contradiction-tracking.md` (Behaviors 3-7)
+- Spec: `.context-index/specs/features/heuristics/contradiction-tracking.spec.md` (Behaviors 3-7)
 - Current SKILL.md: `skills/recover/SKILL.md` (Step 7, lines 304-404)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/heuristics/contradiction-tracking.md` (all AC)
+- Spec: `.context-index/specs/features/heuristics/contradiction-tracking.spec.md` (all AC)
 
 ## Parallelization
 
@@ -238,5 +238,5 @@ git commit -m "test(heuristics): add contradiction tracking eval tests"
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

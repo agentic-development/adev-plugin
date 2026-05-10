@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/retrieval-filtering.md
+> **Spec:** .context-index/specs/features/heuristics/retrieval-filtering.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-12)
 > **Platform:** Node.js, JavaScript (ESM), node:test
 
@@ -19,22 +19,22 @@
 - `tests/lib/heuristics.test.mjs` — Add retrieval filtering test suite
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/heuristics/store-and-helper.md` — Existing API signatures
+- `.context-index/specs/features/heuristics/store-and-helper.spec.md` — Existing API signatures
 - `.context-index/memory/heuristics/_format.md` — Schema documentation
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/heuristics/retrieval-filtering.md` (Behaviors 1-4, Error Cases)
+- Spec: `.context-index/specs/features/heuristics/retrieval-filtering.spec.md` (Behaviors 1-4, Error Cases)
 - Charter: `.context-index/specs/features/heuristics/charter.md` (capability: Retrieval Filtering)
-- Sibling spec: `.context-index/specs/features/heuristics/store-and-helper.md` (readHeuristics API signature)
+- Sibling spec: `.context-index/specs/features/heuristics/store-and-helper.spec.md` (readHeuristics API signature)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/heuristics/retrieval-filtering.md` (Behavior 8, AC: rendering format)
+- Spec: `.context-index/specs/features/heuristics/retrieval-filtering.spec.md` (Behavior 8, AC: rendering format)
 - Charter: `.context-index/specs/features/heuristics/charter.md` (capability: Retrieval Filtering)
 
 ### Task 3 Context
-- Spec: `.context-index/specs/features/heuristics/retrieval-filtering.md` (all Behaviors, all AC)
+- Spec: `.context-index/specs/features/heuristics/retrieval-filtering.spec.md` (all Behaviors, all AC)
 - Task 1 and Task 2 implementation
 
 ## Parallelization
@@ -379,5 +379,5 @@ git commit -m "test(heuristics): add retrieval filtering integration and edge ca
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

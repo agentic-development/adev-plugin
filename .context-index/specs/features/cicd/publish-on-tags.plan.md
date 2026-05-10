@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/cicd/charter.md
-> **Spec:** .context-index/specs/features/cicd/publish-on-tags.md
+> **Spec:** .context-index/specs/features/cicd/publish-on-tags.spec.md
 > **Review:** PASS (2026-03-24)
 > **Platform:** GitHub Actions, npm
 
@@ -15,7 +15,7 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/cicd/publish-on-tags.md` (all acceptance criteria)
+- Spec: `.context-index/specs/features/cicd/publish-on-tags.spec.md` (all acceptance criteria)
 - Charter: `.context-index/specs/features/cicd/charter.md` (capability: Publish on Tags)
 - Constitution: `.context-index/constitution.md` (principle: Version parity)
 
@@ -122,14 +122,14 @@
 
 After all tasks are complete:
 
-- [ ] Release workflow triggers on version tags (v*.*.*)
-- [ ] Release workflow runs tests before publishing
-- [ ] Package published to npm on successful workflow
-- [ ] Workflow fails if tests fail
-- [ ] Workflow fails if npm publish fails
-- [ ] Published package installable via npm
-- [ ] Version in npm matches git tag
-- [ ] All acceptance criteria from spec satisfied
+- Release workflow triggers on version tags (v*.*.*)
+- Release workflow runs tests before publishing
+- Package published to npm on successful workflow
+- Workflow fails if tests fail
+- Workflow fails if npm publish fails
+- Published package installable via npm
+- Version in npm matches git tag
+- All acceptance criteria from spec satisfied
 
 ---
 

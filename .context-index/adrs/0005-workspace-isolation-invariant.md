@@ -1,4 +1,4 @@
-# ADR 0003: Workspace-Mode Isolation Invariant
+# ADR 0005: Workspace-Mode Isolation Invariant
 
 ## Status
 
