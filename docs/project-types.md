@@ -6,16 +6,37 @@ adev is project-type agnostic. The framework adapts to whatever tech stack, lang
 
 This guide shows worked examples using real projects from the adev eval fixture suite. Each example walks through what adev artifacts look like for that project type — from the constitution and manifest through charters, specs, and implementation.
 
-## Worked Examples
+## Data Pipeline
 
-| Project Type | Tech Stack | Repository |
-|-------------|-----------|------------|
-| [Data Pipeline](project-types/data-pipeline.md) | dbt + DuckDB | [adev-data-eval](https://github.com/agentic-development/adev-data-eval) |
-| [API Service](project-types/api-service.md) | Node.js + Express | [adev-api-eval](https://github.com/agentic-development/adev-api-eval) |
-| [CI/CD Pipeline](project-types/ci-cd-pipeline.md) | GitHub Actions + Docker | [adev-pipeline-eval](https://github.com/agentic-development/adev-pipeline-eval) |
-| [Database Migrations](project-types/database-migrations.md) | Node.js CLI + PostgreSQL | [adev-migrations-eval](https://github.com/agentic-development/adev-migrations-eval) |
+**Tech Stack:** dbt + DuckDB | **Fixture:** `tests/evals/adev-data-eval`
 
-Each page includes the full constitution, manifest, charter, and spec examples for that project type.
+A data engineering project where primary artifacts are SQL models, data tests, and pipeline orchestration. The constitution emphasizes data quality and reproducibility. The manifest maps dbt model directories to modules with `dbt test` as the quality gate. Specs use behavioral contracts like "When the pipeline runs, then the mart table has one row per customer."
+
+[Full walkthrough →](project-types/data-pipeline.md)
+
+## API Service
+
+**Tech Stack:** Node.js + Express | **Fixture:** `tests/evals/adev-api-eval`
+
+A REST API service where the constitution focuses on API contract stability and input validation. The manifest declares route directories as modules with `npm test` as the gate. Charters track API endpoints as capabilities, and specs define request/response contracts.
+
+[Full walkthrough →](project-types/api-service.md)
+
+## CI/CD Pipeline
+
+**Tech Stack:** GitHub Actions + Docker | **Fixture:** `tests/evals/adev-pipeline-eval`
+
+A CI/CD automation project where the constitution emphasizes idempotency and failure isolation. The manifest maps workflow files and scripts to modules. Specs cover pipeline stage behavior — trigger conditions, artifact outputs, and failure modes.
+
+[Full walkthrough →](project-types/ci-cd-pipeline.md)
+
+## Database Migrations
+
+**Tech Stack:** Node.js CLI + PostgreSQL | **Fixture:** `tests/evals/adev-migrations-eval`
+
+A database migration tool where the constitution prioritizes backward compatibility and safe rollbacks. The manifest maps migration directories and CLI commands to modules. Specs define migration behavior contracts — up/down idempotency, schema validation, and data preservation.
+
+[Full walkthrough →](project-types/database-migrations.md)
 
 ## Applying adev to Your Own Project Type
 
