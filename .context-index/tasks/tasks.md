@@ -63,8 +63,8 @@
 | epic-59 | Brainstorm Integration | open | .context-index/specs/features/prototype-brainstorm/brainstorm-integration.plan.md |  | 2026-05-08T13:15:14.164Z | 2026-05-08T13:15:14.164Z |
 | epic-60 | Visual Reference Capture | open | .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md |  | 2026-05-08T13:59:18.739Z | 2026-05-08T13:59:18.739Z |
 | epic-61 | Foundation & Onboarding Documentation | closed | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | Reconciled: validated (2026-05-09) | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
-| epic-62 | Milestone Create and List | open |  | 1.0.0 | 2026-05-09T15:04:43.526Z | 2026-05-09T17:25:24.818Z |
-| epic-63 | 1.0.0 | closed |  | 1.0.0 | 2026-05-09T17:21:41.965Z | 2026-05-09T17:25:29.785Z |
+| epic-62 | Milestone Create and List | closed |  | 1.0.0 | 2026-05-09T15:04:43.526Z | 2026-05-10T00:00:00.000Z |
+| epic-63 | 1.0.0 | open |  | 1.0.0 | 2026-05-09T17:21:41.965Z | 2026-05-10T00:00:00.000Z |
 
 ## Issues
 
@@ -443,11 +443,11 @@
 | issue-373 | Verify cross-page links and add next-page navigation | closed | 2 | task | epic-61 | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | 6 |  | issue-368,issue-369,issue-370,issue-371 | Reconciled: validated (2026-05-09) |  | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
 | issue-374 | Build orchestrator drops continuation after specify step — build state never updated | open | 1 | bug |  |  |  |  |  |  |  | 2026-05-09T11:53:03.625Z | 2026-05-09T11:53:03.625Z |
 | issue-375 | Build orchestrator drops continuation after specify step — build state never updated | closed | 1 | bug |  |  |  |  |  | Closed: Fixed: created lib/build-state.mjs programmatic helper with readBuildState, createBuildState, recordStepResult, getNextStep. Updated SKILL.md dispatch loop to use inline Node.js calls to the helper instead of manual JSON writing. 26 new tests, all 1850 tests pass. |  | 2026-05-09T11:55:24.469Z | 2026-05-09T14:54:49.667Z |
-| issue-376 | Milestone YAML schema and I/O | open | 2 | task | epic-62 |  | 1 |  |  |  |  | 2026-05-09T15:04:43.531Z | 2026-05-09T15:04:43.531Z |
-| issue-377 | milestone create command logic | open | 2 | task | epic-62 |  | 2 |  | issue-376 |  |  | 2026-05-09T15:04:43.541Z | 2026-05-09T15:04:43.579Z |
-| issue-378 | milestone list command logic | open | 2 | task | epic-62 |  | 3 |  | issue-376 |  |  | 2026-05-09T15:04:43.549Z | 2026-05-09T15:04:43.587Z |
-| issue-379 | SKILL.md subcommand documentation | open | 2 | task | epic-62 |  | 4 |  |  |  |  | 2026-05-09T15:04:43.557Z | 2026-05-09T15:04:43.557Z |
-| issue-380 | Integration tests for milestone commands | open | 2 | task | epic-62 |  | 5 |  | issue-376,issue-377,issue-378 |  |  | 2026-05-09T15:04:43.565Z | 2026-05-09T15:04:43.606Z |
+| issue-376 | Milestone YAML schema and I/O | closed | 2 | task | epic-62 |  | 1 |  |  | Closed: Implemented in feat/milestone-crud |  | 2026-05-09T15:04:43.531Z | 2026-05-10T00:00:00.000Z |
+| issue-377 | milestone create command logic | closed | 2 | task | epic-62 |  | 2 |  | issue-376 | Closed: Implemented in feat/milestone-crud |  | 2026-05-09T15:04:43.541Z | 2026-05-10T00:00:00.000Z |
+| issue-378 | milestone list command logic | closed | 2 | task | epic-62 |  | 3 |  | issue-376 | Closed: Implemented in feat/milestone-crud |  | 2026-05-09T15:04:43.549Z | 2026-05-10T00:00:00.000Z |
+| issue-379 | SKILL.md subcommand documentation | closed | 2 | task | epic-62 |  | 4 |  |  | Closed: Implemented in feat/milestone-crud |  | 2026-05-09T15:04:43.557Z | 2026-05-10T00:00:00.000Z |
+| issue-380 | Integration tests for milestone commands | closed | 2 | task | epic-62 |  | 5 |  | issue-376,issue-377,issue-378 | Closed: Implemented in feat/milestone-crud |  | 2026-05-09T15:04:43.565Z | 2026-05-10T00:00:00.000Z |
 | issue-381 | Plan QG checkboxes never checked off + getPlanProgress boundary bug | open | 2 | bug |  |  |  |  |  | Two compounding issues: (1) The plan template emits Quality Gates as checkboxes but nothing checks them off — validate writes results to .validate.md, not back to the plan. (2) getPlanProgress in lib/meta-tools.mjs does not stop at ## Quality Gates heading, so QG checkboxes get attributed to the last task, inflating totals and marking it incomplete. Fix: (A) Plan template emits QG as plain bullets. (B) getPlanProgress only counts checkboxes within ### Task N: sections. |  | 2026-05-09T16:48:53.411Z | 2026-05-09T16:48:53.411Z |
 | issue-382 | Research and implement a deploy skill (/adev:deploy) | closed | 2 | feature | epic-62 |  |  |  |  | Closed: Implemented — lib/deploy.mjs, skills/deploy/SKILL.md, tests/deploy.test.mjs (51 tests), docs/skill-reference.md updated |  | 2026-05-09T17:28:40.442Z | 2026-05-10T00:00:00.000Z |
 | issue-387 | Lifecycle gate hook does not block source edits when lifecycle.gate=block | open | 1 | bug |  |  |  |  |  |  |  | 2026-05-09T23:30:09.171Z | 2026-05-09T23:30:09.171Z |
