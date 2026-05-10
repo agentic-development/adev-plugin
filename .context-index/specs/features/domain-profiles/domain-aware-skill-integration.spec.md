@@ -6,11 +6,11 @@
 
 ---
 charter: domain-profiles
-status: review-pending
+status: validated
 risk_level: medium
 milestone: v1
-revision: 5
-charter-revision: 3
+revision: 6
+charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
 ---
@@ -51,13 +51,13 @@ Skills call these merge functions directly. The merge functions are unit-testabl
 
 **Charter Template Overlay (brainstorm)**
 
-2. **When** `/adev:brainstorm` starts **then** it loads the charter template overlay via `loadOverlay(domain, "charter-overlay", ...)`. The overlay's section names and vocabulary replace or extend the corresponding sections in the base charter template. Section matching uses H2 heading names — overlay sections with matching headings replace the base section content; overlay sections with non-matching headings are appended.
+2. **When** `/adev:brainstorm` starts **then** it loads the complete charter template via `loadOverlay(domain, "charter-template", ...)`. The template provides the full section structure and vocabulary for the domain. Skills use the template directly as the charter structure -- no H2 section merging is needed.
 
 3. **When** `/adev:brainstorm` loads a charter overlay that includes a Quality Attributes section **then** the domain-specific quality attribute suggestions are presented to the user (e.g., data-engineering suggests freshness, completeness, accuracy; software suggests latency, throughput, availability).
 
 **Spec Template Overlay (specify)**
 
-4. **When** `/adev:specify` starts **then** it loads the spec template overlay via `loadOverlay(domain, "spec-overlay", ...)`. The overlay's sections replace or extend the corresponding sections in the base spec template. Same H2 heading matching as charter overlays.
+4. **When** `/adev:specify` starts **then** it loads the complete spec template via `loadOverlay(domain, "spec-template", ...)`. The template provides the full section structure for the domain. Skills use the template directly -- no H2 section merging is needed.
 
 **Domain-Aware Reviewer Dispatch (review-specs)**
 
@@ -139,7 +139,7 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 | Domain `verification.yaml` specifies unknown `type` | Fall back to no verification with a warning | UNKNOWN_VERIFY_TYPE |
 | Domain `verification.yaml` `tool` is not `"none"` and not a configured MCP server | Fail config load with actionable message naming the missing server | TOOL_UNAVAILABLE |
 | `trigger_patterns` contain `..` or absolute paths | Patterns are rejected with warning; verification proceeds without those patterns | INVALID_PATTERN |
-| Template overlay contains section names not matching any base section | Extra sections appended after base template sections | — |
+| Domain template file is missing | `loadOverlay()` returns `null`; skill falls back to base template | DOMAIN_NOT_FOUND |
 | Domain profile missing entirely (no bundled directory) | All overlays return `null`; skill warns and uses empty config | DOMAIN_NOT_FOUND |
 
 ## System Constitution Reference
@@ -157,8 +157,8 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 | Implement `mergeVerification()` in `lib/domains/merge-verification.mjs` | Load and validate verification config (type, trigger_patterns, tool) | small |
 | Implement `mergeGateConfig()` in `lib/domains/merge-gate-config.mjs` | Load domain gate config, return file_exclusions and bash_passthrough lists | small |
 | Implement `mergeTestConfig()` in `lib/domains/merge-test-config.mjs` | Load domain test config, return permitted_tools, max_test_file_size, skip_patterns | small |
-| Implement charter template merge function | String-based H2 section replacement/extension for `charter-overlay.md` | medium |
-| Implement spec template merge function | String-based H2 section replacement/extension for `spec-overlay.md` | medium |
+| ~~Implement charter template merge function~~ | ~~String-based H2 section replacement/extension for `charter-overlay.md`~~ — **Obsolete:** replaced by full domain templates (see `template-replacement.spec.md`) | ~~medium~~ |
+| ~~Implement spec template merge function~~ | ~~String-based H2 section replacement/extension for `spec-overlay.md`~~ — **Obsolete:** replaced by full domain templates (see `template-replacement.spec.md`) | ~~medium~~ |
 | Wire domain resolution into brainstorm | Call `resolveDomain()` + `loadOverlay()` at startup, apply charter overlay | small |
 | Wire domain resolution into specify | Call `resolveDomain()` + `loadOverlay()` at startup, apply spec overlay | small |
 | Wire domain resolution into review-specs | Replace hardcoded reviewer loading with `mergeReviewers()` | small |
@@ -183,8 +183,8 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 - [ ] `lib/lifecycle-gate-config.mjs` no longer has `DEFAULT_FILE_EXCLUSIONS` or `DEFAULT_BASH_PASSTHROUGH` — come from domain profile
 - [ ] `lib/test-strategies/profiles.mjs` no longer has hardcoded `permitted_tools` — come from domain profile
 - [ ] Config merge order is domain profile -> governance (governance wins on ID conflict)
-- [ ] Brainstorm uses charter template overlay with H2 section matching
-- [ ] Specify uses spec template overlay with H2 section matching
+- [ ] Brainstorm loads domain charter template via `loadOverlay(domain, "charter-template", ...)`
+- [ ] Specify loads domain spec template via `loadOverlay(domain, "spec-template", ...)`
 - [ ] Review-specs merges domain + governance reviewers via `mergeReviewers()`
 - [ ] `merge_strategy: replace` drops base reviewers but governance still applies on top
 - [ ] Validate merges domain + governance gates via `mergeGates()` by `id` field

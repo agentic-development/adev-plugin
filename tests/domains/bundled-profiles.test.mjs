@@ -21,8 +21,8 @@ const DE_DIR = join(DOMAINS_DIR, 'data-engineering');
 const PA_DIR = join(DOMAINS_DIR, 'process-automation');
 
 const EXPECTED_FILES = [
-  'charter-overlay.md',
-  'spec-overlay.md',
+  'charter-template.md',
+  'spec-template.md',
   'reviewers.yaml',
   'gates.yaml',
   'verification.yaml',
@@ -102,16 +102,16 @@ describe('software profile', () => {
     assert.equal(parsed.tool, 'playwright');
   });
 
-  it('charter-overlay.md is non-empty markdown', () => {
-    const content = readFileSync(join(SW_DIR, 'charter-overlay.md'), 'utf8');
-    assert.ok(content.trim().length > 0, 'charter-overlay.md should not be empty');
-    assert.ok(content.includes('##'), 'charter-overlay.md should contain H2 headings');
+  it('charter-template.md is non-empty markdown', () => {
+    const content = readFileSync(join(SW_DIR, 'charter-template.md'), 'utf8');
+    assert.ok(content.trim().length > 0, 'charter-template.md should not be empty');
+    assert.ok(content.includes('##'), 'charter-template.md should contain H2 headings');
   });
 
-  it('spec-overlay.md is non-empty markdown', () => {
-    const content = readFileSync(join(SW_DIR, 'spec-overlay.md'), 'utf8');
-    assert.ok(content.trim().length > 0, 'spec-overlay.md should not be empty');
-    assert.ok(content.includes('##'), 'spec-overlay.md should contain H2 headings');
+  it('spec-template.md is non-empty markdown', () => {
+    const content = readFileSync(join(SW_DIR, 'spec-template.md'), 'utf8');
+    assert.ok(content.trim().length > 0, 'spec-template.md should not be empty');
+    assert.ok(content.includes('##'), 'spec-template.md should contain H2 headings');
   });
 });
 
@@ -124,16 +124,16 @@ describe('data-engineering profile', () => {
     assert.equal(files.length, 7);
   });
 
-  it('charter overlay contains data domain vocabulary', () => {
-    const content = readFileSync(join(DE_DIR, 'charter-overlay.md'), 'utf8');
+  it('charter template contains data domain vocabulary', () => {
+    const content = readFileSync(join(DE_DIR, 'charter-template.md'), 'utf8');
     assert.ok(content.includes('Data Contract'), 'should contain "Data Contract"');
     assert.ok(content.includes('Pipeline Stages'), 'should contain "Pipeline Stages"');
     assert.ok(content.includes('Data Lineage'), 'should contain "Data Lineage"');
     assert.ok(content.includes('Data Model'), 'should contain "Data Model"');
   });
 
-  it('spec overlay contains data domain vocabulary', () => {
-    const content = readFileSync(join(DE_DIR, 'spec-overlay.md'), 'utf8');
+  it('spec template contains data domain vocabulary', () => {
+    const content = readFileSync(join(DE_DIR, 'spec-template.md'), 'utf8');
     assert.ok(content.includes('Failure Mode'), 'should contain "Failure Mode"');
     assert.ok(content.includes('Recovery Action'), 'should contain "Recovery Action"');
     assert.ok(content.includes('Data Quality Expectations'), 'should contain "Data Quality Expectations"');
@@ -195,15 +195,15 @@ describe('process-automation profile', () => {
     assert.equal(files.length, 7);
   });
 
-  it('charter overlay contains workflow domain vocabulary', () => {
-    const content = readFileSync(join(PA_DIR, 'charter-overlay.md'), 'utf8');
+  it('charter template contains workflow domain vocabulary', () => {
+    const content = readFileSync(join(PA_DIR, 'charter-template.md'), 'utf8');
     assert.ok(content.includes('Integration Points'), 'should contain "Integration Points"');
     assert.ok(content.includes('Workflow Steps'), 'should contain "Workflow Steps"');
     assert.ok(content.includes('Recovery & Compensation'), 'should contain "Recovery & Compensation"');
   });
 
-  it('spec overlay contains workflow domain vocabulary', () => {
-    const content = readFileSync(join(PA_DIR, 'spec-overlay.md'), 'utf8');
+  it('spec template contains workflow domain vocabulary', () => {
+    const content = readFileSync(join(PA_DIR, 'spec-template.md'), 'utf8');
     assert.ok(content.includes('Trigger'), 'should contain "Trigger"');
     assert.ok(content.includes('Outcome'), 'should contain "Outcome"');
     assert.ok(content.includes('Integration Points'), 'should contain "Integration Points"');
@@ -278,7 +278,7 @@ describe('cross-profile validation', () => {
     }
   });
 
-  it('markdown overlays are non-empty strings', () => {
+  it('markdown templates are non-empty strings', () => {
     const mdFiles = EXPECTED_FILES.filter(f => f.endsWith('.md'));
     for (const name of ['software', 'data-engineering', 'process-automation']) {
       const dir = join(DOMAINS_DIR, name);

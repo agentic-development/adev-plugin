@@ -6,11 +6,11 @@
 
 ---
 charter: domain-profiles
-status: review-pending
+status: validated
 risk_level: low
 milestone: v1
-revision: 5
-charter-revision: 3
+revision: 6
+charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
 ---
@@ -31,8 +31,8 @@ Each bundled profile directory contains these files:
 
 | File | Purpose |
 |------|---------|
-| `charter-overlay.md` | Charter template section names, vocabulary, quality attribute suggestions |
-| `spec-overlay.md` | Spec template section names, error case columns, expectations sections |
+| `charter-template.md` | Complete charter template with domain-specific section names, vocabulary, quality attribute suggestions |
+| `spec-template.md` | Complete spec template with domain-specific section names, error case columns, expectations sections |
 | `reviewers.yaml` | Default reviewer entries with merge strategy |
 | `gates.yaml` | Quality gate commands |
 | `verification.yaml` | Verification approach (type, trigger_patterns, tool) |
@@ -45,9 +45,9 @@ Each bundled profile directory contains these files:
 
 The `software` profile contains all current hardcoded framework defaults extracted verbatim into config files. Activating `domain: software` (or having no domain declaration) produces identical behavior to the framework before domain profiles were introduced.
 
-1. **When** `domain: software` is active and brainstorm loads the charter overlay **then** the charter template uses the current section names: Business Intent, Scope and Boundaries, Domain Model (Entities, Relationships, Invariants), Capability Map, Interface Contracts, Quality Attributes. Quality attribute suggestions include: latency (p50/p95/p99), throughput, availability, error rate, test coverage.
+1. **When** `domain: software` is active and brainstorm loads the charter template **then** the charter template uses the current section names: Business Intent, Scope and Boundaries, Domain Model (Entities, Relationships, Invariants), Capability Map, Interface Contracts, Quality Attributes. Quality attribute suggestions include: latency (p50/p95/p99), throughput, availability, error rate, test coverage.
 
-2. **When** `domain: software` is active and specify loads the spec overlay **then** the spec template uses the current section names: Behavioral Contract, Preconditions, Behaviors, Postconditions, Error Cases (with Condition / Expected Behavior / Error Code columns), Visual Expectations, Acceptance Criteria.
+2. **When** `domain: software` is active and specify loads the spec template **then** the spec template uses the current section names: Behavioral Contract, Preconditions, Behaviors, Postconditions, Error Cases (with Condition / Expected Behavior / Error Code columns), Visual Expectations, Acceptance Criteria.
 
 3. **When** `domain: software` is active and review-specs loads the reviewer overlay **then** three reviewers are configured: `structural-architect` (profile: `reviewer-reasoning`), `security-reviewer` (profile: `reviewer-capable`), `consistency-analyzer` (profile: `reviewer-fast`). `merge_strategy: append`. `blocker_threshold: 1`.
 
@@ -61,9 +61,9 @@ The `software` profile contains all current hardcoded framework defaults extract
 
 **Data-Engineering Profile**
 
-8. **When** `domain: data-engineering` is active and brainstorm loads the charter overlay **then** the charter template uses domain vocabulary: "Data Contract" instead of "Interface Contracts", "Pipeline Stages" instead of generic capability descriptions, includes a "Data Lineage" section, and "Domain Model" is replaced with "Data Model" (Sources, Transformations, Outputs). Quality attribute suggestions include: freshness SLA, completeness (null rate), accuracy, row count stability, schema drift detection.
+8. **When** `domain: data-engineering` is active and brainstorm loads the charter template **then** the charter template uses domain vocabulary: "Data Contract" instead of "Interface Contracts", "Pipeline Stages" instead of generic capability descriptions, includes a "Data Lineage" section, and "Domain Model" is replaced with "Data Model" (Sources, Transformations, Outputs). Quality attribute suggestions include: freshness SLA, completeness (null rate), accuracy, row count stability, schema drift detection.
 
-9. **When** `domain: data-engineering` is active and specify loads the spec overlay **then** the spec template replaces "HTTP Status / Error Code" in the error case table with "Failure Mode / Recovery Action", replaces "Visual Expectations" with "Data Quality Expectations" (schema validation rules, freshness thresholds, completeness constraints), and adds an "Output Schema" section.
+9. **When** `domain: data-engineering` is active and specify loads the spec template **then** the spec template replaces "HTTP Status / Error Code" in the error case table with "Failure Mode / Recovery Action", replaces "Visual Expectations" with "Data Quality Expectations" (schema validation rules, freshness thresholds, completeness constraints), and adds an "Output Schema" section.
 
 10. **When** `domain: data-engineering` is active and review-specs loads the reviewer overlay **then** a "Data Contract Reviewer" entry with `id: "data-contract-reviewer"` is configured with `merge_strategy: append`. The reviewer's prompt focuses on data contracts, schema completeness, and SLA definitions.
 
@@ -77,9 +77,9 @@ The `software` profile contains all current hardcoded framework defaults extract
 
 **Process-Automation Profile**
 
-15. **When** `domain: process-automation` is active and brainstorm loads the charter overlay **then** the charter template uses domain vocabulary: "Integration Points" instead of "Interface Contracts", "Workflow Steps" instead of generic capabilities, includes a "Recovery & Compensation" section. Quality attribute suggestions include: end-to-end latency, retry success rate, dead-letter rate, recovery time objective (RTO).
+15. **When** `domain: process-automation` is active and brainstorm loads the charter template **then** the charter template uses domain vocabulary: "Integration Points" instead of "Interface Contracts", "Workflow Steps" instead of generic capabilities, includes a "Recovery & Compensation" section. Quality attribute suggestions include: end-to-end latency, retry success rate, dead-letter rate, recovery time objective (RTO).
 
-16. **When** `domain: process-automation` is active and specify loads the spec overlay **then** the spec template replaces "HTTP Status / Error Code" with "Trigger / Outcome", adds an "Integration Points" section listing external system touchpoints, and adds a "Recovery Actions" section defining compensation logic per failure mode.
+16. **When** `domain: process-automation` is active and specify loads the spec template **then** the spec template replaces "HTTP Status / Error Code" with "Trigger / Outcome", adds an "Integration Points" section listing external system touchpoints, and adds a "Recovery Actions" section defining compensation logic per failure mode.
 
 17. **When** `domain: process-automation` is active and review-specs loads the reviewer overlay **then** an "Integration Reviewer" entry with `id: "integration-reviewer"` is configured with `merge_strategy: append`. The reviewer's prompt focuses on integration point completeness and recovery action coverage.
 
@@ -93,7 +93,7 @@ The `software` profile contains all current hardcoded framework defaults extract
 
 **Shared: Profile Completeness and Customization**
 
-22. **When** a bundled profile directory is inspected **then** it contains exactly seven files: `charter-overlay.md`, `spec-overlay.md`, `reviewers.yaml`, `gates.yaml`, `verification.yaml`, `gate-config.yaml`, and `test-config.yaml`.
+22. **When** a bundled profile directory is inspected **then** it contains exactly seven files: `charter-template.md`, `spec-template.md`, `reviewers.yaml`, `gates.yaml`, `verification.yaml`, `gate-config.yaml`, and `test-config.yaml`.
 
 23. **When** a user wants to customize a bundled profile **then** they create a new custom domain with `extends: <bundled-name>` in `.context-index/domains/<custom-name>/domain.yaml`. They place only the files they want to override in the custom domain directory — missing files are inherited from the parent profile. Users CANNOT create `.context-index/domains/<bundled-name>/` directly (enforced by `BUNDLED_OVERRIDE_BLOCKED` in `loadOverlay()`).
 
@@ -117,7 +117,7 @@ The `software` profile contains all current hardcoded framework defaults extract
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | Bundled profile directory is missing (e.g., deleted from plugin installation) | `loadOverlay()` returns `null` for all types; skills warn and use empty config | DOMAIN_NOT_FOUND |
-| User partially overrides a bundled profile (e.g., only `charter-overlay.md` in project-local) | Project-local file wins for that type; remaining types fall back to bundled | — |
+| User partially overrides a bundled profile (e.g., only `charter-template.md` in project-local) | Project-local file wins for that type; remaining types fall back to bundled | — |
 | Profile reviewer references an execution profile not available in the project | Reviewer entry skipped with warning (handled by skill integration spec) | UNKNOWN_PROFILE |
 | Software profile config file is malformed | `OVERLAY_PARSE_ERROR` at load time; skill cannot proceed with empty config for critical types | OVERLAY_PARSE_ERROR |
 
@@ -154,14 +154,14 @@ The `software` profile contains all current hardcoded framework defaults extract
 - [ ] Software profile test-config matches current `permitted_tools`, `MAX_FILE_SIZE` (512000), and `SKIP_RE` (7 patterns) exactly
 - [ ] Software profile verification config matches current Playwright visual verification defaults
 - [ ] Backward-compatibility tests pass: software profile produces identical behavior to pre-domain-profiles framework
-- [ ] Data-engineering charter overlay uses domain vocabulary (Data Contract, Pipeline Stages, Data Lineage)
-- [ ] Data-engineering spec overlay uses Failure Mode / Recovery Action error columns and Data Quality Expectations
+- [ ] Data-engineering charter template uses domain vocabulary (Data Contract, Pipeline Stages, Data Lineage)
+- [ ] Data-engineering spec template uses Failure Mode / Recovery Action error columns and Data Quality Expectations
 - [ ] Data-engineering reviewer appends a Data Contract Reviewer
 - [ ] Data-engineering verification uses `type: output`
 - [ ] Data-engineering gate-config includes data-specific exclusions and passthrough commands
 - [ ] Data-engineering test-config includes pytest, dbt test as permitted tools
-- [ ] Process-automation charter overlay uses domain vocabulary (Integration Points, Workflow Steps, Recovery & Compensation)
-- [ ] Process-automation spec overlay uses Trigger / Outcome error columns with Integration Points and Recovery Actions
+- [ ] Process-automation charter template uses domain vocabulary (Integration Points, Workflow Steps, Recovery & Compensation)
+- [ ] Process-automation spec template uses Trigger / Outcome error columns with Integration Points and Recovery Actions
 - [ ] Process-automation reviewer appends an Integration Reviewer
 - [ ] Process-automation verification uses `type: flow`
 - [ ] All overlay files are parseable by their respective loaders

@@ -181,15 +181,19 @@ describe('backward-compat: software profile through overlay pipeline', () => {
 
   // ── Markdown Overlays ─────────────────────────────────────────────
 
-  it('charter overlay loads as non-empty string', () => {
-    const overlay = loadOverlay('software', 'charter-overlay', REPO_ROOT, PLUGIN_ROOT);
-    assert.equal(typeof overlay, 'string');
-    assert.ok(overlay.trim().length > 0);
+  it('charter template loads as non-empty string', () => {
+    const template = loadOverlay('software', 'charter-template', REPO_ROOT, PLUGIN_ROOT);
+    assert.equal(typeof template, 'string');
+    assert.ok(template.trim().length > 0);
+    assert.ok(template.includes('## Business Intent'), 'should contain Business Intent section');
+    assert.ok(template.includes('## Domain Model'), 'should contain Domain Model section');
   });
 
-  it('spec overlay loads as non-empty string', () => {
-    const overlay = loadOverlay('software', 'spec-overlay', REPO_ROOT, PLUGIN_ROOT);
-    assert.equal(typeof overlay, 'string');
-    assert.ok(overlay.trim().length > 0);
+  it('spec template loads as non-empty string', () => {
+    const template = loadOverlay('software', 'spec-template', REPO_ROOT, PLUGIN_ROOT);
+    assert.equal(typeof template, 'string');
+    assert.ok(template.trim().length > 0);
+    assert.ok(template.includes('## Behavioral Contract'), 'should contain Behavioral Contract section');
+    assert.ok(template.includes('## Acceptance Criteria'), 'should contain Acceptance Criteria section');
   });
 });

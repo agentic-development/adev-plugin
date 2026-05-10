@@ -111,6 +111,20 @@ If the call fails or returns empty, proceed without heuristics — non-blocking.
 When heuristics are present, prepend: "The following heuristics are lessons learned from past work
 in this module. Use them as guidance, not as hard rules."
 
+**Domain-Aware Charter Template:** After loading context, resolve the active domain and load the domain-specific charter template. This provides the complete charter section structure and vocabulary for the project's domain.
+**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
+Run inline Node.js:
+```javascript
+const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
+const { loadOverlay } = await import('<ADEV_ROOT>/lib/domains/overlay.mjs');
+const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
+const domainTemplate = loadOverlay(domain.resolved_domain, 'charter-template', repoRoot, pluginRoot);
+// domainTemplate is the complete charter template for the resolved domain
+```
+If `loadOverlay()` returns `null`, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md`.
+The loaded template defines the charter's section structure. Use the template's H2 headings as the section names for this charter. Do not use hardcoded section names -- the template is the single source of truth for section structure.
+If the template includes a Quality Attributes section, present domain-specific quality attribute suggestions to the user (e.g., data-engineering suggests freshness, completeness, accuracy; software suggests latency, throughput, availability).
+
 ## Step 2: Clarify
 
 Ask questions one at a time. Prefer multiple-choice when possible. Do not ask more than one question per message.
@@ -118,12 +132,7 @@ Ask questions one at a time. Prefer multiple-choice when possible. Do not ask mo
 **Assessment before questions:** If the idea spans multiple independent subsystems, flag immediately and help decompose into separate modules. Proceed with one at a time.
 
 **Questions to answer (adapt to the idea, not mechanical):**
-- What problem does this solve? (Business Intent)
-- What is in/out of scope? (Scope and Boundaries)
-- Key entities and relationships? (Domain Model)
-- What capabilities does it provide? (Capability Map)
-- How do other modules interact? (Interface Contracts)
-- What quality attributes matter? (Quality Attributes)
+Ask questions to fill each section defined in the loaded domain template. Map each question to the corresponding H2 section in the template. For the default software domain, this typically covers Business Intent, Scope and Boundaries, Domain Model, Capability Map, Interface Contracts, and Quality Attributes -- but always use the template's actual section names rather than hardcoded defaults.
 - (Optional) Is there an external tracker reference for this feature? If so, record it as `tracker-ref` in the charter frontmatter (e.g., `tracker-ref: JIRA-1234`).
 
 **Constitution check during clarification:**
@@ -201,20 +210,15 @@ Then continue to Step 4 (Present Design Sections) with the enriched context from
 
 ## Step 4: Present Design Sections
 
-For each section 4a-4f below, present the content and ask "Does this look right?" before moving to the next. Scale detail to complexity — straightforward sections get 2-3 sentences, nuanced ones get detailed tables.
+For each H2 section in the loaded domain template, present the content and ask "Does this look right?" before moving to the next. Scale detail to complexity -- straightforward sections get 2-3 sentences, nuanced ones get detailed tables.
 
-- **4a. Business Intent:** 2-3 sentences — why the module exists and what problem it solves.
-- **4b. Scope and Boundaries:** Three lists — In Scope (owned capabilities), Out of Scope (explicitly excluded), Dependencies (other modules, with direction).
-- **4c. Domain Model:** Entities table (name, description, key attributes), relationships, and invariants (testable business rules).
-- **4d. Capability Map:** Table with name, description, priority (must/should/nice-to-have), and phase. Each capability is a candidate for a future Live Spec. Order by priority.
-- **4e. Interface Contracts:** Exposed APIs (what this module offers) and Consumed APIs (what it needs). Each with name, type (REST/function/event/message), and description.
-- **4f. Quality Attributes:** Table of non-functional requirements (performance, availability, security, observability). Only include attributes with meaningful requirements.
+Use the template's section names and structure directly. Do not substitute or rename sections. The domain template is the single source of truth for which sections appear and what they are called.
 
 After the user approves all sections, proceed to writing.
 
 ## Step 5: Write Charter
 
-Generate the charter file using the template at `${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md`.
+Generate the charter file using the domain template loaded in Step 1. If no domain template was loaded, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md`.
 
 **File path:** `.context-index/specs/features/<module>/charter.md` (lowercase, hyphenated slug).
 
