@@ -191,7 +191,8 @@ When multiple layers provide the same overlay type, they merge in this order (la
 | Implement bundled override guard | Check `.context-index/domains/` for directories matching bundled names, throw `BUNDLED_OVERRIDE_BLOCKED` | small |
 | Add manifest schema support | Extend manifest parsing to recognize `project.domain` and `modules[].domain` fields | small |
 | Implement `loadDomainConfig()` helper in `lib/domains/config.mjs` | Convenience function that calls `resolveDomain()` + `loadOverlay()` for a given type, then merges with governance file. Returns fully resolved config object. Deterministic script, not markdown. | medium |
-| Write unit tests | Test all 4 resolution levels, precedence, fallback, two-level overlay loading, null returns, parse errors, domain name validation, size guard, governance merge order | medium |
+| Write unit tests | Test all 4 resolution levels, precedence, fallback, two-level overlay loading, null returns, parse errors, domain name validation, size guard, extends chain, bundled override guard | medium |
+| Update `docs/configuration.md` | Document domain profiles: resolution precedence, extends model, overlay types, customization workflow (clone + override), reset instructions | medium |
 
 ## Acceptance Criteria
 
@@ -222,5 +223,7 @@ When multiple layers provide the same overlay type, they merge in this order (la
 - [ ] Config merge order is: domain profile -> project-local domain override -> governance overlay
 - [ ] Each `loadOverlay()` call adds at most 2 file reads (project-local then bundled, short-circuiting on first hit)
 - [ ] Projects without any `domain` field resolve to `"software"` and get the bundled software profile defaults
+- [ ] `docs/configuration.md` is updated with domain profiles documentation: resolution precedence, `extends` model, customization workflow, reset instructions, overlay type reference
+- [ ] `docs/skill-reference.md` is updated for all affected skills noting domain-aware behavior
 - [ ] All quality gates pass (tests, lint)
 - [ ] No constitutional violations introduced

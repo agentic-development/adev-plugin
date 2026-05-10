@@ -141,6 +141,8 @@ The `software` profile contains all current hardcoded framework defaults extract
 | Author `process-automation/` overlays (7 files) | Charter overlay, spec overlay, reviewers, gates, verification, gate-config, test-config for workflows | medium |
 | Write backward-compatibility tests | Verify software profile produces identical outputs to pre-domain-profiles framework | medium |
 | Write content validation tests | Verify all 21 overlay files parse correctly and match expected structure | medium |
+| Update `docs/project-types.md` | Document each bundled profile with overlay contents, quality attributes, and customization examples | medium |
+| Update `docs/getting-started.md` | Add domain profile selection section with examples | small |
 
 ## Acceptance Criteria
 
@@ -167,5 +169,7 @@ The `software` profile contains all current hardcoded framework defaults extract
 - [ ] Custom domains with `extends: <bundled>` inherit missing files from parent
 - [ ] Resetting to bundled profile = changing domain name back (no file cleanup needed)
 - [ ] Governance files are applied as a second layer on top of domain profiles
+- [ ] `docs/project-types.md` documents each bundled profile (software, data-engineering, process-automation) with overlay contents and customization examples
+- [ ] `docs/getting-started.md` includes a section on choosing and configuring a domain profile
 - [ ] All quality gates pass (tests, lint)
 - [ ] No constitutional violations introduced
