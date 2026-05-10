@@ -69,9 +69,9 @@ Create `/adev:document` skill that generates human-readable developer documentat
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Generate architecture.md | Create project-level overview with module map, dependency flow, entry points | must-have | v1 | — |
-| Generate module docs | Create docs/modules/<slug>.md for each module in manifest | must-have | v1 | — |
-| GENERATED.md manifest | Track generated files, last commit, sections | must-have | v1 | — |
+| Generate architecture.md | Create project-level overview with module map, dependency flow, entry points | must-have | v1 | validated |
+| Generate module docs | Create docs/modules/<slug>.md for each module in manifest | must-have | v1 | validated |
+| GENERATED.md manifest | Track generated files, last commit, sections | must-have | v1 | validated |
 | Argument: --module | Generate/update single module doc | must-have | v1 | — |
 | Argument: --check | Dry-run: show what would change without writing | must-have | v1 | — |
 | Argument: --force | Regenerate all sections ignoring diff | should-have | v1 | — |

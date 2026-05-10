@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed
+Accepted
+
+> **Accepted 2026-05-09**: Implementation has landed. Key artifacts exist: `lib/profiles/index.mjs`, `lib/profiles/adapters/`.
 
 ## Date
 

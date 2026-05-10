@@ -1,4 +1,5 @@
 # adev — Agentic Development Framework
+> Last updated: 2026-05-09
 
 A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenCode](https://github.com/opencode-ai/opencode) (alpha), and [OpenAI Codex](https://openai.com/index/codex/) (alpha) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
 
