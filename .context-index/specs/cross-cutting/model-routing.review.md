@@ -1,6 +1,6 @@
 # Architecture Review: model-routing
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/cross-cutting/model-routing.md
+> **Spec:** .context-index/specs/cross-cutting/model-routing.spec.md
 > **Verdict:** PASS_WITH_NOTES
 
 last-reviewed-revision: 1

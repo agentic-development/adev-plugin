@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/tree-sitter-repomap/charter.md
-> **Spec:** .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.md
+> **Spec:** .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-23)
 > **Platform:** Node.js, JavaScript (ESM), npm, node:test
 
@@ -484,7 +484,7 @@ git commit -m "test(repomap): add end-to-end integration test for parser pipelin
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied (13 criteria)
-- [ ] All `.mjs` files use ESM imports (no CommonJS)
-- [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied (13 criteria)
+- All `.mjs` files use ESM imports (no CommonJS)
+- No constitutional violations introduced

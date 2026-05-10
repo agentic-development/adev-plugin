@@ -10,9 +10,11 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 
 ## Arguments
 
-- `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>-plan.md`.
+- `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>.plan.md`.
 - `--task <N>`: execute only task N (useful for re-running a single task after a fix)
 - `--dry-run`: show routing decisions and specialist matches without executing
+- `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
+- `--verbose`: disable silent execution for per-task subagents. Includes `VERBOSE: true` in subagent prompts so they narrate each step. Useful for debugging task failures.
 
 ## Prerequisites
 
@@ -27,7 +29,15 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 ### Step 1: Load Context
 
-Read these files once at the start. Extract everything subagents will need so they never have to re-read these files themselves.
+Extract everything subagents will need so they never have to re-read these files themselves.
+
+**Optimization:** Load spec + charter + constitution in a single Bash call using `loadSpecContext` from `<ADEV_ROOT>/lib/meta-tools.mjs` (replaces items 2, 4, and 5 below with one turn). Use `getPlanProgress` to get plan completion status for resume detection:
+
+```bash
+node -e "import {loadSpecContext, getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; const [ctx, progress] = await Promise.all([loadSpecContext('<spec-path>'), getPlanProgress('<plan-path>')]); console.log(JSON.stringify({context: ctx, progress}))"
+```
+
+If the meta-tool call fails, fall back to reading each file individually.
 
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
@@ -83,6 +93,68 @@ workspace-level orchestration, cd to <workspace-root> and re-run.)
 
 The advisory does not block; it does not appear when `detectWorkspace` returns null.
 
+### Step 1.5: Infrastructure Preflight
+
+After loading context, check whether the spec or plan declares `infra_requirements`. If so, run the infrastructure preflight.
+
+**`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
+
+**Invocation:** Run inline Node.js (same pattern as heuristics loading):
+
+```bash
+node --input-type=module -e "
+import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
+const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
+console.log(JSON.stringify(report));
+"
+```
+
+Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<specPath>` is extracted from the plan's `Spec:` header, and `<planPath>` is the `<plan-path>` argument.
+
+Parse the JSON output. If `report.passed === false`, display the formatted report and block:
+
+```
+Infrastructure Preflight: FAILED
+
+<formatted report output>
+
+Execution blocked. Options:
+  1. Fix the issues above and retry
+  2. Re-run with --no-infra to bypass (user decision only)
+  3. Use --task N to run only tasks that don't need this infrastructure
+```
+
+Option 3 is shown only when the plan has mixed strategies (some unit, some non-unit). Omit it when all tasks require the failed infrastructure.
+
+If `report.passed === true` and `report.skipped === true`, emit: "Infrastructure preflight skipped (--no-infra)."
+
+If `report.passed === true` and `report.skipped === false`, proceed silently.
+
+If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure preflight library could not be loaded: <error>. Fix the library before proceeding."
+
+If `runPreflight()` throws `PREFLIGHT_FILE_NOT_FOUND` or `PREFLIGHT_PARSE_ERROR`, block with the error message.
+
+### Step 1.6: Progress Tracking (Claude Code)
+
+If the `TaskCreate` tool is available (Claude Code environment), create a tracking task for each plan task to provide real-time progress visibility to the user:
+
+```
+For each task N in the plan:
+  TaskCreate({ title: "Task N: <task-title>", status: "pending" })
+```
+
+This creates a visual task list in the Claude Code UI that the user can monitor at a glance.
+
+**If `TaskCreate` is not available** (non-Claude-Code environment — e.g., Cursor, OpenCode), skip this step entirely. Progress is reported via text output as before. Do not error or warn.
+
+**Per-task updates (during Step 2 loop):**
+- When starting a task: `TaskUpdate(taskId, { status: "in_progress" })`
+- When a task passes review: `TaskUpdate(taskId, { status: "completed" })`
+- When a task fails or is blocked: `TaskUpdate(taskId, { status: "failed" })`
+- When a task is skipped (already implemented): `TaskUpdate(taskId, { status: "completed" })`
+
+**Cleanup:** After all tasks complete (Step 4: Completion), do not delete the tasks — leave them visible so the user can review the final state.
+
 ### Step 2: Per-Task Execution Loop
 
 For each task in dependency order:
@@ -110,9 +182,9 @@ This probe prevents re-implementing work that was done outside the lifecycle or 
 Before routing or dispatching, assemble the task's context packet:
 
 1. Read the task's `context_packet` section from the plan (if present).
-2. For each listed file, read and extract the relevant section.
+2. For each listed file, read and extract the relevant section. **Source-manifest-guided loading:** When the spec has `source-manifest.files[]`, prioritize those files — read the primary implementation file in full, read test files and siblings as signatures only (`grep "^export"`). This provides targeted context without loading everything.
 3. Write the assembled packet to `.context-index/packets/<task-slug>.md` (gitignored). This log enables post-mortem debugging via `/adev:recover`.
-4. If no context_packet section exists in the plan, assemble a default packet from: constitution excerpt, spec acceptance criteria for this task, charter capability, and any samples matching the task's file patterns.
+4. If no context_packet section exists in the plan, assemble a default packet from: constitution excerpt, spec acceptance criteria for this task, charter capability, and any samples matching the task's file patterns. If the spec has `source-manifest.files[]`, include those as the primary context source.
 5. **Heuristics injection:** If heuristics were loaded in Step 1 (count > 0), append a `## Heuristics` section to the context packet with the rendered blocks from Step 1. Prefix the section with the advisory preamble:
 
    > The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules.
@@ -177,12 +249,15 @@ If `--dry-run` was passed, print the routing table for every task and stop.
 Build the implementer subagent prompt with these sections in order:
 
 1. **Role.** "You are implementing Task N: [title]." If routed to a specialist: "You are the [specialist name] specialist implementing Task N: [title]."
+1b. **Execution directive.** If `--verbose` is NOT set: "Execute silently — no intermediate narration. Chain all steps without commentary. Use parallel tool calls for multi-file reads. Report ONLY the final result in the Report Format below." If `--verbose` IS set: "VERBOSE: true" (enables step-by-step narration for debugging).
 2. **Constitution excerpt.** The Non-Negotiable Principles and Coding Standards sections. Keep under 60 lines. Do not include the full constitution.
 3. **Task description.** Full text of the task from the plan. Never make the subagent read the plan file.
 4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need. Before implementing, read the actual source files you will modify. Do not assume file contents based on the task description or plan. If a file has changed since the plan was written, work with the current state. If workspace state is non-null and the spec has a `target-repo:` frontmatter field, include an informational advisory: "This task targets repo '<target-repo>' within workspace '<workspace-name>'. All file paths are relative to that repo's root."
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
 6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them. **Cross-repo isolation constraint (workspace mode):** When operating inside a workspace, do NOT modify files in sibling repos. Cross-repo reference context is read-only — it informs your implementation but all changes must be confined to the current repo. If a task requires changes in a sibling repo, report it as NEEDS_CONTEXT with a note identifying the sibling repo and required changes.
 7. **TDD mandate.** This section is non-negotiable. Include the full content of `tdd-mandate.md` from this skill directory.
+
+   **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
@@ -206,12 +281,6 @@ When done, report:
 Keep your report under 2,000 tokens. List files and results concisely. Do not restate the task description.
 
 **Cleanup before reporting.** Remove any debugging console.log, print, or debugger statements added during development. Remove commented-out exploration code. Verify all imports are used and no temporary files were left behind.
-
-**Spec traceability.** If Entire.io integration is configured (`integrations.session_capture.provider: entire` in `manifest.yaml`), prepend a traceability marker:
-
-```
-<!-- entire:spec-trace spec=".context-index/specs/features/<module>/<task>.md" task="N" -->
-```
 
 **Update Execution State:** Before dispatching the implementer subagent, write execution state using inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."` with `status: "active"`, `planRef` set to the plan file path, `currentTask` set to the task number, `issueBinding` set to the issue ID (if `tasks.backend` is configured), `nextAction` set to the task description, and `progress` set to the full task checklist with completed tasks marked done. If `writeExecutionState` fails, log a warning and continue — do not block implementation.
 
@@ -421,8 +490,14 @@ After all tasks are complete and before reporting completion:
      computed-at: "2026-04-01T10:00:00.000Z"
    ```
 5. Write the spec file back
-6. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `implemented`.
-7. Log: "Updated spec status: review-passed → implemented"
+6. **Clear drift flag:** After re-stamping the source manifest, clear any drift flag on the spec:
+   ```javascript
+   const { clearDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
+   await clearDrift(specPath);
+   ```
+   If `clearDrift()` fails (e.g., write error), log a warning but do not block implementation completion.
+7. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `implemented`.
+8. Log: "Updated spec status: review-passed → implemented"
 
 ## Step 5.5: Commit Trailers
 
@@ -431,7 +506,7 @@ When committing implementation work, include structured trailers in commit messa
 ```
 feat(<module>): implement <description>
 
-Spec: .context-index/specs/features/<module>/<spec-slug>.md
+Spec: .context-index/specs/features/<module>/<spec-slug>.spec.md
 Plan-task: <task-number>
 Session: <session-id or timestamp>
 ```

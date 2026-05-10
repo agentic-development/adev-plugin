@@ -1,7 +1,7 @@
 # Architecture Review: integration-strategy-profile
 
 > **Date:** 2026-04-27
-> **Spec:** .context-index/specs/features/test-strategies/integration-strategy-profile.md
+> **Spec:** .context-index/specs/features/test-strategies/integration-strategy-profile.spec.md
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1
@@ -107,4 +107,4 @@ Note: sibling profiles (smoke, contract) also use prose — if they passed revie
 
 **Blockers to resolve:** SA-1 (duplicate title), SA-2 (missing strategy-profile-contract in charter extension note), CON-3 (azure-pipelines.yml), CON-4 (--tag flag)
 
-**Action required:** Resolve blockers, then re-run `/adev:review-specs --spec .context-index/specs/features/test-strategies/integration-strategy-profile.md`
+**Action required:** Resolve blockers, then re-run `/adev:review-specs --spec .context-index/specs/features/test-strategies/integration-strategy-profile.spec.md`

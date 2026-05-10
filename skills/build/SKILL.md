@@ -19,6 +19,9 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 - `--no-route`: skip the route step (Step 3) in the pipeline
 - `--full`: run the Full Pipeline (specify → review → plan → route → implement → validate). Without `--full`, the default Implement Pipeline skips specify and review and requires a pre-existing `.review.md`.
 - `--from <step>`: override resume point — force restart from a specific step (`specify`, `review`, `plan`, `route`, `implement`, `validate`). Useful if build state is corrupted or stale.
+- `--no-infra`: skip infrastructure preflight in implement and validate steps (user-only — the agent must never set this flag). Propagated to sub-skills via `ADEV_NO_INFRA=1` env var.
+- `--verbose`: disable silent execution for all subagents in this pipeline run. Subagent prompts include `VERBOSE: true`, causing skills to narrate each step. Useful for debugging pipeline failures.
+- `--auto`: run the entire pipeline without prompting the user for input. Stale builds are overwritten (not prompted). Subagent prompts include `AUTO: true`, instructing sub-skills to make autonomous decisions instead of asking the user (e.g., accept default choices, skip confirmations). The build stops on errors rather than asking for guidance. Useful for CI, scheduled builds, and batch operations.
 
 ## Prerequisites
 
@@ -100,9 +103,10 @@ PIPELINE_CONTEXT:
     backend: <tasks.backend value from manifest, e.g., "file">
     epic_id: <epic ID for this spec's plan, if known>
   pipeline_mode: "full" | "implement"   # "full" when --full is set, "implement" otherwise
+  auto: true | false                    # true when --auto is set — subagents must not prompt the user
 ```
 
-To assemble pipeline context, the orchestrator reads:
+**Read these files in a single turn using parallel tool calls:**
 - The spec file (path and title)
 - `manifest.yaml` (for `tasks.backend`)
 - Workspace detection result (one-time call to `detectWorkspace(cwd)`)
@@ -156,6 +160,20 @@ using the Skill tool. Let it run to full completion — including all
 post-steps (source manifests, commit trailers, DoD checks, etc.).
 Then report the result.
 
+{{IF --verbose is NOT set:}}
+Execute silently — no intermediate narration. Chain all steps without
+commentary. Use parallel tool calls for multi-file reads.
+{{IF --verbose IS set, include instead:}}
+VERBOSE: true
+
+{{IF --auto IS set, include:}}
+AUTO: true
+Do NOT prompt the user for any input. Make autonomous decisions:
+accept defaults, skip confirmations, choose the most conservative
+option when ambiguous. If you encounter a situation that would
+normally require user input and no safe default exists, report
+FAILED with the details rather than blocking on input.
+
 Do NOT attempt to perform the skill's work yourself. You MUST use the
 Skill tool to load and execute the full skill. The skill contains
 detailed multi-step protocols that you do not have access to without
@@ -175,7 +193,8 @@ STEP_RESULT:
 
 The ONLY work the build orchestrator performs itself (not via subagent):
 
-- **Reads** `.context-index/build-state/*.json` for resume state
+- **Uses** `lib/build-state.mjs` helper (`readBuildState`, `createBuildState`, `recordStepResult`, `getNextStep`) for all build state operations — never writes build state JSON manually
+- **Reads** `.context-index/build-state/*.json` for resume state (via the helper)
 - **Reads** spec frontmatter for `milestone` field (phase discovery) and `source-manifest` (validate step context)
 - **Reads** `.review.md` files for skip conditions and to extract review verdict/notes for step context
 - **Reads** `.plan.md` files for skip conditions and to extract task count for step context
@@ -183,14 +202,92 @@ The ONLY work the build orchestrator performs itself (not via subagent):
 - **Reads** `manifest.yaml` for `tasks.backend` (issue board configuration)
 - **Reads** `user-config` files (local and global) via `parseUserConfig()` for `build.max_retries` (retry policy)
 - **Calls** `detectWorkspace(cwd)` once at build start for workspace context
-- **Writes** `.context-index/build-state/*.json` after each step
+- **Writes** `.context-index/build-state/*.json` after each step (via `recordStepResult()` — atomic writes with validation)
 - **Prints** progress headers and the final summary
 
 Everything else — reading source code, running tests, dispatching implementation subagents, checking spec compliance, writing reports — happens inside the subagent's context.
 
 ---
 
+## One-Step-Per-Invocation Dispatch
+
+The build orchestrator executes **exactly one pipeline step per turn**, then yields control. This is the primary structural mechanism preventing the agent from skipping steps or inlining work due to accumulated context.
+
+### Dispatch Loop (the only thing the orchestrator does)
+
+On every invocation (whether fresh `--spec` or `--resume`), the orchestrator performs this dispatch loop exactly once:
+
+1. **Read build state BEFORE taking any action.** Use `lib/build-state.mjs` to read or create state. Run inline Node.js:
+
+   ```bash
+   node --input-type=module -e "
+   import { readBuildState, createBuildState, getNextStep } from '<ADEV_ROOT>/lib/build-state.mjs';
+   const projectRoot = '<PROJECT_ROOT>';
+   const specPath = '<SPEC_PATH>';
+   let state = readBuildState(projectRoot, specPath);
+   if (!state) {
+     state = createBuildState(projectRoot, specPath, { phase: <PHASE>, full: <FULL> });
+   }
+   const next = getNextStep(state);
+   console.log(JSON.stringify({ state, next }));
+   "
+   ```
+
+   Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<PROJECT_ROOT>` is the absolute project root, `<SPEC_PATH>` is the spec path, `<PHASE>` is the milestone name or `null`, and `<FULL>` is `true` when `--full` is set. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history, not prior subagent results.
+
+2. **Determine next step.** Use the `next` field from step 1's output. If `next` is `null`, all steps are done — print the final summary and exit. Otherwise, evaluate the step's skip conditions against disk artifacts. If skip conditions are met, record a skip and re-read:
+
+   ```bash
+   node --input-type=module -e "
+   import { recordStepResult, getNextStep, readBuildState } from '<ADEV_ROOT>/lib/build-state.mjs';
+   recordStepResult('<PROJECT_ROOT>', '<SPEC_PATH>', '<STEP_NAME>', { status: 'skipped' });
+   const state = readBuildState('<PROJECT_ROOT>', '<SPEC_PATH>');
+   const next = getNextStep(state);
+   console.log(JSON.stringify({ state, next }));
+   "
+   ```
+
+   Repeat skip evaluation until a non-skipped step is found or all steps are done. Dispatch at most ONE non-skipped step.
+
+3. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
+
+4. **Record result. (MANDATORY — this step uses a programmatic helper to prevent skipping.)**
+
+   After the subagent returns its STEP_RESULT, **immediately** run this inline Node.js call to persist the result. Do NOT print anything to the user, do NOT summarize, do NOT respond — run this call FIRST:
+
+   ```bash
+   node --input-type=module -e "
+   import { recordStepResult, getNextStep, readBuildState } from '<ADEV_ROOT>/lib/build-state.mjs';
+   const updated = recordStepResult('<PROJECT_ROOT>', '<SPEC_PATH>', '<STEP_NAME>', {
+     status: '<COMPLETED_OR_FAILED>',
+     verdict: '<VERDICT>',
+     error: '<ERROR_OR_EMPTY>',
+     notes: '<SUMMARY>'
+   });
+   const next = getNextStep(updated);
+   console.log(JSON.stringify({ buildStatus: updated.status, next }));
+   "
+   ```
+
+   This is MANDATORY even if the subagent reported ALREADY_COMPLETE or similar — any COMPLETED status means the step succeeded. The helper atomically writes the state file and recalculates build status.
+
+5. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
+   - If `next` from step 4 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
+   - If `next` is null or `buildStatus` is `"completed"` or `"failed"`: do NOT re-invoke. Print the final summary and exit without re-invocation.
+
+### Why One Step Per Turn
+
+This model prevents the "finish the work" failure mode where accumulated context causes the agent to skip lifecycle steps. By executing one step per turn and re-invoking with a fresh context, the orchestrator never accumulates enough context to feel compelled to shortcut. Each turn has a single, narrow task: read state, determine next step, dispatch one subagent, record result.
+
+### Verbose Mode
+
+When `--verbose` is set, the orchestrator prints its reasoning before each dispatch: which step was selected, why it was not skipped, what context packet was assembled. This is diagnostic output only — `--verbose` does not change the one-step-per-turn behavior. The orchestrator still dispatches exactly one step and re-invokes.
+
+---
+
 ## Build Pipeline
+
+The orchestrator executes exactly one of these steps per invocation. After dispatch and state persistence, it re-invokes itself for the next step. See One-Step-Per-Invocation Dispatch above.
 
 The pipeline executes 5 steps per spec, in strict order. For each step, the orchestrator: (1) checks the skip condition on artifacts, (2) dispatches a subagent via the Agent tool if not skipped, (3) reads the subagent's result, (4) checks the stop condition, and (5) persists build state.
 
@@ -211,7 +308,7 @@ Agent({
 })
 ```
 
-**After subagent returns:** Record step as `completed` or `skipped` in build state.
+**After subagent returns:** Run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="specify"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ---
 
@@ -235,7 +332,7 @@ Agent({
 
 **After subagent returns:**
 - If verdict is BLOCK: see Blocker-Fix Loop below.
-- If verdict is PASS or PASS_WITH_NOTES: record step as `completed` in build state.
+- If verdict is PASS or PASS_WITH_NOTES: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="review"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 **Blocker-Fix Loop (Full Pipeline only):**
 
@@ -267,8 +364,8 @@ Agent({
 ```
 
 **After subagent returns:**
-- If verdict is constitution-violation: save build state with the failure and stop the build for this spec.
-- Otherwise: record step as `completed` in build state.
+- If verdict is constitution-violation: run `recordStepResult()` with `status: "failed"` and the violation details. Stop the build for this spec.
+- Otherwise: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="plan"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ### Step 3: Route
 
@@ -285,9 +382,11 @@ Agent({
 
 **After subagent returns:**
 - Route annotations are advisory. This step does not produce a pass/fail verdict. If the subagent reports FAILED or the skill is unavailable, log a warning and continue.
-- Record step as `completed` (or `skipped` on error) in build state.
+- Run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="route"` (use `status: "completed"` or `status: "skipped"` on error). Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ### Step 4: Implement
+
+When `--no-infra` is passed to build, set `ADEV_NO_INFRA=1` in the environment for implement and validate invocations. Each sub-skill runs its own preflight independently — build does not add a separate preflight step.
 
 **Skip condition:** None. Implementation always runs unless the build was resumed past this step.
 
@@ -303,8 +402,8 @@ Agent({
 This is the longest-running step. The implement skill manages TDD loops, specialist routing, subagent dispatch, 2-stage review, visual verification, integration gates, source manifest stamping, commit trailers, and feature completeness DoD — all within the subagent's isolated context.
 
 **After subagent returns:**
-- If verdict indicates quality gate or integration gate failure: save build state with the failure details (including tier-specific context: tier name, failing command, severity), report the failures to the user, and stop the build for this spec.
-- Otherwise: record step as `completed` in build state.
+- If verdict indicates quality gate or integration gate failure: run `recordStepResult()` with `status: "failed"` and the failure details (including tier-specific context: tier name, failing command, severity). Report the failures to the user and stop the build for this spec.
+- Otherwise: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="implement"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
 
 ### Step 5: Validate
 
@@ -340,7 +439,7 @@ When validate returns FAIL and retry budget remains (`current_retry < max_retrie
 
 #### 1. Extract Failure Context
 
-Read the validation report written by the validate subagent (at `.context-index/specs/features/<module>/<spec-slug>-validation.md`). Extract:
+Read the validation report written by the validate subagent (at `.context-index/specs/features/<module>/<spec-slug>.validate.md`). Extract:
 
 - Which checks failed (check number, name, severity)
 - Specific failure details (file:line references, acceptance criteria IDs, error messages)
@@ -433,7 +532,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 
 ```json
 {
-  "spec": ".context-index/specs/features/<module>/<spec>.md",
+  "spec": ".context-index/specs/features/<module>/<spec>.spec.md",
   "phase": "<milestone-name or null>",
   "status": "in_progress",
   "steps": [
@@ -466,7 +565,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 
 ### Incremental Persistence
 
-The build state file is written **after each step completes** (not just at the end). This ensures that if the build is interrupted at any point, the state file reflects exactly which steps finished. Fields:
+The build state file is written **after each step completes** via `recordStepResult()` from `lib/build-state.mjs` (not just at the end). The helper handles atomic writes, timestamp generation, and build status recalculation automatically. This ensures that if the build is interrupted at any point, the state file reflects exactly which steps finished. Fields:
 
 - `spec`: path to the spec being built
 - `phase`: milestone name (if invoked via `--phase`) or `null`
@@ -475,44 +574,13 @@ The build state file is written **after each step completes** (not just at the e
 - `started`: ISO-8601 timestamp of build start
 - `updated`: ISO-8601 timestamp of last state write
 
-On successful completion of all 5 steps, set `status` to `completed`. On any step failure, set `status` to `failed`.
+Build status recalculation is handled automatically by `recordStepResult()`: when a step fails, `status` is set to `"failed"`; when all steps are completed or skipped, `status` is set to `"completed"`; otherwise it remains `"in_progress"`.
 
 ---
 
 ## Resume Mode
 
-When `--resume` is invoked, the skill resumes an interrupted or failed build from the last successful step.
-
-### Resume without `--spec` or `--phase`
-
-Scan `.context-index/build-state/` for any JSON file with `"status": "in_progress"` or `"status": "failed"`. If multiple are found, list them and ask the user which to resume. If none are found, print:
-
-> No interrupted build found. Nothing to resume.
-
-### Resume with `--spec <path>`
-
-Read the build state file for the specified spec. Identify the last step with `status: completed` and resume from the next step in the pipeline.
-
-### Resume with `--phase <name>`
-
-Re-discover all specs with `milestone: <name>` in their frontmatter by scanning `.context-index/specs/`. Do NOT rely solely on cached build state files -- specs may have been added or modified between sessions. For each discovered spec, check if a build state file exists:
-
-- If build state exists with `status: in_progress` or `status: failed`, resume from the next step after the last completed one.
-- If build state exists with `status: completed`, skip that spec.
-- If no build state exists, start a fresh build for that spec.
-
-### The `--from <step>` Override
-
-When `--from <step>` is combined with `--resume`, force the build to restart from the specified step regardless of what the build state file says. Valid step names: `review`, `plan`, `route`, `implement`, `validate`.
-
-This is a safety valve for situations where:
-- The build state file is corrupted
-- External changes have invalidated a previously-completed step
-- The user wants to re-run a step that passed but produced suboptimal results
-
-When `--from` is used, all steps before the specified step are marked `skipped` in the new build state, and execution begins at the specified step.
-
-Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Note: `specify` is only applicable in Full Pipeline builds; using `--from specify` on an Implement Pipeline build dispatches specify (which may update the spec) — use with care.
+> **Conditional loading:** Read `skills/build/resume-mode.md` for the full Resume Mode instructions.
 
 ---
 
@@ -538,136 +606,19 @@ Proceed? (resume / overwrite)
 ```
 Await user input. "overwrite" resets the build state and proceeds. "resume" applies `--from implement` resume logic. If the user dismisses without choosing, stop and let them decide.
 
+**`--auto` behavior:** When `--auto` is set, skip the prompt and overwrite the stale build automatically. Log: "Auto mode: overwriting stale build for `<spec-slug>`."
+
 ---
 
 ## Phase Mode
 
-When `--phase <name>` is invoked (without `--resume`), the skill discovers and builds multiple specs in batch.
-
-### Spec Discovery
-
-1. Scan all `.md` files under `.context-index/specs/features/` (excluding `charter.md`, `*.plan.md`, `*.review.md`).
-2. Parse YAML frontmatter for the `milestone` field.
-3. Select specs whose `milestone` matches `<name>` (case-insensitive).
-4. **Filter by pipeline mode:**
-   - **Implement Pipeline** (no `--full`): include only specs with `status` of `review-passed`, `implemented`, or `validated`. Skip specs with any other status with a visible note per spec:
-     > Skipped `<spec>` (status: `<status>`): not ready for Implement Pipeline. Run `/adev:review-specs` first, or use `--full` to include review.
-     Explicitly: `review-pending` and `review-blocked` specs are skipped in Implement Pipeline.
-   - **Full Pipeline** (`--full`): include specs with `status` of `review-pending`, `review-passed`, `implemented`, `validated`, and `review-blocked`. Specs with `review-blocked` status are included so the blocker-fix loop can attempt to resolve prior blockers. Skip only `draft` specs.
-5. If no specs are found, print:
-
-   > No specs found for milestone '<name>'. Verify that your specs have `milestone: <name>` in their frontmatter.
-
-   And stop.
-
-### Dependency Ordering
-
-Check each spec's frontmatter for a `depends-on` field (list of spec paths). Build specs in dependency order: specs with no dependencies first, then specs whose dependencies have been built.
-
-If circular dependencies are detected, print a warning and build in discovery order.
-
-### Independent Execution
-
-Each spec is built independently through the full pipeline. **Failure of one spec does not block others** unless they have an explicit `depends-on` referencing the failed spec. If a dependency failed:
-
-- Skip the dependent spec.
-- Mark it as `skipped` with reason: "Dependency `<spec>` failed."
-
-### Issue Board Integration
-
-If `tasks.backend` is configured in `manifest.yaml`:
-
-- At the start of phase mode, find the milestone epic on the issue board and mark it as `in_progress`.
-- During the build, delegate issue updates to child skills (each skill manages its own issue board interactions).
-- At the end of phase mode, do **not** automatically close the milestone epic. That is a manual decision.
-
-If `tasks.backend` is not configured, skip all issue board operations.
-
-### Phase Summary
-
-After all specs are processed, print:
-
-```
-Phase '<name>' complete.
-
-  N specs attempted, N passed, N failed, N skipped
-
-  Passed:
-    - <spec-path>
-    - <spec-path>
-
-  Failed:
-    - <spec-path>: <failure reason>
-
-  Skipped:
-    - <spec-path>: <skip reason>
-```
+> **Conditional loading:** Read `skills/build/phase-mode.md` for the full Phase Mode instructions.
 
 ---
 
 ## Workspace-Mode Build (`--phase` at Workspace Root)
 
-When `--phase <name>` is invoked at the workspace root (`detectWorkspace(cwd)` returns non-null AND `currentRepoSlug` is `null`), the skill enters workspace-mode build. This mode orchestrates builds across multiple repos using the workspace dependency graph. When no workspace is detected, or when `currentRepoSlug` is set, behaviour is unchanged — the existing single-repo phase mode applies, and single-repo behaviour is preserved identically.
-
-### Workspace Detection and Mode Entry
-
-1. **Detect workspace:** Call `detectWorkspace(cwd)`. If the result is non-null and `currentRepoSlug` is `null`, enter workspace-mode build. Otherwise, use the standard Phase Mode (above).
-2. **Read dependency graph:** Load the workspace dependency graph via `resolveWorkspaceContext(workspaceRoot, null).dependencyGraph`. Each edge has the form `{ from: <repo-slug>, to: <repo-slug> }`, meaning `from` depends on `to` (i.e., `to` is upstream of `from`).
-
-### Input Hardening
-
-Paths derived from `adev-workspace.yaml` (repo `path` values) are treated as untrusted input. Before reading any repo's `.context-index/`, apply `assertPathInWorkspace(workspaceRoot, repoPath)` from `lib/workspace.mjs`. On `PATH_ESCAPE`, skip the repo with a warning:
-
-```
-Warning: repo '<slug>' path escapes workspace root. Skipping.
-```
-
-### Topological Repo Ordering
-
-3. **Sort repos topologically (upstream first):** Order registered repos so that upstream repos (the `to` side of dependency edges) are built before downstream repos (the `from` side). Use Kahn's algorithm or depth-first topological sort on the dependencyGraph.
-   - Example: if `api` depends on `core`, build `core` first, then `api`.
-
-4. **Circular dependencies — warning, fall back to declaration order:** If a cycle is detected in the dependency graph, emit a warning:
-   ```
-   Warning: circular dependency detected among workspace repos: <repo-A> -> <repo-B> -> <repo-A>
-   Falling back to declaration order. Resolve cycles in workspace config before relying on topological ordering.
-   ```
-   Then proceed using the order in which repos are declared in `adev-workspace.yaml`.
-
-5. **No dependency graph → declaration order:** If the dependency graph is empty or absent, process repos in the order they are declared in `adev-workspace.yaml`.
-
-### Cross-Repo Build Execution
-
-6. **Per-repo build:** For each repo in topological order, execute the build pipeline within that repo's context. The orchestrator delegates to `/adev:plan --phase <name>` and `/adev:implement` within each repo's `.context-index/` directory. The 5-step pipeline (review, plan, route, implement, validate) runs per-spec within each repo, following the same rules as single-repo Phase Mode.
-
-7. **Upstream failure → skip dependents:** When a repo's build fails (any spec within that repo fails at any pipeline step), downstream repos that depend on the failed repo are skipped with reason: `"Upstream repo '<slug>' failed."` Repos that do not depend on the failed repo continue building.
-
-### Build Progress Reports
-
-8. **Repo start header:** When the workspace-mode build starts processing a repo, print:
-   ```
-   [<current>/<total>] Building repo: <repo-slug>
-   ```
-
-9. **Repo completion line:** When the workspace-mode build finishes processing a repo, print:
-   ```
-   [<current>/<total>] Repo <repo-slug>: <PASSED|FAILED> (<N> specs)
-   ```
-
-### Workspace Build Summary
-
-After all repos are processed, print the cross-repo summary:
-
-```
-Workspace build for phase '<name>' complete.
-
-  <N> repos attempted, <P> passed, <F> failed, <S> skipped
-
-  Repo results:
-    - <repo-slug>: PASSED (N specs passed)
-    - <repo-slug>: FAILED (N passed, M failed)
-    - <repo-slug>: SKIPPED (upstream '<dep-slug>' failed)
-```
+> **Conditional loading:** Read `skills/build/workspace-mode.md` for the full Workspace-Mode Build instructions.
 
 ---
 
@@ -718,7 +669,7 @@ Show:
 ```
 Dry Run: Build Pipeline for <spec or phase>
 
-  Spec: .context-index/specs/features/<module>/<spec>.md
+  Spec: .context-index/specs/features/<module>/<spec>.spec.md
     Step 1: Review    — SKIP (review.md exists, current)
     Step 2: Plan      — SKIP (plan.md exists, 5 tasks)
     Step 3: Route     — EXECUTE
@@ -803,6 +754,8 @@ Build complete.
 6. **Pipeline order is fixed.** The 5-step order (review, plan, route, implement, validate) is invariant. Steps can be skipped based on conditions, but they are never reordered.
 
 7. **Issue board is optional.** All issue board operations are guarded by `tasks.backend` in the manifest. If unconfigured, the build runs identically but without issue tracking.
+
+8. **One step per turn.** The orchestrator dispatches exactly one pipeline step per invocation, persists state, and re-invokes itself for the next step. It never runs two or more steps in a single turn. This prevents context accumulation from causing step-skipping. See the One-Step-Per-Invocation Dispatch section.
 
 ---
 

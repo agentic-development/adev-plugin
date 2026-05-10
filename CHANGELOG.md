@@ -1,5 +1,108 @@
 # Changelog
 
+## [0.24.0] — 2026-05-09
+
+### Infrastructure Preflight
+
+Runtime verification of external system availability before skills execute code or tests. When a spec or plan declares `infra_requirements`, the preflight runs automatically and blocks execution with actionable diagnostics if any system is unavailable.
+
+- **`lib/infra-preflight.mjs`** — generic verification runner: env var presence checks, CLI tool PATH/version checks, and probe commands via `execFileSync` (no shell — manual `$VAR` substitution per-token)
+- **Extended `infra_requirements` schema** — new fields: `cli_tools` (string or `{name, version}` object form), `probe` (connectivity command), `check_level` (`full` | `presence-only` | `skip`), `timeout` (per-system probe timeout), `env_file` (path to `.env` file, validated within project root)
+- **Skill integration** — preflight step added to 7 skills:
+  - **Mandatory** (implement, validate, build, write-test): always run when `infra_requirements` present; block on failure
+  - **Conditional** (debug, eval, recover): run when spec/plan with `infra_requirements` can be located via arguments, active plan, or module inference
+- **`--no-infra` bypass** — user-only flag (agent prohibited from setting it); also accepts `ADEV_NO_INFRA=1` env var as fallback
+- **`@dotenvx/dotenvx` dev dependency** — full `.env` file support (multiline values, variable expansion, cascading) for all projects using adev; falls back to internal `parseDotenv` when unavailable (ADR 0006)
+- **Security hardening** — probe output sanitized at capture time (200 char, ANSI stripped); `env_file` path traversal blocked; CLI tool names validated against `[a-zA-Z0-9._-]+`; dispatch detection via `ADEV_DISPATCHED_BY` env var
+- **70 new tests** (40 unit for lib, 30 content-presence for SKILL.md files)
+
+### Reality Check (Confidence-Backed Lifecycle Verification)
+
+Verifies lifecycle artifact status fields against actual codebase state before trusting metadata. Prevents ghost validations and stale issue boards.
+
+- **`lib/reality-check.mjs`** — shared helper: `verifySpecImplemented()`, `verifyIssueCompleted()`, `verifyCapabilityStatus()`, `formatConfidenceNote()`
+- **Confidence levels** — HIGH (committed + tests pass), MEDIUM (committed), LOW (weak evidence), NONE (contradicts reality)
+- **validate** — Check 12 uses reality-check before flagging drift; "After Validation" closes issues only at HIGH confidence with audit-trail notes
+- **debug** — Phase 6 closes matching bug issue with confidence note when fix is verified (quality gates pass + spec compliant)
+- **hygiene** — Pass 12 step 8: new "Reality Drift" audit detects specs claiming done with no codebase evidence (REALITY_DRIFT, REALITY_WARN)
+- **reconcile** — verification guard before closing epics/issues; blocks auto-close when confidence is LOW/NONE
+- **26 new tests** (14 unit + 12 fixture integration against integration-sandbox)
+
+### Spec Drift Detection (Real-Time Code-Side Drift)
+
+Real-time awareness when implementation code diverges from its governing spec. Inspired by Kiro's living specs, but implemented as an advisory hook rather than a blocking gate. Complements the existing spec-lifecycle git-drift-detection (spec-side drift) with code-side drift detection.
+
+- **`lib/spec-drift.mjs`** — four functions: `scanForDrift` (scans all spec source manifests for a given file path), `stampDrift` (writes `drift_detected`, `drift_source`, `drift_at` to spec frontmatter), `clearDrift` (removes drift fields), `hasDrift` (reads drift flag). Zero external dependencies.
+- **`hooks/sync-trigger.sh` extended** — detects edits to source-manifest-tracked files on every `PostToolUse:Edit` event. Emits advisory JSON warning to stdout; never blocks (exit 0). Path validation ensures edited file is within project root.
+- **Downstream skill integration:**
+  - **plan** — `CODE_DRIFT` gate blocks planning when `drift_detected: true`; `verifyManifest()` fallback for non-Claude-Code hosts
+  - **validate** — non-blocking warning when drift flag is set
+  - **hygiene** — new "Code Drift" audit pass (Pass 17) reports all drifted specs
+  - **implement** — `clearDrift()` called after source manifest re-stamp in GREEN phase
+- **Host portability** — drift flag is an acceleration for Claude Code hooks; on other hosts, skills detect drift via existing `verifyManifest()` SHA comparison
+- **34 new tests** (16 unit for lib, 6 hook integration, 12 content-presence for SKILL.md files)
+
+### Prototype Brainstorm (`/adev:prototype`)
+
+Tiered prototype generation from Feature Charters. Generates wireframe, mockup, or functional prototypes, serves them via localhost, and iterates on conversational feedback.
+
+- **Zero-dep HTTP server** — `lib/prototype-server.mjs` binds to `127.0.0.1` only, scans ports 3210-3219, serves raw files with MIME detection and path traversal protection
+- **Visual reference capture** — `lib/visual-references.mjs` copies user-provided screenshots to `.context-index/references/<module>/visuals/` with slugified filenames, dedup, format validation (PNG/JPG/WebP, 10 MB max), and session tracking
+- **Standalone invocation** — `--module`, `--tier`, `--framework` arguments; charter discovery when `--module` omitted; context construction from charter Business Intent and Capability Map
+- **Module validation** — `lib/prototype-args.mjs` validates kebab-case names (`^[a-z0-9][a-z0-9-]*$`, max 64 chars) and discovers charters via directory scan
+- **Session summary** — standalone sessions end with tier, iteration count, persistence choice, visual references, and heuristics saved
+- **Brainstorm integration** — accepts structured context from `/adev:brainstorm` Step 3b, returns `PROTOTYPE_RESULT` on completion
+- **44 new tests** (server security, visual references, prototype-args validation and discovery)
+
+### Build Pipeline Enhancements
+
+- **`--auto` flag** — runs the entire `/adev:build` pipeline without prompting the user. Stale builds auto-overwrite, subagents receive `AUTO: true` directive. Useful for CI, scheduled builds, and batch operations.
+- **`lib/build-state.mjs`** — programmatic helper with `readBuildState`, `createBuildState`, `recordStepResult`, `getNextStep`. Replaces manual JSON writing in the dispatch loop. 26 new tests.
+- **One-step-per-invocation dispatch** — orchestrator executes exactly one pipeline step per turn, persists state, and re-invokes itself. Prevents context accumulation from causing step-skipping.
+
+### Eval Projects
+
+- **Migration eval** — dbt+DuckDB pipeline with planted bug (incorrect JOIN type), comparison harness with LLM judge
+- **Automation eval** — multi-step automation scenario with file processing and validation
+
+### Fixes
+
+- **Ghost validation prevention (issue-184)** — Check 1.5 now verifies files are git-tracked (not just existing on disk) and uses the correct two-argument `verifyManifest(manifest, projectRoot)` API with SHA-256 comparison. Check 2 requires explicit Read tool calls before citing file:line references, with anti-fabrication rule preventing inferred citations.
+- **Review-specs file-sha ordering (issue-187)** — Step 6 writes `file-sha: <PENDING>` placeholder, new Step 6b stamps final SHA after Step 7 updates the spec status. Fixes false hash drift on next planning invocation.
+- **Plan Quality Gates checkbox bug** — `getPlanProgress` now stops at `## Quality Gates` heading boundary instead of attributing QG checkboxes to the last task. All 63 existing plans migrated from checkboxes to plain bullets in QG sections.
+- **Lifecycle gate hook scripts** — committed missing hook scripts for lifecycle enforcement
+- **Brainstorm prototype offer** — added Step 3b to checklist so prototype offer is not skipped
+- **Heuristics in prototype** — agent proposes heuristics instead of asking user to recall them
+- **ADR 0005 title** — fixed header incorrectly labelled as "ADR 0003"
+- **Model IDs** — updated stale `claude-opus-4-6` → `claude-opus-4-7` in platform-context, init skill, and cross-cutting spec fallback tables
+
+### Commit Trailers
+
+- **`Spec:` trailer requirement** — added to constitution and CLAUDE.md. Commits implementing spec-tracked work must include `Spec: <path>` trailer for traceability. `Plan-task:` trailer recommended alongside.
+- **Manifest** — `recommended_trailers: [Spec, Plan-task]` added to provenance section
+
+### Upgrading from 0.23.x
+
+**Automatic (handled by `npx @adev-org/adev-cli upgrade`):**
+- Plugin files, hooks, templates, and lib modules are updated in-place. No manual action needed for the plugin itself.
+
+**New hooks (active immediately after upgrade):**
+- **Lifecycle gate hooks** — three new hooks registered in `hooks/hooks.json`: `lifecycle-gate-edit.sh` (PostToolUse:Edit), `lifecycle-gate-bash.sh` (PostToolUse:Bash), `lifecycle-gate-advisory.sh` (Notification). These warn when source code is edited without first reading `.context-index/` context. Default enforcement level: `warn`. Configure via `lifecycle.gate` in your project's `.context-index/user-config` or global `<PLUGIN_ROOT>/user-config` (`off` / `warn` / `confirm` / `block`).
+- **Spec drift detection** — `hooks/sync-trigger.sh` now fires on ALL file edits (not just constitution.md). When an edited file is tracked in a spec's `source-manifest`, the hook stamps `drift_detected: true` in the spec's frontmatter. This is advisory only (exit 0, never blocks).
+
+**Optional — run `/adev:init` (Step 7) to set up governance:**
+- `.context-index/governance/gates.yaml` — declarative quality gate definitions (replaces the legacy `gates:` section in `manifest.yaml`). Skills that read gates (`/adev:validate` Check 1, `/adev:build`) will use this file if present, otherwise fall back to the constitution's `## Quality Gates` section.
+- `.context-index/governance/boundaries.yaml` — architectural boundary rules checked by `/adev:validate` Check 8.
+- `.context-index/governance/review.yaml` — configurable reviewer registry for `/adev:review-specs`.
+- `.context-index/governance/validate.yaml` — configurable validation check registry for `/adev:validate`.
+
+**If you have `gates:` in `manifest.yaml`:** The manifest `gates:` section is now legacy. `/adev:validate` emits a migration warning. Run `/adev:init` Step 7a to migrate to `governance/gates.yaml` — the init wizard detects the legacy section and offers one-click migration.
+
+**No action required for:**
+- Existing specs, charters, plans, and ADRs — all work as before
+- Projects without governance files — skills fall back to bundled defaults
+- The `@dotenvx/dotenvx` dev dependency — only affects the plugin, not your project
+
 ## [Unreleased] — release/0.23.0
 
 ### Integration Test Strategy (9th strategy)

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
-> **Spec:** .context-index/specs/features/session-awareness/session-log-schema.md
+> **Spec:** .context-index/specs/features/session-awareness/session-log-schema.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-06)
 > **Platform:** JavaScript ESM, Node.js, node:test
 
@@ -19,18 +19,18 @@
 - `tests/hooks/session-capture.test.mjs` — Update existing tests, add schema validation tests
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/session-awareness/session-log-schema.md` — Schema contract
+- `.context-index/specs/features/session-awareness/session-log-schema.spec.md` — Schema contract
 - `.context-index/samples/hook-sessionstart-session-start.md` — Hook pattern reference
 
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/session-awareness/session-log-schema.md` (Schema Definition, Error Cases)
+- Spec: `.context-index/specs/features/session-awareness/session-log-schema.spec.md` (Schema Definition, Error Cases)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Session Log Schema)
 - Constitution: `.context-index/constitution.md` (Principle 4: Hook protocol compliance)
 
 ### Task 2 Context
-- Spec: `.context-index/specs/features/session-awareness/session-log-schema.md` (Acceptance Criteria, Field Constraints)
+- Spec: `.context-index/specs/features/session-awareness/session-log-schema.spec.md` (Acceptance Criteria, Field Constraints)
 - Charter: `.context-index/specs/features/session-awareness/charter.md` (capability: Session Log Schema)
 
 ## Parallelization
@@ -244,15 +244,15 @@ git commit -m "test(hooks): add schema validation tests for session-log-schema"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [x] Each line in `.session-tracking.jsonl` is valid JSON matching the schema
-  - [x] `tool` field is always present and non-empty
-  - [x] `files` field is always present (empty array when no files)
-  - [x] `timestamp` is ISO 8601 UTC truncated to seconds
-  - [x] `session_id` is omitted (not null) when not available
-  - [x] Hook exits 0 and writes nothing when provider is not "native"
-  - [x] File is created on first write without header or preamble
-  - [x] Existing `session-capture.sh` implementation matches this schema (or is updated to match)
-  - [x] No new dependencies added
-  - [x] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - Each line in `.session-tracking.jsonl` is valid JSON matching the schema
+  - `tool` field is always present and non-empty
+  - `files` field is always present (empty array when no files)
+  - `timestamp` is ISO 8601 UTC truncated to seconds
+  - `session_id` is omitted (not null) when not available
+  - Hook exits 0 and writes nothing when provider is not "native"
+  - File is created on first write without header or preamble
+  - Existing `session-capture.sh` implementation matches this schema (or is updated to match)
+  - No new dependencies added
+  - No constitutional violations introduced

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/cicd/charter.md
-> **Spec:** .context-index/specs/features/cicd/run-quality-gates.md
+> **Spec:** .context-index/specs/features/cicd/run-quality-gates.spec.md
 > **Review:** PASS (2026-03-24)
 > **Platform:** GitHub Actions, Node.js, npm
 
@@ -22,7 +22,7 @@
 ## Context Packets
 
 ### Task 1 Context
-- Spec: `.context-index/specs/features/cicd/run-quality-gates.md` (all acceptance criteria)
+- Spec: `.context-index/specs/features/cicd/run-quality-gates.spec.md` (all acceptance criteria)
 - Charter: `.context-index/specs/features/cicd/charter.md` (capability: Run Quality Gates)
 - Constitution: `.context-index/constitution.md` (principle: minimize external dependencies - CI config is exempt)
 
@@ -80,14 +80,14 @@
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] GitHub Actions workflow exists at `.github/workflows/ci.yml`
-- [ ] Workflow runs on push to any branch
-- [ ] Workflow runs on pull request events
-- [ ] Workflow executes `npm test`
-- [ ] Workflow passes when tests pass
-- [ ] Workflow fails when tests fail
-- [ ] Test results visible in GitHub PR check
-- [ ] All acceptance criteria from spec satisfied
+- GitHub Actions workflow exists at `.github/workflows/ci.yml`
+- Workflow runs on push to any branch
+- Workflow runs on pull request events
+- Workflow executes `npm test`
+- Workflow passes when tests pass
+- Workflow fails when tests fail
+- Test results visible in GitHub PR check
+- All acceptance criteria from spec satisfied
 
 ---
 

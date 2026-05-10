@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/multi-repo-workspace/charter.md
-> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-specify.md
+> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-specify.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-17)
 > **Platform:** Node.js ESM (`.mjs`), `node:test`, npm. Zero-runtime-dependency CLI plugin.
 
@@ -26,7 +26,7 @@
 - `tests/skills/specify-workspace-mode.test.mjs` — SKILL.md content assertions for workspace-mode text (regex-based, following `brainstorm-workspace-bootstrap.test.mjs` pattern)
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/multi-repo-workspace/workspace-aware-specify.md` — target spec (8 behaviours, 11 AC)
+- `.context-index/specs/features/multi-repo-workspace/workspace-aware-specify.spec.md` — target spec (8 behaviours, 11 AC)
 - `.context-index/specs/features/multi-repo-workspace/charter.md` — charter (rev 4)
 - `.context-index/specs/features/multi-repo-workspace/workspace-aware-specify.review.md` — review report (PASS_WITH_NOTES)
 - `lib/workspace.mjs` — existing exports: `detectWorkspace`, `resolveWorkspaceContext`, `validateModuleName`, `assertPathInWorkspace`
@@ -314,8 +314,8 @@ Expected: FAIL on the new frontmatter/isolation tests.
 
 ```markdown
 4. Save location:
-   - **Workspace mode:** Save to workspace `.context-index/specs/features/<module>/<spec-slug>.md`. Include `target-repo: <slug>` (or `target-repo: workspace`) in the YAML frontmatter.
-   - **Repo mode / single-repo:** Save to `.context-index/specs/features/<module>/<spec-slug>.md` as before. No `target-repo:` field.
+   - **Workspace mode:** Save to workspace `.context-index/specs/features/<module>/<spec-slug>.spec.md`. Include `target-repo: <slug>` (or `target-repo: workspace`) in the YAML frontmatter.
+   - **Repo mode / single-repo:** Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md` as before. No `target-repo:` field.
 ```
 
 **3. Add "Workspace Mode: Reference Context and Isolation" section** after the target-repo prompt section:
@@ -387,6 +387,6 @@ git commit -m "test(specify): finalize workspace-mode test coverage"
 
 After all tasks are complete, run the full quality gate suite:
 
-- [ ] Tests pass: `npm test`
-- [ ] All 11 acceptance criteria from spec satisfied
-- [ ] No constitutional violations introduced (Principle 2: skills are primarily markdown — no runtime code added)
+- Tests pass: `npm test`
+- All 11 acceptance criteria from spec satisfied
+- No constitutional violations introduced (Principle 2: skills are primarily markdown — no runtime code added)

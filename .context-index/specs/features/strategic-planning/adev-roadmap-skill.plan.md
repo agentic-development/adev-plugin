@@ -1,7 +1,7 @@
 # Plan: adev:roadmap Skill
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev:roadmap-skill.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:roadmap-skill.spec.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS_WITH_NOTES
 
@@ -93,9 +93,9 @@ Create the `/adev:roadmap` skill as a markdown-based SKILL.md that analyzes prod
 - None
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev:roadmap-skill.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:roadmap-skill.spec.md` — Behavioral contract
 - `.context-index/specs/features/strategic-planning/adev:roadmap-skill.review.md` — Review notes (SA-1, SA-2)
-- `.context-index/specs/features/strategic-planning/adev:vision-skill.md` — Vision spec (defines Milestones section that roadmap reads)
+- `.context-index/specs/features/strategic-planning/adev:vision-skill.spec.md` — Vision spec (defines Milestones section that roadmap reads)
 - `skills/assess/SKILL.md` — Pattern reference for skill file structure
 - `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
 
@@ -120,18 +120,18 @@ Create the `/adev:roadmap` skill as a markdown-based SKILL.md that analyzes prod
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] Reads product.md milestones and all feature charters
-  - [ ] Builds cross-feature dependency graph from charter Dependencies tables
-  - [ ] Determines critical path through dependency chain
-  - [ ] Produces topologically sorted implementation order
-  - [ ] Includes risk assessment per feature
-  - [ ] Identifies parallelization opportunities
-  - [ ] Flags charters without specs as "specs needed"
-  - [ ] Saves roadmap to `.context-index/specs/roadmap/`
-  - [ ] Updates epic dependencies on issue board
-  - [ ] Detects and reports circular dependencies
-  - [ ] `--milestone` mode works for single milestone
-  - [ ] All quality gates pass (tests, lint, typecheck)
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - Reads product.md milestones and all feature charters
+  - Builds cross-feature dependency graph from charter Dependencies tables
+  - Determines critical path through dependency chain
+  - Produces topologically sorted implementation order
+  - Includes risk assessment per feature
+  - Identifies parallelization opportunities
+  - Flags charters without specs as "specs needed"
+  - Saves roadmap to `.context-index/specs/roadmap/`
+  - Updates epic dependencies on issue board
+  - Detects and reports circular dependencies
+  - `--milestone` mode works for single milestone
+  - All quality gates pass (tests, lint, typecheck)
+  - No constitutional violations introduced

@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/sync-index.md
+> **Spec:** .context-index/specs/features/heuristics/sync-index.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-23)
 > **Platform:** Node.js, JavaScript ESM, node:test
 
@@ -134,5 +134,5 @@ After generating all other sections and before preserving User Additions:
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

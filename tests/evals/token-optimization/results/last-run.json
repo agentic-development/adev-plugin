@@ -1,0 +1,262 @@
+{
+  "results": {
+    "baseline": {
+      "plan": {
+        "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/dc657bcb-65c7-4e0a-927e-0abc802b61f5.jsonl",
+        "totalTurns": 31,
+        "toolTurns": 21,
+        "noToolTurns": 10,
+        "parallelTurns": 0,
+        "input": 43,
+        "output": 28217,
+        "cacheCreate": 128337,
+        "cacheRead": 1245468,
+        "outputChars": 2161,
+        "totalTokens": 1402065,
+        "cost": 6.39144075,
+        "toolBreakdown": {
+          "Read": 13,
+          "Glob": 6,
+          "Write": 1,
+          "Agent": 1
+        },
+        "subagents": [
+          {
+            "id": "agent-a73bcf17bb02ac994",
+            "turns": 8,
+            "output": 1567,
+            "cacheRead": 83857,
+            "noToolTurns": 2
+          }
+        ],
+        "subagentTurns": 8,
+        "subagentNoToolTurns": 2,
+        "durationMs": 221954
+      },
+      "review-specs": {
+        "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/81b001fe-cd35-4d5b-ac4b-3c564af2823f.jsonl",
+        "totalTurns": 34,
+        "toolTurns": 24,
+        "noToolTurns": 10,
+        "parallelTurns": 0,
+        "input": 52,
+        "output": 32241,
+        "cacheCreate": 159941,
+        "cacheRead": 1082496,
+        "outputChars": 1741,
+        "totalTokens": 1274730,
+        "cost": 7.04149275,
+        "toolBreakdown": {
+          "Read": 9,
+          "Glob": 6,
+          "Bash": 2,
+          "Agent": 3,
+          "Write": 2,
+          "Edit": 2
+        },
+        "subagents": [
+          {
+            "id": "agent-a5f5de0cfb28a8909",
+            "turns": 14,
+            "output": 1969,
+            "cacheRead": 201897,
+            "noToolTurns": 3
+          },
+          {
+            "id": "agent-a934b6c54ced4f33b",
+            "turns": 1,
+            "output": 728,
+            "cacheRead": 8576,
+            "noToolTurns": 1
+          },
+          {
+            "id": "agent-adb20ec152c92a186",
+            "turns": 9,
+            "output": 1149,
+            "cacheRead": 115293,
+            "noToolTurns": 3
+          }
+        ],
+        "subagentTurns": 24,
+        "subagentNoToolTurns": 7,
+        "durationMs": 218470
+      },
+      "validate": {
+        "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/2af8d4b2-ef68-47ca-8c15-1df7948b1822.jsonl",
+        "totalTurns": 45,
+        "toolTurns": 37,
+        "noToolTurns": 8,
+        "parallelTurns": 0,
+        "input": 51,
+        "output": 19934,
+        "cacheCreate": 117727,
+        "cacheRead": 1874224,
+        "outputChars": 1307,
+        "totalTokens": 2011936,
+        "cost": 6.51453225,
+        "toolBreakdown": {
+          "Read": 11,
+          "Bash": 6,
+          "Glob": 18,
+          "Grep": 1,
+          "Write": 1
+        },
+        "subagents": [],
+        "subagentTurns": 0,
+        "subagentNoToolTurns": 0,
+        "durationMs": 207292
+      }
+    },
+    "optimized": {
+      "plan": {
+        "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/ea3f2fa6-54e5-4399-9ae8-9d8440c36bdc.jsonl",
+        "totalTurns": 35,
+        "toolTurns": 25,
+        "noToolTurns": 10,
+        "parallelTurns": 0,
+        "input": 1737,
+        "output": 22880,
+        "cacheCreate": 138342,
+        "cacheRead": 1255214,
+        "outputChars": 1706,
+        "totalTokens": 1418173,
+        "cost": 6.2187885,
+        "toolBreakdown": {
+          "Read": 14,
+          "Glob": 4,
+          "Bash": 5,
+          "Write": 1,
+          "Agent": 1
+        },
+        "subagents": [
+          {
+            "id": "agent-a3d7997e3aacff0d7",
+            "turns": 6,
+            "output": 833,
+            "cacheRead": 34222,
+            "noToolTurns": 2
+          }
+        ],
+        "subagentTurns": 6,
+        "subagentNoToolTurns": 2,
+        "durationMs": 249394
+      },
+      "review-specs": {
+        "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/1a1d2bf8-880c-44b5-ac0a-9e3ff0f4e510.jsonl",
+        "totalTurns": 36,
+        "toolTurns": 20,
+        "noToolTurns": 16,
+        "parallelTurns": 0,
+        "input": 58,
+        "output": 50584,
+        "cacheCreate": 197610,
+        "cacheRead": 1089165,
+        "outputChars": 1990,
+        "totalTokens": 1337417,
+        "cost": 9.133605,
+        "toolBreakdown": {
+          "Read": 10,
+          "Glob": 4,
+          "Bash": 2,
+          "Agent": 3,
+          "Write": 1
+        },
+        "subagents": [
+          {
+            "id": "agent-a7da646ba8e48023f",
+            "turns": 4,
+            "output": 825,
+            "cacheRead": 38797,
+            "noToolTurns": 2
+          },
+          {
+            "id": "agent-ae103c3f975232dfc",
+            "turns": 8,
+            "output": 1815,
+            "cacheRead": 109363,
+            "noToolTurns": 2
+          },
+          {
+            "id": "agent-afd6bad9794165069",
+            "turns": 1,
+            "output": 666,
+            "cacheRead": 8551,
+            "noToolTurns": 1
+          }
+        ],
+        "subagentTurns": 13,
+        "subagentNoToolTurns": 5,
+        "durationMs": 288162
+      },
+      "validate": {
+        "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/fed65354-64f0-4046-940f-a1453cb9fc88.jsonl",
+        "totalTurns": 36,
+        "toolTurns": 26,
+        "noToolTurns": 10,
+        "parallelTurns": 0,
+        "input": 46,
+        "output": 25298,
+        "cacheCreate": 61244,
+        "cacheRead": 1497666,
+        "outputChars": 2684,
+        "totalTokens": 1584254,
+        "cost": 5.292864,
+        "toolBreakdown": {
+          "Read": 12,
+          "Glob": 11,
+          "Bash": 2,
+          "Write": 1
+        },
+        "subagents": [],
+        "subagentTurns": 0,
+        "subagentNoToolTurns": 0,
+        "durationMs": 143756
+      }
+    }
+  },
+  "runMeta": {
+    "baseline": {
+      "plan": {
+        "success": true,
+        "output": "The charter already shows capability 2 (Revenue aggregation) as `planned`, so no update needed. The task board doesn't exist in this sandbox project, so I'll skip issue creation.\n\nPlan complete and saved to `.context-index/specs/features/orders/revenue-by-customer.plan.md`.\n\n**1 task** covering all **5 acceptance criteria** from the spec. 0 tasks tagged with specialist routing.\n\n**Reviewer verdict:** Approved — all acceptance criteria mapped to tests, constitution compliance verified (no skip guard, real database, deterministic seed data, clean teardown, ESM), infrastructure requirements complete.\n\n**Key plan decisions:**\n- No implementation changes needed — `getRevenueByCustomer()` already exists in `lib/orders.mjs:20-34`\n- Test file `tests/revenue.integration.test.mjs` follows the existing pattern but **omits the `canConnect` skip guard** per constitution principle 2 (fail hard when infra is offline)\n- Strategy: `integration` (spec-declared, high confidence)\n- 6 test cases cover: row-per-customer ordering, completed-only revenue sum, pending exclusion, cancelled exclusion, integer cents type, customer name inclusion\n\n**Next steps:**\n- To implement: `/adev:implement --plan .context-index/specs/features/orders/revenue-by-customer.plan.md`\n- To review the plan: open `.context-index/specs/features/orders/revenue-by-customer.plan.md`\n- To re-plan after spec changes: `/adev:plan --spec .context-index/specs/features/orders/revenue-by-customer.md`\n",
+        "durationMs": 221954,
+        "startedAt": 1777856802538
+      },
+      "review-specs": {
+        "success": true,
+        "output": "Review complete. Spec passed with notes.\n\n```\n  customer-orders: PASS_WITH_NOTES (5 warnings, 3 suggestions)\n\n  Warnings:\n  - SA-1: Test verification technique embedded in Acceptance Criteria (belongs in Test Requirements)\n  - SEC-1: No authorization boundary defined — caller identity check unspecified\n  - SEC-2: No explicit column restriction — schema additions could silently expose sensitive data\n  - CON-1: Spec doesn't clarify that customer fields (name, email) are excluded from results\n  - CON-2: `Date` return type for `created_at` depends on default pg type parser (undeclared assumption)\n```\n\nStatus updated: `review-blocked` → `review-passed`\n\nReview report saved at `.context-index/specs/features/orders/customer-orders.review.md`.\nYou can proceed to `/adev:plan --spec .context-index/specs/features/orders/customer-orders.md` or address the warnings first.\n",
+        "durationMs": 218470,
+        "startedAt": 1777856802538
+      },
+      "validate": {
+        "success": true,
+        "output": "## Validation Result: FAIL\n\n**2 checks failed** — the implementation has a spec and constitution violation.\n\n### Failures\n\n**Check 2 — Spec Compliance (Test Integrity):** `tests/orders.integration.test.mjs:8-18` contains a skip guard that checks connectivity and skips the suite when PostgreSQL is unavailable. The spec explicitly prohibits this pattern.\n\n**Check 4 — Constitution Compliance (Principle 2):** The constitution mandates \"fail hard when infrastructure is offline\" — tests must fail with ECONNREFUSED, not skip. The skip guard violates this principle.\n\n### Root Cause\n\nThe test was written against the plan (revision 1), which allowed `describe.skipIf(!canConnect)`. The spec was later revised (revision 2) to explicitly prohibit skip guards. The implementation was never updated to match.\n\n### Fix Required\n\nRemove lines 8-18 in `tests/orders.integration.test.mjs` (the `canConnect` check and `{ skip: ... }` option). The `describe` block should execute unconditionally — if PostgreSQL is offline, tests fail with ECONNREFUSED, which is the correct behavior per spec and constitution.\n\n---\n\nFix the issues above and re-run: `/adev:validate --spec .context-index/specs/features/orders/customer-orders.md`\n",
+        "durationMs": 207292,
+        "startedAt": 1777856802538
+      },
+      "_completedAt": 1777857450479
+    },
+    "optimized": {
+      "plan": {
+        "success": true,
+        "output": "Plan complete and saved to `.context-index/specs/features/orders/revenue-by-customer.plan.md`.\n\n1 task covering all 5 acceptance criteria from the spec.\n0 tasks tagged with specialist routing.\nCreated epic `epic-45` with 1 issue on the issue board.\n\nTo implement: `/adev:implement --plan .context-index/specs/features/orders/revenue-by-customer.plan.md`\nTo review the plan: open `.context-index/specs/features/orders/revenue-by-customer.plan.md`\nTo re-plan after spec changes: `/adev:plan --spec .context-index/specs/features/orders/revenue-by-customer.md`\n",
+        "durationMs": 249394,
+        "startedAt": 1777857450479
+      },
+      "review-specs": {
+        "success": true,
+        "output": "The spec status is already `review-passed` and the charter already shows `review-passed` for this capability, so no status update is needed.\n\n---\n\nReview complete. Spec passed with notes.\n\n  **customer-orders: PASS_WITH_NOTES** (5 warnings, 5 suggestions)\n\n  Warnings:\n  - **SA-1:** AC§4 conflates behavioral invariant with test verification technique (source inspection)\n  - **SEC-1:** No defined behavior for non-numeric `customerId` input\n  - **SEC-2:** Credential env vars listed but no statement about fallback defaults\n  - **CON-2:** `created_at: Date` contract depends on undeclared `pg` type parser behavior\n  - **CON-4:** No explicit note that customer fields (name, email) are excluded from return\n\nReview saved to `.context-index/specs/features/orders/customer-orders.review.md`.\nYou can proceed to `/adev:plan --spec .context-index/specs/features/orders/customer-orders.md` or address the warnings first.\n",
+        "durationMs": 288162,
+        "startedAt": 1777857450479
+      },
+      "validate": {
+        "success": true,
+        "output": "**Validation failed. 2 checks need attention.**\n\n| Check | Status | Summary |\n|-------|--------|---------|\n| 1 Quality Gates | SKIP | No `governance/gates.yaml` configured |\n| 1.5 Source Manifest | SKIP | No source manifest in spec |\n| 1.6 Drift Warning | SKIP | No drift frontmatter |\n| 2 Spec Compliance | **FAIL** | Skip guard in test file violates prohibited patterns |\n| 3 Charter Consistency | PASS | Within scope, domain model matches |\n| 4 Constitution | **FAIL** | Principle 2 violated — tests skip instead of failing hard |\n| 5 ADR Compliance | N/A | No ADRs |\n| 6 Cross-Cutting | N/A | No cross-cutting specs |\n| 7 Specialist Review | SKIP | No specialists registered |\n| 8 Boundary Compliance | SKIP | No governance directory |\n| 9 Transition Gates | SKIP | No gates configured |\n| 10 Platform Drift | SKIP | No platform-context.yaml |\n| 11 Visual Verification | N/A | No UI files |\n| 12 Lifecycle | SKIP | Task board not found |\n| 13 Heuristic Extraction | SKIP | Non-PASS result |\n\n**Root cause:** `tests/orders.integration.test.mjs:8-18` contains a connectivity check that sets `canConnect = false` on ECONNREFUSED, then passes `{ skip: !canConnect && '...' }` to the describe block. This is explicitly prohibited by both the spec (\"The agent must never add skip guards\") and the constitution (\"Tests must never skip, guard, or bypass when infrastructure is unavailable\").\n\nThe correct behavior is demonstrated by the sibling test files (`orders-s9-baseline.integration.test.mjs`, `orders-s9-summarized.integration.test.mjs`) which connect directly without guards and fail hard with ECONNREFUSED when PostgreSQL is offline.\n\n**Fix:** Remove lines 8-16 (the try/catch connectivity check) and the `{ skip: !canConnect && '...' }` option from the describe call at line 18. Then re-run: `/adev:validate --spec .context-index/specs/features/orders/customer-orders.md`\n",
+        "durationMs": 143756,
+        "startedAt": 1777857450479
+      },
+      "_completedAt": 1777858131795
+    }
+  },
+  "timestamp": "2026-05-04T01:28:53.898Z"
+}

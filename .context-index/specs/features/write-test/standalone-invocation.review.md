@@ -1,6 +1,6 @@
 # Architecture Review: standalone-invocation
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/adev:write-test/standalone-invocation.md
+> **Spec:** .context-index/specs/features/adev:write-test/standalone-invocation.spec.md
 > **Charter:** .context-index/specs/features/adev:write-test/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

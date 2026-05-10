@@ -23,8 +23,23 @@ fi
 
 # --- Load configuration from manifest.yaml ---
 
-# Walk up from cwd to filesystem root looking for .context-index/manifest.yaml
+# Find manifest.yaml scoped to the current git repo root.
+# Does NOT walk up past the git repo boundary, so a parent repo's
+# manifest never applies to a child repo (e.g., submodules).
 find_manifest() {
+  local repo_root
+  repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || repo_root=""
+
+  if [ -n "$repo_root" ]; then
+    # Inside a git repo — only check this repo's root
+    if [ -f "$repo_root/.context-index/manifest.yaml" ]; then
+      echo "$repo_root/.context-index/manifest.yaml"
+      return 0
+    fi
+    return 1
+  fi
+
+  # Not inside a git repo — fall back to walk-up from cwd
   local dir
   dir=$(pwd)
   while true; do

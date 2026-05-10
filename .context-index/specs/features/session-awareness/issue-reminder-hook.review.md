@@ -1,7 +1,7 @@
 # Architecture Review: issue-reminder-hook
 
 > **Date:** 2026-04-06
-> **Spec:** .context-index/specs/features/session-awareness/issue-reminder-hook.md
+> **Spec:** .context-index/specs/features/session-awareness/issue-reminder-hook.spec.md
 > **Charter:** .context-index/specs/features/session-awareness/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

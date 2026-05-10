@@ -1,7 +1,7 @@
 # Architecture Review: generate-generated-manifest.md
 
 > **Date:** 2026-03-23
-> **Spec:** .context-index/specs/features/adev:document/generate-generated-manifest.md
+> **Spec:** .context-index/specs/features/adev:document/generate-generated-manifest.spec.md
 > **Charter:** .context-index/specs/features/adev:document/charter.md
 > **Verdict:** PASS
 

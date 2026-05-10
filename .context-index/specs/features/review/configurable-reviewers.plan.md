@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/review/charter.md
-> **Spec:** .context-index/specs/features/review/configurable-reviewers.md
+> **Spec:** .context-index/specs/features/review/configurable-reviewers.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-19)
 > **Platform:** JavaScript (ESM), Node.js, npm, node:test
 
@@ -28,7 +28,7 @@
 
 **Reference (do not modify):**
 - `lib/profiles/index.mjs` — consumed via `loadProfiles`, `resolveProfile`, `getEffectivePosture`
-- `.context-index/specs/features/review/configurable-reviewers.md` — the contract
+- `.context-index/specs/features/review/configurable-reviewers.spec.md` — the contract
 
 ---
 
@@ -93,5 +93,5 @@ Update `skills/review-specs/SKILL.md` Step 3 (specialist registry) and Step 4 (d
 
 ## Quality Gates
 
-- [ ] `npm test` passes
-- [ ] No new external dependencies
+- `npm test` passes
+- No new external dependencies

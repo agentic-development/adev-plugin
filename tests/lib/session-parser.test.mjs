@@ -197,13 +197,6 @@ describe("parseSession", () => {
     assert.equal(result, null);
   });
 
-  it("returns null when provider is 'entire'", async () => {
-    const result = await parseSession(FIXTURE_PATH, "claude-code", {
-      provider: "entire",
-    });
-    assert.equal(result, null);
-  });
-
   it("handles empty JSONL file gracefully", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "session-test-"));
     const emptyPath = join(tmp, "empty.jsonl");

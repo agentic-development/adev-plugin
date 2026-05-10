@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/hygiene-and-injection.md
+> **Spec:** .context-index/specs/features/heuristics/hygiene-and-injection.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-23)
 > **Platform:** Node.js, JavaScript ESM, node:test
 
@@ -262,5 +262,5 @@ N. **Heuristics:** Load module-scoped heuristics for the spec's charter module.
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

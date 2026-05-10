@@ -6,7 +6,7 @@ file-sha: 199d3111488dace5a2ae4fb7ebcd04b986128315
 # Architecture Review: workspace-aware-vision (Re-review of Revision 3)
 
 > **Date:** 2026-04-16
-> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.md
+> **Spec:** .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.spec.md
 > **Charter:** .context-index/specs/features/multi-repo-workspace/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **Prior Verdict:** BLOCK (rev 2) — all prior blockers and warnings resolved or acknowledged; see per-reviewer resolution notes.

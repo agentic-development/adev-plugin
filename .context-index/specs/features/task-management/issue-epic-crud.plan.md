@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/task-management/charter.md
-> **Spec:** .context-index/specs/features/task-management/issue-epic-crud.md
+> **Spec:** .context-index/specs/features/task-management/issue-epic-crud.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-31)
 > **Platform:** none, javascript (ESM), node:test
 
@@ -289,5 +289,5 @@ git commit -m "feat(task-management): add dependency cycle detection and close g
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied

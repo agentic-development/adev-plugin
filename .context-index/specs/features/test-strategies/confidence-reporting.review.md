@@ -1,7 +1,7 @@
 # Architecture Review: confidence-reporting
 
 > **Date:** 2026-04-20
-> **Spec:** .context-index/specs/features/test-strategies/confidence-reporting.md
+> **Spec:** .context-index/specs/features/test-strategies/confidence-reporting.spec.md
 > **Charter:** .context-index/specs/features/test-strategies/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 1

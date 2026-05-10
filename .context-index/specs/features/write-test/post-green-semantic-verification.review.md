@@ -1,6 +1,6 @@
 # Architecture Review: post-green-semantic-verification
 > **Date:** 2026-03-27
-> **Spec:** .context-index/specs/features/adev:write-test/post-green-semantic-verification.md
+> **Spec:** .context-index/specs/features/adev:write-test/post-green-semantic-verification.spec.md
 > **Charter:** .context-index/specs/features/adev:write-test/charter.md
 > **Verdict:** PASS_WITH_NOTES
 

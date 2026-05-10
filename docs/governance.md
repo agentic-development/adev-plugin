@@ -1,8 +1,21 @@
-# Governance reference
+[adev docs](README.md) > Advanced
 
-Operator guide for customizing `/adev:review-specs` and `/adev:validate` via the project-local governance files. Shipped in 0.18.0.
+# Governance Reference
 
-> **New projects:** `/adev:init` Step 7 walks you through this interactively — it scans for existing Claude/Cursor/Copilot skills to adopt as reviewers, proposes quality-gates based on your `package.json` / `pyproject.toml` / `go.mod`, migrates legacy `manifest.yaml:specialists`, and generates stub prompts. Read below if you prefer to edit the files by hand or if you want to make changes after init.
+Operator guide for customizing [`/adev:review-specs`](skill-reference.md) and [`/adev:validate`](skill-reference.md) via the project-local governance files. Shipped in 0.18.0.
+
+## Prerequisites
+
+Before reading this guide, you should be familiar with:
+
+- [Core Concepts](concepts.md) — the four pillars and context-first approach
+- [Validate & Debug workflow](validate-debug.md) — how validation and review fit into the lifecycle
+- The review and validation skills: [`/adev:review-specs`](skill-reference.md), [`/adev:validate`](skill-reference.md)
+- [Configuration Reference](configuration.md) — manifest.yaml structure
+
+Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is helpful but not required.
+
+> **New projects:** [`/adev:init`](skill-reference.md) Step 7 walks you through this interactively — it scans for existing Claude/Cursor/Copilot skills to adopt as reviewers, proposes quality-gates based on your `package.json` / `pyproject.toml` / `go.mod`, migrates legacy `manifest.yaml:specialists`, and generates stub prompts. Read below if you prefer to edit the files by hand or if you want to make changes after init.
 >
 > **Brownfield projects that just upgraded:** run `/adev:init` again — it's idempotent and will surface adoption opportunities against files that already exist. Absent that, keep reading for the five migration recipes at the bottom.
 >
@@ -12,9 +25,9 @@ Operator guide for customizing `/adev:review-specs` and `/adev:validate` via the
 
 | File | Owner skill | What it does |
 |------|-------------|--------------|
-| `.context-index/governance/gates.yaml` | `/adev:validate` Check 1 | Tiered quality gates (fast/integration/e2e). Pre-0.18.0 behavior, unchanged. |
-| `.context-index/governance/review.yaml` | `/adev:review-specs` | Project reviewer registry — add, disable, override, trigger. |
-| `.context-index/governance/validate.yaml` | `/adev:validate` Checks 2-12 | Project check registry — enable/disable, add custom checks, gate on topology. |
+| `.context-index/governance/gates.yaml` | [`/adev:validate`](skill-reference.md) Check 1 | Tiered quality gates (fast/integration/e2e). Pre-0.18.0 behavior, unchanged. |
+| `.context-index/governance/review.yaml` | [`/adev:review-specs`](skill-reference.md) | Project reviewer registry — add, disable, override, trigger. |
+| `.context-index/governance/validate.yaml` | [`/adev:validate`](skill-reference.md) Checks 2-12 | Project check registry — enable/disable, add custom checks, gate on topology. |
 | `.context-index/profiles.yaml` | cross-cutting | Execution profiles: tool permissions, env allowlist, model tier, redaction. Consumed by every reviewer and check. |
 
 All four are optional. Absent files mean "use bundled defaults."
@@ -55,7 +68,7 @@ profiles:
       files:
         - ".env"
         - "optional:.env.local"
-        - "$workspace/.env.shared"   # <— workspace-root sigil; see below
+        - "$workspace/.env.shared"   # workspace-root sigil; see below
       allow:
         required: ["API_TOKEN", "DATABASE_URL"]
         optional: ["DEBUG_FLAG"]
@@ -73,7 +86,7 @@ Key rules (full list in `.context-index/specs/cross-cutting/execution-profiles.m
 
 ## Reviewer registry (`governance/review.yaml`)
 
-Controls `/adev:review-specs`. The loader reads `templates/review-specs/defaults.yaml` first, then overlays your file.
+Controls [`/adev:review-specs`](skill-reference.md). The loader reads `templates/review-specs/defaults.yaml` first, then overlays your file.
 
 Full template with commented examples: [`templates/governance/review.example.yaml`](../templates/governance/review.example.yaml).
 
@@ -92,7 +105,7 @@ reviewers:
 ```yaml
 reviewers:
   - id: security-reviewer
-    severity_cap: warning   # BLOCK → PASS_WITH_NOTES for this reviewer
+    severity_cap: warning   # BLOCK -> PASS_WITH_NOTES for this reviewer
 ```
 
 **Add a project-triggered reviewer.**
@@ -153,7 +166,7 @@ context_packs:
 
 ## Validate check registry (`governance/validate.yaml`)
 
-Controls `/adev:validate` Checks 2-12. Check 1 stays in `governance/gates.yaml` (unchanged).
+Controls [`/adev:validate`](skill-reference.md) Checks 2-12. Check 1 stays in `governance/gates.yaml` (unchanged).
 
 Full template with commented examples: [`templates/governance/validate.example.yaml`](../templates/governance/validate.example.yaml).
 
@@ -247,7 +260,7 @@ specialists:
 
 0.18.0 gives you two options.
 
-**Option A — do nothing.** Specialists in `manifest.yaml` are still honored. At load, `/adev:review-specs` emits this advisory once per run:
+**Option A — do nothing.** Specialists in `manifest.yaml` are still honored. At load, [`/adev:review-specs`](skill-reference.md) emits this advisory once per run:
 
 > `manifest.yaml:specialists is deprecated. Move entries to governance/review.yaml:reviewers. Support will be removed in 0.19.0.`
 
@@ -357,7 +370,7 @@ If a specialist's prompt asked the model to touch files, that worked pre-0.18.0 
 
 Your options:
 
-1. **Move the write-path work out of review.** Reviews surface findings; the write happens in a separate `/adev:implement` pass or hand-rolled skill.
+1. **Move the write-path work out of review.** Reviews surface findings; the write happens in a separate [`/adev:implement`](skill-reference.md) pass or hand-rolled skill.
 2. **Convert to package mode.** The runner runs the skill under a permissive profile you explicitly declare; the adapter extracts findings without needing write access. The reviewer dispatch surface stays observational.
 
 ```yaml
@@ -372,15 +385,15 @@ reviewers:
 ## Verifying your migration
 
 1. `npm test` or whatever your project uses — the registries add no runtime cost.
-2. Run `/adev:review-specs --spec <path>` against one spec and diff the new `.review.md` against the pre-0.18.0 output. Zero-config should be byte-identical.
-3. Run `/adev:validate --spec <path>` and confirm `Reviewers Dispatched` / `Checks` tables match your expected list. Any disabled entries appear as `SKIPPED-DISABLED`.
+2. Run [`/adev:review-specs --spec <path>`](skill-reference.md) against one spec and diff the new `.review.md` against the pre-0.18.0 output. Zero-config should be byte-identical.
+3. Run [`/adev:validate --spec <path>`](skill-reference.md) and confirm `Reviewers Dispatched` / `Checks` tables match your expected list. Any disabled entries appear as `SKIPPED-DISABLED`.
 4. Grep the report for `BROADEN_`, `TOOL_UNPORTABLE_WARN`, or `UNKNOWN_CATEGORY` warnings — these surface intentional but noisy configurations for review.
 5. If you land a quality-gate, the first run should either PASS with redacted stdout or FAIL with a spec-exact error code from the [hardening list](#quality-gate-hardening). Ambiguous messages are a bug.
 
 ## Further reading
 
-- Cross-cutting spec: [`.context-index/specs/cross-cutting/execution-profiles.md`](../.context-index/specs/cross-cutting/execution-profiles.md)
-- Reviewer spec: [`.context-index/specs/features/review/configurable-reviewers.md`](../.context-index/specs/features/review/configurable-reviewers.md)
-- Check spec: [`.context-index/specs/features/validation/configurable-checks.md`](../.context-index/specs/features/validation/configurable-checks.md)
+- Cross-cutting spec: `.context-index/specs/cross-cutting/execution-profiles.md` (planned)
+- Reviewer spec: [`.context-index/specs/features/review/configurable-reviewers.spec.md`](../.context-index/specs/features/review/configurable-reviewers.spec.md)
+- Check spec: [`.context-index/specs/features/validation/configurable-checks.spec.md`](../.context-index/specs/features/validation/configurable-checks.spec.md)
 - Eval harness (deterministic, no LLM): `tests/evals/configurable-governance/README.md`
 - ADRs: [`0003-configurable-review-registry`](../.context-index/adrs/0003-configurable-review-registry.md), [`0004-execution-profiles`](../.context-index/adrs/0004-execution-profiles.md)

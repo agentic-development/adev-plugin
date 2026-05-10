@@ -1,7 +1,7 @@
 # Architecture Review: validate-extraction (re-review r2)
 
 > **Date:** 2026-04-09
-> **Spec:** .context-index/specs/features/heuristics/validate-extraction.md
+> **Spec:** .context-index/specs/features/heuristics/validate-extraction.spec.md
 > **Charter:** .context-index/specs/features/heuristics/charter.md
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 2
@@ -28,7 +28,7 @@ All SA-10, SA-11, SA-12, CON-21 RESOLVED. Three suggestions:
 
 All SEC-9, SEC-10, SEC-11 RESOLVED. Three new notes:
 - **SEC-NEW-4** [medium] [file-path-safety] — ID hash input includes absolute file path lowercased; on non-POSIX systems path separators could differ from `path.basename()` output. Recommend normalizing `\` → `/` before hashing. Not operational today (POSIX target) but worth a portability note.
-- **SEC-NEW-5** [low] — Accidental deletion of a `-validation.md` file triggers re-extraction. Because `writeHeuristic` is upsert-keyed on `id`, this updates the existing entry rather than duplicating — invariant preserved; intentional behavior.
+- **SEC-NEW-5** [low] — Accidental deletion of a `.validate.md` file triggers re-extraction. Because `writeHeuristic` is upsert-keyed on `id`, this updates the existing entry rather than duplicating — invariant preserved; intentional behavior.
 - **SEC-NEW-6** [low] — Title derivation lifts the spec heading directly. Deliberate, and headings are already public in git.
 
 ## Consistency Analyzer (r2)

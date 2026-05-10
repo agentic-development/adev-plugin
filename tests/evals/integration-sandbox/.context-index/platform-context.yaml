@@ -1,0 +1,26 @@
+# Platform Context
+
+framework: node
+version: "22"
+language: javascript
+module_system: esm
+database: postgresql
+test_runner: "node:test"
+
+infrastructure:
+  postgres:
+    provider: docker-compose
+    credentials:
+      - PGHOST
+      - PGPORT
+      - PGDATABASE
+      - PGUSER
+      - PGPASSWORD
+    setup: "npm run db:up"
+    teardown: "npm run db:down"
+    healthcheck: "pg_isready -h localhost -p 5433 -U sandbox"
+
+model_tiers:
+  fast: ""
+  capable: ""
+  reasoning: ""

@@ -1,5 +1,5 @@
 # Bundled Execution Profiles (v1)
-# See: .context-index/specs/cross-cutting/execution-profiles.md "Bundled Default Profiles".
+# See: .context-index/specs/cross-cutting/execution-profiles.spec.md "Bundled Default Profiles".
 # Projects override by creating .context-index/profiles.yaml with the same top-level
 # "profiles:" key. Same name → project wins (full replacement). New name → appended.
 

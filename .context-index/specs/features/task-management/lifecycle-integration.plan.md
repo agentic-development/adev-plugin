@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/task-management/charter.md
-> **Spec:** .context-index/specs/features/task-management/lifecycle-integration.md
+> **Spec:** .context-index/specs/features/task-management/lifecycle-integration.spec.md
 > **Review:** PASS_WITH_NOTES (2026-03-31)
 > **Platform:** none, javascript (ESM), node:test
 
@@ -20,8 +20,8 @@
 - `skills/validate/SKILL.md` — Add validation outcome recording
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/task-management/issue-epic-crud.md` — Interface contract
-- `.context-index/specs/features/task-management/backend-adapters.md` — Backend behaviors
+- `.context-index/specs/features/task-management/issue-epic-crud.spec.md` — Interface contract
+- `.context-index/specs/features/task-management/backend-adapters.spec.md` — Backend behaviors
 
 ## Context Packets
 
@@ -176,6 +176,6 @@ git commit -m "feat(task-management): add validation outcome recording to adev:v
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] Zero `TodoWrite` references in `skills/implement/SKILL.md`
-- [ ] All acceptance criteria from spec satisfied
+- Tests pass: `npm test`
+- Zero `TodoWrite` references in `skills/implement/SKILL.md`
+- All acceptance criteria from spec satisfied

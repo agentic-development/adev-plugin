@@ -1,7 +1,7 @@
 # Architecture Review: adev-research-skill (rev 3)
 
 > **Date:** 2026-04-09
-> **Spec:** `.context-index/specs/features/strategic-planning/adev-research-skill.md`
+> **Spec:** `.context-index/specs/features/strategic-planning/adev-research-skill.spec.md`
 > **Charter:** `.context-index/specs/features/strategic-planning/charter.md`
 > **Verdict:** PASS_WITH_NOTES
 > **last-reviewed-revision:** 3

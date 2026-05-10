@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/keyword-tags-and-tiered-retrieval.md
+> **Spec:** .context-index/specs/features/heuristics/keyword-tags-and-tiered-retrieval.spec.md
 > **Review:** PASS_WITH_NOTES (2026-04-23)
 > **Platform:** Node.js, JavaScript ESM, node:test
 
@@ -23,7 +23,7 @@
 
 **Reference (read, do not modify):**
 - `tests/lib/heuristics.test.mjs` — Follow existing test patterns
-- `.context-index/specs/features/heuristics/retrieval-filtering.md` — Budget cap and sort order contract
+- `.context-index/specs/features/heuristics/retrieval-filtering.spec.md` — Budget cap and sort order contract
 
 ## Context Packets
 
@@ -188,6 +188,6 @@ describe("tags validation", () => {
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied
-- [ ] Existing heuristic tests still pass (backward compatibility)
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied
+- Existing heuristic tests still pass (backward compatibility)

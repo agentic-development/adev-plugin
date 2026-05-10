@@ -2,7 +2,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/heuristics/charter.md
-> **Spec:** .context-index/specs/features/heuristics/recover-extraction.md (r3)
+> **Spec:** .context-index/specs/features/heuristics/recover-extraction.spec.md (r3)
 > **Review:** PASS_WITH_NOTES (2026-04-09, r3 targeted re-review)
 > **Platform:** JavaScript ESM, Node.js, node:test, bash skill markdown
 
@@ -20,7 +20,7 @@
 
 **Modify:**
 - `skills/recover/SKILL.md` — Insert "### Step 7: Extract Heuristic" after the existing "### Step 6: Enrich" (line 267-319) and before the "## Patterns Across Multiple Recoveries" section (line 304)
-- `.context-index/specs/features/heuristics/recover-extraction.md` — `/adev:implement` stamps a `source-manifest` block in frontmatter after implementation
+- `.context-index/specs/features/heuristics/recover-extraction.spec.md` — `/adev:implement` stamps a `source-manifest` block in frontmatter after implementation
 - `.context-index/specs/features/heuristics/charter.md` — Capability Map: "Recover Extraction" → `implemented`
 
 **Reference (read, do not modify):**
@@ -254,13 +254,13 @@
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All 16 acceptance criteria from the spec satisfied
-- [ ] `skills/recover/SKILL.md` contains a "### Step 7: Extract Heuristic" section placed after the existing Step 6 (Enrich)
-- [ ] Eval test exercises all 6 diagnosis categories
-- [ ] Integration tests cover end-to-end extraction, recurrence auto-promotion, and distillation discipline
-- [ ] No modification to the existing Step 6 Enrich section beyond adding Step 7 after it
-- [ ] No constitutional violations (skill remains markdown-primary; helper call is via inline Node per convention)
+- Tests pass: `npm test`
+- All 16 acceptance criteria from the spec satisfied
+- `skills/recover/SKILL.md` contains a "### Step 7: Extract Heuristic" section placed after the existing Step 6 (Enrich)
+- Eval test exercises all 6 diagnosis categories
+- Integration tests cover end-to-end extraction, recurrence auto-promotion, and distillation discipline
+- No modification to the existing Step 6 Enrich section beyond adding Step 7 after it
+- No constitutional violations (skill remains markdown-primary; helper call is via inline Node per convention)
 
 ## Notes
 

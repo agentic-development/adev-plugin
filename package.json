@@ -1,6 +1,6 @@
 {
   "name": "@adev-org/adev-cli",
-  "version": "0.23.1",
+  "version": "0.24.0",
   "description": "CLI for the Agentic Development Framework — installs adev into Claude Code, OpenCode, and other AI coding assistants. Scaffolds .context-index/ with constitution, manifests, and templates.",
   "type": "module",
   "bin": {
@@ -47,10 +47,10 @@
   "homepage": "https://github.com/agentic-development/adev-plugin#readme",
   "dependencies": {
     "tree-sitter-typescript": "^0.23.2",
-    "tree-sitter-wasms": "^0.1.13",
     "web-tree-sitter": "^0.26.7"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "1.64.0",
     "typescript": "^5.9.3"
   }
 }

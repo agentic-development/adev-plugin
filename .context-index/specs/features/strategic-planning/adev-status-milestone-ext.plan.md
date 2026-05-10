@@ -1,7 +1,7 @@
 # Plan: adev:status Milestone Extension
 
 ## Spec Reference
-- Spec: `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.md`
+- Spec: `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.spec.md`
 - Charter: `.context-index/specs/features/strategic-planning/charter.md`
 - Review: PASS
 
@@ -73,7 +73,7 @@ Extend the existing `skills/status/SKILL.md` to add milestone progress views. Th
 - `skills/status/SKILL.md` — Add milestone argument, milestone progress in --all, and single-milestone view
 
 **Reference (read, do not modify):**
-- `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.md` — Behavioral contract
+- `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.spec.md` — Behavioral contract
 - `.context-index/specs/features/strategic-planning/adev:status-milestone-ext.review.md` — Review (clean PASS)
 - `lib/issues/registry.mjs` — Issue model API reference for querying epics
 - `tests/skills/assess.test.mjs` — Test pattern reference for SKILL.md tests
@@ -102,11 +102,11 @@ Extend the existing `skills/status/SKILL.md` to add milestone progress views. Th
 
 ## Quality Gates
 
-- [ ] Tests pass: `npm test`
-- [ ] All acceptance criteria from spec satisfied:
-  - [ ] `--all` mode shows Milestone Progress section when milestones exist
-  - [ ] `--all` mode is unchanged when no milestones exist
-  - [ ] `--milestone <name>` shows detailed single-milestone view
-  - [ ] Missing milestone shows available milestones
-  - [ ] Gracefully handles unconfigured tasks.backend
-  - [ ] No constitutional violations introduced
+- Tests pass: `npm test`
+- All acceptance criteria from spec satisfied:
+  - `--all` mode shows Milestone Progress section when milestones exist
+  - `--all` mode is unchanged when no milestones exist
+  - `--milestone <name>` shows detailed single-milestone view
+  - Missing milestone shows available milestones
+  - Gracefully handles unconfigured tasks.backend
+  - No constitutional violations introduced

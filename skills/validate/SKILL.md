@@ -12,6 +12,7 @@ Run post-implementation validation against specs, constitution, charters, ADRs, 
 - `--spec <path>`: validate against a specific Live Spec (required)
 - `--plan <path>`: cross-reference the implementation plan (optional, improves traceability)
 - `--fix`: attempt to auto-fix minor issues (lint errors, formatting) before reporting
+- `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
 
 ## Prerequisites
 
@@ -39,6 +40,36 @@ Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mj
 **Sibling repo content is read-only reference.** Cross-repo spec content is used strictly as read-only reference material. The validate skill must never write to, modify, or suggest modifications to files in sibling repos.
 
 **Repo-mode-inside-workspace advisory:** When `detectWorkspace(cwd)` returns non-null but the spec has no cross-repo `depends-on` references, emit an advisory to stdout (once per invocation): `"Advisory: running repo-scoped inside workspace — cross-repo validation skipped (no cross-repo depends-on references)."` This is informational only and does not affect validation behaviour.
+
+## Preflight: Infrastructure Verification
+
+After verifying prerequisites, check whether the spec declares `infra_requirements`. If so, run the infrastructure preflight before proceeding to validation checks.
+
+**`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
+
+**Invocation:** Run inline Node.js:
+
+```bash
+node --input-type=module -e "
+import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
+const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
+console.log(JSON.stringify(report));
+"
+```
+
+Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (or `null` if not provided).
+
+If `report.passed === false`, display the formatted report and block:
+
+```
+Execution blocked. Options:
+  1. Fix the issues above and retry
+  2. Re-run with --no-infra to bypass (user decision only)
+```
+
+If `report.passed === true` and `report.skipped === true`, emit: "Infrastructure preflight skipped (--no-infra)."
+
+If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure preflight library could not be loaded: <error>. Fix the library before proceeding."
 
 ## Step 0: Load Check Registry
 
@@ -135,26 +166,56 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 
 If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:implement`), verify it:
 
-1. Call `verifyManifest(specPath)` from `lib/source-manifest.mjs`.
-2. For each file in the manifest, compare the recorded SHA against the current `git hash-object` output.
-3. Report results:
-   - **Match:** All source files are unchanged since implementation. Record PASS.
+1. Parse the `source-manifest` block from the spec's frontmatter. The block is an object with fields `sha`, `files`, and `computedAt`.
+2. Call `verifyManifest(manifest, projectRoot)` from `lib/source-manifest.mjs`, passing the parsed manifest object and the project root path (NOT the spec file path). The function returns `{ matches: bool, currentSha: string|null, missingFiles?: string[] }`. SHA comparison uses SHA-256 of file contents.
+3. **Implementation existence check:** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed."
+4. Report results:
+   - **Match:** All source files are unchanged since implementation AND all files are git-tracked. Record PASS.
    - **Drift:** One or more files have been modified since the manifest was stamped. List each drifted file with its expected and actual SHA. Record WARN (does not cause overall FAIL, but signals that source may have diverged from the spec contract).
-   - **Missing files:** Source files in the manifest that no longer exist. Record FAIL.
+   - **Missing files:** Source files in the manifest that no longer exist on disk. Record FAIL.
+   - **Untracked files:** Source files exist but were never committed. Record FAIL (implementation incomplete).
 
 If the spec has no `source-manifest` block, skip this check with a note: "No source manifest found. Run /adev:implement to stamp one."
 
 This check runs after quality gates (Check 1) regardless of their result, since it is a metadata check, not a code quality check.
 
+### Check 1.6: Code-Side Drift Warning
+
+Check for code-side drift via the `drift_detected` frontmatter flag. This check is **non-blocking** -- validation continues regardless of result.
+
+Run inline Node.js:
+```javascript
+const { hasDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
+try {
+  const drifted = await hasDrift(specPath);
+  if (drifted) {
+    // Read drift_source and drift_at from frontmatter
+    // Emit: "WARN: drift_detected flag set. Source file <drift_source>
+    // was modified at <drift_at>. Verify that spec still reflects
+    // implementation behavior."
+  }
+} catch {
+  // Emit: "WARN: drift check skipped — frontmatter unreadable"
+  // Record CODE_DRIFT_READ_ERROR
+}
+```
+
+Also run `verifyManifest()` as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
+
+This check is **non-blocking** — validation continues regardless. Record WARN if drift is detected, PASS otherwise.
+
 ### Check 2: Spec Compliance
 
 Load the Live Spec and walk through every acceptance criterion.
 
+**Before citing any file:line reference, you MUST use the Read tool to read the actual file content.** Do not infer, assume, or fabricate file contents from the spec or plan. Every PASS/FAIL/PARTIAL verdict must cite at least one file that was explicitly read in this validation run. If a criterion cannot be verified because no relevant files were found with Glob/Grep, record PARTIAL with the note "Unable to locate implementation files — criterion unverified."
+
 For each criterion:
-1. Identify which files and tests address it.
-2. Read the relevant code. Verify the behavior matches the criterion.
-3. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
-4. Verify test integrity: assertions must be strict and match the spec exactly.
+1. Use Glob and Grep to identify which files and tests address it.
+2. **Read the actual file content** using the Read tool. You MUST read the file before making any claims about its contents. Do NOT infer code structure, line numbers, or behavior from the spec alone — verify against the actual source. If you cite `file:line`, that line number must come from reading the file, not from guessing.
+3. Verify the behavior matches the criterion based on what you read.
+4. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
+5. Verify test integrity: assertions must be strict and match the spec exactly.
    Flag any of these anti-patterns:
    - Loose matchers where exact values are expected (regex where string would do,
      `toContain` where `toEqual` is appropriate)
@@ -169,10 +230,14 @@ For each criterion:
      or ADRs were consulted (look for comments or commit messages referencing
      the context that justified the change)
 
+**Do NOT use plan file checkboxes (`[x]`) as evidence of completion.** A `[x]` checkbox in a `.plan.md` file means the implementer marked the step done — it does not prove the code was written correctly or at all. Check 2 must be grounded in reading actual source files and tests, not plan metadata.
+
 Record per criterion:
-- PASS: code and tests satisfy the criterion.
+- PASS: code and tests satisfy the criterion (cite file:line from actual file reads).
 - FAIL: code does not satisfy the criterion (with file:line references and explanation).
 - PARTIAL: code partially satisfies (describe what is missing).
+
+**Anti-fabrication rule:** Every file:line citation in the report MUST come from a Read tool call in this session. If you cannot read a file (it does not exist, is too large, etc.), say so explicitly rather than guessing its contents. A validation report with fabricated citations is worse than no report at all.
 
 **Cross-repo interface verification (workspace-aware validation mode only):** When workspace-aware validation mode is active and `crossRepoDeps` is non-empty, Check 2 gains an additional sub-step: for each acceptance criterion that references behaviour defined in a cross-repo dependency spec, verify that the implementation respects the interface contracts (API signatures, data shapes, event payloads) described in the dependency spec. Record findings per criterion as PASS / FAIL / PARTIAL with references to both the local code and the cross-repo dependency spec.
 
@@ -339,8 +404,11 @@ Find all issues with `plan-ref` matching the current spec's plan file.
 
 For each issue:
 1. Read the issue status.
-2. If the issue is still `open` or `in-progress` but all its plan tasks are implemented and tests pass → flag as WARN: "Issue `<id>` (`<title>`) is still `<status>` but implementation is complete."
-3. **`--fix` behavior:** Update the issue status to `closed` with note `"Auto-closed by validation: implementation complete and tests pass."`
+2. **Verify against codebase** (do NOT trust status fields alone): Run `verifyIssueCompleted(issue, { projectRoot })` from `lib/reality-check.mjs` via inline Node.js. This checks plan task checkboxes, file existence, and git-committed state.
+3. If the issue is still `open` or `in-progress` but `verifyIssueCompleted` returns `{ completed: true, confidence: "high" }` → flag as WARN: "Issue `<id>` (`<title>`) is still `<status>` but implementation verified (high confidence)."
+4. If `verifyIssueCompleted` returns `{ completed: true, confidence: "medium" }` → flag as INFO (not WARN): "Issue `<id>` appears complete but confidence is medium — manual check recommended."
+5. If `verifyIssueCompleted` returns `{ completed: false }` → the issue status is correct (still open). Record PASS.
+6. **`--fix` behavior:** Only auto-close issues with HIGH confidence. Update status to `closed` with confidence note from `formatConfidenceNote()`. MEDIUM confidence issues get a note added but remain open.
 
 #### 12b. Epic Completion
 
@@ -374,6 +442,14 @@ If no charter is referenced in the spec's frontmatter, SKIP with note: "No chart
 #### 12e. Plan Checkbox Completion
 
 If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
+
+**Optimization:** Use `getPlanProgress` from `<ADEV_ROOT>/lib/meta-tools.mjs` to get plan completion in a single call:
+
+```bash
+node -e "import {getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(JSON.stringify(await getPlanProgress('<plan-path>')))"
+```
+
+If the meta-tool call fails, fall back to the manual scan below.
 
 1. Read the plan file and find all task sections (`### Task N:`).
 2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
@@ -411,7 +487,7 @@ This rule is used consistently in (a) First-Run Detection, (b) id generation, an
 
 #### First-Run Detection Rule
 
-A validation is "first run" if and only if no file matching `<spec-slug>-validation.md` exists in the same directory as the target spec. Explicit deletion followed by re-validation IS treated as a first run (intentional: deletion signals the user wants to re-extract).
+A validation is "first run" if and only if no file matching `<spec-slug>.validate.md` exists in the same directory as the target spec. Explicit deletion followed by re-validation IS treated as a first run (intentional: deletion signals the user wants to re-extract).
 
 #### Scope Derivation Rule
 
@@ -495,7 +571,7 @@ try {
       pattern: 'First-run PASS for Foo Spec: implementation matched all acceptance criteria without revision',
       antiPattern: '',
       confidence: 'medium',
-      evidence: [{ path: '.context-index/specs/features/hooks/foo-spec-validation.md', date: '2026-04-09', source: 'validation' }],
+      evidence: [{ path: '.context-index/specs/features/hooks/foo-spec.validate.md', date: '2026-04-09', source: 'validation' }],
     });
     console.log(\`Check 13: Success Heuristic Extracted — \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
   } catch (err) {
@@ -511,7 +587,7 @@ try {
 
 Explicit list of SKIP reasons:
 
-- `"not first-run PASS"` — prior `<spec-slug>-validation.md` exists.
+- `"not first-run PASS"` — prior `<spec-slug>.validate.md` exists.
 - `"non-PASS result"` — any of checks 1-12 FAILed.
 - `"helper unavailable"` — `lib/heuristics.mjs` import failed.
 - `"no charter scope"` — target spec has no `charter:` frontmatter field.
@@ -529,7 +605,7 @@ On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — 
 
 **Persona adaptation:** The validation report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
 
-Write the validation report to `.context-index/specs/features/<module>/<spec-slug>-validation.md`.
+Write the validation report to `.context-index/specs/features/<module>/<spec-slug>.validate.md`.
 
 ```markdown
 # Validation Report: [Spec Title]
@@ -640,13 +716,24 @@ If PASS:
 
 2. **Update charter Capability Map:** Read the parent charter and update the Capability Map. For each capability covered by this spec, set its `Status` column to `validated`.
 
-3. **Record validation outcome on issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
+3. **Record validation outcome on issue board with confidence:** Read `tasks.backend` from `manifest.yaml`. If configured:
    - Find all issues with `plan-ref` matching the validated spec's plan file.
-   - For each issue, add a note with the validation result:
-     - PASS: `update(id, { notes: "Validated: PASS (YYYY-MM-DD) — <validation-report-path>" })`
+   - For each issue, run reality-check verification via inline Node.js:
+     ```bash
+     node --input-type=module -e "
+     import { verifyIssueCompleted, formatConfidenceNote } from '<ADEV_ROOT>/lib/reality-check.mjs';
+     const result = verifyIssueCompleted(issue, { projectRoot });
+     const note = formatConfidenceNote('Validated', result.confidence, { reportPath, filesVerified, testsPass });
+     console.log(JSON.stringify({ ...result, note }));
+     "
+     ```
+   - Update each issue with the confidence-annotated note:
+     - PASS + HIGH confidence: `update(id, { status: "closed", notes: "<confidence note>" })`
+     - PASS + MEDIUM confidence: `update(id, { notes: "<confidence note>. Manual verification recommended." })`
      - FAIL: `update(id, { notes: "Validated: FAIL (YYYY-MM-DD) — <validation-report-path>" })`
-   - Do not change issue status based on validation outcome.
+   - Only close issues automatically when confidence is HIGH (files committed, tests pass, spec criteria met). MEDIUM confidence adds a note but does not close.
    If `tasks.backend` is not configured, skip.
+   If `lib/reality-check.mjs` fails to import, fall back to the previous behavior (add note without confidence scoring).
 
 4. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 
