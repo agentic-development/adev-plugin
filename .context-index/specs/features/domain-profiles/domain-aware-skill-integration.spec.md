@@ -77,7 +77,7 @@ Skills call these merge functions directly. The merge functions are unit-testabl
 
 **Domain-Aware Quality Gates (validate)**
 
-10. **When** `/adev:validate` loads gate commands **then** it calls `loadGateConfig()` from `lib/domains/merge-gates.mjs` which:
+10. **When** `/adev:validate` loads gate commands **then** it calls `loadDomainGateHookConfig()` from `lib/domains/merge-gates.mjs` which:
     a. Loads domain gates via `loadOverlay(domain, "gates", ...)`
     b. Loads governance gates from `.context-index/governance/gates.yaml` (if exists)
     c. Merges by `id`: governance gates with matching IDs override domain gates; governance gates with new IDs are appended

@@ -220,7 +220,7 @@ When multiple layers provide the same overlay type, they merge in this order (la
 - [ ] `OVERLAY_PARSE_ERROR` messages include only project-relative file path and line number (when available), not raw parser output
 - [ ] Error messages use project-relative file paths, not absolute paths
 - [ ] Custom domain directories are discovered without code changes
-- [ ] Config merge order is: domain profile -> project-local domain override -> governance overlay
+- [ ] Config merge order is: domain profile (resolved via extends chain) -> governance overlay
 - [ ] Each `loadOverlay()` call adds at most 2 file reads (project-local then bundled, short-circuiting on first hit)
 - [ ] Projects without any `domain` field resolve to `"software"` and get the bundled software profile defaults
 - [ ] `docs/configuration.md` is updated with domain profiles documentation: resolution precedence, `extends` model, customization workflow, reset instructions, overlay type reference
