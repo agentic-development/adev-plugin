@@ -8,7 +8,7 @@
 charter: eval-projects
 status: validated
 risk_level: low
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 1
 created: 2026-05-06
@@ -23,6 +23,30 @@ infra_requirements:
       probe: "docker compose ps --format json"
       notes: "Docker Compose spins up Postgres. No external DB required."
   ci_tag: "integration"
+source-manifest:
+  sha: "af2d8a6"
+  files:
+    - tests/evals/adev-api-eval/.gitignore
+    - tests/evals/adev-api-eval/LICENSE
+    - tests/evals/adev-api-eval/README.md
+    - tests/evals/adev-api-eval/docker-compose.yml
+    - tests/evals/adev-api-eval/migrations/001_create_tables.sql
+    - tests/evals/adev-api-eval/migrations/002_seed_data.sql
+    - tests/evals/adev-api-eval/package.json
+    - tests/evals/adev-api-eval/src/db.ts
+    - tests/evals/adev-api-eval/src/index.ts
+    - tests/evals/adev-api-eval/src/middleware/error-handler.ts
+    - tests/evals/adev-api-eval/src/migrate.ts
+    - tests/evals/adev-api-eval/src/routes/authors.ts
+    - tests/evals/adev-api-eval/src/routes/books.ts
+    - tests/evals/adev-api-eval/src/routes/reviews.ts
+    - tests/evals/adev-api-eval/tests/authors.test.ts
+    - tests/evals/adev-api-eval/tests/books.test.ts
+    - tests/evals/adev-api-eval/tests/reviews.test.ts
+    - tests/evals/adev-api-eval/tsconfig.json
+    - tests/evals/web-api/rubrics/.gitkeep
+    - tests/evals/web-api/scenarios/.gitkeep
+  computed-at: "2026-05-11T16:09:58.783Z"
 ---
 
 ## Behavioral Contract

@@ -4,13 +4,13 @@
 charter: extensions
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 2
 charter-revision: 2
 created: 2026-05-10
 updated: 2026-05-11
 source-manifest:
-  sha: "8853934"
+  sha: "c55a93d"
   files:
     - lib/extensions/install.mjs
     - lib/extensions/manifest-schema.mjs
@@ -19,7 +19,8 @@ source-manifest:
     - tests/lib/extensions/install.test.mjs
     - tests/lib/extensions/manifest-schema.test.mjs
     - tests/lib/extensions/resolve-source.test.mjs
-  computed-at: "2026-05-11T14:52:30.696Z"
+    - tests/lib/extensions/version-check.test.mjs
+  computed-at: "2026-05-11T16:09:28.535Z"
 ---
 
 ## Behavioral Contract

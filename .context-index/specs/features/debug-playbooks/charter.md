@@ -67,7 +67,7 @@ Complex projects accumulate domain-specific debugging knowledge that doesn't fit
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Playbook file format and template | Structured markdown format for failure modes, triggers, steps, and escalation. Template at `templates/debug-playbook-template.md` | must-have | 1 | validated |
 | Debug Phase 2 loading | `/adev:debug` loads module playbook + cross-cutting playbook in Phase 2, presents relevant failure modes to guide investigation | must-have | 1 | validated |
@@ -78,7 +78,7 @@ Complex projects accumulate domain-specific debugging knowledge that doesn't fit
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 
 ## Interface Contracts

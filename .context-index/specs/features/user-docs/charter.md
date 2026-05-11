@@ -73,7 +73,7 @@ User-facing documentation that serves as the complete guide to adopting and usin
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Table of Contents | Root index page organizing all docs into a linear reading path | must-have | 1 | validated |
 | Concepts Overview | Brief explanation of the four pillars and the context-first approach | must-have | 1 | validated |
@@ -95,7 +95,7 @@ User-facing documentation that serves as the complete guide to adopting and usin
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 
 ## Interface Contracts

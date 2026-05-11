@@ -8,11 +8,39 @@
 charter: domain-profiles
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 6
 charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
+source-manifest:
+  sha: "4a296cf"
+  files:
+    - docs/configuration.md
+    - docs/hooks.md
+    - lib/domains/merge-gate-config.mjs
+    - lib/domains/merge-gates.mjs
+    - lib/domains/merge-reviewers.mjs
+    - lib/domains/merge-test-config.mjs
+    - lib/domains/merge-verification.mjs
+    - lib/governance/review-config.mjs
+    - lib/governance/validate-config.mjs
+    - lib/lifecycle-gate-config.mjs
+    - lib/test-strategies/profiles.mjs
+    - skills/brainstorm/SKILL.md
+    - skills/implement/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/specify/SKILL.md
+    - skills/validate/SKILL.md
+    - skills/write-test/SKILL.md
+    - tests/lib/domains/integration.test.mjs
+    - tests/lib/domains/merge-gate-config.test.mjs
+    - tests/lib/domains/merge-gates.test.mjs
+    - tests/lib/domains/merge-reviewers.test.mjs
+    - tests/lib/domains/merge-test-config.test.mjs
+    - tests/lib/domains/merge-verification.test.mjs
+    - tests/lib/domains/refactor-constants.test.mjs
+  computed-at: "2026-05-11T16:09:28.518Z"
 ---
 
 ## Behavioral Contract

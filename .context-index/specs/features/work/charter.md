@@ -60,7 +60,7 @@ updated: 2026-04-16
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Work Classification | Classify user's description into a known work type using intent + keywords | must-have | 1 | validated |
 | Project State Scan | Glob/Grep for incomplete plans, unreviewed specs, recent sessions | must-have | 1 | validated |

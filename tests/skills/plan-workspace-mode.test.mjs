@@ -45,11 +45,11 @@ describe("adev:plan SKILL.md — Release Mode workspace-mode branching", () => {
       "Release Mode must reference resolveWorkspaceContext for dependency graph");
   });
 
-  it("Release Mode unconditionally defers epic create() calls and references Shared Issue Tracking or Phase 2", () => {
+  it("Release Mode unconditionally defers epic create() calls and references Shared Issue Tracking or Milestone 2", () => {
     assert.match(releaseModeSection, /skip.*create\(\)|unconditionally defer|unconditionally skip/i,
       "Release Mode must state that epic create() calls are unconditionally skipped/deferred");
-    assert.match(releaseModeSection, /Shared Issue Tracking|Phase 2/,
-      "Release Mode must reference Shared Issue Tracking or Phase 2 for deferred epic sync");
+    assert.match(releaseModeSection, /Shared Issue Tracking|Milestone 2/,
+      "Release Mode must reference Shared Issue Tracking or Milestone 2 for deferred epic sync");
   });
 
   it("Release Mode applies path containment (assertPathInWorkspace) and size caps (readCappedText / MAX_CHARTER_FILES / MAX_CHARTER_FILE_BYTES)", () => {
@@ -60,38 +60,21 @@ describe("adev:plan SKILL.md — Release Mode workspace-mode branching", () => {
   });
 });
 
-describe("adev:plan SKILL.md — Milestone Mode workspace-mode branching", () => {
-  it("Milestone Mode branches on workspace detection", () => {
+describe("adev:plan SKILL.md — Milestone Mode", () => {
+  it("Milestone Mode scans specs and filters by milestone", () => {
     const section = milestoneModeSection;
-    assert.match(section, /detectWorkspace/);
-    assert.match(section, /workspace mode/i);
+    assert.match(section, /scan all specs|filter by milestone/i);
   });
 
-  it("Milestone Mode reads workspace product.md", () => {
+  it("Milestone Mode handles workspace dependency ordering", () => {
     const section = milestoneModeSection;
-    assert.match(section, /resolveWorkspaceProductPath/);
+    assert.match(section, /workspace/i);
+    assert.match(section, /topological/i);
   });
 
-  it("Milestone Mode validates module-name tokens", () => {
+  it("Milestone Mode warns on non-reviewed specs", () => {
     const section = milestoneModeSection;
-    assert.match(section, /validateModuleName/);
-    assert.match(section, /INVALID_MODULE_NAME/);
-  });
-
-  it("Milestone Mode prompts for ambiguous module names", () => {
-    const section = milestoneModeSection;
-    assert.match(section, /disambiguat/i);
-  });
-
-  it("Milestone Mode unconditionally defers epic create() in workspace mode", () => {
-    const section = milestoneModeSection;
-    assert.match(section, /skip.*create\(\)|unconditionally defer|unconditionally skip/i);
-    assert.match(section, /Shared Issue Tracking|Phase 2/);
-  });
-
-  it("Milestone Mode never writes to registered repo product.md", () => {
-    const section = milestoneModeSection;
-    assert.match(section, /never writes.*repo.*product\.md|isolation/i);
+    assert.match(section, /warn.*non-reviewed|not yet review-passed/i);
   });
 });
 

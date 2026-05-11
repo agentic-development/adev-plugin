@@ -12,7 +12,7 @@ const COMPANION_DIR = join(PLUGIN_ROOT, "skills", "plan");
 /** Read SKILL.md + all companion mode files */
 function readFullSkill() {
   let content = readFileSync(SKILL_PATH, "utf8");
-  for (const f of ["feature-mode.md", "release-mode.md", "milestone-mode.md", "epic-mode.md", "phase-mode.md"]) {
+  for (const f of ["feature-mode.md", "release-mode.md", "milestone-mode.md", "epic-mode.md", "milestone-mode.md"]) {
     const p = join(COMPANION_DIR, f);
     if (existsSync(p)) content += "\n" + readFileSync(p, "utf8");
   }
@@ -26,7 +26,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
     assert.ok(existsSync(SKILL_PATH), "skills/plan/SKILL.md must exist");
     // Load SKILL.md + all companion mode files for content assertions
     content = readFileSync(SKILL_PATH, "utf8");
-    for (const f of ["feature-mode.md", "release-mode.md", "milestone-mode.md", "epic-mode.md", "phase-mode.md"]) {
+    for (const f of ["feature-mode.md", "release-mode.md", "milestone-mode.md", "epic-mode.md", "milestone-mode.md"]) {
       const p = join(COMPANION_DIR, f);
       if (existsSync(p)) content += "\n" + readFileSync(p, "utf8");
     }

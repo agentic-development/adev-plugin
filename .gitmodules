@@ -4,17 +4,17 @@
 	ignore = dirty
 [submodule "tests/evals/adev-pipeline-eval"]
 	path = tests/evals/adev-pipeline-eval
-	url = ./tests/evals/adev-pipeline-eval
+	url = https://github.com/agentic-development/adev-pipeline-eval.git
 	ignore = dirty
 [submodule "tests/evals/adev-api-eval"]
 	path = tests/evals/adev-api-eval
-	url = ./tests/evals/adev-api-eval
+	url = https://github.com/agentic-development/adev-api-eval.git
 	ignore = dirty
 [submodule "tests/evals/adev-migrations-eval"]
 	path = tests/evals/adev-migrations-eval
-	url = ./tests/evals/adev-migrations-eval
+	url = https://github.com/agentic-development/adev-migrations-eval.git
 	ignore = dirty
 [submodule "tests/evals/adev-automation-eval"]
 	path = tests/evals/adev-automation-eval
-	url = ./tests/evals/adev-automation-eval
+	url = https://github.com/agentic-development/adev-automation-eval.git
 	ignore = dirty

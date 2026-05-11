@@ -48,7 +48,7 @@ See the [Skill Reference](skill-reference.md) for full details on query options 
 
 **Skill:** `/adev:hygiene`
 
-**What it does:** Audits the health of `.context-index/` and source code across sixteen audit passes. Detects staleness, drift, coverage gaps, phase readiness, lifecycle consistency, operational patterns, code health issues, and heuristic index health. Generates actionable reports with checklists.
+**What it does:** Audits the health of `.context-index/` and source code across sixteen audit passes. Detects staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, and heuristic index health. Generates actionable reports with checklists.
 
 **When to use it:** Periodically to keep context healthy, before major work to catch drift, or when you suspect specs and code are out of sync.
 

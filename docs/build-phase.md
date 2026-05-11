@@ -104,7 +104,7 @@ This cycle is non-negotiable. The agent will not skip writing tests first, and i
 
 **Skill:** `/adev:build`
 
-**What it does:** End-to-end build orchestrator that chains review, plan, route, implement, and validate into a single pipeline. Supports resuming from failure, batch processing by milestone phase, and dry-run preview.
+**What it does:** End-to-end build orchestrator that chains review, plan, route, implement, and validate into a single pipeline. Supports resuming from failure, batch processing by milestone, and dry-run preview.
 
 **When to use it:** When you want to execute a full lifecycle pipeline without manual handoffs between steps. Useful for features where you want hands-off execution from spec to validated implementation.
 
@@ -116,7 +116,7 @@ This cycle is non-negotiable. The agent will not skip writing tests first, and i
 /adev:build --spec .context-index/specs/features/auth/login.spec.md
 ```
 
-Use `--full` to start from review, or `--phase <name>` to build all specs in a milestone.
+Use `--full` to start from review, or `--milestone <name>` to build all specs in a milestone.
 
 **Output:** A fully implemented and validated feature with all lifecycle artifacts updated.
 

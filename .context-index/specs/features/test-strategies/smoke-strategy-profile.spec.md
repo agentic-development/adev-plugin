@@ -118,7 +118,7 @@ See `.context-index/constitution.md` for the full constraint set.
 
 ## Actionable Task Map
 
-| Phase | Task |
+| Milestone | Task |
 |---|---|
 | Specify | Document the smoke target, expected preconditions, expected response shape, and timeout value in the task ticket. |
 | Plan | Confirm target is reachable in the test environment; verify preconditions can be satisfied; choose the smoke tool. |

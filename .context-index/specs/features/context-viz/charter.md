@@ -83,20 +83,20 @@ The context-viz module provides an interactive web-based visualization of the `.
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase |
+| Capability | Description | Priority | Milestone |
 |-----------|-------------|----------|-------|
-| Graph extraction | Node.js build script reads `.context-index/`, emits `graph-data.json` | must-have | v1 |
-| Interactive graph view | Force-directed + hierarchical layout with zoom/pan/click | must-have | v1 |
-| Node type filtering | Toggle visibility of node types (specs, issues, code, etc.) | must-have | v1 |
-| Detail panel | Click a node to see metadata, relationships, content preview | must-have | v1 |
-| Timeline view | Time axis showing when artifacts were created/updated | should-have | v1 |
-| Time-range filter | Slider to filter graph by date range | should-have | v1 |
-| Search | Full-text search across node titles and metadata | should-have | v1 |
-| Graph analytics | Orphan detection, dependency chain length, staleness heatmap | should-have | v2 |
-| Status overlay | Color-code nodes by lifecycle status (draft, validated, etc.) | should-have | v1 |
-| Dependency path highlighting | Click a node to highlight its full dependency chain | nice-to-have | v2 |
-| Export graph as SVG/PNG | Static export for documentation | nice-to-have | v2 |
-| Extensible type registry | Add new node/edge types via JSON config without code changes | must-have | v1 |
+| Graph extraction | Node.js build script reads `.context-index/`, emits `graph-data.json` | must-have |  |
+| Interactive graph view | Force-directed + hierarchical layout with zoom/pan/click | must-have |  |
+| Node type filtering | Toggle visibility of node types (specs, issues, code, etc.) | must-have |  |
+| Detail panel | Click a node to see metadata, relationships, content preview | must-have |  |
+| Timeline view | Time axis showing when artifacts were created/updated | should-have |  |
+| Time-range filter | Slider to filter graph by date range | should-have |  |
+| Search | Full-text search across node titles and metadata | should-have |  |
+| Graph analytics | Orphan detection, dependency chain length, staleness heatmap | should-have |  |
+| Status overlay | Color-code nodes by lifecycle status (draft, validated, etc.) | should-have |  |
+| Dependency path highlighting | Click a node to highlight its full dependency chain | nice-to-have |  |
+| Export graph as SVG/PNG | Static export for documentation | nice-to-have |  |
+| Extensible type registry | Add new node/edge types via JSON config without code changes | must-have |  |
 | Diff view | Compare graph state between two commits/timestamps | nice-to-have | v3 |
 
 ## Interface Contracts

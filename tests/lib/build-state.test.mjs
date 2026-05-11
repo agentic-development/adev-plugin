@@ -95,7 +95,7 @@ describe("createBuildState", () => {
       const state = createBuildState(tmp, "feature.spec.md");
       assert.equal(state.status, "in_progress");
       assert.equal(state.spec, "feature.spec.md");
-      assert.equal(state.phase, null);
+      assert.equal(state.milestone, null);
       assert.equal(state.steps.length, 5);
       assert.deepEqual(
         state.steps.map(s => s.name),
@@ -127,11 +127,11 @@ describe("createBuildState", () => {
     }
   });
 
-  it("sets phase when provided", () => {
+  it("sets milestone when provided", () => {
     const tmp = createTempDir();
     try {
-      const state = createBuildState(tmp, "feature.spec.md", { phase: "v1" });
-      assert.equal(state.phase, "v1");
+      const state = createBuildState(tmp, "feature.spec.md", { milestone: "v1" });
+      assert.equal(state.milestone, "v1");
     } finally {
       cleanupTempDir(tmp);
     }

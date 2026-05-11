@@ -8,7 +8,7 @@
 charter: strategic-planning
 status: superseded
 risk_level: low
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 1
 created: 2026-04-05
@@ -20,6 +20,9 @@ source-manifest:
     - skills/issues/SKILL.md
     - tests/skills/assess.test.mjs
   computed-at: "2026-04-12T11:48:02.751Z"
+drift_detected: true
+drift_source: skills/issues/SKILL.md
+drift_at: 2026-05-11T15:28:45.015Z
 ---
 
 ## Behavioral Contract
