@@ -6,7 +6,7 @@
 
 ---
 charter: domain-extensions
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 1

@@ -70,25 +70,25 @@
 
 **Depends on:** data-engineering-extension Task 1, process-automation-extension Task 1 (extension packages must exist before removing bundled copies)
 
-- [ ] **Write failing test**
+- [x] **Write failing test**
 
 Update the test for `BUNDLED_DOMAIN_NAMES` to assert it contains only `["software"]`.
 
-- [ ] **Verify test fails**
+- [x] **Verify test fails**
 
 Run: `node --test tests/lib/domains/constants.test.mjs`
 Expected: FAIL — constant still has 3 values
 
-- [ ] **Implement**
+- [x] **Implement**
 
 In `lib/domains/constants.mjs`, update `BUNDLED_DOMAIN_NAMES` to contain only `"software"`. Remove `"data-engineering"` and `"process-automation"`.
 
-- [ ] **Verify test passes**
+- [x] **Verify test passes**
 
 Run: `node --test tests/lib/domains/constants.test.mjs`
 Expected: PASS
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add lib/domains/constants.mjs tests/lib/domains/constants.test.mjs
@@ -107,27 +107,27 @@ git commit -m "refactor(domains): remove data-engineering and process-automation
 
 **Depends on:** Task 1
 
-- [ ] **Write failing test**
+- [x] **Write failing test**
 
 Add test asserting `templates/domains/` contains only the `software` subdirectory.
 
-- [ ] **Verify test fails**
+- [x] **Verify test fails**
 
 Run: `node --test tests/lib/domains/constants.test.mjs`
 Expected: FAIL — data-engineering and process-automation dirs still exist
 
-- [ ] **Implement**
+- [x] **Implement**
 
 ```bash
 rm -rf templates/domains/data-engineering templates/domains/process-automation
 ```
 
-- [ ] **Verify test passes**
+- [x] **Verify test passes**
 
 Run: `node --test tests/lib/domains/constants.test.mjs`
 Expected: PASS
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add -A templates/domains/
@@ -147,24 +147,24 @@ git commit -m "refactor(domains): remove bundled data-engineering and process-au
 
 **Depends on:** Task 1, Task 2
 
-- [ ] **Run full test suite to identify failures**
+- [x] **Run full test suite to identify failures**
 
 Run: `npm test`
 Identify all tests that fail due to referencing removed bundled domains or template paths.
 
-- [ ] **Fix each failing test**
+- [x] **Fix each failing test**
 
 For each failure:
 - Tests whose sole subject is a removed bundled path → delete the test
 - Tests covering general resolution behavior → update to use `extensions/<name>/domain/` or test with `software` only
 - Tests asserting `BUNDLED_DOMAIN_NAMES` contains 3 entries → update to expect 1
 
-- [ ] **Verify all tests pass**
+- [x] **Verify all tests pass**
 
 Run: `npm test`
 Expected: PASS (all tests)
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add tests/
