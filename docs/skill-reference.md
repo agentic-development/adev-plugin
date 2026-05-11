@@ -161,6 +161,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** A Feature Charter at `.context-index/specs/features/<module>/charter.md` defining scope, capabilities, entities, and boundaries.
 
+**Domain-aware:** Loads `charter-overlay` from the resolved domain profile to inject domain-specific charter guidance. See [Domain Profiles](configuration.md#domain-profiles).
+
 **Related Guides:** [Design Phase](design-phase.md), [Core Concepts](concepts.md)
 
 ---
@@ -191,6 +193,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** A Live Spec at `.context-index/specs/features/<module>/<slug>.spec.md` with behavioral contract, acceptance criteria, and task map.
 
+**Domain-aware:** Loads `spec-overlay` from the resolved domain profile to inject domain-specific spec guidance. See [Domain Profiles](configuration.md#domain-profiles).
+
 **Related Guides:** [Design Phase](design-phase.md)
 
 ---
@@ -214,6 +218,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 ```
 
 **Expected Output:** A review file at `<spec-path>.review.md` with PASS, PASS_WITH_NOTES, or BLOCK verdict from each specialist reviewer.
+
+**Domain-aware:** Loads `reviewers` overlay from the resolved domain profile to configure domain-specific specialist reviewers. See [Domain Profiles](configuration.md#domain-profiles).
 
 **Related Guides:** [Design Phase](design-phase.md), [Governance](governance.md)
 
@@ -321,6 +327,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** Implemented code for each task, with tests written first (TDD), spec compliance verified, and code quality reviewed. Commits created per task with Spec and Plan-task trailers.
 
+**Domain-aware:** Loads `gates`, `gate-config`, and `test-config` overlays from the resolved domain profile to configure quality gates and test strategies per domain. See [Domain Profiles](configuration.md#domain-profiles).
+
 **Related Guides:** [Build Phase](build-phase.md), [Test Strategies](test-strategies.md)
 
 ---
@@ -401,6 +409,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 ```
 
 **Expected Output:** A structured validation report with PASS/FAIL per check, specific file references for failures, and overall verdict.
+
+**Domain-aware:** Loads `verification` overlay from the resolved domain profile to configure domain-specific validation rules. See [Domain Profiles](configuration.md#domain-profiles).
 
 **Related Guides:** [Validate & Debug](validate-debug.md), [Governance](governance.md)
 

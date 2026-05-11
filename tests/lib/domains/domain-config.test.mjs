@@ -1,9 +1,9 @@
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { createTempDir, cleanupTempDir, writeFixture } from '../../../tests/helpers.mjs';
-import { loadOverlay } from '../../../lib/domains/overlay.mjs';
+import { loadDomainConfig } from '../../../lib/domains/domain-config.mjs';
 
-describe('loadOverlay — core', () => {
+describe('loadDomainConfig — core', () => {
   let tmpDir;
   let pluginRoot;
 
@@ -22,36 +22,36 @@ describe('loadOverlay — core', () => {
     cleanupTempDir(pluginRoot);
   });
 
-  it('returns null for unknown overlay type (Behavior 6)', () => {
-    const result = loadOverlay('software', 'unknown-type', tmpDir, pluginRoot);
+  it('returns null for unknown config type (Behavior 6)', () => {
+    const result = loadDomainConfig('software', 'unknown-type', tmpDir, pluginRoot);
     assert.equal(result, null);
   });
 
-  it('returns string for markdown overlay (Behavior 10)', () => {
-    const result = loadOverlay('software', 'charter-template', tmpDir, pluginRoot);
+  it('returns string for markdown template (Behavior 10)', () => {
+    const result = loadDomainConfig('software', 'charter-template', tmpDir, pluginRoot);
     assert.equal(typeof result, 'string');
     assert.ok(result.includes('# Software Charter'));
   });
 
-  it('returns parsed object for structured overlay (Behavior 11)', () => {
-    const result = loadOverlay('software', 'reviewers', tmpDir, pluginRoot);
+  it('returns parsed object for structured config (Behavior 11)', () => {
+    const result = loadDomainConfig('software', 'reviewers', tmpDir, pluginRoot);
     assert.equal(typeof result, 'object');
     assert.equal(result.merge_strategy, 'append');
   });
 
-  it('returns null when no overlay file exists at any level (Behavior 8)', () => {
-    const result = loadOverlay('software', 'verification', tmpDir, pluginRoot);
+  it('returns null when no config file exists at any level (Behavior 8)', () => {
+    const result = loadDomainConfig('software', 'verification', tmpDir, pluginRoot);
     assert.equal(result, null);
   });
 
   it('reads from bundled profile for software domain (Behavior 5)', () => {
-    const result = loadOverlay('software', 'gates', tmpDir, pluginRoot);
+    const result = loadDomainConfig('software', 'gates', tmpDir, pluginRoot);
     assert.ok(result);
     assert.ok(result.gates);
   });
 });
 
-describe('loadOverlay — extends', () => {
+describe('loadDomainConfig — extends', () => {
   let tmpDir, pluginRoot;
 
   before(() => {
@@ -74,19 +74,19 @@ describe('loadOverlay — extends', () => {
   });
 
   it('returns custom override when present (Behavior 7)', () => {
-    const result = loadOverlay('my-project', 'charter-template', tmpDir, pluginRoot);
+    const result = loadDomainConfig('my-project', 'charter-template', tmpDir, pluginRoot);
     assert.ok(result.includes('# My Custom Charter'));
   });
 
-  it('falls back to parent via extends for missing overlay (Behavior 7)', () => {
-    const result = loadOverlay('my-project', 'reviewers', tmpDir, pluginRoot);
+  it('falls back to parent via extends for missing config (Behavior 7)', () => {
+    const result = loadDomainConfig('my-project', 'reviewers', tmpDir, pluginRoot);
     assert.equal(result.merge_strategy, 'append');
   });
 
   it('throws EXTENDS_NOT_FOUND for non-existent parent', () => {
     writeFixture(tmpDir, '.context-index/domains/bad-parent/domain.yaml', 'extends: nonexistent');
     assert.throws(
-      () => loadOverlay('bad-parent', 'reviewers', tmpDir, pluginRoot),
+      () => loadDomainConfig('bad-parent', 'reviewers', tmpDir, pluginRoot),
       { code: 'EXTENDS_NOT_FOUND' }
     );
   });
@@ -95,21 +95,21 @@ describe('loadOverlay — extends', () => {
     writeFixture(tmpDir, '.context-index/domains/chain-a/domain.yaml', 'extends: software');
     writeFixture(tmpDir, '.context-index/domains/chain-b/domain.yaml', 'extends: chain-a');
     assert.throws(
-      () => loadOverlay('chain-b', 'reviewers', tmpDir, pluginRoot),
+      () => loadDomainConfig('chain-b', 'reviewers', tmpDir, pluginRoot),
       { code: 'EXTENDS_DEPTH_EXCEEDED' }
     );
   });
 
   it('works without domain.yaml (no extends fallback)', () => {
     writeFixture(tmpDir, '.context-index/domains/standalone/charter-template.md', '# Standalone');
-    const result = loadOverlay('standalone', 'charter-template', tmpDir, pluginRoot);
+    const result = loadDomainConfig('standalone', 'charter-template', tmpDir, pluginRoot);
     assert.ok(result.includes('# Standalone'));
-    const missing = loadOverlay('standalone', 'reviewers', tmpDir, pluginRoot);
+    const missing = loadDomainConfig('standalone', 'reviewers', tmpDir, pluginRoot);
     assert.equal(missing, null);
   });
 });
 
-describe('loadOverlay — bundled override guard', () => {
+describe('loadDomainConfig — bundled override guard', () => {
   let tmpDir, pluginRoot;
 
   before(() => {
@@ -127,14 +127,14 @@ describe('loadOverlay — bundled override guard', () => {
 
   it('throws BUNDLED_OVERRIDE_BLOCKED when .context-index/domains/ matches bundled name (Behavior 9)', () => {
     assert.throws(
-      () => loadOverlay('software', 'charter-template', tmpDir, pluginRoot),
+      () => loadDomainConfig('software', 'charter-template', tmpDir, pluginRoot),
       { code: 'BUNDLED_OVERRIDE_BLOCKED' }
     );
   });
 
   it('includes guidance in error message', () => {
     try {
-      loadOverlay('software', 'charter-template', tmpDir, pluginRoot);
+      loadDomainConfig('software', 'charter-template', tmpDir, pluginRoot);
       assert.fail('expected error');
     } catch (e) {
       assert.ok(e.message.includes('extends'));
@@ -143,7 +143,7 @@ describe('loadOverlay — bundled override guard', () => {
   });
 });
 
-describe('loadOverlay — error cases', () => {
+describe('loadDomainConfig — error cases', () => {
   let tmpDir, pluginRoot;
 
   before(() => {
@@ -158,39 +158,39 @@ describe('loadOverlay — error cases', () => {
     cleanupTempDir(pluginRoot);
   });
 
-  it('throws OVERLAY_PARSE_ERROR for malformed YAML with project-relative path', () => {
+  it('throws DOMAIN_CONFIG_PARSE_ERROR for malformed YAML with project-relative path', () => {
     writeFixture(tmpDir, '.context-index/domains/parse-test/domain.yaml', 'extends: software');
     writeFixture(tmpDir, '.context-index/domains/parse-test/gates.yaml', 'gates:\n  - id: test\n bad-indent: oops');
     try {
-      loadOverlay('parse-test', 'gates', tmpDir, pluginRoot);
-      assert.fail('expected OVERLAY_PARSE_ERROR');
+      loadDomainConfig('parse-test', 'gates', tmpDir, pluginRoot);
+      assert.fail('expected DOMAIN_CONFIG_PARSE_ERROR');
     } catch (e) {
-      assert.equal(e.code, 'OVERLAY_PARSE_ERROR');
+      assert.equal(e.code, 'DOMAIN_CONFIG_PARSE_ERROR');
       assert.ok(e.message.includes('.context-index/domains/parse-test/gates.yaml'),
         `error message should contain project-relative path, got: ${e.message}`);
     }
   });
 
-  it('throws OVERLAY_TOO_LARGE for files exceeding 512KB', () => {
+  it('throws DOMAIN_CONFIG_TOO_LARGE for files exceeding 512KB', () => {
     const largeContent = 'x'.repeat(512 * 1024 + 1);
     writeFixture(tmpDir, '.context-index/domains/large-test/charter-template.md', largeContent);
     try {
-      loadOverlay('large-test', 'charter-template', tmpDir, pluginRoot);
-      assert.fail('expected OVERLAY_TOO_LARGE');
+      loadDomainConfig('large-test', 'charter-template', tmpDir, pluginRoot);
+      assert.fail('expected DOMAIN_CONFIG_TOO_LARGE');
     } catch (e) {
-      assert.equal(e.code, 'OVERLAY_TOO_LARGE');
+      assert.equal(e.code, 'DOMAIN_CONFIG_TOO_LARGE');
     }
   });
 
-  it('returns empty string for empty markdown overlay', () => {
+  it('returns empty string for empty markdown template', () => {
     writeFixture(tmpDir, '.context-index/domains/empty-md/charter-template.md', '');
-    const result = loadOverlay('empty-md', 'charter-template', tmpDir, pluginRoot);
+    const result = loadDomainConfig('empty-md', 'charter-template', tmpDir, pluginRoot);
     assert.equal(result, '');
   });
 
-  it('returns empty object for empty structured overlay', () => {
+  it('returns empty object for empty structured config', () => {
     writeFixture(tmpDir, '.context-index/domains/empty-yaml/gates.yaml', '');
-    const result = loadOverlay('empty-yaml', 'gates', tmpDir, pluginRoot);
+    const result = loadDomainConfig('empty-yaml', 'gates', tmpDir, pluginRoot);
     assert.deepEqual(result, {});
   });
 
@@ -198,24 +198,24 @@ describe('loadOverlay — error cases', () => {
     // custom domain "my-override" has its own reviewers.yaml and extends software
     writeFixture(tmpDir, '.context-index/domains/my-override/domain.yaml', 'extends: software');
     writeFixture(tmpDir, '.context-index/domains/my-override/reviewers.yaml', 'merge_strategy: replace');
-    const result = loadOverlay('my-override', 'reviewers', tmpDir, pluginRoot);
+    const result = loadDomainConfig('my-override', 'reviewers', tmpDir, pluginRoot);
     assert.equal(result.merge_strategy, 'replace');
   });
 
   it('custom domain inherits from parent when local file missing', () => {
     writeFixture(tmpDir, '.context-index/domains/inherit-test/domain.yaml', 'extends: software');
     // no local charter-template.md — should fall back to software
-    const result = loadOverlay('inherit-test', 'charter-template', tmpDir, pluginRoot);
+    const result = loadDomainConfig('inherit-test', 'charter-template', tmpDir, pluginRoot);
     assert.ok(result.includes('# Software'));
   });
 
   it('returns null for a domain that is neither bundled nor custom', () => {
-    const result = loadOverlay('nonexistent-domain', 'charter-template', tmpDir, pluginRoot);
+    const result = loadDomainConfig('nonexistent-domain', 'charter-template', tmpDir, pluginRoot);
     assert.equal(result, null);
   });
 });
 
-describe('loadOverlay — deprecated type names', () => {
+describe('loadDomainConfig — deprecated type names', () => {
   let tmpDir, pluginRoot;
 
   before(() => {
@@ -230,12 +230,12 @@ describe('loadOverlay — deprecated type names', () => {
   });
 
   it('returns null for deprecated charter-overlay type name', () => {
-    const result = loadOverlay('software', 'charter-overlay', tmpDir, pluginRoot);
+    const result = loadDomainConfig('software', 'charter-overlay', tmpDir, pluginRoot);
     assert.equal(result, null);
   });
 
   it('returns null for deprecated spec-overlay type name', () => {
-    const result = loadOverlay('software', 'spec-overlay', tmpDir, pluginRoot);
+    const result = loadDomainConfig('software', 'spec-overlay', tmpDir, pluginRoot);
     assert.equal(result, null);
   });
 });

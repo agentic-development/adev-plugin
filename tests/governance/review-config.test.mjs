@@ -168,7 +168,7 @@ describe("review-config loadReviewConfig", () => {
     );
     const r = loadReviewConfig(repo);
     assert.equal(r.errors.length, 0);
-    assert.ok(hasCode(r.warnings, "BUNDLED_DEFAULT_OVERRIDE"));
+    assert.ok(hasCode(r.warnings, "REVIEWER_OVERRIDE"));
     const sec = r.reviewers.find((x) => x.id === "security-reviewer");
     assert.equal(sec.severity_cap, "warning");
   });
@@ -186,6 +186,68 @@ describe("review-config loadReviewConfig", () => {
     const spec = r.reviewers.find((x) => x.id === "my-specialist");
     assert.ok(spec);
     assert.ok(spec.dispatch?.triggered);
+  });
+
+  test("domainReviewers replaces bundled defaults as base", () => {
+    const repo = tmp();
+    writeFixture(repo, ".context-index/.keep", "");
+    // Domain overlay with a custom reviewer (e.g., data-engineering domain)
+    const domainReviewers = {
+      merge_strategy: "append",
+      reviewers: [
+        {
+          id: "data-contract-reviewer",
+          name: "Data Contract Reviewer",
+          dispatch: "always",
+          prompt: "plugin:review-specs/structural-architect-prompt.md",
+          profile: "reviewer-capable",
+        },
+      ],
+    };
+    const r = loadReviewConfig(repo, { domainReviewers });
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
+    const ids = r.reviewers.map((x) => x.id);
+    // Domain reviewer should be present
+    assert.ok(ids.includes("data-contract-reviewer"), "domain reviewer should be included");
+    // Bundled defaults should NOT be present (domain replaces bundled)
+    assert.ok(!ids.includes("structural-architect"), "bundled defaults should not be loaded when domain is provided");
+  });
+
+  test("domainReviewers + governance overlay merges correctly", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/review.yaml",
+      `reviewers:
+  - id: data-contract-reviewer
+    severity_cap: warning
+  - id: custom-project-reviewer
+    dispatch: always
+    prompt: "plugin:review-specs/structural-architect-prompt.md"
+    profile: reviewer-capable
+`
+    );
+    const domainReviewers = {
+      merge_strategy: "append",
+      reviewers: [
+        {
+          id: "data-contract-reviewer",
+          name: "Data Contract Reviewer",
+          dispatch: "always",
+          prompt: "plugin:review-specs/structural-architect-prompt.md",
+          profile: "reviewer-capable",
+          severity_cap: "blocker",
+        },
+      ],
+    };
+    const r = loadReviewConfig(repo, { domainReviewers });
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
+    const ids = r.reviewers.map((x) => x.id);
+    assert.ok(ids.includes("data-contract-reviewer"));
+    assert.ok(ids.includes("custom-project-reviewer"));
+    // Governance overrides domain on id match
+    const dcr = r.reviewers.find((x) => x.id === "data-contract-reviewer");
+    assert.equal(dcr.severity_cap, "warning", "governance should override domain severity_cap");
   });
 });
 

@@ -88,9 +88,9 @@ Domain Profiles make the Agentic Development Framework domain-agnostic by introd
 |------------|-------------|----------|-------|--------|
 | Domain Resolution Function | `resolveDomain()` — 4-level precedence chain returning a domain string | Must-have | v1 | validated |
 | Overlay File Structure | `domains/<domain>/` directory convention with 7 overlay types (charter-template, spec-template, reviewers, gates, verification, gate-config, test-config) | Must-have | v1 | validated |
-| Charter Domain Template | Complete domain-specific charter template with section names and vocabulary | Must-have | v1 | implementing |
-| Spec Domain Template | Complete domain-specific spec template with error case columns and expectations | Must-have | v1 | implementing |
-| Template Replacement | Replace overlay merging with full domain-specific templates for LLM reliability | Must-have | v1 | implementing |
+| Charter Domain Template | Complete domain-specific charter template with section names and vocabulary | Must-have | v1 | validated |
+| Spec Domain Template | Complete domain-specific spec template with error case columns and expectations | Must-have | v1 | validated |
+| Template Replacement | Replace overlay merging with full domain-specific templates for LLM reliability | Must-have | v1 | validated |
 | Domain-Aware Reviewer Dispatch | Review-specs loads domain-specific reviewer set from overlay | Must-have | v1 | validated |
 | Domain-Aware Quality Gates | Validate runs domain-specific gate commands | Should-have | v1 | validated |
 | Domain-Aware Verification | Implement loads domain-specific verification config (visual/output/flow) | Should-have | v1 | validated |
@@ -108,7 +108,7 @@ Domain Profiles make the Agentic Development Framework domain-agnostic by introd
 | Name | Type | Description |
 |------|------|-------------|
 | `resolveDomain(manifest, charterFrontmatter, moduleSlug)` | function | Returns `{ resolved_domain, source_level }`. Single entry point for all skills. Pure function operating on pre-parsed inputs. |
-| `loadOverlay(domain, overlayType, repoRoot, pluginRoot)` | function | Reads and returns parsed overlay for a given domain and type, following the `extends` chain for custom domains. `repoRoot` locates `.context-index/domains/`; `pluginRoot` locates `templates/domains/`. For template types (charter-template/spec-template): returns a complete template string. For structured overlays (reviewers/gates/verification/gate-config/test-config): returns a parsed object. Returns `null` if no overlay file exists. Deprecated type names (charter-overlay/spec-overlay) emit a warning and return `null`. |
+| `loadDomainConfig(domain, configType, repoRoot, pluginRoot)` | function | Reads and returns parsed config for a given domain and type, following the `extends` chain for custom domains. `repoRoot` locates `.context-index/domains/`; `pluginRoot` locates `templates/domains/`. For template types (charter-template/spec-template): returns a complete template string. For structured configs (reviewers/gates/verification/gate-config/test-config): returns a parsed object. Returns `null` if no config file exists. Deprecated type names (charter-overlay/spec-overlay) emit a warning and return `null`. |
 | `domains/<domain>/` | directory convention | Well-known path where domain profiles are stored. Bundled profiles live in the plugin's `templates/domains/`. Custom profiles live in `.context-index/domains/` with a `domain.yaml` containing `extends: <parent>`. |
 
 ### Consumed

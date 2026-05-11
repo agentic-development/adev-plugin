@@ -86,6 +86,22 @@ If the call fails or returns empty, proceed without heuristics — non-blocking.
 When heuristics are present, include them in the validation context so checks can reference learned patterns.
 Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
+**Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks. Run inline Node.js:
+```javascript
+const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
+const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
+const { mergeGates } = await import('<ADEV_ROOT>/lib/domains/merge-gates.mjs');
+const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
+const domainOverlay = loadDomainConfig(domain.resolved_domain, 'gates', repoRoot, pluginRoot);
+// Read governance gates
+const govGatesPath = join(repoRoot, '.context-index', 'governance', 'gates.yaml');
+const govGates = existsSync(govGatesPath) ? parseYaml(readFileSync(govGatesPath, 'utf8')) : null;
+// Merge domain + governance gates (governance wins on id conflict)
+const { gates: mergedGates, warnings: gateWarnings } = mergeGates(domainOverlay, govGates);
+// Gate commands execute via execFile (no shell interpolation)
+```
+Log any warnings from the merge process. The `mergedGates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in.
+
 Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
 
 - Reads bundled defaults from `templates/validate/defaults.yaml` (12 entries covering Check 1.5 + Checks 2–12). Check 1 is not in this registry; it continues to be sourced from `governance/gates.yaml`.
@@ -122,8 +138,8 @@ Abort on any loader error. Warnings surface in the report header.
 
 #### Gate Source Resolution
 
-1. If `governance/gates.yaml` exists → read all gates. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only). Group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c.
-2. If `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found. Quality gates are not configured. Run `/adev:init` to set up gates."
+1. Use the `mergedGates` list computed in Step 0 (domain gates merged with governance gates). If the merged list is non-empty, group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only).
+2. If the merged gate list is empty and `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found and no domain gates configured. Quality gates are not configured. Run `/adev:init` to set up gates."
 
 **Legacy gate detection:** If `manifest.yaml` contains a `gates:` section, emit a migration warning: "Legacy gates: section found in manifest.yaml. This is no longer used. Move gate definitions to governance/gates.yaml." This warning is informational and does not affect Check 1 execution.
 

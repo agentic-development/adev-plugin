@@ -25,6 +25,9 @@ source-manifest:
     - lib/heuristics.mjs
     - .context-index/specs/features/heuristics/retrieval-filtering.md
   computed-at: "2026-04-25T21:55:13.503Z"
+drift_detected: true
+drift_source: skills/implement/SKILL.md
+drift_at: 2026-05-11T00:13:30.434Z
 ---
 
 ## Behavioral Contract
