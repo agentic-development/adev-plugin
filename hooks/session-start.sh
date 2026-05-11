@@ -200,13 +200,13 @@ UPDATE_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROOT
 
     if (!projectVersion) {
       // No version stamp — pre-versioning install
-      console.log("**adev update available:** This project has no adev version stamp. Run `npx @adev-org/adev-cli upgrade` to upgrade to v" + pluginVersion + " (adds provenance tracking, commit-msg enforcement, and new hygiene passes).");
+      console.log("**adev update available:** This project has no adev version stamp. Run `npx @adev-org/adev-cli@latest upgrade` to upgrade to v" + pluginVersion + " (adds provenance tracking, commit-msg enforcement, and new hygiene passes).");
     } else if (projectVersion !== pluginVersion) {
       // Version mismatch
       const [pMaj, pMin] = projectVersion.split(".").map(Number);
       const [iMaj, iMin] = pluginVersion.split(".").map(Number);
       if (iMaj > pMaj || (iMaj === pMaj && iMin > pMin)) {
-        console.log("**adev update available:** v" + projectVersion + " installed, v" + pluginVersion + " available. Run `npx @adev-org/adev-cli upgrade` to upgrade.");
+        console.log("**adev update available:** v" + projectVersion + " installed, v" + pluginVersion + " available. Run `npx @adev-org/adev-cli@latest upgrade` to upgrade.");
       }
     }
   } catch {
