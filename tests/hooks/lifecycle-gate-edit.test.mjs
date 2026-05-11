@@ -54,7 +54,7 @@ describe("lifecycle-gate-edit hook", () => {
 
   it("exits 0 for excluded files (test files)", () => {
     const tmp = createTempDir();
-    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
+    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.file_exclusions=*.test.*,.context-index/**,README.md");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-edit.sh", {
       cwd: tmp,
@@ -66,7 +66,7 @@ describe("lifecycle-gate-edit hook", () => {
 
   it("exits 0 for excluded files (.context-index)", () => {
     const tmp = createTempDir();
-    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
+    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.file_exclusions=*.test.*,.context-index/**,README.md");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-edit.sh", {
       cwd: tmp,
@@ -116,7 +116,7 @@ describe("lifecycle-gate-edit hook", () => {
 
   it("exits 0 for excluded files (README.md)", () => {
     const tmp = createTempDir();
-    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
+    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.file_exclusions=*.test.*,.context-index/**,README.md");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-edit.sh", {
       cwd: tmp,

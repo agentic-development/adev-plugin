@@ -26,6 +26,9 @@ AI coding agents work best with structured context but most projects provide non
 | Debug Playbooks | Module-scoped and cross-cutting diagnostic procedures guiding /adev:debug with domain-specific failure modes, ordered investigation steps, and escalation criteria | [charter.md](./features/debug-playbooks/charter.md) |
 | Infrastructure Preflight | Runtime verification of external system availability before skills execute code or tests, blocking with actionable diagnostics when requirements are unmet | [charter.md](./features/infra-preflight/charter.md) |
 | Spec Drift Detection | Real-time awareness when implementation code diverges from its governing spec, shifting detection from periodic audits to the moment of change | [charter.md](./features/spec-drift-detection/charter.md) |
+| Eval Projects | Suite of four realistic project repos (pipeline, API, migration, automation) serving as eval targets and onboarding demos for the adev lifecycle | [charter.md](./features/eval-projects/charter.md) |
+| Domain Profiles | Configurable domain layer adapting charters, specs, reviewers, quality gates, and verification to different development domains via overlay files and deterministic resolution | [charter.md](./features/domain-profiles/charter.md) |
+| Deploy | Project-specific deployment definitions with structured steps, environment support, milestone integration, and failure recovery guidance | [charter.md](./features/deploy/charter.md) |
 | User-Facing Documentation | Complete user guide replacing and reorganizing docs/ into a linear progression from concepts through daily workflow to full reference | [charter.md](./features/user-docs/charter.md) |
 
 ## Cross-Cutting Concerns

@@ -121,6 +121,23 @@ If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure prefli
 
 ## Step 1b: Strategy Profile Resolution
 
+**Domain-Aware Test Config:** Before resolving the test strategy, load domain-specific test config. Run inline Node.js:
+```javascript
+const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
+const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
+const { mergeTestConfig } = await import('<ADEV_ROOT>/lib/domains/merge-test-config.mjs');
+const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
+const overlay = loadDomainConfig(domain.resolved_domain, 'test-config', repoRoot, pluginRoot);
+const { config, warnings } = mergeTestConfig(overlay);
+// config.permitted_tools — valid test frameworks for this domain
+// config.max_test_file_size — gaming detection threshold
+// config.skip_patterns — regex patterns for detecting skipped tests
+```
+Pass `config.permitted_tools` to `loadProfile()` for test framework detection.
+Use `config.max_test_file_size` for gaming detection threshold.
+Use `config.skip_patterns` for skipped test detection alongside the 4 shared cross-strategy gaming patterns.
+Log any warnings from the merge process.
+
 Before writing any tests, resolve the test strategy for this task:
 
 1. Read the task's `Strategy` field from the plan (set by `/adev:plan`'s Strategy Assignment step).

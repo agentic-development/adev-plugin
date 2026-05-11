@@ -14,6 +14,9 @@ source-manifest:
     - skills/review-specs/SKILL.md
     - tests/lib/workspace.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/review-specs/SKILL.md
+drift_at: 2026-05-11T00:13:14.413Z
 ---
 
 # Live Spec: Cross-Repo References

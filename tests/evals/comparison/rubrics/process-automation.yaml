@@ -1,0 +1,23 @@
+# Rubric: process-automation — Compare plain-claude vs adev-built implementations
+# Target: tests/evals/adev-automation-eval
+
+domain: process-automation
+project: adev-automation-eval
+bug_file: processor/handler.py
+
+dimensions:
+  - id: code_quality
+    weight: 20
+  - id: test_coverage
+    weight: 20
+  - id: bug_handling
+    weight: 15
+  - id: architectural_coherence
+    weight: 15
+  - id: cost
+    weight: 10
+  - id: commit_hygiene
+    weight: 10
+  - id: spec_compliance
+    weight: 10
+    adev_only: true

@@ -1,0 +1,12 @@
+type: visual
+trigger_patterns:
+  - "*.html"
+  - "*.jsx"
+  - "*.tsx"
+  - "*.vue"
+  - "*.svelte"
+tool: playwright
+breakpoints:
+  - 375
+  - 768
+  - 1280

@@ -28,7 +28,7 @@ describe("lifecycle-gate-bash hook", () => {
 
   it("exits 0 for passthrough commands (git status)", () => {
     const tmp = createTempDir();
-    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
+    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.bash_passthrough=git status,git log,npm test,head,tail,ls,cat,grep");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-bash.sh", {
       cwd: tmp,
@@ -40,7 +40,7 @@ describe("lifecycle-gate-bash hook", () => {
 
   it("exits 0 for passthrough commands (npm test)", () => {
     const tmp = createTempDir();
-    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
+    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.bash_passthrough=git status,git log,npm test,head,tail,ls,cat,grep");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-bash.sh", {
       cwd: tmp,
@@ -64,7 +64,7 @@ describe("lifecycle-gate-bash hook", () => {
 
   it("exits 0 for piped commands where all segments are passthrough", () => {
     const tmp = createTempDir();
-    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
+    writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.bash_passthrough=git status,git log,npm test,head,tail,ls,cat,grep");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-bash.sh", {
       cwd: tmp,

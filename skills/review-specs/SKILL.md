@@ -85,7 +85,17 @@ Do not treat missing workspace as a blocking error; proceed with the rest of the
 
 ## Step 3: Load Reviewer Registry
 
-Call `loadReviewConfig(repoRoot)` from `lib/governance/review-config.mjs`. The loader:
+**Domain-Aware Reviewer Loading:** Resolve the active domain and load domain-aware reviewers before calling `loadReviewConfig`. Run inline Node.js:
+```javascript
+const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
+const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
+const { mergeReviewers } = await import('<ADEV_ROOT>/lib/domains/merge-reviewers.mjs');
+const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
+const domainOverlay = loadDomainConfig(domain.resolved_domain, 'reviewers', repoRoot, pluginRoot);
+```
+Log any warnings from the merge process.
+
+Call `loadReviewConfig(repoRoot, { domainReviewers: domainOverlay })` from `lib/governance/review-config.mjs`. When `domainReviewers` is provided, the loader uses domain reviewers as the base instead of bundled defaults. The loader:
 
 - Reads bundled defaults from `templates/review-specs/defaults.yaml` (the three core reviewers: structural-architect, security-reviewer, consistency-analyzer).
 - Overlays `.context-index/governance/review.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
