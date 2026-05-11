@@ -8,7 +8,7 @@
 charter: adev:write-test
 status: validated
 risk_level: low
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 1
 created: 2026-03-27

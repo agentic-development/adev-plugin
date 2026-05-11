@@ -72,7 +72,7 @@ Unify governance gates and manifest tiered gates into a single gate system in `g
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
 | Unified Gate Schema | Define the `governance/gates.yaml` schema with `tier` as a first-class gate property alongside `kind`, `scope`, `required`, `severity`, `triggers`, and `command` | must-have | | validated |
 | Tiered Execution from Governance | Skills read `governance/gates.yaml`, group gates by tier, and execute in order (fast -> integration -> e2e) with fail-fast between error-severity tiers | must-have | | validated |

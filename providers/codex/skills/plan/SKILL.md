@@ -16,7 +16,7 @@ Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implem
 - `--release <name>`: plan a named release (routes to Release Mode)
 - `--milestone <name>`: create or update a milestone (routes to Milestone Mode)
 - `--epic <id>`: decompose an Epic into Features (routes to Epic Mode)
-- `--phase <name>`: plan all specs matching a phase/milestone across all modules (e.g., `--phase v1`)
+- `--milestone <name>`: plan all specs matching a milestone across all modules (e.g., `--milestone v1`)
 - `--dry-run`: show the plan structure without writing it
 
 Passing more than one of `--spec`, `--feature`, `--release`, `--milestone`, `--epic` in a single invocation throws **CONFLICTING_FLAGS** and the skill exits without action.
@@ -79,9 +79,9 @@ workspace-level planning, cd to <workspace-root> and re-run.)
 
 The advisory does not block; it does not appear when `detectWorkspace` returns `null`.
 
-## Phase Planning Mode (`--phase`)
+## Milestone Planning Mode (`--milestone`)
 
-> **Conditional loading:** Read `skills/plan/phase-mode.md` for the full Phase Planning Mode instructions.
+> **Conditional loading:** Read `skills/plan/milestone-mode.md` for the full Milestone Planning Mode instructions.
 
 ---
 

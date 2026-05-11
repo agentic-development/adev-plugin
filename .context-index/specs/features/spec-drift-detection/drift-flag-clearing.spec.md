@@ -4,7 +4,7 @@
 charter: spec-drift-detection
 status: validated
 risk_level: low
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 2
 created: 2026-05-02

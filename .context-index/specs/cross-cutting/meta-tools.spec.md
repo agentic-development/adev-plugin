@@ -81,7 +81,7 @@ source-manifest:
 | implementation (implement) | High | Use `loadSpecContext` when assembling context packets for per-task subagents |
 | validation (validate) | Medium | Use `getPlanProgress` for plan checkbox completion checks |
 | maintenance (hygiene, status) | Medium | Use `findSpecsByStatus` for spec audits and status dashboards |
-| strategic-planning (build) | Medium | Use `findSpecsByStatus` for phase discovery (`--phase` mode) |
+| strategic-planning (build) | Medium | Use `findSpecsByStatus` for milestone discovery (`--milestone` mode) |
 
 ## Integration Points
 

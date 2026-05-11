@@ -91,7 +91,7 @@ The task-management module provides persistent, cross-skill issue tracking for t
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Issue CRUD | Create, read, update, close work items via `lib/issues/` module | must-have | 1 | validated |
 | Epic CRUD | (Legacy) Create, read, update, close epics; group issues under epics. **Subsumed by Unified create() API in Phase 3** — kept as a separate row for traceability of the original Phase 1 contract. | must-have | 1 | validated |
@@ -120,7 +120,7 @@ The task-management module provides persistent, cross-skill issue tracking for t
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 | Status Integration | `/adev:status` reads issue board for progress dashboard | Phase 2 | — |
 | Recover Integration | `/adev:recover` reads/resets stuck work items | Phase 2 | — |

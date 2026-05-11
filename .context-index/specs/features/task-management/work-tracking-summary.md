@@ -141,7 +141,7 @@ Add a `## Deferred Capabilities` table to the charter template (like the Capabil
 ```markdown
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 | Orientation migration | Low priority, manual workaround exists | Phase 2 | — |
 | Incremental updates | Requires diff engine | Phase 3 | Phase 2 migration |

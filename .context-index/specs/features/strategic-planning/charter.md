@@ -74,16 +74,16 @@ Notes:
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
-| `/adev:research` skill | Persistent structured research using web, GitHub, and internal codebase sources | must-have | v1 | validated |
-| `/adev:status` aggregation | Read-only progress dashboard reading product.md, charters, specs, issue board; supports milestone view | must-have | v1 | — |
-| `/adev:work` intake mode | `--intake` for batch-processing incoming requests into categorized, prioritized issues (renamed from `/adev:start intake mode` per start charter rev 2) | should-have | v1 | — |
-| `/adev:build` orchestrator | Two pipeline modes: Full (`--full`: specify → review → plan → route → implement → validate) and Implement (default: plan → route → implement → validate). Route runs by default. Resume support and phase batching. | must-have | v2 | implemented |
+| `/adev:research` skill | Persistent structured research using web, GitHub, and internal codebase sources | must-have |  | validated |
+| `/adev:status` aggregation | Read-only progress dashboard reading product.md, charters, specs, issue board; supports milestone view | must-have |  | — |
+| `/adev:work` intake mode | `--intake` for batch-processing incoming requests into categorized, prioritized issues (renamed from `/adev:start intake mode` per start charter rev 2) | should-have |  | — |
+| `/adev:build` orchestrator | Two pipeline modes: Full (`--full`: specify → review → plan → route → implement → validate) and Implement (default: plan → route → implement → validate). Route runs by default. Resume support and phase batching. | must-have |  | implemented |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 | Multi-team coordination | Future charter scope | — | — |
 
