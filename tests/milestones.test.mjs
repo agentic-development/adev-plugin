@@ -535,7 +535,7 @@ describe("milestoneShip", () => {
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("ships milestone: updates status, closes epic, creates tag", async () => {
-    saveMilestones(dir, [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const closedEpics = [];
     const mockManager = {
       listEpics: async () => [{ id: "epic-1" }],
@@ -558,7 +558,7 @@ describe("milestoneShip", () => {
   });
 
   it("adds v prefix for semver names without it", async () => {
-    saveMilestones(dir, [{ name: "2.0.0", status: "planned", epic_id: "epic-10", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "2.0.0", status: "planned", epic_id: "epic-10", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-10" }],
       list: async () => [],
@@ -576,7 +576,7 @@ describe("milestoneShip", () => {
   });
 
   it("skips tagging for non-semver names", async () => {
-    saveMilestones(dir, [{ name: "beta-1", status: "planned", epic_id: "epic-11", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "beta-1", status: "planned", epic_id: "epic-11", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-11" }],
       list: async () => [],
@@ -617,7 +617,7 @@ describe("milestoneShip", () => {
   });
 
   it("blocks when tag exists", async () => {
-    saveMilestones(dir, [{ name: "v3.0.0", status: "planned", epic_id: "epic-4", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v3.0.0", status: "planned", epic_id: "epic-4", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-4" }],
       list: async () => [],
@@ -638,7 +638,7 @@ describe("milestoneShip", () => {
   });
 
   it("handles epic close failure gracefully", async () => {
-    saveMilestones(dir, [{ name: "v4.0.0", status: "planned", epic_id: "epic-5", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v4.0.0", status: "planned", epic_id: "epic-5", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-5" }],
       list: async () => [],
@@ -667,6 +667,68 @@ describe("milestoneShip", () => {
     });
     assert.equal(result.shipped, false);
     assert.equal(result.confirmRejected, "CHANGELOG updated");
+  });
+});
+
+// --- milestoneShip strategy: manual ---
+
+describe("milestoneShip strategy: manual", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-manual-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("ships with manual strategy (no git ops)", async () => {
+    saveMilestones(dir, [{
+      name: "v1.0.0", status: "planned", epic_id: "epic-1",
+      target_date: null, release: { strategy: "manual" }, ship_criteria: [],
+    }]);
+    const closedEpics = [];
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [],
+      close: async (id, reason) => { closedEpics.push({ id, reason }); },
+    };
+    const result = await milestoneShip(dir, "v1.0.0", {
+      issueManager: mockManager,
+      manifest: {},
+      execGit: () => { throw new Error("should not be called for manual"); },
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "manual");
+    assert.equal(closedEpics[0].id, "epic-1");
+    assert.equal(findMilestone(dir, "v1.0.0").status, "shipped");
+  });
+
+  it("defaults to manual when release is null", async () => {
+    saveMilestones(dir, [{
+      name: "v2.0.0", status: "planned", epic_id: "epic-2",
+      target_date: null, release: null, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-2" }],
+      list: async () => [],
+      close: async () => {},
+    };
+    const result = await milestoneShip(dir, "v2.0.0", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "manual");
+  });
+
+  it("throws UNKNOWN_STRATEGY for bad strategy", async () => {
+    saveMilestones(dir, [{
+      name: "v3.0.0", status: "planned", epic_id: "epic-3",
+      target_date: null, release: { strategy: "bad" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-3" }],
+      list: async () => [],
+    };
+    await assert.rejects(
+      () => milestoneShip(dir, "v3.0.0", { issueManager: mockManager, manifest: {} }),
+      { code: "UNKNOWN_STRATEGY" }
+    );
   });
 });
 
