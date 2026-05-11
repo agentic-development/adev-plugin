@@ -2,7 +2,7 @@
 
 ---
 charter: extensions
-status: implemented
+status: validated
 risk_level: low
 milestone: v1
 revision: 2
@@ -27,7 +27,7 @@ updated: 2026-05-11
 
 3. **When** a skill or hook entry with the same `name`/`event` already exists in hooks.json (from a previous install of the same extension) **then** the existing entry is updated in place rather than duplicated (idempotent registration).
 
-4. **When** the provider's hooks.json file does not exist **then** `installExtension()` creates it with the correct base structure (`{ "hooks": [], "skills": [] }`) before adding entries.
+4. **When** the provider's hooks.json file does not exist **then** `installExtension()` creates it with the correct base structure (`{ "hooks": {}, "skills": [] }`) before adding entries. The `hooks` field is an object keyed by event name (matching the Claude Code hooks.json format), not an array.
 
 5. **When** multiple providers are active **then** `installExtension()` registers skills and hooks in all detected provider hooks.json files so the extension works regardless of which provider the user invokes.
 
