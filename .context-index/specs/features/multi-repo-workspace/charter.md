@@ -26,13 +26,13 @@ The adev plugin assumes a single git repository per project. Teams working acros
 
 ### Out of Scope
 
-- Cross-repo implementation orchestration — agent does not auto-switch repos during `/adev:implement` (Phase 3). Build sequencing across repos is supported via `/adev:build --phase`.
+- Cross-repo implementation orchestration — agent does not auto-switch repos during `/adev:implement` (deferred). Build sequencing across repos is supported via `/adev:build --milestone`.
 - Workspace-level constitution — repos keep their own constitutions, no workspace override
 - Workspace-level CLAUDE.md or agent files — no sync across repos
-- Shared issue tracking / beads DB across repos (Phase 3)
+- Shared issue tracking / beads DB across repos (deferred)
 - Git submodule/subtree management — users own their git topology
 - Build system features (task caching, affected analysis)
-- Full cross-repo interface compatibility validation (Phase 3). Cross-repo `depends-on` reference resolution is supported in Phase 2.
+- Full cross-repo interface compatibility validation (deferred). Cross-repo `depends-on` reference resolution is supported in Phase 2.
 
 ### Dependencies
 
@@ -42,8 +42,8 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | cli | modifies | CLI detects workspace mode during project state resolution |
 | design | modifies | `/adev:brainstorm` gains workspace context for cross-repo charters and for workspace-root `product.md` bootstrap (synthesises from per-repo constitutions); `/adev:specify` gains workspace context for cross-repo specs |
 | assessment | modifies | `/adev:review-specs` validates cross-repo `depends-on` references; `/adev:validate` resolves cross-repo `depends-on` references |
-| planning | modifies | `/adev:plan` reads workspace dependency graph for ordering (via `--phase`); `/adev:plan --release` / `--milestone` invoked at the workspace root read workspace charters and write milestones to workspace `product.md` |
-| execution | modifies | `/adev:implement` loads cross-repo context in workspace mode; `/adev:build --phase` sequences across repos using dependency graph |
+| planning | modifies | `/adev:plan` reads workspace dependency graph for ordering (via `--milestone`); `/adev:plan --release` / `--milestone` invoked at the workspace root read workspace charters and write milestones to workspace `product.md` |
+| execution | modifies | `/adev:implement` loads cross-repo context in workspace mode; `/adev:build --milestone` sequences across repos using dependency graph |
 | strategic-planning | modifies | `/adev:status` aggregates across repos in workspace mode |
 | hooks | modifies | `merge-guard`, `constitution-linter`, `sync-trigger`, `context-preflight`, `session-start` detect workspace mode |
 
@@ -77,7 +77,7 @@ The adev plugin assumes a single git repository per project. Teams working acros
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
 | Workspace Detection | Walk up from `cwd` to find `adev-workspace.yaml`. Return workspace root path, parsed config, and current repo slug. No-op when absent. | must-have | 1 | validated |
 | Workspace Schema | Define and validate `adev-workspace.yaml` structure: repo registry, dependencies, workspace metadata | must-have | 1 | validated |
@@ -85,7 +85,7 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | Context Resolution | Assemble WorkspaceContext at skill invocation — current repo context + read-only sibling repo contexts. Skills opt in via a resolver function. | must-have | 1 | validated |
 | Cross-Repo Spec References | Specs declare `depends-on: ["@repo-slug/spec-slug"]` in frontmatter. References resolve to actual spec files in sibling repos. | must-have | 1 | validated |
 | Reference Validation | `/adev:review-specs` verifies cross-repo `depends-on` targets exist and are in compatible status (not `draft`) | must-have | 1 | validated |
-| Dependency-Aware Planning | `/adev:plan --phase` reads the workspace dependency graph to order repo-level plans (upstream repos first) | should-have | 1 | validated |
+| Dependency-Aware Planning | `/adev:plan --milestone` reads the workspace dependency graph to order repo-level plans (upstream repos first) | should-have | 1 | validated |
 | Workspace-Level Charters | `/adev:brainstorm` in the workspace root creates charters in workspace `.context-index/` that decompose into repo-level specs | should-have | 1 | validated |
 | Workspace Status | `/adev:status` in workspace root aggregates spec/charter status across all repos | nice-to-have | 1 | validated |
 | Workspace-Aware Product Bootstrap | At the workspace root, `/adev:brainstorm` Step 5b bootstraps `product.md` by synthesising identity from `workspace.name` and the registered repos' constitutions (where present). No workspace-level constitution or `manifest.yaml` is required. Subsequent workspace-level brainstorms append/update the Module Map with workspace-charter rows only (each repo retains its own `product.md` Module Map). | must-have | 2 | validated |
@@ -93,7 +93,7 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | Workspace-Aware Specify | `/adev:specify` at the workspace root detects workspace mode and prompts for `target-repo:`. Specs are written to the target repo's `.context-index/`, with cross-repo `depends-on` references resolved via `resolveWorkspaceContext`. | must-have | 2 | validated |
 | Workspace-Aware Implement | `/adev:implement` loads cross-repo context (sibling specs, dependency graph) when running inside a workspace. Does not auto-switch repos — orchestration remains manual. | must-have | 2 | validated |
 | Workspace-Aware Plan Decomposition | `/adev:plan` decomposes workspace-level specs into per-repo plans ordered by the workspace dependency graph. | must-have | 2 | validated |
-| Workspace-Aware Build Orchestration | `/adev:build --phase` at the workspace root sequences builds across repos using the dependency graph (upstream repos first). | should-have | 2 | validated |
+| Workspace-Aware Build Orchestration | `/adev:build --milestone` at the workspace root sequences builds across repos using the dependency graph (upstream repos first). | should-have | 2 | validated |
 | Workspace-Aware Validate | `/adev:validate` resolves cross-repo `depends-on` references and checks interface compatibility across workspace boundaries. | should-have | 2 | validated |
 | Workspace-Aware Status Aggregation | `/adev:status` at the workspace root aggregates spec/charter status across all registered repos and tracks charter-revision staleness across workspace boundaries. | should-have | 2 | validated |
 | Workspace Hook Hardening | Hooks (`merge-guard`, `constitution-linter`, `sync-trigger`, `context-preflight`, `session-start`) detect workspace mode and handle workspace-vs-repo context correctly. | should-have | 2 | validated |
@@ -102,9 +102,9 @@ The adev plugin assumes a single git repository per project. Teams working acros
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Cross-Repo Implementation Orchestration | Agent auto-switches repos during `/adev:implement` (cwd switching + multi-repo execution state). `/adev:build --phase` sequences across repos but does not auto-switch during implement. | 3 | Context Resolution, Workspace-Aware Build Orchestration |
+| Cross-Repo Implementation Orchestration | Agent auto-switches repos during `/adev:implement` (cwd switching + multi-repo execution state). `/adev:build --milestone` sequences across repos but does not auto-switch during implement. | 3 | Context Resolution, Workspace-Aware Build Orchestration |
 | Shared Issue Tracking | Requires workspace-level beads DB or cross-repo linking. Epic-board sync in workspace mode is unconditionally deferred to this capability. | 3 | Workspace Schema |
 | Cross-Repo Validation | Full interface compatibility checking across repos. Phase 2 added `depends-on` reference resolution; full type/contract compatibility remains deferred. | 3 | Workspace-Aware Validate |
 | Workspace-Level Governance | Shared boundary rules and transition gates across repos | 3 | Context Resolution |
@@ -137,7 +137,7 @@ The adev plugin assumes a single git repository per project. Teams working acros
 | `/adev:status` | strategic-planning | Extended to aggregate across repos |
 | `/adev:specify` | design | Extended with workspace-mode detection and `target-repo:` prompt |
 | `/adev:implement` | execution | Extended to load cross-repo context in workspace mode |
-| `/adev:build` | execution | Extended with `--phase` cross-repo sequencing via dependency graph |
+| `/adev:build` | execution | Extended with `--milestone` cross-repo sequencing via dependency graph |
 | `/adev:validate` | assessment | Extended to resolve cross-repo `depends-on` references |
 | `/adev:init` | setup | Extended with `--workspace` scaffolding |
 

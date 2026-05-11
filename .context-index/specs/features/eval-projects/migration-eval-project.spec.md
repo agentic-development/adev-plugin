@@ -8,7 +8,7 @@
 charter: eval-projects
 status: implemented
 risk_level: low
-milestone: v1
+milestone:
 revision: 2
 charter-revision: 1
 created: 2026-05-06

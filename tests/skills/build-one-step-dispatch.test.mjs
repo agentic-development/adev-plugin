@@ -67,8 +67,8 @@ describe("adev:build SKILL.md — One-Step-Per-Invocation Dispatch", () => {
       "Orchestrator prompt must be limited to dispatch-loop instructions");
   });
 
-  it("subagent prompts include pipeline context fields (spec_path, title, phase, mode, position)", () => {
-    assert.match(skill, /spec_path.*spec_title.*phase.*pipeline_mode|PIPELINE_CONTEXT/i,
+  it("subagent prompts include pipeline context fields (spec_path, title, milestone, mode, position)", () => {
+    assert.match(skill, /spec_path.*spec_title.*milestone.*pipeline_mode|PIPELINE_CONTEXT/i,
       "Subagent prompts must include pipeline context");
   });
 

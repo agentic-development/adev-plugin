@@ -52,11 +52,11 @@ updated: {{ date }}
 
 ## Deferred Capabilities
 
-<!-- Capabilities explicitly deferred to later phases or out of scope with structured tracking.
-     Migrated from Out of Scope when a capability has a known target phase or dependency.
+<!-- Capabilities explicitly deferred to later milestones or out of scope with structured tracking.
+     Migrated from Out of Scope when a capability has a known target milestone or dependency.
      This table enables reliable backlog extraction by /adev:status --backlog. -->
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 <!-- | Example capability | Low priority, manual workaround exists | v2 | — | -->
 

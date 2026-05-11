@@ -1,4 +1,4 @@
-// tests/skills/build-phase-and-stale.test.mjs
+// tests/skills/build-milestone-and-stale.test.mjs
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
@@ -6,16 +6,16 @@ import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
-const PHASE_PATH = join(PLUGIN_ROOT, "skills", "build", "phase-mode.md");
-const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(PHASE_PATH, "utf8");
+const MILESTONE_PATH = join(PLUGIN_ROOT, "skills", "build", "milestone-mode.md");
+const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(MILESTONE_PATH, "utf8");
 
-describe("adev:build SKILL.md — phase filter and stale build detection", () => {
-  it("Implement Pipeline phase filter lists review-passed, implemented, validated explicitly", () => {
+describe("adev:build SKILL.md — milestone filter and stale build detection", () => {
+  it("Implement Pipeline milestone filter lists review-passed, implemented, validated explicitly", () => {
     assert.match(skill, /review-passed.*implemented.*validated|review-passed[^.]*implemented[^.]*validated/is,
-      "Implement Pipeline phase filter must explicitly list review-passed, implemented, validated");
+      "Implement Pipeline milestone filter must explicitly list review-passed, implemented, validated");
   });
 
-  it("Implement Pipeline phase filter does NOT use 'review-pending or later'", () => {
+  it("Implement Pipeline milestone filter does NOT use 'review-pending or later'", () => {
     assert.doesNotMatch(skill, /review-pending or later/,
       "Must not use the old 'review-pending or later' filter text");
   });

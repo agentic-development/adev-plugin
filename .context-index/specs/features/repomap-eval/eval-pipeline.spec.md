@@ -4,7 +4,7 @@
 charter: repomap-eval
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 1
 created: 2026-03-23

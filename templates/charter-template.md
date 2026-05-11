@@ -69,20 +69,20 @@ updated: {{ date }}
 
 <!-- The specific capabilities (features, operations) this module provides.
      Each capability is a candidate for a Live Spec.
-     Phase indicates WHEN a capability ships (e.g., v1, v2, mvp, post-launch).
-     Phase is about timing, not importance (that is Priority). Leave blank if unassigned. -->
+     Milestone indicates WHEN a capability ships (e.g., v1, v2, mvp, post-launch).
+     Milestone is about timing, not importance (that is Priority). Leave blank if unassigned. -->
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | ... | ... | must-have / should-have / nice-to-have | | — |
 
 ## Deferred Capabilities
 
-<!-- Capabilities explicitly deferred to later phases or out of scope with structured tracking.
-     Migrated from Out of Scope when a capability has a known target phase or dependency.
+<!-- Capabilities explicitly deferred to later milestones or out of scope with structured tracking.
+     Migrated from Out of Scope when a capability has a known target milestone or dependency.
      This table enables reliable backlog extraction by /adev:status --backlog. -->
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 <!-- | Example capability | Low priority, manual workaround exists | v2 | — | -->
 

@@ -264,14 +264,14 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--release <name>`: plan a named release
 - `--milestone <name>`: create or update a milestone
 - `--epic <id>`: decompose an Epic into Features
-- `--phase <name>`: plan all specs matching a phase/milestone
+- `--milestone <name>`: plan all specs matching a phase/milestone
 - `--dry-run`: show plan structure without writing
 
 **Example:**
 ```
 /adev:plan --spec .context-index/specs/features/auth/login.spec.md
 /adev:plan --feature auth
-/adev:plan --phase v1
+/adev:plan --milestone v1
 ```
 
 **Expected Output:** A plan file at `<spec-path>.plan.md` with ordered tasks, file lists, dependencies, TDD expectations, and context routing.
@@ -369,7 +369,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Arguments:**
 - `--spec <path>`: build a single spec end-to-end
-- `--phase <name>`: discover and build all specs with matching milestone
+- `--milestone <name>`: discover and build all specs with matching milestone
 - `--resume`: resume an interrupted build from the last successful step
 - `--dry-run`: show pipeline plan without executing
 - `--no-route`: skip the route step
@@ -378,7 +378,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 **Example:**
 ```
 /adev:build --spec .context-index/specs/features/auth/login.spec.md
-/adev:build --phase v1
+/adev:build --milestone v1
 /adev:build --resume
 ```
 

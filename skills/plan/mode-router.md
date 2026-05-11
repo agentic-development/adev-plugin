@@ -43,7 +43,7 @@ If a plain-text argument is present (no `.md` extension), scan it for the follow
 | Keywords | Mode | Name extracted from |
 |----------|------|---------------------|
 | `release`, `launch` | Release Mode | remaining tokens after keyword |
-| `milestone`, `phase` | Milestone Mode | remaining tokens after keyword |
+| `milestone` | Milestone Mode | remaining tokens after keyword |
 | `feature`, `module`, `charter` | Feature Mode | remaining tokens after keyword |
 | `epic` | Epic Mode | remaining tokens after keyword |
 | `spec`, `task`, `tasks` | Spec Mode | ask user to provide path |

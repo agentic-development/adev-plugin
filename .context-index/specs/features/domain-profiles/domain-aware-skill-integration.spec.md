@@ -8,7 +8,7 @@
 charter: domain-profiles
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 6
 charter-revision: 5
 created: 2026-05-07

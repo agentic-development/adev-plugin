@@ -68,26 +68,26 @@ Architecture review is the gate between specification and planning. This module 
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Configurable reviewer registry | Project-level `governance/review.yaml` controls which reviewers run, their dispatch, and severity caps. | must-have | v1 | review-passed |
-| Bundled defaults preservation | Plugin ships `plugin:review-specs/defaults.yaml` encoding today's three-reviewer flow; projects with no governance file see no change. | must-have | v1 | draft |
-| Context pack rendering | Named, reusable file bundles with `extends` resolve to concrete file contents at dispatch time. | must-have | v1 | draft |
-| Execution profile consumption | Reviewer entries reference execution profiles (ADR-0004) for tool permissions, MCP, model tier, env, limits. Dispatch concerns are not redefined inline. | must-have | v1 | draft |
-| External skill packaging (package mode) | A reviewer can wrap an existing skill as a package: runner subagent runs the skill verbatim under a profile; adapter subagent extracts findings. Skills stay unaware they are being used as reviewers. | must-have | v1 | draft |
-| Multi-repo env resolution | In a workspace context, env resolves consumer-repo-local (the spec's repo wins over CWD); `$workspace/` prefix opts into a shared env file. Disjoint from cross-repo spec refs (`@<repo-slug>/<spec-slug>`, see `multi-repo-workspace/charter.md`). | must-have | v1 | draft |
-| Specialists migration | Deprecate `manifest.yaml:specialists` with a one-minor-version advisory; surface the new registry as the replacement. | should-have | v1 | draft |
-| Prompt URI scheme | `plugin:<skill>/<file>` resolves to bundled skill files; project-relative paths override. Cross-plugin form deferred to v2. | must-have | v1 | draft |
+| Configurable reviewer registry | Project-level `governance/review.yaml` controls which reviewers run, their dispatch, and severity caps. | must-have |  | review-passed |
+| Bundled defaults preservation | Plugin ships `plugin:review-specs/defaults.yaml` encoding today's three-reviewer flow; projects with no governance file see no change. | must-have |  | draft |
+| Context pack rendering | Named, reusable file bundles with `extends` resolve to concrete file contents at dispatch time. | must-have |  | draft |
+| Execution profile consumption | Reviewer entries reference execution profiles (ADR-0004) for tool permissions, MCP, model tier, env, limits. Dispatch concerns are not redefined inline. | must-have |  | draft |
+| External skill packaging (package mode) | A reviewer can wrap an existing skill as a package: runner subagent runs the skill verbatim under a profile; adapter subagent extracts findings. Skills stay unaware they are being used as reviewers. | must-have |  | draft |
+| Multi-repo env resolution | In a workspace context, env resolves consumer-repo-local (the spec's repo wins over CWD); `$workspace/` prefix opts into a shared env file. Disjoint from cross-repo spec refs (`@<repo-slug>/<spec-slug>`, see `multi-repo-workspace/charter.md`). | must-have |  | draft |
+| Specialists migration | Deprecate `manifest.yaml:specialists` with a one-minor-version advisory; surface the new registry as the replacement. | should-have |  | draft |
+| Prompt URI scheme | `plugin:<skill>/<file>` resolves to bundled skill files; project-relative paths override. Cross-plugin form deferred to v2. | must-have |  | draft |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Reviewer reordering | Today's reviewers run in parallel; ordering affects only report rendering. Deferred until user demand emerges. | v2 | — |
-| Conditional verdict rules | Project-custom verdict math (e.g. "3 warnings = BLOCK"). Defaults from v1 will expose `blocker_threshold`; custom expressions deferred. | v2 | — |
-| Cross-plugin URI scheme (`plugin:<other-plugin>:<path>`) | Lets reviewers reference prompts and skills from other installed plugins. Requires harness plugin-registry integration. | v2 | Plugin registry adapter |
-| Cross-repo env paths (`@<repo-slug>/<path>`) | Lets profiles draw env from named sibling repos in a workspace. Ambiguity around key collisions and slug stability deferred the design. | v2 | execution-profiles primitive |
-| Workspace-level profiles file | Lets a workspace define profiles shared across all repos via `<workspace-root>/profiles.yaml`. v1 requires per-repo duplication. | v2 | execution-profiles primitive |
+| Reviewer reordering | Today's reviewers run in parallel; ordering affects only report rendering. Deferred until user demand emerges. |  | — |
+| Conditional verdict rules | Project-custom verdict math (e.g. "3 warnings = BLOCK"). Defaults from v1 will expose `blocker_threshold`; custom expressions deferred. |  | — |
+| Cross-plugin URI scheme (`plugin:<other-plugin>:<path>`) | Lets reviewers reference prompts and skills from other installed plugins. Requires harness plugin-registry integration. |  | Plugin registry adapter |
+| Cross-repo env paths (`@<repo-slug>/<path>`) | Lets profiles draw env from named sibling repos in a workspace. Ambiguity around key collisions and slug stability deferred the design. |  | execution-profiles primitive |
+| Workspace-level profiles file | Lets a workspace define profiles shared across all repos via `<workspace-root>/profiles.yaml`. v1 requires per-repo duplication. |  | execution-profiles primitive |
 | Reviewer composition / chaining | A reviewer whose input is another reviewer's findings. Out of scope for registry-level config. | post-launch | — |
 
 ## Interface Contracts
