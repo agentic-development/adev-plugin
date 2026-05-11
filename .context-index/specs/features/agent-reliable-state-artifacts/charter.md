@@ -1,6 +1,6 @@
 ---
-status: draft
-revision: 1
+status: approved
+revision: 2
 updated: 2026-05-11
 ---
 
