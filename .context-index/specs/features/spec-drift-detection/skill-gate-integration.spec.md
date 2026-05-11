@@ -9,6 +9,14 @@ revision: 1
 charter-revision: 2
 created: 2026-05-02
 updated: 2026-05-02
+source-manifest:
+  files:
+    - skills/plan/SKILL.md
+    - skills/validate/SKILL.md
+    - skills/hygiene/SKILL.md
+    - lib/spec-drift.mjs
+    - lib/source-manifest.mjs
+  computed-at: "2026-05-10T23:51:35.315Z"
 ---
 
 ## Behavioral Contract
