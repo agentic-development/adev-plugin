@@ -6,7 +6,7 @@
 
 ---
 charter: domain-extensions
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v1
 revision: 1
@@ -19,9 +19,9 @@ updated: 2026-05-11
 
 ### Preconditions
 
-- Extension packages for data-engineering and process-automation exist in `extensions/` and are installable
 - `templates/domains/software/` remains as the bundled default
 - `lib/domains/constants.mjs` exports `BUNDLED_DOMAIN_NAMES` containing software, data-engineering, and process-automation
+- Extension packages for data-engineering and process-automation exist in `extensions/` (requires `data-engineering-extension.spec.md` and `process-automation-extension.spec.md` to be implemented — the extension content must exist before removing bundled copies)
 
 ### Behaviors
 
@@ -33,7 +33,7 @@ updated: 2026-05-11
 
 4. **When** `BUNDLED_DOMAIN_NAMES` in `lib/domains/constants.mjs` is updated **then** it contains only `"software"`. The values `"data-engineering"` and `"process-automation"` are removed.
 
-5. **When** `loadDomainConfig("data-engineering", ...)` is called after cleanup without installing the extension **then** it fails with domain-not-found behavior (no bundled fallback exists).
+5. **When** `loadDomainConfig("data-engineering", ...)` is called after cleanup without installing the extension **then** it returns `null` for all config types (no custom dir, no bundled dir, no extends parent).
 
 6. **When** `loadDomainConfig("data-engineering", ...)` is called after cleanup with the extension installed **then** it resolves through the custom domain in `.context-index/domains/data-engineering/` via the `extends: software` chain.
 
@@ -50,9 +50,9 @@ updated: 2026-05-11
 
 ### Error Cases
 
-| Condition | Expected Behavior | Error Code |
-|-----------|-------------------|------------|
-| `loadDomainConfig("data-engineering", ...)` without extension installed | Domain not found — no silent fallback | domain resolution error |
+| Condition | Expected Behavior | Result |
+|-----------|-------------------|--------|
+| `loadDomainConfig("data-engineering", ...)` without extension installed | Returns `null` — no bundled or custom domain found | `null` return |
 | Test references removed bundled path | Test fails — must be updated | test failure |
 
 ## System Constitution Reference
