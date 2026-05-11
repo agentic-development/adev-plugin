@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.25.1](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.25.0...adev-cli-v0.25.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **cli:** resolve npx invocation failure from in-tree workspaces ([288c378](https://github.com/agentic-development/adev-plugin/commit/288c378e7c063a3a015ed430a69a666ce60b5626))
+* **cli:** resolve npx invocation failure from in-tree workspaces ([7b7db13](https://github.com/agentic-development/adev-plugin/commit/7b7db138a95d9668bd5b4190ae36a31492673227))
+
 ## [0.25.0](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.24.0...adev-cli-v0.25.0) (2026-05-11)
 
 
