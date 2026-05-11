@@ -125,13 +125,14 @@ Call `list({ status: "open" })`, then filter out issues whose dependencies inclu
 
 ### Milestone Create
 
-`milestone create <name> [--target <YYYY-MM-DD>] [--check <type>]... [--confirm "<text>"]...`
+`milestone create <name> [--target <YYYY-MM-DD>] [--strategy <manual|tag-only|release-please>] [--check <type>]... [--confirm "<text>"]...`
 
 Create or update a milestone in `.context-index/milestones.yaml` with an auto-linked epic.
 
 **Arguments:**
 - `<name>` (required) — milestone name, must match `[a-zA-Z0-9._-]+`
 - `--target <YYYY-MM-DD>` (optional) — target date for the milestone
+- `--strategy <value>` (optional) — set the release strategy (default: `manual`). Options: `manual` (no git ops at ship time), `tag-only` (git tag + optional GH release), `release-please` (writes release-as to config)
 - `--check <type>` (repeatable) — ship criteria check (e.g., `all_issues_closed`, `gates_pass`)
 - `--confirm "<text>"` (repeatable) — ship criteria confirmation prompt (e.g., `"CHANGELOG updated"`)
 
@@ -154,6 +155,7 @@ Create or update a milestone in `.context-index/milestones.yaml` with an auto-li
 | Unparseable date | "Invalid date format. Use YYYY-MM-DD." | INVALID_DATE |
 | No backend configured | Warn, still write YAML | NO_BACKEND |
 | Epic creation fails | Write with `epic_id: null`, warn | EPIC_CREATE_FAILED |
+| Unknown strategy | "Unknown release strategy" | UNKNOWN_STRATEGY |
 
 ### Milestone List
 
@@ -180,10 +182,17 @@ Display all milestones with status, target date, linked epic, and issue progress
 
 `milestone ship <name>`
 
-Evaluate ship criteria, create a git tag (for semver names), update status to `shipped`, close the linked epic, and optionally create a GitHub release draft.
+Evaluate ship criteria, execute the configured release strategy, update status to `shipped`, and close the linked epic.
 
 **Arguments:**
 - `<name>` (required) — milestone name to ship
+
+**Release strategies:**
+- `manual` (default) — No git operations. Prints guidance for manual tag/publish.
+- `tag-only` — Creates git tag (`v<name>` for semver). Optionally creates GitHub release draft via `gh` CLI.
+- `release-please` — Writes `release-as` to `release-please-config.json`. Detects and prints open Release PR URL. Does not create tags.
+
+Set the strategy with `milestone create --strategy <value>` or edit `milestones.yaml` directly.
 
 **Behavior:**
 1. Validate name, load milestone from `milestones.yaml`
@@ -191,10 +200,10 @@ Evaluate ship criteria, create a git tag (for semver names), update status to `s
 3. Run `evaluateShipCriteria(milestone, issueManager, manifest)` — evaluates `all_issues_closed` and `gates_pass` auto-checks
 4. If any auto-check fails, report failures and block ship
 5. For each manual `confirm` criterion, prompt the user: "<text>? (yes/no)". If any rejected, block ship
-6. For semver names (with or without `v` prefix): create git tag. Name `v1.0.0` → tag `v1.0.0`; name `1.0.0` → tag `v1.0.0`
-7. Update milestone status to `shipped` in `milestones.yaml`
-8. Close linked epic via `issueManager.close(epicId, "Milestone shipped")`
-9. If `gh` CLI available, create GitHub release draft: `gh release create <tag> --generate-notes --draft`
+6. Resolve release strategy via `resolveStrategy(milestone)` (defaults to `manual` when `release` is null)
+7. Execute strategy-specific release mechanics (see Release strategies above)
+8. Update milestone status to `shipped` in `milestones.yaml`
+9. Close linked epic via `issueManager.close(epicId, "Milestone shipped")`
 
 **Implementation:** Call `milestoneShip(projectRoot, name, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)` and the parsed manifest. For interactive confirms, implement `confirmFn` that prompts the user in chat.
 
@@ -208,7 +217,10 @@ Evaluate ship criteria, create a git tag (for semver names), update status to `s
 | No valid epic | "No valid linked epic" | BROKEN_EPIC |
 | Auto-check fails | Report failure detail, block | CRITERIA_FAILED |
 | Confirm rejected | "Ship cancelled" | CONFIRM_REJECTED |
-| Tag already exists | "Tag already exists" | TAG_EXISTS |
+| Tag already exists (tag-only) | "Tag already exists" | TAG_EXISTS |
+| Config not found (release-please) | Falls back to manual with warning | RELEASE_CONFIG_MISSING |
+| Malformed config JSON (release-please) | "Not valid JSON — cannot write release-as" | RELEASE_CONFIG_INVALID |
+| Unknown strategy value | "Unknown release strategy" | UNKNOWN_STRATEGY |
 | Epic close fails | Warn, do not roll back | EPIC_CLOSE_FAILED |
 | No test command | "No test command configured" | NO_TEST_COMMAND |
 
