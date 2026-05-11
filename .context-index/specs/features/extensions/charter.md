@@ -89,11 +89,11 @@ The domain-profiles module (now validated) provides the foundation: `loadDomainC
 | Governance Config Merge | Merge extension's reviewer, check, and gate entries into project governance files using ADR-0003 semantics | Must-have | v1 | planned |
 | Domain Profile Installation | Install extension's domain profile directory to `.context-index/domains/<name>/` with `domain.yaml` (`extends: <parent>`). Validates name is not bundled. Profile contains up to 7 files (charter-template.md, spec-template.md, reviewers.yaml, gates.yaml, verification.yaml, gate-config.yaml, test-config.yaml) — missing files inherit from parent via `extends` chain. | Must-have | v1 | planned |
 | Sample Installation | Copy extension's golden samples to `.context-index/samples/` | Should-have | v1 | planned |
-| Skill Registration | Register extension's standalone skills in provider hooks.json | Should-have | v1 | planned |
-| Hook Registration | Register extension's hooks in provider hooks.json | Should-have | v1 | planned |
+| Skill Registration | Register extension's standalone skills in provider hooks.json | Should-have | v1 | implemented |
+| Hook Registration | Register extension's hooks in provider hooks.json | Should-have | v1 | implemented |
 | Conflict Detection | Block install when extension skill name collides with a bundled skill | Must-have | v1 | planned |
 | Manifest Stamp | Write `installed_extensions` entry in manifest.yaml on successful install | Must-have | v1 | implemented |
-| Extension List Command | `extension list` reads manifest and displays installed extensions with version and date | Should-have | v1 | planned |
+| Extension List Command | `extension list` reads manifest and displays installed extensions with version and date | Should-have | v1 | implemented |
 
 ## Interface Contracts
 
