@@ -13,6 +13,29 @@ revision: 2
 charter-revision: 1
 created: 2026-05-06
 updated: 2026-05-06
+source-manifest:
+  sha: "10d2549"
+  files:
+    - tests/evals/adev-pipeline-eval/.gitignore
+    - tests/evals/adev-pipeline-eval/LICENSE
+    - tests/evals/adev-pipeline-eval/README.md
+    - tests/evals/adev-pipeline-eval/data/output/.gitkeep
+    - tests/evals/adev-pipeline-eval/data/raw/readings.csv
+    - tests/evals/adev-pipeline-eval/data/raw/stations.csv
+    - tests/evals/adev-pipeline-eval/requirements.txt
+    - tests/evals/adev-pipeline-eval/run_pipeline.py
+    - tests/evals/adev-pipeline-eval/stages/__init__.py
+    - tests/evals/adev-pipeline-eval/stages/aggregate.py
+    - tests/evals/adev-pipeline-eval/stages/clean.py
+    - tests/evals/adev-pipeline-eval/stages/ingest.py
+    - tests/evals/adev-pipeline-eval/stages/load.py
+    - tests/evals/adev-pipeline-eval/tests/__init__.py
+    - tests/evals/adev-pipeline-eval/tests/test_clean.py
+    - tests/evals/adev-pipeline-eval/tests/test_ingest.py
+    - tests/evals/adev-pipeline-eval/tests/test_load.py
+    - tests/evals/data-pipeline/rubrics/.gitkeep
+    - tests/evals/data-pipeline/scenarios/.gitkeep
+  computed-at: "2026-05-11T16:09:58.840Z"
 ---
 
 ## Behavioral Contract

@@ -13,6 +13,12 @@ revision: 2
 charter-revision: 1
 created: 2026-05-06
 updated: 2026-05-06
+source-manifest:
+  sha: "af60ab5"
+  files:
+    - tests/evals/data-migration/rubrics/.gitkeep
+    - tests/evals/data-migration/scenarios/.gitkeep
+  computed-at: "2026-05-11T16:09:58.839Z"
 ---
 
 ## Behavioral Contract

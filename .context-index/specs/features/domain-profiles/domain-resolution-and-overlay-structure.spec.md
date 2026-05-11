@@ -13,6 +13,16 @@ revision: 6
 charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
+source-manifest:
+  sha: "f6a29b0"
+  files:
+    - docs/configuration.md
+    - docs/skill-reference.md
+    - lib/domains/constants.mjs
+    - lib/domains/resolve.mjs
+    - tests/lib/domains/constants.test.mjs
+    - tests/lib/domains/resolve.test.mjs
+  computed-at: "2026-05-11T16:09:28.530Z"
 ---
 
 ## Behavioral Contract
