@@ -7,13 +7,14 @@ import { strict as assert } from 'node:assert';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createTempDir, cleanupTempDir } from '../helpers.mjs';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, statSync, readFileSync } from 'node:fs';
 import {
   CANONICAL_EVENTS,
   slugFromSpec,
   validateProjectRoot,
   ensureLifecycleState,
   hasLifecycleState,
+  appendEvent,
 } from '../../lib/lifecycle-state.mjs';
 
 // ── Test helper: build a minimal project tmpdir + spec path ────────────────
@@ -145,6 +146,88 @@ test('ensureLifecycleState is idempotent — calling twice leaves file size unch
     ensureLifecycleState(root, specPath);
     const size2 = statSync(logPathFor(root, 'sample')).size;
     assert.equal(size1, size2);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+// ── Task 4: appendEvent ─────────────────────────────────────────────────────
+
+test('appendEvent writes one newline-terminated JSON line', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    const text = readFileSync(logPathFor(root, 'sample'), 'utf8');
+    assert.equal(text.endsWith('\n'), true);
+    const lines = text.split('\n').filter(Boolean);
+    assert.equal(lines.length, 1);
+    const obj = JSON.parse(lines[0]);
+    assert.equal(obj.event, 'lifecycle_step');
+    assert.equal(obj.step, 'specify');
+    assert.equal(obj.status, 'started');
+    assert.ok(typeof obj.ts === 'string' && obj.ts.length > 0, 'ts should be stamped');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('appendEvent writes two events in order on separate lines', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    appendEvent(root, specPath, { event: 'step_completed', step: 'specify', verdict: 'PASS' });
+    const text = readFileSync(logPathFor(root, 'sample'), 'utf8');
+    const lines = text.split('\n').filter(Boolean);
+    assert.equal(lines.length, 2);
+    assert.equal(JSON.parse(lines[0]).event, 'lifecycle_step');
+    assert.equal(JSON.parse(lines[1]).event, 'step_completed');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('appendEvent throws EVENT_SCHEMA_INVALID when event field is missing', () => {
+  const { root, specPath } = makeProject();
+  try {
+    assert.throws(
+      () => appendEvent(root, specPath, { step: 'specify' }),
+      (err) => err.code === 'EVENT_SCHEMA_INVALID',
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('appendEvent throws EVENT_SCHEMA_INVALID when event value is non-string', () => {
+  const { root, specPath } = makeProject();
+  try {
+    assert.throws(
+      () => appendEvent(root, specPath, { event: 42 }),
+      (err) => err.code === 'EVENT_SCHEMA_INVALID',
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('appendEvent preserves a caller-provided ts string', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { ts: '2026-01-01T00:00:00.000Z', event: 'lifecycle_step' });
+    const text = readFileSync(logPathFor(root, 'sample'), 'utf8');
+    const obj = JSON.parse(text.trim());
+    assert.equal(obj.ts, '2026-01-01T00:00:00.000Z');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('appendEvent creates the parent directory and file when missing', () => {
+  const { root, specPath } = makeProject();
+  try {
+    // Skip ensureLifecycleState — appendEvent should bootstrap.
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
+    assert.equal(existsSync(logPathFor(root, 'sample')), true);
   } finally {
     cleanupTempDir(root);
   }
