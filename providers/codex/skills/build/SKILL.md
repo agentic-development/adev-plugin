@@ -1,19 +1,19 @@
 ---
 name: adev:build
-description: "End-to-end build orchestrator. Chains review, plan, route, implement, and validate for one or more specs through a full lifecycle pipeline. Use when the user says 'build', 'end to end', 'full pipeline', 'build the spec', 'build the phase', 'run the whole pipeline', or wants to execute multiple lifecycle steps in sequence without manual handoffs. In Codex, invoke with $adev:build"
+description: "End-to-end build orchestrator. Chains review, plan, route, implement, and validate for one or more specs through a full lifecycle pipeline. Use when the user says 'build', 'end to end', 'full pipeline', 'build the spec', 'build the milestone', 'run the whole pipeline', or wants to execute multiple lifecycle steps in sequence without manual handoffs. In Codex, invoke with $adev:build"
 context: fork
 ---
 
 # Build Pipeline Orchestrator
 
-Chain review, plan, route, implement, and validate into a single end-to-end pipeline for one or more specs. Supports resuming from failure, batch processing by milestone phase, and dry-run preview.
+Chain review, plan, route, implement, and validate into a single end-to-end pipeline for one or more specs. Supports resuming from failure, batch processing by milestone, and dry-run preview.
 
 **Announce at start:** "I'm using the adev:build skill to orchestrate a full build pipeline."
 
 ## Arguments
 
 - `--spec <path>`: build a single spec end-to-end through all pipeline steps
-- `--phase <name>`: discover and build all specs with matching `milestone` frontmatter
+- `--milestone <name>`: discover and build all specs with matching `milestone` frontmatter
 - `--resume`: resume an interrupted build from the last successful step
 - `--dry-run`: show the pipeline plan without executing any skill or writing any file
 - `--no-route`: skip the route step (Step 3) in the pipeline
@@ -28,8 +28,8 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 Before starting, verify all conditions. If any fails, stop and tell the user what to fix.
 
 1. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-2. **Spec provided or discoverable.** At least one spec must be specified via `--spec` or discoverable via `--phase`.
-3. **Valid arguments.** If `--spec` is provided, the file must exist. If `--phase` is provided, the milestone name must be a non-empty string.
+2. **Spec provided or discoverable.** At least one spec must be specified via `--spec` or discoverable via `--milestone`.
+3. **Valid arguments.** If `--spec` is provided, the file must exist. If `--milestone` is provided, the milestone name must be a non-empty string.
 
 4. **Read build config.** Resolve `build.max_retries` from `user-config` (local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default `0`). Use `parseUserConfig()` from `lib/persona.mjs` to read both config files. Look for the key `build.max_retries`. Clamp to range 0-3 with a warning if out of range.
 
@@ -91,7 +91,7 @@ The orchestrator reads these once at build start and includes them in every suba
 PIPELINE_CONTEXT:
   spec_path: <absolute path to the spec being built>
   spec_title: <first heading from the spec>
-  phase: <milestone name if --phase, otherwise null>
+  phase: <milestone name if --milestone, otherwise null>
   pipeline_position: "Step <N> of 5 (<step-name>)"
   workspace:
     detected: true | false
@@ -194,7 +194,7 @@ STEP_RESULT:
 The ONLY work the build orchestrator performs itself (not via subagent):
 
 - **Reads** `.context-index/build-state/*.json` for resume state
-- **Reads** spec frontmatter for `milestone` field (phase discovery) and `source-manifest` (validate step context)
+- **Reads** spec frontmatter for `milestone` field (milestone discovery) and `source-manifest` (validate step context)
 - **Reads** `.review.md` files for skip conditions and to extract review verdict/notes for step context
 - **Reads** `.plan.md` files for skip conditions and to extract task count for step context
 - **Reads** `governance/gates.yaml` for dry-run gate display only
@@ -454,7 +454,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 ```json
 {
   "spec": ".context-index/specs/features/<module>/<spec>.spec.md",
-  "phase": "<milestone-name or null>",
+  "milestone": "<milestone-name or null>",
   "status": "in_progress",
   "steps": [
     {
@@ -489,7 +489,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 The build state file is written **after each step completes** (not just at the end). This ensures that if the build is interrupted at any point, the state file reflects exactly which steps finished. Fields:
 
 - `spec`: path to the spec being built
-- `phase`: milestone name (if invoked via `--phase`) or `null`
+- `milestone`: milestone name (if invoked via `--milestone`) or `null`
 - `status`: `in_progress` while running, `completed` when all steps finish successfully, `failed` if any step fails
 - `steps`: array of step records, each with `name`, `status` (`completed`, `failed`, `skipped`), `timestamp` (ISO-8601), and optional `error` (string, only on failure). On tier-specific failures, the `error` field includes tier context: `"Integration gate failure: tier=integration, command='npm run test:integration', severity=error"`
 - `started`: ISO-8601 timestamp of build start
@@ -531,13 +531,13 @@ Await user input. "overwrite" resets the build state and proceeds. "resume" appl
 
 ---
 
-## Phase Mode
+## Milestone Mode
 
-> **Conditional loading:** Read `skills/build/phase-mode.md` for the full Phase Mode instructions.
+> **Conditional loading:** Read `skills/build/milestone-mode.md` for the full Milestone Mode instructions.
 
 ---
 
-## Workspace-Mode Build (`--phase` at Workspace Root)
+## Workspace-Mode Build (`--milestone` at Workspace Root)
 
 > **Conditional loading:** Read `skills/build/workspace-mode.md` for the full Workspace-Mode Build instructions.
 
@@ -556,12 +556,12 @@ Show:
 4. If a build state file exists, note whether `--resume` would change the pipeline.
 5. Flag any `completed_with_warnings` conditions -- specs that may need attention even after previously passing review.
 
-### Dry Run with `--phase <name>` (Workspace Mode)
+### Dry Run with `--milestone <name>` (Workspace Mode)
 
-When `--dry-run` is combined with `--phase` in workspace-mode (`detectWorkspace` non-null, `currentRepoSlug` null), show the cross-repo build plan:
+When `--dry-run` is combined with `--milestone` in workspace-mode (`detectWorkspace` non-null, `currentRepoSlug` null), show the cross-repo build plan:
 
 ```
-Dry Run: Workspace Build for phase '<name>'
+Dry Run: Workspace Build for milestone '<name>'
 
   Repo order (topological):
     1. <repo-slug> (upstream — no dependencies)
@@ -574,7 +574,7 @@ Dry Run: Workspace Build for phase '<name>'
     ...
 ```
 
-### Dry Run with `--phase <name>` (Single-Repo)
+### Dry Run with `--milestone <name>` (Single-Repo)
 
 Show:
 1. All discovered specs for the milestone (with their frontmatter status).
@@ -588,7 +588,7 @@ Show:
 **Persona adaptation:** The formats below are defaults for the Developer persona. If a different persona is active, adapt the chat summary to its output rules.
 
 ```
-Dry Run: Build Pipeline for <spec or phase>
+Dry Run: Build Pipeline for <spec or milestone>
 
   Spec: .context-index/specs/features/<module>/<spec>.spec.md
     Step 1: Review    — SKIP (review.md exists, current)
@@ -614,7 +614,7 @@ Dry Run: Build Pipeline for <spec or phase>
 
 ## Single Spec Mode (`--spec`)
 
-When `--spec <path>` is invoked without `--resume`, `--phase`, or `--dry-run`:
+When `--spec <path>` is invoked without `--resume`, `--milestone`, or `--dry-run`:
 
 1. Verify the spec file exists. If not, print: "Spec not found: `<path>`" and stop.
 2. Create or reset the build state file for this spec.
@@ -646,7 +646,7 @@ Build complete.
 |-----------|-------------------|
 | `.context-index/` missing | Print "Run `/adev:init` first" and stop |
 | `--spec` file not found | Print "Spec not found: `<path>`" and stop |
-| `--phase` finds no matching specs | Print "No specs found for milestone `<name>`" and stop |
+| `--milestone` finds no matching specs | Print "No specs found for milestone `<name>`" and stop |
 | `--resume` with no build state files | Print "No interrupted build found" and stop |
 | Review returns BLOCK | Stop build for that spec, save state, report findings |
 | Quality gates fail during implement | Stop build for that spec, save state, report failures |
@@ -656,7 +656,7 @@ Build complete.
 | Retry cycle makes no progress | Stop retrying, report same failures persisting |
 | `build.max_retries` > 3 in user-config | Clamp to 3 with warning |
 | `--from <step>` with invalid step name | Print "Invalid step: `<name>`. Valid steps: specify, review, plan, route, implement, validate" and stop |
-| Circular dependencies in phase mode | Print warning, proceed in discovery order |
+| Circular dependencies in milestone mode | Print warning, proceed in discovery order |
 
 ---
 
@@ -668,7 +668,7 @@ Build complete.
 
 3. **Incremental state persistence.** Build state is saved after every step, not just at the end. An interrupted build (network failure, timeout, user abort) always has an accurate state file.
 
-4. **Phase independence.** In `--phase` mode, specs are independent units. One spec's failure does not cascade to unrelated specs. Only explicit `depends-on` relationships create blocking dependencies.
+4. **Milestone independence.** In `--milestone` mode, specs are independent units. One spec's failure does not cascade to unrelated specs. Only explicit `depends-on` relationships create blocking dependencies.
 
 5. **Dry run is sacred.** `--dry-run` is strictly read-only. It never invokes a skill, writes a file, or modifies state. It exists to give the user confidence before committing to a potentially long build.
 

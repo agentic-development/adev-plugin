@@ -1,10 +1,10 @@
 ## Mode: Workspace Build
 
-When `--phase <name>` is invoked at the workspace root (`detectWorkspace(cwd)` returns non-null AND `currentRepoSlug` is `null`), the skill enters workspace-mode build. This mode orchestrates builds across multiple repos using the workspace dependency graph. When no workspace is detected, or when `currentRepoSlug` is set, behaviour is unchanged — the existing single-repo phase mode applies, and single-repo behaviour is preserved identically.
+When `--milestone <name>` is invoked at the workspace root (`detectWorkspace(cwd)` returns non-null AND `currentRepoSlug` is `null`), the skill enters workspace-mode build. This mode orchestrates builds across multiple repos using the workspace dependency graph. When no workspace is detected, or when `currentRepoSlug` is set, behaviour is unchanged — the existing single-repo milestone mode applies, and single-repo behaviour is preserved identically.
 
 ### Workspace Detection and Mode Entry
 
-1. **Detect workspace:** Call `detectWorkspace(cwd)`. If the result is non-null and `currentRepoSlug` is `null`, enter workspace-mode build. Otherwise, use the standard Phase Mode (above).
+1. **Detect workspace:** Call `detectWorkspace(cwd)`. If the result is non-null and `currentRepoSlug` is `null`, enter workspace-mode build. Otherwise, use the standard Milestone Mode (above).
 2. **Read dependency graph:** Load the workspace dependency graph via `resolveWorkspaceContext(workspaceRoot, null).dependencyGraph`. Each edge has the form `{ from: <repo-slug>, to: <repo-slug> }`, meaning `from` depends on `to` (i.e., `to` is upstream of `from`).
 
 ### Input Hardening
@@ -31,7 +31,7 @@ Warning: repo '<slug>' path escapes workspace root. Skipping.
 
 ### Cross-Repo Build Execution
 
-6. **Per-repo build:** For each repo in topological order, execute the build pipeline within that repo's context. The orchestrator delegates to `/adev:plan --phase <name>` and `/adev:implement` within each repo's `.context-index/` directory. The 5-step pipeline (review, plan, route, implement, validate) runs per-spec within each repo, following the same rules as single-repo Phase Mode.
+6. **Per-repo build:** For each repo in topological order, execute the build pipeline within that repo's context. The orchestrator delegates to `/adev:plan --milestone <name>` and `/adev:implement` within each repo's `.context-index/` directory. The 5-step pipeline (review, plan, route, implement, validate) runs per-spec within each repo, following the same rules as single-repo Milestone Mode.
 
 7. **Upstream failure → skip dependents:** When a repo's build fails (any spec within that repo fails at any pipeline step), downstream repos that depend on the failed repo are skipped with reason: `"Upstream repo '<slug>' failed."` Repos that do not depend on the failed repo continue building.
 
@@ -52,7 +52,7 @@ Warning: repo '<slug>' path escapes workspace root. Skipping.
 After all repos are processed, print the cross-repo summary:
 
 ```
-Workspace build for phase '<name>' complete.
+Workspace build for milestone '<name>' complete.
 
   <N> repos attempted, <P> passed, <F> failed, <S> skipped
 

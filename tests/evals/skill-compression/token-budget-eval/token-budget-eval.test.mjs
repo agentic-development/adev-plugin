@@ -67,13 +67,13 @@ describe("Strategy 1: Conditional Section Loading", () => {
     assert.ok(content, "plan SKILL.md must exist");
 
     const sections = content.match(/^## .+$/gm) || [];
-    const modeKeywords = ["Feature Mode", "Release Mode", "Milestone Mode", "Epic Mode", "Phase Planning", "Workspace"];
+    const modeKeywords = ["Feature Mode", "Release Mode", "Milestone Mode", "Epic Mode", "Milestone Planning", "Workspace"];
     const conditionalSections = sections.filter(s => modeKeywords.some(k => s.includes(k)));
     const coreSections = sections.filter(s => !modeKeywords.some(k => s.includes(k)));
 
     // Estimate conditional content by finding byte ranges
     let conditionalBytes = 0;
-    for (const kw of ["## Feature Mode", "## Release Mode", "## Milestone Mode", "## Epic Mode", "## Phase Planning Mode"]) {
+    for (const kw of ["## Feature Mode", "## Release Mode", "## Milestone Mode", "## Epic Mode", "## Milestone Planning Mode"]) {
       const idx = content.indexOf(kw);
       if (idx === -1) continue;
       // Find next ## at same level or end
@@ -139,7 +139,7 @@ describe("Strategy 1: Conditional Section Loading", () => {
     const totalBytes = Buffer.byteLength(content);
 
     let conditionalBytes = 0;
-    for (const kw of ["## Resume Mode", "## Phase Mode", "## Workspace-Mode Build", "## Dry Run Mode", "## Single Spec Mode"]) {
+    for (const kw of ["## Resume Mode", "## Milestone Mode", "## Workspace-Mode Build", "## Dry Run Mode", "## Single Spec Mode"]) {
       const idx = content.indexOf(kw);
       if (idx === -1) continue;
       const nextSection = content.indexOf("\n## ", idx + kw.length);

@@ -76,24 +76,24 @@ When both signals are present on the same spec, both independently block `/adev:
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have | v1 | validated |
-| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have | v1 | validated |
-| Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have | v1 | validated |
-| Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have | v1 | validated |
-| Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have | v1 | validated |
-| Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have | v1 | validated |
-| Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have | v1 | validated |
+| Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have |  | validated |
+| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have |  | validated |
+| Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have |  | validated |
+| Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have |  | validated |
+| Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have |  | validated |
+| Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have |  | validated |
+| Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have |  | validated |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Source Manifest Index | On-demand scan is sufficient for now; add index if performance degrades | v2 | — |
-| Reverse Sync (spec → code prompts) | Requires deeper integration; focus on code → spec direction first | v2 | — |
-| Automatic Spec Updates | Advisory-only in v1; auto-edit adds risk of unwanted spec changes | v2 | — |
-| Multi-file Drift Tracking | Track list of all drifted files instead of most-recent-only | v2 | — |
+| Source Manifest Index | On-demand scan is sufficient for now; add index if performance degrades |  | — |
+| Reverse Sync (spec → code prompts) | Requires deeper integration; focus on code → spec direction first |  | — |
+| Automatic Spec Updates | Advisory-only in v1; auto-edit adds risk of unwanted spec changes |  | — |
+| Multi-file Drift Tracking | Track list of all drifted files instead of most-recent-only |  | — |
 
 ## Interface Contracts
 

@@ -1,6 +1,6 @@
-## Mode: Phase
+## Mode: Milestone
 
-When `--phase <name>` is invoked (without `--resume`), the skill discovers and builds multiple specs in batch.
+When `--milestone <name>` is invoked (without `--resume`), the skill discovers and builds multiple specs in batch.
 
 ### Spec Discovery
 
@@ -35,18 +35,18 @@ Each spec is built independently through the full pipeline. **Failure of one spe
 
 If `tasks.backend` is configured in `manifest.yaml`:
 
-- At the start of phase mode, find the milestone epic on the issue board and mark it as `in_progress`.
+- At the start of milestone mode, find the milestone epic on the issue board and mark it as `in_progress`.
 - During the build, delegate issue updates to child skills (each skill manages its own issue board interactions).
-- At the end of phase mode, do **not** automatically close the milestone epic. That is a manual decision.
+- At the end of milestone mode, do **not** automatically close the milestone epic. That is a manual decision.
 
 If `tasks.backend` is not configured, skip all issue board operations.
 
-### Phase Summary
+### Milestone Summary
 
 After all specs are processed, print:
 
 ```
-Phase '<name>' complete.
+Milestone '<name>' complete.
 
   N specs attempted, N passed, N failed, N skipped
 

@@ -63,7 +63,7 @@ Output Personas is a presentation layer that adapts plugin outputs to the user's
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Persona resolution | Resolve persona from hierarchy: flag → local → global → fallback | must-have | | validated |
 | User config file format | Define and parse `user-config` schema for both global and local paths | must-have | | validated |
@@ -76,11 +76,11 @@ Output Personas is a presentation layer that adapts plugin outputs to the user's
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Custom user-defined personas | Start with three built-in personas; extend once usage patterns emerge | v2 | — |
-| Per-skill persona overrides | v1 uses a single persona for all skills; per-skill granularity adds complexity without proven need | v2 | — |
-| Model tier override in user-config | Natural fit for `user-config` but separate concern; deserves its own charter | v2 | User config file format |
+| Custom user-defined personas | Start with three built-in personas; extend once usage patterns emerge |  | — |
+| Per-skill persona overrides | v1 uses a single persona for all skills; per-skill granularity adds complexity without proven need |  | — |
+| Model tier override in user-config | Natural fit for `user-config` but separate concern; deserves its own charter |  | User config file format |
 
 ## Interface Contracts
 

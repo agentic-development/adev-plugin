@@ -157,7 +157,7 @@ These are advisory. They help you catch broken references early without enforcin
 
 ### Dependency-aware planning
 
-When you run [`/adev:plan --phase <name>`](skill-reference.md) in a workspace, specs are planned in **dependency order** — upstream repos first:
+When you run [`/adev:plan --milestone <name>`](skill-reference.md) in a workspace, specs are planned in **dependency order** — upstream repos first:
 
 ```
 Phase v1 planning:

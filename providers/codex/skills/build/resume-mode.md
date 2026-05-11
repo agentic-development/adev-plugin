@@ -2,7 +2,7 @@
 
 When `--resume` is invoked, the skill resumes an interrupted or failed build from the last successful step.
 
-### Resume without `--spec` or `--phase`
+### Resume without `--spec` or `--milestone`
 
 Scan `.context-index/build-state/` for any JSON file with `"status": "in_progress"` or `"status": "failed"`. If multiple are found, list them and ask the user which to resume. If none are found, print:
 
@@ -12,7 +12,7 @@ Scan `.context-index/build-state/` for any JSON file with `"status": "in_progres
 
 Read the build state file for the specified spec. Identify the last step with `status: completed` and resume from the next step in the pipeline.
 
-### Resume with `--phase <name>`
+### Resume with `--milestone <name>`
 
 Re-discover all specs with `milestone: <name>` in their frontmatter by scanning `.context-index/specs/`. Do NOT rely solely on cached build state files -- specs may have been added or modified between sessions. For each discovered spec, check if a build state file exists:
 

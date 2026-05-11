@@ -64,24 +64,24 @@ The repomap eval module measures the accuracy and stability of both the tree-sit
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |---|---|---|---|--------|
-| Repo cloning | Clone target repos to a local cache directory, pin to a specific git ref for reproducibility | must-have | v1 | validated |
-| Ground truth generation | Run TypeScript compiler API against a cloned repo, extract all exported symbols and import edges, write to JSON | must-have | v1 | validated |
-| Tree-sitter eval | Run the tree-sitter parser against the same repo, compare output against ground truth, compute precision/recall | must-have | v1 | validated |
-| Regex eval | Run the regex parser against the same repo, compare symbol output against ground truth, compute precision/recall (no edges — regex doesn't produce them) | must-have | v1 | validated |
-| Comparison report | Generate a markdown report showing side-by-side metrics for both parsers, list missing/extra symbols and edges | must-have | v1 | validated |
-| Repo config | Configurable target repos via JSON config file (name, URL, git ref) | must-have | v1 | validated |
-| Multi-repo aggregation | Run eval across all configured repos, produce a summary table | should-have | v1 | validated |
-| Eval test runner | A dedicated test command (`npm run eval`) separate from `npm test` | must-have | v1 | validated |
+| Repo cloning | Clone target repos to a local cache directory, pin to a specific git ref for reproducibility | must-have |  | validated |
+| Ground truth generation | Run TypeScript compiler API against a cloned repo, extract all exported symbols and import edges, write to JSON | must-have |  | validated |
+| Tree-sitter eval | Run the tree-sitter parser against the same repo, compare output against ground truth, compute precision/recall | must-have |  | validated |
+| Regex eval | Run the regex parser against the same repo, compare symbol output against ground truth, compute precision/recall (no edges — regex doesn't produce them) | must-have |  | validated |
+| Comparison report | Generate a markdown report showing side-by-side metrics for both parsers, list missing/extra symbols and edges | must-have |  | validated |
+| Repo config | Configurable target repos via JSON config file (name, URL, git ref) | must-have |  | validated |
+| Multi-repo aggregation | Run eval across all configured repos, produce a summary table | should-have |  | validated |
+| Eval test runner | A dedicated test command (`npm run eval`) separate from `npm test` | must-have |  | validated |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Evaluating non-TypeScript languages | Only TS grammar exists today | v2 | Tree-sitter grammars |
-| Performance benchmarking (execution time) | Nice-to-have for later | v2 | — |
-| CI integration (running evals on every PR) | Separate concern | v2 | cicd module |
+| Evaluating non-TypeScript languages | Only TS grammar exists today |  | Tree-sitter grammars |
+| Performance benchmarking (execution time) | Nice-to-have for later |  | — |
+| CI integration (running evals on every PR) | Separate concern |  | cicd module |
 
 ## Interface Contracts
 

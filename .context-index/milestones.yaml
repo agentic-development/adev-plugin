@@ -1,9 +1,10 @@
 milestones:
-  - name: 1.0.0
+  - name: 0.25.0
     status: planned
-    epic_id: epic-57
+    epic_id: epic-63
     target_date: 2026-05-14
-    release: null
+    release:
+      strategy: release-please
     ship_criteria:
       - check: all_issues_closed
       - check: gates_pass

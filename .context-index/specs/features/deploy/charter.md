@@ -67,16 +67,16 @@ Projects using adev have a structured path from idea to validated code (brainsto
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
-| Deploy Config Schema | `.context-index/deploy.yaml` schema: steps, environments, variables, rollback. `loadDeployConfig()` / `validateDeployConfig()` | Must-have | v1 | validated |
-| Deploy Execute | `/adev:deploy [--version <tag>] [--env <name>]` — run steps in order: shell (exec), ci-trigger (dispatch + poll), manual (prompt), verify (check), gate (block until condition) | Must-have | v1 | validated |
-| Milestone Integration | When no `--version`, read latest shipped milestone from `milestones.yaml` for version/tag. Fall back to `--version` requirement if none shipped. | Must-have | v1 | validated |
-| Failure and Rollback | On step failure: stop, report what succeeded/failed, surface rollback steps from config, require confirmation before executing any | Must-have | v1 | validated |
-| Deploy Init | `/adev:deploy init` — interactive wizard to scaffold `deploy.yaml` with project-appropriate defaults (detect npm, docker, static site) | Should-have | v1 | — |
-| Deploy History | Append deploy run results to `.context-index/deploy-history.yaml` — version, environment, timestamp, step results, status | Should-have | v1 | — |
-| Named Environments | Opt-in `environments:` config with promotion flow (`--env staging` then `--env production`) | Should-have | v1 | — |
-| Dry Run | `--dry-run` flag — print what would execute without running anything | Nice-to-have | v1 | — |
+| Deploy Config Schema | `.context-index/deploy.yaml` schema: steps, environments, variables, rollback. `loadDeployConfig()` / `validateDeployConfig()` | Must-have |  | validated |
+| Deploy Execute | `/adev:deploy [--version <tag>] [--env <name>]` — run steps in order: shell (exec), ci-trigger (dispatch + poll), manual (prompt), verify (check), gate (block until condition) | Must-have |  | validated |
+| Milestone Integration | When no `--version`, read latest shipped milestone from `milestones.yaml` for version/tag. Fall back to `--version` requirement if none shipped. | Must-have |  | validated |
+| Failure and Rollback | On step failure: stop, report what succeeded/failed, surface rollback steps from config, require confirmation before executing any | Must-have |  | validated |
+| Deploy Init | `/adev:deploy init` — interactive wizard to scaffold `deploy.yaml` with project-appropriate defaults (detect npm, docker, static site) | Should-have |  | — |
+| Deploy History | Append deploy run results to `.context-index/deploy-history.yaml` — version, environment, timestamp, step results, status | Should-have |  | — |
+| Named Environments | Opt-in `environments:` config with promotion flow (`--env staging` then `--env production`) | Should-have |  | — |
+| Dry Run | `--dry-run` flag — print what would execute without running anything | Nice-to-have |  | — |
 
 ## Interface Contracts
 
