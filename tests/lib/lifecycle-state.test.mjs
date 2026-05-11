@@ -24,6 +24,7 @@ import {
   reportStep,
   reportPlanTask,
   reportIntervention,
+  currentState,
 } from '../../lib/lifecycle-state.mjs';
 
 const __dirname = pathDirname(fileURLToPath(import.meta.url));
@@ -458,6 +459,100 @@ test('every actor event ends up with severity stamped on disk', () => {
     for (const ev of actorEvents) {
       assert.ok(typeof ev.severity === 'string' && ev.severity.length > 0, `actor event missing severity: ${JSON.stringify(ev)}`);
     }
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+// ── Task 8: currentState base reducer ──────────────────────────────────────
+
+test('currentState returns the empty projection shape on an empty log', () => {
+  const { root, specPath } = makeProject();
+  try {
+    const s = currentState(root, specPath);
+    assert.equal(s.spec, specPath);
+    assert.equal(s.status, 'pending');
+    assert.equal(s.currentStep, null);
+    assert.equal(s.currentTask, null);
+    assert.deepEqual(s.steps, {});
+    assert.deepEqual(s.planTasks, {});
+    assert.deepEqual(s.interventions, []);
+    assert.deepEqual(s.unknownEvents, []);
+    assert.equal(s.startedAt, null);
+    assert.equal(s.updatedAt, null);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState transitions currentStep and tracks startedAt/updatedAt', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { ts: '2026-01-01T00:00:00.000Z', event: 'lifecycle_step', step: 'specify', status: 'started' });
+    appendEvent(root, specPath, { ts: '2026-01-01T00:05:00.000Z', event: 'lifecycle_step', step: 'review', status: 'started' });
+    const s = currentState(root, specPath);
+    assert.equal(s.currentStep, 'review');
+    assert.equal(s.startedAt, '2026-01-01T00:00:00.000Z');
+    assert.equal(s.updatedAt, '2026-01-01T00:05:00.000Z');
+    assert.ok(s.steps.specify, 'specify step should exist');
+    assert.ok(s.steps.review, 'review step should exist');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState preserves unknown event variants under unknownEvents[]', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    appendEvent(root, specPath, { event: 'my_domain_custom_event', payload: { foo: 'bar' } });
+    const s = currentState(root, specPath);
+    assert.equal(s.unknownEvents.length, 1);
+    assert.equal(s.unknownEvents[0].event, 'my_domain_custom_event');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState is deterministic — same input yields same output', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { ts: '2026-01-01T00:00:00.000Z', event: 'lifecycle_step', step: 'specify', status: 'started' });
+    appendEvent(root, specPath, { ts: '2026-01-01T00:05:00.000Z', event: 'step_completed', step: 'specify', verdict: 'PASS' });
+    const a = currentState(root, specPath);
+    const b = currentState(root, specPath);
+    assert.deepEqual(a, b);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState projection keys are camelCase', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    const s = currentState(root, specPath);
+    const camelRegex = /^[a-z][a-zA-Z0-9]*$/;
+    for (const key of Object.keys(s)) {
+      assert.ok(camelRegex.test(key), `projection key "${key}" is not camelCase`);
+    }
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState collects plan_task events under planTasks keyed by task_id', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportPlanTask(root, specPath, { plan: 'p.plan.md', task_id: 't1', status: 'in_progress' });
+    reportPlanTask(root, specPath, { plan: 'p.plan.md', task_id: 't1', status: 'completed' });
+    reportPlanTask(root, specPath, { plan: 'p.plan.md', task_id: 't2', status: 'in_progress' });
+    const s = currentState(root, specPath);
+    assert.ok(s.planTasks.t1, 'planTasks.t1 should exist');
+    assert.ok(s.planTasks.t2, 'planTasks.t2 should exist');
+    // Latest status wins
+    assert.equal(s.planTasks.t1.status, 'completed');
+    assert.equal(s.planTasks.t2.status, 'in_progress');
   } finally {
     cleanupTempDir(root);
   }
