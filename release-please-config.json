@@ -11,8 +11,7 @@
       "prerelease": false,
       "extra-files": [
         ".claude-plugin/plugin.json"
-      ],
-      "release-as": "0.25.0"
+      ]
     }
   }
 }
