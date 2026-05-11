@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, '..', '..');
 
-const EXT_DIR = join(REPO_ROOT, 'extensions', 'data-engineering');
+const EXT_DIR = join(REPO_ROOT, 'extensions', 'process-automation');
 const DOMAIN_DIR = join(EXT_DIR, 'domain');
 
 const EXPECTED_DOMAIN_FILES = [
@@ -22,9 +22,9 @@ const EXPECTED_DOMAIN_FILES = [
   'test-config.yaml',
 ];
 
-describe('data-engineering extension package', () => {
-  it('extensions/data-engineering/ directory exists', () => {
-    assert.ok(existsSync(EXT_DIR), 'extensions/data-engineering/ should exist');
+describe('process-automation extension package', () => {
+  it('extensions/process-automation/ directory exists', () => {
+    assert.ok(existsSync(EXT_DIR), 'extensions/process-automation/ should exist');
   });
 
   it('adev-extension.yaml exists and passes parseExtensionManifest() validation', () => {
@@ -34,7 +34,7 @@ describe('data-engineering extension package', () => {
     const content = readFileSync(manifestPath, 'utf8');
     const result = parseExtensionManifest(content);
     assert.ok(result.valid, `Manifest should be valid: ${result.message || ''}`);
-    assert.equal(result.manifest.name, 'data-engineering');
+    assert.equal(result.manifest.name, 'process-automation');
     assert.ok(result.manifest.version, 'version should be set');
     assert.ok(result.manifest.requires, 'requires should be set');
     assert.ok(result.manifest.requires.adev, 'requires.adev should be set');
@@ -62,7 +62,7 @@ describe('data-engineering extension package', () => {
     const readmePath = join(EXT_DIR, 'README.md');
     assert.ok(existsSync(readmePath), 'README.md should exist');
     const content = readFileSync(readmePath, 'utf8');
-    assert.ok(content.includes('data-engineering'), 'README should mention data-engineering');
+    assert.ok(content.includes('process-automation'), 'README should mention process-automation');
     assert.ok(content.includes('install'), 'README should mention install');
   });
 });
