@@ -7,7 +7,7 @@ import { strict as assert } from 'node:assert';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createTempDir, cleanupTempDir } from '../helpers.mjs';
-import { existsSync, statSync, readFileSync } from 'node:fs';
+import { existsSync, statSync, readFileSync, appendFileSync } from 'node:fs';
 import {
   CANONICAL_EVENTS,
   slugFromSpec,
@@ -15,6 +15,7 @@ import {
   ensureLifecycleState,
   hasLifecycleState,
   appendEvent,
+  readEvents,
 } from '../../lib/lifecycle-state.mjs';
 
 // ── Test helper: build a minimal project tmpdir + spec path ────────────────
@@ -228,6 +229,61 @@ test('appendEvent creates the parent directory and file when missing', () => {
     // Skip ensureLifecycleState — appendEvent should bootstrap.
     appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
     assert.equal(existsSync(logPathFor(root, 'sample')), true);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+// ── Task 5: readEvents ──────────────────────────────────────────────────────
+
+test('readEvents returns [] when the file does not exist', () => {
+  const { root, specPath } = makeProject();
+  try {
+    assert.deepEqual(readEvents(root, specPath), []);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('readEvents returns two events on disk in order', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
+    appendEvent(root, specPath, { event: 'step_completed', step: 'specify', verdict: 'PASS' });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 2);
+    assert.equal(events[0].event, 'lifecycle_step');
+    assert.equal(events[1].event, 'step_completed');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('readEvents skips a truncated final line silently', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
+    // Simulate a mid-write crash: write a partial JSON object with no trailing newline.
+    appendFileSync(logPathFor(root, 'sample'), '{"event":"step_completed","step":"specif');
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].event, 'lifecycle_step');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('readEvents skips a malformed interior line and keeps remaining events', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
+    // Inject a malformed interior line.
+    appendFileSync(logPathFor(root, 'sample'), 'not-json{{{\n');
+    appendEvent(root, specPath, { event: 'step_completed', step: 'specify' });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 2);
+    assert.equal(events[0].event, 'lifecycle_step');
+    assert.equal(events[1].event, 'step_completed');
   } finally {
     cleanupTempDir(root);
   }
