@@ -75,18 +75,18 @@ updated: 2026-03-27
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| RED Phase Test Authoring | Write failing tests from a spec or behavioral description. Enforce mocking boundaries, seed data requirements, and strict assertion rules. Verify RED state before producing handoff. | Must-have | v1 | review-passed |
-| Immutable Handoff Block | Produce a locked record of test files, verification command, failure summary, and content hash. Written to `.context-index/packets/`. | Must-have | v1 | review-passed |
-| Pre-existing Failure Protocol | Before authoring, run `git stash` + test run + `git stash pop` if any tests are failing. Attach proof record to handoff block. Block if proof cannot be produced. | Must-have | v1 | review-passed |
-| Post-GREEN Semantic Verification | Re-invoked after implementer completes GREEN phase. Diff current tests against handoff block. Report semantic tampering violations. | Must-have | v1 | review-passed |
-| Gaming Violation Detection | During authorship and verification, detect hardcoded return values, vacuous matchers, conditional skips, and unseeded assertions. Block on detection. Deterministic patterns detected via `.mjs` helper without LLM. | Must-have | v1 | review-passed |
-| Standalone Invocation | Accept a file path, function signature, or free-form behavioral description as input (not just a spec path). Fully usable outside `adev:implement`. | Must-have | v1 | review-passed |
-| Mocking Boundary Declaration | Require explicit justification for every mock. Produce a boundary manifest in the handoff block. Flag any mock targeting internal application logic. | Must-have | v1 | review-passed |
-| Framework Detection | Detect the test framework from `package.json` or existing test files (`node:test`, jest, vitest, pytest, etc.) and generate idiomatic test code. Implemented as a `.mjs` helper — no LLM required. | Must-have | v1 | review-passed |
-| Handoff Block Diff Report | On verify failure, produce a human-readable diff showing exactly which assertions were weakened, removed, or had matchers loosened. | Must-have | v1 | review-passed |
-| Model Selection | Dispatch each phase with the appropriate model tier: `capable` for RED authoring, `fast` for verification and gaming judgment. Tiers resolved from `model_tiers` in the project's `platform-context.yaml`. Falls back to `capable` if a tier is unset. | Must-have | v1 | review-passed |
+| RED Phase Test Authoring | Write failing tests from a spec or behavioral description. Enforce mocking boundaries, seed data requirements, and strict assertion rules. Verify RED state before producing handoff. | Must-have |  | review-passed |
+| Immutable Handoff Block | Produce a locked record of test files, verification command, failure summary, and content hash. Written to `.context-index/packets/`. | Must-have |  | review-passed |
+| Pre-existing Failure Protocol | Before authoring, run `git stash` + test run + `git stash pop` if any tests are failing. Attach proof record to handoff block. Block if proof cannot be produced. | Must-have |  | review-passed |
+| Post-GREEN Semantic Verification | Re-invoked after implementer completes GREEN phase. Diff current tests against handoff block. Report semantic tampering violations. | Must-have |  | review-passed |
+| Gaming Violation Detection | During authorship and verification, detect hardcoded return values, vacuous matchers, conditional skips, and unseeded assertions. Block on detection. Deterministic patterns detected via `.mjs` helper without LLM. | Must-have |  | review-passed |
+| Standalone Invocation | Accept a file path, function signature, or free-form behavioral description as input (not just a spec path). Fully usable outside `adev:implement`. | Must-have |  | review-passed |
+| Mocking Boundary Declaration | Require explicit justification for every mock. Produce a boundary manifest in the handoff block. Flag any mock targeting internal application logic. | Must-have |  | review-passed |
+| Framework Detection | Detect the test framework from `package.json` or existing test files (`node:test`, jest, vitest, pytest, etc.) and generate idiomatic test code. Implemented as a `.mjs` helper — no LLM required. | Must-have |  | review-passed |
+| Handoff Block Diff Report | On verify failure, produce a human-readable diff showing exactly which assertions were weakened, removed, or had matchers loosened. | Must-have |  | review-passed |
+| Model Selection | Dispatch each phase with the appropriate model tier: `capable` for RED authoring, `fast` for verification and gaming judgment. Tiers resolved from `model_tiers` in the project's `platform-context.yaml`. Falls back to `capable` if a tier is unset. | Must-have |  | review-passed |
 
 ## Interface Contracts
 

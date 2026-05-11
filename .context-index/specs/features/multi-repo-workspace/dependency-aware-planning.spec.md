@@ -14,6 +14,9 @@ source-manifest:
     - lib/workspace.mjs
     - tests/skills/plan-workspace-mode.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
+drift_source: tests/skills/plan-workspace-mode.test.mjs
+drift_at: 2026-05-11T16:58:48.078Z
 ---
 
 # Live Spec: Dependency-Aware Planning

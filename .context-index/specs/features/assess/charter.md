@@ -71,9 +71,9 @@ Evaluate codebase readiness for agentic development using static file inspection
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Configurable Weights | Allow adjusting dimension weights | v2 | Dimension definitions stable |
+| Configurable Weights | Allow adjusting dimension weights |  | Dimension definitions stable |
 
 ## Interface Contracts
 

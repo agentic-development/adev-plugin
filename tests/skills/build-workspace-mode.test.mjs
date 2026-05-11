@@ -9,7 +9,7 @@ const WORKSPACE_PATH = join(PLUGIN_ROOT, "skills", "build", "workspace-mode.md")
 const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(WORKSPACE_PATH, "utf8");
 
 describe("adev:build SKILL.md — workspace-mode build orchestration", () => {
-  it("workspace-mode build branches on detectWorkspace + currentRepoSlug null + --phase", () => {
+  it("workspace-mode build branches on detectWorkspace + currentRepoSlug null + --milestone", () => {
     assert.match(skill, /detectWorkspace/,
       "Must reference detectWorkspace()");
     assert.match(skill, /currentRepoSlug/,
@@ -32,9 +32,9 @@ describe("adev:build SKILL.md — workspace-mode build orchestration", () => {
       "Must specify upstream repos are built first");
   });
 
-  it("workspace-mode build delegates to /adev:plan --phase and /adev:implement per repo", () => {
-    assert.match(skill, /\/adev:plan --phase/,
-      "Must delegate to /adev:plan --phase per repo");
+  it("workspace-mode build delegates to /adev:plan --milestone and /adev:implement per repo", () => {
+    assert.match(skill, /\/adev:plan --milestone/,
+      "Must delegate to /adev:plan --milestone per repo");
     assert.match(skill, /\/adev:implement/,
       "Must delegate to /adev:implement per repo");
   });

@@ -73,7 +73,7 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |---|---|---|---|--------|
 | Regex repomap (preserve) | Keep existing regex-based symbol extraction as the default zero-dependency mode | must-have | v0.5.0 | — |
 | Tree-sitter parsing | Parse source files via web-tree-sitter WASM for accurate symbol extraction | must-have | v0.5.0 | — |
@@ -92,9 +92,9 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Semantic embeddings or vector search | Future version | v2 | — |
+| Semantic embeddings or vector search | Future version |  | — |
 | Recovery diagnosis (recover) | Define artifact contract for /adev:recover | v0.5.1 | — |
 | Manifest output config | Add repomap.output section to manifest | v0.5.2 | — |
 

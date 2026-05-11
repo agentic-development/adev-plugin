@@ -44,7 +44,7 @@ This module supersedes `/adev:plan --milestone` as the entrypoint for milestone 
 | `/adev:issues` | Extends | New `milestone` subcommands added to the skill |
 | `lib/issues/` | Consumes | Epic create/update/close through issue manager abstraction |
 | `manifest.yaml` | Consumes | Reads `gates.test` for the `gates_pass` ship criterion |
-| `/adev:brainstorm` | Integrates | Validates Phase column values against `milestones.yaml` |
+| `/adev:brainstorm` | Integrates | Validates Milestone column values against `milestones.yaml` |
 | `/adev:specify` | Integrates | Validates `milestone:` frontmatter against `milestones.yaml` |
 | `/adev:plan --milestone` | Integrates | Validates milestone name exists before planning |
 | `/adev:hygiene` | Integrates | Flags orphan milestone references not in `milestones.yaml` |
@@ -66,7 +66,7 @@ This module supersedes `/adev:plan --milestone` as the entrypoint for milestone 
 - A Milestone contains zero or more ShipCriteria
 - A Milestone links to exactly one Epic on the issue board via `epic_id`
 - An Epic links back to its Milestone via the existing `milestone` field on the issue model
-- Capability Map Phase columns and spec `milestone:` frontmatter reference a Milestone by name
+- Capability Map Milestone columns and spec `milestone:` frontmatter reference a Milestone by name
 
 ### Invariants
 
@@ -80,24 +80,24 @@ This module supersedes `/adev:plan --milestone` as the entrypoint for milestone 
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
-| Milestone Create | `milestone create <name>` — defines `milestones.yaml` schema (name, status, target_date, epic_id, release, ship_criteria), writes the entry, and auto-creates linked epic via issue manager | Must-have | v1 | planned |
-| Milestone List | `milestone list` — displays all milestones with status, target date, and issue progress summary | Must-have | v1 | planned |
-| Ship Criteria Evaluation | Run auto-checks (`all_issues_closed`, `gates_pass`) then manual confirms. Collect pass/fail for each. | Must-have | v1 | validated |
-| Milestone Ship | `milestone ship <name>` — evaluate criteria, execute release strategy (manual/tag-only/release-please), update status | Must-have | v1 | validated |
-| Milestone Defer | `milestone defer <name>` — set status to deferred, add reason to milestone entry | Should-have | v1 | specified  |
-| Name Validation in Lifecycle Skills | Brainstorm, specify, plan, and hygiene validate milestone names against `milestones.yaml` | Should-have | v1 | planned |
-| Status Integration | `/adev:status --milestone <name>` reads `milestones.yaml` for metadata alongside issue progress | Nice-to-have | v1 | planned |
+| Milestone Create | `milestone create <name>` — defines `milestones.yaml` schema (name, status, target_date, epic_id, release, ship_criteria), writes the entry, and auto-creates linked epic via issue manager | Must-have |  | planned |
+| Milestone List | `milestone list` — displays all milestones with status, target date, and issue progress summary | Must-have |  | planned |
+| Ship Criteria Evaluation | Run auto-checks (`all_issues_closed`, `gates_pass`) then manual confirms. Collect pass/fail for each. | Must-have |  | validated |
+| Milestone Ship | `milestone ship <name>` — evaluate criteria, execute release strategy (manual/tag-only/release-please), update status | Must-have |  | validated |
+| Milestone Defer | `milestone defer <name>` — set status to deferred, add reason to milestone entry | Should-have |  | specified  |
+| Name Validation in Lifecycle Skills | Brainstorm, specify, plan, and hygiene validate milestone names against `milestones.yaml` | Should-have |  | planned |
+| Status Integration | `/adev:status --milestone <name>` reads `milestones.yaml` for metadata alongside issue progress | Nice-to-have |  | planned |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Automatic status transitions | Complexity of detecting "work started" reliably across backends | v2 | — |
-| npm publish orchestration | Delegated to CI (release-please strategy) or manual. Adding a built-in publish strategy is low-value. | v2 | Milestone Ship |
-| Custom auto-check types | Two built-in checks cover common cases; extensibility deferred | v2 | Ship Criteria Evaluation |
-| Cross-workspace milestone coordination | Requires workspace-level issue board (not yet available) | v2 | Multi-repo workspace |
+| Automatic status transitions | Complexity of detecting "work started" reliably across backends |  | — |
+| npm publish orchestration | Delegated to CI (release-please strategy) or manual. Adding a built-in publish strategy is low-value. |  | Milestone Ship |
+| Custom auto-check types | Two built-in checks cover common cases; extensibility deferred |  | Ship Criteria Evaluation |
+| Cross-workspace milestone coordination | Requires workspace-level issue board (not yet available) |  | Multi-repo workspace |
 
 ## Interface Contracts
 

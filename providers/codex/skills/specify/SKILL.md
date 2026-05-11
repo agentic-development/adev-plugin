@@ -133,7 +133,7 @@ Prepend: "The following heuristics are lessons learned from past work in this mo
 ```yaml
 charter: <module-name>          # omit for cross-cutting (use affects: instead)
 status: draft                   # always starts as draft
-milestone: <phase from charter> # standard mode only
+milestone: <milestone from charter> # standard mode only
 created: <today's date YYYY-MM-DD>
 # mode: extract | refactor | from-diff | cross-cutting
 # extracted-from: [...]         # extract mode
@@ -144,7 +144,7 @@ created: <today's date YYYY-MM-DD>
 # constitutional-exception: "." # if user chose explicit exception
 ```
 
-**Milestone inheritance (standard mode):** Inherit from the capability's Phase in the parent charter. Tell the user and allow override:
+**Milestone inheritance (standard mode):** Inherit from the capability's Milestone in the parent charter. Tell the user and allow override:
 ```
 → Keep milestone "v1", or override? (enter to confirm / type new value)
 ```
@@ -571,7 +571,7 @@ Output the shared summary template with these stats:
 
 ## From-Diff Mode (`--from-diff`)
 
-Generates a retroactive Live Spec from a git diff or PR. Useful for documenting work done before adev was adopted, or hotfixes that skipped the spec phase.
+Generates a retroactive Live Spec from a git diff or PR. Useful for documenting work done before adev was adopted, or hotfixes that skipped the spec milestone.
 
 ### Step 1: Identify the Diff
 

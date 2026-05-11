@@ -68,7 +68,7 @@ The session-awareness module provides continuous context about active work throu
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Execution State File | Read/write `.execution-state.md` with defined YAML frontmatter schema, atomic writes | must-have | 1 | validated |
 | Issue Reminder Hook | PostToolUse hook that surfaces active issues every N tool calls and after git commits | must-have | 1 | validated |
@@ -84,7 +84,7 @@ The session-awareness module provides continuous context about active work throu
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 | Format Documentation | Document file formats as public contracts | Phase 2 | — |
 

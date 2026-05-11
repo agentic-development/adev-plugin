@@ -110,7 +110,7 @@ See `.context-index/constitution.md` for the full constraint set.
 
 ## Actionable Task Map
 
-| Phase | Task |
+| Milestone | Task |
 |---|---|
 | Specify | Document required visual states and breakpoints per component in the task ticket. |
 | Plan | Enumerate prop fixtures; identify API dependencies to mock; list browser/viewport targets. |
