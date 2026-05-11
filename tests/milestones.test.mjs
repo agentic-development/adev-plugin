@@ -670,6 +670,90 @@ describe("milestoneShip", () => {
   });
 });
 
+// --- milestoneShip strategy: tag-only ---
+
+describe("milestoneShip strategy: tag-only", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-tag-only-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("creates git tag for semver names", async () => {
+    saveMilestones(dir, [{
+      name: "1.0.0", status: "planned", epic_id: "epic-1",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    let tagCreated = null;
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "1.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: (args) => { tagCreated = args[1]; },
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "tag-only");
+    assert.equal(result.tag, "v1.0.0");
+    assert.equal(tagCreated, "v1.0.0");
+  });
+
+  it("skips tag for non-semver names", async () => {
+    saveMilestones(dir, [{
+      name: "beta-1", status: "planned", epic_id: "epic-2",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-2" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "beta-1", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.tag, null);
+  });
+
+  it("blocks when tag already exists", async () => {
+    saveMilestones(dir, [{
+      name: "v3.0.0", status: "planned", epic_id: "epic-3",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-3" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "v3.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: () => {
+        const e = new Error("tag exists");
+        e.stderr = Buffer.from("fatal: tag 'v3.0.0' already exists");
+        throw e;
+      },
+    });
+    assert.equal(result.shipped, false);
+    assert.equal(result.error, "TAG_EXISTS");
+  });
+
+  it("calls execGh for GitHub release when available", async () => {
+    saveMilestones(dir, [{
+      name: "4.0.0", status: "planned", epic_id: "epic-4",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    let ghArgs = null;
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-4" }],
+      list: async () => [], close: async () => {},
+    };
+    await milestoneShip(dir, "4.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: () => {},
+      execGh: (args) => { ghArgs = args; },
+    });
+    assert.ok(ghArgs.includes("release"));
+    assert.ok(ghArgs.includes("v4.0.0"));
+  });
+});
+
 // --- milestoneShip strategy: manual ---
 
 describe("milestoneShip strategy: manual", () => {
