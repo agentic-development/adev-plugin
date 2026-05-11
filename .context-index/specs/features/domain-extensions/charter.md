@@ -62,10 +62,10 @@ Domain extension packages distribute domain-specific configuration (templates, r
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Data Engineering Extension | Extension package with domain profile tailored for data pipelines, ETL, dbt, and data quality workflows | Must-have | v1 | review-passed |
-| Process Automation Extension | Extension package with domain profile tailored for workflow automation, RPA, and event-driven processes | Must-have | v1 | review-passed |
-| Bundled Templates Cleanup | Remove extracted domains from `templates/domains/`, update `BUNDLED_DOMAIN_NAMES` constant to software only | Must-have | v1 | review-passed |
-| Git Subdirectory Fragment Support | Enhance `resolve-source.mjs` to parse `repo#path` fragments, cloning the repo and resolving into the subdirectory | Must-have | v1 | review-passed |
+| Data Engineering Extension | Extension package with domain profile tailored for data pipelines, ETL, dbt, and data quality workflows | Must-have | v1 | planned |
+| Process Automation Extension | Extension package with domain profile tailored for workflow automation, RPA, and event-driven processes | Must-have | v1 | planned |
+| Bundled Templates Cleanup | Remove extracted domains from `templates/domains/`, update `BUNDLED_DOMAIN_NAMES` constant to software only | Must-have | v1 | planned |
+| Git Subdirectory Fragment Support | Enhance `resolve-source.mjs` to parse `repo#path` fragments, cloning the repo and resolving into the subdirectory | Must-have | v1 | planned |
 | End-to-End Install Verification | Integration tests proving each extension installs and resolves correctly through `loadDomainConfig()` | Must-have | v1 | — |
 
 ## Deferred Capabilities
