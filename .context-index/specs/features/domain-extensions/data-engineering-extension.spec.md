@@ -6,7 +6,7 @@
 
 ---
 charter: domain-extensions
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: v1
 revision: 1
@@ -20,8 +20,9 @@ updated: 2026-05-11
 ### Preconditions
 
 - The `extensions/` directory exists at the repo root (created if missing)
-- The existing data-engineering domain profile files exist at `templates/domains/data-engineering/` (source content)
+- The existing data-engineering domain profile files exist at `templates/domains/data-engineering/` (source content for copying)
 - The extension install pipeline is functional (`lib/extensions/install.mjs`)
+- `BUNDLED_DOMAIN_NAMES` no longer contains `"data-engineering"` (requires `bundled-templates-cleanup.spec.md` to be implemented first, otherwise `installExtension()` will throw `BUNDLED_COLLISION`)
 
 ### Behaviors
 
@@ -51,7 +52,7 @@ updated: 2026-05-11
 |-----------|-------------------|------------|
 | Extension name collides with `BUNDLED_DOMAIN_NAMES` | Install blocked by pipeline | `BUNDLED_COLLISION` |
 | `adev-extension.yaml` has invalid schema | Install blocked by pipeline | `INVALID_SCHEMA` |
-| `requires.adev` range not satisfied | Install blocked by pipeline | `VERSION_MISMATCH` |
+| `requires.adev` range not satisfied | Install blocked by pipeline | `INCOMPATIBLE_VERSION` |
 
 ## System Constitution Reference
 

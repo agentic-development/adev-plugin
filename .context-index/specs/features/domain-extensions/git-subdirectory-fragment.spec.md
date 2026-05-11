@@ -6,7 +6,7 @@
 
 ---
 charter: domain-extensions
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: v1
 revision: 1
@@ -32,7 +32,7 @@ updated: 2026-05-11
 
 4. **When** the subdirectory exists but does not contain `adev-extension.yaml` **then** it throws a `MISSING_MANIFEST` error (existing behavior, applied to the subdirectory).
 
-5. **When** the `#` fragment contains path traversal segments (`..`) **then** the resolved path is validated to remain within the cloned repository directory. If it escapes, a `SOURCE_RESOLUTION` error is thrown.
+5. **When** the `#` fragment contains path traversal segments (`..`) and the resolved path (`path.resolve(cloneDir, subdir)`) does not start with `cloneDir` **then** `resolveExtensionSource()` throws a `SOURCE_RESOLUTION` error indicating the path escapes the clone directory.
 
 6. **When** `classifyUri()` is called with a URL containing `#` **then** it still classifies as `git` (the fragment does not affect classification).
 
