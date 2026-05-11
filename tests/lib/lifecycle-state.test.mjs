@@ -557,3 +557,102 @@ test('currentState collects plan_task events under planTasks keyed by task_id', 
     cleanupTempDir(root);
   }
 });
+
+// ── Task 9: aggregation algorithm (severity x verdict) ─────────────────────
+
+// Helper: write a `reviewer_report` directly with explicit severity/verdict
+// without going through severity resolution.
+function rawReviewer(root, specPath, step, reviewer, severity, verdict) {
+  appendEvent(root, specPath, {
+    event: 'reviewer_report',
+    step,
+    reviewer,
+    severity,
+    verdict,
+  });
+}
+
+test('aggregation: blocker FAIL -> step FAIL/failed', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'blocker', 'FAIL');
+    rawReviewer(root, specPath, 'review', 'b', 'error', 'PASS');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'FAIL');
+    assert.equal(s.steps.review.status, 'failed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: error FAIL -> step FAIL/failed', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'error', 'FAIL');
+    rawReviewer(root, specPath, 'review', 'b', 'warning', 'PASS');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'FAIL');
+    assert.equal(s.steps.review.status, 'failed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: warning FAIL -> step PASS_WITH_NOTES/completed', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'warning', 'FAIL');
+    rawReviewer(root, specPath, 'review', 'b', 'blocker', 'PASS');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'PASS_WITH_NOTES');
+    assert.equal(s.steps.review.status, 'completed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: advisory FAIL -> step PASS_WITH_NOTES/completed', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'advisory', 'FAIL');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'PASS_WITH_NOTES');
+    assert.equal(s.steps.review.status, 'completed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: no FAILs + at least one PASS_WITH_NOTES -> PASS_WITH_NOTES/completed', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'blocker', 'PASS');
+    rawReviewer(root, specPath, 'review', 'b', 'blocker', 'PASS_WITH_NOTES');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'PASS_WITH_NOTES');
+    assert.equal(s.steps.review.status, 'completed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: all PASS -> PASS/completed', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'blocker', 'PASS');
+    rawReviewer(root, specPath, 'review', 'b', 'error', 'PASS');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'PASS');
+    assert.equal(s.steps.review.status, 'completed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: explicit step_completed overrides synthesized verdict but records aggregated_from discrepancy', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'blocker', 'FAIL');
+    // An explicit step_completed event arrives later overriding the synthesized FAIL.
+    appendEvent(root, specPath, {
+      event: 'step_completed',
+      step: 'review',
+      verdict: 'PASS_WITH_NOTES',
+      aggregated_from: ['manual-override'],
+    });
+    const s = currentState(root, specPath);
+    // Explicit event takes precedence.
+    assert.equal(s.steps.review.verdict, 'PASS_WITH_NOTES');
+    assert.equal(s.steps.review.status, 'completed');
+    assert.ok(Array.isArray(s.steps.review.aggregated_from));
+    assert.ok(s.steps.review.aggregated_discrepancy === true, 'discrepancy flag should be set');
+  } finally { cleanupTempDir(root); }
+});
