@@ -496,7 +496,11 @@ function buildSummary(reports) {
   };
 }
 
-runComparison().catch((err) => {
-  console.error(`Fatal: ${err.message}`);
-  process.exit(1);
-});
+// Only run when invoked directly, not when imported as a module by tests
+const isDirectRun = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+if (isDirectRun) {
+  runComparison().catch((err) => {
+    console.error(`Fatal: ${err.message}`);
+    process.exit(1);
+  });
+}
