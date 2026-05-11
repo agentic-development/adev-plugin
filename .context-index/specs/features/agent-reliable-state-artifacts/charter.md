@@ -41,6 +41,8 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 - **Lifecycle skill instruction cleanup** — every lifecycle skill's `SKILL.md` rewritten to call the adapter and `lib/lifecycle-state.mjs` APIs instead of describing markdown-table format. Affected skills: `adev:issues`, `adev:plan` (+ release-mode, epic-mode, feature-mode), `adev:implement`, `adev:work`, `adev:specify`, `adev:validate`, `adev:reconcile`, `adev:debug`, `adev:status`, `adev:hygiene`, `adev:research`, `adev:sync`, `adev:build` (+ resume-mode). Mirrored in `providers/codex/` and `providers/opencode/`.
 - **Direct-fs consumer migration** — `viz/build.mjs` inline markdown parser replaced with adapter call. Bash hooks switched from inline parsing to Node helper invocation.
 - **Test migration** — every fixture string and assertion against markdown-table or YAML format rewritten against JSON/JSONL. Format-evolution tests (12/13/14-column branches) replaced with schema-version tests.
+- **Sibling charter amendments** — revisions to `task-management`, `spec-lifecycle`, `session-awareness`, and `milestone-lifecycle` charters that (a) reference this charter as the authority for storage format, (b) update normative paths from `.md`/`.yaml` to `.json`/`.jsonl` where applicable (e.g. session-awareness charter's `.execution-state.md` reference), and (c) note the format-ownership boundary. Performed as the last step of the rollout so amended charters reference completed reality.
+- **Constitution Context Routing update** — replace `Build state | .context-index/build-state/` row with `Lifecycle state | .context-index/lifecycle-state/` in `constitution.md`; sync to `CLAUDE.md` via `/adev:sync`.
 
 ### Out of Scope
 
@@ -51,6 +53,8 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 - **Centralized lifecycle state file** — explicitly rejected; per-spec only. A single file with every spec's data is the failure mode this charter exists to eliminate.
 - **Aggregate index file for spec pipeline status** — computed on demand from per-spec files via `listLifecycleStates()`; not stored.
 - **Beads adapter retirement** — beads stays as an optional backend. Native JSON becomes the default; `backend: beads` continues to work.
+- **`createEpic` / `updateEpic` removal** — these methods remain on the `JsonAdapter` as deprecated wrappers around the unified `create()` / `update()` flow, identical to today's `FileAdapter`. Removal is a follow-up charter, not part of this scope.
+- **Markdown `backend: file` removal** — read-only support is preserved for one release cycle (next minor version after this charter lands). Removal of the markdown adapter is a follow-up; specs in this charter define the deprecation window but not the removal commit.
 - **External tracker sync** — already out of scope for `task-management`; remains out here.
 - **Per-step aggregation rule override (majority / weighted voting)** — strict aggregation suffices for v1. Revisit if domains request it.
 - **Lifecycle log compaction** — not needed at current N. Add when individual logs exceed ~10k events.
@@ -148,6 +152,8 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 | Direct-fs consumer migration | `viz/build.mjs` inline parser replaced with adapter call. Bash hooks switched to Node helper. | must-have | — |
 | Provider mirror sync | `providers/codex/skills/*` and `providers/opencode/skills/*` updated to match new lifecycle skill instructions. Synced per-skill as each source-skill PR lands. | must-have | — |
 | Test migration | Every test fixture and assertion against markdown-table or YAML format rewritten against JSON/JSONL. Format-evolution tests replaced with schema-version tests. | must-have | — |
+| Sibling charter amendments | Revisions to `task-management`, `spec-lifecycle`, `session-awareness`, `milestone-lifecycle` charters: reference this charter as storage-format authority, update normative paths to `.json`/`.jsonl` where applicable, note ownership boundary. Performed as the last rollout step. | must-have | — |
+| Constitution Context Routing update | Replace `Build state` row with `Lifecycle state` in `constitution.md`; sync via `/adev:sync`. Single small edit; bundled with the rename PR. | must-have | — |
 | Markdown rendering layer | `lib/issues/render-markdown.mjs` and `lib/lifecycle-state.mjs::renderMarkdown` produce human-readable markdown from authoritative JSON/JSONL on demand. Surfaced via `adev status --render`. | should-have | — |
 | Spec pipeline aggregate view | `/adev:status` surfaces "where is each spec" by calling `listLifecycleStates()`. Pure read; no stored aggregate. | should-have | — |
 | `listLifecycleStates()` helper | Globs `.context-index/lifecycle-state/*.jsonl` and returns folded projections. Used by aggregate views, `/adev:retro`, `/adev:hygiene`. | should-have | — |
@@ -297,8 +303,10 @@ lifecycle:
 
 ### Hook contracts
 
-- `hooks/session-start.sh` — calls a Node helper for parsing; no inline YAML.
-- `hooks/lifecycle-gate-bash.sh` — same Node-helper pattern; no inline grep.
+Shell scripts (`session-start.sh`, `lifecycle-gate-bash.sh`) remain the **registered hook entry points** in `hooks/hooks.json` and retain exclusive ownership of exit codes (0 = allow, 2 = block). The Node helper invoked by these scripts is a parsing subprocess only — it returns parsed data on stdout for the shell script to act on, but it does not own the hook protocol. This preserves constitution Non-Negotiable Principle 4 (hook protocol compliance).
+
+- `hooks/session-start.sh` — calls a Node helper for parsing; no inline YAML. Shell script remains the registered entry point and owns exit code.
+- `hooks/lifecycle-gate-bash.sh` — same Node-helper pattern; no inline grep. Shell script remains the registered entry point.
 - `hooks/issue-reminder.mjs` — already uses `lib/issues/registry.mjs`; behavior unchanged.
 
 ### Consumed APIs
@@ -325,7 +333,7 @@ lifecycle:
 | `currentState()` read+fold latency | < 5 ms p99 for N=50 events; < 50 ms p99 for N=1000 | Parameterized event-count perf test |
 | `listLifecycleStates()` aggregate latency | < 100 ms p99 for 100 specs (cold cache) | Synthetic fixture; CI gate |
 | Crash safety | Partial writes invisible to readers; final-line truncation tolerated (skip-and-continue) | Fault-injection: kill process mid-write, assert reader sees prior consistent state |
-| Concurrent-write safety | Two `appendEvent` calls from different processes never interleave on the same file | 100 concurrent appenders test; assert all events present and well-formed |
+| Concurrent-write safety | Two `appendEvent` calls from different processes never interleave on the same file (assumes payloads ≤ PIPE_BUF ~4 KB on macOS/Linux; not a POSIX guarantee but reliable on target platforms) | 100 concurrent appenders test; assert all events present and well-formed |
 | Migration idempotency | Running `adev migrate` twice produces identical output to once | Round-trip diff = empty on second run |
 | Migration completeness | All existing tasks.md / build-state.json / .execution-state.md / milestones.yaml data appears in JSON output | Field-by-field round-trip compare against old-format parse |
 | Schema evolution cost | Adding a new event variant requires zero changes outside the producing skill | Architectural test: `lib/lifecycle-state.mjs` has no hard-coded variant list in read paths |
