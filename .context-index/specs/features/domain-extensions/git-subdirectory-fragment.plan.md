@@ -57,7 +57,7 @@
 
 **Tests:** `tests/lib/extensions/resolve-source.test.mjs`
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 Add tests for:
 1. Git URL with `#subdir` resolves to `<cloneDir>/subdir/`
@@ -66,12 +66,12 @@ Add tests for:
 4. Subdirectory exists but no `adev-extension.yaml` → `MISSING_MANIFEST`
 5. Path traversal `../` in fragment → `SOURCE_RESOLUTION` error
 
-- [ ] **Verify tests fail**
+- [x] **Verify tests fail**
 
 Run: `node --test tests/lib/extensions/resolve-source.test.mjs`
 Expected: FAIL — new tests reference unimplemented fragment behavior
 
-- [ ] **Implement**
+- [x] **Implement**
 
 In `resolveGit()`:
 1. Split URI on first `#`: `const [repoUrl, subdir] = uri.split('#', 2)`
@@ -81,12 +81,12 @@ In `resolveGit()`:
 5. Check `extensionDir` exists with `existsSync()`
 6. Call `readAndValidateManifest(extensionDir)`
 
-- [ ] **Verify tests pass**
+- [x] **Verify tests pass**
 
 Run: `node --test tests/lib/extensions/resolve-source.test.mjs`
 Expected: PASS
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add lib/extensions/resolve-source.mjs tests/lib/extensions/resolve-source.test.mjs
@@ -104,27 +104,27 @@ git commit -m "feat(extensions): add git subdirectory fragment support in resolv
 
 **Depends on:** Task 1
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 Add tests for:
 1. `classifyUri("https://github.com/org/repo#extensions/data-engineering")` returns `"git"`
 2. `stripCredentials("https://user:pass@github.com/org/repo#subdir")` preserves `#subdir`
 
-- [ ] **Verify tests fail or pass**
+- [x] **Verify tests fail or pass**
 
 Run: `node --test tests/lib/extensions/resolve-source.test.mjs`
 Expected: These may already pass since `classifyUri` checks prefixes and `stripCredentials` uses URL parsing. Verify.
 
-- [ ] **Fix if needed**
+- [x] **Fix if needed**
 
 If `stripCredentials()` drops the fragment, fix the URL reconstruction to preserve it.
 
-- [ ] **Verify tests pass**
+- [x] **Verify tests pass**
 
 Run: `node --test tests/lib/extensions/resolve-source.test.mjs`
 Expected: PASS
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add tests/lib/extensions/resolve-source.test.mjs lib/extensions/resolve-source.mjs
