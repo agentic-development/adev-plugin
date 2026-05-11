@@ -1,0 +1,337 @@
+---
+status: draft
+revision: 1
+updated: 2026-05-11
+---
+
+# Feature Charter: agent-reliable-state-artifacts
+
+## Business Intent
+
+Agent-mutated state in the adev framework lives in three formats today: markdown tables (`tasks.md`, charter capability maps), YAML frontmatter with markdown bodies (`.execution-state.md`), and ad-hoc YAML (`milestones.yaml`). All three are fragile under LLM-mediated updates — research confirms agents misparse columns, drop fields on regeneration, and accumulate multi-format compatibility branches (the 12/13/14-column issue rows in `lib/issues/file-adapter.mjs` are the worst case). The `agent-reliable-state-artifacts` module replaces these with JSON for relational state (the issue board) and per-spec JSONL append-only event logs for lifecycle state, with markdown rendered on demand for human inspection. The goal is to eliminate the entire class of "agent overwrites the file and loses data" bugs by making the file format itself resistant to it, while preserving every existing semantic contract (issue lifecycle, spec gates, milestone definitions). This module owns *how* state is persisted; sibling charters (`task-management`, `spec-lifecycle`, `session-awareness`, `milestone-lifecycle`) retain ownership of *what* the data means.
+
+### Ownership Note
+
+This module supersedes the storage-format decisions of four existing charters:
+
+- **`task-management`** — owns issue lifecycle, tiered IDs, `IssueManagerInterface`. Storage format and on-disk schema for `tasks.json` are now owned here. Next revision of that charter should reference this module for the format contract.
+- **`spec-lifecycle`** — owns source manifests, capability status, `/adev:status`. Build-state location and event log format are now owned here. The `.context-index/build-state/` directory rename is performed by this charter's migration tooling.
+- **`session-awareness`** — owns execution-state semantics. The format of `.execution-state.md` (now `.execution-state.json`) and the bash-hook decoupling are owned here.
+- **`milestone-lifecycle`** — owns milestone definitions and ship strategies. The format of `milestones.yaml` (now `milestones.json`) and the new `lib/milestones.mjs` wrapper are owned here.
+
+This module does NOT change *what* state is tracked, the issue lifecycle, the gating semantics, or the spec/milestone contracts. It changes only *how* state is persisted.
+
+## Scope and Boundaries
+
+### In Scope
+
+- **JSON issue board** — `.context-index/tasks/tasks.json` replaces `tasks.md`. Schema: `{version, epics[], issues[]}`. Atomic writes via temp-then-rename (existing `lib/build-state.mjs` pattern).
+- **JSON adapter** — `lib/issues/json-adapter.mjs` implementing the unchanged `IssueManagerInterface`. Registered as `backend: json` in manifest; becomes the default for new scaffolds.
+- **JSONL per-spec lifecycle log** — `.context-index/lifecycle-state/<slug>.jsonl`. Append-only, multi-writer, heterogeneous events discriminated by `event` field. Replaces `.context-index/build-state/<slug>.json`. One file per spec contains all lifecycle events, plan-task events, reviewer/validator reports, debug interventions, and step transitions.
+- **Severity stamped on actor events at write time** — `reviewer_report` and `validator_report` events carry `severity` resolved from existing `reviewers.yaml`/`gates.yaml` domain config once at write time. Reads never touch domain config.
+- **Multi-writer aggregation** — `lib/lifecycle-state.mjs` exposes `currentState()` folding events into a state projection. Aggregation rule: any `blocker`/`error` severity returning `FAIL` ⇒ step fails; lower severities returning `FAIL` ⇒ `PASS_WITH_NOTES` on the step.
+- **Lifecycle gates from state** — `requireGate(state, stepName)` replaces filesystem-grep of `.review.md` frontmatter. Hard-block by default; manifest knob `lifecycle.gate_mode: strict|advisory` softens to warning-only.
+- **Plan task events in lifecycle log** — `/adev:plan` writes `plan_task` events instead of creating per-task issues on the board. `/adev:implement` reads and writes these events. Plan-file checkboxes are no longer mutated by skills.
+- **Issue board granularity cleanup** — `/adev:plan` no longer creates one issue per task. Board entries are epic / feature-spec / bug level only. Post-migration invariant: no issue carries `planRef` + `planTask`.
+- **Execution state migration** — `.execution-state.md` → `.execution-state.json`. `lib/execution-state.mjs` rewritten; `hooks/session-start.sh` and `hooks/lifecycle-gate-bash.sh` invoke a Node helper rather than parsing inline YAML.
+- **Milestones migration** — `.context-index/milestones.yaml` → `.context-index/milestones.json`. New `lib/milestones.mjs` wrapper using the atomic-write pattern. `/adev:issues milestone *` subcommands updated.
+- **Directory rename** — `.context-index/build-state/` → `.context-index/lifecycle-state/`. Single-break rename done as part of the migration tool. Constitution Context Routing table updated.
+- **One-shot migration tool** — `lib/migrate-state-artifacts.mjs` and `adev migrate` CLI subcommand convert a project's existing artifacts in one pass. Idempotent. Preserves ID counters, dependency edges, and beads-map.
+- **Markdown rendering layer** — `lib/issues/render-markdown.mjs` and `lib/lifecycle-state.mjs::renderMarkdown` produce human-readable markdown from authoritative JSON/JSONL on demand. Surfaced via `adev status --render` CLI subcommand. Rendered files carry a "DO NOT EDIT — generated" header.
+- **Lifecycle skill instruction cleanup** — every lifecycle skill's `SKILL.md` rewritten to call the adapter and `lib/lifecycle-state.mjs` APIs instead of describing markdown-table format. Affected skills: `adev:issues`, `adev:plan` (+ release-mode, epic-mode, feature-mode), `adev:implement`, `adev:work`, `adev:specify`, `adev:validate`, `adev:reconcile`, `adev:debug`, `adev:status`, `adev:hygiene`, `adev:research`, `adev:sync`, `adev:build` (+ resume-mode). Mirrored in `providers/codex/` and `providers/opencode/`.
+- **Direct-fs consumer migration** — `viz/build.mjs` inline markdown parser replaced with adapter call. Bash hooks switched from inline parsing to Node helper invocation.
+- **Test migration** — every fixture string and assertion against markdown-table or YAML format rewritten against JSON/JSONL. Format-evolution tests (12/13/14-column branches) replaced with schema-version tests.
+
+### Out of Scope
+
+- **Charter capability map** — stays as a markdown table mutated by `/adev:implement`. Acknowledged dual-write risk; low frequency makes it tolerable. Migrated to JSON in a follow-up charter if it becomes a problem.
+- **`.review.md`, `.validation.md`, TDD handoff blocks** — stay as markdown. These are wholesale-rewrite artifacts; no agent surgically patches them.
+- **Specs, ADRs, research, orientation, sessions, plan-file prose** — stay as markdown. Prose, written once or wholesale.
+- **SQLite, TOON, custom binary formats** — explicitly rejected by research; outside the design space.
+- **Centralized lifecycle state file** — explicitly rejected; per-spec only. A single file with every spec's data is the failure mode this charter exists to eliminate.
+- **Aggregate index file for spec pipeline status** — computed on demand from per-spec files via `listLifecycleStates()`; not stored.
+- **Beads adapter retirement** — beads stays as an optional backend. Native JSON becomes the default; `backend: beads` continues to work.
+- **External tracker sync** — already out of scope for `task-management`; remains out here.
+- **Per-step aggregation rule override (majority / weighted voting)** — strict aggregation suffices for v1. Revisit if domains request it.
+- **Lifecycle log compaction** — not needed at current N. Add when individual logs exceed ~10k events.
+
+### Dependencies
+
+| Dependency | Type | Description |
+|------------|------|-------------|
+| `task-management` | internal module | Owns issue lifecycle semantics; storage format moves here |
+| `spec-lifecycle` | internal module | Owns build-state semantics; storage format and rename move here |
+| `session-awareness` | internal module | Owns execution-state semantics; format migrates here |
+| `milestone-lifecycle` | internal module | Owns milestone semantics; format migrates here |
+| `lib/domains/domain-config.mjs` | existing helper | Resolves severity from `reviewers.yaml` / `gates.yaml` at write time |
+| `lib/build-state.mjs` (exemplar) | existing helper | Atomic-write pattern that this charter generalizes |
+| `lib/issues/registry.mjs` | existing helper | Adapter registry; gains `json` as a supported backend |
+| `node:fs` built-in | runtime | `fs.appendFile`, `fs.rename`, `fs.writeFile` — no external deps |
+
+## Domain Model
+
+### Entities
+
+- **LifecycleEvent** — a single line in a `<slug>.jsonl` file. Always has `ts` (ISO-8601) and `event` (string discriminator). Other fields vary by variant. Variants: `lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`. Schema is open — new variants are additions, not migrations.
+
+- **LifecycleLog** — append-only sequence of LifecycleEvents for one spec. Persisted at `.context-index/lifecycle-state/<slug>.jsonl`. Lifecycle: created on first write (`ensureLifecycleState`), grows monotonically, never rewritten in place. Compaction is a future concern.
+
+- **StateProjection** — the fold output of a LifecycleLog. Shape: `{spec, status, currentStep, currentTask, steps{}, plan_tasks{}, interventions[], started, updated}`. Recomputed on every read; never persisted as authoritative state.
+
+- **ActorReport** — a `reviewer_report` or `validator_report` event. Carries `step`, actor `name`, `severity` (stamped at write time from domain config), `verdict` (`PASS` / `PASS_WITH_NOTES` / `FAIL`), and optional fields (notes, error, duration, score).
+
+- **IssueBoard** — `.context-index/tasks/tasks.json`. Single document containing `{version, epics[], issues[]}`. Atomic-write target. Entry granularity is human-board level (epics, features, specs, bugs) — never per-plan-task.
+
+- **Issue / Epic** — existing entities from `task-management` charter; same schema fields, new storage shape. JSON adapter implements the unchanged `IssueManagerInterface`.
+
+- **ExecutionState** — `.context-index/.execution-state.json`. Single object with `planRef`, `currentTask`, `status`, `blockers`, `nextAction`, `issueBinding`. Written atomically on transition.
+
+- **MilestoneRegistry** — `.context-index/milestones.json`. List of milestones with name, status, target date, epic link, release config, ship criteria. Same shape as today's YAML.
+
+- **Severity** — enum: `blocker`, `error`, `warning`, `advisory`. Determined per actor from existing domain config (`reviewers.yaml::severity_cap`, `gates.yaml::severity`). Stamped on each ActorReport at write time.
+
+- **Verdict** — enum: `PASS`, `PASS_WITH_NOTES`, `FAIL`. Returned by actors; aggregated by the fold.
+
+- **StepName** — enum: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Extensible via the open event schema if future steps are added.
+
+### Relationships
+
+| From | To | Cardinality | Notes |
+|------|----|-------------|-------|
+| Spec file | LifecycleLog | 1 : 1 | Slug derived from spec filename |
+| LifecycleLog | LifecycleEvent | 1 : N | Append-only |
+| LifecycleEvent | ActorReport | inherits | ActorReport is a subtype of LifecycleEvent |
+| ActorReport | Severity | N : 1 | Stamped from domain config |
+| StateProjection | LifecycleLog | derived | Pure fold; never persisted as truth |
+| IssueBoard | Issue | 1 : N | Single board, many issues |
+| IssueBoard | Epic | 1 : N | Single board, many epics |
+| Epic | Issue | 1 : N | Issue.epicId reference |
+| Plan file | plan_task events | 1 : N | Events live inside the spec's LifecycleLog, scoped by `plan` field |
+| Milestone | Epic | 1 : 1 | Existing milestone-lifecycle linkage |
+| Domain config | Severity | resolves | Fold lookup at write time only; not stored on disk twice |
+
+### Invariants
+
+1. **Append-only.** LifecycleLog files are written exclusively via `appendEvent`. No skill or hook may rewrite an existing line. The lib enforces this — writes go through `fs.appendFile` with newline termination.
+
+2. **Severity is immutable once written.** Once an event lands on disk with a severity, that severity remains. Changing `severity_cap` in domain config affects future events only.
+
+3. **State is derived, never stored.** No file holds the projected `StateProjection`. Every read recomputes from events. Snapshot caches, if ever added, are advisory and reconstructable from the log.
+
+4. **One LifecycleLog per spec, full stop.** All event types for a spec — lifecycle steps, plan tasks, reviewer reports, debug interventions — live in the same file. No sibling state files for the same spec.
+
+5. **Issue board granularity invariant.** No Issue on the board has a `planRef` + `planTask` binding after the migration completes. Plan tasks live exclusively in lifecycle logs as `plan_task` events.
+
+6. **Atomic write or no write.** All JSON writes (`tasks.json`, `execution-state.json`, `milestones.json`) use temp-then-rename. Partial writes are invisible to readers.
+
+7. **Adapter interface stable.** `IssueManagerInterface` (init, create, update, close, list, get, listEpics, createEpic, updateEpic, addDependency, walkTree) is unchanged. JSON adapter, file adapter (deprecated), and beads adapter all conform to it.
+
+8. **Gate enforcement is fold-based.** `/adev:plan` and downstream skills determine prerequisites by reading `currentState(spec).steps[prior]`, not by grepping filesystem artifacts. Hard-block default; manifest knob softens to advisory.
+
+9. **Markdown is rendered, never authoritative.** Any `.md` file produced from JSON/JSONL state carries a "DO NOT EDIT — generated" header and is regeneratable. Editing the rendered file has no effect on the source of truth.
+
+## Capability Map
+
+| Capability | Description | Priority | Status |
+|------------|-------------|----------|--------|
+| Lifecycle event log | `lib/lifecycle-state.mjs` with append-only JSONL writes, `appendEvent`/`readEvents`/`currentState`/`requireGate`/`listLifecycleStates`/`renderMarkdown`. Defines canonical event schema and multi-writer fold-aggregation algorithm. Foundation. | must-have | — |
+| JSON issue board + adapter | `.context-index/tasks/tasks.json` document, `lib/issues/json-adapter.mjs` implementing the unchanged `IssueManagerInterface`, registry update (`backend: json`), new-scaffold default. | must-have | — |
+| Severity stamping at write time | `reportReviewer()` / `reportValidator()` helpers that look up severity from `reviewers.yaml`/`gates.yaml` once at write and stamp it on the event. Reads stay config-free. | must-have | — |
+| Plan-task events in lifecycle log | `/adev:plan` writes `plan_task` events instead of creating per-task issues. `/adev:implement` reads/writes plan-task events. Plan-file checkboxes no longer mutated. | must-have | — |
+| Issue board granularity cleanup | Enforces post-migration invariant: no issue with `planRef`+`planTask`. Board entries are epic / feature-spec / bug level only. Includes `/adev:plan`, `/adev:specify`, `/adev:work` instruction updates and migration collapse of existing per-task issues. | must-have | — |
+| Lifecycle-state gates | `requireGate(state, stepName)` replaces filesystem-grep of `.review.md` frontmatter. Hard-block default; `lifecycle.gate_mode: strict\|advisory` knob softens. | must-have | — |
+| Execution state migration | `.execution-state.md` → `.execution-state.json`. `lib/execution-state.mjs` rewritten; `hooks/session-start.sh` and `hooks/lifecycle-gate-bash.sh` invoke a Node helper. | must-have | — |
+| Milestones migration | `milestones.yaml` → `milestones.json`. New `lib/milestones.mjs` wrapper. `/adev:issues milestone *` subcommands updated. | must-have | — |
+| Directory rename: build-state → lifecycle-state | One-shot rename in migration tool. Constitution Context Routing table and references updated. | must-have | — |
+| One-shot migration tool | `lib/migrate-state-artifacts.mjs` + `adev migrate` CLI subcommand. Converts tasks.md, build-state, .execution-state.md, milestones.yaml in one pass. Idempotent. Preserves IDs, deps, beads-map. | must-have | — |
+| Lifecycle skill instruction updates | Every lifecycle skill's `SKILL.md` rewritten to call adapter / `lib/lifecycle-state.mjs` APIs instead of describing markdown-table format. | must-have | — |
+| Direct-fs consumer migration | `viz/build.mjs` inline parser replaced with adapter call. Bash hooks switched to Node helper. | must-have | — |
+| Provider mirror sync | `providers/codex/skills/*` and `providers/opencode/skills/*` updated to match new lifecycle skill instructions. Synced per-skill as each source-skill PR lands. | must-have | — |
+| Test migration | Every test fixture and assertion against markdown-table or YAML format rewritten against JSON/JSONL. Format-evolution tests replaced with schema-version tests. | must-have | — |
+| Markdown rendering layer | `lib/issues/render-markdown.mjs` and `lib/lifecycle-state.mjs::renderMarkdown` produce human-readable markdown from authoritative JSON/JSONL on demand. Surfaced via `adev status --render`. | should-have | — |
+| Spec pipeline aggregate view | `/adev:status` surfaces "where is each spec" by calling `listLifecycleStates()`. Pure read; no stored aggregate. | should-have | — |
+| `listLifecycleStates()` helper | Globs `.context-index/lifecycle-state/*.jsonl` and returns folded projections. Used by aggregate views, `/adev:retro`, `/adev:hygiene`. | should-have | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Milestone | Depends On |
+|-----------|--------|------------------|------------|
+| Charter capability map → JSON sidecar | Status changes infrequently; dual-write risk low. Defer until pattern is proven on lifecycle state. | TBD | This charter complete |
+| Lifecycle log compaction | Not needed at current N. Add when individual logs exceed ~10k events. | TBD | This charter complete + observed scale |
+| Per-step aggregation rule override (majority / weighted) | Strict default suffices for v1. Revisit if domains request it. | TBD | This charter complete + user feedback |
+| Snapshot cache (`<slug>.snapshot.json`) | Premature optimization at current fold cost. | TBD | Performance evidence |
+| `/adev:status` board drill-down with per-spec lifecycle inline | Cosmetic. Plain status output suffices for v1. | TBD | This charter complete |
+| External tracker sync from JSON board | Out of scope for `task-management`; remains out here. | — | — |
+
+## Interface Contracts
+
+### `lib/lifecycle-state.mjs` — exported API
+
+```javascript
+// Primitive write — append one event line
+appendEvent(projectRoot, specPath, event) → void
+
+// Primitive read — return array of events
+readEvents(projectRoot, specPath) → LifecycleEvent[]
+
+// Convenience writers — resolve severity from domain config, stamp on event, append
+reportReviewer(projectRoot, specPath, { step, reviewer, verdict, notes? }) → void
+reportValidator(projectRoot, specPath, { step, validator, verdict, error?, score?, duration_ms? }) → void
+reportStep(projectRoot, specPath, { step, status, verdict? }) → void
+reportPlanTask(projectRoot, specPath, { plan, task_id, status, notes? }) → void
+reportIntervention(projectRoot, specPath, { kind, note }) → void
+
+// Bootstrap / lifecycle helpers
+ensureLifecycleState(projectRoot, specPath) → void
+hasLifecycleState(projectRoot, specPath) → boolean
+
+// Projection
+currentState(projectRoot, specPath) → StateProjection
+filterEvents(projectRoot, specPath, predicate) → LifecycleEvent[]
+
+// Gate
+requireGate(state, stepName) → void
+//   manifest knob: lifecycle.gate_mode = "strict" (default) | "advisory"
+
+// Aggregate
+listLifecycleStates(projectRoot) → { spec, slug, status, currentStep, updated }[]
+slugFromSpec(specPath) → string
+
+// Rendering
+renderMarkdown(state) → string
+```
+
+### Event schema (canonical line shapes)
+
+All events carry `ts` (ISO-8601) and `event` (string discriminator). Variants:
+
+```jsonl
+{"ts":"...","event":"lifecycle_step","step":"specify","status":"started","invoked_via":"build|standalone","actor":"agent/claude-code"}
+{"ts":"...","event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS","notes":null}
+{"ts":"...","event":"validator_report","step":"validate","validator":"test-suite","severity":"error","verdict":"PASS","duration_ms":2400}
+{"ts":"...","event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","aggregated_from":["structural-architect","security-reviewer","consistency-analyzer"]}
+{"ts":"...","event":"step_failed","step":"validate","verdict":"FAIL","aggregated_from":[...],"failing":["schema-conformance"]}
+{"ts":"...","event":"plan_task","plan":".context-index/specs/.../foo.plan.md","task_id":"t2","status":"in_progress","notes":null}
+{"ts":"...","event":"debug_intervention","note":"ran adev:debug after task 1 GREEN; restarted at task 2","by":"agent/claude-code"}
+{"ts":"...","event":"recovery_record","ref":".context-index/.recovery/<slug>-<ts>.json"}
+{"ts":"...","event":"manual_override","field":"steps.review.verdict","from":"FAIL","to":"PASS","reason":"...","by":"user/<name>"}
+```
+
+Open schema: domains and future skills may define new event variants. Unknown `event` values are preserved on read and ignored by core projections.
+
+### `lib/issues/json-adapter.mjs` — implements `IssueManagerInterface` (unchanged)
+
+```javascript
+class JsonAdapter {
+  constructor(projectRoot, opts) {}
+  async init()
+  async create(issueData)
+  async update(id, changes)
+  async close(id, reason)
+  async list(filters)
+  async get(id)
+  async listEpics(filters)
+  async createEpic(epicData)       // legacy, deprecated
+  async updateEpic(id, changes)    // legacy, deprecated
+  async addDependency(issueId, dependsOnId)
+  async walkTree(parentId)
+}
+```
+
+### `tasks.json` document schema
+
+```json
+{
+  "version": 2,
+  "epics": [
+    { "id": "epic-1", "title": "...", "status": "open", "milestone": null, "plan_ref": null, "created": "...", "updated": "..." }
+  ],
+  "issues": [
+    { "id": "issue-1", "title": "...", "status": "open", "priority": 1, "type": "task",
+      "epicId": "epic-3", "spec_ref": ".context-index/specs/.../foo.spec.md",
+      "deps": [], "notes": null, "next_action": null, "created": "...", "updated": "..." }
+  ]
+}
+```
+
+Post-migration invariant: no `planRef` or `planTask` field on issues. Plan tasks live as events in the lifecycle log.
+
+### `.execution-state.json` document schema
+
+```json
+{
+  "status": "active",
+  "planRef": ".context-index/specs/.../foo.plan.md",
+  "currentTask": "t2",
+  "issueBinding": "issue-42",
+  "blockers": null,
+  "nextAction": "Run /adev:implement task t2",
+  "updated": "..."
+}
+```
+
+### `milestones.json` document schema
+
+Mirrors today's `milestones.yaml` shape exactly; only the format changes. Existing field names preserved for compatibility with `milestone-lifecycle` charter.
+
+### CLI surface (additions)
+
+```bash
+adev migrate                       # one-shot conversion of all state artifacts
+adev migrate --dry-run             # preview changes
+adev migrate --artifact=tasks      # scope to a single artifact
+
+adev status --render               # write tasks.md and lifecycle render from JSON
+adev status --pipeline             # show spec pipeline aggregate via listLifecycleStates()
+```
+
+### Manifest additions (`manifest.yaml`)
+
+```yaml
+tasks:
+  backend: json                    # new default; "file" (markdown) and "beads" still supported
+
+lifecycle:
+  gate_mode: strict                # strict (default) | advisory
+```
+
+### Hook contracts
+
+- `hooks/session-start.sh` — calls a Node helper for parsing; no inline YAML.
+- `hooks/lifecycle-gate-bash.sh` — same Node-helper pattern; no inline grep.
+- `hooks/issue-reminder.mjs` — already uses `lib/issues/registry.mjs`; behavior unchanged.
+
+### Consumed APIs
+
+| API | Consumer | Producer |
+|---|---|---|
+| `IssueManagerInterface` | every lifecycle skill, `viz/build.mjs`, `hooks/issue-reminder.mjs` | `lib/issues/json-adapter.mjs` (this charter) |
+| `lib/lifecycle-state.mjs` | every lifecycle skill | this charter |
+| `loadDomainConfig(domain, 'reviewers', ...)` | `reportReviewer()` | existing `lib/domains/domain-config.mjs` |
+| `loadDomainConfig(domain, 'gates', ...)` | `reportValidator()` | existing `lib/domains/domain-config.mjs` |
+| `getIssueManager(manifest)` | every lifecycle skill | existing `lib/issues/registry.mjs` (extended) |
+
+### Backward compatibility surface
+
+- `backend: file` (markdown) — supported as **read-only** for one release cycle. New writes go through JSON.
+- `backend: beads` — unchanged; continues to delegate to `br` CLI.
+- Old `build-state/<slug>.json` files — read by migration tool only; not used post-migration.
+
+## Quality Attributes
+
+| Attribute | Target | Measurement |
+|-----------|--------|-------------|
+| `appendEvent` write latency | < 5 ms p99 | `tests/lib/lifecycle-state.test.mjs` perf assertion |
+| `currentState()` read+fold latency | < 5 ms p99 for N=50 events; < 50 ms p99 for N=1000 | Parameterized event-count perf test |
+| `listLifecycleStates()` aggregate latency | < 100 ms p99 for 100 specs (cold cache) | Synthetic fixture; CI gate |
+| Crash safety | Partial writes invisible to readers; final-line truncation tolerated (skip-and-continue) | Fault-injection: kill process mid-write, assert reader sees prior consistent state |
+| Concurrent-write safety | Two `appendEvent` calls from different processes never interleave on the same file | 100 concurrent appenders test; assert all events present and well-formed |
+| Migration idempotency | Running `adev migrate` twice produces identical output to once | Round-trip diff = empty on second run |
+| Migration completeness | All existing tasks.md / build-state.json / .execution-state.md / milestones.yaml data appears in JSON output | Field-by-field round-trip compare against old-format parse |
+| Schema evolution cost | Adding a new event variant requires zero changes outside the producing skill | Architectural test: `lib/lifecycle-state.mjs` has no hard-coded variant list in read paths |
+| Format invariant: append-only | No code path rewrites a `<slug>.jsonl` file | Architectural test: grep `lifecycle-state` for non-`appendFile` writes; CI gate |
+| Format invariant: severity stamped at write | No `reviewer_report` or `validator_report` event lacks a `severity` field | Schema-validation test over fixture events |
+| Issue board granularity invariant | After migration, no issue has both `planRef` and `planTask` set | `tests/lib/issues-board-cleanup.test.mjs` on migrated fixture |
+| Test coverage (new lib code) | ≥ 90% line coverage on `lib/lifecycle-state.mjs`, `lib/issues/json-adapter.mjs`, `lib/migrate-state-artifacts.mjs` | `npm test --coverage` |
+| Skill-instruction freshness | Every lifecycle skill SKILL.md references the new APIs; no leftover `tasks.md` row format or YAML frontmatter parsing instructions | `tests/skills/no-stale-format-refs.test.mjs` |
+| Provider mirror parity | Codex and opencode mirrors carry identical API references to the source skills | `tests/providers/mirror-parity.test.mjs` |
