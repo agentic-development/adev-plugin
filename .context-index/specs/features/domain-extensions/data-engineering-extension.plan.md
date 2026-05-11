@@ -69,16 +69,16 @@
 
 **Tests:** `tests/extensions/data-engineering.test.mjs`
 
-- [ ] **Write failing test**
+- [x] **Write failing test**
 
 Test that `extensions/data-engineering/adev-extension.yaml` exists and passes `parseExtensionManifest()` validation. Test that `domain/` contains exactly 7 expected files.
 
-- [ ] **Verify test fails**
+- [x] **Verify test fails**
 
 Run: `node --test tests/extensions/data-engineering.test.mjs`
 Expected: FAIL — directory does not exist
 
-- [ ] **Implement**
+- [x] **Implement**
 
 1. Create `extensions/data-engineering/` directory
 2. Write `adev-extension.yaml`:
@@ -97,12 +97,12 @@ Expected: FAIL — directory does not exist
 3. Copy all 7 files from `templates/domains/data-engineering/` to `extensions/data-engineering/domain/`
 4. Write `README.md` with extension name, description, and install command
 
-- [ ] **Verify test passes**
+- [x] **Verify test passes**
 
 Run: `node --test tests/extensions/data-engineering.test.mjs`
 Expected: PASS
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add extensions/data-engineering/ tests/extensions/data-engineering.test.mjs
@@ -120,7 +120,7 @@ git commit -m "feat(domain-extensions): create data-engineering extension packag
 
 **Depends on:** Task 1, bundled-templates-cleanup (BUNDLED_DOMAIN_NAMES must not contain "data-engineering")
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 Add tests:
 1. `installExtension("./extensions/data-engineering", tempProjectRoot)` succeeds
@@ -129,21 +129,21 @@ Add tests:
 4. Re-install is idempotent — no duplicate manifest stamps
 5. Domain profile files in extension are content-identical to `templates/domains/data-engineering/`
 
-- [ ] **Verify tests fail**
+- [x] **Verify tests fail**
 
 Run: `node --test tests/extensions/data-engineering.test.mjs`
 Expected: FAIL — BUNDLED_COLLISION (if cleanup not yet applied) or resolution failures
 
-- [ ] **Implement**
+- [x] **Implement**
 
 No code changes needed — tests exercise existing pipeline against the extension package. If tests fail due to BUNDLED_COLLISION, this task is blocked until bundled-templates-cleanup is complete.
 
-- [ ] **Verify tests pass**
+- [x] **Verify tests pass**
 
 Run: `node --test tests/extensions/data-engineering.test.mjs`
 Expected: PASS
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add tests/extensions/data-engineering.test.mjs
