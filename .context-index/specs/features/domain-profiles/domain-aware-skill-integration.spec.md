@@ -20,7 +20,7 @@ updated: 2026-05-10
 This spec defines how lifecycle skills consume domain config to adapt their behavior. Skills have NO hardcoded defaults — all configurable behavior is read from the resolved domain profile via deterministic companion code. The config loading pipeline is:
 
 1. Skill calls `resolveDomain()` to get the active domain
-2. Skill calls `loadOverlay()` for its overlay type(s) — `loadOverlay()` resolves through the `extends` chain (custom override -> parent bundled profile) automatically
+2. Skill calls `loadDomainConfig()` for its overlay type(s) — `loadDomainConfig()` resolves through the `extends` chain (custom override -> parent bundled profile) automatically
 3. Skill reads governance files (if any) for project-level overrides
 4. Skill's merge function combines domain config + governance into final config
 5. Skill operates on the merged config
@@ -40,29 +40,29 @@ Skills call these merge functions directly. The merge functions are unit-testabl
 
 ### Preconditions
 
-- `resolveDomain()` and `loadOverlay()` are implemented (see `domain-resolution-and-overlay-structure.spec.md`)
+- `resolveDomain()` and `loadDomainConfig()` are implemented (see `domain-resolution-and-overlay-structure.spec.md`)
 - The consuming skill is executing its normal flow
 
 ### Behaviors
 
 **Shared: Config Loading at Startup**
 
-1. **When** any consuming skill starts **then** it calls `resolveDomain()` once, then `loadOverlay()` for its required overlay type(s). `loadOverlay()` automatically resolves through the `extends` chain for custom domains, so skills always receive the fully resolved config without awareness of inheritance. The domain profile always provides defaults — there are no hardcoded fallbacks in skill code. If `loadOverlay()` returns `null` (domain profile missing or incomplete), the skill logs a warning and operates with empty config (which may cause downstream failures if required config is missing).
+1. **When** any consuming skill starts **then** it calls `resolveDomain()` once, then `loadDomainConfig()` for its required overlay type(s). `loadDomainConfig()` automatically resolves through the `extends` chain for custom domains, so skills always receive the fully resolved config without awareness of inheritance. The domain profile always provides defaults — there are no hardcoded fallbacks in skill code. If `loadDomainConfig()` returns `null` (domain profile missing or incomplete), the skill logs a warning and operates with empty config (which may cause downstream failures if required config is missing).
 
 **Charter Template Overlay (brainstorm)**
 
-2. **When** `/adev:brainstorm` starts **then** it loads the complete charter template via `loadOverlay(domain, "charter-template", ...)`. The template provides the full section structure and vocabulary for the domain. Skills use the template directly as the charter structure -- no H2 section merging is needed.
+2. **When** `/adev:brainstorm` starts **then** it loads the complete charter template via `loadDomainConfig(domain, "charter-template", ...)`. The template provides the full section structure and vocabulary for the domain. Skills use the template directly as the charter structure -- no H2 section merging is needed.
 
 3. **When** `/adev:brainstorm` loads a charter overlay that includes a Quality Attributes section **then** the domain-specific quality attribute suggestions are presented to the user (e.g., data-engineering suggests freshness, completeness, accuracy; software suggests latency, throughput, availability).
 
 **Spec Template Overlay (specify)**
 
-4. **When** `/adev:specify` starts **then** it loads the complete spec template via `loadOverlay(domain, "spec-template", ...)`. The template provides the full section structure for the domain. Skills use the template directly -- no H2 section merging is needed.
+4. **When** `/adev:specify` starts **then** it loads the complete spec template via `loadDomainConfig(domain, "spec-template", ...)`. The template provides the full section structure for the domain. Skills use the template directly -- no H2 section merging is needed.
 
 **Domain-Aware Reviewer Dispatch (review-specs)**
 
 5. **When** `/adev:review-specs` loads its reviewer set **then** it calls `loadReviewerConfig()` from `lib/domains/merge-reviewers.mjs` which:
-   a. Loads domain reviewers via `loadOverlay(domain, "reviewers", ...)`
+   a. Loads domain reviewers via `loadDomainConfig(domain, "reviewers", ...)`
    b. Loads governance reviewers from `.context-index/governance/review.yaml` (if exists)
    c. Merges: domain reviewers first, then governance reviewers applied on top
    d. Returns the final merged reviewer list
@@ -71,14 +71,14 @@ Skills call these merge functions directly. The merge functions are unit-testabl
 
 7. **When** a domain `reviewers.yaml` specifies `merge_strategy: replace` **then** only the domain-defined reviewers are used as the base (bundled defaults are excluded). Governance reviewers are still applied on top. The merge function emits a user-visible warning: `"Domain '<domain>' replaced base reviewers. Governance overrides still apply."`
 
-8. **When** a reviewer entry is missing the required `id` field **then** it is skipped with `OVERLAY_MERGE_WARN`. Optional fields (`dispatch`, `profile`, `severity_cap`, `context_pack`) inherit defaults: `dispatch: always`, `profile: reviewer-capable`, `severity_cap: blocker`, `context_pack: base`.
+8. **When** a reviewer entry is missing the required `id` field **then** it is skipped with `DOMAIN_CONFIG_MERGE_WARN`. Optional fields (`dispatch`, `profile`, `severity_cap`, `context_pack`) inherit defaults: `dispatch: always`, `profile: reviewer-capable`, `severity_cap: blocker`, `context_pack: base`.
 
 9. **When** no domain reviewers overlay exists and no governance reviewers file exists **then** the skill has no reviewers configured and emits a warning. This can only happen if the `software` profile is corrupted or missing.
 
 **Domain-Aware Quality Gates (validate)**
 
 10. **When** `/adev:validate` loads gate commands **then** it calls `loadDomainGateHookConfig()` from `lib/domains/merge-gates.mjs` which:
-    a. Loads domain gates via `loadOverlay(domain, "gates", ...)`
+    a. Loads domain gates via `loadDomainConfig(domain, "gates", ...)`
     b. Loads governance gates from `.context-index/governance/gates.yaml` (if exists)
     c. Merges by `id`: governance gates with matching IDs override domain gates; governance gates with new IDs are appended
     d. Returns the final merged gate list
@@ -89,7 +89,7 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 
 **Domain-Aware Verification (implement)**
 
-12. **When** `/adev:implement` reaches the verification step **then** it loads verification config via `loadOverlay(domain, "verification", ...)`. The config specifies `type` (`visual`, `output`, or `flow`), `trigger_patterns` (file globs evaluated relative to project root, rejecting `..` and absolute paths), and `tool` (`"none"` or a configured MCP server name validated against the harness's active server list).
+12. **When** `/adev:implement` reaches the verification step **then** it loads verification config via `loadDomainConfig(domain, "verification", ...)`. The config specifies `type` (`visual`, `output`, or `flow`), `trigger_patterns` (file globs evaluated relative to project root, rejecting `..` and absolute paths), and `tool` (`"none"` or a configured MCP server name validated against the harness's active server list).
 
 13. **When** `type: output` **then** implement uses output comparison via assertions — no browser or MCP tool.
 
@@ -102,14 +102,14 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 **Domain-Aware Lifecycle Gate Config (hooks)**
 
 17. **When** lifecycle gate hooks execute **then** they load gate config via `loadGateHookConfig()` from `lib/domains/merge-gate-config.mjs` which:
-    a. Loads domain gate config via `loadOverlay(domain, "gate-config", ...)`
+    a. Loads domain gate config via `loadDomainConfig(domain, "gate-config", ...)`
     b. Returns the merged config containing `file_exclusions` (glob patterns for files exempt from lifecycle tracking) and `bash_passthrough` (commands allowed without lifecycle session)
 
 18. **When** no gate config exists for the resolved domain **then** the hooks use empty exclusion and passthrough lists (strictest possible — everything is tracked). The `software` profile ships with the current 44 file exclusions and 32 bash passthrough commands as defaults.
 
 **Domain-Aware Test Config (write-test, implement)**
 
-19. **When** `/adev:write-test` or `/adev:implement` loads test configuration **then** it loads test config via `loadOverlay(domain, "test-config", ...)`. The config specifies `permitted_tools` (test framework commands), `max_test_file_size` (gaming detection threshold), and `skip_patterns` (regex patterns for detecting skipped tests in the domain's test frameworks).
+19. **When** `/adev:write-test` or `/adev:implement` loads test configuration **then** it loads test config via `loadDomainConfig(domain, "test-config", ...)`. The config specifies `permitted_tools` (test framework commands), `max_test_file_size` (gaming detection threshold), and `skip_patterns` (regex patterns for detecting skipped tests in the domain's test frameworks).
 
 20. **When** no test config exists for the resolved domain **then** the skill logs a warning and uses empty permitted tools (which will cause test framework detection to fail). The `software` profile ships with the current defaults (node:test, jest, vitest, etc.).
 
@@ -128,10 +128,10 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| Overlay file has valid YAML with unexpected/missing fields | Skill logs a warning identifying the file and field, skips the malformed entry (per-entry skip, not wholesale discard) | OVERLAY_MERGE_WARN |
-| Overlay file is empty or contains no actionable entries | Emit OVERLAY_MERGE_WARN and use empty config | OVERLAY_MERGE_WARN |
-| Domain `reviewers.yaml` has `merge_strategy` value other than `replace` or `append` | Treat as `append` with a warning | OVERLAY_MERGE_WARN |
-| Domain `reviewers.yaml` entry missing `id` field | Reviewer entry skipped with warning; remaining entries proceed | OVERLAY_MERGE_WARN |
+| Overlay file has valid YAML with unexpected/missing fields | Skill logs a warning identifying the file and field, skips the malformed entry (per-entry skip, not wholesale discard) | DOMAIN_CONFIG_MERGE_WARN |
+| Overlay file is empty or contains no actionable entries | Emit DOMAIN_CONFIG_MERGE_WARN and use empty config | DOMAIN_CONFIG_MERGE_WARN |
+| Domain `reviewers.yaml` has `merge_strategy` value other than `replace` or `append` | Treat as `append` with a warning | DOMAIN_CONFIG_MERGE_WARN |
+| Domain `reviewers.yaml` entry missing `id` field | Reviewer entry skipped with warning; remaining entries proceed | DOMAIN_CONFIG_MERGE_WARN |
 | Domain `reviewers.yaml` references unknown execution profile | Reviewer entry skipped with warning; remaining reviewers proceed | UNKNOWN_PROFILE |
 | Governance reviewer `id` matches domain reviewer `id` | Governance entry overrides domain entry (governance wins) | — |
 | Domain `gates.yaml` entry has no `id` or `command` field | Gate entry skipped with warning | INVALID_GATE |
@@ -139,7 +139,7 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 | Domain `verification.yaml` specifies unknown `type` | Fall back to no verification with a warning | UNKNOWN_VERIFY_TYPE |
 | Domain `verification.yaml` `tool` is not `"none"` and not a configured MCP server | Fail config load with actionable message naming the missing server | TOOL_UNAVAILABLE |
 | `trigger_patterns` contain `..` or absolute paths | Patterns are rejected with warning; verification proceeds without those patterns | INVALID_PATTERN |
-| Domain template file is missing | `loadOverlay()` returns `null`; skill falls back to base template | DOMAIN_NOT_FOUND |
+| Domain template file is missing | `loadDomainConfig()` returns `null`; skill falls back to base template | DOMAIN_NOT_FOUND |
 | Domain profile missing entirely (no bundled directory) | All overlays return `null`; skill warns and uses empty config | DOMAIN_NOT_FOUND |
 
 ## System Constitution Reference
@@ -159,8 +159,8 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 | Implement `mergeTestConfig()` in `lib/domains/merge-test-config.mjs` | Load domain test config, return permitted_tools, max_test_file_size, skip_patterns | small |
 | ~~Implement charter template merge function~~ | ~~String-based H2 section replacement/extension for `charter-overlay.md`~~ — **Obsolete:** replaced by full domain templates (see `template-replacement.spec.md`) | ~~medium~~ |
 | ~~Implement spec template merge function~~ | ~~String-based H2 section replacement/extension for `spec-overlay.md`~~ — **Obsolete:** replaced by full domain templates (see `template-replacement.spec.md`) | ~~medium~~ |
-| Wire domain resolution into brainstorm | Call `resolveDomain()` + `loadOverlay()` at startup, apply charter overlay | small |
-| Wire domain resolution into specify | Call `resolveDomain()` + `loadOverlay()` at startup, apply spec overlay | small |
+| Wire domain resolution into brainstorm | Call `resolveDomain()` + `loadDomainConfig()` at startup, apply charter overlay | small |
+| Wire domain resolution into specify | Call `resolveDomain()` + `loadDomainConfig()` at startup, apply spec overlay | small |
 | Wire domain resolution into review-specs | Replace hardcoded reviewer loading with `mergeReviewers()` | small |
 | Wire domain resolution into validate | Replace hardcoded gate loading with `mergeGates()` | small |
 | Wire domain resolution into implement | Replace hardcoded verification with `mergeVerification()` | small |
@@ -183,8 +183,8 @@ Gate commands execute with `execFile` (no shell interpolation). Gate entries req
 - [ ] `lib/lifecycle-gate-config.mjs` no longer has `DEFAULT_FILE_EXCLUSIONS` or `DEFAULT_BASH_PASSTHROUGH` — come from domain profile
 - [ ] `lib/test-strategies/profiles.mjs` no longer has hardcoded `permitted_tools` — come from domain profile
 - [ ] Config merge order is domain profile -> governance (governance wins on ID conflict)
-- [ ] Brainstorm loads domain charter template via `loadOverlay(domain, "charter-template", ...)`
-- [ ] Specify loads domain spec template via `loadOverlay(domain, "spec-template", ...)`
+- [ ] Brainstorm loads domain charter template via `loadDomainConfig(domain, "charter-template", ...)`
+- [ ] Specify loads domain spec template via `loadDomainConfig(domain, "spec-template", ...)`
 - [ ] Review-specs merges domain + governance reviewers via `mergeReviewers()`
 - [ ] `merge_strategy: replace` drops base reviewers but governance still applies on top
 - [ ] Validate merges domain + governance gates via `mergeGates()` by `id` field

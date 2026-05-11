@@ -26,6 +26,9 @@ source-manifest:
     - lib/heuristics.mjs
     - .context-index/specs/features/heuristics/store-and-helper.md
   computed-at: "2026-04-25T21:55:13.449Z"
+drift_detected: true
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-11T00:13:24.273Z
 ---
 
 ## Behavioral Contract

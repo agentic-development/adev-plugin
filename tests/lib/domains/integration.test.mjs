@@ -47,9 +47,9 @@ describe('domain-aware skill integration', () => {
   });
 
   it('should propagate error codes correctly', () => {
-    // OVERLAY_MERGE_WARN for missing reviewer id
+    // DOMAIN_CONFIG_MERGE_WARN for missing reviewer id
     const reviewResult = mergeReviewers({ reviewers: [{ dispatch: 'always' }] }, null);
-    assert.ok(reviewResult.warnings.some(w => w.code === 'OVERLAY_MERGE_WARN'));
+    assert.ok(reviewResult.warnings.some(w => w.code === 'DOMAIN_CONFIG_MERGE_WARN'));
 
     // INVALID_GATE for shell-form command
     const gateResult = mergeGates({ gates: [{ id: 'test', command: 'npm test' }] }, null);

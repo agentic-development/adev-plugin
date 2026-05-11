@@ -18,6 +18,9 @@ source-manifest:
     - skills/specify/SKILL.md
     - tests/skills/specify-workspace-mode.test.mjs
   computed-at: "2026-04-17T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/specify/SKILL.md
+drift_at: 2026-05-11T00:13:06.995Z
 ---
 
 # Live Spec: Workspace-Aware /adev:specify

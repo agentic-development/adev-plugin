@@ -12,7 +12,7 @@ import { strict as assert } from 'node:assert';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 
-import { loadOverlay } from '../../lib/domains/overlay.mjs';
+import { loadDomainConfig } from '../../lib/domains/domain-config.mjs';
 import { mergeGateConfig } from '../../lib/domains/merge-gate-config.mjs';
 import { mergeTestConfig } from '../../lib/domains/merge-test-config.mjs';
 import { mergeReviewers } from '../../lib/domains/merge-reviewers.mjs';
@@ -28,7 +28,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   // ── Gate Config ───────────────────────────────────────────────────
 
   it('merged gate-config matches pre-domain-profiles file exclusions', () => {
-    const overlay = loadOverlay('software', 'gate-config', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'gate-config', REPO_ROOT, PLUGIN_ROOT);
     const { config } = mergeGateConfig(overlay);
 
     const expectedExclusions = [
@@ -65,7 +65,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   });
 
   it('merged gate-config matches pre-domain-profiles bash passthrough', () => {
-    const overlay = loadOverlay('software', 'gate-config', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'gate-config', REPO_ROOT, PLUGIN_ROOT);
     const { config } = mergeGateConfig(overlay);
 
     const expectedPassthrough = [
@@ -108,7 +108,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   // ── Test Config ───────────────────────────────────────────────────
 
   it('merged test-config matches pre-domain-profiles permitted_tools', () => {
-    const overlay = loadOverlay('software', 'test-config', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'test-config', REPO_ROOT, PLUGIN_ROOT);
     const { config } = mergeTestConfig(overlay);
 
     assert.deepStrictEqual(config.permitted_tools, [
@@ -117,13 +117,13 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   });
 
   it('merged test-config matches pre-domain-profiles max_test_file_size', () => {
-    const overlay = loadOverlay('software', 'test-config', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'test-config', REPO_ROOT, PLUGIN_ROOT);
     const { config } = mergeTestConfig(overlay);
     assert.equal(config.max_test_file_size, 512000);
   });
 
   it('merged test-config matches pre-domain-profiles skip_patterns', () => {
-    const overlay = loadOverlay('software', 'test-config', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'test-config', REPO_ROOT, PLUGIN_ROOT);
     const { config } = mergeTestConfig(overlay);
     assert.equal(config.skip_patterns.length, 7);
     // Verify the patterns match the original SKIP_RE components
@@ -136,7 +136,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   // ── Reviewers ─────────────────────────────────────────────────────
 
   it('merged reviewers match pre-domain-profiles defaults', () => {
-    const overlay = loadOverlay('software', 'reviewers', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'reviewers', REPO_ROOT, PLUGIN_ROOT);
     const { reviewers } = mergeReviewers(overlay, null);
 
     // Expected defaults from templates/review-specs/defaults.yaml
@@ -158,7 +158,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   // ── Verification ──────────────────────────────────────────────────
 
   it('merged verification matches pre-domain-profiles visual defaults', () => {
-    const overlay = loadOverlay('software', 'verification', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'verification', REPO_ROOT, PLUGIN_ROOT);
     const { config } = mergeVerification(overlay);
 
     assert.equal(config.type, 'visual');
@@ -171,7 +171,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   // ── Gates ─────────────────────────────────────────────────────────
 
   it('merged gates load without errors', () => {
-    const overlay = loadOverlay('software', 'gates', REPO_ROOT, PLUGIN_ROOT);
+    const overlay = loadDomainConfig('software', 'gates', REPO_ROOT, PLUGIN_ROOT);
     const { gates, warnings } = mergeGates(overlay, null);
     assert.ok(gates.length > 0, 'Should have at least one gate');
     // No error-level warnings
@@ -182,7 +182,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   // ── Markdown Overlays ─────────────────────────────────────────────
 
   it('charter template loads as non-empty string', () => {
-    const template = loadOverlay('software', 'charter-template', REPO_ROOT, PLUGIN_ROOT);
+    const template = loadDomainConfig('software', 'charter-template', REPO_ROOT, PLUGIN_ROOT);
     assert.equal(typeof template, 'string');
     assert.ok(template.trim().length > 0);
     assert.ok(template.includes('## Business Intent'), 'should contain Business Intent section');
@@ -190,7 +190,7 @@ describe('backward-compat: software profile through overlay pipeline', () => {
   });
 
   it('spec template loads as non-empty string', () => {
-    const template = loadOverlay('software', 'spec-template', REPO_ROOT, PLUGIN_ROOT);
+    const template = loadDomainConfig('software', 'spec-template', REPO_ROOT, PLUGIN_ROOT);
     assert.equal(typeof template, 'string');
     assert.ok(template.trim().length > 0);
     assert.ok(template.includes('## Behavioral Contract'), 'should contain Behavioral Contract section');

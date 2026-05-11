@@ -7,7 +7,7 @@
 
 ---
 charter: domain-profiles
-status: implemented
+status: validated
 mode: refactor
 risk_level: medium
 milestone: v1
@@ -15,6 +15,18 @@ revision: 2
 charter-revision: 4
 created: 2026-05-10
 updated: 2026-05-10
+source-manifest:
+  sha: "7295c51"
+  files:
+    - lib/domains/constants.mjs
+    - lib/domains/domain-config.mjs
+    - templates/domains/data-engineering/charter-template.md
+    - templates/domains/data-engineering/spec-template.md
+    - templates/domains/process-automation/charter-template.md
+    - templates/domains/process-automation/spec-template.md
+    - templates/domains/software/charter-template.md
+    - templates/domains/software/spec-template.md
+  computedAt: "2026-05-11T00:29:38.436Z"
 ---
 
 ## Current State
@@ -49,8 +61,8 @@ updated: 2026-05-10
 
 | Consumer | How It Uses Overlays | Impact of Change |
 |----------|---------------------|-----------------|
-| `skills/brainstorm/SKILL.md` | Calls `loadOverlay(domain, 'charter-overlay')` + `mergeTemplateOverlay()` | Must load full template instead |
-| `skills/specify/SKILL.md` | Calls `loadOverlay(domain, 'spec-overlay')` + `mergeTemplateOverlay()` | Must load full template instead |
+| `skills/brainstorm/SKILL.md` | Calls `loadDomainConfig(domain, 'charter-overlay')` + `mergeTemplateOverlay()` | Must load full template instead |
+| `skills/specify/SKILL.md` | Calls `loadDomainConfig(domain, 'spec-overlay')` + `mergeTemplateOverlay()` | Must load full template instead |
 | `lib/domains/overlay.mjs` | Returns raw markdown string for overlay types | Must return full template string for template types |
 | `tests/lib/domains/merge-template-overlay.test.mjs` | Unit tests for H2 merge function | Tests updated or removed |
 | `tests/domains/bundled-profiles.test.mjs` | Validates overlay files exist | Updated to validate template files |
@@ -65,7 +77,7 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 | Spec | Affected Sections | Required Update |
 |------|-------------------|-----------------|
 | `domain-resolution-and-overlay-structure.spec.md` | Overlay Type-to-Filename Mapping table (lines 53-61); Behavior 10 (markdown overlay read semantics) | Rename `charter-overlay` → `charter-template`, `spec-overlay` → `spec-template` in mapping table. Update Behavior 10 to reference "template" types instead of "overlay" types. |
-| `domain-aware-skill-integration.spec.md` | Behavior 2 (`loadOverlay(domain, "charter-overlay")`); Behavior 4 (`loadOverlay(domain, "spec-overlay")`); Actionable Task Map (charter/spec merge function tasks) | Update Behaviors 2 and 4 to use `charter-template` and `spec-template` type names. Remove references to `mergeTemplateOverlay()`. Mark merge function tasks as obsolete. |
+| `domain-aware-skill-integration.spec.md` | Behavior 2 (`loadDomainConfig(domain, "charter-overlay")`); Behavior 4 (`loadDomainConfig(domain, "spec-overlay")`); Actionable Task Map (charter/spec merge function tasks) | Update Behaviors 2 and 4 to use `charter-template` and `spec-template` type names. Remove references to `mergeTemplateOverlay()`. Mark merge function tasks as obsolete. |
 | `bundled-domain-profiles.spec.md` | Overlay File Inventory table (lines 33-41); Behaviors 1-2, 8-9, 15-16 (overlay loading); Behavior 22 (file inventory); Acceptance Criteria (lines 149-151) | Rename `charter-overlay.md` → `charter-template.md`, `spec-overlay.md` → `spec-template.md` throughout. Update file inventory and ACs. |
 
 **Charter entity update:** The charter's Domain Model entity `TemplateOverlay` ("Markdown file that replaces or renames sections in a base template", attributes: `type`, `domain`, `sections[]`) must be renamed to `DomainTemplate` with updated description: "Complete markdown template for a domain's charter or spec structure" and attributes: `type` (charter/spec), `domain`.
@@ -95,7 +107,7 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 
 2. **LLM-reliable.** The agent sees one template with domain-specific sections. No merging, no dynamic variables to track — just "fill this template." This matches how LLMs process instructions.
 
-3. **Simpler code path.** `loadOverlay()` reads a file and returns it. No H2 parsing, no section matching, no merge logic. The `mergeTemplateOverlay()` function is removed.
+3. **Simpler code path.** `loadDomainConfig()` reads a file and returns it. No H2 parsing, no section matching, no merge logic. The `mergeTemplateOverlay()` function is removed.
 
 ## Migration Path
 
@@ -108,14 +120,14 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 
 ### Step 2: Update constants and overlay loader
 
-- **What:** In `lib/domains/constants.mjs`, rename `charter-overlay` -> `charter-template` and `spec-overlay` -> `spec-template` in `OVERLAY_TYPES`, `OVERLAY_FILENAMES`, and `STRUCTURED_OVERLAY_TYPES` (remove template types from structured set since they return strings). Update `loadOverlay()` to use the new filenames.
+- **What:** In `lib/domains/constants.mjs`, rename `charter-overlay` -> `charter-template` and `spec-overlay` -> `spec-template` in `DOMAIN_CONFIG_TYPES`, `DOMAIN_CONFIG_FILENAMES`, and `STRUCTURED_CONFIG_TYPES` (remove template types from structured set since they return strings). Update `loadDomainConfig()` to use the new filenames.
 - **Why next:** The loader must resolve the new filenames before skills can use them.
 - **Risk:** Low — filename change in a registry constant.
-- **Verification:** `loadOverlay(domain, 'charter-template', ...)` returns the full template string. Existing YAML overlay loading unchanged.
+- **Verification:** `loadDomainConfig(domain, 'charter-template', ...)` returns the full template string. Existing YAML overlay loading unchanged.
 
 ### Step 3: Update brainstorm and specify skills
 
-- **What:** In `skills/brainstorm/SKILL.md`: replace the `mergeTemplateOverlay()` call with a direct `loadOverlay(domain, 'charter-template')` call. Remove hardcoded section names from Steps 2, 4, and the Step 5 write instruction (`${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md` reference at line 234 must use the loaded domain template instead). Replace with instructions to "use the loaded template's section structure." In `skills/specify/SKILL.md`: same pattern for `loadOverlay(domain, 'spec-template')`, including the Step 5 write instruction (`${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md` reference at line 300).
+- **What:** In `skills/brainstorm/SKILL.md`: replace the `mergeTemplateOverlay()` call with a direct `loadDomainConfig(domain, 'charter-template')` call. Remove hardcoded section names from Steps 2, 4, and the Step 5 write instruction (`${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md` reference at line 234 must use the loaded domain template instead). Replace with instructions to "use the loaded template's section structure." In `skills/specify/SKILL.md`: same pattern for `loadDomainConfig(domain, 'spec-template')`, including the Step 5 write instruction (`${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md` reference at line 300).
 - **Why next:** Skills must reference the new overlay type names.
 - **Risk:** Medium — changes LLM-facing instructions. Must verify the agent still produces correct charters/specs.
 - **Verification:** Run brainstorm with each domain and verify the output uses the domain's section names.
@@ -132,7 +144,7 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 - [ ] All existing tests continue to pass at every step (after test file updates in Step 4)
 - [ ] YAML overlay loading (reviewers, gates, verification, gate-config, test-config) is completely unchanged
 - [ ] Custom domain `extends` chain works for template types: a custom domain can override `charter-template.md` and missing files fall back to the parent
-- [ ] `loadOverlay()` return type for template types remains `string|null` (same as overlay types)
+- [ ] `loadDomainConfig()` return type for template types remains `string|null` (same as overlay types)
 - [ ] The software domain template produces identical charter/spec structure to the current base templates (backward compatibility)
 - [ ] Each bundled domain profile directory still contains exactly 7 files (2 templates + 5 YAML configs)
 - [ ] No hardcoded section names remain in brainstorm or specify SKILL.md prose
@@ -141,9 +153,9 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 
 ### Behaviors
 
-1. **When** `loadOverlay(domain, 'charter-template', repoRoot, pluginRoot)` is called **then** it returns the full charter template markdown string for the resolved domain (not an overlay fragment).
+1. **When** `loadDomainConfig(domain, 'charter-template', repoRoot, pluginRoot)` is called **then** it returns the full charter template markdown string for the resolved domain (not an overlay fragment).
 
-2. **When** `loadOverlay(domain, 'spec-template', repoRoot, pluginRoot)` is called **then** it returns the full spec template markdown string for the resolved domain.
+2. **When** `loadDomainConfig(domain, 'spec-template', repoRoot, pluginRoot)` is called **then** it returns the full spec template markdown string for the resolved domain.
 
 3. **When** `/adev:brainstorm` starts and resolves `domain: data-engineering` **then** it loads the data-engineering `charter-template.md` which contains "Data Model", "Data Contract", "Data Lineage", "Pipeline Stages" as section names — and the agent uses these names in the charter it produces, not software-centric names.
 
@@ -151,18 +163,18 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 
 5. **When** `/adev:brainstorm` starts and resolves `domain: software` (or no domain declared) **then** it loads the software `charter-template.md` which contains the current section names (Business Intent, Domain Model, Interface Contracts, Quality Attributes) — identical behavior to today.
 
-6. **When** a custom domain has `extends: software` and provides only `charter-template.md` **then** `loadOverlay()` returns the custom charter template for `charter-template` type and falls back to the software profile's `spec-template.md` for the spec template type.
+6. **When** a custom domain has `extends: software` and provides only `charter-template.md` **then** `loadDomainConfig()` returns the custom charter template for `charter-template` type and falls back to the software profile's `spec-template.md` for the spec template type.
 
-7. **When** `loadOverlay()` is called with the old overlay type names (`charter-overlay`, `spec-overlay`) **then** it emits a deprecation warning (`OVERLAY_TYPE_DEPRECATED: "charter-overlay" has been renamed to "charter-template". Update your domain profile files.`) and returns `null`.
+7. **When** `loadDomainConfig()` is called with the old overlay type names (`charter-overlay`, `spec-overlay`) **then** it emits a deprecation warning (`DOMAIN_CONFIG_TYPE_DEPRECATED: "charter-overlay" has been renamed to "charter-template". Update your domain profile files.`) and returns `null`.
 
 ### Error Cases
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| Domain template file is missing (e.g., deleted from plugin installation) | `loadOverlay()` returns `null`; skill warns and falls back to `templates/charter-template.md` or `templates/live-spec-template.md` | DOMAIN_NOT_FOUND |
-| Template file exceeds MAX_OVERLAY_SIZE | `loadOverlay()` throws with error code `OVERLAY_TOO_LARGE` (matching resolution spec Behavior 13) | OVERLAY_TOO_LARGE |
-| Caller uses deprecated overlay type name (`charter-overlay`, `spec-overlay`) | `loadOverlay()` emits deprecation warning and returns `null` | OVERLAY_TYPE_DEPRECATED |
-| Custom domain has `charter-template.md` but not `spec-template.md` | `loadOverlay()` returns custom charter template; falls back to parent for spec template via `extends` chain | — |
+| Domain template file is missing (e.g., deleted from plugin installation) | `loadDomainConfig()` returns `null`; skill warns and falls back to `templates/charter-template.md` or `templates/live-spec-template.md` | DOMAIN_NOT_FOUND |
+| Template file exceeds MAX_DOMAIN_CONFIG_SIZE | `loadDomainConfig()` throws with error code `DOMAIN_CONFIG_TOO_LARGE` (matching resolution spec Behavior 13) | DOMAIN_CONFIG_TOO_LARGE |
+| Caller uses deprecated overlay type name (`charter-overlay`, `spec-overlay`) | `loadDomainConfig()` emits deprecation warning and returns `null` | DOMAIN_CONFIG_TYPE_DEPRECATED |
+| Custom domain has `charter-template.md` but not `spec-template.md` | `loadDomainConfig()` returns custom charter template; falls back to parent for spec template via `extends` chain | — |
 
 ## System Constitution Reference
 
@@ -178,7 +190,7 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 - [ ] `templates/domains/process-automation/charter-template.md` is a complete template with workflow-domain vocabulary
 - [ ] `templates/domains/process-automation/spec-template.md` is a complete template with workflow-domain vocabulary
 - [ ] `lib/domains/constants.mjs` registers `charter-template` and `spec-template` instead of `charter-overlay` and `spec-overlay`
-- [ ] `loadOverlay()` returns full template strings for template types
+- [ ] `loadDomainConfig()` returns full template strings for template types
 - [ ] `lib/domains/merge-template-overlay.mjs` is deleted
 - [ ] `skills/brainstorm/SKILL.md` has zero hardcoded charter section names — references the loaded template
 - [ ] `skills/specify/SKILL.md` has zero hardcoded spec section names — references the loaded template
@@ -187,7 +199,7 @@ This refactoring supersedes specific sections of three validated sibling specs. 
 - [ ] Each domain profile directory still contains exactly 7 files
 - [ ] Sibling specs (domain-resolution, skill-integration, bundled-profiles) updated to revision 6 with renamed type/file references
 - [ ] Charter entity `TemplateOverlay` renamed to `DomainTemplate` with updated description
-- [ ] Old overlay type names (`charter-overlay`, `spec-overlay`) emit deprecation warning via `loadOverlay()`
+- [ ] Old overlay type names (`charter-overlay`, `spec-overlay`) emit deprecation warning via `loadDomainConfig()`
 - [ ] Brainstorm Step 5 and specify Step 5 reference the loaded domain template, not hardcoded base template paths
 - [ ] All quality gates pass (tests)
 - [ ] No constitutional violations introduced

@@ -132,12 +132,12 @@ Prepend: "The following heuristics are lessons learned from past work in this mo
 Run inline Node.js:
 ```javascript
 const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadOverlay } = await import('<ADEV_ROOT>/lib/domains/overlay.mjs');
+const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
 const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const domainTemplate = loadOverlay(domain.resolved_domain, 'spec-template', repoRoot, pluginRoot);
+const domainTemplate = loadDomainConfig(domain.resolved_domain, 'spec-template', repoRoot, pluginRoot);
 // domainTemplate is the complete spec template for the resolved domain
 ```
-If `loadOverlay()` returns `null`, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
+If `loadDomainConfig()` returns `null`, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
 The loaded template defines the spec's section structure. Use the template's H2 headings and table columns as the structure for this spec. Do not use hardcoded section names -- the template is the single source of truth for section structure.
 
 ## Shared: Frontmatter

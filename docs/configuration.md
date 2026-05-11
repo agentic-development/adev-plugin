@@ -26,6 +26,7 @@ Project metadata used by skills for identification and context.
 | `adev_version` | string | — | Version of the adev framework in use |
 | `description` | string | — | One-line project description |
 | `type` | string | — | Project type (e.g., `cli`, `web`, `api`, `library`) |
+| `domain` | string | `"software"` | Project-level domain profile (see [Domain Profiles](#domain-profiles) below) |
 
 **Example:**
 ```yaml
@@ -34,6 +35,7 @@ project:
   adev_version: "0.22.0"
   description: "A web application for task management"
   type: web
+  domain: software
 ```
 
 ### sync
@@ -67,6 +69,7 @@ Defines the project's module boundaries. Each module groups related code under a
 | `slug` | string | — | Unique identifier (kebab-case, used in file paths and commands) |
 | `name` | string | — | Human-readable module name |
 | `paths` | array | — | Directory paths that belong to this module |
+| `domain` | string | — | Module-level domain profile override (see [Domain Profiles](#domain-profiles)) |
 
 **When to override:** Add or modify modules as your project structure evolves. Module boundaries determine how `/adev:brainstorm` scopes charters and how `/adev:hygiene` reports coverage.
 
@@ -245,6 +248,94 @@ integrations:
   session_capture:
     provider: native
 ```
+
+---
+
+## Domain Profiles
+
+Domain profiles adapt adev's behavior to the type of project you are building. They control overlay files for charters, specs, reviewers, gates, verification, and test configuration, allowing the framework to apply domain-appropriate defaults and constraints.
+
+### Resolution Precedence
+
+Domain resolution follows a 4-level precedence chain (highest wins):
+
+1. **Charter level** — `domain:` in a Feature Charter's frontmatter
+2. **Module level** — `domain:` on a module entry in `manifest.yaml`
+3. **Project level** — `project.domain` in `manifest.yaml`
+4. **Default** — `"software"` (used when no domain is declared anywhere)
+
+This means a charter can override the module domain, which overrides the project domain. The `resolveDomain()` function in `lib/domains/resolve.mjs` implements this precedence chain as a pure, deterministic function.
+
+### Bundled Domains
+
+adev ships with three bundled domain profiles:
+
+| Domain | Description |
+|--------|-------------|
+| `software` | General software development (the default) |
+| `data-engineering` | Data pipelines, ETL, analytics |
+| `process-automation` | Workflow automation, integrations |
+
+Bundled profiles live in the plugin's `templates/domains/` directory and are immutable. You cannot override a bundled profile directly.
+
+### Overlay Types
+
+Each domain profile provides overlay files that skills consume:
+
+| Overlay Type | Filename | Return Type | Purpose |
+|-------------|----------|-------------|---------|
+| `charter-overlay` | `charter-overlay.md` | string | Additional charter guidance |
+| `spec-overlay` | `spec-overlay.md` | string | Additional spec guidance |
+| `reviewers` | `reviewers.yaml` | object | Domain-specific reviewers |
+| `gates` | `gates.yaml` | object | Quality gate configuration |
+| `verification` | `verification.yaml` | object | Verification rules |
+| `gate-config` | `gate-config.yaml` | object | Gate behavior configuration |
+| `test-config` | `test-config.yaml` | object | Test strategy configuration |
+
+### Config Merge Order
+
+Each skill integration point follows a specific merge order. The general rule is: **domain profile provides defaults, governance provides overrides (governance wins on conflict).**
+
+| Skill | Overlay Type | Governance Counterpart | Merge Behavior |
+|-------|-------------|----------------------|----------------|
+| `/adev:brainstorm` | `charter-overlay` | None | Domain overlay replaces/extends base charter template sections via H2 heading matching |
+| `/adev:specify` | `spec-overlay` | None | Domain overlay replaces/extends base spec template sections via H2 heading matching |
+| `/adev:review-specs` | `reviewers` | `governance/review.yaml` | Domain reviewers first, governance reviewers applied on top. Governance wins on ID conflict. |
+| `/adev:validate` | `gates` | `governance/gates.yaml` | Domain gates first, governance gates applied on top. Governance wins on ID conflict. Gate override emits a user-visible warning. |
+| `/adev:implement` | `verification` | None | Domain verification config (type: visual/output/flow) used directly. No governance layer. |
+| Lifecycle gate hooks | `gate-config` | None | Domain gate config (file exclusions, bash passthrough) used directly. No governance layer. |
+| `/adev:write-test`, `/adev:implement` | `test-config` | None | Domain test config (permitted tools, gaming thresholds) used directly. No governance layer. |
+
+Overlay types without a governance counterpart (`charter-overlay`, `spec-overlay`, `verification`, `gate-config`, `test-config`) are domain-only -- the domain profile is the sole source of configuration.
+
+### Custom Domains with `extends`
+
+To customize a domain, create a new domain that extends a bundled profile:
+
+1. Create a directory: `.context-index/domains/<your-domain-name>/`
+2. Add a `domain.yaml` with an `extends` field:
+
+```yaml
+# .context-index/domains/my-project/domain.yaml
+extends: software
+```
+
+3. Add only the overlay files you want to override. Missing files are inherited from the parent profile.
+
+4. Set the domain in your manifest:
+
+```yaml
+project:
+  domain: my-project
+```
+
+The `extends` chain is exactly one level deep: a custom domain can extend a bundled domain, but not another custom domain.
+
+Domain names must match the pattern `/^[a-z0-9][a-z0-9-]*$/` (lowercase alphanumeric with hyphens).
+
+### Resetting Customizations
+
+To reset all customizations and return to the bundled defaults, change `domain:` in your manifest back to a bundled domain name (e.g., `software`). The bundled profile is always pristine.
 
 ---
 

@@ -95,7 +95,7 @@ The `software` profile contains all current hardcoded framework defaults extract
 
 22. **When** a bundled profile directory is inspected **then** it contains exactly seven files: `charter-template.md`, `spec-template.md`, `reviewers.yaml`, `gates.yaml`, `verification.yaml`, `gate-config.yaml`, and `test-config.yaml`.
 
-23. **When** a user wants to customize a bundled profile **then** they create a new custom domain with `extends: <bundled-name>` in `.context-index/domains/<custom-name>/domain.yaml`. They place only the files they want to override in the custom domain directory — missing files are inherited from the parent profile. Users CANNOT create `.context-index/domains/<bundled-name>/` directly (enforced by `BUNDLED_OVERRIDE_BLOCKED` in `loadOverlay()`).
+23. **When** a user wants to customize a bundled profile **then** they create a new custom domain with `extends: <bundled-name>` in `.context-index/domains/<custom-name>/domain.yaml`. They place only the files they want to override in the custom domain directory — missing files are inherited from the parent profile. Users CANNOT create `.context-index/domains/<bundled-name>/` directly (enforced by `BUNDLED_OVERRIDE_BLOCKED` in `loadDomainConfig()`).
 
 24. **When** a user wants to reset all customizations **then** they change `domain: <custom-name>` back to `domain: <bundled-name>` in their manifest or charter frontmatter. The bundled profile is always pristine and unmodified. Optionally, the custom domain directory can be deleted.
 
@@ -116,10 +116,10 @@ The `software` profile contains all current hardcoded framework defaults extract
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| Bundled profile directory is missing (e.g., deleted from plugin installation) | `loadOverlay()` returns `null` for all types; skills warn and use empty config | DOMAIN_NOT_FOUND |
+| Bundled profile directory is missing (e.g., deleted from plugin installation) | `loadDomainConfig()` returns `null` for all types; skills warn and use empty config | DOMAIN_NOT_FOUND |
 | User partially overrides a bundled profile (e.g., only `charter-template.md` in project-local) | Project-local file wins for that type; remaining types fall back to bundled | — |
 | Profile reviewer references an execution profile not available in the project | Reviewer entry skipped with warning (handled by skill integration spec) | UNKNOWN_PROFILE |
-| Software profile config file is malformed | `OVERLAY_PARSE_ERROR` at load time; skill cannot proceed with empty config for critical types | OVERLAY_PARSE_ERROR |
+| Software profile config file is malformed | `DOMAIN_CONFIG_PARSE_ERROR` at load time; skill cannot proceed with empty config for critical types | DOMAIN_CONFIG_PARSE_ERROR |
 
 ## System Constitution Reference
 
