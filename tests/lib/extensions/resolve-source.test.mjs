@@ -1,5 +1,8 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { execSync } from 'node:child_process';
 import { classifyUri, resolveExtensionSource, stripCredentials } from '../../../lib/extensions/resolve-source.mjs';
 import { createTempDir, cleanupTempDir, writeFixture } from '../../helpers.mjs';
 
@@ -140,6 +143,86 @@ describe('extensions/resolve-source', () => {
     it('rejects invalid git URL', async () => {
       await assert.rejects(
         () => resolveExtensionSource('https://'),
+        (err) => {
+          assert.equal(err.code, 'SOURCE_RESOLUTION');
+          return true;
+        }
+      );
+    });
+  });
+
+  describe('resolveExtensionSource (git fragment)', () => {
+    let tmp;
+    let bareRepoPath;
+
+    beforeEach(() => {
+      tmp = createTempDir();
+      // Create a bare git repo with a subdirectory containing a valid manifest
+      const workDir = join(tmp, 'work');
+      bareRepoPath = join(tmp, 'repo.git');
+
+      mkdirSync(workDir, { recursive: true });
+      execSync('git init', { cwd: workDir, stdio: 'ignore' });
+      execSync('git config user.email "test@test.com"', { cwd: workDir, stdio: 'ignore' });
+      execSync('git config user.name "Test"', { cwd: workDir, stdio: 'ignore' });
+
+      // Create root manifest
+      writeFileSync(join(workDir, 'adev-extension.yaml'), 'name: root-ext\nversion: 1.0.0\n');
+
+      // Create subdirectory with its own manifest
+      mkdirSync(join(workDir, 'extensions', 'data-eng'), { recursive: true });
+      writeFileSync(join(workDir, 'extensions', 'data-eng', 'adev-extension.yaml'), 'name: sub-ext\nversion: 2.0.0\n');
+
+      // Create subdirectory without manifest
+      mkdirSync(join(workDir, 'extensions', 'no-manifest'), { recursive: true });
+      writeFileSync(join(workDir, 'extensions', 'no-manifest', 'README.md'), '# No manifest here\n');
+
+      execSync('git add -A', { cwd: workDir, stdio: 'ignore' });
+      execSync('git commit -m "init"', { cwd: workDir, stdio: 'ignore' });
+
+      // Create bare clone for use as remote
+      execSync(`git clone --bare "${workDir}" "${bareRepoPath}"`, { stdio: 'ignore' });
+    });
+
+    afterEach(() => { cleanupTempDir(tmp); });
+
+    it('resolves git URL with #subdir to subdirectory', async () => {
+      const result = await resolveExtensionSource(`file://${bareRepoPath}#extensions/data-eng`);
+      assert.equal(result.type, 'git');
+      assert.equal(result.manifest.name, 'sub-ext');
+      assert.ok(result.resolved_path.endsWith('extensions/data-eng') || result.resolved_path.includes('extensions/data-eng'));
+    });
+
+    it('resolves git URL without fragment to repo root (backward compat)', async () => {
+      const result = await resolveExtensionSource(`file://${bareRepoPath}`);
+      assert.equal(result.type, 'git');
+      assert.equal(result.manifest.name, 'root-ext');
+    });
+
+    it('throws SOURCE_RESOLUTION when subdirectory does not exist', async () => {
+      await assert.rejects(
+        () => resolveExtensionSource(`file://${bareRepoPath}#nonexistent/path`),
+        (err) => {
+          assert.equal(err.code, 'SOURCE_RESOLUTION');
+          assert.ok(err.message.includes('nonexistent/path'));
+          return true;
+        }
+      );
+    });
+
+    it('throws MISSING_MANIFEST when subdirectory exists but has no manifest', async () => {
+      await assert.rejects(
+        () => resolveExtensionSource(`file://${bareRepoPath}#extensions/no-manifest`),
+        (err) => {
+          assert.equal(err.code, 'MISSING_MANIFEST');
+          return true;
+        }
+      );
+    });
+
+    it('throws SOURCE_RESOLUTION for path traversal in fragment', async () => {
+      await assert.rejects(
+        () => resolveExtensionSource(`file://${bareRepoPath}#../../../etc`),
         (err) => {
           assert.equal(err.code, 'SOURCE_RESOLUTION');
           return true;
