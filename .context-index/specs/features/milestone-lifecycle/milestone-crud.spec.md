@@ -5,10 +5,10 @@ charter: milestone-lifecycle
 status: review-passed
 risk_level: medium
 milestone: v1
-revision: 2
-charter-revision: 2
+revision: 3
+charter-revision: 3
 created: 2026-05-08
-updated: 2026-05-09
+updated: 2026-05-11
 tracker-ref: issue-355
 ---
 
@@ -28,7 +28,11 @@ tracker-ref: issue-355
 
 3. **When** `milestone create <name>` is invoked and a milestone with that name already exists **then** the existing entry is updated (idempotent) rather than duplicated, and no new epic is created.
 
-4. **When** `milestone create` succeeds **then** the milestone entry contains: `name`, `status: planned`, `epic_id` (the newly created epic's ID), and optionally `target_date`, `release`, and `ship_criteria` (empty by default).
+4. **When** `milestone create` succeeds **then** the milestone entry contains: `name`, `status: planned`, `epic_id` (the newly created epic's ID), and optionally `target_date`, `release` (object with `strategy` field), and `ship_criteria` (empty by default).
+
+4a. **When** `milestone create <name> --strategy <value>` is invoked **then** the `release.strategy` field is set to `<value>`. Valid values are `manual`, `tag-only`, and `release-please`. If `--strategy` is omitted, `release` defaults to `null` (equivalent to `manual` at ship time).
+
+4b. **When** `milestone create <name> --strategy <value>` is invoked with an unknown strategy **then** it is rejected with "Unknown release strategy '<value>'. Expected: manual, tag-only, release-please".
 
 5. **When** `milestone list` is invoked and `milestones.yaml` exists **then** all milestones are displayed in a table with name, status, target date, epic ID, and issue progress (open/total count from the linked epic).
 
@@ -37,6 +41,21 @@ tracker-ref: issue-355
 7. **When** `milestone list` is invoked and a milestone's `epic_id` references a non-existent epic **then** the milestone row displays a warning indicator (e.g., `epic-42 (broken)`) instead of issue progress.
 
 8. **When** `milestone create <name>` is invoked with ship criteria flags (`--check all_issues_closed --check gates_pass --confirm "CHANGELOG updated"`) **then** the `ship_criteria` array is populated with the corresponding entries.
+
+### Release Field Schema
+
+The `release` field on a milestone entry is an optional object controlling ship-time release mechanics. When `null` or absent, `milestone ship` uses the `manual` strategy.
+
+```yaml
+release:
+  strategy: manual        # "manual" | "tag-only" | "release-please"
+```
+
+- `manual` — Pure governance. No git operations at ship time.
+- `tag-only` — Creates git tag (and optional GitHub release draft) at ship time.
+- `release-please` — Writes `release-as` to `release-please-config.json` at ship time. Does not create tags directly.
+
+The `release` field is serialized/deserialized by `loadMilestones()` and `saveMilestones()`. Backward compatible: existing milestones with `release: null` continue to work (effective strategy is `manual`).
 
 ### Postconditions
 
@@ -52,6 +71,7 @@ tracker-ref: issue-355
 | `milestone create --target` with unparseable date | Reject with "Invalid date format. Use YYYY-MM-DD." | INVALID_DATE |
 | `milestone create` when `tasks.backend` is not configured in manifest | Warn "Issue board not configured; epic creation skipped" — milestone is still written to YAML | NO_BACKEND |
 | `milestone create` when issue manager `createEpic()` throws | Write milestone to YAML with `epic_id: null`, warn user that epic creation failed | EPIC_CREATE_FAILED |
+| `milestone create --strategy <unknown>` with unrecognized strategy value | Reject with "Unknown release strategy" | UNKNOWN_STRATEGY |
 | `milestone list` when YAML file is malformed (unparseable) | Print "milestones.yaml is malformed — cannot parse" and exit | PARSE_ERROR |
 
 ## System Constitution Reference
@@ -76,6 +96,9 @@ tracker-ref: issue-355
 - [ ] `milestone create v1.0.0` a second time updates the entry without duplicating
 - [ ] `milestone create v1.0.0 --target 2026-06-01` stores the target date
 - [ ] `milestone create` with ship criteria flags populates the `ship_criteria` array
+- [ ] `milestone create --strategy tag-only` sets `release.strategy` to `tag-only`
+- [ ] `milestone create` without `--strategy` leaves `release` as `null`
+- [ ] `milestone create --strategy unknown` rejects with UNKNOWN_STRATEGY
 - [ ] `milestone list` displays all milestones with status, date, epic ID, and progress
 - [ ] `milestone list` warns on broken epic references
 - [ ] `milestone list` with no milestones.yaml prints a helpful message
