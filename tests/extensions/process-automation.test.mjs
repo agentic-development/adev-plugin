@@ -1,9 +1,12 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseExtensionManifest } from '../../lib/extensions/manifest-schema.mjs';
+import { installExtension, readManifestStamps } from '../../lib/extensions/install.mjs';
+import { loadDomainConfig } from '../../lib/domains/domain-config.mjs';
+import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,5 +67,54 @@ describe('process-automation extension package', () => {
     const content = readFileSync(readmePath, 'utf8');
     assert.ok(content.includes('process-automation'), 'README should mention process-automation');
     assert.ok(content.includes('install'), 'README should mention install');
+  });
+});
+
+// ── Task 2: Install and resolution integration tests ──────────────────
+
+describe('process-automation extension install and resolution', () => {
+  let tmp;
+
+  beforeEach(() => {
+    tmp = createTempDir();
+    writeFixture(tmp, '.context-index/manifest.yaml', 'project:\n  name: test-project\n');
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tmp);
+  });
+
+  it('installExtension succeeds from local extension path', async () => {
+    const result = await installExtension(EXT_DIR, tmp, { pluginRoot: REPO_ROOT });
+    assert.equal(result.name, 'process-automation');
+    assert.ok(result.version, 'install should return a version');
+    assert.ok(result.filesWritten.length > 0, 'install should write files');
+  });
+
+  it('after install, domain.yaml exists with extends: software', async () => {
+    await installExtension(EXT_DIR, tmp, { pluginRoot: REPO_ROOT });
+    const domainYamlPath = join(tmp, '.context-index', 'domains', 'process-automation', 'domain.yaml');
+    assert.ok(existsSync(domainYamlPath), 'domain.yaml should exist after install');
+    const content = readFileSync(domainYamlPath, 'utf8');
+    assert.ok(content.includes('extends: software'), 'domain.yaml should contain extends: software');
+  });
+
+  it('loadDomainConfig returns integration-reviewer after install', async () => {
+    await installExtension(EXT_DIR, tmp, { pluginRoot: REPO_ROOT });
+    const reviewers = loadDomainConfig('process-automation', 'reviewers', tmp, REPO_ROOT);
+    assert.ok(reviewers, 'reviewers config should be loaded');
+    assert.ok(reviewers.reviewers, 'reviewers config should have a reviewers key');
+    const hasIntegrationReviewer = reviewers.reviewers.some(
+      r => r.id === 'integration-reviewer'
+    );
+    assert.ok(hasIntegrationReviewer, 'reviewers should include integration-reviewer');
+  });
+
+  it('re-install is idempotent — no duplicate manifest stamps', async () => {
+    await installExtension(EXT_DIR, tmp, { pluginRoot: REPO_ROOT });
+    await installExtension(EXT_DIR, tmp, { pluginRoot: REPO_ROOT });
+    const stamps = readManifestStamps(tmp);
+    const paStamps = stamps.filter(s => s.name === 'process-automation');
+    assert.equal(paStamps.length, 1, 'should have exactly one stamp after re-install');
   });
 });
