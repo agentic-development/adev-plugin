@@ -754,6 +754,129 @@ describe("milestoneShip strategy: tag-only", () => {
   });
 });
 
+// --- milestoneShip strategy: release-please ---
+
+describe("milestoneShip strategy: release-please", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-rp-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("writes release-as to config for semver names", async () => {
+    const config = { packages: { ".": { "release-type": "node", "package-name": "test" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "1.0.0", status: "planned", epic_id: "epic-1",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "1.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGh: () => "[]",
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "release-please");
+    const updated = JSON.parse(readFileSync(join(dir, "release-please-config.json"), "utf8"));
+    assert.equal(updated.packages["."]["release-as"], "1.0.0");
+  });
+
+  it("strips v prefix from version in release-as", async () => {
+    const config = { packages: { ".": { "release-type": "node" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "v2.0.0", status: "planned", epic_id: "epic-2",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-2" }],
+      list: async () => [], close: async () => {},
+    };
+    await milestoneShip(dir, "v2.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGh: () => "[]",
+    });
+    const updated = JSON.parse(readFileSync(join(dir, "release-please-config.json"), "utf8"));
+    assert.equal(updated.packages["."]["release-as"], "2.0.0");
+  });
+
+  it("falls back to manual when config file missing", async () => {
+    const noConfigDir = mkdtempSync(join(tmpdir(), "milestone-no-rp-"));
+    saveMilestones(noConfigDir, [{
+      name: "3.0.0", status: "planned", epic_id: "epic-3",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-3" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(noConfigDir, "3.0.0", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "manual");
+    rmSync(noConfigDir, { recursive: true, force: true });
+  });
+
+  it("throws RELEASE_CONFIG_INVALID for malformed JSON", async () => {
+    const badDir = mkdtempSync(join(tmpdir(), "milestone-bad-rp-"));
+    writeFileSync(join(badDir, "release-please-config.json"), "not json{{{");
+    saveMilestones(badDir, [{
+      name: "4.0.0", status: "planned", epic_id: "epic-4",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-4" }],
+      list: async () => [],
+    };
+    await assert.rejects(
+      () => milestoneShip(badDir, "4.0.0", { issueManager: mockManager, manifest: {} }),
+      (err) => err.code === "RELEASE_CONFIG_INVALID"
+    );
+    rmSync(badDir, { recursive: true, force: true });
+  });
+
+  it("skips config write for non-semver names", async () => {
+    const config = { packages: { ".": { "release-type": "node" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "alpha-1", status: "planned", epic_id: "epic-5",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-5" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "alpha-1", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    const updated = JSON.parse(readFileSync(join(dir, "release-please-config.json"), "utf8"));
+    assert.equal(updated.packages["."]["release-as"], undefined);
+  });
+
+  it("does NOT create git tags", async () => {
+    const config = { packages: { ".": { "release-type": "node" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "5.0.0", status: "planned", epic_id: "epic-6",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-6" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "5.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: () => { throw new Error("should not create tags"); },
+      execGh: () => "[]",
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "release-please");
+  });
+});
+
 // --- milestoneShip strategy: manual ---
 
 describe("milestoneShip strategy: manual", () => {
