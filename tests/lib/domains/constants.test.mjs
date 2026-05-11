@@ -1,5 +1,7 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   DOMAIN_CONFIG_TYPES,
   DOMAIN_CONFIG_FILENAMES,
@@ -74,5 +76,11 @@ describe('domains/constants', () => {
 
   it('exports max overlay size as 512KB', () => {
     assert.equal(MAX_DOMAIN_CONFIG_SIZE, 512 * 1024);
+  });
+
+  it('templates/domains/ contains only software subdirectory', () => {
+    const domainsDir = join(import.meta.dirname, '..', '..', '..', 'templates', 'domains');
+    const entries = readdirSync(domainsDir);
+    assert.deepStrictEqual(entries.sort(), ['software'], 'only software should remain in templates/domains/');
   });
 });

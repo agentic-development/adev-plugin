@@ -1,6 +1,0 @@
-gates:
-  - id: data-quality
-    description: "Check schema validation and data fixture definitions"
-    command: ["npm", "test"]
-    severity: error
-    tier: fast
