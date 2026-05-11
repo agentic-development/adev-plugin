@@ -6,11 +6,11 @@
 
 ---
 charter: agent-reliable-state-artifacts
-status: review-pending
+status: review-passed
 risk_level: high
 milestone: 0.26.0
-revision: 2
-charter-revision: 2
+revision: 3
+charter-revision: 3
 created: 2026-05-11
 updated: 2026-05-11
 ---
@@ -19,9 +19,24 @@ updated: 2026-05-11
 
 This spec defines a new storage backend for the adev issue board: `.context-index/tasks/tasks.json`, written and read by `lib/issues/json-adapter.mjs`. The adapter implements the existing `IssueManagerInterface` (the contract shared with `FileAdapter` and `BeadsAdapter`) with identical method signatures, return shapes, and error codes — only the on-disk format and parsing logic differ. Writes go through an atomic temp-then-rename, mirroring the `lib/build-state.mjs` pattern. The document schema is `{ version, epics[], issues[] }`; schema evolution is by optional fields with defaults, not by parser-variant branches. The registry (`lib/issues/registry.mjs`) gains `"json"` as a supported backend value and treats it as the new default for fresh scaffolds. The markdown backend (`"file"`) continues to work in read-only-deprecated mode for one release cycle. The adapter enforces the post-migration board-granularity invariant: any `create` or `update` call that would land an issue with both `planRef` and `planTask` set is rejected — plan-task state belongs in the lifecycle event log, not on the board. Storage root resolution uses the existing `resolveStorageRoot()` helper so `tasks.json` continues to be shared across git worktrees. Optional legacy-read support reads `tasks.md` when `tasks.json` is absent (governed by `tasks.legacy_read` knob); writes never go to markdown.
 
-## Naming Conventions (CON-1)
+## Naming Conventions (CON-1, CON-8, CON-9)
 
-Issue board WorkItem fields preserve the existing `FileAdapter` / `IssueManagerInterface` convention, which is a documented mix: top-level fields like `id`, `title`, `status`, `priority`, `type`, `epicId`, `planRef`, `planTask` are camelCase; the later-added fields `spec_ref` and `next_action` are snake_case. This mix is preserved to keep the `IssueManagerInterface` parity invariant intact across `FileAdapter`, `JsonAdapter`, and `BeadsAdapter`. The sibling `lifecycle-event-log` spec uses snake_case for event-discriminator names (a different naming domain — event names, not WorkItem fields). Implementers must **not** rename WorkItem fields during this work.
+Three distinct naming domains, each with its own convention preserved on purpose:
+
+- **Issue fields (camelCase + later snake_case):** `id`, `title`, `status`, `priority`, `type`, `epicId`, `planRef`, `planTask` (camelCase); `spec_ref`, `next_action` (snake_case, later-added by previous specs). Preserved verbatim from existing `FileAdapter` / `IssueManagerInterface` to keep the parity invariant intact.
+- **Epic fields (snake_case for plan link):** `id`, `title`, `status`, `milestone`, `created`, `updated` (lowercase + camelCase), with `plan_ref` (snake_case) for the optional plan pointer. Epics never carried a `planTask` field, so the granularity invariant (next section) is not applicable to epics — they may reference a plan via `plan_ref` without violation.
+- **Event-discriminator names (snake_case):** owned by the sibling `lifecycle-event-log` spec (`plan_task`, `lifecycle_step`, etc.).
+- **StateProjection fields (camelCase):** also owned by the sibling spec (`currentStep`, `currentTask`, `planTasks`, etc.). This adapter does not emit projection objects; consumers should consult the sibling spec for projection field names.
+
+Implementers must **not** rename Issue/Epic fields during this work — that would break `IssueManagerInterface` parity.
+
+## Granularity invariant scope (CON-8)
+
+The board-granularity invariant ("plan-task state lives in the lifecycle log, not on the board") applies to **Issues only**. Specifically:
+
+- An Issue may not carry `planTask` non-null. The adapter rejects writes that would.
+- An Issue may carry `planRef` (pointer to a plan file) alone. This is permitted — it merely references a plan; no per-task state is implied.
+- Epics may carry `plan_ref` (the snake_case epic-level field). Epics have never had a `planTask` field; no invariant applies. `plan_ref` on epics is a stable epic→plan link and is not affected by this charter.
 
 ## Path Safety (SEC-2)
 
@@ -96,7 +111,7 @@ Not applicable — the adapter is a passive library module. The on-demand `tasks
 - [ ] Granularity invariant rejects `planTask`-only writes (SA-2). `create({ planTask: "t1" })` and `update(id, { planTask: "t1" })` both throw `BOARD_GRANULARITY_VIOLATION`. Legacy issues with both fields present are tolerated on read but cannot be modified to a state where `planTask` is set to any non-null value (CON-3).
 - [ ] Writers always emit `version: 2` regardless of the version read on the input file (SA-5).
 - [ ] Default-flip behavior for existing `tasks.md`-only projects emits `LEGACY_FORMAT_DETECTED` advisory on first write (SA-4). Test fixture exercises this transition.
-- [ ] When `tasks.json` is absent AND `tasks.md` exists AND `tasks.legacy_read != disabled`, `JsonAdapter` reads the legacy markdown via `FileAdapter` and surfaces the parsed data. The first subsequent write creates `tasks.json`; the legacy `tasks.md` is left intact (untouched). Test fixture exercises this path.
+- [ ] When `tasks.json` is absent AND `tasks.md` exists AND `tasks.legacy_read != disabled`, `JsonAdapter` reads the legacy markdown via `lib/issues/markdown-parser.mjs` (the extracted shared helper from SA-3) — NOT via `FileAdapter` — and surfaces the parsed data. The first subsequent write creates `tasks.json`; the legacy `tasks.md` is left intact (untouched). Test fixture exercises this path.
 - [ ] When `tasks.legacy_read = disabled`, no legacy-read attempt is made; an empty board is returned if `tasks.json` is absent.
 - [ ] Storage root resolution uses `resolveStorageRoot()` from `lib/issues/resolve-root.mjs`. Worktree-shared storage continues to work (verified by an existing test re-run against `JsonAdapter`).
 - [ ] `tasks.json` schema includes a top-level `version: 2` field. Readers parse files with `version >= 2`; unknown additional fields on epics/issues are preserved on read and re-emitted on write (forward compatibility).
@@ -145,7 +160,7 @@ Not applicable — the adapter is a passive library module. The on-demand `tasks
 - After a successful `init()`, `tasks.json` exists and contains a syntactically valid empty board with `version: 2`.
 - After a successful write call, `tasks.json` is a complete, parseable JSON document whose top-level shape is `{ version, epics, issues }` — no partial writes are observable.
 - After any rejected write (granularity violation, validation error, dependency cycle), `tasks.json` is byte-for-byte identical to its pre-call state. No partial mutation persists.
-- After a `_write()`, no temp file from that operation remains on disk in the success path. On failure paths, an orphaned temp file may remain; cleanup is a future concern.
+- After a `_write()`, no temp file from that operation remains on disk in either the success or the failure path. Failure paths invoke a best-effort `fs.unlinkSync` (swallowing errors) on the temp file before re-throwing the original error to the caller. This mirrors the cleanup behavior of `lib/build-state.mjs::atomicWriteJson`. (CON-6)
 - After legacy-read fallback, the returned data structure is indistinguishable in shape from a fresh `tasks.json` parse. Callers cannot tell which file was the source unless they inspect filesystem state.
 - After a registry call, the returned adapter conforms to the `IssueManagerInterface` regardless of which backend resolved.
 
@@ -160,7 +175,7 @@ Not applicable — the adapter is a passive library module. The on-demand `tasks
 | `tasks.json` has `version < 2` (coerced to a finite integer via `Number(v)`) or `version` is non-numeric | Throws `UNSUPPORTED_BOARD_VERSION` advising the user to run `adev migrate`. If `version` is non-numeric or cannot be coerced, the thrown message uses a fixed-string fallback ("version field is not a valid integer") rather than interpolating the raw value (SEC-4). | UNSUPPORTED_BOARD_VERSION |
 | Caller passes a `projectRoot` that does not contain `.context-index/manifest.yaml` after `path.resolve()` | Throws `INVALID_PROJECT_ROOT` with the resolved path (SEC-2) | INVALID_PROJECT_ROOT |
 | Any internal path resolution yields a target outside `.context-index/tasks/` | Throws `INVALID_STORAGE_PATH` (SEC-2 / CWE-22) | INVALID_STORAGE_PATH |
-| Any write call (`create`, `update`, `close`, `createEpic`, `updateEpic`, `addDependency`) invoked on a `FileAdapter` returned by registry under `manifest.tasks.backend === "file"` | Throws `BACKEND_READ_ONLY_DEPRECATED` with the advisory message pointing at `adev migrate` (CON-5) | BACKEND_READ_ONLY_DEPRECATED |
+| Any write call (`create`, `update`, `close`, `createEpic`, `updateEpic`, `addDependency`) invoked on a `FileAdapter` returned by registry under `manifest.tasks.backend === "file"` | Throws `BACKEND_READ_ONLY_DEPRECATED` with the canonical advisory message defined in the "`file`" backend deprecation semantics" section (CON-5): "The `file` (markdown) backend is read-only. Run `adev migrate` to upgrade to JSON, or set `tasks.backend: json` in `manifest.yaml`." This is the single source of the message; do not paraphrase. | BACKEND_READ_ONLY_DEPRECATED |
 | `_write()` rename step fails (disk full, permission) | Propagates the underlying `fs` error code unchanged. `tasks.json` is unchanged. Orphaned temp file may remain. | FS_ERROR |
 | `_write()` temp-file write step fails | Propagates `fs` error. No rename attempted. `tasks.json` unchanged. | FS_ERROR |
 | Registry called with `manifest.tasks.backend === "file"` | Returns `FileAdapter`, emits one-time `DEPRECATED_BACKEND` warning. Not an error. | — (warning only) |
