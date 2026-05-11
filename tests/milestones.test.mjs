@@ -121,6 +121,38 @@ describe("validateTargetDate", () => {
   });
 });
 
+// --- release field I/O ---
+
+describe("release field I/O", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-release-io-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("round-trips release object through save/load", () => {
+    const ms = [{ name: "v1", status: "planned", epic_id: null, target_date: null,
+                  release: { strategy: "tag-only" }, ship_criteria: [] }];
+    saveMilestones(dir, ms);
+    const loaded = loadMilestones(dir);
+    assert.deepStrictEqual(loaded[0].release, { strategy: "tag-only" });
+  });
+
+  it("preserves release: null through save/load", () => {
+    const ms = [{ name: "v2", status: "planned", epic_id: null, target_date: null,
+                  release: null, ship_criteria: [] }];
+    saveMilestones(dir, ms);
+    const loaded = loadMilestones(dir);
+    assert.equal(loaded[0].release, null);
+  });
+
+  it("loads legacy milestones without release field as null", () => {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(join(dir, ".context-index", "milestones.yaml"),
+      "milestones:\n  - name: legacy\n    status: planned\n    epic_id: null\n    target_date: null\n    ship_criteria: []\n");
+    const loaded = loadMilestones(dir);
+    assert.equal(loaded[0].release, null);
+  });
+});
+
 // --- Task 2: milestoneCreate ---
 
 describe("milestoneCreate", () => {
