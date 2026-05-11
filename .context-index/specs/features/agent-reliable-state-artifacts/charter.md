@@ -1,6 +1,6 @@
 ---
 status: approved
-revision: 2
+revision: 3
 updated: 2026-05-11
 ---
 
@@ -20,6 +20,8 @@ This module supersedes the storage-format decisions of four existing charters:
 - **`milestone-lifecycle`** — owns milestone definitions and ship strategies. The format of `milestones.yaml` (now `milestones.json`) and the new `lib/milestones.mjs` wrapper are owned here.
 
 This module does NOT change *what* state is tracked, the issue lifecycle, the gating semantics, or the spec/milestone contracts. It changes only *how* state is persisted.
+
+**Board-granularity invariant ownership:** The post-migration invariant "no Issue has both `planRef` and `planTask`" (Scope and Invariants below) is *defined* by this charter but *enforced* by `lib/issues/json-adapter.mjs` (spec `json-issue-board-adapter`). The lifecycle event log module (`lib/lifecycle-state.mjs`, spec `lifecycle-event-log`) is the canonical home for `plan_task` events. The two specs together form one contract: plan-task state lives exclusively in the lifecycle log; the adapter refuses to persist it on Issues.
 
 ## Scope and Boundaries
 

@@ -6,10 +6,10 @@
 
 ---
 charter: agent-reliable-state-artifacts
-status: review-blocked
+status: review-pending
 risk_level: high
 milestone: 0.26.0
-revision: 1
+revision: 2
 charter-revision: 2
 created: 2026-05-11
 updated: 2026-05-11
@@ -18,6 +18,28 @@ updated: 2026-05-11
 ## Behavioral Contract
 
 The Lifecycle Event Log is a new library module (`lib/lifecycle-state.mjs`) that persists every event in a spec's lifecycle as a line in a per-spec JSONL file at `.context-index/lifecycle-state/<slug>.jsonl`. It exposes a small set of write primitives (`appendEvent`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`), read primitives (`readEvents`, `filterEvents`), a state projector (`currentState`), a gate enforcer (`requireGate`), and aggregation helpers (`listLifecycleStates`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`). Writes are append-only via `fs.appendFile`; no code path ever rewrites a log. Actor events (reviewer / validator reports) carry their severity stamped at write time, resolved once from existing domain config (`reviewers.yaml::severity_cap`, `gates.yaml::severity`); reads never touch domain config. `currentState()` folds the log into a state object — steps, plan tasks, interventions — and the aggregation rule is: any `blocker`/`error` severity returning `FAIL` ⇒ step fails; lower severities returning `FAIL` ⇒ `PASS_WITH_NOTES`. The schema is open: a stable set of canonical event variants is documented, but unknown `event` values are preserved on read and ignored by core projections so domains can extend without forking the lib. `requireGate(state, stepName)` is the new prerequisite check that replaces filesystem-grep of `.review.md` frontmatter; it hard-blocks by default and softens to advisory via `manifest.yaml::lifecycle.gate_mode`.
+
+## Naming Conventions (CON-1)
+
+This spec mixes two distinct naming domains. They follow different conventions on purpose:
+
+- **Event-discriminator names and event-only fields** use `snake_case`: `lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `task_id`, `aggregated_from`. This matches the convention established by the existing `lib/build-state.mjs` JSON schema (`recordStepResult` writes `retry_history`, etc.) and is the natural shape for new code.
+- **Issue board WorkItem fields** preserve the existing `FileAdapter`/`IssueManagerInterface` convention, which is a mix: top-level fields like `id`, `title`, `status`, `priority`, `type`, `epicId`, `planRef`, `planTask` are camelCase, while the later-added fields `spec_ref` and `next_action` are snake_case. This mix is legacy of the file-adapter parser and is **preserved as-is** to keep the `IssueManagerInterface` stable across `FileAdapter`, `JsonAdapter`, and `BeadsAdapter`. Changing it is out of scope for this charter.
+- **StateProjection fields** are camelCase (`currentStep`, `currentTask`, `startedAt`, `updatedAt`). The internal projection object is new code, not subject to the WorkItem-legacy mix. **Note:** within the projection, the `plan_tasks` key is renamed to `planTasks` per this convention (correcting CON-2).
+
+The implementer must NOT rename `planRef`/`planTask` on the WorkItem to snake_case during this work — that would break the `IssueManagerInterface` parity invariant declared in the sibling `json-issue-board-adapter` spec.
+
+## Path Safety (SEC-1, SEC-4)
+
+The module enforces a path-containment invariant on every public function that takes a `specPath` or `projectRoot`:
+
+1. **`projectRoot` normalization.** Every public function resolves `projectRoot` via `path.resolve()` at entry. The resolved path must contain `.context-index/manifest.yaml` (validated by `fs.existsSync`). If validation fails, the function throws `INVALID_PROJECT_ROOT`.
+2. **Spec path containment.** `slugFromSpec(specPath)` and every function taking `specPath` must:
+   1. Normalize via `path.resolve(projectRoot, specPath)`.
+   2. Assert the resolved path starts with `path.resolve(projectRoot)` followed by `path.sep`. If not, throw `INVALID_SPEC_PATH` (path-traversal defense per OWASP/CWE-22).
+   3. Assert the resolved path ends with `.spec.md`. If not, throw `INVALID_SPEC_PATH`.
+3. **Log path containment.** The derived log path `<projectRoot>/.context-index/lifecycle-state/<slug>.jsonl` must satisfy `resolvedLogPath.startsWith(projectRoot + sep + '.context-index' + sep + 'lifecycle-state' + sep)`. If not (e.g., slug contains `..`), throw `INVALID_SPEC_PATH`.
+4. **Slug character allowlist.** Slugs derived from spec filenames are constrained to `[a-z0-9._-]+`. Any other character causes `INVALID_SPEC_PATH`. Combined with the containment check, this defeats traversal via crafted spec filenames.
 
 ## System Constitution Reference
 
@@ -37,7 +59,7 @@ The Lifecycle Event Log is a new library module (`lib/lifecycle-state.mjs`) that
 | `ensureLifecycleState` / `hasLifecycleState` | Idempotent bootstrap and existence check. | small |
 | Convenience writers | `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`. Each calls `appendEvent` after stamping severity (for actor events) via `loadDomainConfig` lookup. | medium |
 | Severity resolution helper | Internal function that resolves an actor's severity from `reviewers.yaml`/`gates.yaml` for the resolved domain at write time. Caches the loaded config for the lifetime of the call only. | medium |
-| `currentState` fold | Reducer over events producing the StateProjection. Handles every canonical variant; preserves unknown variants under a `_unknown_events[]` array. | medium |
+| `currentState` fold | Reducer over events producing the StateProjection. Handles every canonical variant; preserves unknown variants under an `unknownEvents[]` array. | medium |
 | Aggregation algorithm | The fold's `step_completed`/`step_failed` synthesis: walk per-step reports, apply severity rule (any `blocker`/`error` FAIL ⇒ FAIL; lower ⇒ PASS_WITH_NOTES). | medium |
 | `requireGate` enforcer | Look up prior step in projection. If not completed/passed, throw `GateError` (strict) or log warning (advisory). Read mode from `manifest.yaml::lifecycle.gate_mode`. | small |
 | `listLifecycleStates` aggregate | Glob `lifecycle-state/*.jsonl`, fold each, return array of `{spec, slug, status, currentStep, updated}`. | small |
@@ -55,12 +77,17 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 
 ## Acceptance Criteria
 
-- [ ] `lib/lifecycle-state.mjs` exports every function listed in the charter's Interface Contracts: `appendEvent`, `readEvents`, `currentState`, `requireGate`, `listLifecycleStates`, `renderMarkdown`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`, `filterEvents`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`.
+- [ ] `lib/lifecycle-state.mjs` exports every function listed in the charter's Interface Contracts: `appendEvent`, `readEvents`, `currentState`, `requireGate`, `resolveGateMode`, `listLifecycleStates`, `renderMarkdown`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`, `filterEvents`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`.
 - [ ] All writes go through `fs.appendFile` (or equivalent `O_APPEND` write). A grep test asserts no other write primitive (`writeFile`, `writeFileSync`, `createWriteStream` truncating) appears in the module. CI gate.
 - [ ] `reportReviewer` and `reportValidator` always stamp `severity` on the event before appending. A schema-validation test over fixture events confirms no actor event lacks `severity`.
 - [ ] `currentState()` is a pure function of the events array; same input always yields the same output. Asserted by property test.
-- [ ] Unknown event variants are preserved on read and surfaced under a `_unknown_events[]` field on the projection. Asserted by a fixture with a custom event type.
-- [ ] `requireGate(state, stepName)` throws `GateError` when the prior step is missing or failed and `lifecycle.gate_mode = strict` (default). It logs an advisory warning and returns when `lifecycle.gate_mode = advisory`.
+- [ ] Unknown event variants are preserved on read and surfaced under an `unknownEvents[]` field on the projection. Asserted by a fixture with a custom event type.
+- [ ] `requireGate(state, stepName, { mode })` throws `GateError` when the prior step is missing or failed and `mode === "strict"`. It logs an advisory warning and returns when `mode === "advisory"`. The function performs no manifest I/O; callers pass `mode` explicitly (typically via `resolveGateMode(manifest)`).
+- [ ] Path-containment defenses are enforced: any `specPath` that resolves outside `projectRoot`, lacks `.spec.md`, or produces a slug with characters outside `[a-z0-9._-]+` throws `INVALID_SPEC_PATH`. Any `projectRoot` lacking `.context-index/manifest.yaml` throws `INVALID_PROJECT_ROOT`. CI test exercises traversal payloads (`../../.bashrc.spec.md`, symlink escape, crafted slugs).
+- [ ] Size caps enforced: events > 1 MB → `EVENT_TOO_LARGE`; log file ≥ 50 MB → `LOG_TOO_LARGE`; `notes` > 4 KB → truncated with `NOTES_TRUNCATED` warning. Test fixtures exercise each cap.
+- [ ] Severity-resolution best-effort: if `loadDomainConfig` throws (broken `reviewers.yaml`/`gates.yaml`), the writer stamps `severity: warning`, emits a one-time `DOMAIN_CONFIG_DEGRADED` warning, and appends the event. Durability is prioritized over strict severity.
+- [ ] Aggregation per the per-severity table in Behaviors: `blocker`/`error` FAIL → step FAIL; `warning`/`advisory` FAIL → step PASS_WITH_NOTES. Fixture-driven test covers all four severity rows.
+- [ ] The StateProjection uses camelCase keys throughout (`currentStep`, `currentTask`, `planTasks`, `startedAt`, `updatedAt`, `interventions`, `unknownEvents`). No snake_case keys on the projection (event-discriminator names within event payloads keep their snake_case as per Naming Conventions).
 - [ ] `listLifecycleStates(projectRoot)` returns one entry per `<slug>.jsonl` file in `.context-index/lifecycle-state/`. Empty array when directory missing.
 - [ ] All constitution quality gates pass: `npm test` green, no new dependencies in `package.json`, all files are `.mjs` ESM.
 - [ ] No constitutional violations.
@@ -90,16 +117,28 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 - **When** `readEvents` is called on a missing file **then** an empty array is returned (no error thrown).
 - **When** `reportReviewer({step, reviewer, verdict})` is called **then** the helper looks up the reviewer's `severity_cap` from `reviewers.yaml` in the resolved domain, stamps `severity` on the event, and appends. If the reviewer is not found in domain config, `severity` defaults to `warning` and a one-time console warning is emitted.
 - **When** `reportValidator({step, validator, verdict})` is called **then** the helper looks up the validator's `severity` from `gates.yaml`, stamps it on the event, and appends. Same default-to-warning fallback as reviewers.
-- **When** `currentState(projectRoot, specPath)` is called **then** the events are read, folded into a `StateProjection` object containing `{spec, status, currentStep, currentTask, steps{}, plan_tasks{}, interventions[], started, updated, _unknown_events[]}`, and that object is returned.
-- **When** the fold encounters reports from multiple actors on the same step **then** the step's aggregate verdict follows the rule: any `blocker`/`error` severity returning `FAIL` ⇒ `verdict: FAIL`, `status: failed`. Lower-severity `FAIL`s and any `PASS_WITH_NOTES` ⇒ `verdict: PASS_WITH_NOTES`, `status: completed`. All `PASS` ⇒ `verdict: PASS`, `status: completed`.
-- **When** `requireGate(state, "plan")` is called and `state.steps.review.status` is not `completed` with verdict `PASS` or `PASS_WITH_NOTES` **then** under `gate_mode: strict` (default) a `GateError` is thrown; under `gate_mode: advisory` a `console.warn` advisory is emitted and the function returns normally.
+- **When** `currentState(projectRoot, specPath)` is called **then** the events are read, folded into a `StateProjection` object containing `{spec, status, currentStep, currentTask, steps{}, planTasks{}, interventions[], startedAt, updatedAt, unknownEvents[]}`, and that object is returned.
+- **When** the fold encounters reports from multiple actors on the same step **then** the step's aggregate verdict is computed by the explicit severity × verdict table below (SA-5):
+
+  | Worst-case actor severity reporting FAIL | Aggregate step verdict | Aggregate step status |
+  |---|---|---|
+  | `blocker` | `FAIL` | `failed` |
+  | `error` | `FAIL` | `failed` |
+  | `warning` | `PASS_WITH_NOTES` | `completed` |
+  | `advisory` | `PASS_WITH_NOTES` | `completed` |
+  | (no FAILs at all, ≥1 PASS_WITH_NOTES) | `PASS_WITH_NOTES` | `completed` |
+  | (all PASS) | `PASS` | `completed` |
+
+  The aggregation is "worst wins" by severity for `FAIL` verdicts; non-FAIL `PASS_WITH_NOTES` reports demote `PASS` to `PASS_WITH_NOTES` regardless of their severity.
+- **When** `requireGate(state, "plan", { mode })` is called and `state.steps.review.status` is not `completed` with verdict `PASS` or `PASS_WITH_NOTES` **then** under `mode === "strict"` a `GateError` is thrown; under `mode === "advisory"` a `console.warn` advisory is emitted and the function returns normally. The `mode` argument is required — callers resolve it from `manifest.yaml::lifecycle.gate_mode` themselves (typically once per skill invocation), keeping `lib/lifecycle-state.mjs` free of manifest I/O. A helper `resolveGateMode(manifest)` is provided as a thin wrapper for callers that want to avoid duplicating the resolution logic.
 - **When** `listLifecycleStates(projectRoot)` is called **then** every `*.jsonl` file in `.context-index/lifecycle-state/` is folded and returned as a single array of `{spec, slug, status, currentStep, updated}` records.
-- **When** the fold encounters an event with an `event` value not in the canonical set **then** the event is preserved on the projection's `_unknown_events[]` array and otherwise ignored by core step / plan_task / intervention projections.
+- **When** the fold encounters an event with an `event` value not in the canonical set **then** the event is preserved on the projection's `unknownEvents[]` array and otherwise ignored by core step / plan-task / intervention projections.
 - **When** any caller attempts to write a log file with a non-append primitive (`writeFile`, truncating stream, etc.) **then** a CI architectural test catches it and fails the build.
+- **When** a skill needs to record per-task progress on a spec's plan **then** it MUST call `reportPlanTask(projectRoot, specPath, { plan, task_id, status })` — this is the canonical substitute for the legacy pattern of creating per-task issues on the board. The sibling `json-issue-board-adapter` spec enforces the inverse: `create()` / `update()` calls that would persist `planTask` on an Issue are rejected with `BOARD_GRANULARITY_VIOLATION`. The two specs together form one contract: plan-task state lives exclusively in the lifecycle log (SA-7 / cross-spec contract).
 
 ## Postconditions
 
-- After a successful `appendEvent`, the target file ends with a complete `\n`-terminated JSON line that parses to the event payload exactly as written, including a stamped `ts` and (for actor events) `severity`.
+- After a successful `appendEvent`, the caller's event is present in the target file as one complete `\n`-terminated JSON line that parses to the event payload exactly as written, including a stamped `ts` and (for actor events) `severity`. Under concurrent writers the caller's event may not be the file's last line — the postcondition is per-event, not positional (SA-6).
 - After a successful convenience write (`reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`), the event's actor-determined fields (severity for actor events) are immutable on disk for the life of the file.
 - After a `currentState` call, the returned projection is independent of any future writes — it captures the log state at read time. Subsequent writes do not mutate prior projections.
 - After a strict-mode `requireGate` throw, no side effect has occurred (no log write, no file mutation) — the caller's transaction can safely abort.
@@ -112,13 +151,17 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 | `appendEvent` called with missing `event` field | Throws `EVENT_SCHEMA_INVALID` with field name | EVENT_SCHEMA_INVALID |
 | `appendEvent` called with non-string `event` value | Throws `EVENT_SCHEMA_INVALID` | EVENT_SCHEMA_INVALID |
 | `appendEvent` called with payload exceeding 1 MB | Throws `EVENT_TOO_LARGE` — concurrent-safe atomicity is no longer guaranteed for oversized payloads | EVENT_TOO_LARGE |
+| `appendEvent` called when the target log file is already ≥ 50 MB | Throws `LOG_TOO_LARGE` advising the caller to await compaction (deferred capability). Defensive cap until compaction lands. | LOG_TOO_LARGE |
+| `reportReviewer` / `reportValidator` called with `notes` exceeding 4 KB | Truncate `notes` to 4 KB, append `…[truncated]` marker, emit one-time `NOTES_TRUNCATED` console warning, append the event. Caller is responsible for not passing secret-bearing text (documented in helper signature). | NOTES_TRUNCATED (warning) |
+| Caller passes a `projectRoot` that does not contain `.context-index/manifest.yaml` after `path.resolve()` | Throws `INVALID_PROJECT_ROOT` with the resolved path | INVALID_PROJECT_ROOT |
+| Caller passes a `specPath` that resolves outside `projectRoot`, ends without `.spec.md`, or yields a slug with characters outside `[a-z0-9._-]+` | Throws `INVALID_SPEC_PATH` with the offending value | INVALID_SPEC_PATH |
 | `appendEvent` cannot create the file (permission, disk full) | Surfaces the underlying `fs` error code unchanged | FS_ERROR |
 | `readEvents` encounters a malformed (non-JSON) interior line | Skip the line, log a one-time `MALFORMED_LINE_SKIPPED` warning, continue reading | MALFORMED_LINE_SKIPPED |
 | `readEvents` encounters a truncated final line | Skip the final line silently (recoverable from a crash mid-write) | — (no error) |
 | `reportReviewer` called with a reviewer name not in `reviewers.yaml` | Default severity to `warning`, emit one-time console warning, append the event | UNKNOWN_REVIEWER_DEFAULTED |
 | `reportValidator` called with a validator name not in `gates.yaml` | Default severity to `warning`, emit one-time console warning, append the event | UNKNOWN_VALIDATOR_DEFAULTED |
-| `loadDomainConfig` throws when resolving severity | Propagate the error; do not append the event (avoids silent severity drift) | DOMAIN_CONFIG_ERROR |
-| `currentState` called on a file with all unknown event variants | Return a projection with empty `steps{}` and the events in `_unknown_events[]` | — (no error) |
+| `loadDomainConfig` throws when resolving severity (e.g., malformed `reviewers.yaml`/`gates.yaml`) | Best-effort: stamp `severity: warning`, emit one-time `DOMAIN_CONFIG_DEGRADED` console warning naming the file, and append the event. Durability of the log is prioritized over strict severity resolution. The advisory points the user at the broken file. | DOMAIN_CONFIG_DEGRADED (warning) |
+| `currentState` called on a file with all unknown event variants | Return a projection with empty `steps{}` and the events in `unknownEvents[]` | — (no error) |
 | `requireGate(state, step)` with prior step missing/failed and `gate_mode: strict` | Throws `GateError` with `{requiredStep, currentStatus, mode}` | GATE_BLOCKED |
 | `requireGate` with `gate_mode: advisory` and prior step missing/failed | Emit `console.warn` with the same payload; return normally | — (no error) |
 | `requireGate` called with an unknown `gate_mode` value in manifest | Treat as `strict`, emit one-time `console.warn` about the unknown mode | UNKNOWN_GATE_MODE_DEFAULTED |
