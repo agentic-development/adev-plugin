@@ -140,8 +140,8 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 
 | Capability | Description | Priority | Status |
 |------------|-------------|----------|--------|
-| Lifecycle event log | `lib/lifecycle-state.mjs` with append-only JSONL writes, `appendEvent`/`readEvents`/`currentState`/`requireGate`/`listLifecycleStates`/`renderMarkdown`. Defines canonical event schema and multi-writer fold-aggregation algorithm. Foundation. | must-have | specified |
-| JSON issue board + adapter | `.context-index/tasks/tasks.json` document, `lib/issues/json-adapter.mjs` implementing the unchanged `IssueManagerInterface`, registry update (`backend: json`), new-scaffold default. | must-have | specified |
+| Lifecycle event log | `lib/lifecycle-state.mjs` with append-only JSONL writes, `appendEvent`/`readEvents`/`currentState`/`requireGate`/`listLifecycleStates`/`renderMarkdown`. Defines canonical event schema and multi-writer fold-aggregation algorithm. Foundation. | must-have | review-passed |
+| JSON issue board + adapter | `.context-index/tasks/tasks.json` document, `lib/issues/json-adapter.mjs` implementing the unchanged `IssueManagerInterface`, registry update (`backend: json`), new-scaffold default. | must-have | review-passed |
 | Severity stamping at write time | `reportReviewer()` / `reportValidator()` helpers that look up severity from `reviewers.yaml`/`gates.yaml` once at write and stamp it on the event. Reads stay config-free. | must-have | — |
 | Plan-task events in lifecycle log | `/adev:plan` writes `plan_task` events instead of creating per-task issues. `/adev:implement` reads/writes plan-task events. Plan-file checkboxes no longer mutated. | must-have | — |
 | Issue board granularity cleanup | Enforces post-migration invariant: no issue with `planRef`+`planTask`. Board entries are epic / feature-spec / bug level only. Includes `/adev:plan`, `/adev:specify`, `/adev:work` instruction updates and migration collapse of existing per-task issues. | must-have | — |

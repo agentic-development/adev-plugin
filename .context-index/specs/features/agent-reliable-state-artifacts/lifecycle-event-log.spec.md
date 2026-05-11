@@ -6,11 +6,11 @@
 
 ---
 charter: agent-reliable-state-artifacts
-status: review-pending
+status: review-passed
 risk_level: high
 milestone: 0.26.0
 revision: 2
-charter-revision: 2
+charter-revision: 3
 created: 2026-05-11
 updated: 2026-05-11
 ---
