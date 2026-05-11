@@ -4,7 +4,7 @@
 charter: extensions
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 2
 charter-revision: 2
 created: 2026-05-10
@@ -14,7 +14,7 @@ source-manifest:
   files:
     - lib/extensions/content-install.mjs
     - tests/lib/extensions/content-install.test.mjs
-  computed-at: "2026-05-11T14:52:30.704Z"
+  computed-at: "2026-05-11T16:09:28.534Z"
 ---
 
 ## Behavioral Contract

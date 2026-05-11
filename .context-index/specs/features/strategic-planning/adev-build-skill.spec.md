@@ -20,7 +20,7 @@ source-manifest:
     - skills/build/resume-mode.md
     - tests/skills/build-one-step-dispatch.test.mjs
     - tests/skills/build-full-pipeline.test.mjs
-    - tests/skills/build-phase-and-stale.test.mjs
+    - tests/skills/build-milestone-and-stale.test.mjs
   computed-at: "2026-05-05T00:00:00.000Z"
 ---
 
@@ -29,7 +29,7 @@ source-manifest:
 ### Preconditions
 
 - `.context-index/` exists with `constitution.md` and `manifest.yaml`
-- At least one Live Spec exists (either specified via `--spec` or found via `--phase` filter)
+- At least one Live Spec exists (either specified via `--spec` or found via `--milestone` filter)
 
 ### Pipeline Modes
 
@@ -43,14 +43,14 @@ Use when starting from scratch or when the spec needs to be written or revised a
 
 Use when the spec is already written and reviewed. Assumes a valid `.review.md` with PASS verdict exists (or plan already exists). Skips specify and review. Includes the validate→implement retry loop if `build.max_retries > 0`.
 
-Both modes support `--phase <name>` to batch-build multiple specs. Route runs by default between plan and implement — use `--no-route` only to explicitly disable it.
+Both modes support `--milestone <name>` to batch-build multiple specs. Route runs by default between plan and implement — use `--no-route` only to explicitly disable it.
 
 ### Behaviors
 
 1. **When** `--spec <path>` is invoked without `--full` **then** the skill runs the Implement Pipeline: plan → route → implement → validate for that single spec
 2. **When** `--spec <path> --full` is invoked **then** the skill runs the Full Pipeline: specify → review (with blocker-fix loop) → plan → route → implement → validate for that single spec
-3. **When** `--phase <name>` is invoked without `--full` **then** the skill discovers all specs with `milestone: <name>` in frontmatter, filters to those with status `review-passed`, `implemented`, or `validated`, and builds each in dependency order using the Implement Pipeline. Specs with any other status are skipped with a visible note: "Skipped <spec> (status: <status>): not ready for Implement Pipeline. Run /adev:review-specs or use --full."
-3a. **When** `--phase <name> --full` is invoked **then** the filter includes `review-pending` specs — the Full Pipeline runs specify and review for each before planning. Specs with status `review-blocked` are also included; the Full Pipeline re-specifies and re-reviews them, allowing auto-fix to resolve prior blockers
+3. **When** `--milestone <name>` is invoked without `--full` **then** the skill discovers all specs with `milestone: <name>` in frontmatter, filters to those with status `review-passed`, `implemented`, or `validated`, and builds each in dependency order using the Implement Pipeline. Specs with any other status are skipped with a visible note: "Skipped <spec> (status: <status>): not ready for Implement Pipeline. Run /adev:review-specs or use --full."
+3a. **When** `--milestone <name> --full` is invoked **then** the filter includes `review-pending` specs — the Full Pipeline runs specify and review for each before planning. Specs with status `review-blocked` are also included; the Full Pipeline re-specifies and re-reviews them, allowing auto-fix to resolve prior blockers
 4. **When** a step fails (e.g., review returns BLOCK and blocker-fix budget is exhausted) **then** the build stops, reports the failure with context, and saves build state for resume
 5. **When** `--resume` is invoked **then** the skill reads `.context-index/build-state/<slug>.json`, identifies the last successful step, and resumes from the next step. Scans for stale builds (see Stale Build Detection below) and surfaces them if found
 5a. **When** `--resume --from <step>` is invoked **then** the skill overrides the automatic resume point and begins execution from the named step (e.g., `--from implement` skips plan and route, starting at implement). Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Invalid step name → print error and stop
@@ -59,7 +59,7 @@ Both modes support `--phase <name>` to batch-build multiple specs. Route runs by
 8. **When** a spec has already passed review (`.review.md` exists with PASS verdict, not stale) **then** both the specify step (Step 0) and the review step (Step 1) are skipped in Full Pipeline — the pipeline continues from plan
 8a. **When** a spec file exists but has no `.review.md` **then** Full Pipeline Step 0 dispatches `/adev:specify` in `--revise` mode (not creation mode) to avoid clobbering an existing spec
 9. **When** the pipeline reaches the route step **then** the orchestrator MUST dispatch the route subagent — this step MUST NOT be skipped, inlined, or treated as a no-op even if no specialists are registered in the manifest. Use `--no-route` to explicitly disable route for the current build
-10. **When** building multiple specs via `--phase` **then** each spec's build is independent — failure of one spec does not block others unless they have explicit dependencies
+10. **When** building multiple specs via `--milestone` **then** each spec's build is independent — failure of one spec does not block others unless they have explicit dependencies
 11. **When** each step completes **then** the build state file is updated with the completed step and timestamp
 12. **When** the full build completes successfully **then** the build state file is marked `status: completed` and a summary is printed
 13. **When** executing any pipeline step **then** the orchestrator MUST dispatch a fresh subagent via the Agent tool with a forked context. The subagent's prompt includes a context packet (pipeline context + step context) and instructs it to invoke the target skill via the Skill tool, run it to completion, and return a structured STEP_RESULT. The orchestrator never calls the Skill tool directly for pipeline steps — only subagents do
@@ -200,7 +200,7 @@ Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`.
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | No spec found for `--spec` | Print "Spec not found: <path>" and stop | N/A |
-| No specs found for `--phase` | Print "No specs found for milestone '<name>'" and stop | N/A |
+| No specs found for `--milestone` | Print "No specs found for milestone '<name>'" and stop | N/A |
 | `--resume` but no build state file | Print "No interrupted build found" and stop | N/A |
 | Zombie build found on `--resume` | Report stale build with resume command; ask to resume or overwrite | N/A |
 | Review BLOCK (Full Pipeline, no retries) | Stop build, report review findings, save state | N/A |
@@ -248,9 +248,9 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 ### Pipeline Modes
 - [ ] `--spec <path>` (no `--full`) runs Implement Pipeline: plan → route → implement → validate
 - [ ] `--spec <path> --full` runs Full Pipeline: specify → review → plan → route → implement → validate
-- [ ] `--phase <name>` (no `--full`) filters to `review-passed` or later specs and builds each using Implement Pipeline
-- [ ] `--phase <name>` skips `review-pending` and `review-blocked` specs with a visible note per spec
-- [ ] `--phase <name> --full` includes `review-pending` specs and runs Full Pipeline for each
+- [ ] `--milestone <name>` (no `--full`) filters to `review-passed` or later specs and builds each using Implement Pipeline
+- [ ] `--milestone <name>` skips `review-pending` and `review-blocked` specs with a visible note per spec
+- [ ] `--milestone <name> --full` includes `review-pending` specs and runs Full Pipeline for each
 - [ ] Implement Pipeline warns and stops if no `.review.md` found for the spec
 - [ ] Route step runs by default in both pipeline modes — orchestrator dispatches route subagent even when no specialists are registered
 - [ ] `--no-route` flag explicitly disables route for the current build

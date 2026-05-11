@@ -8,7 +8,7 @@
 mode: cross-cutting
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 2
 created: 2026-03-27
 updated: 2026-05-04

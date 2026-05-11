@@ -65,7 +65,7 @@ Infrastructure Preflight provides runtime verification of external system availa
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Verification Runner | `lib/infra-preflight.mjs` — parse `infra_requirements`, run env var presence checks, CLI tool PATH checks, and probe commands; return structured PreflightReport | must-have | 1 | validated |
 | Schema Extension | Extend `infra_requirements` with `cli_tools[]`, `probe`, and `check_level` fields | must-have | 1 | validated |
@@ -76,7 +76,7 @@ Infrastructure Preflight provides runtime verification of external system availa
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 
 ## Interface Contracts

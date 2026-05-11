@@ -507,12 +507,28 @@ After all tasks are complete and before reporting completion:
 1. Read the spec file that this plan implements (the plan file references the spec)
 2. Parse YAML frontmatter
 3. Update status: `review-passed` → `implemented`
-4. **Compute source manifest:** Call `computeManifest(specPath)` from `lib/source-manifest.mjs` to generate a hash manifest of all source files produced by this implementation. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter:
+4. **Compute source manifest:** Collect all source files produced by this implementation, then call `computeManifest(filePaths, projectRoot)` from `lib/source-manifest.mjs`. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter.
+
+   **Collecting the file list:** Walk each task in the plan and collect every file listed under `Files: Modify:` and `Files: Create:` (exclude `Files: Reference:` — those are read-only context). Deduplicate and sort. These are project-root-relative paths (e.g., `lib/milestones.mjs`, not absolute paths).
+
+   **Invocation:**
+   ```bash
+   node --input-type=module -e "
+   import { computeManifest } from '<ADEV_ROOT>/lib/source-manifest.mjs';
+   const manifest = await computeManifest(
+     ['lib/feature.mjs', 'tests/feature.test.mjs'],  // collected file list
+     '<PROJECT_ROOT>'                                  // absolute project root
+   );
+   console.log(JSON.stringify(manifest));
+   "
+   ```
+
+   Write the returned manifest into the spec's YAML frontmatter:
    ```yaml
    source-manifest:
      sha: "abc1234"          # first 7 chars of composite SHA-256
      files:
-       - src/lib/feature.mjs
+       - lib/feature.mjs
        - tests/feature.test.mjs
      computed-at: "2026-04-01T10:00:00.000Z"
    ```

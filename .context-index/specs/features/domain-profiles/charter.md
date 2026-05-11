@@ -84,22 +84,22 @@ Domain Profiles make the Agentic Development Framework domain-agnostic by introd
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
-| Domain Resolution Function | `resolveDomain()` — 4-level precedence chain returning a domain string | Must-have | v1 | validated |
-| Overlay File Structure | `domains/<domain>/` directory convention with 7 overlay types (charter-template, spec-template, reviewers, gates, verification, gate-config, test-config) | Must-have | v1 | validated |
-| Charter Domain Template | Complete domain-specific charter template with section names and vocabulary | Must-have | v1 | validated |
-| Spec Domain Template | Complete domain-specific spec template with error case columns and expectations | Must-have | v1 | validated |
-| Template Replacement | Replace overlay merging with full domain-specific templates for LLM reliability | Must-have | v1 | validated |
-| Domain-Aware Reviewer Dispatch | Review-specs loads domain-specific reviewer set from overlay | Must-have | v1 | validated |
-| Domain-Aware Quality Gates | Validate runs domain-specific gate commands | Should-have | v1 | validated |
-| Domain-Aware Verification | Implement loads domain-specific verification config (visual/output/flow) | Should-have | v1 | validated |
-| Domain-Aware Lifecycle Gates | Hooks load domain-specific file exclusions and bash passthrough commands | Must-have | v1 | validated |
-| Domain-Aware Test Config | Write-test/implement load domain-specific permitted tools and gaming thresholds | Must-have | v1 | validated |
-| Bundled Software Profile | Default profile extracting all current hardcoded framework defaults into config files | Must-have | v1 | validated |
-| Bundled Data-Engineering Profile | Overlay set for data pipelines: data contracts, fixture strategies, output verification | Should-have | v1 | validated |
-| Bundled Process-Automation Profile | Overlay set for workflows: integration points, recovery actions, flow verification | Nice-to-have | v1 | validated |
-| Custom Domain Support | Users create `domains/<name>/` with `extends: <parent>` for clone-based customization | Should-have | v1 | validated |
+| Domain Resolution Function | `resolveDomain()` — 4-level precedence chain returning a domain string | Must-have |  | validated |
+| Overlay File Structure | `domains/<domain>/` directory convention with 7 overlay types (charter-template, spec-template, reviewers, gates, verification, gate-config, test-config) | Must-have |  | validated |
+| Charter Domain Template | Complete domain-specific charter template with section names and vocabulary | Must-have |  | validated |
+| Spec Domain Template | Complete domain-specific spec template with error case columns and expectations | Must-have |  | validated |
+| Template Replacement | Replace overlay merging with full domain-specific templates for LLM reliability | Must-have |  | validated |
+| Domain-Aware Reviewer Dispatch | Review-specs loads domain-specific reviewer set from overlay | Must-have |  | validated |
+| Domain-Aware Quality Gates | Validate runs domain-specific gate commands | Should-have |  | validated |
+| Domain-Aware Verification | Implement loads domain-specific verification config (visual/output/flow) | Should-have |  | validated |
+| Domain-Aware Lifecycle Gates | Hooks load domain-specific file exclusions and bash passthrough commands | Must-have |  | validated |
+| Domain-Aware Test Config | Write-test/implement load domain-specific permitted tools and gaming thresholds | Must-have |  | validated |
+| Bundled Software Profile | Default profile extracting all current hardcoded framework defaults into config files | Must-have |  | validated |
+| Bundled Data-Engineering Profile | Overlay set for data pipelines: data contracts, fixture strategies, output verification | Should-have |  | validated |
+| Bundled Process-Automation Profile | Overlay set for workflows: integration points, recovery actions, flow verification | Nice-to-have |  | validated |
+| Custom Domain Support | Users create `domains/<name>/` with `extends: <parent>` for clone-based customization | Should-have |  | validated |
 
 ## Interface Contracts
 
