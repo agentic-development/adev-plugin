@@ -9,6 +9,17 @@ revision: 2
 charter-revision: 2
 created: 2026-05-10
 updated: 2026-05-11
+source-manifest:
+  sha: "8853934"
+  files:
+    - lib/extensions/install.mjs
+    - lib/extensions/manifest-schema.mjs
+    - lib/extensions/resolve-source.mjs
+    - lib/extensions/version-check.mjs
+    - tests/lib/extensions/install.test.mjs
+    - tests/lib/extensions/manifest-schema.test.mjs
+    - tests/lib/extensions/resolve-source.test.mjs
+  computed-at: "2026-05-11T14:52:30.696Z"
 ---
 
 ## Behavioral Contract
