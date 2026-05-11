@@ -15,6 +15,7 @@ import {
   milestoneDefer,
   evaluateShipCriteria,
   milestoneShip,
+  resolveStrategy,
   warnIfMilestoneUndefined,
   getMilestoneStatusData,
 } from "../lib/milestones.mjs";
@@ -118,6 +119,35 @@ describe("validateTargetDate", () => {
   it("rejects invalid date with INVALID_DATE", () => {
     assert.throws(() => validateTargetDate("not-a-date"), (err) => err.code === "INVALID_DATE");
     assert.throws(() => validateTargetDate("06-01-2026"), (err) => err.code === "INVALID_DATE");
+  });
+});
+
+// --- resolveStrategy ---
+
+describe("resolveStrategy", () => {
+  it("returns 'manual' for null release", () => {
+    assert.equal(resolveStrategy({ release: null }), "manual");
+  });
+
+  it("returns 'manual' for undefined release", () => {
+    assert.equal(resolveStrategy({}), "manual");
+  });
+
+  it("returns 'manual' for release without strategy", () => {
+    assert.equal(resolveStrategy({ release: {} }), "manual");
+  });
+
+  it("returns configured strategy for valid values", () => {
+    assert.equal(resolveStrategy({ release: { strategy: "tag-only" } }), "tag-only");
+    assert.equal(resolveStrategy({ release: { strategy: "release-please" } }), "release-please");
+    assert.equal(resolveStrategy({ release: { strategy: "manual" } }), "manual");
+  });
+
+  it("throws UNKNOWN_STRATEGY for unrecognized values", () => {
+    assert.throws(
+      () => resolveStrategy({ release: { strategy: "custom" } }),
+      (err) => err.code === "UNKNOWN_STRATEGY"
+    );
   });
 });
 
