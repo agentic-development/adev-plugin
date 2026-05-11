@@ -249,6 +249,33 @@ describe("milestoneCreate", () => {
   });
 });
 
+// --- milestoneCreate with --strategy ---
+
+describe("milestoneCreate with --strategy", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-strategy-create-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("sets release.strategy when strategy option provided", async () => {
+    const result = await milestoneCreate(dir, "v1", { strategy: "tag-only" });
+    assert.deepStrictEqual(result.release, { strategy: "tag-only" });
+    const loaded = loadMilestones(dir);
+    assert.deepStrictEqual(loaded[0].release, { strategy: "tag-only" });
+  });
+
+  it("leaves release as null when no strategy option", async () => {
+    const result = await milestoneCreate(dir, "v2", {});
+    assert.equal(result.release, null);
+  });
+
+  it("rejects unknown strategy with UNKNOWN_STRATEGY", async () => {
+    await assert.rejects(
+      () => milestoneCreate(dir, "v3", { strategy: "unknown" }),
+      { code: "UNKNOWN_STRATEGY" }
+    );
+  });
+});
+
 // --- Task 3: milestoneList ---
 
 describe("milestoneList", () => {
