@@ -27,6 +27,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 | `/adev:debug` | Validation | Context-aware systematic debugging | Bug or test failure |
 | `/adev:eval` | Validation | Graduated evaluation harness scoring 0-100 | Implementation complete |
 | `/adev:recover` | Validation | Structured diagnosis when agents get stuck | Active implementation |
+| `/adev:deploy` | Operations | Run a structured deployment pipeline from deploy.yaml | deploy.yaml exists |
 | `/adev:issues` | Maintenance | Manage project issues and epics | Task backend configured |
 | `/adev:status` | Maintenance | Query project status dashboard (read-only) | Context index exists |
 | `/adev:hygiene` | Maintenance | Audit context for staleness, drift, and coverage gaps | Context index exists |
@@ -160,6 +161,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** A Feature Charter at `.context-index/specs/features/<module>/charter.md` defining scope, capabilities, entities, and boundaries.
 
+**Domain-aware:** Loads `charter-overlay` from the resolved domain profile to inject domain-specific charter guidance. See [Domain Profiles](configuration.md#domain-profiles).
+
 **Related Guides:** [Design Phase](design-phase.md), [Core Concepts](concepts.md)
 
 ---
@@ -190,6 +193,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** A Live Spec at `.context-index/specs/features/<module>/<slug>.spec.md` with behavioral contract, acceptance criteria, and task map.
 
+**Domain-aware:** Loads `spec-overlay` from the resolved domain profile to inject domain-specific spec guidance. See [Domain Profiles](configuration.md#domain-profiles).
+
 **Related Guides:** [Design Phase](design-phase.md)
 
 ---
@@ -213,6 +218,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 ```
 
 **Expected Output:** A review file at `<spec-path>.review.md` with PASS, PASS_WITH_NOTES, or BLOCK verdict from each specialist reviewer.
+
+**Domain-aware:** Loads `reviewers` overlay from the resolved domain profile to configure domain-specific specialist reviewers. See [Domain Profiles](configuration.md#domain-profiles).
 
 **Related Guides:** [Design Phase](design-phase.md), [Governance](governance.md)
 
@@ -320,6 +327,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** Implemented code for each task, with tests written first (TDD), spec compliance verified, and code quality reviewed. Commits created per task with Spec and Plan-task trailers.
 
+**Domain-aware:** Loads `gates`, `gate-config`, and `test-config` overlays from the resolved domain profile to configure quality gates and test strategies per domain. See [Domain Profiles](configuration.md#domain-profiles).
+
 **Related Guides:** [Build Phase](build-phase.md), [Test Strategies](test-strategies.md)
 
 ---
@@ -400,6 +409,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 ```
 
 **Expected Output:** A structured validation report with PASS/FAIL per check, specific file references for failures, and overall verdict.
+
+**Domain-aware:** Loads `verification` overlay from the resolved domain profile to configure domain-specific validation rules. See [Domain Profiles](configuration.md#domain-profiles).
 
 **Related Guides:** [Validate & Debug](validate-debug.md), [Governance](governance.md)
 
@@ -482,6 +493,46 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 **Expected Output:** A recovery diagnosis with root cause classification, corrective context injection, and re-dispatch of the stuck subagent with enriched prompts. A recovery record is written for retrospective analysis.
 
 **Related Guides:** [Validate & Debug](validate-debug.md), [Build Phase](build-phase.md)
+
+---
+
+## Operations
+
+### `/adev:deploy`
+
+**Purpose:** Execute a structured deployment pipeline defined in `.context-index/deploy.yaml`. Runs shell commands, manual steps, verifications, gates, and CI triggers in order with fail-fast behavior, output redaction, and rollback guidance on failure.
+
+**Prerequisites:** `.context-index/deploy.yaml` must exist and pass validation. A version must be resolvable via `--version` or from a shipped milestone in `milestones.yaml`.
+
+**Arguments:**
+- `--version <tag>`: explicit version/tag for this deploy (bypasses milestone lookup)
+- `--env <name>`: target environment name (uses default if omitted)
+- `--dry-run`: print what would execute without running anything
+
+**Example:**
+```
+/adev:deploy
+/adev:deploy --version v1.2.0 --env production
+/adev:deploy --dry-run
+```
+
+**Step types:**
+
+| Type | Behavior |
+|------|----------|
+| `shell` | Run a command via `execFile` (no shell interpolation) |
+| `manual` | Print instructions, wait for user input (done/skip/abort) |
+| `verify` | Run a verification command, fail deploy if it fails |
+| `gate` | Poll a command at an interval until success or timeout |
+| `ci-trigger` | Dispatch a CI job and poll for completion |
+
+**On failure:** The pipeline stops immediately, reports which steps succeeded and which failed, and surfaces any configured rollback steps in reverse order. Rollback steps are never auto-executed — each requires explicit user confirmation.
+
+**Security:** Shell commands use `execFile` with `shell: false`. Output is redacted for declared environment variable values. Config is validated for inline secrets before execution. `deploy.yaml` is never modified by the skill.
+
+**Companion code:** All deploy logic lives in `lib/deploy.mjs` (config loading, validation, step execution, rollback, version resolution, output formatting).
+
+**Related Guides:** [Build Phase](build-phase.md)
 
 ---
 

@@ -1,0 +1,6 @@
+gates:
+  - id: quality-gate
+    description: "Run project test suite"
+    command: ["npm", "test"]
+    severity: error
+    tier: fast

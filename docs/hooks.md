@@ -106,6 +106,8 @@ These hooks fire before a tool executes. Blocking hooks (exit 2) prevent the too
 
 **Purpose:** Blocks edits that bypass lifecycle gates. Prevents direct edits to implementation files when the spec has not been reviewed, or edits to spec files when a plan is in progress.
 
+**Domain-aware gate config:** File exclusion patterns are loaded from the domain profile's `gate-config.yaml` overlay via `lib/domains/merge-gate-config.mjs`. The `software` profile ships with 44 file exclusion patterns (e.g., `*.test.*`, `.context-index/**`, `README.md`, `docs/**`, `node_modules/**`). When no domain profile is configured, empty exclusion lists are used (strictest mode -- everything is tracked). File exclusions can also be set via `user-config` using the `lifecycle.gate.file_exclusions` key.
+
 **What triggers a block:**
 - Editing implementation files when the governing spec's review status is not "passed"
 - Editing spec files while an active implementation plan exists for that spec
@@ -147,6 +149,8 @@ These hooks fire before a tool executes. Blocking hooks (exit 2) prevent the too
 **Behavior:** Blocks
 
 **Purpose:** Blocks bash commands that bypass lifecycle gates. Prevents running implementation commands (e.g., file creation, code generation) when lifecycle prerequisites are not met.
+
+**Domain-aware gate config:** Bash passthrough patterns are loaded from the domain profile's `gate-config.yaml` overlay via `lib/domains/merge-gate-config.mjs`. The `software` profile ships with 32 bash passthrough commands (e.g., `git status`, `npm test`, `ls`, `cat`, `grep`). When no domain profile is configured, empty passthrough lists are used (strictest mode -- all commands are gated). Bash passthrough commands can also be set via `user-config` using the `lifecycle.gate.bash_passthrough` key.
 
 **What triggers a block:**
 - Running bash commands that create or modify implementation files without a reviewed spec

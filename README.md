@@ -71,7 +71,7 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 | `/adev:review-specs` | Three specialist agents review your spec before coding begins |
 | `/adev:plan` | Decompose at any scope: spec→tasks (default), or `--feature`, `--release`, `--milestone`, `--epic` |
 | `/adev:route` | Score tasks: which can run autonomously vs. need human review |
-| `/adev:build` | Run the full pipeline end-to-end (review, plan, implement, validate) |
+| `/adev:build` | Run the full pipeline end-to-end — single spec (`--spec`), all specs in a charter (`--charter`), or a milestone phase (`--phase`) |
 | `/adev:implement` | Execute tasks with TDD — each in a fresh subagent |
 | `/adev:write-test` | Standalone TDD test authoring with gaming detection |
 | `/adev:validate` | 13-check verification against specs, constitution, and ADRs |

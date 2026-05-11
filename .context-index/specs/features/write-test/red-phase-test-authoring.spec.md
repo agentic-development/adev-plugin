@@ -29,6 +29,9 @@ source-manifest:
     - tests/write-test/detect-gaming.test.mjs
     - tests/write-test/write-handoff.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/write-test/SKILL.md
+drift_at: 2026-05-11T00:13:36.884Z
 ---
 
 ## Behavioral Contract

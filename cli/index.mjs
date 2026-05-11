@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 import { createInterface } from "readline";
 import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
+import { resolveExtensionSource } from "../lib/extensions/resolve-source.mjs";
+import { installExtension, readManifestStamps } from "../lib/extensions/install.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -814,6 +816,96 @@ async function cmdUninstall() {
   console.log();
 }
 
+async function cmdExtension() {
+  const subcommand = process.argv[3];
+
+  switch (subcommand) {
+    case "install": {
+      const source = process.argv[4];
+      if (!source) {
+        error("Missing source argument.");
+        log("Usage: npx adev-cli extension install <source>");
+        log("  <source> can be a local path, npm package, or git URL.");
+        process.exit(1);
+      }
+
+      try {
+        const resolved = await resolveExtensionSource(source);
+        const projectRoot = process.cwd();
+        const report = await installExtension(resolved.resolved_path, projectRoot, {
+          pluginRoot: PLUGIN_ROOT,
+          sourceUri: source,
+          _tmpDir: resolved._tmpDir,
+        });
+
+        heading("Extension Installed");
+        success(`${report.name} v${report.version}`);
+
+        if (report.filesWritten.length > 0) {
+          log("Files written:");
+          for (const f of report.filesWritten) {
+            log(`  ${f}`);
+          }
+        }
+        if (report.mergesApplied.length > 0) {
+          log("Merges applied:");
+          for (const m of report.mergesApplied) {
+            log(`  ${m}`);
+          }
+        }
+      } catch (err) {
+        error(err.message);
+        process.exit(1);
+      }
+      break;
+    }
+
+    case "list": {
+      const projectRoot = process.cwd();
+      const manifestPath = join(projectRoot, ".context-index", "manifest.yaml");
+      if (!existsSync(manifestPath)) {
+        error("manifest.yaml not found. Run /adev:init first.");
+        process.exit(1);
+      }
+
+      const stamps = readManifestStamps(projectRoot);
+      if (stamps.length === 0) {
+        log("No extensions installed.");
+        return;
+      }
+
+      heading("Installed Extensions");
+      // Table header
+      const nameW = Math.max(4, ...stamps.map(s => s.name.length));
+      const verW = Math.max(7, ...stamps.map(s => (s.version || "").length));
+      const dateW = Math.max(9, ...stamps.map(s => (s.installed_date || "").slice(0, 10).length));
+      const srcW = Math.max(6, ...stamps.map(s => (s.source_uri || "").length));
+
+      const header = `${"Name".padEnd(nameW)}  ${"Version".padEnd(verW)}  ${"Installed".padEnd(dateW)}  Source`;
+      const sep = `${"─".repeat(nameW)}  ${"─".repeat(verW)}  ${"─".repeat(dateW)}  ${"─".repeat(srcW)}`;
+      log(header);
+      log(sep);
+
+      for (const s of stamps) {
+        const date = (s.installed_date || "").slice(0, 10);
+        log(`${s.name.padEnd(nameW)}  ${(s.version || "").padEnd(verW)}  ${date.padEnd(dateW)}  ${s.source_uri || ""}`);
+      }
+      break;
+    }
+
+    default:
+      log("Usage: npx adev-cli extension <subcommand>");
+      log("");
+      log("Subcommands:");
+      log("  install <source>   Install an extension from a local path, npm package, or git URL");
+      log("  list               List installed extensions");
+      if (!subcommand) {
+        process.exit(1);
+      }
+      break;
+  }
+}
+
 function cmdHelp() {
   console.log(`
   adev — Agentic Development Framework CLI
@@ -822,6 +914,8 @@ function cmdHelp() {
     npx @adev-org/adev-cli install           First-time plugin setup
     npx @adev-org/adev-cli upgrade           Update existing install to latest version
     npx @adev-org/adev-cli uninstall         Uninstall plugin(s)
+    npx @adev-org/adev-cli extension install <source>  Install an extension
+    npx @adev-org/adev-cli extension list              List installed extensions
 
   Provider Selection:
     --provider claude-code        Install for Claude Code only
@@ -898,6 +992,9 @@ if (isDirectRun) {
         break;
       case "uninstall":
         await cmdUninstall();
+        break;
+      case "extension":
+        await cmdExtension();
         break;
       case "help":
       case "--help":

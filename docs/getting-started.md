@@ -158,6 +158,25 @@ After all tasks are complete, validation runs 13 ordered checks to verify the im
 
 If all checks pass, the spec status is promoted to `validated`. If any check fails, you get a detailed report of what to fix.
 
+## Choosing a Domain Profile
+
+After initialization, you can configure a domain profile to tailor the framework's vocabulary, reviewers, gates, and verification to your project's domain. Set the `domain` field in your manifest:
+
+```yaml
+# .context-index/manifest.yaml
+project:
+  name: my-project
+  domain: data-engineering  # or: software, process-automation
+```
+
+Three bundled profiles are available:
+
+- **software** (default) — Standard software development with visual verification, three reviewers (structural, security, consistency), and general-purpose test tooling.
+- **data-engineering** — Data pipeline development with data contracts, pipeline stages, data quality expectations, dbt integration, and output-based verification.
+- **process-automation** — Workflow automation with integration points, recovery actions, flow verification, and workflow-specific gates.
+
+If no `domain` is set, the `software` profile is used automatically. For details on what each profile provides and how to customize them, see [Project Types Guide](project-types.md).
+
 ## What's Next?
 
 You have completed your first full lifecycle pass. Here are the skills you will use most often going forward:

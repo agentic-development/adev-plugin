@@ -1,0 +1,6 @@
+type: flow
+trigger_patterns:
+  - "*.workflow.yaml"
+  - "*.flow.json"
+  - "*.bpmn"
+tool: none
