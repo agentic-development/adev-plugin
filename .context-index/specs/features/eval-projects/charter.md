@@ -68,26 +68,26 @@ Provide a suite of four realistic, self-contained project repositories spanning 
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Pipeline Eval Project | Python weather/IoT sensor data pipeline with DuckDB — ingests CSV/JSON, cleans, aggregates, loads | must-have | v1 | implemented |
-| API Eval Project | TypeScript/Node.js bookstore REST API with Docker+Postgres — CRUD for books, authors, reviews | must-have | v1 | implemented |
-| Migration Eval Project | Python+YAML legacy ETL migrating to dbt+DuckDB — both pipelines functional, same source data, comparable output | must-have | v1 | implemented |
-| Automation Eval Project | Python file-processing pipeline — watches inbox, validates CSV, transforms, generates reports, archives | must-have | v1 | implemented |
-| Plain-Claude Baseline Branches | All TODO features implemented by plain Claude Code (no adev skills) on `plain-claude` branch for each project, tagged with model version | must-have | v1 | specified |
-| Version Tagging | Adev eval runs tagged `adev-v<version>`, baseline builds tagged `plain-claude-<model>` for traceability | must-have | v1 | specified |
-| With-Context Branches | Pre-populated `.context-index/` on `with-context` branch for each project (constitution, manifest, platform-context, one extracted spec) | must-have | v1 | specified |
-| Onboarding Guides | README instructions in each project covering: quick start, how to init adev, suggested lifecycle walkthrough for TODO features | must-have | v1 | specified |
-| Planted Bugs | One subtle bug per project producing wrong output (not crashes), discoverable via `/adev:debug` | must-have | v1 | specified |
-| TODO Feature Lists | 4-6 features per project spanning brainstorm→validate, documented in README | must-have | v1 | specified |
-| Submodule Registration | All four repos registered as submodules in adev-plugin under `tests/evals/` | must-have | v1 | specified |
-| Eval Harness Scaffolds | Scenario and rubric directories per project domain under `tests/evals/<domain>/` | should-have | v2 | specified |
+| Pipeline Eval Project | Python weather/IoT sensor data pipeline with DuckDB — ingests CSV/JSON, cleans, aggregates, loads | must-have |  | implemented |
+| API Eval Project | TypeScript/Node.js bookstore REST API with Docker+Postgres — CRUD for books, authors, reviews | must-have |  | implemented |
+| Migration Eval Project | Python+YAML legacy ETL migrating to dbt+DuckDB — both pipelines functional, same source data, comparable output | must-have |  | implemented |
+| Automation Eval Project | Python file-processing pipeline — watches inbox, validates CSV, transforms, generates reports, archives | must-have |  | implemented |
+| Plain-Claude Baseline Branches | All TODO features implemented by plain Claude Code (no adev skills) on `plain-claude` branch for each project, tagged with model version | must-have |  | specified |
+| Version Tagging | Adev eval runs tagged `adev-v<version>`, baseline builds tagged `plain-claude-<model>` for traceability | must-have |  | specified |
+| With-Context Branches | Pre-populated `.context-index/` on `with-context` branch for each project (constitution, manifest, platform-context, one extracted spec) | must-have |  | specified |
+| Onboarding Guides | README instructions in each project covering: quick start, how to init adev, suggested lifecycle walkthrough for TODO features | must-have |  | specified |
+| Planted Bugs | One subtle bug per project producing wrong output (not crashes), discoverable via `/adev:debug` | must-have |  | specified |
+| TODO Feature Lists | 4-6 features per project spanning brainstorm→validate, documented in README | must-have |  | specified |
+| Submodule Registration | All four repos registered as submodules in adev-plugin under `tests/evals/` | must-have |  | specified |
+| Eval Harness Scaffolds | Scenario and rubric directories per project domain under `tests/evals/<domain>/` | should-have |  | specified |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Eval Harness Implementation | Scenarios and rubrics require projects to exist first | v2 | All v1 project capabilities |
+| Eval Harness Implementation | Scenarios and rubrics require projects to exist first |  | All v1 project capabilities |
 
 ## Interface Contracts
 

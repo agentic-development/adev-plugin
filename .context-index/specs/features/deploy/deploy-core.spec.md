@@ -9,7 +9,7 @@
 charter: deploy
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 3
 charter-revision: 1
 created: 2026-05-09

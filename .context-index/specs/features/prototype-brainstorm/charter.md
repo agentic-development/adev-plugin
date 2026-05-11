@@ -72,7 +72,7 @@ The `/adev:prototype` skill exists to validate design direction through working 
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Tiered prototype generation | Generate prototype files at three complexity levels: wireframe (HTML structure), mockup (styled HTML/CSS), functional (interactive app with user-chosen framework) | must-have | 1 | validated |
 | Local HTTP serving | Serve prototype files via zero-dep Node.js HTTP server with auto-refresh on regeneration | must-have | 1 | validated |
@@ -87,7 +87,7 @@ The `/adev:prototype` skill exists to validate design direction through working 
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 | Multi-framework support | Phase 1 covers HTML and user-chosen framework; structured multi-framework templates deferred | 2 | Tiered prototype generation |
 | Live reload | Auto-refresh is a UX enhancement; manual browser refresh is acceptable for phase 1 | 2 | Local HTTP serving |

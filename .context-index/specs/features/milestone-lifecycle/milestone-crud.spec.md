@@ -4,7 +4,7 @@
 charter: milestone-lifecycle
 status: review-passed
 risk_level: medium
-milestone: v1
+milestone:
 revision: 3
 charter-revision: 3
 created: 2026-05-08

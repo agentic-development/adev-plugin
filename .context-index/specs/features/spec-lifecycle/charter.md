@@ -106,33 +106,33 @@ The spec-lifecycle module improves how charters and specs track their status, re
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Charter Status Lifecycle | Add `status`/`revision`/`updated` to charters; enforce `draft→approved→evolving→closed` transitions in brainstorm/specify skills; `closed` blocks new specs | must-have | v1 | implemented |
-| Capability Status Column | Add `Status` column to charter Capability Map; update as specs progress through lifecycle | must-have | v1 | implemented |
-| Spec Revision Tracking | Add `revision`/`charter-revision`/`updated` to specs; auto-increment on skill writes; auto-downgrade to `review-pending` on edit after `review-passed` | must-have | v1 | implemented |
-| Source Manifest | Compute content SHA of implementing files after GREEN; stamp `source-manifest` block in spec frontmatter; recomputable by any skill | must-have | v1 | implemented |
-| Plan-Test Mapping | Plan tasks reference their test files; test pass/fail determines task completion; no separate task status tracking | must-have | v1 | implemented |
-| Git Drift Detection | Plan gate compares spec `revision` vs `last-reviewed-revision` in `.review.md` AND checks `git diff` for manual edits; blocks on drift | must-have | v1 | implemented |
-| Session Capture Pipeline | Claude Code hooks (SessionStart, PostToolUse, Stop) + git native hooks (prepare-commit-msg, post-commit) capture session lifecycle; provider config in manifest (`native`/`none`); `lib/session-parser.mjs` reads Claude Code JSONL transcripts and condenses to structured format; zero external deps | must-have | v1 | implemented |
-| Session Summary Persistence | `lib/session-summary.mjs` writes standardized summaries to `.context-index/sessions/` with intent/outcome/learnings/friction/open_items schema; `readSummary()` parses them back; summaries committed alongside code via post-commit hook | must-have | v1 | implemented |
-| Template Updates | Update charter, spec, and manifest templates with new fields; `/adev:init` scaffolds `.githooks/` and sets `core.hooksPath` | must-have | v1 | implemented |
-| Structured Commit Trailers | Git hooks inject `Spec:`, `Plan-task:`, `Session:` trailers into commit messages automatically | must-have | v1 | implemented |
-| Entire Provider Adapter | When `provider: entire`, read summaries from Entire's checkpoint branch; disable native hooks to avoid duplication | nice-to-have | v2 | deferred |
-| Hygiene Lifecycle Auditing | `/adev:hygiene` extended with lifecycle-specific audit passes: detect specs whose frontmatter status contradicts source manifest evidence, flag charters with stale capability status, report specs with `charter-revision` behind current charter revision. Focuses on staleness, drift, and coverage gaps — not progress reporting (that is `/adev:status`). | should-have | v1 | implemented |
-| Status Query Skill | `/adev:status` skill queries spec-lifecycle data: per-spec status (revision, source manifest match, commits, sessions, test results), per-charter status (capability progress), project-wide aggregation. Composes git log, frontmatter, test results, and session summaries into a single report. | must-have | v1 | implemented |
-| Tracker Reference Field | Optional `tracker-ref` field in spec and charter frontmatter linking to external trackers (Jira, Linear, GitHub Issues). No API integration — metadata only. Displayed by `/adev:status`, queryable by future adev-graph plugin. | must-have | v1 | implemented |
-| Codex Adapter | Session parser adapter for Codex log format | nice-to-have | v2 | — |
-| PR Session Aggregation | Aggregate session summaries from branch commits into PR description | nice-to-have | v2 | — |
-| LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | nice-to-have | v2 | — |
+| Charter Status Lifecycle | Add `status`/`revision`/`updated` to charters; enforce `draft→approved→evolving→closed` transitions in brainstorm/specify skills; `closed` blocks new specs | must-have |  | implemented |
+| Capability Status Column | Add `Status` column to charter Capability Map; update as specs progress through lifecycle | must-have |  | implemented |
+| Spec Revision Tracking | Add `revision`/`charter-revision`/`updated` to specs; auto-increment on skill writes; auto-downgrade to `review-pending` on edit after `review-passed` | must-have |  | implemented |
+| Source Manifest | Compute content SHA of implementing files after GREEN; stamp `source-manifest` block in spec frontmatter; recomputable by any skill | must-have |  | implemented |
+| Plan-Test Mapping | Plan tasks reference their test files; test pass/fail determines task completion; no separate task status tracking | must-have |  | implemented |
+| Git Drift Detection | Plan gate compares spec `revision` vs `last-reviewed-revision` in `.review.md` AND checks `git diff` for manual edits; blocks on drift | must-have |  | implemented |
+| Session Capture Pipeline | Claude Code hooks (SessionStart, PostToolUse, Stop) + git native hooks (prepare-commit-msg, post-commit) capture session lifecycle; provider config in manifest (`native`/`none`); `lib/session-parser.mjs` reads Claude Code JSONL transcripts and condenses to structured format; zero external deps | must-have |  | implemented |
+| Session Summary Persistence | `lib/session-summary.mjs` writes standardized summaries to `.context-index/sessions/` with intent/outcome/learnings/friction/open_items schema; `readSummary()` parses them back; summaries committed alongside code via post-commit hook | must-have |  | implemented |
+| Template Updates | Update charter, spec, and manifest templates with new fields; `/adev:init` scaffolds `.githooks/` and sets `core.hooksPath` | must-have |  | implemented |
+| Structured Commit Trailers | Git hooks inject `Spec:`, `Plan-task:`, `Session:` trailers into commit messages automatically | must-have |  | implemented |
+| Entire Provider Adapter | When `provider: entire`, read summaries from Entire's checkpoint branch; disable native hooks to avoid duplication | nice-to-have |  | deferred |
+| Hygiene Lifecycle Auditing | `/adev:hygiene` extended with lifecycle-specific audit passes: detect specs whose frontmatter status contradicts source manifest evidence, flag charters with stale capability status, report specs with `charter-revision` behind current charter revision. Focuses on staleness, drift, and coverage gaps — not progress reporting (that is `/adev:status`). | should-have |  | implemented |
+| Status Query Skill | `/adev:status` skill queries spec-lifecycle data: per-spec status (revision, source manifest match, commits, sessions, test results), per-charter status (capability progress), project-wide aggregation. Composes git log, frontmatter, test results, and session summaries into a single report. | must-have |  | implemented |
+| Tracker Reference Field | Optional `tracker-ref` field in spec and charter frontmatter linking to external trackers (Jira, Linear, GitHub Issues). No API integration — metadata only. Displayed by `/adev:status`, queryable by future adev-graph plugin. | must-have |  | implemented |
+| Codex Adapter | Session parser adapter for Codex log format | nice-to-have |  | — |
+| PR Session Aggregation | Aggregate session summaries from branch commits into PR description | nice-to-have |  | — |
+| LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | nice-to-have |  | — |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Codex Adapter | Session parser adapter for Codex log format | v2 | — |
-| PR Session Aggregation | Aggregate session summaries from branch commits into PR description | v2 | — |
-| LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end | v2 | — |
+| Codex Adapter | Session parser adapter for Codex log format |  | — |
+| PR Session Aggregation | Aggregate session summaries from branch commits into PR description |  | — |
+| LLM Auto-Summarization | Auto-generate intent/outcome/learnings from raw transcript via LLM call at session end |  | — |
 | Epic/task management | Belongs in future adev-graph plugin | — | adev-graph plugin |
 | External tracker API integration (Jira, Linear, GitHub) | Belongs in future adev-graph plugin or dedicated integration plugin | — | adev-graph plugin |
 

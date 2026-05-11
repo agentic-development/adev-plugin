@@ -67,19 +67,19 @@ Create `/adev:document` skill that generates human-readable developer documentat
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
-| Generate architecture.md | Create project-level overview with module map, dependency flow, entry points | must-have | v1 | validated |
-| Generate module docs | Create docs/modules/<slug>.md for each module in manifest | must-have | v1 | validated |
-| GENERATED.md manifest | Track generated files, last commit, sections | must-have | v1 | validated |
-| Argument: --module | Generate/update single module doc | must-have | v1 | — |
-| Argument: --check | Dry-run: show what would change without writing | must-have | v1 | — |
-| Argument: --force | Regenerate all sections ignoring diff | should-have | v1 | — |
-| Error on missing repomap | Clear error if dependency-graph.json or symbol-ranks.json missing | must-have | v1 | — |
+| Generate architecture.md | Create project-level overview with module map, dependency flow, entry points | must-have |  | validated |
+| Generate module docs | Create docs/modules/<slug>.md for each module in manifest | must-have |  | validated |
+| GENERATED.md manifest | Track generated files, last commit, sections | must-have |  | validated |
+| Argument: --module | Generate/update single module doc | must-have |  | — |
+| Argument: --check | Dry-run: show what would change without writing | must-have |  | — |
+| Argument: --force | Regenerate all sections ignoring diff | should-have |  | — |
+| Error on missing repomap | Clear error if dependency-graph.json or symbol-ranks.json missing | must-have |  | — |
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 | Migration from `.context-index/orientation/` | Low priority, manual workaround exists | Phase 2 | — |
 | Incremental update mode with diff presentation | Requires base generation validated | Phase 2 | Phase 1 validated |
