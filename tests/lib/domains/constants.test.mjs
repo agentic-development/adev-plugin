@@ -31,11 +31,11 @@ describe('domains/constants', () => {
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('test-config'), 'test-config.yaml');
   });
 
-  it('exports the 3 bundled domain names', () => {
-    assert.equal(BUNDLED_DOMAIN_NAMES.size, 3);
+  it('exports only software as bundled domain name', () => {
+    assert.equal(BUNDLED_DOMAIN_NAMES.size, 1);
     assert.ok(BUNDLED_DOMAIN_NAMES.has('software'));
-    assert.ok(BUNDLED_DOMAIN_NAMES.has('data-engineering'));
-    assert.ok(BUNDLED_DOMAIN_NAMES.has('process-automation'));
+    assert.ok(!BUNDLED_DOMAIN_NAMES.has('data-engineering'), 'data-engineering should not be bundled');
+    assert.ok(!BUNDLED_DOMAIN_NAMES.has('process-automation'), 'process-automation should not be bundled');
   });
 
   it('exports domain name validation pattern', () => {
