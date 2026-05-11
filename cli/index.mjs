@@ -835,6 +835,7 @@ async function cmdExtension() {
         const report = await installExtension(resolved.resolved_path, projectRoot, {
           pluginRoot: PLUGIN_ROOT,
           sourceUri: source,
+          _tmpDir: resolved._tmpDir,
         });
 
         heading("Extension Installed");
