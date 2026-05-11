@@ -19,6 +19,11 @@ import {
   appendEvent,
   readEvents,
   _resolveActorSeverity,
+  reportReviewer,
+  reportValidator,
+  reportStep,
+  reportPlanTask,
+  reportIntervention,
 } from '../../lib/lifecycle-state.mjs';
 
 const __dirname = pathDirname(fileURLToPath(import.meta.url));
@@ -345,4 +350,115 @@ test('_resolveActorSeverity returns "warning" when domain config lookup throws',
     pluginRoot: '/tmp/__nonexistent_plugin_root_xyz__',
   });
   assert.equal(sev, 'warning');
+});
+
+// ── Task 7: convenience writers ─────────────────────────────────────────────
+
+test('reportReviewer appends a reviewer_report event with stamped severity', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportReviewer(root, specPath, {
+      step: 'review',
+      reviewer: 'structural-architect',
+      verdict: 'PASS',
+      notes: null,
+      pluginRoot: PLUGIN_ROOT,
+    });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 1);
+    const ev = events[0];
+    assert.equal(ev.event, 'reviewer_report');
+    assert.equal(ev.step, 'review');
+    assert.equal(ev.reviewer, 'structural-architect');
+    assert.equal(ev.verdict, 'PASS');
+    assert.equal(ev.severity, 'blocker');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('reportValidator appends a validator_report event with stamped severity', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportValidator(root, specPath, {
+      step: 'validate',
+      validator: 'quality-gate',
+      verdict: 'PASS',
+      duration_ms: 1200,
+      pluginRoot: PLUGIN_ROOT,
+    });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 1);
+    const ev = events[0];
+    assert.equal(ev.event, 'validator_report');
+    assert.equal(ev.validator, 'quality-gate');
+    assert.equal(ev.severity, 'error');
+    assert.equal(ev.duration_ms, 1200);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('reportStep chooses discriminator based on status', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportStep(root, specPath, { step: 'specify', status: 'started' });
+    reportStep(root, specPath, { step: 'specify', status: 'completed', verdict: 'PASS' });
+    reportStep(root, specPath, { step: 'review', status: 'failed', verdict: 'FAIL' });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 3);
+    assert.equal(events[0].event, 'lifecycle_step');
+    assert.equal(events[1].event, 'step_completed');
+    assert.equal(events[2].event, 'step_failed');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('reportPlanTask appends a plan_task event', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportPlanTask(root, specPath, {
+      plan: '.context-index/specs/.../foo.plan.md',
+      task_id: 't2',
+      status: 'in_progress',
+    });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].event, 'plan_task');
+    assert.equal(events[0].task_id, 't2');
+    assert.equal(events[0].status, 'in_progress');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('reportIntervention appends a debug_intervention event', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportIntervention(root, specPath, { kind: 'debug', note: 'ran adev:debug between tasks' });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].event, 'debug_intervention');
+    assert.equal(events[0].note, 'ran adev:debug between tasks');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('every actor event ends up with severity stamped on disk', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportReviewer(root, specPath, { step: 'review', reviewer: 'structural-architect', verdict: 'PASS', pluginRoot: PLUGIN_ROOT });
+    reportValidator(root, specPath, { step: 'validate', validator: 'quality-gate', verdict: 'PASS', pluginRoot: PLUGIN_ROOT });
+    reportStep(root, specPath, { step: 'specify', status: 'started' });
+    const events = readEvents(root, specPath);
+    const actorEvents = events.filter((e) => e.event === 'reviewer_report' || e.event === 'validator_report');
+    assert.equal(actorEvents.length, 2);
+    for (const ev of actorEvents) {
+      assert.ok(typeof ev.severity === 'string' && ev.severity.length > 0, `actor event missing severity: ${JSON.stringify(ev)}`);
+    }
+  } finally {
+    cleanupTempDir(root);
+  }
 });
