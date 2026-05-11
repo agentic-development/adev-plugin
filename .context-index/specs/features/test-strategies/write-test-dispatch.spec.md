@@ -5,6 +5,12 @@ revision: 1
 charter-revision: 2
 created: 2026-04-20
 updated: 2026-05-04
+source-manifest:
+  files:
+    - skills/write-test/SKILL.md
+    - lib/test-strategies/profiles.mjs
+    - lib/test-strategies/gaming.mjs
+  computed-at: "2026-05-10T23:51:01.456Z"
 ---
 
 # Spec: Write-Test Dispatch

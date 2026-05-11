@@ -7,6 +7,10 @@ revision: 3
 charter-revision: 1
 created: 2026-05-01
 updated: 2026-05-04
+source-manifest:
+  files:
+    - lib/infra-preflight.mjs
+  computed-at: "2026-05-10T23:51:01.456Z"
 ---
 
 # Live Spec: Verification Runner and Schema Extension

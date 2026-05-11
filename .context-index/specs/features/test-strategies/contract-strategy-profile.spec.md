@@ -6,6 +6,11 @@ revision: 1
 charter-revision: 2
 created: 2026-04-20
 updated: 2026-05-04
+source-manifest:
+  files:
+    - lib/test-strategies/profiles/contract.md
+    - lib/test-strategies/profiles.mjs
+  computed-at: "2026-05-10T23:51:01.456Z"
 ---
 
 # Spec: Contract Strategy Profile

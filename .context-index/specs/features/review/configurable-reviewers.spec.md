@@ -12,6 +12,14 @@ depends-on:
   - .context-index/adrs/0003-configurable-review-registry.md
   - .context-index/adrs/0004-execution-profiles.md
   - .context-index/specs/cross-cutting/execution-profiles.md
+source-manifest:
+  files:
+    - lib/governance/review-config.mjs
+    - lib/governance/context-pack.mjs
+    - lib/governance/dispatch-shape.mjs
+    - skills/review-specs/SKILL.md
+    - templates/review-specs/defaults.yaml
+  computed-at: "2026-05-10T23:51:35.315Z"
 ---
 
 ## Behavioral Contract
