@@ -13,6 +13,10 @@ revision: 2
 charter-revision: 2
 created: 2026-05-07
 updated: 2026-05-07
+source-manifest:
+  files:
+    - skills/prototype/SKILL.md
+  computed-at: "2026-05-10T23:51:54.631Z"
 ---
 
 ## Behavioral Contract
