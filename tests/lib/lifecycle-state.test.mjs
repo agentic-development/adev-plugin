@@ -8,6 +8,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createTempDir, cleanupTempDir } from '../helpers.mjs';
 import { existsSync, statSync, readFileSync, appendFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname as pathDirname } from 'node:path';
 import {
   CANONICAL_EVENTS,
   slugFromSpec,
@@ -16,7 +18,12 @@ import {
   hasLifecycleState,
   appendEvent,
   readEvents,
+  _resolveActorSeverity,
 } from '../../lib/lifecycle-state.mjs';
+
+const __dirname = pathDirname(fileURLToPath(import.meta.url));
+// Plugin root lives two levels up from this test file (tests/lib/ → tests/ → project)
+const PLUGIN_ROOT = pathDirname(pathDirname(__dirname));
 
 // ── Test helper: build a minimal project tmpdir + spec path ────────────────
 
@@ -287,4 +294,55 @@ test('readEvents skips a malformed interior line and keeps remaining events', ()
   } finally {
     cleanupTempDir(root);
   }
+});
+
+// ── Task 6: severity-resolution helper ─────────────────────────────────────
+
+test('_resolveActorSeverity returns reviewer severity_cap for a known reviewer', () => {
+  // Use the bundled "software" domain — structural-architect has severity_cap: blocker.
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'structural-architect',
+    repoRoot: '/tmp/__lifecycle_severity_known__',
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'blocker');
+});
+
+test('_resolveActorSeverity returns "warning" for an unknown reviewer', () => {
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'no-such-reviewer-xyz',
+    repoRoot: '/tmp/__lifecycle_severity_unknown__',
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'warning');
+});
+
+test('_resolveActorSeverity returns validator severity for a known gate', () => {
+  // The bundled software gates.yaml declares "quality-gate" with severity: error.
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'validator',
+    actorName: 'quality-gate',
+    repoRoot: '/tmp/__lifecycle_severity_gate__',
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'error');
+});
+
+test('_resolveActorSeverity returns "warning" when domain config lookup throws', () => {
+  // Force an error by passing a non-existent plugin root with a bundled
+  // domain name — loadDomainConfig will throw or return null. Either way,
+  // the fallback must yield "warning".
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'structural-architect',
+    repoRoot: '/tmp/__lifecycle_severity_broken__',
+    pluginRoot: '/tmp/__nonexistent_plugin_root_xyz__',
+  });
+  assert.equal(sev, 'warning');
 });
