@@ -62,7 +62,7 @@ Domain extension packages distribute domain-specific configuration (templates, r
 
 | Capability | Description | Priority | Phase | Status |
 |------------|-------------|----------|-------|--------|
-| Data Engineering Extension | Extension package with domain profile tailored for data pipelines, ETL, dbt, and data quality workflows | Must-have | v1 | — |
+| Data Engineering Extension | Extension package with domain profile tailored for data pipelines, ETL, dbt, and data quality workflows | Must-have | v1 | specified |
 | Process Automation Extension | Extension package with domain profile tailored for workflow automation, RPA, and event-driven processes | Must-have | v1 | — |
 | Bundled Templates Cleanup | Remove extracted domains from `templates/domains/`, update `BUNDLED_DOMAIN_NAMES` constant to software only | Must-have | v1 | — |
 | Git Subdirectory Fragment Support | Enhance `resolve-source.mjs` to parse `repo#path` fragments, cloning the repo and resolving into the subdirectory | Must-have | v1 | — |
