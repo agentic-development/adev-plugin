@@ -1,7 +1,0 @@
-type: output
-trigger_patterns:
-  - "*.parquet"
-  - "*.csv"
-  - "*.json"
-  - "*.yaml"
-tool: none
