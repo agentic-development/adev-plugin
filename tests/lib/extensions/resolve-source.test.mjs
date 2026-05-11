@@ -47,6 +47,10 @@ describe('extensions/resolve-source', () => {
     it('classifies simple name as npm', () => {
       assert.equal(classifyUri('adev-ext-foo'), 'npm');
     });
+
+    it('classifies https URL with # fragment as git', () => {
+      assert.equal(classifyUri('https://github.com/org/repo#extensions/data-engineering'), 'git');
+    });
   });
 
   describe('stripCredentials', () => {
@@ -80,6 +84,13 @@ describe('extensions/resolve-source', () => {
       assert.equal(
         stripCredentials('git@github.com:org/ext.git'),
         'git@github.com:org/ext.git'
+      );
+    });
+
+    it('preserves # fragment when stripping credentials', () => {
+      assert.equal(
+        stripCredentials('https://user:pass@github.com/org/repo#subdir'),
+        'https://github.com/org/repo#subdir'
       );
     });
   });
