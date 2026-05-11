@@ -30,6 +30,7 @@ AI coding agents work best with structured context but most projects provide non
 | Domain Profiles | Configurable domain layer adapting charters, specs, reviewers, quality gates, and verification to different development domains via overlay files and deterministic resolution | [charter.md](./features/domain-profiles/charter.md) |
 | Deploy | Project-specific deployment definitions with structured steps, environment support, milestone integration, and failure recovery guidance | [charter.md](./features/deploy/charter.md) |
 | User-Facing Documentation | Complete user guide replacing and reorganizing docs/ into a linear progression from concepts through daily workflow to full reference | [charter.md](./features/user-docs/charter.md) |
+| Domain Extensions | Installable content packages distributing domain-specific configuration as extensions consumed by the install pipeline | [charter.md](./features/domain-extensions/charter.md) |
 
 ## Cross-Cutting Concerns
 
