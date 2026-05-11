@@ -13,6 +13,14 @@ depends-on:
   - .context-index/adrs/0004-execution-profiles.md
   - .context-index/specs/cross-cutting/execution-profiles.md
   - .context-index/specs/features/unified-gates/unified-gate-system.md
+source-manifest:
+  files:
+    - lib/governance/validate-config.mjs
+    - lib/governance/quality-gate.mjs
+    - lib/governance/context-pack.mjs
+    - skills/validate/SKILL.md
+    - templates/validate/defaults.yaml
+  computed-at: "2026-05-10T23:51:35.315Z"
 ---
 
 ## Behavioral Contract

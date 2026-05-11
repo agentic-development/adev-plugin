@@ -9,6 +9,13 @@ revision: 1
 charter-revision: 2
 created: 2026-05-09
 updated: 2026-05-09
+source-manifest:
+  files:
+    - docs/design-phase.md
+    - docs/build-phase.md
+    - docs/validate-debug.md
+    - docs/maintain.md
+  computed-at: "2026-05-10T23:51:35.315Z"
 ---
 
 ## Behavioral Contract
