@@ -10,7 +10,7 @@ charter: domain-profiles
 status: validated
 mode: refactor
 risk_level: medium
-milestone: v1
+milestone:
 revision: 2
 charter-revision: 4
 created: 2026-05-10

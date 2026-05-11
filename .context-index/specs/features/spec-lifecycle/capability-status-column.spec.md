@@ -4,7 +4,7 @@
 charter: spec-lifecycle
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 1
 created: 2026-03-27
@@ -29,7 +29,7 @@ drift_at: 2026-05-11T00:13:30.435Z
 
 ### Preconditions
 
-- A charter exists with a Capability Map table containing at least `Capability`, `Description`, `Priority`, and `Phase` columns
+- A charter exists with a Capability Map table containing at least `Capability`, `Description`, `Priority`, and `Milestone` columns
 - The skill performing the update has identified which capability corresponds to the spec being modified
 
 ### Behaviors

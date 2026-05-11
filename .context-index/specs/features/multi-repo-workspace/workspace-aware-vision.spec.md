@@ -25,8 +25,8 @@ source-manifest:
     - tests/skills/plan-workspace-mode.test.mjs
   computed-at: "2026-04-17T09:26:13.441Z"
 drift_detected: true
-drift_source: skills/brainstorm/SKILL.md
-drift_at: 2026-05-11T00:12:59.663Z
+drift_source: tests/skills/plan-workspace-mode.test.mjs
+drift_at: 2026-05-11T16:58:48.080Z
 ---
 
 # Live Spec: Workspace-Aware Strategic Planning

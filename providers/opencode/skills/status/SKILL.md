@@ -20,7 +20,7 @@ Query and display the current status of adev lifecycle artifacts. This skill is 
 - `--epic <id>`: Show epic status with all child issues, code coverage, and completeness
 - `--file <path>`: Reverse lookup — file → spec (via source manifest) → issue → commits → drift
 - `--backlog`: Aggregate all pending work from charters, specs, issue board, and code provenance
-- `--phase <name>`: Show all capabilities in a phase across all charters with spec/plan/issue/code status
+- `--milestone <name>`: Show all capabilities in a milestone across all charters with spec/plan/issue/code status
 - `--all`: Show full project status dashboard (default when no args)
 
 ## Prerequisites
@@ -342,14 +342,14 @@ Stale Epics (<n>):
   - <epic-id>: <title> — all <N> issues closed, epic still open
 
 Charter Deferred/Future Capabilities (<n>):
-  - <charter>: <capability> (<phase>, <priority>)
+  - <charter>: <capability> (<milestone>, <priority>)
 
 Untraced Code: <N files> (run /adev:hygiene --check provenance for details)
 ```
 
-### Mode: `--phase <name>`
+### Mode: `--milestone <name>`
 
-Show all capabilities in a specific phase across all charters.
+Show all capabilities in a specific milestone across all charters.
 
 1. Scan all charters for Capability Map table entries.
 2. Filter to rows where Phase column matches `<name>` (e.g., "v1", "v2", "Phase 1").
@@ -357,7 +357,7 @@ Show all capabilities in a specific phase across all charters.
 
 **Output format:**
 ```
-=== Phase: <name> ===
+=== Milestone: <name> ===
 
 | Charter | Capability | Priority | Spec | Plan | Issues | Code |
 |---------|-----------|----------|------|------|--------|------|

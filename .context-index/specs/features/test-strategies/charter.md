@@ -68,7 +68,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Strategy Type Registry | Define the 9 strategy types with summary traits (RED/GREEN semantics, domain, typical tools) | must-have | | implemented |
 | Manifest Schema Extension | `test_strategies` section in manifest.yaml for declaring available strategies, commands, tiers, and path globs | must-have | | review-passed |
@@ -85,7 +85,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 
 ## Interface Contracts

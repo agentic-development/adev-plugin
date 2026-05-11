@@ -8,7 +8,7 @@
 charter: strategic-planning
 status: superseded
 risk_level: medium
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 1
 created: 2026-04-05

@@ -67,7 +67,7 @@ Enable the adev lifecycle to run tests at the right stage by categorizing qualit
 
 ## Capability Map
 
-| Capability | Description | Priority | Phase | Status |
+| Capability | Description | Priority | Milestone | Status |
 |------------|-------------|----------|-------|--------|
 | Tiered Gate Schema | Extend `manifest.yaml` gates section to support `fast`, `integration`, and `e2e` tier keys with commands and severity | must-have | | review-passed |
 | Backward-Compatible Fallback | Detect flat `gates.test` and auto-wrap into `gates.fast.test` so existing projects work without changes | must-have | | review-passed |
@@ -79,10 +79,10 @@ Enable the adev lifecycle to run tests at the right stage by categorizing qualit
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Selective tier execution by changed files | Complexity; projects can scope commands themselves | v2 | Tiered Gate Schema |
-| Flaky test quarantine tracking | Project-level concern, not framework feature | v2 | — |
+| Selective tier execution by changed files | Complexity; projects can scope commands themselves |  | Tiered Gate Schema |
+| Flaky test quarantine tracking | Project-level concern, not framework feature |  | — |
 
 ## Interface Contracts
 

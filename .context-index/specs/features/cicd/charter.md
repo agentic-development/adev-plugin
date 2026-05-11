@@ -61,9 +61,9 @@ Automate quality gates (tests, lint, typecheck) on every PR and push, and publis
 
 ## Deferred Capabilities
 
-| Capability | Reason | Target Phase | Depends On |
+| Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Security scanning (npm audit) | Can be added later | v2 | — |
+| Security scanning (npm audit) | Can be added later |  | — |
 
 ## Interface Contracts
 

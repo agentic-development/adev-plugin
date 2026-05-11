@@ -5,12 +5,12 @@ description: "Audit all context for staleness, drift, and coverage gaps. Runs fi
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and source code, generating actionable reports. Sixteen audit passes detect staleness, drift, coverage gaps, phase readiness, lifecycle consistency, operational patterns, code health issues, and heuristic index health so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and source code, generating actionable reports. Sixteen audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, and heuristic index health so the team can fix them before they become obstacles.
 
 ## Arguments
 
 - No arguments: full audit (all fifteen passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, phases, lifecycle, code-health, provenance, issue-board, heuristics, code-drift)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
 
@@ -453,27 +453,27 @@ Total blockers: 5
 - [ ] Review NOVEL_PROBLEM blocker for specialist gap
 ```
 
-## Audit Pass 11: Phase Coverage
+## Audit Pass 11: Milestone Coverage
 
-**Goal:** Report delivery readiness per phase by cross-referencing charter capability phases with spec statuses. Identify capabilities with no phase, and phases with missing or incomplete specs.
+**Goal:** Report delivery readiness per milestone by cross-referencing charter capability milestones with spec statuses. Identify capabilities with no phase, and milestones with missing or incomplete specs.
 
 **Steps:**
 
-1. **Scan all charters.** Read every `.context-index/specs/features/*/charter.md`. For each charter, parse the Capability Map table. Extract each capability's name, priority, and phase.
+1. **Scan all charters.** Read every `.context-index/specs/features/*/charter.md`. For each charter, parse the Capability Map table. Extract each capability's name, priority, and milestone.
 2. **Scan all specs.** Read every `*.spec.md` file under `.context-index/specs/features/`. Parse frontmatter for `charter`, `milestone`, and `status`.
 3. **Match capabilities to specs.** For each charter capability, find the corresponding spec by:
-   - Matching `milestone` in the spec to the capability's phase, AND
+   - Matching `milestone` in the spec to the capability's milestone, AND
    - Matching the spec's `charter` field to the charter's module name.
    - If no milestone match, fall back to matching by capability name similarity against spec titles.
-4. **Group by phase.** For each distinct phase found across all charters:
-   - List all capabilities assigned to that phase.
+4. **Group by milestone.** For each distinct milestone found across all charters:
+   - List all capabilities assigned to that milestone.
    - For each capability, show the matching spec and its status (or "(no spec created)" if none).
    - Compute a summary: N specified, M implemented, K in review, J draft, L missing.
-5. **List unphased capabilities.** Capabilities with no phase assigned, grouped by charter. Include their priority for triage.
+5. **List un-milestoned capabilities.** Capabilities with no milestone assigned, grouped by charter. Include their priority for triage.
 
 **Output format:**
 ```
-## Phase Coverage
+## Milestone Coverage
 
 ### v1
 - auth/password-login — implemented ✓
@@ -485,18 +485,18 @@ Total blockers: 5
 - auth/sso-integration — (no spec created)
   → 0/1 specified (1 charter capability without a spec)
 
-### Unphased Capabilities
-- auth: MFA — nice-to-have, no phase assigned
-- task-boards: board-analytics — should-have, no phase assigned
+### Un-milestoned Capabilities
+- auth: MFA — nice-to-have, no milestone assigned
+- task-boards: board-analytics — should-have, no milestone assigned
 
 **Actions:**
 - [ ] Create spec for auth/sso-integration (v2 capability with no spec)
-- [ ] Assign phase to 2 unphased capabilities
+- [ ] Assign milestone to 2 un-milestoned capabilities
 ```
 
-**Integration with summary table:** Add a row for Phase Coverage in the report summary:
+**Integration with summary table:** Add a row for Milestone Coverage in the report summary:
 ```
-| Phase Coverage | WARN | 1 unspecified capability, 2 unphased |
+| Milestone Coverage | WARN | 1 unspecified capability, 2 un-milestoned |
 ```
 
 ## Audit Pass 12: Lifecycle Audit
@@ -855,7 +855,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Governance Policy Health | PASS | 0 issues |
 | Recovery Pattern Analysis | WARN | 2 repeat offenders |
 | Blocker Frequency Analysis | WARN | 1 stale blocker |
-| Phase Coverage | WARN | 1 unspecified, 2 unphased |
+| Milestone Coverage | WARN | 1 unspecified, 2 un-milestoned |
 | Lifecycle Audit | WARN | 2 revision drift, 1 charter stale |
 | Code Health | WARN | 2 high, 3 medium, 1 low |
 | Code Provenance | WARN | 2 drifted, 3 untraced |

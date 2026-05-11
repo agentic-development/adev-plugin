@@ -63,13 +63,13 @@
 | epic-59 | Brainstorm Integration | closed | .context-index/specs/features/prototype-brainstorm/brainstorm-integration.plan.md |  | 2026-05-08T13:15:14.164Z | 2026-05-08T13:15:14.164Z |
 | epic-60 | Visual Reference Capture | closed | .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md |  | 2026-05-08T13:59:18.739Z | 2026-05-08T13:59:18.739Z |
 | epic-61 | Foundation & Onboarding Documentation | closed | .context-index/specs/features/user-docs/foundation-onboarding.plan.md | Reconciled: validated (2026-05-09) | 2026-05-09T17:00:00.000Z | 2026-05-09T17:00:00.000Z |
-| epic-62 | Milestone Create and List | closed |  | 1.0.0 | 2026-05-09T15:04:43.526Z | 2026-05-09T17:25:24.818Z |
-| epic-63 | 1.0.0 | closed |  | 1.0.0 | 2026-05-09T17:21:41.965Z | 2026-05-09T17:25:29.785Z |
+| epic-62 | Milestone Create and List | closed |  | 0.25.0 | 2026-05-09T15:04:43.526Z | 2026-05-09T17:25:24.818Z |
+| epic-63 | 0.25.0 | closed |  | 0.25.0 | 2026-05-09T17:21:41.965Z | 2026-05-09T17:25:29.785Z |
 | epic-64 | Domain Resolution & Overlay Structure | open | .context-index/specs/features/domain-profiles/domain-resolution-and-overlay-structure.plan.md |  | 2026-05-10T13:46:11.444Z | 2026-05-10T13:46:11.444Z |
 | epic-65 | Domain-Aware Skill Integration | open | .context-index/specs/features/domain-profiles/domain-aware-skill-integration.plan.md |  | 2026-05-10T14:53:19.426Z | 2026-05-10T14:53:19.426Z |
 | epic-66 | Bundled Domain Profiles | open | .context-index/specs/features/domain-profiles/bundled-domain-profiles.plan.md |  | 2026-05-10T21:52:27.609Z | 2026-05-10T21:52:27.609Z |
 | epic-69 | Template Replacement for Domain Profiles | open | .context-index/specs/features/domain-profiles/template-replacement.plan.md |  | 2026-05-10T23:40:02.722Z | 2026-05-10T23:40:02.722Z |
-| epic-70 | Create Domain Extension Packages | open |  | 1.0.0 | 2026-05-11T15:02:19.426Z | 2026-05-11T15:02:19.426Z |
+| epic-70 | Create Domain Extension Packages | open |  | 0.25.0 | 2026-05-11T15:02:19.426Z | 2026-05-11T15:02:19.426Z |
 
 ## Issues
 
