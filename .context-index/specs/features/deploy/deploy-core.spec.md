@@ -15,6 +15,13 @@ charter-revision: 1
 created: 2026-05-09
 updated: 2026-05-09
 tracker-ref: issue-345
+source-manifest:
+  sha: "f71253e"
+  files:
+    - lib/deploy.mjs
+    - skills/deploy/SKILL.md
+    - tests/deploy.test.mjs
+  computed-at: "2026-05-11T16:09:28.509Z"
 ---
 
 ## Behavioral Contract

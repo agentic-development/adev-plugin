@@ -15,6 +15,7 @@ import {
   milestoneDefer,
   evaluateShipCriteria,
   milestoneShip,
+  resolveStrategy,
   warnIfMilestoneUndefined,
   getMilestoneStatusData,
 } from "../lib/milestones.mjs";
@@ -121,6 +122,67 @@ describe("validateTargetDate", () => {
   });
 });
 
+// --- resolveStrategy ---
+
+describe("resolveStrategy", () => {
+  it("returns 'manual' for null release", () => {
+    assert.equal(resolveStrategy({ release: null }), "manual");
+  });
+
+  it("returns 'manual' for undefined release", () => {
+    assert.equal(resolveStrategy({}), "manual");
+  });
+
+  it("returns 'manual' for release without strategy", () => {
+    assert.equal(resolveStrategy({ release: {} }), "manual");
+  });
+
+  it("returns configured strategy for valid values", () => {
+    assert.equal(resolveStrategy({ release: { strategy: "tag-only" } }), "tag-only");
+    assert.equal(resolveStrategy({ release: { strategy: "release-please" } }), "release-please");
+    assert.equal(resolveStrategy({ release: { strategy: "manual" } }), "manual");
+  });
+
+  it("throws UNKNOWN_STRATEGY for unrecognized values", () => {
+    assert.throws(
+      () => resolveStrategy({ release: { strategy: "custom" } }),
+      (err) => err.code === "UNKNOWN_STRATEGY"
+    );
+  });
+});
+
+// --- release field I/O ---
+
+describe("release field I/O", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-release-io-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("round-trips release object through save/load", () => {
+    const ms = [{ name: "v1", status: "planned", epic_id: null, target_date: null,
+                  release: { strategy: "tag-only" }, ship_criteria: [] }];
+    saveMilestones(dir, ms);
+    const loaded = loadMilestones(dir);
+    assert.deepStrictEqual(loaded[0].release, { strategy: "tag-only" });
+  });
+
+  it("preserves release: null through save/load", () => {
+    const ms = [{ name: "v2", status: "planned", epic_id: null, target_date: null,
+                  release: null, ship_criteria: [] }];
+    saveMilestones(dir, ms);
+    const loaded = loadMilestones(dir);
+    assert.equal(loaded[0].release, null);
+  });
+
+  it("loads legacy milestones without release field as null", () => {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(join(dir, ".context-index", "milestones.yaml"),
+      "milestones:\n  - name: legacy\n    status: planned\n    epic_id: null\n    target_date: null\n    ship_criteria: []\n");
+    const loaded = loadMilestones(dir);
+    assert.equal(loaded[0].release, null);
+  });
+});
+
 // --- Task 2: milestoneCreate ---
 
 describe("milestoneCreate", () => {
@@ -184,6 +246,33 @@ describe("milestoneCreate", () => {
     assert.equal(result.ship_criteria.length, 3);
     assert.ok(result.ship_criteria.some((c) => c.check === "all_issues_closed"));
     assert.ok(result.ship_criteria.some((c) => c.confirm === "CHANGELOG updated"));
+  });
+});
+
+// --- milestoneCreate with --strategy ---
+
+describe("milestoneCreate with --strategy", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-strategy-create-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("sets release.strategy when strategy option provided", async () => {
+    const result = await milestoneCreate(dir, "v1", { strategy: "tag-only" });
+    assert.deepStrictEqual(result.release, { strategy: "tag-only" });
+    const loaded = loadMilestones(dir);
+    assert.deepStrictEqual(loaded[0].release, { strategy: "tag-only" });
+  });
+
+  it("leaves release as null when no strategy option", async () => {
+    const result = await milestoneCreate(dir, "v2", {});
+    assert.equal(result.release, null);
+  });
+
+  it("rejects unknown strategy with UNKNOWN_STRATEGY", async () => {
+    await assert.rejects(
+      () => milestoneCreate(dir, "v3", { strategy: "unknown" }),
+      { code: "UNKNOWN_STRATEGY" }
+    );
   });
 });
 
@@ -446,7 +535,7 @@ describe("milestoneShip", () => {
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("ships milestone: updates status, closes epic, creates tag", async () => {
-    saveMilestones(dir, [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const closedEpics = [];
     const mockManager = {
       listEpics: async () => [{ id: "epic-1" }],
@@ -469,7 +558,7 @@ describe("milestoneShip", () => {
   });
 
   it("adds v prefix for semver names without it", async () => {
-    saveMilestones(dir, [{ name: "2.0.0", status: "planned", epic_id: "epic-10", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "2.0.0", status: "planned", epic_id: "epic-10", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-10" }],
       list: async () => [],
@@ -487,7 +576,7 @@ describe("milestoneShip", () => {
   });
 
   it("skips tagging for non-semver names", async () => {
-    saveMilestones(dir, [{ name: "beta-1", status: "planned", epic_id: "epic-11", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "beta-1", status: "planned", epic_id: "epic-11", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-11" }],
       list: async () => [],
@@ -528,7 +617,7 @@ describe("milestoneShip", () => {
   });
 
   it("blocks when tag exists", async () => {
-    saveMilestones(dir, [{ name: "v3.0.0", status: "planned", epic_id: "epic-4", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v3.0.0", status: "planned", epic_id: "epic-4", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-4" }],
       list: async () => [],
@@ -549,7 +638,7 @@ describe("milestoneShip", () => {
   });
 
   it("handles epic close failure gracefully", async () => {
-    saveMilestones(dir, [{ name: "v4.0.0", status: "planned", epic_id: "epic-5", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v4.0.0", status: "planned", epic_id: "epic-5", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-5" }],
       list: async () => [],
@@ -578,6 +667,275 @@ describe("milestoneShip", () => {
     });
     assert.equal(result.shipped, false);
     assert.equal(result.confirmRejected, "CHANGELOG updated");
+  });
+});
+
+// --- milestoneShip strategy: tag-only ---
+
+describe("milestoneShip strategy: tag-only", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-tag-only-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("creates git tag for semver names", async () => {
+    saveMilestones(dir, [{
+      name: "1.0.0", status: "planned", epic_id: "epic-1",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    let tagCreated = null;
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "1.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: (args) => { tagCreated = args[1]; },
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "tag-only");
+    assert.equal(result.tag, "v1.0.0");
+    assert.equal(tagCreated, "v1.0.0");
+  });
+
+  it("skips tag for non-semver names", async () => {
+    saveMilestones(dir, [{
+      name: "beta-1", status: "planned", epic_id: "epic-2",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-2" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "beta-1", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.tag, null);
+  });
+
+  it("blocks when tag already exists", async () => {
+    saveMilestones(dir, [{
+      name: "v3.0.0", status: "planned", epic_id: "epic-3",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-3" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "v3.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: () => {
+        const e = new Error("tag exists");
+        e.stderr = Buffer.from("fatal: tag 'v3.0.0' already exists");
+        throw e;
+      },
+    });
+    assert.equal(result.shipped, false);
+    assert.equal(result.error, "TAG_EXISTS");
+  });
+
+  it("calls execGh for GitHub release when available", async () => {
+    saveMilestones(dir, [{
+      name: "4.0.0", status: "planned", epic_id: "epic-4",
+      target_date: null, release: { strategy: "tag-only" }, ship_criteria: [],
+    }]);
+    let ghArgs = null;
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-4" }],
+      list: async () => [], close: async () => {},
+    };
+    await milestoneShip(dir, "4.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: () => {},
+      execGh: (args) => { ghArgs = args; },
+    });
+    assert.ok(ghArgs.includes("release"));
+    assert.ok(ghArgs.includes("v4.0.0"));
+  });
+});
+
+// --- milestoneShip strategy: release-please ---
+
+describe("milestoneShip strategy: release-please", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-rp-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("writes release-as to config for semver names", async () => {
+    const config = { packages: { ".": { "release-type": "node", "package-name": "test" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "1.0.0", status: "planned", epic_id: "epic-1",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "1.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGh: () => "[]",
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "release-please");
+    const updated = JSON.parse(readFileSync(join(dir, "release-please-config.json"), "utf8"));
+    assert.equal(updated.packages["."]["release-as"], "1.0.0");
+  });
+
+  it("strips v prefix from version in release-as", async () => {
+    const config = { packages: { ".": { "release-type": "node" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "v2.0.0", status: "planned", epic_id: "epic-2",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-2" }],
+      list: async () => [], close: async () => {},
+    };
+    await milestoneShip(dir, "v2.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGh: () => "[]",
+    });
+    const updated = JSON.parse(readFileSync(join(dir, "release-please-config.json"), "utf8"));
+    assert.equal(updated.packages["."]["release-as"], "2.0.0");
+  });
+
+  it("falls back to manual when config file missing", async () => {
+    const noConfigDir = mkdtempSync(join(tmpdir(), "milestone-no-rp-"));
+    saveMilestones(noConfigDir, [{
+      name: "3.0.0", status: "planned", epic_id: "epic-3",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-3" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(noConfigDir, "3.0.0", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "manual");
+    rmSync(noConfigDir, { recursive: true, force: true });
+  });
+
+  it("throws RELEASE_CONFIG_INVALID for malformed JSON", async () => {
+    const badDir = mkdtempSync(join(tmpdir(), "milestone-bad-rp-"));
+    writeFileSync(join(badDir, "release-please-config.json"), "not json{{{");
+    saveMilestones(badDir, [{
+      name: "4.0.0", status: "planned", epic_id: "epic-4",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-4" }],
+      list: async () => [],
+    };
+    await assert.rejects(
+      () => milestoneShip(badDir, "4.0.0", { issueManager: mockManager, manifest: {} }),
+      (err) => err.code === "RELEASE_CONFIG_INVALID"
+    );
+    rmSync(badDir, { recursive: true, force: true });
+  });
+
+  it("skips config write for non-semver names", async () => {
+    const config = { packages: { ".": { "release-type": "node" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "alpha-1", status: "planned", epic_id: "epic-5",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-5" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "alpha-1", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    const updated = JSON.parse(readFileSync(join(dir, "release-please-config.json"), "utf8"));
+    assert.equal(updated.packages["."]["release-as"], undefined);
+  });
+
+  it("does NOT create git tags", async () => {
+    const config = { packages: { ".": { "release-type": "node" } } };
+    writeFileSync(join(dir, "release-please-config.json"), JSON.stringify(config, null, 2));
+    saveMilestones(dir, [{
+      name: "5.0.0", status: "planned", epic_id: "epic-6",
+      target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-6" }],
+      list: async () => [], close: async () => {},
+    };
+    const result = await milestoneShip(dir, "5.0.0", {
+      issueManager: mockManager, manifest: {},
+      execGit: () => { throw new Error("should not create tags"); },
+      execGh: () => "[]",
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "release-please");
+  });
+});
+
+// --- milestoneShip strategy: manual ---
+
+describe("milestoneShip strategy: manual", () => {
+  let dir;
+  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-manual-")); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("ships with manual strategy (no git ops)", async () => {
+    saveMilestones(dir, [{
+      name: "v1.0.0", status: "planned", epic_id: "epic-1",
+      target_date: null, release: { strategy: "manual" }, ship_criteria: [],
+    }]);
+    const closedEpics = [];
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-1" }],
+      list: async () => [],
+      close: async (id, reason) => { closedEpics.push({ id, reason }); },
+    };
+    const result = await milestoneShip(dir, "v1.0.0", {
+      issueManager: mockManager,
+      manifest: {},
+      execGit: () => { throw new Error("should not be called for manual"); },
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "manual");
+    assert.equal(closedEpics[0].id, "epic-1");
+    assert.equal(findMilestone(dir, "v1.0.0").status, "shipped");
+  });
+
+  it("defaults to manual when release is null", async () => {
+    saveMilestones(dir, [{
+      name: "v2.0.0", status: "planned", epic_id: "epic-2",
+      target_date: null, release: null, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-2" }],
+      list: async () => [],
+      close: async () => {},
+    };
+    const result = await milestoneShip(dir, "v2.0.0", {
+      issueManager: mockManager, manifest: {},
+    });
+    assert.equal(result.shipped, true);
+    assert.equal(result.strategy, "manual");
+  });
+
+  it("throws UNKNOWN_STRATEGY for bad strategy", async () => {
+    saveMilestones(dir, [{
+      name: "v3.0.0", status: "planned", epic_id: "epic-3",
+      target_date: null, release: { strategy: "bad" }, ship_criteria: [],
+    }]);
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-3" }],
+      list: async () => [],
+    };
+    await assert.rejects(
+      () => milestoneShip(dir, "v3.0.0", { issueManager: mockManager, manifest: {} }),
+      { code: "UNKNOWN_STRATEGY" }
+    );
   });
 });
 
