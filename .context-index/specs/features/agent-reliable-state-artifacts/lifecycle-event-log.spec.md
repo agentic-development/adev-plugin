@@ -6,7 +6,7 @@
 
 ---
 charter: agent-reliable-state-artifacts
-status: review-pending
+status: review-blocked
 risk_level: high
 milestone: 0.26.0
 revision: 1
