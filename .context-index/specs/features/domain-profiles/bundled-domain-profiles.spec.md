@@ -13,6 +13,29 @@ revision: 6
 charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
+source-manifest:
+  sha: "e6d1b22"
+  files:
+    - docs/getting-started.md
+    - docs/project-types.md
+    - templates/domains/data-engineering/gate-config.yaml
+    - templates/domains/data-engineering/gates.yaml
+    - templates/domains/data-engineering/reviewers.yaml
+    - templates/domains/data-engineering/test-config.yaml
+    - templates/domains/data-engineering/verification.yaml
+    - templates/domains/process-automation/gate-config.yaml
+    - templates/domains/process-automation/gates.yaml
+    - templates/domains/process-automation/reviewers.yaml
+    - templates/domains/process-automation/test-config.yaml
+    - templates/domains/process-automation/verification.yaml
+    - templates/domains/software/gate-config.yaml
+    - templates/domains/software/gates.yaml
+    - templates/domains/software/reviewers.yaml
+    - templates/domains/software/test-config.yaml
+    - templates/domains/software/verification.yaml
+    - tests/domains/backward-compat.test.mjs
+    - tests/domains/bundled-profiles.test.mjs
+  computed-at: "2026-05-11T16:09:28.512Z"
 ---
 
 ## Behavioral Contract
