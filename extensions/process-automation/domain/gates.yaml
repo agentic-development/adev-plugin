@@ -1,0 +1,6 @@
+gates:
+  - id: flow-coverage
+    description: "Check integration point tests and recovery action tests"
+    command: ["npm", "test"]
+    severity: error
+    tier: fast

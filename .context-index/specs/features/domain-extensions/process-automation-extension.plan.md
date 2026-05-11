@@ -59,16 +59,16 @@
 
 **Tests:** `tests/extensions/process-automation.test.mjs`
 
-- [ ] **Write failing test**
+- [x] **Write failing test**
 
 Test that `extensions/process-automation/adev-extension.yaml` exists and passes `parseExtensionManifest()`. Test `domain/` contains 7 files.
 
-- [ ] **Verify test fails**
+- [x] **Verify test fails**
 
 Run: `node --test tests/extensions/process-automation.test.mjs`
 Expected: FAIL
 
-- [ ] **Implement**
+- [x] **Implement**
 
 1. Create `extensions/process-automation/` directory
 2. Write `adev-extension.yaml`:
@@ -87,12 +87,12 @@ Expected: FAIL
 3. Copy 7 files from `templates/domains/process-automation/` to `extensions/process-automation/domain/`
 4. Write `README.md`
 
-- [ ] **Verify test passes**
+- [x] **Verify test passes**
 
 Run: `node --test tests/extensions/process-automation.test.mjs`
 Expected: PASS
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add extensions/process-automation/ tests/extensions/process-automation.test.mjs
@@ -110,14 +110,14 @@ git commit -m "feat(domain-extensions): create process-automation extension pack
 
 **Depends on:** Task 1, bundled-templates-cleanup
 
-- [ ] **Write failing tests**
+- [x] **Write failing tests**
 
 1. `installExtension("./extensions/process-automation", tempProjectRoot)` succeeds
 2. `domain.yaml` exists with `extends: software`
 3. `loadDomainConfig("process-automation", "reviewers", ...)` returns `integration-reviewer`
 4. Re-install is idempotent
 
-- [ ] **Verify tests fail** → **Implement** (no code, tests exercise pipeline) → **Verify pass** → **Commit**
+- [x] **Verify tests fail** → **Implement** (no code, tests exercise pipeline) → **Verify pass** → **Commit**
 
 ```bash
 git add tests/extensions/process-automation.test.mjs
