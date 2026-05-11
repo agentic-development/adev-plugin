@@ -1,0 +1,10 @@
+name: data-engineering
+version: 0.1.0
+description: Domain profile for data pipelines, ETL, dbt, and data quality workflows
+author: adev-org
+requires:
+  adev: ">=0.22.0"
+provides:
+  domain-profile:
+    path: domain
+    extends: software
