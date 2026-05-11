@@ -13,6 +13,27 @@ revision: 1
 charter-revision: 1
 created: 2026-05-06
 updated: 2026-05-06
+source-manifest:
+  sha: "726340a"
+  files:
+    - tests/evals/adev-automation-eval/.gitignore
+    - tests/evals/adev-automation-eval/LICENSE
+    - tests/evals/adev-automation-eval/inbox/expenses_q1.csv
+    - tests/evals/adev-automation-eval/inbox/expenses_q2.csv
+    - tests/evals/adev-automation-eval/inbox/timesheets_march.csv
+    - tests/evals/adev-automation-eval/processor/__init__.py
+    - tests/evals/adev-automation-eval/processor/archiver.py
+    - tests/evals/adev-automation-eval/processor/reporter.py
+    - tests/evals/adev-automation-eval/processor/transformer.py
+    - tests/evals/adev-automation-eval/processor/validator.py
+    - tests/evals/adev-automation-eval/run_processor.py
+    - tests/evals/adev-automation-eval/tests/__init__.py
+    - tests/evals/adev-automation-eval/tests/test_archiver.py
+    - tests/evals/adev-automation-eval/tests/test_transformer.py
+    - tests/evals/adev-automation-eval/tests/test_validator.py
+    - tests/evals/process-automation/rubrics/.gitkeep
+    - tests/evals/process-automation/scenarios/.gitkeep
+  computed-at: "2026-05-11T16:09:58.813Z"
 ---
 
 ## Behavioral Contract
