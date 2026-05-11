@@ -7,11 +7,28 @@ import { strict as assert } from 'node:assert';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createTempDir, cleanupTempDir } from '../helpers.mjs';
+import { existsSync, statSync } from 'node:fs';
 import {
   CANONICAL_EVENTS,
   slugFromSpec,
   validateProjectRoot,
+  ensureLifecycleState,
+  hasLifecycleState,
 } from '../../lib/lifecycle-state.mjs';
+
+// ── Test helper: build a minimal project tmpdir + spec path ────────────────
+
+function makeProject() {
+  const root = createTempDir();
+  mkdirSync(join(root, '.context-index'), { recursive: true });
+  writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+  const specPath = '.context-index/specs/features/test/sample.spec.md';
+  return { root, specPath };
+}
+
+function logPathFor(root, slug) {
+  return join(root, '.context-index', 'lifecycle-state', `${slug}.jsonl`);
+}
 
 // ── Task 1: canonical event schema ──────────────────────────────────────────
 
@@ -95,5 +112,40 @@ test('validateProjectRoot returns the resolved absolute path when manifest prese
     assert.ok(resolved.length > 0);
   } finally {
     cleanupTempDir(dir);
+  }
+});
+
+// ── Task 3: ensureLifecycleState / hasLifecycleState ───────────────────────
+
+test('hasLifecycleState is false on a fresh project', () => {
+  const { root, specPath } = makeProject();
+  try {
+    assert.equal(hasLifecycleState(root, specPath), false);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('ensureLifecycleState creates the file and parent directory; hasLifecycleState turns true', () => {
+  const { root, specPath } = makeProject();
+  try {
+    ensureLifecycleState(root, specPath);
+    assert.equal(hasLifecycleState(root, specPath), true);
+    assert.equal(existsSync(logPathFor(root, 'sample')), true);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('ensureLifecycleState is idempotent — calling twice leaves file size unchanged', () => {
+  const { root, specPath } = makeProject();
+  try {
+    ensureLifecycleState(root, specPath);
+    const size1 = statSync(logPathFor(root, 'sample')).size;
+    ensureLifecycleState(root, specPath);
+    const size2 = statSync(logPathFor(root, 'sample')).size;
+    assert.equal(size1, size2);
+  } finally {
+    cleanupTempDir(root);
   }
 });
