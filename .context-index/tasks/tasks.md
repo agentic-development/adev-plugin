@@ -66,10 +66,11 @@
 | epic-62 | Milestone Create and List | closed |  | 0.25.0 | 2026-05-09T15:04:43.526Z | 2026-05-09T17:25:24.818Z |
 | epic-63 | 0.25.0 | closed |  | 0.25.0 | 2026-05-09T17:21:41.965Z | 2026-05-09T17:25:29.785Z |
 | epic-64 | Domain Resolution & Overlay Structure | open | .context-index/specs/features/domain-profiles/domain-resolution-and-overlay-structure.plan.md |  | 2026-05-10T13:46:11.444Z | 2026-05-10T13:46:11.444Z |
-| epic-65 | Domain-Aware Skill Integration | open | .context-index/specs/features/domain-profiles/domain-aware-skill-integration.plan.md |  | 2026-05-10T14:53:19.426Z | 2026-05-10T14:53:19.426Z |
-| epic-66 | Bundled Domain Profiles | open | .context-index/specs/features/domain-profiles/bundled-domain-profiles.plan.md |  | 2026-05-10T21:52:27.609Z | 2026-05-10T21:52:27.609Z |
-| epic-69 | Template Replacement for Domain Profiles | open | .context-index/specs/features/domain-profiles/template-replacement.plan.md |  | 2026-05-10T23:40:02.722Z | 2026-05-10T23:40:02.722Z |
-| epic-70 | Create Domain Extension Packages | open |  | 0.25.0 | 2026-05-11T15:02:19.426Z | 2026-05-11T15:02:19.426Z |
+| epic-65 | Domain-Aware Skill Integration | closed | .context-index/specs/features/domain-profiles/domain-aware-skill-integration.plan.md |  | 2026-05-10T14:53:19.426Z | 2026-05-11T20:37:25.457Z |
+| epic-66 | Bundled Domain Profiles | closed | .context-index/specs/features/domain-profiles/bundled-domain-profiles.plan.md |  | 2026-05-10T21:52:27.609Z | 2026-05-11T20:37:25.470Z |
+| epic-69 | Template Replacement for Domain Profiles | closed | .context-index/specs/features/domain-profiles/template-replacement.plan.md |  | 2026-05-10T23:40:02.722Z | 2026-05-11T20:37:25.485Z |
+| epic-70 | Create Domain Extension Packages | open |  | 0.27.0 | 2026-05-11T15:02:19.426Z | 2026-05-11T20:31:51.666Z |
+| epic-71 | Milestone 0.26.0 — Agent-Reliable State Artifacts | open |  | 0.26.0 | 2026-05-11T20:22:25.846Z | 2026-05-11T20:22:48.725Z |
 
 ## Issues
 
@@ -524,3 +525,4 @@
 | issue-453 | Create adev-ext-process-automation extension package | closed | 2 | task |  |  |  |  |  | Package templates/domains/process-automation/ as an installable extension with adev-extension.yaml manifest, 7 domain profile files, and package.json for npm distribution.; Closed: Closed: duplicate of issue-447/448/449/450 |  | 2026-05-11T15:02:19.447Z | 2026-05-11T15:02:39.227Z |
 | issue-454 | Extension install integration test with real packages | closed | 2 | task |  |  |  |  |  | End-to-end test: install each extension package via adev-cli extension install, verify domain profile lands in .context-index/domains/, verify loadDomainConfig() resolves it.; Closed: Closed: duplicate of issue-447/448/449/450 |  | 2026-05-11T15:02:19.455Z | 2026-05-11T15:02:39.235Z |
 | issue-455 | Refactor state artifacts from markdown to JSON storage | open | 1 | feature |  |  |  |  |  |  |  | 2026-05-11T17:51:14.060Z | 2026-05-11T17:51:14.060Z |
+| issue-456 | Lifecycle Event Log (lib/lifecycle-state.mjs) | open | 2 | feature | epic-71 |  |  | .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md |  | Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md. Created by /adev:specify on 2026-05-11. Foundation capability for agent-reliable-state-artifacts charter; everything else depends on this. | Run /adev:review-specs --module agent-reliable-state-artifacts | 2026-05-11T20:33:51.275Z | 2026-05-11T20:33:51.275Z |
