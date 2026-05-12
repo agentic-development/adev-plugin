@@ -6,13 +6,25 @@
 
 ---
 charter: agent-reliable-state-artifacts
-status: review-passed
+status: implemented
 risk_level: high
 milestone: 0.26.0
 revision: 2
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-05-11
+updated: 2026-05-12
+source-manifest:
+  sha: "1b4a61e"
+  files:
+    - lib/lifecycle-state.mjs
+    - tests/fixtures/lifecycle-state/concurrent-writer.mjs
+    - tests/fixtures/lifecycle-state/crash-writer.mjs
+    - tests/lib/lifecycle-state-arch.test.mjs
+    - tests/lib/lifecycle-state-concurrent.test.mjs
+    - tests/lib/lifecycle-state-crash.test.mjs
+    - tests/lib/lifecycle-state-perf.test.mjs
+    - tests/lib/lifecycle-state.test.mjs
+  computed-at: "2026-05-12T00:17:48.718Z"
 ---
 
 ## Behavioral Contract
