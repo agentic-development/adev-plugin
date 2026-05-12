@@ -140,25 +140,25 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 
 | Capability | Description | Priority | Status |
 |------------|-------------|----------|--------|
-| Lifecycle event log | `lib/lifecycle-state.mjs` with append-only JSONL writes, `appendEvent`/`readEvents`/`currentState`/`requireGate`/`listLifecycleStates`/`renderMarkdown`. Defines canonical event schema and multi-writer fold-aggregation algorithm. Foundation. | must-have | implemented |
-| JSON issue board + adapter | `.context-index/tasks/tasks.json` document, `lib/issues/json-adapter.mjs` implementing the unchanged `IssueManagerInterface`, registry update (`backend: json`), new-scaffold default. | must-have | planned |
+| Lifecycle event log | `lib/lifecycle-state.mjs` with append-only JSONL writes, `appendEvent`/`readEvents`/`currentState`/`requireGate`/`listLifecycleStates`/`renderMarkdown`. Defines canonical event schema and multi-writer fold-aggregation algorithm. Foundation. | must-have | validated |
+| JSON issue board + adapter | `.context-index/tasks/tasks.json` document, `lib/issues/json-adapter.mjs` implementing the unchanged `IssueManagerInterface`, registry update (`backend: json`), new-scaffold default. | must-have | validated |
 | Severity stamping at write time | `reportReviewer()` / `reportValidator()` helpers that look up severity from `reviewers.yaml`/`gates.yaml` once at write and stamp it on the event. Reads stay config-free. | must-have | — |
 | Plan-task events in lifecycle log | `/adev:plan` writes `plan_task` events instead of creating per-task issues. `/adev:implement` reads/writes plan-task events. Plan-file checkboxes no longer mutated. | must-have | — |
 | Issue board granularity cleanup | Enforces post-migration invariant: no issue with `planRef`+`planTask`. Board entries are epic / feature-spec / bug level only. Includes `/adev:plan`, `/adev:specify`, `/adev:work` instruction updates and migration collapse of existing per-task issues. | must-have | — |
 | Lifecycle-state gates | `requireGate(state, stepName)` replaces filesystem-grep of `.review.md` frontmatter. Hard-block default; `lifecycle.gate_mode: strict\|advisory` knob softens. | must-have | — |
-| Execution state migration | `.execution-state.md` → `.execution-state.json`. `lib/execution-state.mjs` rewritten; `hooks/session-start.sh` and `hooks/lifecycle-gate-bash.sh` invoke a Node helper. | must-have | planned |
-| Milestones migration | `milestones.yaml` → `milestones.json`. New `lib/milestones.mjs` wrapper. `/adev:issues milestone *` subcommands updated. | must-have | planned |
-| Directory rename: build-state → lifecycle-state | One-shot rename in migration tool. Constitution Context Routing table and references updated. | must-have | planned |
-| One-shot migration tool | `lib/migrate-state-artifacts.mjs` + `adev migrate` CLI subcommand. Converts tasks.md, build-state, .execution-state.md, milestones.yaml in one pass. Idempotent. Preserves IDs, deps, beads-map. | must-have | planned |
+| Execution state migration | `.execution-state.md` → `.execution-state.json`. `lib/execution-state.mjs` rewritten; `hooks/session-start.sh` and `hooks/lifecycle-gate-bash.sh` invoke a Node helper. | must-have | validated |
+| Milestones migration | `milestones.yaml` → `milestones.json`. New `lib/milestones.mjs` wrapper. `/adev:issues milestone *` subcommands updated. | must-have | validated |
+| Directory rename: build-state → lifecycle-state | One-shot rename in migration tool. Constitution Context Routing table and references updated. | must-have | validated |
+| One-shot migration tool | `lib/migrate-state-artifacts.mjs` + `adev migrate` CLI subcommand. Converts tasks.md, build-state, .execution-state.md, milestones.yaml in one pass. Idempotent. Preserves IDs, deps, beads-map. | must-have | validated |
 | Lifecycle skill instruction updates | Every lifecycle skill's `SKILL.md` rewritten to call adapter / `lib/lifecycle-state.mjs` APIs instead of describing markdown-table format. | must-have | — |
 | Direct-fs consumer migration | `viz/build.mjs` inline parser replaced with adapter call. Bash hooks switched to Node helper. | must-have | — |
 | Provider mirror sync | `providers/codex/skills/*` and `providers/opencode/skills/*` updated to match new lifecycle skill instructions. Synced per-skill as each source-skill PR lands. | must-have | — |
 | Test migration | Every test fixture and assertion against markdown-table or YAML format rewritten against JSON/JSONL. Format-evolution tests replaced with schema-version tests. | must-have | — |
 | Sibling charter amendments | Revisions to `task-management`, `spec-lifecycle`, `session-awareness`, `milestone-lifecycle` charters: reference this charter as storage-format authority, update normative paths to `.json`/`.jsonl` where applicable, note ownership boundary. Performed as the last rollout step. | must-have | — |
-| Constitution Context Routing update | Replace `Build state` row with `Lifecycle state` in `constitution.md`; sync via `/adev:sync`. Single small edit; bundled with the rename PR. | must-have | planned |
-| Markdown rendering layer | `lib/issues/render-markdown.mjs` and `lib/lifecycle-state.mjs::renderMarkdown` produce human-readable markdown from authoritative JSON/JSONL on demand. Surfaced via `adev status --render`. | should-have | planned |
-| Spec pipeline aggregate view | `/adev:status` surfaces "where is each spec" by calling `listLifecycleStates()`. Pure read; no stored aggregate. Covered by `markdown-rendering-layer.spec.md` (`adev status --pipeline`). | should-have | review-passed |
-| `listLifecycleStates()` helper | Globs `.context-index/lifecycle-state/*.jsonl` and returns folded projections. Used by aggregate views, `/adev:retro`, `/adev:hygiene`. Signature in `lifecycle-event-log.spec.md`; full body in `markdown-rendering-layer.spec.md`. | should-have | review-passed |
+| Constitution Context Routing update | Replace `Build state` row with `Lifecycle state` in `constitution.md`; sync via `/adev:sync`. Single small edit; bundled with the rename PR. | must-have | validated |
+| Markdown rendering layer | `lib/issues/render-markdown.mjs` and `lib/lifecycle-state.mjs::renderMarkdown` produce human-readable markdown from authoritative JSON/JSONL on demand. Surfaced via `adev status --render`. | should-have | validated |
+| Spec pipeline aggregate view | `/adev:status` surfaces "where is each spec" by calling `listLifecycleStates()`. Pure read; no stored aggregate. Covered by `markdown-rendering-layer.spec.md` (`adev status --pipeline`). | should-have | validated |
+| `listLifecycleStates()` helper | Globs `.context-index/lifecycle-state/*.jsonl` and returns folded projections. Used by aggregate views, `/adev:retro`, `/adev:hygiene`. Signature in `lifecycle-event-log.spec.md`; full body in `markdown-rendering-layer.spec.md`. | should-have | validated |
 
 ## Deferred Capabilities
 

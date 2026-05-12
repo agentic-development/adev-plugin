@@ -25,6 +25,9 @@ source-manifest:
     - lib/heuristics.mjs
     - .context-index/manifest.yaml
   computed-at: "2026-04-25T21:55:13.377Z"
+drift_detected: true
+drift_source: .context-index/manifest.yaml
+drift_at: 2026-05-12T00:05:34.573Z
 ---
 
 ## Behavioral Contract
