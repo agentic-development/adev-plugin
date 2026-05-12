@@ -837,6 +837,64 @@ test('renderMarkdown is byte-identical for the same input', () => {
   assert.equal(a, b);
 });
 
+// ── Task 14: size caps ─────────────────────────────────────────────────────
+
+test('appendEvent throws EVENT_TOO_LARGE when serialized event exceeds 1 MB', () => {
+  const { root, specPath } = makeProject();
+  try {
+    const huge = 'x'.repeat(1_100_000);
+    assert.throws(
+      () => appendEvent(root, specPath, { event: 'lifecycle_step', huge }),
+      (err) => err.code === 'EVENT_TOO_LARGE',
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('appendEvent throws LOG_TOO_LARGE when the file is already >= 50 MB', () => {
+  const { root, specPath } = makeProject();
+  try {
+    // Bootstrap, then fake a 50 MB log via a single big append directly to disk.
+    ensureLifecycleState(root, specPath);
+    const path = logPathFor(root, 'sample');
+    // Write 50 MB of newline-terminated empty objects; cheap enough at 50 MB.
+    const filler = Buffer.alloc(50 * 1024 * 1024, '\n');
+    appendFileSync(path, filler);
+    assert.throws(
+      () => appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' }),
+      (err) => err.code === 'LOG_TOO_LARGE',
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('reportReviewer truncates notes > 4 KB and emits NOTES_TRUNCATED warning', () => {
+  const { root, specPath } = makeProject();
+  const orig = console.warn;
+  let warnings = [];
+  console.warn = (msg) => { warnings.push(String(msg)); };
+  try {
+    const giantNotes = 'A'.repeat(5000);
+    reportReviewer(root, specPath, {
+      step: 'review',
+      reviewer: 'structural-architect',
+      verdict: 'PASS',
+      notes: giantNotes,
+      pluginRoot: PLUGIN_ROOT,
+    });
+    const events = readEvents(root, specPath);
+    assert.equal(events.length, 1);
+    assert.ok(events[0].notes.length <= 4096 + 32, 'notes should be truncated');
+    assert.ok(events[0].notes.endsWith('…[truncated]'), 'truncation marker should be appended');
+    assert.ok(warnings.some((w) => w.includes('NOTES_TRUNCATED')), 'should have warned NOTES_TRUNCATED');
+  } finally {
+    console.warn = orig;
+    cleanupTempDir(root);
+  }
+});
+
 test('listLifecycleStates skips a malformed file mid-glob and continues', () => {
   const root = createTempDir();
   try {
