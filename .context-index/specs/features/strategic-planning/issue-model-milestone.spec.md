@@ -25,6 +25,9 @@ source-manifest:
     - tests/lib/issues-interface.test.mjs
     - tests/lib/issues-milestone.test.mjs
   computed-at: "2026-04-12T11:48:02.757Z"
+drift_detected: true
+drift_source: lib/issues/file-adapter.mjs
+drift_at: 2026-05-12T00:31:48.524Z
 ---
 
 ## Behavioral Contract
