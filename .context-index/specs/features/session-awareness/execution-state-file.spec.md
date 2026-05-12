@@ -15,6 +15,9 @@ source-manifest:
     - lib/session-summary.mjs
     - tests/lib/execution-state.test.mjs
   computed-at: "2026-04-12T11:47:08.345Z"
+drift_detected: true
+drift_source: lib/execution-state.mjs
+drift_at: 2026-05-12T01:09:32.201Z
 ---
 
 # Live Spec: Execution State File
