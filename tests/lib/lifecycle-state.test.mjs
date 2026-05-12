@@ -27,6 +27,7 @@ import {
   currentState,
   requireGate,
   resolveGateMode,
+  listLifecycleStates,
 } from '../../lib/lifecycle-state.mjs';
 
 const __dirname = pathDirname(fileURLToPath(import.meta.url));
@@ -733,5 +734,63 @@ test('resolveGateMode returns "strict" and warns on unknown gate_mode value', ()
     assert.equal(warned, true);
   } finally {
     console.warn = orig;
+  }
+});
+
+// ── Task 11: listLifecycleStates ───────────────────────────────────────────
+
+test('listLifecycleStates returns [] when the directory is missing', () => {
+  const { root } = makeProject();
+  try {
+    const list = listLifecycleStates(root);
+    assert.deepEqual(list, []);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('listLifecycleStates returns one entry per <slug>.jsonl file', () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, '.context-index'), { recursive: true });
+    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+    const specA = '.context-index/specs/features/test/a.spec.md';
+    const specB = '.context-index/specs/features/test/b.spec.md';
+    const specC = '.context-index/specs/features/test/c.spec.md';
+    appendEvent(root, specA, { event: 'lifecycle_step', step: 'specify', status: 'started', spec: specA });
+    appendEvent(root, specB, { event: 'lifecycle_step', step: 'specify', status: 'started', spec: specB });
+    appendEvent(root, specC, { event: 'lifecycle_step', step: 'review', status: 'started', spec: specC });
+    const list = listLifecycleStates(root);
+    assert.equal(list.length, 3);
+    const slugs = list.map((e) => e.slug).sort();
+    assert.deepEqual(slugs, ['a', 'b', 'c']);
+    for (const entry of list) {
+      assert.ok('spec' in entry);
+      assert.ok('slug' in entry);
+      assert.ok('status' in entry);
+      assert.ok('currentStep' in entry);
+      assert.ok('updated' in entry);
+    }
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('listLifecycleStates skips a malformed file mid-glob and continues', () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, '.context-index', 'lifecycle-state'), { recursive: true });
+    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+    // One valid log
+    appendEvent(root, '.context-index/specs/.../good.spec.md', { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    // One file whose name passes the .jsonl filter but contains only garbage
+    writeFileSync(join(root, '.context-index', 'lifecycle-state', 'bad.jsonl'), '{{{not-json\n');
+    const list = listLifecycleStates(root);
+    // The bad file is skipped silently (zero readable events) but still
+    // produces an entry — the projection is just empty. Both files appear.
+    const slugs = list.map((e) => e.slug).sort();
+    assert.ok(slugs.includes('good'));
+  } finally {
+    cleanupTempDir(root);
   }
 });
