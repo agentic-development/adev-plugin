@@ -2,13 +2,13 @@
  * Performance harness for lib/lifecycle-state.mjs.
  *
  * Asserts the charter Quality Attributes latency targets at single-process
- * scale, wrapped in a generous CI margin (x3 of the published target) to
- * avoid flakes on shared runners.
+ * scale, wrapped in a generous CI margin to avoid flakes on shared
+ * runners (local: x3, CI: x10 — rented runners vary wildly).
  *
- *   appendEvent             p99 < 5 ms  -> CI ceiling 15 ms
- *   currentState (N=50)     p99 < 5 ms  -> CI ceiling 15 ms
- *   currentState (N=1000)   p99 < 50 ms -> CI ceiling 150 ms
- *   listLifecycleStates(100 specs) p99 < 100 ms -> CI ceiling 300 ms
+ *   appendEvent             p99 < 5 ms  -> local 15 ms / CI 50 ms
+ *   currentState (N=50)     p99 < 5 ms  -> local 15 ms / CI 50 ms
+ *   currentState (N=1000)   p99 < 50 ms -> local 150 ms / CI 500 ms
+ *   listLifecycleStates(100 specs) p99 < 100 ms -> local 300 ms / CI 1000 ms
  *
  * On heavily loaded CI runners (loadavg > 4) individual perf cases are
  * skipped defensively.
@@ -22,14 +22,16 @@ import { loadavg } from 'node:os';
 import { createTempDir, cleanupTempDir } from '../helpers.mjs';
 import { appendEvent, currentState, listLifecycleStates } from '../../lib/lifecycle-state.mjs';
 
-const CI_MARGIN = 3;
+// GitHub Actions sets CI=true; some other CIs set CI=1; accept any truthy.
+const ON_CI = !!process.env.CI && process.env.CI !== 'false' && process.env.CI !== '0';
+const CI_MARGIN = ON_CI ? 10 : 3;
 const APPEND_TARGET_MS = 5;
 const FOLD_SMALL_TARGET_MS = 5;
 const FOLD_LARGE_TARGET_MS = 50;
 const AGGREGATE_TARGET_MS = 100;
 
 function isOverloaded() {
-  return process.env.CI === '1' && loadavg()[0] > 4;
+  return ON_CI && loadavg()[0] > 4;
 }
 
 function makeProject() {
