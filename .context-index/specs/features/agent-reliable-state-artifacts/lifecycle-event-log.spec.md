@@ -6,7 +6,7 @@
 
 ---
 charter: agent-reliable-state-artifacts
-status: implemented
+status: validated
 risk_level: high
 milestone: 0.26.0
 revision: 2
@@ -25,6 +25,9 @@ source-manifest:
     - tests/lib/lifecycle-state-perf.test.mjs
     - tests/lib/lifecycle-state.test.mjs
   computed-at: "2026-05-12T00:17:48.718Z"
+drift_detected: true
+drift_source: tests/lib/lifecycle-state.test.mjs
+drift_at: 2026-05-12T02:42:03.632Z
 ---
 
 ## Behavioral Contract
