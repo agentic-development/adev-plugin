@@ -95,30 +95,29 @@ Steps 1–7 below apply when operating in **Spec Mode**. This is the original si
 
 ## Step 1: Review Gate
 
-Before planning, verify the spec has passed architecture review.
+Before planning, verify the spec has passed architecture review by reading the lifecycle event log. **This is the FIRST action in the skill, before any plan-file authoring, context loading, or other writes.**
 
 1. Identify the spec file path. If `--spec` was provided, use that. Otherwise, ask the user which spec to plan.
-2. Look for a `.review.md` file adjacent to the spec (same directory, same base name with `.review.md` suffix). For example, `card-ordering.md` expects `card-ordering.review.md`.
-3. If no review file exists, **block**:
-   ```
-   This spec has not been reviewed yet.
-   Run /adev:review-specs --spec <path> before planning.
-   ```
-4. Read the review file. Extract the `Verdict` from the header.
-5. If verdict is `BLOCK`, **block**:
-   ```
-   This spec has unresolved blockers from architecture review.
-   Review report: <path to .review.md>
-   Resolve the blockers, revise the spec with /adev:specify, and re-review with /adev:review-specs.
-   ```
-6. Compare file modification times. If the spec is newer than the review file, **block**:
-   ```
-   The spec has been modified since its last review.
-   Run /adev:review-specs --spec <path> to re-review the updated spec.
-   ```
-7. **Code-Side Drift Check (CODE_DRIFT gate).** Before checking spec-side drift, check for code-side drift:
 
-   Run inline Node.js to check the drift flag:
+2. **Gate on `review` step via the lifecycle log:**
+
+   ```javascript
+   import { currentState, requireGate, resolveGateMode } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+   import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
+
+   const state = currentState(projectRoot, specPath);
+   const mode = resolveGateMode(loadManifest(projectRoot));
+   requireGate(state, "review", { mode });
+   ```
+
+   - In `mode === "strict"` (default), `requireGate` throws `GateError` if the review step did not complete with a passing verdict. The skill stops with the operator message naming the failing prior step. Do NOT catch `GateError` — surface it unchanged.
+   - In `mode === "advisory"`, the call emits `console.warn` and proceeds.
+   - The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`). Skill prose MUST NOT pre-validate or normalize paths.
+
+3. **Note any `PASS_WITH_NOTES` warnings.** Read `state.steps.review` for verdict notes; print them for the user but do not block.
+
+4. **Code-Side Drift Check (CODE_DRIFT gate).** Independent from the review gate:
+
    ```javascript
    const { hasDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
    const drifted = await hasDrift(specPath);
@@ -152,20 +151,14 @@ Before planning, verify the spec has passed architecture review.
      frontmatter may be malformed. Fix the spec frontmatter before planning.
      ```
 
-8. **Dual drift check.** Detect spec changes that bypassed the review process:
-   - **Revision drift:** Compare the spec's `revision` frontmatter field against the `.review.md` file's `last-reviewed-revision` value. If the spec's revision is greater, **block**:
-     ```
-     Spec revision drift detected: spec is at revision <N>, but review was performed at revision <M>.
-     The spec content has changed since the last review.
-     Run /adev:review-specs --spec <path> to re-review.
-     ```
-   - **File hash drift:** Run `git hash-object <spec-file-path>` and compare against the `.review.md` file's `file-sha` value. If they differ, **block**:
-     ```
-     Spec file drift detected: the spec file has been modified since the last review (hash mismatch).
-     Run /adev:review-specs --spec <path> to re-review.
-     ```
-   - If the `.review.md` file does not contain `last-reviewed-revision` or `file-sha` fields (legacy review), fall back to the file modification time check in step 6.
-9. If verdict is `PASS` or `PASS_WITH_NOTES`, proceed. If `PASS_WITH_NOTES`, print the warnings for the user's awareness but do not block.
+5. **Emit `reportStep` entry event:** after the gate passes (and before context loading), record the plan step start:
+
+   ```javascript
+   import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+   reportStep(projectRoot, specPath, { step: "plan", status: "started" });
+   ```
+
+   Emit a matching exit event (`status: "completed"` with the produced plan's verdict) at the end of the skill, after the plan file is written.
 
 ### Spec Mode — Workspace-Aware Target-Repo Detection
 
@@ -205,7 +198,7 @@ If the meta-tool call fails, fall back to reading each file individually.
 
 4. **The spec:** Read the Live Spec itself. Extract behavioral contract, acceptance criteria, and actionable task map (if present).
 
-5. **Review report:** Read the `.review.md` file. Note any `PASS_WITH_NOTES` warnings. The plan should address or acknowledge them.
+5. **Review verdict and notes:** The review-gate read in Step 1 already returned `state.steps.review`. Use its `verdict` and `notes` fields directly — do not re-read or parse the `.review.md` artifact. The plan should address or acknowledge any `PASS_WITH_NOTES` notes.
 
 ### Workspace-Aware Target-Repo Context Loading
 
@@ -536,6 +529,8 @@ Strategy Distribution:
 
 ### Task Structure
 
+> **Note on task status.** The per-task `- [ ]` checkboxes shown below are authoring guides only — they help human reviewers scan a plan but are not mutated by skills. `/adev:plan`, `/adev:implement`, `/adev:status`, and any other skill read authoritative task state from the spec's lifecycle event log (`plan_task` events) via `currentState(projectRoot, specPath).planTasks`, never from these checkboxes. Plan-task tables MUST NOT include a `Status` column — status belongs in the lifecycle log, not in the plan markdown. See `agent-reliable-state-artifacts/plan-task-events.spec.md` for the contract.
+
 Each task follows TDD. Steps are granular (2-5 minutes each).
 
 ````markdown
@@ -672,15 +667,41 @@ Proceed to the execution handoff.
 
 **Update charter Capability Map:** After saving the plan, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `planned`.
 
-**Issue creation (optional):** Read `tasks.backend` from `manifest.yaml`.
+**Emit plan-task `pending` events.** After the plan file is saved, walk the Task Map and emit one `pending` event per task into the spec's lifecycle log. This seeds the projection so `currentState(spec).planTasks` is populated as soon as the plan exists.
+
+```javascript
+import { reportPlanTask, filterEvents } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+
+// Re-plan detection: if the spec already has plan_task events for this plan,
+// print a one-line advisory. Existing events remain as history (append-only).
+const priorPending = filterEvents(projectRoot, specPath,
+  e => e.event === 'plan_task' && e.plan === planFilePath);
+if (priorPending.length > 0) {
+  console.warn(
+    'Re-plan detected: prior plan_task events remain in the lifecycle log as history. New events will append.'
+  );
+}
+
+for (const task of plan.tasks) {
+  reportPlanTask(projectRoot, specPath, {
+    plan: planFilePath,
+    task_id: task.id,
+    status: 'pending',
+    notes: null,
+  });
+}
+```
+
+Per-task Issue creation is removed entirely — the skill no longer constructs `create(...)` calls carrying a `planTask` reference. The board-granularity invariant (`agent-reliable-state-artifacts/charter.md`) requires plan-task state to live in the lifecycle log, not as Issues on the board.
+
+**Issue creation (optional, board-granularity only):** Read `tasks.backend` from `manifest.yaml`.
 
 If `tasks.backend` is configured:
-1. Create an epic: call `createEpic({ title: "<plan title>", planRef: "<plan-file-path>" })` from `lib/issues/registry.mjs` (use `getIssueManager(manifest)` to get the active adapter).
-2. For each task in the plan, create an issue: call `create({ title: "<task title>", type: "task", priority: 2, epicId: "<epic-id>", planRef: "<plan-file-path>", planTask: <task-number> })`.
-3. For each task with `Depends on: Task N, Task M` annotations, call `addDependency(<this-issue-id>, <dependency-issue-id>)` for each dependency.
-4. Report: "Created epic `<epic-id>` with `<N>` issues on the issue board."
+1. Create an epic for the plan: call `createEpic({ title: "<plan title>", planRef: "<plan-file-path>" })` from `lib/issues/registry.mjs` (use `getIssueManager(manifest)` to get the active adapter).
+2. **Do NOT create per-task Issues.** Plan-task state is tracked via `reportPlanTask` (above), not as Issues. Feature- and Epic-level Issues created by `--feature` / `--epic` / `--release` modes are unchanged — those are board-granularity items.
+3. Report: "Created epic `<epic-id>`. Plan-task state lives in the lifecycle log at `.context-index/lifecycle-state/<slug>.jsonl`."
 
-If `tasks.backend` is not configured in the manifest, skip issue creation entirely.
+If `tasks.backend` is not configured in the manifest, skip epic creation entirely (plan-task events are still emitted to the lifecycle log).
 
 After the plan is saved and reviewed, present the user with next steps. **Do NOT echo the full plan content in the conversation** — the plan is already on disk at the file path. Present ONLY this summary:
 
@@ -736,3 +757,24 @@ Constitution: no boundary violations detected
 ## Epic Mode
 
 > **Conditional loading:** Read `skills/plan/epic-mode.md` for the full Epic Mode and next_action Convention Table.
+
+---
+
+## API reference
+
+Lifecycle event log (gates, step tracking, plan-task channel):
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — reads the per-spec JSONL log and returns a `StateProjection`: `{ spec, status, currentStep, currentTask, steps, planTasks, interventions, startedAt, updatedAt }`.
+- `requireGate(state, "review", { mode })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — hard-blocks (or warns, in advisory mode) when the prior step is not complete. Throws `GateError` in strict mode.
+- `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode` (`strict` default, or `advisory`).
+- `reportStep(projectRoot, specPath, { step, status, verdict? })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `lifecycle_step` event at skill entry (`status: "started"`) and exit (`status: "completed"`).
+- `reportPlanTask(projectRoot, specPath, { taskNumber, title, status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `plan_task` event. Owned by this skill for `pending` emission; transitions are owned by `/adev:implement`.
+
+Issue board (cross-reference; the plan skill no longer creates per-task issues — see `plan-task-events.spec.md`):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active issue adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest loader:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

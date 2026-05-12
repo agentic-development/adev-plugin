@@ -364,3 +364,129 @@ describe("migrateAll", () => {
     }
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────
+ * Task 4 (plan-task-events.spec.md) — plan-file advisory header
+ * ──────────────────────────────────────────────────────────────────── */
+
+describe("migrateAll: plan-file DO-NOT-EDIT advisory header", () => {
+  it("stamps the advisory header on a pre-existing plan file", async () => {
+    const root = makeProjectRoot();
+    try {
+      const specsDir = join(root, ".context-index", "specs", "features", "x");
+      mkdirSync(specsDir, { recursive: true });
+      const planPath = join(specsDir, "foo.plan.md");
+      writeFileSync(planPath, "# Implementation Plan: Foo\n\n## Tasks\n");
+
+      await migrateAll(root, {});
+
+      const content = readFileSync(planPath, "utf8");
+      assert.match(
+        content,
+        /^<!-- DO NOT EDIT statuses inline — see lifecycle log foo\.jsonl -->/,
+        "plan file does not start with the expected advisory header"
+      );
+      // Original content preserved.
+      assert.ok(
+        content.includes("# Implementation Plan: Foo"),
+        "original plan content not preserved"
+      );
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+
+  it("is idempotent — second run does not double-stamp", async () => {
+    const root = makeProjectRoot();
+    try {
+      const specsDir = join(root, ".context-index", "specs", "features", "x");
+      mkdirSync(specsDir, { recursive: true });
+      const planPath = join(specsDir, "foo.plan.md");
+      writeFileSync(planPath, "# Implementation Plan: Foo\n\n## Tasks\n");
+
+      await migrateAll(root, {});
+      await migrateAll(root, {});
+
+      const after = readFileSync(planPath, "utf8");
+      const occurrences = (after.match(/DO NOT EDIT statuses inline/g) || [])
+        .length;
+      assert.equal(occurrences, 1, "header stamped more than once");
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+
+  it("dry-run does not modify plan files", async () => {
+    const root = makeProjectRoot();
+    try {
+      const specsDir = join(root, ".context-index", "specs", "features", "x");
+      mkdirSync(specsDir, { recursive: true });
+      const planPath = join(specsDir, "foo.plan.md");
+      const original = "# Implementation Plan: Foo\n\n## Tasks\n";
+      writeFileSync(planPath, original);
+
+      await migrateAll(root, { dryRun: true });
+
+      assert.equal(readFileSync(planPath, "utf8"), original);
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+
+  it("derives slug from the plan filename when no sibling spec exists", async () => {
+    const root = makeProjectRoot();
+    try {
+      const specsDir = join(root, ".context-index", "specs", "features", "x");
+      mkdirSync(specsDir, { recursive: true });
+      const planPath = join(specsDir, "my-feature.plan.md");
+      writeFileSync(planPath, "# Plan\n");
+
+      await migrateAll(root, {});
+
+      const content = readFileSync(planPath, "utf8");
+      assert.match(
+        content,
+        /^<!-- DO NOT EDIT statuses inline — see lifecycle log my-feature\.jsonl -->/,
+      );
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+
+  it("skips when no plan files exist", async () => {
+    const root = makeProjectRoot();
+    try {
+      const result = await migrateAll(root, {});
+      const planAdvisory = result.results.find(
+        (r) => r.artifact === "plan-advisory"
+      );
+      // Advisory step should be present and either skipped or migrated with 0 files.
+      if (planAdvisory) {
+        assert.ok(
+          ["skipped", "migrated", "dry-run"].includes(planAdvisory.action),
+          `unexpected action: ${planAdvisory.action}`
+        );
+      }
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+
+  it("does not stamp a plan file that already starts with the header", async () => {
+    const root = makeProjectRoot();
+    try {
+      const specsDir = join(root, ".context-index", "specs", "features", "x");
+      mkdirSync(specsDir, { recursive: true });
+      const planPath = join(specsDir, "foo.plan.md");
+      const seeded =
+        "<!-- DO NOT EDIT statuses inline — see lifecycle log foo.jsonl -->\n# Plan\n";
+      writeFileSync(planPath, seeded);
+
+      await migrateAll(root, {});
+
+      assert.equal(readFileSync(planPath, "utf8"), seeded);
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+});
