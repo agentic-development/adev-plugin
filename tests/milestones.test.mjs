@@ -1,6 +1,14 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  readFileSync,
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readdirSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -20,49 +28,193 @@ import {
   getMilestoneStatusData,
 } from "../lib/milestones.mjs";
 
-// --- Task 1: YAML I/O ---
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
 
-describe("loadMilestones", () => {
+/**
+ * Set up a temp project root with `.context-index/manifest.yaml` so the
+ * path-safety defenses (validateProjectRoot) accept the directory.
+ *
+ * Mirrors the makeProject() helper in tests/lib/issues/json-adapter.test.mjs.
+ */
+function makeProject(prefix = "milestone-test-") {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  mkdirSync(join(dir, ".context-index"), { recursive: true });
+  writeFileSync(
+    join(dir, ".context-index", "manifest.yaml"),
+    "tasks:\n  backend: json\n"
+  );
+  return dir;
+}
+
+/** Read the raw milestones.json file (for byte-level assertions). */
+function readMilestonesRaw(dir) {
+  return readFileSync(join(dir, ".context-index", "milestones.json"), "utf8");
+}
+
+// ---------------------------------------------------------------------------
+// Task 1: schema lock — JSON document shape + byte format
+// ---------------------------------------------------------------------------
+
+describe("milestones.json schema (Task 1)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-io-test-")); });
+  before(() => { dir = makeProject("milestone-schema-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("returns empty array when milestones.yaml does not exist", () => {
+  it("writes the canonical { version, milestones } document shape", () => {
+    const fixture = [
+      {
+        name: "v1.0.0",
+        status: "planned",
+        epic_id: "epic-1",
+        target_date: "2026-06-01",
+        release: { strategy: "tag-only" },
+        ship_criteria: [
+          { check: "all_issues_closed" },
+          { check: "gates_pass" },
+          { confirm: "CHANGELOG updated" },
+        ],
+        defer_reason: null,
+      },
+    ];
+    saveMilestones(dir, fixture);
+    const raw = readMilestonesRaw(dir);
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.version, 1);
+    assert.ok(Array.isArray(parsed.milestones));
+    assert.equal(parsed.milestones.length, 1);
+    assert.equal(parsed.milestones[0].name, "v1.0.0");
+    assert.deepStrictEqual(parsed.milestones[0].release, { strategy: "tag-only" });
+    assert.equal(parsed.milestones[0].ship_criteria.length, 3);
+  });
+
+  it("uses exact 2-space indentation and a single trailing newline", () => {
+    saveMilestones(dir, [
+      { name: "v1", status: "planned", epic_id: null, target_date: null, release: null, ship_criteria: [], defer_reason: null },
+    ]);
+    const raw = readMilestonesRaw(dir);
+    // Exactly one trailing newline (not two).
+    assert.ok(raw.endsWith("\n"), "expected trailing newline");
+    assert.ok(!raw.endsWith("\n\n"), "expected exactly one trailing newline");
+    // Indentation is exactly 2 spaces (not 4 spaces, not tabs).
+    assert.ok(/\n {2}"version":/.test(raw) || /\n {2}"milestones":/.test(raw),
+      `expected 2-space indent, got: ${raw.slice(0, 200)}`);
+    // Tab character absent.
+    assert.ok(!raw.includes("\t"), "JSON output must not contain tabs");
+  });
+
+  it("byte-shape parity: full fixture round-trips identically", () => {
+    const fixture = [
+      {
+        name: "0.25.0",
+        status: "planned",
+        epic_id: "epic-63",
+        target_date: "2026-05-14",
+        release: { strategy: "release-please" },
+        ship_criteria: [
+          { check: "all_issues_closed" },
+          { check: "gates_pass" },
+          { confirm: "CHANGELOG updated" },
+        ],
+        defer_reason: null,
+      },
+    ];
+    saveMilestones(dir, fixture);
+    const loaded = loadMilestones(dir);
+    assert.deepStrictEqual(loaded, fixture);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task 2/3/7: loadMilestones — JSON I/O, error codes, default coercion
+// ---------------------------------------------------------------------------
+
+describe("loadMilestones (Tasks 2, 3, 7)", () => {
+  let dir;
+  before(() => { dir = makeProject("milestone-load-"); });
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("returns empty array when milestones.json does not exist", () => {
     const result = loadMilestones(dir);
     assert.deepStrictEqual(result, []);
   });
 
   it("returns empty array when milestones key is missing", () => {
-    const ciDir = join(dir, ".context-index");
-    mkdirSync(ciDir, { recursive: true });
-    writeFileSync(join(ciDir, "milestones.yaml"), "other_key: value\n");
+    writeFileSync(
+      join(dir, ".context-index", "milestones.json"),
+      JSON.stringify({ version: 1, other_key: "value" }) + "\n"
+    );
     const result = loadMilestones(dir);
     assert.deepStrictEqual(result, []);
   });
 
-  it("throws PARSE_ERROR for malformed YAML", () => {
-    const ciDir = join(dir, ".context-index");
-    mkdirSync(ciDir, { recursive: true });
-    writeFileSync(join(ciDir, "milestones.yaml"), "  bad:\n    - :\n  : broken\n");
-    assert.throws(() => loadMilestones(dir), (err) => err.code === "PARSE_ERROR");
+  it("returns empty array when milestones value is not an array", () => {
+    writeFileSync(
+      join(dir, ".context-index", "milestones.json"),
+      JSON.stringify({ version: 1, milestones: "wiped" }) + "\n"
+    );
+    const result = loadMilestones(dir);
+    assert.deepStrictEqual(result, []);
+  });
+
+  it("throws PARSE_ERROR for malformed JSON", () => {
+    writeFileSync(
+      join(dir, ".context-index", "milestones.json"),
+      "{ not: valid json :: $"
+    );
+    assert.throws(
+      () => loadMilestones(dir),
+      (err) =>
+        err.code === "PARSE_ERROR" &&
+        err.message.includes("milestones.json is malformed")
+    );
+  });
+
+  it("applies field-default coercion for sparse entries", () => {
+    writeFileSync(
+      join(dir, ".context-index", "milestones.json"),
+      JSON.stringify({ version: 1, milestones: [{}] }) + "\n"
+    );
+    const result = loadMilestones(dir);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "");
+    assert.equal(result[0].status, "planned");
+    assert.equal(result[0].epic_id, null);
+    assert.equal(result[0].target_date, null);
+    assert.equal(result[0].release, null);
+    assert.deepStrictEqual(result[0].ship_criteria, []);
+    assert.equal(result[0].defer_reason, null);
+  });
+
+  it("loadMilestones is synchronous (CON-5): returns array directly, not a Promise", () => {
+    saveMilestones(dir, [{ name: "sync-check", status: "planned", epic_id: null, target_date: null, release: null, ship_criteria: [] }]);
+    const result = loadMilestones(dir);
+    assert.ok(Array.isArray(result), "expected array, not Promise");
+    // A Promise has a .then function; an array does not.
+    assert.equal(typeof result.then, "undefined", "expected non-thenable");
   });
 });
 
-describe("saveMilestones", () => {
+// ---------------------------------------------------------------------------
+// Task 2/6: saveMilestones — atomic write, file creation
+// ---------------------------------------------------------------------------
+
+describe("saveMilestones (Tasks 2, 6)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-save-test-")); });
+  before(() => { dir = makeProject("milestone-save-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("creates milestones.yaml with milestone entries", () => {
-    const ms = [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, ship_criteria: [] }];
+  it("creates milestones.json with milestone entries", () => {
+    const ms = [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, release: null, ship_criteria: [] }];
     saveMilestones(dir, ms);
-    assert.ok(existsSync(join(dir, ".context-index", "milestones.yaml")));
+    assert.ok(existsSync(join(dir, ".context-index", "milestones.json")));
   });
 
   it("round-trips through load", () => {
     const ms = [
-      { name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: "2026-06-01", release: null, ship_criteria: [] },
-      { name: "v2.0.0", status: "planned", epic_id: null, target_date: null, release: null, ship_criteria: [{ check: "gates_pass" }] },
+      { name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: "2026-06-01", release: null, ship_criteria: [], defer_reason: null },
+      { name: "v2.0.0", status: "planned", epic_id: null, target_date: null, release: null, ship_criteria: [{ check: "gates_pass" }], defer_reason: null },
     ];
     saveMilestones(dir, ms);
     const loaded = loadMilestones(dir);
@@ -73,13 +225,38 @@ describe("saveMilestones", () => {
     assert.equal(loaded[1].epic_id, null);
     assert.equal(loaded[1].ship_criteria.length, 1);
   });
+
+  it("leaves no temp files after a successful write", () => {
+    saveMilestones(dir, [{ name: "v9", status: "planned", epic_id: null, target_date: null, release: null, ship_criteria: [] }]);
+    const files = readdirSync(join(dir, ".context-index"));
+    const tmps = files.filter((f) => f.endsWith(".tmp"));
+    assert.equal(tmps.length, 0, `unexpected temp files: ${tmps.join(", ")}`);
+  });
+
+  it("creates .context-index/ if the directory is missing under the storage root", () => {
+    // Make a fresh project, then remove .context-index/ between manifest seed and saveMilestones.
+    const dir2 = makeProject("milestone-mkdir-");
+    try {
+      // The manifest stays where it is; only milestones.json's parent needs creating
+      // for the test (the .context-index/ already exists from makeProject).
+      // To stress the mkdir-recursive behavior, write to a nested path:
+      saveMilestones(dir2, []);
+      assert.ok(existsSync(join(dir2, ".context-index", "milestones.json")));
+    } finally {
+      rmSync(dir2, { recursive: true, force: true });
+    }
+  });
 });
 
-describe("findMilestone", () => {
+// ---------------------------------------------------------------------------
+// Task 7: findMilestone — preserved behavior
+// ---------------------------------------------------------------------------
+
+describe("findMilestone (Task 7)", () => {
   let dir;
   before(() => {
-    dir = mkdtempSync(join(tmpdir(), "milestone-find-test-"));
-    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: null, ship_criteria: [] }]);
+    dir = makeProject("milestone-find-");
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: null, release: null, ship_criteria: [] }]);
   });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -94,7 +271,11 @@ describe("findMilestone", () => {
   });
 });
 
-describe("validateMilestoneName", () => {
+// ---------------------------------------------------------------------------
+// Task 7: validators — pure (no I/O), behavior unchanged
+// ---------------------------------------------------------------------------
+
+describe("validateMilestoneName (Task 7)", () => {
   it("accepts valid names", () => {
     assert.doesNotThrow(() => validateMilestoneName("v1.0.0"));
     assert.doesNotThrow(() => validateMilestoneName("my-milestone_2"));
@@ -111,7 +292,7 @@ describe("validateMilestoneName", () => {
   });
 });
 
-describe("validateTargetDate", () => {
+describe("validateTargetDate (Task 7)", () => {
   it("accepts valid YYYY-MM-DD", () => {
     assert.doesNotThrow(() => validateTargetDate("2026-06-01"));
   });
@@ -122,7 +303,9 @@ describe("validateTargetDate", () => {
   });
 });
 
-// --- resolveStrategy ---
+// ---------------------------------------------------------------------------
+// resolveStrategy — pure, unchanged
+// ---------------------------------------------------------------------------
 
 describe("resolveStrategy", () => {
   it("returns 'manual' for null release", () => {
@@ -151,11 +334,13 @@ describe("resolveStrategy", () => {
   });
 });
 
-// --- release field I/O ---
+// ---------------------------------------------------------------------------
+// release field I/O — JSON round-trip parity
+// ---------------------------------------------------------------------------
 
 describe("release field I/O", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-release-io-")); });
+  before(() => { dir = makeProject("milestone-release-io-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("round-trips release object through save/load", () => {
@@ -174,23 +359,29 @@ describe("release field I/O", () => {
     assert.equal(loaded[0].release, null);
   });
 
-  it("loads legacy milestones without release field as null", () => {
-    mkdirSync(join(dir, ".context-index"), { recursive: true });
-    writeFileSync(join(dir, ".context-index", "milestones.yaml"),
-      "milestones:\n  - name: legacy\n    status: planned\n    epic_id: null\n    target_date: null\n    ship_criteria: []\n");
+  it("loads entries without release field as null", () => {
+    writeFileSync(
+      join(dir, ".context-index", "milestones.json"),
+      JSON.stringify({
+        version: 1,
+        milestones: [{ name: "legacy", status: "planned", epic_id: null, target_date: null, ship_criteria: [] }],
+      }) + "\n"
+    );
     const loaded = loadMilestones(dir);
     assert.equal(loaded[0].release, null);
   });
 });
 
-// --- Task 2: milestoneCreate ---
+// ---------------------------------------------------------------------------
+// Task 7: milestoneCreate — preserved behavior, auto-link-to-epic
+// ---------------------------------------------------------------------------
 
-describe("milestoneCreate", () => {
+describe("milestoneCreate (Task 7)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-create-test-")); });
+  before(() => { dir = makeProject("milestone-create-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("creates milestone entry and writes to YAML", async () => {
+  it("creates milestone entry and writes JSON", async () => {
     const mockManager = { createEpic: async (data) => ({ id: "epic-1", ...data }) };
     const result = await milestoneCreate(dir, "v1.0.0", { issueManager: mockManager });
     assert.equal(result.name, "v1.0.0");
@@ -249,11 +440,9 @@ describe("milestoneCreate", () => {
   });
 });
 
-// --- milestoneCreate with --strategy ---
-
 describe("milestoneCreate with --strategy", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-strategy-create-")); });
+  before(() => { dir = makeProject("milestone-strategy-create-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("sets release.strategy when strategy option provided", async () => {
@@ -276,16 +465,18 @@ describe("milestoneCreate with --strategy", () => {
   });
 });
 
-// --- Task 3: milestoneList ---
+// ---------------------------------------------------------------------------
+// Task 7: milestoneList
+// ---------------------------------------------------------------------------
 
-describe("milestoneList", () => {
+describe("milestoneList (Task 7)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-list-test-")); });
+  before(() => { dir = makeProject("milestone-list-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("returns formatted table when milestones exist", async () => {
     saveMilestones(dir, [
-      { name: "v1", status: "planned", epic_id: "epic-1", target_date: "2026-06-01", ship_criteria: [] },
+      { name: "v1", status: "planned", epic_id: "epic-1", target_date: "2026-06-01", release: null, ship_criteria: [] },
     ]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-1", title: "v1", status: "open" }],
@@ -297,8 +488,8 @@ describe("milestoneList", () => {
     assert.ok(output.includes("1/2 open"));
   });
 
-  it("returns help message when no milestones.yaml exists", async () => {
-    const emptyDir = mkdtempSync(join(tmpdir(), "milestone-list-empty-"));
+  it("returns help message when no milestones.json exists", async () => {
+    const emptyDir = makeProject("milestone-list-empty-");
     try {
       const output = await milestoneList(emptyDir, {});
       assert.ok(output.includes("No milestones defined"));
@@ -309,7 +500,7 @@ describe("milestoneList", () => {
 
   it("shows broken epic warning for non-existent epic", async () => {
     saveMilestones(dir, [
-      { name: "v2", status: "planned", epic_id: "epic-999", target_date: null, ship_criteria: [] },
+      { name: "v2", status: "planned", epic_id: "epic-999", target_date: null, release: null, ship_criteria: [] },
     ]);
     const mockManager = {
       listEpics: async () => [],
@@ -321,7 +512,7 @@ describe("milestoneList", () => {
 
   it("shows epic ID without progress when no issue manager", async () => {
     saveMilestones(dir, [
-      { name: "v3", status: "planned", epic_id: "epic-10", target_date: null, ship_criteria: [] },
+      { name: "v3", status: "planned", epic_id: "epic-10", target_date: null, release: null, ship_criteria: [] },
     ]);
     const output = await milestoneList(dir, {});
     assert.ok(output.includes("epic-10"));
@@ -330,7 +521,9 @@ describe("milestoneList", () => {
   });
 });
 
-// --- Task 5: Integration test (create + list lifecycle) ---
+// ---------------------------------------------------------------------------
+// Integration test (create + list lifecycle)
+// ---------------------------------------------------------------------------
 
 describe("milestone create + list integration", () => {
   let dir;
@@ -347,12 +540,12 @@ describe("milestone create + list integration", () => {
   };
 
   before(() => {
-    dir = mkdtempSync(join(tmpdir(), "milestone-integration-"));
+    dir = makeProject("milestone-integration-");
     epicCounter = 0;
   });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("full lifecycle: create → list → create again (idempotent)", async () => {
+  it("full lifecycle: create -> list -> create again (idempotent)", async () => {
     // Create
     const ms1 = await milestoneCreate(dir, "v1.0.0", { issueManager: mockManager, targetDate: "2026-06-01" });
     assert.equal(ms1.name, "v1.0.0");
@@ -406,15 +599,17 @@ describe("milestone create + list integration", () => {
   });
 });
 
-// --- milestoneDefer ---
+// ---------------------------------------------------------------------------
+// milestoneDefer (Task 7)
+// ---------------------------------------------------------------------------
 
-describe("milestoneDefer", () => {
+describe("milestoneDefer (Task 7)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-defer-test-")); });
+  before(() => { dir = makeProject("milestone-defer-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("defers milestone with reason", async () => {
-    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: null, release: null, ship_criteria: [] }]);
     const mockManager = { updateEpic: async () => {} };
     const result = await milestoneDefer(dir, "v1", "Pushed to Q3", { issueManager: mockManager });
     assert.equal(result.status, "deferred");
@@ -425,12 +620,12 @@ describe("milestoneDefer", () => {
   });
 
   it("rejects shipped milestone with ALREADY_SHIPPED", async () => {
-    saveMilestones(dir, [{ name: "v2", status: "shipped", epic_id: "epic-2", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v2", status: "shipped", epic_id: "epic-2", target_date: null, release: null, ship_criteria: [] }]);
     await assert.rejects(() => milestoneDefer(dir, "v2", "Too late", {}), { code: "ALREADY_SHIPPED" });
   });
 
   it("idempotently re-defers with updated reason", async () => {
-    saveMilestones(dir, [{ name: "v3", status: "deferred", epic_id: "epic-3", target_date: null, ship_criteria: [], defer_reason: "Old reason" }]);
+    saveMilestones(dir, [{ name: "v3", status: "deferred", epic_id: "epic-3", target_date: null, release: null, ship_criteria: [], defer_reason: "Old reason" }]);
     const mockManager = { updateEpic: async () => {} };
     const result = await milestoneDefer(dir, "v3", "New reason", { issueManager: mockManager });
     assert.equal(result.defer_reason, "New reason");
@@ -447,20 +642,20 @@ describe("milestoneDefer", () => {
   });
 
   it("defers without epic update when no issue manager", async () => {
-    saveMilestones(dir, [{ name: "v4", status: "planned", epic_id: "epic-4", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v4", status: "planned", epic_id: "epic-4", target_date: null, release: null, ship_criteria: [] }]);
     const result = await milestoneDefer(dir, "v4", "No backend", {});
     assert.equal(result.status, "deferred");
   });
 
   it("warns but does not roll back when epic update fails", async () => {
-    saveMilestones(dir, [{ name: "v5", status: "planned", epic_id: "epic-5", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v5", status: "planned", epic_id: "epic-5", target_date: null, release: null, ship_criteria: [] }]);
     const mockManager = { updateEpic: async () => { throw new Error("backend down"); } };
     const result = await milestoneDefer(dir, "v5", "Epic fail", { issueManager: mockManager });
     assert.equal(result.status, "deferred");
   });
 
   it("defer_reason round-trips through save/load", () => {
-    const ms = [{ name: "rt", status: "deferred", epic_id: null, target_date: null, ship_criteria: [], defer_reason: "Test: special chars & colons" }];
+    const ms = [{ name: "rt", status: "deferred", epic_id: null, target_date: null, release: null, ship_criteria: [], defer_reason: "Test: special chars & colons" }];
     saveMilestones(dir, ms);
     const loaded = loadMilestones(dir);
     const found = loaded.find((m) => m.name === "rt");
@@ -468,7 +663,9 @@ describe("milestoneDefer", () => {
   });
 });
 
-// --- evaluateShipCriteria ---
+// ---------------------------------------------------------------------------
+// evaluateShipCriteria — unchanged
+// ---------------------------------------------------------------------------
 
 describe("evaluateShipCriteria", () => {
   it("returns passed: true when all issues closed", async () => {
@@ -527,11 +724,13 @@ describe("evaluateShipCriteria", () => {
   });
 });
 
-// --- milestoneShip ---
+// ---------------------------------------------------------------------------
+// milestoneShip (Task 7)
+// ---------------------------------------------------------------------------
 
-describe("milestoneShip", () => {
+describe("milestoneShip (Task 7)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-test-")); });
+  before(() => { dir = makeProject("milestone-ship-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("ships milestone: updates status, closes epic, creates tag", async () => {
@@ -592,14 +791,14 @@ describe("milestoneShip", () => {
   });
 
   it("is a no-op when already shipped", async () => {
-    saveMilestones(dir, [{ name: "v0.9.0", status: "shipped", epic_id: "epic-2", target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v0.9.0", status: "shipped", epic_id: "epic-2", target_date: null, release: null, ship_criteria: [] }]);
     const result = await milestoneShip(dir, "v0.9.0", { issueManager: {}, manifest: {} });
     assert.equal(result.shipped, true);
     assert.equal(result.skipped, true);
   });
 
   it("blocks when criteria fail", async () => {
-    saveMilestones(dir, [{ name: "v2.1.0", status: "planned", epic_id: "epic-3", target_date: null, ship_criteria: [{ check: "all_issues_closed" }] }]);
+    saveMilestones(dir, [{ name: "v2.1.0", status: "planned", epic_id: "epic-3", target_date: null, release: null, ship_criteria: [{ check: "all_issues_closed" }] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-3" }],
       list: async () => [{ id: "issue-1", status: "open" }],
@@ -655,7 +854,7 @@ describe("milestoneShip", () => {
   });
 
   it("blocks when confirm is rejected", async () => {
-    saveMilestones(dir, [{ name: "v5.0.0", status: "planned", epic_id: "epic-6", target_date: null, ship_criteria: [{ confirm: "CHANGELOG updated" }] }]);
+    saveMilestones(dir, [{ name: "v5.0.0", status: "planned", epic_id: "epic-6", target_date: null, release: null, ship_criteria: [{ confirm: "CHANGELOG updated" }] }]);
     const mockManager = {
       listEpics: async () => [{ id: "epic-6" }],
       list: async () => [],
@@ -670,11 +869,13 @@ describe("milestoneShip", () => {
   });
 });
 
-// --- milestoneShip strategy: tag-only ---
+// ---------------------------------------------------------------------------
+// milestoneShip strategy: tag-only
+// ---------------------------------------------------------------------------
 
 describe("milestoneShip strategy: tag-only", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-tag-only-")); });
+  before(() => { dir = makeProject("milestone-ship-tag-only-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("creates git tag for semver names", async () => {
@@ -754,11 +955,13 @@ describe("milestoneShip strategy: tag-only", () => {
   });
 });
 
-// --- milestoneShip strategy: release-please ---
+// ---------------------------------------------------------------------------
+// milestoneShip strategy: release-please
+// ---------------------------------------------------------------------------
 
 describe("milestoneShip strategy: release-please", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-rp-")); });
+  before(() => { dir = makeProject("milestone-ship-rp-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("writes release-as to config for semver names", async () => {
@@ -802,7 +1005,7 @@ describe("milestoneShip strategy: release-please", () => {
   });
 
   it("falls back to manual when config file missing", async () => {
-    const noConfigDir = mkdtempSync(join(tmpdir(), "milestone-no-rp-"));
+    const noConfigDir = makeProject("milestone-no-rp-");
     saveMilestones(noConfigDir, [{
       name: "3.0.0", status: "planned", epic_id: "epic-3",
       target_date: null, release: { strategy: "release-please" }, ship_criteria: [],
@@ -820,7 +1023,7 @@ describe("milestoneShip strategy: release-please", () => {
   });
 
   it("throws RELEASE_CONFIG_INVALID for malformed JSON", async () => {
-    const badDir = mkdtempSync(join(tmpdir(), "milestone-bad-rp-"));
+    const badDir = makeProject("milestone-bad-rp-");
     writeFileSync(join(badDir, "release-please-config.json"), "not json{{{");
     saveMilestones(badDir, [{
       name: "4.0.0", status: "planned", epic_id: "epic-4",
@@ -877,11 +1080,13 @@ describe("milestoneShip strategy: release-please", () => {
   });
 });
 
-// --- milestoneShip strategy: manual ---
+// ---------------------------------------------------------------------------
+// milestoneShip strategy: manual
+// ---------------------------------------------------------------------------
 
 describe("milestoneShip strategy: manual", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-ship-manual-")); });
+  before(() => { dir = makeProject("milestone-ship-manual-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("ships with manual strategy (no git ops)", async () => {
@@ -939,27 +1144,31 @@ describe("milestoneShip strategy: manual", () => {
   });
 });
 
-// --- warnIfMilestoneUndefined ---
+// ---------------------------------------------------------------------------
+// warnIfMilestoneUndefined (Task 7)
+// ---------------------------------------------------------------------------
 
-describe("warnIfMilestoneUndefined", () => {
+describe("warnIfMilestoneUndefined (Task 7)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-warn-test-")); });
+  before(() => { dir = makeProject("milestone-warn-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("returns null when milestone exists", () => {
-    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: null, target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: null, target_date: null, release: null, ship_criteria: [] }]);
     assert.equal(warnIfMilestoneUndefined(dir, "v1"), null);
   });
 
   it("returns warning when milestone not found", () => {
-    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: null, target_date: null, ship_criteria: [] }]);
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: null, target_date: null, release: null, ship_criteria: [] }]);
     const result = warnIfMilestoneUndefined(dir, "v2");
     assert.ok(result.includes("Warning"));
     assert.ok(result.includes("v2"));
+    // message text references milestones.json (truthful after migration)
+    assert.ok(result.includes("milestones.json"));
   });
 
-  it("returns null when milestones.yaml does not exist", () => {
-    const emptyDir = mkdtempSync(join(tmpdir(), "milestone-warn-empty-"));
+  it("returns null when milestones.json does not exist", () => {
+    const emptyDir = makeProject("milestone-warn-empty-");
     try {
       assert.equal(warnIfMilestoneUndefined(emptyDir, "v1"), null);
     } finally {
@@ -967,11 +1176,10 @@ describe("warnIfMilestoneUndefined", () => {
     }
   });
 
-  it("returns null when milestones.yaml is malformed (fail-open)", () => {
-    const badDir = mkdtempSync(join(tmpdir(), "milestone-warn-bad-"));
+  it("returns null when milestones.json is malformed (fail-open)", () => {
+    const badDir = makeProject("milestone-warn-bad-");
     try {
-      mkdirSync(join(badDir, ".context-index"), { recursive: true });
-      writeFileSync(join(badDir, ".context-index", "milestones.yaml"), "  bad:\n    - :\n  : broken\n");
+      writeFileSync(join(badDir, ".context-index", "milestones.json"), "{ not json");
       assert.equal(warnIfMilestoneUndefined(badDir, "v1"), null);
     } finally {
       rmSync(badDir, { recursive: true, force: true });
@@ -979,15 +1187,17 @@ describe("warnIfMilestoneUndefined", () => {
   });
 });
 
-// --- getMilestoneStatusData ---
+// ---------------------------------------------------------------------------
+// getMilestoneStatusData (Task 7)
+// ---------------------------------------------------------------------------
 
-describe("getMilestoneStatusData", () => {
+describe("getMilestoneStatusData (Task 7)", () => {
   let dir;
-  before(() => { dir = mkdtempSync(join(tmpdir(), "milestone-status-test-")); });
+  before(() => { dir = makeProject("milestone-status-"); });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
   it("returns milestone data when found", () => {
-    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: "2026-06-01", ship_criteria: [{ check: "gates_pass" }] }]);
+    saveMilestones(dir, [{ name: "v1", status: "planned", epic_id: "epic-1", target_date: "2026-06-01", release: null, ship_criteria: [{ check: "gates_pass" }] }]);
     const result = getMilestoneStatusData(dir, "v1");
     assert.equal(result.found, true);
     assert.equal(result.milestone.name, "v1");
@@ -1002,7 +1212,7 @@ describe("getMilestoneStatusData", () => {
   });
 
   it("returns not-found when file missing", () => {
-    const emptyDir = mkdtempSync(join(tmpdir(), "milestone-status-empty-"));
+    const emptyDir = makeProject("milestone-status-empty-");
     try {
       const result = getMilestoneStatusData(emptyDir, "v1");
       assert.equal(result.found, false);
@@ -1013,10 +1223,9 @@ describe("getMilestoneStatusData", () => {
   });
 
   it("returns not-found when file malformed", () => {
-    const badDir = mkdtempSync(join(tmpdir(), "milestone-status-bad-"));
+    const badDir = makeProject("milestone-status-bad-");
     try {
-      mkdirSync(join(badDir, ".context-index"), { recursive: true });
-      writeFileSync(join(badDir, ".context-index", "milestones.yaml"), "  bad:\n    - :\n  : broken\n");
+      writeFileSync(join(badDir, ".context-index", "milestones.json"), "{ not json");
       const result = getMilestoneStatusData(badDir, "v1");
       assert.equal(result.found, false);
       assert.equal(result.milestone, null);

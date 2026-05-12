@@ -73,13 +73,13 @@ case "$LEVEL" in
     ;;
 esac
 
-# Bypass 2+3: Check execution state (standalone or active → exit 0)
-STATE_FILE="$CONTEXT_ROOT/.context-index/.execution-state.md"
-if [ -f "$STATE_FILE" ]; then
-  STATE_STATUS=$(grep -E "^status:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/status:\s*//' | tr -d '[:space:]' || true)
-  if [ "$STATE_STATUS" = "standalone" ] || [ "$STATE_STATUS" = "active" ]; then
-    exit 0
-  fi
+# Bypass 2+3: Check execution state (standalone or active → exit 0).
+# Delegates parsing to hooks/_execution-state.mjs (read mode). The mode emits
+# JSON.stringify(state) or "null"; inline Node extracts .status from it.
+# Stderr is discarded per spec CON-4 SEC-4.
+STATE_STATUS=$(ADEV_CONTEXT_ROOT="$CONTEXT_ROOT" ADEV_EXECUTION_STATE_MODE=read node "$PLUGIN_ROOT/hooks/_execution-state.mjs" 2>/dev/null | node -e 'let s=""; process.stdin.on("data",c=>s+=c); process.stdin.on("end",()=>{ try { const j=JSON.parse(s); console.log((j&&j.status)||""); } catch { console.log(""); } })' 2>/dev/null || echo "")
+if [ "$STATE_STATUS" = "standalone" ] || [ "$STATE_STATUS" = "active" ]; then
+  exit 0
 fi
 
 # Check command against passthrough patterns

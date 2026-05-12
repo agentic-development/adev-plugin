@@ -154,6 +154,7 @@ This is the key difference from generic debugging. Before diving into code, load
 2. **Check specs for expected behavior.**
    - Read the relevant Feature Charter at `.context-index/specs/features/<module>/charter.md`.
    - Read the Live Spec if one exists for the current task.
+   - For spec status and prior reviewer/validator outcomes, call `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read `state.steps.review` for the latest review verdict and notes, and `state.steps.validate` for prior validator findings. Do NOT parse `.review.md` or `.validate.md` files directly.
    - Compare the observed behavior against the spec's behavioral contract.
    - The bug may be "working as specified" (spec problem, not code problem).
 
@@ -279,6 +280,20 @@ This is the key difference from generic debugging. Before diving into code, load
    - No other tests broken.
    - Issue actually resolved end-to-end.
 
+4. **Record the debug intervention in the lifecycle log.**
+
+   If the bug is tracked by a spec, emit a `debug_intervention` event so the projection captures the intervention (replaces any prior "append to debug log" prose):
+
+   ```javascript
+   import { reportIntervention } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+   reportIntervention(projectRoot, specPath, {
+     kind: "debug",
+     note: "<≤200-char operator summary of root cause and fix>",
+   });
+   ```
+
+   Severity is stamped at write time by the lib. `notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; ≤200 chars in practice).
+
 ### Phase 6: Validate and Record
 
 **Goal:** Confirm the fix is complete and capture any architectural insight.
@@ -373,3 +388,23 @@ If you catch yourself thinking any of these, STOP and return to Phase 1:
 | **5. Fix** | Create failing test, implement single fix, verify | Root cause resolved, tests pass |
 | **6. Validate** | Run quality gates, check spec compliance, consider ADR | Fix is complete, insight captured |
 | **7. Doc Impact** | Check if fix changes spec/charter/ADR assumptions | Documentation updated or confirmed unchanged |
+
+## API reference
+
+Lifecycle event log:
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection (`state.steps.review`, `state.steps.validate`, `state.interventions`). Replaces filesystem inspection of `.review.md` / `.validate.md` artifacts.
+- `reportIntervention(projectRoot, specPath, { kind: "debug", note })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `debug_intervention` event in Phase 5 step 4. Severity is stamped at write time.
+
+Issue board (Phase 6 step 4 update):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Reality check (confidence scoring before closing):
+
+- `formatConfidenceNote` and `verifyIssueCompleted` from `<ADEV_ROOT>/lib/reality-check.mjs`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

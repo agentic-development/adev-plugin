@@ -13,6 +13,9 @@ source-manifest:
     - templates/manifest-template.yaml
     - tests/templates/manifest-template.test.mjs
   computed-at: "2026-04-12T11:47:08.344Z"
+drift_detected: true
+drift_source: templates/manifest-template.yaml
+drift_at: 2026-05-12T01:28:44.133Z
 ---
 
 # Live Spec: Configurable Reminder Interval

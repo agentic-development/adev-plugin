@@ -13,8 +13,10 @@ const skill = readFileSync(SKILL_PATH, "utf8");
 describe("review-specs SKILL.md — file-sha ordering (issue-187)", () => {
   it("Step 6 does NOT capture file-sha before Step 7", () => {
     // Step 6 must not instruct running git hash-object directly —
-    // that would capture the pre-status-update hash.
-    const step6Match = skill.match(/## Step 6: Save Review Report([\s\S]*?)## Step 7:/);
+    // that would capture the pre-status-update hash. The lifecycle-skill
+    // adoption pass renamed Step 6 to "Emit Reviewer Events and Save
+    // Review Report"; match the renamed heading.
+    const step6Match = skill.match(/## Step 6: [^\n]*Save Review Report([\s\S]*?)## Step 7:/);
     assert.ok(step6Match, "Step 6 section must exist");
     assert.doesNotMatch(
       step6Match[1],

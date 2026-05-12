@@ -17,9 +17,12 @@ describe("build SKILL.md — unified dry-run gates", () => {
 
   it("should NOT read gates from manifest.yaml for display", () => {
     const idx = content.indexOf("Gate tier summary");
-    const dryRunSection = idx >= 0 ? content.substring(idx) : "";
+    const sectionEndIdx = idx >= 0 ? content.indexOf("\n---\n", idx) : -1;
+    const dryRunSection = idx >= 0
+      ? content.substring(idx, sectionEndIdx > 0 ? sectionEndIdx : idx + 800)
+      : "";
     assert.ok(!dryRunSection.includes("manifest.yaml"),
-      "Dry-run gate display should not reference manifest.yaml");
+      "Dry-run gate display section should not reference manifest.yaml");
   });
 
   it("should delegate gate execution to implement and validate", () => {

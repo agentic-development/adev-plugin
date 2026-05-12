@@ -26,8 +26,8 @@ source-manifest:
     - skills/standalone/SKILL.md
   computed-at: "2026-05-05T00:00:00.000Z"
 drift_detected: true
-drift_source: lib/lifecycle-gate-helpers.mjs
-drift_at: 2026-05-11T00:11:10.043Z
+drift_source: lib/execution-state.mjs
+drift_at: 2026-05-12T01:09:32.199Z
 ---
 
 ## Behavioral Contract
