@@ -68,7 +68,7 @@ describe("readBuildState", () => {
   it("returns null on malformed JSON", () => {
     const tmp = createTempDir();
     try {
-      const dir = join(tmp, ".context-index", "build-state");
+      const dir = join(tmp, ".context-index", "lifecycle-state");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "bad.json"), "not json{{{");
       const result = readBuildState(tmp, "bad.spec.md");
@@ -83,6 +83,50 @@ describe("readBuildState", () => {
       () => readBuildState("relative", "spec.md"),
       (err) => err.code === "INVALID_PROJECT_ROOT"
     );
+  });
+
+  it("falls back to legacy .context-index/build-state/ when new path absent", () => {
+    const tmp = createTempDir();
+    try {
+      const legacyDir = join(tmp, ".context-index", "build-state");
+      mkdirSync(legacyDir, { recursive: true });
+      const legacyState = {
+        spec: "legacy.spec.md",
+        milestone: null,
+        status: "in_progress",
+        steps: [{ name: "review", status: "pending" }],
+        started: "2026-05-01T00:00:00.000Z",
+        updated: "2026-05-01T00:00:00.000Z",
+      };
+      writeFileSync(join(legacyDir, "legacy.json"), JSON.stringify(legacyState));
+      const result = readBuildState(tmp, "legacy.spec.md");
+      assert.equal(result.spec, "legacy.spec.md");
+      assert.equal(result.steps[0].name, "review");
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  it("prefers new lifecycle-state path over legacy build-state path", () => {
+    const tmp = createTempDir();
+    try {
+      const newDir = join(tmp, ".context-index", "lifecycle-state");
+      const legacyDir = join(tmp, ".context-index", "build-state");
+      mkdirSync(newDir, { recursive: true });
+      mkdirSync(legacyDir, { recursive: true });
+      writeFileSync(
+        join(newDir, "shadow.json"),
+        JSON.stringify({ spec: "shadow.spec.md", source: "new", steps: [] })
+      );
+      writeFileSync(
+        join(legacyDir, "shadow.json"),
+        JSON.stringify({ spec: "shadow.spec.md", source: "legacy", steps: [] })
+      );
+      const result = readBuildState(tmp, "shadow.spec.md");
+      assert.equal(result.source, "new");
+    } finally {
+      cleanupTempDir(tmp);
+    }
   });
 });
 
@@ -104,7 +148,7 @@ describe("createBuildState", () => {
       assert.ok(state.steps.every(s => s.status === "pending"));
 
       // Verify file on disk
-      const filePath = join(tmp, ".context-index", "build-state", "feature.json");
+      const filePath = join(tmp, ".context-index", "lifecycle-state", "feature.json");
       assert.ok(existsSync(filePath));
       const onDisk = JSON.parse(readFileSync(filePath, "utf-8"));
       assert.equal(onDisk.status, "in_progress");
@@ -279,7 +323,7 @@ describe("recordStepResult", () => {
         verdict: "PASS",
       });
       // Read from disk independently
-      const filePath = join(tmp, ".context-index", "build-state", "feature.json");
+      const filePath = join(tmp, ".context-index", "lifecycle-state", "feature.json");
       const onDisk = JSON.parse(readFileSync(filePath, "utf-8"));
       assert.equal(onDisk.steps[0].status, "completed");
       assert.equal(onDisk.steps[0].verdict, "PASS");
