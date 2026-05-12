@@ -195,16 +195,17 @@ STEP_RESULT:
 
 The ONLY work the build orchestrator performs itself (not via subagent):
 
-- **Uses** `lib/build-state.mjs` helper (`readBuildState`, `createBuildState`, `recordStepResult`, `getNextStep`) for all build state operations — never writes build state JSON manually
-- **Reads** `.context-index/build-state/*.json` for resume state (via the helper)
+- **Uses** `lib/build-state.mjs` helper (`readBuildState`, `createBuildState`, `recordStepResult`, `getNextStep`) for all build-orchestrator resume state — never writes the helper's underlying storage manually. The helper owns its on-disk shape; the skill talks to the helper, not to the filesystem.
+- **Uses** `lib/lifecycle-state.mjs` (`currentState`, `requireGate`, `reportStep`) to gate between chained sub-skills and to emit step-level lifecycle events that downstream skills consume.
 - **Reads** spec frontmatter for `milestone` field (milestone discovery) and `source-manifest` (validate step context)
-- **Reads** `.review.md` files for skip conditions and to extract review verdict/notes for step context
+- **Reads** `state.steps.review.notes` and `state.steps.review.verdict` from the lifecycle projection for review skip conditions / context (replaces parsing `.review.md` directly)
 - **Reads** `.plan.md` files for skip conditions and to extract task count for step context
 - **Reads** `governance/gates.yaml` for dry-run gate display only
-- **Reads** `manifest.yaml` for `tasks.backend` (issue board configuration)
+- **Reads** `manifest.yaml` for `tasks.backend` (issue board configuration) via `loadManifest`
 - **Reads** `user-config` files (local and global) via `parseUserConfig()` for `build.max_retries` (retry policy)
 - **Calls** `detectWorkspace(cwd)` once at build start for workspace context
-- **Writes** `.context-index/build-state/*.json` after each step (via `recordStepResult()` — atomic writes with validation)
+- **Writes** build-orchestrator resume state via `recordStepResult()` (atomic writes with validation, owned by the helper)
+- **Emits** `reportStep` events to the lifecycle log at each sub-skill entry/exit so downstream `requireGate` calls see the latest state
 - **Prints** progress headers and the final summary
 
 Everything else — reading source code, running tests, dispatching implementation subagents, checking spec compliance, writing reports — happens inside the subagent's context.
@@ -291,7 +292,34 @@ When `--verbose` is set, the orchestrator prints its reasoning before each dispa
 
 The orchestrator executes exactly one of these steps per invocation. After dispatch and state persistence, it re-invokes itself for the next step. See One-Step-Per-Invocation Dispatch above.
 
-The pipeline executes 5 steps per spec, in strict order. For each step, the orchestrator: (1) checks the skip condition on artifacts, (2) dispatches a subagent via the Agent tool if not skipped, (3) reads the subagent's result, (4) checks the stop condition, and (5) persists build state.
+The pipeline executes 5 steps per spec, in strict order. For each step, the orchestrator: (1) checks the skip condition on artifacts, (2) calls `requireGate(state, "<prior-step>", { mode })` to enforce that the prior step actually passed, (3) dispatches a subagent via the Agent tool if not skipped, (4) reads the subagent's result, (5) checks the stop condition, and (6) persists build state.
+
+### Gate Between Sub-Skill Dispatches
+
+Before dispatching ANY sub-skill, run the lifecycle gate using the prior step's name:
+
+```javascript
+import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
+
+const state = currentState(projectRoot, specPath);
+const mode = resolveGateMode(loadManifest(projectRoot));
+
+// Per-step gate mapping (use the PRIOR step's name):
+//   review   → gate on "specify"
+//   plan     → gate on "review"
+//   route    → gate on "plan"
+//   implement → gate on "plan"      // route is optional/observational
+//   validate → gate on "implement"
+requireGate(state, "<prior-step>", { mode });
+
+// Then emit the lifecycle entry event before invoking the sub-skill:
+reportStep(projectRoot, specPath, { step: "<step>", status: "started" });
+```
+
+In strict mode (default), `requireGate` throws `GateError` if the prior step is incomplete — the orchestrator stops and surfaces the message unchanged. In advisory mode, it warns and continues. Do NOT catch `GateError`.
+
+Emit a matching `reportStep` exit (`status: "completed"`) immediately after the sub-skill returns and BEFORE the `recordStepResult()` call, so the next turn's `currentState` reads the most recent step status.
 
 ### Step 0: Specify (Full Pipeline only)
 
@@ -524,11 +552,11 @@ Retry cycles are recorded in build state under the validate step:
 
 ## Build State
 
-Build state is persisted as JSON at `.context-index/build-state/<slug>.json`, where `<slug>` is derived from the spec filename (lowercase, hyphenated, without extension).
+Build-orchestrator resume state is persisted via `lib/build-state.mjs`. The helper owns the on-disk shape — derived per spec, where `<slug>` comes from the spec filename (lowercase, hyphenated, without extension). Treat the helper as the source of truth; do not interact with its underlying storage directly.
 
 ### Directory Creation
 
-If `.context-index/build-state/` does not exist, create it before writing the first build state file.
+The helper creates its underlying storage directory on first write. Skill prose does not need to test for existence or create directories — call `createBuildState(projectRoot, specPath, ...)` and let the helper handle filesystem setup.
 
 ### State File Format
 
@@ -567,7 +595,7 @@ If `.context-index/build-state/` does not exist, create it before writing the fi
 
 ### Incremental Persistence
 
-The build state file is written **after each step completes** via `recordStepResult()` from `lib/build-state.mjs` (not just at the end). The helper handles atomic writes, timestamp generation, and build status recalculation automatically. This ensures that if the build is interrupted at any point, the state file reflects exactly which steps finished. Fields:
+The build state is written **after each step completes** via `recordStepResult()` from `lib/build-state.mjs` (not just at the end). The helper handles atomic writes, timestamp generation, and build status recalculation automatically. This ensures that if the build is interrupted at any point, the recorded state reflects exactly which steps finished. Fields:
 
 - `spec`: path to the spec being built
 - `milestone`: milestone name (if invoked via `--milestone`) or `null`
@@ -588,9 +616,9 @@ Build status recalculation is handled automatically by `recordStepResult()`: whe
 
 ## Stale Build Detection
 
-When `--resume` is invoked, or at the start of a new `--spec` build, scan `.context-index/build-state/` for zombie builds.
+When `--resume` is invoked, or at the start of a new `--spec` build, query `lib/build-state.mjs` (via `readBuildState` and the helper's listing API) for zombie builds.
 
-**Zombie build:** A state file where `status` is `in_progress` AND all recorded steps have `status: skipped`. This means the orchestrator ran, evaluated all skip conditions (`.review.md` present, `.plan.md` present, etc.), skipped every step, and exited without doing real work.
+**Zombie build:** A state record where `status` is `in_progress` AND all recorded steps have `status: skipped`. This means the orchestrator ran, evaluated all skip conditions (lifecycle log shows `review` and `plan` complete, plan file present, etc.), skipped every step, and exited without doing real work.
 
 **On `--resume`:** Report zombie builds found:
 ```
@@ -791,3 +819,30 @@ Build complete.
 - Modify build state for a step before the subagent has returned its result
 - Continue to the next step if the subagent has not fully completed and returned its STEP_RESULT
 - Parse or act on intermediate output from the subagent — only the final STEP_RESULT matters for orchestration decisions
+
+## API reference
+
+Lifecycle event log (gating between sub-skills, step events, next-step discovery for resume):
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection (`steps`, `currentStep`, `planTasks`, `interventions`).
+- `requireGate(state, "<prior-step>", { mode })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — hard-blocks (or warns) before dispatching each sub-skill.
+- `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode` (`strict` default, or `advisory`).
+- `reportStep(projectRoot, specPath, { step, status, verdict? })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emit step entry/exit so the next turn's `currentState` is fresh.
+- `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregate per-spec projections (used by milestone-mode and the no-args resume scan).
+
+Build orchestrator resume cache:
+
+- `readBuildState`, `createBuildState`, `recordStepResult`, `getNextStep` from `<ADEV_ROOT>/lib/build-state.mjs` — programmatic resume state. The helper owns its on-disk shape; skill prose does not manipulate its underlying storage directly.
+
+Execution state (cross-session resume tracking):
+
+- `readExecutionState`, `writeExecutionState`, `clearExecutionState` from `<ADEV_ROOT>/lib/execution-state.mjs` — `.context-index/.execution-state.json` for session-level resume.
+
+Issue board (guarded by `tasks.backend` configuration):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter for epic-level work-item tracking.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

@@ -174,7 +174,7 @@ Aggregate capability counts across all charters.
 For each spec with a `source-manifest`, check using `lib/source-manifest.mjs`. Flag any spec where source files are missing or changed.
 
 #### Specs Needing Re-Review
-Flag specs where `revision` is greater than the last-reviewed revision (specs modified since last review pass).
+For each spec, call `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` and compare the spec's `revision` frontmatter against `state.steps.review.lastReviewedRevision`. Flag specs where `revision` is greater (modified since last review pass). For the project-wide view, `listLifecycleStates(projectRoot)` returns the full set in one call.
 
 #### Milestone Progress
 
@@ -185,7 +185,7 @@ If `tasks.backend` is configured in `manifest.yaml`, scan all epics for `milesto
 - Total issues across those epics
 - Issue counts by status: open / in_progress / closed
 - Percentage complete (closed issues / total issues)
-- **Milestone metadata** (from `milestones.yaml` if available): call `getMilestoneStatusData(projectRoot, name)` from `lib/milestones.mjs` for each milestone name. If found, include target_date, status, and ship_criteria count alongside the issue board aggregation.
+- **Milestone metadata** (from `milestones.json` via `lib/milestones.mjs`): call `getMilestoneStatusData(projectRoot, name)` for each milestone name. If found, include target_date, status, and ship_criteria count alongside the issue board aggregation.
 
 If no epics have milestones, skip this section entirely (unchanged behavior). If `tasks.backend` is not configured, skip this section silently.
 
@@ -431,3 +431,27 @@ Advisory: running repo-scoped inside workspace at <workspace-path>. Run /adev:st
 - If `.context-index/sessions/` does not exist, report "No sessions directory found" and skip session reporting.
 - If `lib/source-manifest.mjs` is not available, skip source manifest checks and note "source-manifest checking unavailable".
 - Use frontmatter parsing that tolerates missing fields — default to "unknown" for missing values.
+
+## API reference
+
+Lifecycle event log (the primary source for spec status, review verdicts, and re-review detection):
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — single-spec projection.
+- `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregate per-spec lifecycle states across the project (used by `--all` and the Specs Needing Re-Review scan).
+
+Issue board (board-level work-item aggregation):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Milestones:
+
+- `getMilestoneStatusData(projectRoot, name)` from `<ADEV_ROOT>/lib/milestones.mjs` — reads `.context-index/milestones.json`.
+
+Source-manifest drift:
+
+- `verifyManifest(manifest, projectRoot)` from `<ADEV_ROOT>/lib/source-manifest.mjs` — drift detection on `source-manifest` blocks.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

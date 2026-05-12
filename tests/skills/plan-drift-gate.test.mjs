@@ -27,11 +27,18 @@ describe("plan SKILL.md drift gate", () => {
     assert.ok(content.includes("verifyManifest"), "SKILL.md should reference verifyManifest fallback");
   });
 
-  it("CODE_DRIFT gate comes before existing dual drift check", () => {
+  it("CODE_DRIFT gate is enforced before the planning step is recorded", () => {
+    // The legacy "Dual drift check" was removed by the lifecycle-skill
+    // instruction adoption pass. CODE_DRIFT is now part of the Step 1
+    // prerequisite block alongside requireGate("review"). Verify it
+    // appears before the reportStep("plan", "started") entry event so a
+    // drifted spec cannot have its plan step opened.
     const content = readFileSync(SKILL_PATH, "utf-8");
     const driftIdx = content.indexOf("CODE_DRIFT");
-    const dualDriftIdx = content.indexOf("Dual drift check");
-    assert.ok(driftIdx < dualDriftIdx,
-      "CODE_DRIFT should come before the Dual drift check");
+    const reportStepIdx = content.search(/reportStep\([^)]*step:\s*["']plan["'][^)]*status:\s*["']started["']/);
+    assert.ok(driftIdx >= 0, "CODE_DRIFT prerequisite must exist");
+    assert.ok(reportStepIdx >= 0, "reportStep(plan, started) entry must exist");
+    assert.ok(driftIdx < reportStepIdx,
+      "CODE_DRIFT prerequisite should come before reportStep(plan, started)");
   });
 });

@@ -507,22 +507,20 @@ Total blockers: 5
 **Steps:**
 
 1. **Scan all specs.** Read every `*.spec.md` file under `.context-index/specs/features/`. Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
-2. **Scan all review files.** Read every `.review.md` file. Parse `last-reviewed-revision` and `file-sha` fields.
+2. **Read lifecycle states.** Call `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` to get the per-spec lifecycle projection. The `state.steps.review` block carries the reviewed revision and content hash that were stamped by `/adev:review-specs` at write time.
 3. **Scan all charters.** Read every `charter.md`. Parse `revision` and the Capability Map table (including the `Status` column).
 
-4. **Revision drift check:** For each spec that has a corresponding `.review.md`:
-   - Compare spec's `revision` against the review's `last-reviewed-revision`.
+4. **Revision drift check:** For each spec, compare the spec's `revision` frontmatter against `state.steps.review.lastReviewedRevision` (from the lifecycle projection):
    - If the spec's revision is greater, flag as `REVISION_DRIFT`:
      ```
      - [ ] <spec-path>: REVISION_DRIFT — spec revision <N>, last reviewed revision <M>
      ```
 
-5. **File drift check:** For each spec that has a corresponding `.review.md` with a `file-sha` field:
-   - Run `git hash-object <spec-file-path>` and compare against `file-sha`.
-   - If they differ, flag as `FILE_DRIFT`:
-     ```
-     - [ ] <spec-path>: FILE_DRIFT — file hash changed since last review
-     ```
+5. **File drift check:** For each spec, call `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` (which compares the spec's stored content hash against the current file). If `hasDrift()` returns `true`, flag as `FILE_DRIFT`:
+   ```
+   - [ ] <spec-path>: FILE_DRIFT — content changed since last review
+   ```
+   Do NOT shell out to compute hashes from the skill — the helper computes the SHA-256 internally.
 
 6. **Charter-revision staleness check:** For each spec with a `charter-revision` field:
    - Read the parent charter's current `revision`.
@@ -887,3 +885,21 @@ Next steps:
 - Run /adev:hygiene again after fixes to verify
 - Schedule monthly hygiene audits to prevent drift
 ```
+
+## API reference
+
+Lifecycle projection (used by the Lifecycle Audit pass and other staleness checks):
+
+- `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregates per-spec lifecycle projections from `.context-index/lifecycle-state/*.jsonl`. Replaces the prior `.review.md` filesystem scan for revision/file-drift detection.
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — single-spec projection (`{ status, currentStep, steps, planTasks, ... }`).
+- `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` — fast drift flag read from the spec's frontmatter.
+- `verifyManifest(manifest, projectRoot)` from `<ADEV_ROOT>/lib/source-manifest.mjs` — recompute the content hash for a spec's source manifest and compare; fallback when `hasDrift()` returns false.
+
+Issue board (used by the Issue Board Audit pass and coverage scans):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

@@ -49,11 +49,11 @@ Find specs with status `review-passed` that have no sibling `.plan.md` file.
 **Fix offered:** "Create a plan? → invoke `/adev:plan`"
 **Action:** Invoke `/adev:plan` on the spec (interactive, not batch-safe).
 
-#### 1c. Partial Epics
-Find epics where the number of child issues doesn't match the plan's task count.
+#### 1c. Per-Task Issues to Collapse
+Find epics or features that violate the board-granularity invariant — Issues that carry both `planRef` and `planTask` (the legacy per-task issue pattern). These should be collapsed and their state migrated to `plan_task` events in the lifecycle log.
 
-**Fix offered:** "Create missing issues?"
-**Action:** Read the plan, identify tasks without issues, create issues via `create()` on the adapter.
+**Fix offered:** "Collapse per-task issues for {epicId} into lifecycle log events?"
+**Action:** Invoke the `collapse-per-task-issues` operation (defined in `issue-board-granularity-cleanup.spec.md`): for each per-task issue, emit a matching `reportPlanTask` event with the issue's status, then `close()` the issue with reason `"Migrated to lifecycle log per board-granularity invariant"`. Post-migration invariant: no Issue carries both `planRef` and `planTask`.
 
 #### 1d. Orphaned Issues
 Find issues whose `planRef` points to a file that no longer exists.
@@ -73,8 +73,8 @@ If `lib/reality-check.mjs` fails to import, proceed without verification.
 #### 1e. Orphaned Plans
 Find `.plan.md` files that have no corresponding epic on the issue board.
 
-**Fix offered:** "Create an epic and issues for this plan?"
-**Action:** Create epic with `createEpic({ title, planRef })`, then create issues for each task.
+**Fix offered:** "Create an epic for this plan and seed plan-task events?"
+**Action:** Call `getIssueManager(manifest).createEpic({ title, planRef })` to create the epic at board-level granularity. Then call `reportPlanTask(projectRoot, specPath, { taskNumber, title, status: "pending" })` once per plan task to seed the lifecycle log's plan-task channel. Do NOT call `create({ planRef, planTask })` — per-task issues are forbidden by the board-granularity invariant.
 
 #### 1f. Untraced Code
 Find source files with no lifecycle trailers on any commit (post-pipeline only).
@@ -182,7 +182,28 @@ Remaining:
 **Never:**
 - Delete spec files, plan files, or source code
 - Modify code to match specs (that's `/adev:implement`)
-- Create issues without a plan (issues need `planRef` and `planTask`)
+- Create per-task issues (`create({ planRef, planTask })`) — board granularity is epic / feature / bug only; plan-task state lives in the lifecycle log
 - Close issues that have unclosed dependencies
 - Run `/adev:plan` in batch mode (planning requires review)
 - Stamp a source manifest without verifying files exist
+
+## API reference
+
+Issue board (the reconciliation operations call into the manager, never the on-disk JSON directly):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Lifecycle event log (plan-task channel migration during `collapse-per-task-issues`):
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection.
+- `reportPlanTask(projectRoot, specPath, { taskNumber, title, status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emit a `plan_task` event to migrate per-task issue state into the lifecycle log.
+- `appendEvent(projectRoot, specPath, event)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — low-level append. Reserved for explicit repair workflows that need to backfill a specific event variant; prefer the convenience writers (`reportPlanTask`, `reportReviewer`, etc.) wherever possible.
+
+Reality check helpers:
+
+- `verifyIssueCompleted(issueId, options)` and `verifySpecImplemented(specPath, options)` from `<ADEV_ROOT>/lib/reality-check.mjs` — confidence scoring before auto-closing or marking obsolete.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

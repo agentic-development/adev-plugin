@@ -14,133 +14,17 @@
 #   patterns:  File glob patterns that trigger this reviewer
 #   keywords:  Keywords that trigger this reviewer
 #   min_score: Minimum keyword match score to trigger (default: 1)
+#
+# NOTE: Eight project-domain reviewers were previously declared here but
+# referenced prompt files at `.context-index/prompts/*.md` that do not
+# exist on disk. The path resolver double-prefixed the `.context-index/`
+# segment when resolving them, causing /adev:review-specs to abort with
+# FILE_MISSING errors. The entries were stripped on 2026-05-11; to
+# reintroduce domain reviewers, create the prompt files first, then add
+# entries with a path relative to `.context-index/` (i.e., `prompts/...`,
+# not `.context-index/prompts/...`).
 
-reviewers:
-  - id: project.heuristics-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/heuristics-reviewer.md
-    patterns:
-      - "specs/features/heuristics/**/*.md"
-      - "lib/heuristics.mjs"
-      - "skills/learn/**"
-    keywords:
-      - heuristic
-      - retrieval
-      - keyword-tag
-      - tiered
-      - contradiction
-    min_score: 1
-
-  - id: project.task-management-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/task-management-reviewer.md
-    patterns:
-      - "specs/features/task-management/**/*.md"
-      - "lib/issues/**"
-      - "skills/issues/**"
-    keywords:
-      - dotted-id
-      - next_action
-      - issue-board
-      - epic
-      - work-item
-    min_score: 1
-
-  - id: project.multi-repo-workspace-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/multi-repo-workspace-reviewer.md
-    patterns:
-      - "specs/features/multi-repo-workspace/**/*.md"
-      - "lib/workspace.mjs"
-      - "templates/workspace-template/**"
-    keywords:
-      - workspace
-      - target-repo
-      - cross-repo
-      - isolation-invariant
-      - detectWorkspace
-    min_score: 1
-
-  - id: project.spec-lifecycle-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/spec-lifecycle-reviewer.md
-    patterns:
-      - "specs/features/spec-lifecycle/**/*.md"
-      - "skills/specify/**"
-      - "skills/review-specs/**"
-    keywords:
-      - status-transition
-      - revision
-      - source-manifest
-      - review-pending
-      - charter-revision
-    min_score: 1
-
-  - id: project.tree-sitter-repomap-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/tree-sitter-repomap-reviewer.md
-    patterns:
-      - "specs/features/tree-sitter-repomap/**/*.md"
-      - "lib/repomap/**"
-      - "skills/repomap/**"
-    keywords:
-      - tree-sitter
-      - ast
-      - pagerank
-      - dependency-graph
-      - symbol-rank
-    min_score: 1
-
-  - id: project.codehealth-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/codehealth-reviewer.md
-    patterns:
-      - "specs/features/codehealth/**/*.md"
-      - "skills/codehealth/**"
-    keywords:
-      - dead-export
-      - orphan-file
-      - unused-dependency
-      - detection-pass
-      - severity-tier
-    min_score: 1
-
-  - id: project.test-strategies-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/test-strategies-reviewer.md
-    patterns:
-      - "specs/features/test-strategies/**/*.md"
-      - "skills/write-test/**"
-    keywords:
-      - test-strategy
-      - gaming-detection
-      - handoff-block
-      - domain-strategy
-      - red-green-refactor
-    min_score: 1
-
-  - id: project.review-domain
-    dispatch: triggered
-    profile: reviewer-capable
-    prompt: .context-index/prompts/review-reviewer.md
-    patterns:
-      - "specs/features/review/**/*.md"
-      - "skills/review-specs/**"
-      - ".context-index/governance/review.yaml"
-    keywords:
-      - reviewer-registry
-      - verdict-consolidation
-      - dispatch-rule
-      - reviewer-profile
-      - bundled-reviewer
-    min_score: 1
+reviewers: []
 
 # Context packs — additional files loaded for all reviewers
 # context_packs:

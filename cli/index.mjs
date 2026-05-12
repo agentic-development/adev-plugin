@@ -906,6 +906,285 @@ async function cmdExtension() {
   }
 }
 
+// ── status subcommand (markdown-rendering-layer spec) ─────────────────────
+
+/**
+ * Implement `adev status [--render] [--pipeline]`. Operator-on-demand.
+ *
+ * --render:   regenerate tasks.md and every <slug>.md in lifecycle-state/.
+ *             Exit 1 only on INVALID_PROJECT_ROOT / INVALID_STORAGE_PATH /
+ *             unrecoverable fs error. Advisory-skipped files
+ *             (SKIPPED_INVALID_SLUG, OVERSIZED_LOG_SKIPPED, MALFORMED_FILE_SKIPPED)
+ *             do NOT affect the exit code per SA-2.
+ *
+ * --pipeline: print an aggregate per-spec table to stdout.
+ *
+ * When both are passed, render runs first, a divider is printed, then
+ * pipeline. SA-3: composite exit code is the max of the two halves.
+ */
+async function cmdStatus() {
+  const args = process.argv.slice(3);
+  const wantRender = args.includes("--render");
+  const wantPipeline = args.includes("--pipeline");
+  const cwd = process.cwd();
+
+  if (!wantRender && !wantPipeline) {
+    log("Usage: npx adev-cli status [--render] [--pipeline]");
+    log("");
+    log("  --render    Regenerate tasks.md and lifecycle <slug>.md files");
+    log("  --pipeline  Print the per-spec pipeline table to stdout");
+    process.exit(1);
+  }
+
+  let exit = 0;
+
+  if (wantRender) {
+    try {
+      const { writeTasksMd } = await import("../lib/issues/render-markdown.mjs");
+      const { listLifecycleStates, currentState, renderMarkdown } = await import(
+        "../lib/lifecycle-state.mjs"
+      );
+      const { existsSync: exists, mkdirSync: mkd, readdirSync, writeFileSync: wfs, renameSync, unlinkSync, statSync } =
+        await import("node:fs");
+      const { randomBytes } = await import("node:crypto");
+      const path = await import("node:path");
+
+      // tasks.md
+      try {
+        await writeTasksMd(cwd);
+        console.log("  ✓ tasks.md");
+      } catch (err) {
+        if (err && (err.code === "INVALID_PROJECT_ROOT" || err.code === "INVALID_STORAGE_PATH")) {
+          console.error(`  ✗ ${err.code}: ${err.message}`);
+          process.exit(1);
+        }
+        // Non-validation fs error → hard fail.
+        console.error(`  ✗ ${err?.code ?? "FS_ERROR"}: ${err?.message ?? err}`);
+        process.exit(1);
+      }
+
+      // <slug>.md per lifecycle-state/<slug>.jsonl
+      const lsDir = path.join(cwd, ".context-index", "lifecycle-state");
+      if (exists(lsDir)) {
+        const ALLOW = /^[a-z0-9._-]+$/;
+        const MAX = 50 * 1024 * 1024;
+        let entries;
+        try {
+          entries = readdirSync(lsDir, { withFileTypes: true });
+        } catch {
+          entries = [];
+        }
+        for (const entry of entries) {
+          if (!entry.isFile()) continue;
+          if (!entry.name.endsWith(".jsonl")) continue;
+          const slug = entry.name.slice(0, -".jsonl".length);
+          if (!ALLOW.test(slug)) {
+            console.log(`  ⚠ skipped: ${entry.name} (SKIPPED_INVALID_SLUG)`);
+            continue;
+          }
+          const sourcePath = path.join(lsDir, entry.name);
+          try {
+            const st = statSync(sourcePath);
+            if (st.size > MAX) {
+              console.log(`  ⚠ skipped: ${slug} (OVERSIZED_LOG_SKIPPED)`);
+              continue;
+            }
+          } catch {
+            console.log(`  ⚠ skipped: ${slug} (STAT_FAILED)`);
+            continue;
+          }
+          const syntheticSpec = `.context-index/specs/.synthetic/${slug}.spec.md`;
+          let state;
+          try {
+            state = currentState(cwd, syntheticSpec);
+          } catch {
+            console.log(`  ⚠ skipped: ${slug} (MALFORMED_FILE_SKIPPED)`);
+            continue;
+          }
+          let rendered;
+          try {
+            rendered = renderMarkdown(state);
+          } catch (e) {
+            console.log(`  ⚠ skipped: ${slug} (${e?.code ?? "RENDER_FAILED"})`);
+            continue;
+          }
+          // Atomic temp-then-rename mirroring atomicWriteFile.
+          const target = path.join(lsDir, `${slug}.md`);
+          const tmp = target + "." + randomBytes(4).toString("hex") + ".tmp";
+          try {
+            mkd(lsDir, { recursive: true });
+            wfs(tmp, rendered);
+            try {
+              renameSync(tmp, target);
+            } catch (rErr) {
+              try { unlinkSync(tmp); } catch { /* swallow */ }
+              throw rErr;
+            }
+            console.log(`  ✓ ${slug}.md`);
+          } catch (e) {
+            console.error(`  ✗ ${slug}.md: ${e?.code ?? e}`);
+            exit = Math.max(exit, 1);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`  ✗ ${err?.code ?? "ERROR"}: ${err?.message ?? err}`);
+      exit = Math.max(exit, 1);
+    }
+  }
+
+  if (wantRender && wantPipeline) {
+    console.log("");
+    console.log("─".repeat(60));
+    console.log("");
+  }
+
+  if (wantPipeline) {
+    try {
+      const { listLifecycleStates } = await import("../lib/lifecycle-state.mjs");
+      const records = listLifecycleStates(cwd);
+      if (records.length === 0) {
+        console.log("No specs found in .context-index/lifecycle-state/");
+      } else {
+        // Truncate spec paths to 40 chars with ellipsis.
+        const truncate = (s, n) => {
+          if (!s) return "—";
+          const str = String(s);
+          if (str.length <= n) return str;
+          return str.slice(0, n - 1) + "…";
+        };
+        const rows = records.map((r) => ({
+          spec: truncate(r.spec, 40),
+          status: String(r.status ?? "—"),
+          currentStep: String(r.currentStep ?? "—"),
+          updated: String(r.updated ?? "—"),
+        }));
+        const headers = { spec: "Spec", status: "Status", currentStep: "Current Step", updated: "Updated" };
+        const widths = {
+          spec: Math.max(headers.spec.length, ...rows.map((r) => r.spec.length)),
+          status: Math.max(headers.status.length, ...rows.map((r) => r.status.length)),
+          currentStep: Math.max(headers.currentStep.length, ...rows.map((r) => r.currentStep.length)),
+          updated: Math.max(headers.updated.length, ...rows.map((r) => r.updated.length)),
+        };
+        const fmt = (r) =>
+          `${r.spec.padEnd(widths.spec)}  ${r.status.padEnd(widths.status)}  ${r.currentStep.padEnd(widths.currentStep)}  ${r.updated.padEnd(widths.updated)}`;
+        console.log(fmt(headers));
+        console.log(
+          `${"-".repeat(widths.spec)}  ${"-".repeat(widths.status)}  ${"-".repeat(widths.currentStep)}  ${"-".repeat(widths.updated)}`,
+        );
+        for (const r of rows) console.log(fmt(r));
+      }
+    } catch (err) {
+      if (err && err.code === "INVALID_PROJECT_ROOT") {
+        console.error(`  ✗ ${err.code}: ${err.message}`);
+        process.exit(1);
+      }
+      console.error(`  ✗ ${err?.code ?? "ERROR"}: ${err?.message ?? err}`);
+      exit = Math.max(exit, 1);
+    }
+  }
+
+  if (exit !== 0) process.exit(exit);
+}
+
+/**
+ * `adev migrate` — one-shot conversion of legacy state artifacts to the
+ * charter-era shapes. Wraps `lib/migrate-state-artifacts.mjs::migrateAll`.
+ *
+ * Flags:
+ *   --dry-run                  Print plan without writing
+ *   --artifact=<name>          Scope to a single artifact
+ *
+ * Exit codes:
+ *   0  success / no work to do / valid dry-run
+ *   1  parse error / containment violation / fatal collision / unknown artifact
+ */
+async function cmdMigrate(argv) {
+  const cwd = process.cwd();
+  // Parse flags from argv[3..]
+  const flags = argv.slice(3);
+  let dryRun = false;
+  let artifact = "all";
+
+  for (const flag of flags) {
+    if (flag === "--dry-run") {
+      dryRun = true;
+    } else if (flag === "--help" || flag === "-h") {
+      console.log(`
+  adev migrate — convert legacy state artifacts to charter-era shapes.
+
+  Usage:
+    adev migrate                           Run full migration
+    adev migrate --dry-run                 Preview without writing
+    adev migrate --artifact=<name>         Migrate only the named artifact
+
+  Valid artifact names:
+    tasks                          tasks.md → tasks.json
+    lifecycle-state                build-state/*.json → lifecycle-state/*.jsonl
+                                   (per-file translation + directory rename)
+    lifecycle-state-skip-rename    Per-file translation only (recovery flow)
+    execution-state                .execution-state.md → .execution-state.json
+    milestones                     milestones.yaml → milestones.json
+    constitution                   Update Context Routing row only
+    all                            Default — run every artifact in order
+      `);
+      return 0;
+    } else if (flag.startsWith("--artifact=")) {
+      artifact = flag.slice("--artifact=".length);
+    } else {
+      error(`Unknown flag: ${flag}`);
+      return 1;
+    }
+  }
+
+  // Lazy-import the library so first-load cost is paid only on this subcommand.
+  const { migrateAll } = await import("../lib/migrate-state-artifacts.mjs");
+
+  let result;
+  try {
+    result = await migrateAll(cwd, { dryRun, artifact });
+  } catch (e) {
+    error(`${e.code ?? "ERROR"}: ${e.message}`);
+    return 1;
+  }
+
+  if (result.failed) {
+    console.log();
+    error("Pre-flight failed:");
+    for (const f of result.preflight.failures) {
+      const line = `  - ${f.code}${f.artifact ? ` (${f.artifact})` : ""}${f.file ? ` — ${f.file}` : ""}`;
+      console.log(line);
+      if (f.size != null && f.cap != null) {
+        console.log(`      size=${f.size} cap=${f.cap}`);
+      }
+    }
+    return 1;
+  }
+
+  console.log();
+  if (dryRun) {
+    heading("Dry-run plan");
+  } else {
+    heading("Migration result");
+  }
+  for (const r of result.results) {
+    const label = r.action === "skipped" ? "·" : r.action === "migrated" ? "✓" : "→";
+    console.log(`  ${label} ${r.artifact}: ${r.action}${r.target ? ` → ${r.target}` : ""}`);
+    for (const adv of r.advisories ?? []) {
+      console.log(`      ${adv.code}: ${adv.message ?? ""}`);
+    }
+  }
+
+  if (result.advisorySync && !dryRun) {
+    console.log();
+    warn(
+      "Constitution Context Routing row updated. Run /adev:sync to propagate the change to CLAUDE.md.",
+    );
+  }
+
+  return 0;
+}
+
 function cmdHelp() {
   console.log(`
   adev — Agentic Development Framework CLI
@@ -916,6 +1195,7 @@ function cmdHelp() {
     npx @adev-org/adev-cli uninstall         Uninstall plugin(s)
     npx @adev-org/adev-cli extension install <source>  Install an extension
     npx @adev-org/adev-cli extension list              List installed extensions
+    npx @adev-org/adev-cli migrate                     Convert legacy state artifacts (one-shot)
 
   Provider Selection:
     --provider claude-code        Install for Claude Code only
@@ -995,6 +1275,15 @@ if (isDirectRun) {
         break;
       case "extension":
         await cmdExtension();
+        break;
+      case "status":
+        await cmdStatus();
+        break;
+      case "migrate":
+        {
+          const exitCode = await cmdMigrate(process.argv);
+          if (exitCode !== 0) process.exit(exitCode);
+        }
         break;
       case "help":
       case "--help":

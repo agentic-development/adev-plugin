@@ -10,7 +10,7 @@ Disable lifecycle gate enforcement for this session.
 
 ## Behavior
 
-1. Write `status: standalone` to `.context-index/.execution-state.md`
+1. Write `status: standalone` to `.context-index/.execution-state.json` via `writeExecutionState`
 2. All lifecycle gates pass for the remainder of this session
 3. Next session start (without `ADEV_STANDALONE=1` env var) resets to `idle`
 

@@ -13,6 +13,9 @@ source-manifest:
     - hooks/session-capture.sh
     - tests/hooks/session-capture.test.mjs
   computed-at: "2026-04-12T18:30:00.000Z"
+drift_detected: true
+drift_source: hooks/session-capture.sh
+drift_at: 2026-05-12T00:55:08.747Z
 ---
 
 # Live Spec: Session Log Schema

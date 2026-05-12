@@ -137,6 +137,16 @@ tasks:
   backend: file
 
 # ============================================================================
+# Lifecycle State
+# ============================================================================
+
+# Controls how requireGate behaves on a missing/failed prior step.
+#   strict   — throw GateError (default)
+#   advisory — emit console.warn and continue
+# lifecycle:
+#   gate_mode: strict
+
+# ============================================================================
 # Provenance Tracking
 # ============================================================================
 
