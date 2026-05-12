@@ -31,6 +31,7 @@ AI coding agents work best with structured context but most projects provide non
 | Deploy | Project-specific deployment definitions with structured steps, environment support, milestone integration, and failure recovery guidance | [charter.md](./features/deploy/charter.md) |
 | User-Facing Documentation | Complete user guide replacing and reorganizing docs/ into a linear progression from concepts through daily workflow to full reference | [charter.md](./features/user-docs/charter.md) |
 | Agent-Reliable State Artifacts | Storage-layer refactor replacing markdown-table and YAML agent-mutated state with JSON for relational data and per-spec JSONL append-only event logs, with markdown rendered on demand for human inspection | [charter.md](./features/agent-reliable-state-artifacts/charter.md) |
+| Domain Extensions | Installable content packages distributing domain-specific configuration as extensions consumed by the install pipeline | [charter.md](./features/domain-extensions/charter.md) |
 
 ## Cross-Cutting Concerns
 

@@ -1,6 +1,6 @@
 milestones:
   - name: 0.25.0
-    status: planned
+    status: shipped
     epic_id: epic-63
     target_date: 2026-05-14
     release:
