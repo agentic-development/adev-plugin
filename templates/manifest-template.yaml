@@ -228,6 +228,17 @@ tasks:
   #   z: "Step"
 
 # ============================================================================
+# Lifecycle State
+# ============================================================================
+
+# Controls how lib/lifecycle-state.mjs::requireGate behaves on a
+# missing/failed prior step.
+#   strict   — throw GateError (default)
+#   advisory — emit console.warn and continue
+# lifecycle:
+#   gate_mode: strict
+
+# ============================================================================
 # Repo Map Configuration
 # Controls how /adev:repomap scans the repository.
 # ============================================================================

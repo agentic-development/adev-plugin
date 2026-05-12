@@ -837,6 +837,15 @@ test('renderMarkdown is byte-identical for the same input', () => {
   assert.equal(a, b);
 });
 
+// ── Task 18: manifest documents lifecycle.gate_mode ───────────────────────
+
+test('project manifest documents lifecycle.gate_mode (commented or active)', () => {
+  // Resolve the project manifest two levels up from this test file.
+  const manifestPath = pathDirname(pathDirname(__dirname)) + '/.context-index/manifest.yaml';
+  const raw = readFileSync(manifestPath, 'utf8');
+  assert.match(raw, /lifecycle\.gate_mode|lifecycle:\s*[\s\S]*?gate_mode:/, 'manifest should reference lifecycle.gate_mode');
+});
+
 // ── Task 14: size caps ─────────────────────────────────────────────────────
 
 test('appendEvent throws EVENT_TOO_LARGE when serialized event exceeds 1 MB', () => {
