@@ -31,8 +31,8 @@ source-manifest:
     - .context-index/constitution.md
   computed-at: "2026-04-25T21:55:13.860Z"
 drift_detected: true
-drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-11T00:13:30.435Z
+drift_source: templates/manifest-template.yaml
+drift_at: 2026-05-12T01:28:44.135Z
 ---
 
 ## Behavioral Contract

@@ -22,6 +22,9 @@ source-manifest:
     - templates/personas/product.md
     - tests/persona.test.mjs
   computed-at: "2026-04-21T13:05:58.708Z"
+drift_detected: true
+drift_source: cli/index.mjs
+drift_at: 2026-05-12T03:02:09.257Z
 ---
 
 ## Behavioral Contract

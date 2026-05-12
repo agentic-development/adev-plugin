@@ -204,16 +204,30 @@ provenance:
 
 tasks:
   # Backend for issue tracking:
-  #   file  — markdown table in .context-index/tasks/ (default, zero setup)
+  #   json  — JSON document at .context-index/tasks/tasks.json (default, zero setup)
+  #           Recommended. Writes use atomic temp-then-rename.
+  #   file  — markdown table at .context-index/tasks/tasks.md
+  #           READ-ONLY-DEPRECATED. Writes throw BACKEND_READ_ONLY_DEPRECATED.
+  #           Run `adev migrate` to convert to json, or set backend: json here.
   #   beads — beads_rust CLI (br), local-first git-native issue tracker
   #           Install: https://github.com/Dicklesworthstone/beads_rust
-  backend: file
+  backend: json
   # Tool calls between issue reminders. 0 to disable. Default: 25.
   reminder_interval: 25
+  # legacy_read: enabled | disabled
+  #   When set to "enabled" (default) and tasks.json is absent, the json
+  #   adapter falls back to reading tasks.md via the shared markdown parser.
+  #   Set to "disabled" to skip the fallback and always return the empty board
+  #   when tasks.json is missing.
+  # legacy_read: enabled
   # db_path: /absolute/path/to/shared/root
   #   Optional — override the storage root for issue data.
   #   Useful when multiple git worktrees need to share a single issue database.
   #   When omitted, the main repo root is auto-resolved via git.
+  #   tasks.db_path also governs milestones.json location (unified knob):
+  #   the same override resolves both
+  #     <db_path>/.context-index/tasks/tasks.json   (issue board)
+  #     <db_path>/.context-index/milestones.json    (milestone registry)
   #
   # tier_prefixes: Custom prefix → tier label map for the tiered hierarchy.
   #   Default (when omitted): { e: "Epic", f: "Feature", t: "Task" }
