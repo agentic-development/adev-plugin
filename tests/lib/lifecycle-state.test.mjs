@@ -29,6 +29,7 @@ import {
   resolveGateMode,
   listLifecycleStates,
   filterEvents,
+  renderMarkdown,
 } from '../../lib/lifecycle-state.mjs';
 
 const __dirname = pathDirname(fileURLToPath(import.meta.url));
@@ -818,6 +819,22 @@ test('filterEvents does not mutate the underlying log', () => {
   } finally {
     cleanupTempDir(root);
   }
+});
+
+// ── Task 13: renderMarkdown stub ───────────────────────────────────────────
+
+test('renderMarkdown returns a deterministic string with DO-NOT-EDIT header and spec ref', () => {
+  const state = { spec: 'foo.spec.md', status: 'pending', steps: {}, planTasks: {}, interventions: [], unknownEvents: [] };
+  const md = renderMarkdown(state);
+  assert.match(md, /<!-- DO NOT EDIT — generated -->/);
+  assert.match(md, /foo\.spec\.md/);
+});
+
+test('renderMarkdown is byte-identical for the same input', () => {
+  const state = { spec: 'x.spec.md', status: 'in_progress', steps: {}, planTasks: {}, interventions: [], unknownEvents: [] };
+  const a = renderMarkdown(state);
+  const b = renderMarkdown(state);
+  assert.equal(a, b);
 });
 
 test('listLifecycleStates skips a malformed file mid-glob and continues', () => {
