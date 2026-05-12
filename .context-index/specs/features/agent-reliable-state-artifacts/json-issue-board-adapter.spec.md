@@ -6,7 +6,7 @@
 
 ---
 charter: agent-reliable-state-artifacts
-status: review-passed
+status: validated
 risk_level: high
 milestone: 0.26.0
 revision: 3

@@ -1,15 +1,28 @@
 /**
  * Integration tests for Epic milestone field across the issue management stack.
+ *
+ * Post-CON-5: write paths now go through `JsonAdapter`. The historical
+ * `FileAdapter` write coverage is replaced by JsonAdapter equivalents below;
+ * the remaining FileAdapter read-side test (legacy 6-column epic markdown)
+ * exercises the parser delegation in read-only mode.
  */
 
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { validateEpic } from "../../lib/issues/interface.mjs";
 import { FileAdapter } from "../../lib/issues/file-adapter.mjs";
+import { JsonAdapter } from "../../lib/issues/json-adapter.mjs";
+
+function makeJsonProject() {
+  const dir = mkdtempSync(join(tmpdir(), "milestone-test-"));
+  mkdirSync(join(dir, ".context-index"), { recursive: true });
+  writeFileSync(join(dir, ".context-index", "manifest.yaml"), "tasks:\n  backend: json\n");
+  return dir;
+}
 
 describe("Epic milestone support", () => {
   describe("validateEpic", () => {
@@ -34,12 +47,12 @@ describe("Epic milestone support", () => {
     });
   });
 
-  describe("FileAdapter milestone round-trip", () => {
+  describe("JsonAdapter milestone round-trip", () => {
     let dir, adapter;
 
     before(async () => {
-      dir = mkdtempSync(join(tmpdir(), "milestone-test-"));
-      adapter = new FileAdapter(dir);
+      dir = makeJsonProject();
+      adapter = new JsonAdapter(dir);
       await adapter.init();
     });
 
@@ -48,16 +61,14 @@ describe("Epic milestone support", () => {
     it("creates epic with milestone and reads it back", async () => {
       const epic = await adapter.createEpic({ title: "Release v1", milestone: "v1" });
       assert.equal(epic.milestone, "v1");
-
       const epics = await adapter.listEpics({});
       const found = epics.find((e) => e.id === epic.id);
       assert.equal(found.milestone, "v1");
     });
 
-    it("creates epic without milestone, milestone is undefined", async () => {
+    it("creates epic without milestone — milestone is undefined", async () => {
       const epic = await adapter.createEpic({ title: "No milestone" });
       assert.equal(epic.milestone, undefined);
-
       const epics = await adapter.listEpics({});
       const found = epics.find((e) => e.id === epic.id);
       assert.equal(found.milestone, undefined);
@@ -67,7 +78,6 @@ describe("Epic milestone support", () => {
       const epic = await adapter.createEpic({ title: "Evolving", milestone: "v1" });
       const updated = await adapter.updateEpic(epic.id, { milestone: "v2" });
       assert.equal(updated.milestone, "v2");
-
       const epics = await adapter.listEpics({});
       const found = epics.find((e) => e.id === epic.id);
       assert.equal(found.milestone, "v2");
@@ -85,18 +95,12 @@ describe("Epic milestone support", () => {
       const result = await adapter.listEpics({ milestone: "v99" });
       assert.equal(result.length, 0);
     });
-
-    it("serializes tasks.md with Milestone column header", async () => {
-      const path = join(dir, ".context-index", "tasks", "tasks.md");
-      const content = readFileSync(path, "utf8");
-      assert.ok(content.includes("| Milestone |"), "tasks.md should contain Milestone column");
-    });
   });
 
-  describe("backward compatibility", () => {
+  describe("FileAdapter — read-only backward compatibility", () => {
     let dir, adapter;
 
-    before(async () => {
+    before(() => {
       dir = mkdtempSync(join(tmpdir(), "milestone-compat-test-"));
       const tasksDir = join(dir, ".context-index", "tasks");
       mkdirSync(tasksDir, { recursive: true });
@@ -116,7 +120,6 @@ describe("Epic milestone support", () => {
 |----|-------|--------|----------|------|------|----------|-----------|------|-------|---------|---------|
 `;
       writeFileSync(join(tasksDir, "tasks.md"), oldFormat);
-
       adapter = new FileAdapter(dir);
     });
 
@@ -132,23 +135,6 @@ describe("Epic milestone support", () => {
     it("old epics have milestone undefined", async () => {
       const epics = await adapter.listEpics({});
       assert.equal(epics[0].milestone, undefined);
-    });
-
-    it("re-serializes with 7-column Milestone header after write", async () => {
-      // Trigger a write by creating a new epic
-      await adapter.createEpic({ title: "New Epic", milestone: "v2" });
-
-      const path = join(dir, ".context-index", "tasks", "tasks.md");
-      const content = readFileSync(path, "utf8");
-      assert.ok(content.includes("| Milestone |"), "Re-serialized file should have Milestone column");
-    });
-
-    it("old epic preserves data after re-serialization", async () => {
-      const epics = await adapter.listEpics({});
-      const oldEpic = epics.find((e) => e.id === "epic-1");
-      assert.equal(oldEpic.title, "Old Epic");
-      assert.equal(oldEpic.status, "open");
-      assert.equal(oldEpic.milestone, undefined);
     });
   });
 });
