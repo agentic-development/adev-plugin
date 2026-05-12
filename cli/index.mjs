@@ -598,7 +598,7 @@ async function cmdInstall() {
 
   if (state.mode === "brownfield-outdated" || state.mode === "brownfield-current") {
     log(`Detected: existing adev install (v${state.version || "pre-versioning"})`);
-    log("Use `npx @adev-org/adev-cli upgrade` to update to the latest version.");
+    log("Use `npx @adev-org/adev-cli@latest upgrade` to update to the latest version.");
     console.log();
     return;
   }

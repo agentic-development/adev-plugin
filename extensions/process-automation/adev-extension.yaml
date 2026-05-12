@@ -1,0 +1,10 @@
+name: process-automation
+version: 0.1.0
+description: Domain profile for workflow automation, RPA, and event-driven processes
+author: adev-org
+requires:
+  adev: ">=0.22.0"
+provides:
+  domain-profile:
+    path: domain
+    extends: software
