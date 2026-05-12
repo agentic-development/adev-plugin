@@ -173,6 +173,17 @@ After writing any spec, output the path, mode-specific stats (see each mode), an
 
 The primary path. Takes a Feature Charter and produces a Live Spec for one capability.
 
+### Step 0: Lifecycle entry event
+
+Before any spec authoring, emit a `lifecycle_step` event so the projection's `currentStep` reflects the active phase:
+
+```javascript
+import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+reportStep(projectRoot, specPath, { step: "specify", status: "started" });
+```
+
+This skill does NOT carry severity stamping, gate adoption, or issue board adoption — it only emits step entry/exit. Charter capability-map mutation (acknowledged dual-write in the charter's Out-of-Scope) remains a markdown edit and is not migrated here.
+
 ### Step 1: Resolve Charter
 
 Use the shared Resolve Charter section above.
@@ -369,6 +380,8 @@ Assemble the Feature work item fields:
 
 Call `getIssueManager(manifest).create({ title, type: "feature", spec_ref, next_action, parent_id, notes })` (or update if the idempotency check in 5.6-2 found an existing Feature).
 
+**Board granularity invariant.** The Feature work item carries `spec_ref` only. It MUST NOT carry `planRef` or `planTask` — those fields belong to the lifecycle event log (`plan_task` events), not to the issue board. The `JsonAdapter` rejects `create()` calls that include both `planRef` and `planTask` with `BOARD_GRANULARITY_VIOLATION`. See `agent-reliable-state-artifacts/charter.md`.
+
 If the issue board adapter throws, log the error to the summary output but **do not block** spec completion — the spec is already written and status is already `review-pending`.
 
 #### 5.6 — Mode Variants
@@ -382,6 +395,13 @@ If the issue board adapter throws, log the error to the summary output but **do 
 ### Step 6: Summary
 
 Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps. Include any notes from Step 5.6 (Feature created/updated, skipped, or failed).
+
+Emit the lifecycle exit event:
+
+```javascript
+import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+reportStep(projectRoot, specPath, { step: "specify", status: "completed" });
+```
 
 ---
 
@@ -785,3 +805,18 @@ Before creating a spec, check existing specs in the target directory:
 
 → Your choice?
 ```
+
+## API reference
+
+Lifecycle event log:
+
+- `reportStep(projectRoot, specPath, { step: "specify", status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `lifecycle_step` event at skill entry (`status: "started"`) and exit (`status: "completed"`). This skill does not carry severity, gate, or board adoption beyond `reportStep`.
+
+Issue board:
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter for Feature work-item binding (Step 5.6). The Feature carries `spec_ref` only; `planRef` / `planTask` belong to the lifecycle log.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

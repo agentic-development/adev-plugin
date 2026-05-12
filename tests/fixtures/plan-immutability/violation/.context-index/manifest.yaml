@@ -1,0 +1,5 @@
+project:
+  name: "plan-immutability-violation-fixture"
+  adev_version: "0.26.0"
+tasks:
+  backend: json

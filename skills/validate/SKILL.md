@@ -22,6 +22,24 @@ Before starting, verify:
 2. **Spec exists.** The target Live Spec must exist and be readable.
 3. **Implementation exists.** The files referenced in the spec or plan must exist. If the spec references files that do not exist, the implementation is incomplete. Report this immediately without running the full check suite.
 
+### Step 0a: Implement-step gate (FIRST action)
+
+Before any validation work, gate on the prior step via the lifecycle log:
+
+```javascript
+import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
+
+const state = currentState(projectRoot, specPath);
+const mode = resolveGateMode(loadManifest(projectRoot));
+requireGate(state, "implement", { mode });
+reportStep(projectRoot, specPath, { step: "validate", status: "started" });
+```
+
+In strict mode (default), `requireGate` throws `GateError` if the `implement` step is not complete — the skill stops and tells the operator which prior step is missing. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+
+Emit a matching `reportStep` exit (`status: "completed"`, including the aggregate verdict) after the report is written in Step 14.
+
 ## Workspace-Aware Validation Mode
 
 Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mjs`.
@@ -617,6 +635,28 @@ Explicit list of SKIP reasons:
 
 On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — <id> (scope: <scope>, confidence: medium)` — or whatever confidence the helper returns after auto-promotion, since the confidence value must come from the `writeHeuristic` return value rather than the caller-supplied input.
 
+## Per-Check Event Emission
+
+For every check (1 through 13) that produces a verdict, emit a `validator_report` event to the lifecycle log. This makes the projection's `state.steps.validate` the canonical source of validator outcomes and removes the need to parse the prior `<spec-slug>.validate.md` file when computing aggregate verdict.
+
+```javascript
+import { reportValidator } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+reportValidator(projectRoot, specPath, {
+  step: "validate",
+  validator: "check-2-spec-compliance",  // a stable identifier per check
+  verdict: "PASS",                       // PASS | PASS_WITH_NOTES | FAIL
+  error: null,                           // short error summary on FAIL (≤200 chars)
+  score: null,                           // optional numeric score
+  duration_ms: 1234,
+});
+```
+
+Severity is stamped at write time by the lib from `gates.yaml` domain config — skill prose does NOT compute or assert severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
+
+When aggregating the overall validation verdict, read `state.steps.validate` from `currentState(projectRoot, specPath)` after all `reportValidator` calls have landed. Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file.
+
+`notes` and `error` arguments MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message. The lib caps at 4 KB and truncates with a `NOTES_TRUNCATED` warning; keep operator-facing summaries ≤ 200 characters.
+
 ## Report Format
 
 **Persona adaptation:** The validation report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
@@ -805,3 +845,17 @@ Fix the issues above and re-run: /adev:validate --spec <path>
 - Skip visual verification for UI files when Playwright is not available (block and ask the user to install it)
 - Record SKIP for Check 11 when UI files are present (N/A is only valid when no UI files are touched)
 - Suggest merging to a protected branch (always suggest PR for protected branches)
+
+## API reference
+
+Lifecycle event log:
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection. `state.steps.validate` aggregates this skill's per-check results.
+- `requireGate(state, "implement", { mode })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — hard-blocks (or warns) when implementation is not complete.
+- `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode`.
+- `reportStep(projectRoot, specPath, { step: "validate", status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits skill entry/exit.
+- `reportValidator(projectRoot, specPath, { step, validator, verdict, error, score, duration_ms })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits one event per check. Severity is stamped at write time.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
