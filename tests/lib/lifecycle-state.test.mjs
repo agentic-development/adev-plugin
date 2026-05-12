@@ -25,6 +25,8 @@ import {
   reportPlanTask,
   reportIntervention,
   currentState,
+  requireGate,
+  resolveGateMode,
 } from '../../lib/lifecycle-state.mjs';
 
 const __dirname = pathDirname(fileURLToPath(import.meta.url));
@@ -655,4 +657,81 @@ test('aggregation: explicit step_completed overrides synthesized verdict but rec
     assert.ok(Array.isArray(s.steps.review.aggregated_from));
     assert.ok(s.steps.review.aggregated_discrepancy === true, 'discrepancy flag should be set');
   } finally { cleanupTempDir(root); }
+});
+
+// ── Task 10: requireGate + resolveGateMode ─────────────────────────────────
+
+test('requireGate throws GateError when prior step missing in strict mode', () => {
+  const state = currentState; // dummy; we'll build minimal state inline
+  const minimal = { spec: 'x', status: 'pending', steps: {}, planTasks: {}, interventions: [], unknownEvents: [] };
+  assert.throws(
+    () => requireGate(minimal, 'plan', { mode: 'strict' }),
+    (err) => err.code === 'GATE_BLOCKED',
+  );
+});
+
+test('requireGate logs warning and returns in advisory mode when prior missing', () => {
+  const minimal = { spec: 'x', status: 'pending', steps: {}, planTasks: {}, interventions: [], unknownEvents: [] };
+  // Spy on console.warn
+  const orig = console.warn;
+  let warned = false;
+  console.warn = () => { warned = true; };
+  try {
+    assert.doesNotThrow(() => requireGate(minimal, 'plan', { mode: 'advisory' }));
+    assert.equal(warned, true);
+  } finally {
+    console.warn = orig;
+  }
+});
+
+test('requireGate passes when prior step completed with PASS', () => {
+  const minimal = {
+    spec: 'x', status: 'in_progress',
+    steps: { review: { name: 'review', status: 'completed', verdict: 'PASS', reports: [] } },
+    planTasks: {}, interventions: [], unknownEvents: [],
+  };
+  assert.doesNotThrow(() => requireGate(minimal, 'plan', { mode: 'strict' }));
+});
+
+test('requireGate passes when prior step completed with PASS_WITH_NOTES', () => {
+  const minimal = {
+    spec: 'x', status: 'in_progress',
+    steps: { review: { name: 'review', status: 'completed', verdict: 'PASS_WITH_NOTES', reports: [] } },
+    planTasks: {}, interventions: [], unknownEvents: [],
+  };
+  assert.doesNotThrow(() => requireGate(minimal, 'plan', { mode: 'strict' }));
+});
+
+test('requireGate throws when prior step failed even in strict mode', () => {
+  const minimal = {
+    spec: 'x', status: 'failed',
+    steps: { review: { name: 'review', status: 'failed', verdict: 'FAIL', reports: [] } },
+    planTasks: {}, interventions: [], unknownEvents: [],
+  };
+  assert.throws(
+    () => requireGate(minimal, 'plan', { mode: 'strict' }),
+    (err) => err.code === 'GATE_BLOCKED',
+  );
+});
+
+test('resolveGateMode returns "advisory" when manifest sets it', () => {
+  assert.equal(resolveGateMode({ lifecycle: { gate_mode: 'advisory' } }), 'advisory');
+});
+
+test('resolveGateMode returns "strict" by default', () => {
+  assert.equal(resolveGateMode({}), 'strict');
+  assert.equal(resolveGateMode(null), 'strict');
+  assert.equal(resolveGateMode(undefined), 'strict');
+});
+
+test('resolveGateMode returns "strict" and warns on unknown gate_mode value', () => {
+  const orig = console.warn;
+  let warned = false;
+  console.warn = () => { warned = true; };
+  try {
+    assert.equal(resolveGateMode({ lifecycle: { gate_mode: 'bogus' } }), 'strict');
+    assert.equal(warned, true);
+  } finally {
+    console.warn = orig;
+  }
 });
