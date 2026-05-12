@@ -17,6 +17,9 @@ source-manifest:
     - tests/hooks/session-capture.test.mjs
     - tests/lib/session-parser.test.mjs
   computed-at: "2026-04-01T13:43:22.528Z"
+drift_detected: true
+drift_source: hooks/session-capture.sh
+drift_at: 2026-05-12T00:55:08.749Z
 ---
 
 ## Behavioral Contract
