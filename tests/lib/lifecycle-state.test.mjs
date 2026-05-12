@@ -28,6 +28,7 @@ import {
   requireGate,
   resolveGateMode,
   listLifecycleStates,
+  filterEvents,
 } from '../../lib/lifecycle-state.mjs';
 
 const __dirname = pathDirname(fileURLToPath(import.meta.url));
@@ -771,6 +772,49 @@ test('listLifecycleStates returns one entry per <slug>.jsonl file', () => {
       assert.ok('currentStep' in entry);
       assert.ok('updated' in entry);
     }
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+// ── Task 12: filterEvents ──────────────────────────────────────────────────
+
+test('filterEvents returns only events matching the predicate', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
+    reportPlanTask(root, specPath, { plan: 'p.plan.md', task_id: 't1', status: 'in_progress' });
+    reportPlanTask(root, specPath, { plan: 'p.plan.md', task_id: 't2', status: 'in_progress' });
+    appendEvent(root, specPath, { event: 'step_completed', step: 'specify', verdict: 'PASS' });
+
+    const planTaskEvents = filterEvents(root, specPath, (e) => e.event === 'plan_task');
+    assert.equal(planTaskEvents.length, 2);
+    assert.equal(planTaskEvents[0].task_id, 't1');
+    assert.equal(planTaskEvents[1].task_id, 't2');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('filterEvents returns [] when nothing matches', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
+    const out = filterEvents(root, specPath, () => false);
+    assert.deepEqual(out, []);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('filterEvents does not mutate the underlying log', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify' });
+    const sizeBefore = statSync(logPathFor(root, 'sample')).size;
+    filterEvents(root, specPath, () => true);
+    const sizeAfter = statSync(logPathFor(root, 'sample')).size;
+    assert.equal(sizeBefore, sizeAfter);
   } finally {
     cleanupTempDir(root);
   }
