@@ -57,17 +57,15 @@ printf '%s' "$STDIN_JSON" | node -e '
     const isRemote = process.env.CLAUDE_CODE_REMOTE === "true";
     entry.operator = osUser + "/" + (isRemote ? "remote" : "local");
 
-    // Enrich with issue/epic from execution state (if active)
+    // Enrich with issue/epic from execution state (if active).
+    // Reads the JSON state directly (post-migration on-disk format).
     try {
-      const statePath = path.join(".context-index", ".execution-state.md");
+      const statePath = path.join(".context-index", ".execution-state.json");
       const stateRaw = fs.readFileSync(statePath, "utf8");
-      const fmMatch = stateRaw.match(/^---\n([\s\S]*?)\n---/);
-      if (fmMatch) {
-        const fm = fmMatch[1];
-        const statusM = fm.match(/status:\s*(\S+)/);
-        if (statusM && statusM[1] === "active") {
-          const issueM = fm.match(/issueBinding:\s*(\S+)/);
-          if (issueM && issueM[1]) entry.issue = issueM[1];
+      const state = JSON.parse(stateRaw);
+      if (state && state.status === "active") {
+        if (state.issueBinding) entry.issue = String(state.issueBinding);
+        {
           // Extract epic from issue board if issue is bound
           // Supports both file and beads backends
           if (entry.issue) {

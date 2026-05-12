@@ -54,7 +54,7 @@ describe("lifecycle-gate integration", () => {
   it("standalone status bypasses block-level enforcement (edit)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: standalone\nupdated: 2026-01-01\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "standalone", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-01-01T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: app\n    paths:\n      - src/\n");
     writeFixture(tmp, ".context-index/specs/features/app/feature.spec.md", "# spec");
     writeFixture(tmp, "src/main.mjs", "");
@@ -70,7 +70,7 @@ describe("lifecycle-gate integration", () => {
   it("standalone status bypasses block-level enforcement (bash)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: standalone\nupdated: 2026-01-01\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "standalone", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-01-01T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-bash.sh", {
       cwd: tmp,
@@ -182,7 +182,7 @@ describe("lifecycle-gate integration", () => {
   it("advisory: silent when active (all layers bypassed)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=confirm\nlifecycle.gate.advisory_interval=1");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: active\nplanRef: p.md\ncurrentTask: 1\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "active", planRef: "p.md", currentTask: 1, issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
 
     // All three layers should be silent

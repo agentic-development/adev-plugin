@@ -36,7 +36,7 @@ describe("lifecycle-gate-advisory hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=confirm\nlifecycle.gate.advisory_interval=1");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: idle\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "idle", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
     assert.equal(result.exitCode, 0);
     assert.ok(result.stdout.includes("additionalContext"), "Should include additionalContext");
@@ -47,7 +47,7 @@ describe("lifecycle-gate-advisory hook", () => {
   it("exits 0 silently when execution state is active", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=confirm\nlifecycle.gate.advisory_interval=1");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: active\nplanRef: p.md\ncurrentTask: 1\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "active", planRef: "p.md", currentTask: 1, issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
     assert.equal(result.exitCode, 0);
@@ -58,7 +58,7 @@ describe("lifecycle-gate-advisory hook", () => {
   it("exits 0 silently when execution state is standalone", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.advisory_interval=1");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: standalone\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "standalone", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
     assert.equal(result.exitCode, 0);
@@ -70,7 +70,7 @@ describe("lifecycle-gate-advisory hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=confirm\nlifecycle.gate.advisory_interval=3");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: idle\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "idle", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
 
     // Calls 1 and 2 should be silent (counter not at interval)
     const r1 = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });

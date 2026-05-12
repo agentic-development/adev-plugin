@@ -29,7 +29,7 @@ describe("lifecycle-gate-edit hook", () => {
   it("exits 0 when execution state is active", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: active\nplanRef: test.plan.md\ncurrentTask: 1\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "active", planRef: "test.plan.md", currentTask: 1, issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-edit.sh", {
       cwd: tmp,
@@ -42,7 +42,7 @@ describe("lifecycle-gate-edit hook", () => {
   it("exits 0 when execution state is standalone", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
-    writeFixture(tmp, ".context-index/.execution-state.md", "---\nstatus: standalone\n---\n");
+    writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "standalone", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const result = runHook("lifecycle-gate-edit.sh", {
       cwd: tmp,

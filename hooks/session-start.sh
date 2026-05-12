@@ -43,91 +43,12 @@ fi
 # Read the skill content
 SKILL_CONTENT=$(cat "$SKILL_FILE")
 
-# Build resume block from execution state (if available)
+# Build resume block from execution state (if available).
+# Delegates parsing + formatting to hooks/_execution-state.mjs (resume-block mode).
+# Stderr is discarded per spec CON-4 SEC-4 — helper stack traces must not flow
+# into hookSpecificOutput.additionalContext.
 RESUME_BLOCK=""
-RESUME_BLOCK=$(ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" node -e '
-  const fs = require("fs");
-  const path = require("path");
-
-  // Walk up from cwd to find .context-index/.execution-state.md
-  function findExecutionState() {
-    const contextRoot = process.env.ADEV_CONTEXT_ROOT;
-    if (contextRoot) {
-      return path.join(contextRoot, ".context-index", ".execution-state.md");
-    }
-    let dir = process.cwd();
-    while (true) {
-      const candidate = path.join(dir, ".context-index", ".execution-state.md");
-      if (fs.existsSync(candidate)) return candidate;
-      const parent = path.dirname(dir);
-      if (parent === dir) return null;
-      dir = parent;
-    }
-  }
-
-  try {
-    const stateFile = findExecutionState();
-    if (!stateFile) process.exit(0);
-    const raw = fs.readFileSync(stateFile, "utf-8");
-
-    // Parse frontmatter
-    const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-    if (!match) {
-      // Malformed
-      console.log("---\nname: session-resume\ndescription: \"Warning: execution state file could not be read.\"\n---\n\nExecution state file is missing or corrupt. Run /adev:issues to check issue board status.");
-      process.exit(0);
-    }
-
-    const meta = {};
-    for (const line of match[1].split("\n")) {
-      const i = line.indexOf(":");
-      if (i === -1) continue;
-      meta[line.slice(0, i).trim()] = line.slice(i + 1).trim();
-    }
-
-    const status = meta.status || "";
-
-    if (status === "idle" || status === "") {
-      // No resume needed
-      process.exit(0);
-    }
-
-    if (status === "active") {
-      let block = "---\nname: session-resume\ndescription: \"Resumption context from previous session. You were actively working on a plan.\"\n---\n\n# Session Resume\n\n";
-      block += "**Status:** active\n";
-      block += "**Plan:** " + (meta.planRef || "") + "\n";
-      block += "**Current Task:** " + (meta.currentTask || "") + "\n";
-      block += "**Issue:** " + (meta.issueBinding || "") + "\n";
-      block += "**Next Action:** " + (meta.nextAction || "") + "\n";
-
-      // Parse progress from body
-      const body = match[2] || "";
-      const progressLines = body.split("\n").filter(l => l.match(/^- \[(x| )\] /));
-      if (progressLines.length > 0) {
-        block += "\n## Progress\n\n";
-        for (const pl of progressLines) {
-          block += pl + "\n";
-        }
-      }
-
-      block += "\nResume from Task " + (meta.currentTask || "") + ". Read the plan file for full context.";
-      console.log(block);
-    } else if (status === "blocked") {
-      let block = "---\nname: session-resume\ndescription: \"Resumption context from previous session. Work was blocked.\"\n---\n\n# Session Resume\n\n";
-      block += "**Status:** blocked\n";
-      block += "**Blocker:** " + (meta.blockers || "") + "\n";
-      block += "**Next Action:** " + (meta.nextAction || "") + "\n";
-      block += "\nAddress the blocker before continuing implementation.";
-      console.log(block);
-    } else {
-      // Unknown status — treat as malformed
-      console.log("---\nname: session-resume\ndescription: \"Warning: execution state file could not be read.\"\n---\n\nExecution state file is missing or corrupt. Run /adev:issues to check issue board status.");
-    }
-  } catch (e) {
-    // File missing or any error — no resume block
-    process.exit(0);
-  }
-' 2>/dev/null || true)
+RESUME_BLOCK=$(ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" ADEV_EXECUTION_STATE_MODE=resume-block node "$PLUGIN_ROOT/hooks/_execution-state.mjs" 2>/dev/null || true)
 
 # Resolve persona and load directive
 PERSONA_BLOCK=""
