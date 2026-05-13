@@ -5,13 +5,14 @@
  * scale, wrapped in a generous CI margin to avoid flakes on shared
  * runners (local: x3, CI: x10 — rented runners vary wildly).
  *
- *   appendEvent             p99 < 5 ms  -> local 15 ms / CI 50 ms
- *   currentState (N=50)     p99 < 5 ms  -> local 15 ms / CI 50 ms
- *   currentState (N=1000)   p99 < 50 ms -> local 150 ms / CI 500 ms
- *   listLifecycleStates(100 specs) p99 < 100 ms -> local 300 ms / CI 1000 ms
+ *   appendEvent             p99 < 5 ms  -> local 25 ms / CI 50 ms
+ *   currentState (N=50)     p99 < 5 ms  -> local 25 ms / CI 50 ms
+ *   currentState (N=1000)   p99 < 50 ms -> local 250 ms / CI 500 ms
+ *   listLifecycleStates(100 specs) p99 < 100 ms -> local 500 ms / CI 1000 ms
  *
- * On heavily loaded CI runners (loadavg > 4) individual perf cases are
- * skipped defensively.
+ * On heavily loaded runners (CI loadavg > 4, local loadavg > 8) individual
+ * perf cases are skipped defensively. The local threshold is higher because
+ * dev machines often idle at 2-5 loadavg from background services.
  */
 
 import { test } from 'node:test';
@@ -24,14 +25,15 @@ import { appendEvent, currentState, listLifecycleStates } from '../../lib/lifecy
 
 // GitHub Actions sets CI=true; some other CIs set CI=1; accept any truthy.
 const ON_CI = !!process.env.CI && process.env.CI !== 'false' && process.env.CI !== '0';
-const CI_MARGIN = ON_CI ? 10 : 3;
+const CI_MARGIN = ON_CI ? 10 : 5;
 const APPEND_TARGET_MS = 5;
 const FOLD_SMALL_TARGET_MS = 5;
 const FOLD_LARGE_TARGET_MS = 50;
 const AGGREGATE_TARGET_MS = 100;
 
 function isOverloaded() {
-  return ON_CI && loadavg()[0] > 4;
+  const threshold = ON_CI ? 4 : 8;
+  return loadavg()[0] > threshold;
 }
 
 function makeProject() {

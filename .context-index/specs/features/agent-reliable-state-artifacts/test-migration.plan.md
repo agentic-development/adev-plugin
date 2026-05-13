@@ -109,11 +109,11 @@ Groups A, B, C can run in parallel. Group D must follow Group A.
 
 **Context to load:** `lib/issues/json-adapter.mjs:55-60` (the constant block).
 
-- [ ] **Write failing test** — Deferred to Task 2. This task is enabling work; the test is the import statement in Task 2's new file.
+- [x] **Write failing test** — Deferred to Task 2. This task is enabling work; the test is the import statement in Task 2's new file.
 
-- [ ] **Verify test fails** — N/A for this task individually; will be verified when Task 2's test file is authored and the import line is added before the constant is exported.
+- [x] **Verify test fails** — N/A for this task individually; will be verified when Task 2's test file is authored and the import line is added before the constant is exported.
 
-- [ ] **Implement**
+- [x] **Implement**
 
 ```javascript
 // lib/issues/json-adapter.mjs:58
@@ -123,9 +123,9 @@ export const UNSUPPORTED_VERSION_FALLBACK =
 
 (Single edit: prepend `export ` to the existing `const` declaration on line 58.)
 
-- [ ] **Verify** — Run `npm test`. All existing tests must continue to pass (export does not change runtime behavior).
+- [x] **Verify** — Run `npm test`. All existing tests must continue to pass (export does not change runtime behavior).
 
-- [ ] **Commit**
+- [x] **Commit**
 
 Branch: `feat/agent-reliable-state-artifacts/test-migration`
 
@@ -155,7 +155,7 @@ Plan-task: 1"
 - `lib/issues/json-adapter.mjs` lines 200-280 (the version-check paths)
 - `tests/lib/issues/json-adapter.test.mjs` (test setup pattern: temp dir, manifest fixture, adapter instantiation)
 
-- [ ] **Write failing test**
+- [x] **Write failing test**
 
 Create the file with these `describe`/`it` blocks (named, not line-numbered):
 
@@ -237,11 +237,11 @@ describe("JsonAdapter — schema version", () => {
 });
 ```
 
-- [ ] **Verify test fails** — Run `node --test tests/lib/issues/json-adapter.schema-version.test.mjs`. Expected: the file loads (Task 1's export succeeded). All 5 tests should PASS immediately because the JsonAdapter already implements this behavior; the test surface is what's missing, not the implementation. **If any test fails, that is the actual signal — the spec's claims about the existing mechanism are wrong.** Do not proceed; investigate and report. The "RED" phase for this task is "tests do not exist yet"; the failing condition is the absence of the file.
+- [x] **Verify test fails** — Run `node --test tests/lib/issues/json-adapter.schema-version.test.mjs`. Expected: the file loads (Task 1's export succeeded). All 5 tests should PASS immediately because the JsonAdapter already implements this behavior; the test surface is what's missing, not the implementation. **If any test fails, that is the actual signal — the spec's claims about the existing mechanism are wrong.** Do not proceed; investigate and report. The "RED" phase for this task is "tests do not exist yet"; the failing condition is the absence of the file.
 
-- [ ] **Verify test passes** — Run `node --test tests/lib/issues/json-adapter.schema-version.test.mjs`. Expected: 5 PASS.
+- [x] **Verify test passes** — Run `node --test tests/lib/issues/json-adapter.schema-version.test.mjs`. Expected: 5 PASS.
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add tests/lib/issues/json-adapter.schema-version.test.mjs
@@ -264,11 +264,11 @@ Plan-task: 2"
 
 **Context to load:** `tests/lib/issues/markdown-parser.test.mjs` (full read); charter line 59 (markdown adapter removal timeline).
 
-- [ ] **Write failing test** — Not applicable; this is a restructure of existing passing tests. No new assertions.
+- [x] **Write failing test** — Not applicable; this is a restructure of existing passing tests. No new assertions.
 
-- [ ] **Verify** — Run `node --test tests/lib/issues/markdown-parser.test.mjs` before and after the restructure. Output must be identical (same 3 tests pass).
+- [x] **Verify** — Run `node --test tests/lib/issues/markdown-parser.test.mjs` before and after the restructure. Output must be identical (same 3 tests pass).
 
-- [ ] **Implement**
+- [x] **Implement**
 
 Wrap the three named tests (`"parses a canonical 14-column issue row"`, `"parses a legacy 13-column issue row (no spec_ref)"`, `"parses a legacy 12-column issue row (no spec_ref, no next_action)"`) in:
 
@@ -285,9 +285,9 @@ describe("legacy-read regression (markdown adapter sunset)", () => {
 });
 ```
 
-- [ ] **Verify test passes** — `node --test tests/lib/issues/markdown-parser.test.mjs`. 3 PASS, identical to pre-restructure.
+- [x] **Verify test passes** — `node --test tests/lib/issues/markdown-parser.test.mjs`. 3 PASS, identical to pre-restructure.
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add tests/lib/issues/markdown-parser.test.mjs
@@ -312,7 +312,7 @@ Plan-task: 3"
 
 **Context to load:** `tests/architectural-execution-state.test.mjs` (pattern reference); `tests/architectural-milestones.test.mjs`.
 
-- [ ] **Write failing test**
+- [x] **Write failing test**
 
 Implement a scanner that walks `tests/` and `lib/`, ignores `node_modules`, `.git`, and `tests/lib/issues/markdown-parser.test.mjs` (the only allowed home for column-variant references), and asserts zero matches for `\b1[234]-column\b`.
 
@@ -364,11 +364,11 @@ describe("architectural — no legacy column-variant idioms outside sunset block
 
 > Note: Before authoring, check whether `tests/helpers.mjs` already exports a recursive-walk helper. If yes, import it instead of redeclaring `walk()` (and remove the `export { walk }` here). Same applies to Task 5.
 
-- [ ] **Verify test fails** — Insert a temporary string `"// 14-column hack"` in any `lib/` file. Run `node --test tests/architectural-legacy-format-fixtures.test.mjs`. Expected: FAIL with that filename. Remove the temporary string.
+- [x] **Verify test fails** — Insert a temporary string `"// 14-column hack"` in any `lib/` file. Run `node --test tests/architectural-legacy-format-fixtures.test.mjs`. Expected: FAIL with that filename. Remove the temporary string.
 
-- [ ] **Verify test passes** — Run `node --test tests/architectural-legacy-format-fixtures.test.mjs`. Expected: PASS.
+- [x] **Verify test passes** — Run `node --test tests/architectural-legacy-format-fixtures.test.mjs`. Expected: PASS.
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add tests/architectural-legacy-format-fixtures.test.mjs
@@ -394,7 +394,7 @@ Plan-task: 4"
 - Allowed paths: `tests/lib/migrate-state-artifacts.*`, `tests/evals/`, `tests/lib/issues/markdown-parser.test.mjs` (column-variant fixtures), `tests/architectural-legacy-format-fixtures.test.mjs` itself (this test names the legacy strings)
 - Legacy strings to detect: `.execution-state.md`, `milestones.yaml`, `.context-index/build-state/` (pre-rename path)
 
-- [ ] **Write failing test**
+- [x] **Write failing test**
 
 ```javascript
 describe("architectural — no legacy storage-format assertions outside allowed paths", () => {
@@ -430,11 +430,11 @@ describe("architectural — no legacy storage-format assertions outside allowed 
 });
 ```
 
-- [ ] **Verify test fails** — Run the new test. If it fails on first run, that is the expected outcome — it has surfaced real legacy-fixture leaks. Each violation must be migrated (markdown shape → JSON shape, OR moved into an allowed path, OR added to the allow-list with a documented rationale). Iterate until the test passes.
+- [x] **Verify test fails** — Run the new test. If it fails on first run, that is the expected outcome — it has surfaced real legacy-fixture leaks. Each violation must be migrated (markdown shape → JSON shape, OR moved into an allowed path, OR added to the allow-list with a documented rationale). Iterate until the test passes.
 
-- [ ] **Verify test passes** — Run after all violations are addressed. Expected: PASS.
+- [x] **Verify test passes** — Run after all violations are addressed. Expected: PASS.
 
-- [ ] **Commit** — One commit for the test itself, separate commits for each batch of migrated fixtures (use `fix(<area>)` for fixture migrations).
+- [x] **Commit** — One commit for the test itself, separate commits for each batch of migrated fixtures (use `fix(<area>)` for fixture migrations).
 
 ```bash
 git add tests/architectural-legacy-format-fixtures.test.mjs
@@ -461,9 +461,9 @@ Plan-task: 5"
 - `json-issue-board-adapter.spec.md` line 145 (CON-3 read-tolerance rule)
 - `tests/lib/issues/json-adapter.test.mjs` (grep for "planTask" and "planRef" to see if a read-tolerance test already exists)
 
-- [ ] **Audit** — Grep `tests/lib/issues/json-adapter.test.mjs` for an existing test that exercises legacy in-board issues with both `planRef` and `planTask`. If one exists, no implementation work is needed — note the test name in the commit message and proceed to commit.
+- [x] **Audit** — Grep `tests/lib/issues/json-adapter.test.mjs` for an existing test that exercises legacy in-board issues with both `planRef` and `planTask`. If one exists, no implementation work is needed — note the test name in the commit message and proceed to commit.
 
-- [ ] **If gap found, write failing test**
+- [x] **If gap found, write failing test**
 
 ```javascript
 describe("JsonAdapter — read-tolerance for legacy planRef+planTask issues (CON-3)", () => {
@@ -485,9 +485,9 @@ describe("JsonAdapter — read-tolerance for legacy planRef+planTask issues (CON
 });
 ```
 
-- [ ] **Verify test fails OR passes accordingly** — If the read-tolerance is already implemented (it should be per `json-issue-board-adapter.spec.md` line 145), the test passes immediately, which is the desired outcome.
+- [x] **Verify test fails OR passes accordingly** — If the read-tolerance is already implemented (it should be per `json-issue-board-adapter.spec.md` line 145), the test passes immediately, which is the desired outcome.
 
-- [ ] **Commit**
+- [x] **Commit**
 
 ```bash
 git add tests/lib/issues/json-adapter.test.mjs
