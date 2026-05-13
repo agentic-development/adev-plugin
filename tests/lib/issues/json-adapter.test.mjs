@@ -626,6 +626,52 @@ describe("JsonAdapter — read APIs", () => {
 });
 
 // ---------------------------------------------------------------------------
+// CON-3 / CON-6 — read-tolerance for legacy planRef+planTask issues
+// ---------------------------------------------------------------------------
+// json-issue-board-adapter.spec.md line 145 (CON-3): legacy in-board issues
+// carrying both `planRef` and `planTask` are tolerated on read indefinitely.
+// test-migration.spec.md CON-6: a direct read-tolerance test under
+// tests/lib/issues/* is permitted (asserts against parsed in-memory data,
+// not against authored markdown/YAML fixtures).
+
+describe("JsonAdapter — read-tolerance for legacy planRef+planTask issues (CON-3)", () => {
+  let dir, adapter;
+  beforeEach(() => {
+    dir = makeProject();
+    adapter = new JsonAdapter(dir);
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("returns issues with both planRef and planTask via list() without rejecting", async () => {
+    // Pre-existing legacy issue authored before the granularity invariant.
+    writeBoardRaw(
+      dir,
+      JSON.stringify({
+        version: 2,
+        epics: [],
+        issues: [{
+          id: "issue-legacy",
+          title: "Legacy",
+          status: "open",
+          priority: 2,
+          type: "task",
+          dependencies: [],
+          notes: "",
+          planRef: "specs/features/foo/bar.plan.md",
+          planTask: 3,
+          created: "2026-01-01T00:00:00.000Z",
+          updated: "2026-01-01T00:00:00.000Z",
+        }],
+      })
+    );
+    const issues = await adapter.list();
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0].planRef, "specs/features/foo/bar.plan.md");
+    assert.equal(issues[0].planTask, 3);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Task 13 — legacy epic wrappers
 // ---------------------------------------------------------------------------
 

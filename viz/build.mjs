@@ -12,6 +12,8 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { join, basename, dirname, relative, extname } from 'node:path';
 import { execSync } from 'node:child_process';
+import { getIssueManager } from '../lib/issues/registry.mjs';
+import { loadManifest } from '../lib/manifest.mjs';
 
 // ---------------------------------------------------------------------------
 // CLI args
@@ -48,16 +50,6 @@ function parseFrontmatter(content) {
     }
   }
   return { meta, body: content.slice(match[0].length) };
-}
-
-function parseMarkdownTable(text) {
-  const lines = text.split('\n').filter(l => l.startsWith('|'));
-  if (lines.length < 2) return [];
-  const headers = lines[0].split('|').slice(1, -1).map(h => h.trim());
-  return lines.slice(2).map(row => {
-    const cells = row.split('|').slice(1, -1).map(c => c.trim());
-    return Object.fromEntries(headers.map((h, i) => [h, cells[i] || '']));
-  });
 }
 
 function readFileSafe(path) {
@@ -355,89 +347,83 @@ function extractSpecs() {
 // 4. extractTasks
 // ---------------------------------------------------------------------------
 
-function extractTasks() {
-  const tasksPath = join(ctxDir, 'tasks', 'tasks.md');
-  const content = readFileSafe(tasksPath);
-  if (!content) return;
+async function extractTasks() {
+  let adapter;
+  try {
+    const manifest = loadManifest(root);
+    adapter = getIssueManager(manifest, root);
+  } catch {
+    return;
+  }
 
-  // Split into Epics and Issues sections
-  const epicSection = content.match(/## Epics\n\n([\s\S]*?)(?=\n## |\n*$)/);
-  const issueSection = content.match(/## Issues\n\n([\s\S]*?)(?=\n## |\n*$)/);
+  const planRefRegex = /features\/([^/]+)\/(.+)\.plan\.md/;
+  const isoDate = (v) => (typeof v === 'string' && v.length >= 10 ? v.slice(0, 10) : null);
 
-  if (epicSection) {
-    for (const row of parseMarkdownTable(epicSection[1])) {
-      const id = row.ID;
-      if (!id) continue;
-      addNode({
-        id: `epic:${id}`,
-        type: 'epic',
-        title: row.Title || id,
-        status: row.Status || null,
-        created: row.Created ? row.Created.slice(0, 10) : null,
-        updated: row.Updated ? row.Updated.slice(0, 10) : null,
-        metadata: {
-          'plan-ref': row['Plan-Ref'] || null,
-          milestone: row.Milestone || null,
-        },
-      });
+  let epics = [];
+  let issues = [];
+  try {
+    [epics, issues] = await Promise.all([adapter.listEpics(), adapter.list()]);
+  } catch {
+    return;
+  }
 
-      // epic-planned-by
-      if (row['Plan-Ref']) {
-        // Derive plan ID from path
-        const planMatch = row['Plan-Ref'].match(/features\/([^/]+)\/(.+)\.plan\.md/);
-        if (planMatch) {
-          addEdge(`epic:${id}`, `plan:${planMatch[1]}/${planMatch[2]}`, 'epic-planned-by');
-        }
+  for (const epic of epics) {
+    if (!epic.id) continue;
+    addNode({
+      id: `epic:${epic.id}`,
+      type: 'epic',
+      title: epic.title || epic.id,
+      status: epic.status || null,
+      created: isoDate(epic.created),
+      updated: isoDate(epic.updated),
+      metadata: {
+        'plan-ref': epic.planRef || null,
+        milestone: epic.milestone || null,
+      },
+    });
+
+    if (epic.planRef) {
+      const planMatch = epic.planRef.match(planRefRegex);
+      if (planMatch) {
+        addEdge(`epic:${epic.id}`, `plan:${planMatch[1]}/${planMatch[2]}`, 'epic-planned-by');
       }
     }
   }
 
-  if (issueSection) {
-    for (const row of parseMarkdownTable(issueSection[1])) {
-      const id = row.ID;
-      if (!id) continue;
-      addNode({
-        id: `issue:${id}`,
-        type: 'issue',
-        title: row.Title || id,
-        status: row.Status || null,
-        created: row.Created ? row.Created.slice(0, 10) : null,
-        updated: row.Updated ? row.Updated.slice(0, 10) : null,
-        metadata: {
-          priority: row.Priority || null,
-          type: row.Type || null,
-          epic: row.Epic || null,
-          'plan-ref': row['Plan-Ref'] || null,
-          'plan-task': row['Plan-Task'] || null,
-          deps: row.Deps ? row.Deps.split(',').map(d => d.trim()) : [],
-        },
-      });
+  for (const issue of issues) {
+    if (!issue.id) continue;
+    const deps = Array.isArray(issue.dependencies) ? issue.dependencies : [];
+    addNode({
+      id: `issue:${issue.id}`,
+      type: 'issue',
+      title: issue.title || issue.id,
+      status: issue.status || null,
+      created: isoDate(issue.created),
+      updated: isoDate(issue.updated),
+      metadata: {
+        priority: issue.priority ?? null,
+        type: issue.type || null,
+        epic: issue.epicId || null,
+        'plan-ref': issue.planRef || null,
+        'plan-task': issue.planTask ?? null,
+        deps,
+      },
+    });
 
-      // issue-belongs-to-epic
-      if (row.Epic) addEdge(`issue:${id}`, `epic:${row.Epic}`, 'issue-belongs-to-epic');
+    if (issue.epicId) addEdge(`issue:${issue.id}`, `epic:${issue.epicId}`, 'issue-belongs-to-epic');
 
-      // issue-planned-by
-      if (row['Plan-Ref']) {
-        const planMatch = row['Plan-Ref'].match(/features\/([^/]+)\/(.+)\.plan\.md/);
-        if (planMatch) {
-          addEdge(`issue:${id}`, `plan:${planMatch[1]}/${planMatch[2]}`, 'issue-planned-by');
+    if (issue.planRef) {
+      const planMatch = issue.planRef.match(planRefRegex);
+      if (planMatch) {
+        addEdge(`issue:${issue.id}`, `plan:${planMatch[1]}/${planMatch[2]}`, 'issue-planned-by');
+        if (issue.planTask != null) {
+          addEdge(`issue:${issue.id}`, `plan:${planMatch[1]}/${planMatch[2]}`, 'issue-implements-task');
         }
       }
+    }
 
-      // issue-implements-task
-      if (row['Plan-Task'] && row['Plan-Ref']) {
-        const planMatch = row['Plan-Ref'].match(/features\/([^/]+)\/(.+)\.plan\.md/);
-        if (planMatch) {
-          addEdge(`issue:${id}`, `plan:${planMatch[1]}/${planMatch[2]}`, 'issue-implements-task');
-        }
-      }
-
-      // issue-blocked-by
-      if (row.Deps) {
-        for (const dep of row.Deps.split(',').map(d => d.trim()).filter(Boolean)) {
-          addEdge(`issue:${id}`, `issue:${dep}`, 'issue-blocked-by');
-        }
-      }
+    for (const dep of deps) {
+      if (dep) addEdge(`issue:${issue.id}`, `issue:${dep}`, 'issue-blocked-by');
     }
   }
 }
@@ -908,7 +894,7 @@ for (const mod of modules) {
 
 extractCharters(modules);
 extractSpecs();
-extractTasks();
+await extractTasks();
 extractADRs();
 extractSessions();
 extractCodeFiles(modules);
