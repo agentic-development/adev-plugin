@@ -1,0 +1,2 @@
+{"event":"lifecycle_step","ts":"2026-05-11T23:07:15.250Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/agent-reliable-state-artifacts/json-issue-board-adapter.spec.md"}
+{"event":"step_completed","ts":"2026-05-11T23:07:15.250Z","step":"review","actor":"migration/adev-cli","verdict":"PASS_WITH_NOTES"}

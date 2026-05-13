@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log markdown-rendering-layer.jsonl -->
 # Implementation Plan: Markdown Rendering Layer
 
 > **Methodology:** adev

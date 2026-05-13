@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log spec-drift-detection.jsonl -->
 # Implementation Plan: Spec Drift Detection
 
 > **Methodology:** adev

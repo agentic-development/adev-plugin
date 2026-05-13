@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log publish-on-tags.jsonl -->
 # Implementation Plan: Publish on Tags
 
 > **Methodology:** adev

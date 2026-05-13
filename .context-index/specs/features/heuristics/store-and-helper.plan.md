@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log store-and-helper.jsonl -->
 # Implementation Plan: Heuristic Store Structure and Helper API
 
 > **Methodology:** adev

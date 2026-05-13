@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log persona-resolution-and-injection.jsonl -->
 # Implementation Plan: Persona Resolution and Injection
 
 > **Methodology:** adev

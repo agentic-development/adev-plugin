@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log milestone-defer.jsonl -->
 # Implementation Plan: Milestone Defer
 
 > **Methodology:** adev

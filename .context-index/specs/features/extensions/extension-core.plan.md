@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log extension-core.jsonl -->
 # Implementation Plan: Extension Core
 
 > **Methodology:** adev

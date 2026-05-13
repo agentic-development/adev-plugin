@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-issues-milestone-ext.jsonl -->
 # Plan: adev:issues Milestone Extension
 
 ## Spec Reference

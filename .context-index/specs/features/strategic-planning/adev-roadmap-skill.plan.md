@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-roadmap-skill.jsonl -->
 # Plan: adev:roadmap Skill
 
 ## Spec Reference

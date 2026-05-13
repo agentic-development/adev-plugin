@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log sync-index.jsonl -->
 # Implementation Plan: Sync Index
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log data-engineering-extension.jsonl -->
 # Implementation Plan: Data Engineering Extension
 
 > **Methodology:** adev

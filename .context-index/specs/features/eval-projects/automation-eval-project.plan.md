@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log automation-eval-project.jsonl -->
 # Implementation Plan: Automation Eval Project
 
 > **Methodology:** adev

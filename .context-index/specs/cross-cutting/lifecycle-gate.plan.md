@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log lifecycle-gate.jsonl -->
 # Implementation Plan: Lifecycle Gate
 
 > **Methodology:** adev

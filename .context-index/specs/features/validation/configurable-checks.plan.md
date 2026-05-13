@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log configurable-checks.jsonl -->
 # Implementation Plan: Configurable Validate Check Registry
 
 > **Methodology:** adev

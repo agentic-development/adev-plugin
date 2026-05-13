@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log verification-runner-and-schema.jsonl -->
 # Implementation Plan: Verification Runner and Schema Extension
 
 > **Methodology:** adev

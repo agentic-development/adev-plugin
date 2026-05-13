@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log workspace-aware-vision.jsonl -->
 # Implementation Plan: Workspace-Aware Strategic Planning
 
 > **Methodology:** adev

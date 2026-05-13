@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log milestones-migration.jsonl -->
 # Implementation Plan: Milestones Migration
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log token-cost-logging.jsonl -->
 # Implementation Plan: Token Cost Logging
 
 > **Methodology:** adev

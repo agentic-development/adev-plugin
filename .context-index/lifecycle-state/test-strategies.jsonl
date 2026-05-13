@@ -1,0 +1,10 @@
+{"event":"lifecycle_step","ts":"2026-04-20T10:00:00Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/test-strategies/"}
+{"event":"step_completed","ts":"2026-04-20T10:00:00Z","step":"review","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-20T10:15:00Z","step":"plan","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/test-strategies/"}
+{"event":"step_completed","ts":"2026-04-20T10:15:00Z","step":"plan","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-20T10:15:01Z","step":"route","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/test-strategies/"}
+{"event":"step_completed","ts":"2026-04-20T10:15:01Z","step":"route","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-20T10:45:00Z","step":"implement","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/test-strategies/"}
+{"event":"step_completed","ts":"2026-04-20T10:45:00Z","step":"implement","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-20T10:50:00Z","step":"validate","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/test-strategies/"}
+{"event":"step_completed","ts":"2026-04-20T10:50:00Z","step":"validate","actor":"migration/adev-cli","verdict":"PASS"}

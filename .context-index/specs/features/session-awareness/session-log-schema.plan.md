@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log session-log-schema.jsonl -->
 # Implementation Plan: Session Log Schema
 
 > **Methodology:** adev

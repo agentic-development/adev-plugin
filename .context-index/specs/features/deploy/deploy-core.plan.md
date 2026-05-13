@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log deploy-core.jsonl -->
 # Implementation Plan: Deploy Core
 
 > **Methodology:** adev

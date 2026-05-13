@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log lifecycle-event-log.jsonl -->
 # Implementation Plan: Lifecycle Event Log
 
 > **Methodology:** adev
