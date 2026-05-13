@@ -9,10 +9,14 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 3
-charter-revision: 3
+revision: 4
+charter-revision: 6
 created: 2026-05-11
-updated: 2026-05-11
+updated: 2026-05-13
+revision-history:
+  - revision: 4
+    date: 2026-05-13
+    change: "Clarification amendment (CON-1 from test-migration.review.md). Made the version-3 round-trip behaviour for top-level unknown keys explicit: epic/issue unknown fields preserved; top-level unknown keys dropped on write. No code change — _write() at lib/issues/json-adapter.mjs:316 already reconstructs the document this way."
 ---
 
 ## Behavioral Contract
@@ -114,7 +118,7 @@ Not applicable — the adapter is a passive library module. The on-demand `tasks
 - [ ] When `tasks.json` is absent AND `tasks.md` exists AND `tasks.legacy_read != disabled`, `JsonAdapter` reads the legacy markdown via `lib/issues/markdown-parser.mjs` (the extracted shared helper from SA-3) — NOT via `FileAdapter` — and surfaces the parsed data. The first subsequent write creates `tasks.json`; the legacy `tasks.md` is left intact (untouched). Test fixture exercises this path.
 - [ ] When `tasks.legacy_read = disabled`, no legacy-read attempt is made; an empty board is returned if `tasks.json` is absent.
 - [ ] Storage root resolution uses `resolveStorageRoot()` from `lib/issues/resolve-root.mjs`. Worktree-shared storage continues to work (verified by an existing test re-run against `JsonAdapter`).
-- [ ] `tasks.json` schema includes a top-level `version: 2` field. Readers parse files with `version >= 2`; unknown additional fields on epics/issues are preserved on read and re-emitted on write (forward compatibility).
+- [ ] `tasks.json` schema includes a top-level `version: 2` field. Readers parse files with `version >= 2`. Unknown additional fields on each epic and each issue are preserved on read and re-emitted on write (per-entity forward compatibility). Unknown top-level keys (siblings of `epics`/`issues` on the document root) are **dropped** on write — `_write()` reconstructs `{ version: 2, epics, issues }` only. A schema-version test fixture exercises both branches: epic/issue unknown fields survive a round-trip; a top-level unknown key does not.
 - [ ] All constitution quality gates pass: `npm test` green, no new dependencies in `package.json`, all files are `.mjs` ESM.
 - [ ] No constitutional violations.
 - [ ] Test coverage on `lib/issues/json-adapter.mjs` ≥ 90% lines. Coverage on the registry's new code path ≥ 90% lines.
@@ -148,7 +152,7 @@ Not applicable — the adapter is a passive library module. The on-demand `tasks
 - **When** the registry is called with `manifest.tasks.backend === "file"` **then** a `FileAdapter` instance is returned AND a one-time `DEPRECATED_BACKEND` console warning is emitted advising users to migrate to `"json"`. All write methods on that adapter throw `BACKEND_READ_ONLY_DEPRECATED` (CON-5); reads continue to work.
 - **When** an existing project has no `tasks.json` AND no `tasks.md` AND `tasks.backend` is unset **then** the registry returns a `JsonAdapter` (new default), `init()` creates an empty `tasks.json`, and no advisory is emitted (clean greenfield).
 - **When** an existing project has `tasks.md` but no `tasks.json` AND `tasks.backend` is unset **then** the registry returns a `JsonAdapter`. If `tasks.legacy_read` is enabled (default), the adapter reads `tasks.md` via the shared markdown parser (see SA-3 below) and returns its data. The first write call creates `tasks.json` from the parsed data, leaves `tasks.md` intact, and emits a one-time `LEGACY_FORMAT_DETECTED` advisory recommending `adev migrate` for an explicit conversion (SA-4).
-- **When** `tasks.json` contains a top-level `version` value greater than `2` **then** the reader proceeds normally — unknown fields on epics/issues are preserved on read and re-emitted on write, ensuring future-version files can be read by older adapters without data loss.
+- **When** `tasks.json` contains a top-level `version` value greater than `2` **then** the reader proceeds normally — unknown fields on each epic and each issue are preserved on read and re-emitted on write, ensuring future-version files can be read by older adapters without per-entity data loss. **Top-level unknown keys** (sibling fields of `epics`/`issues` on the document root) are **dropped** on write: `_write()` reconstructs the document as `{ version: 2, epics, issues }` only. This is intentional — top-level metadata is reserved for the schema itself; future-version metadata that must survive an older-adapter round-trip belongs on a per-entity field, not as a document-root key.
 - **When** `tasks.json` is absent but `tasks.md` exists AND `tasks.legacy_read != disabled` **then** the adapter parses `tasks.md` via the shared `lib/issues/markdown-parser.mjs` helper (extracted from the existing `FileAdapter._read()` logic — see SA-3 in this spec) and returns its data. `JsonAdapter` does not call `FileAdapter` directly. The next write call creates `tasks.json` and leaves `tasks.md` untouched.
 - **When** `tasks.legacy_read = disabled` AND `tasks.json` is absent **then** the adapter returns the empty board, regardless of whether `tasks.md` exists.
 - **When** `_write()` cannot complete the rename step (permission, disk full) **then** the temp file is left orphaned, the underlying `fs` error is surfaced to the caller, and `tasks.json` remains in its prior state.
