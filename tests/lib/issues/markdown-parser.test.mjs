@@ -58,58 +58,67 @@ describe("parseTasksMd", () => {
     assert.deepEqual(board.issues, []);
   });
 
-  it("parses a canonical 14-column issue row", () => {
-    const md = mkBoard(
-      [],
-      [
-        "| issue-1 | Fix login | open | 2 | bug | epic-1 | plans/p.md | 3 | specs/s.md | issue-9 | a note | next | 2026-01-01 | 2026-01-02 |",
-      ]
-    );
-    const { issues } = parseTasksMd(md);
-    assert.equal(issues.length, 1);
-    const i = issues[0];
-    assert.equal(i.id, "issue-1");
-    assert.equal(i.title, "Fix login");
-    assert.equal(i.status, "open");
-    assert.equal(i.priority, 2);
-    assert.equal(i.type, "bug");
-    assert.equal(i.epicId, "epic-1");
-    assert.equal(i.planRef, "plans/p.md");
-    assert.equal(i.planTask, 3);
-    assert.equal(i.spec_ref, "specs/s.md");
-    assert.deepEqual(i.dependencies, ["issue-9"]);
-    assert.equal(i.notes, "a note");
-    assert.equal(i.next_action, "next");
-  });
+  describe("legacy-read regression (markdown adapter sunset)", () => {
+    // Sunset: delete this block (and the column-variant fixtures) in the same
+    // PR that removes tasks.backend: "file" from lib/issues/registry.mjs. See
+    // .context-index/specs/features/agent-reliable-state-artifacts/charter.md
+    // line 59 — markdown `backend: file` removal has a one-release-cycle
+    // deprecation window (next minor version after charter agent-reliable-
+    // state-artifacts lands).
 
-  it("parses a legacy 13-column issue row (no spec_ref)", () => {
-    const md = mkBoard(
-      [],
-      [
-        "| issue-2 | Old | open | 2 | task | epic-1 | plans/p.md | 1 | issue-9 | notes | nx | 2026-01-01 | 2026-01-02 |",
-      ],
-      { issueCols: 13 }
-    );
-    const { issues } = parseTasksMd(md);
-    assert.equal(issues.length, 1);
-    assert.equal(issues[0].spec_ref, undefined);
-    assert.equal(issues[0].next_action, "nx");
-    assert.equal(issues[0].planTask, 1);
-  });
+    it("parses a canonical 14-column issue row", () => {
+      const md = mkBoard(
+        [],
+        [
+          "| issue-1 | Fix login | open | 2 | bug | epic-1 | plans/p.md | 3 | specs/s.md | issue-9 | a note | next | 2026-01-01 | 2026-01-02 |",
+        ]
+      );
+      const { issues } = parseTasksMd(md);
+      assert.equal(issues.length, 1);
+      const i = issues[0];
+      assert.equal(i.id, "issue-1");
+      assert.equal(i.title, "Fix login");
+      assert.equal(i.status, "open");
+      assert.equal(i.priority, 2);
+      assert.equal(i.type, "bug");
+      assert.equal(i.epicId, "epic-1");
+      assert.equal(i.planRef, "plans/p.md");
+      assert.equal(i.planTask, 3);
+      assert.equal(i.spec_ref, "specs/s.md");
+      assert.deepEqual(i.dependencies, ["issue-9"]);
+      assert.equal(i.notes, "a note");
+      assert.equal(i.next_action, "next");
+    });
 
-  it("parses a legacy 12-column issue row (no spec_ref, no next_action)", () => {
-    const md = mkBoard(
-      [],
-      [
-        "| issue-3 | Very old | open | 2 | task | epic-1 | plans/p.md | 1 | issue-9 | notes | 2026-01-01 | 2026-01-02 |",
-      ],
-      { issueCols: 12 }
-    );
-    const { issues } = parseTasksMd(md);
-    assert.equal(issues.length, 1);
-    assert.equal(issues[0].next_action, null);
-    assert.equal(issues[0].planTask, 1);
-    assert.equal(issues[0].planRef, "plans/p.md");
+    it("parses a legacy 13-column issue row (no spec_ref)", () => {
+      const md = mkBoard(
+        [],
+        [
+          "| issue-2 | Old | open | 2 | task | epic-1 | plans/p.md | 1 | issue-9 | notes | nx | 2026-01-01 | 2026-01-02 |",
+        ],
+        { issueCols: 13 }
+      );
+      const { issues } = parseTasksMd(md);
+      assert.equal(issues.length, 1);
+      assert.equal(issues[0].spec_ref, undefined);
+      assert.equal(issues[0].next_action, "nx");
+      assert.equal(issues[0].planTask, 1);
+    });
+
+    it("parses a legacy 12-column issue row (no spec_ref, no next_action)", () => {
+      const md = mkBoard(
+        [],
+        [
+          "| issue-3 | Very old | open | 2 | task | epic-1 | plans/p.md | 1 | issue-9 | notes | 2026-01-01 | 2026-01-02 |",
+        ],
+        { issueCols: 12 }
+      );
+      const { issues } = parseTasksMd(md);
+      assert.equal(issues.length, 1);
+      assert.equal(issues[0].next_action, null);
+      assert.equal(issues[0].planTask, 1);
+      assert.equal(issues[0].planRef, "plans/p.md");
+    });
   });
 
   it("preserves a legacy planRef+planTask pair on read (CON-3 read tolerance)", () => {
