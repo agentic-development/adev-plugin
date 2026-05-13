@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log preconditions-and-arguments.jsonl -->
 # Implementation Plan: adev:codehealth
 
 > **Methodology:** adev

@@ -1,0 +1,2 @@
+{"event":"lifecycle_step","ts":"2026-05-09T17:00:00Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/user-docs/foundation-onboarding.spec.md"}
+{"event":"step_completed","ts":"2026-05-09T17:00:00Z","step":"review","actor":"migration/adev-cli"}

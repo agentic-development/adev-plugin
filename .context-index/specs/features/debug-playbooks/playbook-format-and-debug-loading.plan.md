@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log playbook-format-and-debug-loading.jsonl -->
 # Implementation Plan: Playbook Format and Debug Loading
 
 > **Methodology:** adev

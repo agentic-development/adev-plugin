@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log visual-reference-capture.jsonl -->
 # Implementation Plan: Visual Reference Capture
 
 > **Methodology:** adev

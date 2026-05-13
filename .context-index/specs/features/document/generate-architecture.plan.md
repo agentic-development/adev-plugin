@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log generate-architecture.jsonl -->
 # Implementation Plan: Generate architecture.md
 
 > **Methodology:** adev

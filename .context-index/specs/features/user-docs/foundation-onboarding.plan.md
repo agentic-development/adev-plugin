@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log foundation-onboarding.jsonl -->
 # Implementation Plan: Foundation & Onboarding
 
 > **Methodology:** adev

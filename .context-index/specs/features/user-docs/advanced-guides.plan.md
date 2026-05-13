@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log advanced-guides.jsonl -->
 # Implementation Plan: Advanced Guides
 
 > **Methodology:** adev

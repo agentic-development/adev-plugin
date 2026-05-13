@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log api-eval-project.jsonl -->
 # Implementation Plan: API Eval Project
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-write-test.jsonl -->
 # Implementation Plan: adev:write-test
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log backend-adapters.jsonl -->
 # Implementation Plan: Backend Adapters and Registry
 
 > **Methodology:** adev

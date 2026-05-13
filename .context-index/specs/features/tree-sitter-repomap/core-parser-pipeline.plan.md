@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log core-parser-pipeline.jsonl -->
 # Implementation Plan: Core Parser Pipeline
 
 > **Methodology:** adev

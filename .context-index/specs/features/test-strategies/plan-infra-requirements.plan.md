@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log plan-infra-requirements.jsonl -->
 # Implementation Plan: Plan Infrastructure Requirements
 
 > **Methodology:** adev

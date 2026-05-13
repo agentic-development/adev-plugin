@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log configurable-reminder-interval.jsonl -->
 # Implementation Plan: Configurable Reminder Interval
 
 > **Methodology:** adev

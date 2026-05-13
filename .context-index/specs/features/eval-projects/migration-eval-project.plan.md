@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log migration-eval-project.jsonl -->
 # Implementation Plan: Migration Eval Project
 
 > **Methodology:** adev

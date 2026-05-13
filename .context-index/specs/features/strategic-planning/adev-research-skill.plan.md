@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-research-skill.jsonl -->
 # Implementation Plan: adev:research Skill (Multi-Agent Refactor)
 
 > **Methodology:** adev

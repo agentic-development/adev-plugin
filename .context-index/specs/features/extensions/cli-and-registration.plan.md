@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log cli-and-registration.jsonl -->
 # Implementation Plan: CLI and Registration
 
 > **Methodology:** adev

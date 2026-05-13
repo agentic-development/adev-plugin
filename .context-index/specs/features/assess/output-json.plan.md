@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log output-json.jsonl -->
 # Plan: Output JSON
 
 ## Spec Reference

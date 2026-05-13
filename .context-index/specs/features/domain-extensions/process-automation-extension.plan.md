@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log process-automation-extension.jsonl -->
 # Implementation Plan: Process Automation Extension
 
 > **Methodology:** adev

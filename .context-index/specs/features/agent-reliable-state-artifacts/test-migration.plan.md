@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log test-migration.jsonl -->
 # Implementation Plan: Test Migration
 
 > **Methodology:** adev

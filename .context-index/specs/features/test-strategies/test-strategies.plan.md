@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log test-strategies.jsonl -->
 # Implementation Plan: Test Strategies Module
 
 > **Charter:** test-strategies

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log execution-state-file.jsonl -->
 # Implementation Plan: Execution State File
 
 > **Methodology:** adev

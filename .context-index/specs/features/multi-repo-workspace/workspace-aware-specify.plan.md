@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log workspace-aware-specify.jsonl -->
 # Implementation Plan: Workspace-Aware /adev:specify
 
 > **Methodology:** adev

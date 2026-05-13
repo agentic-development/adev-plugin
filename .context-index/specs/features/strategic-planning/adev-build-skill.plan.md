@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-build-skill.jsonl -->
 # Implementation Plan: adev:build Orchestrator — One-Step-Per-Invocation Dispatch
 
 > **Methodology:** adev

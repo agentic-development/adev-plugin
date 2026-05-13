@@ -1,0 +1,2 @@
+{"event":"lifecycle_step","ts":"2026-05-11T22:49:47.754Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md"}
+{"event":"step_completed","ts":"2026-05-11T22:49:47.754Z","step":"review","actor":"migration/adev-cli"}

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log milestone-crud.jsonl -->
 # Implementation Plan: Milestone Create and List (Release Schema Update)
 
 > **Methodology:** adev

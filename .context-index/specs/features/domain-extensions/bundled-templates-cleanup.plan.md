@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log bundled-templates-cleanup.jsonl -->
 # Implementation Plan: Bundled Templates Cleanup
 
 > **Methodology:** adev

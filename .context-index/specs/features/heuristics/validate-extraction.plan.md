@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log validate-extraction.jsonl -->
 # Implementation Plan: Validate Extraction
 
 > **Methodology:** adev

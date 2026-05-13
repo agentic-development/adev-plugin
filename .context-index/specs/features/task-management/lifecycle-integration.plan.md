@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log lifecycle-integration.jsonl -->
 # Implementation Plan: Lifecycle Skill Integration
 
 > **Methodology:** adev

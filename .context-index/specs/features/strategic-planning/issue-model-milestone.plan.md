@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log issue-model-milestone.jsonl -->
 # Plan: Issue Model Milestone Extension
 
 ## Spec Reference

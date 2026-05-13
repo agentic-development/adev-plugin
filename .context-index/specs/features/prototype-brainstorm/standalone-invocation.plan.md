@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log standalone-invocation.jsonl -->
 # Implementation Plan: Standalone Invocation
 
 > **Methodology:** adev
