@@ -1,6 +1,6 @@
 ---
 status: approved
-revision: 5
+revision: 6
 updated: 2026-05-12
 ---
 
@@ -142,10 +142,10 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 |------------|-------------|----------|--------|
 | Lifecycle event log | `lib/lifecycle-state.mjs` with append-only JSONL writes, `appendEvent`/`readEvents`/`currentState`/`requireGate`/`listLifecycleStates`/`renderMarkdown`. Defines canonical event schema and multi-writer fold-aggregation algorithm. Foundation. | must-have | validated |
 | JSON issue board + adapter | `.context-index/tasks/tasks.json` document, `lib/issues/json-adapter.mjs` implementing the unchanged `IssueManagerInterface`, registry update (`backend: json`), new-scaffold default. | must-have | validated |
-| Severity stamping at write time | `reportReviewer()` / `reportValidator()` helpers that look up severity from `reviewers.yaml`/`gates.yaml` once at write and stamp it on the event. Reads stay config-free. | must-have | specified (lib done in `lifecycle-event-log`; adoption pass in `lifecycle-skill-instruction-updates`) |
+| Severity stamping at write time | `reportReviewer()` / `reportValidator()` helpers that look up severity from `reviewers.yaml`/`gates.yaml` once at write and stamp it on the event. Reads stay config-free. | must-have | validated (lib in `lifecycle-event-log`; adoption in `lifecycle-skill-instruction-updates`) |
 | Plan-task events in lifecycle log | `/adev:plan` writes `plan_task` events instead of creating per-task issues. `/adev:implement` reads/writes plan-task events. Plan-file checkboxes no longer mutated. | must-have | validated |
 | Issue board granularity cleanup | Enforces post-migration invariant: no issue with `planRef`+`planTask`. Board entries are epic / feature-spec / bug level only. Includes `/adev:plan`, `/adev:specify`, `/adev:work` instruction updates and migration collapse of existing per-task issues. | must-have | review-passed |
-| Lifecycle-state gates | `requireGate(state, stepName)` replaces filesystem-grep of `.review.md` frontmatter. Hard-block default; `lifecycle.gate_mode: strict\|advisory` knob softens. | must-have | specified (lib done in `lifecycle-event-log`; adoption pass in `lifecycle-skill-instruction-updates`) |
+| Lifecycle-state gates | `requireGate(state, stepName)` replaces filesystem-grep of `.review.md` frontmatter. Hard-block default; `lifecycle.gate_mode: strict\|advisory` knob softens. | must-have | validated (lib in `lifecycle-event-log`; adoption in `lifecycle-skill-instruction-updates`) |
 | Execution state migration | `.execution-state.md` → `.execution-state.json`. `lib/execution-state.mjs` rewritten; `hooks/session-start.sh` and `hooks/lifecycle-gate-bash.sh` invoke a Node helper. | must-have | validated |
 | Milestones migration | `milestones.yaml` → `milestones.json`. New `lib/milestones.mjs` wrapper. `/adev:issues milestone *` subcommands updated. | must-have | validated |
 | Directory rename: build-state → lifecycle-state | One-shot rename in migration tool. Constitution Context Routing table and references updated. | must-have | validated |
