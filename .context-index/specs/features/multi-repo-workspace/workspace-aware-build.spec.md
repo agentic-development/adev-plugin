@@ -20,6 +20,9 @@ source-manifest:
     - lib/workspace.mjs
     - tests/skills/build-workspace-mode.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/build/SKILL.md
+drift_at: 2026-05-14T17:23:43.421Z
 ---
 
 # Live Spec: Workspace-Aware Build
