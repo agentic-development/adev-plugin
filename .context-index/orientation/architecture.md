@@ -105,7 +105,7 @@ adev-plugin/
 │   ├── meta-tools.mjs          # Deterministic multi-file operations: loadSpecContext(), findSpecsByStatus(), getPlanProgress(). Used by plan and implement skills
 │   ├── spec-drift.mjs          # Specification drift detection and stamping
 │   ├── reality-check.mjs       # Codebase-verified confidence scoring: verifySpecImplemented(), verifyIssueCompleted(), verifyCapabilityStatus(), formatConfidenceNote(). Prevents ghost validations
-│   ├── build-state.mjs         # Build pipeline state management: readBuildState(), createBuildState(), recordStepResult(), getNextStep(). State stored in .context-index/build-state/
+│   ├── build-state.mjs         # Build pipeline state management: readBuildState(), createBuildState(), recordStepResult(), getNextStep(). State stored in .context-index/lifecycle-state/ (reads tolerate legacy .context-index/build-state/ for pre-migration projects)
 │   ├── visual-references.mjs   # Visual reference capture for prototype skill: validateSourcePath(), copyVisualReference(), createVisualReferenceTracker()
 │   ├── lifecycle-gate-config.mjs # Gate configuration: resolveGateConfig(), matchesFileExclusion(), matchesBashPassthrough(). Defines DEFAULT_FILE_EXCLUSIONS and DEFAULT_BASH_PASSTHROUGH patterns
 │   ├── lifecycle-gate-helpers.mjs # Gate enforcement helpers: isFileExcluded(), isBashPassthrough(), loadMergedConfig(), resolveModule(), checkModuleLifecycle(). Used by hooks/lifecycle-gate-*.sh
@@ -146,7 +146,7 @@ adev-plugin/
 
 7. **Lifecycle gating**: `lifecycle-gate-edit.sh` and `lifecycle-gate-bash.sh` block source edits and shell commands when no lifecycle session is active. `lifecycle-gate-advisory.sh` issues warnings for lesser violations. Gate configuration (exclusion patterns, bash passthroughs) is defined in `lib/lifecycle-gate-config.mjs` and enforced by `lib/lifecycle-gate-helpers.mjs`.
 
-8. **Build pipeline**: `/adev:build` orchestrates multi-step builds using `lib/build-state.mjs` to persist pipeline state (current step, results) in `.context-index/build-state/`, enabling resumable builds across sessions.
+8. **Build pipeline**: `/adev:build` orchestrates multi-step builds using `lib/build-state.mjs` to persist pipeline state (current step, results) in `.context-index/lifecycle-state/<slug>.json`, enabling resumable builds across sessions. Per-spec JSONL event logs (`<slug>.jsonl`) written by `lib/lifecycle-state.mjs` live in the same directory.
 
 9. **Context visualization**: `viz/` provides a browser-based interactive dependency graph viewer built on Cytoscape.js. `viz/build.mjs` generates a static site; `viz/app.mjs` serves it with filters, detail panels, and a timeline view.
 

@@ -45,3 +45,19 @@ contradicted-by: []
 created: 2026-05-03
 updated: 2026-05-03
 ---
+
+---
+id: orchestrators-dispatch-optimistically
+scope: _global
+title: Orchestrators must dispatch subagents optimistically — never introspect tool availability
+pattern: When an orchestrator skill dispatches subagents (Agent tool), call Agent({...}) directly and treat a harness rejection as the only valid signal that the tool is absent. Agent is eagerly loaded — its absence from the deferred-tools list or ToolSearch results is expected and is NOT evidence of unavailability. ToolSearch only enumerates deferred tools.
+anti-pattern: Scan the deferred-tools list / loaded tool list / ToolSearch results for "Agent" or "Task" and self-abort a dispatch step when not found. This produces a FAILED lifecycle-state record with error "Agent/Task dispatcher tool not available" without ever calling Agent. ("Task" is not a tool name in Claude Code — Agent is the only subagent dispatcher.)
+confidence: low
+evidence:
+  - path: .context-index/lifecycle-state/kind-enumeration.json
+    date: 2026-05-14
+    source: learn
+contradicted-by: []
+created: 2026-05-14
+updated: 2026-05-14
+---

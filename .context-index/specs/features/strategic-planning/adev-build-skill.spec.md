@@ -22,6 +22,9 @@ source-manifest:
     - tests/skills/build-full-pipeline.test.mjs
     - tests/skills/build-milestone-and-stale.test.mjs
   computed-at: "2026-05-05T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/build/SKILL.md
+drift_at: 2026-05-14T17:23:43.422Z
 ---
 
 ## Behavioral Contract
@@ -52,7 +55,7 @@ Both modes support `--milestone <name>` to batch-build multiple specs. Route run
 3. **When** `--milestone <name>` is invoked without `--full` **then** the skill discovers all specs with `milestone: <name>` in frontmatter, filters to those with status `review-passed`, `implemented`, or `validated`, and builds each in dependency order using the Implement Pipeline. Specs with any other status are skipped with a visible note: "Skipped <spec> (status: <status>): not ready for Implement Pipeline. Run /adev:review-specs or use --full."
 3a. **When** `--milestone <name> --full` is invoked **then** the filter includes `review-pending` specs — the Full Pipeline runs specify and review for each before planning. Specs with status `review-blocked` are also included; the Full Pipeline re-specifies and re-reviews them, allowing auto-fix to resolve prior blockers
 4. **When** a step fails (e.g., review returns BLOCK and blocker-fix budget is exhausted) **then** the build stops, reports the failure with context, and saves build state for resume
-5. **When** `--resume` is invoked **then** the skill reads `.context-index/build-state/<slug>.json`, identifies the last successful step, and resumes from the next step. Scans for stale builds (see Stale Build Detection below) and surfaces them if found
+5. **When** `--resume` is invoked **then** the skill reads `.context-index/lifecycle-state/<slug>.json`, identifies the last successful step, and resumes from the next step. Scans for stale builds (see Stale Build Detection below) and surfaces them if found
 5a. **When** `--resume --from <step>` is invoked **then** the skill overrides the automatic resume point and begins execution from the named step (e.g., `--from implement` skips plan and route, starting at implement). Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Invalid step name → print error and stop
 6. **When** `--dry-run` is invoked **then** the skill shows what would happen at each phase (specs found, pipeline mode, steps to execute, estimated task counts, retry policy) without executing any skill
 7. **When** a spec already has a plan (`.plan.md` exists) **then** the plan step is skipped
@@ -84,7 +87,7 @@ The build orchestrator executes **exactly one pipeline step per turn**, then yie
 
 25. **When** the orchestrator identifies that all steps are complete (or a stop condition is met) **then** it does NOT re-invoke. It prints the final summary and exits.
 
-26. **When** the orchestrator loads **then** it MUST determine its current step by reading `.context-index/build-state/<slug>.json` BEFORE taking any action. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history.
+26. **When** the orchestrator loads **then** it MUST determine its current step by reading `.context-index/lifecycle-state/<slug>.json` BEFORE taking any action. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history.
 
 27. **When** the orchestrator's prompt is assembled **then** it contains ONLY the instructions for the dispatch loop (read state → determine next step → dispatch ONE subagent → record result → re-invoke or stop). It does NOT contain the full behavioral details of child skills. The orchestrator sees step names and dispatch instructions, never implementation details.
 
@@ -96,7 +99,7 @@ This model prevents the "finish the work" failure mode where accumulated context
 
 ### Stale Build Detection
 
-When `--resume` is invoked (or at the start of a new `--spec` build), scan `.context-index/build-state/` for files where:
+When `--resume` is invoked (or at the start of a new `--spec` build), scan `.context-index/lifecycle-state/` for `<slug>.json` files where:
 - `status` is `in_progress`, AND
 - all recorded steps have `status: skipped`
 
@@ -191,7 +194,7 @@ Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`.
 ### Postconditions
 
 - Each spec that passes all steps has status `validated`
-- Build state file at `.context-index/build-state/<slug>.json` records outcome
+- Build state file at `.context-index/lifecycle-state/<slug>.json` records outcome
 - Issue board reflects current state (if configured)
 - Summary printed: N specs attempted, N passed, N failed, N skipped
 
@@ -218,7 +221,7 @@ When invoked from a workspace root (a directory containing a `workspace.yaml` ma
 - The orchestrator performs a topological sort of child repos based on declared dependencies in `workspace.yaml`
 - Each child repo is built in dependency order using its own pipeline mode (Full or Implement)
 - Failure in a child repo stops dependents but not independent repos
-- Build state files are written per-repo at `<child-repo>/.context-index/build-state/<slug>.json`
+- Build state files are written per-repo at `<child-repo>/.context-index/lifecycle-state/<slug>.json`
 - Workspace-level summary is printed after all child builds complete
 
 See the `workspace-aware-vision` spec for the full workspace topology spec.
@@ -233,8 +236,8 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
 | Create SKILL.md | Write the skill with pipeline steps, resume logic, phase batching | large |
-| Define build state format | JSON schema for `.context-index/build-state/` files | small |
-| Create build-state directory | Ensure directory exists or is created on first build | small |
+| Define build state format | JSON schema for `.context-index/lifecycle-state/<slug>.json` files | small |
+| Create lifecycle-state directory | Ensure directory exists or is created on first build | small |
 
 ## Issue Board Integration
 
@@ -276,7 +279,7 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 - [ ] Review step skipped in Full Pipeline if `.review.md` exists with PASS verdict and is not stale
 
 ### Resume and Stale Builds
-- [ ] `--resume` reads `.context-index/build-state/<slug>.json` and resumes from next uncompleted step
+- [ ] `--resume` reads `.context-index/lifecycle-state/<slug>.json` and resumes from next uncompleted step
 - [ ] `--resume --from <step>` overrides the automatic resume point; valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`
 - [ ] `--resume --from <invalid-step>` prints an error and stops
 - [ ] On `--resume`, stale build detection scans for zombie builds (in_progress + all steps skipped) and reports them with suggested resume command
