@@ -6,18 +6,20 @@
 
 ---
 charter: cli-driver-surface
-status: review-passed
+status: review-pending
 risk_level: high
 milestone: adev-compiler-discipline
-revision: 1
-charter-revision: 2
+revision: 2
+charter-revision: 3
 created: 2026-05-14
 updated: 2026-05-14
 ---
 
+> **Rev 2 amendment (2026-05-14):** Updated illustrative diagnostic IDs to match `diagnostic-registry.spec.md` rev 2. The example previously used `adev/lifecycle-prerequisite-met`, which was dropped from the Tier-1 producer set in `diagnostic-registry` rev 2 (lifecycle step-order is now enforced by `requireGate`, not by a diagnostic). Examples now use `adev/event-schema-valid` (a real Tier-1 producer). Behavior contracts are unchanged; this is a documentation alignment, not a contract change. Status returned to `review-pending` because cross-spec example payloads changed.
+
 ## Behavioral Contract
 
-The write-time diagnostic hook closes the claim/evidence gap at the strongest possible moment: every time a lifecycle event is appended to a spec's JSONL log, the engine runs Tier-1 diagnostics scoped to `event-impact` and tags the event inline with any firing diagnostic IDs. The result: an agent claiming `step_completed: validate` cannot do so silently — if no prior `validator_report` events exist, the appended event carries `diagnostic_warnings: ["adev/lifecycle-prerequisite-met", ...]` as a structural part of the audit trail. The default mode is `tag` (write succeeds, warnings recorded inline); `strict` mode rejects the write with a `GateError`; `off` disables. The manifest knob `lifecycle.event_diagnostics: strict|tag|off` (default `tag`) controls behavior.
+The write-time diagnostic hook closes the claim/evidence gap at the strongest possible moment: every time a lifecycle event is appended to a spec's JSONL log, the engine runs Tier-1 diagnostics scoped to `event-impact` and tags the event inline with any firing diagnostic IDs. The result: an agent appending an event with a typo'd or unknown discriminator cannot do so silently — the appended event carries `diagnostic_warnings: ["adev/event-schema-valid", ...]` as a structural part of the audit trail. The default mode is `tag` (write succeeds, warnings recorded inline); `strict` mode rejects the write with a `GateError`; `off` disables. The manifest knob `lifecycle.event_diagnostics: strict|tag|off` (default `tag`) controls behavior.
 
 ### Preconditions
 
@@ -56,7 +58,7 @@ The write-time diagnostic hook closes the claim/evidence gap at the strongest po
 | Engine call throws despite engine's internal try/catch | Log full error to stderr; in `tag`/`off` modes write proceeds; in `strict` mode the throw propagates as `GateError` |
 | Event object missing required fields (no `event`/`ts`) | The event-schema-valid Tier-1 producer fires; in `tag` mode the warning is tagged onto the malformed event itself (still written); in `strict` mode `appendEvent` throws |
 | `runDiagnostics` returns runner-level `errors:` (registry malformed) | Log to stderr with `[event-diagnostics:registry-error]` prefix; do not tag onto event; write proceeds |
-| `strict` mode AND `adev/lifecycle-prerequisite-met` fires (e.g., `step_completed` without prior `step_started`) | `appendEvent` throws `GateError("Prerequisite missing: ...")`; event NOT written to disk |
+| `strict` mode AND an error-severity Tier-1 producer fires on the appended event (e.g., `adev/event-schema-valid` rejects an unknown event discriminator, or `adev/frontmatter-present` flags a spec missing frontmatter) | `appendEvent` throws `GateError` with the firing diagnostic's message; event NOT written to disk |
 | `strict` mode AND only `warning` or `info` severities fire | Write proceeds; not blocking |
 
 ## System Constitution Reference

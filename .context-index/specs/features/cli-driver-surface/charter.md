@@ -1,8 +1,10 @@
 ---
 status: approved
-revision: 2
+revision: 3
 updated: 2026-05-14
 ---
+
+> **Rev 3 amendment (2026-05-14):** Aligned with `diagnostic-registry.spec.md` rev 2. Tier-1 producer count revised from 4 → 3 (the `adev/lifecycle-prerequisite-met` producer was dropped; lifecycle step-order is enforced by `requireGate` in `lib/lifecycle-state.mjs`, not by a diagnostic). Updated three load-bearing references: (i) the In Scope bullet for Tier-1 producers (was "4 deterministic checks"), (ii) the Relationships entry for diagnostic runner paths (`lib/cli/diagnostics/<id>.mjs` → `lib/diagnostics/tier1/<id>.mjs`, resolving a deferred path mismatch from the rev 1 diagnostic-registry review), (iii) the Capability Map row for "Tier-1 producers (v1 set)" (roster description). No charter scope or boundary changes.
 
 # Feature Charter: cli-driver-surface
 
@@ -22,7 +24,7 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 - **`adev diagnose [--spec <p>] [--tier 1|2|3] [--json] [--only <ids>]`** — CLI verb that iterates the registry and reports firing diagnostics.
 - **Write-time Tier-1 diagnostic hook** — `lib/lifecycle-state.mjs::appendEvent` calls `runDiagnostics({ tier: 1, scope: 'event-impact' })` after every write; results are tagged inline on the event as `diagnostic_warnings: [<id>...]`.
 - **Manifest knob `lifecycle.event_diagnostics: strict|tag|off`** — default `tag`.
-- **Tier-1 producers shipped in v1** — event-schema check, status-enum legality, lifecycle-step prerequisite consistency, frontmatter presence (4 deterministic checks).
+- **Tier-1 producers shipped in v1** — event-schema check, status-enum legality, frontmatter presence (3 deterministic checks). Lifecycle step-order checks are NOT a diagnostic — they remain `requireGate` in `lib/lifecycle-state.mjs` per the rev 2 diagnostic-registry amendment and ADR-0009.
 - **Canonical SKILL.md updates** — 18 files in `skills/*/SKILL.md`. Mid-migration tree state is per-skill atomic: extracted skills + un-extracted skills, never "skill with both forms."
 - **Constitution amendment** — extend `## Anti-Patterns to Avoid` to forbid `node --input-type=module -e "..."` heredocs, `node -e "..."` invocations, and `Run inline Node.js:` step directives in SKILL.md prose. Harness-side `!command` (read-once at load time, distinct from agent-side eval) remains permitted for read-only context injection.
 - **Regression hook** — `hooks/pre-commit-no-inline-node.sh` that greps `skills/**/SKILL.md` for the forbidden patterns and rejects matching commits. Scope: canonical `skills/**` only (`providers/*/skills/**` is out of scope per Dependencies below). The hook also rejects commits where a single SKILL.md contains both an inline-Node block *and* an `adev <verb>` invocation in the same H3 section (the per-step boundary; mechanically enforces the per-skill atomic invariant).
@@ -64,7 +66,7 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 
 - One `lib/cli/<verb>.mjs` ↔ one `adev <verb>` CLI entry (1:1)
 - One CLI helper ↔ zero-or-one lifecycle-step binding (only lifecycle helpers call `requireGate`)
-- `governance/diagnostics.yaml` entries → runner files in `lib/cli/diagnostics/<id>.mjs` (registry is the source of truth for which diagnostics exist; runners are the implementations)
+- `governance/diagnostics.yaml` entries → runner files in `lib/diagnostics/tier1/<id>.mjs` for Tier-1 producers (and `lib/diagnostics/tier{2,3}/` for higher tiers as they ship). The registry is the source of truth for which diagnostics exist; runners are the implementations.
 - `lib/lifecycle-state.mjs::appendEvent` → `runDiagnostics({ tier: 1, scope: 'event-impact' })` after every write
 - `adev diagnose` → `runDiagnostics({ tier: <selected> })` on demand
 - `adev gate require` → `runDiagnostics({ tier: 1, only: <blocker ids> })` at skill entry
@@ -92,7 +94,7 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 | `adev diagnose` CLI verb | On-demand diagnostic run, JSON + human-readable modes | must-have | adev-compiler-discipline | review-passed |
 | Write-time Tier-1 hook in `appendEvent` | Calls `runDiagnostics({ tier: 1 })` after every event write; tags event inline | must-have | adev-compiler-discipline | review-passed |
 | Manifest knob `lifecycle.event_diagnostics` | strict / tag / off; default tag | must-have | adev-compiler-discipline | review-passed |
-| Tier-1 producers (v1 set) | Event schema, status enum, prerequisite consistency, frontmatter presence | must-have | adev-compiler-discipline | review-passed |
+| Tier-1 producers (v1 set) | Event schema (closed discriminator / open per-type shape), status-enum legality, frontmatter presence (3 producers; lifecycle step-order is `requireGate`'s job, not a diagnostic — see ADR-0009) | must-have | adev-compiler-discipline | review-passed |
 | Constitution amendment | Extend Anti-Patterns to forbid inline-Node patterns; permit harness-side `!command` | must-have | adev-compiler-discipline | review-passed |
 | `hooks/pre-commit-no-inline-node.sh` | Regression hook rejecting new inline-Node and both-forms states in `skills/**/SKILL.md` | must-have | adev-compiler-discipline | review-passed |
 | `cli` charter revision (rev 2 → rev 3) | Drop single-file constraint, declare driver model, expand commands list. **Prerequisite for the driver-substrate work** — must land first so the first multi-file `lib/cli/` commit does not violate the existing single-file constraint. | must-have | adev-compiler-discipline | done |
