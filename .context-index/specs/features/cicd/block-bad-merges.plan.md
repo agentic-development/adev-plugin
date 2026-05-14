@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log block-bad-merges.jsonl -->
 # Implementation Plan: Block Bad Merges
 
 > **Methodology:** adev

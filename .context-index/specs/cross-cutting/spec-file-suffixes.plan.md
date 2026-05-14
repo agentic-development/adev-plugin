@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log spec-file-suffixes.jsonl -->
 # Implementation Plan: Standardize Spec File Suffixes
 
 > **Methodology:** adev

@@ -262,6 +262,10 @@ describe("migrateMilestones", () => {
 
       const result = await migrateMilestones(root, {});
       assert.equal(result.action, "migrated");
+      // Target must be worktree-local — never redirected via resolveStorageRoot()
+      // to a sibling worktree's checkout. Regression guard for the 0.26.0
+      // cross-worktree-write bug.
+      assert.equal(result.target, join(root, ".context-index", "milestones.json"));
       const milestones = loadMilestones(root);
       assert.equal(milestones.length, 2);
       assert.equal(milestones[0].name, "0.25.0");

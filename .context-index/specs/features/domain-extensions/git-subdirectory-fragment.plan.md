@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log git-subdirectory-fragment.jsonl -->
 # Implementation Plan: Git Subdirectory Fragment Support
 
 > **Methodology:** adev

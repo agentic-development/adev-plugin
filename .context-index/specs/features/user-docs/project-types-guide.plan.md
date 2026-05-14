@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log project-types-guide.jsonl -->
 # Implementation Plan: Project Types Guide
 
 > **Methodology:** adev

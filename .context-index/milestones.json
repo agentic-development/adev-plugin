@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "milestones": [
+    {
+      "name": "0.25.0",
+      "status": "shipped",
+      "epic_id": "epic-63",
+      "target_date": "2026-05-14",
+      "release": {
+        "strategy": "release-please"
+      },
+      "ship_criteria": [
+        {
+          "check": "all_issues_closed"
+        },
+        {
+          "check": "gates_pass"
+        },
+        {
+          "confirm": "CHANGELOG updated"
+        },
+        {
+          "confirm": "README updated"
+        }
+      ]
+    },
+    {
+      "name": "0.26.0",
+      "status": "planned",
+      "epic_id": "epic-71",
+      "target_date": "2026-07-06",
+      "release": {
+        "strategy": "release-please"
+      },
+      "ship_criteria": [
+        {
+          "check": "all_issues_closed"
+        },
+        {
+          "check": "gates_pass"
+        },
+        {
+          "confirm": "Migration tool tested on this repo end-to-end"
+        },
+        {
+          "confirm": "All sibling charters (task-management, spec-lifecycle, session-awareness, milestone-lifecycle) revised to reference this charter as storage-format authority"
+        },
+        {
+          "confirm": "Provider mirrors (codex, opencode) synced for every updated lifecycle skill"
+        },
+        {
+          "confirm": "CHANGELOG updated with breaking-change note for tasks.md to tasks.json"
+        }
+      ]
+    }
+  ]
+}

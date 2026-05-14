@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-issues-skill.jsonl -->
 # Implementation Plan: /adev:issues Skill
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log model-routing.jsonl -->
 # Plan: Model Routing
 
 ## Spec Reference

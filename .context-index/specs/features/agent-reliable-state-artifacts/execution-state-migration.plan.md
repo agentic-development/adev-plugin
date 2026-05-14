@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log execution-state-migration.jsonl -->
 # Implementation Plan: Execution State Migration
 
 > **Methodology:** adev

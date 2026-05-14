@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log work-triage-and-routing.jsonl -->
 # Implementation Plan: Work Triage and Routing
 
 > **Methodology:** adev

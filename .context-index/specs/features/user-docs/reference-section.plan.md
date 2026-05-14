@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log reference-section.jsonl -->
 # Implementation Plan: Reference Section
 
 > **Methodology:** adev

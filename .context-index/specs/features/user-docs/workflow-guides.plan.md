@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log workflow-guides.jsonl -->
 # Implementation Plan: Workflow Guides
 
 > **Methodology:** adev

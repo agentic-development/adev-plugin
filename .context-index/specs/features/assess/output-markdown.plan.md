@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log output-markdown.jsonl -->
 # Plan: Output Markdown
 
 ## Spec Reference

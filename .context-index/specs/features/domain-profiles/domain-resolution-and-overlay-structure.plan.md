@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log domain-resolution-and-overlay-structure.jsonl -->
 # Implementation Plan: Domain Resolution & Overlay Structure
 
 > **Methodology:** adev

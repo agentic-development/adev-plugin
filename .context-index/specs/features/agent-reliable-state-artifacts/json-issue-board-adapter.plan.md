@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log json-issue-board-adapter.jsonl -->
 # Implementation Plan: JSON Issue Board + Adapter
 
 > **Methodology:** adev

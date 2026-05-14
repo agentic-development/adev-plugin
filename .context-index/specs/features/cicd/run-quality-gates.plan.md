@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log run-quality-gates.jsonl -->
 # Implementation Plan: Run Quality Gates
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log contradiction-tracking.jsonl -->
 # Implementation Plan: Contradiction Tracking
 
 > **Methodology:** adev

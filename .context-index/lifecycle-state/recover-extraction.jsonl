@@ -1,0 +1,10 @@
+{"event":"lifecycle_step","ts":"2026-04-09T00:00:00Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/heuristics/recover-extraction.md"}
+{"event":"step_completed","ts":"2026-04-09T00:00:00Z","step":"review","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-09T00:00:00Z","step":"plan","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/heuristics/recover-extraction.md"}
+{"event":"step_completed","ts":"2026-04-09T00:00:00Z","step":"plan","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-09T00:00:00Z","step":"route","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/heuristics/recover-extraction.md"}
+{"event":"step_completed","ts":"2026-04-09T00:00:00Z","step":"route","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-10T00:05:00Z","step":"implement","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/heuristics/recover-extraction.md"}
+{"event":"step_completed","ts":"2026-04-10T00:05:00Z","step":"implement","actor":"migration/adev-cli"}
+{"event":"lifecycle_step","ts":"2026-04-10T00:05:00Z","step":"validate","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/heuristics/recover-extraction.md"}
+{"event":"step_completed","ts":"2026-04-10T00:05:00Z","step":"validate","actor":"migration/adev-cli"}

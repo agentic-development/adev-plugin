@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-vision-skill.jsonl -->
 # Plan: adev:vision Skill
 
 ## Spec Reference

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log retrieval-filtering.jsonl -->
 # Implementation Plan: Retrieval Filtering
 
 > **Methodology:** adev

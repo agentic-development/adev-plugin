@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log generate-generated-manifest.jsonl -->
 # Implementation Plan: Generate GENERATED.md manifest
 
 > **Methodology:** adev

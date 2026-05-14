@@ -40,6 +40,9 @@ source-manifest:
     - tests/skills/api-reference-appendix.test.mjs
     - tests/skills/no-stale-format-refs.test.mjs
   computed-at: "2026-05-12T18:38:32.899Z"
+drift_detected: true
+drift_source: lib/migrate-state-artifacts.mjs
+drift_at: 2026-05-13T18:59:51.237Z
 ---
 
 ## Behavioral Contract
