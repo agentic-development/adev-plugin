@@ -1,5 +1,12 @@
 # adev — Empirical Audit and Ranked Improvement Plan
 
+> **Correction appended 2026-05-14** — Section 7 corrects the "0 BLOCK
+> verdicts" finding. Reviews are *intentionally* overwritten on resolution
+> per `skills/review-specs/SKILL.md` lines 274/305/330/354; BLOCK history
+> survives in git, not in the markdown. The real gap is that the
+> supposedly-canonical lifecycle event log isn't populated. P7 is
+> downgraded; a new P21 captures the actual gap. See §7.
+
 > Companion to `adev-vs-compiler-comparison.md` and `adev-vs-compiler-gaps-and-practice.md`.
 > Where those notes argued the analogy in principle, this one measures it.
 > Five parallel research agents audited specs, reviews, commits, validation
@@ -189,3 +196,142 @@ adev finally taking the compiler analogy literally instead of metaphorically.
   is not to imitate LLVM — it is to find the cheapest mechanism that makes
   each adev invariant actually hold. Compilers are a library of those
   mechanisms; we are shopping.
+
+---
+
+## 7. Correction — the "0 BLOCK verdicts" finding was a measurement error
+
+### 7.1 The challenge
+
+A reviewer (correctly) pointed out: "Reviews are mutated when they are
+blocked to fix blocks." Let me look at the review file history and
+git blame.
+
+### 7.2 What `skills/review-specs/SKILL.md` actually says
+
+The skill explicitly defines the BLOCK→resolve→PASS workflow with file
+mutation:
+
+- L274 *"If verdict is BLOCK: ... Update status: `review-pending` → `review-blocked`"*
+- L305 *"Step 7 writes `review-pending → review-passed` (or `review-blocked`) back to the spec file"*
+- L342 *"Run /adev:specify to revise the spec, then /adev:review-specs to re-review."*
+- L354 *"BLOCK → `review-blocked`"* (status enum)
+
+That is: BLOCK is *expected* to flip to PASS on re-review, and the
+`.review.md` is overwritten in the process. The markdown is the
+*current-state* artifact, not the audit log. Treating "0 BLOCK in current
+state" as evidence of "no verdict floor" was a category error.
+
+### 7.3 What the git history actually shows
+
+Quantified (`git log --all --format='%H %s'` filtered):
+
+| Signal | Count |
+| --- | --- |
+| Commits whose subject contains `BLOCKED` / `BLOCK review` / `review blockers` | **8** |
+| Commits whose subject signals resolution (`PASS review` / `blockers resolved` / `re-review`) | **10** |
+| `.review.md` files with **>1 git commit** (true re-reviews) | **7** |
+| `.review.md` files with inline `rev-1` / `Previous Review` / `Resolution Summary` sections | **13** |
+| `.review.md` files currently containing `BLOCK` in body | **3** (one is `immutable-handoff-block.review.md`; the BLOCK is in the slug) |
+
+Concrete example — `agent-reliable-state-artifacts/lifecycle-event-log.review.md`:
+
+```
+add1117 docs(agent-reliable-state-artifacts): foundation specs PASS review
+0d62cfc docs(agent-reliable-state-artifacts): review foundation specs — BLOCKED
+```
+
+The earlier commit `0d62cfc` recorded BLOCKED; the later `add1117` overwrote
+the file with PASS. The current file shows PASS only — the BLOCK history
+lives in git, not in the artifact.
+
+Other concrete BLOCK→resolution pairs in commit subjects:
+
+- `1de437e` *"architecture review — 3 specs BLOCKED"* → `7bedc95` *"re-review after blocker fixes — all 3 PASS_WITH_NOTES"*
+- `8c4a8c8` *"address 11 security blockers from rev-2 review"* → resolution PASS in subsequent commit
+- `f2d216a`, `8ba5a9c` *"fix(infra-preflight): address review blockers and warnings"* → `47d407c` *"spec review passed — all 18 findings resolved"*
+- `fee7773` *"resolve review blockers + cross-spec warnings"* (single squash commit)
+
+So the verdict floor **does** fire — at least 7–13 specs (depending on how
+you count) went through the documented BLOCK→revise→PASS cycle. The Agent B
+finding "0 BLOCK across 148 review files" was correct as a literal count of
+current-state markdown, but the *interpretation* ("blockers negotiated down
+inline") was wrong. The correct interpretation is "blockers fire, the spec
+gets revised, and the markdown is overwritten as designed."
+
+### 7.4 The real gap that remains
+
+The corrected reading sharpens the actual problem rather than dissolving it:
+
+**The canonical audit log doesn't exist.** Per the `agent-reliable-state-artifacts`
+charter, BLOCK→resolution provenance should live in
+`.context-index/lifecycle-state/<slug>.jsonl` as `reviewer_report` events
+with `severity` and `verdict` fields, stamped at write time and aggregated
+by `currentState()`. Today:
+
+- `.context-index/lifecycle-state/` **does not exist** on disk.
+- `.context-index/build-state/` (the pre-migration name) contains **2 files**:
+  `persona-resolution-and-injection.json` and `recover-extraction.json`.
+- `find … -name '*.jsonl' | xargs grep '"event":"reviewer_report"'` returns **0 events**.
+
+So the BLOCK history that *should* be machine-queryable from the lifecycle
+log instead survives only in:
+
+1. Git subjects of ~8–18 commits (durable but unstructured)
+2. Inline `rev-1` / `Previous Review` sections in **13 of 148** review files (durable but inconsistent — only ~9% of reviews preserve it)
+3. Nothing else.
+
+For 78% of reviews, the prior-verdict provenance is lost as soon as the
+file is overwritten and the commit message doesn't happen to mention the
+prior state. An auditor today cannot answer "how many specs were BLOCKED
+and resolved in the last release?" without combing git subjects manually.
+
+### 7.5 Revised diagnosis
+
+| Old reading | Corrected reading |
+| --- | --- |
+| Verdict floor doesn't exist; blockers negotiated down to PASS_WITH_NOTES inline | Verdict floor exists and fires; markdown is overwritten on resolution by design |
+| `governance/review.yaml: reviewers: []` since 2026-05-11 | (still true and still a problem — independent of the verdict-floor question) |
+| `.review.md` is the audit trail | `.review.md` is the *current-state* artifact; the lifecycle event log should be the audit trail but isn't populated |
+
+### 7.6 Updated improvement ranking
+
+**P7 — Deterministic verdict floor in review** — *downgraded.* The
+mechanism is already implemented (`computeVerdict` in
+`lib/governance/review-config.mjs`, default `verdictRules.blocker_threshold: 1`).
+What we observed in 7.3 is consistent with the floor working. Keep this
+item as a regression-guard test (`tests/governance/verdict-floor.test.mjs`:
+"any reviewer emitting `severity: blocker` produces consolidated
+`verdict: BLOCK`") but its impact drops from 5 → 2.
+
+**P21 — Populate the lifecycle event log with reviewer_report events** *(new, impact 5, effort 3).*
+Wire `/adev:review-specs` Step 6c to append a `reviewer_report` event per
+dispatched reviewer to `.context-index/lifecycle-state/<slug>.jsonl`,
+including `severity` (stamped from `reviewers.yaml::severity_cap`),
+`verdict`, and a pointer to the consolidated `.review.md`. This is already
+specified in `agent-reliable-state-artifacts/lifecycle-event-log.spec.md`
+behaviors; the gap is that the skill instructions don't yet call the
+writer. Once landed, BLOCK history becomes machine-queryable and the
+P10 (`/adev:dce`) and P15 (`/adev:retro`) commands can use it.
+
+**P22 — Backfill historical BLOCK→PASS provenance from git** *(new, impact 3, effort 2).*
+One-shot script (`lib/migrate-review-history.mjs`) that walks all
+`.review.md` git histories, identifies BLOCK→PASS transitions by parsing
+commit-message subjects and prior file contents, and emits synthetic
+`reviewer_report` events into the lifecycle log. Restores the ~135
+specs' worth of lost provenance. Optional — only worth doing if P21
+lands first.
+
+### 7.7 Methodological lesson
+
+The Agent B audit was asked to characterize the `.review.md` corpus. It
+did that correctly. The mistake was mine in synthesis: I treated the
+markdown as the audit log without re-checking the workflow contract.
+**The lesson is structural, not just careless:** for any artifact whose
+contract permits in-place mutation, current-state counts are not
+evidence about the rate of state transitions — only the lifecycle log
+is. Future audit notes should distinguish between "current-state corpus
+findings" and "transition-rate findings" and use the right source for
+each. This applies just as much to validates (which can be re-run) and
+to spec status (`draft → review-pending → review-passed → validated`,
+also mutated in place).
