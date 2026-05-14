@@ -374,3 +374,183 @@ without anyone having to remember to check.
 - [Claude Code hooks](https://code.claude.com/docs/en/hooks)
 - [Qodo — 2026 AI code review pattern predictions](https://www.qodo.ai/blog/5-ai-code-review-pattern-predictions-in-2026/)
 - [Writing an LSP from scratch in Node](https://blog.abhinasregmi.com.np/blog/lsp-implementation)
+
+---
+
+## 12. Are lifecycle gates part of `diagnose`?
+
+Yes — but as a **derived policy layer over diagnostics**, not as a parallel
+subsystem. The distinction matters and deserves a clean answer because it
+determines whether adev ends up with one source of truth or two.
+
+### 12.1 The conceptual distinction
+
+**Diagnostics** are observations of current state. *"This spec is missing a
+citation."* *"`governance/review.yaml` has zero reviewers."* They are
+facts about files.
+
+**Gates** are decisions about whether forward motion is allowed.
+*"You can't run validate because the implement step hasn't completed."*
+They are policies about transitions.
+
+The two are easily confused because a failing gate *looks like* a
+diagnostic. But the difference is structural: diagnostics are about
+**state at time `t`**; gates are about **transition from step `n` to step
+`n+1`**. Some diagnostics never gate anything (a charter missing a
+capability map is a problem; it doesn't block `validate` for an unrelated
+spec). Some gates aren't naturally one diagnostic ("the prior step
+completed" is queried from the lifecycle event log, not from a file's
+schema).
+
+### 12.2 The compiler answer
+
+A compiler has *errors* (observations the analyzer makes — type mismatch,
+undefined symbol, malformed AST) and **separately**, a driver policy
+that says *"if any diagnostic of severity ≥ error was emitted by phase
+N, do not invoke phase N+1."* The errors are produced by independent
+passes; the gating is the driver's policy on the aggregated result.
+
+There is exactly one source of truth (the diagnostic stream) and one
+derived policy (the driver's gate). Replace either and the other still
+works.
+
+### 12.3 The adev shape
+
+Apply the compiler discipline:
+
+1. **Diagnostics are the foundation.** Every fact adev cares about — schema
+   violations, missing citations, registry attrition, drift, status
+   inconsistencies, lifecycle-event-log assertions — is a named diagnostic
+   kind produced by the registry from §6.
+2. **Gates are policies over diagnostics.** A new declarative file —
+   `governance/lifecycle-gates.yaml` — maps each lifecycle step to the
+   subset of diagnostic kinds that block entry to it.
+3. **`adev gate require ...` is a thin query.** It runs the diagnostic
+   set filtered to the relevant policy entry and exits non-zero if any
+   fire.
+
+```yaml
+# .context-index/governance/lifecycle-gates.yaml
+gates:
+  plan:
+    blockers:
+      - adev/spec-status-not-review-passed
+      - adev/charter-missing-capability-map
+      - adev/spec-missing-required-section
+  implement:
+    blockers:
+      - adev/plan-not-found
+      - adev/plan-status-not-approved
+  validate:
+    blockers:
+      - adev/implement-step-not-complete
+      - adev/spec-missing-citations         # P2 grounding
+      - adev/source-manifest-not-stamped
+  retro:
+    blockers:
+      - adev/validate-step-not-complete
+```
+
+`adev/implement-step-not-complete` is itself a diagnostic — produced by
+reading `.context-index/lifecycle-state/<slug>.jsonl` and folding events.
+It's just a diagnostic whose *input source* is the event log rather than
+a markdown file. The diagnostic registry doesn't distinguish; it just
+runs producers.
+
+### 12.4 Helper-side implementation
+
+The `requireGate` helper from the dispatch-patterns §7 (helper-side
+enforcement) becomes a one-liner over the diagnostic library:
+
+```javascript
+// lib/cli/gate.mjs
+import { runDiagnostics } from '../diagnostics/index.mjs';
+import { loadGates }      from '../governance/lifecycle-gates.mjs';
+
+export async function require({ projectRoot, spec, step }) {
+  const gates = loadGates(projectRoot);
+  const blockers = gates[step]?.blockers ?? [];
+  const firing = await runDiagnostics({
+    projectRoot, spec, only: blockers, minSeverity: 'error',
+  });
+  if (firing.length > 0) {
+    throw new GateError(step, firing);
+  }
+}
+```
+
+That's it. Every helper's first-line `requireGate(..., 'implement')`
+funnels into this. P5 of the audit (status-advancement gate) becomes the
+same library with a different `step` argument. The dispatch-patterns
+three-layer enforcement (helper-side, UserPromptSubmit, future Anthropic
+hook) all consult one function.
+
+### 12.5 LSP surface — two views, one engine
+
+The daemon exposes both:
+
+| Request | Returns | Use |
+| --- | --- | --- |
+| `textDocument/diagnostic` | All diagnostics for the open file | Editor squiggly lines |
+| `workspace/diagnostic` | All project diagnostics | Full-project view |
+| `workspace/executeCommand` `adev/gate?step=validate&spec=...` | Only the diagnostics in `gates.validate.blockers` that are firing | Agent's PreToolUse pull |
+
+In LSP terms, lifecycle-position diagnostics attach to the spec file's
+frontmatter `status:` line, with a message like *"Cannot advance to
+validated — `adev/implement-step-not-complete` (see
+.context-index/lifecycle-state/<slug>.jsonl)"*. Same diagnostic
+machinery, attached to the file that's blocking transition. Code actions
+can offer *"Open lifecycle log"* or *"Mark implement complete (only if
+…)"*.
+
+### 12.6 Why this is better than two parallel systems
+
+Three structural wins:
+
+1. **One source of truth.** Every fact adev cares about lives in one
+   registry. Changing how a check is implemented changes one file.
+2. **Gates become declarative.** Today, "what blocks validate?" is
+   spread across `skills/validate/SKILL.md` Step 0a inline Node, the
+   `lib/lifecycle-state.mjs` `requireGate` function, and the
+   `hooks/lifecycle-gate-*.sh` shell scripts. After this design, it's
+   one YAML stanza.
+3. **The LSP daemon is naturally the gate oracle.** No separate "gate
+   server"; the daemon answers both "what's wrong with this file?" and
+   "can I run step X?" from the same in-memory state.
+
+### 12.7 Compiler analog, restated
+
+`gcc` doesn't have a separate "is it OK to invoke `as` now?" subsystem.
+It has the error stream from `cc1` and a one-line driver policy: *"if
+`cc1` exited non-zero, do not run `as`."* The error stream is the
+authoritative state; the gating is a function over it. Replace `cc1`'s
+diagnostic kinds and the gate still works; replace the gate's policy
+(e.g., `-Werror`) and the diagnostics still mean the same thing.
+
+adev's lifecycle gates should sit in the same relationship to the
+diagnostic registry: the gate is policy, the diagnostic is fact, and
+the LSP daemon is the engine that produces facts which the gate
+consumes.
+
+### 12.8 Implication for the audit's improvement plan
+
+This sharpens several P-items:
+
+- **P5 (status-advancement gate)** becomes a thin wrapper over the
+  diagnostic library; the actual logic moves to producers in
+  `lib/diagnostics/lifecycle/*.mjs`.
+- **P7 (deterministic verdict floor in review)** is similarly a policy
+  over a `adev/review-blocker-finding` diagnostic — already implemented
+  by `computeVerdict`, just re-exposed as a diagnostic producer.
+- **New: `governance/lifecycle-gates.yaml`.** Replaces the implicit
+  per-step gate logic scattered across SKILL.md prose. One file,
+  schema-validated at install time per §2.3 (TableGen layer).
+- **Existing `lifecycle.gate_mode: strict|advisory`** stays — it
+  controls how the helper reacts to a fired gate (throw vs. warn), not
+  how gates are defined. Same knob, simpler implementation underneath.
+
+The unifying picture: **diagnostics are the IR; gates are link-time
+checks; LSP is the incremental driver; helpers are the phase binaries;
+hooks are cross-cutting concerns.** Each layer has one job, and the
+compiler analogy is no longer doing structural work — it's just
+describing the architecture.
