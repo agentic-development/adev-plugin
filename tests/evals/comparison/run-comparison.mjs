@@ -281,7 +281,9 @@ function scoreSpecCompliance(projectDir, branch) {
     const hasContextIndex = fileList.some((f) => f.startsWith('.context-index/'));
     const hasSpecs = fileList.some((f) => f.includes('/specs/'));
     const hasPlans = fileList.some((f) => f.includes('/plans/') || f.includes('plan'));
-    const hasBuildState = fileList.some((f) => f.includes('/build-state/'));
+    const hasBuildState = fileList.some(
+      (f) => f.includes('/build-state/') || f.includes('/lifecycle-state/'),
+    );
 
     if (!hasContextIndex) {
       return { score: null, metrics: { status: 'N/A', reason: 'plain-claude has no specs by design' } };
