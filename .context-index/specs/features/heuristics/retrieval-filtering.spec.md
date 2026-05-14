@@ -21,7 +21,7 @@ source-manifest:
   files:
     - lib/heuristics.mjs
     - tests/lib/heuristics.test.mjs
-    - .context-index/specs/features/heuristics/store-and-helper.md
+    - .context-index/specs/features/heuristics/store-and-helper.spec.md
     - .context-index/memory/heuristics/_format.md
   computed-at: "2026-04-25T21:55:13.324Z"
 ---

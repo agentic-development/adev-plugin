@@ -16,7 +16,6 @@ updated: 2026-05-04
 source-manifest:
   sha: "ee55775"
   files:
-    - lib/provider/interface.mjs
     - skills/assess/SKILL.md
   computed-at: "2026-04-12T11:48:02.729Z"
 ---
