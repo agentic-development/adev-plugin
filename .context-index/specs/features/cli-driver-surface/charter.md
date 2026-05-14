@@ -83,10 +83,10 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 
 | Capability | Description | Priority | Milestone | Status |
 |---|---|---|---|---|
-| Driver substrate (`lib/cli/<verb>.mjs` + dispatch) | Pattern, conventions, registration glue in `cli/index.mjs` | must-have | adev-compiler-discipline | review-passed |
+| Driver substrate (`lib/cli/<verb>.mjs` + dispatch) | Pattern, conventions, registration glue in `cli/index.mjs` | must-have | adev-compiler-discipline | planned |
 | Inline-Node extraction sweep | Per-skill atomic deletion of all 35+ inline blocks across 18 canonical SKILL.md files. Each PR ships helper + test + SKILL.md edit in one commit; no in-tree intermediate state with both forms. | must-have | adev-compiler-discipline | review-passed |
-| Helper-side `requireGate` discipline | Convention enforced by test that scans `lib/cli/*.mjs` for the call site | must-have | adev-compiler-discipline | review-passed |
-| `adev gate require` CLI verb | Explicit-invocation gate primitive | must-have | adev-compiler-discipline | review-passed |
+| Helper-side `requireGate` discipline | Convention enforced by test that scans `lib/cli/*.mjs` for the call site | must-have | adev-compiler-discipline | planned |
+| `adev gate require` CLI verb | Explicit-invocation gate primitive | must-have | adev-compiler-discipline | planned |
 | Diagnostic registry engine (`lib/diagnostics/index.mjs`) | `runDiagnostics({...})` + registry loader | must-have | adev-compiler-discipline | review-passed |
 | `governance/diagnostics.yaml` schema + initial scaffold | Declarative registry entries with `id` / `runner` / `severity` / `tier` / `scope` fields. Follows the precedent set by ADR-0003 (configurable review registry) for `governance/review.yaml` and `governance/gates.yaml`; this charter generalizes the same registry shape to diagnostics. | must-have | adev-compiler-discipline | review-passed |
 | `adev diagnose` CLI verb | On-demand diagnostic run, JSON + human-readable modes | must-have | adev-compiler-discipline | review-passed |
