@@ -1,0 +1,13 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-14T16:13:43.868Z"}
+{"event":"step_completed","step":"specify","ts":"2026-05-14T16:18:43.669Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-14T16:19:52.502Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PARSE_ERROR row missing (SA-10); severity vs exit-code (CON-4).","ts":"2026-05-14T16:25:34.763Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"PARSE_ERROR row missing (SA-10); severity vs exit-code (CON-4).","ts":"2026-05-14T16:25:34.764Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PARSE_ERROR row missing (SA-10); severity vs exit-code (CON-4).","ts":"2026-05-14T16:25:34.764Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-14T16:25:34.765Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-14T17:03:25.324Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-4","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T17:03:25.334Z"}

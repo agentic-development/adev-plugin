@@ -1,0 +1,15 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-14T14:54:28.174Z"}
+{"event":"step_completed","step":"specify","ts":"2026-05-14T14:55:44.574Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-14T16:19:52.499Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS","notes":"Foundational primitive; 0 warnings, 1 suggestion.","ts":"2026-05-14T16:25:34.673Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"Foundational primitive; 0 warnings, 1 suggestion.","ts":"2026-05-14T16:25:34.674Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"Foundational primitive; 0 warnings, 1 suggestion.","ts":"2026-05-14T16:25:34.674Z"}
+{"event":"step_completed","step":"review","verdict":"PASS","ts":"2026-05-14T16:25:34.676Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-14T17:03:25.203Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/kind-enumeration.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.207Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/kind-enumeration.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.207Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T17:03:25.224Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-05-14T17:10:44.368Z"}
+{"event":"step_failed","step":"route","verdict":"orchestrator-blocked","ts":"2026-05-14T17:11:11.675Z"}
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-14T17:45:47.458Z"}
+{"event":"step_failed","step":"specify","verdict":"orchestrator-blocked","ts":"2026-05-14T17:46:05.784Z"}
