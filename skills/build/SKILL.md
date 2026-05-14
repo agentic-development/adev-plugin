@@ -81,6 +81,17 @@ The build orchestrator is a coordinator. It decides *which* skill to run next, c
 1. **No pseudo-invocation.** A fresh subagent has no "knowledge" of what the child skill does. It must load the full SKILL.md via the Skill tool to execute it. It cannot summarize or shortcut.
 2. **Context isolation.** Each pipeline step runs in its own context. A 200K-token implement step does not pollute the orchestrator's context. The orchestrator only sees the result summary.
 
+### Dispatch Optimism (Tool Availability)
+
+**Dispatch optimistically. Do not introspect tool availability before calling Agent.** The harness is the only authority on whether a tool exists — call `Agent(...)` and let it return either a result or a harness-level rejection. There is no other valid signal of unavailability.
+
+In particular:
+
+- **`Agent` is the only dispatcher** in this CLI. The name `Task` appears in some Anthropic SDK docs but is NOT a tool name in Claude Code — there is no `Task` tool to look for. Searching for "Task" will always return nothing and is meaningless.
+- **`Agent` is eagerly loaded, not deferred.** It is declared in the top-level `<functions>` block of every orchestrator session, not in the deferred-tools list and not via ToolSearch. Its absence from the deferred-tools list is NOT evidence of unavailability — it is the expected state.
+- **ToolSearch only enumerates deferred tools.** Running `ToolSearch` with query `select:Agent` or keyword `agent` will correctly return zero matches even when Agent is available, because Agent is not deferred. Do not interpret an empty ToolSearch result as proof of absence.
+- **The harness is the only authority.** If — and only if — an attempted `Agent({...})` call returns a harness-level error indicating the tool does not exist, may the orchestrator record the step as FAILED with an unavailability reason. You must attempt the Agent call before recording any such failure. Self-aborting at the prose level (i.e., refusing to dispatch because you "couldn't find Agent in the tool list") is a build bug, not a safe fallback.
+
 ### Context Packet Assembly
 
 The Agent tool only accepts a `prompt` string — there are no env vars, JSON params, or other channels. All context the subagent needs must be serialized into the prompt. The orchestrator assembles a **context packet** per step with two sections: **pipeline context** (common to all steps) and **step context** (specific to each step).
@@ -819,6 +830,8 @@ Build complete.
 - Modify build state for a step before the subagent has returned its result
 - Continue to the next step if the subagent has not fully completed and returned its STEP_RESULT
 - Parse or act on intermediate output from the subagent — only the final STEP_RESULT matters for orchestration decisions
+- Introspect tool availability before dispatching — never scan the loaded tool list, the deferred-tools list, or ToolSearch results looking for "Agent" (or "Task") and self-abort based on the result. Agent is eagerly loaded and not deferred, so it is correctly absent from the deferred-tools list; that absence is NOT evidence of unavailability. Dispatch optimistically — the harness is the only authority on tool availability.
+- Record a step as FAILED with error `"Agent ... not available"` or `"Task ... not available"` without first attempting an actual `Agent({...})` call and observing the harness reject it. The orchestrator must attempt the Agent call before recording any tool-unavailability failure — prose-level self-abort is a build bug, not a safe fallback. Note: there is no `Task` tool in this CLI; Agent is the only dispatcher.
 
 ## API reference
 
