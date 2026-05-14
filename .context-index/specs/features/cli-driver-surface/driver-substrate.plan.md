@@ -204,6 +204,9 @@ In `cli/index.mjs`:
 // Adding a verb: create lib/cli/<verb>.mjs and add one line below.
 // ============================================================================
 
+// ⚠ NOTE: the registry sketch below shows separate _legacy-*.mjs files —
+//   this is SUPERSEDED by the inline-closure approach in the next section.
+//   Do not create _legacy-*.mjs files. See the inline-closure registry below.
 const VERB_REGISTRY = new Map([
   ['install',   () => import('./_legacy-install.mjs')],   // wraps cmdInstall
   ['upgrade',   () => import('./_legacy-upgrade.mjs')],
