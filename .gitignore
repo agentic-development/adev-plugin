@@ -22,8 +22,16 @@ skills/*/evals/
 # Beads adapter ID mapping (local state, auto-recoverable)
 .beads-map.json
 
-# Build state files (ephemeral — resume across sessions but never committed)
+# Build orchestrator resume state (ephemeral — survives across sessions but never committed)
+# Per-spec event logs (*.jsonl) ARE committed; only the *.json build-state files are ignored.
+.context-index/lifecycle-state/*.json
+# Legacy path retained for pre-migration projects (see ADR / one-shot-migration-tool.spec.md).
 .context-index/build-state/*.json
+
+# Environment variables — local overrides, never committed
+.env
+.env.local
+.env.*.local
 
 # Eval cached repos (cloned on demand, large)
 tests/evals/repomap/.cache/
