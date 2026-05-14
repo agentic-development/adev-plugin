@@ -6,7 +6,7 @@
 
 ---
 charter: cli-driver-surface
-status: review-pending
+status: review-passed
 risk_level: high
 milestone: adev-compiler-discipline
 revision: 2
