@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: low
 milestone: spec-and-charter-taxonomy
 revision: 1
@@ -9,6 +9,13 @@ charter-revision: 2
 created: 2026-05-14
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/kind-enumeration.plan.md
+
+source-manifest:
+  sha: "3eba56a"
+  files:
+    - lib/kinds.mjs
+    - tests/lib/kinds.test.mjs
+  computed-at: "2026-05-14T21:44:35.879Z"
 ---
 
 # Live Spec: Kind Enumeration

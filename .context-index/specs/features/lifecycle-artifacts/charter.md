@@ -93,7 +93,7 @@ Deferred to `issue-464` (Layer 3 — domain extension matrix):
 
 | Capability | Description | Priority | Milestone | Status |
 |---|---|---|---|---|
-| Kind enumeration | Closed set: 6 spec kinds + 4 charter kinds in `lib/kinds.mjs` with `isValidKind(layer, kind)` validator | must-have | spec-and-charter-taxonomy | planned |
+| Kind enumeration | Closed set: 6 spec kinds + 4 charter kinds in `lib/kinds.mjs` with `isValidKind(layer, kind)` validator | must-have | spec-and-charter-taxonomy | implemented |
 | Frontmatter discriminator | `kind:` field on specs and charters; required-on-write for new artifacts; default-at-read for legacy | must-have | spec-and-charter-taxonomy | planned |
 | Template matrix | 10 new dotfile templates following the `.{charter,spec}-template.<kind>.md` convention | must-have | spec-and-charter-taxonomy | planned |
 | Template renames | `.live-spec-template.md` → `.spec-template.behavioral.md`; `.refactoring-spec-template.md` → `.spec-template.refactor.md` | must-have | spec-and-charter-taxonomy | planned |
