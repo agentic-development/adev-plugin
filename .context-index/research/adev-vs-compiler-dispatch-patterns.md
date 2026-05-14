@@ -215,3 +215,127 @@ question about adev's design ("where should X live?") has a one-line
 answer keyed off this table. That is the real prize: not imitating
 LLVM, but making the framework's *own* decisions cheap because the
 mental model is shared across everyone working on it.
+
+---
+
+## 7. Why helper-side gating beats hook-side gating
+
+A natural follow-up to the driver model: *can we use Claude Code hooks to
+guarantee preconditions before a skill runs?* The intuitive answer —
+`PreToolUse` with `"matcher": "Skill"` — does not currently work. Verified
+against the Claude Code documentation:
+
+> The supported `PreToolUse` matchers are: `Bash`, `Edit`, `Write`,
+> `Read`, `Glob`, `Grep`, `Agent`, `WebFetch`, `WebSearch`,
+> `AskUserQuestion`, `ExitPlanMode`, and MCP tools.
+> The `Skill` tool is **not** in the matcher list, and there is no
+> `PreSkill` / `SkillStart` event.
+> — `https://code.claude.com/docs/en/hooks.md`
+
+So the "hook gates the skill at its boundary" approach is unavailable
+today. What *is* available, and what each option covers:
+
+| Mechanism | Covers user-typed `/adev:foo` | Covers agent-internal Skill call |
+| --- | --- | --- |
+| `UserPromptSubmit` hook | yes | no |
+| `PreToolUse` on `Bash` / `Edit` (adev today) | fires *after* skill starts | fires *after* skill starts |
+| Inline `requireGate` in SKILL.md (adev today) | depends on agent | depends on agent |
+| **Helper-side `requireGate` (driver model, §2.1)** | yes | yes |
+
+The first three each leave a path around the gate. Only the last is
+unconditional.
+
+### 7.1 The compiler argument
+
+A compiler driver does not rely on the caller to check that the
+preprocessor produced parseable output. `cc1` itself refuses to compile
+malformed input. The check lives **inside** the binary that does the work,
+which is why no caller can bypass it. There is no equivalent of "the user
+forgot to gate me" in a compiler pipeline.
+
+Translated to adev: when the implementation of a skill lives in
+`lib/cli/<verb>.mjs` (per §2.1), `requireGate` is the helper's first line
+of code. The SKILL.md prose may *also* tell the agent to invoke
+`adev gate require ...` as a fail-fast courtesy, but if the agent skips
+that line and runs `adev validate run` directly, the helper still throws
+on entry. There is nowhere to skip to. This is qualitatively stronger than
+any hook, because the gate is no longer separable from the work it
+guards.
+
+### 7.2 Three-layer enforcement model
+
+For each lifecycle skill, the gate should be enforced at three layers in
+priority order:
+
+**Layer 1 — Helper-side gate (mandatory).**
+Every `lib/cli/<verb>.mjs` calls `requireGate` as its first action. The
+gate is uncircumventable because it lives inside the executor.
+
+```javascript
+// lib/cli/validate.mjs
+import { requireGate, currentState, reportStep } from '../lifecycle-state.mjs';
+import { loadManifest, resolveGateMode } from '../manifest.mjs';
+
+export async function run({ projectRoot, spec }) {
+  const state = currentState(projectRoot, spec);
+  const mode  = resolveGateMode(loadManifest(projectRoot));
+  requireGate(state, 'implement', { mode });   // throws GateError
+  reportStep(projectRoot, spec, { step: 'validate', status: 'started' });
+  // ... actual check work follows
+}
+```
+
+This is the dispatch-patterns approach made concrete. Layer 1 alone is
+sufficient for correctness.
+
+**Layer 2 — `UserPromptSubmit` hook (defence in depth).**
+A new `hooks/skill-precheck.sh` fires on prompt submit, parses leading
+`/adev:<skill>`, and runs the same gate. Catches the user-typed case
+*before* the agent even loads the SKILL.md, which buys faster failure and
+a clearer error message. Does not catch agent-routed Skill calls — Layer 1
+covers those. Strictly additive to Layer 1.
+
+**Layer 3 — File the Anthropic feature request.**
+Ask for `Skill` to be a `PreToolUse` matcher, with the matcher able to
+filter by `tool_input.skill_name`. That would close the agent-routed gap
+at the harness level. Until and unless it lands, Layer 1 is the only
+enforcement that survives all three call paths.
+
+### 7.3 Implication for the audit's improvement ranking
+
+The audit's P-list shifts:
+
+- **P5 (status-advancement gate in `lib/lifecycle-state.mjs`)** is exactly
+  Layer 1 applied to the status field. Stays as-ranked, gains weight.
+- **P3 (move inline Node out of SKILL.md)** becomes *more* important, not
+  less, because the helpers it produces are the Layer 1 enforcement
+  sites. Doing P3 without Layer 1 wastes most of its value; doing Layer 1
+  without P3 is impossible (there is nowhere to put the gate).
+- **P23 (new) — File `PreToolUse: Skill` feature request with Anthropic.**
+  Impact 3 (closes the agent-routed gap cleanly if landed), effort 1
+  (file an issue), but timeline is out of adev's control. Track but do
+  not block on it.
+- **P24 (new) — Add `hooks/skill-precheck.sh` for `UserPromptSubmit`.**
+  Impact 2 (fast user-side rejection), effort 1. Strictly additive to
+  Layer 1 and worth doing once Layer 1 lands.
+
+### 7.4 The structural takeaway
+
+The instinct to reach for hooks first is reasonable but inverted. Hooks
+are *cross-cutting* concerns (trailers, session capture, drift detection)
+that should fire regardless of which skill is running. Gates are
+*skill-specific* concerns that belong inside the skill's executor. Trying
+to gate from outside the executor is what produced the current situation:
+gate logic scattered across SKILL.md prose, `hooks/lifecycle-gate-*.sh`,
+and `hooks/_lifecycle-gate-check-*.mjs`, none of them complete on their
+own.
+
+Moving the gate to Layer 1 collapses three half-implementations into one
+authoritative one. The hook layer is freed to do what hooks are actually
+good at: cross-cutting work that has nothing to do with which skill the
+agent just invoked.
+
+That collapse — gates inside the executor, hooks outside — is the same
+discipline a compiler enforces by construction. Helper-side enforcement
+is not a workaround for the missing `Skill` matcher; it is the right
+answer regardless of whether the matcher ever ships.
