@@ -23,7 +23,7 @@ source-manifest:
     - skills/implement/SKILL.md
     - tests/skills/implement-heuristic-injection.test.mjs
     - lib/heuristics.mjs
-    - .context-index/specs/features/heuristics/retrieval-filtering.md
+    - .context-index/specs/features/heuristics/retrieval-filtering.spec.md
   computed-at: "2026-04-25T21:55:13.503Z"
 drift_detected: true
 drift_source: skills/implement/SKILL.md
