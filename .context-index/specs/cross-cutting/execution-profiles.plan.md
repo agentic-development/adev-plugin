@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log execution-profiles.jsonl -->
 # Implementation Plan: Execution Profiles
 
 > **Methodology:** adev

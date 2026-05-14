@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log detect-mode.jsonl -->
 # Plan: Detect Mode
 
 ## Spec Reference

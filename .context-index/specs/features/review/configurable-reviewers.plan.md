@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log configurable-reviewers.jsonl -->
 # Implementation Plan: Configurable Reviewer Registry
 
 > **Methodology:** adev

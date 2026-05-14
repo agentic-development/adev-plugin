@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log plan-task-events.jsonl -->
 # Implementation Plan: Plan-Task Events in Lifecycle Log
 
 > **Methodology:** adev

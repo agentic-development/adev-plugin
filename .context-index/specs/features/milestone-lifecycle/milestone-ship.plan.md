@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log milestone-ship.jsonl -->
 # Implementation Plan: Strategy-Based Release Execution + CRUD Release Schema
 
 > **Methodology:** adev

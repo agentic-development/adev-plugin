@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log generate-module-docs.jsonl -->
 # Implementation Plan: Generate module docs
 
 > **Methodology:** adev

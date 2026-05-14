@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log domain-aware-skill-integration.jsonl -->
 # Implementation Plan: Domain-Aware Skill Integration
 
 > **Methodology:** adev

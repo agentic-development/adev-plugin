@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log integration-strategy-profile.jsonl -->
 # Implementation Plan: Integration Strategy Profile
 
 > **Methodology:** adev

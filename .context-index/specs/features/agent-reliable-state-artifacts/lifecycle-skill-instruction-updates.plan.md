@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log lifecycle-skill-instruction-updates.jsonl -->
 # Implementation Plan: Lifecycle Skill Instruction Updates
 
 > **Methodology:** adev

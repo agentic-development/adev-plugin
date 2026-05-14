@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log hygiene-and-injection.jsonl -->
 # Implementation Plan: Hygiene and Injection
 
 > **Methodology:** adev

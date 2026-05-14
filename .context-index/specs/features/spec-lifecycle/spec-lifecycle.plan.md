@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log spec-lifecycle.jsonl -->
 # Implementation Plan: Spec Lifecycle
 
 > **Methodology:** adev

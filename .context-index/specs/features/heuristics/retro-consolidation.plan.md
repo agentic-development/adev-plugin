@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log retro-consolidation.jsonl -->
 # Implementation Plan: Retro Consolidation
 
 > **Methodology:** adev

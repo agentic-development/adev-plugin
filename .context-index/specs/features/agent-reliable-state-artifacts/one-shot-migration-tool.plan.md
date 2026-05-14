@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log one-shot-migration-tool.jsonl -->
 # Implementation Plan: One-Shot Migration Tool
 
 > **Methodology:** adev

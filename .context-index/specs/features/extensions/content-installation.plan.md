@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log content-installation.jsonl -->
 # Implementation Plan: Content Installation
 
 > **Methodology:** adev

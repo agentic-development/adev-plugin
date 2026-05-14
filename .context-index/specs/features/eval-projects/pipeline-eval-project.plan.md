@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log pipeline-eval-project.jsonl -->
 # Implementation Plan: Pipeline Eval Project
 
 > **Methodology:** adev

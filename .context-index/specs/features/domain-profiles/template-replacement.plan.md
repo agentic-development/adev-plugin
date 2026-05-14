@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log template-replacement.jsonl -->
 # Implementation Plan: Template Replacement for Domain Profiles
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log implement-injection.jsonl -->
 # Implementation Plan: Implement Injection
 
 > **Methodology:** adev

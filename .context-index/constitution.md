@@ -100,7 +100,7 @@ Plan-task: <task-number>          # when implementing a plan task
 | ADRs | `.context-index/adrs/` |
 | Research artifacts | `.context-index/research/` |
 | Roadmaps | `.context-index/specs/roadmap/` |
-| Build state | `.context-index/build-state/` |
+| Lifecycle state | `.context-index/lifecycle-state/` |
 
 ## Quality Gates
 

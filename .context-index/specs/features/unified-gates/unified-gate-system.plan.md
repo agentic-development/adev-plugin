@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log unified-gate-system.jsonl -->
 # Implementation Plan: Unified Gate System
 
 > **Methodology:** adev

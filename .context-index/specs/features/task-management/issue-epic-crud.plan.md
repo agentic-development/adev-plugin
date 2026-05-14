@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log issue-epic-crud.jsonl -->
 # Implementation Plan: Issue and Epic CRUD
 
 > **Methodology:** adev

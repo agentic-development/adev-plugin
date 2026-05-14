@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log support-polish.jsonl -->
 # Implementation Plan: Support & Polish
 
 > **Methodology:** adev

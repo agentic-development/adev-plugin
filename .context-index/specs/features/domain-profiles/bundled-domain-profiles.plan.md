@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log bundled-domain-profiles.jsonl -->
 # Implementation Plan: Bundled Domain Profiles
 
 > **Methodology:** adev

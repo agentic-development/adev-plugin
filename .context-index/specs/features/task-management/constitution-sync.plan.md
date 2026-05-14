@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log constitution-sync.jsonl -->
 # Implementation Plan: Constitution and Sync Integration
 
 > **Methodology:** adev

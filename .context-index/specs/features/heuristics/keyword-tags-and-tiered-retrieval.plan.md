@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log keyword-tags-and-tiered-retrieval.jsonl -->
 # Implementation Plan: Keyword Tags and Tiered Retrieval
 
 > **Methodology:** adev

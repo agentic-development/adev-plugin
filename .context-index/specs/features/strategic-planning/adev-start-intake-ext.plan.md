@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-start-intake-ext.jsonl -->
 # Plan: adev:work Intake Extension
 
 ## Spec Reference

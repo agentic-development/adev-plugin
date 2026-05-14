@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log brainstorm-integration.jsonl -->
 # Implementation Plan: Brainstorm Integration
 
 > **Methodology:** adev

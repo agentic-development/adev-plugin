@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log eval-pipeline.jsonl -->
 # Implementation Plan: Eval Pipeline
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log skill-integration.jsonl -->
 # Implementation Plan: Skill Integration — Infrastructure Preflight
 
 > **Methodology:** adev
