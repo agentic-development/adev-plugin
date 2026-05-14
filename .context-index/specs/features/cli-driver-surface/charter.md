@@ -83,10 +83,10 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 
 | Capability | Description | Priority | Milestone | Status |
 |---|---|---|---|---|
-| Driver substrate (`lib/cli/<verb>.mjs` + dispatch) | Pattern, conventions, registration glue in `cli/index.mjs` | must-have | adev-compiler-discipline | planned |
+| Driver substrate (`lib/cli/<verb>.mjs` + dispatch) | Pattern, conventions, registration glue in `cli/index.mjs` | must-have | adev-compiler-discipline | validated |
 | Inline-Node extraction sweep | Per-skill atomic deletion of all 35+ inline blocks across 18 canonical SKILL.md files. Each PR ships helper + test + SKILL.md edit in one commit; no in-tree intermediate state with both forms. | must-have | adev-compiler-discipline | review-passed |
-| Helper-side `requireGate` discipline | Convention enforced by test that scans `lib/cli/*.mjs` for the call site | must-have | adev-compiler-discipline | planned |
-| `adev gate require` CLI verb | Explicit-invocation gate primitive | must-have | adev-compiler-discipline | planned |
+| Helper-side `requireGate` discipline | Convention enforced by test that scans `lib/cli/*.mjs` for the call site | must-have | adev-compiler-discipline | validated |
+| `adev gate require` CLI verb | Explicit-invocation gate primitive | must-have | adev-compiler-discipline | validated |
 | Diagnostic registry engine (`lib/diagnostics/index.mjs`) | `runDiagnostics({...})` + registry loader | must-have | adev-compiler-discipline | review-passed |
 | `governance/diagnostics.yaml` schema + initial scaffold | Declarative registry entries with `id` / `runner` / `severity` / `tier` / `scope` fields. Follows the precedent set by ADR-0003 (configurable review registry) for `governance/review.yaml` and `governance/gates.yaml`; this charter generalizes the same registry shape to diagnostics. | must-have | adev-compiler-discipline | review-passed |
 | `adev diagnose` CLI verb | On-demand diagnostic run, JSON + human-readable modes | must-have | adev-compiler-discipline | review-passed |
@@ -95,9 +95,9 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 | Tier-1 producers (v1 set) | Event schema, status enum, prerequisite consistency, frontmatter presence | must-have | adev-compiler-discipline | review-passed |
 | Constitution amendment | Extend Anti-Patterns to forbid inline-Node patterns; permit harness-side `!command` | must-have | adev-compiler-discipline | review-passed |
 | `hooks/pre-commit-no-inline-node.sh` | Regression hook rejecting new inline-Node and both-forms states in `skills/**/SKILL.md` | must-have | adev-compiler-discipline | review-passed |
-| `cli` charter revision (rev 2 → rev 3) | Drop single-file constraint, declare driver model, expand commands list. **Prerequisite for the driver-substrate work** — must land first so the first multi-file `lib/cli/` commit does not violate the existing single-file constraint. | must-have | adev-compiler-discipline | — |
+| `cli` charter revision (rev 2 → rev 3) | Drop single-file constraint, declare driver model, expand commands list. **Prerequisite for the driver-substrate work** — must land first so the first multi-file `lib/cli/` commit does not violate the existing single-file constraint. | must-have | adev-compiler-discipline | done |
 | Tier-2/3 producer extension points | Registry supports them; concrete producers land in dependent charters | should-have | adev-compiler-discipline | — |
-| `adev <verb>` help / discovery | `adev --help`, `adev <verb> --help` for standard argv discoverability | should-have | adev-compiler-discipline | — |
+| `adev <verb>` help / discovery | `adev --help`, `adev <verb> --help` for standard argv discoverability | should-have | adev-compiler-discipline | validated |
 
 ## Deferred Capabilities
 

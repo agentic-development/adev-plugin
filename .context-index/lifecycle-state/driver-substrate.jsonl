@@ -10,3 +10,28 @@
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","status":"pending","notes":null,"ts":"2026-05-14T15:00:21.416Z"}
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","status":"pending","notes":null,"ts":"2026-05-14T15:00:21.416Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T15:00:21.416Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-14T16:51:51.301Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-05-14T16:52:46.454Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","task_id":"1","status":"done","notes":"verb registry + dispatch + exit-code policy in cli/index.mjs; all tests pass","ts":"2026-05-14T16:56:04.705Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","task_id":"2","status":"in_progress","notes":null,"ts":"2026-05-14T16:56:10.103Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","task_id":"2","status":"done","notes":"lib/cli/gate.mjs + adev gate require primitive with path containment; all tests pass","ts":"2026-05-14T16:58:56.180Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","task_id":"3","status":"in_progress","notes":null,"ts":"2026-05-14T16:59:01.465Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/driver-substrate.plan.md","task_id":"3","status":"done","notes":"pattern test strengthened with LIFECYCLE_STEP AST assertion + fixture-driven detector tests","ts":"2026-05-14T17:00:29.549Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-14T17:00:56.487Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-14T17:09:41.733Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.182Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-5-source-manifest","severity":"warning","verdict":"PASS_WITH_NOTES","error":"7/8 source files uncommitted (workflow state — pending commit)","ts":"2026-05-14T17:14:18.183Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-6-drift","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.184Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS_WITH_NOTES","error":"AC3 + AC5 PARTIAL due to spec self-contradiction (Postcondition vs Behavior 3); coverage comprehensive but distributed","ts":"2026-05-14T17:14:18.184Z"}
+{"event":"validator_report","step":"validate","validator":"check-3-charter-consistency","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.184Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.185Z"}
+{"event":"validator_report","step":"validate","validator":"check-5-adr","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.185Z"}
+{"event":"validator_report","step":"validate","validator":"check-6-cross-cutting","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.185Z"}
+{"event":"validator_report","step":"validate","validator":"check-7-specialist","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.186Z"}
+{"event":"validator_report","step":"validate","validator":"check-8-boundaries","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.186Z"}
+{"event":"validator_report","step":"validate","validator":"check-9-transitions","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.186Z"}
+{"event":"validator_report","step":"validate","validator":"check-10-platform","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.187Z"}
+{"event":"validator_report","step":"validate","validator":"check-11-visual","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.187Z"}
+{"event":"validator_report","step":"validate","validator":"check-12-lifecycle-reconciliation","severity":"warning","verdict":"PASS_WITH_NOTES","error":"spec status will promote implemented → validated","ts":"2026-05-14T17:14:18.187Z"}
+{"event":"validator_report","step":"validate","validator":"check-13-heuristic","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.188Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-14T17:14:18.188Z"}
