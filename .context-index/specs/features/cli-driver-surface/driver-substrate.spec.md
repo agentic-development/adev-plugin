@@ -6,13 +6,25 @@
 
 ---
 charter: cli-driver-surface
-status: review-passed
+status: validated
 risk_level: medium
 milestone: adev-compiler-discipline
 revision: 1
 charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-14
+source-manifest:
+  sha: "1ac7197"
+  files:
+    - cli/index.mjs
+    - lib/cli/gate.mjs
+    - tests/cli-driver-pattern.test.mjs
+    - tests/cli/dispatcher.test.mjs
+    - tests/cli/gate.test.mjs
+    - tests/fixtures/cli/conforming.mjs
+    - tests/fixtures/cli/non-conforming-no-gate.mjs
+    - tests/fixtures/cli/non-conforming-no-run.mjs
+  computed-at: "2026-05-14T17:01:01.991Z"
 ---
 
 ## Behavioral Contract
