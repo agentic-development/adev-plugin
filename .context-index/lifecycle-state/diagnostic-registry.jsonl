@@ -14,3 +14,17 @@
 {"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"rev 2 second re-review: SEC-1/2/3/4/7 all resolved. No regressions or new attack surfaces. SEC-5/SEC-6 remain non-blocking suggestions.","ts":"2026-05-14T18:43:20.942Z"}
 {"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"rev 2 second re-review: CON-1/2/3/4/5/9 all resolved. Sibling specs and charter rev 3 aligned. Self-diagnostic ID naming + severity assignments coherent.","ts":"2026-05-14T18:43:20.942Z"}
 {"event":"step_completed","step":"review","verdict":"PASS","ts":"2026-05-14T18:43:20.942Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-14T18:55:27.851Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-1","status":"pending","notes":"Extract lib/spec-status.mjs","ts":"2026-05-14T18:57:30.689Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-2","status":"pending","notes":"Migrate lib-side status-string writers","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-3","status":"pending","notes":"lib/diagnostics/event-schemas.mjs","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-4","status":"pending","notes":"lib/diagnostics/index.mjs engine","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-5","status":"pending","notes":"tier1/event-schema-valid.mjs","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-6","status":"pending","notes":"tier1/status-enum-legal.mjs","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-7","status":"pending","notes":"tier1/frontmatter-present.mjs","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-8","status":"pending","notes":"Scaffold governance/diagnostics.yaml + template","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-9","status":"pending","notes":"Engine tests","ts":"2026-05-14T18:57:30.690Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-10","status":"pending","notes":"Producer tests","ts":"2026-05-14T18:57:30.691Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-11","status":"pending","notes":"Update normaliseEventInPlace docstring","ts":"2026-05-14T18:57:30.691Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-12","status":"pending","notes":"Skill-side prose updates","ts":"2026-05-14T18:57:30.691Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T18:57:30.691Z"}
