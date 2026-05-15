@@ -22,22 +22,14 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 1. **Plan exists.** The plan file must exist and be readable.
 2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — read the lifecycle log and gate on the prior step, then emit the step-started event:
-
-   ```javascript
-   import { currentState, requireGate, resolveGateMode } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-   import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-   const state = currentState(projectRoot, specPath);
-   const mode = resolveGateMode(loadManifest(projectRoot));
-   requireGate(state, "plan", { mode });
-   ```
+3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
 
    ```bash
+   adev gate require --skill implement --spec <spec-path>
    adev report --type step --spec <spec-path> --step implement --status started
    ```
 
-   In strict mode (default), `requireGate` throws `GateError` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+   In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
    When all tasks finish in Step 4, emit the matching exit event:
 

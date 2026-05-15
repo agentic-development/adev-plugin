@@ -22,19 +22,19 @@ grep -rc "Run inline Node\|node --input-type=module -e\|node -e" skills/*/SKILL.
 | Skill            | Inline blocks (initial count) | Status   | PR(s) | Notes |
 |------------------|-------------------------------|----------|-------|-------|
 | brainstorm       | 2                             | pending  | —     |       |
-| build            | 4                             | partially-extracted | PR 3 (reportStep) | reportStep extracted (Gate Between Sub-Skill Dispatches); 4 `node --input-type=module -e` blocks remain (not in PR 3 scope); stays on allowlist |
+| build            | 4                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Gate Between Sub-Skill Dispatches); 4 `node --input-type=module -e` blocks remain (not in PR 4 scope); stays on allowlist |
 | debug            | 4                             | pending  | —     |       |
 | eval             | 2                             | pending  | —     |       |
 | hygiene          | 1                             | pending  | —     |       |
-| implement        | 10                            | partially-extracted | PR 3 (reportStep) | reportStep extracted (Step 3 plan-step gate, Step 4 completion); 10 forbidden-regex blocks remain (not in PR 3 scope); stays on allowlist |
-| plan             | 2                             | partially-extracted | PR 3 (reportStep) | reportStep extracted (Step 1.5 entry, Step 6 exit); 2 forbidden-regex blocks remain (not in PR 3 scope); stays on allowlist |
+| implement        | 10                            | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 3 plan-step gate, Step 4 completion); 10 forbidden-regex blocks remain (not in PR 4 scope); stays on allowlist |
+| plan             | 2                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 1.5 entry, Step 6 exit); 2 forbidden-regex blocks remain (not in PR 4 scope); stays on allowlist |
 | prototype        | 6                             | pending  | —     |       |
 | recover          | 3                             | pending  | —     |       |
-| review-specs     | 2                             | partially-extracted | PR 3 (reportStep) | reportStep extracted (Step 0 entry, Step 8 exit); 2 forbidden-regex blocks remain (not in PR 3 scope); stays on allowlist |
-| specify          | 2                             | partially-extracted | PR 3 (reportStep) | reportStep extracted (Step 0 entry, Step 6 exit); 2 forbidden-regex blocks remain (not in PR 3 scope); stays on allowlist |
+| review-specs     | 2                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 0 entry, Step 8 exit); 2 forbidden-regex blocks remain (not in PR 4 scope); stays on allowlist |
+| specify          | 2                             | partially-extracted | PR 3 (reportStep) | reportStep extracted (Step 0 entry, Step 6 exit); specify has no Step 0a requireGate gate (it's the first lifecycle step); 2 forbidden-regex blocks remain; stays on allowlist |
 | standalone       | 1                             | pending  | —     |       |
 | status           | 1                             | pending  | —     |       |
-| validate         | 8                             | partially-extracted | PR 1 (Check 13), PR 2 (reportValidator), PR 3 (reportStep) | reportStep extracted (Step 0a entry, Step 14 exit); 7 forbidden-regex blocks remain; stays on allowlist |
+| validate         | 8                             | partially-extracted | PR 1 (Check 13), PR 2 (reportValidator), PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 0a entry, Step 14 exit); 7 forbidden-regex blocks remain; stays on allowlist |
 | write-test       | 3                             | pending  | —     |       |
 | **TOTAL**        | **51**                        |          |       |       |
 
@@ -57,7 +57,7 @@ named-PR sequence, with the long tail parallelizable.
 | 1   | Extract Check 13 — heuristic extraction            | `validate`                                              | merged   |
 | 2   | Extract `reportValidator` per-check emission       | `validate`                                              | merged   |
 | 3   | Extract `reportStep` lifecycle entry/exit emission | `specify, review-specs, plan, implement, validate, build` | merged   |
-| 4   | Extract Step 0a `requireGate` calls                | `~all lifecycle skills`                                 | pending  |
+| 4   | Extract Step 0a `requireGate` calls                | `review-specs, plan, implement, validate, build`        | merged   |
 | 5   | Extract source-manifest verify                     | `validate`, possibly `implement`                        | pending  |
 | 6   | Extract domain-aware gate loading                  | `review-specs`, `validate`, `plan`                      | pending  |
 | 7+  | Long-tail extractions (per block)                  | All remaining; one PR per block or per canonical-verb group | pending  |
@@ -70,7 +70,7 @@ logic matches — naming is canonical and shared.
 
 | Verb                  | Helper module                 | Introduced in | Covers blocks in                  |
 |-----------------------|-------------------------------|---------------|-----------------------------------|
-| `gate require`        | `lib/cli/gate.mjs`            | driver-substrate | (lifecycle Step 0a — used by PR 4) |
+| `gate require`        | `lib/cli/gate.mjs`            | driver-substrate | lifecycle Step 0a in `review-specs, plan, implement, validate, build` (PR 4) |
 | `diagnose`            | `lib/cli/diagnose.mjs`        | adev-diagnose-cli | (engine, not from this sweep)   |
 | `heuristics extract`  | `lib/cli/heuristics.mjs`      | PR 1          | `validate` Check 13               |
 | `report --type validator` | `lib/cli/report.mjs`      | PR 2          | `validate` Per-Check Event Emission |

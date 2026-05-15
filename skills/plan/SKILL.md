@@ -101,18 +101,13 @@ Before planning, verify the spec has passed architecture review by reading the l
 
 2. **Gate on `review` step via the lifecycle log:**
 
-   ```javascript
-   import { currentState, requireGate, resolveGateMode } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-   import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-   const state = currentState(projectRoot, specPath);
-   const mode = resolveGateMode(loadManifest(projectRoot));
-   requireGate(state, "review", { mode });
+   ```bash
+   adev gate require --skill plan --spec <spec-path>
    ```
 
-   - In `mode === "strict"` (default), `requireGate` throws `GateError` if the review step did not complete with a passing verdict. The skill stops with the operator message naming the failing prior step. Do NOT catch `GateError` — surface it unchanged.
-   - In `mode === "advisory"`, the call emits `console.warn` and proceeds.
-   - The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`). Skill prose MUST NOT pre-validate or normalize paths.
+   - In `mode === "strict"` (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), the helper exits `2` (per the hook protocol) if the `review` step did not complete with a passing verdict. The skill stops; surface the helper's stderr message unchanged. Do NOT catch the failure.
+   - In `mode === "advisory"`, the helper emits a warning and exits `0`.
+   - Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`). Skill prose MUST NOT pre-validate or normalize paths.
 
 3. **Note any `PASS_WITH_NOTES` warnings.** Read `state.steps.review` for verdict notes; print them for the user but do not block.
 
