@@ -16,7 +16,7 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 drift_source: skills/plan/SKILL.md
-drift_at: 2026-05-15T13:52:45.900Z
+drift_at: 2026-05-15T14:19:41.783Z
 ---
 
 # Live Spec: Dependency-Aware Planning

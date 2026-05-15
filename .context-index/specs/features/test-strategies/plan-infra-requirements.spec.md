@@ -11,7 +11,7 @@ source-manifest:
   computed-at: "2026-05-10T23:51:01.456Z"
 drift_detected: true
 drift_source: skills/plan/SKILL.md
-drift_at: 2026-05-15T13:52:45.903Z
+drift_at: 2026-05-15T14:19:41.785Z
 ---
 
 # Live Spec: Plan Infrastructure Requirements

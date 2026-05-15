@@ -20,20 +20,12 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 
 Before identifying targets, gate on the prior step via the lifecycle log, then emit the step-started event:
 
-```javascript
-import { currentState, requireGate, resolveGateMode } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-const state = currentState(projectRoot, specPath);
-const mode = resolveGateMode(loadManifest(projectRoot));
-requireGate(state, "specify", { mode });
-```
-
 ```bash
+adev gate require --skill review-specs --spec <spec-path>
 adev report --type step --spec <spec-path> --step review --status started
 ```
 
-In strict mode (default), `requireGate` throws `GateError` if the `specify` step has not been recorded as completed (the spec must exist and have a `lifecycle_step: specify, status: completed` event). In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment.
+In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if the `specify` step has not been recorded as completed (the spec must exist and have a `lifecycle_step: specify, status: completed` event). In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper.
 
 When reviewing in bulk (`--charter` or no-args), apply the gate per-spec inside the loop.
 
