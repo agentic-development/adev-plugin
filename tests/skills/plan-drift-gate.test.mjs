@@ -31,14 +31,21 @@ describe("plan SKILL.md drift gate", () => {
     // The legacy "Dual drift check" was removed by the lifecycle-skill
     // instruction adoption pass. CODE_DRIFT is now part of the Step 1
     // prerequisite block alongside requireGate("review"). Verify it
-    // appears before the reportStep("plan", "started") entry event so a
+    // appears before the step-started event (per inline-Node extraction
+    // sweep PR 3, the inline `reportStep(...)` block was replaced with
+    // the `adev report --type step ... --status started` CLI call) so a
     // drifted spec cannot have its plan step opened.
     const content = readFileSync(SKILL_PATH, "utf-8");
     const driftIdx = content.indexOf("CODE_DRIFT");
-    const reportStepIdx = content.search(/reportStep\([^)]*step:\s*["']plan["'][^)]*status:\s*["']started["']/);
+    // Match either the legacy `reportStep(...)` JS form OR the new CLI form
+    // emitted by Task 3 of the inline-Node extraction sweep.
+    const legacyRe = /reportStep\([^)]*step:\s*["']plan["'][^)]*status:\s*["']started["']/;
+    const cliRe = /adev\s+report\s+--type\s+step[\s\S]*?--step\s+plan[\s\S]*?--status\s+started/;
+    let reportStepIdx = content.search(legacyRe);
+    if (reportStepIdx < 0) reportStepIdx = content.search(cliRe);
     assert.ok(driftIdx >= 0, "CODE_DRIFT prerequisite must exist");
-    assert.ok(reportStepIdx >= 0, "reportStep(plan, started) entry must exist");
+    assert.ok(reportStepIdx >= 0, "step-started entry must exist (reportStep JS or `adev report --type step ... --status started`)");
     assert.ok(driftIdx < reportStepIdx,
-      "CODE_DRIFT prerequisite should come before reportStep(plan, started)");
+      "CODE_DRIFT prerequisite should come before the step-started entry");
   });
 });

@@ -16,7 +16,7 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 drift_source: skills/review-specs/SKILL.md
-drift_at: 2026-05-14T21:11:15.166Z
+drift_at: 2026-05-15T13:52:37.952Z
 ---
 
 # Live Spec: Cross-Repo References

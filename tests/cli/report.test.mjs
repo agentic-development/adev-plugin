@@ -548,7 +548,276 @@ test("adev report --type validator accepts PASS_WITH_NOTES verdict", () => {
   }
 });
 
-test("--type step is not yet implemented in Task 2 (reserved for Task 3); exits 1 with informative message", () => {
+// ── --type step (Task 3 — extract reportStep) ────────────────────────────
+
+test("adev report --type step --status started appends a lifecycle_step event", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# Live Spec: Foo\n");
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "validate",
+        "--status",
+        "started",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+
+    assert.strictEqual(
+      r.status,
+      0,
+      `expected 0, got ${r.status}: stderr=${r.stderr} stdout=${r.stdout}`,
+    );
+
+    const events = readLog(dir, "foo");
+    assert.ok(events.length >= 1, "log should contain at least one event");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.event, "lifecycle_step");
+    assert.strictEqual(ev.step, "validate");
+    assert.strictEqual(ev.status, "started");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step --status completed appends a step_completed event", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "validate",
+        "--status",
+        "completed",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+
+    const events = readLog(dir, "foo");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.event, "step_completed");
+    assert.strictEqual(ev.step, "validate");
+    // `status` is NOT carried on step_completed payloads (per reportStep
+    // implementation — only `started` carries an explicit status field).
+    assert.strictEqual(ev.status, undefined);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step --status failed appends a step_failed event", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "implement",
+        "--status",
+        "failed",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+
+    const events = readLog(dir, "foo");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.event, "step_failed");
+    assert.strictEqual(ev.step, "implement");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step --status completed --verdict PASS attaches verdict", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "review",
+        "--status",
+        "completed",
+        "--verdict",
+        "PASS",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+
+    const events = readLog(dir, "foo");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.event, "step_completed");
+    assert.strictEqual(ev.step, "review");
+    assert.strictEqual(ev.verdict, "PASS");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step accepts PASS_WITH_NOTES verdict on completed", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "review",
+        "--status",
+        "completed",
+        "--verdict",
+        "PASS_WITH_NOTES",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+
+    const events = readLog(dir, "foo");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.verdict, "PASS_WITH_NOTES");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step accepts FAIL verdict on completed", () => {
+  // The lifecycle library accepts any verdict string on step_completed
+  // (verdict is metadata, not enum-validated at the lib layer). The CLI
+  // however constrains verdict to the standard tri-state set used by
+  // validator reports — this keeps the surface narrow and consistent.
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "review",
+        "--status",
+        "completed",
+        "--verdict",
+        "FAIL",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+
+    const events = readLog(dir, "foo");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.verdict, "FAIL");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step without --spec exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--step",
+        "validate",
+        "--status",
+        "started",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr + r.stdout, /--spec|usage/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step without --step exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--status",
+        "started",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr + r.stdout, /--step|usage/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step without --status exits 1", () => {
   const dir = makeTempProject();
   try {
     const specRel = ".context-index/specs/features/m/foo.spec.md";
@@ -563,20 +832,165 @@ test("--type step is not yet implemented in Task 2 (reserved for Task 3); exits 
         "--spec",
         specRel,
         "--step",
-        "implement",
+        "validate",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr + r.stdout, /--status|usage/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step with invalid --status exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "validate",
+        "--status",
+        "halfway",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr + r.stdout, /status|started|completed|failed/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step with invalid --verdict exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "review",
+        "--status",
+        "completed",
+        "--verdict",
+        "MAYBE",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr + r.stdout, /verdict|PASS|FAIL/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step with out-of-bounds --spec path exits 1 (containment)", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        "../../../etc/passwd",
+        "--step",
+        "validate",
         "--status",
         "started",
       ],
       { encoding: "utf8", cwd: dir },
     );
-    // Task 2 ships --type validator only. --type step is reserved for Task 3.
-    // The helper recognises the type but reports it is unimplemented so that
-    // the test serves as a deliberate seam — Task 3 will flip this expectation.
     assert.strictEqual(r.status, 1);
-    assert.match(r.stderr + r.stdout, /step|not yet|unimplemented|task 3/i);
+    assert.match(r.stderr, /spec not found|escapes/i);
   } finally {
     cleanup(dir);
   }
+});
+
+test("adev report --type step with missing --spec file exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        ".context-index/specs/features/m/no-such.spec.md",
+        "--step",
+        "validate",
+        "--status",
+        "started",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /spec not found/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step --status started ignores --verdict (no-op, not an error)", () => {
+  // `reportStep` puts verdict on the payload regardless of status, but the
+  // canonical use is to pass verdict only with status=completed. We do not
+  // reject a verdict on started — the lib accepts it. This test pins the
+  // tolerant behavior.
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "validate",
+        "--status",
+        "started",
+        "--verdict",
+        "PASS",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --help mentions --type step usage", () => {
+  const r = spawnSync("node", [CLI, "report", "--help"], { encoding: "utf8" });
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /--type step/);
+  assert.match(r.stdout, /--status/);
 });
 
 test("adev report --type validator is observational — non-zero exit only on argument errors, not on the underlying event", () => {

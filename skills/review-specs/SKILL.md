@@ -18,23 +18,30 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 
 ## Step 0: Specify-step gate (FIRST action)
 
-Before identifying targets, gate on the prior step via the lifecycle log:
+Before identifying targets, gate on the prior step via the lifecycle log, then emit the step-started event:
 
 ```javascript
-import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+import { currentState, requireGate, resolveGateMode } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
 import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
 
 const state = currentState(projectRoot, specPath);
 const mode = resolveGateMode(loadManifest(projectRoot));
 requireGate(state, "specify", { mode });
-reportStep(projectRoot, specPath, { step: "review", status: "started" });
+```
+
+```bash
+adev report --type step --spec <spec-path> --step review --status started
 ```
 
 In strict mode (default), `requireGate` throws `GateError` if the `specify` step has not been recorded as completed (the spec must exist and have a `lifecycle_step: specify, status: completed` event). In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment.
 
 When reviewing in bulk (`--charter` or no-args), apply the gate per-spec inside the loop.
 
-Emit a matching `reportStep` exit (`status: "completed"`, `verdict` set to the consolidated review verdict) in Step 8.
+In Step 8, emit the matching exit event with the consolidated review verdict:
+
+```bash
+adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict>
+```
 
 ## Step 1: Identify Target Specs
 
