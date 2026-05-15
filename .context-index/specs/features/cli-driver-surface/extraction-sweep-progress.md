@@ -34,7 +34,7 @@ grep -rc "Run inline Node\|node --input-type=module -e\|node -e" skills/*/SKILL.
 | specify          | 2                             | pending  | —     |       |
 | standalone       | 1                             | pending  | —     |       |
 | status           | 1                             | pending  | —     |       |
-| validate         | 8                             | partially-extracted | PR 1 (Check 13) | 7 blocks remain; stays on allowlist |
+| validate         | 8                             | partially-extracted | PR 1 (Check 13), PR 2 (reportValidator) | 7 inline-Node blocks remain (reportValidator JS example was not in the forbidden-regex footprint); stays on allowlist |
 | write-test       | 3                             | pending  | —     |       |
 | **TOTAL**        | **51**                        |          |       |       |
 
@@ -55,7 +55,7 @@ named-PR sequence, with the long tail parallelizable.
 |-----|----------------------------------------------------|---------------------------------------------------------|----------|
 | 0   | Sweep scaffolding (progress index + allowlist test)| —                                                       | merged   |
 | 1   | Extract Check 13 — heuristic extraction            | `validate`                                              | merged   |
-| 2   | Extract `reportValidator` per-check emission       | `validate`                                              | pending  |
+| 2   | Extract `reportValidator` per-check emission       | `validate`                                              | merged   |
 | 3   | Extract `reportStep` lifecycle entry/exit emission | `~all lifecycle skills` (specify, review-specs, plan, implement, validate, debug) | pending  |
 | 4   | Extract Step 0a `requireGate` calls                | `~all lifecycle skills`                                 | pending  |
 | 5   | Extract source-manifest verify                     | `validate`, possibly `implement`                        | pending  |
@@ -73,6 +73,8 @@ logic matches — naming is canonical and shared.
 | `gate require`        | `lib/cli/gate.mjs`            | driver-substrate | (lifecycle Step 0a — used by PR 4) |
 | `diagnose`            | `lib/cli/diagnose.mjs`        | adev-diagnose-cli | (engine, not from this sweep)   |
 | `heuristics extract`  | `lib/cli/heuristics.mjs`      | PR 1          | `validate` Check 13               |
+| `report --type validator` | `lib/cli/report.mjs`      | PR 2          | `validate` Per-Check Event Emission |
+| `report --type step`  | `lib/cli/report.mjs` (Task 3) | (reserved)    | (Task 3 — all lifecycle skills)   |
 
 ## Acceptance (sweep-complete sentinel)
 
