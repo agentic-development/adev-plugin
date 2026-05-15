@@ -1,7 +1,6 @@
 ---
 name: adev:build
 description: "End-to-end build orchestrator. Chains review, plan, route, implement, and validate for one or more specs through a full lifecycle pipeline. Use when the user says 'build', 'end to end', 'full pipeline', 'build the spec', 'build the milestone', 'run the whole pipeline', or wants to execute multiple lifecycle steps in sequence without manual handoffs."
-context: fork
 ---
 
 # Build Pipeline Orchestrator
