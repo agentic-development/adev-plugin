@@ -23,7 +23,7 @@ test('readEvents recovers prior complete events after a mid-write crash', async 
   const root = createTempDir();
   try {
     mkdirSync(join(root, '.context-index'), { recursive: true });
-    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
     const specPath = '.context-index/specs/features/test/crash.spec.md';
 
     // First, write two clean events so we have a baseline.

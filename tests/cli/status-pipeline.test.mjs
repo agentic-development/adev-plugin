@@ -26,7 +26,7 @@ function runCli(args, opts = {}) {
 }
 
 function seedProject(tmp) {
-  writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: pipeline-test\n");
+  writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: pipeline-test\nlifecycle:\n  event_diagnostics: off\n");
   return tmp;
 }
 

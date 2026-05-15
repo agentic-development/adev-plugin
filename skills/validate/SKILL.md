@@ -761,6 +761,10 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 
 ## After Validation
 
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time; the
+> specific transition this skill drives is `implemented → validated`.
+
 If PASS:
 
 1. Update the spec's status to `validated`:

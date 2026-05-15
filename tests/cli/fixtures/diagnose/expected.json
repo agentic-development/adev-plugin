@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "fired": [
+    {
+      "id": "adev/status-enum-legal",
+      "severity": "error",
+      "message": "spec status \"definitely-not-a-real-status\" is not in SPEC_STATUSES (legal: draft, review-pending, review-passed, review-blocked, implemented, validated, superseded)",
+      "citation": "<REDACTED>",
+      "spec": ".context-index/specs/features/m/bad.spec.md",
+      "runner_path": "<REDACTED>"
+    }
+  ],
+  "skipped": [
+    {
+      "id": "adev/event-schema-valid",
+      "reason": "tier mismatch (entry=1, requested=2)"
+    },
+    {
+      "id": "adev/status-enum-legal",
+      "reason": "tier mismatch (entry=1, requested=2)"
+    },
+    {
+      "id": "adev/frontmatter-present",
+      "reason": "tier mismatch (entry=1, requested=2)"
+    },
+    {
+      "id": "adev/event-schema-valid",
+      "reason": "tier mismatch (entry=1, requested=3)"
+    },
+    {
+      "id": "adev/status-enum-legal",
+      "reason": "tier mismatch (entry=1, requested=3)"
+    },
+    {
+      "id": "adev/frontmatter-present",
+      "reason": "tier mismatch (entry=1, requested=3)"
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "total_fired": 1,
+    "by_severity": {
+      "info": 0,
+      "warning": 0,
+      "error": 1
+    },
+    "exit_code": 2
+  }
+}
