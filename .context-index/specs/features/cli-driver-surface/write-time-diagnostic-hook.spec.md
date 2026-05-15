@@ -6,13 +6,29 @@
 
 ---
 charter: cli-driver-surface
-status: review-passed
+status: implemented
 risk_level: high
 milestone: adev-compiler-discipline
 revision: 2
 charter-revision: 3
 created: 2026-05-14
 updated: 2026-05-14
+source-manifest:
+  sha: "9f7eaab"
+  files:
+    - lib/diagnostics/event-schemas.mjs
+    - lib/lifecycle-events.mjs
+    - lib/lifecycle-state.mjs
+    - templates/manifest-template.yaml
+    - tests/cli/status-pipeline.test.mjs
+    - tests/cli/status-render.test.mjs
+    - tests/lib/lifecycle-state-concurrent.test.mjs
+    - tests/lib/lifecycle-state-crash.test.mjs
+    - tests/lib/lifecycle-state-event-diagnostics.test.mjs
+    - tests/lib/lifecycle-state-perf.test.mjs
+    - tests/lib/lifecycle-state.render.test.mjs
+    - tests/lib/lifecycle-state.test.mjs
+  computed-at: "2026-05-14T21:41:53.147Z"
 ---
 
 > **Rev 2 amendment (2026-05-14):** Updated illustrative diagnostic IDs to match `diagnostic-registry.spec.md` rev 2. The example previously used `adev/lifecycle-prerequisite-met`, which was dropped from the Tier-1 producer set in `diagnostic-registry` rev 2 (lifecycle step-order is now enforced by `requireGate`, not by a diagnostic). Examples now use `adev/event-schema-valid` (a real Tier-1 producer). Behavior contracts are unchanged; this is a documentation alignment, not a contract change. Status returned to `review-pending` because cross-spec example payloads changed.

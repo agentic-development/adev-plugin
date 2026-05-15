@@ -15,7 +15,7 @@ Audit the health of `.context-index/` and source code, generating actionable rep
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
 
-  Valid status values: `draft`, `review-pending`, `review-passed`, `review-blocked`, `implemented`, `validated`
+  Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The `adev/status-enum-legal` diagnostic enforces this enum at write time.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ The project must have `.context-index/` initialized. If it does not exist, sugge
 **If `--status <spec-path> <new-status>` is provided:**
 
 1. Validate the spec path exists and is a valid spec file
-2. Validate the new status value is one of: draft, review-pending, review-passed, review-blocked, implemented, validated
+2. Validate the new status value is in `SPEC_STATUSES` (imported from `lib/spec-status.mjs`). The seven legal values are defined there; the `adev/status-enum-legal` diagnostic enforces this enum at write time. Use `assertLegalStatus(value)` from that module to validate.
 3. Read the spec file
 4. Parse YAML frontmatter
 5. Record the old status value

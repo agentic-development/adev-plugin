@@ -198,6 +198,7 @@ function scaffoldContextKit() {
     "specialists",
     "hygiene",
     "sessions",
+    "governance",
   ];
 
   for (const dir of dirs) {
@@ -216,6 +217,7 @@ function scaffoldContextKit() {
     { src: "spec-template.behavioral.md", dest: "specs/features/.spec-template.behavioral.md" },
     { src: "spec-template.refactor.md", dest: "specs/features/.spec-template.refactor.md" },
     { src: "context-index-readme.md", dest: "README.md" },
+    { src: "diagnostics-template.yaml", dest: "governance/diagnostics.yaml" },
   ];
 
   const templatesDir = join(PLUGIN_ROOT, "templates");
@@ -400,6 +402,26 @@ async function setupGitHooks() {
       chmodSync(destPath, 0o755);
       created.push(`.githooks/${hookName}`);
     }
+  }
+
+  // Install auxiliary hook scripts (not git-named hooks; invoked by the
+  // standard hooks above). These are simple copies — no chaining, no
+  // alt-variant handling, since they aren't git's standard hook names and
+  // therefore cannot collide with project-owned hooks.
+  const auxHooks = ["pre-commit-no-inline-node"];
+  for (const auxName of auxHooks) {
+    const srcPath = join(pluginHooksDir, auxName);
+    const destPath = join(githooksDir, auxName);
+    if (!existsSync(srcPath)) continue;
+    if (resolve(srcPath) === resolve(destPath)) continue;
+    if (existsSync(destPath)) {
+      const srcContent = readFileSync(srcPath);
+      const destContent = readFileSync(destPath);
+      if (Buffer.compare(srcContent, destContent) === 0) continue;
+    }
+    cpSync(srcPath, destPath);
+    chmodSync(destPath, 0o755);
+    created.push(`.githooks/${auxName}`);
   }
 
   // Set core.hooksPath to .githooks/ (skip if already set)
@@ -1286,6 +1308,7 @@ const VERB_REGISTRY = new Map([
                         }, help: () => cmdHelp() })],
   ["help",      () => ({ run: () => cmdHelp(),                   help: () => cmdHelp() })],
   ["gate",      () => import("../lib/cli/gate.mjs")],
+  ["diagnose",  () => import("../lib/cli/diagnose.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr

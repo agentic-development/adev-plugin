@@ -263,6 +263,10 @@ for (const reviewer of dispatchedReviewers) {
 
 ## Step 7: Update Spec Status
 
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> seven legal transitions are tracked there; if a future review introduces a
+> new status, extend that module first, then this skill.
+
 After saving the review report, update the spec's status based on the verdict:
 
 **If verdict is PASS or PASS_WITH_NOTES:**

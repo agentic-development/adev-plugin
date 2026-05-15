@@ -14,8 +14,8 @@ source-manifest:
     - lib/execution-state.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
-drift_source: lib/execution-state.mjs
-drift_at: 2026-05-12T01:09:32.202Z
+drift_source: skills/implement/SKILL.md
+drift_at: 2026-05-14T21:11:43.430Z
 ---
 
 # Live Spec: Skill-Level State Instructions

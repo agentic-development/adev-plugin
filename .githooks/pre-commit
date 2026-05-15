@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
-# Git pre-commit hook — blocks commits on protected branches.
+# Git pre-commit hook — blocks commits on protected branches AND
+# rejects new inline-Node accruals in skills/**/SKILL.md.
 # Reads configuration from .context-index/manifest.yaml when available.
-# Exit codes: 0 = allow, 1 = block.
+# Exit codes: 0 = allow, 1 = block (branch), 2 = block (inline-Node policy).
 
 set -uo pipefail
+
+# --- Inline-Node accrual guard (cli-driver-surface/regression-prevention) ---
+#
+# Run pre-commit-no-inline-node first. If the project doesn't have the
+# auxiliary hook script (e.g. older install, downstream project without
+# .githooks/pre-commit-no-inline-node), skip silently and continue.
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -x "$HOOK_DIR/pre-commit-no-inline-node" ]; then
+  "$HOOK_DIR/pre-commit-no-inline-node"
+  INLINE_NODE_EXIT=$?
+  if [ "$INLINE_NODE_EXIT" -ne 0 ]; then
+    exit $INLINE_NODE_EXIT
+  fi
+fi
 
 # --- Detect current branch ---
 

@@ -25,6 +25,9 @@ source-manifest:
     - tests/fixtures/cli/non-conforming-no-gate.mjs
     - tests/fixtures/cli/non-conforming-no-run.mjs
   computed-at: "2026-05-14T17:01:01.991Z"
+drift_detected: true
+drift_source: cli/index.mjs
+drift_at: 2026-05-14T21:49:15.586Z
 ---
 
 ## Behavioral Contract

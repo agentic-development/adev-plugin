@@ -575,6 +575,9 @@ Do NOT merge directly to <target-branch>.
 
 ## Step 5: Update Spec Status and Source Manifest
 
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time.
+
 After all tasks are complete and before reporting completion:
 
 1. Read the spec file that this plan implements (the plan file references the spec)

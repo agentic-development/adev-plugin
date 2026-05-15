@@ -6,13 +6,29 @@
 
 ---
 charter: cli-driver-surface
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: adev-compiler-discipline
 revision: 1
 charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-14
+source-manifest:
+  sha: "5f6e0f2"
+  files:
+    - .context-index/constitution.md
+    - .githooks/pre-commit
+    - .githooks/pre-commit-no-inline-node
+    - CLAUDE.md
+    - cli/index.mjs
+    - hooks/pre-commit-no-inline-node.sh
+    - tests/cli.test.mjs
+    - tests/constitution.test.mjs
+    - tests/hooks/pre-commit-no-inline-node.test.mjs
+  computed-at: "2026-05-14T21:51:01.790Z"
+drift_detected: true
+drift_source: tests/hooks/pre-commit-no-inline-node.test.mjs
+drift_at: 2026-05-15T11:01:05.373Z
 ---
 
 ## Behavioral Contract

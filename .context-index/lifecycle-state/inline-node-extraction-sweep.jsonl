@@ -5,3 +5,13 @@
 {"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"security-reviewer findings recorded in .review.md; initial verdict BLOCK, post-resolution PASS_WITH_NOTES","ts":"2026-05-14T14:38:33.617Z"}
 {"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"consistency-analyzer findings recorded in .review.md; initial verdict BLOCK, post-resolution PASS_WITH_NOTES","ts":"2026-05-14T14:38:33.617Z"}
 {"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-14T14:38:33.621Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-14T19:01:55.088Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-0","status":"pending","notes":"Sweep scaffolding (progress index + allowlist test)","ts":"2026-05-14T19:01:55.088Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-1","status":"pending","notes":"PR 1 — Extract Check 13 heuristic extraction","ts":"2026-05-14T19:01:55.089Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-2","status":"pending","notes":"PR 2 — Extract reportValidator emission","ts":"2026-05-14T19:01:55.089Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-3","status":"pending","notes":"PR 3 — Extract reportStep lifecycle emission","ts":"2026-05-14T19:01:55.089Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-4","status":"pending","notes":"PR 4 — Extract Step 0a requireGate calls","ts":"2026-05-14T19:01:55.089Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-5","status":"pending","notes":"PR 5 — Extract source-manifest verify","ts":"2026-05-14T19:01:55.089Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-6","status":"pending","notes":"PR 6 — Extract domain-aware gate loading","ts":"2026-05-14T19:01:55.089Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md","task_id":"task-7","status":"pending","notes":"PRs 7–N — Long-tail extractions","ts":"2026-05-14T19:01:55.090Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T19:01:55.090Z"}

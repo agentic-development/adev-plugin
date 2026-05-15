@@ -15,7 +15,7 @@ source-manifest:
   computed-at: "2026-04-12T11:47:08.344Z"
 drift_detected: true
 drift_source: templates/manifest-template.yaml
-drift_at: 2026-05-12T01:28:44.133Z
+drift_at: 2026-05-14T21:34:08.370Z
 ---
 
 # Live Spec: Configurable Reminder Interval

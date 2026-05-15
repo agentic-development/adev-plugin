@@ -35,7 +35,7 @@ function runCli(args, opts = {}) {
 }
 
 function seedProject(tmp) {
-  writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: status-render-test\n");
+  writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: status-render-test\nlifecycle:\n  event_diagnostics: off\n");
   return tmp;
 }
 
