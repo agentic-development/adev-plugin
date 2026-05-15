@@ -34,7 +34,7 @@ grep -rc "Run inline Node\|node --input-type=module -e\|node -e" skills/*/SKILL.
 | specify          | 2                             | pending  | —     |       |
 | standalone       | 1                             | pending  | —     |       |
 | status           | 1                             | pending  | —     |       |
-| validate         | 8                             | pending  | —     |       |
+| validate         | 8                             | partially-extracted | PR 1 (Check 13) | 7 blocks remain; stays on allowlist |
 | write-test       | 3                             | pending  | —     |       |
 | **TOTAL**        | **51**                        |          |       |       |
 
@@ -53,8 +53,8 @@ named-PR sequence, with the long tail parallelizable.
 
 | PR  | Title                                              | Skills affected                                         | Status   |
 |-----|----------------------------------------------------|---------------------------------------------------------|----------|
-| 0   | Sweep scaffolding (progress index + allowlist test)| —                                                       | in-flight |
-| 1   | Extract Check 13 — heuristic extraction            | `validate`                                              | pending  |
+| 0   | Sweep scaffolding (progress index + allowlist test)| —                                                       | merged   |
+| 1   | Extract Check 13 — heuristic extraction            | `validate`                                              | merged   |
 | 2   | Extract `reportValidator` per-check emission       | `validate`                                              | pending  |
 | 3   | Extract `reportStep` lifecycle entry/exit emission | `~all lifecycle skills` (specify, review-specs, plan, implement, validate, debug) | pending  |
 | 4   | Extract Step 0a `requireGate` calls                | `~all lifecycle skills`                                 | pending  |
