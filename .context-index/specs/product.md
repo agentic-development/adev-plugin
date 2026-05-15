@@ -33,6 +33,7 @@ AI coding agents work best with structured context but most projects provide non
 | Agent-Reliable State Artifacts | Storage-layer refactor replacing markdown-table and YAML agent-mutated state with JSON for relational data and per-spec JSONL append-only event logs, with markdown rendered on demand for human inspection | [charter.md](./features/agent-reliable-state-artifacts/charter.md) |
 | Domain Extensions | Installable content packages distributing domain-specific configuration as extensions consumed by the install pipeline | [charter.md](./features/domain-extensions/charter.md) |
 | Lifecycle Artifacts | Structural taxonomy for adev's lifecycle artifacts via a unified `kind:` discriminator, per-kind template matrix, and kind-aware routing in `/adev:specify` and `/adev:brainstorm` | [charter.md](./features/lifecycle-artifacts/charter.md) |
+| CLI Driver Surface | Compiler-driver pattern wrapping every adev helper as an `adev <verb>` subcommand, with diagnostic registry and write-time event tagging that makes "agent claimed done but checks didn't fire" detectable at the moment of claim | [charter.md](./features/cli-driver-surface/charter.md) |
 
 ## Cross-Cutting Concerns
 
