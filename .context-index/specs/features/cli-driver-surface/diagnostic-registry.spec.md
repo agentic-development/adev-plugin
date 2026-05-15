@@ -6,13 +6,53 @@
 
 ---
 charter: cli-driver-surface
-status: review-passed
+status: implemented
 risk_level: high
 milestone: adev-compiler-discipline
 revision: 2
 charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-14
+source-manifest:
+  sha: "02cf5b1"
+  files:
+    - cli/index.mjs
+    - lib/diagnostics/event-schemas.mjs
+    - lib/diagnostics/index.mjs
+    - lib/diagnostics/tier1/event-schema-valid.mjs
+    - lib/diagnostics/tier1/frontmatter-present.mjs
+    - lib/diagnostics/tier1/status-enum-legal.mjs
+    - lib/lifecycle-state.mjs
+    - lib/meta-tools.mjs
+    - lib/reality-check.mjs
+    - lib/spec-status.mjs
+    - skills/hygiene/SKILL.md
+    - skills/implement/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/specify/SKILL.md
+    - skills/validate/SKILL.md
+    - templates/diagnostics-template.yaml
+    - tests/cli.test.mjs
+    - tests/diagnostics/event-schemas.test.mjs
+    - tests/diagnostics/fixtures/runners/conforming.mjs
+    - tests/diagnostics/fixtures/runners/firing.mjs
+    - tests/diagnostics/fixtures/runners/hung.mjs
+    - tests/diagnostics/fixtures/runners/slow.mjs
+    - tests/diagnostics/fixtures/runners/throws-external-path.mjs
+    - tests/diagnostics/fixtures/runners/throws-home-path.mjs
+    - tests/diagnostics/fixtures/runners/throws-project-path.mjs
+    - tests/diagnostics/index-smoke.test.mjs
+    - tests/diagnostics/registry.test.mjs
+    - tests/diagnostics/tier1/event-schema-valid.test.mjs
+    - tests/diagnostics/tier1/frontmatter-present.test.mjs
+    - tests/diagnostics/tier1/status-enum-legal.test.mjs
+    - tests/lib/lifecycle-state.test.mjs
+    - tests/lib/spec-status-no-bare-literals.test.mjs
+    - tests/lib/spec-status.test.mjs
+  computed-at: "2026-05-14T21:13:35.721Z"
+drift_detected: true
+drift_source: tests/cli.test.mjs
+drift_at: 2026-05-14T21:49:51.116Z
 ---
 
 > **Rev 2 amendment (2026-05-14):**

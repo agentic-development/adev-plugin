@@ -249,8 +249,20 @@ tasks:
 # missing/failed prior step.
 #   strict   — throw GateError (default)
 #   advisory — emit console.warn and continue
+#
+# Controls write-time Tier-1 / event-impact diagnostics that fire on every
+# call to lib/lifecycle-state.mjs::appendEvent.
+#   strict — event-impact diagnostics fire before writing; any error-severity
+#            firing throws GateError and the event is NOT persisted.
+#   tag    — (default) event-impact diagnostics fire before writing; firings
+#            are merged into the event's diagnostic_warnings field, and the
+#            event is persisted with the inline tags.
+#   off    — diagnostics engine not invoked. Pre-rev-2 baseline behavior.
+#            Use in test fixtures and during incremental rollouts; the
+#            default tag mode is non-blocking (writes always succeed).
 # lifecycle:
 #   gate_mode: strict
+#   event_diagnostics: tag
 
 # ============================================================================
 # Repo Map Configuration

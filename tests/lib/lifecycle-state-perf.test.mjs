@@ -39,7 +39,7 @@ function isOverloaded() {
 function makeProject() {
   const root = createTempDir();
   mkdirSync(join(root, '.context-index'), { recursive: true });
-  writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+  writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
   return root;
 }
 
