@@ -582,21 +582,21 @@ After all tasks are complete and before reporting completion:
 1. Read the spec file that this plan implements (the plan file references the spec)
 2. Parse YAML frontmatter
 3. Update status: `review-passed` → `implemented`
-4. **Compute source manifest:** Collect all source files produced by this implementation, then call `computeManifest(filePaths, projectRoot)` from `lib/source-manifest.mjs`. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter.
+4. **Compute source manifest:** Collect all source files produced by this implementation, then call the CLI to compute a deterministic SHA-256 manifest. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter.
 
    **Collecting the file list:** Walk each task in the plan and collect every file listed under `Files: Modify:` and `Files: Create:` (exclude `Files: Reference:` — those are read-only context). Deduplicate and sort. These are project-root-relative paths (e.g., `lib/milestones.mjs`, not absolute paths).
 
    **Invocation:**
    ```bash
-   node --input-type=module -e "
-   import { computeManifest } from '<ADEV_ROOT>/lib/source-manifest.mjs';
-   const manifest = await computeManifest(
-     ['lib/feature.mjs', 'tests/feature.test.mjs'],  // collected file list
-     '<PROJECT_ROOT>'                                  // absolute project root
-   );
-   console.log(JSON.stringify(manifest));
-   "
+   adev source-manifest compute --files <comma-separated-paths>
    ```
+
+   Example:
+   ```bash
+   adev source-manifest compute --files lib/feature.mjs,tests/feature.test.mjs
+   ```
+
+   Stdout is a single-line JSON object matching `computeManifest()`'s return shape: `{ sha, files, computedAt }`. The `sha` is the first 7 characters of the composite SHA-256. The `files` array is sorted ascending. The `computedAt` is an ISO 8601 timestamp. Pass `--out <path>` to write the JSON to a file instead of stdout (the file is created with `mkdir -p` semantics for the parent directory). Exit codes: `0` on success, `1` on argument error, missing source file, or path traversal.
 
    Write the returned manifest into the spec's YAML frontmatter:
    ```yaml
