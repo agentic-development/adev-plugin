@@ -1,0 +1,85 @@
+---
+status: draft
+kind: cross-cutting
+revision: 1
+updated: {{ date }}
+---
+
+# Cross-Cutting Charter: {{ concern_name }}
+
+<!-- Cross-Cutting Charter for the {{ concern_name }} concern. Cross-cutting
+     charters describe a concern that touches multiple modules (e.g., logging,
+     authentication, observability, gates). They live under
+     `specs/cross-cutting/`, NOT `specs/features/`.
+
+     Domain Model is intentionally omitted at this layer: entities owned by a
+     cross-cutting concern do not exist — the entities live in the affected
+     modules and the concern modifies their behavior. If you find yourself
+     authoring a Domain Model here, the concern is probably a feature in
+     disguise; use charter-template.feature.md instead. -->
+
+## Business Intent
+
+<!-- Why this concern exists across modules. What policy, quality attribute,
+     or shared mechanism it is responsible for. Two or three sentences. -->
+
+...
+
+## Scope
+
+### In Scope
+
+<!-- The concerns this charter governs across the affected modules. -->
+
+- ...
+
+### Out of Scope
+
+<!-- Concerns that look adjacent but are explicitly NOT covered here. Prevents
+     scope drift and clarifies which charter is responsible for what. -->
+
+- ...
+
+## Affected Modules
+
+<!-- The modules this concern touches. Impact column captures the depth of
+     change required in each affected module. Changes Required is the
+     concrete handle reviewers and implementers use to estimate work. -->
+
+| Module | Impact (high / medium / low) | Changes Required |
+|---|---|---|
+| ... | ... | ... |
+
+## Interface Contracts
+
+<!-- How this concern interacts with the affected modules: which hooks it
+     exposes, which conventions modules MUST follow, which APIs it consumes
+     from other modules to do its job. -->
+
+### Exposed APIs
+
+<!-- Interfaces this concern exposes to the affected modules — functions,
+     conventions, hook contracts, configuration knobs. -->
+
+| Interface | Type | Description |
+|---|---|---|
+| ... | function / convention / hook / config | ... |
+
+### Consumed APIs
+
+<!-- Interfaces from affected modules that this concern relies on. -->
+
+| Interface | Source Module | Description |
+|---|---|---|
+| ... | ... | ... |
+
+## Quality Attributes
+
+<!-- Non-functional requirements specific to this cross-cutting concern. -->
+
+| Attribute | Requirement |
+|---|---|
+| Performance | ... |
+| Availability | ... |
+| Security | ... |
+| Observability | ... |

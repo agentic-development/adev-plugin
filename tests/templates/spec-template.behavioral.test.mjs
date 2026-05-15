@@ -5,9 +5,9 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEMPLATE = join(__dirname, "..", "..", "templates", "live-spec-template.md");
+const TEMPLATE = join(__dirname, "..", "..", "templates", "spec-template.behavioral.md");
 
-describe("live-spec-template.md — infra_requirements field", () => {
+describe("spec-template.behavioral.md — infra_requirements field", () => {
   const content = readFileSync(TEMPLATE, "utf8");
 
   it("frontmatter contains infra_requirements field (commented)", () => {

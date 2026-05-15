@@ -22,7 +22,8 @@
         {
           "confirm": "README updated"
         }
-      ]
+      ],
+      "defer_reason": null
     },
     {
       "name": "0.26.0",
@@ -51,7 +52,65 @@
         {
           "confirm": "CHANGELOG updated with breaking-change note for tasks.md to tasks.json"
         }
-      ]
+      ],
+      "defer_reason": null
+    },
+    {
+      "name": "adev-compiler-discipline",
+      "status": "planned",
+      "epic_id": "epic-74",
+      "target_date": null,
+      "release": {
+        "strategy": "manual"
+      },
+      "ship_criteria": [
+        {
+          "check": "all_issues_closed"
+        },
+        {
+          "check": "gates_pass"
+        },
+        {
+          "confirm": "All 5 sub-epic charters reviewed"
+        },
+        {
+          "confirm": "Constitution amendments synced"
+        }
+      ],
+      "defer_reason": null
+    },
+    {
+      "name": "spec-and-charter-taxonomy",
+      "status": "planned",
+      "epic_id": "epic-73",
+      "target_date": null,
+      "release": {
+        "strategy": "manual"
+      },
+      "ship_criteria": [
+        {
+          "check": "all_issues_closed"
+        },
+        {
+          "check": "gates_pass"
+        },
+        {
+          "confirm": "ADR landed defining the six spec modes and four charter kinds"
+        },
+        {
+          "confirm": "Four new spec templates added (action, skill, integration, artifact)"
+        },
+        {
+          "confirm": "Three new charter templates added (module, cross-cutting, initiative)"
+        },
+        {
+          "confirm": "/adev:specify routes by spec mode; /adev:brainstorm routes by charter kind"
+        },
+        {
+          "confirm": "Smoke validation: one spec authored in each new mode AND one charter in each new kind"
+        }
+      ],
+      "defer_reason": null
     }
   ]
 }

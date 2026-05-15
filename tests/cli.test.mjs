@@ -58,9 +58,9 @@ describe("scaffoldContextKit", () => {
       ".context-index/constitution.md",
       ".context-index/manifest.yaml",
       ".context-index/adrs/.template.md",
-      ".context-index/specs/features/.charter-template.md",
-      ".context-index/specs/features/.live-spec-template.md",
-      ".context-index/specs/features/.refactoring-spec-template.md",
+      ".context-index/specs/features/.charter-template.feature.md",
+      ".context-index/specs/features/.spec-template.behavioral.md",
+      ".context-index/specs/features/.spec-template.refactor.md",
     ];
 
     for (const file of expectedFiles) {

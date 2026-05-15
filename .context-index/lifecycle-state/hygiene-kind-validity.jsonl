@@ -1,0 +1,40 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-14T16:13:43.868Z"}
+{"event":"step_completed","step":"specify","ts":"2026-05-14T16:18:43.669Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-14T16:19:52.502Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PARSE_ERROR row missing (SA-10); severity vs exit-code (CON-4).","ts":"2026-05-14T16:25:34.763Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"PARSE_ERROR row missing (SA-10); severity vs exit-code (CON-4).","ts":"2026-05-14T16:25:34.764Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PARSE_ERROR row missing (SA-10); severity vs exit-code (CON-4).","ts":"2026-05-14T16:25:34.764Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-14T16:25:34.765Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-14T17:03:25.324Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-4","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.328Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T17:03:25.334Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T16:30:02.879Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-05-15T16:31:51.707Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-1","status":"done","notes":"Implemented in lib/hygiene/kind-validity.mjs; manifest cross-reference inline","ts":"2026-05-15T16:40:39.258Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-2","status":"done","notes":"Implemented in lib/hygiene/kind-validity.mjs; manifest cross-reference inline","ts":"2026-05-15T16:40:39.259Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-05-15T16:40:39.259Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-3","status":"done","notes":"Added Pass 18 (Kind Validity) to skills/hygiene/SKILL.md","ts":"2026-05-15T16:42:25.800Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md","task_id":"task-4","status":"done","notes":"tests/lib/hygiene-kind-validity.test.mjs covers all 5 codes + non-blocking exit","ts":"2026-05-15T16:42:25.801Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-15T16:48:42.256Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-15T16:50:30.136Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-15T16:50:30.139Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-15T16:51:05.438Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS_WITH_NOTES","error":"Pre-existing unrelated test failure in plan-task-immutability.test.mjs (informational per pipeline)","score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.416Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-5-source-manifest","severity":"warning","verdict":"PASS_WITH_NOTES","error":"lib/hygiene/kind-validity.mjs and tests/lib/hygiene-kind-validity.test.mjs are untracked; expected to be committed in pipeline step","score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.417Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-6-code-drift","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.417Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.418Z"}
+{"event":"validator_report","step":"validate","validator":"check-3-charter-consistency","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.418Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.418Z"}
+{"event":"validator_report","step":"validate","validator":"check-5-adr-compliance","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.419Z"}
+{"event":"validator_report","step":"validate","validator":"check-6-cross-cutting","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.419Z"}
+{"event":"validator_report","step":"validate","validator":"check-7-specialist-review","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.419Z"}
+{"event":"validator_report","step":"validate","validator":"check-8-boundary","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.420Z"}
+{"event":"validator_report","step":"validate","validator":"check-9-transitions","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.420Z"}
+{"event":"validator_report","step":"validate","validator":"check-10-platform-drift","severity":"warning","verdict":"PASS","error":"SKIP: no platform-context.yaml","score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.421Z"}
+{"event":"validator_report","step":"validate","validator":"check-11-visual","severity":"warning","verdict":"PASS","error":"N/A: no UI files","score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.421Z"}
+{"event":"validator_report","step":"validate","validator":"check-12-lifecycle","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.421Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T17:02:13.957Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T17:02:34.583Z"}

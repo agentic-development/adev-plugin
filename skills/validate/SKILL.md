@@ -32,11 +32,11 @@ import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
 
 const state = currentState(projectRoot, specPath);
 const mode = resolveGateMode(loadManifest(projectRoot));
-requireGate(state, "implement", { mode });
+requireGate(state, "validate", { mode });
 reportStep(projectRoot, specPath, { step: "validate", status: "started" });
 ```
 
-In strict mode (default), `requireGate` throws `GateError` if the `implement` step is not complete — the skill stops and tells the operator which prior step is missing. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+`requireGate(state, "validate", ...)` follows the lib contract: pass the step about to begin; the lib resolves its prior (`implement`) and asserts that step is completed with a passing verdict. In strict mode (default), it throws `GateError` when implement is incomplete. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
 Emit a matching `reportStep` exit (`status: "completed"`, including the aggregate verdict) after the report is written in Step 14.
 

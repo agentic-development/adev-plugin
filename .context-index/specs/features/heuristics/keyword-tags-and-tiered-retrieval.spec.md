@@ -22,8 +22,11 @@ source-manifest:
     - .context-index/memory/heuristics/_format.md
     - tests/lib/heuristics-tags-and-tiers.test.mjs
     - tests/lib/heuristics.test.mjs
-    - .context-index/specs/features/heuristics/retrieval-filtering.md
+    - .context-index/specs/features/heuristics/retrieval-filtering.spec.md
   computed-at: "2026-04-25T21:55:13.273Z"
+drift_detected: true
+drift_source: .context-index/specs/features/heuristics/retrieval-filtering.spec.md
+drift_at: 2026-05-14T19:00:40.058Z
 ---
 
 ## Behavioral Contract

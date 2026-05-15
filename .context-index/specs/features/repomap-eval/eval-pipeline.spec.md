@@ -27,6 +27,9 @@ source-manifest:
     - tests/evals/repomap/run-eval.mjs
     - tests/repomap/index.test.mjs
   computed-at: "2026-04-12T11:48:02.741Z"
+drift_detected: true
+drift_source: .gitignore
+drift_at: 2026-05-14T20:51:14.119Z
 ---
 
 ## Behavioral Contract

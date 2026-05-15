@@ -17,6 +17,9 @@ source-manifest:
     - lib/spec-drift.mjs
     - lib/source-manifest.mjs
   computed-at: "2026-05-10T23:51:35.315Z"
+drift_detected: true
+drift_source: skills/hygiene/SKILL.md
+drift_at: 2026-05-15T16:42:13.605Z
 ---
 
 ## Behavioral Contract

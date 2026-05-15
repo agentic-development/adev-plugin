@@ -21,6 +21,9 @@ source-manifest:
     - skills/validate/SKILL.md
     - templates/validate/defaults.yaml
   computed-at: "2026-05-10T23:51:35.315Z"
+drift_detected: true
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-14T21:51:25.658Z
 ---
 
 ## Behavioral Contract
