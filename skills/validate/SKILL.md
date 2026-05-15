@@ -582,40 +582,22 @@ Before writing the new heuristic, scan for semantic contradictions with existing
 
 This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `/adev:retro` consolidation is the backstop for missed contradictions.
 
-#### Inline Node Invocation
+#### CLI Invocation
 
-Run the extraction via an inline Node invocation that resolves `projectRoot`, imports `writeHeuristic` from the adev plugin's `lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL. The process always exits with code 0. The `evidence[]` array must contain exactly one entry: `{ source: "validation", path: "<validation-report-path>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence in the printed output must come from the `writeHeuristic` return value (which may auto-promote).
-
-**Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. For example, if this skill's base directory is `/path/to/adev/0.10.0/skills/validate`, the plugin root is `/path/to/adev/0.10.0`. Use the absolute path in the import.
-
-On import failure: SKIP with reason `"helper unavailable"`.
-On `HEURISTICS_SCHEMA_ERROR` or any thrown error: SKIP with the error message.
-
-Concrete invocation (replace `<ADEV_ROOT>` with the resolved absolute plugin root path):
+Run the extraction via `adev heuristics extract`. The helper (`lib/cli/heuristics.mjs`) implements every derivation rule in the sections above (spec-slug, scope, title, id, default pattern) and is observational: it always exits 0 on success or SKIP, exit 1 only on argument errors. The `evidence[]` array contains exactly one entry: `{ source: "validation", path: "<--report value>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence printed comes from the underlying `writeHeuristic` return value (which may auto-promote).
 
 ```bash
-node --input-type=module -e "
-try {
-  const { writeHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-  try {
-    const h = await writeHeuristic(projectRoot, {
-      id: 'foo-spec-a1b2c3d4',
-      scope: 'hooks',
-      title: 'First-run PASS: Foo Spec',
-      pattern: 'First-run PASS for Foo Spec: implementation matched all acceptance criteria without revision',
-      antiPattern: '',
-      confidence: 'medium',
-      evidence: [{ path: '.context-index/specs/features/hooks/foo-spec.validate.md', date: '2026-04-09', source: 'validation' }],
-    });
-    console.log(\`Check 13: Success Heuristic Extracted — \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
-  } catch (err) {
-    console.log(\`Check 13: SKIP — \${err.message}\`);
-  }
-} catch (err) {
-  console.log('Check 13: SKIP — helper unavailable');
-}
-"
+adev heuristics extract \
+  --spec "<spec-path>" \
+  --report "<validation-report-path>" \
+  [--pattern "<success-factor text from packet — golden sample / ADR / spec / default>"]
 ```
+
+When the agent has identified a specific success factor (golden sample, ADR, cross-cutting spec), pass it via `--pattern`. Otherwise omit the flag and the helper falls back to the default success-factor pattern.
+
+On any failure inside the helper (helper unavailable, `HEURISTICS_SCHEMA_ERROR`, etc.) the helper prints `Check 13: SKIP — <reason>` and exits 0. The validate skill MUST capture stdout and propagate the SKIP/extract line verbatim into the validation report.
+
+> Authority: the helper is the canonical implementation per `.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md` PR 1. Do not re-introduce inline Node here — `tests/skills-no-inline-node.test.mjs` and `hooks/pre-commit-no-inline-node.sh` reject it.
 
 #### SKIP Semantics
 
