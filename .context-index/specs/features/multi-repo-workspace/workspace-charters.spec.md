@@ -16,8 +16,8 @@ source-manifest:
     - tests/skills/specify-workspace-mode.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
-drift_source: skills/specify/SKILL.md
-drift_at: 2026-05-11T00:13:06.997Z
+drift_source: skills/brainstorm/SKILL.md
+drift_at: 2026-05-15T16:05:09.593Z
 ---
 
 # Live Spec: Workspace-Level Charters

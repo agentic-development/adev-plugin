@@ -1,14 +1,32 @@
 ---
 charter: lifecycle-artifacts
 kind: artifact
-status: review-passed
+status: implemented
 risk_level: low
 milestone: spec-and-charter-taxonomy
 revision: 1
 charter-revision: 2
 created: 2026-05-14
+updated: 2026-05-15
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/spec-templates.plan.md
+
+source-manifest:
+  sha: "08df430"
+  files:
+    - .context-index/specs/features/.spec-template.action.md
+    - .context-index/specs/features/.spec-template.artifact.md
+    - .context-index/specs/features/.spec-template.integration.md
+    - .context-index/specs/features/.spec-template.skill.md
+    - templates/spec-template.action.md
+    - templates/spec-template.artifact.md
+    - templates/spec-template.integration.md
+    - templates/spec-template.skill.md
+    - tests/lib/template-resolution.test.mjs
+  computed-at: "2026-05-15T13:58:22.832Z"
+drift_detected: true
+drift_source: tests/lib/template-resolution.test.mjs
+drift_at: 2026-05-15T14:23:30.744Z
 ---
 
 # Live Spec: Spec Templates

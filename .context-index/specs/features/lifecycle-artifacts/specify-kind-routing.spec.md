@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: skill
-status: review-passed
+status: validated
 risk_level: medium
 milestone: spec-and-charter-taxonomy
 revision: 2

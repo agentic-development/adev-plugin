@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: behavioral
-status: implemented
+status: validated
 risk_level: medium
 milestone: spec-and-charter-taxonomy
 revision: 2
@@ -16,6 +16,9 @@ source-manifest:
     - lib/template-resolution.mjs
     - tests/lib/template-resolution.test.mjs
   computed-at: "2026-05-15T13:32:34.277Z"
+drift_detected: true
+drift_source: tests/lib/template-resolution.test.mjs
+drift_at: 2026-05-15T14:23:30.746Z
 ---
 
 # Live Spec: Template Resolution

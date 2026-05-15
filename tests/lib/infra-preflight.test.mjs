@@ -613,7 +613,7 @@ describe("formatPreflightReport", () => {
 describe("live-spec template", () => {
   test("template includes extended infra_requirements fields", () => {
     const template = readFileSync(
-      join(PROJECT_ROOT, "templates", "live-spec-template.md"),
+      join(PROJECT_ROOT, "templates", "spec-template.behavioral.md"),
       "utf-8"
     );
     assert.ok(template.includes("cli_tools"), "must include cli_tools example");

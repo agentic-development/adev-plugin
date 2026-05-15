@@ -21,7 +21,7 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-11T00:13:24.275Z
+drift_at: 2026-05-14T21:51:25.656Z
 ---
 
 # Live Spec: Workspace-Aware Validate

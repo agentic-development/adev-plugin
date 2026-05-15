@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: refactor
-status: review-passed
+status: validated
 risk_level: low
 milestone: spec-and-charter-taxonomy
 revision: 2
@@ -9,6 +9,26 @@ charter-revision: 2
 created: 2026-05-14
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/template-renames.plan.md
+
+source-manifest:
+  sha: "0fefc10"
+  files:
+    - .context-index/specs/features/.spec-template.behavioral.md
+    - .context-index/specs/features/.spec-template.refactor.md
+    - cli/index.mjs
+    - providers/codex/skills/specify/SKILL.md
+    - providers/opencode/skills/specify/SKILL.md
+    - skills/specify/SKILL.md
+    - templates/spec-template.behavioral.md
+    - templates/spec-template.refactor.md
+    - tests/cli.test.mjs
+    - tests/lib/infra-preflight.test.mjs
+    - tests/templates/spec-template.behavioral.test.mjs
+    - tests/visual-verification.test.mjs
+  computed-at: "2026-05-15T15:14:03.286Z"
+drift_detected: true
+drift_source: templates/spec-template.refactor.md
+drift_at: 2026-05-15T17:40:33.005Z
 ---
 
 # Refactoring Spec: Template Renames

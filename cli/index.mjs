@@ -211,9 +211,9 @@ function scaffoldContextKit() {
     { src: "constitution-template.md", dest: "constitution.md" },
     { src: "manifest-template.yaml", dest: "manifest.yaml" },
     { src: "adr-template.md", dest: "adrs/.template.md" },
-    { src: "charter-template.md", dest: "specs/features/.charter-template.md" },
-    { src: "live-spec-template.md", dest: "specs/features/.live-spec-template.md" },
-    { src: "refactoring-spec-template.md", dest: "specs/features/.refactoring-spec-template.md" },
+    { src: "charter-template.feature.md", dest: "specs/features/.charter-template.feature.md" },
+    { src: "spec-template.behavioral.md", dest: "specs/features/.spec-template.behavioral.md" },
+    { src: "spec-template.refactor.md", dest: "specs/features/.spec-template.refactor.md" },
     { src: "context-index-readme.md", dest: "README.md" },
   ];
 
