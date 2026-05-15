@@ -2869,6 +2869,30 @@
       "created": "2026-05-15T13:44:47.513Z",
       "updated": "2026-05-15T13:47:17.838Z",
       "epicId": "epic-75"
+    },
+    {
+      "id": "issue-486",
+      "title": "Review default validation checks",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "Validate dispatches consume disproportionate tokens — averaged ~90-110K per spec across 13 checks during the lifecycle-artifacts charter build (~3x the per-implement cost). Most checks re-read the same spec, charter, and manifest files independently.\n\n## Problem\nMeasured during 2026-05-15 lifecycle-artifacts charter retro:\n- 11 validate dispatches × ~95K tokens avg = ~1.05M tokens\n- 11 implement dispatches × ~25K tokens avg = ~275K tokens\n- Validate is ~3x the cost of implement despite doing strictly less work (read-only verification vs. authoring code+tests)\n\nRoot cause: every check (1, 1.5, 1.6, 2-13) loads the same spec/charter/manifest files independently inside its own subagent context. No shared cache.\n\n## Proposed scope\n1. Audit which of the 13 checks actually need file content vs. could work from a single pre-parsed payload.\n2. Add a read-once cache (spec body, charter, manifest, plan) at the validate subagent entry point and pass parsed data to checks.\n3. Consider conditional check execution — skip Check 11 (UI) when no UI files exist; skip Check 9 (transitions) when no state-machine config; skip Check 7 (e2e) when no e2e suite. Signal these from the orchestrator rather than re-discovering per-subagent.\n4. Consider whether some checks should be deduped or combined (e.g., Check 1 + 1.5 + 1.6 all read npm test output).\n\n## Expected impact\n- 30% token reduction conservatively → ~330K tokens saved per 11-spec charter\n- Faster validate wall-clock (less LLM throughput on redundant reads)\n- Cleaner check authoring contract (signature: (parsedContext) => result)\n\n## Reference\nSee .context-index/hygiene/retros/2026-05-15-lifecycle-artifacts-build.md action item #10 and #11 for full retrospective context.",
+      "next_action": null,
+      "created": "2026-05-15T19:35:58.758Z",
+      "updated": "2026-05-15T19:35:58.758Z"
+    },
+    {
+      "id": "issue-487",
+      "title": "Document worker-vs-orchestrator fork pattern in skill frontmatter",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "## Background\nThe single most important architectural pattern in adev — coordinator/orchestrator skills must NOT fork; worker skills SHOULD fork — is currently undocumented in any skill frontmatter and in using-adev. This caused ~50K tokens + several round-trips of wasted debugging during the 2026-05-15 lifecycle-artifacts charter build before commit f635b6a removed `context: fork` from `skills/build/SKILL.md`.\n\n## The pattern\nWhen invoked via the Skill tool, a skill with `context: fork` in its frontmatter runs in a forked subagent execution context that does NOT inherit the Agent dispatcher tool. This is correct behavior for WORKERS (which are themselves dispatched by an orchestrator via Agent and run in a clean subagent context with its own tool list). It is INCORRECT for ORCHESTRATORS like /adev:build, which need Agent to dispatch their pipeline steps.\n\n## Current state (verified post-fix)\n| Skill | Role | context: fork | Correct? |\n|---|---|---|---|\n| skills/build | orchestrator | removed (f635b6a) | yes |\n| skills/implement | worker | present | yes |\n| skills/deploy | worker | present | yes |\n| skills/research | worker | present | yes |\n\n## Proposed scope\n1. Add an explanatory comment to each affected SKILL.md frontmatter declaring its role:\n   - build: `# role: orchestrator — must NOT use context: fork (needs Agent dispatcher)`\n   - implement/deploy/research: `# role: worker — context: fork is required for context isolation when dispatched by an orchestrator`\n2. Add a section to skills/using-adev/SKILL.md documenting the pattern with examples and the failure mode it prevents.\n3. Optionally add an integration test that asserts orchestrator skills do NOT carry `context: fork` and worker skills DO carry it.\n\n## Reference\nSee .context-index/hygiene/retros/2026-05-15-lifecycle-artifacts-build.md action item #8 and the f635b6a commit message for full context.",
+      "next_action": null,
+      "created": "2026-05-15T19:36:21.226Z",
+      "updated": "2026-05-15T19:36:21.226Z"
     }
   ]
 }
