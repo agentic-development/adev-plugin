@@ -4,7 +4,7 @@ When `--resume` is invoked, the skill resumes an interrupted or failed build fro
 
 ### Resume without `--spec` or `--milestone`
 
-Scan `.context-index/build-state/` for any JSON file with `"status": "in_progress"` or `"status": "failed"`. If multiple are found, list them and ask the user which to resume. If none are found, print:
+Scan `.context-index/lifecycle-state/` for any `<slug>.json` file with `"status": "in_progress"` or `"status": "failed"`. If multiple are found, list them and ask the user which to resume. If none are found, print:
 
 > No interrupted build found. Nothing to resume.
 

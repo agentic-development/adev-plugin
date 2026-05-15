@@ -193,7 +193,7 @@ STEP_RESULT:
 
 The ONLY work the build orchestrator performs itself (not via subagent):
 
-- **Reads** `.context-index/build-state/*.json` for resume state
+- **Reads** `.context-index/lifecycle-state/*.json` for resume state
 - **Reads** spec frontmatter for `milestone` field (milestone discovery) and `source-manifest` (validate step context)
 - **Reads** `.review.md` files for skip conditions and to extract review verdict/notes for step context
 - **Reads** `.plan.md` files for skip conditions and to extract task count for step context
@@ -201,7 +201,7 @@ The ONLY work the build orchestrator performs itself (not via subagent):
 - **Reads** `manifest.yaml` for `tasks.backend` (issue board configuration)
 - **Reads** `user-config` files (local and global) via `parseUserConfig()` for `build.max_retries` (retry policy)
 - **Calls** `detectWorkspace(cwd)` once at build start for workspace context
-- **Writes** `.context-index/build-state/*.json` after each step
+- **Writes** `.context-index/lifecycle-state/*.json` after each step
 - **Prints** progress headers and the final summary
 
 Everything else — reading source code, running tests, dispatching implementation subagents, checking spec compliance, writing reports — happens inside the subagent's context.
@@ -443,11 +443,11 @@ Retry cycles are recorded in build state under the validate step:
 
 ## Build State
 
-Build state is persisted as JSON at `.context-index/build-state/<slug>.json`, where `<slug>` is derived from the spec filename (lowercase, hyphenated, without extension).
+Build state is persisted as JSON at `.context-index/lifecycle-state/<slug>.json`, where `<slug>` is derived from the spec filename (lowercase, hyphenated, without extension).
 
 ### Directory Creation
 
-If `.context-index/build-state/` does not exist, create it before writing the first build state file.
+If `.context-index/lifecycle-state/` does not exist, create it before writing the first build state file.
 
 ### State File Format
 
@@ -507,7 +507,7 @@ On successful completion of all 5 steps, set `status` to `completed`. On any ste
 
 ## Stale Build Detection
 
-When `--resume` is invoked, or at the start of a new `--spec` build, scan `.context-index/build-state/` for zombie builds.
+When `--resume` is invoked, or at the start of a new `--spec` build, scan `.context-index/lifecycle-state/` for zombie builds.
 
 **Zombie build:** A state file where `status` is `in_progress` AND all recorded steps have `status: skipped`. This means the orchestrator ran, evaluated all skip conditions (`.review.md` present, `.plan.md` present, etc.), skipped every step, and exited without doing real work.
 

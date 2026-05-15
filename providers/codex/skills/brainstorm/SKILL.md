@@ -18,6 +18,7 @@ Do NOT invoke any implementation skill, write any code, create any Live Spec, or
 - `--module <name>`: scope brainstorm to an existing module (extends or revises its charter)
 - `--from-blueprint <path>`: seed brainstorm from a blueprint file (skips early clarification, jumps to approach selection)
 - `--no-bootstrap`: suppress product.md bootstrap even on first-charter scenarios (charter is written without product.md modifications)
+- `--kind <kind>`: one of `CHARTER_KINDS` (`module`, `feature`, `cross-cutting`, `initiative`). If omitted, the skill presents the ask-first menu in Step 2 (Clarify). Strict-on-write: missing or invalid values trigger a re-prompt — there is no silent defaulting on write. Read-time defaulting (`feature`) applies only to legacy charters that pre-date this taxonomy.
 
 ## Prerequisites
 
@@ -116,6 +117,58 @@ Ask questions one at a time. Prefer multiple-choice when possible. Do not ask mo
 
 **Assessment before questions:** If the idea spans multiple independent subsystems, flag immediately and help decompose into separate modules. Proceed with one at a time.
 
+### Step 2.1: Resolve Charter Kind
+
+Determine the charter `kind:` before approach selection. The kind shapes which subsequent clarifying questions get asked — for example, a `kind: cross-cutting` charter does not need Domain Model questions, and a `kind: module` charter cross-references `manifest.yaml`. The resolved kind is also passed to `resolveTemplate('charter', kind, domain)` in Step 5 to pick the correct charter template.
+
+**If `--kind <value>` was supplied on invocation:**
+
+```javascript
+import { isValidKind } from '<ADEV_ROOT>/lib/kinds.mjs';
+
+if (!isValidKind('charter', kind)) {
+  // Reject with the closed-enumeration list and stop.
+  // Message must list the 4 valid kinds so the user can correct their invocation:
+  //   "Invalid --kind 'xxx'. Valid options: module, feature, cross-cutting, initiative."
+}
+```
+
+If `isValidKind('charter', kind)` returns `false`, reject the invocation with a message naming the 4 valid options and halt. Do not proceed to charter authoring.
+
+**If `--kind` was NOT supplied:** present the ask-first menu and have the user pick:
+
+```
+What kind of charter is this?
+
+  1. feature (default) — discrete capability with full domain model
+  2. module — lifecycle-slot module registered in manifest.yaml (skill registry shape)
+  3. cross-cutting — concern affecting multiple modules (lives in specs/cross-cutting/)
+  4. initiative — time-bounded effort (migration, theme, release-bound work)
+
+→ Pick a number or name (default: feature)
+```
+
+**Strict-on-write semantics.** The kind axis is required at write time. If the user presses enter without picking a value, re-prompt with:
+
+```
+Kind is required for new charters. Pick a number or name.
+```
+
+Continue re-prompting until a valid kind is supplied. **No defaulting on write** — there is no silent defaulting at write time; the chosen value is written verbatim to frontmatter. (Read-time defaulting to `feature` applies only to legacy charters authored before this taxonomy landed; new charters must carry an explicit `kind:`.)
+
+**Kind-aware question routing.** Once the kind is resolved, adapt the rest of Step 2's clarifying questions accordingly:
+
+- `kind: feature` — full domain model: Business Intent, Scope, Domain Model, Capability Map, Interfaces, Quality Attributes
+- `kind: module` — lifecycle-slot shape: Identity, Scope, Slots/Hooks, Configuration (no Domain Model). Validate the user-supplied module slug against `manifest.yaml:modules[]` — see Step 5 for the manifest cross-reference warning
+- `kind: cross-cutting` — concern shape: Business Intent, Affected Modules, Cross-Cutting Behavior, Constraints (no Domain Model, no Capability Map — the charter template's H2 section list determines the actual section structure)
+- `kind: initiative` — time-bounded effort: Objective, Phases/Milestones, Success Criteria, Exit Conditions
+
+The exact section names always come from the resolved charter template (loaded in Step 5 via `resolveTemplate('charter', kind, domain)`). Use the template's H2 headings as the source of truth — do not invent section names.
+
+After resolution, the `kind` variable is available for Step 5's `resolveTemplate('charter', kind, domain)` call and for the path-policy branch (cross-cutting save-path).
+
+### Step 2.2: Other Clarifying Questions
+
 **Questions to answer (adapt to the idea, not mechanical):**
 - What problem does this solve? (Business Intent)
 - What is in/out of scope? (Scope and Boundaries)
@@ -167,15 +220,44 @@ After the user approves all sections, proceed to writing.
 
 ## Step 5: Write Charter
 
-Generate the charter file using the template at `${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md`.
+Generate the charter file using the kind-resolved template from `resolveTemplate('charter', kind, domain)`. **Do not hardcode a template filename.** Use the kind value resolved in Step 2.1 and the active domain from `resolveDomain(...)` (loaded in Step 1):
 
-**File path:** `.context-index/specs/features/<module>/charter.md` (lowercase, hyphenated slug).
+```javascript
+import { resolveTemplate } from '<ADEV_ROOT>/lib/template-resolution.mjs';
+import { readFileSync } from 'node:fs';
 
-**Before writing:** Create directory if needed. If charter exists (`--module`), read and merge rather than overwrite.
+const templatePath = await resolveTemplate('charter', kind, domain.resolved_domain ?? null);
+const templateBody = readFileSync(templatePath, 'utf8');
+```
 
-**Writing:** Fill all sections from Step 4, replace placeholders, remove HTML comments, no TODOs/TBDs.
+**Error handling:**
+- If `resolveTemplate` throws `TEMPLATE_NOT_FOUND`: fail with a diagnostic listing the attempted paths (the error's `attempted` array). Suggest checking that the bundled `templates/charter-template.<kind>.md` exists or that the domain extension provides the matching override.
+- If `resolveTemplate` throws `UNSAFE_TEMPLATE_PATH`: fail with the offending path (the error's `offendingPath` field). Report verbatim — do not silently fall back.
+- If `resolveTemplate` throws `INVALID_KIND` or `INVALID_LAYER`: re-run Step 2.1 (kind resolution); this indicates the kind value was corrupted between resolution and write.
+
+**File path policy (branch on kind):**
+
+- `kind: feature`, `kind: module`, `kind: initiative` → save to `.context-index/specs/features/<module>/charter.md` (lowercase, hyphenated slug).
+- `kind: cross-cutting` → save to `.context-index/specs/cross-cutting/<module>/charter.md`. This is a **different parent directory** by design — cross-cutting charters describe concerns that span multiple modules and live alongside other cross-cutting artifacts.
+
+**Cross-cutting directory bootstrap.** When `kind: cross-cutting` and the parent `.context-index/specs/cross-cutting/` directory does not yet exist on disk, prompt the user before creating it:
+
+> The directory `.context-index/specs/cross-cutting/` does not exist yet. This will establish the conventional location for cross-cutting charters in this project. Create it now? (yes / no)
+
+If the user declines, halt and ask whether to abandon the charter or re-select the kind. Do not silently create the directory.
+
+**Manifest cross-reference warning (kind: module).** When `kind: module`, cross-reference the user-supplied module slug against `manifest.yaml:modules[]`. If no entry matches the slug, emit a non-blocking warning and proceed:
+
+> Module charters typically correspond to a manifest entry. Add to manifest.yaml after this charter lands.
+
+The warning is informational; it does NOT block charter creation. Do not auto-update `manifest.yaml` — that is the user's decision.
+
+**Before writing:** Create the destination directory if needed (subject to the cross-cutting prompt above). If charter exists (`--module`), read and merge rather than overwrite.
+
+**Writing:** Fill all sections from Step 4 using the section structure of the resolved template, replace placeholders, remove HTML comments, no TODOs/TBDs.
 
 **Lifecycle frontmatter:** Set the following fields in the charter's YAML frontmatter:
+- `kind: <chosen value>` — **explicit, no defaulting on write.** Write the value resolved in Step 2.1 verbatim. Charters authored after Layer 1 of the lifecycle-artifacts taxonomy must carry an explicit `kind:` field; read-time defaulting to `feature` applies only to legacy charters.
 - `status: draft`
 - `revision: 1`
 - `updated: <today's date YYYY-MM-DD>`

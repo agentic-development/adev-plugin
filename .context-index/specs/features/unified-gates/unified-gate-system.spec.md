@@ -26,13 +26,13 @@ source-manifest:
     - skills/init/SKILL.md
     - tests/templates/gates-template.test.mjs
     - tests/templates/manifest-template.test.mjs
-    - .context-index/specs/features/unified-gates/unified-gate-system.md
+    - .context-index/specs/features/unified-gates/unified-gate-system.spec.md
     - .context-index/specs/features/unified-gates/charter.md
     - .context-index/constitution.md
   computed-at: "2026-04-25T21:55:13.860Z"
 drift_detected: true
-drift_source: templates/manifest-template.yaml
-drift_at: 2026-05-12T01:28:44.135Z
+drift_source: skills/hygiene/SKILL.md
+drift_at: 2026-05-15T16:42:13.605Z
 ---
 
 ## Behavioral Contract

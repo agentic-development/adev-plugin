@@ -1,7 +1,6 @@
 ---
 name: adev:build
 description: "End-to-end build orchestrator. Chains review, plan, route, implement, and validate for one or more specs through a full lifecycle pipeline. Use when the user says 'build', 'end to end', 'full pipeline', 'build the spec', 'build the milestone', 'run the whole pipeline', or wants to execute multiple lifecycle steps in sequence without manual handoffs."
-context: fork
 ---
 
 # Build Pipeline Orchestrator
@@ -80,6 +79,17 @@ The build orchestrator is a coordinator. It decides *which* skill to run next, c
 
 1. **No pseudo-invocation.** A fresh subagent has no "knowledge" of what the child skill does. It must load the full SKILL.md via the Skill tool to execute it. It cannot summarize or shortcut.
 2. **Context isolation.** Each pipeline step runs in its own context. A 200K-token implement step does not pollute the orchestrator's context. The orchestrator only sees the result summary.
+
+### Dispatch Optimism (Tool Availability)
+
+**Dispatch optimistically. Do not introspect tool availability before calling Agent.** The harness is the only authority on whether a tool exists — call `Agent(...)` and let it return either a result or a harness-level rejection. There is no other valid signal of unavailability.
+
+In particular:
+
+- **`Agent` is the only dispatcher** in this CLI. The name `Task` appears in some Anthropic SDK docs but is NOT a tool name in Claude Code — there is no `Task` tool to look for. Searching for "Task" will always return nothing and is meaningless.
+- **`Agent` is eagerly loaded, not deferred.** It is declared in the top-level `<functions>` block of every orchestrator session, not in the deferred-tools list and not via ToolSearch. Its absence from the deferred-tools list is NOT evidence of unavailability — it is the expected state.
+- **ToolSearch only enumerates deferred tools.** Running `ToolSearch` with query `select:Agent` or keyword `agent` will correctly return zero matches even when Agent is available, because Agent is not deferred. Do not interpret an empty ToolSearch result as proof of absence.
+- **The harness is the only authority.** If — and only if — an attempted `Agent({...})` call returns a harness-level error indicating the tool does not exist, may the orchestrator record the step as FAILED with an unavailability reason. You must attempt the Agent call before recording any such failure. Self-aborting at the prose level (i.e., refusing to dispatch because you "couldn't find Agent in the tool list") is a build bug, not a safe fallback.
 
 ### Context Packet Assembly
 
@@ -296,7 +306,7 @@ The pipeline executes 5 steps per spec, in strict order. For each step, the orch
 
 ### Gate Between Sub-Skill Dispatches
 
-Before dispatching ANY sub-skill, run the lifecycle gate using the prior step's name:
+Before dispatching ANY sub-skill, run the lifecycle gate. The lib contract for `requireGate(state, stepName, ...)` is **pass the step about to begin** — the lib resolves its prior internally and asserts that prior is completed with a passing verdict.
 
 ```javascript
 import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
@@ -305,19 +315,20 @@ import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
 const state = currentState(projectRoot, specPath);
 const mode = resolveGateMode(loadManifest(projectRoot));
 
-// Per-step gate mapping (use the PRIOR step's name):
-//   review   → gate on "specify"
-//   plan     → gate on "review"
-//   route    → gate on "plan"
-//   implement → gate on "plan"      // route is optional/observational
-//   validate → gate on "implement"
-requireGate(state, "<prior-step>", { mode });
+// Per-step gate calls (pass the step ABOUT TO BEGIN; the lib resolves
+// its prior internally and checks that prior is completed/passing):
+//   before review    → requireGate(state, "review",    { mode })  // checks specify
+//   before plan      → requireGate(state, "plan",      { mode })  // checks review
+//   before route     → requireGate(state, "route",     { mode })  // checks plan
+//   before implement → requireGate(state, "implement", { mode })  // skips optional route → checks plan
+//   before validate  → requireGate(state, "validate",  { mode })  // checks implement
+requireGate(state, "<step-about-to-begin>", { mode });
 
 // Then emit the lifecycle entry event before invoking the sub-skill:
 reportStep(projectRoot, specPath, { step: "<step>", status: "started" });
 ```
 
-In strict mode (default), `requireGate` throws `GateError` if the prior step is incomplete — the orchestrator stops and surfaces the message unchanged. In advisory mode, it warns and continues. Do NOT catch `GateError`.
+In strict mode (default), `requireGate` throws `GateError` if the resolved prior step is incomplete — the orchestrator stops and surfaces the message unchanged. In advisory mode, it warns and continues. Do NOT catch `GateError`. The `route` step is in `OPTIONAL_GATE_STEPS`, so `priorStepOf("implement")` walks past `route` and returns `"plan"` — implement does NOT require route to have run.
 
 Emit a matching `reportStep` exit (`status: "completed"`) immediately after the sub-skill returns and BEFORE the `recordStepResult()` call, so the next turn's `currentState` reads the most recent step status.
 
@@ -819,6 +830,8 @@ Build complete.
 - Modify build state for a step before the subagent has returned its result
 - Continue to the next step if the subagent has not fully completed and returned its STEP_RESULT
 - Parse or act on intermediate output from the subagent — only the final STEP_RESULT matters for orchestration decisions
+- Introspect tool availability before dispatching — never scan the loaded tool list, the deferred-tools list, or ToolSearch results looking for "Agent" (or "Task") and self-abort based on the result. Agent is eagerly loaded and not deferred, so it is correctly absent from the deferred-tools list; that absence is NOT evidence of unavailability. Dispatch optimistically — the harness is the only authority on tool availability.
+- Record a step as FAILED with error `"Agent ... not available"` or `"Task ... not available"` without first attempting an actual `Agent({...})` call and observing the harness reject it. The orchestrator must attempt the Agent call before recording any tool-unavailability failure — prose-level self-abort is a build bug, not a safe fallback. Note: there is no `Task` tool in this CLI; Agent is the only dispatcher.
 
 ## API reference
 

@@ -10,28 +10,54 @@
  * (b) the real repo, which should be clean.
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
+import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
-test("plan-immutability: violation fixture is detected", async () => {
-  const fixtureRoot = "tests/fixtures/plan-immutability/violation";
-  if (!existsSync(fixtureRoot)) {
-    assert.fail(
-      "violation fixture missing — TDD RED state requires the fixture to be in tree",
+test("plan-immutability: violation is detected (dynamic untracked fixture)", async () => {
+  // Build the violation scenario in a temp dir so the plan file is genuinely
+  // untracked by git → the detector falls back to mtime, which we control.
+  // (The static checked-in fixture would be tracked by the parent repo and
+  // appear "added-only" under --diff-filter=M, masking the violation.)
+  const tmp = createTempDir();
+  try {
+    writeFixture(
+      tmp,
+      ".context-index/specs/features/x/foo.plan.md",
+      "# Plan: foo\n\n### Task 1: Stub\n",
     );
+    writeFixture(
+      tmp,
+      ".context-index/lifecycle-state/foo.jsonl",
+      JSON.stringify({
+        ts: "2020-01-01T00:00:00.000Z",
+        event: "plan_task",
+        plan: ".context-index/specs/features/x/foo.plan.md",
+        task_id: "t1",
+        status: "pending",
+        notes: null,
+      }) + "\n",
+    );
+    // Force plan mtime well after the pending event ts.
+    const planPath = join(tmp, ".context-index/specs/features/x/foo.plan.md");
+    const future = new Date("2030-01-01T00:00:00.000Z");
+    utimesSync(planPath, future, future);
+
+    const { detectMutatedPlans } = await import(
+      "../../lib/plan-immutability.mjs"
+    );
+    const violations = await detectMutatedPlans(tmp);
+    assert.equal(
+      violations.length,
+      1,
+      `expected exactly one violation, got ${violations.length}: ${JSON.stringify(violations)}`,
+    );
+    assert.match(violations[0].path, /foo\.plan\.md$/);
+  } finally {
+    cleanupTempDir(tmp);
   }
-  const { detectMutatedPlans } = await import(
-    "../../lib/plan-immutability.mjs"
-  );
-  const violations = await detectMutatedPlans(fixtureRoot);
-  assert.equal(
-    violations.length,
-    1,
-    `expected exactly one violation in fixture, got ${violations.length}: ${JSON.stringify(violations)}`,
-  );
-  assert.match(violations[0].path, /foo\.plan\.md$/);
 });
 
 test("plan-immutability: real repo has no violations", async () => {

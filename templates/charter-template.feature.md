@@ -1,8 +1,17 @@
+---
+status: draft
+kind: feature
+revision: 1
+updated: {{ date }}
+---
+
 # Feature Charter: {{ module_name }}
 
 <!-- Feature Charter for the {{ module_name }} module.
      This defines WHAT the module does and its boundaries, not HOW it is built.
      Live Specs within this charter define specific behavioral contracts. -->
+
+<!-- # tracker-ref: -->
 
 ## Business Intent
 
@@ -61,12 +70,22 @@
 
 <!-- The specific capabilities (features, operations) this module provides.
      Each capability is a candidate for a Live Spec.
-     Phase indicates WHEN a capability ships (e.g., v1, v2, mvp, post-launch).
-     Phase is about timing, not importance (that is Priority). Leave blank if unassigned. -->
+     Milestone indicates WHEN a capability ships (e.g., v1, v2, mvp, post-launch).
+     Milestone is about timing, not importance (that is Priority). Leave blank if unassigned. -->
 
-| Capability | Description | Priority | Milestone |
-|-----------|-------------|----------|-------|
-| ... | ... | must-have / should-have / nice-to-have | |
+| Capability | Description | Priority | Milestone | Status |
+|-----------|-------------|----------|-------|--------|
+| ... | ... | must-have / should-have / nice-to-have | | — |
+
+## Deferred Capabilities
+
+<!-- Capabilities explicitly deferred to later milestones or out of scope with structured tracking.
+     Migrated from Out of Scope when a capability has a known target milestone or dependency.
+     This table enables reliable backlog extraction by /adev:status --backlog. -->
+
+| Capability | Reason | Target Milestone | Depends On |
+|-----------|--------|-------------|------------|
+<!-- | Example capability | Low priority, manual workaround exists | v2 | — | -->
 
 ## Interface Contracts
 

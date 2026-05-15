@@ -14,12 +14,15 @@ Author a Live Spec that defines a behavioral contract for implementation, scoped
 | *(positional)* | No | Feature module name or capability hint (e.g., `task-boards` or `"add drag-and-drop reordering"`) |
 | `--charter <module>` | No | Explicit parent charter. Required when multiple charters exist and the positional arg is ambiguous. |
 | `--title <title>` | No | Spec title. Prompted interactively if omitted. |
+| `--kind <kind>` | No | Artifact shape from the closed enumeration in `SPEC_KINDS`: `behavioral`, `refactor`, `action`, `skill`, `integration`, `artifact`. If omitted, the skill prompts via the ask-first menu (Step 3.5). Strict-on-write: missing or invalid values re-prompt — there is no default at write time. |
 | `--extract` | No | Extract mode: reverse-engineer a spec from existing code. |
 | `--refactor` | No | Refactor mode: current state + target state + migration path. |
 | `--from-diff` | No | From-diff mode: generate a retroactive spec from a git diff or PR. |
 | `--cross-cutting` | No | Cross-cutting mode: spec spans multiple charters (auth, logging, error handling, etc.). |
 
-Modes are mutually exclusive. If none is specified, standard mode is used.
+**Workflow axis vs. kind axis (orthogonality).** `--extract`, `--refactor`, `--from-diff`, and `--cross-cutting` are **direct boolean flags** describing the *workflow* used to author the spec. `--kind` is a **separate axis** describing the *artifact shape* the spec takes. The two axes combine independently — any workflow flag may pair with any `--kind` value. No `--mode <name>` flag is introduced; the existing direct-flag syntax is preserved verbatim.
+
+Workflow flags remain mutually exclusive with each other. If no workflow flag is supplied, standard mode is used. The `--kind` axis is independent of workflow flag selection.
 
 ## Prerequisites
 
@@ -210,6 +213,41 @@ If the user describes something not in the charter, warn them:
 
 If option 2, add `charter-extension: true` to frontmatter and a comment at the top of the spec noting the charter divergence.
 
+### Step 3.5: Resolve Kind
+
+Determine the artifact shape (`kind:`) for the spec being authored. This step is **orthogonal** to the workflow flag (Standard / `--extract` / `--refactor` / `--from-diff` / `--cross-cutting`) — both axes combine independently. No `--mode` flag is introduced.
+
+**If `--kind <value>` was supplied on invocation:**
+
+```javascript
+import { isValidKind } from '<ADEV_ROOT>/lib/kinds.mjs';
+
+if (!isValidKind('spec', kind)) {
+  // Reject with the closed-enumeration list and stop.
+  // Message must list the 6 valid kinds:
+  //   "Invalid --kind 'xxx'. Valid options: behavioral, refactor, action, skill, integration, artifact."
+}
+```
+
+If `isValidKind('spec', kind)` returns `false`, reject the invocation with a message naming the 6 valid options and halt.
+
+**If `--kind` was NOT supplied:** present the ask-first menu and have the user pick:
+
+```
+What kind of spec is this?
+
+  1. behavioral (default) — runtime behavior of a feature
+  2. refactor — current→target migration with steps and invariants
+  3. action — one-shot operational task (cleanup, backfill, migration tool)
+  4. skill — defines /adev:* CLI surface
+  5. integration — wires two skills or modules together
+  6. artifact — static deliverable (package, template, fixture, schema)
+
+→ Pick a number or name (default: behavioral)
+```
+
+**Strict-on-write semantics.** The kind axis is required at write time. If the user presses enter without picking a value, re-prompt with `"Kind is required for new specs. Pick a number or name."`. Continue re-prompting until a valid kind is supplied. **There is no silent defaulting at write time** — the chosen value is written verbatim to frontmatter.
+
 ### Step 4: Interactive Spec Authoring
 
 Guide the user through each section. Do not dump a blank template. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
@@ -280,8 +318,20 @@ infra_requirements:
 ### Step 5: Write the Spec
 
 1. Generate slug: lowercase, kebab-case, no special characters.
-2. Fill `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
+2. **Resolve the template via `resolveTemplate('spec', kind, domain)`.** Call `resolveTemplate` from `<ADEV_ROOT>/lib/template-resolution.mjs`, passing the kind selected in Step 3.5 as the second argument and the active domain as the third. Use the returned absolute path as the template body. **Do not hardcode a template filename.**
+
+   ```javascript
+   import { resolveTemplate } from '<ADEV_ROOT>/lib/template-resolution.mjs';
+   const templatePath = await resolveTemplate('spec', kind, domain.resolved_domain ?? null);
+   ```
+
+   **Error handling:**
+   - If `resolveTemplate` throws `TEMPLATE_NOT_FOUND`: fail with a diagnostic listing the attempted paths (the error's `attempted` array).
+   - If `resolveTemplate` throws `UNSAFE_TEMPLATE_PATH`: fail with the offending path (the error's `offendingPath` field). Do not silently fall back.
+   - If `resolveTemplate` throws `INVALID_KIND` or `INVALID_LAYER`: re-run Step 3.5.
+
 3. Set frontmatter per shared section (including milestone inheritance). Additionally set:
+   - `kind: <chosen value>` — **explicit, no defaulting at write time.** Write the value resolved in Step 3.5 verbatim.
    - `revision: 1`
    - `charter-revision: <the parent charter's current revision value>`
    - `updated: <today's date YYYY-MM-DD>`
@@ -500,7 +550,7 @@ Validate the target state against the constitution. Flag violations:
 
 Each migration step must be independently deployable, have clear verification criteria, include risk assessment, and follow safe ordering (extract before modify, tests before refactor).
 
-Use the template at `${CLAUDE_PLUGIN_ROOT}/templates/refactoring-spec-template.md`.
+Use the template at `${CLAUDE_PLUGIN_ROOT}/templates/spec-template.refactor.md`.
 
 ```
 Proposed migration path (4 steps):
@@ -545,9 +595,10 @@ Ask for domain-specific invariants:
 
 Define the target behavior (what the system does AFTER refactoring). This gives `/adev:validate` something to verify against.
 
-1. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/refactoring-spec-template.md`.
-2. Set frontmatter per the shared section with `mode: refactor`.
-3. Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md`.
+1. **Resolve kind first** (apply Step 3.5 of Standard mode): if `--kind` was not passed, prompt with the ask-first menu. The natural pairing for a refactor workflow is `--kind refactor`, but any kind is permitted.
+2. **Resolve the template via `resolveTemplate('spec', kind, domain)`** (see Standard mode Step 5). Do not hardcode the template filename. Handle `TEMPLATE_NOT_FOUND` and `UNSAFE_TEMPLATE_PATH` the same way Standard mode does.
+3. Set frontmatter per the shared section with `mode: refactor` AND an explicit `kind: <chosen value>` field (no defaulting).
+4. Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md`.
 
 ### Step 7.5: Update Spec Status
 
@@ -701,10 +752,11 @@ Same process as standard mode (behavioral contract, constitution reference, task
 
 ### Step 5: Write the Spec
 
-1. Fill the template at `${CLAUDE_PLUGIN_ROOT}/templates/live-spec-template.md`.
-2. Add Module Impact and Integration Points after the standard template sections.
-3. Set frontmatter per the shared section with `mode: cross-cutting` and `affects: [<modules>]` instead of `charter:`.
-4. Save to `.context-index/specs/cross-cutting/<spec-slug>.spec.md`.
+1. **Resolve kind first** (apply Step 3.5 of Standard mode): if `--kind` was not passed, prompt with the ask-first menu. Any kind is permitted; the workflow and kind axes are orthogonal.
+2. **Resolve the template via `resolveTemplate('spec', kind, domain)`** (see Standard mode Step 5). Do not hardcode the template filename. Handle `TEMPLATE_NOT_FOUND` and `UNSAFE_TEMPLATE_PATH` the same way Standard mode does.
+3. Add Module Impact and Integration Points after the standard template sections.
+4. Set frontmatter per the shared section with `mode: cross-cutting`, `affects: [<modules>]` instead of `charter:`, AND an explicit `kind: <chosen value>` field (no defaulting).
+5. Save to `.context-index/specs/cross-cutting/<spec-slug>.spec.md`.
 
 ### Step 5.5: Update Spec Status
 

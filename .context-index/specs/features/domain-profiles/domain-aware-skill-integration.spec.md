@@ -41,6 +41,9 @@ source-manifest:
     - tests/lib/domains/merge-verification.test.mjs
     - tests/lib/domains/refactor-constants.test.mjs
   computed-at: "2026-05-11T16:09:28.518Z"
+drift_detected: true
+drift_source: skills/brainstorm/SKILL.md
+drift_at: 2026-05-15T16:05:09.592Z
 ---
 
 ## Behavioral Contract

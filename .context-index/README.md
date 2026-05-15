@@ -15,7 +15,7 @@ Skills read from and write to these files throughout the development lifecycle.
 | `sessions/` | Auto-captured session summaries | Git hooks |
 | `tasks/` | Issue board (file or beads backend) | `/adev:issues`, `/adev:plan` |
 | `research/` | Persistent research artifacts | `/adev:research` |
-| `build-state/` | Build orchestrator resume state | `/adev:build` |
+| `lifecycle-state/` | Per-spec lifecycle event logs (JSONL) plus build orchestrator resume state | `/adev:build`, lifecycle skills |
 | `samples/` | Golden reference implementations | `/adev:sample` |
 | `hygiene/` | Repomap output, drift data | `/adev:repomap`, `/adev:hygiene` |
 | `orientation/` | Codebase architecture guide | `/adev:document` |

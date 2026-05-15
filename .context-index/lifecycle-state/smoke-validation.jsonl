@@ -1,0 +1,60 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-14T16:13:43.868Z"}
+{"event":"step_completed","step":"specify","ts":"2026-05-14T16:18:43.677Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-14T16:19:52.502Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Grep robustness (SA-11), deletion order (SA-12), issue-465 ref (CON-5).","ts":"2026-05-14T16:25:34.772Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"Grep robustness (SA-11), deletion order (SA-12), issue-465 ref (CON-5).","ts":"2026-05-14T16:25:34.772Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"Grep robustness (SA-11), deletion order (SA-12), issue-465 ref (CON-5).","ts":"2026-05-14T16:25:34.772Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-14T16:25:34.774Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-14T17:03:25.334Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.338Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.338Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.338Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-4","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.338Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-5","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.339Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-6","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.339Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-7","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.339Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T17:03:25.346Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T17:02:34.596Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T17:03:17.362Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-05-15T17:03:50.716Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-1","status":"done","notes":"All 6 kinds present: behavioral=3, refactor=1, action=1, skill=3, integration=1, artifact=2","ts":"2026-05-15T17:03:57.507Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-05-15T17:04:03.883Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-2","status":"done","notes":"Throwaway specs authored from all 4 new kinds (action, skill, integration, artifact); H2 structure verified; cleaned up","ts":"2026-05-15T17:17:23.812Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-05-15T17:17:29.702Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-3","status":"done","notes":"Throwaway charters from all 3 new kinds (module, cross-cutting, initiative); H2 structure verified; cleaned up","ts":"2026-05-15T17:21:10.014Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-4","status":"in_progress","notes":null,"ts":"2026-05-15T17:21:25.557Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-4","status":"done","notes":"Hygiene kind-validity audit on lifecycle-artifacts: 0 findings (added kind: feature to charter to clear pre-existing MISSING_KIND)","ts":"2026-05-15T17:22:28.875Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-5","status":"in_progress","notes":null,"ts":"2026-05-15T17:22:33.692Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-5","status":"blocked","notes":"npm test fails: plan-immutability detector false-positives on 11 lifecycle-artifacts plans (uses %aI of creation commit, not modification diff-filter); see .context-index/hygiene/blockers/smoke-validation-task-5.md","ts":"2026-05-15T17:38:49.910Z"}
+{"event":"debug_intervention","kind":"blocker_filed","note":"task-5: plan-immutability detector false positive on creation-only commits; smoke-validation procedure says to open a fix spec","ts":"2026-05-15T17:38:49.912Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-6","status":"in_progress","notes":null,"ts":"2026-05-15T17:38:55.679Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-6","status":"done","notes":"ADR-0009 Accepted; Capability Map: all 14 must-have rows in approved set (added Changes Catalog to refactor template; fixed 3 stale planned statuses)","ts":"2026-05-15T17:40:48.156Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-7","status":"blocked","notes":"Cannot close issue-465; task-5 (npm test) is blocked. Spec Step 8 requires all prior steps pass. Re-run after fix spec lands.","ts":"2026-05-15T17:40:56.788Z"}
+{"event":"step_failed","step":"implement","verdict":"BLOCKED_ON_TEST","ts":"2026-05-15T17:41:15.153Z"}
+{"event":"step_failed","step":"implement","verdict":"PARTIAL","ts":"2026-05-15T17:42:40.717Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T17:51:58.772Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-5","status":"in_progress","notes":null,"ts":"2026-05-15T17:52:35.454Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-5","status":"done","notes":"npm test: 2605/2605 pass, 0 fail. Plan-immutability false-positive fixed in commit 5348ad6 (uses --diff-filter=M).","ts":"2026-05-15T17:55:55.394Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-7","status":"in_progress","notes":null,"ts":"2026-05-15T17:56:50.786Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md","task_id":"task-7","status":"done","notes":"issue-465 closed (Layer 1 sign-off). Milestone spec-and-charter-taxonomy stays planned: 463/464 deferred (Layer 2/3) per spec; advance to ship deferred until they close.","ts":"2026-05-15T18:02:04.507Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-15T18:03:09.992Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-15T18:04:17.474Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-15T18:04:17.480Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-15T18:05:09.648Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.712Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.713Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-code-drift","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.714Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.714Z"}
+{"event":"validator_report","step":"validate","validator":"check-3-charter-consistency","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.714Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.715Z"}
+{"event":"validator_report","step":"validate","validator":"check-5-adr-compliance","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.715Z"}
+{"event":"validator_report","step":"validate","validator":"check-6-cross-cutting","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.716Z"}
+{"event":"validator_report","step":"validate","validator":"check-7-specialist-review","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.716Z"}
+{"event":"validator_report","step":"validate","validator":"check-8-boundary-compliance","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.716Z"}
+{"event":"validator_report","step":"validate","validator":"check-9-transition-gates","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.717Z"}
+{"event":"validator_report","step":"validate","validator":"check-10-platform-drift","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.717Z"}
+{"event":"validator_report","step":"validate","validator":"check-11-visual-verification","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.717Z"}
+{"event":"validator_report","step":"validate","validator":"check-12-lifecycle-reconciliation","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:10:10.718Z"}
+{"event":"validator_report","step":"validate","validator":"check-13-success-heuristic","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T18:11:22.584Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-15T18:11:22.585Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-15T18:11:46.623Z"}
