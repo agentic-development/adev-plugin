@@ -22,6 +22,9 @@ source-manifest:
   files:
     - lib/meta-tools.mjs
     - tests/lib/meta-tools.test.mjs
+drift_detected: true
+drift_source: lib/meta-tools.mjs
+drift_at: 2026-05-15T11:14:01.485Z
 ---
 
 ## Behavioral Contract

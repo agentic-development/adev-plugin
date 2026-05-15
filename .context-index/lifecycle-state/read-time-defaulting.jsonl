@@ -10,3 +10,32 @@
 {"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.296Z"}
 {"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.297Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T17:03:25.304Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T11:48:27.401Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T11:49:09.500Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-05-15T11:50:04.568Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-1","status":"done","notes":"lib/git-timestamp.mjs with git+mtime fallback; 5 unit tests pass","ts":"2026-05-15T12:07:01.671Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-05-15T12:07:38.229Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-2","status":"done","notes":"Contract-only: parser sentinels (meta-tools) + getCreationTimestamp verified consumable; hygiene wiring lives in hygiene-kind-validity plan","ts":"2026-05-15T12:07:38.231Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-05-15T12:08:05.351Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md","task_id":"task-3","status":"done","notes":"tests/integration/read-time-defaulting.test.mjs verifies parser+timestamp+classification end-to-end (7 tests)","ts":"2026-05-15T12:15:06.804Z"}
+{"event":"step_completed","step":"implement","ts":"2026-05-15T12:15:48.020Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-15T12:16:45.846Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-15T12:16:45.854Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-15T12:17:28.827Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS_WITH_NOTES","error":"pre-existing systemic plan-task-immutability test failure; scoped tests for this spec pass 12/12","score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.229Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS_WITH_NOTES","error":"manifest sha matches; files untracked pending commit","score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.231Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-code-drift","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.232Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.232Z"}
+{"event":"validator_report","step":"validate","validator":"check-3-charter-consistency","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.233Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.234Z"}
+{"event":"validator_report","step":"validate","validator":"check-5-adr","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.234Z"}
+{"event":"validator_report","step":"validate","validator":"check-6-cross-cutting","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.235Z"}
+{"event":"validator_report","step":"validate","validator":"check-7-specialist","severity":"warning","verdict":"PASS","error":"no specialists registered","score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.235Z"}
+{"event":"validator_report","step":"validate","validator":"check-8-boundary","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.236Z"}
+{"event":"validator_report","step":"validate","validator":"check-9-transitions","severity":"warning","verdict":"PASS","error":"no transitions configured","score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.237Z"}
+{"event":"validator_report","step":"validate","validator":"check-10-platform-drift","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.241Z"}
+{"event":"validator_report","step":"validate","validator":"check-11-visual","severity":"warning","verdict":"PASS","error":"no UI files","score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.241Z"}
+{"event":"validator_report","step":"validate","validator":"check-12-lifecycle-reconcile","severity":"warning","verdict":"PASS_WITH_NOTES","error":"charter capability row not explicit","score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.242Z"}
+{"event":"validator_report","step":"validate","validator":"check-13-heuristic-extract","severity":"warning","verdict":"PASS","error":"skipped: non-PASS result","score":null,"duration_ms":0,"ts":"2026-05-15T12:34:11.242Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T12:34:11.242Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T12:34:40.530Z"}

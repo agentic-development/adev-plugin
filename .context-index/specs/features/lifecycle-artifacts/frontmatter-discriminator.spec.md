@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: behavioral
-status: review-passed
+status: validated
 risk_level: medium
 milestone: spec-and-charter-taxonomy
 revision: 2
@@ -9,6 +9,13 @@ charter-revision: 2
 created: 2026-05-14
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/frontmatter-discriminator.plan.md
+
+source-manifest:
+  sha: "3d4f1fe"
+  files:
+    - lib/meta-tools.mjs
+    - tests/lib/frontmatter-kind-field.test.mjs
+  computed-at: "2026-05-15T11:27:41.571Z"
 ---
 
 # Live Spec: Frontmatter Discriminator

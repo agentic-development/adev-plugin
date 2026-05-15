@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: action
-status: review-passed
+status: validated
 risk_level: low
 milestone: spec-and-charter-taxonomy
 revision: 2
@@ -9,6 +9,10 @@ charter-revision: 2
 created: 2026-05-14
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/smoke-validation.plan.md
+source-manifest:
+  sha: null
+  files: []
+  computed-at: "2026-05-15T18:02:17.753Z"
 ---
 
 # Action Spec: Smoke Validation

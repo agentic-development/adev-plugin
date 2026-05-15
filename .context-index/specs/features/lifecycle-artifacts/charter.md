@@ -1,4 +1,5 @@
 ---
+kind: feature
 status: approved
 revision: 2
 updated: 2026-05-14
@@ -93,21 +94,21 @@ Deferred to `issue-464` (Layer 3 — domain extension matrix):
 
 | Capability | Description | Priority | Milestone | Status |
 |---|---|---|---|---|
-| Kind enumeration | Closed set: 6 spec kinds + 4 charter kinds in `lib/kinds.mjs` with `isValidKind(layer, kind)` validator | must-have | spec-and-charter-taxonomy | implemented |
-| Frontmatter discriminator | `kind:` field on specs and charters; required-on-write for new artifacts; default-at-read for legacy | must-have | spec-and-charter-taxonomy | planned |
-| Template matrix | 10 new dotfile templates following the `.{charter,spec}-template.<kind>.md` convention | must-have | spec-and-charter-taxonomy | planned |
-| Template renames | `.live-spec-template.md` → `.spec-template.behavioral.md`; `.refactoring-spec-template.md` → `.spec-template.refactor.md` | must-have | spec-and-charter-taxonomy | planned |
-| Template-resolution helper | `resolveTemplate(layer, kind, domain)` API resolving through domain → bundled fallback | must-have | spec-and-charter-taxonomy | implemented |
-| `/adev:specify` kind routing | Ask-first menu with one-line per kind; route to matching template; reject invalid values | must-have | spec-and-charter-taxonomy | planned |
-| `/adev:brainstorm` kind routing | Same pattern at the charter layer | must-have | spec-and-charter-taxonomy | planned |
-| Workflow/kind orthogonality | `/adev:specify`'s existing `--mode {extraction,diff-driven,...}` flags reconciled as orthogonal axis to `--kind` | must-have | spec-and-charter-taxonomy | planned |
-| Kind-aware hygiene | Validate `kind:` values across the spec/charter library; warn on `kind: module` without manifest entry | should-have | spec-and-charter-taxonomy | planned |
-| Action template (Devin-style) | Postconditions / Procedure / Idempotency / Rollback | must-have | spec-and-charter-taxonomy | planned |
-| Refactor template Changes Catalog | OpenSpec-style `ADDED/MODIFIED/REMOVED/RENAMED` subsections additive to Migration Path | must-have | spec-and-charter-taxonomy | planned |
-| Skill / integration / artifact templates | Three remaining new spec templates; sections sized to each kind's shape | must-have | spec-and-charter-taxonomy | planned |
-| Module / cross-cutting / initiative templates | Three new charter templates; existing `.charter-template.md` becomes the `feature` template | must-have | spec-and-charter-taxonomy | planned |
+| Kind enumeration | Closed set: 6 spec kinds + 4 charter kinds in `lib/kinds.mjs` with `isValidKind(layer, kind)` validator | must-have | spec-and-charter-taxonomy | validated |
+| Frontmatter discriminator | `kind:` field on specs and charters; required-on-write for new artifacts; default-at-read for legacy | must-have | spec-and-charter-taxonomy | validated |
+| Template matrix | 10 new dotfile templates following the `.{charter,spec}-template.<kind>.md` convention | must-have | spec-and-charter-taxonomy | implemented |
+| Template renames | `.live-spec-template.md` → `.spec-template.behavioral.md`; `.refactoring-spec-template.md` → `.spec-template.refactor.md` | must-have | spec-and-charter-taxonomy | implemented |
+| Template-resolution helper | `resolveTemplate(layer, kind, domain)` API resolving through domain → bundled fallback | must-have | spec-and-charter-taxonomy | validated |
+| `/adev:specify` kind routing | Ask-first menu with one-line per kind; route to matching template; reject invalid values | must-have | spec-and-charter-taxonomy | validated |
+| `/adev:brainstorm` kind routing | Same pattern at the charter layer | must-have | spec-and-charter-taxonomy | validated |
+| Workflow/kind orthogonality | `/adev:specify`'s existing `--mode {extraction,diff-driven,...}` flags reconciled as orthogonal axis to `--kind` | must-have | spec-and-charter-taxonomy | validated |
+| Kind-aware hygiene | Validate `kind:` values across the spec/charter library; warn on `kind: module` without manifest entry | should-have | spec-and-charter-taxonomy | implemented |
+| Action template (Devin-style) | Postconditions / Procedure / Idempotency / Rollback | must-have | spec-and-charter-taxonomy | implemented |
+| Refactor template Changes Catalog | OpenSpec-style `ADDED/MODIFIED/REMOVED/RENAMED` subsections additive to Migration Path | must-have | spec-and-charter-taxonomy | implemented |
+| Skill / integration / artifact templates | Three remaining new spec templates; sections sized to each kind's shape | must-have | spec-and-charter-taxonomy | implemented |
+| Module / cross-cutting / initiative templates | Three new charter templates; existing `.charter-template.md` becomes the `feature` template | must-have | spec-and-charter-taxonomy | validated |
 | ADR-0009 | Single ADR covering unified `kind:`, both enumerations, posture, resolution mechanics, public-API surface | must-have | spec-and-charter-taxonomy | validated |
-| Smoke validation suite | At least one new spec authored in each new kind + one new charter in each new kind | must-have | spec-and-charter-taxonomy | planned |
+| Smoke validation suite | At least one new spec authored in each new kind + one new charter in each new kind | must-have | spec-and-charter-taxonomy | validated |
 
 ### Deferred Capabilities
 

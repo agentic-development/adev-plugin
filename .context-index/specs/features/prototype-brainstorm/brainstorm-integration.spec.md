@@ -18,6 +18,9 @@ source-manifest:
     - skills/prototype/SKILL.md
     - skills/brainstorm/SKILL.md
   computed-at: "2026-05-10T23:51:54.631Z"
+drift_detected: true
+drift_source: skills/brainstorm/SKILL.md
+drift_at: 2026-05-15T16:05:09.593Z
 ---
 
 ## Behavioral Contract

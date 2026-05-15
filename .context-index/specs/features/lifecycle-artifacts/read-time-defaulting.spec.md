@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: integration
-status: review-passed
+status: validated
 risk_level: medium
 milestone: spec-and-charter-taxonomy
 revision: 2
@@ -9,6 +9,14 @@ charter-revision: 2
 created: 2026-05-14
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/read-time-defaulting.plan.md
+
+source-manifest:
+  sha: "2ddc7f1"
+  files:
+    - lib/git-timestamp.mjs
+    - tests/integration/read-time-defaulting.test.mjs
+    - tests/lib/git-timestamp.test.mjs
+  computed-at: "2026-05-15T12:15:12.657Z"
 ---
 
 # Live Spec: Read-Time Defaulting Integration

@@ -602,6 +602,22 @@
       "milestone": "spec-and-charter-taxonomy",
       "created": "2026-05-14T16:58:52.453Z",
       "updated": "2026-05-14T16:58:52.453Z"
+    },
+    {
+      "id": "epic-81",
+      "title": "Diagnostic Registry (lib/diagnostics + Tier-1 producers + spec-status enum)",
+      "status": "closed",
+      "planRef": ".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md",
+      "created": "2026-05-14T20:58:40.600Z",
+      "updated": "2026-05-14T21:14:11.399Z"
+    },
+    {
+      "id": "epic-82",
+      "title": "Template Renames",
+      "status": "closed",
+      "planRef": ".context-index/specs/features/lifecycle-artifacts/template-renames.plan.md",
+      "created": "2026-05-15T14:48:21.070Z",
+      "updated": "2026-05-15T15:14:42.825Z"
     }
   ],
   "issues": [
@@ -2557,15 +2573,15 @@
     {
       "id": "issue-465",
       "title": "Layer 1 — Framework primitive: spec modes (6) + charter kinds (4) + templates",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "feature",
       "epicId": "epic-80",
       "dependencies": [],
-      "notes": "v1 framework primitive for the unified spec/charter taxonomy. Scope: ADR defining BOTH the six spec modes (behavioral, refactor, action, skill, integration, artifact) AND the four charter kinds (module, feature, cross-cutting, initiative). Add four new spec templates (action, skill, integration, artifact). Add three new charter templates (module, cross-cutting, initiative); existing .charter-template.md becomes the feature template. Update .live-spec-template.md frontmatter to require mode: (default behavioral). Update .charter-template.md frontmatter to require kind: (default feature). Update .refactoring-spec-template.md to align with mode: refactor. Teach /adev:specify to route by spec mode. Teach /adev:brainstorm to route by charter kind. Light mode/kind-awareness in /adev:plan, /adev:review-specs, /adev:hygiene where useful. Smoke validation: author one spec in each new mode AND one charter in each new kind. Full scope and acceptance criteria in .context-index/research/spec-taxonomy-audit.md AND .context-index/research/charter-format-audit.md. Next action: /adev:research for cross-framework comparison, then /adev:brainstorm.\n\n--- Charter review notes (2026-05-14) ---\nReviewer flagged that adjacent charters reference the old template filenames. When the renames land (.live-spec-template.md → .spec-template.behavioral.md; .refactoring-spec-template.md → .spec-template.refactor.md), also grep + revise Key Files / file references in: design/charter.md, setup/charter.md, and any SKILL.md files in skills/init/, skills/specify/, skills/brainstorm/, skills/sync/. Treat this as part of the rename PR, not a separate spec.",
+      "notes": "v1 framework primitive for the unified spec/charter taxonomy. Scope: ADR defining BOTH the six spec modes (behavioral, refactor, action, skill, integration, artifact) AND the four charter kinds (module, feature, cross-cutting, initiative). Add four new spec templates (action, skill, integration, artifact). Add three new charter templates (module, cross-cutting, initiative); existing .charter-template.md becomes the feature template. Update .live-spec-template.md frontmatter to require mode: (default behavioral). Update .charter-template.md frontmatter to require kind: (default feature). Update .refactoring-spec-template.md to align with mode: refactor. Teach /adev:specify to route by spec mode. Teach /adev:brainstorm to route by charter kind. Light mode/kind-awareness in /adev:plan, /adev:review-specs, /adev:hygiene where useful. Smoke validation: author one spec in each new mode AND one charter in each new kind. Full scope and acceptance criteria in .context-index/research/spec-taxonomy-audit.md AND .context-index/research/charter-format-audit.md. Next action: /adev:research for cross-framework comparison, then /adev:brainstorm.\n\n--- Charter review notes (2026-05-14) ---\nReviewer flagged that adjacent charters reference the old template filenames. When the renames land (.live-spec-template.md → .spec-template.behavioral.md; .refactoring-spec-template.md → .spec-template.refactor.md), also grep + revise Key Files / file references in: design/charter.md, setup/charter.md, and any SKILL.md files in skills/init/, skills/specify/, skills/brainstorm/, skills/sync/. Treat this as part of the rename PR, not a separate spec.; Closed: [object Object]",
       "next_action": "/adev:research cross-framework comparison of spec/charter mode-kind discriminators",
       "created": "2026-05-14T12:34:59.142Z",
-      "updated": "2026-05-14T16:58:52.469Z"
+      "updated": "2026-05-15T17:58:43.162Z"
     },
     {
       "id": "issue-466",
@@ -2704,10 +2720,10 @@
       "type": "feature",
       "spec_ref": ".context-index/specs/features/lifecycle-artifacts/template-renames.spec.md",
       "dependencies": [],
-      "notes": "kind: refactor. Bound 1:1 to spec at .context-index/specs/features/lifecycle-artifacts/template-renames.spec.md. Created by /adev:specify batch on 2026-05-14. Layer 1 tracking: issue-465 (epic-73).",
+      "notes": "Validated: LOW confidence (2026-05-15) | Report: .context-index/specs/features/lifecycle-artifacts/template-renames.validate.md | Files verified: true | Tests: FAIL (manual close recommended after pipeline commit)",
       "next_action": "Run /adev:implement --plan .context-index/specs/features/lifecycle-artifacts/template-renames.plan.md",
       "created": "2026-05-14T16:18:43.611Z",
-      "updated": "2026-05-14T17:03:25.263Z",
+      "updated": "2026-05-15T15:29:12.904Z",
       "epicId": "epic-80",
       "planRef": ".context-index/specs/features/lifecycle-artifacts/template-renames.plan.md"
     },
@@ -2764,10 +2780,10 @@
       "type": "feature",
       "spec_ref": ".context-index/specs/features/lifecycle-artifacts/specify-kind-routing.spec.md",
       "dependencies": [],
-      "notes": "kind: skill. Bound 1:1 to spec at .context-index/specs/features/lifecycle-artifacts/specify-kind-routing.spec.md. Created by /adev:specify batch on 2026-05-14. Layer 1 tracking: issue-465 (epic-73).",
+      "notes": "Validated: PASS_WITH_WARNINGS (2026-05-15). Report: .context-index/specs/features/lifecycle-artifacts/specify-kind-routing.validate.md. All 8 acceptance criteria PASS; 21/21 kind-routing tests pass. Check 12 surfaced lifecycle bookkeeping WARNs (this issue still open; plan checkboxes unchecked) — manual close recommended after /adev:reconcile.",
       "next_action": "Run /adev:implement --plan .context-index/specs/features/lifecycle-artifacts/specify-kind-routing.plan.md",
       "created": "2026-05-14T16:18:43.647Z",
-      "updated": "2026-05-14T17:03:25.313Z",
+      "updated": "2026-05-15T16:00:33.159Z",
       "epicId": "epic-80",
       "planRef": ".context-index/specs/features/lifecycle-artifacts/specify-kind-routing.plan.md"
     },
@@ -2839,6 +2855,19 @@
       "next_action": null,
       "created": "2026-05-14T17:42:54.689Z",
       "updated": "2026-05-14T17:43:09.580Z"
+    },
+    {
+      "id": "issue-485",
+      "title": "Extension authoring docs — guide, manifest template, reference extension",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "",
+      "next_action": "Spec the three deliverables under the existing extensions charter (or a new extension-authoring sub-charter if scope warrants); priority is the worked-example extension since it grounds the docs.",
+      "created": "2026-05-15T13:44:47.513Z",
+      "updated": "2026-05-15T13:47:17.838Z",
+      "epicId": "epic-75"
     }
   ]
 }

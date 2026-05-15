@@ -58,6 +58,41 @@ created: {{ date }}
 2. ...
 3. ...
 
+## Changes Catalog
+
+<!-- OpenSpec-style enumeration of what this refactor changes, classified by
+     the kind of change. Additive to Migration Path: the catalog answers
+     "what's different" at a glance; the path answers "how do we get there safely". -->
+
+### ADDED
+
+<!-- New files, exports, behaviors, or contracts introduced by this refactor.
+     List each item with a one-line rationale. Omit subsection if empty. -->
+
+- ...
+
+### MODIFIED
+
+<!-- Existing files, exports, behaviors, or contracts whose meaning changes.
+     Be precise about what changed and why. Omit subsection if empty. -->
+
+- ...
+
+### REMOVED
+
+<!-- Files, exports, or behaviors deleted by this refactor. Each removal must
+     have a deprecation path or compatibility shim noted in Migration Path.
+     Omit subsection if empty. -->
+
+- ...
+
+### RENAMED
+
+<!-- Identifier or path renames. Format: `old → new` with a one-line rationale.
+     Omit subsection if empty. -->
+
+- ...
+
 ## Migration Path
 
 <!-- Step-by-step plan for getting from current to target state.

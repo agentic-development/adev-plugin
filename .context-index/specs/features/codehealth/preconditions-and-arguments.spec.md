@@ -18,8 +18,8 @@ source-manifest:
     - tests/skills/codehealth.test.mjs
   computed-at: "2026-04-12T11:48:02.735Z"
 drift_detected: true
-drift_source: .context-index/manifest.yaml
-drift_at: 2026-05-13T17:29:46.918Z
+drift_source: skills/hygiene/SKILL.md
+drift_at: 2026-05-15T16:42:13.604Z
 ---
 
 ## Behavioral Contract

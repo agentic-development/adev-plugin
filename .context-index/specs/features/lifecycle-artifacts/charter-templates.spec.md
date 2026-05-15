@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: artifact
-status: review-passed
+status: validated
 risk_level: low
 milestone: spec-and-charter-taxonomy
 revision: 2
@@ -9,6 +9,20 @@ charter-revision: 2
 created: 2026-05-14
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/charter-templates.plan.md
+
+source-manifest:
+  sha: "ee5f4fe"
+  files:
+    - .context-index/specs/features/.charter-template.cross-cutting.md
+    - .context-index/specs/features/.charter-template.feature.md
+    - .context-index/specs/features/.charter-template.initiative.md
+    - .context-index/specs/features/.charter-template.module.md
+    - templates/charter-template.cross-cutting.md
+    - templates/charter-template.feature.md
+    - templates/charter-template.initiative.md
+    - templates/charter-template.module.md
+    - tests/lib/template-resolution.test.mjs
+  computed-at: "2026-05-15T14:34:13.860Z"
 ---
 
 # Live Spec: Charter Templates

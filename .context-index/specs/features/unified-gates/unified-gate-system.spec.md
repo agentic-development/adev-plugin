@@ -31,8 +31,8 @@ source-manifest:
     - .context-index/constitution.md
   computed-at: "2026-04-25T21:55:13.860Z"
 drift_detected: true
-drift_source: .context-index/specs/features/unified-gates/unified-gate-system.spec.md
-drift_at: 2026-05-14T19:01:07.176Z
+drift_source: skills/hygiene/SKILL.md
+drift_at: 2026-05-15T16:42:13.605Z
 ---
 
 ## Behavioral Contract

@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: behavioral
-status: implemented
+status: validated
 risk_level: low
 milestone: spec-and-charter-taxonomy
 revision: 1

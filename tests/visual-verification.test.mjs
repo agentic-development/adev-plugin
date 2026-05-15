@@ -13,7 +13,7 @@ function readTemplate(name) {
 }
 
 describe("visual verification in live-spec template", () => {
-  const template = readTemplate("live-spec-template.md");
+  const template = readTemplate("spec-template.behavioral.md");
 
   it("has a Visual Expectations section", () => {
     assert.ok(template.includes("## Visual Expectations"));

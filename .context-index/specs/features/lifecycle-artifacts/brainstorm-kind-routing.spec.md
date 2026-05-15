@@ -1,7 +1,7 @@
 ---
 charter: lifecycle-artifacts
 kind: skill
-status: review-passed
+status: validated
 risk_level: medium
 milestone: spec-and-charter-taxonomy
 revision: 1
@@ -9,6 +9,15 @@ charter-revision: 2
 created: 2026-05-14
 
 plan-ref: .context-index/specs/features/lifecycle-artifacts/brainstorm-kind-routing.plan.md
+
+source-manifest:
+  sha: "4358a4c"
+  files:
+    - providers/codex/skills/brainstorm/SKILL.md
+    - providers/opencode/skills/brainstorm/SKILL.md
+    - skills/brainstorm/SKILL.md
+    - tests/skills/brainstorm-kind-routing.test.mjs
+  computed-at: "2026-05-15T16:16:10.334Z"
 ---
 
 # Live Spec: `/adev:brainstorm` Kind Routing
