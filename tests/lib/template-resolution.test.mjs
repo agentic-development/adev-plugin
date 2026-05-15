@@ -20,6 +20,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -392,4 +393,207 @@ describe("resolveTemplate — UNSAFE_TEMPLATE_PATH (Behavior 8)", () => {
       rmSync(evilSibling, { recursive: true, force: true });
     }
   });
+});
+
+// ── Bundled-template coverage: action / skill / integration / artifact ─────
+//
+// Covers spec-templates.plan.md Task 5: for each new kind, assert
+//   * resolveTemplate('spec', kind, null) returns the bundled path
+//   * the file exists on disk
+//   * the body contains the documented H2 section list in the documented order
+//
+// These tests intentionally run against the real plugin `templates/` directory
+// (no __setAllowedRootsForTest override) so they pin the actually-shipped
+// templates to the structural contract in spec-templates.spec.md.
+
+describe("resolveTemplate — bundled new-kind spec templates (Task 5)", () => {
+  // Documented H2 section order per spec-templates.spec.md "Structural Shape".
+  const EXPECTED_H2 = {
+    action: [
+      "Postconditions",
+      "Procedure",
+      "Idempotency",
+      "Rollback",
+      "System Constitution Reference",
+      "Acceptance Criteria",
+    ],
+    skill: [
+      "Invocation Modes",
+      "Arguments",
+      "Output Contract",
+      "Failure Modes",
+      "System Constitution Reference",
+      "Acceptance Criteria",
+    ],
+    integration: [
+      "Participants",
+      "Interaction Contract",
+      "State Machine",
+      "Error Propagation",
+      "System Constitution Reference",
+      "Acceptance Criteria",
+    ],
+    artifact: [
+      "Structural Shape",
+      "Required Files",
+      "Consumers",
+      "System Constitution Reference",
+      "Acceptance Criteria",
+    ],
+  };
+
+  // Extract the ordered list of H2 headings ("## Title") from a markdown body.
+  function extractH2Sections(body) {
+    const out = [];
+    for (const line of body.split("\n")) {
+      const m = line.match(/^##\s+(.+?)\s*$/);
+      if (m) out.push(m[1].trim());
+    }
+    return out;
+  }
+
+  for (const kind of ["action", "skill", "integration", "artifact"]) {
+    it(`resolves bundled spec template for kind '${kind}' to ${kind}-file under PLUGIN_ROOT/templates/`, async () => {
+      const expected = resolve(
+        PLUGIN_ROOT,
+        "templates",
+        `spec-template.${kind}.md`,
+      );
+      const p = await resolveTemplate("spec", kind, null);
+      // realpathSync of the expected path normalizes /var → /private/var on macOS.
+      assert.equal(p, realpathSync(expected));
+      assert.equal(existsSync(p), true);
+    });
+
+    it(`bundled spec template for kind '${kind}' has the documented H2 section list in order`, async () => {
+      const p = await resolveTemplate("spec", kind, null);
+      const body = readFileSync(p, "utf8");
+      const sections = extractH2Sections(body);
+      assert.deepEqual(
+        sections,
+        EXPECTED_H2[kind],
+        `Template '${kind}' H2 sections mismatch.\n` +
+          `Expected: ${JSON.stringify(EXPECTED_H2[kind])}\n` +
+          `Got:      ${JSON.stringify(sections)}`,
+      );
+    });
+
+    it(`bundled spec template for kind '${kind}' frontmatter declares kind: ${kind}`, async () => {
+      const p = await resolveTemplate("spec", kind, null);
+      const body = readFileSync(p, "utf8");
+      // Frontmatter line should be 'kind: <kind>' (no quotes per templates).
+      const re = new RegExp(`^kind:\\s*${kind}\\b`, "m");
+      assert.match(
+        body,
+        re,
+        `Template '${kind}' frontmatter must contain 'kind: ${kind}'.`,
+      );
+    });
+  }
+});
+
+// ── Bundled-template coverage: charter kinds (feature / module / cross-cutting / initiative) ──
+//
+// Covers charter-templates.plan.md Task 5: for each charter kind, assert
+//   * resolveTemplate('charter', kind, null) returns the bundled path
+//   * the file exists on disk
+//   * the body contains the documented H2 section list in the documented order
+//   * frontmatter declares `kind: <kind>`
+//
+// Like the spec-template coverage above, these tests intentionally run against
+// the real plugin `templates/` directory (no __setAllowedRootsForTest override)
+// so they pin the actually-shipped templates to the structural contract in
+// charter-templates.spec.md.
+
+describe("resolveTemplate — bundled charter templates (Task 5)", () => {
+  // Documented H2 section order per charter-templates.spec.md "Structural Shape".
+  //
+  // The feature charter retains the existing six-section shape plus the
+  // organically-added "Deferred Capabilities" section that ships in the
+  // existing template (spec line 50: "H2 structure unchanged" — i.e., what is
+  // currently on disk after the rename). The other three kinds match the
+  // section lists documented in the spec verbatim.
+  const EXPECTED_H2 = {
+    feature: [
+      "Business Intent",
+      "Scope and Boundaries",
+      "Domain Model",
+      "Capability Map",
+      "Deferred Capabilities",
+      "Interface Contracts",
+      "Quality Attributes",
+    ],
+    module: [
+      "Purpose",
+      "Skills",
+      "Key Behaviors",
+      "Key Files",
+      "Constitution Reference",
+      "Capability Map",
+    ],
+    "cross-cutting": [
+      "Business Intent",
+      "Scope",
+      "Affected Modules",
+      "Interface Contracts",
+      "Quality Attributes",
+    ],
+    initiative: [
+      "Business Intent",
+      "Scope",
+      "Current State",
+      "Target State",
+      "Migration Plan",
+      "Acceptance Criteria",
+    ],
+  };
+
+  // Extract the ordered list of H2 headings ("## Title") from a markdown body.
+  function extractH2Sections(body) {
+    const out = [];
+    for (const line of body.split("\n")) {
+      const m = line.match(/^##\s+(.+?)\s*$/);
+      if (m) out.push(m[1].trim());
+    }
+    return out;
+  }
+
+  for (const kind of ["feature", "module", "cross-cutting", "initiative"]) {
+    it(`resolves bundled charter template for kind '${kind}' to ${kind}-file under PLUGIN_ROOT/templates/`, async () => {
+      const expected = resolve(
+        PLUGIN_ROOT,
+        "templates",
+        `charter-template.${kind}.md`,
+      );
+      const p = await resolveTemplate("charter", kind, null);
+      // realpathSync of the expected path normalizes /var → /private/var on macOS.
+      assert.equal(p, realpathSync(expected));
+      assert.equal(existsSync(p), true);
+    });
+
+    it(`bundled charter template for kind '${kind}' has the documented H2 section list in order`, async () => {
+      const p = await resolveTemplate("charter", kind, null);
+      const body = readFileSync(p, "utf8");
+      const sections = extractH2Sections(body);
+      assert.deepEqual(
+        sections,
+        EXPECTED_H2[kind],
+        `Charter template '${kind}' H2 sections mismatch.\n` +
+          `Expected: ${JSON.stringify(EXPECTED_H2[kind])}\n` +
+          `Got:      ${JSON.stringify(sections)}`,
+      );
+    });
+
+    it(`bundled charter template for kind '${kind}' frontmatter declares kind: ${kind}`, async () => {
+      const p = await resolveTemplate("charter", kind, null);
+      const body = readFileSync(p, "utf8");
+      // Frontmatter line should be 'kind: <kind>' (no quotes per templates).
+      const re = new RegExp(`^kind:\\s*${kind}\\b`, "m");
+      assert.match(
+        body,
+        re,
+        `Charter template '${kind}' frontmatter must contain 'kind: ${kind}'.`,
+      );
+    });
+  }
 });
