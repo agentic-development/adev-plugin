@@ -26,7 +26,7 @@ grep -rc "Run inline Node\|node --input-type=module -e\|node -e" skills/*/SKILL.
 | debug            | 4                             | pending  | —     |       |
 | eval             | 2                             | pending  | —     |       |
 | hygiene          | 1                             | pending  | —     |       |
-| implement        | 10                            | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 3 plan-step gate, Step 4 completion); 10 forbidden-regex blocks remain (not in PR 4 scope); stays on allowlist |
+| implement        | 10                            | partially-extracted | PR 3 (reportStep), PR 4 (requireGate), PR 5 (source-manifest compute) | reportStep + requireGate + source-manifest compute extracted (Step 3 plan-step gate, Step 4 completion, Step 5 manifest stamping — the `node --input-type=module -e "import { computeManifest } ..."` heredoc block was replaced with `adev source-manifest compute --files ...`); 9 forbidden-regex blocks remain; stays on allowlist |
 | plan             | 2                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 1.5 entry, Step 6 exit); 2 forbidden-regex blocks remain (not in PR 4 scope); stays on allowlist |
 | prototype        | 6                             | pending  | —     |       |
 | recover          | 3                             | pending  | —     |       |
@@ -34,7 +34,7 @@ grep -rc "Run inline Node\|node --input-type=module -e\|node -e" skills/*/SKILL.
 | specify          | 2                             | partially-extracted | PR 3 (reportStep) | reportStep extracted (Step 0 entry, Step 6 exit); specify has no Step 0a requireGate gate (it's the first lifecycle step); 2 forbidden-regex blocks remain; stays on allowlist |
 | standalone       | 1                             | pending  | —     |       |
 | status           | 1                             | pending  | —     |       |
-| validate         | 8                             | partially-extracted | PR 1 (Check 13), PR 2 (reportValidator), PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 0a entry, Step 14 exit); 7 forbidden-regex blocks remain; stays on allowlist |
+| validate         | 8                             | partially-extracted | PR 1 (Check 13), PR 2 (reportValidator), PR 3 (reportStep), PR 4 (requireGate), PR 5 (source-manifest verify) | reportStep + requireGate + source-manifest verify extracted (Step 0a entry, Step 14 exit, Check 1.5). Check 1.5 referenced `verifyManifest()` as a lib API call (prose-only, no fenced inline-Node block) — replaced with `adev source-manifest verify` CLI call; the underlying behavior (parse frontmatter, call `verifyManifest(manifest, projectRoot)`, classify result) is now CLI-invoked rather than lib-invoked. Forbidden-regex count unchanged at 7 because Check 1.5 was prose. Stays on allowlist. |
 | write-test       | 3                             | pending  | —     |       |
 | **TOTAL**        | **51**                        |          |       |       |
 
@@ -58,7 +58,7 @@ named-PR sequence, with the long tail parallelizable.
 | 2   | Extract `reportValidator` per-check emission       | `validate`                                              | merged   |
 | 3   | Extract `reportStep` lifecycle entry/exit emission | `specify, review-specs, plan, implement, validate, build` | merged   |
 | 4   | Extract Step 0a `requireGate` calls                | `review-specs, plan, implement, validate, build`        | merged   |
-| 5   | Extract source-manifest verify                     | `validate`, possibly `implement`                        | pending  |
+| 5   | Extract source-manifest verify                     | `validate`, `implement`                                 | merged   |
 | 6   | Extract domain-aware gate loading                  | `review-specs`, `validate`, `plan`                      | pending  |
 | 7+  | Long-tail extractions (per block)                  | All remaining; one PR per block or per canonical-verb group | pending  |
 
@@ -75,6 +75,8 @@ logic matches — naming is canonical and shared.
 | `heuristics extract`  | `lib/cli/heuristics.mjs`      | PR 1          | `validate` Check 13               |
 | `report --type validator` | `lib/cli/report.mjs`      | PR 2          | `validate` Per-Check Event Emission |
 | `report --type step`  | `lib/cli/report.mjs`          | PR 3          | step-started/completed emissions in `specify, review-specs, plan, implement, validate, build` |
+| `source-manifest verify` | `lib/cli/source-manifest.mjs` | PR 5       | `validate` Check 1.5 (manifest verification) |
+| `source-manifest compute` | `lib/cli/source-manifest.mjs` | PR 5      | `implement` Step 5 (compute and stamp source manifest) |
 
 ## Acceptance (sweep-complete sentinel)
 

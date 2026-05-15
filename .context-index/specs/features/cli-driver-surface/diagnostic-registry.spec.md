@@ -52,7 +52,7 @@ source-manifest:
   computed-at: "2026-05-14T21:13:35.721Z"
 drift_detected: true
 drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-15T14:20:15.606Z
+drift_at: 2026-05-15T14:37:38.760Z
 ---
 
 > **Rev 2 amendment (2026-05-14):**

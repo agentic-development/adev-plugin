@@ -1307,10 +1307,11 @@ const VERB_REGISTRY = new Map([
                           if (exitCode !== 0) process.exit(exitCode);
                         }, help: () => cmdHelp() })],
   ["help",      () => ({ run: () => cmdHelp(),                   help: () => cmdHelp() })],
-  ["gate",       () => import("../lib/cli/gate.mjs")],
-  ["diagnose",   () => import("../lib/cli/diagnose.mjs")],
-  ["heuristics", () => import("../lib/cli/heuristics.mjs")],
-  ["report",     () => import("../lib/cli/report.mjs")],
+  ["gate",            () => import("../lib/cli/gate.mjs")],
+  ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
+  ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
+  ["report",          () => import("../lib/cli/report.mjs")],
+  ["source-manifest", () => import("../lib/cli/source-manifest.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
