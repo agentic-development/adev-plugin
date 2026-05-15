@@ -97,7 +97,7 @@ Deferred to `issue-464` (Layer 3 — domain extension matrix):
 | Frontmatter discriminator | `kind:` field on specs and charters; required-on-write for new artifacts; default-at-read for legacy | must-have | spec-and-charter-taxonomy | planned |
 | Template matrix | 10 new dotfile templates following the `.{charter,spec}-template.<kind>.md` convention | must-have | spec-and-charter-taxonomy | planned |
 | Template renames | `.live-spec-template.md` → `.spec-template.behavioral.md`; `.refactoring-spec-template.md` → `.spec-template.refactor.md` | must-have | spec-and-charter-taxonomy | planned |
-| Template-resolution helper | `resolveTemplate(layer, kind, domain)` API resolving through domain → bundled fallback | must-have | spec-and-charter-taxonomy | planned |
+| Template-resolution helper | `resolveTemplate(layer, kind, domain)` API resolving through domain → bundled fallback | must-have | spec-and-charter-taxonomy | implemented |
 | `/adev:specify` kind routing | Ask-first menu with one-line per kind; route to matching template; reject invalid values | must-have | spec-and-charter-taxonomy | planned |
 | `/adev:brainstorm` kind routing | Same pattern at the charter layer | must-have | spec-and-charter-taxonomy | planned |
 | Workflow/kind orthogonality | `/adev:specify`'s existing `--mode {extraction,diff-driven,...}` flags reconciled as orthogonal axis to `--kind` | must-have | spec-and-charter-taxonomy | planned |

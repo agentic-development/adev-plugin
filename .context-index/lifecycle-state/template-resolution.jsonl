@@ -10,3 +10,14 @@
 {"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.239Z"}
 {"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-05-14T17:03:25.239Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-14T17:03:25.251Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T12:57:08.038Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T12:57:43.944Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-05-15T12:59:33.201Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T13:06:36.460Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-15T13:17:49.339Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-1","status":"done","notes":"Already implemented (detected by implementation probe); both reviews pass.","ts":"2026-05-15T13:18:37.635Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-05-15T13:18:37.636Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-2","status":"done","notes":"Already implemented (SEC-1 guard covered by 3 symlink-escape tests).","ts":"2026-05-15T13:18:37.636Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-05-15T13:18:37.637Z"}
+{"event":"plan_task","plan":".context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md","task_id":"task-3","status":"done","notes":"Already implemented; 20 tests cover all 9 behaviors incl. symlink escape.","ts":"2026-05-15T13:18:37.637Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-15T13:33:03.405Z"}
