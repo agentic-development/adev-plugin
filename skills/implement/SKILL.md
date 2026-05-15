@@ -330,17 +330,13 @@ Build the implementer subagent prompt with these sections in order:
 
    **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
-   **Domain-Aware Test Config:** Load domain test config for test framework detection and gaming thresholds:
-   ```javascript
-   const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-   const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-   const { mergeTestConfig } = await import('<ADEV_ROOT>/lib/domains/merge-test-config.mjs');
-   const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-   const overlay = loadDomainConfig(domain.resolved_domain, 'test-config', repoRoot, pluginRoot);
-   const { config } = mergeTestConfig(overlay);
+   **Domain-Aware Test Config:** Load domain test config for test framework detection and gaming thresholds via the CLI:
+
+   ```bash
+   adev domain load-test-config --module <module-slug> [--charter <charter-path>]
    ```
-   Pass `config.permitted_tools` to the write-test subagent for test framework detection.
-   Pass `config.skip_patterns` for domain-specific skipped test detection.
+
+   Stdout is a single JSON object `{ domain, config, warnings }` where `config` contains `permitted_tools`, `skip_patterns`, and `max_test_file_size`. Pass `config.permitted_tools` to the write-test subagent for test framework detection. Pass `config.skip_patterns` for domain-specific skipped test detection.
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
@@ -392,15 +388,14 @@ Dispatch the subagent. Handle the returned status:
 
 #### 2e. Visual Verification (UI tasks)
 
-**Domain-Aware Verification Config:** Before checking UI patterns, resolve the active domain and load verification config. Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-const { mergeVerification } = await import('<ADEV_ROOT>/lib/domains/merge-verification.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const overlay = loadDomainConfig(domain.resolved_domain, 'verification', repoRoot, pluginRoot);
-const { config, warnings } = mergeVerification(overlay, activeServers);
+**Domain-Aware Verification Config:** Before checking UI patterns, resolve the active domain and load verification config via the CLI:
+
+```bash
+adev domain load-verification --module <module-slug> [--charter <charter-path>] [--mcp-server <name>]...
 ```
+
+Pass each active MCP server name as `--mcp-server <name>` (repeat the flag for multiple). Stdout is a single JSON object `{ domain, config, warnings }`. If the verification tool listed in the domain config is not in the active MCP server set, `config` is `null` and a `TOOL_UNAVAILABLE` warning appears in `warnings`.
+
 Based on the verification `type`:
 - `visual`: use browser-based snapshot verification (existing Playwright flow below)
 - `output`: use output comparison via assertions — no browser, no MCP tool

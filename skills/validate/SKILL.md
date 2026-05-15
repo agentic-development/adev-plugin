@@ -104,21 +104,19 @@ If the call fails or returns empty, proceed without heuristics — non-blocking.
 When heuristics are present, include them in the validation context so checks can reference learned patterns.
 Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
-**Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks. Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-const { mergeGates } = await import('<ADEV_ROOT>/lib/domains/merge-gates.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const domainOverlay = loadDomainConfig(domain.resolved_domain, 'gates', repoRoot, pluginRoot);
-// Read governance gates
-const govGatesPath = join(repoRoot, '.context-index', 'governance', 'gates.yaml');
-const govGates = existsSync(govGatesPath) ? parseYaml(readFileSync(govGatesPath, 'utf8')) : null;
-// Merge domain + governance gates (governance wins on id conflict)
-const { gates: mergedGates, warnings: gateWarnings } = mergeGates(domainOverlay, govGates);
-// Gate commands execute via execFile (no shell interpolation)
+**Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks via the CLI:
+
+```bash
+adev domain load-gates --module <module-slug> [--charter <charter-path>]
 ```
-Log any warnings from the merge process. The `mergedGates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in.
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'), loads `templates/domains/<domain>/gates.yaml`, and merges `.context-index/governance/gates.yaml` on top (governance wins on `id` conflict). Stdout is a single JSON object:
+
+```json
+{ "domain": { "resolved_domain": "...", "source_level": "..." }, "gates": [...], "warnings": [...] }
+```
+
+Log any warnings from the `warnings` field. The `gates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in. Gate commands continue to execute via `execFile` (no shell interpolation).
 
 Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
 

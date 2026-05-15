@@ -51,8 +51,8 @@ source-manifest:
     - tests/lib/spec-status.test.mjs
   computed-at: "2026-05-14T21:13:35.721Z"
 drift_detected: true
-drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-15T14:37:38.760Z
+drift_source: skills/implement/SKILL.md
+drift_at: 2026-05-15T17:00:27.821Z
 ---
 
 > **Rev 2 amendment (2026-05-14):**

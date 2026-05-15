@@ -1312,6 +1312,7 @@ const VERB_REGISTRY = new Map([
   ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
   ["report",          () => import("../lib/cli/report.mjs")],
   ["source-manifest", () => import("../lib/cli/source-manifest.mjs")],
+  ["domain",          () => import("../lib/cli/domain.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
