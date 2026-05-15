@@ -151,14 +151,17 @@ Before planning, verify the spec has passed architecture review by reading the l
      frontmatter may be malformed. Fix the spec frontmatter before planning.
      ```
 
-5. **Emit `reportStep` entry event:** after the gate passes (and before context loading), record the plan step start:
+5. **Emit step-started event:** after the gate passes (and before context loading), record the plan step start:
 
-   ```javascript
-   import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-   reportStep(projectRoot, specPath, { step: "plan", status: "started" });
+   ```bash
+   adev report --type step --spec <spec-path> --step plan --status started
    ```
 
-   Emit a matching exit event (`status: "completed"` with the produced plan's verdict) at the end of the skill, after the plan file is written.
+   After the plan file is written at the end of the skill, emit the matching exit event with the produced plan's verdict:
+
+   ```bash
+   adev report --type step --spec <spec-path> --step plan --status completed --verdict <verdict>
+   ```
 
 ### Spec Mode — Workspace-Aware Target-Repo Detection
 

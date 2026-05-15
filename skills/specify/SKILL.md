@@ -185,9 +185,8 @@ The primary path. Takes a Feature Charter and produces a Live Spec for one capab
 
 Before any spec authoring, emit a `lifecycle_step` event so the projection's `currentStep` reflects the active phase:
 
-```javascript
-import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-reportStep(projectRoot, specPath, { step: "specify", status: "started" });
+```bash
+adev report --type step --spec <spec-path> --step specify --status started
 ```
 
 This skill does NOT carry severity stamping, gate adoption, or issue board adoption — it only emits step entry/exit. Charter capability-map mutation (acknowledged dual-write in the charter's Out-of-Scope) remains a markdown edit and is not migrated here.
@@ -465,9 +464,8 @@ Output path, charter, status, counts of behaviors/error cases/tasks/acceptance c
 
 Emit the lifecycle exit event:
 
-```javascript
-import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-reportStep(projectRoot, specPath, { step: "specify", status: "completed" });
+```bash
+adev report --type step --spec <spec-path> --step specify --status completed
 ```
 
 ---

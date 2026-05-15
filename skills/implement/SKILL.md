@@ -22,21 +22,28 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 1. **Plan exists.** The plan file must exist and be readable.
 2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — read the lifecycle log and gate on the prior step:
+3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — read the lifecycle log and gate on the prior step, then emit the step-started event:
 
    ```javascript
-   import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+   import { currentState, requireGate, resolveGateMode } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
    import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
 
    const state = currentState(projectRoot, specPath);
    const mode = resolveGateMode(loadManifest(projectRoot));
    requireGate(state, "plan", { mode });
-   reportStep(projectRoot, specPath, { step: "implement", status: "started" });
+   ```
+
+   ```bash
+   adev report --type step --spec <spec-path> --step implement --status started
    ```
 
    In strict mode (default), `requireGate` throws `GateError` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
-   Emit a matching `reportStep` exit (`status: "completed"`) when all tasks finish in Step 4.
+   When all tasks finish in Step 4, emit the matching exit event:
+
+   ```bash
+   adev report --type step --spec <spec-path> --step implement --status completed
+   ```
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
