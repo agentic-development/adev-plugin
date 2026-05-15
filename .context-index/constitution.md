@@ -63,6 +63,8 @@ Plan-task: <task-number>          # when implementing a plan task
 - No CommonJS (`require`, `module.exports`)
 - No executable logic inside SKILL.md files
 - No hardcoded paths to `~/.claude/` — use the plugin root resolution from `cli/index.mjs`
+- No `Run inline Node.js:` step directives, `node --input-type=module -e "..."` heredocs, or `node -e "..."` invocations inside `skills/*/SKILL.md`. Skills name a CLI subcommand (`adev <verb> …`) or a helper script; the helper body lives in `lib/cli/` or `scripts/`.
+- No SKILL.md contains both an inline-Node block AND an `adev <verb>` invocation within the same H3 section (the per-step boundary; enforces per-skill atomic migration from the cli-driver-surface charter).
 
 ## Architecture Boundaries
 

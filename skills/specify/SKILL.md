@@ -382,6 +382,9 @@ infra_requirements:
 
 ### Step 5.5: Update Spec Status
 
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time.
+
 After saving the spec:
 
 1. Read the spec file you just created

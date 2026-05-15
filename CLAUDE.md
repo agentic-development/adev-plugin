@@ -64,6 +64,8 @@ Plan-task: <task-number>          # when implementing a plan task
 - No CommonJS (`require`, `module.exports`)
 - No executable logic inside SKILL.md files
 - No hardcoded paths to `~/.claude/` — use the plugin root resolution from `cli/index.mjs`
+- No `Run inline Node.js:` step directives, `node --input-type=module -e "..."` heredocs, or `node -e "..."` invocations inside `skills/*/SKILL.md`. Skills name a CLI subcommand (`adev <verb> …`) or a helper script; the helper body lives in `lib/cli/` or `scripts/`.
+- No SKILL.md contains both an inline-Node block AND an `adev <verb>` invocation within the same H3 section (the per-step boundary; enforces per-skill atomic migration from the cli-driver-surface charter).
 
 ## Architecture Boundaries
 
@@ -148,3 +150,18 @@ claude --plugin-dir /path/to/adev-plugin
 # Install into Claude Code (production path)
 npx @adev-org/adev-cli install
 ```
+
+## Git Hooks
+
+The `.githooks/pre-commit` chain invokes `.githooks/pre-commit-no-inline-node`
+(source: `hooks/pre-commit-no-inline-node.sh`) before the protected-branch
+check. The auxiliary hook rejects commits that add inline-Node patterns
+(`Run inline Node.js:` headings, `node --input-type=module -e` heredocs, or
+`node -e` in fenced code blocks) to any `skills/**/SKILL.md` file, and
+rejects per-H3-section both-forms violations (inline-Node and `adev <verb>`
+in the same section). Exit 2 means policy violation; exit 1 means the hook
+crashed.
+
+Bypass with `git commit --no-verify` only when justified (and explain why
+in the commit message). Provider mirrors under `providers/*/skills/**` are
+out of scope.

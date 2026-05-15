@@ -26,7 +26,7 @@ test('100 concurrent appendEvent calls all land as well-formed lines', async () 
   const root = createTempDir();
   try {
     mkdirSync(join(root, '.context-index'), { recursive: true });
-    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
     const specPath = '.context-index/specs/features/test/concurrent.spec.md';
 
     // Fork all writers concurrently.

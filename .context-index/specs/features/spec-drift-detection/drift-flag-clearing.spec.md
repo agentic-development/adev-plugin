@@ -14,6 +14,9 @@ source-manifest:
     - lib/spec-drift.mjs
     - skills/implement/SKILL.md
   computed-at: "2026-05-10T23:51:35.315Z"
+drift_detected: true
+drift_source: skills/implement/SKILL.md
+drift_at: 2026-05-14T21:11:43.430Z
 ---
 
 ## Behavioral Contract
