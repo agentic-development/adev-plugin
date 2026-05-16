@@ -175,4 +175,73 @@ describe('Validate check set restructure — registry trim', () => {
       'Overall Status / report copy must not claim "All 13 checks passed" after restructure'
     );
   });
+
+  test('project governance/validate.yaml referencing a removed check ID emits RESURRECTED_CHECK_ID WARN', () => {
+    const repo = tmp();
+    const starterBase = readFileSync(STARTER_PATH, 'utf8');
+    // Append a removed check ID to the project override.
+    const withResurrected =
+      starterBase +
+      '\n  - id: validate.check-3-charter-consistency\n    enabled: true\n';
+    writeFixture(repo, '.context-index/governance/validate.yaml', withResurrected);
+    const r = loadValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+    // No errors — RESURRECTED is a WARN, not a hard fail.
+    assert.equal(
+      r.errors.length,
+      0,
+      `expected no errors; got ${JSON.stringify(r.errors)}`
+    );
+    assert.ok(
+      r.warnings.some(
+        (w) => w.code === 'RESURRECTED_CHECK_ID' && /check-3/.test(w.message),
+      ),
+      `expected RESURRECTED_CHECK_ID warning for check-3; got ${JSON.stringify(r.warnings)}`
+    );
+    // The entry is skipped — not present in the final check list.
+    assert.ok(
+      !r.checks.some((c) => c.id === 'validate.check-3-charter-consistency'),
+      'Resurrected check must be skipped from the final check list'
+    );
+  });
+
+  test('RESURRECTED_CHECK_ID covers every dropped ID', () => {
+    const droppedIds = [
+      'validate.check-3-charter-consistency',
+      'validate.check-5-adrs',
+      'validate.check-6-cross-cutting',
+      'validate.check-7-specialist-review',
+      'validate.check-10-platform-drift',
+      'validate.check-12-lifecycle-reconciliation',
+      'validate.check-12-heuristic-extraction',
+    ];
+    for (const id of droppedIds) {
+      const repo = tmp();
+      const starterBase = readFileSync(STARTER_PATH, 'utf8');
+      const withResurrected = starterBase + `\n  - id: ${id}\n    enabled: true\n`;
+      writeFixture(repo, '.context-index/governance/validate.yaml', withResurrected);
+      const r = loadValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+      assert.ok(
+        r.warnings.some((w) => w.code === 'RESURRECTED_CHECK_ID' && w.message.includes(id.replace('validate.', ''))),
+        `expected RESURRECTED_CHECK_ID warning for ${id}; got ${JSON.stringify(r.warnings)}`
+      );
+    }
+  });
+
+  test('SEC-4: RESURRECTED_CHECK_ID message shows only the check ID, not the full entry content', () => {
+    const repo = tmp();
+    const starterBase = readFileSync(STARTER_PATH, 'utf8');
+    // Include extra fields with a potential sensitive label to verify the
+    // diagnostic does not echo it.
+    const withResurrected =
+      starterBase +
+      `\n  - id: validate.check-5-adrs\n    enabled: true\n    name: "internal-codename-do-not-leak"\n`;
+    writeFixture(repo, '.context-index/governance/validate.yaml', withResurrected);
+    const r = loadValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+    const warn = r.warnings.find((w) => w.code === 'RESURRECTED_CHECK_ID');
+    assert.ok(warn, 'expected a RESURRECTED_CHECK_ID warning');
+    assert.ok(
+      !warn.message.includes('internal-codename-do-not-leak'),
+      'SEC-4: diagnostic must not echo other fields (name, prompt, context_pack) — only the check ID'
+    );
+  });
 });
