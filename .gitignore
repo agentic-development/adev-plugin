@@ -54,5 +54,8 @@ viz/dist/
 # Claude Code worktrees (ephemeral agent workspaces)
 .claude/worktrees/
 
+# Claude Code scheduled-tasks lock (runtime state)
+.claude/scheduled_tasks.lock
+
 # Lifecycle gate advisory counter (runtime state)
 .context-index/.advisory-counter
