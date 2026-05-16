@@ -20,13 +20,33 @@ const PLUGIN_ROOT = join(__dirname, '..', '..');
 const REPO_ROOT = PLUGIN_ROOT;
 
 describe("loadDomainConfig: validate configType", () => {
-  it("recognizes 'validate' configType and returns a value (object or null)", () => {
+  it("loadDomainConfig('software', 'validate') returns a structured object with checks array", () => {
     const result = loadDomainConfig('software', 'validate', REPO_ROOT, PLUGIN_ROOT);
-    // Before Task 3 (software starter created), result may be null.
-    // After Task 3: result is an object with checks array.
+    assert.ok(result !== null, 'software starter should exist (Task 3 created it)');
+    assert.ok(typeof result === 'object', 'should be parsed YAML object');
+    assert.ok(Array.isArray(result.checks), 'should have a checks array');
+    assert.ok(result.checks.length >= 12, `expected >= 12 checks, got ${result.checks.length}`);
+  });
+
+  it("loadDomainConfig('data-engineering', 'validate') returns null (no starter shipped, SA-7)", () => {
+    const result = loadDomainConfig('data-engineering', 'validate', REPO_ROOT, PLUGIN_ROOT);
+    assert.equal(result, null, 'data-engineering should not ship a validate starter');
+  });
+
+  it("loadDomainConfig('process-automation', 'validate') returns null (no starter shipped, SA-7)", () => {
+    const result = loadDomainConfig('process-automation', 'validate', REPO_ROOT, PLUGIN_ROOT);
+    assert.equal(result, null, 'process-automation should not ship a validate starter');
+  });
+
+  it("software validate.yaml has plugin: URIs in prompt fields", () => {
+    const result = loadDomainConfig('software', 'validate', REPO_ROOT, PLUGIN_ROOT);
+    assert.ok(result !== null);
+    const checksWithPluginUri = result.checks.filter(
+      (c) => typeof c.prompt === 'string' && c.prompt.startsWith('plugin:validate/checks/')
+    );
     assert.ok(
-      result === null || typeof result === 'object',
-      `expected null or object, got ${typeof result}`
+      checksWithPluginUri.length >= 10,
+      `expected at least 10 checks with plugin: URI prompts, got ${checksWithPluginUri.length}`
     );
   });
 
