@@ -364,9 +364,20 @@ If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merg
 
 ### Check 11: Visual Verification (UI projects)
 
-**Trigger:** If any file touched by the implementation matches UI patterns (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `components/**`, `app/**/page.*`, `app/**/layout.*`, `pages/**`).
+**Trigger guard (revised by `check-set-restructure.spec.md` Behaviors 5 + 6).** Before running visual verification, evaluate the implementation diff against UI file patterns (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `*.html`, files under `components/`, `pages/`, `views/`, `public/`, `app/**/page.*`, `app/**/layout.*`) and check whether the Playwright MCP server (`browser_navigate`, `browser_snapshot`) is available.
 
-**Playwright MCP required.** Check for the Playwright MCP browser tools (`browser_navigate`, `browser_snapshot`). If they are not available, **BLOCK validation** and tell the user:
+The four-case matrix:
+
+| UI files in diff? | Playwright available? | Outcome |
+|---|---|---|
+| No  | No  | **SKIP** — "No UI files in implementation diff — visual verification not applicable." |
+| Yes | No  | **BLOCK** — see message below (preserved from previous behavior). |
+| Yes | Yes | Proceed with the visual verification protocol below. |
+| No  | Yes | **SKIP** — "Playwright available but nothing to verify for this spec." |
+
+The full guard logic with rationale lives in `skills/validate/checks/validate.check-11-visual-verification.md` (Trigger Guard section).
+
+**BLOCK message** (Case B only):
 
 ```
 BLOCKED: This implementation includes UI files but no browser verification tool is available.
@@ -379,9 +390,7 @@ Then add it to your Claude Code MCP config and restart.
 Without visual verification, UI implementations cannot be fully validated.
 ```
 
-Do not record SKIP. Do not proceed without it. UI code without visual verification is unvalidated code.
-
-**If Playwright is available:**
+**If Playwright is available AND UI files match (Case C):**
 
 1. **Dev server.** Ensure the dev server is running. If not, start it. Wait for it to be ready.
 2. **Visual Expectations check.** If the spec has a `## Visual Expectations` section, verify each expectation:
@@ -727,8 +736,8 @@ Fix the issues above and re-run: /adev:validate --spec <path>
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code
 - Skip specialist review when the scoring algorithm produces matches
-- Skip visual verification for UI files when Playwright is not available (block and ask the user to install it)
-- Record SKIP for Check 11 when UI files are present (N/A is only valid when no UI files are touched)
+- Skip visual verification for UI files when Playwright is not available (block and ask the user to install it — Case B in the Check 11 trigger guard)
+- Record SKIP for Check 11 when UI files ARE present (SKIP is only valid when no UI files are touched — Cases A and D)
 - Suggest merging to a protected branch (always suggest PR for protected branches)
 
 ## API reference
