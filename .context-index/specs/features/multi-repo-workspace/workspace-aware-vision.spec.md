@@ -26,7 +26,7 @@ source-manifest:
   computed-at: "2026-04-17T09:26:13.441Z"
 drift_detected: true
 drift_source: skills/plan/SKILL.md
-drift_at: 2026-05-16T00:17:13.898Z
+drift_at: 2026-05-16T01:02:42.711Z
 ---
 
 # Live Spec: Workspace-Aware Strategic Planning

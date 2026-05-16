@@ -71,15 +71,14 @@ If the CLI call fails, fall back to reading each file individually.
 10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
     All subagent dispatches in this skill use the `capable` tier (implementer, spec reviewer, code quality reviewer, visual verifier).
     If `model_tiers` is absent or a tier is unset, use the hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
-11. **Heuristics:** Load module-scoped heuristics for injection into context packets.
-    Derive the module slug from the plan's spec `charter:` frontmatter field.
-    **Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Use the absolute path in imports. Replace `<ADEV_ROOT>` below with the resolved path.
-    Run inline Node.js:
+11. **Heuristics:** Load module-scoped heuristics for injection into context packets via the CLI:
+
     ```bash
-    node -e "import { retrieveHeuristics, renderHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    adev heuristics retrieve --module <charter-module> [--injection-limit N]
     ```
-    Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<module>` is the charter module slug, and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
-    If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
+
+    Derive the module slug from the plan's spec `charter:` frontmatter field. Pass `--injection-limit` only when `heuristics.injection_limit` is configured in `manifest.yaml` (otherwise omit for the library default).
+    Stdout is a single JSON object `{count, rendered}` where `rendered` is the markdown blocks joined by blank lines. The verb exits 0 regardless — failures degrade to `{count:0, rendered:""}` so heuristic injection stays strictly non-blocking.
     Store the `rendered` output for use in Step 2a.
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
@@ -172,17 +171,13 @@ After loading context, check whether the spec or plan declares `infra_requiremen
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Invocation:** Run inline Node.js (same pattern as heuristics loading):
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> --plan <planPath> [--timeout N] [--no-infra]
 ```
 
-Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<specPath>` is extracted from the plan's `Spec:` header, and `<planPath>` is the `<plan-path>` argument.
+Where `<specPath>` is extracted from the plan's `Spec:` header and `<planPath>` is the `<plan-path>` argument. Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
 Parse the JSON output. If `report.passed === false`, display the formatted report and block:
 

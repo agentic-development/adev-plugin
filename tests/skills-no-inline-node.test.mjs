@@ -40,27 +40,17 @@ const FORBIDDEN = /Run inline Node|node\s+--input-type=module\s+-e|node\s+-e/;
 // Seeded from
 //   grep -rl "Run inline Node\|node --input-type=module -e\|node -e" skills/*/SKILL.md
 // at Task 0 authoring time (2026-05-15). 15 canonical skills × 51 inline
-// blocks remain. Each extraction PR removes one entry once the skill's
-// inline blocks all reach zero. Allowlist shrinks monotonically.
+// blocks remained at that point. Each extraction PR removed one entry once
+// the skill's inline blocks all reached zero. Allowlist shrinks
+// monotonically and is empty when the sweep is complete.
 //
 // PR 7 (long-tail PR 1 — context/state primitives bundle): build, hygiene,
-// status reached zero inline blocks. Removed from allowlist. implement, plan,
-// validate retain inline blocks for heuristics + infra-preflight; still
-// allowlisted.
-export const ALLOWLIST = new Set([
-  "brainstorm",
-  "debug",
-  "eval",
-  "implement",
-  "plan",
-  "prototype",
-  "recover",
-  "review-specs",
-  "specify",
-  "standalone",
-  "validate",
-  "write-test",
-]);
+// status reached zero inline blocks. Removed from allowlist.
+//
+// PR 8-9 (sweep finish): all 12 remaining skills converted. Allowlist is
+// now empty. Acceptance sentinel (per spec Behavior 6 + AC 7): zero
+// forbidden-regex matches across skills/*/SKILL.md AND empty ALLOWLIST.
+export const ALLOWLIST = new Set();
 
 function listSkillDirs() {
   return readdirSync(SKILLS_DIR)

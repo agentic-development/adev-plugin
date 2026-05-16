@@ -131,18 +131,15 @@ If `loadReviewConfig` returns any errors, abort with the error list. Warnings ar
 
 ## Step 4: Dispatch Reviewers
 
-**Heuristics:** Before dispatching reviewers, load module-scoped heuristics for the spec's charter module.
-Derive the module slug from the spec's `charter:` frontmatter field.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
+**Heuristics:** Before dispatching reviewers, load module-scoped heuristics for the spec's charter module via the CLI:
+
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-Include the rendered heuristics in each reviewer's context pack under a `## Heuristics` section,
-prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+Derive the module slug from the spec's `charter:` frontmatter field. Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), include them in each reviewer's context pack under a `## Heuristics` section, prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
 For each reviewer returned by the registry, call `shouldDispatch(reviewer, { targetSpecPath, specContent })` from the same module. Reviewers with `dispatch: always` always dispatch; `triggered` compute a score (2 points per matching glob + 1 per path segment beyond root, 1 point per keyword) and dispatch when score ≥ `min_score` (default 1); `never` are skipped.
 

@@ -488,3 +488,64 @@ test("adev domain load-gates without --module exits 1", () => {
     cleanup(dir);
   }
 });
+
+// ── PR 8-9: `resolve` subcommand ─────────────────────────────────────────
+
+test("domain resolve without --module exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync("node", [CLI, "domain", "resolve"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--module|usage/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("domain resolve returns JSON with resolved_domain (manifest module default)", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "domain", "resolve", "--module", "m"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const parsed = JSON.parse(r.stdout.trim());
+    assert.ok(parsed.domain);
+    assert.strictEqual(typeof parsed.domain.resolved_domain, "string");
+    // No gates/reviewers/config/warnings in resolve mode — domain-only.
+    assert.strictEqual(parsed.gates, undefined);
+    assert.strictEqual(parsed.reviewers, undefined);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("domain resolve with charter frontmatter overrides manifest domain", () => {
+  const dir = makeTempProject();
+  writeCharter(dir, "m", { domain: "data-engineering" });
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "domain",
+        "resolve",
+        "--module",
+        "m",
+        "--charter",
+        ".context-index/specs/features/m/charter.md",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const parsed = JSON.parse(r.stdout.trim());
+    assert.strictEqual(parsed.domain.resolved_domain, "data-engineering");
+  } finally {
+    cleanup(dir);
+  }
+});

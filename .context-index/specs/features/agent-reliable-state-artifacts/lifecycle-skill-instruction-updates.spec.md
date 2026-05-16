@@ -41,8 +41,8 @@ source-manifest:
     - tests/skills/no-stale-format-refs.test.mjs
   computed-at: "2026-05-12T18:38:32.899Z"
 drift_detected: true
-drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-16T00:18:15.334Z
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-16T01:06:37.665Z
 ---
 
 ## Behavioral Contract

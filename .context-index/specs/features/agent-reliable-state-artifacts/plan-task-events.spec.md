@@ -33,7 +33,7 @@ source-manifest:
 >>>>>>> 46d8950 (feat(cli-driver-surface): PR 5 — extract source-manifest verify)
 drift_detected: true
 drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-16T00:18:15.334Z
+drift_at: 2026-05-16T01:04:28.843Z
 ---
 
 ## Behavioral Contract
