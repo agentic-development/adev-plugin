@@ -1,0 +1,107 @@
+# adev-extension.yaml — Reference Manifest Template
+#
+# This file exercises every `provides.*` slot that the adev extension
+# installer (`lib/extensions/install.mjs`) recognizes. Copy it to your
+# extension's root directory and trim the slots you do not need.
+#
+# Required: `name` (kebab-case, ≤64 chars), `version` (semver, ≤32 chars).
+# Recommended: `requires.adev` (semver range) so the installer can refuse
+# installs against an incompatible adev version.
+#
+# Canonical schemas referenced below are defined by:
+#   - extension-core.spec.md          (manifest shape + install semantics)
+#   - content-installation.spec.md    (governance merge + path containment)
+#   - cli-and-registration.spec.md    (skill + hook registration)
+#   - configurable-checks.spec.md     (quality-gate command + profile rules)
+#   - adrs/0003-configurable-review-registry.md (merge-by-id semantics)
+
+name: my-extension
+version: 0.1.0
+description: One-line description shown in `npx adev-cli extension list`.
+author: your-org
+
+# Pin to a supported adev range. Install aborts with INCOMPATIBLE_VERSION
+# if the installed adev is outside this range.
+requires:
+  adev: ">=0.27.0"
+
+provides:
+  # ── provides.governance ────────────────────────────────────────────────
+  #
+  # Array of { target, entries[] } objects. `target` is the governance
+  # file (review.yaml | validate.yaml | gates.yaml) under
+  # .context-index/governance/. `entries[]` is merged by `id` per ADR-0003:
+  # project values override extension values; new ids are appended.
+  #
+  # For `kind: quality-gate` entries (validate.yaml):
+  #   - `command` MUST be an argv list, never a shell string. The installer
+  #     runs `child_process.execFile(argv[0], argv.slice(1))` — no shell
+  #     interpolation. A string form fails with QUALITY_GATE_COMMAND_SHELL.
+  #   - `profile` MUST be explicit (e.g., `read-only`, `read-write`). It
+  #     scopes the adapter's tool surface but does NOT sandbox the
+  #     subprocess. The child runs with the user's full filesystem and
+  #     network privileges. Author your binary defensively.
+  governance:
+    - target: validate.yaml
+      entries:
+        - id: my-extension.my-check
+          kind: quality-gate
+          profile: read-only
+          command: [bash, extensions/my-extension/bin/check.sh]
+          severity: warning
+          after: [validate.check-1-quality-gates]
+
+    # You may target multiple files in the same provides.governance array:
+    # - target: review.yaml
+    #   entries:
+    #     - id: my-extension.review-rule
+    #       dispatch: always
+
+  # ── provides.skills ────────────────────────────────────────────────────
+  #
+  # Standalone skills registered in the provider's hooks.json. Extension
+  # skill names MUST NOT collide with bundled skill names — install fails
+  # with SKILL_COLLISION otherwise. Skill content is markdown (SKILL.md)
+  # only; no executable logic per Constitution Principle 2.
+  skills:
+    - name: my-extension-skill
+      description: One-line description of what this skill does
+      source_dir: skills/my-skill
+
+  # ── provides.hooks ─────────────────────────────────────────────────────
+  #
+  # Lifecycle hooks registered in the provider's hooks.json. Hooks read
+  # JSON from stdin + env vars and exit 0 (allow) or 2 (block) per the
+  # adev hook protocol. Use `event` (e.g., PostToolUse, PreToolUse,
+  # UserPromptSubmit) and `command` (script path relative to extension
+  # root).
+  hooks:
+    - event: PostToolUse
+      command: hooks/post-tool-use.sh
+
+  # ── provides.domain-profile ────────────────────────────────────────────
+  #
+  # Domain profile directory installed to .context-index/domains/<name>/
+  # with a generated `domain.yaml` containing `extends: <parent>`. Profile
+  # contains up to 7 files (charter-template.md, spec-template.md,
+  # reviewers.yaml, gates.yaml, verification.yaml, gate-config.yaml,
+  # test-config.yaml) — missing files inherit from the parent profile.
+  #
+  # The `name` field MUST NOT be one of the bundled domain names
+  # (software, data-engineering, process-automation) — install fails
+  # with BUNDLED_COLLISION otherwise.
+  domain-profile:
+    name: my-domain
+    path: domain
+    extends: software
+
+  # ── provides.samples ───────────────────────────────────────────────────
+  #
+  # Golden samples copied to .context-index/samples/. Each entry can be a
+  # string (sample path relative to extension root, same path under
+  # samples/) or an explicit {src, dest}. Source and destination paths
+  # are containment-checked; any escape fails with PATH_TRAVERSAL.
+  samples:
+    - samples/example.md
+    # - src: samples/long-name.md
+    #   dest: my-extension/example.md

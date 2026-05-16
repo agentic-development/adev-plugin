@@ -1,0 +1,55 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-16T11:56:37.297Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-05-16T11:56:37.333Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-16T13:46:14.135Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"10 findings (0 blockers, 7 warnings, 3 suggestions); charter Out-of-Scope contradictions (SA-3 SA-4) and missing depends-on (SA-2) are the highest-impact.","ts":"2026-05-16T13:50:42.263Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"7 findings (0 blockers, 4 warnings, 3 suggestions); make profile-permissions scoping and bin/check.mjs minimalism explicit.","ts":"2026-05-16T13:50:42.299Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"8 findings (0 blockers, 3 warnings, 5 suggestions); governance schema shape mismatch (CON-2) and test path convention (CON-3) are the actionable items.","ts":"2026-05-16T13:50:42.334Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T13:52:19.481Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-16T14:13:36.353Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Rev 2: all 10 prior warnings ADDRESSED. 3 new suggestions on charter wording precision and AC enforcement detail.","ts":"2026-05-16T14:17:15.638Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Rev 2: 7 prior findings ADDRESSED. 2 new warnings: SEC-8 bash hardening (set -euo pipefail, forbid eval/source/cmd-sub); SEC-9 untrusted-source threat model in docs pitfalls.","ts":"2026-05-16T14:17:15.678Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Rev 2: all 4 prior warnings ADDRESSED. 4 polish suggestions (line-range citation parity, parenthetical clarification, charter phrase echo, frontmatter family hygiene).","ts":"2026-05-16T14:17:15.713Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T14:18:24.623Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-16T14:18:48.813Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-05-16T14:21:03.788Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-05-16T14:21:03.828Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-05-16T14:21:03.868Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"4","status":"pending","notes":null,"ts":"2026-05-16T14:21:03.908Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"5","status":"pending","notes":null,"ts":"2026-05-16T14:21:03.949Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"6","status":"pending","notes":null,"ts":"2026-05-16T14:21:03.988Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"7","status":"pending","notes":null,"ts":"2026-05-16T14:21:04.027Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"8","status":"pending","notes":null,"ts":"2026-05-16T14:21:04.064Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"9","status":"pending","notes":null,"ts":"2026-05-16T14:21:04.100Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"10","status":"pending","notes":null,"ts":"2026-05-16T14:21:04.139Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-16T14:21:04.178Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-16T14:22:43.051Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-05-16T14:23:58.852Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"1","status":"done","notes":"Charter capability row verified; status flipped to 'implementing' for tracking","ts":"2026-05-16T14:24:09.905Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"2","status":"in_progress","notes":null,"ts":"2026-05-16T14:24:19.713Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"2","status":"done","notes":"Reference manifest created (16 lines, canonical provides.governance shape)","ts":"2026-05-16T14:24:39.998Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"3","status":"in_progress","notes":null,"ts":"2026-05-16T14:24:40.035Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"3","status":"done","notes":"bin/check.sh created (6 lines, hardened, ignores SECRET sentinel)","ts":"2026-05-16T14:25:09.475Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"4","status":"in_progress","notes":null,"ts":"2026-05-16T14:25:09.511Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"4","status":"done","notes":"Manifest template exercises all 5 provides.* slots; parses cleanly","ts":"2026-05-16T14:26:02.291Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"5","status":"in_progress","notes":null,"ts":"2026-05-16T14:26:02.327Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"5","status":"done","notes":"Author guide: 191 lines covering schema, merge, validate flow, 6 pitfalls (SEC2-2/SEC2-9), worked example","ts":"2026-05-16T14:27:43.213Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"6","status":"in_progress","notes":null,"ts":"2026-05-16T14:27:43.250Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"6","status":"done","notes":"Reference extension README (47 lines): install, verify, constraints, modify guidance","ts":"2026-05-16T14:28:07.057Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"7","status":"in_progress","notes":null,"ts":"2026-05-16T14:28:07.093Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"7","status":"done","notes":"docs/README.md updated with Extensions link in Reference section","ts":"2026-05-16T14:28:15.548Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"8","status":"in_progress","notes":null,"ts":"2026-05-16T14:28:15.585Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"8","status":"done","notes":"Install test: 15 cases passing (manifest shape, template slots, hardening, install positive, string-form rejection, collision report)","ts":"2026-05-16T14:30:41.868Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"9","status":"in_progress","notes":null,"ts":"2026-05-16T14:30:41.905Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"9","status":"done","notes":"Validate-flow integration test: 2 cases passing (install + validator_report emission + single-token id)","ts":"2026-05-16T14:31:52.557Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"10","status":"in_progress","notes":null,"ts":"2026-05-16T14:31:52.594Z"}
+{"event":"plan_task","plan":".context-index/specs/features/extensions/extension-authoring-docs.plan.md","task_id":"10","status":"done","notes":"Doc-link sentinel: 11 cases passing (file existence + required references + CLI verb binding)","ts":"2026-05-16T14:33:46.519Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-16T14:35:02.461Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-16T14:36:18.139Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.419Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.458Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-drift","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.493Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.529Z"}
+{"event":"validator_report","step":"validate","validator":"check-3-charter-consistency","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.564Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution-compliance","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.599Z"}
+{"event":"validator_report","step":"validate","validator":"check-12-lifecycle-reconciliation","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.636Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-16T14:38:50.406Z"}
