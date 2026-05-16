@@ -129,4 +129,20 @@ describe('Validate check set restructure — registry trim', () => {
     assert.ok(!/^### Check 6: /m.test(skill), 'SKILL.md must not retain ### Check 6 prose');
     assert.ok(!/^### Check 7: /m.test(skill), 'SKILL.md must not retain ### Check 7 prose');
   });
+
+  test('software starter has no active check-12-heuristic-extraction entry', () => {
+    const starter = readFileSync(STARTER_PATH, 'utf8');
+    assert.ok(
+      !/^\s*-\s*id:\s*validate\.check-12-heuristic-extraction/m.test(starter),
+      'Starter must not register check-12-heuristic-extraction (now runs via post-validate hook)'
+    );
+  });
+
+  test('SKILL.md no longer contains Check 13 Success Heuristic Extraction section', () => {
+    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    assert.ok(
+      !/^### Check 13: Success Heuristic Extraction/m.test(skill),
+      'SKILL.md must not retain the ### Check 13 prose section (relocated to post-validate hook)'
+    );
+  });
 });
