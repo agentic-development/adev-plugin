@@ -21,7 +21,7 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 drift_source: cli/index.mjs
-drift_at: 2026-05-16T00:05:50.552Z
+drift_at: 2026-05-16T00:48:30.137Z
 ---
 
 ## Behavioral Contract

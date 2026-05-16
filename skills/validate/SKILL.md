@@ -65,17 +65,13 @@ After verifying prerequisites, check whether the spec declares `infra_requiremen
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Invocation:** Run inline Node.js:
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> [--plan <planPath>] [--timeout N] [--no-infra]
 ```
 
-Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (or `null` if not provided).
+Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (omit `--plan` when not provided). Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
 If `report.passed === false`, display the formatted report and block:
 
@@ -91,18 +87,15 @@ If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure prefli
 
 ## Step 0: Load Check Registry
 
-**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module.
-Derive the module slug from the spec's `charter:` frontmatter field.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
+**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module via the CLI:
+
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-When heuristics are present, include them in the validation context so checks can reference learned patterns.
-Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+Derive the module slug from the spec's `charter:` frontmatter field. Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), include them in the validation context so checks can reference learned patterns and prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
 **Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks via the CLI:
 
@@ -221,24 +214,23 @@ This check runs after quality gates (Check 1) regardless of their result, since 
 
 Check for code-side drift via the `drift_detected` frontmatter flag. This check is **non-blocking** -- validation continues regardless of result.
 
-Run inline Node.js:
-```javascript
-const { hasDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
-try {
-  const drifted = await hasDrift(specPath);
-  if (drifted) {
-    // Read drift_source and drift_at from frontmatter
-    // Emit: "WARN: drift_detected flag set. Source file <drift_source>
-    // was modified at <drift_at>. Verify that spec still reflects
-    // implementation behavior."
-  }
-} catch {
-  // Emit: "WARN: drift check skipped — frontmatter unreadable"
-  // Record CODE_DRIFT_READ_ERROR
-}
+Run the drift check via the CLI:
+
+```bash
+adev verify spec --spec <specPath> --check-drift
 ```
 
-Also run `verifyManifest()` as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
+The `--check-drift` mode reads the spec's frontmatter and emits a single JSON object on stdout:
+
+```json
+{ "drifted": <bool>, "drift_source": "<path|null>", "drift_at": "<timestamp|null>" }
+```
+
+If `drifted === true`, emit a WARN: "drift_detected flag set. Source file `<drift_source>` was modified at `<drift_at>`. Verify that spec still reflects implementation behavior."
+
+If the verb exits non-zero (frontmatter unreadable), record `CODE_DRIFT_READ_ERROR` and emit: "WARN: drift check skipped — frontmatter unreadable".
+
+Also run `adev source-manifest verify --spec <specPath>` (see Check 1.5) as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
 
 This check is **non-blocking** — validation continues regardless. Record WARN if drift is detected, PASS otherwise.
 

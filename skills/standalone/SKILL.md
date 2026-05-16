@@ -16,14 +16,10 @@ Disable lifecycle gate enforcement for this session.
 
 ## Instructions
 
-Find the project root (the directory containing `.context-index/`). Then write the execution state:
+Find the project root (the directory containing `.context-index/`). Then write the execution state via the CLI:
 
 ```bash
-node -e "
-import { writeExecutionState } from '$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/execution-state.mjs';
-writeExecutionState(process.cwd(), { status: 'standalone' });
-console.log('Standalone mode activated. Lifecycle gates disabled for this session.');
-"
+adev execution-state write --status standalone
 ```
 
-Confirm to the user: "Standalone mode activated. Lifecycle gates disabled for this session."
+The verb persists `{ status: "standalone" }` to `.context-index/.execution-state.json` and exits 0 on success. Confirm to the user: "Standalone mode activated. Lifecycle gates disabled for this session."

@@ -1027,3 +1027,238 @@ test("adev report --type validator is observational — non-zero exit only on ar
     cleanup(dir);
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// PR 8-9 subcommands: --type reviewer | plan-task | intervention
+// ─────────────────────────────────────────────────────────────────────────
+
+// Helper: read JSONL log for a spec slug.
+function readSlugLog(dir, slug) {
+  const logPath = join(dir, ".context-index", "lifecycle-state", `${slug}.jsonl`);
+  if (!existsSync(logPath)) return [];
+  return readFileSync(logPath, "utf8")
+    .split("\n")
+    .filter((l) => l.length > 0)
+    .map((l) => JSON.parse(l));
+}
+
+// ── --type reviewer ──────────────────────────────────────────────────────
+
+test("--type reviewer requires --spec --step --reviewer --verdict", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "report", "--type", "reviewer"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--spec|reviewer/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type reviewer with invalid --verdict exits 1", () => {
+  const dir = makeTempProject();
+  const specRel = ".context-index/specs/features/m/x.spec.md";
+  writeSpec(dir, specRel, "---\ncharter: m\n---\n\n# X\n");
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI, "report", "--type", "reviewer",
+        "--spec", specRel,
+        "--step", "review",
+        "--reviewer", "structural",
+        "--verdict", "MAYBE",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /verdict|PASS|FAIL/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type reviewer appends reviewer_report event", () => {
+  const dir = makeTempProject();
+  const specRel = ".context-index/specs/features/m/x.spec.md";
+  writeSpec(dir, specRel, "---\ncharter: m\n---\n\n# X\n");
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI, "report", "--type", "reviewer",
+        "--spec", specRel,
+        "--step", "review",
+        "--reviewer", "structural-review",
+        "--verdict", "PASS_WITH_NOTES",
+        "--notes", "minor",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const log = readSlugLog(dir, "x");
+    const reviewerEvents = log.filter((e) => e.event === "reviewer_report");
+    assert.strictEqual(reviewerEvents.length, 1);
+    assert.strictEqual(reviewerEvents[0].reviewer, "structural-review");
+    assert.strictEqual(reviewerEvents[0].verdict, "PASS_WITH_NOTES");
+    assert.strictEqual(reviewerEvents[0].notes, "minor");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+// ── --type plan-task ─────────────────────────────────────────────────────
+
+test("--type plan-task requires --spec --plan --task-id --status", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "report", "--type", "plan-task"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--spec|--plan|--task-id|--status/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type plan-task with invalid --status exits 1", () => {
+  const dir = makeTempProject();
+  const specRel = ".context-index/specs/features/m/x.spec.md";
+  writeSpec(dir, specRel, "---\ncharter: m\n---\n\n# X\n");
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI, "report", "--type", "plan-task",
+        "--spec", specRel,
+        "--plan", ".context-index/specs/features/m/x.plan.md",
+        "--task-id", "task-1",
+        "--status", "weird-state",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /status|pending|in_progress|done/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type plan-task appends plan_task event with valid status", () => {
+  const dir = makeTempProject();
+  const specRel = ".context-index/specs/features/m/x.spec.md";
+  writeSpec(dir, specRel, "---\ncharter: m\n---\n\n# X\n");
+  const planRel = ".context-index/specs/features/m/x.plan.md";
+  // Plan file doesn't need to exist — see lib/cli/report.mjs comment.
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI, "report", "--type", "plan-task",
+        "--spec", specRel,
+        "--plan", planRel,
+        "--task-id", "task-7",
+        "--status", "in_progress",
+        "--notes", "starting task 7",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const log = readSlugLog(dir, "x");
+    const planEvents = log.filter((e) => e.event === "plan_task");
+    assert.strictEqual(planEvents.length, 1);
+    assert.strictEqual(planEvents[0].task_id, "task-7");
+    assert.strictEqual(planEvents[0].status, "in_progress");
+    assert.strictEqual(planEvents[0].notes, "starting task 7");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type plan-task with out-of-bounds --plan exits 1 (containment)", () => {
+  const dir = makeTempProject();
+  const specRel = ".context-index/specs/features/m/x.spec.md";
+  writeSpec(dir, specRel, "---\ncharter: m\n---\n\n# X\n");
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI, "report", "--type", "plan-task",
+        "--spec", specRel,
+        "--plan", "../../../etc/passwd",
+        "--task-id", "task-1",
+        "--status", "pending",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /plan|escapes/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+// ── --type intervention ──────────────────────────────────────────────────
+
+test("--type intervention requires --spec --kind --note", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "report", "--type", "intervention"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--spec|--kind|--note/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type intervention appends debug_intervention event", () => {
+  const dir = makeTempProject();
+  const specRel = ".context-index/specs/features/m/x.spec.md";
+  writeSpec(dir, specRel, "---\ncharter: m\n---\n\n# X\n");
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI, "report", "--type", "intervention",
+        "--spec", specRel,
+        "--kind", "recover",
+        "--note", "Re-dispatched with cache-spec context appended",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const log = readSlugLog(dir, "x");
+    const events = log.filter((e) => e.event === "debug_intervention");
+    assert.strictEqual(events.length, 1);
+    assert.strictEqual(events[0].kind, "recover");
+    assert.match(events[0].note, /cache-spec/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type intervention with unknown --type still exits 1 (sanity)", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "report", "--type", "completely-bogus"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /unknown|--type/i);
+  } finally {
+    cleanup(dir);
+  }
+});

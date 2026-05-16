@@ -25,6 +25,9 @@ source-manifest:
     - tests/skills/recover-extract-heuristic.test.mjs
     - tests/skills/recover-extraction.test.mjs
   computed-at: "2026-04-10T00:08:54.070Z"
+drift_detected: true
+drift_source: skills/recover/SKILL.md
+drift_at: 2026-05-16T01:04:03.849Z
 ---
 
 ## Behavioral Contract

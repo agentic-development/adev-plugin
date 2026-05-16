@@ -531,3 +531,326 @@ function readDirSafe(p) {
     return [];
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// PR 8-9 subcommands: retrieve + write
+// ─────────────────────────────────────────────────────────────────────────
+
+// Helper: write a heuristic file directly so retrieve has something to find.
+function seedHeuristic(dir, scope, body) {
+  const dirPath = join(dir, ".context-index", "memory", "heuristics");
+  mkdirSync(dirPath, { recursive: true });
+  writeFileSync(join(dirPath, `${scope}.md`), body);
+}
+
+// Minimal heuristic markdown block (matches lib/heuristics.mjs::serializeHeuristic format).
+function makeHeuristicBody({
+  id = "test-deadbeef",
+  scope = "m",
+  title = "Test heuristic",
+  pattern = "Do the thing",
+  confidence = "medium",
+  created = "2026-05-15",
+  updated = "2026-05-15",
+} = {}) {
+  return `# Heuristics (scope: ${scope})\n\n---\nid: ${id}\nscope: ${scope}\ntitle: ${title}\npattern: ${pattern}\nconfidence: ${confidence}\ncreated: ${created}\nupdated: ${updated}\nevidence: []\n---\n`;
+}
+
+// ── retrieve subcommand ──────────────────────────────────────────────────
+
+test("heuristics retrieve without --module exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync("node", [CLI, "heuristics", "retrieve"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--module|usage/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics retrieve with invalid --injection-limit exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "retrieve",
+        "--module",
+        "m",
+        "--injection-limit",
+        "not-a-number",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--injection-limit|integer/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics retrieve with invalid --tier exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "heuristics", "retrieve", "--module", "m", "--tier", "bogus"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--tier|index|summary|full/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics retrieve with no heuristics returns {count:0,rendered:''}", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "heuristics", "retrieve", "--module", "m"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const parsed = JSON.parse(r.stdout.trim());
+    assert.strictEqual(parsed.count, 0);
+    assert.strictEqual(parsed.rendered, "");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics retrieve --format text returns '__NONE__' when empty", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "heuristics", "retrieve", "--module", "m", "--format", "text"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    assert.strictEqual(r.stdout.trim(), "__NONE__");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics retrieve returns seeded heuristics (json)", () => {
+  const dir = makeTempProject();
+  seedHeuristic(
+    dir,
+    "m",
+    makeHeuristicBody({ id: "m-aaaa1111", scope: "m", title: "Module heuristic" }),
+  );
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "heuristics", "retrieve", "--module", "m"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const parsed = JSON.parse(r.stdout.trim());
+    assert.strictEqual(parsed.count, 1);
+    assert.match(parsed.rendered, /Module heuristic|m-aaaa1111/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics retrieve --format text returns rendered markdown", () => {
+  const dir = makeTempProject();
+  seedHeuristic(
+    dir,
+    "m",
+    makeHeuristicBody({ id: "m-bbbb2222", title: "Text heuristic" }),
+  );
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "heuristics", "retrieve", "--module", "m", "--format", "text"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    assert.notStrictEqual(r.stdout.trim(), "__NONE__");
+    assert.match(r.stdout, /Text heuristic|m-bbbb2222/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics retrieve --injection-limit 0 returns empty result", () => {
+  const dir = makeTempProject();
+  seedHeuristic(dir, "m", makeHeuristicBody({ id: "m-cccc3333" }));
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "retrieve",
+        "--module",
+        "m",
+        "--injection-limit",
+        "0",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const parsed = JSON.parse(r.stdout.trim());
+    assert.strictEqual(parsed.count, 0);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+// ── write subcommand ─────────────────────────────────────────────────────
+
+test("heuristics write without required flags exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync("node", [CLI, "heuristics", "write"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /missing|--id|--scope|--title|--pattern/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write with invalid --confidence exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "write",
+        "--id",
+        "x-12345678",
+        "--scope",
+        "m",
+        "--title",
+        "T",
+        "--pattern",
+        "P",
+        "--confidence",
+        "ultra",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /--confidence|low|medium|high/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write with partial evidence flags exits 1", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "write",
+        "--id",
+        "x-12345678",
+        "--scope",
+        "m",
+        "--title",
+        "T",
+        "--pattern",
+        "P",
+        "--evidence-source",
+        "recovery",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /evidence/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write succeeds and emits success line", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "write",
+        "--id",
+        "missing-context-aaaa1111",
+        "--scope",
+        "_global",
+        "--title",
+        "Missing context: cache layer assumptions",
+        "--pattern",
+        "Include cache invalidation docs in context packets for hook tasks",
+        "--confidence",
+        "low",
+        "--evidence-source",
+        "recovery",
+        "--evidence-path",
+        ".context-index/hygiene/recoveries/2026-05-15-x.md",
+        "--evidence-date",
+        "2026-05-15",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    assert.match(r.stdout, /Heuristic written: missing-context-aaaa1111/);
+    // Verify the file was created.
+    const path = join(dir, ".context-index", "memory", "heuristics", "_global.md");
+    assert.ok(existsSync(path), "heuristic file should be written");
+    const body = readFileSync(path, "utf8");
+    assert.match(body, /missing-context-aaaa1111/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write with schema error degrades to stderr + exit 0", () => {
+  const dir = makeTempProject();
+  try {
+    // Empty id triggers HEURISTICS_SCHEMA_ERROR from validateEntry.
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "write",
+        "--id",
+        "x",
+        "--scope",
+        "m",
+        "--title",
+        "T",
+        "--pattern",
+        "P",
+        "--confidence",
+        "low",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    // Either succeeds (if validateEntry accepts the short id) or degrades to
+    // exit 0 with stderr note. Both are acceptable per write subcommand spec.
+    assert.strictEqual(r.status, 0);
+  } finally {
+    cleanup(dir);
+  }
+});

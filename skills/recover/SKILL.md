@@ -65,19 +65,15 @@ After detecting the stall point, check whether the relevant spec or plan declare
 
 **Spec/plan resolution:** Use the plan and spec identified in Step 1 (Detect). The plan path comes from the active plan or `--task` resolution. The spec path comes from the plan's `Spec:` header.
 
-**Invocation:** Run inline Node.js:
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: 10, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> [--plan <planPath>] [--timeout 10] [--no-infra]
 ```
 
-Where `<ADEV_ROOT>` is the resolved absolute plugin root path.
+Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
-If `report.passed === false`, display the formatted report and block:
+If the report has `passed === false` (exit 2), display the formatted report and block:
 
 ```
 Infrastructure Preflight: FAILED
@@ -433,29 +429,30 @@ If the helper import itself fails (e.g., `lib/heuristics.mjs` is absent), log on
 heuristics: helper unavailable, extraction skipped
 ```
 
-Concrete invocation:
+Concrete invocation via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { writeHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs';
-try {
-  const h = await writeHeuristic(projectRoot, {
-    id: 'missing-context-a1b2c3d4',
-    scope: 'hooks',
-    title: 'Missing context: cache layer assumptions',
-    pattern: 'Include cache invalidation docs in context packets for hook tasks',
-    antiPattern: 'Assuming cache behavior without reading the cache module',
-    confidence: 'low',
-    evidence: [{ path: '.context-index/hygiene/recoveries/2026-04-09-cache-task.md', date: '2026-04-09', source: 'recovery' }],
-  });
-  console.log(\`Heuristic extracted: \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
-} catch (err) {
-  process.stderr.write(\`heuristics: extraction skipped — \${err.message}\n\`);
-}
-"
+adev heuristics write \
+    --id missing-context-a1b2c3d4 \
+    --scope hooks \
+    --title "Missing context: cache layer assumptions" \
+    --pattern "Include cache invalidation docs in context packets for hook tasks" \
+    --anti-pattern "Assuming cache behavior without reading the cache module" \
+    --confidence low \
+    --evidence-source recovery \
+    --evidence-path .context-index/hygiene/recoveries/2026-04-09-cache-task.md \
+    --evidence-date 2026-04-09
 ```
 
-Step 7's last printed output on success must be exactly: `Heuristic extracted: <id> (scope: <scope>, confidence: low)` — or whatever confidence the helper returns after auto-promotion, since the confidence value must come from the `writeHeuristic` return value rather than the caller-supplied input.
+The verb wraps `writeHeuristic`, emits a single line on stdout:
+
+```
+Heuristic written: <id> (scope: <scope>, confidence: <confidence>)
+```
+
+and exits 0. On schema failure, the verb writes `heuristics: extraction skipped — <error>` to stderr and still exits 0 — lesson capture is best-effort. The confidence value in the success line comes from the helper return value (which may apply auto-promotion), not the `--confidence` flag input.
+
+Step 7's last printed output on success must therefore be exactly the verb's stdout line.
 
 ## Patterns Across Multiple Recoveries
 

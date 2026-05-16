@@ -11,6 +11,9 @@ source-manifest:
     - lib/test-strategies/profiles.mjs
     - lib/test-strategies/gaming.mjs
   computed-at: "2026-05-10T23:51:01.456Z"
+drift_detected: true
+drift_source: skills/write-test/SKILL.md
+drift_at: 2026-05-16T01:03:25.952Z
 ---
 
 # Spec: Write-Test Dispatch
