@@ -22,21 +22,20 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 1. **Plan exists.** The plan file must exist and be readable.
 2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — read the lifecycle log and gate on the prior step:
+3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
 
-   ```javascript
-   import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-   import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-   const state = currentState(projectRoot, specPath);
-   const mode = resolveGateMode(loadManifest(projectRoot));
-   requireGate(state, "plan", { mode });
-   reportStep(projectRoot, specPath, { step: "implement", status: "started" });
+   ```bash
+   adev gate require --skill implement --spec <spec-path>
+   adev report --type step --spec <spec-path> --step implement --status started
    ```
 
-   In strict mode (default), `requireGate` throws `GateError` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+   In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
-   Emit a matching `reportStep` exit (`status: "completed"`) when all tasks finish in Step 4.
+   When all tasks finish in Step 4, emit the matching exit event:
+
+   ```bash
+   adev report --type step --spec <spec-path> --step implement --status completed
+   ```
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
@@ -45,13 +44,15 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 Extract everything subagents will need so they never have to re-read these files themselves.
 
-**Optimization:** Load spec + charter + constitution in a single Bash call using `loadSpecContext` from `<ADEV_ROOT>/lib/meta-tools.mjs` (replaces items 2, 4, and 5 below with one turn). Use `getPlanProgress` to get plan completion status for resume detection:
+**Optimization:** Load spec + charter + constitution + plan progress in a single Bash call via the CLI (replaces items 2, 4, and 5 below with one turn):
 
 ```bash
-node -e "import {loadSpecContext, getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; const [ctx, progress] = await Promise.all([loadSpecContext('<spec-path>'), getPlanProgress('<plan-path>')]); console.log(JSON.stringify({context: ctx, progress}))"
+adev context load --spec <spec-path> --plan <plan-path>
 ```
 
-If the meta-tool call fails, fall back to reading each file individually.
+The verb wraps `lib/meta-tools.mjs::loadSpecContext` + `getPlanProgress` and emits JSON `{ context, progress }`. Use `progress` for resume detection (look at `progress.completed` vs `progress.total` and the per-task `progress.tasks` array).
+
+If the CLI call fails, fall back to reading each file individually.
 
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
@@ -70,15 +71,14 @@ If the meta-tool call fails, fall back to reading each file individually.
 10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
     All subagent dispatches in this skill use the `capable` tier (implementer, spec reviewer, code quality reviewer, visual verifier).
     If `model_tiers` is absent or a tier is unset, use the hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
-11. **Heuristics:** Load module-scoped heuristics for injection into context packets.
-    Derive the module slug from the plan's spec `charter:` frontmatter field.
-    **Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Use the absolute path in imports. Replace `<ADEV_ROOT>` below with the resolved path.
-    Run inline Node.js:
+11. **Heuristics:** Load module-scoped heuristics for injection into context packets via the CLI:
+
     ```bash
-    node -e "import { retrieveHeuristics, renderHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    adev heuristics retrieve --module <charter-module> [--injection-limit N]
     ```
-    Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<module>` is the charter module slug, and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
-    If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
+
+    Derive the module slug from the plan's spec `charter:` frontmatter field. Pass `--injection-limit` only when `heuristics.injection_limit` is configured in `manifest.yaml` (otherwise omit for the library default).
+    Stdout is a single JSON object `{count, rendered}` where `rendered` is the markdown blocks joined by blank lines. The verb exits 0 regardless — failures degrade to `{count:0, rendered:""}` so heuristic injection stays strictly non-blocking.
     Store the `rendered` output for use in Step 2a.
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
@@ -171,17 +171,13 @@ After loading context, check whether the spec or plan declares `infra_requiremen
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Invocation:** Run inline Node.js (same pattern as heuristics loading):
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> --plan <planPath> [--timeout N] [--no-infra]
 ```
 
-Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<specPath>` is extracted from the plan's `Spec:` header, and `<planPath>` is the `<plan-path>` argument.
+Where `<specPath>` is extracted from the plan's `Spec:` header and `<planPath>` is the `<plan-path>` argument. Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
 Parse the JSON output. If `report.passed === false`, display the formatted report and block:
 
@@ -331,17 +327,13 @@ Build the implementer subagent prompt with these sections in order:
 
    **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
-   **Domain-Aware Test Config:** Load domain test config for test framework detection and gaming thresholds:
-   ```javascript
-   const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-   const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-   const { mergeTestConfig } = await import('<ADEV_ROOT>/lib/domains/merge-test-config.mjs');
-   const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-   const overlay = loadDomainConfig(domain.resolved_domain, 'test-config', repoRoot, pluginRoot);
-   const { config } = mergeTestConfig(overlay);
+   **Domain-Aware Test Config:** Load domain test config for test framework detection and gaming thresholds via the CLI:
+
+   ```bash
+   adev domain load-test-config --module <module-slug> [--charter <charter-path>]
    ```
-   Pass `config.permitted_tools` to the write-test subagent for test framework detection.
-   Pass `config.skip_patterns` for domain-specific skipped test detection.
+
+   Stdout is a single JSON object `{ domain, config, warnings }` where `config` contains `permitted_tools`, `skip_patterns`, and `max_test_file_size`. Pass `config.permitted_tools` to the write-test subagent for test framework detection. Pass `config.skip_patterns` for domain-specific skipped test detection.
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
@@ -366,7 +358,19 @@ Keep your report under 2,000 tokens. List files and results concisely. Do not re
 
 **Cleanup before reporting.** Remove any debugging console.log, print, or debugger statements added during development. Remove commented-out exploration code. Verify all imports are used and no temporary files were left behind.
 
-**Update Execution State:** Before dispatching the implementer subagent, write execution state using inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."` with `status: "active"`, `planRef` set to the plan file path, `currentTask` set to the task number, `issueBinding` set to the issue ID (if `tasks.backend` is configured), `nextAction` set to the task description, and `progress` set to the full task checklist with completed tasks marked done. If `writeExecutionState` fails, log a warning and continue — do not block implementation.
+**Update Execution State:** Before dispatching the implementer subagent, write execution state via the CLI:
+
+```bash
+adev execution-state write \
+  --status active \
+  --plan-ref <plan-file-path> \
+  --current-task <task-number> \
+  [--issue-binding <issue-id>] \
+  --next-action "<task description>" \
+  --progress-json '<json-array-of-progress-items>'
+```
+
+The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call exits non-zero, log a warning and continue — do not block implementation.
 
 #### 2d. Dispatch and Handle Status
 
@@ -387,21 +391,25 @@ Dispatch the subagent. Handle the returned status:
 **BLOCKED.** The subagent cannot proceed.
 - Present the blocker description to the user immediately.
 - **Emit a `plan_task` blocked event:** `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "blocked", notes: "<≤200-char operator-facing summary>" })`. The `notes` field must NOT contain stack traces, env values, secrets, or full command output — those belong in the blocker file under `.context-index/hygiene/blockers/`, not in the lifecycle log.
-- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution. Use inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`.
+- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution, via the CLI:
+  ```bash
+  adev execution-state write --status blocked \
+    --blockers "<blocker description>" \
+    --next-action "<recommended resolution>"
+  ```
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev:specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 
 #### 2e. Visual Verification (UI tasks)
 
-**Domain-Aware Verification Config:** Before checking UI patterns, resolve the active domain and load verification config. Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-const { mergeVerification } = await import('<ADEV_ROOT>/lib/domains/merge-verification.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const overlay = loadDomainConfig(domain.resolved_domain, 'verification', repoRoot, pluginRoot);
-const { config, warnings } = mergeVerification(overlay, activeServers);
+**Domain-Aware Verification Config:** Before checking UI patterns, resolve the active domain and load verification config via the CLI:
+
+```bash
+adev domain load-verification --module <module-slug> [--charter <charter-path>] [--mcp-server <name>]...
 ```
+
+Pass each active MCP server name as `--mcp-server <name>` (repeat the flag for multiple). Stdout is a single JSON object `{ domain, config, warnings }`. If the verification tool listed in the domain config is not in the active MCP server set, `config` is `null` and a `TOOL_UNAVAILABLE` warning appears in `warnings`.
+
 Based on the verification `type`:
 - `visual`: use browser-based snapshot verification (existing Playwright flow below)
 - `output`: use output comparison via assertions — no browser, no MCP tool
@@ -540,7 +548,13 @@ If `governance/boundaries.yaml` exists, run final boundary compliance check: gre
 
 Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
 
-**Clear Execution State:** After all tasks are complete, clear the execution state using inline Node.js: `node -e "import { clearExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`. This resets the state to `idle` so the next session starts fresh. If `clearExecutionState` fails, log a warning — implementation is still considered complete.
+**Clear Execution State:** After all tasks are complete, clear the execution state via the CLI:
+
+```bash
+adev execution-state clear
+```
+
+This resets the state to `idle` so the next session starts fresh. If the CLI call exits non-zero, log a warning — implementation is still considered complete.
 
 Read the `completion.merge_policy` from manifest.yaml (default: "pr").
 
@@ -575,26 +589,29 @@ Do NOT merge directly to <target-branch>.
 
 ## Step 5: Update Spec Status and Source Manifest
 
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time.
+
 After all tasks are complete and before reporting completion:
 
 1. Read the spec file that this plan implements (the plan file references the spec)
 2. Parse YAML frontmatter
 3. Update status: `review-passed` → `implemented`
-4. **Compute source manifest:** Collect all source files produced by this implementation, then call `computeManifest(filePaths, projectRoot)` from `lib/source-manifest.mjs`. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter.
+4. **Compute source manifest:** Collect all source files produced by this implementation, then call the CLI to compute a deterministic SHA-256 manifest. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter.
 
    **Collecting the file list:** Walk each task in the plan and collect every file listed under `Files: Modify:` and `Files: Create:` (exclude `Files: Reference:` — those are read-only context). Deduplicate and sort. These are project-root-relative paths (e.g., `lib/milestones.mjs`, not absolute paths).
 
    **Invocation:**
    ```bash
-   node --input-type=module -e "
-   import { computeManifest } from '<ADEV_ROOT>/lib/source-manifest.mjs';
-   const manifest = await computeManifest(
-     ['lib/feature.mjs', 'tests/feature.test.mjs'],  // collected file list
-     '<PROJECT_ROOT>'                                  // absolute project root
-   );
-   console.log(JSON.stringify(manifest));
-   "
+   adev source-manifest compute --files <comma-separated-paths>
    ```
+
+   Example:
+   ```bash
+   adev source-manifest compute --files lib/feature.mjs,tests/feature.test.mjs
+   ```
+
+   Stdout is a single-line JSON object matching `computeManifest()`'s return shape: `{ sha, files, computedAt }`. The `sha` is the first 7 characters of the composite SHA-256. The `files` array is sorted ascending. The `computedAt` is an ISO 8601 timestamp. Pass `--out <path>` to write the JSON to a file instead of stdout (the file is created with `mkdir -p` semantics for the parent directory). Exit codes: `0` on success, `1` on argument error, missing source file, or path traversal.
 
    Write the returned manifest into the spec's YAML frontmatter:
    ```yaml

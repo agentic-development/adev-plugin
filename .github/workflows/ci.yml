@@ -146,9 +146,24 @@ jobs:
           echo "Checking commits for required trailers (Author-type, Operator) and conventional commit format..."
           FAILED=0
 
-          for SHA in $(git log --format='%H' origin/${{ github.base_ref }}..HEAD); do
-            MSG=$(git log --format='%B' -1 "$SHA")
+          # Use --first-parent to walk only PR-side commits and skip the
+          # ancestors of GitHub's auto-merge commit that's created at HEAD
+          # for pull_request events. Even with --first-parent, that auto-
+          # merge commit itself is at HEAD — handle it via the case below.
+          for SHA in $(git log --first-parent --format='%H' origin/${{ github.base_ref }}..HEAD); do
             SUBJECT=$(git log --format='%s' -1 "$SHA")
+
+            # Skip auto-generated merge commits and fixup/squash markers for
+            # ALL provenance checks. GitHub creates a `Merge <sha> into <sha>`
+            # commit at the PR's HEAD for pull_request runs; it lacks the
+            # Author-type/Operator trailers because the trailers come from
+            # the local pre-commit hook, which doesn't run on GitHub-Actions
+            # merges. fixup!/squash!/amend! commits are handled at rebase.
+            case "$SUBJECT" in
+              Merge\ *|fixup!\ *|squash!\ *|amend!\ *) continue ;;
+            esac
+
+            MSG=$(git log --format='%B' -1 "$SHA")
             MISSING=""
 
             echo "$MSG" | grep -q "^Author-type:" || MISSING="${MISSING} Author-type"
@@ -159,17 +174,12 @@ jobs:
               FAILED=$((FAILED + 1))
             fi
 
-            # Validate conventional commit format (skip merge/fixup commits)
+            # Validate conventional commit format.
             if [ -n "$ALLOWED_TYPES" ]; then
-              case "$SUBJECT" in
-                Merge\ *|fixup!\ *|squash!\ *|amend!\ *) ;;
-                *)
-                  if ! echo "$SUBJECT" | grep -qE "^($ALLOWED_TYPES)(\([a-zA-Z0-9_./-]+\))?\!?:"; then
-                    echo "::warning::Commit ${SHA:0:7} ($SUBJECT) does not follow conventional commit format. Allowed types: $(echo "$ALLOWED_TYPES" | tr '|' ', ')"
-                    FAILED=$((FAILED + 1))
-                  fi
-                  ;;
-              esac
+              if ! echo "$SUBJECT" | grep -qE "^($ALLOWED_TYPES)(\([a-zA-Z0-9_./-]+\))?\!?:"; then
+                echo "::warning::Commit ${SHA:0:7} ($SUBJECT) does not follow conventional commit format. Allowed types: $(echo "$ALLOWED_TYPES" | tr '|' ', ')"
+                FAILED=$((FAILED + 1))
+              fi
             fi
           done
 

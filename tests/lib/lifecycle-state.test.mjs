@@ -41,7 +41,7 @@ const PLUGIN_ROOT = pathDirname(pathDirname(__dirname));
 function makeProject() {
   const root = createTempDir();
   mkdirSync(join(root, '.context-index'), { recursive: true });
-  writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+  writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
   const specPath = '.context-index/specs/features/test/sample.spec.md';
   return { root, specPath };
 }
@@ -60,6 +60,35 @@ test('CANONICAL_EVENTS contains every documented variant', () => {
   ]) {
     assert.ok(CANONICAL_EVENTS.has(e), `missing variant: ${e}`);
   }
+});
+
+test('normaliseEventInPlace docstring reflects the closed-discriminator / mode-dependent stance', () => {
+  // diagnostic-registry.spec.md rev 2 AC: the docstring at the
+  // normaliseEventInPlace declaration must reflect rev 2 amendment 8.
+  // We read the source file and grep for the load-bearing strings; this
+  // catches regressions where a future edit removes the wording.
+  const __fname = fileURLToPath(import.meta.url);
+  const __dir = pathDirname(__fname);
+  const libPath = join(pathDirname(pathDirname(__dir)), 'lib', 'lifecycle-state.mjs');
+  const src = readFileSync(libPath, 'utf8');
+
+  // Find the docstring block that precedes the normaliseEventInPlace declaration.
+  const declIdx = src.indexOf('function normaliseEventInPlace');
+  assert.ok(declIdx > 0, 'normaliseEventInPlace declaration must exist');
+  const docBlockStart = src.lastIndexOf('/**', declIdx);
+  assert.ok(docBlockStart > 0, 'docstring must precede the declaration');
+  const docBlock = src.slice(docBlockStart, declIdx);
+
+  // Required talking points per diagnostic-registry.spec.md rev 2 AC.
+  assert.match(docBlock, /closed/i, 'must mention closed-discriminator stance');
+  assert.match(docBlock, /mode-dependent/i, 'must mention mode-dependent enforcement');
+  assert.match(docBlock, /lifecycle\.event_diagnostics/, 'must cite the manifest knob');
+  assert.match(docBlock, /strict/i, 'must mention strict mode');
+  assert.match(docBlock, /tag/i, 'must mention tag mode');
+  assert.match(docBlock, /off/i, 'must mention off mode');
+  assert.match(docBlock, /event-schemas\.mjs/, 'must cite the mirror module');
+  assert.match(docBlock, /unknownEvents/, 'must mention StateProjection.unknownEvents');
+  assert.match(docBlock, /deprecated/i, 'must mark unknownEvents deprecated');
 });
 
 // ── Task 2: slugFromSpec / validateProjectRoot ─────────────────────────────
@@ -126,7 +155,7 @@ test('validateProjectRoot returns the resolved absolute path when manifest prese
   const dir = createTempDir();
   try {
     mkdirSync(join(dir, '.context-index'), { recursive: true });
-    writeFileSync(join(dir, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+    writeFileSync(join(dir, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
     const resolved = validateProjectRoot(dir);
     assert.equal(typeof resolved, 'string');
     assert.ok(resolved.length > 0);
@@ -755,7 +784,7 @@ test('listLifecycleStates returns one entry per <slug>.jsonl file', () => {
   const root = createTempDir();
   try {
     mkdirSync(join(root, '.context-index'), { recursive: true });
-    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
     const specA = '.context-index/specs/features/test/a.spec.md';
     const specB = '.context-index/specs/features/test/b.spec.md';
     const specC = '.context-index/specs/features/test/c.spec.md';
@@ -915,7 +944,7 @@ test('listLifecycleStates skips a malformed file mid-glob and continues', () => 
   const root = createTempDir();
   try {
     mkdirSync(join(root, '.context-index', 'lifecycle-state'), { recursive: true });
-    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\n');
+    writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
     // One valid log
     appendEvent(root, '.context-index/specs/.../good.spec.md', { event: 'lifecycle_step', step: 'specify', status: 'started' });
     // One file whose name passes the .jsonl filter but contains only garbage

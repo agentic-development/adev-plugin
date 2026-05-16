@@ -18,23 +18,22 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 
 ## Step 0: Specify-step gate (FIRST action)
 
-Before identifying targets, gate on the prior step via the lifecycle log:
+Before identifying targets, gate on the prior step via the lifecycle log, then emit the step-started event:
 
-```javascript
-import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-const state = currentState(projectRoot, specPath);
-const mode = resolveGateMode(loadManifest(projectRoot));
-requireGate(state, "specify", { mode });
-reportStep(projectRoot, specPath, { step: "review", status: "started" });
+```bash
+adev gate require --skill review-specs --spec <spec-path>
+adev report --type step --spec <spec-path> --step review --status started
 ```
 
-In strict mode (default), `requireGate` throws `GateError` if the `specify` step has not been recorded as completed (the spec must exist and have a `lifecycle_step: specify, status: completed` event). In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment.
+In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if the `specify` step has not been recorded as completed (the spec must exist and have a `lifecycle_step: specify, status: completed` event). In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper.
 
 When reviewing in bulk (`--charter` or no-args), apply the gate per-spec inside the loop.
 
-Emit a matching `reportStep` exit (`status: "completed"`, `verdict` set to the consolidated review verdict) in Step 8.
+In Step 8, emit the matching exit event with the consolidated review verdict:
+
+```bash
+adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict>
+```
 
 ## Step 1: Identify Target Specs
 
@@ -106,17 +105,21 @@ Do not treat missing workspace as a blocking error; proceed with the rest of the
 
 ## Step 3: Load Reviewer Registry
 
-**Domain-Aware Reviewer Loading:** Resolve the active domain and load domain-aware reviewers before calling `loadReviewConfig`. Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-const { mergeReviewers } = await import('<ADEV_ROOT>/lib/domains/merge-reviewers.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const domainOverlay = loadDomainConfig(domain.resolved_domain, 'reviewers', repoRoot, pluginRoot);
-```
-Log any warnings from the merge process.
+**Domain-Aware Reviewer Loading:** Resolve the active domain and load domain-aware reviewers before calling `loadReviewConfig` via the CLI:
 
-Call `loadReviewConfig(repoRoot, { domainReviewers: domainOverlay })` from `lib/governance/review-config.mjs`. When `domainReviewers` is provided, the loader uses domain reviewers as the base instead of bundled defaults. The loader:
+```bash
+adev domain load-reviewers --module <module-slug> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'), loads `templates/domains/<domain>/reviewers.yaml`, and merges `.context-index/governance/review.yaml` on top (governance wins on `id` conflict). Stdout is a single JSON object:
+
+```json
+{ "domain": { "resolved_domain": "...", "source_level": "..." }, "reviewers": [...], "warnings": [...] }
+```
+
+Log any warnings from the `warnings` field.
+
+Call `loadReviewConfig(repoRoot, { domainReviewers: <reviewers-from-cli-output> })` from `lib/governance/review-config.mjs`. When `domainReviewers` is provided, the loader uses domain reviewers as the base instead of bundled defaults. The loader:
 
 - Reads bundled defaults from `templates/review-specs/defaults.yaml` (the three core reviewers: structural-architect, security-reviewer, consistency-analyzer).
 - Overlays `.context-index/governance/review.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
@@ -128,18 +131,15 @@ If `loadReviewConfig` returns any errors, abort with the error list. Warnings ar
 
 ## Step 4: Dispatch Reviewers
 
-**Heuristics:** Before dispatching reviewers, load module-scoped heuristics for the spec's charter module.
-Derive the module slug from the spec's `charter:` frontmatter field.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
+**Heuristics:** Before dispatching reviewers, load module-scoped heuristics for the spec's charter module via the CLI:
+
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-Include the rendered heuristics in each reviewer's context pack under a `## Heuristics` section,
-prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+Derive the module slug from the spec's `charter:` frontmatter field. Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), include them in each reviewer's context pack under a `## Heuristics` section, prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
 For each reviewer returned by the registry, call `shouldDispatch(reviewer, { targetSpecPath, specContent })` from the same module. Reviewers with `dispatch: always` always dispatch; `triggered` compute a score (2 points per matching glob + 1 per path segment beyond root, 1 point per keyword) and dispatch when score ≥ `min_score` (default 1); `never` are skipped.
 
@@ -262,6 +262,10 @@ for (const reviewer of dispatchedReviewers) {
 - `file-sha: <PENDING>` — write a placeholder at this stage. The final hash is computed in Step 6c via the in-tree helper, after Step 7 has written the status update back to the spec.
 
 ## Step 7: Update Spec Status
+
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> seven legal transitions are tracked there; if a future review introduces a
+> new status, extend that module first, then this skill.
 
 After saving the review report, update the spec's status based on the verdict:
 

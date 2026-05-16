@@ -8,6 +8,7 @@ import { createInterface } from "readline";
 import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
 import { resolveExtensionSource } from "../lib/extensions/resolve-source.mjs";
 import { installExtension, readManifestStamps } from "../lib/extensions/install.mjs";
+import { loadManifest } from "../lib/manifest.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -197,6 +198,7 @@ function scaffoldContextKit() {
     "specialists",
     "hygiene",
     "sessions",
+    "governance",
   ];
 
   for (const dir of dirs) {
@@ -215,6 +217,7 @@ function scaffoldContextKit() {
     { src: "spec-template.behavioral.md", dest: "specs/features/.spec-template.behavioral.md" },
     { src: "spec-template.refactor.md", dest: "specs/features/.spec-template.refactor.md" },
     { src: "context-index-readme.md", dest: "README.md" },
+    { src: "diagnostics-template.yaml", dest: "governance/diagnostics.yaml" },
   ];
 
   const templatesDir = join(PLUGIN_ROOT, "templates");
@@ -399,6 +402,26 @@ async function setupGitHooks() {
       chmodSync(destPath, 0o755);
       created.push(`.githooks/${hookName}`);
     }
+  }
+
+  // Install auxiliary hook scripts (not git-named hooks; invoked by the
+  // standard hooks above). These are simple copies — no chaining, no
+  // alt-variant handling, since they aren't git's standard hook names and
+  // therefore cannot collide with project-owned hooks.
+  const auxHooks = ["pre-commit-no-inline-node"];
+  for (const auxName of auxHooks) {
+    const srcPath = join(pluginHooksDir, auxName);
+    const destPath = join(githooksDir, auxName);
+    if (!existsSync(srcPath)) continue;
+    if (resolve(srcPath) === resolve(destPath)) continue;
+    if (existsSync(destPath)) {
+      const srcContent = readFileSync(srcPath);
+      const destContent = readFileSync(destPath);
+      if (Buffer.compare(srcContent, destContent) === 0) continue;
+    }
+    cpSync(srcPath, destPath);
+    chmodSync(destPath, 0o755);
+    created.push(`.githooks/${auxName}`);
   }
 
   // Set core.hooksPath to .githooks/ (skip if already set)
@@ -1241,6 +1264,153 @@ function resolveSymlink(p) {
   }
 }
 
+// ============================================================================
+// CLI Verb Registry
+// ----------------------------------------------------------------------------
+// Each entry maps a verb name to a factory that returns
+// { run, help, LIFECYCLE_STEP? }. Contract:
+//
+//   run({ projectRoot, argv, manifest }) => Promise<void>
+//   help() => void  (mandatory; prints help text to stdout)
+//   LIFECYCLE_STEP?: string  (modules bound to a lifecycle step;
+//                              run() must call requireGate() first)
+//
+// Exit codes (per hook protocol):
+//   0  success
+//   1  fatal error (unknown verb, missing argument, unexpected exception)
+//   2  gate-blocked (GateError thrown from run())
+//
+// Adding a verb: create lib/cli/<verb>.mjs and add one line below.
+//
+// Legacy commands (install/upgrade/uninstall/init/extension/status/migrate/help)
+// are wrapped in inline adapter closures that take no args and read
+// process.argv internally — preserved unchanged. New-pattern helpers are
+// dynamic imports of lib/cli/<verb>.mjs modules.
+// ============================================================================
+
+const VERB_REGISTRY = new Map([
+  ["install",   () => ({ run: () => cmdInstall(),                help: () => cmdHelp() })],
+  ["upgrade",   () => ({ run: () => cmdUpgrade(),                help: () => cmdHelp() })],
+  ["uninstall", () => ({ run: () => cmdUninstall(),              help: () => cmdHelp() })],
+  ["init",      () => ({ run: async () => {
+                          warn("`init` is deprecated. Use `install` (first-time) or `upgrade` (existing).");
+                          console.log();
+                          const state = detectProjectState();
+                          if (state.mode === "brownfield-outdated" || state.mode === "brownfield-current") {
+                            await cmdUpgrade();
+                          } else {
+                            await cmdInstall();
+                          }
+                        }, help: () => cmdHelp() })],
+  ["extension", () => ({ run: () => cmdExtension(),              help: () => cmdHelp() })],
+  ["status",    () => ({ run: () => cmdStatus(),                 help: () => cmdHelp() })],
+  ["migrate",   () => ({ run: async () => {
+                          const exitCode = await cmdMigrate(process.argv);
+                          if (exitCode !== 0) process.exit(exitCode);
+                        }, help: () => cmdHelp() })],
+  ["help",      () => ({ run: () => cmdHelp(),                   help: () => cmdHelp() })],
+  ["gate",            () => import("../lib/cli/gate.mjs")],
+  ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
+  ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
+  ["report",          () => import("../lib/cli/report.mjs")],
+  ["source-manifest", () => import("../lib/cli/source-manifest.mjs")],
+  ["domain",          () => import("../lib/cli/domain.mjs")],
+  ["context",         () => import("../lib/cli/context.mjs")],
+  ["verify",          () => import("../lib/cli/verify.mjs")],
+  ["state",           () => import("../lib/cli/state.mjs")],
+  ["execution-state", () => import("../lib/cli/execution-state.mjs")],
+  ["build-state",     () => import("../lib/cli/build-state.mjs")],
+  ["preflight",       () => import("../lib/cli/preflight.mjs")],
+  ["prototype",       () => import("../lib/cli/prototype.mjs")],
+]);
+
+// Strip ANSI color codes from messages before printing to stdout/stderr
+// (sanitises verb names and error messages — SEC-2 from spec review).
+function stripAnsi(s) {
+  return typeof s === "string" ? s.replace(/\x1b\[[0-9;]*m/g, "") : s;
+}
+
+function printVerbRegistry(stream = "stdout") {
+  const out = stream === "stderr" ? (m) => console.error(m) : (m) => console.log(m);
+  out("Usage: adev <verb> [args]");
+  out("");
+  out("Verbs:");
+  for (const verb of VERB_REGISTRY.keys()) {
+    out(`  ${verb}`);
+  }
+}
+
+async function dispatch(argv) {
+  const verb = argv[2];
+  if (!verb) {
+    printVerbRegistry();
+    process.exit(1);
+  }
+  const factory = VERB_REGISTRY.get(verb);
+  if (!factory) {
+    console.error(`unknown verb: ${stripAnsi(verb)}`);
+    printVerbRegistry("stderr");
+    process.exit(1);
+  }
+  const verbArgs = argv.slice(3);
+
+  let mod;
+  try {
+    mod = await factory();
+  } catch (err) {
+    // Module import failure (e.g., missing run export)
+    console.error(stripAnsi(err && err.message ? err.message : String(err)));
+    process.exit(1);
+  }
+
+  // Validate that the resolved module exposes the contract.
+  if (typeof mod.run !== "function") {
+    console.error(`verb ${stripAnsi(verb)} missing run export`);
+    process.exit(1);
+  }
+
+  // --help short-circuit applies only to new-contract modules. Legacy
+  // adapters (run.length === 0) read process.argv themselves and may
+  // implement verb-specific --help; defer to them.
+  if (mod.run.length > 0 && (verbArgs.includes("--help") || verbArgs.includes("-h"))) {
+    if (typeof mod.help === "function") {
+      mod.help();
+      process.exit(0);
+    }
+  }
+
+  try {
+    // New-contract modules (lib/cli/*.mjs) accept { projectRoot, argv, manifest }.
+    // Legacy adapter closures (install/upgrade/etc.) take no args and read
+    // process.argv internally. Branch on run.length.
+    if (mod.run.length === 0) {
+      await mod.run();
+    } else {
+      const projectRoot = process.cwd();
+      let manifest = null;
+      try {
+        manifest = loadManifest(projectRoot);
+      } catch {
+        // Manifest may legitimately not exist (e.g., before /adev:init). New-
+        // contract helpers that need it should fail with their own error.
+        manifest = null;
+      }
+      await mod.run({ projectRoot, argv: verbArgs, manifest });
+    }
+    process.exit(0);
+  } catch (err) {
+    // GateError detection: use err.code === 'GATE_BLOCKED' rather than
+    // instanceof — robust across module-instance boundaries.
+    if (err && err.code === "GATE_BLOCKED") {
+      console.error(stripAnsi(err.message));
+      process.exit(2);
+    }
+    console.error(stripAnsi(err && err.message ? err.message : String(err)));
+    if (err && err.stack) console.error(stripAnsi(err.stack));
+    process.exit(1);
+  }
+}
+
 const isDirectRun = (() => {
   if (!process.argv[1]) return false;
   const argvPath = resolveSymlink(process.argv[1]);
@@ -1249,53 +1419,7 @@ const isDirectRun = (() => {
 })();
 
 if (isDirectRun) {
-  const command = process.argv[2] || "help";
-
-  (async () => {
-    switch (command) {
-      case "install":
-        await cmdInstall();
-        break;
-      case "upgrade":
-        await cmdUpgrade();
-        break;
-      case "init":
-        // Backward compatibility — route to install or upgrade based on state
-        warn("`init` is deprecated. Use `install` (first-time) or `upgrade` (existing).");
-        console.log();
-        {
-          const state = detectProjectState();
-          if (state.mode === "brownfield-outdated" || state.mode === "brownfield-current") {
-            await cmdUpgrade();
-          } else {
-            await cmdInstall();
-          }
-        }
-        break;
-      case "uninstall":
-        await cmdUninstall();
-        break;
-      case "extension":
-        await cmdExtension();
-        break;
-      case "status":
-        await cmdStatus();
-        break;
-      case "migrate":
-        {
-          const exitCode = await cmdMigrate(process.argv);
-          if (exitCode !== 0) process.exit(exitCode);
-        }
-        break;
-      case "help":
-      case "--help":
-      case "-h":
-        cmdHelp();
-        break;
-      default:
-        error(`Unknown command: ${command}`);
-        cmdHelp();
-        process.exit(1);
-    }
-  })();
+  await dispatch(process.argv);
 }
+
+export { VERB_REGISTRY, dispatch, printVerbRegistry, stripAnsi };

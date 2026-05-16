@@ -17,8 +17,8 @@ source-manifest:
     - skills/using-adev/SKILL.md
   computed-at: "2026-04-12T11:48:02.760Z"
 drift_detected: true
-drift_source: skills/issues/SKILL.md
-drift_at: 2026-05-11T15:28:45.017Z
+drift_source: skills/debug/SKILL.md
+drift_at: 2026-05-16T01:01:48.868Z
 ---
 
 ## Behavioral Contract

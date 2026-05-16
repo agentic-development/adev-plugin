@@ -14,6 +14,9 @@ source-manifest:
     - lib/workspace.mjs
     - tests/skills/status-workspace-mode.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/status/SKILL.md
+drift_at: 2026-05-16T00:16:55.862Z
 ---
 
 # Live Spec: Workspace Status

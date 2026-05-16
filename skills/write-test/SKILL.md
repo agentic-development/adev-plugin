@@ -87,19 +87,15 @@ After model tier resolution, check whether the spec declares `infra_requirements
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Invocation:** Run inline Node.js (same pattern as model tier resolution):
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', null, { timeout: 10, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> [--timeout 10] [--no-infra]
 ```
 
-Where `<ADEV_ROOT>` is the resolved absolute plugin root path and `<specPath>` is the `--spec` argument.
+Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
-If `report.passed === false`, display the formatted report and block:
+If the report has `passed === false` (exit 2), display the formatted report and block:
 
 ```
 Infrastructure Preflight: FAILED
@@ -121,22 +117,23 @@ If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure prefli
 
 ## Step 1b: Strategy Profile Resolution
 
-**Domain-Aware Test Config:** Before resolving the test strategy, load domain-specific test config. Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-const { mergeTestConfig } = await import('<ADEV_ROOT>/lib/domains/merge-test-config.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const overlay = loadDomainConfig(domain.resolved_domain, 'test-config', repoRoot, pluginRoot);
-const { config, warnings } = mergeTestConfig(overlay);
-// config.permitted_tools — valid test frameworks for this domain
-// config.max_test_file_size — gaming detection threshold
-// config.skip_patterns — regex patterns for detecting skipped tests
+**Domain-Aware Test Config:** Before resolving the test strategy, load domain-specific test config via the CLI:
+
+```bash
+adev domain load-test-config --module <module-slug> [--charter <charter-path>]
 ```
+
+The verb resolves the active domain and emits a single JSON object on stdout:
+
+```json
+{ "domain": { "resolved_domain": "...", "source_level": "..." }, "config": { ... }, "warnings": [...] }
+```
+
+The `config` object includes `permitted_tools` (valid test frameworks for this domain), `max_test_file_size` (gaming detection threshold), and `skip_patterns` (regex patterns for detecting skipped tests).
 Pass `config.permitted_tools` to `loadProfile()` for test framework detection.
 Use `config.max_test_file_size` for gaming detection threshold.
 Use `config.skip_patterns` for skipped test detection alongside the 4 shared cross-strategy gaming patterns.
-Log any warnings from the merge process.
+Log any warnings from the `warnings` field.
 
 Before writing any tests, resolve the test strategy for this task:
 

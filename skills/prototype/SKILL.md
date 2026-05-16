@@ -48,29 +48,31 @@ This step runs only when `/adev:prototype` is invoked directly (not dispatched f
 
 **When `--module` is provided:**
 
-Validate the module name. Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
+Validate the module name via the CLI:
 
 ```bash
-node -e "import { validateModuleName } from '<ADEV_ROOT>/lib/prototype-args.mjs'; console.log(validateModuleName('<module>'));"
+adev prototype validate-module-name --module <module>
 ```
 
-If validation returns `false`: error and stop.
+Stdout is the literal string `true` (valid kebab-case, ≤ 64 chars) or `false`. Exit 0 always.
+
+If stdout is `false`: error and stop.
 
 > Invalid module name: `<value>`. Must be kebab-case (lowercase letters, numbers, hyphens). Error code: `INVALID_MODULE_NAME`.
 
-If validation returns `true`: locate the charter at `.context-index/specs/features/<module>/charter.md`. If the charter file does not exist:
+If stdout is `true`: locate the charter at `.context-index/specs/features/<module>/charter.md`. If the charter file does not exist:
 
 > No charter found at `.context-index/specs/features/<module>/charter.md`. Error code: `CHARTER_NOT_FOUND`.
 
 **When `--module` is NOT provided:**
 
-Discover available charters:
+Discover available charters via the CLI:
 
 ```bash
-node -e "import { discoverCharters } from '<ADEV_ROOT>/lib/prototype-args.mjs'; console.log(JSON.stringify(discoverCharters(process.cwd())));"
+adev prototype discover-charters
 ```
 
-Handle the result based on the number of charters found:
+Stdout is a single JSON array of `{module, title, path}` objects — one per charter found under `.context-index/specs/features/`. Handle the result based on the number of charters found:
 
 - **Zero charters:** Error and stop. Error code: `NO_CHARTERS`.
   > No charters found under `.context-index/specs/features/`. Run `/adev:brainstorm` first to create a charter.
@@ -109,11 +111,13 @@ Proceed to Step 1.
 1. Read the charter at `.context-index/specs/features/<module>/charter.md`.
 2. Read `.context-index/constitution.md` for constraint validation.
 3. Read `.context-index/platform-context.yaml` for framework defaults (if it exists).
-4. Load module heuristics. Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
+4. Load module heuristics via the CLI:
 
 ```bash
-node -e "import { retrieveHeuristics, renderHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>'); if (h.length) { console.log(h.map(r => renderHeuristic(r)).join('\n\n')); } else { console.log('__NONE__'); }"
+adev heuristics retrieve --module <module> --format text
 ```
+
+Stdout is either rendered markdown blocks (one per heuristic, separated by blank lines) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic loading stays non-blocking.
 
 If heuristics are found (output is not `__NONE__`), present them to the user:
 
@@ -202,26 +206,20 @@ Write all generated files into the temp directory.
 
 ### Step 4: Start HTTP Server
 
-Start the server using the prototype-server helper. Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
+Start the server via the CLI. The verb keeps the HTTP server alive for the rest of the skill session (the process must be backgrounded so the parent can read the printed port):
 
 ```bash
-node -e "
-import { startServer } from '<ADEV_ROOT>/lib/prototype-server.mjs';
-const server = await startServer('<tmpDir>');
-if (server) {
-  console.log(JSON.stringify({ port: server.port }));
-} else {
-  console.log(JSON.stringify({ port: null }));
-}
-"
+adev prototype start-server --dir <tmpDir> &
 ```
 
-**If server starts successfully:**
+The verb prints a single JSON object `{port: <number|null>}` on stdout. Port range is 3210–3219; `null` indicates all ports are unavailable or permission was denied. Read the port from the first line of stdout, then continue with the feedback loop.
+
+**If server starts successfully (port is a number):**
 
 > Prototype server running at **http://127.0.0.1:<port>/**
 > Open this URL in your browser to preview.
 
-**If `startServer` returns null (all ports busy or permission error):**
+**If the printed `port` is `null` (all ports busy or permission error):**
 
 Fall back to file-path mode:
 
@@ -320,15 +318,13 @@ After the feedback loop ends, present the persistence choice:
 
 1. Re-validate the module name against `^[a-z0-9][a-z0-9-]*$` before path construction (defense-in-depth).
 2. Copy all files from the temp directory to `.adev/prototype/<module>/`.
-3. Ensure `.adev/` is gitignored using the helper:
+3. Ensure `.adev/` is gitignored via the CLI:
 
 ```bash
-node -e "
-import { ensureGitignore } from '<ADEV_ROOT>/lib/prototype-server.mjs';
-ensureGitignore(process.cwd());
-console.log('OK');
-"
+adev prototype ensure-gitignore
 ```
+
+The verb appends `.adev/` to the project's `.gitignore` (idempotent — checks for existing entries and parent globs first). Stdout is `OK` on success; exit 1 only when `.gitignore` is unwritable.
 
 4. Remove the temp directory.
 5. Stop the HTTP server.
@@ -344,14 +340,7 @@ If `.adev/` directory is not writable: error with code `PERSIST_WRITE_ERROR`. Su
 
 The HTTP server MUST always be stopped when the session ends, regardless of keep/discard choice. No orphaned server processes.
 
-Stop the server:
-
-```bash
-node -e "
-// Server close is handled by the startServer return value's close() method
-// This is called in Step 6 during keep/discard handling
-"
-```
+Stop the server. The server is owned by the backgrounded `adev prototype start-server` process spawned in Step 4. Kill it with the recorded PID (e.g., `kill $SERVER_PID`) or let the parent skill session terminate, which will reap the child via SIGHUP.
 
 **Note:** If the conversation ends mid-session (terminal closed, browser tab closed), the server process dies with the Claude Code session. Temp files are cleaned by the OS. This is an inherent limitation of skill-driven sessions, not a bug.
 
