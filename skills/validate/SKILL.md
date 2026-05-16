@@ -1,6 +1,6 @@
 ---
 name: adev:validate
-description: "Post-implementation validation with 13 ordered checks including lifecycle reconciliation and browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable. Use when the user says 'validate the implementation', 'check if it works', 'run validation', 'verify the feature', or after implementation is complete and needs quality assurance."
+description: "Post-implementation validation with a trimmed code-time check set (quality gates, source manifest, code-drift advisory, spec compliance with scope-expansion sub-finding, constitution compliance with evidence-citation contract, optionally governance boundaries and transition gates, and visual verification for UI implementations). Fail-fast on quality gates. Structured PASS/FAIL report with migration-orientation footer pointing users to /adev:hygiene, /adev:reconcile, and /adev:review-specs for relocated concerns. Use when the user says 'validate the implementation', 'check if it works', 'run validation', 'verify the feature', or after implementation is complete and needs quality assurance."
 ---
 
 # Validate Implementation
@@ -442,11 +442,22 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 ---
 
 **Summary:** [N] passed, [N] failed, [N] skipped checks. [If any skipped due to missing configuration: "Run `/adev:init` to configure missing components."]
+
+---
+
+> **Note for users comparing with historic reports:** Checks 3, 5, 6, 7, 10, 11 (when no UI files), 12, and 13 have been relocated by `check-set-restructure.spec.md`. See:
+>
+> - `/adev:review-specs` — for ADR compliance (formerly Check 5), cross-cutting compliance (formerly Check 6), specialist review (formerly Check 7), and charter consistency (formerly Check 3, now covered by Check 2's scope-expansion sub-finding).
+> - `/adev:hygiene` Audit Pass 20 — for platform drift (formerly Check 10).
+> - `/adev:reconcile` lifecycle-sync — for lifecycle reconciliation (formerly Check 12, with `--fix` as the default mode).
+> - `hooks/post-validate-extract-heuristics.{sh,mjs}` — for heuristic extraction (formerly Check 13 / `check-12-heuristic-extraction`), now a non-blocking Stop-event hook.
+>
+> Historic `.validate.md` reports continue to use the pre-restructure numbering; the gaps in the surviving inventory (Checks 1, 1.5, 1.6, 2, 4, optionally 8 and 9) are intentional to preserve report readability.
 ```
 
 ## Overall Status
 
-- **PASS:** All 13 checks passed (WARN-only in Check 12 counts as PASS). The implementation is validated.
+- **PASS:** All dispatched checks (Check 1 quality gates plus the surviving registry — 1.5, 2, 4, and conditionally 8, 9, 11) passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev:validate`.
 
 ## After Validation
@@ -485,7 +496,7 @@ If PASS:
 
 If "pr" (or target branch is in `completion.protected_branches`):
 ```
-Validation passed. All 13 checks green.
+Validation passed. All dispatched checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -496,7 +507,7 @@ Do NOT merge directly to protected branches.
 
 If "merge" (and target branch is NOT protected):
 ```
-Validation passed. All 13 checks green.
+Validation passed. All dispatched checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -506,7 +517,7 @@ Ready to merge or proceed to the next feature.
 
 If "ask":
 ```
-Validation passed. All 13 checks green.
+Validation passed. All dispatched checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -527,7 +538,7 @@ Fix the issues above and re-run: /adev:validate --spec <path>
 
 **Never:**
 - Continue to Checks 2-13 if Check 1 (Quality Gates) failed
-- Skip any of the 13 checks (except when fail-fast applies to Check 1)
+- Skip any of the dispatched registry checks (except when fail-fast applies to Check 1)
 - Report PASS when any check has unresolved failures
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code
