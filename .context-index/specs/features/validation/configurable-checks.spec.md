@@ -21,10 +21,17 @@ source-manifest:
     - skills/validate/SKILL.md
     - templates/validate/defaults.yaml
   computed-at: "2026-05-10T23:51:35.315Z"
+superseded-by-behaviors:
+  - validate-config-single-source.spec.md#behavior-1
+  - validate-config-single-source.spec.md#behavior-2
+  - validate-config-single-source.spec.md#behavior-5
 drift_detected: true
 drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-14T21:51:25.658Z
+drift_at: 2026-05-16T01:33:38.854Z
 ---
+
+
+> **Partial supersession (2026-05-15):** Behaviors 1, 2, 5 (registry loading & merge, canonical IDs from bundled defaults) and Acceptance Criterion #1 (zero-config behavior parity) are **superseded** by `validate-config-single-source.spec.md`. The configurable-checks `kind` taxonomy, profile-driven dispatch, `kind: deterministic-check` restriction, quality-gate argv form and shell-rejection, prompt URI resolution (Behavior 22), ordering via `after:`, severity semantics, multi-repo dispatch, quality-gate output redaction, and report emission (Behaviors 6-23, 25, 26) **remain in force**.
 
 ## Behavioral Contract
 
