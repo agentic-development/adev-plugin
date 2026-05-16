@@ -107,18 +107,23 @@ describe("validate-config loadValidateConfig", () => {
   });
 
   test("enabled: false surfaces as SKIPPED-DISABLED entry without running", () => {
+    // Uses check-11 (still a surviving registry entry post-restructure) to
+    // exercise the disabled-flag flow. check-10 was previously used here but
+    // was removed by check-set-restructure.spec.md — references to removed
+    // IDs now produce RESURRECTED_CHECK_ID and are skipped entirely (a
+    // separate flow verified in tests/governance/validate-check-set-restructure.test.mjs).
     const repo = tmp();
     writeFixture(
       repo,
       ".context-index/governance/validate.yaml",
       `checks:
-  - id: validate.check-10-platform-drift
+  - id: validate.check-11-visual-verification
     enabled: false
 `
     );
     const r = loadValidateConfig(repo);
     assert.equal(r.errors.length, 0);
-    const disabled = r.checks.find((c) => c.id === "validate.check-10-platform-drift");
+    const disabled = r.checks.find((c) => c.id === "validate.check-11-visual-verification");
     assert.equal(disabled.enabled, false);
     assert.match(disabled.disabledNote, /skipped/);
   });
