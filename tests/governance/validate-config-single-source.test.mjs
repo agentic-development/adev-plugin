@@ -32,10 +32,14 @@ afterEach(() => {
 describe("init scaffold simulation: governance/validate.yaml", () => {
   it("software starter is available via loadDomainConfig", () => {
     // This simulates what /adev:init Step 7d.0 would do at scaffold time.
+    // Post-check-set-restructure.spec.md the starter has been trimmed; the
+    // surviving floor is the deterministic + always-on subset (1.5, 2, 4,
+    // 8, 9, 11). The exact count is asserted by tests in
+    // tests/governance/validate-check-set-restructure.test.mjs.
     const starter = loadDomainConfig('software', 'validate', PLUGIN_ROOT, PLUGIN_ROOT);
     assert.ok(starter !== null, 'software starter must exist');
     assert.ok(Array.isArray(starter.checks), 'starter must have checks array');
-    assert.ok(starter.checks.length >= 12, 'starter must have at least 12 checks');
+    assert.ok(starter.checks.length >= 5, 'starter must have at least 5 surviving checks');
   });
 
   it("starter file content can be copied byte-for-byte to a project repo", () => {
@@ -278,7 +282,7 @@ describe("acceptance criteria: full coverage", () => {
     );
   });
 
-  it("parity: project with full software starter as governance/validate.yaml loads 12 checks identically to starter", async () => {
+  it("parity: project with full software starter as governance/validate.yaml loads identically to starter", async () => {
     const { loadValidateConfig } = await import('../../lib/governance/validate-config.mjs');
     const starterPath = join(PLUGIN_ROOT, 'templates', 'domains', 'software', 'validate.yaml');
     const starterBytes = readFileSync(starterPath, 'utf8');
@@ -286,9 +290,15 @@ describe("acceptance criteria: full coverage", () => {
     writeFixture(repo, '.context-index/governance/validate.yaml', starterBytes);
     const r = loadValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-    assert.equal(r.checks.length, 12);
-    // Every check id must come from the starter (no project additions in this fixture)
+    // Post-check-set-restructure.spec.md the starter count is not pinned to 12;
+    // assert parity with whatever the starter currently defines.
     const starterConfig = loadDomainConfig('software', 'validate', PLUGIN_ROOT, PLUGIN_ROOT);
+    assert.equal(
+      r.checks.length,
+      starterConfig.checks.length,
+      `loaded count must match starter count (loaded=${r.checks.length}, starter=${starterConfig.checks.length})`,
+    );
+    // Every check id must come from the starter (no project additions in this fixture)
     const starterIds = new Set(starterConfig.checks.map((c) => c.id));
     for (const c of r.checks) {
       assert.ok(starterIds.has(c.id), `unexpected id ${c.id} (not in starter)`);

@@ -24,17 +24,18 @@ function hasCode(issues, code) {
 }
 
 describe("validate-config loadValidateConfig", () => {
-  test("project with scaffolded governance/validate.yaml returns the 12 checks in topological order", () => {
+  test("project with scaffolded governance/validate.yaml returns the surviving checks in topological order", () => {
     // Post-refactor: zero-config means no file → MISSING_VALIDATE_CONFIG.
-    // The "12 checks" path now requires a scaffolded file (as init does).
-    // We simulate scaffolding by copying the software starter into the repo.
+    // Surviving-check count is asserted in
+    // tests/governance/validate-check-set-restructure.test.mjs — here we just
+    // pin the structural invariants (key IDs present, ordering correct).
     const repo = tmp();
     const starterPath = join(PLUGIN_ROOT, "templates", "domains", "software", "validate.yaml");
     const starterBytes = readFileSync(starterPath, "utf8");
     writeFixture(repo, ".context-index/governance/validate.yaml", starterBytes);
     const r = loadValidateConfig(repo);
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-    assert.equal(r.checks.length, 12);
+    assert.ok(r.checks.length >= 5, `expected >=5 surviving checks, got ${r.checks.length}`);
     const ids = r.checks.map((c) => c.id);
     assert.ok(ids.includes("validate.check-1.5-source-manifest"));
     assert.ok(ids.includes("validate.check-11-visual-verification"));

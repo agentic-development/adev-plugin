@@ -1,11 +1,16 @@
-# validate.yaml — Validate check overrides
-# This file lives at .context-index/governance/validate.yaml
-# Only checks that differ from defaults need to appear here.
-# See templates/governance/validate.example.yaml for more examples.
+# validate.yaml — Project validate registry (single source post-restructure).
+#
+# Post-check-set-restructure.spec.md:
+#  - check-10-platform-drift was removed from the starter (migrated to
+#    /adev:hygiene Audit Pass 20). The previously-disabled entry is no longer
+#    needed; references to removed IDs now warn as RESURRECTED_CHECK_ID.
+#  - check-11-visual-verification remains in the starter but is now
+#    self-guarded: it SKIPs (not BLOCKs) when no UI files match the
+#    implementation diff, so the project no longer needs to disable it
+#    locally to keep validate running on non-UI specs.
+#
+# This file is the single source of truth for validate checks in this
+# project. To re-enable or override defaults, copy the relevant entry from
+# templates/domains/software/validate.yaml here.
 
-checks:
-  - id: validate.check-10-platform-drift
-    enabled: false
-
-  - id: validate.check-11-visual-verification
-    enabled: false
+checks: []

@@ -362,33 +362,6 @@ If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merg
 3. Note `approver_role` if present (informational).
 4. If no transitions configured in `governance/gates.yaml` (or `governance/` absent) → SKIP: "No transitions configured."
 
-### Check 10: Platform Drift
-
-Compare `.context-index/platform-context.yaml` tech stack declarations against `package.json` dependencies. Catches cases where the declared stack no longer matches what is actually installed.
-
-**If `platform-context.yaml` does not exist:** SKIP (no platform context configured).
-**If `package.json` does not exist:** SKIP (not a Node.js project; platform drift check is not applicable).
-
-**Mapping rules:**
-
-For each field in `platform-context.yaml`, check the corresponding package in `package.json` (dependencies + devDependencies):
-
-| platform-context field | Expected package(s) | Example |
-|----------------------|---------------------|---------|
-| `framework` | Framework package present (`next`, `nuxt`, `astro`, `svelte`, etc.) | `framework: nextjs` → `next` in dependencies |
-| `version` | Framework package version satisfies declared version | `version: "16"` → `next` version starts with `16.x` |
-| `language` | If `typescript`, `typescript` in devDependencies | `language: typescript` → `typescript` present |
-| `orm` | ORM package present (`prisma`, `drizzle-orm`, `typeorm`, `@mikro-orm/core`, etc.) | `orm: prisma` → `prisma` or `@prisma/client` present |
-| `auth` | Auth package present (`@clerk/nextjs`, `next-auth`, `@auth0/nextjs-auth0`, etc.) | `auth: clerk` → `@clerk/nextjs` present |
-| `database` | DB driver or client present if applicable | `database: postgresql` → pg-related package or ORM handles it |
-| `testing` | Test framework present | `testing: vitest` → `vitest` in devDependencies |
-
-**Unknown fields or values:** If a `platform-context.yaml` field has a value the mapping does not recognize, log it as INFO (not a failure). The mapping is best-effort.
-
-**Version check:** Only performed for `framework` + `version`. Uses semver-compatible prefix matching (e.g., declared `"16"` matches installed `16.1.2`). If the major version does not match, flag as FAIL.
-
-Record per field: PASS (matches), FAIL (mismatch with details), WARN (could not verify), or SKIP (field not declared).
-
 ### Check 11: Visual Verification (UI projects)
 
 **Trigger:** If any file touched by the implementation matches UI patterns (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `components/**`, `app/**/page.*`, `app/**/layout.*`, `pages/**`).
@@ -429,84 +402,6 @@ Do not record SKIP. Do not proceed without it. UI code without visual verificati
 
 Record per visual expectation: PASS or FAIL with description.
 Overall: PASS if all expectations met, FAIL if any expectation fails or if page does not load.
-
-### Check 12: Lifecycle Reconciliation
-
-Verify that lifecycle artifacts (issues, epics, spec status, charter capability map) are consistent with the implementation state. This check catches the drift that accumulates when implementation completes but bookkeeping is skipped.
-
-**If `tasks.backend` is not configured in `manifest.yaml`:** SKIP checks 12a–12c with note: "No task backend configured."
-
-#### 12a. Issue Status Alignment
-
-Find all issues with `plan-ref` matching the current spec's plan file.
-
-For each issue:
-1. Read the issue status.
-2. **Verify against codebase** (do NOT trust status fields alone): Run `verifyIssueCompleted(issue, { projectRoot })` from `lib/reality-check.mjs` via inline Node.js. This checks plan task checkboxes, file existence, and git-committed state.
-3. If the issue is still `open` or `in-progress` but `verifyIssueCompleted` returns `{ completed: true, confidence: "high" }` → flag as WARN: "Issue `<id>` (`<title>`) is still `<status>` but implementation verified (high confidence)."
-4. If `verifyIssueCompleted` returns `{ completed: true, confidence: "medium" }` → flag as INFO (not WARN): "Issue `<id>` appears complete but confidence is medium — manual check recommended."
-5. If `verifyIssueCompleted` returns `{ completed: false }` → the issue status is correct (still open). Record PASS.
-6. **`--fix` behavior:** Only auto-close issues with HIGH confidence. Update status to `closed` with confidence note from `formatConfidenceNote()`. MEDIUM confidence issues get a note added but remain open.
-
-#### 12b. Epic Completion
-
-Find the epic associated with the current spec's plan (via `epicRef` on child issues or plan frontmatter).
-
-If an epic is found:
-1. Count total child issues vs closed child issues.
-2. If ALL child issues are closed (or will be closed by 12a fix) but the epic is still `open` → flag as WARN: "Epic `<id>` (`<title>`) has all children closed but is still open."
-3. **`--fix` behavior:** Update epic status to `closed`.
-
-If no epic is found, record PASS (no epic to reconcile).
-
-#### 12c. Spec Status Consistency
-
-Read the current spec's `status` frontmatter field.
-
-1. If the spec status is `implemented` but all checks 1–11 passed → this is expected (validation will update it to `validated` in the "After Validation" step). Record PASS.
-2. If the spec status is `draft` or `review-pending` → flag as WARN: "Spec status is `<status>` but implementation exists and passes validation. Status may not have been updated after implementation."
-3. **`--fix` behavior:** Update spec status to `implemented` (the "After Validation" step will then promote to `validated`).
-
-#### 12d. Charter Capability Map Sync
-
-Read the parent charter's Capability Map. For each capability covered by this spec:
-
-1. Check the `Status` column value.
-2. If the capability status is `planned` or `in-progress` but the spec is validated → flag as WARN: "Charter capability `<name>` is `<status>` but spec is validated."
-3. **`--fix` behavior:** Update the capability status to `validated`.
-
-If no charter is referenced in the spec's frontmatter, SKIP with note: "No charter reference found."
-
-#### 12e. Plan Checkbox Completion
-
-If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
-
-**Optimization:** Use `getPlanProgress` from `<ADEV_ROOT>/lib/meta-tools.mjs` to get plan completion in a single call:
-
-```bash
-node -e "import {getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(JSON.stringify(await getPlanProgress('<plan-path>')))"
-```
-
-If the meta-tool call fails, fall back to the manual scan below.
-
-1. Read the plan file and find all task sections (`### Task N:`).
-2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
-3. If any task has unchecked checkboxes but the corresponding issue is closed (or all tests pass) → flag as WARN: "Plan task N has N unchecked checkboxes but implementation is complete."
-4. **`--fix` behavior:** Mark all `- [ ]` checkboxes in completed task sections as `- [x]`.
-
-If no plan file exists or can be inferred, SKIP with note: "No plan file found."
-
-**Output format:**
-```
-## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
-- Issue alignment: PASS | WARN [N issues still open]
-- Epic completion: PASS | WARN [epic still open] | N/A
-- Spec status: PASS | WARN [status is <current>]
-- Charter sync: PASS | WARN [N capabilities stale] | SKIP
-- Plan checkboxes: PASS | WARN [N tasks with unchecked boxes] | SKIP
-```
-
-**This check uses WARN severity, not FAIL.** Lifecycle drift does not invalidate the implementation — the code is correct. But warnings are prominently displayed so the user knows to run `/adev:reconcile` or apply `--fix` for automatic cleanup.
 
 ### Check 13: Success Heuristic Extraction
 
@@ -727,14 +622,6 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - [transition-id]: PASS | FAIL [details]
 - ...
 
-## Check 10: Platform Drift — PASS | FAIL | SKIP
-- framework: PASS | FAIL [declared: X, found: Y]
-- version: PASS | FAIL [declared: X, installed: Y]
-- language: PASS | FAIL [details]
-- orm: PASS | FAIL [declared: X, not found in package.json]
-- auth: PASS | FAIL [details]
-- ...
-
 ## Check 11: Visual Verification — PASS | FAIL | N/A
 - [expectation 1]: PASS | FAIL [what was seen]
 - [expectation 2]: PASS | FAIL [what was seen]
@@ -742,12 +629,6 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Responsive (768px): PASS | FAIL [details]
 - Responsive (1280px): PASS | FAIL [details]
 - Dark mode: PASS | FAIL | N/A [details]
-
-## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
-- Issue alignment: PASS | WARN [N issues still open]
-- Epic completion: PASS | WARN [epic still open] | N/A
-- Spec status: PASS | WARN [status is <current>]
-- Charter sync: PASS | WARN [N capabilities stale] | SKIP
 
 ## Check 13: Success Heuristic Extraction — PASS | SKIP
 - [PASS case] Heuristic extracted: <id> (scope: <scope>, confidence: medium)
