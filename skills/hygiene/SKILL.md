@@ -1,6 +1,6 @@
 ---
 name: adev:hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs eighteen audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
+description: "Audit all context for staleness, drift, and coverage gaps. Runs nineteen audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
 ---
 
 # Context Hygiene Audit
@@ -888,6 +888,56 @@ Header notes:
 **Integration with summary table:**
 ```
 | Kind Validity | WARN | 3 findings (1 error, 2 warn) |
+```
+
+## Audit Pass 19: Validate Config Drift
+
+**Goal:** Compare the project's `.context-index/governance/validate.yaml` against the resolved domain's `validate.yaml` starter and surface divergent registry entries as INFO findings. Per `validate-config-single-source.spec.md` (Behavior 8), the audit's purpose is **visibility, not nagging** — divergence is the expected outcome of project customization and the pass never blocks. When a plugin upgrade improves a starter prompt or adds a new check, this audit surfaces the divergence so operators can opt in deliberately.
+
+**Steps:**
+
+1. Resolve the project's domain (from manifest, charter frontmatter, or module slug — same resolution chain used by `/adev:validate` Step 0).
+2. Call `loadDomainConfig(domain, 'validate', repoRoot, pluginRoot)` to get the current domain starter.
+3. **Pre-condition guards (skip cases):**
+   - If `loadDomainConfig` returns `null`: SKIP with INFO "No validate.yaml starter for domain '<domain>' — drift check not applicable."
+   - If `.context-index/governance/validate.yaml` does not exist: SKIP with INFO "No governance/validate.yaml found — run /adev:init to scaffold."
+4. Load both files (starter via the returned object; project via `parseYaml(readFileSync(...))`). Build an id-keyed map of each registry's entries.
+5. **Diff by id, field-by-field.** For each `id` present in the starter:
+   - If absent in the project file: INFO "Starter contains id '<id>' not present in project config — consider adding."
+   - If present but differs: emit a per-field finding (see SEC-4 below).
+6. For each `id` present in the project but absent in the starter: INFO "Project adds id '<id>' (not in starter) — project customization."
+7. If no divergence: INFO "Validate config is current with domain starter."
+
+**SEC-4: per-field emission rules.** When emitting a per-field difference:
+- For `prompt:` and `context_pack:` fields: emit ONLY the field name and value **type** (e.g., `prompt: <plugin-URI> vs <project-relative-path>`). Do NOT emit the full string values. Project paths may contain internal codenames or sensitive labels that should not appear in hygiene output that may be shared in chat or PRs.
+- For all other fields: emit the literal starter value and project value side-by-side.
+
+**Severity policy.** All findings from this pass are **INFO**, not WARN. Divergence is expected; the audit is informational. Severity escalation would invert the purpose — make a Layer-2 issue if a project wants to be reminded about specific drift patterns.
+
+**Output format:**
+```
+## Validate Config Drift
+
+- PASS: Validate config is current with domain starter (no divergence)
+
+— or —
+
+- INFO: N divergent registry entries detected (non-blocking)
+
+| Check ID | Field | Starter | Project |
+|---|---|---|---|
+| validate.check-2-spec-compliance | severity | error | warning |
+| validate.check-4-constitution | prompt | <plugin-URI> | <project-relative-path> |
+| project.custom-check | (full entry) | — | (added by project) |
+
+**Actions:**
+- [ ] Review each divergence; adopt starter improvements where appropriate
+- [ ] Document intentional deviations in governance/validate.yaml comments
+```
+
+**Integration with summary table:**
+```
+| Validate Config Drift | INFO | 3 divergent entries |
 ```
 
 ## Report Format

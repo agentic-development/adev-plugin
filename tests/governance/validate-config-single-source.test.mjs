@@ -85,6 +85,73 @@ checks:
   });
 });
 
+describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", () => {
+  it("skills/hygiene/SKILL.md declares Audit Pass 19: Validate Config Drift", () => {
+    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
+    assert.ok(
+      content.includes("Audit Pass 19: Validate Config Drift"),
+      "hygiene SKILL.md must declare the new audit pass"
+    );
+  });
+
+  it("skills/hygiene/SKILL.md describes SEC-4 value-type emission for prompt/context_pack", () => {
+    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
+    assert.ok(
+      content.includes("SEC-4"),
+      "hygiene SKILL.md must reference SEC-4 emission rules"
+    );
+    assert.ok(
+      /value\s*\*\*type\*\*/i.test(content) || /value type/i.test(content),
+      "hygiene SKILL.md must describe value-type emission for sensitive fields"
+    );
+  });
+
+  it("skills/hygiene/SKILL.md emits INFO (not WARN) for drift findings", () => {
+    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
+    // The Audit Pass 19 section must state INFO severity for drift findings.
+    const passIdx = content.indexOf("Audit Pass 19");
+    assert.ok(passIdx >= 0);
+    const passContent = content.slice(passIdx, passIdx + 4000);
+    assert.ok(
+      /INFO.*not WARN|INFO.*not\s+WARN|All findings.*INFO/i.test(passContent),
+      "drift findings must be INFO severity"
+    );
+  });
+
+  it("hygiene drift simulation: project validate.yaml differs from software starter when prompt is overridden", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      '.context-index/governance/validate.yaml',
+      `checks:
+  - id: validate.check-2-spec-compliance
+    kind: subagent-review
+    profile: reviewer-capable
+    prompt: governance/validate-prompts/custom-check-2.md
+    severity: error
+`
+    );
+    const starter = loadDomainConfig('software', 'validate', repo, PLUGIN_ROOT);
+    assert.ok(starter !== null);
+    const starterCheck = starter.checks.find((c) => c.id === 'validate.check-2-spec-compliance');
+    assert.ok(starterCheck, 'check must exist in starter');
+    // Project overrides starter — drift IS detected here.
+    assert.notEqual(starterCheck.prompt, 'governance/validate-prompts/custom-check-2.md');
+  });
+
+  it("hygiene drift simulation: project validate.yaml without overrides matches starter", () => {
+    const starterPath = join(PLUGIN_ROOT, 'templates', 'domains', 'software', 'validate.yaml');
+    const starter = loadDomainConfig('software', 'validate', PLUGIN_ROOT, PLUGIN_ROOT);
+    assert.ok(starter !== null);
+    const repo = tmp();
+    // Project file == starter bytes => no drift.
+    const starterBytes = readFileSync(starterPath, 'utf8');
+    writeFixture(repo, '.context-index/governance/validate.yaml', starterBytes);
+    const projectFile = readFileSync(join(repo, '.context-index/governance/validate.yaml'), 'utf8');
+    assert.equal(projectFile, starterBytes, 'project file should match starter byte-for-byte');
+  });
+});
+
 describe("SKILL.md content: init Step 7d.0", () => {
   it("skills/init/SKILL.md mentions loadDomainConfig with 'validate' configType", () => {
     const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
