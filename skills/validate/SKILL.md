@@ -120,18 +120,20 @@ const { gates: mergedGates, warnings: gateWarnings } = mergeGates(domainOverlay,
 ```
 Log any warnings from the merge process. The `mergedGates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in.
 
-Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
+Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader follows the **single-source model** (per `validate-config-single-source.spec.md`):
 
-- Reads bundled defaults from `templates/validate/defaults.yaml` (12 entries covering Check 1.5 + Checks 2–12). Check 1 is not in this registry; it continues to be sourced from `governance/gates.yaml`.
-- Overlays `.context-index/governance/validate.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
-- Validates each entry's `kind` (quality-gate | subagent-review | deterministic-check | observational).
-- For `kind: quality-gate`: rejects string-form `command`; rejects any argv token containing `{{...}}`, `$VAR`, `${VAR}`, or `%VAR%` interpolation; requires an explicit `profile` (no implicit default — authors must positively acknowledge that profile permissions scope the adapter's tool surface, NOT the spawned subprocess).
-- For `kind: observational`: rejects `severity: error`.
-- For `kind: deterministic-check`: rejects project-registered entries (only bundled ids allowed).
+- **Preflight (missing-file check):** If `.context-index/governance/validate.yaml` does not exist, `loadValidateConfig` throws `MISSING_VALIDATE_CONFIG` with the message: `"No governance/validate.yaml found. Run /adev:init to scaffold the validate configuration for your domain."` The skill catches this only to surface the message and stop — no checks dispatch, no report is written.
+- **Direct read:** Loads `.context-index/governance/validate.yaml` directly. There is no bundled-defaults file, no overlay merge. The project file is the entire registry. It was scaffolded at `/adev:init` time from `templates/domains/<domain>/validate.yaml`.
+- **Id allowlist (SEC-1):** Every entry's `id` is validated against `^[a-z0-9][a-z0-9._-]*$` BEFORE any `plugin:` URI construction. Non-conforming ids fail load with `INVALID_CHECK_ID` and the offending value is stripped to allowlist chars + truncated to 64 chars in the diagnostic.
+- **Prompt URI resolution:** For each entry's `prompt` field, the loader resolves `plugin:validate/checks/<id>.md` to `<pluginRoot>/skills/validate/checks/<id>.md` with path-containment and absolute/cross-plugin guards. Project-relative paths resolve under `.context-index/`. The resolved absolute path is stored on the check object as `resolvedPromptPath`.
+- **Per-kind validation:** Validates each entry's `kind` (`quality-gate` | `subagent-review` | `deterministic-check` | `observational`).
+  - `quality-gate`: rejects string-form `command`; rejects any argv token containing `{{...}}`, `$VAR`, `${VAR}`, or `%VAR%` interpolation; requires an explicit `profile` (no implicit default — authors must positively acknowledge that profile permissions scope the adapter's tool surface, NOT the spawned subprocess).
+  - `observational`: rejects `severity: error`.
+  - `deterministic-check`: only the bundled allowed-id set (`validate.check-1.5-source-manifest`) may use this kind; other ids fail with `DETERMINISTIC_PROJECT`.
 - Resolves each check's profile via `lib/profiles/` (MCP-missing fails load; required env missing fails load).
 - Topologically sorts by `after` with lex-by-id tie-break; cycles fail load; unknown `after` ids emit WARN.
 
-Abort on any loader error. Warnings surface in the report header.
+Abort on any loader error. Warnings surface in the report header. Check 1 (quality gates) is not in this registry; it continues to be sourced from `governance/gates.yaml`.
 
 ## Execution Strategy
 
@@ -146,11 +148,13 @@ Abort on any loader error. Warnings surface in the report header.
 
 **Project quality-gate checks:** invoke `runQualityGate(check, { env, redactor, cwd })` from `lib/governance/quality-gate.mjs`. The runner uses `execFile` with `shell: false`; the subprocess environment consists of the profile-resolved env plus a minimal startup whitelist (`PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TMPDIR`, `USER`, `LOGNAME`). `LD_PRELOAD`, `NODE_OPTIONS`, `PYTHONPATH`, `SSL_CERT_FILE`, and any other invoking-shell var is NOT inherited. stdout/stderr flow through the profile's redactor before report/display/dispatch-record use. Combined output is capped at 64 KiB with a tail-truncation marker.
 
-**Bundled `internal: true` subagent-review checks** (Checks 2–11): continue to execute via the per-check prose below. Each check's section begins with an `enabled` guard — if the registry marked it disabled, the check is skipped without running.
+**Subagent-review checks** (Checks 2–11): dispatch the subagent with the prompt body loaded from each check's `resolvedPromptPath` (resolved at registry-load time from the `plugin:validate/checks/<id>.md` URI). Each check's section begins with an `enabled` guard — if the registry marked it disabled, the check is skipped without running.
 
 **Check 12 (heuristic extraction) as observational**: never contributes to verdict per Behavior 9.
 
 ## The 12 Checks
+
+> **Source of truth for per-check prompts:** As of `validate-config-single-source.spec.md`, the substantive prompt body for each subagent-review / deterministic-check / observational check lives in `skills/validate/checks/<id>.md`, referenced from the registry via the `plugin:validate/checks/<id>.md` URI. The sections below describe each check's purpose, orchestration semantics, and execution guards. The dispatch loop reads the prompt from the registry entry's `resolvedPromptPath`, not from the prose in this file. When the two diverge, the externalized file wins.
 
 ### Check 1: Quality Gates (fail-fast, tiered)
 

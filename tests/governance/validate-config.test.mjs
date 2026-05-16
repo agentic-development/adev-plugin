@@ -1,11 +1,13 @@
 import { test, describe, afterEach } from "node:test";
 import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   loadValidateConfig,
   shouldSkipDueToFailFast,
 } from "../../lib/governance/validate-config.mjs";
-import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
+import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from "../helpers.mjs";
 
 const tempDirs = [];
 function tmp() {
@@ -22,8 +24,14 @@ function hasCode(issues, code) {
 }
 
 describe("validate-config loadValidateConfig", () => {
-  test("zero-config returns the 12 bundled checks in topological order", () => {
+  test("project with scaffolded governance/validate.yaml returns the 12 checks in topological order", () => {
+    // Post-refactor: zero-config means no file → MISSING_VALIDATE_CONFIG.
+    // The "12 checks" path now requires a scaffolded file (as init does).
+    // We simulate scaffolding by copying the software starter into the repo.
     const repo = tmp();
+    const starterPath = join(PLUGIN_ROOT, "templates", "domains", "software", "validate.yaml");
+    const starterBytes = readFileSync(starterPath, "utf8");
+    writeFixture(repo, ".context-index/governance/validate.yaml", starterBytes);
     const r = loadValidateConfig(repo);
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
     assert.equal(r.checks.length, 12);
@@ -34,6 +42,67 @@ describe("validate-config loadValidateConfig", () => {
     const idx1_5 = ids.indexOf("validate.check-1.5-source-manifest");
     const idx2 = ids.indexOf("validate.check-2-spec-compliance");
     assert.ok(idx1_5 < idx2, "1.5 should run before check-2");
+  });
+
+  test("missing governance/validate.yaml throws MISSING_VALIDATE_CONFIG (Behavior 1)", () => {
+    const repo = tmp();
+    // No governance/validate.yaml written
+    assert.throws(
+      () => loadValidateConfig(repo),
+      (err) => {
+        return err.code === "MISSING_VALIDATE_CONFIG"
+          && /No governance\/validate\.yaml found/.test(err.message)
+          && /\/adev:init/.test(err.message);
+      },
+    );
+  });
+
+  test("id with path traversal fails load with INVALID_CHECK_ID (Behavior 0 / SEC-1)", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/validate.yaml",
+      `checks:
+  - id: ../../bad
+    kind: observational
+`
+    );
+    const r = loadValidateConfig(repo);
+    assert.ok(
+      hasCode(r.errors, "INVALID_CHECK_ID"),
+      `expected INVALID_CHECK_ID; got: ${JSON.stringify(r.errors)}`
+    );
+  });
+
+  test("id with spaces fails load with INVALID_CHECK_ID", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/validate.yaml",
+      `checks:
+  - id: with spaces
+    kind: observational
+`
+    );
+    const r = loadValidateConfig(repo);
+    assert.ok(hasCode(r.errors, "INVALID_CHECK_ID"));
+  });
+
+  test("id with control characters fails load with INVALID_CHECK_ID; diagnostic strips them", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/validate.yaml",
+      `checks:
+  - id: "bad\\u001bid"
+    kind: observational
+`
+    );
+    const r = loadValidateConfig(repo);
+    const err = r.errors.find((e) => e.code === "INVALID_CHECK_ID");
+    assert.ok(err, `expected INVALID_CHECK_ID; got: ${JSON.stringify(r.errors)}`);
+    // Diagnostic should NOT contain the raw ANSI escape
+    assert.ok(!err.message.includes(""), "diagnostic must strip control chars");
   });
 
   test("enabled: false surfaces as SKIPPED-DISABLED entry without running", () => {
