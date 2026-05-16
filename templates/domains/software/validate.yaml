@@ -84,8 +84,7 @@ checks:
     severity: warning
     prompt: plugin:validate/checks/validate.check-11-visual-verification.md
 
-  - id: validate.check-12-heuristic-extraction
-    name: "Heuristic Extraction"
-    kind: observational
-    severity: info
-    prompt: plugin:validate/checks/validate.check-12-heuristic-extraction.md
+  # check-12-heuristic-extraction removed by check-set-restructure.spec.md
+  # (now runs as a Stop-event post-validate hook —
+  # hooks/post-validate-extract-heuristics.{sh,mjs} — with SEC-1 input
+  # scoping that consumes only structured verdict metadata).
