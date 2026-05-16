@@ -180,14 +180,112 @@ Output findings in BIL-N format.
 EOF
 
 # ---------------------------------------------------------------------------
-# governance/validate.yaml — disables a platform-drift check, adds a project
-# quality-gate (valid argv form), adds a project subagent-review after
-# check-2-spec-compliance
+# governance/validate.yaml — single-source registry per
+# validate-config-single-source.spec.md. Contains the full 12-entry bundled set
+# (mirroring the software-domain starter that `/adev:init` would scaffold) with
+# in-place project customizations: platform-drift disabled (enabled: false on
+# the existing entry), plus three appended project entries.
 # ---------------------------------------------------------------------------
 cat > .context-index/governance/validate.yaml << 'EOF'
 checks:
+  - id: validate.check-1.5-source-manifest
+    name: "Source Manifest Verification"
+    kind: deterministic-check
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-1.5-source-manifest.md
+    description: "Verify spec source-manifest SHAs match current files."
+
+  - id: validate.check-2-spec-compliance
+    name: "Spec Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-2-spec-compliance.md
+    after: [validate.check-1.5-source-manifest]
+
+  - id: validate.check-3-charter-consistency
+    name: "Charter Consistency"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-3-charter-consistency.md
+    after: [validate.check-2-spec-compliance]
+
+  - id: validate.check-4-constitution
+    name: "Constitutional Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-4-constitution.md
+    after: [validate.check-2-spec-compliance]
+
+  - id: validate.check-5-adrs
+    name: "ADR Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-5-adrs.md
+    after: [validate.check-2-spec-compliance]
+
+  - id: validate.check-6-cross-cutting
+    name: "Cross-Cutting Spec Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-6-cross-cutting.md
+    after: [validate.check-2-spec-compliance]
+
+  - id: validate.check-7-specialist-review
+    name: "Specialist Review"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-7-specialist-review.md
+    after: [validate.check-2-spec-compliance]
+
+  - id: validate.check-8-boundaries
+    name: "Governance Boundaries"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-8-boundaries.md
+    after: [validate.check-2-spec-compliance]
+
+  - id: validate.check-9-transition-gates
+    name: "Transition Gate Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-9-transition-gates.md
+    after: [validate.check-2-spec-compliance]
+
+  # Project customization: disabled for this project (was kind: subagent-review).
   - id: validate.check-10-platform-drift
     enabled: false
+
+  - id: validate.check-11-visual-verification
+    name: "Visual Verification"
+    kind: subagent-review
+    profile: browser-review
+    context_pack: base
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-11-visual-verification.md
+
+  - id: validate.check-12-heuristic-extraction
+    name: "Heuristic Extraction"
+    kind: observational
+    severity: info
+    prompt: plugin:validate/checks/validate.check-12-heuristic-extraction.md
+
+  # ── Project additions ──────────────────────────────────────────────────
 
   - id: project.npm-test
     name: "Project npm test gate"
