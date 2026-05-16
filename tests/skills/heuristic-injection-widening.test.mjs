@@ -12,9 +12,11 @@ const skills = {
 
 for (const [name, content] of Object.entries(skills)) {
   describe(`${name} SKILL.md heuristic injection`, () => {
-    it("references retrieveHeuristics", () => {
-      assert.ok(content.includes("retrieveHeuristics"),
-        `${name} should reference retrieveHeuristics`);
+    it("invokes `adev heuristics retrieve`", () => {
+      // After the inline-Node extraction sweep (PR 8-9), skills call the
+      // canonical CLI verb instead of importing `retrieveHeuristics` inline.
+      assert.ok(content.includes("adev heuristics retrieve"),
+        `${name} should invoke 'adev heuristics retrieve'`);
     });
     it("uses summary tier", () => {
       assert.ok(content.includes("summary") || content.includes("tier"),
@@ -25,8 +27,13 @@ for (const [name, content] of Object.entries(skills)) {
         `${name} should include the heuristic preamble`);
     });
     it("specifies non-blocking behavior", () => {
-      assert.ok(content.includes("proceed without") || content.includes("non-blocking"),
-        `${name} should be non-blocking on failure`);
+      assert.ok(
+        content.includes("proceed without") ||
+          content.includes("non-blocking") ||
+          content.includes("stays non-blocking") ||
+          content.includes("__NONE__"),
+        `${name} should be non-blocking on failure`,
+      );
     });
   });
 }

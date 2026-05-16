@@ -1307,8 +1307,19 @@ const VERB_REGISTRY = new Map([
                           if (exitCode !== 0) process.exit(exitCode);
                         }, help: () => cmdHelp() })],
   ["help",      () => ({ run: () => cmdHelp(),                   help: () => cmdHelp() })],
-  ["gate",      () => import("../lib/cli/gate.mjs")],
-  ["diagnose",  () => import("../lib/cli/diagnose.mjs")],
+  ["gate",            () => import("../lib/cli/gate.mjs")],
+  ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
+  ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
+  ["report",          () => import("../lib/cli/report.mjs")],
+  ["source-manifest", () => import("../lib/cli/source-manifest.mjs")],
+  ["domain",          () => import("../lib/cli/domain.mjs")],
+  ["context",         () => import("../lib/cli/context.mjs")],
+  ["verify",          () => import("../lib/cli/verify.mjs")],
+  ["state",           () => import("../lib/cli/state.mjs")],
+  ["execution-state", () => import("../lib/cli/execution-state.mjs")],
+  ["build-state",     () => import("../lib/cli/build-state.mjs")],
+  ["preflight",       () => import("../lib/cli/preflight.mjs")],
+  ["prototype",       () => import("../lib/cli/prototype.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr

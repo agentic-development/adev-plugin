@@ -538,14 +538,11 @@ Total blockers: 5
      - [ ] <charter-path>: STATUS_MISMATCH — capability "<name>" shows "<charter-status>" but spec status is "<spec-status>"
      ```
 
-8. **Reality drift check (codebase verification):** For each spec with status `implemented` or `validated`, verify the implementation actually exists in the codebase. Run via inline Node.js:
+8. **Reality drift check (codebase verification):** For each spec with status `implemented` or `validated`, verify the implementation actually exists in the codebase via the CLI:
    ```bash
-   node --input-type=module -e "
-   import { verifySpecImplemented } from '<ADEV_ROOT>/lib/reality-check.mjs';
-   const result = verifySpecImplemented('<specPath>', { projectRoot: '<projectRoot>' });
-   console.log(JSON.stringify(result));
-   "
+   adev verify spec --spec <specPath>
    ```
+   The verb wraps `lib/reality-check.mjs::verifySpecImplemented` and emits JSON `{ implemented, confidence, evidence }`.
    - If `confidence === "none"` (status claims implemented but no codebase evidence): flag as `REALITY_DRIFT`:
      ```
      - [ ] <spec-path>: REALITY_DRIFT — status is "<status>" but implementation not found in codebase (confidence: none)
@@ -555,7 +552,7 @@ Total blockers: 5
      - [ ] <spec-path>: REALITY_WARN — status is "<status>" but implementation evidence is weak (files untracked or missing)
      ```
    - If `confidence === "medium"` or `"high"`: no finding (status matches reality).
-   - If `lib/reality-check.mjs` fails to import, skip this step with note: "Reality check unavailable — skipping codebase verification."
+   - If `adev verify spec` exits non-zero, skip this step with note: "Reality check unavailable — skipping codebase verification."
 
 **Output format:**
 ```
