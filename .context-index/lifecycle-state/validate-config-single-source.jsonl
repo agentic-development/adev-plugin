@@ -1,0 +1,72 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-16T00:04:47.886Z"}
+{"event":"step_completed","step":"specify","ts":"2026-05-16T00:10:45.818Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"3 warnings (cross-charter loadDomainConfig, kind:refactor framing, supersedes-behaviors convention), 4 suggestions","ts":"2026-05-16T00:20:27.243Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"FAIL","notes":"SEC-1 blocker: id field must be sanitized before plugin URI construction (path traversal); plus 3 warnings, 2 suggestions","ts":"2026-05-16T00:20:27.243Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"CON-4 blocker: loadValidateConfig signature claim contradicts shipped code; plus 2 warnings, 1 suggestion","ts":"2026-05-16T00:20:27.244Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-05-16T00:20:27.250Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev-2: most rev-1 findings resolved; SA-1 cross-charter ownership still partially open; new SA-8 constants file edits","ts":"2026-05-16T00:42:04.584Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"rev-2: all 6 rev-1 findings resolved including SEC-1 blocker. No new findings.","ts":"2026-05-16T00:42:04.585Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"rev-2: all 4 rev-1 findings resolved including CON-4 blocker. Round-trip verified.","ts":"2026-05-16T00:42:04.585Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T00:42:04.591Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-16T00:54:07.150Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-1","status":"pending","notes":"Externalize per-check prompts","ts":"2026-05-16T01:02:22.807Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-2","status":"pending","notes":"Extend constants + loadDomainConfig with validate type","ts":"2026-05-16T01:02:22.807Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-3","status":"pending","notes":"Author software domain starter","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-4","status":"pending","notes":"Update /adev:init to scaffold governance/validate.yaml","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-5","status":"pending","notes":"Switch loader to single-source","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-6","status":"pending","notes":"Delete templates/validate/defaults.yaml","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-7","status":"pending","notes":"Add hygiene Validate Config Drift audit pass","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-8","status":"pending","notes":"Migration tool for existing projects","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-9","status":"pending","notes":"Annotate configurable-checks.spec.md + amend ADR-0003","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-10","status":"pending","notes":"Update validation charter Skills section","ts":"2026-05-16T01:02:22.808Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-11","status":"pending","notes":"Augment tests for all new behaviors","ts":"2026-05-16T01:02:22.809Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T01:02:26.565Z"}
+{"event":"step_completed","step":"plan","verdict":"plan-written","ts":"2026-05-16T01:03:27.300Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-16T01:04:04.569Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-05-16T01:04:04.573Z"}
+{"event":"step_completed","step":"route","verdict":"PASS","ts":"2026-05-16T01:08:55.837Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-16T01:09:13.750Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-16T01:13:08.398Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-05-16T01:14:27.669Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-1","status":"done","notes":"Externalized 12 check prompts; added plugin: URI resolution + SEC-3 sanitization","ts":"2026-05-16T01:24:13.547Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-05-16T01:24:19.022Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-2","status":"done","notes":"Added validate to DOMAIN_CONFIG_TYPES/FILENAMES/STRUCTURED + domain arg guard (SEC-2)","ts":"2026-05-16T01:25:43.155Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-05-16T01:25:50.838Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-3","status":"done","notes":"Added software validate.yaml starter (12 checks with plugin: URIs)","ts":"2026-05-16T01:26:54.333Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-4","status":"in_progress","notes":null,"ts":"2026-05-16T01:27:04.116Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-4","status":"done","notes":"Added Step 7d.0 domain-aware scaffold to init SKILL.md (idempotent, software fallback)","ts":"2026-05-16T01:27:59.766Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-5","status":"in_progress","notes":null,"ts":"2026-05-16T01:28:08.069Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-5","status":"done","notes":"Switched loader to single-source; added MISSING_VALIDATE_CONFIG + INVALID_CHECK_ID; updated SKILL.md preflight","ts":"2026-05-16T01:34:06.669Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-6","status":"in_progress","notes":null,"ts":"2026-05-16T01:34:13.144Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-6","status":"done","notes":"Deleted templates/validate/defaults.yaml; no remaining consumers","ts":"2026-05-16T01:34:29.570Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-7","status":"in_progress","notes":null,"ts":"2026-05-16T01:34:36.126Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-7","status":"done","notes":"Added hygiene Audit Pass 19: Validate Config Drift (INFO + SEC-4 value-type emission)","ts":"2026-05-16T01:35:46.009Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-8","status":"in_progress","notes":null,"ts":"2026-05-16T01:35:52.000Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-8","status":"done","notes":"Added migrateValidateConfig with 3 branches; MIGRATION_BLOCKED_BY_CORRUPT_CONFIG per SEC-5","ts":"2026-05-16T01:39:04.037Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-9","status":"in_progress","notes":null,"ts":"2026-05-16T01:39:10.133Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-9","status":"done","notes":"ADR-0003 amended with 2026-05-15 narrowing note; superseded-by-behaviors round-trip in place","ts":"2026-05-16T01:39:56.110Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-10","status":"in_progress","notes":null,"ts":"2026-05-16T01:40:03.190Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-10","status":"done","notes":"Charter Skills section updated for single-source model","ts":"2026-05-16T01:40:33.105Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-11","status":"in_progress","notes":null,"ts":"2026-05-16T01:40:41.058Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/validate-config-single-source.plan.md","task_id":"task-11","status":"done","notes":"Final acceptance-criteria coverage: 12 files, parity, round-trip, ADR note, charter references","ts":"2026-05-16T01:41:34.952Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-16T01:42:22.853Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-16T01:44:03.592Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-16T01:44:18.268Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-16T01:44:57.625Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS_WITH_NOTES","error":"1 pre-existing failure: plan-task-immutability untracked plan mtime fallback (unrelated to this spec)","score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.923Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.924Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-drift-warning","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.925Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.925Z"}
+{"event":"validator_report","step":"validate","validator":"check-3-charter-consistency","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.926Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.926Z"}
+{"event":"validator_report","step":"validate","validator":"check-5-adrs","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.926Z"}
+{"event":"validator_report","step":"validate","validator":"check-6-cross-cutting","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.927Z"}
+{"event":"validator_report","step":"validate","validator":"check-7-specialist-review","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.927Z"}
+{"event":"validator_report","step":"validate","validator":"check-8-boundaries","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.928Z"}
+{"event":"validator_report","step":"validate","validator":"check-9-transition-gates","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.928Z"}
+{"event":"validator_report","step":"validate","validator":"check-10-platform-drift","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.928Z"}
+{"event":"validator_report","step":"validate","validator":"check-11-visual-verification","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.929Z"}
+{"event":"validator_report","step":"validate","validator":"check-12-lifecycle-reconciliation","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.929Z"}
+{"event":"validator_report","step":"validate","validator":"check-13-heuristic-extraction","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.930Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T01:56:23.349Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T01:56:51.986Z"}

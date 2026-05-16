@@ -1,0 +1,73 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-15T22:10:46.482Z"}
+{"event":"step_completed","step":"specify","ts":"2026-05-15T22:37:11.808Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"4 warnings (cross-charter coupling, scope-expansion contract, removed-ID semantics, dependency ordering), 2 suggestions","ts":"2026-05-16T00:20:27.232Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"1 suggestion: heuristic hook should not re-emit subprocess output","ts":"2026-05-16T00:20:27.234Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"1 suggestion: line 30 check-count notation error","ts":"2026-05-16T00:20:27.234Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T00:20:27.242Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev-2: all rev-1 findings resolved; 3 new suggestions (ID disambiguation, lifecycle gating, reportPlanTask scope)","ts":"2026-05-16T00:42:04.572Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev-2: SEC-1 resolved; 3 new low-severity suggestions (hook failure mode, no-prior-commit diff, RESURRECTED_CHECK_ID verbosity)","ts":"2026-05-16T00:42:04.573Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev-2: CON-1 resolved; 3 new suggestions on edge cases (coordinated-with definition, empty-list, file source)","ts":"2026-05-16T00:42:04.574Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T00:42:04.580Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-16T01:57:32.563Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-16T01:59:29.001Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.574Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.576Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.576Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-4","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.576Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-5","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.577Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-6","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.577Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-7","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.577Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-8","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.577Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-9","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.577Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-10","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.577Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-11","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.578Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-12","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.578Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-13","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.578Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-14","status":"pending","notes":null,"ts":"2026-05-16T02:07:34.578Z"}
+{"event":"step_completed","step":"plan","verdict":"PLAN_READY","ts":"2026-05-16T02:07:38.923Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-16T02:08:05.717Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-05-16T02:08:18.716Z"}
+{"event":"step_completed","step":"route","verdict":"PASS","ts":"2026-05-16T02:13:14.239Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-16T02:13:30.128Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-16T02:14:22.996Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-05-16T02:19:09.988Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-1","status":"done","notes":"Added Audit Pass 20 Platform Drift to hygiene; updated description and pass count","ts":"2026-05-16T02:20:43.673Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-05-16T02:20:50.480Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-2","status":"done","notes":"Added --fix default mode and 1h Lifecycle Sync section using reportPlanTask channel","ts":"2026-05-16T02:22:08.896Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-05-16T02:22:14.880Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-3","status":"done","notes":"Appended ADR scope to structural-architect and cross-cutting scope to consistency-analyzer prompts","ts":"2026-05-16T02:29:01.202Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-4","status":"in_progress","notes":null,"ts":"2026-05-16T02:29:16.158Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-4","status":"done","notes":"Added Stop-event bash+mjs hook with SEC-1 input scoping and SEC-2 stderr audit trail","ts":"2026-05-16T02:31:59.310Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-5","status":"in_progress","notes":null,"ts":"2026-05-16T02:32:04.208Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-5","status":"done","notes":"Removed check-10 yaml entry, removed Check 10/12 SKILL.md prose and templates, relaxed legacy 12-count tests","ts":"2026-05-16T02:37:53.474Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-6","status":"in_progress","notes":null,"ts":"2026-05-16T02:37:58.789Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-6","status":"done","notes":"Added four-case Trigger Guard matrix; revised SKILL.md Check 11 section and Red Flags","ts":"2026-05-16T02:39:20.587Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-7","status":"in_progress","notes":null,"ts":"2026-05-16T02:39:27.349Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-7","status":"done","notes":"Added scope-expansion sub-finding pinned to source-manifest.files; removed check-3 yaml entry and SKILL.md prose","ts":"2026-05-16T02:46:26.396Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-8","status":"in_progress","notes":null,"ts":"2026-05-16T02:46:35.736Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-8","status":"done","notes":"Removed check-5, 6, 7 yaml entries, SKILL.md prose, and report-template lines","ts":"2026-05-16T02:47:41.318Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-9","status":"in_progress","notes":null,"ts":"2026-05-16T02:47:45.964Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-9","status":"done","notes":"Added Evidence Contract requiring file:line or grep citation; uncited findings -> FAIL/UNCITED_FINDING","ts":"2026-05-16T02:48:38.501Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-10","status":"in_progress","notes":null,"ts":"2026-05-16T02:48:43.614Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-10","status":"done","notes":"Removed check-12-heuristic-extraction yaml entry and Check 13 SKILL.md prose; logic lives in post-validate hook from task 4","ts":"2026-05-16T02:50:49.863Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-11","status":"in_progress","notes":null,"ts":"2026-05-16T02:50:55.164Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-11","status":"done","notes":"Added migration-orientation footer; updated Overall Status, Red Flags, completion messages, and description frontmatter","ts":"2026-05-16T02:56:16.401Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-12","status":"in_progress","notes":null,"ts":"2026-05-16T02:56:22.256Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-12","status":"done","notes":"Added REMOVED_CHECK_IDS set + RESURRECTED_CHECK_ID WARN path with SEC-4 message scoping","ts":"2026-05-16T02:58:58.635Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-13","status":"in_progress","notes":null,"ts":"2026-05-16T02:59:05.701Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-13","status":"done","notes":"Charter Skills section enumerates surviving checks and relocation destinations","ts":"2026-05-16T03:00:05.945Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-14","status":"in_progress","notes":null,"ts":"2026-05-16T03:00:11.887Z"}
+{"event":"plan_task","plan":".context-index/specs/features/validation/check-set-restructure.plan.md","task_id":"task-14","status":"done","notes":"Structural dispatch-count delta recorded (~43-64% reduction); JSONL per-token measurement deferred to downstream project as follow-up","ts":"2026-05-16T03:01:16.124Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-16T03:13:58.606Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-16T03:19:24.655Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-16T03:19:42.651Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-16T03:37:42.458Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":183910,"ts":"2026-05-16T03:38:20.399Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":50,"ts":"2026-05-16T03:38:20.401Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-code-drift","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":10,"ts":"2026-05-16T03:38:20.401Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS_WITH_NOTES","error":"scope-expansion: test files outside source-manifest.files (warning severity)","score":null,"duration_ms":100,"ts":"2026-05-16T03:38:20.401Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":80,"ts":"2026-05-16T03:38:20.402Z"}
+{"event":"validator_report","step":"validate","validator":"check-8-boundaries","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":20,"ts":"2026-05-16T03:38:20.402Z"}
+{"event":"validator_report","step":"validate","validator":"check-9-transition-gates","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":20,"ts":"2026-05-16T03:38:20.403Z"}
+{"event":"validator_report","step":"validate","validator":"check-11-visual-verification","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":15,"ts":"2026-05-16T03:38:20.403Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T03:40:37.894Z"}

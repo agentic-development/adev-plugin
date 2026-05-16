@@ -36,6 +36,9 @@ source-manifest:
     - tests/domains/backward-compat.test.mjs
     - tests/domains/bundled-profiles.test.mjs
   computed-at: "2026-05-11T16:09:28.512Z"
+drift_detected: true
+drift_source: tests/domains/bundled-profiles.test.mjs
+drift_at: 2026-05-16T01:26:27.529Z
 ---
 
 ## Behavioral Contract

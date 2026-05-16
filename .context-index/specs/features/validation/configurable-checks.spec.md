@@ -26,8 +26,8 @@ superseded-by-behaviors:
   - validate-config-single-source.spec.md#behavior-2
   - validate-config-single-source.spec.md#behavior-5
 drift_detected: true
-drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-16T01:33:38.854Z
+drift_source: lib/governance/validate-config.mjs
+drift_at: 2026-05-16T02:58:10.277Z
 ---
 
 

@@ -555,10 +555,10 @@
     {
       "id": "epic-75",
       "title": "cli-driver-surface",
-      "status": "open",
+      "status": "closed",
       "milestone": "adev-compiler-discipline",
       "created": "2026-05-14T12:32:48.184Z",
-      "updated": "2026-05-14T12:39:41.559Z"
+      "updated": "2026-05-16T11:50:02.098Z"
     },
     {
       "id": "epic-76",
@@ -619,6 +619,29 @@
       "planRef": ".context-index/specs/features/lifecycle-artifacts/template-renames.plan.md",
       "created": "2026-05-15T14:48:21.070Z",
       "updated": "2026-05-15T15:14:42.825Z"
+    },
+    {
+      "id": "epic-83",
+      "title": "Single-Source Validate Configuration",
+      "status": "open",
+      "planRef": ".context-index/specs/features/validation/validate-config-single-source.plan.md",
+      "created": "2026-05-16T01:02:35.446Z",
+      "updated": "2026-05-16T01:02:35.446Z"
+    },
+    {
+      "id": "epic-84",
+      "title": "Validate Check Set Restructure",
+      "status": "open",
+      "planRef": ".context-index/specs/features/validation/check-set-restructure.plan.md",
+      "created": "2026-05-16T02:01:28.910Z",
+      "updated": "2026-05-16T02:01:28.910Z"
+    },
+    {
+      "id": "epic-85",
+      "title": "Validation charter build retro — improvements (2026-05-16)",
+      "status": "open",
+      "created": "2026-05-16T11:58:07.716Z",
+      "updated": "2026-05-16T11:58:07.716Z"
     }
   ],
   "issues": [
@@ -2452,30 +2475,30 @@
     {
       "id": "issue-456",
       "title": "Lifecycle Event Log (lib/lifecycle-state.mjs)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-71",
       "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md. Created by /adev:specify on 2026-05-11. Foundation capability for agent-reliable-state-artifacts charter; everything else depends on this.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md. Created by /adev:specify on 2026-05-11. Foundation capability for agent-reliable-state-artifacts charter; everything else depends on this.; Closed: Spec lifecycle-event-log.spec.md is validated; reconciliation cleanup per epic-71",
       "next_action": "Run /adev:plan --spec lifecycle-event-log",
       "created": "2026-05-11T20:33:51.275Z",
-      "updated": "2026-05-11T21:11:52.225Z"
+      "updated": "2026-05-15T23:57:29.777Z"
     },
     {
       "id": "issue-457",
       "title": "JSON Issue Board + Adapter (lib/issues/json-adapter.mjs)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-71",
       "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/json-issue-board-adapter.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/json-issue-board-adapter.spec.md. Created by /adev:specify on 2026-05-11. JSON adapter implementing unchanged IssueManagerInterface. Default backend for new scaffolds.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/json-issue-board-adapter.spec.md. Created by /adev:specify on 2026-05-11. JSON adapter implementing unchanged IssueManagerInterface. Default backend for new scaffolds.; Closed: Spec json-issue-board-adapter.spec.md is validated; reconciliation cleanup per epic-71",
       "next_action": "Run /adev:plan --spec json-issue-board-adapter",
       "created": "2026-05-11T20:47:19.115Z",
-      "updated": "2026-05-11T21:11:52.237Z"
+      "updated": "2026-05-15T23:57:29.789Z"
     },
     {
       "id": "issue-458",
@@ -2506,44 +2529,44 @@
     {
       "id": "issue-460",
       "title": "Execution State Migration (.execution-state.md → .execution-state.json)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-71",
       "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/execution-state-migration.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/execution-state-migration.spec.md. Created by /adev:specify on 2026-05-11. Migrates execution-state file format to JSON and decouples bash hooks from inline YAML parsing while preserving constitution principle 4 (hook protocol compliance).",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/execution-state-migration.spec.md. Created by /adev:specify on 2026-05-11. Migrates execution-state file format to JSON and decouples bash hooks from inline YAML parsing while preserving constitution principle 4 (hook protocol compliance).; Closed: Spec execution-state-migration.spec.md is validated; reconciliation cleanup per epic-71",
       "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts",
       "created": "2026-05-11T21:26:00.767Z",
-      "updated": "2026-05-11T21:26:00.767Z"
+      "updated": "2026-05-15T23:57:29.798Z"
     },
     {
       "id": "issue-461",
       "title": "Milestones Migration (milestones.yaml → milestones.json)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-71",
       "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/milestones-migration.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/milestones-migration.spec.md. Created by /adev:specify on 2026-05-11. Migrates milestones registry to JSON; co-locates with the issue board via resolveStorageRoot (shared across worktrees). API surface unchanged.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/milestones-migration.spec.md. Created by /adev:specify on 2026-05-11. Migrates milestones registry to JSON; co-locates with the issue board via resolveStorageRoot (shared across worktrees). API surface unchanged.; Closed: Spec milestones-migration.spec.md is validated; reconciliation cleanup per epic-71",
       "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts",
       "created": "2026-05-11T21:28:13.657Z",
-      "updated": "2026-05-11T21:28:13.657Z"
+      "updated": "2026-05-15T23:57:29.808Z"
     },
     {
       "id": "issue-462",
       "title": "One-Shot Migration Tool (adev migrate)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-71",
       "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md. Created by /adev:specify on 2026-05-11. Idempotent one-pass migration: tasks.md→tasks.json, build-state/*.json→lifecycle-state/*.jsonl (with directory rename), .execution-state.md→.execution-state.json, milestones.yaml→milestones.json, constitution Context Routing update. Also covers Directory rename and Constitution Context Routing update capabilities. Depends on specs A (execution-state) and B (milestones) for target shapes.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md. Created by /adev:specify on 2026-05-11. Idempotent one-pass migration: tasks.md→tasks.json, build-state/*.json→lifecycle-state/*.jsonl (with directory rename), .execution-state.md→.execution-state.json, milestones.yaml→milestones.json, constitution Context Routing update. Also covers Directory rename and Constitution Context Routing update capabilities. Depends on specs A (execution-state) and B (milestones) for target shapes.; Closed: Spec one-shot-migration-tool.spec.md is validated; reconciliation cleanup per epic-71",
       "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts",
       "created": "2026-05-11T21:31:52.989Z",
-      "updated": "2026-05-11T21:31:52.989Z"
+      "updated": "2026-05-15T23:57:29.817Z"
     },
     {
       "id": "issue-463",
@@ -2865,22 +2888,25 @@
       "type": "feature",
       "dependencies": [],
       "notes": "",
-      "next_action": "Spec the three deliverables under the existing extensions charter (or a new extension-authoring sub-charter if scope warrants); priority is the worked-example extension since it grounds the docs.",
+      "next_action": "See feature issue-503 (extension-authoring-docs spec). Run /adev:review-specs --module extensions to advance.",
       "created": "2026-05-15T13:44:47.513Z",
-      "updated": "2026-05-15T13:47:17.838Z",
-      "epicId": "epic-75"
+      "updated": "2026-05-16T12:00:50.158Z",
+      "epicId": "epic-74"
     },
     {
       "id": "issue-486",
-      "title": "Review default validation checks",
-      "status": "open",
+      "title": "Cache spec/charter/manifest reads in validate subagent",
+      "status": "deferred",
       "priority": 2,
       "type": "feature",
-      "dependencies": [],
+      "dependencies": [
+        "issue-490"
+      ],
       "notes": "Validate dispatches consume disproportionate tokens — averaged ~90-110K per spec across 13 checks during the lifecycle-artifacts charter build (~3x the per-implement cost). Most checks re-read the same spec, charter, and manifest files independently.\n\n## Problem\nMeasured during 2026-05-15 lifecycle-artifacts charter retro:\n- 11 validate dispatches × ~95K tokens avg = ~1.05M tokens\n- 11 implement dispatches × ~25K tokens avg = ~275K tokens\n- Validate is ~3x the cost of implement despite doing strictly less work (read-only verification vs. authoring code+tests)\n\nRoot cause: every check (1, 1.5, 1.6, 2-13) loads the same spec/charter/manifest files independently inside its own subagent context. No shared cache.\n\n## Proposed scope\n1. Audit which of the 13 checks actually need file content vs. could work from a single pre-parsed payload.\n2. Add a read-once cache (spec body, charter, manifest, plan) at the validate subagent entry point and pass parsed data to checks.\n3. Consider conditional check execution — skip Check 11 (UI) when no UI files exist; skip Check 9 (transitions) when no state-machine config; skip Check 7 (e2e) when no e2e suite. Signal these from the orchestrator rather than re-discovering per-subagent.\n4. Consider whether some checks should be deduped or combined (e.g., Check 1 + 1.5 + 1.6 all read npm test output).\n\n## Expected impact\n- 30% token reduction conservatively → ~330K tokens saved per 11-spec charter\n- Faster validate wall-clock (less LLM throughput on redundant reads)\n- Cleaner check authoring contract (signature: (parsedContext) => result)\n\n## Reference\nSee .context-index/hygiene/retros/2026-05-15-lifecycle-artifacts-build.md action item #10 and #11 for full retrospective context.",
       "next_action": null,
       "created": "2026-05-15T19:35:58.758Z",
-      "updated": "2026-05-15T19:35:58.758Z"
+      "updated": "2026-05-15T21:38:07.897Z",
+      "description": "> **PARKED behind issue-490** (Restructure /adev:validate around real-signal checks).\n>\n> Analysis of 88 historic .validate.md reports showed that 9 of validate's 13 checks duplicate gates that already run at spec-review time, belong in /adev:hygiene or /adev:reconcile, or have never produced signal in this project's configuration. Caching reads for those checks optimizes the wrong axis. The cache work belongs inside the surviving check set, after the restructure decides which checks survive.\n>\n> Resume work on this issue only after the umbrella's charter pins the post-restructure validate check set.\n>\n> ---\n>\nValidate dispatches re-read the same spec, charter, manifest, and plan files inside every check's subagent context. No shared cache.\n\n## Problem\nMeasured during 2026-05-15 lifecycle-artifacts charter retro:\n- 11 validate dispatches × ~95K tokens avg = ~1.05M tokens\n- 11 implement dispatches × ~25K tokens avg = ~275K tokens\n- Validate is ~3x the cost of implement despite doing strictly less work\n\nRoot cause: every check (1, 1.5, 1.6, 2-13) loads the same spec/charter/manifest files independently inside its own subagent context.\n\n## Scope\nCache spec / charter / manifest / plan reads at the validate-subagent entry point. Pass the pre-parsed payload to every check. Update the check-authoring contract so checks consume `(parsedContext) => result` rather than re-reading from disk.\n\n**Out of scope:** conditional check execution (skipping irrelevant checks based on charter content). Tracked separately — see follow-up issue. That work depends on real post-cache token measurements to size its ROI.\n\n## Acceptance\n1. New `parsedContext` payload computed once at validate entry; contains spec body+frontmatter, charter, manifest, plan (when present), and source-manifest evaluation.\n2. All 13 checks updated to consume the payload instead of independent file reads.\n3. Before/after token measurement on a representative charter (11+ specs) shows the reduction.\n4. Test coverage: payload-builder unit tests + integration test that runs validate end-to-end and asserts no redundant reads via fs-spy or similar.\n\n## Expected impact\n~30% token reduction conservatively per retro item #10 → ~330K tokens saved per 11-spec charter. Cleaner check-authoring contract.\n\n## Reference\n- .context-index/hygiene/retros/2026-05-15-lifecycle-artifacts-build.md — Cost/efficiency improvement #10, Action item #8 (Medium, 2-4h)\n- Companion (separately scoped): conditional check execution — see follow-up issue."
     },
     {
       "id": "issue-487",
@@ -2893,6 +2919,218 @@
       "next_action": null,
       "created": "2026-05-15T19:36:21.226Z",
       "updated": "2026-05-15T19:36:21.226Z"
+    },
+    {
+      "id": "issue-488",
+      "title": "drift-stamp hook overwrites drift_source/drift_at on every watched-file edit",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-15T19:54:44.462Z",
+      "updated": "2026-05-15T19:54:44.462Z"
+    },
+    {
+      "id": "issue-489",
+      "title": "Conditional check execution in validate (skip N/A checks earlier)",
+      "status": "deferred",
+      "priority": 3,
+      "type": "feature",
+      "dependencies": [
+        "issue-486",
+        "issue-490"
+      ],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-15T20:16:05.029Z",
+      "updated": "2026-05-15T21:38:07.908Z",
+      "description": "> **PARKED behind issue-490** (Restructure /adev:validate around real-signal checks).\n>\n> The conditional-execution framing assumes the 13 checks are correct and the question is \"which to skip per spec.\" The data shows the more fundamental question is \"which checks should exist at validate-time at all.\" Several \"conditional\" gates (Checks 7, 8, 9, 11) are actually project-configuration decisions that should be made once at orchestrator level, not per-spec.\n>\n> Resume work on this issue only after the umbrella's charter pins the post-restructure validate check set.\n>\n> ---\n>\n"
+    },
+    {
+      "id": "issue-490",
+      "title": "Restructure /adev:validate around real-signal checks",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-15T21:38:07.876Z",
+      "updated": "2026-05-15T21:45:49.180Z",
+      "description": "\n\n---\n\n## Investigation findings (2026-05-15)\n\n### (i) Zombie check audit — Checks 3 and 4 at 100% PASS\n\nSampled 12 random Check 3 PASS bodies + 12 Check 4 PASS bodies from the 78-report corpus.\n\n**Check 3 (Charter Consistency) — verdict: DROP**\n\nFindings:\n- Real verification when present: cites specific charter capabilities, entities, and interface contracts.\n- BUT transitively redundant given Check 2 (file:line spec compliance with anti-fabrication rule) + review-specs/structural-architect #3 (spec-time scope check).\n- 2 of 12 samples were thin/formulaic (\"Format Documentation capability (Phase 2, nice-to-have)\" was the entire body); 1 was empty.\n- The 100% PASS rate is explained by the redundancy chain, not gaming.\n\nRecommendation: replace with a Check 2 sub-finding \"scope expansion detected\" that fires when code lives outside the spec's listed file scope.\n\n**Check 4 (Constitution Compliance) — verdict: KEEP, tighten contract**\n\nFindings:\n- Samples show genuine code-level inspection: import lists, file extensions, version parity in two files, naming conventions.\n- These checks cannot be done by review-specs (which works from spec text, not code).\n- 100% PASS rate is explained by upstream pipeline enforcing constraints (charter → spec → review → plan → implement); Check 4 is the safety net.\n\nRecommendation: keep, but the new validate charter should codify \"every Check 4 finding cites grep / file-inspection evidence\" — most samples already do this; make it mandatory.\n\n### (ii) Check 12 noise audit — 49% WARN rate\n\nPulled all 25 Check 12 WARN sections; classified sub-findings.\n\nSub-finding frequency within Check 12 WARNs:\n- Plan checkboxes: 25/25 (100%)\n- Spec status: 16/25 (64%)\n- Issue alignment: 14/25 (56%)\n- Charter sync: 12/25 (48%)\n- Epic completion: 7/25 (28%)\n\nFindings:\n- Bodies overwhelmingly contain bookkeeping observations, not validation failures. Example body: \"Spec status: implemented → validated. Charter capability row: promoted to validated. Plan checkboxes: 30/30 marked complete.\" That is a success log labeled WARN.\n- Other typical pattern: \"Issue alignment: WARN — issues still open but implementation complete.\" The validator is correctly seeing what `--fix` would update — but `--fix` is opt-in, so the WARN persists every run.\n- Plan-checkbox sub-check fires in 100% of WARNs, often on \"summary checkboxes\" that aren't task state per plan-task-events.spec.md. Retro item #7 confirmed at scale.\n\nVerdict: MOVE to /adev:reconcile, with `--fix` as the default mode. Validation should answer \"does code work and match spec\"; reconciliation should answer \"are bookkeeping artifacts in sync.\" Bundling them produced 49% noise rate.\n\n## Updated KEEP/MOVE/DROP map (input to /adev:brainstorm)\n\n| Check | Verdict | Destination | Rationale |\n|---|---|---|---|\n| 1 Quality Gates | KEEP | validate | 93% PASS, 3% FAIL — only check producing actual signal. |\n| 1.5 Source Manifest | KEEP | validate (advisory) | Cheap, advisory; 1 FAIL ever but real. |\n| 1.6 Code-Side Drift | KEEP | validate (advisory) | Cheap, advisory; cross-reference with hook. |\n| 2 Spec Compliance | KEEP + sub-finding | validate | The reason validate exists. Add \"scope expansion\" sub-finding to absorb Check 3. |\n| 3 Charter Consistency | DROP | (subsumed) | Transitively redundant. |\n| 4 Constitution Compliance | KEEP + tighten | validate | Code-level checks review-specs can't do. Require evidence citations. |\n| 5 ADR Compliance | MOVE or DROP | review-specs (design-level) | review-specs/structural-architect already implicitly covers ADR conflicts. |\n| 6 Cross-Cutting Specs | MOVE | review-specs / consistency-analyzer | consistency-analyzer #3 (Contract Compatibility) already covers. |\n| 7 Specialist Review | DROP | (subsumed by review-specs) | Same specialist registry, duplicate dispatch path. |\n| 8 Boundary Compliance | KEEP if used | validate, orchestrator-gated | Skip dispatch if no `governance/boundaries.yaml`. |\n| 9 Transition Gates | KEEP if used | validate, orchestrator-gated | Skip dispatch if no transitions in `governance/gates.yaml`. |\n| 10 Platform Drift | MOVE | /adev:hygiene | Repo-level, identical for every spec in a run. |\n| 11 Visual Verification | DROP or guard | validate (conditional) | 0/79 PASS rate. Guard with \"Playwright MCP available AND spec has UI files\"; don't BLOCK if absent. |\n| 12 Lifecycle Reconciliation | MOVE | /adev:reconcile (with --fix default) | 49% noise rate confirmed; the check is correctly observing drift, just in the wrong skill. |\n| 13 Success Heuristic Extraction | MOVE | Post-validate hook | Side effect, not pass/fail. |\n\n**Surviving validate checks after restructure: 4-6** (1, 1.5, 1.6, 2, 4, optionally 8/9 when governance configured).\n\n## Expected token impact (refined)\n\nIf the surviving checks are 1, 1.5, 1.6, 2, 4 (5 checks vs 13), and Check 2 dominates the cost:\n- Pre-restructure: 13 checks × ~7K average = ~95K per validate dispatch\n- Post-restructure: 5 checks, with Check 2 still expensive (~30K) and the others cheap (~3K each) = ~45K per dispatch\n- Per 11-spec charter: ~50K × 11 = ~550K tokens saved (vs ~330K from the cache-only approach)\n\nPlus reduced noise: Check 12 WARNs disappear (move to reconcile), Check 11 BLOCK never fires."
+    },
+    {
+      "id": "issue-491",
+      "title": "Validate Check Set Restructure",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/validation/check-set-restructure.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/check-set-restructure.spec.md. Created by /adev:specify on 2026-05-15. Tracker: issue-490.",
+      "next_action": "Run /adev:plan --spec check-set-restructure.spec.md",
+      "created": "2026-05-15T22:37:11.805Z",
+      "updated": "2026-05-16T00:42:04.581Z"
+    },
+    {
+      "id": "issue-492",
+      "title": "Single-Source Validate Configuration",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/validation/validate-config-single-source.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/validate-config-single-source.spec.md. Created by /adev:specify on 2026-05-15. Supersedes configurable-checks Behaviors 1, 2, 5 + AC #1.",
+      "next_action": "Run /adev:plan --spec validate-config-single-source.spec.md",
+      "created": "2026-05-16T00:10:45.789Z",
+      "updated": "2026-05-16T00:42:04.595Z"
+    },
+    {
+      "id": "issue-493",
+      "title": "adev diagnose scalability — push spec iteration into the engine",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "",
+      "next_action": "Spec under cli-driver-surface charter as a perf-driven amendment to diagnostic-registry.spec.md",
+      "created": "2026-05-16T11:51:15.560Z",
+      "updated": "2026-05-16T11:51:15.560Z"
+    },
+    {
+      "id": "issue-494",
+      "title": "Kind-aware CLI surface — adev state list --kind, adev context load emits kind",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "",
+      "next_action": "Decide charter home, then /adev:specify",
+      "created": "2026-05-16T11:51:15.570Z",
+      "updated": "2026-05-16T11:51:15.570Z"
+    },
+    {
+      "id": "issue-495",
+      "title": "/adev:plan should git-add the plan file when authored",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-85",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.422Z",
+      "updated": "2026-05-16T11:58:30.422Z"
+    },
+    {
+      "id": "issue-496",
+      "title": "Validate report write should be atomic (write-temp + rename)",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-85",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.425Z",
+      "updated": "2026-05-16T11:58:30.425Z"
+    },
+    {
+      "id": "issue-497",
+      "title": "Migrate build orchestrator to Sonnet (with A/B measurement)",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-85",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.435Z",
+      "updated": "2026-05-16T11:58:30.435Z"
+    },
+    {
+      "id": "issue-498",
+      "title": "Lifecycle gate verdict vocabulary — broaden or document",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-85",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.443Z",
+      "updated": "2026-05-16T11:58:30.443Z"
+    },
+    {
+      "id": "issue-499",
+      "title": "Build re-invocations default to --auto mode",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-85",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.449Z",
+      "updated": "2026-05-16T11:58:30.449Z"
+    },
+    {
+      "id": "issue-500",
+      "title": "Disambiguate check-12-* registry IDs in configurable-checks spec",
+      "status": "open",
+      "priority": 3,
+      "type": "task",
+      "epicId": "epic-85",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.456Z",
+      "updated": "2026-05-16T11:58:30.456Z"
+    },
+    {
+      "id": "issue-501",
+      "title": "Per-spec cost ticker via session-JSONL hook",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-85",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.460Z",
+      "updated": "2026-05-16T11:58:30.460Z"
+    },
+    {
+      "id": "issue-502",
+      "title": "Drift-stamp hook churn (cross-link to issue-488)",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-85",
+      "dependencies": [
+        "issue-488"
+      ],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-16T11:58:30.465Z",
+      "updated": "2026-05-16T11:58:30.480Z"
+    },
+    {
+      "id": "issue-503",
+      "title": "Extension Authoring Documentation Bundle",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/extensions/extension-authoring-docs.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/extensions/extension-authoring-docs.spec.md. Created by /adev:specify on 2026-05-16. Closes issue-485 — extension authoring docs gap.",
+      "next_action": "Run /adev:review-specs --module extensions",
+      "created": "2026-05-16T12:00:50.146Z",
+      "updated": "2026-05-16T12:00:50.146Z"
     }
   ]
 }
