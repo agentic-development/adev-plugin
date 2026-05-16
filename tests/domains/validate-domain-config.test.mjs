@@ -25,7 +25,11 @@ describe("loadDomainConfig: validate configType", () => {
     assert.ok(result !== null, 'software starter should exist (Task 3 created it)');
     assert.ok(typeof result === 'object', 'should be parsed YAML object');
     assert.ok(Array.isArray(result.checks), 'should have a checks array');
-    assert.ok(result.checks.length >= 12, `expected >= 12 checks, got ${result.checks.length}`);
+    // Post-check-set-restructure.spec.md the starter trimmed from 12 entries
+    // to the surviving subset (1.5, 2, 4, 8, 9, 11). Surviving-count
+    // invariants are asserted in tests/governance/validate-check-set-restructure.test.mjs;
+    // here we just guard against an accidental empty starter.
+    assert.ok(result.checks.length >= 5, `expected >= 5 surviving checks, got ${result.checks.length}`);
   });
 
   it("loadDomainConfig('data-engineering', 'validate') returns null (no starter shipped, SA-7)", () => {
@@ -44,9 +48,13 @@ describe("loadDomainConfig: validate configType", () => {
     const checksWithPluginUri = result.checks.filter(
       (c) => typeof c.prompt === 'string' && c.prompt.startsWith('plugin:validate/checks/')
     );
+    // Post-check-set-restructure.spec.md the surviving subagent-review checks
+    // (2, 4, 8, 9, 11) all use plugin: URI prompts; Check 1.5 is a
+    // deterministic-check that also references a plugin: URI. Any surviving
+    // entry with a prompt MUST use the plugin: scheme.
     assert.ok(
-      checksWithPluginUri.length >= 10,
-      `expected at least 10 checks with plugin: URI prompts, got ${checksWithPluginUri.length}`
+      checksWithPluginUri.length >= 3,
+      `expected at least 3 surviving checks with plugin: URI prompts, got ${checksWithPluginUri.length}`,
     );
   });
 
