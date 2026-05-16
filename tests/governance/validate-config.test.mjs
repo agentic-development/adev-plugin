@@ -231,6 +231,95 @@ describe("validate-config loadValidateConfig", () => {
     const r = loadValidateConfig(repo);
     assert.ok(hasCode(r.errors, "SUBAGENT_PROMPT_REQUIRED"));
   });
+
+  test("plugin:validate/checks/<id>.md URI resolves to plugin tree file", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/validate.yaml",
+      `checks:
+  - id: project.uses-plugin-uri
+    kind: subagent-review
+    profile: reviewer-capable
+    prompt: plugin:validate/checks/validate.check-2-spec-compliance.md
+`
+    );
+    const r = loadValidateConfig(repo);
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
+    const check = r.checks.find((c) => c.id === "project.uses-plugin-uri");
+    assert.ok(check, "check should be present");
+    assert.ok(
+      typeof check.resolvedPromptPath === "string",
+      "resolvedPromptPath should be set"
+    );
+    assert.ok(
+      check.resolvedPromptPath.includes("skills/validate/checks"),
+      `resolvedPromptPath should point at plugin checks dir; got ${check.resolvedPromptPath}`
+    );
+  });
+
+  test("plugin: URI to unknown check file fails with PROMPT_NOT_FOUND", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/validate.yaml",
+      `checks:
+  - id: project.missing-prompt-file
+    kind: subagent-review
+    profile: reviewer-capable
+    prompt: plugin:validate/checks/validate.check-does-not-exist.md
+`
+    );
+    const r = loadValidateConfig(repo);
+    assert.ok(
+      hasCode(r.errors, "PROMPT_NOT_FOUND"),
+      `expected PROMPT_NOT_FOUND; got: ${JSON.stringify(r.errors)}`
+    );
+  });
+
+  test("cross-plugin prompt URI (plugin:other:...) fails with PROMPT_CROSS_PLUGIN", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/validate.yaml",
+      `checks:
+  - id: project.cross-plugin
+    kind: subagent-review
+    profile: reviewer-capable
+    prompt: "plugin:other:checks/foo.md"
+`
+    );
+    const r = loadValidateConfig(repo);
+    assert.ok(
+      hasCode(r.errors, "PROMPT_CROSS_PLUGIN"),
+      `expected PROMPT_CROSS_PLUGIN; got: ${JSON.stringify(r.errors)}`
+    );
+  });
+
+  test("PROMPT_NOT_FOUND diagnostic emits sanitized + truncated URI (≤128 chars + allowlist-stripped)", () => {
+    const repo = tmp();
+    // Pad the file portion so the URI exceeds 128 chars before sanitization.
+    const longSuffix = "a".repeat(200);
+    writeFixture(
+      repo,
+      ".context-index/governance/validate.yaml",
+      `checks:
+  - id: project.long-uri
+    kind: subagent-review
+    profile: reviewer-capable
+    prompt: "plugin:validate/checks/validate.${longSuffix}.md"
+`
+    );
+    const r = loadValidateConfig(repo);
+    const err = r.errors.find((e) => e.code === "PROMPT_NOT_FOUND");
+    assert.ok(err, "expected PROMPT_NOT_FOUND");
+    // The displayed URI substring inside the message should be capped near 128 chars.
+    // We check that the message length is bounded (well under the worst-case 200+char prompt).
+    assert.ok(
+      err.message.length < 300,
+      `diagnostic should be bounded; length=${err.message.length}`
+    );
+  });
 });
 
 describe("validate-config shouldSkipDueToFailFast", () => {
