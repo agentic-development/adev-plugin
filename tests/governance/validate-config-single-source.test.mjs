@@ -231,6 +231,80 @@ describe("validate-config migration tool (adev migrate --artifact=validate-confi
   });
 });
 
+describe("acceptance criteria: full coverage", () => {
+  it("12 check prompt files exist under skills/validate/checks/ and are non-empty", async () => {
+    const { readdirSync, statSync } = await import('node:fs');
+    const checksDir = join(PLUGIN_ROOT, 'skills', 'validate', 'checks');
+    assert.ok(existsSync(checksDir), 'checks/ directory must exist');
+    const files = readdirSync(checksDir).filter((f) => f.endsWith('.md'));
+    assert.ok(files.length >= 12, `expected >= 12 check files, got ${files.length}`);
+    for (const f of files) {
+      const stat = statSync(join(checksDir, f));
+      assert.ok(stat.size > 50, `check file ${f} is too small (${stat.size} bytes)`);
+    }
+  });
+
+  it("templates/validate/defaults.yaml is removed", () => {
+    const oldDefaults = join(PLUGIN_ROOT, 'templates', 'validate', 'defaults.yaml');
+    assert.ok(!existsSync(oldDefaults), 'old bundled defaults file must be deleted');
+  });
+
+  it("supersession round-trip: configurable-checks.spec.md has superseded-by-behaviors pointing at this spec", () => {
+    const specPath = join(
+      PLUGIN_ROOT,
+      '.context-index/specs/features/validation/configurable-checks.spec.md',
+    );
+    const content = readFileSync(specPath, 'utf8');
+    assert.ok(
+      content.includes('superseded-by-behaviors:'),
+      'predecessor spec must declare superseded-by-behaviors',
+    );
+    assert.ok(
+      content.includes('validate-config-single-source'),
+      'predecessor must point at this spec',
+    );
+  });
+
+  it("ADR-0003 contains the 2026-05-15 narrowing note referencing this spec", () => {
+    const adrPath = join(PLUGIN_ROOT, '.context-index/adrs/0003-configurable-review-registry.md');
+    const content = readFileSync(adrPath, 'utf8');
+    assert.ok(
+      content.includes('Revised 2026-05-15') && content.includes('validate-config-single-source'),
+      'ADR-0003 must include the narrowing note for the validate registry',
+    );
+    assert.ok(
+      /opt-in adoption/i.test(content) || /Validate Config Drift/i.test(content),
+      'note must describe opt-in adoption via /adev:hygiene drift pass',
+    );
+  });
+
+  it("parity: project with full software starter as governance/validate.yaml loads 12 checks identically to starter", async () => {
+    const { loadValidateConfig } = await import('../../lib/governance/validate-config.mjs');
+    const starterPath = join(PLUGIN_ROOT, 'templates', 'domains', 'software', 'validate.yaml');
+    const starterBytes = readFileSync(starterPath, 'utf8');
+    const repo = tmp();
+    writeFixture(repo, '.context-index/governance/validate.yaml', starterBytes);
+    const r = loadValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
+    assert.equal(r.checks.length, 12);
+    // Every check id must come from the starter (no project additions in this fixture)
+    const starterConfig = loadDomainConfig('software', 'validate', PLUGIN_ROOT, PLUGIN_ROOT);
+    const starterIds = new Set(starterConfig.checks.map((c) => c.id));
+    for (const c of r.checks) {
+      assert.ok(starterIds.has(c.id), `unexpected id ${c.id} (not in starter)`);
+    }
+  });
+
+  it("validation charter Key Files references skills/validate/checks/", () => {
+    const charterPath = join(PLUGIN_ROOT, '.context-index/specs/features/validation/charter.md');
+    const content = readFileSync(charterPath, 'utf8');
+    assert.ok(
+      content.includes('skills/validate/checks/'),
+      'charter must reference the externalized checks directory',
+    );
+  });
+});
+
 describe("SKILL.md content: init Step 7d.0", () => {
   it("skills/init/SKILL.md mentions loadDomainConfig with 'validate' configType", () => {
     const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
