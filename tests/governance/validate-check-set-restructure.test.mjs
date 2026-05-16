@@ -227,6 +227,30 @@ describe('Validate check set restructure — registry trim', () => {
     }
   });
 
+  test('validation charter Skills section no longer uses pre-restructure check counts', () => {
+    const charter = readFileSync(
+      join(PLUGIN_ROOT, '.context-index/specs/features/validation/charter.md'),
+      'utf8',
+    );
+    assert.ok(!/11 ordered checks/.test(charter), 'Charter must not say "11 ordered checks"');
+    assert.ok(!/12 ordered checks/.test(charter), 'Charter must not say "12 ordered checks"');
+    assert.ok(!/13 ordered checks/.test(charter), 'Charter must not say "13 ordered checks"');
+  });
+
+  test('validation charter Skills section enumerates the post-restructure surviving checks', () => {
+    const charter = readFileSync(
+      join(PLUGIN_ROOT, '.context-index/specs/features/validation/charter.md'),
+      'utf8',
+    );
+    assert.ok(charter.includes('Check 1.5'), 'Charter Skills must mention Check 1.5');
+    assert.ok(/Check 2/.test(charter), 'Charter Skills must mention Check 2');
+    assert.ok(/Check 4/.test(charter), 'Charter Skills must mention Check 4');
+    assert.ok(
+      /relocated|relocated to/.test(charter),
+      'Charter Skills should describe relocation of the dropped checks'
+    );
+  });
+
   test('SEC-4: RESURRECTED_CHECK_ID message shows only the check ID, not the full entry content', () => {
     const repo = tmp();
     const starterBase = readFileSync(STARTER_PATH, 'utf8');
