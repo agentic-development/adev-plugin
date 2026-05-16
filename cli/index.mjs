@@ -1322,6 +1322,7 @@ const VERB_REGISTRY = new Map([
   ["build-state",     () => import("../lib/cli/build-state.mjs")],
   ["preflight",       () => import("../lib/cli/preflight.mjs")],
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
+  ["artifact",        () => import("../lib/cli/artifact.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr

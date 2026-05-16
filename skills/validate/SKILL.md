@@ -385,7 +385,16 @@ When aggregating the overall validation verdict, read `state.steps.validate` fro
 
 **Persona adaptation:** The validation report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
 
-Write the validation report to `.context-index/specs/features/<module>/<spec-slug>.validate.md`.
+**Atomic write protocol (per epic-85 / issue-496):** Write the validation report in two steps so that a session terminated mid-write never leaves a partial `.validate.md` on disk:
+
+1. Use the Write tool to write the full report body to `.context-index/specs/features/<module>/<spec-slug>.validate.md.tmp` (note the `.tmp` suffix).
+2. Commit the artifact via the CLI:
+
+```bash
+adev artifact commit --spec .context-index/specs/features/<module>/<spec-slug>.spec.md --kind validate
+```
+
+The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec-path>.validate.md`) from the spec path, validates that the temp file exists and is non-empty (rejects zero-byte artifacts), and performs a same-directory `fs.renameSync` — atomic on POSIX. Until the commit step runs, the canonical `.validate.md` either reflects the prior run or is absent; the new content is never partially observable. On any failure the verb exits non-zero with a diagnostic message and the temp file remains for inspection.
 
 ```markdown
 # Validation Report: [Spec Title]
