@@ -1,0 +1,16 @@
+name: example-validation-check
+version: 0.1.0
+description: Reference extension showing the canonical provides.governance wiring
+author: adev-org
+requires:
+  adev: ">=0.27.0"
+provides:
+  governance:
+    - target: validate.yaml
+      entries:
+        - id: example-validation-check.passing
+          kind: quality-gate
+          profile: read-only
+          command: [bash, extensions/example-validation-check/bin/check.sh]
+          severity: warning
+          after: [validate.check-1-quality-gates]
