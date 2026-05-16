@@ -289,45 +289,6 @@ Load `.context-index/constitution.md`. Check:
 
 Record PASS or FAIL with specific principle/boundary violated and code location.
 
-### Check 5: ADR Compliance
-
-List all ADRs in `.context-index/adrs/`. For each ADR relevant to the implementation's domain:
-
-1. Read the ADR's decision and rationale.
-2. Check whether the implementation conflicts with, contradicts, or ignores the decision.
-3. If the implementation intentionally deviates from an ADR, flag it. The user must either update the ADR or change the implementation.
-
-If no ADRs exist or none are relevant, record PASS (no applicable ADRs).
-
-### Check 6: Cross-Cutting Spec Compliance
-
-List all specs in `.context-index/specs/cross-cutting/`. For each cross-cutting spec relevant to the implementation:
-
-1. Read the spec's requirements (e.g., error handling conventions, API versioning rules, auth flow requirements).
-2. Verify the implementation follows those requirements.
-
-Relevance is determined by the domain: if a cross-cutting spec covers error handling and the implementation includes error handling code, that spec is relevant.
-
-If no cross-cutting specs exist or none are relevant, record PASS (no applicable cross-cutting specs).
-
-### Check 7: Specialist Review
-
-Read the `specialists` registry from `.context-index/manifest.yaml`. Apply the same match scoring algorithm used by `/adev:implement`:
-
-1. Collect all files touched by the implementation (from the plan, or by diffing against the base branch).
-2. For each specialist, compute pattern score (2 points per matching glob + depth bonus) and keyword score (1 point per matching keyword in the spec title/description).
-3. If any specialist scores above 0, flag the implementation for domain-specific review.
-
-For each matched specialist:
-- If `invoke: skill`, note the skill name and recommend the user invoke it for a focused review.
-- If `invoke: subagent`, dispatch the specialist as a review subagent with:
-  - The specialist's prompt template from `.context-index/specialists/<name>.md`
-  - The list of files to review
-  - The relevant spec sections
-  - Instructions to check domain-specific quality (e.g., accessibility for frontend, injection vectors for security, migration safety for data-engineering)
-
-Record per specialist: PASS, FAIL (with specific findings), or SKIPPED (no specialist matched).
-
 ### Check 8: Boundary Compliance
 
 If the `governance/` directory does not exist → SKIP: "No governance directory configured."
@@ -592,19 +553,6 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Architecture boundaries: PASS | FAIL [boundary violated, file:line]
 - Non-negotiable principles: PASS | FAIL [principle violated, file:line]
 - Coding standards: PASS | FAIL [standard violated, file:line]
-
-## Check 5: ADR Compliance — PASS | FAIL | N/A
-- [ADR-001]: PASS | FAIL [conflict description]
-- ...
-
-## Check 6: Cross-Cutting Specs — PASS | FAIL | N/A
-- [error-handling.md]: PASS | FAIL [details]
-- ...
-
-## Check 7: Specialist Review — PASS | FAIL | SKIPPED
-- [frontend-design]: PASS | FAIL [findings]
-- [security]: PASS | FAIL [findings]
-- ...
 
 ## Check 8: Boundary Compliance — PASS | FAIL | N/A
 - [boundary-id]: PASS | FAIL | WARN [details]

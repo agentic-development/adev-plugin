@@ -106,4 +106,27 @@ describe('Validate check set restructure — registry trim', () => {
       'SKILL.md must not retain the ### Check 12: Lifecycle Reconciliation prose section'
     );
   });
+
+  test('software starter has no active check-5, check-6, check-7 entries', () => {
+    const starter = readFileSync(STARTER_PATH, 'utf8');
+    assert.ok(
+      !/^\s*-\s*id:\s*validate\.check-5-adrs/m.test(starter),
+      'Starter must not register check-5-adrs'
+    );
+    assert.ok(
+      !/^\s*-\s*id:\s*validate\.check-6-cross-cutting/m.test(starter),
+      'Starter must not register check-6-cross-cutting'
+    );
+    assert.ok(
+      !/^\s*-\s*id:\s*validate\.check-7-specialist-review/m.test(starter),
+      'Starter must not register check-7-specialist-review'
+    );
+  });
+
+  test('SKILL.md no longer contains Check 5, 6, 7 prose sections', () => {
+    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    assert.ok(!/^### Check 5: /m.test(skill), 'SKILL.md must not retain ### Check 5 prose');
+    assert.ok(!/^### Check 6: /m.test(skill), 'SKILL.md must not retain ### Check 6 prose');
+    assert.ok(!/^### Check 7: /m.test(skill), 'SKILL.md must not retain ### Check 7 prose');
+  });
 });

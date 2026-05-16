@@ -43,32 +43,15 @@ checks:
     prompt: plugin:validate/checks/validate.check-4-constitution.md
     after: [validate.check-2-spec-compliance]
 
-  - id: validate.check-5-adrs
-    name: "ADR Compliance"
-    kind: subagent-review
-    profile: reviewer-capable
-    context_pack: base
-    severity: warning
-    prompt: plugin:validate/checks/validate.check-5-adrs.md
-    after: [validate.check-2-spec-compliance]
-
-  - id: validate.check-6-cross-cutting
-    name: "Cross-Cutting Spec Compliance"
-    kind: subagent-review
-    profile: reviewer-capable
-    context_pack: base
-    severity: warning
-    prompt: plugin:validate/checks/validate.check-6-cross-cutting.md
-    after: [validate.check-2-spec-compliance]
-
-  - id: validate.check-7-specialist-review
-    name: "Specialist Review"
-    kind: subagent-review
-    profile: reviewer-capable
-    context_pack: base
-    severity: warning
-    prompt: plugin:validate/checks/validate.check-7-specialist-review.md
-    after: [validate.check-2-spec-compliance]
+  # check-5-adrs removed by check-set-restructure.spec.md
+  # (migrated to /adev:review-specs structural-architect ADR-compliance scope).
+  #
+  # check-6-cross-cutting removed by check-set-restructure.spec.md
+  # (migrated to /adev:review-specs consistency-analyzer cross-cutting scope).
+  #
+  # check-7-specialist-review removed by check-set-restructure.spec.md
+  # (duplicate dispatch path; /adev:review-specs already runs the same
+  # specialist registry).
 
   - id: validate.check-8-boundaries
     name: "Governance Boundaries"
