@@ -37,6 +37,7 @@ import {
   rmSync,
   realpathSync,
   appendFileSync,
+  existsSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -534,6 +535,102 @@ describe("cli-lifecycle: end-to-end CLI verb composition", () => {
       r.stdout,
       /lib\/feature\.mjs/,
       `post-drift verify should name the drifted file; got: ${r.stdout}`,
+    );
+  });
+
+  test("validate report commit: write-tmp → `adev artifact commit` produces the canonical .validate.md atomically (issue-496)", () => {
+    const SPEC = SPEC_REL;
+
+    // Walk specify → review → plan → implement → validate (started) so the
+    // lifecycle reaches the point where /adev:validate would write its
+    // report on disk.
+    for (const step of ["specify", "review", "plan", "implement"]) {
+      let r = adev(projectDir, [
+        "report", "--type", "step", "--spec", SPEC,
+        "--step", step, "--status", "started",
+      ]);
+      assert.equal(r.exitCode, 0, `${step} started: ${r.stderr}`);
+      r = adev(projectDir, [
+        "report", "--type", "step", "--spec", SPEC,
+        "--step", step, "--status", "completed", "--verdict", "PASS",
+      ]);
+      assert.equal(r.exitCode, 0, `${step} completed: ${r.stderr}`);
+    }
+    let r = adev(projectDir, [
+      "report", "--type", "step", "--spec", SPEC,
+      "--step", "validate", "--status", "started",
+    ]);
+    assert.equal(r.exitCode, 0, `validate started: ${r.stderr}`);
+
+    const specAbs = join(projectDir, SPEC);
+    const validateMd = specAbs.replace(/\.spec\.md$/, ".validate.md");
+    const validateTmp = `${validateMd}.tmp`;
+
+    // Stage 1: the skill writes the report body to <path>.validate.md.tmp.
+    // The canonical .validate.md is NOT yet observable.
+    const reportBody = "# Validation Report: Sample\n\nFull body.\n";
+    writeFileSync(validateTmp, reportBody);
+    assert.ok(
+      !existsSync(validateMd),
+      "before commit: canonical .validate.md must NOT exist",
+    );
+
+    // Negative path: a zero-byte tmp must NOT be committed.
+    writeFileSync(validateTmp, "");
+    r = adev(projectDir, [
+      "artifact", "commit",
+      "--spec", SPEC, "--kind", "validate",
+    ]);
+    assert.equal(r.exitCode, 1, "zero-byte tmp must be rejected");
+    assert.match(r.stderr, /empty|zero/i);
+    assert.ok(existsSync(validateTmp), "tmp must remain for inspection on failure");
+    assert.ok(
+      !existsSync(validateMd),
+      "destination must NOT be created on failure",
+    );
+
+    // Stage 2: re-stage a non-empty tmp and commit.
+    writeFileSync(validateTmp, reportBody);
+    r = adev(projectDir, [
+      "artifact", "commit",
+      "--spec", SPEC, "--kind", "validate",
+    ]);
+    assert.equal(r.exitCode, 0, `commit should succeed: ${r.stderr}`);
+    assert.equal(r.stdout, "", "commit is silent on success");
+    assert.ok(!existsSync(validateTmp), "tmp must be gone after rename");
+    assert.ok(existsSync(validateMd), "canonical .validate.md must exist after commit");
+    assert.equal(
+      readFileSync(validateMd, "utf8"),
+      reportBody,
+      "committed content must match what was written to tmp",
+    );
+
+    // Re-run case: a second validation overwrites the canonical report
+    // through the same write-tmp + commit pattern.
+    const reportBodyV2 = "# Validation Report: Sample\n\nSecond run.\n";
+    writeFileSync(validateTmp, reportBodyV2);
+    r = adev(projectDir, [
+      "artifact", "commit",
+      "--spec", SPEC, "--kind", "validate",
+    ]);
+    assert.equal(r.exitCode, 0, `re-commit should succeed: ${r.stderr}`);
+    assert.equal(
+      readFileSync(validateMd, "utf8"),
+      reportBodyV2,
+      "re-commit must replace prior canonical content",
+    );
+
+    // The lifecycle log records the validate step as started — artifact
+    // commit is a filesystem operation, not a lifecycle event, so it must
+    // NOT have appended any event.
+    const eventsBefore = readEvents(projectDir, SPEC);
+    const artifactEvents = eventsBefore.filter((e) =>
+      JSON.stringify(e).includes("artifact"),
+    );
+    assert.equal(
+      artifactEvents.length,
+      0,
+      "artifact commit must not emit lifecycle events",
     );
   });
 });
