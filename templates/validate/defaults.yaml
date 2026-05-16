@@ -3,16 +3,16 @@
 #
 # Check 1 (quality gates) is sourced from governance/gates.yaml by a separate
 # flow in skills/validate/SKILL.md and is not represented here. All other
-# checks are registry entries; the `internal: true` flag indicates the check's
-# subagent prompt is inlined in skills/validate/SKILL.md prose during the v1
-# migration. Projects adding new subagent-review checks must supply a `prompt`.
+# checks are registry entries. Each check's subagent / observational / deterministic
+# prompt body lives in skills/validate/checks/<id>.md and is referenced via
+# the `plugin:validate/checks/<id>.md` URI scheme.
 
 checks:
   - id: validate.check-1.5-source-manifest
     name: "Source Manifest Verification"
     kind: deterministic-check
     severity: warning
-    internal: true
+    prompt: plugin:validate/checks/validate.check-1.5-source-manifest.md
     description: "Verify spec source-manifest SHAs match current files."
 
   - id: validate.check-2-spec-compliance
@@ -21,7 +21,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: error
-    internal: true
+    prompt: plugin:validate/checks/validate.check-2-spec-compliance.md
     after: [validate.check-1.5-source-manifest]
 
   - id: validate.check-3-charter-consistency
@@ -30,7 +30,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: error
-    internal: true
+    prompt: plugin:validate/checks/validate.check-3-charter-consistency.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-4-constitution
@@ -39,7 +39,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: error
-    internal: true
+    prompt: plugin:validate/checks/validate.check-4-constitution.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-5-adrs
@@ -48,7 +48,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: warning
-    internal: true
+    prompt: plugin:validate/checks/validate.check-5-adrs.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-6-cross-cutting
@@ -57,7 +57,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: warning
-    internal: true
+    prompt: plugin:validate/checks/validate.check-6-cross-cutting.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-7-specialist-review
@@ -66,7 +66,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: warning
-    internal: true
+    prompt: plugin:validate/checks/validate.check-7-specialist-review.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-8-boundaries
@@ -75,7 +75,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: error
-    internal: true
+    prompt: plugin:validate/checks/validate.check-8-boundaries.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-9-transition-gates
@@ -84,7 +84,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: warning
-    internal: true
+    prompt: plugin:validate/checks/validate.check-9-transition-gates.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-10-platform-drift
@@ -93,7 +93,7 @@ checks:
     profile: reviewer-capable
     context_pack: base
     severity: warning
-    internal: true
+    prompt: plugin:validate/checks/validate.check-10-platform-drift.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-11-visual-verification
@@ -102,10 +102,10 @@ checks:
     profile: browser-review
     context_pack: base
     severity: warning
-    internal: true
+    prompt: plugin:validate/checks/validate.check-11-visual-verification.md
 
   - id: validate.check-12-heuristic-extraction
     name: "Heuristic Extraction"
     kind: observational
     severity: info
-    internal: true
+    prompt: plugin:validate/checks/validate.check-12-heuristic-extraction.md
