@@ -1,12 +1,12 @@
 ---
 charter: validation
-status: review-passed
+status: implemented
 kind: refactor
 mode: refactor
 revision: 2
 charter-revision: 1
 created: 2026-05-15
-updated: 2026-05-15
+updated: 2026-05-16
 depends-on:
   - .context-index/specs/features/validation/validate-config-single-source.spec.md
   - .context-index/specs/features/validation/configurable-checks.spec.md
@@ -17,6 +17,25 @@ coordinated-with:
   - .context-index/specs/features/maintenance/charter.md
   - .context-index/specs/features/review/charter.md
 tracker-ref: issue-490
+source-manifest:
+  sha: "6ebea3d"
+  computed-at: "2026-05-16T03:14:14.875Z"
+  files:
+    - .context-index/governance/validate.yaml
+    - .context-index/specs/features/validation/charter.md
+    - hooks/hooks.json
+    - hooks/post-validate-extract-heuristics.mjs
+    - hooks/post-validate-extract-heuristics.sh
+    - lib/governance/validate-config.mjs
+    - skills/hygiene/SKILL.md
+    - skills/reconcile/SKILL.md
+    - skills/review-specs/consistency-analyzer-prompt.md
+    - skills/review-specs/structural-architect-prompt.md
+    - skills/validate/SKILL.md
+    - skills/validate/checks/validate.check-11-visual-verification.md
+    - skills/validate/checks/validate.check-2-spec-compliance.md
+    - skills/validate/checks/validate.check-4-constitution.md
+    - templates/domains/software/validate.yaml
 ---
 
 > **Revision 2 (2026-05-15):** Addresses rev-1 warnings SA-1 (cross-charter coordination), SA-2 (scope-expansion contract pin), SA-3 (removed-ID rule consolidation), SA-4 (dependency-order declaration), SA-5 (post-validate hook scope note), SA-6 (reconcile authoritative-channel AC), CON-1 (line 30 count and REMOVED wording), and SEC-1 (heuristic hook input scoping). Migration Path retargeted to `governance/validate.yaml` per the explicit ordering declaration (this spec lands AFTER `validate-config-single-source.spec.md`).
