@@ -145,4 +145,34 @@ describe('Validate check set restructure — registry trim', () => {
       'SKILL.md must not retain the ### Check 13 prose section (relocated to post-validate hook)'
     );
   });
+
+  test('SKILL.md report template references relocation destinations', () => {
+    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    // Task 11: the migration-orientation footer cites the three skills that
+    // now own the relocated checks.
+    assert.ok(skill.includes('/adev:hygiene'), 'Report template must reference /adev:hygiene');
+    assert.ok(skill.includes('/adev:reconcile'), 'Report template must reference /adev:reconcile');
+    assert.ok(skill.includes('/adev:review-specs'), 'Report template must reference /adev:review-specs');
+  });
+
+  test('SKILL.md report template mentions relocated checks for migration orientation', () => {
+    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    // The footer enumerates Checks 3, 5, 6, 7, 10, 11 (conditional), 12, 13
+    // so users comparing with historic .validate.md reports can find the new
+    // home of each relocated check.
+    assert.ok(
+      /Check[s]? 3/.test(skill) || /check-3/.test(skill),
+      'Report template should mention Check 3 in the orientation footer'
+    );
+  });
+
+  test('SKILL.md "Overall Status" no longer claims all 13 checks pass', () => {
+    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    // Task 11: stale "All 13 checks passed" / "Skip any of the 13 checks"
+    // language gets updated to reflect the trimmed inventory.
+    assert.ok(
+      !/All 13 checks passed/.test(skill),
+      'Overall Status / report copy must not claim "All 13 checks passed" after restructure'
+    );
+  });
 });
