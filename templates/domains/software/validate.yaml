@@ -28,14 +28,11 @@ checks:
     prompt: plugin:validate/checks/validate.check-2-spec-compliance.md
     after: [validate.check-1.5-source-manifest]
 
-  - id: validate.check-3-charter-consistency
-    name: "Charter Consistency"
-    kind: subagent-review
-    profile: reviewer-capable
-    context_pack: base
-    severity: error
-    prompt: plugin:validate/checks/validate.check-3-charter-consistency.md
-    after: [validate.check-2-spec-compliance]
+  # check-3-charter-consistency removed by check-set-restructure.spec.md.
+  # Its substantive concern (implementation respects charter scope) is now
+  # covered by Check 2's scope-expansion sub-finding (which pins to
+  # source-manifest.files) + /adev:review-specs structural-architect prompt
+  # (which checks spec-vs-charter consistency at review time).
 
   - id: validate.check-4-constitution
     name: "Constitutional Compliance"
