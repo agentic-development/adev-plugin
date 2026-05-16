@@ -5,8 +5,12 @@ import assert from "node:assert/strict";
 describe("plan SKILL.md heuristic injection", () => {
   it("Step 2 includes heuristic loading instruction", async () => {
     const content = await readFile("skills/plan/SKILL.md", "utf8");
-    assert.ok(content.includes("retrieveHeuristics"), "Must reference retrieveHeuristics");
-    assert.ok(content.includes("lib/heuristics.mjs"), "Must reference lib/heuristics.mjs");
+    // After the inline-Node extraction sweep (PR 8-9), Step 2 invokes the
+    // canonical CLI verb instead of importing retrieveHeuristics inline.
+    assert.ok(
+      content.includes("adev heuristics retrieve"),
+      "Must invoke 'adev heuristics retrieve'",
+    );
   });
 
   it("Context Packet Section includes Heuristics entry template", async () => {

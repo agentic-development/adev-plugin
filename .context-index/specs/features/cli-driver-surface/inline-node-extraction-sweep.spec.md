@@ -6,13 +6,13 @@
 
 ---
 charter: cli-driver-surface
-status: review-passed
+status: implemented
 risk_level: high
 milestone: adev-compiler-discipline
 revision: 1
 charter-revision: 2
 created: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-15
 ---
 
 ## Behavioral Contract

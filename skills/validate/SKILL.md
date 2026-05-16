@@ -65,17 +65,13 @@ After verifying prerequisites, check whether the spec declares `infra_requiremen
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Invocation:** Run inline Node.js:
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> [--plan <planPath>] [--timeout N] [--no-infra]
 ```
 
-Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (or `null` if not provided).
+Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (omit `--plan` when not provided). Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
 If `report.passed === false`, display the formatted report and block:
 
@@ -91,34 +87,29 @@ If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure prefli
 
 ## Step 0: Load Check Registry
 
-**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module.
-Derive the module slug from the spec's `charter:` frontmatter field.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
-```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-When heuristics are present, include them in the validation context so checks can reference learned patterns.
-Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module via the CLI:
 
-**Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks. Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-const { mergeGates } = await import('<ADEV_ROOT>/lib/domains/merge-gates.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const domainOverlay = loadDomainConfig(domain.resolved_domain, 'gates', repoRoot, pluginRoot);
-// Read governance gates
-const govGatesPath = join(repoRoot, '.context-index', 'governance', 'gates.yaml');
-const govGates = existsSync(govGatesPath) ? parseYaml(readFileSync(govGatesPath, 'utf8')) : null;
-// Merge domain + governance gates (governance wins on id conflict)
-const { gates: mergedGates, warnings: gateWarnings } = mergeGates(domainOverlay, govGates);
-// Gate commands execute via execFile (no shell interpolation)
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-Log any warnings from the merge process. The `mergedGates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in.
+
+Derive the module slug from the spec's `charter:` frontmatter field. Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), include them in the validation context so checks can reference learned patterns and prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+**Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks via the CLI:
+
+```bash
+adev domain load-gates --module <module-slug> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'), loads `templates/domains/<domain>/gates.yaml`, and merges `.context-index/governance/gates.yaml` on top (governance wins on `id` conflict). Stdout is a single JSON object:
+
+```json
+{ "domain": { "resolved_domain": "...", "source_level": "..." }, "gates": [...], "warnings": [...] }
+```
+
+Log any warnings from the `warnings` field. The `gates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in. Gate commands continue to execute via `execFile` (no shell interpolation).
 
 Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
 
@@ -198,18 +189,24 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 
 ### Check 1.5: Source Manifest Verification
 
-If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:implement`), verify it:
+If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:implement`), verify it via the CLI:
 
-1. Parse the `source-manifest` block from the spec's frontmatter. The block is an object with fields `sha`, `files`, and `computedAt`.
-2. Call `verifyManifest(manifest, projectRoot)` from `lib/source-manifest.mjs`, passing the parsed manifest object and the project root path (NOT the spec file path). The function returns `{ matches: bool, currentSha: string|null, missingFiles?: string[] }`. SHA comparison uses SHA-256 of file contents.
-3. **Implementation existence check:** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed."
-4. Report results:
-   - **Match:** All source files are unchanged since implementation AND all files are git-tracked. Record PASS.
-   - **Drift:** One or more files have been modified since the manifest was stamped. List each drifted file with its expected and actual SHA. Record WARN (does not cause overall FAIL, but signals that source may have diverged from the spec contract).
-   - **Missing files:** Source files in the manifest that no longer exist on disk. Record FAIL.
-   - **Untracked files:** Source files exist but were never committed. Record FAIL (implementation incomplete).
+```bash
+adev source-manifest verify --spec <spec-path>
+```
 
-If the spec has no `source-manifest` block, skip this check with a note: "No source manifest found. Run /adev:implement to stamp one."
+The verb parses the `source-manifest` block from the spec's frontmatter (fields `sha`, `files`, and `computed-at`) and delegates to `verifyManifest(manifest, projectRoot)` from `lib/source-manifest.mjs` — passing the parsed manifest object and the project root path (NOT the spec file path). SHA comparison uses SHA-256 of file contents. The function returns `{ matches: bool, currentSha: string|null, missingFiles?: string[] }`; the verb classifies the result into one of the four outcomes below. Stdout is a single line; exit code follows the outcome.
+
+| Outcome | Stdout shape | Exit | Validator verdict |
+|---------|--------------|------|--------------------|
+| Match — all listed files unchanged since stamping | `Check 1.5: PASS — source manifest matches (sha: <sha>)` | 0 | PASS |
+| Drift — one or more files modified since stamping | `Check 1.5: WARN — source manifest drifted (...). Files: <list>` | 0 | PASS_WITH_NOTES (does not block) |
+| Missing file — a listed file no longer exists on disk | `Check 1.5: FAIL — missing source files: <list>` | 1 | FAIL |
+| No manifest block — spec has not been implemented yet | `Check 1.5: SKIP — no source manifest found. Run /adev:implement to stamp one.` | 0 | SKIP |
+
+Pass `--quiet` to suppress the PASS / SKIP stdout line (errors and WARN are still emitted). The validator should still emit a `validator_report` event per Check 1.5 outcome via `adev report --type validator --validator check-1.5-source-manifest`.
+
+**Implementation existence check (post-CLI, validator-side):** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed." The CLI does not perform this git-tracked check (it only inspects file content vs. SHA); the validator wraps it around the CLI call.
 
 This check runs after quality gates (Check 1) regardless of their result, since it is a metadata check, not a code quality check.
 
@@ -217,24 +214,23 @@ This check runs after quality gates (Check 1) regardless of their result, since 
 
 Check for code-side drift via the `drift_detected` frontmatter flag. This check is **non-blocking** -- validation continues regardless of result.
 
-Run inline Node.js:
-```javascript
-const { hasDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
-try {
-  const drifted = await hasDrift(specPath);
-  if (drifted) {
-    // Read drift_source and drift_at from frontmatter
-    // Emit: "WARN: drift_detected flag set. Source file <drift_source>
-    // was modified at <drift_at>. Verify that spec still reflects
-    // implementation behavior."
-  }
-} catch {
-  // Emit: "WARN: drift check skipped — frontmatter unreadable"
-  // Record CODE_DRIFT_READ_ERROR
-}
+Run the drift check via the CLI:
+
+```bash
+adev verify spec --spec <specPath> --check-drift
 ```
 
-Also run `verifyManifest()` as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
+The `--check-drift` mode reads the spec's frontmatter and emits a single JSON object on stdout:
+
+```json
+{ "drifted": <bool>, "drift_source": "<path|null>", "drift_at": "<timestamp|null>" }
+```
+
+If `drifted === true`, emit a WARN: "drift_detected flag set. Source file `<drift_source>` was modified at `<drift_at>`. Verify that spec still reflects implementation behavior."
+
+If the verb exits non-zero (frontmatter unreadable), record `CODE_DRIFT_READ_ERROR` and emit: "WARN: drift check skipped — frontmatter unreadable".
+
+Also run `adev source-manifest verify --spec <specPath>` (see Check 1.5) as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
 
 This check is **non-blocking** — validation continues regardless. Record WARN if drift is detected, PASS otherwise.
 
@@ -477,13 +473,15 @@ If no charter is referenced in the spec's frontmatter, SKIP with note: "No chart
 
 If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
 
-**Optimization:** Use `getPlanProgress` from `<ADEV_ROOT>/lib/meta-tools.mjs` to get plan completion in a single call:
+**Optimization:** Use `adev context load --plan <plan-path>` to get plan completion in a single call:
 
 ```bash
-node -e "import {getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(JSON.stringify(await getPlanProgress('<plan-path>')))"
+adev context load --plan <plan-path>
 ```
 
-If the meta-tool call fails, fall back to the manual scan below.
+Emits JSON `{ progress: { total, completed, remaining, percent, tasks } }` matching `lib/meta-tools.mjs::getPlanProgress`.
+
+If the CLI call fails, fall back to the manual scan below.
 
 1. Read the plan file and find all task sections (`### Task N:`).
 2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
@@ -582,40 +580,22 @@ Before writing the new heuristic, scan for semantic contradictions with existing
 
 This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `/adev:retro` consolidation is the backstop for missed contradictions.
 
-#### Inline Node Invocation
+#### CLI Invocation
 
-Run the extraction via an inline Node invocation that resolves `projectRoot`, imports `writeHeuristic` from the adev plugin's `lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL. The process always exits with code 0. The `evidence[]` array must contain exactly one entry: `{ source: "validation", path: "<validation-report-path>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence in the printed output must come from the `writeHeuristic` return value (which may auto-promote).
-
-**Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. For example, if this skill's base directory is `/path/to/adev/0.10.0/skills/validate`, the plugin root is `/path/to/adev/0.10.0`. Use the absolute path in the import.
-
-On import failure: SKIP with reason `"helper unavailable"`.
-On `HEURISTICS_SCHEMA_ERROR` or any thrown error: SKIP with the error message.
-
-Concrete invocation (replace `<ADEV_ROOT>` with the resolved absolute plugin root path):
+Run the extraction via `adev heuristics extract`. The helper (`lib/cli/heuristics.mjs`) implements every derivation rule in the sections above (spec-slug, scope, title, id, default pattern) and is observational: it always exits 0 on success or SKIP, exit 1 only on argument errors. The `evidence[]` array contains exactly one entry: `{ source: "validation", path: "<--report value>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence printed comes from the underlying `writeHeuristic` return value (which may auto-promote).
 
 ```bash
-node --input-type=module -e "
-try {
-  const { writeHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-  try {
-    const h = await writeHeuristic(projectRoot, {
-      id: 'foo-spec-a1b2c3d4',
-      scope: 'hooks',
-      title: 'First-run PASS: Foo Spec',
-      pattern: 'First-run PASS for Foo Spec: implementation matched all acceptance criteria without revision',
-      antiPattern: '',
-      confidence: 'medium',
-      evidence: [{ path: '.context-index/specs/features/hooks/foo-spec.validate.md', date: '2026-04-09', source: 'validation' }],
-    });
-    console.log(\`Check 13: Success Heuristic Extracted — \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
-  } catch (err) {
-    console.log(\`Check 13: SKIP — \${err.message}\`);
-  }
-} catch (err) {
-  console.log('Check 13: SKIP — helper unavailable');
-}
-"
+adev heuristics extract \
+  --spec "<spec-path>" \
+  --report "<validation-report-path>" \
+  [--pattern "<success-factor text from packet — golden sample / ADR / spec / default>"]
 ```
+
+When the agent has identified a specific success factor (golden sample, ADR, cross-cutting spec), pass it via `--pattern`. Otherwise omit the flag and the helper falls back to the default success-factor pattern.
+
+On any failure inside the helper (helper unavailable, `HEURISTICS_SCHEMA_ERROR`, etc.) the helper prints `Check 13: SKIP — <reason>` and exits 0. The validate skill MUST capture stdout and propagate the SKIP/extract line verbatim into the validation report.
+
+> Authority: the helper is the canonical implementation per `.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md` PR 1. Do not re-introduce inline Node here — `tests/skills-no-inline-node.test.mjs` and `hooks/pre-commit-no-inline-node.sh` reject it.
 
 #### SKIP Semantics
 
@@ -637,25 +617,29 @@ On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — 
 
 ## Per-Check Event Emission
 
-For every check (1 through 13) that produces a verdict, emit a `validator_report` event to the lifecycle log. This makes the projection's `state.steps.validate` the canonical source of validator outcomes and removes the need to parse the prior `<spec-slug>.validate.md` file when computing aggregate verdict.
+For every check (1 through 13) that produces a verdict, emit a `validator_report` event to the lifecycle log via `adev report --type validator`. This makes the projection's `state.steps.validate` the canonical source of validator outcomes and removes the need to parse the prior `<spec-slug>.validate.md` file when computing aggregate verdict.
 
-```javascript
-import { reportValidator } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-reportValidator(projectRoot, specPath, {
-  step: "validate",
-  validator: "check-2-spec-compliance",  // a stable identifier per check
-  verdict: "PASS",                       // PASS | PASS_WITH_NOTES | FAIL
-  error: null,                           // short error summary on FAIL (≤200 chars)
-  score: null,                           // optional numeric score
-  duration_ms: 1234,
-});
+```bash
+adev report --type validator \
+  --spec "<spec-path>" \
+  --step validate \
+  --validator "check-2-spec-compliance" \
+  --verdict PASS \
+  [--error "<short summary>"] \
+  [--score <number>] \
+  [--duration-ms <number>] \
+  [--notes "<≤200-char summary>"]
 ```
 
-Severity is stamped at write time by the lib from `gates.yaml` domain config — skill prose does NOT compute or assert severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
+Run one invocation per check (1 through 13). `--validator` is a stable identifier (e.g., `check-1-quality-gates`, `check-2-spec-compliance`, …, `check-13-heuristics`). `--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
 
-When aggregating the overall validation verdict, read `state.steps.validate` from `currentState(projectRoot, specPath)` after all `reportValidator` calls have landed. Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file.
+Severity is stamped at write time by the lib from `gates.yaml` domain config — neither the skill prose nor the CLI invocation computes or asserts severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
 
-`notes` and `error` arguments MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message. The lib caps at 4 KB and truncates with a `NOTES_TRUNCATED` warning; keep operator-facing summaries ≤ 200 characters.
+When aggregating the overall validation verdict, read `state.steps.validate` from `currentState(projectRoot, specPath)` after all `adev report --type validator` invocations have landed. Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file.
+
+`--notes` and `--error` arguments MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message. The lib caps at 4 KB and truncates with a `NOTES_TRUNCATED` warning; keep operator-facing summaries ≤ 200 characters.
+
+> Authority: `lib/cli/report.mjs` is the canonical implementation per `.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md` PR 2 (Task 2). Do not re-introduce inline `reportValidator` Node imports here — `tests/skills-no-inline-node.test.mjs` and `hooks/pre-commit-no-inline-node.sh` reject inline-Node patterns.
 
 ## Report Format
 
@@ -778,22 +762,21 @@ If PASS:
 
 3. **Record validation outcome on issue board with confidence:** Read `tasks.backend` from `manifest.yaml`. If configured:
    - Find all issues with `plan-ref` matching the validated spec's plan file.
-   - For each issue, run reality-check verification via inline Node.js:
+   - For each issue, run reality-check verification via the CLI (pass the issue JSON object and the desired confidence-note action):
      ```bash
-     node --input-type=module -e "
-     import { verifyIssueCompleted, formatConfidenceNote } from '<ADEV_ROOT>/lib/reality-check.mjs';
-     const result = verifyIssueCompleted(issue, { projectRoot });
-     const note = formatConfidenceNote('Validated', result.confidence, { reportPath, filesVerified, testsPass });
-     console.log(JSON.stringify({ ...result, note }));
-     "
+     adev verify issue --issue-json '<issue-object-json>' \
+       --note Validated \
+       --report-path <validation-report-path> \
+       [--files-verified <n>] [--tests-pass <true|false>]
      ```
+     The verb wraps `verifyIssueCompleted` + `formatConfidenceNote` and emits JSON `{ completed, confidence, reason, note }`.
    - Update each issue with the confidence-annotated note:
      - PASS + HIGH confidence: `update(id, { status: "closed", notes: "<confidence note>" })`
      - PASS + MEDIUM confidence: `update(id, { notes: "<confidence note>. Manual verification recommended." })`
      - FAIL: `update(id, { notes: "Validated: FAIL (YYYY-MM-DD) — <validation-report-path>" })`
    - Only close issues automatically when confidence is HIGH (files committed, tests pass, spec criteria met). MEDIUM confidence adds a note but does not close.
    If `tasks.backend` is not configured, skip.
-   If `lib/reality-check.mjs` fails to import, fall back to the previous behavior (add note without confidence scoring).
+   If `adev verify issue` exits non-zero, fall back to the previous behavior (add note without confidence scoring).
 
 4. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 
