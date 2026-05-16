@@ -17,6 +17,9 @@ source-manifest:
     - skills/hygiene/SKILL.md
     - tests/lib/hygiene-kind-validity.test.mjs
   computed-at: "2026-05-15T16:48:47.137Z"
+drift_detected: true
+drift_source: skills/hygiene/SKILL.md
+drift_at: 2026-05-16T00:16:38.188Z
 ---
 
 # Live Spec: Hygiene Kind Validity Audit

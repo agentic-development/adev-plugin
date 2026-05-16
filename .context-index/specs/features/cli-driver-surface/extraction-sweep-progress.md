@@ -22,19 +22,19 @@ grep -rc "Run inline Node\|node --input-type=module -e\|node -e" skills/*/SKILL.
 | Skill            | Inline blocks (initial count) | Status   | PR(s) | Notes |
 |------------------|-------------------------------|----------|-------|-------|
 | brainstorm       | 2                             | pending  | —     |       |
-| build            | 4                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Gate Between Sub-Skill Dispatches); 4 `node --input-type=module -e` blocks remain (not in PR 4 scope); stays on allowlist |
+| build            | 4                             | extracted | PR 3 (reportStep), PR 4 (requireGate), PR 7 (build-state) | All inline blocks removed. PR 7 replaced the 3 `readBuildState`/`createBuildState`/`recordStepResult`/`getNextStep` heredocs with `adev build-state <read\|create\|record\|next>` calls. Removed from allowlist. |
 | debug            | 4                             | pending  | —     |       |
 | eval             | 2                             | pending  | —     |       |
-| hygiene          | 1                             | pending  | —     |       |
-| implement        | 10                            | partially-extracted | PR 3 (reportStep), PR 4 (requireGate), PR 5 (source-manifest compute), PR 6 (domain test-config + verification) | reportStep + requireGate + source-manifest compute + domain test-config + domain verification extracted (Step 3 plan-step gate, Step 4 completion, Step 5 manifest stamping — the `node --input-type=module -e "import { computeManifest } ..."` heredoc block was replaced with `adev source-manifest compute --files ...`; Step 2c "Domain-Aware Test Config" inline `node -e` JS block replaced with `adev domain load-test-config`; Step 2e "Domain-Aware Verification Config" inline `node -e` JS block replaced with `adev domain load-verification`); 7 forbidden-regex blocks remain; stays on allowlist |
-| plan             | 2                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate) | reportStep + requireGate extracted (Step 1.5 entry, Step 6 exit); 2 forbidden-regex blocks remain (not in PR 4 scope); stays on allowlist |
+| hygiene          | 1                             | extracted | PR 7 (verify spec) | Step 8 "Reality drift check" `verifySpecImplemented` heredoc replaced with `adev verify spec --spec <path>`. Removed from allowlist. |
+| implement        | 10                            | partially-extracted | PR 3 (reportStep), PR 4 (requireGate), PR 5 (source-manifest compute), PR 6 (domain test-config + verification), PR 7 (context load + execution-state) | Step 1 `loadSpecContext + getPlanProgress` heredoc replaced with `adev context load --spec --plan`. Three `writeExecutionState` / `clearExecutionState` prose mentions (Steps 2c-pre, 2d-blocker, 4 Completion) replaced with `adev execution-state write|clear`. 4 forbidden-regex blocks remain (heuristics retrieval Step 1, infra-preflight Step 1.5); stays on allowlist. |
+| plan             | 2                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate), PR 7 (context load) | Essential Context `loadSpecContext` heredoc replaced with `adev context load --spec`. 1 forbidden-regex block remains (heuristics retrieval Step 1 item 12); stays on allowlist. |
 | prototype        | 6                             | pending  | —     |       |
 | recover          | 3                             | pending  | —     |       |
 | review-specs     | 2                             | partially-extracted | PR 3 (reportStep), PR 4 (requireGate), PR 6 (domain reviewers) | reportStep + requireGate + domain reviewers extracted (Step 0 entry, Step 8 exit; Step 3 "Domain-Aware Reviewer Loading" inline `node -e` JS block replaced with `adev domain load-reviewers`); 1 forbidden-regex block remains (heuristics inline `node -e` in Step 4 — not in PR 6 scope); stays on allowlist |
 | specify          | 2                             | partially-extracted | PR 3 (reportStep) | reportStep extracted (Step 0 entry, Step 6 exit); specify has no Step 0a requireGate gate (it's the first lifecycle step); 2 forbidden-regex blocks remain; stays on allowlist |
 | standalone       | 1                             | pending  | —     |       |
-| status           | 1                             | pending  | —     |       |
-| validate         | 8                             | partially-extracted | PR 1 (Check 13), PR 2 (reportValidator), PR 3 (reportStep), PR 4 (requireGate), PR 5 (source-manifest verify), PR 6 (domain gates) | reportStep + requireGate + source-manifest verify + domain gates extracted (Step 0a entry, Step 14 exit, Check 1.5, Step 0 "Domain-Aware Gate Loading"). The Step 0 "Domain-Aware Gate Loading" inline `node -e` JS block was replaced with `adev domain load-gates`. Check 1.5 referenced `verifyManifest()` as a lib API call (prose-only) — replaced with `adev source-manifest verify`. After PR 6, 6 forbidden-regex blocks remain (heuristics retrieval in Step 0, preflight + plan-progress meta-tools, Check 1.6 drift, etc.). Stays on allowlist. |
+| status           | 1                             | extracted | PR 7 (state list) | Mode `--all` `findSpecsByStatus` loop replaced with `for s in …; do adev state list --status "$s"; done`. Removed from allowlist. |
+| validate         | 8                             | partially-extracted | PR 1 (Check 13), PR 2 (reportValidator), PR 3 (reportStep), PR 4 (requireGate), PR 5 (source-manifest verify), PR 6 (domain gates), PR 7 (context load --plan + verify issue) | Check 12e plan-progress `getPlanProgress` heredoc replaced with `adev context load --plan`. After-Validation step 3 `verifyIssueCompleted + formatConfidenceNote` heredoc replaced with `adev verify issue --issue-json … --note Validated …`. 4 forbidden-regex blocks remain (infra-preflight Step 1.5, heuristics Step 0, Check 1.6 drift, etc.); stays on allowlist. |
 | write-test       | 3                             | pending  | —     |       |
 | **TOTAL**        | **51**                        |          |       |       |
 
@@ -60,7 +60,8 @@ named-PR sequence, with the long tail parallelizable.
 | 4   | Extract Step 0a `requireGate` calls                | `review-specs, plan, implement, validate, build`        | merged   |
 | 5   | Extract source-manifest verify                     | `validate`, `implement`                                 | merged   |
 | 6   | Extract domain-aware gate / reviewer / test-config / verification loading | `validate`, `review-specs`, `implement` | merged   |
-| 7+  | Long-tail extractions (per block)                  | All remaining; one PR per block or per canonical-verb group | pending  |
+| 7   | Extract context / verify / state / execution-state / build-state primitives | `implement`, `plan`, `validate`, `hygiene`, `status`, `build` | merged   |
+| 8+  | Long-tail extractions (per remaining block)        | `brainstorm, debug, eval, prototype, recover, specify, standalone, write-test`, plus residual blocks in `implement, plan, review-specs, validate` | pending  |
 
 ## Canonical-verb registry (cross-PR re-use, per spec Behavior 9)
 
@@ -81,6 +82,19 @@ logic matches — naming is canonical and shared.
 | `domain load-reviewers`  | `lib/cli/domain.mjs`          | PR 6          | `review-specs` Step 3 "Domain-Aware Reviewer Loading" |
 | `domain load-test-config`| `lib/cli/domain.mjs`          | PR 6          | `implement` Step 2c "Domain-Aware Test Config"  |
 | `domain load-verification`| `lib/cli/domain.mjs`         | PR 6          | `implement` Step 2e "Domain-Aware Verification Config" |
+| `context load`            | `lib/cli/context.mjs`         | PR 7          | `implement` Step 1 (spec + plan progress), `plan` Essential Context, `validate` Check 12e (plan progress) |
+| `verify spec`             | `lib/cli/verify.mjs`          | PR 7          | `hygiene` Step 8 (reality drift check)         |
+| `verify issue`            | `lib/cli/verify.mjs`          | PR 7          | `validate` After-Validation Step 3 (issue confidence-annotated update) |
+| `state list`              | `lib/cli/state.mjs`           | PR 7          | `status` Mode `--all` (`findSpecsByStatus` loop) |
+| `state current`           | `lib/cli/state.mjs`           | PR 7          | (canonical verb introduced for future hygiene / recover extractions; no SKILL.md sites converted in PR 7) |
+| `state events`            | `lib/cli/state.mjs`           | PR 7          | (canonical verb introduced for future hygiene / recover extractions; no SKILL.md sites converted in PR 7) |
+| `execution-state read`    | `lib/cli/execution-state.mjs` | PR 7          | (canonical verb introduced for future recover/hygiene reads)  |
+| `execution-state write`   | `lib/cli/execution-state.mjs` | PR 7          | `implement` 2c-pre (status=active), 2d-blocker (status=blocked) |
+| `execution-state clear`   | `lib/cli/execution-state.mjs` | PR 7          | `implement` Step 4 Completion |
+| `build-state read`        | `lib/cli/build-state.mjs`     | PR 7          | (read mode, canonical verb) |
+| `build-state create`      | `lib/cli/build-state.mjs`     | PR 7          | `build` Dispatch Loop step 1 (creation branch) |
+| `build-state record`      | `lib/cli/build-state.mjs`     | PR 7          | `build` Dispatch Loop steps 2 (skipped) and 4 (completed/failed) |
+| `build-state next`        | `lib/cli/build-state.mjs`     | PR 7          | `build` Dispatch Loop steps 1, 2, 4 (next-step computation) |
 
 ## Acceptance (sweep-complete sentinel)
 

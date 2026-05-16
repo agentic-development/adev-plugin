@@ -44,13 +44,15 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 Extract everything subagents will need so they never have to re-read these files themselves.
 
-**Optimization:** Load spec + charter + constitution in a single Bash call using `loadSpecContext` from `<ADEV_ROOT>/lib/meta-tools.mjs` (replaces items 2, 4, and 5 below with one turn). Use `getPlanProgress` to get plan completion status for resume detection:
+**Optimization:** Load spec + charter + constitution + plan progress in a single Bash call via the CLI (replaces items 2, 4, and 5 below with one turn):
 
 ```bash
-node -e "import {loadSpecContext, getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; const [ctx, progress] = await Promise.all([loadSpecContext('<spec-path>'), getPlanProgress('<plan-path>')]); console.log(JSON.stringify({context: ctx, progress}))"
+adev context load --spec <spec-path> --plan <plan-path>
 ```
 
-If the meta-tool call fails, fall back to reading each file individually.
+The verb wraps `lib/meta-tools.mjs::loadSpecContext` + `getPlanProgress` and emits JSON `{ context, progress }`. Use `progress` for resume detection (look at `progress.completed` vs `progress.total` and the per-task `progress.tasks` array).
+
+If the CLI call fails, fall back to reading each file individually.
 
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
@@ -361,7 +363,19 @@ Keep your report under 2,000 tokens. List files and results concisely. Do not re
 
 **Cleanup before reporting.** Remove any debugging console.log, print, or debugger statements added during development. Remove commented-out exploration code. Verify all imports are used and no temporary files were left behind.
 
-**Update Execution State:** Before dispatching the implementer subagent, write execution state using inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."` with `status: "active"`, `planRef` set to the plan file path, `currentTask` set to the task number, `issueBinding` set to the issue ID (if `tasks.backend` is configured), `nextAction` set to the task description, and `progress` set to the full task checklist with completed tasks marked done. If `writeExecutionState` fails, log a warning and continue — do not block implementation.
+**Update Execution State:** Before dispatching the implementer subagent, write execution state via the CLI:
+
+```bash
+adev execution-state write \
+  --status active \
+  --plan-ref <plan-file-path> \
+  --current-task <task-number> \
+  [--issue-binding <issue-id>] \
+  --next-action "<task description>" \
+  --progress-json '<json-array-of-progress-items>'
+```
+
+The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call exits non-zero, log a warning and continue — do not block implementation.
 
 #### 2d. Dispatch and Handle Status
 
@@ -382,7 +396,12 @@ Dispatch the subagent. Handle the returned status:
 **BLOCKED.** The subagent cannot proceed.
 - Present the blocker description to the user immediately.
 - **Emit a `plan_task` blocked event:** `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "blocked", notes: "<≤200-char operator-facing summary>" })`. The `notes` field must NOT contain stack traces, env values, secrets, or full command output — those belong in the blocker file under `.context-index/hygiene/blockers/`, not in the lifecycle log.
-- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution. Use inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`.
+- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution, via the CLI:
+  ```bash
+  adev execution-state write --status blocked \
+    --blockers "<blocker description>" \
+    --next-action "<recommended resolution>"
+  ```
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev:specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 
@@ -534,7 +553,13 @@ If `governance/boundaries.yaml` exists, run final boundary compliance check: gre
 
 Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
 
-**Clear Execution State:** After all tasks are complete, clear the execution state using inline Node.js: `node -e "import { clearExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`. This resets the state to `idle` so the next session starts fresh. If `clearExecutionState` fails, log a warning — implementation is still considered complete.
+**Clear Execution State:** After all tasks are complete, clear the execution state via the CLI:
+
+```bash
+adev execution-state clear
+```
+
+This resets the state to `idle` so the next session starts fresh. If the CLI call exits non-zero, log a warning — implementation is still considered complete.
 
 Read the `completion.merge_policy` from manifest.yaml (default: "pr").
 

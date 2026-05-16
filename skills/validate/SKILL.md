@@ -481,13 +481,15 @@ If no charter is referenced in the spec's frontmatter, SKIP with note: "No chart
 
 If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
 
-**Optimization:** Use `getPlanProgress` from `<ADEV_ROOT>/lib/meta-tools.mjs` to get plan completion in a single call:
+**Optimization:** Use `adev context load --plan <plan-path>` to get plan completion in a single call:
 
 ```bash
-node -e "import {getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(JSON.stringify(await getPlanProgress('<plan-path>')))"
+adev context load --plan <plan-path>
 ```
 
-If the meta-tool call fails, fall back to the manual scan below.
+Emits JSON `{ progress: { total, completed, remaining, percent, tasks } }` matching `lib/meta-tools.mjs::getPlanProgress`.
+
+If the CLI call fails, fall back to the manual scan below.
 
 1. Read the plan file and find all task sections (`### Task N:`).
 2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
@@ -768,22 +770,21 @@ If PASS:
 
 3. **Record validation outcome on issue board with confidence:** Read `tasks.backend` from `manifest.yaml`. If configured:
    - Find all issues with `plan-ref` matching the validated spec's plan file.
-   - For each issue, run reality-check verification via inline Node.js:
+   - For each issue, run reality-check verification via the CLI (pass the issue JSON object and the desired confidence-note action):
      ```bash
-     node --input-type=module -e "
-     import { verifyIssueCompleted, formatConfidenceNote } from '<ADEV_ROOT>/lib/reality-check.mjs';
-     const result = verifyIssueCompleted(issue, { projectRoot });
-     const note = formatConfidenceNote('Validated', result.confidence, { reportPath, filesVerified, testsPass });
-     console.log(JSON.stringify({ ...result, note }));
-     "
+     adev verify issue --issue-json '<issue-object-json>' \
+       --note Validated \
+       --report-path <validation-report-path> \
+       [--files-verified <n>] [--tests-pass <true|false>]
      ```
+     The verb wraps `verifyIssueCompleted` + `formatConfidenceNote` and emits JSON `{ completed, confidence, reason, note }`.
    - Update each issue with the confidence-annotated note:
      - PASS + HIGH confidence: `update(id, { status: "closed", notes: "<confidence note>" })`
      - PASS + MEDIUM confidence: `update(id, { notes: "<confidence note>. Manual verification recommended." })`
      - FAIL: `update(id, { notes: "Validated: FAIL (YYYY-MM-DD) — <validation-report-path>" })`
    - Only close issues automatically when confidence is HIGH (files committed, tests pass, spec criteria met). MEDIUM confidence adds a note but does not close.
    If `tasks.backend` is not configured, skip.
-   If `lib/reality-check.mjs` fails to import, fall back to the previous behavior (add note without confidence scoring).
+   If `adev verify issue` exits non-zero, fall back to the previous behavior (add note without confidence scoring).
 
 4. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 

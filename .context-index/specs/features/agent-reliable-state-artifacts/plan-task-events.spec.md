@@ -28,14 +28,12 @@ source-manifest:
     - tests/skills/no-stale-format-refs.test.mjs
     - tests/skills/plan-task-immutability.test.mjs
   computed-at: "2026-05-12T18:02:31.778Z"
-drift_detected: true
 <<<<<<< HEAD
-drift_source: tests/skills/plan-task-immutability.test.mjs
-drift_at: 2026-05-15T17:47:59.024Z
 =======
-drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-15T14:35:22.189Z
 >>>>>>> 46d8950 (feat(cli-driver-surface): PR 5 — extract source-manifest verify)
+drift_detected: true
+drift_source: skills/implement/SKILL.md
+drift_at: 2026-05-16T00:18:15.334Z
 ---
 
 ## Behavioral Contract

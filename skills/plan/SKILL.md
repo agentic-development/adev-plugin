@@ -180,13 +180,15 @@ After the Review Gate passes (Step 1) and before loading context (Step 2), check
 
 ### Essential Context (load now)
 
-**Optimization:** Load spec + charter + constitution in a single Bash call using `loadSpecContext` from `<ADEV_ROOT>/lib/meta-tools.mjs` (where `<ADEV_ROOT>` is the adev plugin root — derive from this skill file's base directory by stripping `skills/<name>/`). This replaces items 1, 3, and 4 below with one turn:
+**Optimization:** Load spec + charter + constitution in a single Bash call via the CLI. This replaces items 1, 3, and 4 below with one turn:
 
 ```bash
-node -e "import {loadSpecContext} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(await loadSpecContext('<spec-path>'))"
+adev context load --spec <spec-path>
 ```
 
-If the meta-tool call fails, fall back to reading each file individually.
+The verb wraps `lib/meta-tools.mjs::loadSpecContext` and emits a JSON object `{ context }`; the `context` field is a markdown bundle containing the spec body, the parent charter's Capability Map, and the constitution's Non-Negotiable Principles.
+
+If the CLI call fails, fall back to reading each file individually.
 
 1. **Constitution:** Read `.context-index/constitution.md`. Extract non-negotiable principles, architecture boundaries, quality gate commands, and coding standards.
 
