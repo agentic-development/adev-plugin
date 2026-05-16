@@ -123,29 +123,26 @@ Used by all modes (Cross-Cutting loads only constitution and product charter).
 - Any existing specs in the same module directory — to avoid duplication
 - `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
-**Heuristics:** Load module-scoped heuristics for the charter module.
-Derive the module slug from the resolved Feature Charter's module name (the `charter:` field or directory name).
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
-```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-When heuristics are present, include them in the working context alongside the charter and existing specs.
-Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+**Heuristics:** Load module-scoped heuristics for the charter module via the CLI:
 
-**Domain-Aware Spec Template:** After loading context, resolve the active domain and load the domain-specific spec template. This provides the complete spec section structure for the project's domain.
-Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const { loadDomainConfig } = await import('<ADEV_ROOT>/lib/domains/domain-config.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-const domainTemplate = loadDomainConfig(domain.resolved_domain, 'spec-template', repoRoot, pluginRoot);
-// domainTemplate is the complete spec template for the resolved domain
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-If `loadDomainConfig()` returns `null`, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/spec-template.behavioral.md`.
+
+Derive the module slug from the resolved Feature Charter's module name (the `charter:` field or directory name).
+Stdout is either rendered markdown blocks (one per heuristic, separated by blank lines) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), include them in the working context alongside the charter and existing specs and prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+**Domain-Aware Spec Template:** After loading context, resolve the active domain via the CLI. This provides the resolved domain name needed to pick the correct spec template:
+
+```bash
+adev domain resolve --module <charter-module> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'). Stdout is a single JSON object whose `domain.resolved_domain` field names the domain.
+
+Load the domain spec template from `templates/domains/<resolved_domain>/spec-template.md` under the plugin root. If the file does not exist, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/spec-template.behavioral.md`.
 The loaded template defines the spec's section structure. Use the template's H2 headings and table columns as the structure for this spec. Do not use hardcoded section names -- the template is the single source of truth for section structure.
 
 ## Shared: Frontmatter
@@ -185,9 +182,8 @@ The primary path. Takes a Feature Charter and produces a Live Spec for one capab
 
 Before any spec authoring, emit a `lifecycle_step` event so the projection's `currentStep` reflects the active phase:
 
-```javascript
-import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-reportStep(projectRoot, specPath, { step: "specify", status: "started" });
+```bash
+adev report --type step --spec <spec-path> --step specify --status started
 ```
 
 This skill does NOT carry severity stamping, gate adoption, or issue board adoption — it only emits step entry/exit. Charter capability-map mutation (acknowledged dual-write in the charter's Out-of-Scope) remains a markdown edit and is not migrated here.
@@ -382,6 +378,9 @@ infra_requirements:
 
 ### Step 5.5: Update Spec Status
 
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time.
+
 After saving the spec:
 
 1. Read the spec file you just created
@@ -462,9 +461,8 @@ Output path, charter, status, counts of behaviors/error cases/tasks/acceptance c
 
 Emit the lifecycle exit event:
 
-```javascript
-import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-reportStep(projectRoot, specPath, { step: "specify", status: "completed" });
+```bash
+adev report --type step --spec <spec-path> --step specify --status completed
 ```
 
 ---

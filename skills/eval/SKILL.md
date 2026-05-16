@@ -32,21 +32,17 @@ After verifying prerequisites, check whether the spec declares `infra_requiremen
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Plan path resolution:** Glob for a `.plan.md` sibling adjacent to the spec (same directory, same base name). If absent, pass `null` as the plan path.
+**Plan path resolution:** Glob for a `.plan.md` sibling adjacent to the spec (same directory, same base name). If absent, omit `--plan`.
 
-**Invocation:** Run inline Node.js:
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: 10, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> [--plan <planPath>] [--timeout 10] [--no-infra]
 ```
 
-Where `<ADEV_ROOT>` is the resolved absolute plugin root path and `<specPath>` is the `--spec` argument.
+Stdout is a single JSON object — the preflight report (the same shape `runPreflight()` returns). Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
-If `report.passed === false`, display the formatted report and block:
+If the report has `passed === false` (exit 2), display the formatted report and block:
 
 ```
 Infrastructure Preflight: FAILED

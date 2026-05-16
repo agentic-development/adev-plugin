@@ -25,6 +25,9 @@ source-manifest:
     - lib/heuristics.mjs
     - .context-index/specs/features/heuristics/retrieval-filtering.spec.md
   computed-at: "2026-04-25T21:55:13.556Z"
+drift_detected: true
+drift_source: tests/skills/plan-heuristic-injection.test.mjs
+drift_at: 2026-05-16T01:09:38.450Z
 ---
 
 ## Behavioral Contract

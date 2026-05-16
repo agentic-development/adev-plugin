@@ -98,28 +98,26 @@ Read on-demand as the conversation touches these areas:
 
 After reading, summarize findings in 3-5 bullet points covering: what the project builds, existing modules and boundaries, architectural constraints, tech stack, and cross-cutting concerns.
 
-**Heuristics:** Load module-scoped heuristics for the target module.
-Derive the module slug from the `--module <name>` argument if provided, or from the feature idea once identified.
-If the module is new (no existing scope file in `.context-index/memory/heuristics/`), use `_global` only.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, moduleSlug, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
-```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-When heuristics are present, prepend: "The following heuristics are lessons learned from past work
-in this module. Use them as guidance, not as hard rules."
+**Heuristics:** Load module-scoped heuristics for the target module via the CLI:
 
-**Domain-Aware Charter Template:** After loading context, resolve the active domain. The full template is loaded in Step 5 via `resolveTemplate('charter', kind, domain)` once the kind is also known (resolved in Step 2.1), but Step 1 still resolves the domain so subsequent steps can pass it through.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { resolveDomain } = await import('<ADEV_ROOT>/lib/domains/resolve.mjs');
-const domain = resolveDomain(manifest, charterFrontmatter, moduleSlug);
-// `domain.resolved_domain` is passed to resolveTemplate('charter', kind, domain.resolved_domain) in Step 5.
+```bash
+adev heuristics retrieve --module <module-slug> --tier summary --format text
 ```
+
+Derive the module slug from the `--module <name>` argument if provided, or from the feature idea once identified.
+If the module is new (no existing scope file in `.context-index/memory/heuristics/`), use `_global`.
+Stdout is either rendered markdown blocks (one per heuristic, separated by blank lines) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — failures degrade to an empty/`__NONE__` result so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), prepend the advisory preamble: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+**Domain-Aware Charter Template:** After loading context, resolve the active domain via the CLI:
+
+```bash
+adev domain resolve --module <module-slug> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'). Stdout is a single JSON object whose `resolved_domain` field is passed to `resolveTemplate('charter', kind, resolved_domain)` in Step 5. The full template is loaded in Step 5 once the kind is also known (resolved in Step 2.1); Step 1 only resolves the domain so subsequent steps can pass it through.
+
 The final section structure is determined by the kind-resolved template in Step 5. Use the template's H2 headings as the section names for this charter. Do not use hardcoded section names — the resolved template is the single source of truth for section structure.
 If the template includes a Quality Attributes section, present domain-specific quality attribute suggestions to the user (e.g., data-engineering suggests freshness, completeness, accuracy; software suggests latency, throughput, availability).
 

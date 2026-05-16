@@ -26,7 +26,7 @@ import {
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 function seedProject(tmp) {
-  writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: lc-render-test\n");
+  writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: lc-render-test\nlifecycle:\n  event_diagnostics: off\n");
   return tmp;
 }
 

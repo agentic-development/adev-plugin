@@ -101,18 +101,13 @@ Before planning, verify the spec has passed architecture review by reading the l
 
 2. **Gate on `review` step via the lifecycle log:**
 
-   ```javascript
-   import { currentState, requireGate, resolveGateMode } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-   import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-   const state = currentState(projectRoot, specPath);
-   const mode = resolveGateMode(loadManifest(projectRoot));
-   requireGate(state, "review", { mode });
+   ```bash
+   adev gate require --skill plan --spec <spec-path>
    ```
 
-   - In `mode === "strict"` (default), `requireGate` throws `GateError` if the review step did not complete with a passing verdict. The skill stops with the operator message naming the failing prior step. Do NOT catch `GateError` — surface it unchanged.
-   - In `mode === "advisory"`, the call emits `console.warn` and proceeds.
-   - The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`). Skill prose MUST NOT pre-validate or normalize paths.
+   - In `mode === "strict"` (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), the helper exits `2` (per the hook protocol) if the `review` step did not complete with a passing verdict. The skill stops; surface the helper's stderr message unchanged. Do NOT catch the failure.
+   - In `mode === "advisory"`, the helper emits a warning and exits `0`.
+   - Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`). Skill prose MUST NOT pre-validate or normalize paths.
 
 3. **Note any `PASS_WITH_NOTES` warnings.** Read `state.steps.review` for verdict notes; print them for the user but do not block.
 
@@ -151,14 +146,17 @@ Before planning, verify the spec has passed architecture review by reading the l
      frontmatter may be malformed. Fix the spec frontmatter before planning.
      ```
 
-5. **Emit `reportStep` entry event:** after the gate passes (and before context loading), record the plan step start:
+5. **Emit step-started event:** after the gate passes (and before context loading), record the plan step start:
 
-   ```javascript
-   import { reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-   reportStep(projectRoot, specPath, { step: "plan", status: "started" });
+   ```bash
+   adev report --type step --spec <spec-path> --step plan --status started
    ```
 
-   Emit a matching exit event (`status: "completed"` with the produced plan's verdict) at the end of the skill, after the plan file is written.
+   After the plan file is written at the end of the skill, emit the matching exit event with the produced plan's verdict:
+
+   ```bash
+   adev report --type step --spec <spec-path> --step plan --status completed --verdict <verdict>
+   ```
 
 ### Spec Mode — Workspace-Aware Target-Repo Detection
 
@@ -182,13 +180,15 @@ After the Review Gate passes (Step 1) and before loading context (Step 2), check
 
 ### Essential Context (load now)
 
-**Optimization:** Load spec + charter + constitution in a single Bash call using `loadSpecContext` from `<ADEV_ROOT>/lib/meta-tools.mjs` (where `<ADEV_ROOT>` is the adev plugin root — derive from this skill file's base directory by stripping `skills/<name>/`). This replaces items 1, 3, and 4 below with one turn:
+**Optimization:** Load spec + charter + constitution in a single Bash call via the CLI. This replaces items 1, 3, and 4 below with one turn:
 
 ```bash
-node -e "import {loadSpecContext} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(await loadSpecContext('<spec-path>'))"
+adev context load --spec <spec-path>
 ```
 
-If the meta-tool call fails, fall back to reading each file individually.
+The verb wraps `lib/meta-tools.mjs::loadSpecContext` and emits a JSON object `{ context }`; the `context` field is a markdown bundle containing the spec body, the parent charter's Capability Map, and the constitution's Non-Negotiable Principles.
+
+If the CLI call fails, fall back to reading each file individually.
 
 1. **Constitution:** Read `.context-index/constitution.md`. Extract non-negotiable principles, architecture boundaries, quality gate commands, and coding standards.
 
@@ -238,7 +238,15 @@ Read these as needed during task writing. Do not load everything upfront — loa
 
 11. **Boundary rules:** Read `.context-index/governance/boundaries.yaml` only if the directory exists. Extract boundary rules as additional planning constraints.
 
-12. **Heuristics:** Load module-scoped heuristics for inclusion in the plan. Derive the module slug from the spec's `charter:` frontmatter field. Run inline Node.js using `retrieveHeuristics` and `renderHeuristic` from `<ADEV_ROOT>/lib/heuristics.mjs` (where `<ADEV_ROOT>` is the adev plugin root — derive it from this skill file's base directory by stripping the `skills/<name>/` suffix), passing the module slug and `heuristics.injection_limit` from manifest.yaml (if configured). If the call fails or returns empty, proceed without heuristics — heuristic injection is non-blocking. Store the rendered output for use in Step 5.
+12. **Heuristics:** Load module-scoped heuristics for inclusion in the plan via the CLI:
+
+    ```bash
+    adev heuristics retrieve --module <charter-module> --format text [--injection-limit N]
+    ```
+
+    Derive the module slug from the spec's `charter:` frontmatter field. Pass `--injection-limit` only when `heuristics.injection_limit` is configured in `manifest.yaml` (otherwise omit the flag for the library default of 8). Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+    Store the rendered output for use in Step 5.
 
 ## Step 3: Constitution Validation
 
