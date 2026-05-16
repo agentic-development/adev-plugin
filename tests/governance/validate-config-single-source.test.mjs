@@ -152,6 +152,85 @@ describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", 
   });
 });
 
+describe("validate-config migration tool (adev migrate --artifact=validate-config)", () => {
+  it("absent file: migrateValidateConfig writes governance/validate.yaml from software starter", async () => {
+    const repo = tmp();
+    // Seed a minimal context-index so storage-root validation passes.
+    writeFixture(repo, '.context-index/manifest.yaml', 'project:\n  name: t\n');
+    const { migrateValidateConfig } = await import('../../lib/migrate-state-artifacts.mjs');
+    const r = await migrateValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+    assert.equal(r.action, 'migrated', `expected migrated, got ${r.action}: ${JSON.stringify(r)}`);
+    const dest = join(repo, '.context-index', 'governance', 'validate.yaml');
+    assert.ok(existsSync(dest), 'governance/validate.yaml must be written');
+    const bytes = readFileSync(dest, 'utf8');
+    assert.ok(bytes.includes('validate.check-1.5-source-manifest'), 'must contain bundled check ids');
+  });
+
+  it("absent file + dry-run: migrateValidateConfig reports action 'dry-run' and writes nothing", async () => {
+    const repo = tmp();
+    writeFixture(repo, '.context-index/manifest.yaml', 'project:\n  name: t\n');
+    const { migrateValidateConfig } = await import('../../lib/migrate-state-artifacts.mjs');
+    const r = await migrateValidateConfig(repo, { dryRun: true, pluginRoot: PLUGIN_ROOT });
+    assert.equal(r.action, 'dry-run');
+    const dest = join(repo, '.context-index', 'governance', 'validate.yaml');
+    assert.ok(!existsSync(dest), 'dry-run must not write the file');
+  });
+
+  it("present + valid: migrateValidateConfig is a no-op (action: skipped)", async () => {
+    const repo = tmp();
+    writeFixture(repo, '.context-index/manifest.yaml', 'project:\n  name: t\n');
+    writeFixture(
+      repo,
+      '.context-index/governance/validate.yaml',
+      `checks:
+  - id: project.x
+    kind: observational
+    severity: info
+`,
+    );
+    const dest = join(repo, '.context-index', 'governance', 'validate.yaml');
+    const before = readFileSync(dest, 'utf8');
+    const { migrateValidateConfig } = await import('../../lib/migrate-state-artifacts.mjs');
+    const r = await migrateValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+    assert.equal(r.action, 'skipped');
+    const after = readFileSync(dest, 'utf8');
+    assert.equal(after, before, 'file must remain byte-identical');
+    assert.ok(
+      r.advisories.some((a) => a.code === 'VALIDATE_CONFIG_ALREADY_PRESENT'),
+      'must include the already-present advisory'
+    );
+  });
+
+  it("present + malformed: migrateValidateConfig throws MIGRATION_BLOCKED_BY_CORRUPT_CONFIG (SEC-5)", async () => {
+    const repo = tmp();
+    writeFixture(repo, '.context-index/manifest.yaml', 'project:\n  name: t\n');
+    writeFixture(
+      repo,
+      '.context-index/governance/validate.yaml',
+      'checks:\n bad indent\n  worse: indent\n',  // malformed YAML (unexpected indentation)
+    );
+    const dest = join(repo, '.context-index', 'governance', 'validate.yaml');
+    const before = readFileSync(dest, 'utf8');
+    const { migrateValidateConfig } = await import('../../lib/migrate-state-artifacts.mjs');
+    await assert.rejects(
+      () => migrateValidateConfig(repo, { pluginRoot: PLUGIN_ROOT }),
+      (err) => err.code === 'MIGRATION_BLOCKED_BY_CORRUPT_CONFIG'
+    );
+    const after = readFileSync(dest, 'utf8');
+    assert.equal(after, before, 'malformed file must NOT be overwritten');
+  });
+
+  it("re-running on already-migrated repo is idempotent (writes once, no-ops thereafter)", async () => {
+    const repo = tmp();
+    writeFixture(repo, '.context-index/manifest.yaml', 'project:\n  name: t\n');
+    const { migrateValidateConfig } = await import('../../lib/migrate-state-artifacts.mjs');
+    const r1 = await migrateValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+    assert.equal(r1.action, 'migrated');
+    const r2 = await migrateValidateConfig(repo, { pluginRoot: PLUGIN_ROOT });
+    assert.equal(r2.action, 'skipped');
+  });
+});
+
 describe("SKILL.md content: init Step 7d.0", () => {
   it("skills/init/SKILL.md mentions loadDomainConfig with 'validate' configType", () => {
     const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
