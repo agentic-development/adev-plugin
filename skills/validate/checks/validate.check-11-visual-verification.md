@@ -1,8 +1,21 @@
 # Check 11: Visual Verification (UI projects)
 
-**Trigger:** If any file touched by the implementation matches UI patterns (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `components/**`, `app/**/page.*`, `app/**/layout.*`, `pages/**`).
+## Trigger Guard
 
-**Playwright MCP required.** Check for the Playwright MCP browser tools (`browser_navigate`, `browser_snapshot`). If they are not available, **BLOCK validation** and tell the user:
+**Before running visual verification, evaluate two conditions in parallel:**
+
+- (1) Does the implementation diff include any file matching the UI patterns below?
+- (2) Is the Playwright MCP server available (`browser_navigate` and `browser_snapshot` tools present)?
+
+UI file patterns: `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `*.html`, and any file under `components/`, `pages/`, `views/`, `public/`, `app/**/page.*`, `app/**/layout.*`.
+
+The four-case matrix decides the outcome (revised by `check-set-restructure.spec.md` Behaviors 5 + 6 so non-UI specs are no longer blocked by missing Playwright):
+
+**Case A — No UI files in diff AND Playwright MCP unavailable:**
+Return **SKIP** with note: "No UI files in implementation diff — visual verification not applicable." Do NOT return BLOCK.
+
+**Case B — UI files present in diff AND Playwright MCP unavailable:**
+Return **BLOCK** with the existing actionable error message (preserved from previous behavior):
 
 ```
 BLOCKED: This implementation includes UI files but no browser verification tool is available.
@@ -15,7 +28,17 @@ Then add it to your Claude Code MCP config and restart.
 Without visual verification, UI implementations cannot be fully validated.
 ```
 
-Do not record SKIP. Do not proceed without it. UI code without visual verification is unvalidated code.
+Do not proceed without it.
+
+**Case C — UI files present in diff AND Playwright MCP available:**
+Proceed with the visual verification protocol documented below.
+
+**Case D — No UI files in diff AND Playwright MCP available:**
+Return **SKIP** with note: "No UI files in implementation diff — Playwright available but nothing to verify." (Same outcome as Case A; the matrix records the availability for log fidelity.)
+
+## Verification Protocol
+
+The protocol below runs only when Case C resolves. Otherwise, the result is already determined by the guard above.
 
 **If Playwright is available:**
 
