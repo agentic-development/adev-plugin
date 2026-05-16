@@ -230,34 +230,23 @@ The build orchestrator executes **exactly one pipeline step per turn**, then yie
 
 On every invocation (whether fresh `--spec` or `--resume`), the orchestrator performs this dispatch loop exactly once:
 
-1. **Read build state BEFORE taking any action.** Use `lib/build-state.mjs` to read or create state. Run inline Node.js:
+1. **Read build state BEFORE taking any action.** Read or create state via `adev build-state`:
 
    ```bash
-   node --input-type=module -e "
-   import { readBuildState, createBuildState, getNextStep } from '<ADEV_ROOT>/lib/build-state.mjs';
-   const projectRoot = '<PROJECT_ROOT>';
-   const specPath = '<SPEC_PATH>';
-   let state = readBuildState(projectRoot, specPath);
-   if (!state) {
-     state = createBuildState(projectRoot, specPath, { milestone: <PHASE>, full: <FULL> });
-   }
-   const next = getNextStep(state);
-   console.log(JSON.stringify({ state, next }));
-   "
+   # Returns { state, next }. If the read returns null, follow with `create`.
+   adev build-state next --spec <SPEC_PATH>
+   # If state is null and a fresh pipeline is needed:
+   adev build-state create --spec <SPEC_PATH> [--milestone <PHASE>] [--full]
+   adev build-state next --spec <SPEC_PATH>
    ```
 
-   Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<PROJECT_ROOT>` is the absolute project root, `<SPEC_PATH>` is the spec path, `<PHASE>` is the milestone name or `null`, and `<FULL>` is `true` when `--full` is set. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history, not prior subagent results.
+   Where `<SPEC_PATH>` is the spec path, `<PHASE>` is the milestone name (omit when null), and `--full` is added when `--full` is set. The build state file is the single source of truth for pipeline position — not in-context memory, not the conversation history, not prior subagent results.
 
 2. **Determine next step.** Use the `next` field from step 1's output. If `next` is `null`, all steps are done — print the final summary and exit. Otherwise, evaluate the step's skip conditions against disk artifacts. If skip conditions are met, record a skip and re-read:
 
    ```bash
-   node --input-type=module -e "
-   import { recordStepResult, getNextStep, readBuildState } from '<ADEV_ROOT>/lib/build-state.mjs';
-   recordStepResult('<PROJECT_ROOT>', '<SPEC_PATH>', '<STEP_NAME>', { status: 'skipped' });
-   const state = readBuildState('<PROJECT_ROOT>', '<SPEC_PATH>');
-   const next = getNextStep(state);
-   console.log(JSON.stringify({ state, next }));
-   "
+   adev build-state record --spec <SPEC_PATH> --step <STEP_NAME> --status skipped
+   adev build-state next   --spec <SPEC_PATH>
    ```
 
    Repeat skip evaluation until a non-skipped step is found or all steps are done. Dispatch at most ONE non-skipped step.
@@ -266,20 +255,14 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
 
 4. **Record result. (MANDATORY — this step uses a programmatic helper to prevent skipping.)**
 
-   After the subagent returns its STEP_RESULT, **immediately** run this inline Node.js call to persist the result. Do NOT print anything to the user, do NOT summarize, do NOT respond — run this call FIRST:
+   After the subagent returns its STEP_RESULT, **immediately** run this CLI call to persist the result. Do NOT print anything to the user, do NOT summarize, do NOT respond — run this call FIRST:
 
    ```bash
-   node --input-type=module -e "
-   import { recordStepResult, getNextStep, readBuildState } from '<ADEV_ROOT>/lib/build-state.mjs';
-   const updated = recordStepResult('<PROJECT_ROOT>', '<SPEC_PATH>', '<STEP_NAME>', {
-     status: '<COMPLETED_OR_FAILED>',
-     verdict: '<VERDICT>',
-     error: '<ERROR_OR_EMPTY>',
-     notes: '<SUMMARY>'
-   });
-   const next = getNextStep(updated);
-   console.log(JSON.stringify({ buildStatus: updated.status, next }));
-   "
+   adev build-state record --spec <SPEC_PATH> --step <STEP_NAME> \
+     --status <completed|failed> \
+     --verdict <VERDICT> \
+     [--error <ERROR>] [--notes <SUMMARY>]
+   adev build-state next --spec <SPEC_PATH>
    ```
 
    This is MANDATORY even if the subagent reported ALREADY_COMPLETE or similar — any COMPLETED status means the step succeeded. The helper atomically writes the state file and recalculates build status.

@@ -42,12 +42,15 @@ const FORBIDDEN = /Run inline Node|node\s+--input-type=module\s+-e|node\s+-e/;
 // at Task 0 authoring time (2026-05-15). 15 canonical skills × 51 inline
 // blocks remain. Each extraction PR removes one entry once the skill's
 // inline blocks all reach zero. Allowlist shrinks monotonically.
+//
+// PR 7 (long-tail PR 1 — context/state primitives bundle): build, hygiene,
+// status reached zero inline blocks. Removed from allowlist. implement, plan,
+// validate retain inline blocks for heuristics + infra-preflight; still
+// allowlisted.
 export const ALLOWLIST = new Set([
   "brainstorm",
-  "build",
   "debug",
   "eval",
-  "hygiene",
   "implement",
   "plan",
   "prototype",
@@ -55,7 +58,6 @@ export const ALLOWLIST = new Set([
   "review-specs",
   "specify",
   "standalone",
-  "status",
   "validate",
   "write-test",
 ]);

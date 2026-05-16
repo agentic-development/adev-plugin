@@ -27,7 +27,7 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.556Z"
 drift_detected: true
 drift_source: skills/plan/SKILL.md
-drift_at: 2026-05-15T14:19:41.783Z
+drift_at: 2026-05-16T00:17:13.897Z
 ---
 
 ## Behavioral Contract

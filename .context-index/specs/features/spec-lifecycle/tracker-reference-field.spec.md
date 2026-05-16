@@ -19,8 +19,8 @@ source-manifest:
     - templates/live-spec-template.md
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
-drift_source: skills/brainstorm/SKILL.md
-drift_at: 2026-05-15T16:05:09.594Z
+drift_source: skills/status/SKILL.md
+drift_at: 2026-05-16T00:16:55.863Z
 ---
 
 ## Behavioral Contract

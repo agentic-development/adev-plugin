@@ -146,13 +146,17 @@ Summary:
 
 ### Mode: `--all` (default)
 
-**Optimization:** Use `findSpecsByStatus` from `<ADEV_ROOT>/lib/meta-tools.mjs` to scan specs by status in a single Bash call instead of reading each file individually:
+**Optimization:** Use `adev state list --status <s>` to scan specs by status in a single call instead of reading each file individually. Loop over the lifecycle statuses:
 
 ```bash
-node -e "import {findSpecsByStatus} from '<ADEV_ROOT>/lib/meta-tools.mjs'; for (const s of ['draft','review-pending','review-passed','implemented','validated']) { const r = await findSpecsByStatus('*', s); console.log(JSON.stringify({status: s, count: r.length, specs: r})); }"
+for s in draft review-pending review-passed implemented validated; do
+  adev state list --status "$s"
+done
 ```
 
-If the meta-tool call fails, fall back to the manual scan below.
+Each invocation emits a single-line JSON `{ status, module, count, specs }`. The verb wraps `lib/meta-tools.mjs::findSpecsByStatus` and accepts `--module <slug>` to scope to a single charter (default `*` covers all features + cross-cutting).
+
+If the CLI call fails, fall back to the manual scan below.
 
 1. Scan all charters under `.context-index/specs/features/` and `.context-index/specs/cross-cutting/`
 2. Scan all `*.spec.md` files under the same directories

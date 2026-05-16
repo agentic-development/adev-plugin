@@ -26,8 +26,8 @@ source-manifest:
     - lib/heuristics.mjs
   computed-at: "2026-05-10T23:51:54.631Z"
 drift_detected: true
-drift_source: skills/hygiene/SKILL.md
-drift_at: 2026-05-15T16:42:13.604Z
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-16T00:17:38.938Z
 ---
 
 ## Behavioral Contract
