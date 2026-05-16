@@ -27,7 +27,7 @@ superseded-by-behaviors:
   - validate-config-single-source.spec.md#behavior-5
 drift_detected: true
 drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-16T14:09:58.717Z
+drift_at: 2026-05-16T14:20:01.884Z
 ---
 
 
@@ -70,6 +70,8 @@ drift_at: 2026-05-16T14:09:58.717Z
    - `validate.check-11-visual-verification`
    - `validate.check-12-heuristic-extraction`
    - Check 1 (quality gates) is not in this registry; it remains sourced from `governance/gates.yaml`.
+
+   > **Note on the duplicate `check-12-*` prefix (historical):** The legacy registry shipped with two distinct entries that both used the `check-12-` ID prefix — `validate.check-12-lifecycle-reconciliation` AND `validate.check-12-heuristic-extraction`. This is intentional, not a typo: the legacy registry never assigned a Check 13 numeric ID — "Check 13" existed only as prose in `skills/validate/SKILL.md`. Both IDs were removed by `check-set-restructure.spec.md` (the lifecycle reconciliation check relocated to `/adev:reconcile`; the heuristic extraction relocated to `hooks/post-validate-extract-heuristics.*`), so the duplication no longer exists in the live registry. The note is retained here so anyone reading the superseded spec, the migration's `REMOVED_CHECK_ID` diagnostics, or historic `.validate.md` reports understands the two-`check-12` situation is deliberate.
 
 #### Check Kinds
 
