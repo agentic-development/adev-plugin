@@ -1,0 +1,11 @@
+# Test fixture manifest for doc-references scanner
+modules:
+  - slug: test-strategies
+    paths:
+      - lib/test-strategies
+  - slug: governance
+    paths:
+      - lib/governance
+  - slug: cli
+    paths:
+      - cli

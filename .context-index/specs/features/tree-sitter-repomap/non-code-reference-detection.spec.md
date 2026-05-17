@@ -20,7 +20,7 @@
 ---
 charter: tree-sitter-repomap
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: v0.5.2
 revision: 3
@@ -28,6 +28,23 @@ charter-revision: 1
 charter-extension: true
 created: 2026-05-17
 updated: 2026-05-17
+source-manifest:
+  sha: "4fb0ecb"
+  files:
+    - .context-index/manifest.yaml
+    - .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.spec.md
+    - lib/repomap/doc-references.mjs
+    - lib/repomap/index.mjs
+    - lib/repomap/public-api-entries.mjs
+    - lib/repomap/rank.mjs
+    - skills/codehealth/SKILL.md
+    - tests/repomap/doc-references.test.mjs
+    - tests/repomap/index.test.mjs
+    - tests/repomap/non-code-references.integration.test.mjs
+    - tests/repomap/public-api-entries.test.mjs
+    - tests/repomap/rank.test.mjs
+    - tests/repomap/render-non-code-sections.test.mjs
+  computed-at: "2026-05-17T19:00:21.169Z"
 ---
 
 ## Schema Evolution Rule
