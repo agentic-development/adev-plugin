@@ -87,6 +87,7 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 |---|---|---|---|---|
 | Driver substrate (`lib/cli/<verb>.mjs` + dispatch) | Pattern, conventions, registration glue in `cli/index.mjs` | must-have | adev-compiler-discipline | validated |
 | Inline-Node extraction sweep | Per-skill atomic deletion of all 35+ inline blocks across 18 canonical SKILL.md files. Each PR ships helper + test + SKILL.md edit in one commit; no in-tree intermediate state with both forms. | must-have | adev-compiler-discipline | implemented |
+| Lib-import control-flow extraction | Narrow follow-up: migrate ~3 embedded control-flow JS snippets in plan and implement SKILL.md (task-selection lookup, status-transition emissions, re-plan-detection conditional) into the existing CLI verbs. Distinct from the inline-Node sweep, which targeted executable `node -e` patterns; this targets descriptive snippets that embed agent-side decision logic. | should-have | adev-compiler-discipline | review-pending |
 | Helper-side `requireGate` discipline | Convention enforced by test that scans `lib/cli/*.mjs` for the call site | must-have | adev-compiler-discipline | validated |
 | `adev gate require` CLI verb | Explicit-invocation gate primitive | must-have | adev-compiler-discipline | validated |
 | Diagnostic registry engine (`lib/diagnostics/index.mjs`) | `runDiagnostics({...})` + registry loader | must-have | adev-compiler-discipline | implemented |
