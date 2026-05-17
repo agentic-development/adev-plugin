@@ -35,6 +35,11 @@ modules:
     paths:
       - hooks/
 
+  - slug: lib
+    name: Core Libraries
+    paths:
+      - lib/
+
   - slug: setup
     name: Setup
     paths:

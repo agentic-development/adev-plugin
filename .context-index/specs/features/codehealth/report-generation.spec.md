@@ -14,6 +14,9 @@ source-manifest:
   files:
     - skills/codehealth/SKILL.md
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/codehealth/SKILL.md
+drift_at: 2026-05-17T18:54:07.768Z
 ---
 
 ## Behavioral Contract
