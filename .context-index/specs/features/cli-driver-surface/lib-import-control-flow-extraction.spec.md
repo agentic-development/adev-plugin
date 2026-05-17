@@ -11,7 +11,7 @@
 ---
 charter: cli-driver-surface
 kind: refactor
-status: implemented
+status: validated
 risk_level: low
 milestone: adev-compiler-discipline
 revision: 2
@@ -27,6 +27,9 @@ source-manifest:
     - tests/lib-import-control-flow-extraction.test.mjs
     - tests/skills/no-stale-format-refs.test.mjs
   computed-at: "2026-05-17T21:45:19.821Z"
+drift_detected: true
+drift_source: .context-index/specs/features/cli-driver-surface/charter.md
+drift_at: 2026-05-17T21:53:06.699Z
 ---
 
 ## Current State
