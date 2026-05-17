@@ -11,13 +11,22 @@
 ---
 charter: cli-driver-surface
 kind: refactor
-status: review-passed
+status: implemented
 risk_level: low
 milestone: adev-compiler-discipline
 revision: 2
 charter-revision: 3
 created: 2026-05-17
 updated: 2026-05-17
+source-manifest:
+  sha: "96d4421"
+  files:
+    - .context-index/specs/features/cli-driver-surface/charter.md
+    - skills/implement/SKILL.md
+    - skills/plan/SKILL.md
+    - tests/lib-import-control-flow-extraction.test.mjs
+    - tests/skills/no-stale-format-refs.test.mjs
+  computed-at: "2026-05-17T21:45:19.821Z"
 ---
 
 ## Current State
