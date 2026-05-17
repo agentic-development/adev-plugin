@@ -21,8 +21,8 @@ source-manifest:
     - templates/charter-template.md
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
-drift_source: skills/specify/SKILL.md
-drift_at: 2026-05-17T20:38:19.319Z
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-17T20:34:52.866Z
 ---
 
 ## Behavioral Contract
