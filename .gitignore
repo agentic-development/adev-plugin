@@ -68,3 +68,13 @@ viz/dist/
 
 # Lifecycle gate advisory counter (runtime state)
 .context-index/.advisory-counter
+
+# Incremental-artifact writes (.partial + atomic-rename pattern).
+# Per incremental-artifact-writes.spec.md, *.partial files represent
+# in-progress agent authoring committed via atomic rename to the final
+# filename. *.partial.lock files are sidecar coordination state holding
+# {pid, started_at} for steal-on-stale detection. Both are runtime state
+# and never committed — a committed orphan would surface as a "wedged
+# artifact" on every clone. (Analogous treatment to tasks.json.lock above.)
+*.partial
+*.partial.lock
