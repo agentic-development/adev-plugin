@@ -251,9 +251,31 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
 
    Repeat skip evaluation until a non-skipped step is found or all steps are done. Dispatch at most ONE non-skipped step.
 
-3. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
+3. **Partial Artifact Detection (incremental-artifact-writes.spec.md, Behavior 5).** Before dispatching the subagent for the determined step, check whether a `.partial` file exists for that step's output artifact. Run:
 
-4. **Record result. (MANDATORY — this step uses a programmatic helper to prevent skipping.)**
+   ```bash
+   adev partial detect --root .context-index
+   ```
+
+   The verb returns JSON `{ partials: [...] }`. Filter to entries whose canonical path matches the step about to dispatch:
+
+   - `specify` → `<spec-path>`
+   - `plan` → `<spec-path>` minus `.spec.md` plus `.plan.md`
+   - `validate` → `<spec-path>` minus `.spec.md` plus `.validate.md`
+   - `implement` → none (per Integration Point 2, implement uses per-task commits, not `.partial`)
+
+   For each match, run `adev partial inspect --artifact <partial-path>` to fetch `{partial_exists, schema_marker, schema_allowed, lock_exists}`. Decision matrix:
+
+   - **`--auto` mode AND `schema_allowed` is true:** resume — pass the partial as additional context to the dispatching subagent.
+   - **`--auto` mode AND `schema_allowed` is false (missing/mismatched marker):** discard with a logged warning and start fresh: `adev partial discard --artifact <partial-path> --spec <spec-path>`. Never silently overwrite.
+   - **Interactive mode:** prompt the user — **resume / discard / abort**. Resume re-dispatches with the partial as context; discard runs the CLI discard call; abort stops the build for manual inspection.
+   - **`lock_exists` is true with a live owner:** another invocation is in flight. Abort the build with a clear message naming the pid and lock file. The user can re-run after the prior invocation completes.
+
+   If no `.partial` exists for the step, proceed normally.
+
+4. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
+
+5. **Record result. (MANDATORY — this step uses a programmatic helper to prevent skipping.)**
 
    After the subagent returns its STEP_RESULT, **immediately** run this CLI call to persist the result. Do NOT print anything to the user, do NOT summarize, do NOT respond — run this call FIRST:
 
@@ -267,8 +289,8 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
 
    This is MANDATORY even if the subagent reported ALREADY_COMPLETE or similar — any COMPLETED status means the step succeeded. The helper atomically writes the state file and recalculates build status.
 
-5. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
-   - If `next` from step 4 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
+6. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
+   - If `next` from step 5 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
    - If `next` is null or `buildStatus` is `"completed"` or `"failed"`: do NOT re-invoke. Print the final summary and exit without re-invocation.
 
 ### Why One Step Per Turn
