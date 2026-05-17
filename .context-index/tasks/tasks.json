@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 1,
+  "seq": 24,
   "epics": [
     {
       "id": "epic-1",
@@ -643,6 +643,22 @@
       "status": "open",
       "created": "2026-05-16T11:58:07.716Z",
       "updated": "2026-05-16T11:58:07.716Z"
+    },
+    {
+      "id": "epic-86",
+      "title": "provider-mirror-lifecycle-parity",
+      "status": "open",
+      "created": "2026-05-17T20:42:54.390Z",
+      "updated": "2026-05-17T20:42:54.390Z"
+    },
+    {
+      "id": "epic-87",
+      "title": "Lib-Import Control-Flow Extraction",
+      "status": "open",
+      "planRef": ".context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.plan.md",
+      "milestone": "adev-compiler-discipline",
+      "created": "2026-05-17T21:30:37.684Z",
+      "updated": "2026-05-17T21:30:37.684Z"
     }
   ],
   "issues": [
@@ -3184,9 +3200,116 @@
       "notes": "The project's validate registry at .context-index/governance/validate.yaml is currently checks: [], leaving /adev:validate without a registry-driven check set. Under the single-source model, that file is authoritative and there are no bundled fallbacks — meaning only Check 1 (quality gates, sourced separately from governance/gates.yaml) should fire today.\n\nRequired entries to copy from templates/domains/software/validate.yaml:\n- validate.check-1.5-source-manifest\n- validate.check-2-spec-compliance\n- validate.check-4-constitution\n- validate.check-8-boundaries\n- validate.check-9-transition-gates\n- validate.check-11-visual-verification\n\nExplicitly excluded (removed by check-set-restructure.spec.md, migrated elsewhere): checks 3, 5, 6, 7, 10, 12, 13. The starter file documents which skill or hygiene pass each one moved to.\n\nWhy this matters:\n1. Operator configurability — disabling a check, overriding a severity, or adding a project-specific check is impossible until the registry is populated.\n2. Single-source-model integrity — registry vs prose currently contradict.\n3. Validator events emitted by /adev:validate trigger UNKNOWN_VALIDATOR_DEFAULTED warnings because the IDs are not declared in any registry the project knows about.\n\nAcceptance:\n- governance/validate.yaml contains the six entries above.\n- /adev:validate against a sample spec dispatches via the registry rather than skill prose.\n- No more UNKNOWN_VALIDATOR_DEFAULTED warnings on validator-event emission.\n\nReferences:\n- templates/domains/software/validate.yaml (starter to copy from)\n- .context-index/specs/features/validation/validate-config-single-source.spec.md\n- .context-index/specs/features/validation/check-set-restructure.spec.md\n\nSurfaced during /adev:validate of tree-sitter-repomap/non-code-reference-detection (PR #127, 2026-05-17).",
       "next_action": null,
       "created": "2026-05-17T19:22:53.449Z",
-      "updated": "2026-05-17T19:33:39.363Z",
+      "updated": "2026-05-17T19:41:22.917Z",
       "epicId": "epic-74",
-      "notes_append": "\n\n2026-05-17: PR #130 opened — registry populated with 6 starter entries. AC3 (UNKNOWN_VALIDATOR_DEFAULTED warnings) does NOT hold after this fix; root cause is _resolveActorSeverity reading gates.yaml rather than validate.yaml. Needs separate follow-up issue."
+      "notes_append": "\n\n2026-05-17 (later): AC3 closed too — root-cause fix in lib/lifecycle-state.mjs (commit 64e83ed in PR #130). Validator severity now resolves from validate.yaml instead of gates.yaml. All 3 ACs satisfied; ready to close when PR merges."
+    },
+    {
+      "id": "issue-508",
+      "title": "specify and implement skills emit step-completed without verdict, blocking downstream gates",
+      "status": "in_progress",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "Two skills emit `adev report --type step --status completed` without a verdict, which causes the next skill's gate (`adev gate require`) to block until an operator manually re-emits the completed event with --verdict.\n\nAffected skills:\n- skills/specify/SKILL.md:465 — emits `adev report --type step --step specify --status completed` (no verdict). /adev:review-specs then blocks until verdict is re-emitted.\n- skills/implement/SKILL.md:37 — emits `adev report --type step --step implement --status completed` (no verdict). /adev:validate then blocks.\n\nOther skills (review-specs, plan, validate) DO emit a verdict on completion. The contract is therefore not uniformly applied.\n\nObserved twice during 2026-05-17 lifecycle run on tree-sitter-repomap/non-code-reference-detection:\n- After /adev:specify, /adev:review-specs blocked with: \"step 'review' requires prior step 'specify' to be completed with PASS or PASS_WITH_NOTES (current: {status: completed, verdict: null})\". Workaround: manually re-emitted specify completion with --verdict PASS.\n- After /adev:implement, /adev:validate blocked with the same shape of error against the 'implement' prior step. Same workaround applied.\n\nFix (option A — chosen): make every skill emit a verdict on the completed event. specify is treated as PASS when it successfully writes the spec; implement is treated as PASS when the GREEN phase passes (which the skill already gates on internally). Two-line edits per skill.\n\nAlternative considered (option B — rejected): relax the gate to accept `status: completed` without a verdict for steps that don't naturally produce pass/fail. Rejected because it weakens the gate's contract for the three steps (review, plan, validate) that DO produce verdicts.\n\nAcceptance:\n- skills/specify/SKILL.md and skills/implement/SKILL.md include --verdict PASS in their step-completed emission.\n- A clean end-to-end lifecycle (specify → review → plan → implement → validate) succeeds without any manual verdict re-emission.\n- /adev:validate is no longer blocked by an absent implement verdict.\n\nOut of scope: changes to gate logic, changes to the failed-step verdict-emission path (specify/implement already correctly emit no verdict on failure — only the success path is affected).",
+      "next_action": null,
+      "created": "2026-05-17T19:58:10.037Z",
+      "updated": "2026-05-17T20:02:14.999Z",
+      "notes_append": "\n\n2026-05-17: PR #131 opened."
+    },
+    {
+      "id": "issue-509",
+      "title": "/adev:validate emits no lifecycle events (no gate, no started, no completed)",
+      "status": "in_progress",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-1, LIFE-3).\n\nskills/validate/SKILL.md Step 0a uses inline-Node imports of currentState/requireGate/resolveGateMode/reportStep instead of `adev gate require --skill validate --spec <p>` and `adev report --type step --status started`. Worse, no completion event is emitted — the section structure jumps from Check 11 to Overall Status to After Validation without ever calling `adev report --type step --step validate --status completed`.\n\nConsequence: after /adev:validate runs, the lifecycle log shows lifecycle_step:validate started with no terminal event. Any future skill that gates on validate completion would block permanently. Same shape of bug as issue-508 but for a different skill.\n\nFix:\n1. Replace the Step 0a inline-Node block with `adev gate require --skill validate --spec <p>` + `adev report --type step --step validate --status started`.\n2. Add a final emission step that calls `adev report --type step --step validate --status completed --verdict <aggregate>` where aggregate is PASS / PASS_WITH_NOTES / FAIL based on the consolidated check results.\n\nAcceptance:\n- /adev:validate runs end-to-end without inline-Node in its critical-path gate logic.\n- Lifecycle log after a validate run contains both lifecycle_step:validate started AND step_completed:validate with a verdict.\n- Manual verification: a fictional downstream skill calling `adev gate require --skill <next>` after validate does not block.",
+      "next_action": null,
+      "created": "2026-05-17T20:31:01.507Z",
+      "updated": "2026-05-17T20:33:36.039Z",
+      "notes_append": "\n\n2026-05-17: PR #132 opened with the fix."
+    },
+    {
+      "id": "issue-510",
+      "title": "Validator ID prefix mismatch — skill prose drops the \"validate.\" prefix",
+      "status": "in_progress",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-2). Partially negates PR #130.\n\nPR #130 routed validator-severity lookups from gates.yaml to validate.yaml. validate.yaml entries use the prefixed form `validate.check-2-spec-compliance`. But skills/validate/SKILL.md (lines 363–374 and elsewhere) tells operators to emit `adev report --type validator --validator check-2-spec-compliance` (NO prefix). The severity-resolution lookup then misses every entry and defaults to severity: warning, suppressing blocker-severity FAILs in the aggregation table.\n\nEffectively re-introduces the UNKNOWN_VALIDATOR_DEFAULTED symptom that issue-507 + PR #130 were supposed to eliminate.\n\nFix (pick ONE):\n- A. Update skill prose to use the prefixed form consistently (cheapest; pure markdown).\n- B. Strip the prefix from validate.yaml and the domain starter (touches more files; risks breaking the loader if other code references the prefixed form).\n\nOption A is recommended.\n\nAcceptance:\n- skills/validate/SKILL.md emits validators with the same ID strings declared in validate.yaml.\n- After emitting a real validator_report event, no UNKNOWN_VALIDATOR_DEFAULTED warning is printed.\n- Add a CI test that walks every id in governance/validate.yaml and asserts the skill prose calls `adev report --type validator --validator <id>` verbatim.",
+      "next_action": null,
+      "created": "2026-05-17T20:31:01.519Z",
+      "updated": "2026-05-17T20:36:33.820Z",
+      "notes_append": "\n\n2026-05-17: PR #133 opened."
+    },
+    {
+      "id": "issue-511",
+      "title": "/adev:specify non-Standard modes (Extract, Refactor, From-Diff, Cross-Cutting) emit no lifecycle events",
+      "status": "in_progress",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-7). Issue-508 / PR #131 only covered Specify's Standard Mode.\n\nskills/specify/SKILL.md has five modes:\n- Standard (Steps 0/6) — emits lifecycle_step started/completed ✓\n- Extract (Steps 1–5) — emits nothing\n- Refactor (Steps 1–8) — emits nothing\n- From-Diff (Steps 1–5) — emits nothing\n- Cross-Cutting (Steps 1–6) — emits nothing\n\nSpecs authored via the four non-Standard modes have empty lifecycle-state/<slug>.jsonl files. requireGate(state, 'review', ...) reports currentStatus: {status: 'missing', verdict: null} for them, blocking /adev:review-specs in strict mode.\n\nFix: factor the started/completed emission into the Shared section so every mode inherits it (mirrors how PR #131 set it for Standard Mode). The verdict should be PASS for all five modes' success paths (each mode's emission line is reached only when the spec has been written).\n\nAcceptance:\n- All five Specify modes emit lifecycle_step started AND step_completed:specify with --verdict PASS on success.\n- A spec authored in Extract / Refactor / From-Diff / Cross-Cutting mode unblocks /adev:review-specs without manual verdict re-emission.",
+      "next_action": null,
+      "created": "2026-05-17T20:31:01.532Z",
+      "updated": "2026-05-17T20:40:00.421Z",
+      "notes_append": "\n\n2026-05-17: PR #134 opened with the fix."
+    },
+    {
+      "id": "issue-512",
+      "title": "Extract embedded control-flow logic from plan/implement SKILL.md JS snippets",
+      "status": "in_progress",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-6). The cli-driver-surface inline-Node-extraction-sweep was meant to migrate every skill from inline-Node lib imports to canonical adev verb CLI calls. Audit found six skills still using inline-Node patterns even though the CLI surface for each call exists. Skills affected: review-specs (reportReviewer), plan (reportPlanTask, filterEvents, hasDrift, verifyManifest), implement (readExecutionState, currentState, reportPlanTask), build (currentState pattern), debug (currentState, reportIntervention). validate Step 0a was addressed by PR #132. Pre-commit hook only catches NEW inline-Node patterns; grandfathered lines hide the violation from CI. Acceptance: every call site migrated to adev verb; new test walks all SKILL.md files asserting no inline-Node patterns appear. Out of scope: provider mirrors (separate epic).",
+      "next_action": null,
+      "created": "2026-05-17T20:42:39.691Z",
+      "updated": "2026-05-17T21:09:37.916Z",
+      "notes_append": "\n\n2026-05-17: PR #135 opened with constitution amendment, /adev:sync, narrow follow-up spec."
+    },
+    {
+      "id": "issue-513",
+      "title": "No skill emits step_failed events on failure paths",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-74",
+      "dependencies": [],
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-8, LIFE-15). The lifecycle library exposes reportStep with status: failed (CLI: adev report --type step --status failed) and recovery_record is in the canonical event set, but no skill calls either on failure paths. Result: partial runs leave the lifecycle log with a started event and no terminal event, making the spec unrecoverable for downstream gates. Concrete failure paths that should emit step_failed but do not (from audit): implement Step 1.5 Infra Preflight FAIL; implement Step 2-post Integration Gate severity-error failure; implement TDD blocker exits; specify CHARTER_CLOSED gate; plan REVIEW_GATE / CODE_DRIFT blocks; validate Check 1 quality-gates fail-fast exit. Additionally /adev:recover is documented as producer of recovery_record events but emits nothing. Acceptance: each lifecycle skill emits adev report --type step --status failed --verdict FAIL with --error summary on early-exit paths; /adev:recover emits recovery_record (or that event is removed from canonical); new lifecycle-state test asserts terminal event present for failure-path fixtures.",
+      "next_action": null,
+      "created": "2026-05-17T20:42:54.386Z",
+      "updated": "2026-05-17T20:42:54.386Z"
+    },
+    {
+      "id": "issue-514",
+      "title": "Research: unify quality gates and validation checks under a single logic",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "Surfaced 2026-05-17 during /adev:validate scoping discussion on the incremental-artifact-writes spec. The user observed that we have two adjacent concepts with significant overlap and asked whether they should be one thing.\n\n=== Current state (two parallel surfaces) ===\n\n1. **Quality gates** (governance/gates.yaml) — tier-organized commands (fast | integration | e2e), each with kind (deterministic | probabilistic), severity (error | warning), required flag, triggers list (post-task | post-implement | pre-merge), group (smoke | full for e2e). Run by:\n   - /adev:validate Check 1 (full tier sweep)\n   - /adev:implement post-task hook (via gate triggers)\n   - /adev:plan during planning context loading\n   - CI directly (npm test, etc.)\n\n2. **Validation checks** (governance/validate.yaml) — registry of checks with kinds (quality-gate | subagent-review | deterministic-check | observational), each with profile, fail-fast, after dependencies, severity. Run by /adev:validate only.\n\n=== Friction points ===\n\n- Check 1 of validation IS the quality-gate tier sweep — wrapper around governance/gates.yaml. Same logic, two entry points.\n- Mental model gap: \"what must pass before X\" has no single answer. Quality gates? Validation checks? Transition gates (governance/gates.yaml transitions section)? All three?\n- governance/ has three files (gates.yaml, validate.yaml, boundaries.yaml) that interact in non-obvious ways.\n- check-set-restructure.spec.md already relocated 7 historic checks to other skills (review-specs, hygiene, reconcile, post-validate hook). The remaining 5–8 dispatched checks are a hybrid of \"gate-like\" and \"review-like\" work.\n- Severity, fail-fast, and tier semantics are duplicated across gates.yaml (severity, tier) and validate.yaml (severity, fail_fast, after).\n\n=== Possible unifications to study ===\n\nA. **Single registry** — collapse gates.yaml + validate.yaml + transitions into one governance/checks.yaml with a uniform schema. Each entry declares: id, kind, trigger (when to run), severity, dependencies, command-or-skill-or-subagent.\n\nB. **Layered registries with shared schema** — keep separate files for separation of concerns but make gates a subtype of validation-checks (kind: quality-gate already exists in validate.yaml). Validation checks include their own gates inline.\n\nC. **Trigger-driven dispatcher** — separate from gates/checks files; introduce a \"lifecycle event → check set\" mapping (post-task fires gates with trigger:post-task; pre-merge fires all gates + all error-severity checks; etc.). Existing gate triggers list is the seed.\n\nD. **Status quo + better docs** — accept the two-surface model and document the boundary clearly. Cheaper but doesn't reduce friction.\n\n=== Research questions ===\n\n- Are there projects with similar two-surface friction? (ESLint/Prettier vs Jest, or Bazel's test/build distinction, or pre-commit/pre-push hook divisions.) What did they pick?\n- Does check-set-restructure's relocation logic suggest a deeper unification or argue against it?\n- How much complexity is per-check kind (subagent-review needs profile/prompt; deterministic-check needs command; quality-gate needs tier/command/severity)? Could a uniform schema absorb all three without over-engineering?\n- Migration cost — gates.yaml is well-established; breaking the surface risks invalidating existing projects' configurations.\n- What's the user-facing benefit? One mental model? Faster CI? Fewer governance files? Clearer \"what fails what\" diagnostics?\n\n=== Out of scope ===\n\n- Implementation work — this is /adev:research first, then potentially spec → plan → implement.\n- Lifecycle event log unification — that's already done by agent-reliable-state-artifacts.\n- Existing ADRs covering this — none found; this would be a net-new ADR if unification is chosen.\n\n=== Next action ===\n\nRun /adev:research on \"unifying quality gates and validation checks under a single logic\". Output: research artifact with the four options enumerated above, plus comparable patterns from ESLint/Bazel/pre-commit, plus a recommendation. If recommendation is \"unify\", file a follow-up spec; if \"document the boundary\", file a docs task.",
+      "next_action": "Run /adev:research on unifying quality gates and validation checks; produce options-comparison artifact",
+      "created": "2026-05-17T21:10:09.512Z",
+      "updated": "2026-05-17T21:10:09.512Z"
+    },
+    {
+      "id": "issue-515",
+      "title": "Improve persona outputs — trim default Architect verbosity; consider depth dial",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "Surfaced 2026-05-17 by direct user feedback during a long Architect-persona session. The personas system (templates/personas/{architect,developer,product}.md, resolved by lib/persona.mjs) works as designed, but the default verbosity of at least the Architect persona is higher than the practical sweet spot for most interactions. The Architect template explicitly mandates \"full technical detail including trade-off analysis, review rationale, and architectural reasoning\" — which produces multi-section responses with tables and \"architectural decisions worth flagging\" callouts even for routine actions.\n\n=== Observed friction (this session) ===\n\n- Responses after every meaningful action include an \"Architectural read\" or \"Architectural decisions worth flagging\" section even when the user has not asked for one.\n- Status reports default to multi-table breakdowns where one sentence would do.\n- After every skill completion (specify / review / plan / implement / validate), a multi-paragraph summary lands even when the lifecycle state file already captures everything.\n- \"Next steps\" sections appear at the end of nearly every turn, often listing 3+ options when the user typically picks one quickly.\n- Token cost on the user side: cache-read accumulation per the existing heuristic (\"Cache reads are 71% of session cost — minimize context accumulation\") amplifies verbose chat output across every subsequent turn.\n\n=== What's working ===\n\n- The Architect persona's depth IS valuable when the user is making architectural decisions, doing reviews, or scoping unfamiliar territory.\n- The Developer and Product personas (per templates/personas/) already have terser rules; the issue is more pronounced for Architect than for siblings.\n- Persona resolution and injection (lib/persona.mjs + output-personas charter) already works; this issue is about output tuning, not the resolution mechanism.\n\n=== Possible improvements to study ===\n\nA. **Trim default verbosity at the template level.** Edit templates/personas/architect.md to reduce mandated sections (e.g., move \"architectural decisions worth flagging\" from MUST to MAY-when-asked; drop default \"next steps\" sections; reserve trade-off analysis for explicit-decision moments).\n\nB. **Adaptive verbosity within a persona.** Introduce a within-persona dial — \"depth: terse | normal | deep\" — that the user can adjust mid-session. Architect would default to \"normal,\" dropping to \"terse\" on request. Long-running sessions might auto-trim to \"terse\" after N turns to combat cache-read amplification.\n\nC. **Context-aware verbosity.** Different output rules for different intents: routine actions (file edits, lifecycle bookkeeping) get terse output; architectural decisions, reviews, and design moments get full Architect output. The persona stays Architect but the depth flexes with the moment.\n\nD. **New persona \"Architect-Lite\"** — a fourth template that retains Architect's depth on decisions but mirrors Developer's terseness on routine actions. Existing personas unchanged.\n\nE. **Suppress redundant disk-mirroring in chat.** Many of the verbose chat outputs duplicate content already written to disk artifacts (.review.md, .plan.md, .validate.md). The persona-rules section \"Artifacts written to disk always use the full technical format regardless of persona\" already exists — the chat-side rule could be tightened to \"if a disk artifact captures the detail, chat may summarize in 1-3 sentences\" instead of recapitulating.\n\n=== Concrete asks (not all needed; pick a starting set) ===\n\n1. Audit templates/personas/architect.md and trim default-required sections. Specific candidates: \"Architectural read,\" \"architectural decisions worth flagging,\" default \"next steps.\"\n2. Introduce a depth dial (B above) with sensible per-persona defaults.\n3. Add an explicit anti-redundancy rule (E above) referencing the existing disk-artifact-format invariant.\n4. Update output-personas/charter.md and persona-resolution-and-injection.spec.md to reflect any rule changes.\n5. Add tests under tests/persona.test.mjs that verify the trimmed templates render expected output for a fixture set of prompts.\n\n=== Out of scope ===\n\n- Changing persona resolution / detection / injection mechanism (persona-resolution-and-injection.spec.md is the authority; this issue defers to it).\n- Adding new personas beyond Architect-Lite (option D is itself optional).\n- Cross-skill behavior change (skills still call reportStep / write artifacts / etc. unchanged).\n\n=== Related context ===\n\n- output-personas feature charter: .context-index/specs/features/output-personas/\n- Persona templates: templates/personas/{architect,developer,product}.md\n- Resolution lib: lib/persona.mjs\n- Existing heuristic on output volume: \"Cache reads are 71% of session cost — minimize context accumulation\" (memory). The verbose-Architect pattern directly contradicts this heuristic during long sessions.\n\n=== Next action ===\n\nTriage scope: pick which of options A-E to spec first, or run /adev:research to compare them against patterns from other agent frameworks (Cursor, Aider, Cline — how do their personas/modes balance depth vs terseness?). Then /adev:specify under the output-personas charter.",
+      "next_action": "Triage: pick from options A-E (template trim / depth dial / context-aware / Architect-Lite / anti-redundancy rule) or run /adev:research first to compare to other agent frameworks",
+      "created": "2026-05-17T21:14:33.334Z",
+      "updated": "2026-05-17T21:14:33.334Z"
     }
   ]
 }
