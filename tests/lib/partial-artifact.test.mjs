@@ -24,6 +24,8 @@ import {
   assertWithin,
   findPartials,
   isPartialStale,
+  loadPartialKnobs,
+  DEFAULT_PARTIAL_KNOBS,
 } from "../../lib/partial-artifact.mjs";
 
 test("partialPath appends .partial to a path", () => {
@@ -253,6 +255,86 @@ test("isPartialStale returns false for a missing file", () => {
       isPartialStale(join(dir, "missing.partial"), 24),
       false
     );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Task 7: Manifest knobs
+// ---------------------------------------------------------------------------
+
+test("DEFAULT_PARTIAL_KNOBS exposes the documented defaults", () => {
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_stale_seconds, 30);
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_stale_hours, 24);
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_oversize_multiplier, 3);
+  assert.deepEqual(DEFAULT_PARTIAL_KNOBS.partial_roots, []);
+});
+
+test("loadPartialKnobs returns defaults for a silent manifest", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      "project:\n  name: test\n"
+    );
+    const knobs = loadPartialKnobs(dir);
+    assert.deepEqual(knobs, DEFAULT_PARTIAL_KNOBS);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("loadPartialKnobs honours overrides under lifecycle.*", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      [
+        "project:",
+        "  name: test",
+        "lifecycle:",
+        "  partial_stale_seconds: 60",
+        "  partial_stale_hours: 48",
+        "  partial_oversize_multiplier: 5",
+        "  partial_roots:",
+        "    - docs",
+        "    - src",
+        "",
+      ].join("\n")
+    );
+    const knobs = loadPartialKnobs(dir);
+    assert.equal(knobs.partial_stale_seconds, 60);
+    assert.equal(knobs.partial_stale_hours, 48);
+    assert.equal(knobs.partial_oversize_multiplier, 5);
+    assert.deepEqual(knobs.partial_roots, ["docs", "src"]);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("loadPartialKnobs ignores invalid override types", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      [
+        "project:",
+        "  name: test",
+        "lifecycle:",
+        "  partial_stale_seconds: -1", // negative → ignored
+        "  partial_stale_hours: 0", // zero → ignored
+        '  partial_oversize_multiplier: "five"', // string → ignored
+        "  partial_roots: not-a-list", // string → ignored
+        "",
+      ].join("\n")
+    );
+    const knobs = loadPartialKnobs(dir);
+    // Each invalid value falls back to its documented default.
+    assert.deepEqual(knobs, DEFAULT_PARTIAL_KNOBS);
   } finally {
     cleanupTempDir(dir);
   }
