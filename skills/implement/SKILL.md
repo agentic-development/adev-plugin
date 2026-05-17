@@ -117,30 +117,30 @@ This is a one-line operator-cognitive lookup over a returned projection, not a c
 
 ### Task transitions
 
-All state transitions go through `reportPlanTask`. The plan file is read-only after authoring — no checkbox flips, no inline state stamps, no per-task Issue updates.
+All state transitions go through `adev report --type plan-task`. The plan file is read-only after authoring — no checkbox flips, no inline state stamps, no per-task Issue updates.
 
-```javascript
-// At task start (before dispatching the implementer subagent):
-reportPlanTask(projectRoot, specPath, {
-  plan: planFilePath, task_id, status: 'in_progress', notes: null,
-});
+**At task start** (before dispatching the implementer subagent):
 
-// At task done (after GREEN + REFACTOR + both reviews pass):
-reportPlanTask(projectRoot, specPath, {
-  plan: planFilePath, task_id, status: 'done',
-  notes: '<optional ≤200-char summary or null>',
-});
+```bash
+adev report --type plan-task --spec <spec-path> --plan <plan-file-path> --task-id <id> --status in_progress
+```
 
-// On a blocker the skill cannot resolve:
-reportPlanTask(projectRoot, specPath, {
-  plan: planFilePath, task_id, status: 'blocked',
-  notes: '<≤200-char operator-facing summary — no stack traces, no env values, no full command output>',
-});
+**At task done** (after GREEN + REFACTOR + both reviews pass; `--notes` is an optional ≤200-char summary):
 
-// On a user-declined optional task (e.g., user skips a REFACTOR-only task):
-reportPlanTask(projectRoot, specPath, {
-  plan: planFilePath, task_id, status: 'skipped', notes: null,
-});
+```bash
+adev report --type plan-task --spec <spec-path> --plan <plan-file-path> --task-id <id> --status done [--notes "<≤200-char summary>"]
+```
+
+**On a blocker the skill cannot resolve** (the `--notes` field is a short operator-facing summary — no stack traces, no env values, no secrets, no full command output; full diagnostics belong in `.context-index/hygiene/blockers/`, not in the lifecycle log):
+
+```bash
+adev report --type plan-task --spec <spec-path> --plan <plan-file-path> --task-id <id> --status blocked --notes "<≤200-char operator-facing summary>"
+```
+
+**On a user-declined optional task** (e.g., user skips a REFACTOR-only task):
+
+```bash
+adev report --type plan-task --spec <spec-path> --plan <plan-file-path> --task-id <id> --status skipped
 ```
 
 **Blocker notes guidance:** Blocker `notes` must be a short operator-facing summary. Do not paste stack traces, env values, secrets, or full command output. The foundation caps `notes` at 4 KB but operators need a one-line description, not a dump.
