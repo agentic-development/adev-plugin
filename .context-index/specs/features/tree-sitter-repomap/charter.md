@@ -89,7 +89,7 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 | Recovery diagnosis (recover) | Define artifact contract for `/adev:recover` to check packets against dependency graph. Consumption logic owned by implementation charter. | nice-to-have | v0.5.1 | — |
 | Multi-language support | TypeScript/JS, Python, Go, Rust, Java, Ruby grammar support | should-have | v0.5.0 | — |
 | Manifest output config | Add `repomap.output` section to manifest for enabling/disabling output formats | nice-to-have | v0.5.2 | — |
-| Non-code reference detection | Recognize SKILL.md prose mentions of source files and `package.json:exports` entries as inbound references in the dependency graph and symbol-ranks. Eliminates false-positive "zero inbound" findings for skill-driven libraries and public-API entries. | should-have | v0.5.2 | review-pending |
+| Non-code reference detection | Recognize SKILL.md prose mentions of source files and `package.json:exports` entries as inbound references in the dependency graph and symbol-ranks. Eliminates false-positive "zero inbound" findings for skill-driven libraries and public-API entries. | should-have | v0.5.2 | review-passed |
 
 ## Deferred Capabilities
 

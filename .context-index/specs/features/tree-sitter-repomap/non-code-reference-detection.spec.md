@@ -17,7 +17,7 @@
 ---
 charter: tree-sitter-repomap
 kind: behavioral
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v0.5.2
 revision: 2
