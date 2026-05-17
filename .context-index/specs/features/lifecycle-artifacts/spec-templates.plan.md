@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log spec-templates.jsonl -->
 # Implementation Plan: Spec Templates
 
 > **Methodology:** adev

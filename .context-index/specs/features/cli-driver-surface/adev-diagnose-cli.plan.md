@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log adev-diagnose-cli.jsonl -->
 # Implementation Plan: `adev diagnose` CLI Verb
 
 > **Methodology:** adev

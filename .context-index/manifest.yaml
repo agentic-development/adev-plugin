@@ -7,7 +7,7 @@
 
 project:
   name: "adev-plugin"
-  adev_version: "0.22.0"
+  adev_version: "0.26.0"
   description: "Claude Code plugin and CLI implementing a full-lifecycle Agentic Development Framework"
   type: cli
 

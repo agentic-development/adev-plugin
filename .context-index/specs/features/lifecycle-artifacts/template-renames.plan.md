@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log template-renames.jsonl -->
 # Implementation Plan: Template Renames
 
 > **Methodology:** adev
