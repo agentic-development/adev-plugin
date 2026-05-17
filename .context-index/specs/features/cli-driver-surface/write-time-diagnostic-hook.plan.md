@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log write-time-diagnostic-hook.jsonl -->
 # Implementation Plan: Write-Time Diagnostic Hook
 
 > **Methodology:** adev

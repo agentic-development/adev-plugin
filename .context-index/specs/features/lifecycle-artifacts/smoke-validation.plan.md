@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log smoke-validation.jsonl -->
 # Implementation Plan: Smoke Validation
 
 > **Methodology:** adev

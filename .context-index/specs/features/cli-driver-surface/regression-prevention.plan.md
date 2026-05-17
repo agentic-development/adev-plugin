@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log regression-prevention.jsonl -->
 # Implementation Plan: Regression Prevention (Constitution Amendment + Pre-Commit Hook)
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log hygiene-kind-validity.jsonl -->
 # Implementation Plan: Hygiene Kind Validity Audit
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log charter-templates.jsonl -->
 # Implementation Plan: Charter Templates
 
 > **Methodology:** adev

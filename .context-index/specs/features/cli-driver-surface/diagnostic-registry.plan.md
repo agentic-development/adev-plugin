@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log diagnostic-registry.jsonl -->
 # Implementation Plan: Diagnostic Registry
 
 > **Methodology:** adev

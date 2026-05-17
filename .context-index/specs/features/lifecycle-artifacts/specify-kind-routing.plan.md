@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log specify-kind-routing.jsonl -->
 # Implementation Plan: /adev:specify Kind Routing
 
 > **Methodology:** adev
