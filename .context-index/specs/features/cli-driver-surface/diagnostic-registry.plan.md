@@ -40,7 +40,7 @@
 - `.context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md` — canonical event-log shape (mirror `event-schemas.mjs` against it).
 - `.context-index/specs/features/cli-driver-surface/diagnostic-registry.spec.md` rev 2 amendment block (clauses 1–15).
 - `lib/cli/gate.mjs:69-80` — the spec-resolution containment pattern (explicitly NOT sufficient for runner imports; runner guard must be stricter).
-- `.context-index/adrs/0009-governance-check-layering.md` — articulates the diagnostic surface vs other governance surfaces.
+- `.context-index/adrs/0010-governance-check-layering.md` — articulates the diagnostic surface vs other governance surfaces.
 
 ---
 

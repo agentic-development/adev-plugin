@@ -1,4 +1,4 @@
-# ADR 0009: Governance Check Layering — Gates, Reviewers, Validate Checks, Boundaries, Diagnostics
+# ADR 0010: Governance Check Layering — Gates, Reviewers, Validate Checks, Boundaries, Diagnostics
 
 ## Status
 
