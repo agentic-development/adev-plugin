@@ -16,6 +16,9 @@ source-manifest:
     - docs/installation.md
     - docs/getting-started.md
   computed-at: "2026-05-10T23:51:35.315Z"
+drift_detected: true
+drift_source: docs/README.md
+drift_at: 2026-05-16T14:28:10.503Z
 ---
 
 ## Behavioral Contract

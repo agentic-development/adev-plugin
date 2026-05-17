@@ -1,0 +1,369 @@
+/**
+ * Tests for the example-validation-check reference extension.
+ *
+ * Covers:
+ *   - Manifest parses with the canonical provides.governance shape (Task 2 fixture).
+ *   - Manifest template exercises all 5 provides.* slots (Task 4 fixture).
+ *   - bin/check.sh shebang, executable bit, set -euo pipefail, forbidden-form grep,
+ *     runtime exit code, single-line stdout, sentinel-env redaction (Task 3, SEC2-8/SEC2-10).
+ *   - Install positive path against a temp project.
+ *   - Install rejects string-form command at validate-load time (negative fixture).
+ *   - Install report surfaces colliding ids in a dedicated section.
+ *   - After install, the merged validate.yaml entry's command argv resolves to a
+ *     repo-relative path the runner can resolve (SEC2-11 spirit — argv form preserved,
+ *     no shell interpolation).
+ *   - Line-count budgets: manifest ≤25, bin/check.sh ≤15, README ≤60.
+ *
+ * Spec: .context-index/specs/features/extensions/extension-authoring-docs.spec.md
+ */
+
+import { describe, it, before, beforeEach, afterEach } from "node:test";
+import { strict as assert } from "node:assert";
+import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+
+import { parseYaml } from "../../../lib/profiles/yaml.mjs";
+import { parseExtensionManifest } from "../../../lib/extensions/manifest-schema.mjs";
+import { installExtension, readManifestStamps } from "../../../lib/extensions/install.mjs";
+import { mergeGovernanceEntries } from "../../../lib/extensions/content-install.mjs";
+import { loadValidateConfig } from "../../../lib/governance/validate-config.mjs";
+import { createTempDir, cleanupTempDir, PLUGIN_ROOT } from "../../helpers.mjs";
+
+const EXAMPLE_DIR = join(PLUGIN_ROOT, "extensions", "example-validation-check");
+const MANIFEST_PATH = join(EXAMPLE_DIR, "adev-extension.yaml");
+const BIN_PATH = join(EXAMPLE_DIR, "bin", "check.sh");
+const README_PATH = join(EXAMPLE_DIR, "README.md");
+const TEMPLATE_PATH = join(PLUGIN_ROOT, "templates", "adev-extension.example.yaml");
+
+// ── Task 2 fixture: manifest shape ──────────────────────────────────────
+
+describe("example-validation-check: manifest", () => {
+  it("manifest-parses with canonical provides.governance shape", () => {
+    const raw = readFileSync(MANIFEST_PATH, "utf8");
+    const result = parseExtensionManifest(raw);
+    assert.ok(result.valid, `manifest must parse: ${result.message || ""}`);
+    const m = result.manifest;
+    assert.equal(m.name, "example-validation-check");
+    assert.ok(Array.isArray(m.provides.governance), "provides.governance must be an array");
+    assert.equal(m.provides.governance[0].target, "validate.yaml");
+    assert.ok(Array.isArray(m.provides.governance[0].entries), "entries must be an array");
+    const entry = m.provides.governance[0].entries[0];
+    assert.equal(entry.id, "example-validation-check.passing");
+    assert.equal(entry.kind, "quality-gate");
+    assert.ok(Array.isArray(entry.command), "command must be argv form");
+    assert.equal(entry.profile, "read-only", "profile must be explicit");
+    assert.equal(entry.severity, "warning");
+  });
+
+  it("manifest-line-budget: manifest is ≤25 lines", () => {
+    const raw = readFileSync(MANIFEST_PATH, "utf8");
+    const lines = raw.split("\n").length;
+    assert.ok(lines <= 25, `manifest is ${lines} lines, budget is 25`);
+  });
+});
+
+// ── Task 4 fixture: template parses all 5 slots ─────────────────────────
+
+describe("templates/adev-extension.example.yaml", () => {
+  it("template-parses and exercises all 5 provides.* slots", () => {
+    const raw = readFileSync(TEMPLATE_PATH, "utf8");
+    const m = parseYaml(raw);
+    assert.ok(m.provides.skills, "provides.skills slot must be present");
+    assert.ok(m.provides.hooks, "provides.hooks slot must be present");
+    assert.ok(m.provides.governance, "provides.governance slot must be present");
+    assert.ok(m.provides["domain-profile"], "provides.domain-profile slot must be present");
+    assert.ok(m.provides.samples, "provides.samples slot must be present");
+  });
+
+  it("template provides.governance uses canonical {target, entries[]} shape", () => {
+    const raw = readFileSync(TEMPLATE_PATH, "utf8");
+    const m = parseYaml(raw);
+    assert.ok(Array.isArray(m.provides.governance), "must be array");
+    assert.ok(m.provides.governance[0].target, "first entry must have target");
+    assert.ok(Array.isArray(m.provides.governance[0].entries), "first entry must have entries[]");
+  });
+});
+
+// ── Task 3 fixture: bin/check.sh hardening ──────────────────────────────
+
+describe("example-validation-check: bin/check.sh hardening", () => {
+  it("bin-check-shebang-and-executable", () => {
+    const stat = statSync(BIN_PATH);
+    assert.ok(stat.mode & 0o111, "bin/check.sh must be executable");
+    const body = readFileSync(BIN_PATH, "utf8");
+    assert.match(body, /^#!\/usr\/bin\/env bash/, "must begin with #!/usr/bin/env bash");
+  });
+
+  it("bin-check-safe-shell-options-and-forbidden-forms", () => {
+    const body = readFileSync(BIN_PATH, "utf8");
+    assert.match(body, /set -euo pipefail/, "must set -euo pipefail");
+    // SEC2-8: static grep — forbid dangerous bash forms.
+    // Filter comment lines before matching variable-expansion patterns (the README
+    // and a security comment may reference '$VAR' inside prose; only the executable
+    // body must be clean).
+    const codeLines = body
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith("#"))
+      .join("\n");
+    const forbidden = [
+      { re: /\beval\b/, label: "eval" },
+      { re: /\bsource\b/, label: "source" },
+      { re: /`[^`]+`/, label: "backtick command substitution" },
+      { re: /\$\(/, label: "$(...) command substitution" },
+      { re: /\$\{?[A-Z_][A-Z0-9_]*/, label: "variable expansion ($VAR / ${VAR})" },
+      { re: /\bprintenv\b/, label: "printenv" },
+      { re: /(^|[^a-zA-Z])env(\s|$)/, label: "env" },
+    ];
+    for (const { re, label } of forbidden) {
+      assert.doesNotMatch(codeLines, re, `bin/check.sh must not contain ${label}`);
+    }
+  });
+
+  it("bin-check-runtime: exits 0 with single-line stdout and zero stderr", () => {
+    const r = spawnSync("bash", [BIN_PATH], { encoding: "utf8" });
+    assert.equal(r.status, 0, `expected exit 0, got ${r.status}: ${r.stderr}`);
+    assert.equal(r.stderr, "", "stderr must be empty");
+    assert.equal(r.stdout.trim().split("\n").length, 1, "stdout must be one line");
+    assert.match(r.stdout, /^PASS: example-validation-check$/m);
+  });
+
+  it("bin-check-ignores SECRET sentinel env var (SEC2-10)", () => {
+    const r = spawnSync("bash", [BIN_PATH], {
+      encoding: "utf8",
+      env: { ...process.env, SECRET: "hunter2-sentinel-value" },
+    });
+    assert.equal(r.status, 0);
+    assert.doesNotMatch(r.stdout, /hunter2-sentinel-value/, "stdout must not leak SECRET");
+    assert.doesNotMatch(r.stderr, /hunter2-sentinel-value/, "stderr must not leak SECRET");
+  });
+
+  it("bin-line-budget: bin/check.sh is ≤15 lines including shebang", () => {
+    const raw = readFileSync(BIN_PATH, "utf8");
+    const lines = raw.split("\n").length;
+    assert.ok(lines <= 15, `bin/check.sh is ${lines} lines, budget is 15`);
+  });
+});
+
+// ── Task 6 fixture: README line budget ──────────────────────────────────
+
+describe("example-validation-check: README line budget", () => {
+  it("readme-line-budget: README is ≤60 lines", () => {
+    const raw = readFileSync(README_PATH, "utf8");
+    const lines = raw.split("\n").length;
+    assert.ok(lines <= 60, `README is ${lines} lines, budget is 60`);
+  });
+});
+
+// ── Install positive path ───────────────────────────────────────────────
+
+describe("example-validation-check: install positive path", () => {
+  let projectRoot;
+  let stubPluginRoot;
+
+  beforeEach(() => {
+    projectRoot = createTempDir();
+    mkdirSync(join(projectRoot, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(projectRoot, ".context-index/manifest.yaml"),
+      "project:\n  name: install-test\n",
+    );
+
+    // Stub plugin root with version satisfying the manifest's requires.adev
+    // (>=0.27.0). Mirrors how the real install path resolves the installed
+    // version from the plugin's package.json. Avoids coupling the test to the
+    // current package.json version, which lags behind the milestone field.
+    stubPluginRoot = createTempDir();
+    writeFileSync(
+      join(stubPluginRoot, "package.json"),
+      JSON.stringify({ name: "stub", version: "0.27.0" }),
+    );
+    mkdirSync(join(stubPluginRoot, "skills"), { recursive: true });
+  });
+
+  afterEach(() => {
+    cleanupTempDir(projectRoot);
+    cleanupTempDir(stubPluginRoot);
+  });
+
+  it("install-positive-path: installs and stamps manifest + validate.yaml", async () => {
+    const report = await installExtension(EXAMPLE_DIR, projectRoot, {
+      pluginRoot: stubPluginRoot,
+      sourceUri: EXAMPLE_DIR,
+    });
+    assert.equal(report.name, "example-validation-check");
+    assert.equal(report.version, "0.1.0");
+
+    // Manifest stamp recorded
+    const stamps = readManifestStamps(projectRoot);
+    assert.equal(stamps.length, 1);
+    assert.equal(stamps[0].name, "example-validation-check");
+
+    // validate.yaml gained the entry
+    const validatePath = join(projectRoot, ".context-index/governance/validate.yaml");
+    assert.ok(existsSync(validatePath), "validate.yaml must be created");
+    const validate = parseYaml(readFileSync(validatePath, "utf8"));
+    // mergeGovernanceEntries infers root key 'validators' for validate.yaml.
+    // Find the entry under either root key for resilience.
+    const entries = validate.validators || validate.checks || [];
+    assert.ok(
+      entries.some((e) => e && e.id === "example-validation-check.passing"),
+      `validate.yaml must contain example-validation-check.passing, got keys ${Object.keys(validate)}`,
+    );
+  });
+
+  it("install-argv-form-preserved (SEC2-11): merged entry retains argv list, never a shell string", async () => {
+    await installExtension(EXAMPLE_DIR, projectRoot, {
+      pluginRoot: stubPluginRoot,
+      sourceUri: EXAMPLE_DIR,
+    });
+    const validatePath = join(projectRoot, ".context-index/governance/validate.yaml");
+    const raw = readFileSync(validatePath, "utf8");
+    // The serialized YAML emits the array as `[ "bash", "extensions/..." ]`.
+    // SEC2-11: command must remain an argv list, not collapsed to a shell string.
+    assert.match(raw, /command:\s*\[/m, "command must be serialized as argv list");
+    assert.doesNotMatch(raw, /command:\s*"[^"]*\s[^"]*"/, "command must not be a shell-form string");
+  });
+});
+
+// ── Install: string-form command rejected ───────────────────────────────
+
+describe("example-validation-check: install rejects string-form command", () => {
+  let projectRoot;
+
+  beforeEach(() => {
+    projectRoot = createTempDir();
+    mkdirSync(join(projectRoot, ".context-index/governance"), { recursive: true });
+    writeFileSync(
+      join(projectRoot, ".context-index/manifest.yaml"),
+      "project:\n  name: install-test\n",
+    );
+  });
+
+  afterEach(() => {
+    cleanupTempDir(projectRoot);
+  });
+
+  it("install-string-form-command-rejected: validate-load fails with QUALITY_GATE_COMMAND_SHELL", () => {
+    // The install merge accepts primitive scalars including strings; the rejection
+    // fires at validate-load time per configurable-checks Behavior 6a. We exercise
+    // the same path that /adev:validate would: write a string-form command into
+    // governance/validate.yaml then call loadValidateConfig.
+    const overlayPath = join(projectRoot, ".context-index/governance/validate.yaml");
+    writeFileSync(
+      overlayPath,
+      [
+        "checks:",
+        "  - id: example-validation-check.passing",
+        "    kind: quality-gate",
+        "    profile: read-only",
+        '    command: "bash extensions/example-validation-check/bin/check.sh"',
+        "    severity: warning",
+        "",
+      ].join("\n"),
+    );
+    const result = loadValidateConfig(projectRoot, { pluginRoot: PLUGIN_ROOT });
+    const codes = result.errors.map((e) => e.code);
+    assert.ok(
+      codes.includes("QUALITY_GATE_COMMAND_SHELL"),
+      `expected QUALITY_GATE_COMMAND_SHELL in errors, got ${codes.join(", ")}`,
+    );
+  });
+});
+
+// ── Install: collision report dedicated section (SA2-2) ─────────────────
+
+describe("example-validation-check: install collision reporting", () => {
+  let projectRoot;
+
+  beforeEach(() => {
+    projectRoot = createTempDir();
+    mkdirSync(join(projectRoot, ".context-index/governance"), { recursive: true });
+    writeFileSync(
+      join(projectRoot, ".context-index/manifest.yaml"),
+      "project:\n  name: install-test\n",
+    );
+  });
+
+  afterEach(() => {
+    cleanupTempDir(projectRoot);
+  });
+
+  it("install-collision-report: pre-existing project entry preserved; merge logged", () => {
+    // Seed project's validate.yaml with the same id, error severity, enabled: false.
+    const overlayPath = join(projectRoot, ".context-index/governance/validate.yaml");
+    writeFileSync(
+      overlayPath,
+      [
+        "validators:",
+        "  - id: example-validation-check.passing",
+        "    severity: error",
+        "    enabled: false",
+        "",
+      ].join("\n"),
+    );
+
+    const entries = [
+      {
+        id: "example-validation-check.passing",
+        kind: "quality-gate",
+        profile: "read-only",
+        command: ["bash", "extensions/example-validation-check/bin/check.sh"],
+        severity: "warning",
+        after: ["validate.check-1-quality-gates"],
+      },
+    ];
+
+    const report = mergeGovernanceEntries(projectRoot, "validate.yaml", entries);
+
+    // Merge ran in project-wins mode (entry id already existed in project)
+    assert.ok(
+      report.mergesApplied.some((m) => m.startsWith("merged (project-wins)")),
+      `expected project-wins merge log, got ${report.mergesApplied.join(", ")}`,
+    );
+
+    const result = parseYaml(readFileSync(overlayPath, "utf8"));
+    const projectEntry = result.validators.find((e) => e.id === "example-validation-check.passing");
+
+    // Project's severity preserved (non-overridable)
+    assert.equal(projectEntry.severity, "error", "project severity must win");
+    // Project's enabled preserved
+    assert.equal(projectEntry.enabled, false, "project enabled must win");
+    // Extension fills in fields the project did not set (kind, profile)
+    assert.equal(projectEntry.kind, "quality-gate", "extension fills missing kind");
+    assert.equal(projectEntry.profile, "read-only", "extension fills missing profile");
+  });
+
+  it("install-collision-multiple-ids: all colliding ids appear in mergesApplied report", () => {
+    const overlayPath = join(projectRoot, ".context-index/governance/validate.yaml");
+    writeFileSync(
+      overlayPath,
+      [
+        "validators:",
+        "  - id: example-validation-check.passing",
+        "    severity: error",
+        "  - id: example-validation-check.secondary",
+        "    severity: warning",
+        "",
+      ].join("\n"),
+    );
+
+    const entries = [
+      { id: "example-validation-check.passing", kind: "quality-gate", profile: "read-only" },
+      { id: "example-validation-check.secondary", kind: "quality-gate", profile: "read-only" },
+      { id: "example-validation-check.new", kind: "quality-gate", profile: "read-only" },
+    ];
+
+    const report = mergeGovernanceEntries(projectRoot, "validate.yaml", entries);
+
+    const merges = report.mergesApplied;
+    const collisions = merges.filter((m) => m.startsWith("merged (project-wins)"));
+    const appends = merges.filter((m) => m.startsWith("appended"));
+
+    assert.equal(collisions.length, 2, `expected 2 project-wins collisions, got ${collisions.length}`);
+    assert.equal(appends.length, 1, `expected 1 append, got ${appends.length}`);
+    assert.ok(collisions.some((m) => m.includes("example-validation-check.passing")));
+    assert.ok(collisions.some((m) => m.includes("example-validation-check.secondary")));
+    assert.ok(appends.some((m) => m.includes("example-validation-check.new")));
+  });
+});
