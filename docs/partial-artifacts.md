@@ -1,3 +1,5 @@
+← [README.md](./README.md)
+
 # Partial Artifacts (`.partial` + atomic rename)
 
 A reliability pattern for skill authors. Use this when your skill writes a non-trivial markdown artifact — a plan, a spec, a long validation report — and you want it to survive a mid-stream API failure with no silent loss.
