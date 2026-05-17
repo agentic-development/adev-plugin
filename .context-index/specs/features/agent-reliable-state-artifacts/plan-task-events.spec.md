@@ -29,8 +29,8 @@ source-manifest:
     - tests/skills/plan-task-immutability.test.mjs
   computed-at: "2026-05-12T18:02:31.778Z"
 drift_detected: true
-drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-17T19:58:38.627Z
+drift_source: tests/skills/no-stale-format-refs.test.mjs
+drift_at: 2026-05-17T21:43:46.335Z
 ---
 
 ## Behavioral Contract
