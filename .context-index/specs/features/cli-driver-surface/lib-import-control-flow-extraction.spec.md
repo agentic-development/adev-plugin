@@ -11,10 +11,10 @@
 ---
 charter: cli-driver-surface
 kind: refactor
-status: review-pending
+status: review-passed
 risk_level: low
 milestone: adev-compiler-discipline
-revision: 1
+revision: 2
 charter-revision: 3
 created: 2026-05-17
 updated: 2026-05-17
@@ -26,12 +26,21 @@ Two skill files embed fenced JavaScript blocks that go beyond "name the lib func
 
 > Fenced JavaScript in SKILL.md must be descriptive-reference only, never executable directive. If a fenced JavaScript block contains control-flow logic (branching, iteration, lookup that drives the next step), that logic belongs inside the CLI verb's implementation, not in skill prose.
 
-Affected sites (this is the full scope of this spec):
+Affected sites grouped by the three control-flow **categories** that the charter Capability Map row references. Each category has one canonical owner (the source SKILL.md where the block is authored) and may have mirror(s) in the other SKILL.md. Line ranges are approximate at spec-authoring time; Step 1 of the Migration Path captures the actual ranges per file before any edits:
 
-1. **`skills/plan/SKILL.md:108-123`** — embeds `state.planTasks[t.id]?.status === 'pending' || …` lookup logic in a `Array.find` to pick the next task. The agent is implicitly being asked to evaluate the predicate.
-2. **`skills/plan/SKILL.md:129-151`** — four separate `reportPlanTask({...})` invocations with different status values (in_progress / done / blocked / skipped) and per-status notes guidance embedded as JavaScript object literals.
-3. **`skills/plan/SKILL.md:681-701`** — `filterEvents` lookup driving a `console.warn` conditional ("Re-plan detected") plus a `for` loop over `plan.tasks` to emit `pending` events.
-4. **`skills/implement/SKILL.md`** mirrors `skills/plan/SKILL.md:108-123` (task-selection lookup) and `:129-151` (status-transition emissions).
+**Category A — Task-selection lookup** (`Array.find` over `state.planTasks` predicate)
+- Canonical owner: `skills/implement/SKILL.md` (lines ~108-123 — this is where the agent dispatches the next task)
+- Mirror: `skills/plan/SKILL.md` (lines ~108-123 — same lookup duplicated; may be removable once implement owns the logic)
+
+**Category B — Status-transition emissions** (four `reportPlanTask({...})` invocations for `in_progress` / `done` / `blocked` / `skipped`)
+- Canonical owner: `skills/implement/SKILL.md` (lines ~129-151 — implement drives task transitions)
+- Mirror: `skills/plan/SKILL.md` (lines ~129-151 — duplicate documentation; may be removable)
+
+**Category C — Re-plan-detection conditional + pending-event emission** (`filterEvents` lookup + `for` loop over `plan.tasks`)
+- Canonical owner: `skills/plan/SKILL.md` (lines ~681-701 — only `/adev:plan` seeds `pending` events)
+- Mirror: none
+
+Total: 3 categories × ~2 sites avg = ~5 file:line citations across two SKILL.md files. The "~3" framing in the charter Capability Map row refers to the three categories, not the file:line count.
 
 These blocks are out of scope for the existing inline-node-extraction-sweep spec (which marks `implemented` and has an empty allowlist in `tests/skills-no-inline-node.test.mjs`). They are in scope here.
 
@@ -43,23 +52,26 @@ For each affected site, the JavaScript block is replaced by:
 2. The corresponding `adev <verb>` invocation, with arguments expressed declaratively.
 3. The control-flow logic moved into the CLI verb's implementation (`lib/cli/<verb>.mjs`) where it already lives or needs to be added.
 
-No new CLI verbs are introduced unless an existing one cannot express the case. For each call site:
+The CLI surface this spec **expects to use** (pending Step 1 audit confirmation):
 
-- The "next task to dispatch" lookup → covered by `adev state current --spec <p>` which already returns `state.planTasks` (caller picks pending/in_progress/missing tasks in the verb's dispatch logic, not in skill prose).
-- The four `reportPlanTask` transition calls → already covered by `adev report --type plan-task --spec <p> --plan <p> --task-id <id> --status <s> [--notes <text>]`.
-- The re-plan-detection conditional → covered by `adev state events --spec <p> --event plan_task` (caller checks for non-empty result and prints the advisory in the verb).
-- The `for` loop emitting pending events → covered by the existing `adev report --type plan-task --status pending` call invoked once per task.
+- Category A ("next task to dispatch" lookup) → `adev state current --spec <p>` which already returns `state.planTasks`.
+- Category B (four transition calls) → `adev report --type plan-task --spec <p> --plan <p> --task-id <id> --status <s> [--notes <text>]`.
+- Category C (re-plan detection + pending emission) → `adev state events --spec <p> --event plan_task` (read) + `adev report --type plan-task --status pending` (write, once per task).
+
+**This list is the audit's expected outcome, not its premise.** If Step 1 (Audit) reveals a gap — e.g., `adev state events` does not yet support `--event` filtering — the affected sub-task either (a) blocks on adding the missing flag in a separate PR before this spec can land, or (b) accepts a wider verb output and filters in the caller. The Invariants section permits verb-argument additions; it forbids only the introduction of **new** verbs.
+
+**Distinguishing acceptable agent-side lookup from a constitutional violation.** A one-line operator-cognitive lookup over a returned projection — e.g., "the agent picks the first pending task from the `planTasks` map" — is descriptive prose and is permitted under the constitution's fenced-JS rule, provided the lookup is *expressed in prose*, not in a fenced ```javascript block with `find`/`for`/`filter`. A control-flow violation is specifically *embedded executable-shape JS in skill prose* — code that a reader can run mentally as a step in the recipe.
 
 The skill prose retains a one-line description per call site so a reviewer can understand the step's intent without reading the CLI source.
 
 ## Migration Path
 
-Each site is migrated atomically: prose update + verb confirmation + verb-side logic move (if needed) in one PR. Per-skill atomic invariant from the parent sweep spec applies — a SKILL.md never contains both the JavaScript block AND the corresponding `adev <verb>` invocation for the same step.
+Each site is migrated atomically: prose update + verb confirmation + verb-side logic move (if needed) in one PR. **Per-skill atomic discipline.** The parent sweep's per-step invariant is scoped to inline-Node blocks (per `constitution.md:67-68` and `inline-node-extraction-sweep.spec.md` Behavior 3) and is enforced by the pre-commit hook for those patterns. The same review-time discipline applies to this spec's descriptive-JS migration — a SKILL.md should never contain both the JS control-flow block AND the corresponding `adev <verb>` invocation for the same step at any point in tree — but the discipline is enforced by code review, not by the hook. Extending the hook to the descriptive-JS class is out of scope here; if desired, file a follow-up to `regression-prevention.spec.md`.
 
-Step 1: Audit each CLI verb's current implementation to confirm whether the embedded control-flow logic is already present in the verb or needs to be added. Likely findings:
-- `adev state current` already returns the full projection; caller-side filtering is the agent's job (acceptable as one-line prose).
-- `adev report --type plan-task` already accepts all four status values.
-- `adev state events --filter` (or equivalent) already exists per the inline-node-extraction-sweep research.
+Step 1: **Audit existing CLI verb coverage.** For each of the three categories, confirm whether the embedded control-flow logic is already covered by an existing CLI verb (with the right argument surface) or whether a verb argument needs to be added. The audit captures its findings in a short note added to the implementation PR's commit message (or to a Capability Map cell on the charter), so reviewers can verify "no new verbs were silently introduced" at merge time. Audit hypotheses to confirm or refute:
+- `adev state current` already returns the full projection; agent-side picking is acceptable as one-line prose.
+- `adev report --type plan-task` already accepts all four status values (`in_progress`, `done`, `blocked`, `skipped`).
+- `adev state events` exposes `filterEvents` per the inline-node-extraction-sweep research; verify whether it accepts an event-type filter equivalent to `e.event === 'plan_task'`. If not, add `--event <type>` as a one-line verb-argument extension in a separate PR before this spec lands.
 
 Step 2: For each of the four sites, replace the JS block with a prose description and the CLI invocation. Preserve the surrounding step prose unchanged.
 
@@ -72,7 +84,7 @@ Step 4: Update `skills/plan/SKILL.md` and `skills/implement/SKILL.md` source-man
 - The inline-node-extraction-sweep test (`tests/skills-no-inline-node.test.mjs`) continues to pass throughout. This spec does NOT extend its forbidden-pattern regex.
 - The lifecycle event schema is unchanged — the same `plan_task` events with the same fields are emitted, just via the CLI verb instead of via direct JavaScript imports in prose.
 - PageRank-style invariants and other downstream contracts are unchanged.
-- No new CLI verbs are introduced unless an existing one cannot express the case (after Step 1 audit).
+- **No new CLI verbs.** Verb-argument additions (e.g., adding `--event` to `adev state events`) are permitted — they are part of finishing a verb's surface, not a new entry. New entries in `cli/index.mjs` are forbidden by this spec.
 
 ## Behavioral Contract
 
@@ -84,7 +96,7 @@ Step 4: Update `skills/plan/SKILL.md` and `skills/implement/SKILL.md` source-man
 
 ### Behaviors
 
-1. **When** the migration completes **then** `grep -nE "import \{ (currentState|reportPlanTask|filterEvents) \} from '<ADEV_ROOT>" skills/plan/SKILL.md skills/implement/SKILL.md` returns zero matches.
+1. **When** the migration completes **then** the import-shape success signal `grep -nE "import \{ (currentState|reportPlanTask|filterEvents) \} from '<ADEV_ROOT>" skills/plan/SKILL.md skills/implement/SKILL.md` returns zero matches. **Choice of signal:** this regex is the *minimum* migration check — it catches the literal named-import shape for the three known control-flow imports. It does NOT catch renamed re-imports, default-import variants, or fenced JS that drops the `import` line but keeps `find`/`for`/`filter` bodies. Reviewers must additionally scan fenced ```javascript blocks for control-flow tokens during PR review; mechanical detection of control-flow shape inside fenced JS is explicitly out of scope here (track separately under `regression-prevention.spec.md` if desired).
 2. **When** an operator reads `skills/plan/SKILL.md` Step 7 (Execution Handoff) **then** they see a prose description of the re-plan-detection and pending-event emission, followed by the corresponding `adev <verb>` invocations — not a fenced `javascript` code block with `filterEvents` and `for` loops.
 3. **When** an operator reads `skills/implement/SKILL.md` Task Discovery section **then** they see prose describing how the verb selects the next pending task, followed by the `adev state current` invocation — not a fenced `javascript` block with `Array.find(...)`.
 4. **When** the four `reportPlanTask` transition snippets in implement/SKILL.md are migrated **then** each is replaced by a one-line description plus the corresponding `adev report --type plan-task --status <s>` invocation.
@@ -116,15 +128,17 @@ Step 4: Update `skills/plan/SKILL.md` and `skills/implement/SKILL.md` source-man
 | Migrate `skills/plan/SKILL.md` re-plan-detection + pending-event emission (lines 681-701) | Replace fenced JS block with prose + `adev state events` + `adev report --type plan-task` invocations. | Small |
 | Migrate `skills/implement/SKILL.md` task-selection lookup (lines 108-123) | Replace `Array.find` JS block with prose + `adev state current` invocation. | Small |
 | Migrate `skills/implement/SKILL.md` four status-transition snippets (lines 129-151) | Replace each `reportPlanTask({...})` JS block with the corresponding `adev report --type plan-task` invocation. | Small |
-| Migrate `skills/plan/SKILL.md` mirror sites (108-123, 129-151) if present | Same pattern as implement; confirm whether plan has the same blocks (audit said yes) and migrate. | Small |
+| Migrate `skills/plan/SKILL.md` mirror sites (Category A + B duplicates) | Same pattern as implement; the audit said these mirrors exist. Migrate or remove duplication once implement owns the logic. | Small |
 | Source-manifest re-stamp | Auto-emitted by the drift hook when the SKILL.md files change. No manual action. | Trivial |
-| Update charter Capability Map | Add a new row "Lib-import control-flow extraction" with `Status: implemented` after the migration completes. | Trivial |
+| Update charter Capability Map | Update the existing "Lib-import control-flow extraction" row's `Status` column from `review-passed` (set by `/adev:review-specs`) to `implementing` at start, then `implemented` after migration completes. The row already exists in `charter.md` rev 3; do not add a new row. | Trivial |
+| Capture audit findings in commit message | Step 1's audit (which CLI verbs already cover which categories; any verb-argument extensions needed) is recorded inline in the implementation PR's commit message. Reviewers verify "no new verbs were silently introduced." | Trivial |
 
 ## Acceptance Criteria
 
-- [ ] `grep -nE "import \{ (currentState\|reportPlanTask\|filterEvents) \} from '<ADEV_ROOT>" skills/plan/SKILL.md skills/implement/SKILL.md` returns zero matches.
+- [ ] `grep -nE "import \{ (currentState|reportPlanTask|filterEvents) \} from '<ADEV_ROOT>" skills/plan/SKILL.md skills/implement/SKILL.md` returns zero matches. (The `|` inside the alternation is the ERE OR operator, not a literal pipe.)
 - [ ] The four sites enumerated in Current State are each replaced by prose + CLI invocation.
 - [ ] `tests/skills-no-inline-node.test.mjs` continues to pass.
 - [ ] `npm test` reports zero failures.
 - [ ] No new CLI verbs introduced unless an existing one cannot express the case (audit-confirmed).
-- [ ] Charter Capability Map carries a new row reflecting this spec, status set to `implemented` after migration.
+- [ ] Charter Capability Map's existing "Lib-import control-flow extraction" row has its `Status` column advanced to `implemented` after migration. (No new row is added; the row was created when this spec was filed.)
+- [ ] Step 1 audit findings are captured in the implementation PR's commit message: which existing verbs covered each category; any `--<flag>` arguments added; explicit confirmation that no new CLI verbs were introduced.
