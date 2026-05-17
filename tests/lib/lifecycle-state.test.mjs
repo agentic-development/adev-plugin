@@ -361,16 +361,41 @@ test('_resolveActorSeverity returns "warning" for an unknown reviewer', () => {
   assert.equal(sev, 'warning');
 });
 
-test('_resolveActorSeverity returns validator severity for a known gate', () => {
-  // The bundled software gates.yaml declares "quality-gate" with severity: error.
+test('_resolveActorSeverity returns validator severity for a known check in validate.yaml', () => {
+  // The bundled software validate.yaml declares "validate.check-2-spec-compliance"
+  // with severity: error. Validator severities now resolve from validate.yaml
+  // (single-source model), not gates.yaml.
   const sev = _resolveActorSeverity({
     domain: 'software',
     actorKind: 'validator',
-    actorName: 'quality-gate',
-    repoRoot: '/tmp/__lifecycle_severity_gate__',
+    actorName: 'validate.check-2-spec-compliance',
+    repoRoot: '/tmp/__lifecycle_severity_validate__',
     pluginRoot: PLUGIN_ROOT,
   });
   assert.equal(sev, 'error');
+});
+
+test('_resolveActorSeverity returns warning-severity validator from validate.yaml', () => {
+  // validate.check-1.5-source-manifest is declared with severity: warning.
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'validator',
+    actorName: 'validate.check-1.5-source-manifest',
+    repoRoot: '/tmp/__lifecycle_severity_validate_warn__',
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'warning');
+});
+
+test('_resolveActorSeverity returns "warning" for an unknown validator', () => {
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'validator',
+    actorName: 'validate.check-does-not-exist',
+    repoRoot: '/tmp/__lifecycle_severity_validate_unknown__',
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'warning');
 });
 
 test('_resolveActorSeverity returns "warning" when domain config lookup throws', () => {
@@ -415,9 +440,11 @@ test('reportReviewer appends a reviewer_report event with stamped severity', () 
 test('reportValidator appends a validator_report event with stamped severity', () => {
   const { root, specPath } = makeProject();
   try {
+    // Severity now resolves from validate.yaml (single-source model). Use a
+    // check id that the bundled software starter declares with severity: error.
     reportValidator(root, specPath, {
       step: 'validate',
-      validator: 'quality-gate',
+      validator: 'validate.check-2-spec-compliance',
       verdict: 'PASS',
       duration_ms: 1200,
       pluginRoot: PLUGIN_ROOT,
@@ -426,7 +453,7 @@ test('reportValidator appends a validator_report event with stamped severity', (
     assert.equal(events.length, 1);
     const ev = events[0];
     assert.equal(ev.event, 'validator_report');
-    assert.equal(ev.validator, 'quality-gate');
+    assert.equal(ev.validator, 'validate.check-2-spec-compliance');
     assert.equal(ev.severity, 'error');
     assert.equal(ev.duration_ms, 1200);
   } finally {

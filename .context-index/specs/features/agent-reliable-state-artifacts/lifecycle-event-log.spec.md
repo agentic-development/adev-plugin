@@ -26,8 +26,8 @@ source-manifest:
     - tests/lib/lifecycle-state.test.mjs
   computed-at: "2026-05-12T00:17:48.718Z"
 drift_detected: true
-drift_source: lib/lifecycle-state.mjs
-drift_at: 2026-05-15T11:08:37.633Z
+drift_source: tests/lib/lifecycle-state.test.mjs
+drift_at: 2026-05-17T19:39:56.829Z
 ---
 
 ## Behavioral Contract
