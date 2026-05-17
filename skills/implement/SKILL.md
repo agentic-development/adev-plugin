@@ -31,10 +31,10 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
    In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
-   When all tasks finish in Step 4, emit the matching exit event:
+   When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `implement` step only reaches this emission point after all tasks completed and the GREEN-phase gate fired in Step 4; success at this stage implies PASS. (Failure modes earlier in the skill emit `status: failed` separately and do not reach this line.)
 
    ```bash
-   adev report --type step --spec <spec-path> --step implement --status completed
+   adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS
    ```
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
