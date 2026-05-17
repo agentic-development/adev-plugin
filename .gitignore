@@ -57,5 +57,14 @@ viz/dist/
 # Claude Code scheduled-tasks lock (runtime state)
 .claude/scheduled_tasks.lock
 
+# JSON issue board CAS lock + temp files (runtime state from lib/issues/json-adapter.mjs).
+# Lock file is normally created+released within a single mutator call but may
+# survive process kill (SIGKILL, OS crash). Temp files are normally renamed
+# into place but may persist if the rename step fails. Committing either
+# would break writes on every clone (stale lock → repeated STALE_BOARD_WRITE;
+# stray .tmp is benign but pollutes diffs). See concurrent-write-protection.spec.md.
+.context-index/tasks/tasks.json.lock
+.context-index/tasks/tasks.json.*.tmp
+
 # Lifecycle gate advisory counter (runtime state)
 .context-index/.advisory-counter
