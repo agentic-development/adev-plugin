@@ -215,3 +215,15 @@ hygiene:
   coverage_exclude:
     - "tests/**"
     - "skills/*/evals/**"
+  plan_immutability:
+    # One-time batch modifications whose hashes the detector should ignore.
+    # Use full 40-char SHAs. Document the reason inline.
+    exempt_commits:
+      # 0.26.0 migration: stamped the DO-NOT-EDIT advisory header on 20 plan
+      # files (chore: migrate context-index to 0.26.0 lifecycle-state shape).
+      # Structural comment, not content change.
+      - "95ab0d1f69f5a6a66e9494c2248dd4f15b33c009"
+      # Hygiene audit follow-up: rewrote one ADR reference in
+      # diagnostic-registry.plan.md from 0009 to 0010 when resolving the
+      # duplicate ADR id. Reference-only update, not content change.
+      - "dc27388f0e762c0519e1cb833bd98a55cc8f3e26"
