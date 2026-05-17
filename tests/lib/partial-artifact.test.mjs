@@ -22,6 +22,8 @@ import {
   lockPath,
   commitPartial,
   assertWithin,
+  findPartials,
+  isPartialStale,
 } from "../../lib/partial-artifact.mjs";
 
 test("partialPath appends .partial to a path", () => {
@@ -157,6 +159,99 @@ test("assertWithin uses a custom error code when provided", () => {
     assert.throws(
       () => assertWithin(dir, "/elsewhere", "CUSTOM_CODE"),
       (err) => err && err.code === "CUSTOM_CODE"
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Task 5: findPartials + isPartialStale
+// ---------------------------------------------------------------------------
+
+test("findPartials returns all .partial files under a root", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, "a", "b"), { recursive: true });
+    mkdirSync(join(dir, "c"), { recursive: true });
+    writeFileSync(join(dir, "a", "one.spec.md.partial"), "1");
+    writeFileSync(join(dir, "a", "b", "two.plan.md.partial"), "2");
+    writeFileSync(join(dir, "c", "three.validate.md.partial"), "3");
+    // Sibling files that should NOT match:
+    writeFileSync(join(dir, "a", "one.spec.md"), "");
+    writeFileSync(join(dir, "a", "one.spec.md.partial.lock"), "");
+    writeFileSync(join(dir, "c", "regular.md"), "");
+
+    const found = findPartials(dir);
+    const rel = found
+      .map((p) => p.slice(dir.length + 1).replaceAll(sep, "/"))
+      .sort();
+    assert.deepEqual(rel, [
+      "a/b/two.plan.md.partial",
+      "a/one.spec.md.partial",
+      "c/three.validate.md.partial",
+    ]);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("findPartials returns [] for a missing directory", () => {
+  const dir = createTempDir();
+  try {
+    const found = findPartials(join(dir, "does-not-exist"));
+    assert.deepEqual(found, []);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("findPartials excludes .partial.lock sidecars", () => {
+  const dir = createTempDir();
+  try {
+    writeFileSync(join(dir, "a.spec.md.partial"), "");
+    writeFileSync(join(dir, "a.spec.md.partial.lock"), "");
+    const found = findPartials(dir);
+    assert.equal(found.length, 1);
+    assert.ok(found[0].endsWith(".spec.md.partial"));
+    assert.ok(!found[0].endsWith(".lock"));
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("isPartialStale returns false for a fresh file", () => {
+  const dir = createTempDir();
+  try {
+    const p = join(dir, "fresh.spec.md.partial");
+    writeFileSync(p, "");
+    assert.equal(isPartialStale(p, 24), false);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("isPartialStale returns true when mtime is older than thresholdHours", () => {
+  const dir = createTempDir();
+  try {
+    const p = join(dir, "old.spec.md.partial");
+    writeFileSync(p, "");
+    // Use the clock seam to fast-forward.
+    const future = () => new Date(Date.now() + 25 * 60 * 60 * 1000);
+    assert.equal(isPartialStale(p, 24, { now: future }), true);
+    // Sanity: 26h threshold against 25h fast-forward = still fresh.
+    assert.equal(isPartialStale(p, 26, { now: future }), false);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("isPartialStale returns false for a missing file", () => {
+  const dir = createTempDir();
+  try {
+    assert.equal(
+      isPartialStale(join(dir, "missing.partial"), 24),
+      false
     );
   } finally {
     cleanupTempDir(dir);
