@@ -85,7 +85,8 @@ Execute passes in this fixed order. If `--check` is provided, skip passes not in
 2. For each node in `nodes[]` within the resolved file scope:
    - For each symbol in the node's `exports[]`:
      - Search all `edges[]` for an edge where `edge.to` matches the node's `path` AND the symbol appears in `edge.symbols[]`.
-     - If no such edge exists, the symbol is a dead export.
+     - If no such edge exists, the symbol is a dead-export candidate.
+   - **Suppression by non-code references (rev-2 schema):** If the node carries `tags` including `"public-api-entry"`, OR if `symbol-ranks.json` records `referenceSources[]` containing `"package-exports"` or `"doc-reference"` for this symbol, the symbol is NOT dead — skip it. The new `referenceSources[]` field encodes inbound references that the static `.mjs`-only edge analysis cannot see (SKILL.md prose mentions; `package.json:exports` entries).
 
 3. Cross-reference with `.context-index/hygiene/symbol-ranks.json` to get `line` number for each dead export.
    If `symbol-ranks.json` has unexpected format, skip line number enrichment with note:
@@ -96,6 +97,8 @@ Execute passes in this fixed order. If `--check` is provided, skip passes not in
    - **medium:** The dead export coexists with other referenced exports in the same file.
    - **low:** The symbol's file appears as the `to` target of an edge with `type: "re-export"` (barrel file re-export — may be consumed externally outside the project).
 
+   Tolerance contract: Unknown `edge.type` values introduced by future schema evolutions (e.g., the rev-2 `"doc-reference"` type) MUST NOT cause this pass to crash; treat unknown types as informational and continue.
+
 5. Emit findings: `{ pass: "dead-exports", severity, file_path, line_number, symbol, description }`.
 
 ### Pass 2: Orphan File Detection (`orphan-files`)
@@ -104,13 +107,14 @@ Execute passes in this fixed order. If `--check` is provided, skip passes not in
 
 **Steps:**
 
-1. From `dependency-graph.json`, collect all file paths appearing as `edge.to` in any edge. These are "imported files."
+1. From `dependency-graph.json`, collect all file paths appearing as `edge.to` in any edge. These are "imported files." (Note: `doc-reference` edges introduced in rev-2 of `core-parser-pipeline.spec.md` also populate `edge.to`, so a file referenced from a SKILL.md is counted here and will not be flagged as an orphan.)
 2. For each node in `nodes[]` within the resolved file scope:
    - If the node's `path` does NOT appear in the "imported files" set, it is an orphan candidate.
 3. **Exclude entry points** from orphan detection:
    - Files matching `**/index.*` (barrel files / entry points)
    - Files matching `**/cli.*` or `**/main.*` (CLI entry points)
    - Files listed as hook scripts in `hooks/hooks.json`
+   - Files whose FileNode `tags` includes `"public-api-entry"` (rev-2 schema — these files are declared as the package's public API surface via `package.json:exports` and are consumed by external dependents not visible in the local graph).
    - Test files matching `hygiene.coverage_exclude` patterns
 4. **Verify candidates against hook scripts:** Before reporting an orphan, grep hook shell scripts (`hooks/*.sh`) for the module's filename or its exported symbol names. Hooks often contain inline Node.js blocks with dynamic `import()` calls that reference library modules — these are invisible in the static `.mjs` dependency graph but are real consumers.
 5. **Severity classification:**

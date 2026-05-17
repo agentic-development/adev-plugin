@@ -1,14 +1,26 @@
 # Live Spec: Core Parser Pipeline
 
+<!-- REVISION HISTORY
+     - rev 1 (2026-03-23): initial draft and implementation contract.
+     - rev 2 (2026-05-17): additive schema evolution from sibling spec
+       `non-code-reference-detection.spec.md`. Adds optional `tags: string[]`
+       to FileNode, adds `"doc-reference"` to the Edge `type` enumeration,
+       adds optional `count: integer` to Edge, adds optional
+       `referenceSources: string[]` to symbol entries. All additions are
+       purely additive; pre-existing artifacts produced under rev 1 remain
+       schema-valid under rev 2. Consumers MUST tolerate unknown edge
+       types and additional FileNode fields per the graceful-degradation
+       contract.
+-->
 ---
 charter: tree-sitter-repomap
 status: validated
 risk_level: medium
 milestone: v0.5.0
-revision: 1
+revision: 2
 charter-revision: 1
 created: 2026-03-23
-updated: 2026-05-04
+updated: 2026-05-17
 source-manifest:
   sha: "34b531d"
   files:
@@ -33,6 +45,9 @@ source-manifest:
     - tests/repomap/parse.test.mjs
     - tests/repomap/rank.test.mjs
   computed-at: "2026-04-12T11:48:02.771Z"
+drift_detected: true
+drift_source: lib/repomap/rank.mjs
+drift_at: 2026-05-17T18:51:21.025Z
 ---
 
 ## Behavioral Contract
@@ -62,9 +77,12 @@ source-manifest:
 - In tree-sitter mode: `.context-index/hygiene/repo-map.md`, `dependency-graph.json`, and `symbol-ranks.json` exist and are valid
 - In regex mode: `.context-index/hygiene/repo-map.md` exists; no JSON artifacts are produced
 - `repo-map.md` contains a `Parser:` annotation indicating which mode was used
-- `dependency-graph.json` schema: `{ generated: <ISO 8601 timestamp>, commit: <git hash string>, nodes: [{ path, exports, module }], edges: [{ from, to, type, symbols }] }`
-- Valid edge `type` values: `import`, `require`, `re-export`, `dynamic-import`, `type-import`
-- `symbol-ranks.json` schema: `{ generated: <ISO 8601 timestamp>, commit: <git hash string>, symbols: [{ name, kind, file, line, score, references, module }] }`
+- `dependency-graph.json` schema: `{ generated: <ISO 8601 timestamp>, commit: <git hash string>, nodes: [{ path, exports, module, tags? }], edges: [{ from, to, type, symbols, count? }] }`
+  - `tags?: string[]` (added rev 2): optional array of tags applied to a FileNode (e.g., `"public-api-entry"`). Absent on nodes with no tags.
+  - `count?: integer` (added rev 2): present on edges where multiple text occurrences were collapsed into a single edge (e.g., `doc-reference` edges).
+- Valid edge `type` values: `import`, `require`, `re-export`, `dynamic-import`, `type-import`, `doc-reference` (rev 2).
+- `symbol-ranks.json` schema: `{ generated: <ISO 8601 timestamp>, commit: <git hash string>, symbols: [{ name, kind, file, line, score, references, module, referenceSources? }] }`
+  - `referenceSources?: string[]` (added rev 2): optional array of labels for synthetic inbound-reference sources (e.g., `"package-exports"`, `"doc-reference"`). Absent when no synthetic sources contributed.
 - `references` is the number of distinct files that import the symbol (counted from dependency graph edges, not grep)
 - Output directory for all artifacts: `.context-index/hygiene/` (gitignored by `/adev:init`)
 - PageRank scores across all file nodes sum to 1.0 (±0.001)

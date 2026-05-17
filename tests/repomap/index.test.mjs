@@ -187,6 +187,7 @@ describe('integration - full pipeline', () => {
     're-export',
     'dynamic-import',
     'type-import',
+    'doc-reference',
   ]);
 
   let graph;
