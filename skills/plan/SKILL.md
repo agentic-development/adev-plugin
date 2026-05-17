@@ -25,6 +25,20 @@ Passing more than one of `--spec`, `--feature`, `--release`, `--milestone`, `--e
 
 Before any other steps, determine the operating mode. Explicit flag wins over keyword detection, which wins over project-state inference, which falls back to a multi-choice menu on ambiguity.
 
+### Resume Detection (Incremental Authoring)
+
+**Before** anything else in Step 0, check whether a prior `/adev:plan` invocation left a `.partial` file for the resolved plan path. Per `incremental-artifact-writes.spec.md`, plan files are written incrementally to `<plan-path>.partial` with a `partial_schema: plan@1` marker and atomically renamed to `<plan-path>` on completion. If a `.partial` exists, a prior invocation was interrupted mid-stream (commonly: Claude API streaming dropped a long Write tool call — see issue-504).
+
+Steps:
+
+1. Resolve the prospective plan path from arguments (Spec Mode: `<spec-path>` minus `.spec.md` plus `.plan.md`; other modes: per their detection logic).
+2. Run `adev partial inspect --artifact <plan-path>.partial` to check existence + schema marker + lock state.
+3. If `partial_exists` is true:
+   - **Schema marker is `plan@1` and `schema_allowed` is true:** ask the user `Resume from prior partial, discard and restart, or abort?` Default in `--auto` mode is **resume** (read the partial, continue authoring from the last coherent section).
+   - **Schema marker missing or not allowed:** the file may be from an older plan format or an unrelated process. Discard with a logged warning and start fresh: `adev partial discard --artifact <plan-path>.partial --spec <spec-path>`.
+4. If `partial_exists` is false, proceed normally.
+5. If the inspect call reports a live lock (`lock_exists` true, owner alive), STOP — another `/adev:plan` invocation is in flight. Tell the user and exit.
+
 ### Detection Precedence
 
 1. **Explicit flag (highest priority):** If one of `--spec`, `--feature`, `--release`, `--milestone`, or `--epic` is present, enter that mode immediately. Skip keyword and state detection entirely.
@@ -288,6 +302,35 @@ Read `.context-index/manifest.yaml` and check the `specialists` section. For eac
 These tags tell `/adev:implement` which subagent to dispatch for each task.
 
 ## Step 5: Write the Plan
+
+### Incremental Authoring (.partial pattern)
+
+Per `incremental-artifact-writes.spec.md`, plan files MUST be authored incrementally to `<plan-path>.partial` and atomically renamed to `<plan-path>` on completion. This protocol survives mid-stream API failures (issue-504) by checkpointing to disk frequently.
+
+Cadence: one section (H2 boundary or coherent block) per append. The first authored chunk MUST begin with a `partial_schema: plan@1` marker placed in an HTML comment so it does not render in the final plan:
+
+```markdown
+<!-- partial_schema: plan@1 -->
+
+# Implementation Plan: <Feature Name>
+
+...
+```
+
+Section append order matches the plan header → File Structure → Context Packets → Parallelization → Task Summary → Task Structure → Quality Gates flow defined below. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
+
+After writing the final Quality Gates section, commit the artifact via atomic rename. Use the CLI verb so the SKILL.md stays markdown-only per the `cli-driver-surface` charter:
+
+```bash
+adev partial inspect --artifact <plan-path>.partial   # sanity check before commit
+# then perform the rename (helper invocation, NOT inline Node):
+# In a foreground skill, the wrapping CLI driver performs the rename; the
+# skill simply marks "done" so the orchestrator finalises.
+```
+
+Lock coordination: acquire `<plan-path>.partial.lock` via `adev partial inspect` first (lock_exists must be false OR the lock must be owned by this process). On a stale lock (dead-owner, age > `lifecycle.partial_stale_seconds`), the helper auto-steals — see the spec's Behavior 6 for the full contract.
+
+If `/adev:plan` is interrupted mid-section, the next invocation enters Step 0 Resume Detection and picks up from the last coherent H2 boundary.
 
 ### Plan Location
 
