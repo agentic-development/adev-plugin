@@ -115,8 +115,8 @@ specialists: []
 # Quality Gates
 # ============================================================================
 
-gates:
-  test: "npm test"
+# Gate definitions live in .context-index/governance/gates.yaml (post-0.26.0).
+# The legacy top-level `gates:` block here is no longer read.
 
 # ============================================================================
 # Completion Policy
