@@ -105,22 +105,15 @@ If `tasks.backend` is not configured, skip epic creation entirely (plan-task eve
 
 The plan file is the source of truth for *what the tasks are*. The lifecycle log projection is the source of truth for *what state each task is in*.
 
-```javascript
-import { currentState, reportPlanTask } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+Read the projection with:
 
-const state = currentState(projectRoot, specPath);
-// planTasks shape: { [task_id]: { status, notes, plan, updated } }
-//
-// `/adev:plan` seeds one `pending` event per task at authoring time, so every
-// task in the plan should already appear here. If a task is missing from the
-// projection, the plan was authored before this surface was migrated — fall
-// back to treating it as `pending`.
-const nextTask = plan.tasks.find(t =>
-  state.planTasks[t.id]?.status === 'pending' ||
-  state.planTasks[t.id]?.status === 'in_progress' ||
-  state.planTasks[t.id] === undefined
-);
+```bash
+adev state current --spec <spec-path>
 ```
+
+The verb returns a `StateProjection` whose `planTasks` field maps `task_id` → `{ status, notes, plan, updated }`. The agent picks the next task to dispatch by scanning the plan's task list and selecting the first task whose `planTasks[task_id].status` is `pending`, `in_progress`, or is absent from the projection. (Absence means the task was authored before this surface was migrated — treat it as `pending` for the cap-of-one fallback.)
+
+This is a one-line operator-cognitive lookup over a returned projection, not a control-flow JS block; the cap-of-one fallback is preserved here as prose so a reviewer can audit the intent without reading the CLI source.
 
 ### Task transitions
 
