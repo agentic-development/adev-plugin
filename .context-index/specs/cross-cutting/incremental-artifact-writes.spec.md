@@ -1,13 +1,40 @@
 ---
 affects: [cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts]
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 mode: cross-cutting
 revision: 2
 created: 2026-05-17
 updated: 2026-05-17
 tracker-ref: issue-504
+source-manifest:
+  sha: "f97c13f"
+  files:
+    - .context-index/manifest.yaml
+    - .context-index/specs/features/agent-reliable-state-artifacts/charter.md
+    - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md
+    - .gitignore
+    - cli/index.mjs
+    - docs/partial-artifacts.md
+    - lib/cli/partial.mjs
+    - lib/diagnostics/event-schemas.mjs
+    - lib/lifecycle-events.mjs
+    - lib/lifecycle-state.mjs
+    - lib/partial-artifact.mjs
+    - skills/build/SKILL.md
+    - skills/implement/SKILL.md
+    - skills/plan/SKILL.md
+    - skills/specify/SKILL.md
+    - skills/validate/SKILL.md
+    - tests/cli/partial.test.mjs
+    - tests/integration/partial-resume-end-to-end.test.mjs
+    - tests/integration/scanner-invisibility.test.mjs
+    - tests/lib/lifecycle-state-partial-recovery.test.mjs
+    - tests/lib/partial-artifact-concurrency.test.mjs
+    - tests/lib/partial-artifact-validation.test.mjs
+    - tests/lib/partial-artifact.test.mjs
+  computed-at: "2026-05-17T20:43:09.408Z"
 ---
 
 # Live Spec: Incremental artifact writes — `.partial` + atomic-rename for agent-authored artifacts
