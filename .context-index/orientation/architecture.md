@@ -11,7 +11,7 @@ adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). 
 ```
 adev-plugin/
 ├── cli/index.mjs              # Single-file CLI — install, scaffold, conflict detection
-├── skills/                     # 28 skill directories, each with a SKILL.md
+├── skills/                     # 31 skill directories, each with a SKILL.md
 │   ├── using-adev/             # Gateway skill — injected at session start
 │   ├── adev:init/              # This wizard
 │   ├── adev:brainstorm/        # Idea exploration → Feature Charter
@@ -39,8 +39,11 @@ adev-plugin/
 │   ├── adev:research/          # Structured multi-agent research
 │   ├── adev:document/          # Developer documentation generation
 │   ├── adev:reconcile/         # Interactive repair for lifecycle mismatches
-│   └── adev:codehealth/        # Dead code and orphan file detection
-├── hooks/                      # 12 hook files (11 .sh + 1 .mjs) + hooks.json config
+│   ├── adev:codehealth/        # Dead code and orphan file detection
+│   ├── adev:deploy/            # Deployment pipeline executor (deploy.yaml steps)
+│   ├── adev:prototype/         # Rapid UI/API prototyping from Feature Charters
+│   └── adev:standalone/        # Lifecycle gate bypass for exploratory sessions
+├── hooks/                      # 17 hook scripts (13 .sh + 4 .mjs) + hooks.json config
 │   ├── hooks.json              # Hook registration (which events trigger which scripts)
 │   ├── session-start.sh        # SessionStart — injects using-adev skill
 │   ├── session-capture.sh      # PostToolUse — records session events to .context-index/sessions/
@@ -52,7 +55,11 @@ adev-plugin/
 │   ├── lifecycle-gate-advisory.sh # PostToolUse — advisory warnings when no lifecycle session is active
 │   ├── lifecycle-gate-bash.sh  # PreToolUse:Bash — blocks shell commands outside lifecycle scope
 │   ├── lifecycle-gate-edit.sh  # PreToolUse:Edit — blocks source edits outside lifecycle scope
+│   ├── pre-commit-no-inline-node.sh # git pre-commit — rejects inline-Node patterns in SKILL.md files
 │   ├── _parse-stdin.sh         # Shared stdin JSON parser sourced by other hooks
+│   ├── _execution-state.mjs    # Helper — reads/writes .context-index/.execution-state.json
+│   ├── _lifecycle-gate-check-bash.mjs # Helper — bash command gate check logic for lifecycle-gate-bash.sh
+│   ├── _lifecycle-gate-check-edit.mjs # Helper — file edit gate check logic for lifecycle-gate-edit.sh
 │   ├── issue-reminder.sh       # PostToolUse — periodic issue board reminders
 │   └── issue-reminder.mjs      # Helper module for issue reminder logic
 ├── templates/                  # 31 scaffold template files consumed by /adev:init (includes governance/, personas/, review-specs/, validate/ subdirs)
