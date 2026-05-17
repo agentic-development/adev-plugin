@@ -6,6 +6,7 @@
 
 ---
 charter: cli-driver-surface
+kind: behavioral
 status: validated
 risk_level: medium
 milestone: adev-compiler-discipline

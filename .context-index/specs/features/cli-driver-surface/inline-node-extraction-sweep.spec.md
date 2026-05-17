@@ -6,6 +6,7 @@
 
 ---
 charter: cli-driver-surface
+kind: refactor
 status: implemented
 risk_level: high
 milestone: adev-compiler-discipline
