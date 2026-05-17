@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log extension-authoring-docs.jsonl -->
 # Implementation Plan: Extension Authoring Documentation Bundle
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log template-resolution.jsonl -->
 # Implementation Plan: Template Resolution
 
 > **Methodology:** adev

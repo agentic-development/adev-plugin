@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log driver-substrate.jsonl -->
 # Implementation Plan: Driver Substrate
 
 > **Methodology:** adev

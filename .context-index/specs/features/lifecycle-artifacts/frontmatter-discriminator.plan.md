@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log frontmatter-discriminator.jsonl -->
 # Implementation Plan: Frontmatter Discriminator
 
 > **Methodology:** adev
