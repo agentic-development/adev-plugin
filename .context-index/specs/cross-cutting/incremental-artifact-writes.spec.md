@@ -1,7 +1,7 @@
 ---
 affects: [cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts]
 kind: behavioral
-status: implemented
+status: validated
 risk_level: medium
 mode: cross-cutting
 revision: 2
@@ -9,7 +9,7 @@ created: 2026-05-17
 updated: 2026-05-17
 tracker-ref: issue-504
 source-manifest:
-  sha: "f97c13f"
+  sha: "a53bfcc"
   files:
     - .context-index/manifest.yaml
     - .context-index/specs/features/agent-reliable-state-artifacts/charter.md
@@ -34,7 +34,7 @@ source-manifest:
     - tests/lib/partial-artifact-concurrency.test.mjs
     - tests/lib/partial-artifact-validation.test.mjs
     - tests/lib/partial-artifact.test.mjs
-  computed-at: "2026-05-17T20:43:09.408Z"
+  computed-at: "2026-05-17T22:02:42.030Z"
 ---
 
 # Live Spec: Incremental artifact writes — `.partial` + atomic-rename for agent-authored artifacts
