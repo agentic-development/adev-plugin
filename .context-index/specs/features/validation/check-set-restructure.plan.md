@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log check-set-restructure.jsonl -->
 # Implementation Plan: Validate Check Set Restructure
 
 > **Methodology:** adev

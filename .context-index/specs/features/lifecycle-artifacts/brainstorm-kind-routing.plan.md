@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log brainstorm-kind-routing.jsonl -->
 # Implementation Plan: /adev:brainstorm Kind Routing
 
 > **Methodology:** adev

@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log inline-node-extraction-sweep.jsonl -->
 # Implementation Plan: Inline-Node Extraction Sweep
 
 > **Methodology:** adev

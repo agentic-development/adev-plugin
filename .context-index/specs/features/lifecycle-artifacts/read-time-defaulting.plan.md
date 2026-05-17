@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log read-time-defaulting.jsonl -->
 # Implementation Plan: Read-Time Defaulting Integration
 
 > **Methodology:** adev

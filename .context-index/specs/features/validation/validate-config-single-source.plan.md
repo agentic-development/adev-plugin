@@ -1,3 +1,4 @@
+<!-- DO NOT EDIT statuses inline — see lifecycle log validate-config-single-source.jsonl -->
 # Implementation Plan: Single-Source Validate Configuration
 
 > **Methodology:** adev
