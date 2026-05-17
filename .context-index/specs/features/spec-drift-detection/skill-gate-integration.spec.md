@@ -18,8 +18,8 @@ source-manifest:
     - lib/source-manifest.mjs
   computed-at: "2026-05-10T23:51:35.315Z"
 drift_detected: true
-drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-16T02:55:54.158Z
+drift_source: lib/source-manifest.mjs
+drift_at: 2026-05-17T15:09:48.592Z
 ---
 
 ## Behavioral Contract
