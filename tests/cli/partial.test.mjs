@@ -238,3 +238,88 @@ test("adev partial rejects paths that escape the project root (containment)", ()
     cleanup(dir);
   }
 });
+
+// ── check-size ─────────────────────────────────────────────────────────────
+
+test("adev partial check-size exits 0 and reports ok:true when partial is under cap", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/under.md");
+    writeFileSync(`${finalPath}.partial`, "x".repeat(10_000));
+    const r = runCli(["check-size", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout.trim());
+    assert.strictEqual(out.ok, true);
+    assert.strictEqual(out.actual, 10_000);
+    assert.strictEqual(out.expected, 51200);
+    assert.strictEqual(out.cap, 153600);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial check-size exits 2 with PARTIAL_ARTIFACT_OVERSIZE when over cap", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/over.md");
+    writeFileSync(`${finalPath}.partial`, "x".repeat(200_000));
+    const r = runCli(["check-size", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 2);
+    const out = JSON.parse(r.stdout.trim());
+    assert.strictEqual(out.ok, false);
+    assert.strictEqual(out.code, "PARTIAL_ARTIFACT_OVERSIZE");
+    assert.strictEqual(out.actual, 200_000);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial check-size accepts --expected override", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/override.md");
+    writeFileSync(`${finalPath}.partial`, "x".repeat(100_000));
+    // Default cap=153600 → 100K would PASS. With --expected 20000, cap=60000 → FAIL.
+    const r = runCli(
+      ["check-size", "--artifact", finalPath, "--expected", "20000"],
+      { cwd: dir },
+    );
+    assert.strictEqual(r.status, 2);
+    const out = JSON.parse(r.stdout.trim());
+    assert.strictEqual(out.code, "PARTIAL_ARTIFACT_OVERSIZE");
+    assert.strictEqual(out.expected, 20000);
+    assert.strictEqual(out.cap, 60000);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial check-size exits 0 when no partial exists (no-op)", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/absent.md");
+    const r = runCli(["check-size", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout.trim());
+    assert.strictEqual(out.ok, true);
+    assert.strictEqual(out.actual, null);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial check-size accepts the .partial form of --artifact", () => {
+  // Adopting skills may pass either the final path or the .partial path —
+  // the verb normalises both so SKILL prose stays simple.
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/either.md");
+    writeFileSync(`${finalPath}.partial`, "x".repeat(10_000));
+    const r = runCli(["check-size", "--artifact", `${finalPath}.partial`], { cwd: dir });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout.trim());
+    assert.strictEqual(out.ok, true);
+  } finally {
+    cleanup(dir);
+  }
+});

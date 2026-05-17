@@ -385,6 +385,8 @@ infra_requirements:
 
 Cadence: one section (H2 boundary — Behavioral Contract, System Constitution Reference, Module Impact Map, Integration Points, Acceptance Criteria, etc.) per append. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
 
+**Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE).** Before each append, run `adev partial check-size --artifact <spec-path>` to verify the in-progress partial has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior spec size, 50 KB)). Exit code 2 with `PARTIAL_ARTIFACT_OVERSIZE` is a hard stop: do NOT continue appending, do NOT commit the rename, preserve the partial for inspection, surface the error.
+
 Before writing, check for a prior `.partial`: run `adev partial inspect --artifact <spec-path>.partial`. If `partial_exists` is true and the schema marker is `spec@1`, offer the user **resume / discard / abort**. In `--auto` mode, default to resume; on a schema-mismatched marker, discard with a logged warning via `adev partial discard --artifact <spec-path>.partial --spec <spec-path>`.
 
 After writing the final section, the atomic rename `commit` step finalises the artifact. Use the CLI verb to drive this — SKILL.md stays markdown-only per the `cli-driver-surface` charter (no inline Node).

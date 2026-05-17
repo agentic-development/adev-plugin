@@ -26,6 +26,8 @@ import {
   isPartialStale,
   loadPartialKnobs,
   DEFAULT_PARTIAL_KNOBS,
+  expectedSize,
+  assertNotOversize,
 } from "../../lib/partial-artifact.mjs";
 
 test("partialPath appends .partial to a path", () => {
@@ -335,6 +337,159 @@ test("loadPartialKnobs ignores invalid override types", () => {
     const knobs = loadPartialKnobs(dir);
     // Each invalid value falls back to its documented default.
     assert.deepEqual(knobs, DEFAULT_PARTIAL_KNOBS);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE per-append firing)
+// ---------------------------------------------------------------------------
+
+test("DEFAULT_PARTIAL_KNOBS exposes partial_expected_size_default (50KB)", () => {
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_expected_size_default, 51200);
+});
+
+test("expectedSize returns prior-version size when final exists and exceeds floor", () => {
+  const dir = createTempDir();
+  try {
+    const finalPath = join(dir, "artifact.md");
+    writeFileSync(finalPath, "x".repeat(80_000));
+    const size = expectedSize(finalPath, { partial_expected_size_default: 51200 });
+    assert.equal(size, 80_000);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("expectedSize returns the floor when prior version is smaller than floor", () => {
+  const dir = createTempDir();
+  try {
+    const finalPath = join(dir, "artifact.md");
+    writeFileSync(finalPath, "small");
+    const size = expectedSize(finalPath, { partial_expected_size_default: 51200 });
+    assert.equal(size, 51200);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("expectedSize returns the floor when no prior version exists", () => {
+  const dir = createTempDir();
+  try {
+    const finalPath = join(dir, "absent.md");
+    const size = expectedSize(finalPath, { partial_expected_size_default: 51200 });
+    assert.equal(size, 51200);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("assertNotOversize is a no-op when no .partial exists", () => {
+  const dir = createTempDir();
+  try {
+    const finalPath = join(dir, "absent.md");
+    assert.doesNotThrow(() => assertNotOversize(finalPath, { projectRoot: dir }));
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("assertNotOversize passes when partial is under cap", () => {
+  const dir = createTempDir();
+  try {
+    const finalPath = join(dir, "artifact.md");
+    writeFileSync(partialPath(finalPath), "x".repeat(10_000));
+    // floor=51200, multiplier=3 → cap=153600. 10K is well under.
+    assert.doesNotThrow(() => assertNotOversize(finalPath, { projectRoot: dir }));
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+function captureThrow(fn) {
+  try {
+    fn();
+  } catch (e) {
+    return e;
+  }
+  throw new Error("expected fn to throw, but it did not");
+}
+
+test("assertNotOversize throws PARTIAL_ARTIFACT_OVERSIZE when partial exceeds cap", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      "project:\n  name: test\n"
+    );
+    const finalPath = join(dir, "artifact.md");
+    // floor=51200, multiplier=3 → cap=153600. Write 200K.
+    writeFileSync(partialPath(finalPath), "x".repeat(200_000));
+    const err = captureThrow(() => assertNotOversize(finalPath, { projectRoot: dir }));
+    assert.equal(err.code, "PARTIAL_ARTIFACT_OVERSIZE");
+    assert.match(err.message, /200000/);
+    assert.match(err.message, /153600/);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("assertNotOversize uses prior-version size when it exceeds the floor", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      "project:\n  name: test\n"
+    );
+    const finalPath = join(dir, "artifact.md");
+    writeFileSync(finalPath, "x".repeat(100_000)); // prior version 100KB
+    // cap = max(100000, 51200) * 3 = 300000. 250K passes.
+    writeFileSync(partialPath(finalPath), "x".repeat(250_000));
+    assert.doesNotThrow(() => assertNotOversize(finalPath, { projectRoot: dir }));
+    // 350K fails.
+    writeFileSync(partialPath(finalPath), "x".repeat(350_000));
+    const err = captureThrow(() => assertNotOversize(finalPath, { projectRoot: dir }));
+    assert.equal(err.code, "PARTIAL_ARTIFACT_OVERSIZE");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("assertNotOversize honours custom multiplier override from manifest", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      [
+        "project:",
+        "  name: test",
+        "lifecycle:",
+        "  partial_oversize_multiplier: 2",
+        "",
+      ].join("\n")
+    );
+    const finalPath = join(dir, "artifact.md");
+    // floor=51200, multiplier=2 → cap=102400. 110K fails.
+    writeFileSync(partialPath(finalPath), "x".repeat(110_000));
+    const err = captureThrow(() => assertNotOversize(finalPath, { projectRoot: dir }));
+    assert.equal(err.code, "PARTIAL_ARTIFACT_OVERSIZE");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("assertNotOversize rejects paths that escape projectRoot via INVALID_PARTIAL_PATH", () => {
+  const dir = createTempDir();
+  try {
+    const escapingPath = join(dir, "..", "outside.md");
+    const err = captureThrow(() =>
+      assertNotOversize(escapingPath, { projectRoot: dir })
+    );
+    assert.equal(err.code, "INVALID_PARTIAL_PATH");
   } finally {
     cleanupTempDir(dir);
   }

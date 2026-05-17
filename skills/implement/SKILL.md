@@ -627,6 +627,8 @@ After all tasks are complete and before reporting completion:
 
    **Incremental authoring for source-manifest stamping (`.partial` pattern):** When the spec file is non-trivial (~ 2 KB or larger, which is the common case for any reviewed Live Spec), the frontmatter rewrite MUST follow the `.partial` + atomic-rename protocol from `incremental-artifact-writes.spec.md`. Write the updated spec body to `<spec-path>.partial` with a `partial_schema: implement@1` marker in the first authored chunk (the chunk that carries the new frontmatter), then atomically rename to `<spec-path>` once the write completes. Use the existing artifact-commit CLI verb (`adev artifact commit ...`) which already implements the `.tmp` byte-level atomic-rename idiom — the `.partial` layer applies when the rewrite is performed by an agent over multiple Write calls rather than a single fs operation. On a mid-rewrite crash, the next `/adev:implement` invocation detects the partial and resumes.
 
+   **Runaway-write guard:** Before each Write to the spec's `.partial`, run `adev partial check-size --artifact <spec-path>` to verify the in-progress rewrite has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior spec size, 50 KB)). Exit code 2 with `PARTIAL_ARTIFACT_OVERSIZE` is a hard stop: do NOT continue rewriting, do NOT commit the rename, surface the error to the user. Protects against retry loops re-writing prior chunks.
+
 6. **Clear drift flag:** After re-stamping the source manifest, clear any drift flag on the spec:
    ```javascript
    const { clearDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
