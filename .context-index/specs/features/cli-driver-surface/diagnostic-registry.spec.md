@@ -52,8 +52,8 @@ source-manifest:
     - tests/lib/spec-status.test.mjs
   computed-at: "2026-05-14T21:13:35.721Z"
 drift_detected: true
-drift_source: lib/reality-check.mjs
-drift_at: 2026-05-17T15:10:08.197Z
+drift_source: tests/lib/lifecycle-state.test.mjs
+drift_at: 2026-05-17T19:39:56.832Z
 ---
 
 > **Rev 2 amendment (2026-05-14):**
