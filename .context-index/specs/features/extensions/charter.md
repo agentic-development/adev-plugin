@@ -1,7 +1,7 @@
 ---
 status: draft
-revision: 2
-updated: 2026-05-10
+revision: 4
+updated: 2026-05-16
 ---
 
 # Feature Charter: Extensions
@@ -34,9 +34,9 @@ The domain-profiles module (now validated) provides the foundation: `loadDomainC
 - Automatic updates or version polling
 - Extension marketplace or discovery service
 - Runtime loading — extensions are consumed at install time only
-- Executable code in extensions (content is markdown, YAML, and bash only)
+- Executable code SHIPPED BY extensions for runtime adev consumption (skills and templates are markdown + YAML only). Executable scripts invoked AS `provides.governance` quality-gate commands are permitted under the existing `configurable-checks.spec.md` rules — they run as child processes via `child_process.execFile`, NOT as adev plugin code. Per Constitution Principle 1 minimization, prefer bash (`bin/<name>.sh`) over `node`/`python` so the example install path requires no extra runtime.
 - Modifying or replacing existing bundled skills
-- Extension authoring tooling (scaffolding a new extension)
+- Automated authoring scaffolding tooling (e.g. an `adev extension new` generator). Documentation, manifest templates, and reference example extensions that demonstrate the authoring path are IN scope — they exhibit the contract rather than auto-generating it.
 
 ### Dependencies
 
@@ -94,6 +94,7 @@ The domain-profiles module (now validated) provides the foundation: `loadDomainC
 | Conflict Detection | Block install when extension skill name collides with a bundled skill | Must-have |  | validated |
 | Manifest Stamp | Write `installed_extensions` entry in manifest.yaml on successful install | Must-have |  | validated |
 | Extension List Command | `extension list` reads manifest and displays installed extensions with version and date | Should-have |  | validated |
+| Extension Authoring Documentation Bundle | `docs/extensions.md` author guide, `templates/adev-extension.example.yaml` manifest template, and `extensions/example-validation-check/` reference extension demonstrating the full provides.* surface (especially `provides.governance` wiring a `kind: quality-gate` check that integrates with `adev report --type validator`). Closes the post-cli-driver-surface documentation gap (issue-485). | Must-have | 0.27.0 | validated |
 
 ## Interface Contracts
 
