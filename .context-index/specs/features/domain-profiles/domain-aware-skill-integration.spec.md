@@ -42,8 +42,8 @@ source-manifest:
     - tests/lib/domains/refactor-constants.test.mjs
   computed-at: "2026-05-11T16:09:28.518Z"
 drift_detected: true
-drift_source: skills/specify/SKILL.md
-drift_at: 2026-05-17T20:38:19.318Z
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-17T20:34:52.864Z
 ---
 
 ## Behavioral Contract
