@@ -27,8 +27,8 @@ source-manifest:
     - tests/visual-verification.test.mjs
   computed-at: "2026-05-15T15:14:03.286Z"
 drift_detected: true
-drift_source: tests/visual-verification.test.mjs
-drift_at: 2026-05-16T03:08:50.627Z
+drift_source: skills/specify/SKILL.md
+drift_at: 2026-05-17T19:58:35.231Z
 ---
 
 # Refactoring Spec: Template Renames
