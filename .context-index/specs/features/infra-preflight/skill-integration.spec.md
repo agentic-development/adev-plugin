@@ -18,8 +18,8 @@ source-manifest:
     - skills/recover/SKILL.md
   computed-at: "2026-05-10T23:51:01.456Z"
 drift_detected: true
-drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-17T19:58:38.629Z
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-17T20:31:49.573Z
 ---
 
 # Live Spec: Skill Integration
