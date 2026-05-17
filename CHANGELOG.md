@@ -1,5 +1,91 @@
 # Changelog
 
+## [0.26.0](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.25.1...adev-cli-v0.26.0) (2026-05-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agent-reliable-state-artifacts:** lib/build-state.mjs now writes to .context-index/lifecycle-state/<slug>.json instead of .context-index/build-state/<slug>.json. Reads transparently fall back to the legacy path so existing projects keep resuming, but any external tooling that reads build-state JSON files directly from the legacy path must be updated. Operators should run `adev migrate` to convert legacy build-state/<slug>.json files into lifecycle-state JSONL events and remove the legacy directory.
+* **agent-reliable-state-artifacts:** /adev:plan no longer creates per-task issues on the board and no longer mutates plan-file checkboxes; per-task state lives exclusively in the lifecycle event log via reportPlanTask. New plan templates drop the Status column. Existing projects must run `adev migrate` to stamp the DO-NOT-EDIT advisory header on legacy plan files and to convert legacy build-state/<slug>.json files into lifecycle-state JSONL events. Every lifecycle skill's prose has been rewritten — agents following the new SKILL.md instructions will call lib/lifecycle-state.mjs helpers (requireGate, reportStep, etc.) rather than grepping markdown artifacts; downstream tooling that depends on the prior instruction surface (or on per-task Issue creation by /adev:plan) must be updated.
+
+### Features
+
+* add agent-reliable-state-artifacts feature charter ([8a5dbe8](https://github.com/agentic-development/adev-plugin/commit/8a5dbe84b64328ad4699da500b5ceafc4212c932))
+* **agent-reliable-state-artifacts:** appendEvent primitive with O_APPEND semantics ([ef5f3f0](https://github.com/agentic-development/adev-plugin/commit/ef5f3f07d5311a5521646fb1a4dd7e9e4a6b8aab))
+* **agent-reliable-state-artifacts:** convenience writers (reviewer/validator/step/plan_task/intervention) ([ecea7f5](https://github.com/agentic-development/adev-plugin/commit/ecea7f5c8944e58207b59a8f69636fb2b82d4150))
+* **agent-reliable-state-artifacts:** currentState reducer + StateProjection camelCase shape ([6478cc8](https://github.com/agentic-development/adev-plugin/commit/6478cc8ae08c5b79270ade97e76b662a6922472c))
+* **agent-reliable-state-artifacts:** ensure/has lifecycle-state helpers ([0d809bd](https://github.com/agentic-development/adev-plugin/commit/0d809bd39efe38b1de4ca756a86eb64a6434c886))
+* **agent-reliable-state-artifacts:** execution state JSON migration + hook decoupling ([3ba9732](https://github.com/agentic-development/adev-plugin/commit/3ba97325374d6d5059a9fc6b74d2c57875be7f42))
+* **agent-reliable-state-artifacts:** filterEvents predicate API ([d868342](https://github.com/agentic-development/adev-plugin/commit/d8683423bffa8dddb4cc51c34345b6e9b675b32e))
+* **agent-reliable-state-artifacts:** JSON issue board + adapter ([0876c08](https://github.com/agentic-development/adev-plugin/commit/0876c082214b122dfa6b558f5e7999402c588d5d))
+* **agent-reliable-state-artifacts:** listLifecycleStates aggregate fold ([3039d1f](https://github.com/agentic-development/adev-plugin/commit/3039d1f4abeb33d9824b8e26388d85f4f98b7e4f))
+* **agent-reliable-state-artifacts:** markdown rendering layer + migrate CLI subcommand ([8e4702f](https://github.com/agentic-development/adev-plugin/commit/8e4702f9cfcc30685682f59a253b80b333a4d617))
+* **agent-reliable-state-artifacts:** milestones JSON migration ([88c3bf0](https://github.com/agentic-development/adev-plugin/commit/88c3bf08dbe6bbe31ec3201bd8b20059a9b236ce))
+* **agent-reliable-state-artifacts:** one-shot migration tool ([60192b6](https://github.com/agentic-development/adev-plugin/commit/60192b6cee3a0e321b15186d64ae473c1e1b3d16))
+* **agent-reliable-state-artifacts:** path-safety primitives for lifecycle-state ([324d854](https://github.com/agentic-development/adev-plugin/commit/324d8542f8353055bcbc69fc9bc3c17f6b088f2d))
+* **agent-reliable-state-artifacts:** plan-task events + lifecycle skill instruction adoption ([5da3f8b](https://github.com/agentic-development/adev-plugin/commit/5da3f8b22ee4cad92cd7ac8349cc5d88a8e7fc51))
+* **agent-reliable-state-artifacts:** readEvents primitive with crash-tolerant tail ([0d41ff5](https://github.com/agentic-development/adev-plugin/commit/0d41ff5942de9f811515800bec6858096c5f801e))
+* **agent-reliable-state-artifacts:** renderMarkdown stub with stable signature ([7fe8563](https://github.com/agentic-development/adev-plugin/commit/7fe8563b41208aa64622d116df42f49e0c891f0c))
+* **agent-reliable-state-artifacts:** replace viz/build.mjs inline markdown parser with adapter ([fd75162](https://github.com/agentic-development/adev-plugin/commit/fd75162329489ce9cd7b0f6e504bba1c7ae8dcd7))
+* **agent-reliable-state-artifacts:** requireGate + resolveGateMode ([45abf38](https://github.com/agentic-development/adev-plugin/commit/45abf38549d64a50797f48dbc78f274d8e4800a7))
+* **agent-reliable-state-artifacts:** seed lifecycle-state lib with canonical event set ([067a017](https://github.com/agentic-development/adev-plugin/commit/067a017e7465d02449624f0668e5e9dd14411106))
+* **agent-reliable-state-artifacts:** severity-resolution helper with best-effort fallback ([96dddc7](https://github.com/agentic-development/adev-plugin/commit/96dddc76bd0bbff9cdffc21323dbc30085a14b20))
+* **agent-reliable-state-artifacts:** size caps for events, log file, and notes ([d4bd57a](https://github.com/agentic-development/adev-plugin/commit/d4bd57a14d38374882ab6527944e0c9fea3d8a26))
+* **agent-reliable-state-artifacts:** spec the JSON issue board + adapter ([fd05bc7](https://github.com/agentic-development/adev-plugin/commit/fd05bc7fb1725a83aab4dffd81d1b98850205b7d))
+* **agent-reliable-state-artifacts:** spec the lifecycle event log ([bdc9238](https://github.com/agentic-development/adev-plugin/commit/bdc92387c881cf36d4ead4e13a07645cd23391c2))
+* **agent-reliable-state-artifacts:** step verdict aggregation per severity table ([ce9f9b1](https://github.com/agentic-development/adev-plugin/commit/ce9f9b1c080c9f1cb83d7831f1b927528d3a9071))
+* **agent-reliable-state-artifacts:** test migration — schema-version surface and legacy-format guards ([7ffc7d4](https://github.com/agentic-development/adev-plugin/commit/7ffc7d4651d45ddd7e47f0d8a2153680edef9d5f))
+* **cli-driver-surface:** add 6 live specs + reviews under cli-driver-surface charter ([3cd1083](https://github.com/agentic-development/adev-plugin/commit/3cd1083c074bb554294560650e43b296c9368c63))
+* **cli-driver-surface:** add feature charter ([63c0e1b](https://github.com/agentic-development/adev-plugin/commit/63c0e1b1234837715996404f4ab9948a4510ee18))
+* **cli-driver-surface:** add implementation plan for driver-substrate spec ([bed5a22](https://github.com/agentic-development/adev-plugin/commit/bed5a229c0ff8d704c77862ccf12c9a5fddae216))
+* **cli-driver-surface:** amend diagnostic-registry spec to rev 2 + ADR-0009 ([fb4703d](https://github.com/agentic-development/adev-plugin/commit/fb4703d02cb3e39c5cda7fb2a616df68d6d21bd6))
+* **cli-driver-surface:** close the epic — sweep PRs 1-9 (zero inline-Node blocks across all skills) ([7d4946b](https://github.com/agentic-development/adev-plugin/commit/7d4946be314b9db1c9c79963961a446e2d6e17ab))
+* **cli-driver-surface:** implement 4 specs (diagnostic-registry, adev-diagnose-cli, write-time-diagnostic-hook, regression-prevention) ([9e85077](https://github.com/agentic-development/adev-plugin/commit/9e85077209916ad3be5f506006524a0cf019735e))
+* **cli-driver-surface:** implement diagnostic-registry, adev-diagnose-cli, write-time-diagnostic-hook, regression-prevention ([a994181](https://github.com/agentic-development/adev-plugin/commit/a994181019b681ddcc817e320339b954b55a5315))
+* **cli-driver-surface:** land driver-substrate (verb registry + adev gate) ([35e49f3](https://github.com/agentic-development/adev-plugin/commit/35e49f3421ad231f90deff899df0bc498c5d024c))
+* **cli-driver-surface:** land driver-substrate (verb registry + adev gate) ([35496cf](https://github.com/agentic-development/adev-plugin/commit/35496cf768e324e3b1a7c059b204999ba9f2bf18))
+* **cli-driver-surface:** plan remaining 5 specs (regression-prevention, diagnostic-registry, adev-diagnose-cli, write-time-diagnostic-hook, inline-node-extraction-sweep) ([00aef82](https://github.com/agentic-development/adev-plugin/commit/00aef82397668552f409efd61b44445b415aee08))
+* **cli-driver-surface:** PR 1 — extract Check 13 heuristic extraction (skill: validate) ([9d16883](https://github.com/agentic-development/adev-plugin/commit/9d168834301cf3208362c7b35e54cd7a1f2b6ede))
+* **cli-driver-surface:** PR 2 — extract reportValidator per-check emission ([43981ff](https://github.com/agentic-development/adev-plugin/commit/43981ff933cb68734b245dad484d67bf19bb927f))
+* **cli-driver-surface:** PR 3 — extract reportStep lifecycle emission ([50ec455](https://github.com/agentic-development/adev-plugin/commit/50ec4553b989fa17f68bb3e3102e3d8ec1c7f220))
+* **cli-driver-surface:** PR 4 — extract Step 0a requireGate (all lifecycle skills) ([9702d95](https://github.com/agentic-development/adev-plugin/commit/9702d953a56b9ff26de88fce152bf3dd2055aa2f))
+* **cli-driver-surface:** PR 5 — extract source-manifest verify ([0c3eaf4](https://github.com/agentic-development/adev-plugin/commit/0c3eaf47b5e42300b53ad1c85c0bda7a610218f4))
+* **cli-driver-surface:** PR 6 — extract domain-aware loading (gates, reviewers, test-config, verification) ([3cfae20](https://github.com/agentic-development/adev-plugin/commit/3cfae209d23ec793f4db73c5b488a4b1459bb1f9))
+* **cli-driver-surface:** PR 7 — extract context/state primitives bundle ([453c988](https://github.com/agentic-development/adev-plugin/commit/453c9882793a89f2ddc536891c86efc0b4dc9d14))
+* **cli-driver-surface:** PR 8-9 — finish the sweep (zero inline-Node blocks) ([53ddf26](https://github.com/agentic-development/adev-plugin/commit/53ddf265f53d0440a5da08cf33474b9fe6dc5317))
+* **cli-driver-surface:** sweep scaffolding (progress index + allowlist test) ([190b3cd](https://github.com/agentic-development/adev-plugin/commit/190b3cdabf3775de78612f00035c5d8aa32e744a))
+* **cli:** revise CLI charter to rev 3 (drop single-file constraint) ([e5fc9d2](https://github.com/agentic-development/adev-plugin/commit/e5fc9d267aa5d98f553b8ab353fb0a12666a2380))
+* **lifecycle-artifacts:** add --kind routing to /adev:brainstorm ([f7cecb4](https://github.com/agentic-development/adev-plugin/commit/f7cecb467bd3248815fe2f3153aabfe84a48a561))
+* **lifecycle-artifacts:** add --kind routing to /adev:specify ([8d33a89](https://github.com/agentic-development/adev-plugin/commit/8d33a89dbc9f5aaef56013fe859cae6fda153873))
+* **lifecycle-artifacts:** add 3 new charter templates ([1aff762](https://github.com/agentic-development/adev-plugin/commit/1aff762911d12b393e90f20d2f1cf1832a2b1e2e))
+* **lifecycle-artifacts:** add 4 new Devin-style spec templates ([f992d6a](https://github.com/agentic-development/adev-plugin/commit/f992d6afe54bcfb2eb1a7eb698a395ca260368bf))
+* **lifecycle-artifacts:** add kind-aware hygiene audit pass ([e0c3983](https://github.com/agentic-development/adev-plugin/commit/e0c3983074ba97e71b0aacd236993aeac2dee136))
+* **lifecycle-artifacts:** add lib/kinds.mjs with closed enumerations + validators ([3c99a68](https://github.com/agentic-development/adev-plugin/commit/3c99a685963ec17c2d88e19ecf6f51e5bcd94557))
+* **lifecycle-artifacts:** add parseSpecFrontmatter with kind sentinels ([0af45da](https://github.com/agentic-development/adev-plugin/commit/0af45da36b47d32768b6783eceb7d5a46c08bc80))
+* **lifecycle-artifacts:** add read-time kind defaulting helpers ([06de933](https://github.com/agentic-development/adev-plugin/commit/06de933d703fb740608c557e67c556b05672fff7))
+* **lifecycle-artifacts:** add resolveTemplate helper with path-containment guard ([f58fce9](https://github.com/agentic-development/adev-plugin/commit/f58fce92aa398fe71383d8e3298886d5e212422a))
+* **lifecycle-artifacts:** land charter, ADR-0009, and 11 specs ([85e0bd1](https://github.com/agentic-development/adev-plugin/commit/85e0bd13a1122f50293d6b669902d07e43eb922b))
+* test migration — schema-version surface + viz adapter migration ([be8276d](https://github.com/agentic-development/adev-plugin/commit/be8276da8e14d7a564a359ebe83cc67c0992d5e7))
+
+
+### Bug Fixes
+
+* **agent-reliable-state-artifacts:** migrateMilestones writes worktree-local, not main-checkout ([cba8ff0](https://github.com/agentic-development/adev-plugin/commit/cba8ff0f3f85454efdda6df0ac563310b428f290))
+* **agent-reliable-state-artifacts:** resolve review blockers + cross-spec warnings ([fee7773](https://github.com/agentic-development/adev-plugin/commit/fee77736b3d5017ed7ad7015068210af322c4802))
+* **build:** dispatch optimistically; do not introspect tool availability ([df087e3](https://github.com/agentic-development/adev-plugin/commit/df087e37a379c928f8cafce8cf317edb4cfda069))
+* **build:** point prose at lifecycle-state/ instead of legacy build-state/ ([369c860](https://github.com/agentic-development/adev-plugin/commit/369c860502348e8f230fd72d1aeee0974f9dd589))
+* **ci:** skip GitHub auto-merge commit in provenance trailer check ([81cd36d](https://github.com/agentic-development/adev-plugin/commit/81cd36dbad5e69b8d65731ad8d21487bde8d73ce))
+* **orchestration:** unblock charter-mode builds with subagent dispatch ([f635b6a](https://github.com/agentic-development/adev-plugin/commit/f635b6a6185c670144d92d666fcc662b5a10721c))
+* **plan-immutability:** only flag genuine modification commits ([5348ad6](https://github.com/agentic-development/adev-plugin/commit/5348ad6db3aec70f1d71390f26fdc82f8305b5ee))
+* **specs:** repair source-manifest path references ([ace26d3](https://github.com/agentic-development/adev-plugin/commit/ace26d3941d37c21633e9d148a1f3e1dd4a066eb))
+* **tests:** make lifecycle-state perf harness CI-aware ([c04a5eb](https://github.com/agentic-development/adev-plugin/commit/c04a5eb2a716603eb599acd7b2037d8bc900c3b7))
+* **tests:** widen lifecycle-state-perf local margin to x5; promote test-migration to validated ([782aba8](https://github.com/agentic-development/adev-plugin/commit/782aba8f0527bc8b00617ac7244b4b7032baca66))
+
+
+### Code Refactoring
+
+* **agent-reliable-state-artifacts:** lib/build-state.mjs writes to lifecycle-state path ([5b6f4ba](https://github.com/agentic-development/adev-plugin/commit/5b6f4bacf60a71dc5b41843b2721697ef3263c57))
+
 ## [0.25.1](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.25.0...adev-cli-v0.25.1) (2026-05-11)
 
 
