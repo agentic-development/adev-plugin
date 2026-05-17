@@ -306,6 +306,23 @@ If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguo
 
 ### Step 7d: Validate registry (`governance/validate.yaml`)
 
+#### Step 7d.0: Scaffold from domain starter (single-source model)
+
+Before any customization, materialize the project's `governance/validate.yaml` from the resolved domain's starter. This makes the project's validate check registry self-contained and visible at a single path — the single-source model from `validate-config-single-source.spec.md`.
+
+1. Call `loadDomainConfig(resolvedDomain, 'validate', repoRoot, pluginRoot)`.
+2. If the call returns a starter object AND `.context-index/governance/validate.yaml` does not yet exist:
+   - Read the starter file directly (the same file that `loadDomainConfig` resolved) and copy its bytes verbatim into `.context-index/governance/validate.yaml`.
+3. If `loadDomainConfig` returns `null` for the resolved domain (no starter shipped for this domain):
+   - Fall back to `loadDomainConfig('software', 'validate', repoRoot, pluginRoot)` and write from the software starter.
+   - Print exactly: `"No validate.yaml starter for domain '<domain>'; scaffolded from 'software' as fallback."`
+4. If `.context-index/governance/validate.yaml` already exists: no-op (idempotent).
+5. Do NOT prompt the user — this scaffold step is automatic, like `gates.yaml`.
+
+Subsequent customization steps (7d.1–7d.5 below) operate on the already-scaffolded file.
+
+#### Step 7d.1: Customize (existing behavior)
+
 1. **Read platform-context.yaml** (captured in Step 3) plus detect stack signals at repo root: `package.json`, `pyproject.toml`, `Pipfile`, `go.mod`, `Cargo.toml`, `Gemfile`, `pom.xml`, `build.gradle`.
 
 2. **Propose quality-gate candidates.** Cross-reference the stack against available scripts. Only propose commands that actually exist.

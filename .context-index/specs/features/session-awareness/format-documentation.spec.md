@@ -13,6 +13,9 @@ source-manifest:
     - templates/format-documentation.md
     - skills/init/SKILL.md
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
+drift_source: skills/init/SKILL.md
+drift_at: 2026-05-16T01:27:22.126Z
 ---
 
 # Live Spec: Format Documentation

@@ -19,7 +19,7 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.735Z"
 drift_detected: true
 drift_source: skills/hygiene/SKILL.md
-drift_at: 2026-05-16T00:16:38.188Z
+drift_at: 2026-05-16T02:20:26.514Z
 ---
 
 ## Behavioral Contract

@@ -12,9 +12,11 @@ Interactive repair for mismatches between specs, plans, the issue board, and cod
 ## Arguments
 
 - No arguments: full reconciliation scan (all checks)
-- `--check <type>`: run a single check (epics, plans, issues, manifests, untraced)
+- `--check <type>`: run a single check (epics, plans, issues, manifests, untraced, lifecycle-sync)
 - `--batch`: apply fixes without confirmation prompts (use with caution)
 - `--dry-run`: show what would be fixed without making changes
+- `--fix`: apply all detected fixes automatically without per-item confirmation (this is the **default behavior** post-`check-set-restructure.spec.md`)
+- `--no-fix`: report-only mode — show findings without applying any fixes (opposite of the new default; preserves the historical "scan first, then ask" workflow for users who want it)
 
 ## Prerequisites
 
@@ -23,6 +25,8 @@ Interactive repair for mismatches between specs, plans, the issue board, and cod
 3. If a recent hygiene report exists at `.context-index/hygiene/drift-report.md`, read it for pre-computed findings. Otherwise, run detection inline.
 
 ## Process
+
+**Default mode:** `--fix` (applies fixes automatically). Pass `--no-fix` for a report-only run. This default was flipped as part of `check-set-restructure.spec.md` so that `/adev:reconcile` is the authoritative repair tool for lifecycle drift (the previous validate-time Check 12 only warned; it never fixed). User-facing prompts still appear interactively unless `--batch` or `--no-fix` is passed.
 
 ### Step 1: Detection Scan
 
@@ -91,6 +95,24 @@ Find specs with status `implemented` or `validated` that have no `source-manifes
 
 **Batch prioritization:** Process specs that have existing `.plan.md` files first (29 specs). Specs without plans require heuristic file matching and should be reviewed individually.
 
+#### 1h. Lifecycle Sync
+
+Detect spec-status, charter-capability, and epic-status drift relative to the lifecycle event log. This is the equivalent of former `/adev:validate` Check 12 (relocated by `check-set-restructure.spec.md`), now running in its proper home at reconcile-time rather than per-spec validate-time. Lifecycle reconciliation belongs here because the data is repo-level (one answer per repo), not per-spec, so emitting it from validate produced 49% WARN noise without verdict signal.
+
+**What to check:**
+- Spec `status` frontmatter vs lifecycle log `currentStep` — flag mismatches (e.g., spec says `implemented` but log shows no `implement` completed event; or spec says `review-passed` but `validate` already completed with PASS).
+- Charter capability `Status` column vs lifecycle log per-spec state — flag capabilities listed as `planned` or `implementing` when all contributing specs are `validated`.
+- Plan-task projection drift — flag plans whose `currentState(spec).planTasks` projection has tasks marked `pending` long past the implement event's completion timestamp (only inform; never auto-flip).
+- Epic `status` on issue board vs child issue states — already covered by 1a (Stale Epics).
+
+**Fix offered (`--fix` mode, default):** Update spec frontmatter `status` field to match lifecycle log. Update charter capability Status column. For plan-task reconciliation, emit a `reportPlanTask` event via `lib/lifecycle-state.mjs` — do NOT write `- [x]` markdown checkbox state into plan files (plan files are immutable post-authoring per `plan-task-events.spec.md`; the authoritative state lives in the lifecycle log projection).
+
+**Fix offered (`--no-fix` mode):** Print WARN for each mismatch with the correct value side-by-side, so the operator can decide whether to apply manually.
+
+**Structural equivalence with historic Check 12 output:** Each finding from this section carries the same fields a Check 12 WARN body previously carried (path, severity, message, evidence) so users moving between historic `.validate.md` reports and new reconcile output can map between them without information loss. This satisfies the spec's "destinations preserve structural shape" invariant.
+
+**Prompt:** "Sync lifecycle for {spec}?" with options `[Y/n]` in default `--fix` mode; suppressed in `--batch`; printed as informational rows in `--no-fix`.
+
 ### Step 2: Present and Fix — One Category at a Time
 
 Start with a one-line summary, then walk through each category sequentially. Present all items in a category as a numbered table, then prompt for each item individually. Apply fixes immediately after each confirmation before moving to the next item.
@@ -142,6 +164,7 @@ Stale Epics: 2 fixed, 0 skipped.
 | Orphaned Plans | "Create epic + issues for {plan}?" | `[Y/n]` |
 | Untraced Code | "Create spec for {file}?" | `[Y/n/ignore]` — ignore marks as intentional |
 | Missing Source Manifests | "Stamp manifest for {spec}?" | `[Y/n]` |
+| Lifecycle Sync | "Sync lifecycle for {spec}?" | `[Y/n]` — `--fix` default applies; `--no-fix` prints WARN rows |
 
 **Skip empty categories entirely** — do not print headers for categories with zero findings.
 

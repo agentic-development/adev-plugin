@@ -1149,6 +1149,8 @@ async function cmdMigrate(argv) {
     execution-state                .execution-state.md → .execution-state.json
     milestones                     milestones.yaml → milestones.json
     constitution                   Update Context Routing row only
+    validate-config                Scaffold governance/validate.yaml from domain
+                                   starter (refuses to overwrite malformed files)
     all                            Default — run every artifact in order
       `);
       return 0;
@@ -1320,6 +1322,7 @@ const VERB_REGISTRY = new Map([
   ["build-state",     () => import("../lib/cli/build-state.mjs")],
   ["preflight",       () => import("../lib/cli/preflight.mjs")],
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
+  ["artifact",        () => import("../lib/cli/artifact.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr

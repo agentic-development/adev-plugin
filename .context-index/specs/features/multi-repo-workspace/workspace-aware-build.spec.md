@@ -22,7 +22,7 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 drift_source: skills/build/SKILL.md
-drift_at: 2026-05-16T00:16:18.705Z
+drift_at: 2026-05-15T18:27:08.637Z
 ---
 
 # Live Spec: Workspace-Aware Build

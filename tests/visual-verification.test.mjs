@@ -79,13 +79,16 @@ describe("visual verification in adev:validate", () => {
     assert.ok(skill.includes("### Check 11: Visual Verification"));
   });
 
-  it("requires Playwright MCP — blocks, does not skip", () => {
+  it("BLOCKs when UI files match AND Playwright is absent (Case B); SKIPs when no UI files (Cases A/D)", () => {
+    // check-set-restructure.spec.md Behaviors 5 + 6: BLOCK preserved only when
+    // UI files are in the diff. The Case A SKIP path is new; before the
+    // restructure this case BLOCKed even on non-UI specs.
     const check11 = skill.slice(
       skill.indexOf("### Check 11"),
       skill.indexOf("## Report Format")
     );
-    assert.ok(check11.includes("BLOCK validation"), "should block validation");
-    assert.ok(check11.includes("Do not record SKIP"), "should not allow SKIP for UI files");
+    assert.ok(/BLOCK/i.test(check11), "should still cite BLOCK for the UI+no-Playwright case");
+    assert.ok(/SKIP/.test(check11), "should permit SKIP for the no-UI-files case after the trigger-guard restructure");
   });
 
   it("tests three responsive breakpoints", () => {
@@ -105,9 +108,21 @@ describe("visual verification in adev:validate", () => {
     assert.ok(reportSection.includes("Dark mode"));
   });
 
-  it("references 13 checks, not 11", () => {
-    assert.ok(!skill.includes("11 checks"), "should not reference 11 checks anymore");
-    assert.ok(skill.includes("13 checks"), "should reference 13 checks");
+  it("references the trimmed post-restructure check inventory, not the historic 11 or 13 count", () => {
+    // After check-set-restructure.spec.md the surviving check inventory is
+    // not pinned to a single integer (it depends on optional governance
+    // and conditional UI/Playwright matching). Assert the migration-orientation
+    // footer is present instead of pinning to a stale number.
+    assert.ok(
+      skill.includes("/adev:hygiene") &&
+        skill.includes("/adev:reconcile") &&
+        skill.includes("/adev:review-specs"),
+      "should carry the migration-orientation footer pointing at relocation destinations"
+    );
+    assert.ok(
+      !/All 13 checks passed/.test(skill),
+      "should not retain the stale 'All 13 checks passed' phrasing"
+    );
   });
 
   it("lists visual verification in red flags", () => {

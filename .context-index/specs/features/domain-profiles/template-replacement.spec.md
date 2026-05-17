@@ -27,6 +27,9 @@ source-manifest:
     - templates/domains/software/charter-template.md
     - templates/domains/software/spec-template.md
   computedAt: "2026-05-11T00:29:38.436Z"
+drift_detected: true
+drift_source: lib/domains/domain-config.mjs
+drift_at: 2026-05-16T01:25:10.353Z
 ---
 
 ## Current State
