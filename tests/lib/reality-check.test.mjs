@@ -160,6 +160,143 @@ describe("verifySpecImplemented", () => {
       cleanupTempDir(tmp);
     }
   });
+
+  test("falls back to source-manifest files when no plan file exists (high confidence with tests)", () => {
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(
+        tmp,
+        "spec.spec.md",
+        `---
+status: validated
+source-manifest:
+  sha: "abc1234"
+  files:
+    - lib/feature.mjs
+    - tests/feature.test.mjs
+  computed-at: "2026-04-15T00:00:00.000Z"
+---
+# Spec
+
+Tests at tests/feature.test.mjs
+`,
+      );
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      writeFixture(
+        tmp,
+        "tests/feature.test.mjs",
+        "import { test } from 'node:test';\ntest('pass', () => {});\n",
+      );
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      assert.equal(result.confidence, CONFIDENCE.HIGH);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("falls back to source-manifest files when no plan file exists (medium confidence without tests)", () => {
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(
+        tmp,
+        "spec.spec.md",
+        `---
+status: validated
+source-manifest:
+  sha: "abc1234"
+  files:
+    - lib/feature.mjs
+  computed-at: "2026-04-15T00:00:00.000Z"
+---
+# Spec
+`,
+      );
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      assert.equal(result.confidence, CONFIDENCE.MEDIUM);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("returns none from source-manifest when files missing from disk", () => {
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(
+        tmp,
+        "spec.spec.md",
+        `---
+status: validated
+source-manifest:
+  sha: "abc1234"
+  files:
+    - lib/feature.mjs
+    - lib/missing.mjs
+  computed-at: "2026-04-15T00:00:00.000Z"
+---
+# Spec
+`,
+      );
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      // lib/missing.mjs intentionally absent
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      assert.equal(result.confidence, CONFIDENCE.NONE);
+      assert.equal(result.implemented, false);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("prefers plan files over source-manifest when both are present", () => {
+    const tmp = createTempGitDir();
+    try {
+      // Plan lists feature.mjs (committed); source-manifest lists a missing file.
+      // If the verifier preferred source-manifest, confidence would be NONE.
+      // Plan must take precedence and yield MEDIUM.
+      writeFixture(
+        tmp,
+        "spec.spec.md",
+        `---
+status: validated
+source-manifest:
+  sha: "abc1234"
+  files:
+    - lib/missing.mjs
+  computed-at: "2026-04-15T00:00:00.000Z"
+---
+# Spec
+`,
+      );
+      writeFixture(
+        tmp,
+        "spec.plan.md",
+        `# Plan
+
+**Create:**
+- lib/feature.mjs — the module
+
+**Reference (read, do not modify):**
+- README.md
+`,
+      );
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      assert.equal(result.confidence, CONFIDENCE.MEDIUM);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
