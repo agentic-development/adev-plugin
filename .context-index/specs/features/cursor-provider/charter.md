@@ -17,9 +17,10 @@ adev-plugin currently installs into Claude Code, OpenCode, and Codex via three p
 
 - `providers/cursor/adapter.mjs` — fourth peer adapter exporting `CursorAdapter` with `install`, `uninstall`, `status` methods, mirroring the shape of `providers/opencode/adapter.mjs`.
 - `.cursor-plugin/plugin.json` — Cursor plugin manifest, kept version-locked with `package.json` and `.claude-plugin/plugin.json` (extends the constitution's version-parity guard from two manifests to three).
+- `release-please-config.json` update — add `.cursor-plugin/plugin.json` to the `extra-files` array per ADR-0008 so the automated Release PR bumps all three manifests in lockstep. Without this, the three-way parity invariant breaks at the first release after implementation.
 - `scripts/build-cursor-hooks.mjs` — Node-built-ins-only build step that reads canonical `hooks/hooks.json` and emits `providers/cursor/hooks.json` using a committed Claude-event → Cursor-event translation table. Generator throws on unknown Claude events.
 - `tests/cursor-hooks-sync.test.mjs` — pattern test that re-runs the generator in-memory and asserts deepEqual against the committed `providers/cursor/hooks.json`. Fails CI with a "run `npm run build:cursor-hooks`" hint when drift is detected.
-- Hook script reuse — the 17 scripts in `hooks/` are consumed unchanged by both providers; Cursor injects `CLAUDE_PROJECT_DIR` as an alias per Cursor docs.
+- Hook script reuse — the existing shell scripts in `hooks/` are consumed unchanged by both providers; Cursor injects `CLAUDE_PROJECT_DIR` as an alias per Cursor docs.
 - Skill name sanitization at install time — `adev:init` → `adev-init` if Cursor rejects colons in skill names; verified by a smoke install during charter follow-up.
 - CLI integration — `adev install` registry gains `cursor` as a target; `cli/index.mjs` install/uninstall/status routes through the new adapter.
 - `cursor` sync-target format — `/adev:sync` writes `.cursor/rules/adev.mdc` with `alwaysApply: true`, under Cursor's 200-word recommendation, treated as a pointer projection of `.context-index/constitution.md`. Completes the stub on `cli/index.mjs:465-467` and finishes the half-modeled format in the `setup` charter.
@@ -40,6 +41,7 @@ adev-plugin currently installs into Claude Code, OpenCode, and Codex via three p
 | CLI charter | internal charter | Install/uninstall/status verb dispatch; `cli/index.mjs` provider routing. Requires rev 4 update (Cursor added to provider list). |
 | Setup charter | internal charter | `cursor` sync-target format completion belongs to setup's `/adev:sync` capability; this charter finishes the half-modeled entry. |
 | Extensions charter | internal charter | Already names "Provider Adapters" as a consumed dependency for skill/hook registration. No revision needed; this charter adds a fourth adapter behind that contract. |
+| ADR-0008 (release-please automation) | internal ADR | The `extra-files` array in `release-please-config.json` must include `.cursor-plugin/plugin.json` for the three-way version-parity invariant to hold at release time. |
 | Cursor 2.5+ | external runtime | Plugin system requires Cursor 2.5 (Plugins shipped) or 2.4 (Skills/Subagents); hooks require Cursor 1.7+. |
 
 ## Domain Model
@@ -76,13 +78,14 @@ adev-plugin currently installs into Claude Code, OpenCode, and Codex via three p
 |-----------|-------------|----------|-----------|--------|
 | Cursor plugin manifest | Write `.cursor-plugin/plugin.json` with version locked to package.json + claude-plugin | must-have | v1 | — |
 | Three-way version parity | Extend existing parity check to include `.cursor-plugin/plugin.json` | must-have | v1 | — |
+| Release-please extra-files update | Add `.cursor-plugin/plugin.json` to `release-please-config.json:extra-files` per ADR-0008 so automated Release PRs bump all three manifests in lockstep | must-have | v1 | — |
 | CursorAdapter install/uninstall/status | Fourth peer adapter mirroring `providers/opencode/adapter.mjs` shape | must-have | v1 | — |
 | Hook config generator | `scripts/build-cursor-hooks.mjs` + translation table; emits `providers/cursor/hooks.json` | must-have | v1 | — |
 | Hook drift test | `tests/cursor-hooks-sync.test.mjs` fails CI on out-of-sync committed hooks.json | must-have | v1 | — |
 | Translation-table coverage assertion | Generator throws on Claude events with no Cursor mapping | must-have | v1 | — |
 | CLI install integration | `adev install` accepts `cursor` as a target; routes through CursorAdapter | must-have | v1 | — |
 | `.cursor/rules/adev.mdc` sync output | `/adev:sync` writes alwaysApply rule when `cursor` is a sync target | must-have | v1 | — |
-| Skill name sanitization | Install-time rename of `adev:<x>` skills to `adev-<x>` if Cursor rejects colons | should-have | v1 | — |
+| Skill name sanitization | Install-time rename of `adev:<x>` skills to `adev-<x>` — Cursor docs require lowercase + hyphens matching the folder name, so colons are invalid | must-have | v1 | — |
 | CLI charter revision | Update `cli` charter install verb description (rev 3 → rev 4) | must-have | v1 | — |
 | Smoke install verification | Manual local install into `~/.cursor/plugins/local/adev` + open Cursor + verify skill discovery | should-have | v1 | — |
 
