@@ -8,6 +8,8 @@ Accepted
 
 > **Revised 2026-04-19**: Sandbox/tier/thinking-budget concerns originally proposed in this ADR have been promoted into a separate primitive — see ADR-0004 (Execution Profiles). This ADR now focuses solely on the reviewer/check **registry** decision; how each registered work unit *runs* is the job of execution profiles, which the registries reference by name.
 
+> **Revised 2026-05-15 (`validate-config-single-source.spec.md`)**: The "Zero behavior change for existing projects" guarantee under §Consequences — i.e. bundled defaults flow-through, where plugin-supplied prompt improvements reach projects via field-by-field overlay merge — has been **narrowed for the validate registry**. Plugin-supplied prompt improvements now reach projects via **opt-in adoption** (drift surfaced by `/adev:hygiene` *Validate Config Drift* pass), not auto-merge. This is the same trade-off already accepted for `unified-gates` (`governance/gates.yaml`): single-source, project-owned, plugin drift surfaced as audit findings rather than silent updates. The ADR remains accepted; this note records the narrowing. ADR-0003 §Consequences bullet "Zero behavior change for existing projects" applies only to `governance/review.yaml` going forward.
+
 ## Date
 
 2026-04-19

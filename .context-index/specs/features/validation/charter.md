@@ -14,18 +14,22 @@ Verify that implementation meets specs, passes quality gates, and scores well on
 
 ## Skills
 
-- **adev:validate** — 11 ordered checks including browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists.
+- **adev:validate** — Post-`check-set-restructure.spec.md` check set: Check 1 (tiered quality gates from `governance/gates.yaml`), Check 1.5 (source manifest verification), Check 1.6 (code-side drift advisory), Check 2 (spec compliance with scope-expansion sub-finding pinned to `source-manifest.files`), Check 4 (constitutional compliance with file:line evidence-citation contract), and — when configured — Check 8 (governance boundaries) and Check 9 (transition gates). Check 11 (visual verification) is dispatched conditionally on UI-pattern matches and Playwright MCP availability. Single-source check registry in `.context-index/governance/validate.yaml` (scaffolded at `/adev:init` time from the domain starter); per-check subagent prompts live as standalone files in `skills/validate/checks/<id>.md`, referenced via the `plugin:validate/checks/<id>.md` URI scheme. Fail-fast on quality gates. Structured PASS/FAIL report with a migration-orientation footer pointing users to `/adev:hygiene` Audit Pass 20 (platform drift, formerly Check 10), `/adev:reconcile` lifecycle-sync (formerly Check 12), `/adev:review-specs` ADR + cross-cutting scope items (formerly Checks 5 and 6), and the post-validate Stop-event hook (heuristic extraction, formerly Check 13). Checks 3, 5, 6, 7, 10, 12, 13 are relocated, not deleted — historic `.validate.md` reports remain readable without retroactive renumbering.
 - **adev:eval** — graduated evaluation harness with four layers: deterministic gates, pattern matching, LLM-as-a-Judge scoring, and human-in-the-loop checkpoints.
 
 ## Key Behaviors
 
-- Validation runs quality gate commands from the constitution (`npm test`, etc.)
-- Fail-fast: first failure stops the pipeline
-- Eval scores go beyond pass/fail — they measure quality on multiple dimensions
-- Both skills check against the constitution and specs
+- Validation runs quality gate commands from `governance/gates.yaml` (`npm test`, etc.) — `manifest.yaml:gates` is deprecated.
+- **Single-source check registry.** `governance/validate.yaml` is the project-owned source of truth; there is no bundled-defaults overlay. Plugin upgrades that improve a starter prompt surface as drift findings via `/adev:hygiene` *Validate Config Drift* pass (opt-in adoption, not auto-merge).
+- Fail-fast: first failure of an error-severity gate stops the pipeline.
+- Eval scores go beyond pass/fail — they measure quality on multiple dimensions.
+- Both skills check against the constitution and specs.
 
 ## Key Files
 
-- `skills/validate/SKILL.md`
+- `skills/validate/SKILL.md` — orchestration: preflight, dispatch loop, fail-fast logic, report assembly.
+- `skills/validate/checks/<id>.md` — per-check subagent prompt bodies (one file per registry entry).
 - `skills/eval/SKILL.md`
+- `lib/governance/validate-config.mjs` — single-source registry loader (reads `governance/validate.yaml` directly; throws `MISSING_VALIDATE_CONFIG` when absent).
+- `templates/domains/<domain>/validate.yaml` — domain-shipped starters consumed by `/adev:init` and the `adev migrate --artifact=validate-config` migration tool.
 - `templates/eval-config-template.yaml`

@@ -29,15 +29,16 @@ const EXPECTED_FILES = [
   'verification.yaml',
   'gate-config.yaml',
   'test-config.yaml',
+  'validate.yaml',
 ];
 
 // ── Software Profile ──────────────────────────────────────────────────
 
 describe('software profile', () => {
-  it('contains exactly 7 overlay files', () => {
+  it('contains exactly 8 overlay files', () => {
     const files = readdirSync(SW_DIR).sort();
     assert.deepStrictEqual(files, EXPECTED_FILES.slice().sort());
-    assert.equal(files.length, 7);
+    assert.equal(files.length, 8);
   });
 
   it('YAML files are parseable', () => {
@@ -124,9 +125,9 @@ describe('cross-profile validation', () => {
     assert.deepStrictEqual(entries.sort(), ['software'], 'only software should be bundled');
   });
 
-  it('software profile contains exactly 7 files', () => {
+  it('software profile contains exactly 8 files', () => {
     const files = readdirSync(SW_DIR).sort();
-    assert.equal(files.length, 7, 'software should have 7 files');
+    assert.equal(files.length, 8, 'software should have 8 files');
     assert.deepStrictEqual(files, EXPECTED_FILES.slice().sort(), 'software files should match expected');
   });
 

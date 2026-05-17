@@ -1,0 +1,90 @@
+# Software domain validate starter — generated from adev defaults.
+# Scaffolded into a project's .context-index/governance/validate.yaml at
+# `/adev:init` time. Project-owned thereafter.
+#
+# See: .context-index/specs/features/validation/validate-config-single-source.spec.md
+# See: .context-index/specs/features/validation/configurable-checks.spec.md rev 3.
+#
+# Check 1 (quality gates) is sourced from governance/gates.yaml by a separate
+# flow in skills/validate/SKILL.md and is not represented here. All other
+# checks are registry entries; each check's prompt body lives in
+# skills/validate/checks/<id>.md in the plugin tree, referenced via the
+# `plugin:validate/checks/<id>.md` URI scheme.
+
+checks:
+  - id: validate.check-1.5-source-manifest
+    name: "Source Manifest Verification"
+    kind: deterministic-check
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-1.5-source-manifest.md
+    description: "Verify spec source-manifest SHAs match current files."
+
+  - id: validate.check-2-spec-compliance
+    name: "Spec Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-2-spec-compliance.md
+    after: [validate.check-1.5-source-manifest]
+
+  # check-3-charter-consistency removed by check-set-restructure.spec.md.
+  # Its substantive concern (implementation respects charter scope) is now
+  # covered by Check 2's scope-expansion sub-finding (which pins to
+  # source-manifest.files) + /adev:review-specs structural-architect prompt
+  # (which checks spec-vs-charter consistency at review time).
+
+  - id: validate.check-4-constitution
+    name: "Constitutional Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-4-constitution.md
+    after: [validate.check-2-spec-compliance]
+
+  # check-5-adrs removed by check-set-restructure.spec.md
+  # (migrated to /adev:review-specs structural-architect ADR-compliance scope).
+  #
+  # check-6-cross-cutting removed by check-set-restructure.spec.md
+  # (migrated to /adev:review-specs consistency-analyzer cross-cutting scope).
+  #
+  # check-7-specialist-review removed by check-set-restructure.spec.md
+  # (duplicate dispatch path; /adev:review-specs already runs the same
+  # specialist registry).
+
+  - id: validate.check-8-boundaries
+    name: "Governance Boundaries"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-8-boundaries.md
+    after: [validate.check-2-spec-compliance]
+
+  - id: validate.check-9-transition-gates
+    name: "Transition Gate Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-9-transition-gates.md
+    after: [validate.check-2-spec-compliance]
+
+  # check-10-platform-drift removed by check-set-restructure.spec.md
+  # (migrated to /adev:hygiene Audit Pass 20). Project references to this ID
+  # are tolerated as RESURRECTED_CHECK_ID warnings by the loader (project-side
+  # only — see lib/governance/validate-config.mjs REMOVED_CHECK_IDS).
+
+  - id: validate.check-11-visual-verification
+    name: "Visual Verification"
+    kind: subagent-review
+    profile: browser-review
+    context_pack: base
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-11-visual-verification.md
+
+  # check-12-heuristic-extraction removed by check-set-restructure.spec.md
+  # (now runs as a Stop-event post-validate hook —
+  # hooks/post-validate-extract-heuristics.{sh,mjs} — with SEC-1 input
+  # scoping that consumes only structured verdict metadata).

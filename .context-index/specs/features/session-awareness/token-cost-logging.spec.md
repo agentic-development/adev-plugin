@@ -30,8 +30,8 @@ source-manifest:
     - hooks/hooks.json
   computed-at: "2026-04-25T21:55:13.685Z"
 drift_detected: true
-drift_source: lib/execution-state.mjs
-drift_at: 2026-05-12T01:09:32.202Z
+drift_source: hooks/hooks.json
+drift_at: 2026-05-16T02:31:19.739Z
 ---
 
 ## Behavioral Contract

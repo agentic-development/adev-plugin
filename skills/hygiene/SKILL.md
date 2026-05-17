@@ -1,16 +1,16 @@
 ---
 name: adev:hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs eighteen audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
+description: "Audit all context for staleness, drift, and coverage gaps. Runs twenty audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and source code, generating actionable reports. Eighteen audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, heuristic index health, and kind-discriminator validity so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and source code, generating actionable reports. Twenty audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, heuristic index health, kind-discriminator validity, validate config drift, and platform drift so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all eighteen passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift, kind-validity)
+- No arguments: full audit (all twenty passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift, kind-validity, validate-config-drift, platform-drift)
 - `--pass <type>`: alias for `--check <type>` (accepted for symmetry with related skills; identical behavior)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
@@ -887,6 +887,109 @@ Header notes:
 | Kind Validity | WARN | 3 findings (1 error, 2 warn) |
 ```
 
+## Audit Pass 19: Validate Config Drift
+
+**Goal:** Compare the project's `.context-index/governance/validate.yaml` against the resolved domain's `validate.yaml` starter and surface divergent registry entries as INFO findings. Per `validate-config-single-source.spec.md` (Behavior 8), the audit's purpose is **visibility, not nagging** — divergence is the expected outcome of project customization and the pass never blocks. When a plugin upgrade improves a starter prompt or adds a new check, this audit surfaces the divergence so operators can opt in deliberately.
+
+**Steps:**
+
+1. Resolve the project's domain (from manifest, charter frontmatter, or module slug — same resolution chain used by `/adev:validate` Step 0).
+2. Call `loadDomainConfig(domain, 'validate', repoRoot, pluginRoot)` to get the current domain starter.
+3. **Pre-condition guards (skip cases):**
+   - If `loadDomainConfig` returns `null`: SKIP with INFO "No validate.yaml starter for domain '<domain>' — drift check not applicable."
+   - If `.context-index/governance/validate.yaml` does not exist: SKIP with INFO "No governance/validate.yaml found — run /adev:init to scaffold."
+4. Load both files (starter via the returned object; project via `parseYaml(readFileSync(...))`). Build an id-keyed map of each registry's entries.
+5. **Diff by id, field-by-field.** For each `id` present in the starter:
+   - If absent in the project file: INFO "Starter contains id '<id>' not present in project config — consider adding."
+   - If present but differs: emit a per-field finding (see SEC-4 below).
+6. For each `id` present in the project but absent in the starter: INFO "Project adds id '<id>' (not in starter) — project customization."
+7. If no divergence: INFO "Validate config is current with domain starter."
+
+**SEC-4: per-field emission rules.** When emitting a per-field difference:
+- For `prompt:` and `context_pack:` fields: emit ONLY the field name and value **type** (e.g., `prompt: <plugin-URI> vs <project-relative-path>`). Do NOT emit the full string values. Project paths may contain internal codenames or sensitive labels that should not appear in hygiene output that may be shared in chat or PRs.
+- For all other fields: emit the literal starter value and project value side-by-side.
+
+**Severity policy.** All findings from this pass are **INFO**, not WARN. Divergence is expected; the audit is informational. Severity escalation would invert the purpose — make a Layer-2 issue if a project wants to be reminded about specific drift patterns.
+
+**Output format:**
+```
+## Validate Config Drift
+
+- PASS: Validate config is current with domain starter (no divergence)
+
+— or —
+
+- INFO: N divergent registry entries detected (non-blocking)
+
+| Check ID | Field | Starter | Project |
+|---|---|---|---|
+| validate.check-2-spec-compliance | severity | error | warning |
+| validate.check-4-constitution | prompt | <plugin-URI> | <project-relative-path> |
+| project.custom-check | (full entry) | — | (added by project) |
+
+**Actions:**
+- [ ] Review each divergence; adopt starter improvements where appropriate
+- [ ] Document intentional deviations in governance/validate.yaml comments
+```
+
+**Integration with summary table:**
+```
+| Validate Config Drift | INFO | 3 divergent entries |
+```
+
+## Audit Pass 20: Platform Drift
+
+**Goal:** Compare `.context-index/platform-context.yaml` tech stack declarations against `package.json` dependencies. Catches cases where the declared stack no longer matches what is actually installed. Migrated from `/adev:validate` Check 10 (removed in `check-set-restructure.spec.md`), where the same data is identical for every spec in a run — so it belongs at repo level (here) rather than per spec.
+
+**Pre-condition guards (skip cases):**
+- If `.context-index/platform-context.yaml` does not exist: SKIP with INFO "No platform-context.yaml found — platform drift check not applicable."
+- If `package.json` does not exist: SKIP with INFO "No package.json found — not a Node.js project, platform drift check not applicable."
+
+**Mapping rules** (same as former Check 10):
+
+For each field in `platform-context.yaml`, check the corresponding package in `package.json` (dependencies + devDependencies):
+
+| platform-context field | Expected package(s) | Example |
+|----------------------|---------------------|---------|
+| `framework` | Framework package present (`next`, `nuxt`, `astro`, `svelte`, etc.) | `framework: nextjs` → `next` in dependencies |
+| `version` | Framework package version satisfies declared version | `version: "16"` → `next` version starts with `16.x` |
+| `language` | If `typescript`, `typescript` in devDependencies | `language: typescript` → `typescript` present |
+| `orm` | ORM package present (`prisma`, `drizzle-orm`, `typeorm`, etc.) | `orm: prisma` → `prisma` or `@prisma/client` present |
+| `auth` | Auth package present (`@clerk/nextjs`, `next-auth`, etc.) | `auth: clerk` → `@clerk/nextjs` present |
+| `database` | DB driver or client present if applicable | `database: postgresql` → pg-related package or ORM handles it |
+| `testing` | Test framework present | `testing: vitest` → `vitest` in devDependencies |
+
+**Unknown fields or values:** Log as INFO (not a failure) — mapping is best-effort.
+
+**Version check:** Only performed for `framework` + `version`. Uses semver-compatible prefix matching (e.g., declared `"16"` matches installed `16.1.2`). Major version mismatch → WARN.
+
+Record per field: PASS (matches), WARN (mismatch), INFO (could not verify), or SKIP (field not declared).
+
+**Output format:**
+```
+## Platform Drift
+
+- PASS: All declared platform-context fields confirmed in package.json
+
+— or —
+
+- WARN: N field mismatches detected
+
+| Field | Declared | Installed | Status |
+|-------|----------|-----------|--------|
+| framework | nextjs | (not found) | WARN |
+| version   | 16     | 15.3.1    | WARN |
+
+**Actions:**
+- [ ] Update platform-context.yaml to match the installed stack
+- [ ] Or install the declared package(s) if the platform-context.yaml is authoritative
+```
+
+**Integration with summary table:**
+```
+| Platform Drift | WARN | 2 field mismatches |
+```
+
 ## Report Format
 
 **Persona adaptation:** The report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
@@ -921,6 +1024,8 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Heuristic Index Health | WARN | 1 stale index entry, 2 orphan tags |
 | Code Drift | PASS | 0 issues |
 | Kind Validity | WARN | 3 findings (non-blocking) |
+| Validate Config Drift | INFO | 0 divergent entries |
+| Platform Drift | PASS | All declared fields match |
 
 ## Priority Actions
 
