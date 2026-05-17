@@ -29,7 +29,7 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.746Z"
 drift_detected: true
 drift_source: .context-index/manifest.yaml
-drift_at: 2026-05-17T14:27:25.149Z
+drift_at: 2026-05-17T16:03:20.155Z
 ---
 
 ## Behavioral Contract
