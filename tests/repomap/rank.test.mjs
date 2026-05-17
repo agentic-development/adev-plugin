@@ -197,3 +197,159 @@ describe('computeRanks', () => {
     assert.equal(result.symbols[0].module, 'core');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Post-rank annotation (Behavior 4 of non-code-reference-detection.spec.md)
+// ---------------------------------------------------------------------------
+
+describe('post-rank annotation (doc-references + public-api)', () => {
+  it('PageRank score sum is unchanged after annotation', () => {
+    const graph = makeGraph(
+      [
+        { path: 'a.ts', exports: ['A'], module: null },
+        { path: 'b.ts', exports: ['B'], module: null },
+      ],
+      [{ from: 'a.ts', to: 'b.ts', type: 'import', symbols: ['B'] }],
+    );
+    const details = makeSymbolDetails([
+      ['a.ts', [{ name: 'A', kind: 'function', line: 1 }]],
+      ['b.ts', [{ name: 'B', kind: 'function', line: 1 }]],
+    ]);
+
+    const baseline = computeRanks(graph, details);
+    const baselineSum = baseline.symbols.reduce((s, x) => s + x.score, 0);
+
+    const annotated = computeRanks(graph, details, {
+      docReferenceEdges: [
+        { type: 'doc-reference', from: 'skills/x/SKILL.md', to: 'b.ts', symbols: [], count: 1 },
+      ],
+      publicApiPaths: ['a.ts'],
+    });
+    const annotatedSum = annotated.symbols.reduce((s, x) => s + x.score, 0);
+    assert.ok(
+      Math.abs(baselineSum - annotatedSum) < 0.001,
+      `score sum must not change (baseline=${baselineSum}, annotated=${annotatedSum})`,
+    );
+  });
+
+  it('public-api-entry symbols get referenceSources containing "package-exports"', () => {
+    const graph = makeGraph(
+      [
+        { path: 'cli.ts', exports: ['main'], module: null, tags: ['public-api-entry'] },
+        { path: 'lib.ts', exports: ['helper'], module: null },
+      ],
+      [],
+    );
+    const details = makeSymbolDetails([
+      ['cli.ts', [{ name: 'main', kind: 'function', line: 1 }]],
+      ['lib.ts', [{ name: 'helper', kind: 'function', line: 1 }]],
+    ]);
+
+    const result = computeRanks(graph, details, {
+      docReferenceEdges: [],
+      publicApiPaths: ['cli.ts'],
+    });
+    const mainSym = result.symbols.find(s => s.name === 'main');
+    assert.ok(mainSym.referenceSources);
+    assert.ok(mainSym.referenceSources.includes('package-exports'));
+    assert.ok(mainSym.references >= 1, 'public-api references must be at least 1');
+    const helperSym = result.symbols.find(s => s.name === 'helper');
+    // Helper has no annotations.
+    assert.equal(
+      (helperSym.referenceSources || []).includes('package-exports'),
+      false,
+    );
+  });
+
+  it('doc-reference target symbols get referenceSources containing "doc-reference"', () => {
+    const graph = makeGraph(
+      [
+        { path: 'lib.ts', exports: ['helper'], module: null },
+        { path: 'other.ts', exports: ['other'], module: null },
+      ],
+      [],
+    );
+    const details = makeSymbolDetails([
+      ['lib.ts', [{ name: 'helper', kind: 'function', line: 1 }]],
+      ['other.ts', [{ name: 'other', kind: 'function', line: 1 }]],
+    ]);
+
+    const result = computeRanks(graph, details, {
+      docReferenceEdges: [
+        { type: 'doc-reference', from: 'skills/a/SKILL.md', to: 'lib.ts', symbols: [], count: 1 },
+        { type: 'doc-reference', from: 'skills/b/SKILL.md', to: 'lib.ts', symbols: [], count: 3 },
+      ],
+      publicApiPaths: [],
+    });
+    const helperSym = result.symbols.find(s => s.name === 'helper');
+    assert.ok(helperSym.referenceSources.includes('doc-reference'));
+    // Two distinct source skills (a, b) each contribute 1 → references += 2.
+    assert.equal(helperSym.references, 2, 'one per distinct source skill, capped');
+    const otherSym = result.symbols.find(s => s.name === 'other');
+    assert.equal(
+      (otherSym.referenceSources || []).includes('doc-reference'),
+      false,
+    );
+  });
+
+  it('cap of one contribution per distinct source skill file', () => {
+    const graph = makeGraph(
+      [{ path: 'lib.ts', exports: ['helper'], module: null }],
+      [],
+    );
+    const details = makeSymbolDetails([
+      ['lib.ts', [{ name: 'helper', kind: 'function', line: 1 }]],
+    ]);
+    // Three edges from the SAME skill source — should contribute 1 reference.
+    const result = computeRanks(graph, details, {
+      docReferenceEdges: [
+        { type: 'doc-reference', from: 'skills/a/SKILL.md', to: 'lib.ts', symbols: [], count: 7 },
+        { type: 'doc-reference', from: 'skills/a/SKILL.md', to: 'lib.ts', symbols: [], count: 1 },
+      ],
+      publicApiPaths: [],
+    });
+    const helperSym = result.symbols.find(s => s.name === 'helper');
+    assert.equal(helperSym.references, 1);
+  });
+
+  it('a symbol with both annotations gets both labels and both increments', () => {
+    const graph = makeGraph(
+      [
+        { path: 'cli.ts', exports: ['main'], module: null, tags: ['public-api-entry'] },
+      ],
+      [],
+    );
+    const details = makeSymbolDetails([
+      ['cli.ts', [{ name: 'main', kind: 'function', line: 1 }]],
+    ]);
+    const result = computeRanks(graph, details, {
+      docReferenceEdges: [
+        { type: 'doc-reference', from: 'skills/x/SKILL.md', to: 'cli.ts', symbols: [], count: 1 },
+      ],
+      publicApiPaths: ['cli.ts'],
+    });
+    const mainSym = result.symbols[0];
+    assert.ok(mainSym.referenceSources.includes('package-exports'));
+    assert.ok(mainSym.referenceSources.includes('doc-reference'));
+    // public-api +1 and doc-reference +1
+    assert.equal(mainSym.references, 2);
+  });
+
+  it('omitting options arg leaves prior behavior unchanged', () => {
+    const graph = makeGraph(
+      [{ path: 'a.ts', exports: ['A'], module: null }],
+      [],
+    );
+    const details = makeSymbolDetails([
+      ['a.ts', [{ name: 'A', kind: 'function', line: 1 }]],
+    ]);
+    const result = computeRanks(graph, details);
+    // referenceSources should be undefined or empty when no annotations were applied.
+    const sym = result.symbols[0];
+    assert.equal(sym.references, 0);
+    assert.ok(
+      sym.referenceSources === undefined ||
+        (Array.isArray(sym.referenceSources) && sym.referenceSources.length === 0),
+    );
+  });
+});
