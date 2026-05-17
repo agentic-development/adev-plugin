@@ -459,10 +459,10 @@ If the issue board adapter throws, log the error to the summary output but **do 
 
 Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps. Include any notes from Step 5.6 (Feature created/updated, skipped, or failed).
 
-Emit the lifecycle exit event:
+Emit the lifecycle exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:review-specs::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `specify` step has no failure path that reaches this point (the spec was written, status set to `review-pending`, Feature work item created or skipped), so success implies PASS.
 
 ```bash
-adev report --type step --spec <spec-path> --step specify --status completed
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
 ```
 
 ---
