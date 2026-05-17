@@ -319,6 +319,8 @@ Cadence: one section (H2 boundary or coherent block) per append. The first autho
 
 Section append order matches the plan header → File Structure → Context Packets → Parallelization → Task Summary → Task Structure → Quality Gates flow defined below. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
 
+**Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE).** Before each append, run `adev partial check-size --artifact <plan-path>` to verify the in-progress partial has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior plan size, 50 KB)). The verb exits 2 with `PARTIAL_ARTIFACT_OVERSIZE` when the cap is breached — treat that as a hard stop: do NOT continue appending, do NOT commit the rename, preserve the partial for inspection, and surface the error to the user. This protects against retry loops that re-write prior chunks instead of appending only the new section.
+
 After writing the final Quality Gates section, commit the artifact via atomic rename. Use the CLI verb so the SKILL.md stays markdown-only per the `cli-driver-surface` charter:
 
 ```bash
