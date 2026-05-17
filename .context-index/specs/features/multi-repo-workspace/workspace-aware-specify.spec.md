@@ -20,7 +20,7 @@ source-manifest:
   computed-at: "2026-04-17T00:00:00.000Z"
 drift_detected: true
 drift_source: skills/specify/SKILL.md
-drift_at: 2026-05-16T01:02:12.818Z
+drift_at: 2026-05-17T19:58:35.232Z
 ---
 
 # Live Spec: Workspace-Aware /adev:specify
