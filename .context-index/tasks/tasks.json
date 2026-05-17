@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "seq": 1,
   "epics": [
     {
       "id": "epic-1",
@@ -2516,15 +2517,16 @@
     {
       "id": "issue-459",
       "title": "No concurrent-write protection on shared tasks.md — cross-session writes lose data",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "feature",
       "epicId": "epic-71",
       "dependencies": [],
-      "notes": "lib/issues/file-adapter.mjs _write() does a plain readFileSync → mutate-in-memory → writeFileSync sequence with no locking, no atomic rename, and no version check.  Observed failure mode (2026-05-11 during 0.25.0 reconcile session): Three concurrent Claude sessions on the same project directory mutated tasks.md. The background agent (in a separate session) created epic-72 and re-parented issues 274/374 — those changes were visible briefly on disk, then completely wiped by a subsequent write from a different writer that had read an earlier version. Other concurrent changes (epic-65/66/69 closure, epic-70 milestone move, issues 456-458 creation) survived. The pattern is unpredictable last-writer-wins lost-update behavior.  Impact: every multi-session scenario (worktrees, parallel agents, user-plus-agent edits) silently loses work. Issue board state cannot be trusted under concurrent access. This is structurally severe because the issue board is the canonical source of truth for plan/issue/epic state across the lifecycle.  Possible fixes (need spec discussion): 1. File lock via proper-lockfile or fs/promises advisory flock around _read+_write critical section. 2. Atomic write via temp file + rename, plus a version/etag check (compare-and-swap) — read returns a version token; write fails if disk version != staged version, triggering a re-read-and-retry. 3. Move to JSON-with-CAS or SQLite — both give atomicity for free and unblock the json-issue-board-adapter spec (issue-457).  Fits under epic-71 (Agent-Reliable State Artifacts). Probably the highest-priority structural fix in that epic since it underpins all other state-artifact reliability work.",
-      "next_action": "Spec the locking/CAS approach, decide vs JSON adapter path (issue-457) integration",
+      "notes": "lib/issues/file-adapter.mjs _write() does a plain readFileSync → mutate-in-memory → writeFileSync sequence with no locking, no atomic rename, and no version check.  Observed failure mode (2026-05-11 during 0.25.0 reconcile session): Three concurrent Claude sessions on the same project directory mutated tasks.md. The background agent (in a separate session) created epic-72 and re-parented issues 274/374 — those changes were visible briefly on disk, then completely wiped by a subsequent write from a different writer that had read an earlier version. Other concurrent changes (epic-65/66/69 closure, epic-70 milestone move, issues 456-458 creation) survived. The pattern is unpredictable last-writer-wins lost-update behavior.  Impact: every multi-session scenario (worktrees, parallel agents, user-plus-agent edits) silently loses work. Issue board state cannot be trusted under concurrent access. This is structurally severe because the issue board is the canonical source of truth for plan/issue/epic state across the lifecycle.  Possible fixes (need spec discussion): 1. File lock via proper-lockfile or fs/promises advisory flock around _read+_write critical section. 2. Atomic write via temp file + rename, plus a version/etag check (compare-and-swap) — read returns a version token; write fails if disk version != staged version, triggering a re-read-and-retry. 3. Move to JSON-with-CAS or SQLite — both give atomicity for free and unblock the json-issue-board-adapter spec (issue-457).  Fits under epic-71 (Agent-Reliable State Artifacts). Probably the highest-priority structural fix in that epic since it underpins all other state-artifact reliability work.; Closed: Validated 2026-05-17 — all 15 AC pass, npm test green, 3 commits on feat/agent-reliable-state-artifacts/concurrent-write-protection branch. CAS implementation exceeds original spec guarantee (now unconditional via O_EXCL lock-file).",
+      "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts",
       "created": "2026-05-11T21:18:54.682Z",
-      "updated": "2026-05-11T21:18:54.682Z"
+      "updated": "2026-05-17T17:21:03.553Z",
+      "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/concurrent-write-protection.spec.md"
     },
     {
       "id": "issue-460",
@@ -2883,14 +2885,14 @@
     {
       "id": "issue-485",
       "title": "Extension authoring docs — guide, manifest template, reference extension",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "dependencies": [],
-      "notes": "",
+      "notes": "Closed: Implemented and validated via feature issue-503 / spec extension-authoring-docs.spec.md (charter rev 4, validated 2026-05-16).",
       "next_action": "See feature issue-503 (extension-authoring-docs spec). Run /adev:review-specs --module extensions to advance.",
       "created": "2026-05-15T13:44:47.513Z",
-      "updated": "2026-05-16T12:00:50.158Z",
+      "updated": "2026-05-16T14:38:50.499Z",
       "epicId": "epic-74"
     },
     {
@@ -3122,15 +3124,69 @@
     {
       "id": "issue-503",
       "title": "Extension Authoring Documentation Bundle",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/extensions/extension-authoring-docs.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/extensions/extension-authoring-docs.spec.md. Created by /adev:specify on 2026-05-16. Closes issue-485 — extension authoring docs gap.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/extensions/extension-authoring-docs.spec.md. Created by /adev:specify on 2026-05-16. Closes issue-485 — extension authoring docs gap.; Closed: Validated: PASS (2026-05-16) — see extension-authoring-docs.validate.md",
       "next_action": "Run /adev:review-specs --module extensions",
       "created": "2026-05-16T12:00:50.146Z",
-      "updated": "2026-05-16T12:00:50.146Z"
+      "updated": "2026-05-16T14:38:50.453Z"
+    },
+    {
+      "id": "issue-504",
+      "title": "Subagent Write tool disconnects on large payloads — /adev:build fails dispatching /adev:plan and /adev:implement",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-71",
+      "dependencies": [],
+      "notes": "Observed 2026-05-17 during build of concurrent-write-protection spec. Two consecutive Agent-tool dispatches to /adev:plan failed with \"API Error: The socket connection was closed unexpectedly\" at the moment of attempting Write tool call to author a ~15K-token markdown file. Pattern reproducible: subagent completes context gathering, attempts Write, dies 28-58s later. Different context sizes (115K and 69K cache_read) — not size-correlated. Reviewer subagent dispatches in same session (small <1.5K outputs) all succeeded. Foreground invocation of same skill, same payload, succeeded instantly. Root cause: streaming-response transport limit on large Write tool calls across subagent boundary. Full diagnosis in .context-index/research/subagent-write-disconnect.md. Affects all /adev:build runs of write-heavy skills (/adev:plan, /adev:implement, /adev:specify) until mitigated.",
+      "next_action": "Run /adev:review-specs on incremental-artifact-writes spec; the spec reframes 504 as the project-side mitigation (the API bug itself remains upstream and out-of-scope).",
+      "created": "2026-05-17T16:55:10.943Z",
+      "updated": "2026-05-17T18:32:23.852Z",
+      "spec_ref": ".context-index/specs/cross-cutting/incremental-artifact-writes.spec.md"
+    },
+    {
+      "id": "issue-505",
+      "title": "Auto-recover from stale tasks.json.lock (orphan-lock cleanup)",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-71",
+      "dependencies": [],
+      "notes": "The CAS layer in lib/issues/json-adapter.mjs acquires tasks.json.lock via O_EXCL before each write and releases it in the finally block. If the process is killed mid-write (SIGKILL, OS crash, container OOM), the lock file persists. Every subsequent CAS mutator then hits EEXIST → STALE_BOARD_WRITE_RETRY → bounded retry → STALE_BOARD_WRITE. The issue board becomes effectively read-only until someone manually deletes the orphan lock. The error message does not mention the lock file, making the failure hard to debug.\n\n.gitignore now excludes the lock file (committed in ba44d3b on the concurrent-write-protection branch) so it cannot propagate via git, but in-place developer environments still need recovery.\n\nProposed mitigation: when _write encounters EEXIST on the lock acquire, stat the existing lock file. If its mtime is older than a configurable threshold (default 30 seconds; override via manifest.tasks.cas_lock_stale_seconds), treat it as orphaned, unlink it, and retry the acquire (without consuming a CAS retry budget slot). Log a one-time warning on the recovery path so users notice if it happens repeatedly.\n\nSurfaced 2026-05-17 during PR review of concurrent-write-protection. Filed at user direction as a follow-up; not in scope for the original spec.",
+      "next_action": "Spec the stale-threshold and recovery semantics; pick a default for cas_lock_stale_seconds",
+      "created": "2026-05-17T17:54:56.842Z",
+      "updated": "2026-05-17T17:54:56.842Z"
+    },
+    {
+      "id": "issue-506",
+      "title": "Incremental artifact writes — .partial + atomic-rename pattern",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/incremental-artifact-writes.spec.md",
+      "dependencies": [],
+      "notes": "Cross-cutting spec. Affects: cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts. Created by /adev:specify on 2026-05-17. Tracker: issue-504.",
+      "next_action": "Spec review-passed at rev 2. Run /adev:plan --spec <path> or fold the 2 warnings + 7 suggestions from the review into plan tasks. Per the spec, the most actionable items are SA-10 (lock-steal TOCTOU) and SA-11 (stale-threshold precedence).",
+      "created": "2026-05-17T18:32:23.789Z",
+      "updated": "2026-05-17T19:14:38.528Z"
+    },
+    {
+      "id": "issue-507",
+      "title": "Populate project governance/validate.yaml from domain starter",
+      "status": "in_progress",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "The project's validate registry at .context-index/governance/validate.yaml is currently checks: [], leaving /adev:validate without a registry-driven check set. Under the single-source model, that file is authoritative and there are no bundled fallbacks — meaning only Check 1 (quality gates, sourced separately from governance/gates.yaml) should fire today.\n\nRequired entries to copy from templates/domains/software/validate.yaml:\n- validate.check-1.5-source-manifest\n- validate.check-2-spec-compliance\n- validate.check-4-constitution\n- validate.check-8-boundaries\n- validate.check-9-transition-gates\n- validate.check-11-visual-verification\n\nExplicitly excluded (removed by check-set-restructure.spec.md, migrated elsewhere): checks 3, 5, 6, 7, 10, 12, 13. The starter file documents which skill or hygiene pass each one moved to.\n\nWhy this matters:\n1. Operator configurability — disabling a check, overriding a severity, or adding a project-specific check is impossible until the registry is populated.\n2. Single-source-model integrity — registry vs prose currently contradict.\n3. Validator events emitted by /adev:validate trigger UNKNOWN_VALIDATOR_DEFAULTED warnings because the IDs are not declared in any registry the project knows about.\n\nAcceptance:\n- governance/validate.yaml contains the six entries above.\n- /adev:validate against a sample spec dispatches via the registry rather than skill prose.\n- No more UNKNOWN_VALIDATOR_DEFAULTED warnings on validator-event emission.\n\nReferences:\n- templates/domains/software/validate.yaml (starter to copy from)\n- .context-index/specs/features/validation/validate-config-single-source.spec.md\n- .context-index/specs/features/validation/check-set-restructure.spec.md\n\nSurfaced during /adev:validate of tree-sitter-repomap/non-code-reference-detection (PR #127, 2026-05-17).",
+      "next_action": null,
+      "created": "2026-05-17T19:22:53.449Z",
+      "updated": "2026-05-17T19:33:39.363Z",
+      "epicId": "epic-74",
+      "notes_append": "\n\n2026-05-17: PR #130 opened — registry populated with 6 starter entries. AC3 (UNKNOWN_VALIDATOR_DEFAULTED warnings) does NOT hold after this fix; root cause is _resolveActorSeverity reading gates.yaml rather than validate.yaml. Needs separate follow-up issue."
     }
   ]
 }
