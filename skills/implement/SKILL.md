@@ -505,8 +505,9 @@ After both reviews pass, if `governance/gates.yaml` exists:
 After both reviews pass:
 1. Emit a `plan_task` `done` event: `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.
 2. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).
-3. Record: specialist used (or "generic"), review cycles needed, concerns noted.
-4. Move to the next task.
+3. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
+4. Record: specialist used (or "generic"), review cycles needed, concerns noted.
+5. Move to the next task.
 
 ### Step 2-post: Integration Gate
 
@@ -622,7 +623,10 @@ After all tasks are complete and before reporting completion:
        - tests/feature.test.mjs
      computed-at: "2026-04-01T10:00:00.000Z"
    ```
-5. Write the spec file back
+5. Write the spec file back.
+
+   **Incremental authoring for source-manifest stamping (`.partial` pattern):** When the spec file is non-trivial (~ 2 KB or larger, which is the common case for any reviewed Live Spec), the frontmatter rewrite MUST follow the `.partial` + atomic-rename protocol from `incremental-artifact-writes.spec.md`. Write the updated spec body to `<spec-path>.partial` with a `partial_schema: implement@1` marker in the first authored chunk (the chunk that carries the new frontmatter), then atomically rename to `<spec-path>` once the write completes. Use the existing artifact-commit CLI verb (`adev artifact commit ...`) which already implements the `.tmp` byte-level atomic-rename idiom — the `.partial` layer applies when the rewrite is performed by an agent over multiple Write calls rather than a single fs operation. On a mid-rewrite crash, the next `/adev:implement` invocation detects the partial and resumes.
+
 6. **Clear drift flag:** After re-stamping the source manifest, clear any drift flag on the spec:
    ```javascript
    const { clearDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
