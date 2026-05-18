@@ -78,14 +78,28 @@ test("no-stale-format-refs / /adev:implement reads from planTasks projection", (
     ),
     "plan-checkbox mutation prose still present in /adev:implement",
   );
+  // Post lib-import-control-flow-extraction migration: the SKILL.md
+  // expresses the planTasks-projection lookup via `adev state current`
+  // (the CLI verb that wraps `currentState(...).planTasks`) rather than
+  // an embedded fenced-JS `currentState(...).planTasks` snippet. Accept
+  // either the legacy lib-call form (still permitted as inline prose
+  // reference) or the migrated CLI-verb form.
+  // Spec: lib-import-control-flow-extraction.spec.md § Behaviors 3 + AC 2.
   assert.ok(
-    /currentState\([^)]*\)\.planTasks/.test(content),
-    "/adev:implement does not read currentState(...).planTasks",
+    /currentState\([^)]*\)\.planTasks/.test(content) ||
+      /adev state current[^\n]*--spec/.test(content),
+    "/adev:implement does not read the planTasks projection (via currentState(...).planTasks or `adev state current --spec`)",
   );
+  // Same migration: the four reportPlanTask({...}) blocks were replaced
+  // by four `adev report --type plan-task --status <s>` invocations.
+  // Accept either form for the in_progress transition.
   assert.ok(
     /reportPlanTask\([^)]*['"]in_progress['"]/.test(content) ||
-      /reportPlanTask\([^)]*status:\s*['"]in_progress/.test(content),
-    "/adev:implement does not emit reportPlanTask in_progress transitions",
+      /reportPlanTask\([^)]*status:\s*['"]in_progress/.test(content) ||
+      /adev report[^\n]*--type plan-task[^\n]*--status in_progress/.test(
+        content,
+      ),
+    "/adev:implement does not emit in_progress plan-task transitions (via reportPlanTask or `adev report --type plan-task --status in_progress`)",
   );
 });
 

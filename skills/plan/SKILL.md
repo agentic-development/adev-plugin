@@ -677,28 +677,23 @@ Proceed to the execution handoff.
 
 **Emit plan-task `pending` events.** After the plan file is saved, walk the Task Map and emit one `pending` event per task into the spec's lifecycle log. This seeds the projection so `currentState(spec).planTasks` is populated as soon as the plan exists.
 
-```javascript
-import { reportPlanTask, filterEvents } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+**Re-plan detection.** Before emitting new `pending` events, read the existing `plan_task` events for this spec. If any prior `plan_task` events reference this same plan file, print a one-line advisory — existing events remain as history (append-only).
 
-// Re-plan detection: if the spec already has plan_task events for this plan,
-// print a one-line advisory. Existing events remain as history (append-only).
-const priorPending = filterEvents(projectRoot, specPath,
-  e => e.event === 'plan_task' && e.plan === planFilePath);
-if (priorPending.length > 0) {
-  console.warn(
-    'Re-plan detected: prior plan_task events remain in the lifecycle log as history. New events will append.'
-  );
-}
-
-for (const task of plan.tasks) {
-  reportPlanTask(projectRoot, specPath, {
-    plan: planFilePath,
-    task_id: task.id,
-    status: 'pending',
-    notes: null,
-  });
-}
+```bash
+adev state events --spec <spec-path> --event plan_task
 ```
+
+If the returned event list is non-empty AND any event's `plan` field equals the current plan file path, emit the advisory:
+
+> Re-plan detected: prior plan_task events remain in the lifecycle log as history. New events will append.
+
+**Emit one `pending` event per task** in the plan's Task Map. The `--task-id` is the integer task number; `--notes` is omitted (null).
+
+```bash
+adev report --type plan-task --spec <spec-path> --plan <plan-file-path> --task-id <id> --status pending
+```
+
+Repeat for every task in the plan. The CLI verb encapsulates the `for`-loop semantics — the skill prose names the operation, the verb implements it.
 
 Per-task Issue creation is removed entirely — the skill no longer constructs `create(...)` calls carrying a `planTask` reference. The board-granularity invariant (`agent-reliable-state-artifacts/charter.md`) requires plan-task state to live in the lifecycle log, not as Issues on the board.
 
