@@ -237,3 +237,73 @@ These hooks fire after a tool executes. They are always advisory (exit 0) and do
 - Checks for lifecycle state issues that are not severe enough to block
 - Emits advisory warnings (e.g., "spec is stale", "plan has uncompleted tasks")
 - Warnings are informational and do not prevent the operation
+
+---
+
+## Git Hooks
+
+In addition to the Claude Code hooks above, `npx @adev-org/adev-cli install` also installs four **git hooks** into your project's `.githooks/` directory and points `git config core.hooksPath` at that directory. These hooks fire on git operations (not on Claude Code tool calls) and operate on commit content rather than tool input.
+
+> **Note on dual hook surfaces.** Claude Code hooks (above) gate *tool calls* during an agent session. Git hooks (below) gate or annotate *commits* regardless of whether the commit was made by an agent or by a human at the terminal. The two surfaces are orthogonal — both can be active in the same project.
+
+### Summary Table
+
+| Hook | Stage | Behavior | Purpose |
+|------|-------|----------|---------|
+| `pre-commit` | Pre-commit | Blocks | Run the protected-branch check and the no-inline-Node-in-SKILL.md guard |
+| `prepare-commit-msg` | Prepare commit message | Advisory | Inject default `Author-type` and `Operator` trailers into the commit template |
+| `commit-msg` | Validate commit message | Blocks | Enforce manifest-required trailers (e.g., `Author-type`, `Operator`, optionally `Spec`) |
+| `post-commit` | After commit lands | Advisory | Auto-generate a session summary file in `.context-index/sessions/` |
+
+### pre-commit
+
+**Script:** `.githooks/pre-commit`
+**Behavior:** Blocks
+
+**Purpose:** Runs a chain of pre-commit checks before the commit is created. Currently chains the no-inline-Node check (`hooks/pre-commit-no-inline-node.sh`) for `skills/**/SKILL.md` files. Additional project-specific checks can be added to the chain.
+
+**Exit codes:**
+- `exit 0` — all checks passed; commit proceeds
+- `exit 1` — a check crashed (treat as hard error)
+- `exit 2` — a check rejected the commit (policy violation; commit blocked)
+
+Bypass with `git commit --no-verify` only when justified. Provider mirrors under `providers/*/skills/**` are out of scope for the no-inline-Node guard.
+
+### prepare-commit-msg
+
+**Script:** `.githooks/prepare-commit-msg`
+**Behavior:** Advisory
+
+**Purpose:** Injects `Author-type` and `Operator` trailers into the commit message template before the user (or agent) writes the subject line. The trailers identify the actor that produced the commit (e.g., `Author-type: agent/claude-code`, `Operator: <user>/local`) and feed into provenance tracking per `manifest.yaml::provenance`.
+
+### commit-msg
+
+**Script:** `.githooks/commit-msg`
+**Behavior:** Blocks (when `provenance.require_hooks: true` in manifest)
+
+**Purpose:** Validates that the commit message contains all trailers listed in `manifest.yaml::provenance.required_trailers` (e.g., `Author-type`, `Operator`). When `provenance.require_hooks` is `false` (default), missing trailers produce a warning but allow the commit. When `true`, missing trailers reject the commit with `exit 2`.
+
+`Spec:` and `Plan-task:` trailers are listed in `provenance.recommended_trailers` and are advisory by default — `/adev:implement` adds them automatically; manual commits touching spec-tracked code should add them.
+
+### post-commit
+
+**Script:** `.githooks/post-commit`
+**Behavior:** Advisory (always exits 0; never blocks)
+
+**Purpose:** Auto-generates one session summary file per commit at `.context-index/sessions/<date>-<shortSHA>.md`. The file contains structured commit metadata (date, type, mode, agent, specs-touched, commits) plus the commit subject and body — pre-parsed so that `/adev:retro`, `/adev:hygiene`, and audit skills can walk recent activity without re-parsing `git log`.
+
+**What it writes:**
+- One markdown file per commit at `.context-index/sessions/<YYYY-MM-DD>-<short-sha>.md`
+- Includes `specs-touched` derived from the commit's `Spec:` trailer (multiple specs supported, comma-separated)
+- Always exits 0 — if `node` is unavailable or any step fails, the hook quietly no-ops
+
+**Adopter convention for these files (important — see [issue-518](../.context-index/tasks/tasks.json)):**
+
+| Question | Answer |
+|---|---|
+| Are they tracked content? | **Yes** by default. The installer's `.gitignore` block lists 5 ephemeral paths (`hygiene/`, `.token-cursor.json`, `.reminder-counter`, `.session-tracking.jsonl`, `user-config`) but **does not** include `.context-index/sessions/`. So `git status` will show them after each commit. |
+| How should they be committed? | **Batch them periodically** under one `chore(sessions): record YYYY-MM-DD transcripts` commit at session end or once per day. Do not interleave them with feature commits — that pollutes diff scope. The session file referencing the *most recent* commit will always be "one behind" (it's generated *after* the commit lands), which is fine; the next batch picks it up. |
+| Can I gitignore them instead? | **Yes**, if your project does not run `/adev:retro` or other audit skills that consume the files. Add `.context-index/sessions/` to your `.gitignore`. You will lose the pre-parsed session-activity surface but `git log` still has the canonical commit record. |
+| Why not auto-batch in the post-commit hook? | Auto-batching would create amend-loops, fight with `rebase`/`squash`, and surprise users with extra commits they didn't author. The convention is intentionally manual. |
+
+**Distinction from `.session-tracking.jsonl`:** The `.context-index/.session-tracking.jsonl` file (written by the **Claude Code** `session-capture` PostToolUse hook, documented above) is a separate, **gitignored** telemetry stream — one line per tool call. The post-commit `.md` files are a separate, **tracked** per-commit summary stream. Names are similar; sources, contents, and tracking conventions differ.
