@@ -1,7 +1,7 @@
 ---
 charter: cursor-provider
 kind: artifact
-status: implemented
+status: validated
 risk_level: low
 milestone: v1
 revision: 1
