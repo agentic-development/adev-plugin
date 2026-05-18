@@ -79,13 +79,13 @@ When both signals are present on the same spec, both independently block `/adev:
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have |  | validated |
-| Drift Flag Stamping | Append `code_drift_detected` JSONL event + inline `drift_detected: true` boolean (rev 3 — `drift_source`/`drift_at` removed from frontmatter) | must-have |  | implementing |
+| Drift Flag Stamping | Append `code_drift_detected` JSONL event + inline `drift_detected: true` boolean (rev 3 — `drift_source`/`drift_at` removed from frontmatter) | must-have |  | validated |
 | Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have |  | validated |
-| Drift Flag Clearing | `/adev:implement` appends `code_drift_cleared` JSONL event and removes inline `drift_detected` boolean | must-have |  | implementing |
+| Drift Flag Clearing | `/adev:implement` appends `code_drift_cleared` JSONL event and removes inline `drift_detected` boolean | must-have |  | validated |
 | Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have |  | validated |
 | Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have |  | validated |
 | Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have |  | validated |
-| Multi-file Drift Tracking | Every drift detection appended to per-spec JSONL; inline boolean is the derived view. Multi-source history preserved. | must-have |  | implementing |
+| Multi-file Drift Tracking | Every drift detection appended to per-spec JSONL; inline boolean is the derived view. Multi-source history preserved. | must-have |  | validated |
 
 ## Deferred Capabilities
 
