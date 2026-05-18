@@ -659,6 +659,12 @@ async function cmdInstall() {
     for (const item of hookItems) {
       success(item);
     }
+    console.log();
+    log("Note: the post-commit hook auto-generates .context-index/sessions/<date>-<sha>.md");
+    log("      summary files (tracked content — not in the installer's .gitignore list).");
+    log("      Batch them periodically with: git commit -m 'chore(sessions): record YYYY-MM-DD transcripts'");
+    log("      Add .context-index/sessions/ to .gitignore if you'd rather skip the audit surface.");
+    log("      Full details: docs/hooks.md > Git Hooks > post-commit");
   } else {
     log("Git hooks already up to date.");
   }
@@ -792,6 +798,12 @@ async function cmdUpgrade() {
     for (const item of hookItems) {
       success(item);
     }
+    console.log();
+    log("Note: the post-commit hook auto-generates .context-index/sessions/<date>-<sha>.md");
+    log("      summary files (tracked content — not in the installer's .gitignore list).");
+    log("      Batch them periodically with: git commit -m 'chore(sessions): record YYYY-MM-DD transcripts'");
+    log("      Add .context-index/sessions/ to .gitignore if you'd rather skip the audit surface.");
+    log("      Full details: docs/hooks.md > Git Hooks > post-commit");
   } else {
     log("Git hooks already up to date.");
   }
