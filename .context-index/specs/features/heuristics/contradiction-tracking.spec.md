@@ -27,8 +27,8 @@ source-manifest:
     - .context-index/specs/features/heuristics/store-and-helper.spec.md
   computed-at: "2026-04-25T21:55:13.449Z"
 drift_detected: true
-drift_source: tests/skills/contradiction-tracking.test.mjs
-drift_at: 2026-05-16T03:09:18.846Z
+drift_source: skills/validate/SKILL.md
+drift_at: 2026-05-17T20:31:49.572Z
 ---
 
 ## Behavioral Contract
