@@ -322,3 +322,21 @@ describe("CursorAdapter.disableConflictingPlugin", () => {
     assert.equal(CursorAdapter.disableConflictingPlugin("superpowers"), false);
   });
 });
+
+describe("CursorAdapter (CLI dispatch loadability)", () => {
+  it("is importable via the same path the CLI uses", async () => {
+    const mod = await import("../../providers/cursor/adapter.mjs");
+    assert.ok(mod.CursorAdapter);
+    assert.equal(mod.CursorAdapter.name, "cursor");
+  });
+
+  it("is registered in lib/provider/registry.mjs (Task 6 scope: loadability only)", async () => {
+    const registry = await import("../../lib/provider/registry.mjs");
+    assert.ok(
+      registry.getProviderNames().includes("cursor"),
+      "registry.getProviderNames() must include 'cursor'"
+    );
+    const provider = registry.getProvider("cursor");
+    assert.equal(provider.name, "cursor");
+  });
+});
