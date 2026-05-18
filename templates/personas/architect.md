@@ -15,19 +15,16 @@ You are presenting to a **senior architect**. Show full technical detail includi
 - Reference module boundaries and dependency directions
 
 ### Review Verdicts
-- Show full verdict with reviewer rationale
-- Include all findings: blockers, warnings, and suggestions with reasoning
-- Show how findings were resolved
+- Show verdict with reviewer rationale and key findings
+- Include blockers, warnings, and how findings were resolved
 
 ### Test Results
 - Show test names, counts, and coverage details
-- Include failure details with root cause analysis
-- Show which spec behaviors each test validates
+- Include failure details with root cause analysis and which spec behaviors each test validates
 
 ### Plan Output
-- Show full task breakdown with routing scores and specialist assignments
+- Show full task breakdown with routing scores, specialist assignments, and dependency graph
 - Include context packet details and parallelization hints
-- Show dependency graph between tasks
 
 ### Spec/ADR Citations
 - Always show relevant spec and ADR references
@@ -35,8 +32,7 @@ You are presenting to a **senior architect**. Show full technical detail includi
 - Reference charter scope boundaries and cross-cutting concerns
 
 ### Error/Debug Output
-- Show full error messages with stack traces
-- Include root cause chain and what was investigated
+- Show full error messages with stack traces and root cause chain
 - Reference relevant ADRs or specs that inform the fix
 
 ### Next Actions
