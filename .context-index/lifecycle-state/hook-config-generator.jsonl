@@ -1,0 +1,21 @@
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-05-18T13:51:25.585Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-18T13:52:50.503Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"1 warning (SA-1: PreToolUse/Edit fan-out includes afterFileEdit leg where fail-closed semantics degrade to advisory), 1 suggestion (SA-2: failClosed/timeout defaults unspecified)","ts":"2026-05-18T13:54:36.525Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"1 suggestion (SEC-1: add fail-loud failure mode when hook command deviates from canonical bash pattern); risk level low appropriate for build-time local file transform","ts":"2026-05-18T13:54:38.924Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"No findings; spec consistent with charter, constitution, and sibling specs; naming and acceptance criteria align","ts":"2026-05-18T13:54:40.577Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-18T13:54:57.007Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-18T14:14:20.363Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS","notes":"Rev 2 resolves SA-1 (PreToolUse/Edit now maps to preToolUse with matcher, preserving fail-closed deny) and SA-2 (failClosed/timeout defaults explicit).","ts":"2026-05-18T14:15:36.100Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"Rev 2 resolves SEC-1 by adding fail-loud throw on non-canonical hook command shapes, plus bonus throw on missing-on-disk scripts.","ts":"2026-05-18T14:15:42.283Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"CON-1: parent charter still references the rejected fan-out example (PreToolUse/Edit → beforeReadFile + afterFileEdit); spec is internally consistent and authoritative.","ts":"2026-05-18T14:15:42.331Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-18T14:15:59.061Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-18T14:17:36.666Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-05-18T14:21:47.886Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-05-18T14:21:48.083Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-05-18T14:21:48.130Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"task-4","status":"pending","notes":null,"ts":"2026-05-18T14:21:48.191Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"task-5","status":"pending","notes":null,"ts":"2026-05-18T14:21:48.233Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"task-6","status":"pending","notes":null,"ts":"2026-05-18T14:21:48.283Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS_WITH_NOTES","ts":"2026-05-18T14:22:01.913Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-18T14:25:36.832Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-05-18T14:26:23.635Z"}
