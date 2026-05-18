@@ -26,3 +26,4 @@
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/write-time-diagnostic-hook.plan.md","task_id":"task-6","status":"done","notes":"Wrote 28 tests covering modes x behaviors + error cases","ts":"2026-05-14T21:41:46.985Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/write-time-diagnostic-hook.plan.md","task_id":"task-7","status":"done","notes":"Set event_diagnostics: off in 7 baseline test fixtures","ts":"2026-05-14T21:41:46.985Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-14T21:42:19.539Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/diagnostics/event-schemas.mjs","drift_at":"2026-05-18T13:36:45.951Z","ts":"2026-05-18T13:50:21.082Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -8,3 +8,4 @@
 {"event":"step_completed","ts":"2026-04-06T20:05:00Z","step":"implement","actor":"migration/adev-cli"}
 {"event":"lifecycle_step","ts":"2026-04-06T20:06:00Z","step":"validate","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/session-awareness/session-log-schema.md"}
 {"event":"step_completed","ts":"2026-04-06T20:06:00Z","step":"validate","actor":"migration/adev-cli"}
+{"event":"code_drift_detected","drift_source":"hooks/session-capture.sh","drift_at":"2026-05-12T00:55:08.747Z","ts":"2026-05-18T13:48:57.270Z"}

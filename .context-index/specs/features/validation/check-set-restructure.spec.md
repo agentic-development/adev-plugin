@@ -37,8 +37,6 @@ source-manifest:
     - skills/validate/checks/validate.check-4-constitution.md
     - templates/domains/software/validate.yaml
 drift_detected: true
-drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-17T20:34:52.868Z
 ---
 
 > **Revision 2 (2026-05-15):** Addresses rev-1 warnings SA-1 (cross-charter coordination), SA-2 (scope-expansion contract pin), SA-3 (removed-ID rule consolidation), SA-4 (dependency-order declaration), SA-5 (post-validate hook scope note), SA-6 (reconcile authoritative-channel AC), CON-1 (line 30 count and REMOVED wording), and SEC-1 (heuristic hook input scoping). Migration Path retargeted to `governance/validate.yaml` per the explicit ordering declaration (this spec lands AFTER `validate-config-single-source.spec.md`).

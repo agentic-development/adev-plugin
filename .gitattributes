@@ -1,0 +1,15 @@
+# Lifecycle-state JSONL logs are append-only by construction. The Tier-1
+# `event-schema-valid` producer ensures every line is well-formed JSON, and
+# both `lib/lifecycle-state.mjs::appendEvent` and
+# `scripts/migrate-drift-fields.mjs` use `fs.appendFile` with `O_APPEND` so
+# no in-place edits ever happen. Two concurrent feature branches that each
+# append disjoint events to the same per-spec JSONL must produce a
+# conflict-free three-way merge (this is the headline acceptance criterion
+# of `jsonl-drift-events.spec.md` Behavior 8 — see also
+# `tests/integration/spec-drift-no-merge-conflict.test.mjs`).
+#
+# `merge=union` tells git to keep both sides' added lines when the diff
+# windows overlap, instead of marking the file as conflicted. Safe here
+# because the per-spec JSONL has no "shared" lines either branch could
+# meaningfully overwrite — every line is a discrete event.
+.context-index/lifecycle-state/*.jsonl merge=union

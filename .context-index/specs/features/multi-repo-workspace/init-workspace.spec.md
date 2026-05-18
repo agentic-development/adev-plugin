@@ -15,8 +15,6 @@ source-manifest:
     - tests/skills/init-workspace.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
-drift_source: skills/init/SKILL.md
-drift_at: 2026-05-16T01:27:22.124Z
 ---
 
 # Live Spec: Init Workspace
