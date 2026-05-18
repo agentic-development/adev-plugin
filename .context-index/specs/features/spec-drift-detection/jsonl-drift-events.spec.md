@@ -8,12 +8,25 @@
 charter: spec-drift-detection
 kind: refactor
 mode: refactor
-status: review-passed
+status: implemented
 revision: 2
-charter-revision: 2
+charter-revision: 3
 created: 2026-05-18
-updated: 2026-05-18
+updated: 2026-05-17
 tracker-ref: issue-516
+source-manifest:
+  sha: "735c4c4"
+  files:
+    - lib/cli/verify.mjs
+    - lib/diagnostics/event-schemas.mjs
+    - lib/lifecycle-events.mjs
+    - lib/spec-drift.mjs
+    - scripts/migrate-drift-fields.mjs
+    - tests/cli/verify.test.mjs
+    - tests/integration/spec-drift-no-merge-conflict.test.mjs
+    - tests/lib/spec-drift.test.mjs
+    - tests/scripts/migrate-drift-fields.test.mjs
+  computed-at: "2026-05-18T13:59:32.083Z"
 ---
 
 ## Revision History
