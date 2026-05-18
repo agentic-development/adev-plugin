@@ -1,2 +1,3 @@
 {"event":"lifecycle_step","ts":"2026-05-11T22:49:47.754Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md"}
 {"event":"step_completed","ts":"2026-05-11T22:49:47.754Z","step":"review","actor":"migration/adev-cli"}
+{"event":"code_drift_detected","drift_source":"tests/lib/lifecycle-state.test.mjs","drift_at":"2026-05-17T19:39:56.829Z","ts":"2026-05-18T13:50:21.073Z","diagnostic_warnings":["adev/frontmatter-present"]}

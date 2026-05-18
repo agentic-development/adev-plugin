@@ -79,7 +79,7 @@ When both signals are present on the same spec, both independently block `/adev:
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have |  | validated |
-| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have |  | validated |
+| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have |  | planned |
 | Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have |  | validated |
 | Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have |  | validated |
 | Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have |  | validated |

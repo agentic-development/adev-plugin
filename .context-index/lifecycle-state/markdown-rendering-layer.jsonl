@@ -1,0 +1,1 @@
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-17T19:39:17.064Z","ts":"2026-05-18T13:50:21.075Z","diagnostic_warnings":["adev/frontmatter-present"]}

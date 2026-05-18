@@ -48,13 +48,18 @@ import { appendEvent, readEvents } from "../lib/lifecycle-state.mjs";
 
 /**
  * Extract the YAML frontmatter block from a markdown file.
+ *
+ * Mirrors lib/spec-drift.mjs: matches the first `---\n…\n---` block
+ * anywhere in the file (in this repo many specs prefix an `# H1` line
+ * before the YAML delimiter).
+ *
  * @param {string} content - File contents.
- * @returns {{fm: string, body: string} | null}
+ * @returns {{fm: string} | null}
  */
 function extractFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  const match = content.match(/---\n([\s\S]*?)\n---/);
   if (!match) return null;
-  return { fm: match[1], body: match[2] };
+  return { fm: match[1] };
 }
 
 /**
@@ -218,7 +223,9 @@ function migrateSpec(projectRoot, specAbs, { dryRun }) {
 
   // Strip the legacy fields from frontmatter.
   const newFm = stripLegacyFields(fmExt.fm);
-  const newContent = content.replace(/^---\n[\s\S]*?\n---/, "---\n" + newFm + "\n---");
+  // Replace the first frontmatter block in the file (matches the same
+  // unanchored pattern as extractFrontmatter / lib/spec-drift.mjs).
+  const newContent = content.replace(/---\n[\s\S]*?\n---/, "---\n" + newFm + "\n---");
   try {
     writeFileSync(specAbs, newContent);
   } catch (err) {

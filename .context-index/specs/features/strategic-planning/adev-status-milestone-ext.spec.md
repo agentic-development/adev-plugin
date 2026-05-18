@@ -21,8 +21,6 @@ source-manifest:
     - tests/skills/assess.test.mjs
   computed-at: "2026-04-12T11:48:02.755Z"
 drift_detected: true
-drift_source: skills/status/SKILL.md
-drift_at: 2026-05-16T00:16:55.863Z
 ---
 
 ## Behavioral Contract

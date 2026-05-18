@@ -1,0 +1,1 @@
+{"event":"code_drift_detected","drift_source":"hooks/session-capture.sh","drift_at":"2026-05-12T00:55:08.749Z","ts":"2026-05-18T13:50:21.107Z","diagnostic_warnings":["adev/frontmatter-present"]}

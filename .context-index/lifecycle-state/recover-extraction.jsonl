@@ -8,3 +8,4 @@
 {"event":"step_completed","ts":"2026-04-10T00:05:00Z","step":"implement","actor":"migration/adev-cli"}
 {"event":"lifecycle_step","ts":"2026-04-10T00:05:00Z","step":"validate","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/heuristics/recover-extraction.md"}
 {"event":"step_completed","ts":"2026-04-10T00:05:00Z","step":"validate","actor":"migration/adev-cli"}
+{"event":"code_drift_detected","drift_source":"skills/recover/SKILL.md","drift_at":"2026-05-16T01:04:03.849Z","ts":"2026-05-18T13:50:21.093Z","diagnostic_warnings":["adev/frontmatter-present"]}
