@@ -7,7 +7,7 @@
 > **Spec:** `.context-index/specs/features/output-personas/verbosity-axis-and-output-trimming.spec.md` (revision 2)
 > **Review:** PASS_WITH_NOTES (2026-05-18) — 9 warnings addressed in spec rev 2; 15 suggestions remain open as quality-of-life polish
 > **Platform:** Node.js (ESM, `.mjs`), npm, `node:test`
-> **Issue:** issue-519 (implementation) — fulfills issue-515 (feedback)
+> **Issue:** issue-516 (implementation) — fulfills issue-515 (feedback)
 
 **Goal:** Add `verbosity: terse|normal|deep` as a second config axis orthogonal to persona, calibrate the Architect template's normal-overlay defaults, install a universal anti-redundancy rule, and codify the Next-Actions-as-invariant rule — all without breaking the frozen `resolvePersona()` contract from `persona-resolution-and-injection.spec.md`.
 
@@ -749,7 +749,7 @@ After all tasks are complete, `/adev:validate` verifies the full quality gate su
 - Version parity: `package.json` and `.claude-plugin/plugin.json` carry the same version
 - No constitutional violations: ESM only (`.mjs`, `import`), no new external deps, hook protocol compliance (exit 0/2)
 - Spec-traceable commits: every commit message carries `Spec:` and `Plan-task:` trailers per CLAUDE.md commit-trailer rule
-- `adev/frontmatter-present` diagnostic: the new spec passes (frontmatter is first non-blank line); the 130 pre-existing spec violations are out of scope (filed as issue-520, separate spec)
+- `adev/frontmatter-present` diagnostic: the new spec passes (frontmatter is first non-blank line); the 130 pre-existing spec violations are out of scope (filed as issue-517, separate spec)
 
 **Post-ship validation contract** (executed separately after ≥1000 assistant turns on the new templates, per SA-8 review finding — turn-count threshold, not session-count):
 

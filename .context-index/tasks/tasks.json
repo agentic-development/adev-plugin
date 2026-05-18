@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 24,
+  "seq": 30,
   "epics": [
     {
       "id": "epic-1",
@@ -659,6 +659,14 @@
       "milestone": "adev-compiler-discipline",
       "created": "2026-05-17T21:30:37.684Z",
       "updated": "2026-05-17T21:30:37.684Z"
+    },
+    {
+      "id": "epic-88",
+      "title": "Implementation plan: Verbosity Axis and Output Trimming",
+      "status": "open",
+      "planRef": ".context-index/specs/features/output-personas/verbosity-axis-and-output-trimming.plan.md",
+      "created": "2026-05-18T14:32:19.618Z",
+      "updated": "2026-05-18T14:32:19.618Z"
     }
   ],
   "issues": [
@@ -3302,14 +3310,40 @@
     {
       "id": "issue-515",
       "title": "Improve persona outputs — trim default Architect verbosity; consider depth dial",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "dependencies": [],
-      "notes": "Surfaced 2026-05-17 by direct user feedback during a long Architect-persona session. The personas system (templates/personas/{architect,developer,product}.md, resolved by lib/persona.mjs) works as designed, but the default verbosity of at least the Architect persona is higher than the practical sweet spot for most interactions. The Architect template explicitly mandates \"full technical detail including trade-off analysis, review rationale, and architectural reasoning\" — which produces multi-section responses with tables and \"architectural decisions worth flagging\" callouts even for routine actions.\n\n=== Observed friction (this session) ===\n\n- Responses after every meaningful action include an \"Architectural read\" or \"Architectural decisions worth flagging\" section even when the user has not asked for one.\n- Status reports default to multi-table breakdowns where one sentence would do.\n- After every skill completion (specify / review / plan / implement / validate), a multi-paragraph summary lands even when the lifecycle state file already captures everything.\n- \"Next steps\" sections appear at the end of nearly every turn, often listing 3+ options when the user typically picks one quickly.\n- Token cost on the user side: cache-read accumulation per the existing heuristic (\"Cache reads are 71% of session cost — minimize context accumulation\") amplifies verbose chat output across every subsequent turn.\n\n=== What's working ===\n\n- The Architect persona's depth IS valuable when the user is making architectural decisions, doing reviews, or scoping unfamiliar territory.\n- The Developer and Product personas (per templates/personas/) already have terser rules; the issue is more pronounced for Architect than for siblings.\n- Persona resolution and injection (lib/persona.mjs + output-personas charter) already works; this issue is about output tuning, not the resolution mechanism.\n\n=== Possible improvements to study ===\n\nA. **Trim default verbosity at the template level.** Edit templates/personas/architect.md to reduce mandated sections (e.g., move \"architectural decisions worth flagging\" from MUST to MAY-when-asked; drop default \"next steps\" sections; reserve trade-off analysis for explicit-decision moments).\n\nB. **Adaptive verbosity within a persona.** Introduce a within-persona dial — \"depth: terse | normal | deep\" — that the user can adjust mid-session. Architect would default to \"normal,\" dropping to \"terse\" on request. Long-running sessions might auto-trim to \"terse\" after N turns to combat cache-read amplification.\n\nC. **Context-aware verbosity.** Different output rules for different intents: routine actions (file edits, lifecycle bookkeeping) get terse output; architectural decisions, reviews, and design moments get full Architect output. The persona stays Architect but the depth flexes with the moment.\n\nD. **New persona \"Architect-Lite\"** — a fourth template that retains Architect's depth on decisions but mirrors Developer's terseness on routine actions. Existing personas unchanged.\n\nE. **Suppress redundant disk-mirroring in chat.** Many of the verbose chat outputs duplicate content already written to disk artifacts (.review.md, .plan.md, .validate.md). The persona-rules section \"Artifacts written to disk always use the full technical format regardless of persona\" already exists — the chat-side rule could be tightened to \"if a disk artifact captures the detail, chat may summarize in 1-3 sentences\" instead of recapitulating.\n\n=== Concrete asks (not all needed; pick a starting set) ===\n\n1. Audit templates/personas/architect.md and trim default-required sections. Specific candidates: \"Architectural read,\" \"architectural decisions worth flagging,\" default \"next steps.\"\n2. Introduce a depth dial (B above) with sensible per-persona defaults.\n3. Add an explicit anti-redundancy rule (E above) referencing the existing disk-artifact-format invariant.\n4. Update output-personas/charter.md and persona-resolution-and-injection.spec.md to reflect any rule changes.\n5. Add tests under tests/persona.test.mjs that verify the trimmed templates render expected output for a fixture set of prompts.\n\n=== Out of scope ===\n\n- Changing persona resolution / detection / injection mechanism (persona-resolution-and-injection.spec.md is the authority; this issue defers to it).\n- Adding new personas beyond Architect-Lite (option D is itself optional).\n- Cross-skill behavior change (skills still call reportStep / write artifacts / etc. unchanged).\n\n=== Related context ===\n\n- output-personas feature charter: .context-index/specs/features/output-personas/\n- Persona templates: templates/personas/{architect,developer,product}.md\n- Resolution lib: lib/persona.mjs\n- Existing heuristic on output volume: \"Cache reads are 71% of session cost — minimize context accumulation\" (memory). The verbose-Architect pattern directly contradicts this heuristic during long sessions.\n\n=== Next action ===\n\nTriage scope: pick which of options A-E to spec first, or run /adev:research to compare them against patterns from other agent frameworks (Cursor, Aider, Cline — how do their personas/modes balance depth vs terseness?). Then /adev:specify under the output-personas charter.",
+      "notes": "Closed: implementation landed via issue-519 (PR #143). Spec verbosity-axis-and-output-trimming validated 2026-05-18 in 0.27.0. Empirical addendum + recommendations captured; A+E (calibrated trim + anti-redundancy) + verbosity-dial spine + Next-Actions invariant all shipped.; Closed: [object Object]",
       "next_action": "Triage: pick from options A-E (template trim / depth dial / context-aware / Architect-Lite / anti-redundancy rule) or run /adev:research first to compare to other agent frameworks",
       "created": "2026-05-17T21:14:33.334Z",
-      "updated": "2026-05-17T21:14:33.334Z"
+      "updated": "2026-05-18T14:32:19.666Z"
+    },
+    {
+      "id": "issue-516",
+      "title": "Verbosity Axis and Output Trimming",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-88",
+      "planRef": ".context-index/specs/features/output-personas/verbosity-axis-and-output-trimming.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/output-personas/verbosity-axis-and-output-trimming.spec.md. Created by /adev:specify on 2026-05-18. Validated PASS — see verbosity-axis-and-output-trimming.validate.md. Shipped in 0.27.0.; Closed: [object Object]",
+      "next_action": null,
+      "created": "2026-05-18T14:32:19.641Z",
+      "updated": "2026-05-18T14:32:19.648Z"
+    },
+    {
+      "id": "issue-517",
+      "title": "Reconcile partial_schema marker placement with adev/frontmatter-present diagnostic",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "dependencies": [],
+      "notes": "Two validated specs contradict in practice: incremental-artifact-writes.spec.md prescribes partial_schema marker as HTML comment BEFORE frontmatter; diagnostic-registry.spec.md Behavior 9 (adev/frontmatter-present, severity: error) requires --- as the first non-blank line. Result: 130 of 201 .spec.md files violate the diagnostic; both spec templates (behavioral + refactor) put # heading before ---; skills/specify/SKILL.md and skills/plan/SKILL.md prescribe the violating placement. Currently runs in tag mode so writes succeed with diagnostic_warnings; flipping manifest.lifecycle.event_diagnostics to strict would block all writes against the 130 specs. The verbosity-axis-and-output-trimming spec is the first in the repo to pass the diagnostic (marker moved inside frontmatter as YAML key). Recommended fix: author reconciliation spec under cross-cutting that updates incremental-artifact-writes.spec.md to mandate YAML-frontmatter-key placement; update SKILL.md examples; update both spec templates so --- comes first; one-shot hygiene script to reorder leading lines on the 130 violating files; add hygiene assertion. Out of scope: changing the diagnostic itself to relax the first-line rule.",
+      "next_action": "Run /adev:specify --cross-cutting to author a reconciliation spec; or /adev:specify --refactor under cli-driver-surface. Backfill 130 specs as follow-on hygiene task.",
+      "created": "2026-05-18T14:32:19.655Z",
+      "updated": "2026-05-18T14:32:19.655Z"
     }
   ]
 }

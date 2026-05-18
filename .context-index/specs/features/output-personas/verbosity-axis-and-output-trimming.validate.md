@@ -118,7 +118,7 @@ No UI files in the implementation diff. This feature is a CLI plugin extending m
 **Open items** (acknowledged, not blocking):
 
 - **15 suggestion-level findings from `/adev:review-specs`** remain open as quality-of-life polish. The plan explicitly deferred 5 of them to a follow-up hygiene pass (SA-4, SA-7, CA-4, CA-6, CA-7); the remaining 10 are absorbed at the implementation level or are documentation/style notes that do not affect behavior.
-- **issue-520** (partial_schema marker placement contradicts `adev/frontmatter-present` diagnostic on 130 pre-existing spec files) — out of scope for this validation. This spec is the first in the repo to pass the diagnostic; the broader reconciliation is filed separately.
+- **issue-517** (partial_schema marker placement contradicts `adev/frontmatter-present` diagnostic on 130 pre-existing spec files) — out of scope for this validation. This spec is the first in the repo to pass the diagnostic; the broader reconciliation is filed separately.
 - **Post-ship validation contract** (P-1 to P-4) — by design, executes after ≥1000 assistant turns on the live JSONL corpus, not pre-merge. Instruments are in place.
 
 ---
