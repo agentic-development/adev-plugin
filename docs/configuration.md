@@ -462,3 +462,116 @@ model_tiers:
   capable: claude-sonnet-4-6
   reasoning: claude-opus-4-6
 ```
+
+---
+
+## user-config — Personas & Verbosity
+
+`user-config` is a flat `key=value` text file that controls how adev presents output in chat. It is bash-parseable (no external dependencies), exists at two paths, and is resolved in a fixed precedence order. See [Output Personas](concepts.md#output-personas) for the conceptual overview.
+
+### File locations
+
+| Location | Path | Scope | Tracked in git? |
+|----------|------|-------|-----------------|
+| Global | `<plugin-root>/user-config` | All projects using this plugin install | No (lives outside any repo) |
+| Local | `.context-index/user-config` | One project (overrides global) | **No** — added to `.gitignore` by `/adev:init` |
+
+The plugin-root location is set during `npx @adev-org/adev-cli install` (the installer prompts for a default persona). The local override is created on-demand by `/adev:init` or by manual edit.
+
+### Schema
+
+| Key | Type | Required | Valid values | Default |
+|-----|------|----------|--------------|---------|
+| `persona` | string | No | `product` \| `developer` \| `architect` | `developer` |
+| `verbosity` | string | No | `terse` \| `normal` \| `deep` | per-persona default (see below) |
+
+**Per-persona verbosity defaults** (applied when `verbosity` is not set in any layer):
+
+| Persona | Default verbosity | Why |
+|---------|-------------------|-----|
+| `product` | `terse` | PM/designer audience tolerates short summaries; long walls of text reduce signal |
+| `developer` | `normal` | Balanced — code references and rationale where they help, skipped where they don't |
+| `architect` | `normal` | Decision-grade detail by default; switch to `terse` for routine actions or `deep` for unfamiliar architecture |
+
+### Resolution hierarchy
+
+Both keys resolve through the same four-layer chain (first non-empty layer wins):
+
+1. **Per-invocation flag.** `--persona <name>` or `--verbosity <level>` parsed from the slash-command argument (e.g., `/adev:plan --verbosity deep`).
+2. **Local config.** `.context-index/user-config` in the current project.
+3. **Global config.** `user-config` at the plugin root.
+4. **Default.** Persona falls back to `developer`. Verbosity falls back to the per-persona default in the table above.
+
+### Validation
+
+Both keys are validated at parse time and again at resolve time (defense-in-depth):
+
+- **Closed-enumeration check.** Unknown values produce a non-fatal warning naming the valid set; the value is discarded and the next layer in the resolution hierarchy is consulted.
+- **Path-traversal denylist.** Values containing `/`, `\`, or `..` are rejected with the same warning class as the persona check. This guards `loadVerbosityOverlay(<name>)` against malformed input reaching `path.join(templatesDir, "${name}.md")`.
+
+### Adoption guide (for projects new to adev or upgrading)
+
+**Step 1 — confirm or set the global persona.** During `npx @adev-org/adev-cli install` the installer prompts for a default persona and writes the global `user-config`. To change later, edit the file at the plugin root (path is printed by the installer) or re-run the installer.
+
+**Step 2 — set a project-local override (optional).** Create or edit `.context-index/user-config` in the project root:
+
+```bash
+# .context-index/user-config (local override; gitignored)
+persona=architect
+verbosity=normal
+```
+
+For projects upgrading from a pre-verbosity version of adev: existing `persona=…` configs continue to work unchanged. The `verbosity` line is optional — if absent, the per-persona default applies.
+
+**Step 3 — verify the resolved settings.** Open Claude Code (or your configured harness) inside the project. The session-start hook reads `user-config`, resolves both axes, and injects the combined persona directive + verbosity overlay as `additionalContext` at session start. Issue any `/adev:*` skill and observe the output style.
+
+**Step 4 — override per-invocation when needed.** Both flags work on any skill:
+
+```text
+/adev:plan --verbosity deep         # Decision-moment: want full trade-off rationale
+/adev:status --verbosity terse      # Routine status check: one-paragraph summary
+/adev:review-specs --persona product # Demo to PM: hide implementation detail
+```
+
+### Verbosity overlay templates
+
+Verbosity behavior lives in three markdown templates at `<plugin-root>/templates/verbosity/`:
+
+| File | Behavior |
+|------|----------|
+| `terse.md` | ~1-3 sentence default; skip Architectural-Read, multi-table verdicts, trade-off recapping unless invoked; bias Next Actions to a single most-likely suggestion |
+| `normal.md` | 1-2 paragraph default; Next Actions menu permitted at real branch points |
+| `deep.md` | Restore all mandated sections; permit trade-off rationale, multi-table verdicts, full citation lists |
+
+All three overlays carry the **anti-redundancy** rule (summarize disk artifacts in 1-3 sentences + link rather than recapitulate) and the **Next-Actions still mandated** clause. Both rules also live in each of the three persona templates (`architect.md`, `developer.md`, `product.md`) — they are universal across all 9 combinations.
+
+You can inspect the active directive composition with:
+
+```bash
+node -e "
+import('./lib/persona.mjs').then(m => {
+  const result = m.resolvePersona({});
+  console.log('Resolved:', result);
+  console.log('---persona directive---');
+  console.log(m.loadPersonaDirective(result.name));
+  console.log('---verbosity overlay---');
+  console.log(m.loadVerbosityOverlay(result.verbosity));
+});
+"
+```
+
+### Empirical grounding (for the curious)
+
+The verbosity axis was added based on an audit of 75 chat transcripts (4276 assistant turns) showing the Architect persona produced 1.85× mean output tokens and 4.14× trade-off mentions vs Developer — too much output for routine actions, while still appropriate for decision moments. The two-axis split decouples *audience pitch* from *output depth* so users can keep an architect-grade audience profile while dialing back default chat volume. See `.context-index/research/persona-output-depth-and-verbosity.md` in the plugin source for the full audit and the calibration finding (Architect template trimmed from 24 to 20 per-dimension bullets; fixture-weighted total from 69 to 61).
+
+### Failure modes (what happens when things go wrong)
+
+| Condition | Behavior |
+|-----------|----------|
+| `verbosity=loud` (unknown value) | Warning to stderr naming valid values; per-persona default applied |
+| `verbosity=../etc/passwd` (path traversal) | `INVALID_VERBOSITY_PATH_TRAVERSAL` warning; value discarded; per-persona default applied |
+| `templates/verbosity/<name>.md` missing | Warning to stderr; fall back to `normal.md` |
+| `templates/verbosity/normal.md` also missing | Warning to stderr; no overlay injected; persona directive used alone |
+| `templates/verbosity/` directory missing entirely | Warning to stderr; no overlay; persona directive used alone |
+
+The session-start hook never exits non-zero due to overlay problems — degraded directive injection is always preferred to blocking the session (Hook protocol compliance per the constitution).
