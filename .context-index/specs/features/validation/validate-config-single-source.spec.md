@@ -49,7 +49,7 @@ source-manifest:
   computed-at: "2026-05-16T01:42:03.195Z"
 drift_detected: true
 drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-17T20:31:49.575Z
+drift_at: 2026-05-17T20:34:52.868Z
 ---
 
 > **Revision 2 (2026-05-15):** Addresses blockers SEC-1 (id sanitization) and CON-4 (loadValidateConfig signature) plus warnings SA-1, SA-2, SA-3, SA-6, SA-7, CON-1, CON-3, SEC-2, SEC-3, SEC-4, SEC-5 from the rev-1 review. Reclassified from `kind: refactor` to `kind: behavioral` to accurately reflect that this spec introduces a required artifact rather than purely refactoring storage; the migration tool (Step 8) mitigates the one-time break for upgrading projects.
