@@ -19,3 +19,14 @@
 {"event":"step_completed","step":"plan","verdict":"PASS_WITH_NOTES","ts":"2026-05-18T14:22:01.913Z"}
 {"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-18T14:25:36.832Z"}
 {"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-05-18T14:26:23.635Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"1","status":"done","notes":"TRANSLATION_TABLE and timeout constants exported; 2 tests green","ts":"2026-05-18T14:38:47.360Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"2","status":"in_progress","notes":null,"ts":"2026-05-18T14:38:53.141Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"2","status":"done","notes":"buildCursorHooks transform + atomic main(); 7 unit tests green","ts":"2026-05-18T14:43:23.975Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"3","status":"in_progress","notes":null,"ts":"2026-05-18T14:43:28.219Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"3","status":"done","notes":"npm run build:cursor-hooks wired","ts":"2026-05-18T14:47:39.630Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"4","status":"in_progress","notes":null,"ts":"2026-05-18T14:47:44.300Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"4","status":"done","notes":"Generated and committed providers/cursor/hooks.json","ts":"2026-05-18T14:51:37.670Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"5","status":"in_progress","notes":null,"ts":"2026-05-18T14:51:41.608Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"5","status":"done","notes":"4 drift assertions added; perturbation paths verified","ts":"2026-05-18T14:55:29.662Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"6","status":"in_progress","notes":null,"ts":"2026-05-18T14:55:34.845Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"6","status":"done","notes":"Drift + missing-file perturbations verified; both fire spec-mandated messages","ts":"2026-05-18T14:59:12.162Z"}
