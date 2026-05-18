@@ -1,13 +1,19 @@
 ---
 charter: design
 kind: skill
-status: review-pending
+status: implemented
 risk_level: low
 revision: 1
 charter-revision: 2
 created: 2026-05-18
 updated: 2026-05-18
 tracker-ref: issue-338
+source-manifest:
+  sha: "55633ed"
+  files:
+    - skills/brainstorm/SKILL.md
+    - tests/skills/brainstorm-spec-grouping.test.mjs
+  computed-at: "2026-05-18T12:44:21.316Z"
 ---
 
 # Skill Spec: Brainstorm Step 8 Capability Grouping Suggestions
