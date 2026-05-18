@@ -180,3 +180,58 @@ test("package.json declares build:cursor-hooks script", () => {
   const pkg = JSON.parse(readFileSync_(join_(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["build:cursor-hooks"], "node scripts/build-cursor-hooks.mjs");
 });
+
+// ─── Task 5: file-on-disk drift gate ──────────────────────────────────────
+
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import { join as join2, dirname as dirname2 } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+
+const PROJECT_ROOT = join2(dirname2(fileURLToPath2(import.meta.url)), "..");
+const CURSOR_HOOKS = join2(PROJECT_ROOT, "providers", "cursor", "hooks.json");
+const CANONICAL_HOOKS = join2(PROJECT_ROOT, "hooks", "hooks.json");
+
+test("providers/cursor/hooks.json exists at the plugin root", () => {
+  assert.ok(
+    existsSync2(CURSOR_HOOKS),
+    "providers/cursor/hooks.json does not exist. Run `npm run build:cursor-hooks` to create it.",
+  );
+});
+
+test("providers/cursor/hooks.json parses as valid JSON", () => {
+  const raw = readFileSync2(CURSOR_HOOKS, "utf8");
+  // Lets JSON.parse throw natively so the failure message includes the syntax-error location.
+  JSON.parse(raw);
+});
+
+test("committed providers/cursor/hooks.json deepEquals generator output (drift gate)", () => {
+  const committed = JSON.parse(readFileSync2(CURSOR_HOOKS, "utf8"));
+  const canonical = JSON.parse(readFileSync2(CANONICAL_HOOKS, "utf8"));
+  const fresh = buildCursorHooks(canonical, (scriptName) =>
+    existsSync2(join2(PROJECT_ROOT, "hooks", scriptName)),
+  );
+  assert.deepEqual(
+    committed,
+    fresh,
+    "providers/cursor/hooks.json is out of sync with hooks/hooks.json. Run `npm run build:cursor-hooks` to regenerate.",
+  );
+});
+
+test("every Claude event in hooks/hooks.json resolves to at least one entry in providers/cursor/hooks.json", () => {
+  const canonical = JSON.parse(readFileSync2(CANONICAL_HOOKS, "utf8"));
+  const committed = JSON.parse(readFileSync2(CURSOR_HOOKS, "utf8"));
+  const claudeEvents = Object.keys(canonical.hooks || {});
+  for (const claudeEvent of claudeEvents) {
+    // Find every cursor event produced by any translation row whose claudeEvent matches.
+    const cursorEvents = TRANSLATION_TABLE.filter((e) => e.claudeEvent === claudeEvent).map(
+      (e) => e.cursorEvent,
+    );
+    const hasEntry = cursorEvents.some(
+      (ce) => Array.isArray(committed.hooks[ce]) && committed.hooks[ce].length > 0,
+    );
+    assert.ok(
+      hasEntry,
+      `Claude event ${claudeEvent} did not resolve to any entry in providers/cursor/hooks.json`,
+    );
+  }
+});
