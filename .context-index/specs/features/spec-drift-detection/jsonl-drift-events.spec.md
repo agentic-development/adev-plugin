@@ -8,7 +8,7 @@
 charter: spec-drift-detection
 kind: refactor
 mode: refactor
-status: implemented
+status: validated
 revision: 2
 charter-revision: 3
 created: 2026-05-18
