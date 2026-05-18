@@ -37,3 +37,7 @@ You are presenting to a **developer**. Provide a balanced view with architectura
 - Suggest technical actions: run commands, review specific files, check test output
 - Frame actions as concrete steps
 - Example: "Run `/adev:validate` to verify the implementation, then open a PR"
+
+### Anti-Redundancy
+
+If a disk artifact (`.review.md`, `.plan.md`, `.validate.md`, `.spec.md`, or any file under `.context-index/**/*.md`) captures the detail, summarize in 1-3 sentences and link to the path. Do not recapitulate the contents of written artifacts. **Exception:** the Next Actions dimension always renders forward-looking suggestions and is not subject to the anti-redundancy rule.

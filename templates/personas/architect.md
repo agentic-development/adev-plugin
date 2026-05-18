@@ -39,3 +39,7 @@ You are presenting to a **senior architect**. Show full technical detail includi
 - Suggest technical and architectural actions: review ADRs, assess trade-offs, evaluate alternatives
 - Include both immediate steps and architectural considerations
 - Example: "Review the trade-off in ADR-003 before proceeding — the review registry design affects how custom personas could extend this in v2"
+
+### Anti-Redundancy
+
+If a disk artifact (`.review.md`, `.plan.md`, `.validate.md`, `.spec.md`, or any file under `.context-index/**/*.md`) captures the detail, summarize in 1-3 sentences and link to the path. Do not recapitulate the contents of written artifacts. **Exception:** the Next Actions dimension always renders forward-looking suggestions and is not subject to the anti-redundancy rule.
