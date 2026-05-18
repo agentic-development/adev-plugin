@@ -552,3 +552,181 @@ describe("resolvePersona — verbosity additive shape", () => {
     assert.ok(result.warnings.length > 0);
   });
 });
+
+// ============================================================================
+// Task 7: 9-combo matrix, calibration invariants, Next-Actions invariant,
+//   anti-redundancy invariants, no-hard-word-cap grep
+// ============================================================================
+
+import { readFileSync as _readFileSync, readdirSync as _readdirSync, existsSync as _existsSync } from "fs";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __dirname_persona = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = join(__dirname_persona, "..");
+const PERSONAS_DIR = join(PROJECT_ROOT, "templates", "personas");
+const VERBOSITY_DIR = join(PROJECT_ROOT, "templates", "verbosity");
+const FIXTURES_DIR = join(PROJECT_ROOT, "tests", "fixtures", "persona-output");
+const PERSONA_LIST = ["architect", "developer", "product"];
+const VERBOSITY_LIST = ["terse", "normal", "deep"];
+
+describe("9-combo fixture matrix", () => {
+  beforeEach(async () => {
+    await loadModule();
+  });
+
+  for (const persona of PERSONA_LIST) {
+    for (const verbosity of VERBOSITY_LIST) {
+      it(`${persona}-${verbosity}: lib composition matches golden fixture byte-for-byte`, () => {
+        const pd = loadPersonaDirective(persona, PERSONAS_DIR);
+        const vo = loadVerbosityOverlay(verbosity, VERBOSITY_DIR);
+        const composed = pd.content + "\n\n" + vo.content;
+        const fixturePath = join(FIXTURES_DIR, `${persona}-${verbosity}.expected.md`);
+        assert.ok(
+          _existsSync(fixturePath),
+          `Fixture missing: ${persona}-${verbosity}.expected.md`
+        );
+        const expected = _readFileSync(fixturePath, "utf-8");
+        assert.equal(composed, expected);
+      });
+    }
+  }
+
+  // Next-Actions invariant across all 9 combos
+  for (const persona of PERSONA_LIST) {
+    for (const verbosity of VERBOSITY_LIST) {
+      it(`${persona}-${verbosity}: fixture contains Next Actions dimension`, () => {
+        const fixturePath = join(FIXTURES_DIR, `${persona}-${verbosity}.expected.md`);
+        const content = _readFileSync(fixturePath, "utf-8");
+        assert.ok(
+          /Next Actions/.test(content),
+          `Next Actions invariant violated for ${persona}-${verbosity}`
+        );
+      });
+    }
+  }
+
+  // Anti-redundancy presence invariant across all 9 fixtures
+  for (const persona of PERSONA_LIST) {
+    for (const verbosity of VERBOSITY_LIST) {
+      it(`${persona}-${verbosity}: fixture contains Anti-Redundancy paragraph`, () => {
+        const fixturePath = join(FIXTURES_DIR, `${persona}-${verbosity}.expected.md`);
+        const content = _readFileSync(fixturePath, "utf-8");
+        assert.ok(
+          /Anti-Redundancy/.test(content),
+          `Anti-Redundancy invariant violated for ${persona}-${verbosity}`
+        );
+      });
+    }
+  }
+});
+
+describe("Architect template calibration", () => {
+  it("per-dimension bullet sum lands in [19, 22]", () => {
+    const content = _readFileSync(join(PERSONAS_DIR, "architect.md"), "utf-8");
+    // Only count bullets that belong to a Dimension-level (### header) section
+    // up to the Next-Actions / Anti-Redundancy boundary. The Anti-Redundancy
+    // section uses paragraph form (no - bullets) so it contributes 0 regardless.
+    const lines = content.split("\n");
+    let currentDim = null;
+    const perDim = {};
+    for (const line of lines) {
+      const m = line.match(/^### (.+)$/);
+      if (m) {
+        currentDim = m[1].trim();
+        perDim[currentDim] = 0;
+        continue;
+      }
+      if (currentDim && line.startsWith("- ")) {
+        perDim[currentDim] += 1;
+      }
+    }
+    const total = Object.values(perDim).reduce((a, b) => a + b, 0);
+    assert.ok(
+      total >= 19 && total <= 22,
+      `Per-dimension bullet sum out of [19, 22]: ${total} (breakdown: ${JSON.stringify(perDim)})`
+    );
+  });
+
+  it("Next Actions section retains 3 bullets (invariant)", () => {
+    const content = _readFileSync(join(PERSONAS_DIR, "architect.md"), "utf-8");
+    const lines = content.split("\n");
+    let inNextActions = false;
+    let bulletCount = 0;
+    for (const line of lines) {
+      const m = line.match(/^### (.+)$/);
+      if (m) {
+        inNextActions = m[1].trim() === "Next Actions";
+        continue;
+      }
+      if (inNextActions && line.startsWith("- ")) bulletCount += 1;
+    }
+    assert.equal(bulletCount, 3, "Next Actions must keep 3 bullets (invariant)");
+  });
+
+  it("fixture-weighted total from persona-fixture-score.mjs lands in [58, 62]", () => {
+    const result = spawnSync(
+      "node",
+      [join(PROJECT_ROOT, "scripts", "persona-fixture-score.mjs")],
+      { encoding: "utf-8" }
+    );
+    assert.equal(result.status, 0, `script failed: ${result.stderr}`);
+    const m = result.stdout.match(/Total bullets across fixtures:\s*architect\s*(\d+)/);
+    assert.ok(m, "could not parse 'Total bullets across fixtures' for architect");
+    const total = parseInt(m[1], 10);
+    assert.ok(
+      total >= 58 && total <= 62,
+      `Fixture-weighted total out of [58, 62]: ${total}`
+    );
+  });
+});
+
+describe("Anti-redundancy invariants", () => {
+  // 6 source templates: 3 personas + 3 verbosity overlays
+  const ALL_TEMPLATES = [
+    ...PERSONA_LIST.map((p) => join(PERSONAS_DIR, `${p}.md`)),
+    ...VERBOSITY_LIST.map((v) => join(VERBOSITY_DIR, `${v}.md`)),
+  ];
+
+  for (const templatePath of ALL_TEMPLATES) {
+    const label = templatePath.split("/").slice(-2).join("/");
+    it(`${label}: contains anti-redundancy paragraph mentioning disk artifacts`, () => {
+      const content = _readFileSync(templatePath, "utf-8");
+      assert.ok(
+        /\.review\.md|\.plan\.md|\.validate\.md|\.spec\.md|\.context-index\//.test(content),
+        `${label}: missing disk-artifact reference in anti-redundancy paragraph`
+      );
+    });
+
+    it(`${label}: anti-redundancy paragraph explicitly excludes Next Actions`, () => {
+      const content = _readFileSync(templatePath, "utf-8");
+      // The exclusion clause must mention "Next Actions" and "Exception" (or "except")
+      assert.ok(
+        /(Exception|except).*Next Actions|Next Actions.*(Exception|except)/is.test(content),
+        `${label}: anti-redundancy paragraph missing Next-Actions exclusion`
+      );
+    });
+  }
+});
+
+describe("No hard word caps", () => {
+  it("no template uses literal '<N> words' or '<N>-word' patterns", () => {
+    const ALL_TEMPLATES = [
+      ..._readdirSync(PERSONAS_DIR).map((f) => join(PERSONAS_DIR, f)),
+      ..._readdirSync(VERBOSITY_DIR).map((f) => join(VERBOSITY_DIR, f)),
+    ].filter((f) => f.endsWith(".md"));
+    const offenders = [];
+    for (const t of ALL_TEMPLATES) {
+      const content = _readFileSync(t, "utf-8");
+      if (/\b\d+\s+words\b|\b\d+-word\b/i.test(content)) {
+        offenders.push(t);
+      }
+    }
+    assert.deepEqual(
+      offenders,
+      [],
+      `Templates contain hard word caps (Anthropic April-2026 postmortem rule): ${offenders.join(", ")}`
+    );
+  });
+});
