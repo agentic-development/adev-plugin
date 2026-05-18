@@ -24,21 +24,16 @@ Before starting, verify:
 
 ### Step 0a: Implement-step gate (FIRST action)
 
-Before any validation work, gate on the prior step via the lifecycle log:
+Before any validation work, gate on the prior step via the lifecycle log, then emit the step-started event:
 
-```javascript
-import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-const state = currentState(projectRoot, specPath);
-const mode = resolveGateMode(loadManifest(projectRoot));
-requireGate(state, "validate", { mode });
-reportStep(projectRoot, specPath, { step: "validate", status: "started" });
+```bash
+adev gate require --skill validate --spec <spec-path>
+adev report --type step --spec <spec-path> --step validate --status started
 ```
 
-`requireGate(state, "validate", ...)` follows the lib contract: pass the step about to begin; the lib resolves its prior (`implement`) and asserts that step is completed with a passing verdict. In strict mode (default), it throws `GateError` when implement is incomplete. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if the `implement` step did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
-Emit a matching `reportStep` exit (`status: "completed"`, including the aggregate verdict) after the report is written in Step 14.
+Emit a matching exit event in the new "Step Z: Emit lifecycle completion" section after the validation report is written. The exit event carries the aggregate verdict (PASS / PASS_WITH_NOTES / FAIL) computed from the consolidated check results.
 
 ## Workspace-Aware Validation Mode
 
@@ -466,6 +461,20 @@ The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec
 
 - **PASS:** All dispatched checks (Check 1 quality gates plus the surviving registry — 1.5, 2, 4, and conditionally 8, 9, 11) passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev:validate`.
+
+## Step Z: Emit lifecycle completion event
+
+After the validation report has been written to disk (Step 14 / atomic-write commit), emit the matching exit event paired with Step 0a's `started` emission. The verdict is the aggregate computed from the consolidated check results:
+
+- All dispatched checks PASS → `--verdict PASS`
+- At least one check returned PASS_WITH_NOTES, no FAILs → `--verdict PASS_WITH_NOTES`
+- Any FAIL → `--verdict FAIL`
+
+```bash
+adev report --type step --spec <spec-path> --step validate --status completed --verdict <aggregate>
+```
+
+This event is REQUIRED. Without it, the lifecycle log shows `lifecycle_step:validate started` with no terminal event, and any future skill that gates on validate completion will block permanently.
 
 ## After Validation
 
