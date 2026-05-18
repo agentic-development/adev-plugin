@@ -535,15 +535,47 @@ For projects upgrading from a pre-verbosity version of adev: existing `persona=�
 
 ### Verbosity overlay templates
 
-Verbosity behavior lives in three markdown templates at `<plugin-root>/templates/verbosity/`:
+Verbosity behavior lives in three markdown templates at `<plugin-root>/templates/verbosity/`. Each is layered *on top of* the persona directive: the persona sets **audience pitch** (who you're talking to), the verbosity overlay sets **output depth** (how much you say). All nine persona × verbosity combinations are supported.
 
-| File | Behavior |
-|------|----------|
-| `terse.md` | ~1-3 sentence default; skip Architectural-Read, multi-table verdicts, trade-off recapping unless invoked; bias Next Actions to a single most-likely suggestion |
-| `normal.md` | 1-2 paragraph default; Next Actions menu permitted at real branch points |
-| `deep.md` | Restore all mandated sections; permit trade-off rationale, multi-table verdicts, full citation lists |
+#### What each level does
 
-All three overlays carry the **anti-redundancy** rule (summarize disk artifacts in 1-3 sentences + link rather than recapitulate) and the **Next-Actions still mandated** clause. Both rules also live in each of the three persona templates (`architect.md`, `developer.md`, `product.md`) — they are universal across all 9 combinations.
+**`terse`** — minimum-volume chat. Use for routine actions, status checks, or any turn where the answer matters more than the rationale.
+- Chat default: **1–3 sentences**.
+- Mandated sections (Architectural-Read blocks, multi-table review verdicts, full trade-off recapping) are **skipped** unless the user explicitly invokes the topic.
+- Disk artifacts (`.review.md`, `.plan.md`, `.validate.md`, `.spec.md`, anything under `.context-index/**/*.md`) are summarized in **one sentence + link**, never recapitulated.
+- Next Actions: **one** most-likely suggestion (no menu).
+- Use when: the user is acting routinely, knows the domain, or asked a narrow question.
+
+**`normal`** — standard depth. The persona directive runs as written, no extra trimming or expansion.
+- Chat default: **1–2 paragraphs** for routine work; expands naturally at real decision moments.
+- Mandated sections render as the persona defines them.
+- Disk artifacts: summarized in a few sentences + link when chat would otherwise duplicate them.
+- Next Actions: usually a single recommendation; a short menu is permitted **at real decision branches**.
+- Use when: you're not sure which level fits — this is the safe default.
+
+**`deep`** — full depth. Restores every mandated section in the persona directive.
+- Chat default: paragraph-length, with full structure.
+- Mandated sections render **in full**: Architectural-Read blocks, multi-table review verdicts, full trade-off recapping, citation lists across spec/ADR/charter references.
+- Trade-off rationale is explicitly encouraged at decision moments.
+- Next Actions: a **numbered menu** of alternatives paired with the strongest recommendation.
+- Use when: you're at an architectural decision, unfamiliar with the area, reviewing trade-offs for a stakeholder, or preparing a written artifact yourself.
+
+#### What stays constant across all three
+
+Two rules live in **every** verbosity overlay (and also in every persona template), so they apply to all nine combinations:
+
+- **Anti-redundancy.** Disk artifacts get summarized + linked, not recapitulated — even at `deep`. The chat is not a mirror of the files on disk.
+- **Next Actions are mandatory.** Every assistant turn ends with at least one forward-looking suggestion, regardless of verbosity. This is the one dimension exempt from the anti-redundancy rule.
+
+#### Quick chooser
+
+| You're about to… | Try |
+|------------------|-----|
+| Run a status check, ship a small change, ask a narrow question | `terse` |
+| Plan a feature, review a spec, debug something unfamiliar | `normal` |
+| Make an architectural decision, evaluate options, prepare a write-up | `deep` |
+| Demo something to a non-technical stakeholder | `--persona product --verbosity terse` |
+| Investigate a system you haven't touched in months | `--verbosity deep` (one-shot, no config change) |
 
 You can inspect the active directive composition with:
 
