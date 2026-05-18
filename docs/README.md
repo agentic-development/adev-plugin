@@ -24,7 +24,7 @@ Guides organized by lifecycle phase, covering the skills you use day-to-day.
 Detailed reference documentation for every skill, configuration file, and hook.
 
 - [Skill Reference](skill-reference.md) — One entry per skill with usage, arguments, and examples
-- [Configuration Reference](configuration.md) — manifest.yaml, constitution.md, platform-context.yaml
+- [Configuration Reference](configuration.md) — manifest.yaml, constitution.md, platform-context.yaml, [user-config (personas & verbosity)](configuration.md#user-config--personas--verbosity)
 - [Hooks Reference](hooks.md) — What each hook does, when it fires, how to customize
 - [Extensions](extensions.md) — Authoring extension packages (manifest schema, install merge, validate-time event flow)
 
