@@ -151,6 +151,16 @@ tasks:
 # lifecycle:
 #   gate_mode: strict
 
+# Partial-artifact (`.partial` + atomic-rename) knobs — incremental-artifact-writes.spec.md.
+# These knobs govern lifecycle-artifact write-state, which is a lifecycle concern
+# even though the per-knob behavior is artifact-byte-management (CON-9 recommendation B).
+# lifecycle:
+#   partial_stale_seconds: 30           # lock-steal threshold (default 30)
+#   partial_stale_hours:   24           # orphan-content sweep threshold (default 24)
+#   partial_oversize_multiplier: 3      # runaway-write guard (default 3× expected size)
+#   partial_expected_size_default: 51200  # floor for expected size when no prior version exists (bytes, default 50 KB)
+#   partial_roots: []                   # optional containment-allowlist roots beyond .context-index/
+
 # ============================================================================
 # Provenance Tracking
 # ============================================================================

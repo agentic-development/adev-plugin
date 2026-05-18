@@ -397,6 +397,8 @@ adev artifact commit --spec .context-index/specs/features/<module>/<spec-slug>.s
 
 The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec-path>.validate.md`) from the spec path, validates that the temp file exists and is non-empty (rejects zero-byte artifacts), and performs a same-directory `fs.renameSync` — atomic on POSIX. Until the commit step runs, the canonical `.validate.md` either reflects the prior run or is absent; the new content is never partially observable. On any failure the verb exits non-zero with a diagnostic message and the temp file remains for inspection.
 
+**Write-state suffix choice (`.tmp` not `.partial`).** Per the write-state suffix taxonomy invariant in `agent-reliable-state-artifacts/charter.md` (Invariant #10) and `incremental-artifact-writes.spec.md` Integration Point 4, validate keeps the existing `.tmp` (byte-level, ms-scale, never recovered) and does NOT migrate to `.partial` (artifact-level, minutes-to-hours, durable). Rationale: the entire validate report is computed in memory and written in a single Write call — there is no incremental-checkpoint surface for `.partial` to protect. The `.tmp` + `adev artifact commit` idiom is the right tool for byte-level atomicity here; `.partial` is the right tool for skills (like `/adev:plan`, `/adev:specify`, `/adev:implement`) that author across multiple Write calls over minutes.
+
 ```markdown
 # Validation Report: [Spec Title]
 
