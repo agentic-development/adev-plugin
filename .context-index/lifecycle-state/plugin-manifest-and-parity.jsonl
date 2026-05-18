@@ -15,3 +15,5 @@
 {"event":"plan_task","plan":".context-index/specs/features/cursor-provider/plugin-manifest-and-parity.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-05-18T13:23:45.232Z"}
 {"event":"plan_task","plan":".context-index/specs/features/cursor-provider/plugin-manifest-and-parity.plan.md","task_id":"task-2","status":"done","notes":"Appended .cursor-plugin/plugin.json to extra-files (alphabetical order after .claude-plugin/plugin.json)","ts":"2026-05-18T13:24:10.068Z"}
 {"event":"plan_task","plan":".context-index/specs/features/cursor-provider/plugin-manifest-and-parity.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-05-18T13:24:13.565Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/plugin-manifest-and-parity.plan.md","task_id":"task-3","status":"done","notes":"Authored tests/version-parity.test.mjs (5 assertions, node built-ins only). npm test passes.","ts":"2026-05-18T13:32:19.810Z"}
+{"event":"step_completed","step":"implement","ts":"2026-05-18T13:32:57.740Z"}
