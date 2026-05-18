@@ -5,8 +5,8 @@ charter: output-personas
 status: validated
 risk_level: medium
 milestone:
-revision: 2
-charter-revision: 2
+revision: 3
+charter-revision: 3
 created: 2026-04-21
 updated: 2026-04-21
 source-manifest:
@@ -61,11 +61,12 @@ drift_detected: true
 
 ### Postconditions
 
-- After session start, the conversation context contains exactly one persona directive block
+- After session start, the conversation context contains exactly one persona directive block, optionally followed by a verbosity overlay block (when the verbosity axis is configured per `verbosity-axis-and-output-trimming.spec.md`). Both are injected at session start.
 - The `user-config` file (when written) contains valid `key=value` format parseable by bash without external tools
 - The `.gitignore` includes `user-config` after `/adev:init` runs
 - All skill outputs follow the persona's dimension rules (verbosity, code refs, next actions) without any change to internal processing
-- Persona rules override skill output templates for user-facing chat responses. Skill output templates define the default format (Developer persona) and what to write to disk artifacts. Each skill's "Report to User" or "Output Format" section includes a persona-adaptation qualifier.
+- Persona rules override skill output templates for user-facing chat responses. Skill output templates define the default format (Developer persona) and what to write to disk artifacts. Each skill's "Report to User" or "Output Format" section includes a persona-adaptation qualifier. **If a disk artifact (`.review.md`, `.plan.md`, `.validate.md`, `.spec.md`, or any file under `.context-index/`) captures the detail, chat summarizes in 1–3 sentences and links to the path; chat MUST NOT recapitulate the contents of written artifacts. Exception: the Next Actions dimension renders forward-looking suggestions regardless of disk content.**
+- **Next-Actions invariant.** Every assistant turn ends with a clear Next-action suggestion, regardless of persona or verbosity setting. The Next Actions dimension is not subject to template trimming or to the anti-redundancy rule. This is a persona-system invariant.
 
 ### Error Cases
 
