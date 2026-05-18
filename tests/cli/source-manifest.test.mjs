@@ -260,6 +260,82 @@ test("adev source-manifest verify exits 0 with PASS when source files match the 
   }
 });
 
+// ── verify: H1-prefixed frontmatter (regression for Bug 2) ──────────────
+
+test("adev source-manifest verify recognizes the manifest when the spec opens with an H1 heading before frontmatter", () => {
+  // Regression test: ~65% of specs in this repo begin with `# H1` BEFORE the
+  // YAML frontmatter block. The CLI's readManifestFromSpec parser previously
+  // required `body.startsWith("---\n")` and silently SKIP-ed all such specs.
+  // This test forces the parser to handle pre-frontmatter content (an H1
+  // heading, comments, blank lines) the same way `lib/source-manifest.mjs`
+  // already does.
+  const dir = makeTempProject();
+  try {
+    writeSrc(dir, "lib/feature.mjs", "export const x = 1;\n");
+    writeSrc(dir, "tests/feature.test.mjs", "// tests\n");
+
+    // Compute a real SHA over the source files.
+    const r0 = spawnSync(
+      "node",
+      [
+        CLI,
+        "source-manifest",
+        "compute",
+        "--files",
+        "lib/feature.mjs,tests/feature.test.mjs",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r0.status, 0, `compute failed: ${r0.stderr}`);
+    const manifest = JSON.parse(r0.stdout);
+
+    // Write a spec whose first line is an H1 heading, NOT `---`.
+    const specRel = ".context-index/specs/features/m/h1-prefixed.spec.md";
+    const body = [
+      "# Refactoring Spec: Some Feature",
+      "",
+      "<!-- A comment block before frontmatter — also common in this repo. -->",
+      "",
+      "---",
+      "charter: m",
+      "source-manifest:",
+      `  sha: "${manifest.sha}"`,
+      "  files:",
+      "    - lib/feature.mjs",
+      "    - tests/feature.test.mjs",
+      `  computed-at: "${manifest.computedAt}"`,
+      "---",
+      "",
+      "## Behavioral Contract",
+      "",
+    ].join("\n");
+    writeSpec(dir, specRel, body);
+
+    const r = spawnSync(
+      "node",
+      [CLI, "source-manifest", "verify", "--spec", specRel],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(
+      r.status,
+      0,
+      `stderr: ${r.stderr}\nstdout: ${r.stdout}`,
+    );
+    assert.match(
+      r.stdout,
+      /PASS|match/i,
+      `H1-prefixed spec must be recognized; got: ${r.stdout}`,
+    );
+    assert.doesNotMatch(
+      r.stdout,
+      /SKIP/i,
+      `H1-prefixed spec must not silently SKIP; got: ${r.stdout}`,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
 // ── verify: drift (WARN) ─────────────────────────────────────────────────
 
 test("adev source-manifest verify exits 0 with WARN when a source file has drifted", () => {
