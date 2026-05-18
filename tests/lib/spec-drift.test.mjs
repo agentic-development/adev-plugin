@@ -226,6 +226,15 @@ describe("stampDrift", () => {
     const events = readEvents(root, fresh).filter(e => e.event === "code_drift_detected");
     assert.deepEqual(events.map(e => e.drift_source), ["a.mjs", "b.mjs", "c.mjs"]);
   });
+
+  it("no longer writes drift_source or drift_at to spec frontmatter (Migration Step 3)", async () => {
+    const fresh = makeSpec(root, "step3-stamp", { sourceManifestFiles: ["a.mjs"] });
+    await stampDrift(fresh, "a.mjs");
+    const content = readFileSync(fresh, "utf-8");
+    assert.match(content, /^drift_detected:\s*true$/m);
+    assert.doesNotMatch(content, /^drift_source:/m);
+    assert.doesNotMatch(content, /^drift_at:/m);
+  });
 });
 
 describe("clearDrift", () => {
@@ -279,6 +288,14 @@ describe("clearDrift", () => {
     assert.match(cleared[0].drift_at, /^\d{4}-\d{2}-\d{2}T/);
     const content = readFileSync(specPath, "utf-8");
     assert.doesNotMatch(content, /^drift_detected:/m);
+  });
+
+  it("no longer mutates drift_source or drift_at in frontmatter (Migration Step 3)", async () => {
+    const specPath = makeSpec(root, "step3-clear", { sourceManifestFiles: ["lib/foo.mjs"] });
+    await stampDrift(specPath, "lib/foo.mjs");
+    await clearDrift(specPath);
+    const content = readFileSync(specPath, "utf-8");
+    assert.doesNotMatch(content, /^drift_(detected|source|at):/m);
   });
 });
 
