@@ -340,3 +340,20 @@ describe("CursorAdapter (CLI dispatch loadability)", () => {
     assert.equal(provider.name, "cursor");
   });
 });
+
+describe("CursorAdapter (source constraints — Acceptance Criterion line 10)", () => {
+  it("uses fs.cpSync (not execSync of cp -r) and avoids ~/.claude/ paths", () => {
+    const src = readFileSync(
+      join(import.meta.dirname, "../../providers/cursor/adapter.mjs"),
+      "utf8"
+    );
+    assert.match(src, /\bcpSync\b/, "must use fs.cpSync");
+    assert.doesNotMatch(
+      src,
+      /execSync\s*\(\s*["'`]cp\s+-r/,
+      "must not shell to cp -r"
+    );
+    assert.doesNotMatch(src, /~\/\.claude\//, "must not hardcode ~/.claude/ paths");
+    assert.doesNotMatch(src, /\.claude["'`]/, "must not reference .claude config dir");
+  });
+});
