@@ -168,3 +168,15 @@ test("buildCursorHooks throws when canonical-shaped command references missing s
     /Hook script not found: hooks\/session-start\.sh referenced from SessionStart\/startup\|resume\|clear\|compact/,
   );
 });
+
+// ─── Task 3: package.json wiring ──────────────────────────────────────────
+
+import { readFileSync as readFileSync_ } from "node:fs";
+import { join as join_, dirname as dirname_ } from "node:path";
+import { fileURLToPath as fileURLToPath_ } from "node:url";
+
+test("package.json declares build:cursor-hooks script", () => {
+  const root = join_(dirname_(fileURLToPath_(import.meta.url)), "..");
+  const pkg = JSON.parse(readFileSync_(join_(root, "package.json"), "utf8"));
+  assert.equal(pkg.scripts["build:cursor-hooks"], "node scripts/build-cursor-hooks.mjs");
+});
