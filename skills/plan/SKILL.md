@@ -120,10 +120,16 @@ Before planning, verify the spec has passed architecture review by reading the l
 
    - If `hasDrift()` returns `true`, **block**:
      ```
-     CODE_DRIFT: Spec "<name>" has drift_detected: true. Source file <drift_source>
-     was modified since last validation. Run /adev:validate or update the spec
-     before planning new work.
+     CODE_DRIFT: Spec "<name>" has drift_detected: true. The latest unresolved
+     code_drift_detected event in the spec's lifecycle JSONL reports source
+     file <drift_source> was modified since the source manifest was last
+     stamped. Run /adev:validate or update the spec before planning new work.
      ```
+
+     The inline `drift_detected: true` boolean is the rolled-up view; the
+     authoritative `drift_source` / `drift_at` payload lives on the spec's
+     latest `code_drift_detected` event in `.context-index/lifecycle-state/<slug>.jsonl`.
+     Use `adev verify spec --spec <path> --check-drift` to surface those fields.
 
    - If `hasDrift()` returns `false`, also run `verifyManifest()` as a fallback
      (catches drift on non-Claude-Code hosts where the hook never fired):
