@@ -215,11 +215,41 @@ export const CursorAdapter = {
   },
 
   detectConflicts() {
-    return []; // Task 5
+    let cursorHome;
+    try {
+      cursorHome = getCursorHome();
+    } catch {
+      return [];
+    }
+    const configPath = join(cursorHome, "config.json");
+    const config = readJson(configPath);
+    if (!config || !config.plugins) return [];
+
+    const conflicts = [];
+    // v1 Superpowers guard — matches the OpenCode adapter's guard.
+    if (config.plugins.superpowers) {
+      conflicts.push({
+        name: "superpowers",
+        reason:
+          "Overlapping brainstorming, planning, TDD, and code review workflows; disable before installing adev.",
+      });
+    }
+    return conflicts;
   },
 
-  disableConflictingPlugin(_name) {
-    return false; // Task 5
+  disableConflictingPlugin(name) {
+    let cursorHome;
+    try {
+      cursorHome = getCursorHome();
+    } catch {
+      return false;
+    }
+    const configPath = join(cursorHome, "config.json");
+    const config = readJson(configPath);
+    if (!config || !config.plugins || !config.plugins[name]) return false;
+    delete config.plugins[name];
+    writeJson(configPath, config);
+    return true;
   },
 };
 

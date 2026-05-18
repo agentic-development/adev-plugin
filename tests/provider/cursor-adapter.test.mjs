@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { CursorAdapter, sanitizeSkillName } from "../../providers/cursor/adapter.mjs";
@@ -202,5 +202,123 @@ describe("CursorAdapter.uninstall", () => {
     await CursorAdapter.uninstall({ scope: "user" });
     const result = await CursorAdapter.install({ scope: "user" });
     assert.equal(result.installed, true);
+  });
+});
+
+describe("CursorAdapter.detect", () => {
+  let originalEnv;
+  let homeDir;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    homeDir = mkdtempSync(join(tmpdir(), "cursor-detect-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it("returns true when CURSOR=true env is set", () => {
+    process.env.CURSOR = "true";
+    assert.equal(CursorAdapter.detect(), true);
+  });
+
+  it("returns true when ~/.cursor/ exists", () => {
+    delete process.env.CURSOR;
+    mkdirSync(join(homeDir, ".cursor"), { recursive: true });
+    assert.equal(CursorAdapter.detect(), true);
+  });
+
+  it("returns false when neither env nor dir is present", () => {
+    delete process.env.CURSOR;
+    // homeDir is fresh per beforeEach; ~/.cursor/ does not exist.
+    assert.equal(CursorAdapter.detect(), false);
+  });
+});
+
+describe("CursorAdapter.detectConflicts", () => {
+  let originalEnv;
+  let homeDir;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    homeDir = mkdtempSync(join(tmpdir(), "cursor-conflicts-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it("returns Superpowers conflict when present in ~/.cursor/config.json:plugins", () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    writeFileSync(
+      join(cursorDir, "config.json"),
+      JSON.stringify({ plugins: { superpowers: { enabled: true } } })
+    );
+    const conflicts = CursorAdapter.detectConflicts();
+    assert.equal(conflicts.length, 1);
+    assert.equal(conflicts[0].name, "superpowers");
+    assert.ok(conflicts[0].reason, "conflict reason must be present");
+  });
+
+  it("returns [] when no config.json exists", () => {
+    assert.deepEqual(CursorAdapter.detectConflicts(), []);
+  });
+
+  it("returns [] when config.json has no plugins section", () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    writeFileSync(join(cursorDir, "config.json"), JSON.stringify({ otherKey: "val" }));
+    assert.deepEqual(CursorAdapter.detectConflicts(), []);
+  });
+});
+
+describe("CursorAdapter.disableConflictingPlugin", () => {
+  let originalEnv;
+  let homeDir;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    homeDir = mkdtempSync(join(tmpdir(), "cursor-disable-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it("removes the named plugin from ~/.cursor/config.json and returns true", () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    const configPath = join(cursorDir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({ plugins: { superpowers: { enabled: true }, keep: { enabled: true } } })
+    );
+    const result = CursorAdapter.disableConflictingPlugin("superpowers");
+    assert.equal(result, true);
+    const after = JSON.parse(readFileSync(configPath, "utf8"));
+    assert.equal(after.plugins.superpowers, undefined);
+    assert.ok(after.plugins.keep, "other plugins must be preserved");
+  });
+
+  it("returns false when the plugin is not present", () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    writeFileSync(join(cursorDir, "config.json"), JSON.stringify({ plugins: {} }));
+    assert.equal(CursorAdapter.disableConflictingPlugin("superpowers"), false);
+  });
+
+  it("returns false when no config.json exists", () => {
+    assert.equal(CursorAdapter.disableConflictingPlugin("superpowers"), false);
   });
 });
