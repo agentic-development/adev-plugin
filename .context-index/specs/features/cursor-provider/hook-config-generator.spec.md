@@ -1,13 +1,21 @@
 ---
 charter: cursor-provider
 kind: skill
-status: review-passed
+status: implemented
 risk_level: low
 milestone: v1
 revision: 2
 charter-revision: 2
 created: 2026-05-18
 updated: 2026-05-18
+source-manifest:
+  sha: "0d49109"
+  files:
+    - package.json
+    - providers/cursor/hooks.json
+    - scripts/build-cursor-hooks.mjs
+    - tests/cursor-hooks-sync.test.mjs
+  computed-at: "2026-05-18T14:59:40.081Z"
 ---
 
 # Skill Spec: Hook Config Generator with Translation Table and Drift Test
