@@ -76,9 +76,9 @@ adev-plugin currently installs into Claude Code, OpenCode, and Codex via three p
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-----------|--------|
-| Cursor plugin manifest | Write `.cursor-plugin/plugin.json` with version locked to package.json + claude-plugin | must-have | v1 | implemented |
-| Three-way version parity | Extend existing parity check to include `.cursor-plugin/plugin.json` | must-have | v1 | implemented |
-| Release-please extra-files update | Add `.cursor-plugin/plugin.json` to `release-please-config.json:extra-files` per ADR-0008 so automated Release PRs bump all three manifests in lockstep | must-have | v1 | implemented |
+| Cursor plugin manifest | Write `.cursor-plugin/plugin.json` with version locked to package.json + claude-plugin | must-have | v1 | validated |
+| Three-way version parity | Extend existing parity check to include `.cursor-plugin/plugin.json` | must-have | v1 | validated |
+| Release-please extra-files update | Add `.cursor-plugin/plugin.json` to `release-please-config.json:extra-files` per ADR-0008 so automated Release PRs bump all three manifests in lockstep | must-have | v1 | validated |
 | CursorAdapter install/uninstall/status | Fourth peer adapter mirroring `providers/opencode/adapter.mjs` shape | must-have | v1 | — |
 | Hook config generator | `scripts/build-cursor-hooks.mjs` + translation table; emits `providers/cursor/hooks.json` | must-have | v1 | — |
 | Hook drift test | `tests/cursor-hooks-sync.test.mjs` fails CI on out-of-sync committed hooks.json | must-have | v1 | — |
