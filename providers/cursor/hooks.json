@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "./hooks/session-start.sh",
+        "failClosed": false,
+        "timeout": 60
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "./hooks/context-preflight.sh",
+        "failClosed": true,
+        "timeout": 30,
+        "matcher": "Edit"
+      },
+      {
+        "command": "./hooks/constitution-linter.sh",
+        "failClosed": true,
+        "timeout": 30,
+        "matcher": "Edit"
+      },
+      {
+        "command": "./hooks/lifecycle-gate-edit.sh",
+        "failClosed": true,
+        "timeout": 30,
+        "matcher": "Edit"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "./hooks/merge-guard.sh",
+        "failClosed": true,
+        "timeout": 30
+      },
+      {
+        "command": "./hooks/lifecycle-gate-bash.sh",
+        "failClosed": true,
+        "timeout": 30
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "./hooks/context-read-tracker.sh",
+        "failClosed": false,
+        "timeout": 60,
+        "matcher": "Read"
+      },
+      {
+        "command": "./hooks/session-capture.sh",
+        "failClosed": false,
+        "timeout": 60
+      },
+      {
+        "command": "./hooks/issue-reminder.sh",
+        "failClosed": false,
+        "timeout": 60
+      },
+      {
+        "command": "./hooks/lifecycle-gate-advisory.sh",
+        "failClosed": false,
+        "timeout": 60
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "./hooks/sync-trigger.sh",
+        "failClosed": false,
+        "timeout": 60
+      }
+    ],
+    "stop": [
+      {
+        "command": "./hooks/post-validate-extract-heuristics.sh",
+        "failClosed": false,
+        "timeout": 60
+      }
+    ]
+  }
+}
