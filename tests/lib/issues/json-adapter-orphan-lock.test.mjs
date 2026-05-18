@@ -135,3 +135,49 @@ describe('orphan-lock cleanup — manifest knob (Task 3)', () => {
     } finally { cleanupTempDir(root); }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Task 2 — orphan-recovery branch + one-time stderr warning.
+// ---------------------------------------------------------------------------
+
+// Helper: age an existing lock file so its mtime is `ageSeconds` in the past.
+function ageLock(lockPath, ageSeconds) {
+  const tsSec = Math.floor((Date.now() - ageSeconds * 1000) / 1000);
+  utimesSync(lockPath, tsSec, tsSec);
+}
+
+// Helper: capture stderr writes during `fn`. Returns { result, stderr }.
+function captureStderr(fn) {
+  const orig = process.stderr.write.bind(process.stderr);
+  const chunks = [];
+  process.stderr.write = (chunk) => { chunks.push(String(chunk)); return true; };
+  try { return { result: fn(), stderr: chunks.join('') }; }
+  finally { process.stderr.write = orig; }
+}
+
+test('_acquireLock recovers an orphaned lock older than threshold and emits a one-time warning', () => {
+  const root = createTempDir();
+  try {
+    writeFixture(root, '.context-index/manifest.yaml',
+      'tasks:\n  backend: json\n  cas_lock_stale_seconds: 5\n');
+    mkdirSync(join(root, '.context-index', 'tasks'), { recursive: true });
+    const adapter = new JsonAdapter(root);
+    const lockPath = adapter.filePath + '.lock';
+
+    // Seed an orphaned lock with mtime 60s in the past (well above 5s threshold).
+    closeSync(openSync(lockPath, 'wx'));
+    ageLock(lockPath, 60);
+
+    const { result: fd, stderr } = captureStderr(() => adapter._acquireLock(lockPath));
+
+    assert.equal(typeof fd, 'number', 'recovery retry should succeed');
+    assert.match(stderr, /\[adev\] recovered orphaned tasks\.json\.lock/);
+    assert.match(stderr, /age: \d+s, threshold: 5s/);
+    // SEC-1: warning MUST NOT interpolate absolute lockPath or project root.
+    assert.ok(!stderr.includes(lockPath), 'warning must not interpolate absolute lockPath');
+    assert.ok(!stderr.includes(root), 'warning must not include project root path');
+
+    try { closeSync(fd); } catch { /* ignore */ }
+    try { unlinkSync(lockPath); } catch { /* ignore */ }
+  } finally { cleanupTempDir(root); }
+});
