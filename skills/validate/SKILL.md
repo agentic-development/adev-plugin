@@ -201,7 +201,7 @@ The verb parses the `source-manifest` block from the spec's frontmatter (fields 
 | Missing file — a listed file no longer exists on disk | `Check 1.5: FAIL — missing source files: <list>` | 1 | FAIL |
 | No manifest block — spec has not been implemented yet | `Check 1.5: SKIP — no source manifest found. Run /adev:implement to stamp one.` | 0 | SKIP |
 
-Pass `--quiet` to suppress the PASS / SKIP stdout line (errors and WARN are still emitted). The validator should still emit a `validator_report` event per Check 1.5 outcome via `adev report --type validator --validator check-1.5-source-manifest`.
+Pass `--quiet` to suppress the PASS / SKIP stdout line (errors and WARN are still emitted). The validator should still emit a `validator_report` event per Check 1.5 outcome via `adev report --type validator --validator validate.check-1.5-source-manifest`.
 
 **Implementation existence check (post-CLI, validator-side):** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed." The CLI does not perform this git-tracked check (it only inspects file content vs. SHA); the validator wraps it around the CLI call.
 
@@ -358,7 +358,7 @@ For every surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11) that produces a verdict,
 adev report --type validator \
   --spec "<spec-path>" \
   --step validate \
-  --validator "check-2-spec-compliance" \
+  --validator "validate.check-2-spec-compliance" \
   --verdict PASS \
   [--error "<short summary>"] \
   [--score <number>] \
@@ -366,9 +366,13 @@ adev report --type validator \
   [--notes "<≤200-char summary>"]
 ```
 
-Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier (e.g., `check-1-quality-gates`, `check-1.5-source-manifest`, `check-2-spec-compliance`, `check-4-constitution`, `check-8-boundaries`, `check-9-transition-gates`, `check-11-visual-verification`). `--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
+Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier that MUST match the `id:` declared in `governance/validate.yaml` (or the domain starter at `templates/domains/<domain>/validate.yaml`). The six registry-backed IDs in the bundled software domain are: `validate.check-1.5-source-manifest`, `validate.check-2-spec-compliance`, `validate.check-4-constitution`, `validate.check-8-boundaries`, `validate.check-9-transition-gates`, `validate.check-11-visual-verification`. Use these exact strings — emitting an unprefixed form (e.g., `check-2-spec-compliance`) bypasses `_resolveActorSeverity` lookup and defaults every event to `severity: warning`, suppressing blocker-severity FAILs in the aggregation table.
 
-Severity is stamped at write time by the lib from `gates.yaml` domain config — neither the skill prose nor the CLI invocation computes or asserts severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
+For Check 1 (quality gates, sourced from `gates.yaml` in a separate flow) and Check 1.6 (code-drift, observational), no registry entry exists today — events emitted with `--validator validate.check-1-quality-gates` or `validate.check-1.6-code-drift` will trip the unknown-validator fallback (severity defaults to warning). This is acceptable for these checks because they don't aggregate into blocker-severity verdicts; if that changes, add explicit entries to `templates/domains/<domain>/validate.yaml`.
+
+`--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
+
+Severity is stamped at write time by the lib from `validate.yaml` (each check's `severity:` field, per the single-source model in `validate-config-single-source.spec.md`). Neither the skill prose nor the CLI invocation computes or asserts severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
 
 When aggregating the overall validation verdict, read `state.steps.validate` from `currentState(projectRoot, specPath)` after all `adev report --type validator` invocations have landed. Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file.
 
