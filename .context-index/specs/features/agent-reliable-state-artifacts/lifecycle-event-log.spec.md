@@ -9,58 +9,35 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 3
+revision: 2
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-05-17
+updated: 2026-05-12
 source-manifest:
-  sha: "1b4a61e"
+  sha: "449d3d5"
   files:
+    - lib/lifecycle-events.mjs
     - lib/lifecycle-state.mjs
     - tests/fixtures/lifecycle-state/concurrent-writer.mjs
     - tests/fixtures/lifecycle-state/crash-writer.mjs
     - tests/lib/lifecycle-state-arch.test.mjs
     - tests/lib/lifecycle-state-concurrent.test.mjs
     - tests/lib/lifecycle-state-crash.test.mjs
+    - tests/lib/lifecycle-state-partial-recovery.test.mjs
     - tests/lib/lifecycle-state-perf.test.mjs
     - tests/lib/lifecycle-state.test.mjs
-  computed-at: "2026-05-12T00:17:48.718Z"
-drift_detected: true
+  computed-at: "2026-05-17T20:42:36.797Z"
 ---
-
-## Revision History
-
-- **rev 3 (2026-05-17):** Extend the canonical event-variant table with `code_drift_detected` and `code_drift_cleared` (ad-hoc, non-step events emitted by `lib/spec-drift.mjs::stampDrift` / `clearDrift` per the `jsonl-drift-events.spec.md` Migration Step 0 CON-4 blocker resolution).
-- **rev 2 (2026-05-12):** Added closed-discriminator strict mode at write time per `write-time-diagnostic-hook.spec.md`; clarified `event_diagnostics` manifest knob and `tag` default.
-- **rev 1 (2026-05-11):** Initial spec.
 
 ## Behavioral Contract
 
-The Lifecycle Event Log is a new library module (`lib/lifecycle-state.mjs`) that persists every event in a spec's lifecycle as a line in a per-spec JSONL file at `.context-index/lifecycle-state/<slug>.jsonl`. It exposes a small set of write primitives (`appendEvent`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`), read primitives (`readEvents`, `filterEvents`), a state projector (`currentState`), a gate enforcer (`requireGate`), and aggregation helpers (`listLifecycleStates`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`). Writes are append-only via `fs.appendFile`; no code path ever rewrites a log. Actor events (reviewer / validator reports) carry their severity stamped at write time, resolved once from existing domain config (`reviewers.yaml::severity_cap`, `gates.yaml::severity`); reads never touch domain config. `currentState()` folds the log into a state object — steps, plan tasks, interventions — and the aggregation rule is: any `blocker`/`error` severity returning `FAIL` ⇒ step fails; lower severities returning `FAIL` ⇒ `PASS_WITH_NOTES`. The schema is open: a stable set of canonical event variants is documented, but unknown `event` values are preserved on read and ignored by core projections so domains can extend without forking the lib. `requireGate(state, stepName)` is the new prerequisite check that replaces filesystem-grep of `.review.md` frontmatter; it hard-blocks by default and softens to advisory via `manifest.yaml::lifecycle.gate_mode`.
-
-## Canonical Event Variants
-
-The closed discriminator set recognised by core projections. Mirrored in code by `lib/lifecycle-events.mjs::CANONICAL_EVENTS` and `lib/diagnostics/event-schemas.mjs::REQUIRED_FIELDS_BY_EVENT`; when the two diverge, this table wins (per `diagnostic-registry.spec.md` rev 2 amendment 12). All variants additionally carry universal fields `event` (discriminator) and `ts` (ISO-8601 timestamp).
-
-| Discriminator | Emitter | Payload (beyond `event`, `ts`) | Notes |
-|---|---|---|---|
-| `lifecycle_step` | `reportStep(..., status="started")` | `step` | Step entry event. |
-| `step_completed` | `reportStep(..., status="completed")` | `step`, `verdict?` | Step exit event (passing). |
-| `step_failed` | `reportStep(..., status="failed")` | `step`, `verdict?` | Step exit event (failing). |
-| `reviewer_report` | `reportReviewer({step, reviewer, verdict})` | `step`, `reviewer`, `verdict`, `severity` | Actor event; `severity` stamped from `reviewers.yaml::severity_cap`. |
-| `validator_report` | `reportValidator({step, validator, verdict})` | `step`, `validator`, `verdict`, `severity` | Actor event; `severity` stamped from `gates.yaml::severity`. |
-| `plan_task` | `reportPlanTask({plan, task_id, status})` | `plan`, `task_id`, `status`, `notes?` | Canonical home of plan-task state (per `json-issue-board-adapter.spec.md` cross-spec contract). |
-| `debug_intervention` | `reportIntervention({kind, note})` | `kind`, `note` | Recoverable obstacle (rerouted to `/adev:debug`, prompt edits, etc.). |
-| `recovery_record` | (no in-tree emitter yet) | — | Forward-compat slot. |
-| `manual_override` | (no in-tree emitter yet) | — | Forward-compat slot. |
-| `code_drift_detected` | `lib/spec-drift.mjs::stampDrift(specPath, driftSource)` | `drift_source` (canonical project-root-relative path), `drift_at` (ISO-8601) | Ad-hoc non-step event. Emitted when an edit to a `source-manifest.files[]` tracked path is observed. Multi-source: every detection appended as a separate event; the inline `drift_detected: true` frontmatter boolean is the derived rolled-up view (see `spec-drift-detection/jsonl-drift-events.spec.md`). |
-| `code_drift_cleared` | `lib/spec-drift.mjs::clearDrift(specPath)` | `drift_at` (ISO-8601) | Ad-hoc non-step event. Marks the latest unresolved `code_drift_detected` event as resolved. Only `/adev:implement` calls `clearDrift` (per ADR 0011 + `jsonl-drift-events.spec.md` Behavior 3b). |
+The Lifecycle Event Log is a new library module (`lib/lifecycle-state.mjs`) that persists every event in a spec's lifecycle as a line in a per-spec JSONL file at `.context-index/lifecycle-state/<slug>.jsonl`. It exposes a small set of write primitives (`appendEvent`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`, `reportPartialRecovery`), read primitives (`readEvents`, `filterEvents`), a state projector (`currentState`), a gate enforcer (`requireGate`), and aggregation helpers (`listLifecycleStates`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`). Writes are append-only via `fs.appendFile`; no code path ever rewrites a log. Actor events (reviewer / validator reports) carry their severity stamped at write time, resolved once from existing domain config (`reviewers.yaml::severity_cap`, `gates.yaml::severity`); reads never touch domain config. `currentState()` folds the log into a state object — steps, plan tasks, interventions, partial recoveries — and the aggregation rule is: any `blocker`/`error` severity returning `FAIL` ⇒ step fails; lower severities returning `FAIL` ⇒ `PASS_WITH_NOTES`. The schema is open: a stable set of canonical event variants is documented, but unknown `event` values are preserved on read and ignored by core projections so domains can extend without forking the lib. `requireGate(state, stepName)` is the new prerequisite check that replaces filesystem-grep of `.review.md` frontmatter; it hard-blocks by default and softens to advisory via `manifest.yaml::lifecycle.gate_mode`.
 
 ## Naming Conventions (CON-1)
 
 This spec mixes two distinct naming domains. They follow different conventions on purpose:
 
-- **Event-discriminator names and event-only fields** use `snake_case`: `lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `task_id`, `aggregated_from`. This matches the convention established by the existing `lib/build-state.mjs` JSON schema (`recordStepResult` writes `retry_history`, etc.) and is the natural shape for new code.
+- **Event-discriminator names and event-only fields** use `snake_case`: `lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `partial_recovery`, `task_id`, `aggregated_from`, `artifact_path`, `prior_partial_ts`, `dispatch_mode`. This matches the convention established by the existing `lib/build-state.mjs` JSON schema (`recordStepResult` writes `retry_history`, etc.) and is the natural shape for new code.
 - **Issue board WorkItem fields** preserve the existing `FileAdapter`/`IssueManagerInterface` convention, which is a mix: top-level fields like `id`, `title`, `status`, `priority`, `type`, `epicId`, `planRef`, `planTask` are camelCase, while the later-added fields `spec_ref` and `next_action` are snake_case. This mix is legacy of the file-adapter parser and is **preserved as-is** to keep the `IssueManagerInterface` stable across `FileAdapter`, `JsonAdapter`, and `BeadsAdapter`. Changing it is out of scope for this charter.
 - **StateProjection fields** are camelCase (`currentStep`, `currentTask`, `startedAt`, `updatedAt`). The internal projection object is new code, not subject to the WorkItem-legacy mix. **Note:** within the projection, the `plan_tasks` key is renamed to `planTasks` per this convention (correcting CON-2).
 
@@ -94,7 +71,7 @@ The module enforces a path-containment invariant on every public function that t
 | `readEvents` primitive | Read file, split on newline, parse each line as JSON. Tolerates truncated final line (skip-and-continue). Returns `[]` for missing file. | small |
 | `slugFromSpec` / path helpers | Compute slug from spec filename. Resolve path to `<projectRoot>/.context-index/lifecycle-state/<slug>.jsonl`. | small |
 | `ensureLifecycleState` / `hasLifecycleState` | Idempotent bootstrap and existence check. | small |
-| Convenience writers | `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`. Each calls `appendEvent` after stamping severity (for actor events) via `loadDomainConfig` lookup. | medium |
+| Convenience writers | `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`, `reportPartialRecovery`. Each calls `appendEvent` after stamping severity (for actor events) via `loadDomainConfig` lookup. `reportPartialRecovery` follows the one-helper-per-variant discipline (NOT a widening of `reportIntervention`) and emits `partial_recovery` events. | medium |
 | Severity resolution helper | Internal function that resolves an actor's severity from `reviewers.yaml`/`gates.yaml` for the resolved domain at write time. Caches the loaded config for the lifetime of the call only. | medium |
 | `currentState` fold | Reducer over events producing the StateProjection. Handles every canonical variant; preserves unknown variants under an `unknownEvents[]` array. | medium |
 | Aggregation algorithm | The fold's `step_completed`/`step_failed` synthesis: walk per-step reports, apply severity rule (any `blocker`/`error` FAIL ⇒ FAIL; lower ⇒ PASS_WITH_NOTES). | medium |
@@ -114,7 +91,7 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 
 ## Acceptance Criteria
 
-- [ ] `lib/lifecycle-state.mjs` exports every function listed in the charter's Interface Contracts: `appendEvent`, `readEvents`, `currentState`, `requireGate`, `resolveGateMode`, `listLifecycleStates`, `renderMarkdown`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`, `filterEvents`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`.
+- [ ] `lib/lifecycle-state.mjs` exports every function listed in the charter's Interface Contracts: `appendEvent`, `readEvents`, `currentState`, `requireGate`, `resolveGateMode`, `listLifecycleStates`, `renderMarkdown`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`, `filterEvents`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`, `reportPartialRecovery`.
 - [ ] All writes go through `fs.appendFile` (or equivalent `O_APPEND` write). A grep test asserts no other write primitive (`writeFile`, `writeFileSync`, `createWriteStream` truncating) appears in the module. CI gate.
 - [ ] `reportReviewer` and `reportValidator` always stamp `severity` on the event before appending. A schema-validation test over fixture events confirms no actor event lacks `severity`.
 - [ ] `currentState()` is a pure function of the events array; same input always yields the same output. Asserted by property test.
@@ -124,7 +101,9 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 - [ ] Size caps enforced: events > 1 MB → `EVENT_TOO_LARGE`; log file ≥ 50 MB → `LOG_TOO_LARGE`; `notes` > 4 KB → truncated with `NOTES_TRUNCATED` warning. Test fixtures exercise each cap.
 - [ ] Severity-resolution best-effort: if `loadDomainConfig` throws (broken `reviewers.yaml`/`gates.yaml`), the writer stamps `severity: warning`, emits a one-time `DOMAIN_CONFIG_DEGRADED` warning, and appends the event. Durability is prioritized over strict severity.
 - [ ] Aggregation per the per-severity table in Behaviors: `blocker`/`error` FAIL → step FAIL; `warning`/`advisory` FAIL → step PASS_WITH_NOTES. Fixture-driven test covers all four severity rows.
-- [ ] The StateProjection uses camelCase keys throughout (`currentStep`, `currentTask`, `planTasks`, `startedAt`, `updatedAt`, `interventions`, `unknownEvents`). No snake_case keys on the projection (event-discriminator names within event payloads keep their snake_case as per Naming Conventions).
+- [ ] The StateProjection uses camelCase keys throughout (`currentStep`, `currentTask`, `planTasks`, `startedAt`, `updatedAt`, `interventions`, `partialRecoveries`, `unknownEvents`). No snake_case keys on the projection (event-discriminator names within event payloads keep their snake_case as per Naming Conventions).
+- [ ] `reportPartialRecovery(projectRoot, specPath, args)` exists with the documented signature. `action` is validated against the closed enum `{resumed, discarded, stolen, aborted}` and rejected with `EVENT_SCHEMA_INVALID` otherwise. `artifact_path` is rejected with `EVENT_SCHEMA_INVALID` if absolute. The fold surfaces `partial_recovery` events under `partialRecoveries[]` on the projection (NOT folded into `interventions[]`). This is the cross-spec contract with `incremental-artifact-writes.spec.md` — that spec defines the .partial recovery lifecycle; this spec owns the event-payload shape and projection field.
+- [ ] **Data-exposure boundary (SEC-8):** `partial_recovery` events MUST persist `artifact_path` as project-root-relative. Helper rejects absolute paths at write time. Lock-payload PIDs, environment values, and full command output MUST NOT appear in any `partial_recovery` event — those belong outside the lifecycle log per the spec's data-exposure boundary.
 - [ ] `listLifecycleStates(projectRoot)` returns one entry per `<slug>.jsonl` file in `.context-index/lifecycle-state/`. Empty array when directory missing.
 - [ ] All constitution quality gates pass: `npm test` green, no new dependencies in `package.json`, all files are `.mjs` ESM.
 - [ ] No constitutional violations.
@@ -172,6 +151,7 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 - **When** the fold encounters an event with an `event` value not in the canonical set **then** the event is preserved on the projection's `unknownEvents[]` array and otherwise ignored by core step / plan-task / intervention projections.
 - **When** any caller attempts to write a log file with a non-append primitive (`writeFile`, truncating stream, etc.) **then** a CI architectural test catches it and fails the build.
 - **When** a skill needs to record per-task progress on a spec's plan **then** it MUST call `reportPlanTask(projectRoot, specPath, { plan, task_id, status })` — this is the canonical substitute for the legacy pattern of creating per-task issues on the board. The sibling `json-issue-board-adapter` spec enforces the inverse: `create()` / `update()` calls that would persist `planTask` on an Issue are rejected with `BOARD_GRANULARITY_VIOLATION`. The two specs together form one contract: plan-task state lives exclusively in the lifecycle log (SA-7 / cross-spec contract).
+- **When** a `.partial` artifact's authoring is resolved (resumed, discarded, stolen, or aborted) **then** the actor MUST call `reportPartialRecovery(projectRoot, specPath, { artifact_path, prior_partial_ts, action, dispatch_mode })`. The helper appends a `partial_recovery` event to the lifecycle log. `action` is validated against the closed enum `{resumed, discarded, stolen, aborted}`; `artifact_path` MUST be a project-root-relative path (no absolute paths persisted to disk per SEC-3 data-exposure boundary); `prior_partial_ts` is the ISO-8601 mtime of the prior `.partial` file; `dispatch_mode` is `"foreground" | "subagent"`. The fold surfaces these events under a new projection field `partialRecoveries[]` (NOT folded into `interventions[]` — see `incremental-artifact-writes.spec.md` for the full design). The cross-spec contract: `lib/partial-artifact.mjs` invokes `reportPartialRecovery` on every resume/discard/steal/abort decision; this spec owns the event-payload shape and helper signature.
 
 ## Postconditions
 

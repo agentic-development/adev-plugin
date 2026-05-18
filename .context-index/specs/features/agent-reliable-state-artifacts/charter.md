@@ -136,6 +136,14 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 
 9. **Markdown is rendered, never authoritative.** Any `.md` file produced from JSON/JSONL state carries a "DO NOT EDIT — generated" header and is regeneratable. Editing the rendered file has no effect on the source of truth.
 
+10. **Write-state suffix taxonomy.** Four write-state suffixes are orthogonal to artifact-kind suffixes (`.spec.md`, `.plan.md`, etc. — owned by `spec-file-suffixes.spec.md`). Each suffix has exactly one owner and one purpose; tooling never aliases them.
+    - **`.tmp`** — byte-level atomic-rename staging (`fs.writeFileSync(tmpPath); fs.renameSync(tmp, final)`). Lifetime: milliseconds. Never recovered, never persisted across process exit. Exemplars: `lib/build-state.mjs::atomicWriteJson`, `lib/issues/json-adapter.mjs::_write` (random-hex `.tmp` suffix).
+    - **`.lock`** — exclusive-write coordination via `openSync(O_EXCL)`. Lifetime: scoped to one critical section. Exemplar: `lib/issues/json-adapter.mjs` (`tasks.json.lock`).
+    - **`.partial`** — artifact-level incremental authoring. Lifetime: minutes to hours; persists across process exit so a successor invocation can resume or discard. Committed via atomic rename. Carries a `partial_schema: <skill>@<version>` marker in the first authored chunk. Owned by `incremental-artifact-writes.spec.md`.
+    - **`.partial.lock`** — sidecar coordination for `.partial` writers. Holds `{pid, started_at}` so orphan locks can be stolen on stale. Owned by `incremental-artifact-writes.spec.md`.
+
+    Recovery scanners look only at `.partial` (never `.tmp`); lock-coordination logic distinguishes `.partial.lock` from `tasks.json.lock`; etc. Canonical artifact-kind globs (`*.spec.md`, `*.plan.md`, etc.) MUST NOT match `<name>.<kind>.md.partial` — partials are invisible to spec-aggregation tooling by construction (a future regression broadening a glob to `*.md` would violate this invariant).
+
 ## Capability Map
 
 | Capability | Description | Priority | Status |
