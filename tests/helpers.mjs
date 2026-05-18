@@ -24,10 +24,17 @@ export function createTempDir() {
 
 /**
  * Remove a temp directory and all its contents.
+ *
+ * The `maxRetries`/`retryDelay` options absorb transient filesystem races
+ * (ENOTEMPTY observed on macOS when the directory contains symlinks the
+ * CLI install just created — `providers/opencode` symlinks the plugin into
+ * the temp HOME, and the recursive walk can race with the symlink target
+ * still being written).
+ *
  * @param {string} dirPath
  */
 export function cleanupTempDir(dirPath) {
-  rmSync(dirPath, { recursive: true, force: true });
+  rmSync(dirPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 }
 
 /**
