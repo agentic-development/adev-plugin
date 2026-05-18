@@ -133,12 +133,21 @@ targets_protected_branch() {
     fi
   fi
 
-  for branch in "${PROTECTED_BRANCHES[@]}"; do
-    # git merge <branch> or git merge ... <branch>
-    if echo "$cmd" | grep -qE "git\s+merge\s+.*\b${branch}\b"; then
-      echo "$branch"
+  # git merge while on a protected branch — block regardless of merge argument
+  # (the merge advances the current branch; if current is protected, the merge
+  # writes to a protected branch). Merging FROM a protected ref INTO a feature
+  # branch (e.g. `git merge origin/main` from `feat/x`) is the routine
+  # "keep-current" workflow and must be allowed.
+  if echo "$cmd" | grep -qE "git\s+merge\b"; then
+    local on_protected_merge
+    on_protected_merge=$(is_on_protected_branch) || true
+    if [ -n "$on_protected_merge" ]; then
+      echo "$on_protected_merge"
       return 0
     fi
+  fi
+
+  for branch in "${PROTECTED_BRANCHES[@]}"; do
     # git push (to protected branch): origin main, origin master, etc.
     if echo "$cmd" | grep -qE "git\s+push\s+.*\b${branch}\b"; then
       echo "$branch"
