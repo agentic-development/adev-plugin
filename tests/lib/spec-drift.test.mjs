@@ -268,6 +268,18 @@ describe("clearDrift", () => {
     assert.ok(content.includes("status: review-passed"));
     assert.ok(!content.includes("drift_detected"));
   });
+
+  it("appends a code_drift_cleared JSONL event AND removes the inline boolean (jsonl-drift-events Behavior 3)", async () => {
+    const specPath = makeSpec(root, "cleared-evt", { sourceManifestFiles: ["lib/foo.mjs"] });
+    await stampDrift(specPath, "lib/foo.mjs");
+    await clearDrift(specPath);
+    const events = readEvents(root, specPath);
+    const cleared = events.filter(e => e.event === "code_drift_cleared");
+    assert.equal(cleared.length, 1);
+    assert.match(cleared[0].drift_at, /^\d{4}-\d{2}-\d{2}T/);
+    const content = readFileSync(specPath, "utf-8");
+    assert.doesNotMatch(content, /^drift_detected:/m);
+  });
 });
 
 describe("hasDrift", () => {
