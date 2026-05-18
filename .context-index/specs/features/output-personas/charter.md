@@ -73,7 +73,7 @@ Output Personas is a presentation layer that adapts plugin outputs to the user's
 | Gitignore management | Ensure `.context-index/user-config` is added to `.gitignore` during init | must-have | | validated |
 | Unknown persona fallback | Warn on unrecognized persona name and fall back to `developer` | must-have | | validated |
 | Per-invocation flag | Support `--persona <name>` argument in skill invocation text (e.g., `/adev:build --persona product`), parsed from slash-command arguments | must-have | | validated |
-| Verbosity axis + output trim + anti-redundancy + Next-Actions invariant | Add `verbosity: terse\|normal\|deep` as a second axis orthogonal to persona; calibrate Architect `normal` template trim to 58–62 bullets; add universal anti-redundancy rule excluding Next Actions; codify Next-Actions-always-present invariant. Grounded by issue-515 + .context-index/research/persona-output-depth-and-verbosity.md. | should-have | v2 | implemented |
+| Verbosity axis + output trim + anti-redundancy + Next-Actions invariant | Add `verbosity: terse\|normal\|deep` as a second axis orthogonal to persona; calibrate Architect `normal` template trim to 58–62 bullets; add universal anti-redundancy rule excluding Next Actions; codify Next-Actions-always-present invariant. Grounded by issue-515 + .context-index/research/persona-output-depth-and-verbosity.md. | should-have | v2 | validated |
 
 ## Deferred Capabilities
 
