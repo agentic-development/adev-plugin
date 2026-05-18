@@ -48,6 +48,11 @@ viz/dist/
 .context-index/.session-tracking.jsonl
 .context-index/user-config
 
+# Execution state (transient per-session resume cursor — owned by lib/execution-state.mjs).
+# Committed copies appeared on cursor-provider branches due to /adev:implement
+# staging the file; ignore here so future builds don't repeat that mistake.
+.context-index/.execution-state.json
+
 # Prototype artifacts (adev)
 .adev/
 
