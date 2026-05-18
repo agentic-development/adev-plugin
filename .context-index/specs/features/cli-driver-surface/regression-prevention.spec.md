@@ -28,8 +28,6 @@ source-manifest:
     - tests/hooks/pre-commit-no-inline-node.test.mjs
   computed-at: "2026-05-14T21:51:01.790Z"
 drift_detected: true
-drift_source: CLAUDE.md
-drift_at: 2026-05-17T21:03:49.915Z
 ---
 
 ## Behavioral Contract

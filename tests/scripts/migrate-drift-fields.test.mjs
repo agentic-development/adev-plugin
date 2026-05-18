@@ -233,6 +233,38 @@ describe("migrate-drift-fields", () => {
     assert.match(r.stdout + r.stderr, /skip|summary|migrated|reject/i);
   });
 
+  it("migrates specs whose frontmatter is preceded by an H1 header (real-world style)", () => {
+    // Many specs in this repo write the H1 before the YAML delimiter.
+    const rel = join(".context-index", "specs", "features", "m", "h1-prefixed.spec.md");
+    const abs = join(root, rel);
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, [
+      "# Cross-Cutting Spec: H1 prefixed",
+      "",
+      "---",
+      "title: h1-prefixed",
+      "status: implemented",
+      "drift_detected: true",
+      "drift_source: lib/foo.mjs",
+      "drift_at: 2026-04-01T10:00:00.000Z",
+      "---",
+      "",
+      "## Behavioral Contract",
+    ].join("\n"));
+    const r = runScript([], { cwd: root });
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+    const content = readFileSync(abs, "utf8");
+    assert.match(content, /^drift_detected:\s*true$/m);
+    assert.doesNotMatch(content, /^drift_source:/m);
+    assert.doesNotMatch(content, /^drift_at:/m);
+    // H1 and body preserved.
+    assert.match(content, /^# Cross-Cutting Spec: H1 prefixed$/m);
+    assert.match(content, /## Behavioral Contract/);
+    const events = readEvents(root, rel).filter(e => e.event === "code_drift_detected");
+    assert.equal(events.length, 1);
+    assert.equal(events[0].drift_source, "lib/foo.mjs");
+  });
+
   it("supports --root flag to scope the scan to a subdirectory", () => {
     const { rel, abs } = writeSpec(root, "scoped", {
       title: "scoped",

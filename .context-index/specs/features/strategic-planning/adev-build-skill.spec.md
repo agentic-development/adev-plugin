@@ -23,8 +23,6 @@ source-manifest:
     - tests/skills/build-milestone-and-stale.test.mjs
   computed-at: "2026-05-05T00:00:00.000Z"
 drift_detected: true
-drift_source: skills/build/SKILL.md
-drift_at: 2026-05-15T18:27:08.638Z
 ---
 
 ## Behavioral Contract

@@ -54,3 +54,4 @@
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-12","status":"in_progress","notes":null,"ts":"2026-05-14T21:10:52.030Z"}
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/diagnostic-registry.plan.md","task_id":"task-12","status":"done","notes":"5 SKILL.md files updated to cite lib/spec-status.mjs::SPEC_STATUSES as canonical source; full suite passes (2516/2518, 2 todo, 0 fail)","ts":"2026-05-14T21:12:54.603Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-14T21:13:25.530Z"}
+{"event":"code_drift_detected","drift_source":"lib/diagnostics/event-schemas.mjs","drift_at":"2026-05-18T13:36:45.948Z","ts":"2026-05-18T13:50:21.080Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -70,3 +70,4 @@
 {"event":"validator_report","step":"validate","validator":"check-13-heuristic-extraction","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":null,"ts":"2026-05-16T01:54:04.930Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T01:56:23.349Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T01:56:51.986Z"}
+{"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-05-17T20:31:49.575Z","ts":"2026-05-18T13:48:57.294Z"}
