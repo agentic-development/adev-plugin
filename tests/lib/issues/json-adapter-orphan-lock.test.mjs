@@ -21,7 +21,7 @@ import {
   chmodSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { JsonAdapter } from '../../../lib/issues/json-adapter.mjs';
+import { JsonAdapter, DEFAULT_CAS_LOCK_STALE_SECONDS } from '../../../lib/issues/json-adapter.mjs';
 import { createTempDir, cleanupTempDir, writeFixture } from '../../helpers.mjs';
 
 // ---------------------------------------------------------------------------
@@ -43,4 +43,95 @@ test('JsonAdapter._acquireLock returns a numeric fd on success', () => {
   } finally {
     cleanupTempDir(root);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Task 3 — DEFAULT_CAS_LOCK_STALE_SECONDS export + manifest knob + validation.
+// ---------------------------------------------------------------------------
+
+describe('orphan-lock cleanup — manifest knob (Task 3)', () => {
+
+  test('DEFAULT_CAS_LOCK_STALE_SECONDS exported and equals 30', () => {
+    assert.equal(DEFAULT_CAS_LOCK_STALE_SECONDS, 30);
+  });
+
+  test('absent manifest knob → falls back to default', () => {
+    const root = createTempDir();
+    try {
+      writeFixture(root, '.context-index/manifest.yaml',
+        'tasks:\n  backend: json\n');
+      const adapter = new JsonAdapter(root);
+      assert.equal(adapter.casLockStaleSeconds, DEFAULT_CAS_LOCK_STALE_SECONDS);
+    } finally { cleanupTempDir(root); }
+  });
+
+  test('manifest.tasks.cas_lock_stale_seconds: 60 overrides the default', () => {
+    const root = createTempDir();
+    try {
+      writeFixture(root, '.context-index/manifest.yaml',
+        'tasks:\n  backend: json\n  cas_lock_stale_seconds: 60\n');
+      const adapter = new JsonAdapter(root);
+      assert.equal(adapter.casLockStaleSeconds, 60);
+    } finally { cleanupTempDir(root); }
+  });
+
+  test('manifest with cas_lock_stale_seconds: 3 (< floor 5) rejects at construction', () => {
+    const root = createTempDir();
+    try {
+      writeFixture(root, '.context-index/manifest.yaml',
+        'tasks:\n  backend: json\n  cas_lock_stale_seconds: 3\n');
+      assert.throws(
+        () => new JsonAdapter(root),
+        (err) => err.code === 'BOARD_INVALID_LOCK_STALE_SECONDS',
+      );
+    } finally { cleanupTempDir(root); }
+  });
+
+  test('manifest with non-integer (string literal) cas_lock_stale_seconds rejects', () => {
+    const root = createTempDir();
+    try {
+      writeFixture(root, '.context-index/manifest.yaml',
+        'tasks:\n  backend: json\n  cas_lock_stale_seconds: thirty\n');
+      assert.throws(
+        () => new JsonAdapter(root),
+        (err) => err.code === 'BOARD_INVALID_LOCK_STALE_SECONDS',
+      );
+    } finally { cleanupTempDir(root); }
+  });
+
+  test('manifest with float cas_lock_stale_seconds: 5.5 rejects', () => {
+    const root = createTempDir();
+    try {
+      writeFixture(root, '.context-index/manifest.yaml',
+        'tasks:\n  backend: json\n  cas_lock_stale_seconds: 5.5\n');
+      assert.throws(
+        () => new JsonAdapter(root),
+        (err) => err.code === 'BOARD_INVALID_LOCK_STALE_SECONDS',
+      );
+    } finally { cleanupTempDir(root); }
+  });
+
+  test('manifest with boolean cas_lock_stale_seconds: true rejects', () => {
+    const root = createTempDir();
+    try {
+      writeFixture(root, '.context-index/manifest.yaml',
+        'tasks:\n  backend: json\n  cas_lock_stale_seconds: true\n');
+      assert.throws(
+        () => new JsonAdapter(root),
+        (err) => err.code === 'BOARD_INVALID_LOCK_STALE_SECONDS',
+      );
+    } finally { cleanupTempDir(root); }
+  });
+
+  test('manifest with cas_lock_stale_seconds: null rejects', () => {
+    const root = createTempDir();
+    try {
+      writeFixture(root, '.context-index/manifest.yaml',
+        'tasks:\n  backend: json\n  cas_lock_stale_seconds: null\n');
+      assert.throws(
+        () => new JsonAdapter(root),
+        (err) => err.code === 'BOARD_INVALID_LOCK_STALE_SECONDS',
+      );
+    } finally { cleanupTempDir(root); }
+  });
 });
