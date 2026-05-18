@@ -172,6 +172,26 @@ created: <today's date YYYY-MM-DD>
 
 After writing any spec, output the path, mode-specific stats (see each mode), and next steps: review the spec, `/adev:review-specs`, or write another spec.
 
+## Shared: Lifecycle Events
+
+Every mode (Standard, Extract, Refactor, From-Diff, Cross-Cutting) MUST emit a lifecycle entry event before writing any spec content and a matching exit event after the spec is saved. Without these events, the lifecycle log has no record of the specify step and `/adev:review-specs` blocks with `step "review" requires prior step "specify" to be completed`.
+
+**Entry event** (emit before Step 1 / earliest spec-related action):
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status started
+```
+
+**Exit event** (emit at the end of the Summary step):
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+```
+
+The `--verdict PASS` is required — downstream gates require the prior step to have completed with PASS or PASS_WITH_NOTES. The specify step has no failure path that reaches the Summary step (success implies the spec was written, status set to `review-pending`, and the Feature work item created or skipped), so success implies PASS. Failure paths emit `--status failed` separately and do not reach the exit emission.
+
+For `--cross-cutting` mode, the spec path is `.context-index/specs/cross-cutting/<slug>.spec.md` rather than `.context-index/specs/features/<module>/<slug>.spec.md`. The events are otherwise identical.
+
 ---
 
 ## Standard Mode (default)
@@ -471,6 +491,10 @@ adev report --type step --spec <spec-path> --step specify --status completed --v
 
 For brownfield codebases. Reads existing source code and produces a "snapshot spec" that captures current behavior. Documents what IS, not what SHOULD BE.
 
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
+
 ### Step 1: Resolve Charter
 
 Use the shared Resolve Charter section above.
@@ -532,6 +556,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 5: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Extracted from: <N> files (<N> lines analyzed)
@@ -551,6 +577,10 @@ Output the shared summary template with these stats:
 ## Refactor Mode (`--refactor`)
 
 Produces a refactoring spec with current state analysis, target state definition, a step-by-step migration path, and invariants.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
 
 ### Step 1: Resolve Charter
 
@@ -652,6 +682,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 8: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Current state: <N> files, <N> problems identified
@@ -669,6 +701,10 @@ Output the shared summary template with these stats:
 ## From-Diff Mode (`--from-diff`)
 
 Generates a retroactive Live Spec from a git diff or PR. Useful for documenting work done before adev was adopted, or hotfixes that skipped the spec milestone.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
 
 ### Step 1: Identify the Diff
 
@@ -739,6 +775,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 5: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Diff source: <source>
@@ -755,6 +793,10 @@ Output the shared summary template with these stats:
 ## Cross-Cutting Mode (`--cross-cutting`)
 
 Produces specs for concerns spanning multiple features: authentication, error handling, API versioning, logging, etc.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode. Note that for cross-cutting specs, the `--spec` path is `.context-index/specs/cross-cutting/<slug>.spec.md`, not `.context-index/specs/features/<module>/<slug>.spec.md`.
 
 ### Step 1: Prerequisites
 
@@ -809,6 +851,8 @@ Same process as standard mode (behavioral contract, constitution reference, task
 After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
 
 ### Step 6: Summary
+
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`). The spec path is `.context-index/specs/cross-cutting/<slug>.spec.md`.
 
 Output the shared summary template with these stats:
 ```

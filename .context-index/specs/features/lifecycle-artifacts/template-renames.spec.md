@@ -28,7 +28,7 @@ source-manifest:
   computed-at: "2026-05-15T15:14:03.286Z"
 drift_detected: true
 drift_source: skills/specify/SKILL.md
-drift_at: 2026-05-17T19:58:35.231Z
+drift_at: 2026-05-17T20:38:19.318Z
 ---
 
 # Refactoring Spec: Template Renames
