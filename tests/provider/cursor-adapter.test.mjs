@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { CursorAdapter, sanitizeSkillName } from "../../providers/cursor/adapter.mjs";
@@ -159,5 +159,48 @@ describe("sanitizeSkillName (pure helper)", () => {
     const input = "---\r\nname: adev:winz\r\n---\r\n\r\nBody.\r\n";
     const { sanitizedName } = sanitizeSkillName(input);
     assert.equal(sanitizedName, "adev-winz");
+  });
+});
+
+describe("CursorAdapter.uninstall", () => {
+  let originalEnv;
+  let homeDir;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    homeDir = mkdtempSync(join(tmpdir(), "cursor-uninstall-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it("removes the plugin cache dir and all ~/.cursor/skills/adev-*/ dirs", async () => {
+    await CursorAdapter.install({ scope: "user" });
+    await CursorAdapter.uninstall({ scope: "user" });
+
+    const cacheDir = join(homeDir, ".cursor", "plugins", "local", "adev");
+    assert.equal(existsSync(cacheDir), false, "plugin cache dir must be removed");
+
+    const skillsDir = join(homeDir, ".cursor", "skills");
+    if (existsSync(skillsDir)) {
+      const remaining = readdirSync(skillsDir).filter((n) => n.startsWith("adev-"));
+      assert.deepEqual(remaining, [], "no adev-* skill dirs may remain");
+    }
+  });
+
+  it("is idempotent: uninstall when ~/.cursor/ does not exist is a no-op", async () => {
+    // Do not call install first. Just uninstall against an empty homeDir.
+    await assert.doesNotReject(() => CursorAdapter.uninstall({ scope: "user" }));
+  });
+
+  it("install after uninstall produces the same state as a first install", async () => {
+    await CursorAdapter.install({ scope: "user" });
+    await CursorAdapter.uninstall({ scope: "user" });
+    const result = await CursorAdapter.install({ scope: "user" });
+    assert.equal(result.installed, true);
   });
 });

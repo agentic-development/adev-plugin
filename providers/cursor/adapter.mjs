@@ -188,7 +188,30 @@ export const CursorAdapter = {
   },
 
   async uninstall(_opts = {}) {
-    throw new Error("not implemented yet"); // Task 4
+    let cursorHome;
+    try {
+      cursorHome = getCursorHome();
+    } catch {
+      return { uninstalled: true };
+    }
+    if (!existsSync(cursorHome)) return { uninstalled: true };
+
+    const cacheDir = getPluginCacheDir();
+    if (existsSync(cacheDir)) {
+      rmSync(cacheDir, { recursive: true, force: true });
+    }
+
+    const skillsDir = getCursorSkillsDir();
+    if (existsSync(skillsDir)) {
+      const entries = readdirSync(skillsDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        if (!entry.name.startsWith("adev-")) continue;
+        rmSync(join(skillsDir, entry.name), { recursive: true, force: true });
+      }
+    }
+
+    return { uninstalled: true };
   },
 
   detectConflicts() {
