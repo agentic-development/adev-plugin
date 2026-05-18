@@ -297,7 +297,7 @@ Bypass with `git commit --no-verify` only when justified. Provider mirrors under
 - Includes `specs-touched` derived from the commit's `Spec:` trailer (multiple specs supported, comma-separated)
 - Always exits 0 — if `node` is unavailable or any step fails, the hook quietly no-ops
 
-**Adopter convention for these files (important — see [issue-518](../.context-index/tasks/tasks.md)):**
+**Adopter convention for these files (important — see [issue-518](../.context-index/tasks/tasks.json)):**
 
 | Question | Answer |
 |---|---|
