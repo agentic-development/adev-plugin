@@ -282,6 +282,53 @@ describe("clearDrift", () => {
   });
 });
 
+describe("stampDrift concurrency (SEC-6: per-spec lock-scope)", () => {
+  let root;
+
+  before(() => {
+    root = makeTempProject();
+  });
+
+  after(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("concurrent stampDrift calls on different specs proceed in parallel (per-spec lock-scope)", async () => {
+    const specA = makeSpec(root, "lock-spec-a", { sourceManifestFiles: ["lib/a.mjs"] });
+    const specB = makeSpec(root, "lock-spec-b", { sourceManifestFiles: ["lib/b.mjs"] });
+    const start = Date.now();
+    await Promise.all([
+      stampDrift(specA, "lib/a.mjs"),
+      stampDrift(specB, "lib/b.mjs"),
+    ]);
+    const elapsed = Date.now() - start;
+    // appendFileSync with O_APPEND is per-file, so different specs never block
+    // each other. A global lock would serialize and roughly double the wall
+    // time. 500ms is a generous ceiling for two stamps on independent files.
+    assert.ok(
+      elapsed < 500,
+      `Concurrent stamps on different specs took ${elapsed}ms — suggests a global lock`,
+    );
+    // Both stamps must have landed.
+    const evA = readEvents(root, specA).filter(e => e.event === "code_drift_detected");
+    const evB = readEvents(root, specB).filter(e => e.event === "code_drift_detected");
+    assert.equal(evA.length, 1);
+    assert.equal(evB.length, 1);
+  });
+
+  it("concurrent stampDrift calls on the same spec serialize correctly (no duplicate, no corruption)", async () => {
+    const specPath = makeSpec(root, "lock-same-spec", { sourceManifestFiles: ["a.mjs", "b.mjs"] });
+    await Promise.all([
+      stampDrift(specPath, "a.mjs"),
+      stampDrift(specPath, "b.mjs"),
+    ]);
+    const events = readEvents(root, specPath).filter(e => e.event === "code_drift_detected");
+    assert.equal(events.length, 2, "both stamps must be present");
+    const sources = events.map(e => e.drift_source).sort();
+    assert.deepEqual(sources, ["a.mjs", "b.mjs"]);
+  });
+});
+
 describe("hasDrift", () => {
   let root;
 
