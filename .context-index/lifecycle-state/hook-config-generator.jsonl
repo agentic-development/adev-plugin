@@ -30,3 +30,9 @@
 {"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"5","status":"done","notes":"4 drift assertions added; perturbation paths verified","ts":"2026-05-18T14:55:29.662Z"}
 {"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"6","status":"in_progress","notes":null,"ts":"2026-05-18T14:55:34.845Z"}
 {"event":"plan_task","plan":".context-index/specs/features/cursor-provider/hook-config-generator.plan.md","task_id":"6","status":"done","notes":"Drift + missing-file perturbations verified; both fire spec-mandated messages","ts":"2026-05-18T14:59:12.162Z"}
+{"event":"step_completed","step":"implement","ts":"2026-05-18T15:04:00.806Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-18T15:06:08.536Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"FAIL","error":"1 failing test in tests/cli-e2e.test.mjs:91 (afterEach ENOTEMPTY teardown). Pre-existing flake, unrelated to spec source-manifest files.","ts":"2026-05-18T15:14:40.131Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"Source manifest sha 0d49109 matches; all 4 listed files committed via cursor-provider commits.","ts":"2026-05-18T15:14:42.061Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"drift_detected=false; no code-side drift.","ts":"2026-05-18T15:14:43.324Z"}
+{"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-05-18T15:15:28.228Z"}
