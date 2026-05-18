@@ -65,7 +65,33 @@ export const CursorAdapter = {
   },
 
   async install(_opts = {}) {
-    throw new Error("not implemented yet"); // Task 2
+    const cacheDir = getPluginCacheDir();
+
+    if (existsSync(cacheDir)) {
+      return { installed: false, path: cacheDir };
+    }
+
+    ensureDir(cacheDir);
+
+    // Constitution Reference Principle 1: use fs.cpSync over shelling to cp -r.
+    // The OpenCode adapter still uses execSync for historical reasons; the
+    // new CursorAdapter does not need that legacy.
+    cpSync(PLUGIN_ROOT, cacheDir, {
+      recursive: true,
+      filter: (src) => {
+        const basename = src.split("/").pop();
+        return (
+          basename !== ".git" &&
+          basename !== "node_modules" &&
+          basename !== ".DS_Store"
+        );
+      },
+    });
+
+    // Publish sanitized skill directories (Task 3 fills in publishSkillsFromCache).
+    const skillReport = await publishSkillsFromCache(cacheDir);
+
+    return { installed: true, path: cacheDir, skills: skillReport };
   },
 
   async uninstall(_opts = {}) {
