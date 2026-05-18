@@ -1,13 +1,20 @@
 ---
 charter: cursor-provider
 kind: artifact
-status: review-passed
+status: implemented
 risk_level: low
 milestone: v1
 revision: 1
 charter-revision: 2
 created: 2026-05-18
 updated: 2026-05-18
+source-manifest:
+  sha: "2aed756"
+  files:
+    - .cursor-plugin/plugin.json
+    - release-please-config.json
+    - tests/version-parity.test.mjs
+  computed-at: "2026-05-18T13:32:29.548Z"
 ---
 
 # Artifact Spec: Cursor Plugin Manifest and Three-Way Version Parity
