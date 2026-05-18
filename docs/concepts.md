@@ -68,7 +68,9 @@ This lifecycle is not rigid — you can enter at any point, skip phases for simp
 
 ## Output Personas
 
-adev adapts its communication style based on who is reading the output. When you initialize a project with `/adev:init`, you can configure an **output persona** that controls how skills present their results in conversation. The persona does not change what the framework does — it changes how it talks to you.
+adev adapts its communication style on **two orthogonal axes**: a **persona** that controls the audience pitch (who is reading), and a **verbosity** dial that controls how much detail lands in chat (how much they need to see). Neither axis changes what the framework does — they change how it talks to you. Artifacts written to disk (validation reports, review files, plans) always use the full technical format regardless of either axis.
+
+### Axis 1 — Persona (audience pitch)
 
 Three personas are available:
 
@@ -76,7 +78,42 @@ Three personas are available:
 - **Developer** (default) — For engineers actively building. Skills show file paths, code references, test results, and technical details. This is the full-detail view.
 - **Architect** — For technical leads reviewing design decisions. Skills emphasize architectural trade-offs, boundary compliance, and cross-cutting concerns.
 
-The persona is set in the manifest and injected at session start. You can change it at any time by editing `manifest.yaml` or re-running `/adev:init`. Artifacts written to disk (validation reports, review files, plans) always use the full technical format regardless of persona — only the conversation output adapts.
+### Axis 2 — Verbosity (output depth)
+
+Three verbosity levels are available:
+
+- **terse** — Cap responses to ~3 sentences unless asked. Skip Architectural-Read, multi-table verdicts, and trade-off recapping unless the user explicitly invokes them. Summarize disk artifacts in one sentence with a link.
+- **normal** — One to two paragraphs by default. Trade-off rationale appears at real decision branches.
+- **deep** — Full mandated sections from the persona directive: rationale, trade-offs, multi-table review verdicts, and complete citation lists.
+
+Per-persona defaults: `architect → normal`, `developer → normal`, `product → terse`. You can override on a per-session basis with `--verbosity <level>`.
+
+### Universal invariants (across all 9 combinations)
+
+Three rules hold regardless of which persona × verbosity combination is active:
+
+- **Next-Actions invariant.** Every assistant turn ends with a clear next-action suggestion. The Next Actions dimension is never trimmed, even under `verbosity: terse`. (Terse mode biases toward a single most-likely suggestion rather than enumerating a menu of alternatives, but the line is always present.)
+- **Anti-redundancy rule.** If a disk artifact (`.review.md`, `.plan.md`, `.validate.md`, `.spec.md`, or any file under `.context-index/`) captures the detail, chat summarizes in 1–3 sentences and links to the path rather than recapitulating contents. The Next Actions dimension is exempt — forward-looking suggestions are not duplicates of disk content.
+- **No hard word caps.** Templates bias tone, never enforce a hard "N words max." (The Anthropic April-2026 Claude Code postmortem found that hard word caps cost 3% quality.)
+
+### Configuration
+
+Both axes are configured the same way — via the `user-config` file (flat `key=value` lines, bash-parseable). The resolution hierarchy is identical:
+
+1. Per-invocation flag (`--persona <name>` or `--verbosity <level>`)
+2. Local config (`.context-index/user-config`, gitignored)
+3. Global config (`<plugin-root>/user-config`, set during `npx @adev-org/adev-cli install`)
+4. Per-persona default for verbosity (no fallback for persona — `developer` is the universal default)
+
+```bash
+# .context-index/user-config (local override; gitignored)
+persona=architect
+verbosity=terse
+```
+
+Unknown values produce a non-fatal warning and fall back. Values containing `/`, `\`, or `..` are rejected (defense-in-depth path-traversal guard). If a verbosity overlay template is missing, the session-start hook degrades to persona-only directive injection — it never blocks the session.
+
+See [Configuration Reference → Personas & Verbosity](configuration.md#personas-verbosity) for the full schema and adoption guide.
 
 ## Key Terms
 
