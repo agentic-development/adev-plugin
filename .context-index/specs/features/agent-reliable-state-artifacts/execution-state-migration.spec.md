@@ -35,8 +35,6 @@ source-manifest:
     - tests/lib/execution-state.test.mjs
   computed-at: "2026-05-12T01:20:29.444Z"
 drift_detected: true
-drift_source: tests/architectural-execution-state.test.mjs
-drift_at: 2026-05-12T03:08:37.821Z
 ---
 
 ## Behavioral Contract

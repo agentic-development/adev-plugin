@@ -25,8 +25,6 @@ source-manifest:
     - tests/skills/validate-success-heuristic.test.mjs
   computed-at: "2026-04-10T00:28:19.351Z"
 drift_detected: true
-drift_source: skills/validate/SKILL.md
-drift_at: 2026-05-17T20:34:52.865Z
 ---
 
 ## Behavioral Contract

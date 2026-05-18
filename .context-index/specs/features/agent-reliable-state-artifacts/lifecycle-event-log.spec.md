@@ -9,10 +9,10 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 2
+revision: 3
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-05-12
+updated: 2026-05-17
 source-manifest:
   sha: "1b4a61e"
   files:
@@ -26,13 +26,35 @@ source-manifest:
     - tests/lib/lifecycle-state.test.mjs
   computed-at: "2026-05-12T00:17:48.718Z"
 drift_detected: true
-drift_source: tests/lib/lifecycle-state.test.mjs
-drift_at: 2026-05-17T19:39:56.829Z
 ---
+
+## Revision History
+
+- **rev 3 (2026-05-17):** Extend the canonical event-variant table with `code_drift_detected` and `code_drift_cleared` (ad-hoc, non-step events emitted by `lib/spec-drift.mjs::stampDrift` / `clearDrift` per the `jsonl-drift-events.spec.md` Migration Step 0 CON-4 blocker resolution).
+- **rev 2 (2026-05-12):** Added closed-discriminator strict mode at write time per `write-time-diagnostic-hook.spec.md`; clarified `event_diagnostics` manifest knob and `tag` default.
+- **rev 1 (2026-05-11):** Initial spec.
 
 ## Behavioral Contract
 
 The Lifecycle Event Log is a new library module (`lib/lifecycle-state.mjs`) that persists every event in a spec's lifecycle as a line in a per-spec JSONL file at `.context-index/lifecycle-state/<slug>.jsonl`. It exposes a small set of write primitives (`appendEvent`, `reportReviewer`, `reportValidator`, `reportStep`, `reportPlanTask`, `reportIntervention`), read primitives (`readEvents`, `filterEvents`), a state projector (`currentState`), a gate enforcer (`requireGate`), and aggregation helpers (`listLifecycleStates`, `slugFromSpec`, `ensureLifecycleState`, `hasLifecycleState`). Writes are append-only via `fs.appendFile`; no code path ever rewrites a log. Actor events (reviewer / validator reports) carry their severity stamped at write time, resolved once from existing domain config (`reviewers.yaml::severity_cap`, `gates.yaml::severity`); reads never touch domain config. `currentState()` folds the log into a state object — steps, plan tasks, interventions — and the aggregation rule is: any `blocker`/`error` severity returning `FAIL` ⇒ step fails; lower severities returning `FAIL` ⇒ `PASS_WITH_NOTES`. The schema is open: a stable set of canonical event variants is documented, but unknown `event` values are preserved on read and ignored by core projections so domains can extend without forking the lib. `requireGate(state, stepName)` is the new prerequisite check that replaces filesystem-grep of `.review.md` frontmatter; it hard-blocks by default and softens to advisory via `manifest.yaml::lifecycle.gate_mode`.
+
+## Canonical Event Variants
+
+The closed discriminator set recognised by core projections. Mirrored in code by `lib/lifecycle-events.mjs::CANONICAL_EVENTS` and `lib/diagnostics/event-schemas.mjs::REQUIRED_FIELDS_BY_EVENT`; when the two diverge, this table wins (per `diagnostic-registry.spec.md` rev 2 amendment 12). All variants additionally carry universal fields `event` (discriminator) and `ts` (ISO-8601 timestamp).
+
+| Discriminator | Emitter | Payload (beyond `event`, `ts`) | Notes |
+|---|---|---|---|
+| `lifecycle_step` | `reportStep(..., status="started")` | `step` | Step entry event. |
+| `step_completed` | `reportStep(..., status="completed")` | `step`, `verdict?` | Step exit event (passing). |
+| `step_failed` | `reportStep(..., status="failed")` | `step`, `verdict?` | Step exit event (failing). |
+| `reviewer_report` | `reportReviewer({step, reviewer, verdict})` | `step`, `reviewer`, `verdict`, `severity` | Actor event; `severity` stamped from `reviewers.yaml::severity_cap`. |
+| `validator_report` | `reportValidator({step, validator, verdict})` | `step`, `validator`, `verdict`, `severity` | Actor event; `severity` stamped from `gates.yaml::severity`. |
+| `plan_task` | `reportPlanTask({plan, task_id, status})` | `plan`, `task_id`, `status`, `notes?` | Canonical home of plan-task state (per `json-issue-board-adapter.spec.md` cross-spec contract). |
+| `debug_intervention` | `reportIntervention({kind, note})` | `kind`, `note` | Recoverable obstacle (rerouted to `/adev:debug`, prompt edits, etc.). |
+| `recovery_record` | (no in-tree emitter yet) | — | Forward-compat slot. |
+| `manual_override` | (no in-tree emitter yet) | — | Forward-compat slot. |
+| `code_drift_detected` | `lib/spec-drift.mjs::stampDrift(specPath, driftSource)` | `drift_source` (canonical project-root-relative path), `drift_at` (ISO-8601) | Ad-hoc non-step event. Emitted when an edit to a `source-manifest.files[]` tracked path is observed. Multi-source: every detection appended as a separate event; the inline `drift_detected: true` frontmatter boolean is the derived rolled-up view (see `spec-drift-detection/jsonl-drift-events.spec.md`). |
+| `code_drift_cleared` | `lib/spec-drift.mjs::clearDrift(specPath)` | `drift_at` (ISO-8601) | Ad-hoc non-step event. Marks the latest unresolved `code_drift_detected` event as resolved. Only `/adev:implement` calls `clearDrift` (per ADR 0011 + `jsonl-drift-events.spec.md` Behavior 3b). |
 
 ## Naming Conventions (CON-1)
 

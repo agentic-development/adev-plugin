@@ -46,8 +46,6 @@ source-manifest:
     - tests/repomap/rank.test.mjs
   computed-at: "2026-04-12T11:48:02.771Z"
 drift_detected: true
-drift_source: lib/repomap/rank.mjs
-drift_at: 2026-05-17T18:51:21.025Z
 ---
 
 ## Behavioral Contract

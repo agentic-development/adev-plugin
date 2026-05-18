@@ -16,8 +16,6 @@ source-manifest:
     - hooks/sync-trigger.sh
   computed-at: "2026-05-10T23:51:35.315Z"
 drift_detected: true
-drift_source: lib/source-manifest.mjs
-drift_at: 2026-05-17T15:09:48.589Z
 ---
 
 ## Behavioral Contract

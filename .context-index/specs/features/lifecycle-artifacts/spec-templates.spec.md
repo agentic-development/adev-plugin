@@ -25,8 +25,6 @@ source-manifest:
     - tests/lib/template-resolution.test.mjs
   computed-at: "2026-05-15T13:58:22.832Z"
 drift_detected: true
-drift_source: tests/lib/template-resolution.test.mjs
-drift_at: 2026-05-15T14:23:30.744Z
 ---
 
 # Live Spec: Spec Templates

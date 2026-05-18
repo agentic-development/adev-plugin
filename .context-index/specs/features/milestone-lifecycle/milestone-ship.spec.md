@@ -17,8 +17,6 @@ source-manifest:
     - tests/milestones.test.mjs
   computed-at: "2026-05-11T15:53:40.792Z"
 drift_detected: true
-drift_source: lib/milestones.mjs
-drift_at: 2026-05-12T01:28:32.666Z
 ---
 
 ## Behavioral Contract

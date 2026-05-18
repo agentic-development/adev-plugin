@@ -1,0 +1,2 @@
+{"event":"code_drift_detected","drift_source":"tests/skills/plan-heuristic-injection.test.mjs","drift_at":"2026-05-16T01:09:38.450Z","ts":"2026-05-18T13:50:21.092Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/plan/SKILL.md","drift_at":"2026-05-18T13:54:06.161Z","ts":"2026-05-18T13:54:06.161Z","diagnostic_warnings":["adev/frontmatter-present"]}

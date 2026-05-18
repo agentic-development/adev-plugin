@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 2
-updated: 2026-05-02
+revision: 3
+updated: 2026-05-17
 tracker-ref: issue-213
 ---
 
@@ -56,9 +56,9 @@ When both signals are present on the same spec, both independently block `/adev:
 
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
-| Drift Event | A detected edit to a source-manifest-tracked file | `spec_path`, `drift_source` (edited file), `drift_at` (timestamp) |
+| Drift Event | A detected edit to a source-manifest-tracked file. Persisted as a `code_drift_detected` JSONL event in `.context-index/lifecycle-state/<slug>.jsonl` (rev 3). | `spec_path`, `drift_source` (canonical project-root-relative path), `drift_at` (ISO timestamp) |
 | Source Manifest | Existing spec frontmatter block mapping spec to implementation files | `sha`, `files[]`, `computed-at` (already defined in spec-lifecycle) |
-| Drift Flag | Frontmatter fields stamped on a spec when drift is detected | `drift_detected` (boolean), `drift_source` (string), `drift_at` (ISO timestamp) |
+| Drift Flag | Single inline `drift_detected: true` boolean on the spec frontmatter (rev 3 — the derived rolled-up view; `drift_source`/`drift_at` live on the Drift Event JSONL). | `drift_detected` (boolean) |
 
 ### Relationships
 
@@ -72,19 +72,20 @@ When both signals are present on the same spec, both independently block `/adev:
 - `drift_detected` can only be `true` if the spec has a `source-manifest` block
 - `drift_source` must be a file listed in the spec's `source-manifest.files[]`
 - Clearing the drift flag requires re-computing and re-stamping the source manifest SHA
-- Multiple edits to different tracked files overwrite `drift_source` with the most recent — the flag is binary (drifted or not), not a list
+- Every detection appends a `code_drift_detected` event to the spec's JSONL; the inline `drift_detected` boolean is the derived rolled-up view. Multiple sources are preserved as separate events, not overwritten. (Rev 3 — supersedes the prior overwrite-only invariant per `jsonl-drift-events.spec.md`.)
 
 ## Capability Map
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have |  | validated |
-| Drift Flag Stamping | Write `drift_detected`, `drift_source`, `drift_at` to the spec's frontmatter | must-have |  | validated |
+| Drift Flag Stamping | Append `code_drift_detected` JSONL event + inline `drift_detected: true` boolean (rev 3 — `drift_source`/`drift_at` removed from frontmatter) | must-have |  | validated |
 | Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have |  | validated |
-| Drift Flag Clearing | `/adev:implement` clears drift fields after re-stamping source manifest | must-have |  | validated |
+| Drift Flag Clearing | `/adev:implement` appends `code_drift_cleared` JSONL event and removes inline `drift_detected` boolean | must-have |  | validated |
 | Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have |  | validated |
 | Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have |  | validated |
 | Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have |  | validated |
+| Multi-file Drift Tracking | Every drift detection appended to per-spec JSONL; inline boolean is the derived view. Multi-source history preserved. | must-have |  | validated |
 
 ## Deferred Capabilities
 
@@ -93,7 +94,6 @@ When both signals are present on the same spec, both independently block `/adev:
 | Source Manifest Index | On-demand scan is sufficient for now; add index if performance degrades |  | — |
 | Reverse Sync (spec → code prompts) | Requires deeper integration; focus on code → spec direction first |  | — |
 | Automatic Spec Updates | Advisory-only in v1; auto-edit adds risk of unwanted spec changes |  | — |
-| Multi-file Drift Tracking | Track list of all drifted files instead of most-recent-only |  | — |
 
 ## Interface Contracts
 
@@ -102,9 +102,9 @@ When both signals are present on the same spec, both independently block `/adev:
 | Interface | Type | Description |
 |-----------|------|-------------|
 | `scanForDrift(filePath, contextIndexRoot)` | function | Delegates to `buildReverseIndex()` from `lib/source-manifest.mjs` to find specs whose source manifests track `filePath`. Returns array of `{ specPath, specName }` matches |
-| `stampDrift(specPath, driftSource)` | function | Writes `drift_detected: true`, `drift_source`, `drift_at` to spec frontmatter |
-| `clearDrift(specPath)` | function | Removes `drift_detected`, `drift_source`, `drift_at` from spec frontmatter |
-| `hasDrift(specPath)` | function | Reads spec frontmatter, returns boolean |
+| `stampDrift(specPath, driftSource)` | function | Canonicalizes `driftSource` (SEC-1 traversal-reject), appends a `code_drift_detected` JSONL event with `{drift_source, drift_at}`, and ensures `drift_detected: true` is present in spec frontmatter. (Rev 3 — `drift_source`/`drift_at` are no longer written to frontmatter.) |
+| `clearDrift(specPath)` | function | Appends a `code_drift_cleared` JSONL event with `{drift_at}` and removes the inline `drift_detected` boolean from spec frontmatter. (Rev 3 — only `/adev:implement` is authorized to call this per ADR 0011.) |
+| `hasDrift(specPath)` | function | Reads the inline `drift_detected: true` boolean from spec frontmatter (the derived rolled-up view), returns boolean. |
 
 All exported from `lib/spec-drift.mjs`.
 
