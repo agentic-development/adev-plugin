@@ -29,13 +29,25 @@ describe("merge-guard hook", () => {
     assert.equal(exitCode, 0);
   });
 
-  it("blocks git merge to main (default policy)", () => {
-    const { exitCode, stderr } = runHook("merge-guard.sh", {
-      cwd: tempDir,
-      stdin: commandInput("git merge main"),
-    });
-    assert.equal(exitCode, 2);
-    assert.ok(stderr.includes("main"), "stderr should mention main");
+  // Bug 3 regression: the merge-guard hook previously blocked ANY 'git merge'
+  // command that mentioned a protected branch, including 'git merge origin/main'
+  // run FROM a feature branch (the routine "keep my PR current" workflow).
+  // The corrected semantics is: block 'git merge' iff the CURRENT branch is
+  // protected. The argument to git merge is irrelevant — what matters is which
+  // branch would be advanced by the merge (the current branch).
+
+  it("blocks git merge when current branch is protected (default policy)", () => {
+    const gitDir = createTempGitRepo({ branch: "main" });
+    try {
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git merge feature/foo"),
+      });
+      assert.equal(exitCode, 2);
+      assert.ok(stderr.includes("main"), "stderr should mention main");
+    } finally {
+      cleanupTempDir(gitDir);
+    }
   });
 
   it("blocks git push to main", () => {
@@ -55,12 +67,52 @@ describe("merge-guard hook", () => {
     assert.equal(exitCode, 2);
   });
 
-  it("allows git merge to feature branch", () => {
-    const { exitCode } = runHook("merge-guard.sh", {
-      cwd: tempDir,
-      stdin: commandInput("git merge feature/foo"),
-    });
-    assert.equal(exitCode, 0);
+  it("allows git merge to feature branch (current is not protected)", () => {
+    const gitDir = createTempGitRepo({ branch: "feat/test" });
+    try {
+      const { exitCode } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git merge feature/foo"),
+      });
+      assert.equal(exitCode, 0);
+    } finally {
+      cleanupTempDir(gitDir);
+    }
+  });
+
+  it("Bug 3: allows 'git merge origin/main' from a feature branch", () => {
+    // The routine "keep my PR current with main" workflow. The old regex
+    // matched `\bmain\b` anywhere in the command and blocked this case,
+    // forcing every operator to use 'git rebase origin/main' as a workaround.
+    const gitDir = createTempGitRepo({ branch: "feat/keep-current" });
+    try {
+      const { exitCode } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git merge origin/main"),
+      });
+      assert.equal(
+        exitCode,
+        0,
+        "merging origin/main INTO a feature branch must be allowed",
+      );
+    } finally {
+      cleanupTempDir(gitDir);
+    }
+  });
+
+  it("blocks 'git merge origin/main' when current branch is main", () => {
+    // Even though 'origin/main' is a remote ref, merging anything while on
+    // main itself advances main directly and should still block.
+    const gitDir = createTempGitRepo({ branch: "main" });
+    try {
+      const { exitCode } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git merge origin/main"),
+      });
+      assert.equal(exitCode, 2);
+    } finally {
+      cleanupTempDir(gitDir);
+    }
   });
 
   it("advisory mode with ask policy", () => {
