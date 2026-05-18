@@ -34,6 +34,7 @@ AI coding agents work best with structured context but most projects provide non
 | Domain Extensions | Installable content packages distributing domain-specific configuration as extensions consumed by the install pipeline | [charter.md](./features/domain-extensions/charter.md) |
 | Lifecycle Artifacts | Structural taxonomy for adev's lifecycle artifacts via a unified `kind:` discriminator, per-kind template matrix, and kind-aware routing in `/adev:specify` and `/adev:brainstorm` | [charter.md](./features/lifecycle-artifacts/charter.md) |
 | CLI Driver Surface | Compiler-driver pattern wrapping every adev helper as an `adev <verb>` subcommand, with diagnostic registry and write-time event tagging that makes "agent claimed done but checks didn't fire" detectable at the moment of claim | [charter.md](./features/cli-driver-surface/charter.md) |
+| Cursor Provider | Fourth provider adapter that installs adev into Cursor 2.5's Plugin system, with a build-step generator translating canonical `hooks/hooks.json` to Cursor's event model and completing the `cursor` sync-target format | [charter.md](./features/cursor-provider/charter.md) |
 
 ## Cross-Cutting Concerns
 
