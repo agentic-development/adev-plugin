@@ -396,10 +396,13 @@ When review returns BLOCK and `--full` is set:
    Blocker findings written to <spec-stem>.blockers.md.
 
    Manual revision is required:
-     1. Read the blockers sidecar and revise <spec-path>
-     2. Re-run /adev:review-specs --spec <spec-path>
-     3. When the review verdict is PASS or PASS_WITH_NOTES, resume the build:
-            /adev:build --resume --spec <spec-path>
+     1. Read the blockers sidecar to understand the findings
+     2. Revise <spec-path> either by editing it directly OR by re-running
+        the documented re-author flow: `/adev:specify --module <module>`
+        (standard mode rewrites the spec interactively — see
+        `skills/review-specs/SKILL.md` "Recovery" guidance)
+     3. Re-run `/adev:review-specs --spec <spec-path>` to confirm PASS
+     4. Resume the build: `/adev:build --resume --spec <spec-path>`
    ```
 
 Auto-retry is not supported in this version of `/adev:build` because `/adev:specify` does not carry a revision workflow flag; an attempt to auto-dispatch the spec author with `--revise --blocker-context` (the previous, broken contract) would either error or silently fall through to standard mode and clobber the spec. The `build.max_review_retries` config is reserved for a future enhancement that lands a real revision workflow; until then, any value > 0 produces a warning and behaves as 0 (fail fast).
