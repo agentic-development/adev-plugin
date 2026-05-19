@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"lib/repomap/index.mjs","drift_at":"2026-05-17T18:49:30.028Z","ts":"2026-05-18T13:50:21.102Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/repomap/index.mjs","drift_at":"2026-05-18T22:25:03.400Z","ts":"2026-05-18T22:25:03.400Z","diagnostic_warnings":["adev/frontmatter-present"]}
