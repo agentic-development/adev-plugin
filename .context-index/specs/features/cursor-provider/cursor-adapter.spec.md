@@ -5,7 +5,7 @@ status: implemented
 risk_level: medium
 milestone: v1
 revision: 2
-charter-revision: 2
+charter-revision: 3
 created: 2026-05-18
 updated: 2026-05-18
 source-manifest:
@@ -15,6 +15,7 @@ source-manifest:
     - providers/cursor/adapter.mjs
     - tests/provider/cursor-adapter.test.mjs
   computed-at: "2026-05-18T21:49:33.622Z"
+drift_detected: true
 ---
 
 # Behavioral Spec: CursorAdapter with Skill Name Sanitization
