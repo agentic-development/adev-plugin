@@ -23,6 +23,26 @@ COMMIT_BODY=$(git log -1 --format='%b' "$COMMIT_HASH" 2>/dev/null || echo "")
 # Get files changed in this commit
 CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "$COMMIT_HASH" 2>/dev/null || echo "")
 
+# Self-skip guard: when every changed file is inside `.context-index/sessions/`,
+# exit without writing a capture. Prevents the "1 commit -> 1 capture -> 1 commit"
+# amplification when agents commit in-session.
+# Spec: .context-index/specs/features/session-awareness/post-commit-self-skip.spec.md
+if [ -n "$CHANGED_FILES" ]; then
+  SESSIONS_ONLY=1
+  while IFS= read -r CHANGED_PATH; do
+    [ -z "$CHANGED_PATH" ] && continue
+    case "$CHANGED_PATH" in
+      .context-index/sessions/*) ;;
+      *) SESSIONS_ONLY=0; break ;;
+    esac
+  done <<< "$CHANGED_FILES"
+
+  if [ "$SESSIONS_ONLY" = "1" ]; then
+    echo "session-capture skipped: sessions-only commit" >&2
+    exit 0
+  fi
+fi
+
 # Determine output directory
 OUTPUT_DIR=".context-index/sessions"
 TRACKING_FILE=".context-index/.session-tracking.jsonl"
