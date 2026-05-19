@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 4
+revision: 5
 updated: 2026-05-19
 ---
 
@@ -92,19 +92,19 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-----------|--------|
-| CopilotAdapter install/uninstall/status | Fifth peer adapter mirroring `providers/opencode/adapter.mjs` and the new cursor adapter; install materializes adev's skills + hooks into the consuming project's `.github/` tree | must-have | v1 | specified |
+| CopilotAdapter install/uninstall/status | Fifth peer adapter mirroring `providers/opencode/adapter.mjs` and the new cursor adapter; install materializes adev's skills + hooks into the consuming project's `.github/` tree | must-have | v1 | review-passed |
 | Hook config generator | `scripts/build-copilot-hooks.mjs` + Claude→Copilot event translation table; emits `providers/copilot/hooks.json` in PascalCase stdin shape | must-have | v1 | review-passed |
 | Hook drift test | `tests/copilot-hooks-sync.test.mjs` fails CI on out-of-sync committed `hooks.json` | must-have | v1 | review-passed |
 | Tool-name mapping table | `lib/providers/copilot/tool-names.mjs` maps Claude tool names (`Bash`, `Write`, `Edit`, `Read`, `WebFetch`, …) to Copilot tool names (`bash`, `create`, `edit`, `view`, `web_fetch`, …) for matcher regex translation | must-have | v1 | review-passed |
 | Translation-table coverage assertion | Generator throws on Claude events or tool names with no Copilot mapping | must-have | v1 | review-passed |
 | `.github/copilot-instructions.md` sync output | `/adev:sync` writes the repo-wide instructions file under 4,000 characters when `copilot` is a sync target | must-have | v1 | — |
 | `.github/instructions/<module>.instructions.md` sync output | `/adev:sync` writes one per-module instructions file with `applyTo` glob per registered module | must-have | v1 | — |
-| Skill name compliance check | Install-time validation that every adev skill matches `^[a-z0-9-]{1,64}$` and the `name:` frontmatter equals its parent directory | must-have | v1 | specified |
-| CLI install integration | `adev install` accepts `copilot` as a target; routes through CopilotAdapter | must-have | v1 | specified |
-| CLI charter revision | Update `cli` charter install verb description to include Copilot in the provider list | must-have | v1 | specified |
-| `--user` flag for personal-scope seeding | Optional install flag that mirrors `.github/{skills,hooks,instructions}/` into `~/.copilot/{skills,hooks,instructions}/` | should-have | v1 | specified |
-| AGENTS.md compat confirmation | Verify the existing AGENTS.md root file is auto-loaded by Copilot CLI and VS Code Copilot; no new write path required | should-have | v1 | specified |
-| Smoke install verification | Manual install into a fixture repo + run `copilot` CLI + verify instructions, skills, and hooks discovery | should-have | v1 | specified |
+| Skill name compliance check | Install-time validation that every adev skill matches `^[a-z0-9-]{1,64}$` and the `name:` frontmatter equals its parent directory | must-have | v1 | review-passed |
+| CLI install integration | `adev install` accepts `copilot` as a target; routes through CopilotAdapter | must-have | v1 | review-passed |
+| CLI charter revision | Update `cli` charter install verb description to include Copilot in the provider list | must-have | v1 | review-passed |
+| `--user` flag for personal-scope seeding | Optional install flag that mirrors `.github/{skills,hooks,instructions}/` into `~/.copilot/{skills,hooks,instructions}/` | should-have | v1 | review-passed |
+| AGENTS.md compat confirmation | Verify the existing AGENTS.md root file is auto-loaded by Copilot CLI and VS Code Copilot; no new write path required | should-have | v1 | review-passed |
+| Smoke install verification | Manual install into a fixture repo + run `copilot` CLI + verify instructions, skills, and hooks discovery | should-have | v1 | review-passed |
 
 ## Deferred Capabilities
 
@@ -125,7 +125,7 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 |-----------|------|-------------|
 | `CopilotAdapter.install({ projectRoot, dryRun, user })` | function | Materialize adev's skills + hooks + instructions into the project's `.github/` tree; optionally seed `~/.copilot/*` when `user: true` |
 | `CopilotAdapter.uninstall({ projectRoot })` | function | Remove `.github/skills/`, `.github/hooks/`, and `.github/instructions/` entries adev wrote; leave `.github/copilot-instructions.md` untouched (sync-output is project state, not plugin state) |
-| `CopilotAdapter.status({ projectRoot })` | function | Return `{ installed, version, location, userSeeded }` for diagnostics |
+| `CopilotAdapter.status({ projectRoot })` | function | Return `{ installed, version, location, userSeeded, skillCount, hookConfigPresent, syncOutputPresent: { repoInstructions, moduleInstructions }, agentsMd: { exists, autoLoadHint } }` for diagnostics. `syncOutputPresent` is reported independently of `installed` (adapter is a read-only observer of sync-output files). |
 | `CopilotAdapter.validateSkillNames(skills)` | function | Throw if any skill directory or `name:` frontmatter violates Copilot's `^[a-z0-9-]{1,64}$` constraint; return list of valid skills otherwise |
 | `getCopilotHome()` | function | Resolve `~/.copilot` (honoring `$COPILOT_HOME`); no hardcoded paths to `~/.claude/` per constitution anti-pattern |
 | `build-copilot-hooks.mjs` (CLI) | script | `npm run build:copilot-hooks` — regenerate `providers/copilot/hooks.json` from canonical `hooks/hooks.json` |
