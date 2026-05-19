@@ -48,7 +48,7 @@ Use when the spec already exists with a valid `.review.md` (PASS or PASS_WITH_NO
 
 **Full Pipeline** (`--full`): `specify → review (with blocker-fix loop) → plan → route → implement → validate`
 
-Use when starting from scratch or when the spec needs authoring or revision. Step 0 dispatches `/adev:specify`; if the spec file already exists without a valid review, it dispatches with `--revise` (revision mode, not overwrite). Step 1 runs `/adev:review-specs`; on BLOCK, the blocker-fix loop re-specifies and re-reviews up to `build.max_review_retries` times (default 2). Includes the validate→implement retry loop if `build.max_retries > 0`.
+Use when starting from scratch or when the spec needs authoring. Step 0 dispatches `/adev:specify` only when no spec file exists AND the lifecycle log has no completed `specify` event for this spec; otherwise Step 0 is recorded as `skipped` (the prior session's spec work is authoritative — `review-specs` and downstream gates catch any drift). Step 1 runs `/adev:review-specs`; on BLOCK, the blocker-fix loop re-specifies and re-reviews up to `build.max_review_retries` times (default 2). Includes the validate→implement retry loop if `build.max_retries > 0`.
 
 **Model tier:** The build orchestrator runs at the `build-orchestrator` role tier (`reasoning` by default, per the subagent-cost-routing spec). Override via `model_routing.subagent_overrides.build-orchestrator` in `manifest.yaml`.
 
@@ -342,15 +342,16 @@ Emit a matching `reportStep` exit (`status: "completed"`) immediately after the 
 **Skip conditions:**
 - `--full` NOT set → skip unconditionally (Implement Pipeline does not run specify).
 - `.review.md` exists adjacent to the spec with PASS or PASS_WITH_NOTES verdict and is not stale → skip (spec already reviewed). Record as `skipped` in build state.
+- `currentState(projectRoot, specPath).steps.specify.status === "completed"` AND that step's `verdict` is `"PASS"` or `"PASS_WITH_NOTES"` → skip (lifecycle log shows specify already passed in a prior session — the spec on disk is authoritative). Record as `skipped` in build state. (Per issue-527: prior versions of this skill dispatched `/adev:specify --revise` here, but `--revise` is not a flag on `/adev:specify`; reading the lifecycle log is the spec-compliant skip evidence.)
+- Spec file exists on disk → skip. Record as `skipped`. Review will catch any drift between spec and code.
 
 **Dispatch (when not skipped):**
-- Spec file does NOT exist: dispatch `/adev:specify --spec <path>` in creation mode.
-- Spec file EXISTS but no current passing `.review.md`: dispatch `/adev:specify --spec <path> --revise` (revision mode — avoids clobbering the existing spec).
+- Spec file does NOT exist AND no completed specify event in lifecycle log → dispatch `/adev:specify --spec <path>` in creation mode.
 
 ```
 Agent({
   description: "Build Step 0: Specify <spec-name>",
-  prompt: <subagent prompt template with skill="adev:specify" args="--spec <path> [--revise]">
+  prompt: <subagent prompt template with skill="adev:specify" args="--spec <path>">
 })
 ```
 
