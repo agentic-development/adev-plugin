@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 52,
+  "seq": 57,
   "epics": [
     {
       "id": "epic-1",
@@ -686,10 +686,10 @@
     {
       "id": "epic-91",
       "title": "CLI install integration (cursor-provider Spec D)",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/cursor-provider/cli-install-integration.plan.md",
       "created": "2026-05-19T11:57:37.598Z",
-      "updated": "2026-05-19T11:57:37.598Z"
+      "updated": "2026-05-19T12:34:26.461Z"
     }
   ],
   "issues": [
@@ -3407,6 +3407,58 @@
       "next_action": "Run /adev:review-specs --module cursor-provider",
       "created": "2026-05-19T11:45:20.607Z",
       "updated": "2026-05-19T11:45:20.607Z"
+    },
+    {
+      "id": "issue-521",
+      "title": "Rolling daily session-capture log (one file per day, append-only)",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-41",
+      "dependencies": [],
+      "notes": "Follow-up to issue-458 (Option B). Replace per-commit session-capture files with a single .context-index/sessions/YYYY-MM-DD.jsonl per day, appended on each post-commit hook fire. Eliminates per-commit noise entirely and removes the need for the self-skip guard landing for issue-458 (Option A). Defer until: (1) self-skip approach proves insufficient, OR (2) we want to reduce git noise further. Breaks the current per-commit-file pattern — any downstream consumer of .context-index/sessions/*.md must be updated.",
+      "next_action": "When ready: /adev:specify --module session-awareness rolling-daily-log",
+      "created": "2026-05-19T12:26:33.876Z",
+      "updated": "2026-05-19T12:26:33.876Z"
+    },
+    {
+      "id": "issue-522",
+      "title": "Post-commit hook self-skips on session-capture-only commits",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-71",
+      "spec_ref": ".context-index/specs/features/session-awareness/post-commit-self-skip.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/session-awareness/post-commit-self-skip.spec.md. Created by /adev:specify on 2026-05-19. Implements Option A from issue-458 (self-skip). Option B (rolling daily log) deferred to issue-521.",
+      "next_action": "Run /adev:review-specs --module session-awareness",
+      "created": "2026-05-19T12:28:05.426Z",
+      "updated": "2026-05-19T12:28:05.426Z"
+    },
+    {
+      "id": "issue-523",
+      "title": "retro/hygiene: codify durable-vs-transient artifact classification in manifest",
+      "status": "open",
+      "priority": 2,
+      "type": "enhancement",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-19T12:41:35.310Z",
+      "updated": "2026-05-19T12:41:35.310Z"
+    },
+    {
+      "id": "issue-524",
+      "title": "Cursor sync target output",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/cursor-provider/sync-target-output.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/sync-target-output.spec.md. Created by /adev:specify on 2026-05-19.",
+      "next_action": "Run /adev:review-specs --module cursor-provider",
+      "created": "2026-05-19T12:56:49.742Z",
+      "updated": "2026-05-19T12:56:49.742Z"
     }
   ]
 }
