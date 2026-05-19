@@ -16,6 +16,25 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
 
+## Step 0: Specify-step gate (FIRST action)
+
+Before identifying targets, gate on the prior step via the lifecycle log, then emit the step-started event:
+
+```bash
+adev gate require --skill review-specs --spec <spec-path>
+adev report --type step --spec <spec-path> --step review --status started
+```
+
+In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if the `specify` step has not been recorded as completed (the spec must exist and have a `lifecycle_step: specify, status: completed` event). In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper.
+
+When reviewing in bulk (`--charter` or no-args), apply the gate per-spec inside the loop.
+
+In Step 8, emit the matching exit event with the consolidated review verdict:
+
+```bash
+adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict>
+```
+
 ## Step 1: Identify Target Specs
 
 Determine which specs need review:
@@ -23,8 +42,9 @@ Determine which specs need review:
 1. If `--spec <path>` is provided, use that file directly.
 2. If `--charter <module>` is provided, glob `.context-index/specs/features/<module>/*.spec.md`.
 3. If no arguments, scan all `.context-index/specs/features/` and `.context-index/specs/cross-cutting/` directories. A spec needs review if:
-   - No adjacent `.review.md` file exists (e.g., `card-ordering.md` expects `card-ordering.review.md`)
-   - The spec file is newer than its `.review.md` file (spec was modified after last review)
+   - The lifecycle projection does not yet have a `review` step recorded, OR
+   - `state.steps.review.lastReviewedRevision` is less than the spec's current `revision`, OR
+   - `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` returns `true` (content hash mismatch).
 
 If no specs need review, report that and exit.
 
@@ -85,7 +105,21 @@ Do not treat missing workspace as a blocking error; proceed with the rest of the
 
 ## Step 3: Load Reviewer Registry
 
-Call `loadReviewConfig(repoRoot)` from `lib/governance/review-config.mjs`. The loader:
+**Domain-Aware Reviewer Loading:** Resolve the active domain and load domain-aware reviewers before calling `loadReviewConfig` via the CLI:
+
+```bash
+adev domain load-reviewers --module <module-slug> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'), loads `templates/domains/<domain>/reviewers.yaml`, and merges `.context-index/governance/review.yaml` on top (governance wins on `id` conflict). Stdout is a single JSON object:
+
+```json
+{ "domain": { "resolved_domain": "...", "source_level": "..." }, "reviewers": [...], "warnings": [...] }
+```
+
+Log any warnings from the `warnings` field.
+
+Call `loadReviewConfig(repoRoot, { domainReviewers: <reviewers-from-cli-output> })` from `lib/governance/review-config.mjs`. When `domainReviewers` is provided, the loader uses domain reviewers as the base instead of bundled defaults. The loader:
 
 - Reads bundled defaults from `templates/review-specs/defaults.yaml` (the three core reviewers: structural-architect, security-reviewer, consistency-analyzer).
 - Overlays `.context-index/governance/review.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
@@ -97,18 +131,15 @@ If `loadReviewConfig` returns any errors, abort with the error list. Warnings ar
 
 ## Step 4: Dispatch Reviewers
 
-**Heuristics:** Before dispatching reviewers, load module-scoped heuristics for the spec's charter module.
-Derive the module slug from the spec's `charter:` frontmatter field.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
+**Heuristics:** Before dispatching reviewers, load module-scoped heuristics for the spec's charter module via the CLI:
+
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-Include the rendered heuristics in each reviewer's context pack under a `## Heuristics` section,
-prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+Derive the module slug from the spec's `charter:` frontmatter field. Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), include them in each reviewer's context pack under a `## Heuristics` section, prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
 For each reviewer returned by the registry, call `shouldDispatch(reviewer, { targetSpecPath, specContent })` from the same module. Reviewers with `dispatch: always` always dispatch; `triggered` compute a score (2 points per matching glob + 1 per path segment beyond root, 1 point per keyword) and dispatch when score ≥ `min_score` (default 1); `never` are skipped.
 
@@ -202,18 +233,39 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 
 Verdict consolidation uses `computeVerdict(findings, verdictRules)` from `lib/governance/review-config.mjs`. Default `verdictRules.blocker_threshold: 1` matches today's behavior.
 
-## Step 6: Save Review Report
+## Step 6: Emit Reviewer Events and Save Review Report
 
-Write the consolidated report to a `.review.md` file adjacent to the spec:
+**6a. Emit one `reviewer_report` event per dispatched reviewer.** Severity is stamped at write time by the lib from `reviewers.yaml` domain config — skill prose MUST NOT compute or assert severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`):
+
+```javascript
+import { reportReviewer } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+for (const reviewer of dispatchedReviewers) {
+  reportReviewer(projectRoot, specPath, {
+    step: "review",
+    reviewer: reviewer.id,
+    verdict: reviewer.verdict,             // PASS | PASS_WITH_NOTES | FAIL
+    notes: reviewer.summary ?? null,       // ≤200 chars in practice
+  });
+}
+```
+
+`notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; truncated with a `NOTES_TRUNCATED` warning).
+
+**6b. Write the rendered review report** adjacent to the spec. The `.review.md` artifact is now a presentation/audit artifact for human consumption; the canonical reviewer state lives in the lifecycle log.
 
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
 - Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.spec.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
-**Lifecycle tracking fields:** In the `.review.md` file, also record:
+**Lifecycle tracking fields:** In the `.review.md` file, also record (this skill OWNS these fields; downstream skills MUST NOT parse them — they read `state.steps.review` from the lifecycle log instead):
+
 - `last-reviewed-revision: <spec's current revision value>` — the spec's `revision` frontmatter field at the time of review.
-- `file-sha: <git hash-object output>` — run `git hash-object <spec-file-path>` and record the SHA. This enables drift detection: if the file changes without a revision bump, `/adev:plan` can detect it.
+- `file-sha: <PENDING>` — write a placeholder at this stage. The final hash is computed in Step 6c via the in-tree helper, after Step 7 has written the status update back to the spec.
 
 ## Step 7: Update Spec Status
+
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> seven legal transitions are tracked there; if a future review introduces a
+> new status, extend that module first, then this skill.
 
 After saving the review report, update the spec's status based on the verdict:
 
@@ -234,6 +286,23 @@ Log the status change to the user.
 **Charter Capability Map update (PASS or PASS_WITH_NOTES only):** After updating the spec status to `review-passed`, also update the parent charter's Capability Map. Find the capability row corresponding to this spec and set its `Status` column to `review-passed`.
 
 **Note:** Do not increment the spec's `revision` field on status-only changes. The `revision` field tracks content changes, not workflow transitions.
+
+## Step 6c: Stamp Final file-sha
+
+After Step 7 has written the status update to the spec file, compute the final SHA-256 of the on-disk spec content and update the `.review.md`:
+
+```javascript
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+
+const buf = await readFile(specPath);
+const sha = createHash('sha256').update(buf).digest('hex');
+// Replace `file-sha: <PENDING>` in the .review.md with `file-sha: <sha>`.
+```
+
+Do NOT shell out for hashing — the in-tree `crypto.createHash('sha256')` computation is the canonical hash for spec content, consistent with `lib/source-manifest.mjs` and `lib/spec-drift.mjs`.
+
+**Why after Step 7:** Step 7 writes `review-pending → review-passed` (or `review-blocked`) back to the spec file, which changes the file's content and hash. If the SHA were captured in Step 6 (before Step 7), the stored SHA would immediately diverge from the on-disk spec, causing `/adev:plan` to report false drift on the very next invocation.
 
 ## Step 8: Report to User
 
@@ -279,14 +348,11 @@ Run /adev:specify to revise the spec, then /adev:review-specs to re-review.
 
 ## Gate Behavior
 
-This skill produces the gate artifact that `/adev:plan` checks. The plan skill will:
+This skill produces the canonical reviewer events in the lifecycle log that `/adev:plan` (and `/adev:implement`, `/adev:validate`) gate on. The `.review.md` artifact is a rendered presentation of those events for human inspection.
 
-1. Look for a `.review.md` file adjacent to the target spec.
-2. Read the `Verdict` line from the review file header.
-3. Compare the spec file modification time against the review file modification time.
-4. Block planning if: no review exists, verdict is BLOCK, or spec is newer than review.
+Downstream skills MUST call `requireGate(state, "review", { mode })` against `currentState(projectRoot, specPath)` — they MUST NOT parse `.review.md` frontmatter for verdict or grep for `status:` fields. The lifecycle log is the source of truth; the rendered artifact is a view.
 
-This skill also updates the spec's `status` frontmatter field:
+This skill also updates the spec's `status` frontmatter field (Step 7):
 - PASS → `review-passed`
 - PASS_WITH_NOTES → `review-passed`
 - BLOCK → `review-blocked`
@@ -307,3 +373,21 @@ Architecture Review Summary
 
 1 of 2 specs ready for planning.
 ```
+
+## API reference
+
+Lifecycle event log:
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection; this skill writes the `review` step entries that downstream skills gate on.
+- `requireGate(state, "specify", { mode })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — hard-blocks (or warns) when the prior step is not complete.
+- `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode`.
+- `reportStep(projectRoot, specPath, { step: "review", status, verdict? })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits skill entry/exit. The exit event carries the consolidated verdict.
+- `reportReviewer(projectRoot, specPath, { step: "review", reviewer, verdict, notes })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits one event per dispatched reviewer; severity is stamped at write time from `reviewers.yaml`.
+
+Spec drift:
+
+- `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` — detects spec-content drift since last validation; used in Step 1 to identify specs needing re-review.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

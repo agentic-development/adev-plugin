@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Prototype"
+  short_description: "Run adev:prototype"
+  default_prompt: "Use $adev:prototype to run this skill."

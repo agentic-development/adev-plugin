@@ -221,3 +221,14 @@ The slug is generated from the topic: lowercase, hyphenated, maximum 50 characte
 6. **Context isolation.** The orchestrator never ingests raw tool output. Only condensed researcher summaries enter the orchestrator's context. This is enforced structurally by `allowed-tools` excluding WebSearch and MCP tools.
 
 7. **Defense-in-depth against injection.** Untrusted content passes through two sanitization layers — the researcher's content-fence rule and the orchestrator's Step 5.5 pass. Both layers are required; removing either is a regression.
+
+## API reference
+
+Issue board (Step 7 / Step 3 link-to-issue flow):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter. The skill reads the linked issue's context and writes a `notes` update referencing the research artifact.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
