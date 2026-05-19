@@ -529,8 +529,10 @@ function stampVersion() {
 /**
  * Install providers (Claude Code, OpenCode, Codex, Cursor).
  * @param {string[]} providerNames
+ * @param {{ ask?: (q: string) => Promise<string> }} [opts] — optional ask
+ *   injector for testability. Default uses the production readline ask helper.
  */
-async function installProviders(providerNames) {
+async function installProviders(providerNames, { ask: askFn = ask } = {}) {
   for (const providerName of providerNames) {
     const provider = getProvider(providerName);
     heading(`Installing for ${provider.name}`);
@@ -543,7 +545,7 @@ async function installProviders(providerNames) {
         success(`Plugin v${PLUGIN_VERSION} already installed`);
       }
 
-      const scope = await ask("Install for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
       const settingsPath = provider.enable(scope === "project" ? "project" : "user");
       success(`Plugin enabled in ${settingsPath}`);
 
@@ -553,7 +555,7 @@ async function installProviders(providerNames) {
       } else {
         for (const conflict of conflicts) {
           warn(`${conflict.name} — ${conflict.reason}`);
-          const disable = await ask(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
           if (disable === "yes" || disable === "y") {
             provider.disableConflictingPlugin(conflict.key);
             success(`${conflict.name} disabled for this project`);
@@ -598,7 +600,7 @@ async function installProviders(providerNames) {
 
       log("Skills are available via ~/.config/opencode/skills/");
     } else if (providerName === "codex") {
-      const scope = await ask("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
       const targetScope = scope === "project" ? "project" : "user";
       const { installed, path: pluginPath } = await provider.install({ scope: targetScope });
       if (installed) {
@@ -623,7 +625,7 @@ async function installProviders(providerNames) {
       } else {
         for (const conflict of conflicts) {
           warn(`${conflict.name} — ${conflict.reason}`);
-          const disable = await ask(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
           if (disable === "yes" || disable === "y") {
             // claude-code surfaces { key } for the disable target; the cursor
             // adapter's Superpowers guard returns { name, reason } only.
@@ -1276,6 +1278,7 @@ export {
   PLUGIN_ROOT,
   PLUGIN_VERSION,
   selectProviders,
+  installProviders,
 };
 
 // Re-export Claude Code adapter functions for backward compatibility
