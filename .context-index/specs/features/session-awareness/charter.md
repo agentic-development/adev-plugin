@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 2
-updated: 2026-04-06
+revision: 3
+updated: 2026-05-19
 ---
 
 # Feature Charter: Session Awareness
@@ -9,6 +9,10 @@ updated: 2026-04-06
 ## Business Intent
 
 The session-awareness module provides continuous context about active work throughout an agent session. It solves three problems: (1) sessions start cold with no knowledge of prior work, (2) the agent drifts from tracked issues during long sessions, and (3) execution state (current plan, task, blockers) is lost on session compaction or restart. It does this by maintaining a live execution state file, injecting it at session start, and periodically surfacing issue reminders mid-session via hook-based context injection.
+
+### Storage Format Authority
+
+This charter retains ownership of *what* execution state means: session-start cold-resume semantics, in-session reminder cadence, `next_action` propagation, the issue-reminder hook contract. *How* execution state is persisted on disk — the `.context-index/.execution-state.json` schema (renamed from `.execution-state.md`), `lib/execution-state.mjs` read/write helpers, atomic temp-rename writes, and the bash-hook decoupling that invokes a Node helper rather than parsing inline YAML — is owned by the `agent-reliable-state-artifacts` charter. See `.context-index/specs/features/agent-reliable-state-artifacts/charter.md`.
 
 ## Scope and Boundaries
 

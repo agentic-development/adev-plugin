@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 3
-updated: 2026-04-16
+revision: 4
+updated: 2026-05-19
 ---
 
 # Feature Charter: Task Management
@@ -9,6 +9,10 @@ updated: 2026-04-16
 ## Business Intent
 
 The task-management module provides persistent, cross-skill issue tracking for the adev lifecycle. It replaces the ephemeral `TodoWrite` mechanism with a pluggable layer that persists work-item state in the repository, supports an **adaptable tiered hierarchy (Epic → Feature → Task by default, with arbitrary depth via dotted IDs)**, and integrates with both a zero-setup file backend and the beads_rust CLI for scaling. Each work item carries a free-text **`next_action`** field that documents the next agent step (typically a skill invocation), reducing drift in long agent sessions. Skills create, claim, update, and close items programmatically via `lib/issues/`; users manage the board through `/adev:issues`.
+
+### Storage Format Authority
+
+This charter retains ownership of *what* the issue board means: lifecycle, tiered IDs, `next_action`, dependency edges, and the `IssueManagerInterface` contract. *How* issue-board state is persisted on disk — `.context-index/tasks/tasks.json` schema, atomic temp-rename writes, CAS over a `seq` field, the `JsonAdapter` registration, and the board-granularity invariant (no `planRef`+`planTask` on the same issue) — is owned by the `agent-reliable-state-artifacts` charter. See `.context-index/specs/features/agent-reliable-state-artifacts/charter.md`.
 
 ## Scope and Boundaries
 
