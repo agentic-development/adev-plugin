@@ -120,3 +120,17 @@ If multiple providers are used, sync all enabled targets from the manifest.
 - After editing `.context-index/constitution.md` (suggested by sync-trigger hook)
 - After editing `.context-index/manifest.yaml` (manual)
 - When agent files seem stale (`/adev:hygiene` will detect this)
+
+## Context Routing referent
+
+The constitution's Context Routing table includes a row `Lifecycle state | .context-index/lifecycle-state/` — this points at the per-spec JSONL event logs managed by `lib/lifecycle-state.mjs`. When syncing the constitution into agent files, propagate this row verbatim; do not rewrite it to refer to the legacy `build-state/` directory (which has been renamed by `one-shot-migration-tool.spec.md`).
+
+## API reference
+
+Heuristic injection (Step 3):
+
+- `retrieveHeuristics(projectRoot, scope)` and `renderHeuristic(entry)` from `<ADEV_ROOT>/lib/heuristics.mjs` — read high-confidence heuristics for the `## Learned Lessons` block.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`. Use when reading sync targets, `tasks.backend`, and `project.adev_version`.
