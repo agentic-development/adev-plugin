@@ -1,3 +1,5 @@
+[adev docs](README.md) > Providers > Copilot
+
 # Smoke-install verification: GitHub Copilot adapter
 
 This procedure verifies that `CopilotAdapter` materializes a working customization surface in a consuming project's `.github/` tree and that Copilot's runtime picks it up. It is a manual checklist — the automated test suite (`tests/copilot-adapter*.test.mjs`) covers the same behaviors against synthetic fixtures; this document covers the live integration.
