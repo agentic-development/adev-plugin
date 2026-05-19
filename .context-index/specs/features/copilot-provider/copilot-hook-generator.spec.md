@@ -6,13 +6,28 @@
 ---
 charter: copilot-provider
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 2
 charter-revision: 2
 created: 2026-05-19
 updated: 2026-05-19
+source-manifest:
+  sha: "47611d9"
+  files:
+    - lib/providers/copilot/event-table.mjs
+    - lib/providers/copilot/matcher.mjs
+    - lib/providers/copilot/tool-names.mjs
+    - providers/copilot/hooks.json
+    - scripts/build-copilot-hooks.mjs
+    - tests/copilot-build-generator.test.mjs
+    - tests/copilot-event-table.test.mjs
+    - tests/copilot-hook-generator-errors.test.mjs
+    - tests/copilot-hooks-sync.test.mjs
+    - tests/copilot-matcher.test.mjs
+    - tests/copilot-tool-names.test.mjs
+  computed-at: "2026-05-19T19:48:52.956Z"
 ---
 
 ## Behavioral Contract
