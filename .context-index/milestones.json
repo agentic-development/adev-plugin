@@ -27,9 +27,9 @@
     },
     {
       "name": "0.27.1",
-      "status": "planned",
+      "status": "shipped",
       "epic_id": "epic-71",
-      "target_date": "2026-07-06",
+      "target_date": "2026-05-19",
       "release": {
         "strategy": "release-please"
       },
