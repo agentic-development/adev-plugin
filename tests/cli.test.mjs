@@ -12,6 +12,7 @@ import {
   enablePlugin,
   detectConflicts,
   disableConflictingPlugin,
+  selectProviders,
 } from "../cli/index.mjs";
 
 // --- scaffoldContextKit ---
@@ -308,6 +309,52 @@ describe("setupGitHooks", () => {
     // Original should be preserved
     const original = readFileSync(join(gitDir, ".githooks", "pre-commit"), "utf8");
     assert.ok(original.includes("custom"), "original hook should be preserved");
+  });
+});
+
+// --- selectProviders — menu shape (Task 2) ---
+
+describe("selectProviders — menu shape", () => {
+  it("returns standalone cursor for the cursor menu entry (choice 4)", async () => {
+    const fakeAsk = async () => "4";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["cursor"]);
+  });
+
+  it("returns the four-element list for the 'all four providers' choice (choice 7)", async () => {
+    const fakeAsk = async () => "7";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code", "opencode", "codex", "cursor"]);
+  });
+
+  it("preserves the default (claude-code only) on empty input", async () => {
+    const fakeAsk = async () => "";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code"]);
+  });
+
+  it("returns opencode for choice 2", async () => {
+    const fakeAsk = async () => "2";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["opencode"]);
+  });
+
+  it("returns codex for choice 3", async () => {
+    const fakeAsk = async () => "3";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["codex"]);
+  });
+
+  it("returns claude-code + opencode for choice 5 (renumbered from 4)", async () => {
+    const fakeAsk = async () => "5";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code", "opencode"]);
+  });
+
+  it("returns claude-code + codex for choice 6 (renumbered from 5)", async () => {
+    const fakeAsk = async () => "6";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code", "codex"]);
   });
 });
 

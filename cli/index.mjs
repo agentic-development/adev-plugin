@@ -71,7 +71,7 @@ function parseProviderFlags() {
   return providers;
 }
 
-async function selectProviders() {
+async function selectProviders({ ask: askFn = ask } = {}) {
   const explicitProviders = parseProviderFlags();
   if (explicitProviders.length > 0) {
     return explicitProviders;
@@ -81,11 +81,12 @@ async function selectProviders() {
   console.log("    [1] Claude Code only (default)");
   console.log("    [2] OpenCode only");
   console.log("    [3] OpenAI Codex only");
-  console.log("    [4] Claude Code and OpenCode");
-  console.log("    [5] Claude Code and OpenAI Codex");
-  console.log("    [6] All three providers\n");
+  console.log("    [4] Cursor only");
+  console.log("    [5] Claude Code and OpenCode");
+  console.log("    [6] Claude Code and OpenAI Codex");
+  console.log("    [7] All four providers (Claude Code, OpenCode, Codex, Cursor)\n");
 
-  const answer = await ask("Enter choice (1-6) [1]: ");
+  const answer = await askFn("Enter choice (1-7) [1]: ");
 
   switch (answer) {
     case "2":
@@ -93,11 +94,13 @@ async function selectProviders() {
     case "3":
       return ["codex"];
     case "4":
-      return ["claude-code", "opencode"];
+      return ["cursor"];
     case "5":
-      return ["claude-code", "codex"];
+      return ["claude-code", "opencode"];
     case "6":
-      return ["claude-code", "opencode", "codex"];
+      return ["claude-code", "codex"];
+    case "7":
+      return ["claude-code", "opencode", "codex", "cursor"];
     default:
       return ["claude-code"];
   }
