@@ -1,7 +1,7 @@
 ---
 status: evolving
-revision: 3
-updated: 2026-05-14
+revision: 4
+updated: 2026-05-19
 ---
 
 # Feature Charter: CLI
@@ -43,7 +43,7 @@ The dispatcher catches `GateError` (detected via `err.code === 'GATE_BLOCKED'`) 
 
 ### Installation / management (legacy in-file commands)
 
-- **`install`** — Register plugin with provider (Claude Code, OpenCode, Codex), scaffold minimal `.context-index/`, set up git hooks, stamp version. Exits early if adev is already installed, suggesting `upgrade` instead.
+- **`install`** — Register plugin with provider (Claude Code, OpenCode, Codex, Cursor, Copilot), scaffold minimal `.context-index/`, set up git hooks, stamp version. Exits early if adev is already installed, suggesting `upgrade` instead. The `--target <name>` flag invokes the per-target adapter directly (used by Copilot via `--target copilot [--user] [--dry-run]`), skipping interactive provider selection.
 - **`upgrade`** — Detect installed version, compute upgrade delta, re-install providers, add missing scaffold files/templates, update git hooks, apply new config (provenance), stamp new version.
 - **`uninstall`** — Remove plugin from selected providers.
 - **`init`** — Backward-compat alias that routes to `install` or `upgrade` based on project state.
