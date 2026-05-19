@@ -2,95 +2,78 @@
 spec: .context-index/specs/features/copilot-provider/copilot-adapter.spec.md
 charter: .context-index/specs/features/copilot-provider/charter.md
 date: 2026-05-19
-verdict: BLOCK
-last-reviewed-revision: 1
-file-sha: 6ef2a2183d12c4d1cb1f304e765844665e59d28a086621d8242e4b45aaf52542
+verdict: PASS_WITH_NOTES
+last-reviewed-revision: 2
+file-sha: 1f47f5c25bc9cc5db51bbcc6e736b983860e92367fd7151a2008a725ed5d9bd3
 ---
 
-# Architecture Review: copilot-adapter
+# Architecture Review: copilot-adapter (rev 2)
 
-> **Verdict:** BLOCK (3 blockers, 9 warnings, 7 suggestions)
+> **Spec revision:** 2 (was 1 in prior BLOCK pass)
+> **Verdict:** PASS_WITH_NOTES (0 blockers, 3 warnings, 6 suggestions)
 
 ## Reviewers Dispatched
 
-| ID | Mode | Profile | Prompt |
-|----|------|---------|--------|
-| structural-architect | subagent | reviewer-reasoning | `plugin:review-specs/structural-architect-prompt.md` |
-| security-reviewer | subagent | reviewer-capable | `plugin:review-specs/security-reviewer-prompt.md` |
-| consistency-analyzer | subagent | reviewer-fast | `plugin:review-specs/consistency-analyzer-prompt.md` |
+| ID | Mode | Profile |
+|----|------|---------|
+| structural-architect | subagent | reviewer-reasoning |
+| security-reviewer | subagent | reviewer-capable |
+| consistency-analyzer | subagent | reviewer-fast |
 
-## Blockers (must fix before planning)
+## Prior Findings — All Resolved
 
-- **CON-1 — Missing peer-adapter exports.** Every existing `providers/*/adapter.mjs` exports `name`, `pluginRoot`, `version`, and a `detect()` method, in addition to `install`/`uninstall`/`status`. The spec's Acceptance Criteria and Behaviors do not require these. Without them, `cli/index.mjs` install-dispatch will not find Copilot — the dispatcher keys off `adapter.name` and `detect()`.
-  - **Fix:** Add Behavior 0 covering `detect()` semantics (e.g., `process.env.COPILOT === "true" || existsSync(".github/copilot-instructions.md")`) and an acceptance criterion that the adapter exports the four constants plus `detect()`.
-- **SEC-3 — State-record forgery enables arbitrary path deletion on uninstall.** `.github/.adev-copilot-install.json` is a tracked, committable JSON file. A malicious PR could rewrite it to list `["../../../etc"]` or `["/Users/victim/.ssh"]`. On the next `adev uninstall --target copilot`, the adapter would attempt to remove those paths.
-  - **Fix:** Specify that uninstall MUST (a) re-validate each state-record skill entry against `^[a-z0-9-]{1,64}$`, (b) `path.resolve` + `startsWith(<projectRoot>/.github/skills/)` containment-check before any `rm`, (c) refuse deletions outside that prefix and add such entries to `residual` with a `SUSPICIOUS_STATE_ENTRY` annotation. Add a `STATE_RECORD_TAMPERED` error code.
-- **SEC-5 — Absolute `PLUGIN_ROOT` path leaks into committed config.** Hook scripts under `PLUGIN_ROOT/hooks/*.sh` are referenced by **absolute path** in the generated `.github/hooks/adev-hooks.json`, which is committed. This (a) leaks the operator's username and filesystem layout into repo history, (b) breaks for every other contributor who clones the repo (the path is meaningless on their machine), and (c) is a supply-chain-adjacent risk if a colleague has different code at the same path.
-  - **Fix:** Specify that the adapter MUST resolve hook script paths to a relative form (e.g., `./hooks/<name>.sh` relative to `.github/`) and either (a) copy the scripts into `.github/hooks/scripts/` so they are self-contained, or (b) reference them via a documented env var (`${ADEV_PLUGIN_ROOT}/hooks/<name>.sh`) the consumer's shell expands.
+**Blockers (3, all resolved):** CON-1 (peer-adapter exports), SEC-3 (state-record forgery / arbitrary deletion), SEC-5 (absolute-path leak in committed config).
+
+**Warnings (9, all resolved):** SA-1 (`$COPILOT_HOME` overreach), SA-2 (partial-rollback), SEC-1 (validation ordering), SEC-2 (symlink following), SEC-4 (`$COPILOT_HOME` platform fragility — moot via SA-1), SEC-6 (downgrade attack), CON-2 (hook filename pivot rationale), CON-6 (`status` shape charter drift), CON-8 (argument convention divergence).
+
+**Suggestions (7, all resolved or addressed):** SA-3, SA-4, SA-5, SEC-7, SEC-8, CON-3, CON-7.
 
 ## Structural Architect — PASS_WITH_NOTES
 
-**Warnings:**
+**New suggestions (all editorial):**
 
-- **SA-1 — `$COPILOT_HOME`-under-`$HOME` constraint is invented overreach.** The constraint has no basis in GitHub Copilot CLI docs and no peer-adapter precedent. It will break legitimate setups (CI containers, managed-laptop fleets).
-  - **Fix:** Remove the constraint and `INVALID_COPILOT_HOME` error path; `getCopilotHome()` simply honors `$COPILOT_HOME || join(os.homedir(), '.copilot')`. Alternatively, cite an ADR.
-- **SA-2 — Partial-rollback semantics on `INVALID_COPILOT_HOME`.** Repo-scope writes are not rolled back if user-scope fails. Leaves the consuming repo half-installed without any signal in `status`.
-  - **Fix:** Validate `getCopilotHome()` BEFORE any repo-scope writes when `user: true`. Either both legs succeed or neither writes. Moot if SA-1 is resolved.
+- **SA-1 — Install-Surface Map row wording.** The "Repo-wide instructions" row's `(n/a — user-level uses ~/.copilot/instructions/*.instructions.md only)` parenthetical implies user-scope materializes those files; Behavior §2 confirms it does not. Rephrase to `(n/a — user-scope instructions, if any, are owned by /adev:sync, not this adapter)`.
+- **SA-2 — `getCopilotHome()` export rationale.** Add one sentence noting the export exists for `--user` testability, not as a pattern to backport to peer adapters.
+- **SA-3 — Uninstall idempotency.** Add postcondition: "Uninstall is idempotent — state-record entries whose target no longer exists are skipped silently and do not populate `residual`."
+- **SA-4 — User-scope hook-config rewrite resolution.** Add to Behavior §2 that the absolute→relative rewrite applies independently to both surfaces; user-scope `hooks.json` references resolve relative to `~/.copilot/hooks/`.
 
-**Suggestions:**
+## Security Reviewer — PASS_WITH_NOTES
 
-- **SA-3 — `status.syncOutputPresent` cross-module reporting.** Clarify that `syncOutputPresent` is reported independently of `installed` (adapter is a read-only observer of sync-output files; no `status` outcome blocks on sync-output state).
-- **SA-4 — State-record schema gap.** Uninstall depends on a `skills: string[]` field that install §1 does not guarantee to write. Either extend §1's state-record schema to include `skills` and `hookConfig` fields, or rephrase §4 to enumerate skills by reading `.github/skills/` directly. Pick one source of truth. (Also relevant to SEC-3 mitigation.)
-- **SA-5 — Empty `~/.copilot/instructions/` directory is dead structure.** `--user` seeds skills/hooks but never seeds instructions (sync writes those per-repo). Either remove the empty-directory creation or extend `copilot-sync-output` to honor a user-scope flag.
+**New warnings:**
 
-## Security Reviewer — FAIL
+- **SEC-9 — `rmSync` symlink-following defense gap.** Behavior §4(e)'s parenthetical claim that "`rmSync` does not follow symlinks at the recursion root by default" is incorrect as a defense. If a state-record entry's resolved path is itself a symlink to a directory, behavior is platform-dependent.
+  - **Fix:** Add Behavior §4(d-bis): `If fs.lstatSync(resolved).isSymbolicLink() returns true, refuse with SUSPICIOUS_STATE_ENTRY: <entry> (symlink)`. Add matching acceptance criterion. Remove the misleading `rmSync`-defaults parenthetical.
+- **SEC-10 — User-scope partial-failure leaves orphaned `~/.copilot/` tree, no record.** When `user: true`, user-scope writes complete first; if repo-scope subsequently fails, the user has files under `~/.copilot/` with no inventory and no uninstall path. Shifts the same SEC-3 forgery surface to user-scope.
+  - **Fix:** Either (a) write an equivalent schema-versioned state record at `~/.copilot/.adev-copilot-install.json` for symmetry, OR (b) explicitly declare user-scope uninstall out-of-scope for this spec and track in a follow-up issue with the same defense-in-depth requirements.
 
-**Warnings:**
+**New suggestion:**
 
-- **SEC-1 — Path traversal validation ordering.** The regex DOES reject `..` and `/`, but the spec doesn't explicitly state that path construction uses only names returned by `validateSkillNames()`. State the ordering explicitly and add `path.resolve` + `startsWith` as a documented second defense layer per-write.
-- **SEC-2 — Symlink following during recursive skill copy.** The spec does not specify symlink handling. The peer `opencode/adapter.mjs` uses `execSync("cp -r ...")` which preserves symlinks. A skill containing `leak.txt -> /etc/passwd` could exfiltrate into a committed `.github/skills/` tree.
-  - **Fix:** Specify `fs.cpSync(src, dest, { recursive: true, dereference: false, verbatimSymlinks: false })` and throw `SKILL_CONTAINS_SYMLINK: <path>` on any symlink under `PLUGIN_ROOT/skills/`. Forbid `execSync("cp -r")`.
-- **SEC-4 — `$COPILOT_HOME` containment fragile across platforms.** Windows casing/short-name aliases, macOS `/private/var/...` symlinks, legitimately-symlinked `$HOME` setups all defeat a literal `startsWith` check. Specify `fs.realpathSync` on both sides before compare; document Windows case normalization. (Moot if SA-1 is resolved by removing the constraint.)
-- **SEC-6 — Downgrade attack surface on uninstall version drift.** Distinguish minor/patch drift (proceed with warning) from major drift OR missing schema-version field (require explicit `--force`, otherwise exit 1 with `STATE_RECORD_VERSION_INCOMPATIBLE`). Add a `schemaVersion: 1` field to the state record itself.
+- **SEC-11 — Windows `path.sep` containment portability.** `startsWith(<base> + path.sep)` is fragile across separators. Use `path.relative(base, resolved)` and require the result to be non-empty, not start with `..`, and not be absolute. Low priority (adev has no Windows quality gate yet).
 
-**Suggestions:**
+## Consistency Analyzer — PASS
 
-- **SEC-7 — Partial-failure cleanup gap.** Either perform user-scope writes BEFORE repo-scope writes, or write the state record LAST after both surfaces complete. Document the chosen ordering.
-- **SEC-8 — Frontmatter parsing trust boundary.** Specify allocation-bounded YAML parsing, regex-validate `name:` before equality check against dirname, NFC-normalize both sides or reject non-ASCII.
+**New warning:**
 
-## Consistency Analyzer — FAIL
+- **CON-9 — Hook config filename idiom note.** Copilot documents `.github/hooks/*.json` as a wildcard scan with per-feature filenames; the spec collapses everything to a single `.github/hooks/hooks.json`. Wildcard-compatible (it matches), but novel.
+  - **Fix:** One-line note under Install-Surface Map: "adev emits a single aggregated hooks file because adev's canonical `hooks/hooks.json` is single-file by design."
 
-**Warnings:**
+**New suggestion:**
 
-- **CON-2 — Hook config filename pivot lacks rationale.** Sibling spec emits `providers/copilot/hooks.json`; this spec writes `.github/hooks/adev-hooks.json`. Either document the deliberate `adev-` prefix (to avoid collision with user-authored sibling hook configs) or drop the prefix for byte-equivalence with the sibling.
-- **CON-6 — `status` return shape drifts from charter Interface Contract.** Spec returns `{ installed, version, location, userSeeded, skillCount, hookConfigPresent, syncOutputPresent, agentsMd }`; charter line 128 documents only the first four fields. Bump charter revision 4 → 5 to document the richer shape; share the Spec trailer commit with the adapter implementation.
-- **CON-8 — `install(opts)` argument convention divergence.** Peer adapters take `opts.scope`; this spec uses `opts.projectRoot` + `opts.user`. The divergence is principled (Copilot is repo-scoped, peers are user-scoped) but the spec must explicitly justify it in the Behavioral Contract preamble.
+- **CON-11 — Sibling-spec traceability.** Add an acceptance criterion: "The `copilot-hook-generator` sibling spec is implemented and `tests/copilot-hooks-sync.test.mjs` is green before this adapter is merged."
 
-**Suggestions:**
-
-- **CON-3 — AGENTS.md auto-load hint should reflect `chat.useAgentsMdFile` setting gate.** Research §Q1 qualifies auto-load as setting-gated. Soften the hint string to: `"VS Code Copilot (when chat.useAgentsMdFile enabled) and Copilot CLI auto-load AGENTS.md at the repo root"`.
-- **CON-7 — `.github/.adev-copilot-install.json` is a novel naming convention.** Acceptable (Copilot has no plugin home) but call out as a deliberate deviation in the Install-Surface Map preamble.
-
-**Verified consistent (no action):** CON-4 (skill-name regex matches research §Q10), CON-5 ("no plugin home" framing matches charter and constitution anti-pattern).
+**Verified consistent:** CON-10 — relative hook-script path scheme `./scripts/<name>.sh` matches Copilot's documented hook schema example verbatim.
 
 ---
 
 ## Summary
 
-**Total findings:** 19 (3 blockers, 9 warnings, 7 suggestions)
+**Total findings:** 9 (0 blockers, 3 warnings, 6 suggestions)
 
-**Action required:** The spec is **BLOCKED** for planning. The three blockers (CON-1 missing peer-adapter exports, SEC-3 state-record forgery, SEC-5 absolute-path leak in committed config) must be resolved before `/adev:plan`. The warnings should be folded in during the same revision pass — most resolve trivially alongside the blockers.
+**Spec is unblocked for `/adev:plan`.** All three rev-1 blockers and all nine rev-1 warnings are confirmed resolved. The three new warnings (SEC-9 `rmSync` symlink check, SEC-10 user-scope inventory asymmetry, CON-9 filename idiom note) are all polish — none require structural rework. SEC-9 and SEC-10 are 5-minute edits.
 
-**Suggested revision pass:**
+**Recommended quick fixes before planning (optional):**
+1. SEC-9: Add `lstatSync` symlink check in Behavior §4 + acceptance criterion.
+2. SEC-10: Declare user-scope uninstall out-of-scope OR add a symmetric state record at `~/.copilot/.adev-copilot-install.json`.
+3. CON-9: One-line note explaining the single-file aggregation choice.
 
-1. **CON-1:** Add `detect()`, `name`, `pluginRoot`, `version` to adapter exports + acceptance criteria.
-2. **SEC-3:** Tighten uninstall path-confinement with re-validation + `startsWith` check + `SUSPICIOUS_STATE_ENTRY` annotation.
-3. **SEC-5:** Switch to relative hook-script paths (copy scripts into `.github/hooks/scripts/` or use `${ADEV_PLUGIN_ROOT}` env var).
-4. **SA-1 + SEC-4:** Remove the invented `$COPILOT_HOME`-under-`$HOME` constraint and its error path entirely.
-5. **SA-2 + SEC-7:** Move user-scope validation/writes before repo-scope writes so partial-failure leaves no state record.
-6. **SA-4:** Extend state-record schema with `skills: string[]` and `hookConfig: string` for SEC-3 mitigation.
-7. **SEC-2:** Specify `fs.cpSync({ dereference: false })` and `SKILL_CONTAINS_SYMLINK`.
-8. **SEC-6:** Add `schemaVersion: 1` to state record + version-drift gating.
-9. **CON-2/CON-6/CON-8:** Add rationale paragraphs for the documented pivots; bump charter rev 4 → 5 for the richer `status` shape.
-
-After revisions, re-run `/adev:review-specs --spec .context-index/specs/features/copilot-provider/copilot-adapter.spec.md`.
+After these (or proceeding as-is), the spec is ready for `/adev:plan`.
