@@ -71,6 +71,32 @@ function parseProviderFlags() {
   return providers;
 }
 
+/**
+ * Parse `--target <name>` (Copilot's CLI surface — `adev install --target copilot`).
+ * Returns the target name or null. Validates the name is a known provider.
+ *
+ * @returns {string|null}
+ */
+function parseTargetFlag() {
+  const argv = process.argv;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--target" && argv[i + 1]) {
+      const t = argv[i + 1];
+      if (!getProviderNames().includes(t)) {
+        error(`Unknown target: ${t}`);
+        error(`Available: ${getProviderNames().join(", ")}`);
+        process.exit(1);
+      }
+      return t;
+    }
+  }
+  return null;
+}
+
+function parseBooleanFlag(name) {
+  return process.argv.includes(name);
+}
+
 async function selectProviders() {
   const explicitProviders = parseProviderFlags();
   if (explicitProviders.length > 0) {
@@ -610,7 +636,77 @@ async function installProviders(providerNames) {
   }
 }
 
+/**
+ * `adev install --target copilot [--user] [--dry-run]` — per-target adapter
+ * invocation. Routes through CopilotAdapter.install() and prints its return
+ * value as a status line. Mirrors the documented Behaviors §7 surface.
+ */
+async function cmdInstallCopilot() {
+  const adapter = getProvider("copilot");
+  const dryRun = parseBooleanFlag("--dry-run");
+  const user = parseBooleanFlag("--user");
+  try {
+    const result = adapter.install({ projectRoot: process.cwd(), dryRun, user });
+    if (result.dryRun) {
+      console.log(`Would write ${result.wouldWrite.length} paths under ${result.location}${user ? " and " + adapter.getCopilotHome() : ""}`);
+      for (const p of result.wouldWrite) console.log(`  + ${p}`);
+    } else if (result.installed) {
+      success(`Copilot adapter v${result.version} installed at ${result.location}${result.userSeeded ? " (user-scope mirrored to " + adapter.getCopilotHome() + ")" : ""}`);
+    } else {
+      log(`Copilot adapter already installed at ${result.location}`);
+    }
+  } catch (err) {
+    error(err.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * `adev uninstall --target copilot [--force]` — per-target adapter invocation.
+ */
+async function cmdUninstallCopilot() {
+  const adapter = getProvider("copilot");
+  const force = parseBooleanFlag("--force");
+  try {
+    const result = adapter.uninstall({ projectRoot: process.cwd(), force });
+    if (result.removed) {
+      success(`Copilot adapter uninstalled from ${process.cwd()}/.github`);
+      if (result.residual && result.residual.length > 0) {
+        warn(`Residual entries (skipped — not removed):`);
+        for (const r of result.residual) warn(`  ${r}`);
+      }
+    } else {
+      log(`Copilot adapter was not installed; nothing to uninstall.`);
+    }
+  } catch (err) {
+    error(err.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * `adev status --target copilot` — per-target status query.
+ */
+async function cmdStatusCopilot() {
+  const adapter = getProvider("copilot");
+  try {
+    const result = adapter.status({ projectRoot: process.cwd() });
+    console.log(JSON.stringify(result, null, 2));
+  } catch (err) {
+    error(err.message);
+    process.exit(1);
+  }
+}
+
 async function cmdInstall() {
+  // --target <name> branch: per-target adapter invocation (Copilot uses this).
+  // Skips the interactive provider selection + scaffolding flow used by the
+  // generic `adev install` entry point.
+  const target = parseTargetFlag();
+  if (target === "copilot") {
+    return cmdInstallCopilot();
+  }
+
   console.log();
   console.log("  adev — Agentic Development Framework");
   console.log("  ─────────────────────────────────────");
@@ -831,6 +927,12 @@ async function cmdUpgrade() {
 }
 
 async function cmdUninstall() {
+  // --target <name> branch: per-target adapter invocation (Copilot uses this).
+  const target = parseTargetFlag();
+  if (target === "copilot") {
+    return cmdUninstallCopilot();
+  }
+
   const providerNames = await selectProviders();
 
   for (const providerName of providerNames) {
@@ -958,6 +1060,12 @@ async function cmdExtension() {
  * pipeline. SA-3: composite exit code is the max of the two halves.
  */
 async function cmdStatus() {
+  // --target <name> branch: per-target adapter status query (Copilot uses this).
+  const target = parseTargetFlag();
+  if (target === "copilot") {
+    return cmdStatusCopilot();
+  }
+
   const args = process.argv.slice(3);
   const wantRender = args.includes("--render");
   const wantPipeline = args.includes("--pipeline");
