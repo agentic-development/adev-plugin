@@ -58,7 +58,7 @@ Both modes support `--milestone <name>` to batch-build multiple specs. Route run
 6. **When** `--dry-run` is invoked **then** the skill shows what would happen at each phase (specs found, pipeline mode, steps to execute, estimated task counts, retry policy) without executing any skill
 7. **When** a spec already has a plan (`.plan.md` exists) **then** the plan step is skipped
 8. **When** a spec has already passed review (`.review.md` exists with PASS verdict, not stale) **then** both the specify step (Step 0) and the review step (Step 1) are skipped in Full Pipeline — the pipeline continues from plan
-8a. **When** a spec file exists but has no `.review.md` **then** Full Pipeline Step 0 dispatches `/adev:specify` in `--revise` mode (not creation mode) to avoid clobbering an existing spec
+8a. **When** a spec file already exists OR the lifecycle log shows the `specify` step completed with verdict `PASS` or `PASS_WITH_NOTES` for that spec **then** Full Pipeline Step 0 records the step as `skipped` (without dispatching a subagent). The downstream `/adev:review-specs` and `/adev:validate` gates catch any drift between the spec on disk and the intended behavior; re-running specify would risk clobbering the existing spec since `/adev:specify` does NOT carry a `--revise` workflow flag (see issue-527).
 9. **When** the pipeline reaches the route step **then** the orchestrator MUST dispatch the route subagent — this step MUST NOT be skipped, inlined, or treated as a no-op even if no specialists are registered in the manifest. Use `--no-route` to explicitly disable route for the current build
 10. **When** building multiple specs via `--milestone` **then** each spec's build is independent — failure of one spec does not block others unless they have explicit dependencies
 11. **When** each step completes **then** the build state file is updated with the completed step and timestamp
@@ -115,10 +115,10 @@ Each step is dispatched as a fresh subagent via the Agent tool with a forked con
 **Full Pipeline** (`--full`):
 
 ```
-Step 0: Specify   — Agent dispatch → subagent invokes /adev:specify --spec <path>
-                     If spec file exists: dispatched with --revise (revision mode, not overwrite)
-                     If spec file does not exist: dispatched in creation mode
-                     Skip if spec exists AND .review.md exists with PASS verdict (spec is already reviewed)
+Step 0: Specify   — Agent dispatch → subagent invokes /adev:specify --spec <path> (creation mode only)
+                     Skip if spec file already exists on disk
+                     Skip if lifecycle log shows specify step completed with PASS or PASS_WITH_NOTES verdict
+                     Skip if .review.md exists with PASS verdict (spec is already reviewed)
 
 Step 1: Review    — Agent dispatch → subagent invokes /adev:review-specs --spec <path>
                      Skip if .review.md exists and is current (PASS verdict)
@@ -273,7 +273,7 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 ### Skip Conditions
 - [ ] Plan step skipped if `.plan.md` exists
 - [ ] Full Pipeline Step 0 (Specify) skipped if `.review.md` exists with PASS verdict (spec already reviewed)
-- [ ] Full Pipeline Step 0 dispatches `/adev:specify --revise` when spec exists but has no `.review.md`
+- [ ] Full Pipeline Step 0 records `skipped` (not dispatches `--revise`) when the spec file exists or the lifecycle log shows specify completed with PASS — `/adev:specify` does not carry a `--revise` flag (issue-527)
 - [ ] Review step skipped in Full Pipeline if `.review.md` exists with PASS verdict and is not stale
 
 ### Resume and Stale Builds
