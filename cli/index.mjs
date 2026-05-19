@@ -606,6 +606,30 @@ async function installProviders(providerNames) {
 
       const skillsPath = provider.enable(targetScope);
       success(`Codex skills linked in ${skillsPath}`);
+    } else if (providerName === "cursor") {
+      const { installed, path: pluginPath } = await provider.install({ scope: "user" });
+      if (installed) {
+        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+      } else {
+        success(`Plugin v${PLUGIN_VERSION} already installed`);
+      }
+
+      const conflicts = provider.detectConflicts();
+      if (conflicts.length === 0) {
+        success("No conflicting plugins detected");
+      } else {
+        for (const conflict of conflicts) {
+          warn(`${conflict.name} — ${conflict.reason}`);
+          const disable = await ask(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          if (disable === "yes" || disable === "y") {
+            // claude-code surfaces { key } for the disable target; the cursor
+            // adapter's Superpowers guard returns { name, reason } only.
+            // Prefer key when present, fall back to name.
+            provider.disableConflictingPlugin(conflict.key ?? conflict.name);
+            success(`${conflict.name} disabled for this project`);
+          }
+        }
+      }
     }
   }
 }
