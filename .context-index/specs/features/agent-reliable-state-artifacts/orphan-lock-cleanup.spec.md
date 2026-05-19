@@ -15,7 +15,7 @@
 ---
 charter: agent-reliable-state-artifacts
 kind: behavioral
-status: implemented
+status: validated
 risk_level: medium
 milestone: 0.26.0
 revision: 1
