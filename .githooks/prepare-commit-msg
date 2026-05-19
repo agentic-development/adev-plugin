@@ -187,10 +187,21 @@ if [ -n "$OPERATOR" ]; then
   fi
 fi
 
-# Append trailers if any
+# Append trailers if any. If the body already ends with a trailer-formatted
+# line (e.g. `Spec:` / `Plan-task:` injected via HEREDOC), append the new
+# trailers WITHOUT a leading blank line — otherwise the existing trailer
+# block becomes a separate paragraph and `git interpret-trailers --parse`
+# only returns the last block, silently dropping the body trailers.
+# See issue-526 (cursor-provider retro 2026-05-19).
 if [ -n "$TRAILERS" ]; then
-  # Ensure there's a blank line before trailers
-  printf '\n%s' "$TRAILERS" >> "$COMMIT_MSG_FILE"
+  LAST_LINE=$(awk 'NF{l=$0} END{print l}' "$COMMIT_MSG_FILE")
+  if printf '%s' "$LAST_LINE" | grep -qE '^[A-Za-z][A-Za-z0-9_-]*: '; then
+    # Existing trailer block — append directly without a blank-line separator
+    printf '%s' "$TRAILERS" >> "$COMMIT_MSG_FILE"
+  else
+    # No existing trailer block — start a new paragraph
+    printf '\n%s' "$TRAILERS" >> "$COMMIT_MSG_FILE"
+  fi
 fi
 
 exit 0
