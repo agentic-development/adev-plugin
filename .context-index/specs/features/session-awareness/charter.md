@@ -81,7 +81,7 @@ The session-awareness module provides continuous context about active work throu
 | Concurrent Access Safety | Atomic writes via temp-file-then-rename for execution state | should-have | 1 | validated |
 | Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | validated |
 | Token Cost Logging | Extend session tracking JSONL with optional per-entry token usage and cost fields | should-have | 2 | validated |
-| Session-Capture Self-Skip Guard | Post-commit hook self-skips when the commit only touches `.context-index/sessions/` paths, breaking the recursive "1 commit -> 1 capture -> 1 commit" amplification | should-have | 2 | implemented |
+| Session-Capture Self-Skip Guard | Post-commit hook self-skips when the commit only touches `.context-index/sessions/` paths, breaking the recursive "1 commit -> 1 capture -> 1 commit" amplification | should-have | 2 | validated |
 
 ## Deferred Capabilities
 
