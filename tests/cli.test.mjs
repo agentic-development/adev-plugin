@@ -530,3 +530,30 @@ describe("installProviders — cursor end-to-end", () => {
 // invocation and is covered upstream by the CLI E2E suite — not duplicated
 // here per the Task 5 plan's "OR add a dedicated subprocess assertion" note.
 
+// --- handleDualSyncTargets — cursor scaffold stub (sync-target-output Task 2) ---
+
+describe("handleDualSyncTargets — cursor scaffold stub", () => {
+  it("emits an active cursor block with .cursor/rules/adev.mdc (not the commented .cursorrules)", () => {
+    const src = readFileSync(
+      join(PLUGIN_ROOT, "cli/index.mjs"),
+      "utf8"
+    );
+    // The manifest-template substitution in handleDualSyncTargets must
+    // contain an UNCOMMENTED cursor entry pointing at .cursor/rules/adev.mdc.
+    // Per spec Output Contract step 1 + Acceptance Criterion 2.
+    assert.match(
+      src,
+      /# Cursor\n\s*- path: \.cursor\/rules\/adev\.mdc\n\s*format: cursor\n\s*providers: \[cursor\]/,
+      "handleDualSyncTargets must emit an uncommented cursor block at .cursor/rules/adev.mdc"
+    );
+    // The legacy `.cursorrules` literal must not survive in the template
+    // substitution — its presence in any form (commented or not) indicates
+    // the scaffold stub was not activated.
+    assert.doesNotMatch(
+      src,
+      /#\s*-\s*path:\s*\.cursorrules/,
+      "handleDualSyncTargets must not retain the legacy commented .cursorrules block"
+    );
+  });
+});
+

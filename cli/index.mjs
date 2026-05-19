@@ -465,9 +465,9 @@ async function handleDualSyncTargets(providerNames) {
       providers: [opencode]
 
     # Cursor
-    # - path: .cursorrules
-    #   format: cursor
-    #   providers: [cursor]
+    - path: .cursor/rules/adev.mdc
+      format: cursor
+      providers: [cursor]
 
     # GitHub Copilot
     # - path: .github/copilot-instructions.md
