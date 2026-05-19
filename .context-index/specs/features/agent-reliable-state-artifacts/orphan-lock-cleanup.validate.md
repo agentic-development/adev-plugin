@@ -3,7 +3,7 @@
 > **Date:** 2026-05-18
 > **Spec:** .context-index/specs/features/agent-reliable-state-artifacts/orphan-lock-cleanup.spec.md
 > **Plan:** .context-index/specs/features/agent-reliable-state-artifacts/orphan-lock-cleanup.plan.md
-> **Milestone:** 0.26.0
+> **Milestone:** 0.27.0
 > **Overall Status:** PASS
 
 ---
