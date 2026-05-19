@@ -1,7 +1,7 @@
 ---
 charter: cursor-provider
 kind: skill
-status: implemented
+status: validated
 risk_level: medium
 milestone: v1
 revision: 1
@@ -18,6 +18,7 @@ source-manifest:
     - tests/cli.test.mjs
     - tests/sync/cursor-format.test.mjs
   computed-at: "2026-05-19T13:32:14.199Z"
+drift_detected: true
 ---
 
 # Skill Spec: Cursor sync target output

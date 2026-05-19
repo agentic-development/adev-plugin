@@ -1,11 +1,11 @@
 ---
 charter: cursor-provider
 kind: skill
-status: implemented
+status: validated
 risk_level: medium
 milestone: v1
 revision: 1
-charter-revision: 2
+charter-revision: 3
 created: 2026-05-19
 updated: 2026-05-19
 source-manifest:
@@ -15,6 +15,7 @@ source-manifest:
     - cli/index.mjs
     - tests/cli.test.mjs
   computed-at: "2026-05-19T12:33:18.188Z"
+drift_detected: true
 ---
 
 # Skill Spec: CLI install integration

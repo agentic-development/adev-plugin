@@ -84,7 +84,7 @@ adev-plugin currently installs into Claude Code, OpenCode, and Codex via three p
 | Hook drift test | `tests/cursor-hooks-sync.test.mjs` fails CI on out-of-sync committed hooks.json | must-have | v1 | implemented |
 | Translation-table coverage assertion | Generator throws on Claude events with no Cursor mapping | must-have | v1 | implemented |
 | CLI install integration | `adev install` accepts `cursor` as a target; routes through CursorAdapter | must-have | v1 | validated |
-| `.cursor/rules/adev.mdc` sync output | `/adev:sync` writes alwaysApply pointer rule when `cursor` is a sync target | must-have | v1 | implemented |
+| `.cursor/rules/adev.mdc` sync output | `/adev:sync` writes alwaysApply pointer rule when `cursor` is a sync target | must-have | v1 | validated |
 | Skill name sanitization | Install-time rename of `adev:<x>` skills to `adev-<x>` — Cursor docs require lowercase + hyphens matching the folder name, so colons are invalid | must-have | v1 | implemented |
 | CLI charter revision | Update `cli` charter install verb description (rev 3 → rev 4) | must-have | v1 | validated |
 | Smoke install verification | Manual local install into `~/.cursor/plugins/local/adev` + open Cursor + verify skill discovery | should-have | v1 | — |
