@@ -1,7 +1,7 @@
 ---
-status: approved
+status: evolving
 kind: feature
-revision: 2
+revision: 3
 updated: 2026-05-19
 ---
 
@@ -63,8 +63,8 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 |--------|-------------|----------------|
 | CopilotAdapter | The provider adapter object exported from `providers/copilot/adapter.mjs` | `install(opts)`, `uninstall(opts)`, `status(opts)`, `getCopilotHome()`, `validateSkillNames(skills)` |
 | CopilotHookConfig | Generated `providers/copilot/hooks.json` derived from `hooks/hooks.json` | `version: 1`, `hooks: { preToolUse \| postToolUse \| sessionStart \| agentStop \| subagentStart \| subagentStop \| ... : [...] }`, per-event `matcher` regex |
-| HookEventTranslation | Single entry in the Claude→Copilot event translation table inside `build-copilot-hooks.mjs` | `claudeEvent`, `claudeMatcher`, `copilotEvent`, `copilotMatcher`, `cloudAgentSafe`, `timeoutSec?` |
-| ToolNameMapping | Single entry in `lib/providers/copilot/tool-names.mjs` mapping Claude tool names to Copilot tool names for matcher rewrites | `claudeToolName`, `copilotToolName` |
+| HookEventTranslation | Single entry in the Claude Code → Copilot event translation table inside `lib/providers/copilot/event-table.mjs`. Entries with `cloudAgentSafe: false` are dropped from generator output entirely — the corresponding Copilot event is never emitted (v1: `Notification → notification (cloudAgentSafe: false)` is dropped). | `claudeEvent`, `copilotEvent`, `cloudAgentSafe`, `defaultTimeoutSec?` |
+| ToolNameMapping | Single entry in `lib/providers/copilot/tool-names.mjs` mapping Claude Code tool names to Copilot tool names for matcher rewrites. v1 coverage: `Bash→bash`, `Write→create`, `Edit→edit`, `MultiEdit→edit`, `Read→view`, `Glob→glob`, `Grep→grep`, `WebFetch→web_fetch`, `Task→task`, `AskUser→ask_user`. | `claudeToolName`, `copilotToolName` |
 | CopilotRepoInstructions | The `.github/copilot-instructions.md` file written by `/adev:sync` when `copilot` is a sync target | plain markdown body under 4,000 characters (code-review compatibility ceiling) |
 | CopilotModuleInstruction | Per-module `.github/instructions/<module>.instructions.md` files written by `/adev:sync` | YAML frontmatter (`applyTo` required, optional `excludeAgent`, `description`), body scoped to the module |
 | CopilotSkillTree | The materialized `.github/skills/<name>/SKILL.md` tree the adapter copies from adev's canonical `skills/` directory | every emitted skill carries lowercase-kebab `name` ≤ 64 chars matching its parent directory |
