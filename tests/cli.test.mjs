@@ -358,6 +358,22 @@ describe("selectProviders — menu shape", () => {
   });
 });
 
+// --- installProviders — JSDoc names all four providers (Task 3) ---
+
+describe("installProviders — JSDoc names all four providers", () => {
+  it("the JSDoc header lists Claude Code, OpenCode, Codex, and Cursor", () => {
+    const src = readFileSync(
+      join(PLUGIN_ROOT, "cli/index.mjs"),
+      "utf8"
+    );
+    assert.match(
+      src,
+      /\*\s*Install providers \(Claude Code, OpenCode, Codex, Cursor\)/,
+      "installProviders JSDoc must name all four providers"
+    );
+  });
+});
+
 // --- installProviders — cursor branch structure (Task 1) ---
 
 describe("installProviders — cursor branch structure", () => {
