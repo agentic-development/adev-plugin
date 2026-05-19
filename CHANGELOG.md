@@ -1,5 +1,84 @@
 # Changelog
 
+## [0.27.0](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.26.0...adev-cli-v0.27.0) (2026-05-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agent-reliable-state-artifacts:** the on-disk tasks.json document now carries a `seq` field when written by this adapter. Legacy tasks.json files without seq are upgraded transparently on first mutation; no adev migrate invocation needed. External tooling that reconstructs tasks.json from a parsed shape must preserve the seq field (drop-unknown-top-level-keys rule has a documented exception).
+
+### Features
+
+* add cursor-provider feature charter ([1d5ba77](https://github.com/agentic-development/adev-plugin/commit/1d5ba771eee35160ad228142c438147e0fb7dbe4))
+* **agent-reliable-state-artifacts:** CAS over atomic rename for JSON issue board ([517e9d6](https://github.com/agentic-development/adev-plugin/commit/517e9d6375a32ef2dc9e38abb984620623f3ab4f))
+* **agent-reliable-state-artifacts:** reportPartialRecovery + partialRecoveries[] projection ([d77db59](https://github.com/agentic-development/adev-plugin/commit/d77db59e0b150819159003c3eba0aa8e9df5cbf2))
+* **cli-driver-surface:** adev partial {detect,resume,discard,inspect} verbs ([8dae15e](https://github.com/agentic-development/adev-plugin/commit/8dae15e32fbf9e555cfb52374b3c7346ec5bc57c))
+* **cross-cutting:** incremental artifact writes (.partial + atomic-rename) ([39a4c14](https://github.com/agentic-development/adev-plugin/commit/39a4c146c1aed14aeb6446ca70fb8add3ecbd408))
+* **cursor-provider:** add Cursor IDE provider adapter charter ([b720758](https://github.com/agentic-development/adev-plugin/commit/b72075883775d2162ec4e916e7e7b333bf5c4502))
+* **cursor-provider:** add drift test for cursor hooks generator ([b4a332a](https://github.com/agentic-development/adev-plugin/commit/b4a332a16026defcea2137fbcbc2ba23f0ea891b))
+* **cursor-provider:** add TRANSLATION_TABLE and timeout constants for cursor hooks generator ([019494e](https://github.com/agentic-development/adev-plugin/commit/019494ef507452441d605788bc5eb046c3b8468c))
+* **cursor-provider:** approve charter (status: approved, rev 2) ([bcf6565](https://github.com/agentic-development/adev-plugin/commit/bcf6565dd6ee6b0489d4f095bbd721cf83d1c4f1))
+* **cursor-provider:** commit initial providers/cursor/hooks.json ([f5fa465](https://github.com/agentic-development/adev-plugin/commit/f5fa465d1c91f9a078dab2dd54b167e4e66e8ed1))
+* **cursor-provider:** hook config generator + drift test + coverage assertion (Spec C) ([4cd8852](https://github.com/agentic-development/adev-plugin/commit/4cd8852ddd6cebb40ad276f998877fb97bbf7aa9))
+* **cursor-provider:** implement buildCursorHooks transform with atomic write ([be2229d](https://github.com/agentic-development/adev-plugin/commit/be2229d99ca48babafc1f27eacbb78a83ac6e3a7))
+* **cursor-provider:** incorporate reviewer notes ([27177d9](https://github.com/agentic-development/adev-plugin/commit/27177d955ec1d39e4a95ce08af68c7eb0ea113c0))
+* **cursor-provider:** stamp source manifest; flip spec/charter to implemented ([8bdba98](https://github.com/agentic-development/adev-plugin/commit/8bdba988eb51716621fe0976308a69c4012cc384))
+* **cursor-provider:** wire build:cursor-hooks npm script ([ed77384](https://github.com/agentic-development/adev-plugin/commit/ed77384ba6c9a08096f07a8de8d2f59f3c4d844f))
+* **design:** add Spec Organization Plan to brainstorm Step 8 ([6183c08](https://github.com/agentic-development/adev-plugin/commit/6183c085e321dff1d5d8c16b863c3fe501e34d4f))
+* **design:** brainstorm Step 8 capability grouping (issue-338) ([3a1ce65](https://github.com/agentic-development/adev-plugin/commit/3a1ce65650999ba36eb46ab2a409812af8f6c830))
+* **design:** spec brainstorm Step 8 capability grouping suggestions ([f4c81ca](https://github.com/agentic-development/adev-plugin/commit/f4c81cabe63051feb4beec0209ff899d1e813e9a))
+* **extensions:** extension authoring docs bundle (issue-485) ([0368c6e](https://github.com/agentic-development/adev-plugin/commit/0368c6ec99aef8cde707f1fefc796ad78f6093a1))
+* **output-personas:** add verbosity overlay templates ([7113bbb](https://github.com/agentic-development/adev-plugin/commit/7113bbb1d8d7ba381a45cdbb8c3196ca3f1cf53b))
+* **output-personas:** calibrated Architect template trim ([c8b7fa2](https://github.com/agentic-development/adev-plugin/commit/c8b7fa292c4bb76b44cf480c7772ca06e66ee109))
+* **output-personas:** extend lib/persona.mjs with verbosity axis ([712abd6](https://github.com/agentic-development/adev-plugin/commit/712abd6c1031b6068f3f132bfed47a8f0e66394d))
+* **output-personas:** persona x verbosity grouping in JSONL analysis (GREEN) ([88056e7](https://github.com/agentic-development/adev-plugin/commit/88056e7f46c60a6220e0490acd0c0c917a66bcff))
+* **output-personas:** universal anti-redundancy rule ([1f50700](https://github.com/agentic-development/adev-plugin/commit/1f50700a2f70bfd68ffed401d45f47fa6a570ea2))
+* **output-personas:** verbosity axis + output trimming ([0533412](https://github.com/agentic-development/adev-plugin/commit/05334125bc4bc7364f25c58367f86b7a420f53fe))
+* **output-personas:** wire session-start hook to concatenate persona + verbosity ([a630e89](https://github.com/agentic-development/adev-plugin/commit/a630e89cad2d71fdeef143da08878030fd7b6f2c))
+* **partial-artifacts:** findPartials + isPartialStale ([10dc414](https://github.com/agentic-development/adev-plugin/commit/10dc4147cfb1b93da0b56baeb438ed62511aa02a))
+* **partial-artifacts:** helper skeleton — partialPath, lockPath, commitPartial, assertWithin ([f60848c](https://github.com/agentic-development/adev-plugin/commit/f60848c3878ebc59236d3996d608222b8254415f))
+* **partial-artifacts:** lock acquire + steal-on-stale (closes SA-10, SA-11, SEC-7) ([ad9976c](https://github.com/agentic-development/adev-plugin/commit/ad9976cac9fb447c15f5d1ff479b4f8bb663cf42))
+* **partial-artifacts:** manifest knobs (lifecycle.partial_* family, closes CON-9) ([61b7f68](https://github.com/agentic-development/adev-plugin/commit/61b7f6884b8b9773ce7d6d76e0c3221ca692e1d2))
+* **partial-artifacts:** schema-marker grammar + allowlist (closes SEC-6, CON-12) ([ab5e59f](https://github.com/agentic-development/adev-plugin/commit/ab5e59f00e6b32048502f73ed23000f639c69432))
+* **partial-artifacts:** wire PARTIAL_ARTIFACT_OVERSIZE per-append guard ([682034f](https://github.com/agentic-development/adev-plugin/commit/682034f479ef02d3fa054184454709f9136f3aa2))
+* **spec-drift-detection:** canonicalize code_drift_detected/code_drift_cleared in lifecycle-event-log ([d23a57b](https://github.com/agentic-development/adev-plugin/commit/d23a57b157645b03c4221a6f8e880ae2f5980ab8))
+* **spec-drift-detection:** charter rev 3 - promote multi-file drift tracking, rewrite invariant 4 (Step 5) ([5f9fd0b](https://github.com/agentic-development/adev-plugin/commit/5f9fd0be1f095d0d1341322c26f52d5af420899b))
+* **spec-drift-detection:** clearDrift appends code_drift_cleared event ([af85e10](https://github.com/agentic-development/adev-plugin/commit/af85e10bcce2667e59fd3a2e621a3a1efcc03b57))
+* **spec-drift-detection:** JSONL drift events — eliminate spurious merge conflicts (closes issue-516) ([05d4f46](https://github.com/agentic-development/adev-plugin/commit/05d4f462d148997a060077b3da63591693d2133b))
+* **spec-drift-detection:** one-shot migrate-drift-fields script (Step 4) ([c482bb6](https://github.com/agentic-development/adev-plugin/commit/c482bb686ed12fc08e01884cc19b2d4bb294da69))
+* **spec-drift-detection:** stampDrift appends code_drift_detected event with canonicalized path ([71c6343](https://github.com/agentic-development/adev-plugin/commit/71c6343258beafdb6770bab21ad69b1331345cad))
+* **spec-drift-detection:** stop writing drift_source/drift_at to frontmatter (Step 3) ([9cc9724](https://github.com/agentic-development/adev-plugin/commit/9cc97245e26c61065ff728d6708caddd8a29f7e9))
+* **spec-drift-detection:** update skill prose for JSONL drift model (Step 6) ([e380f71](https://github.com/agentic-development/adev-plugin/commit/e380f71664b7a6fc85ba4c675ad3d512387081d4))
+* **spec-drift-detection:** verify check-drift sources from JSONL (Step 2) ([70cf0a2](https://github.com/agentic-development/adev-plugin/commit/70cf0a23ccdd62ced967c4cb53acbb3d269d3160))
+* **tree-sitter-repomap:** implement non-code reference detection ([f40761d](https://github.com/agentic-development/adev-plugin/commit/f40761d22db669004e15dd9f37b76ebdb3b379f6))
+* **tree-sitter-repomap:** live spec — non-code reference detection ([cba8920](https://github.com/agentic-development/adev-plugin/commit/cba8920a6f7f21fb9aac04dc5e49ea5fa58076ae))
+* **tree-sitter-repomap:** live spec — non-code reference detection ([9141699](https://github.com/agentic-development/adev-plugin/commit/914169982151a332fdfc1ced6fea62c657664507))
+* **tree-sitter-repomap:** plan — non-code reference detection (9 tasks) ([f580fc5](https://github.com/agentic-development/adev-plugin/commit/f580fc5e897755b5ce47ec41fd7ac171d5264bc1))
+* **validation:** single-source validate config + check-set restructure ([7052db6](https://github.com/agentic-development/adev-plugin/commit/7052db6969b2bea125dc9970e46dc39935c672be))
+
+
+### Bug Fixes
+
+* **cli-driver-surface:** source-manifest verify recognizes H1-prefixed specs ([f74c36e](https://github.com/agentic-development/adev-plugin/commit/f74c36eff9a8042114057b52a278a397502cb811))
+* **cli-driver-surface:** source-manifest verify recognizes H1-prefixed specs ([655dbd8](https://github.com/agentic-development/adev-plugin/commit/655dbd8ba5f1bb771b840f1a9ece7a120f7afece))
+* **cli-driver-surface:** specify and implement emit verdict on step completion ([df3e3b2](https://github.com/agentic-development/adev-plugin/commit/df3e3b2b619af001dcd9497f294dca89d67fd5a4))
+* **cli-driver-surface:** specify and implement emit verdict on step completion ([2f675a8](https://github.com/agentic-development/adev-plugin/commit/2f675a8316f0ac7523a223bcdc0d7454d27d4383))
+* **docs:** tasks.md → tasks.json in hooks.md broken link ([466af87](https://github.com/agentic-development/adev-plugin/commit/466af87111b0f76b2f565879df9c5a03bb27a635))
+* **hooks:** merge-guard blocks git merge only when current branch is protected ([be70e3d](https://github.com/agentic-development/adev-plugin/commit/be70e3d6756943862d14ad4e11db6417a89c6395))
+* **hooks:** merge-guard blocks git merge only when current branch is protected ([e4b6859](https://github.com/agentic-development/adev-plugin/commit/e4b685993244cb9c7a6b53d816e7e14cb7df7410))
+* **lifecycle-artifacts:** backfill kind: discriminator on 6 cli-driver-surface specs ([ee9dea0](https://github.com/agentic-development/adev-plugin/commit/ee9dea0be0dd0d5cc78f48924f6e2c0b11ef33f9))
+* **lifecycle-artifacts:** specify emits lifecycle events for all 5 modes ([9566038](https://github.com/agentic-development/adev-plugin/commit/95660388ed1587c6ce2f8dec229df73f026b53da))
+* **lifecycle-artifacts:** specify emits lifecycle events for all 5 modes ([1f88e9c](https://github.com/agentic-development/adev-plugin/commit/1f88e9cd68f6f40cb7b814d38720412bd45e5c3e))
+* **maintenance:** plan-immutability detector honors manifest exempt-commit list ([9f9f93d](https://github.com/agentic-development/adev-plugin/commit/9f9f93d9d53280780a99f7309b33cc06a379a188))
+* **tests:** retry cleanupTempDir to absorb ENOTEMPTY race on macOS ([511f7e9](https://github.com/agentic-development/adev-plugin/commit/511f7e9a553d323e0dda25767056cfbf8e9da129))
+* **tests:** retry cleanupTempDir to absorb ENOTEMPTY race on macOS ([4cb0ded](https://github.com/agentic-development/adev-plugin/commit/4cb0dedd5c9fa64cdb66dd4bd2206ad1e14a5770))
+* **validation:** reality-check falls back to spec source-manifest when no plan ([c29e87b](https://github.com/agentic-development/adev-plugin/commit/c29e87b6875f207b4a64c572a3c94bb526adfa76))
+* **validation:** validate skill emits canonical lifecycle events ([72c0df7](https://github.com/agentic-development/adev-plugin/commit/72c0df75ea9b5121ff4e6fd201c5f98d40bf9e50))
+* **validation:** validate skill emits canonical lifecycle events ([24dab08](https://github.com/agentic-development/adev-plugin/commit/24dab083a87dd57399b691a0635d44f1a0fa7073))
+* **validation:** validator IDs in skill prose match validate.yaml prefix ([7367915](https://github.com/agentic-development/adev-plugin/commit/73679156f6af9f6b84d5cc27ffedb61b360e89e7))
+* **validation:** validator IDs in skill prose match validate.yaml prefix ([3984868](https://github.com/agentic-development/adev-plugin/commit/3984868a4e0458a7d822c873ce85822686f9ace6))
+* **validation:** validator severity resolves from validate.yaml, not gates.yaml ([64e83ed](https://github.com/agentic-development/adev-plugin/commit/64e83edbcc765c1e5e7b0cf5487bbc9c1dc0923e))
+
 ## [0.26.0](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.25.1...adev-cli-v0.26.0) (2026-05-16)
 
 
