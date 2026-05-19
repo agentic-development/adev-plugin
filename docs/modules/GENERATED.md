@@ -2,9 +2,10 @@
 
 > Managed by `/adev:document`. Lists every file under `docs/` that the skill writes or refreshes.
 
+Generated output lives under `docs/modules/` (this directory). The top level of `docs/` is reserved for human-authored entries — see commit `0623ca2` ("remove superseded docs files"). The upstream `/adev:document` skill spec calls for a top-level `docs/architecture.md`; for this project the equivalent module-map content is captured per-module under `docs/modules/<slug>.md` instead.
+
 | File | Generated Sections | Last Commit | Last Run |
 |------|--------------------|-------------|----------|
-| docs/architecture.md | Module Map \| Dependency Flow \| Entry Points \| ADRs | `3f2551f` | 2026-05-18 |
 | docs/modules/cli.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
 | docs/modules/hooks.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
 | docs/modules/lib.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
