@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 5
+revision: 6
 updated: 2026-05-19
 ---
 
@@ -23,7 +23,7 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 - Skill name compliance check at install time — Copilot Agent Skills require `name` to match the parent directory name and be lowercase letters/numbers/hyphens, max 64 chars. Adapter validates every adev skill before install and fails with an actionable rename hint.
 - `.github/skills/<name>/SKILL.md` materialization — adapter copies adev's `skills/<name>/SKILL.md` tree into the consuming project under `.github/skills/`.
 - CLI integration — `adev install` registry gains `copilot` as a target; `cli/index.mjs` install/uninstall/status routes through the new adapter.
-- `copilot` sync-target format — `/adev:sync` writes `.github/copilot-instructions.md` (repo-wide, under 4,000 characters so Copilot **code review** loads it in full) and one `.github/instructions/<module>.instructions.md` per registered module (path-scoped via `applyTo`). The repo-wide file is treated as a pointer projection of `.context-index/constitution.md`, not a duplicate.
+- `copilot` sync-target format — `/adev:sync` writes `.github/copilot-instructions.md` (repo-wide, under 4,000 UTF-8 bytes so Copilot **code review** loads it in full) and one `.github/instructions/<module>.instructions.md` per registered module (path-scoped via `applyTo`). The repo-wide file is treated as a pointer projection of `.context-index/constitution.md`, not a duplicate.
 - `applyTo` correctness — every emitted `.instructions.md` carries an `applyTo` value (using `**` for repo-wide entries) because Copilot only auto-applies path-scoped instructions when `applyTo` is present.
 - Optional `--user` flag on `adev install --target copilot` — seeds `~/.copilot/skills/`, `~/.copilot/hooks/`, and `~/.copilot/instructions/` mirrors for users who want personal-scope adev across all repos.
 - AGENTS.md confirmation — verify the existing `AGENTS.md` (already written by sync to repo root for other providers) is picked up by Copilot for cross-tool compatibility; no new write path needed.
@@ -65,7 +65,7 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 | CopilotHookConfig | Generated `providers/copilot/hooks.json` derived from `hooks/hooks.json` | `version: 1`, `hooks: { preToolUse \| postToolUse \| sessionStart \| agentStop \| subagentStart \| subagentStop \| ... : [...] }`, per-event `matcher` regex |
 | HookEventTranslation | Single entry in the Claude Code → Copilot event translation table inside `lib/providers/copilot/event-table.mjs`. Entries with `cloudAgentSafe: false` are dropped from generator output entirely — the corresponding Copilot event is never emitted (v1: `Notification → notification (cloudAgentSafe: false)` is dropped). | `claudeEvent`, `copilotEvent`, `cloudAgentSafe`, `defaultTimeoutSec?` |
 | ToolNameMapping | Single entry in `lib/providers/copilot/tool-names.mjs` mapping Claude Code tool names to Copilot tool names for matcher rewrites. v1 coverage: `Bash→bash`, `Write→create`, `Edit→edit`, `MultiEdit→edit`, `Read→view`, `Glob→glob`, `Grep→grep`, `WebFetch→web_fetch`, `Task→task`, `AskUser→ask_user`. | `claudeToolName`, `copilotToolName` |
-| CopilotRepoInstructions | The `.github/copilot-instructions.md` file written by `/adev:sync` when `copilot` is a sync target | plain markdown body under 4,000 characters (code-review compatibility ceiling) |
+| CopilotRepoInstructions | The `.github/copilot-instructions.md` file written by `/adev:sync` when `copilot` is a sync target | plain markdown body under 4,000 UTF-8 bytes (code-review compatibility ceiling) |
 | CopilotModuleInstruction | Per-module `.github/instructions/<module>.instructions.md` files written by `/adev:sync` | YAML frontmatter (`applyTo` required, optional `excludeAgent`, `description`), body scoped to the module |
 | CopilotSkillTree | The materialized `.github/skills/<name>/SKILL.md` tree the adapter copies from adev's canonical `skills/` directory | every emitted skill carries lowercase-kebab `name` ≤ 64 chars matching its parent directory |
 
@@ -83,7 +83,7 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 - The Claude→Copilot event translation table MUST cover every event present in `hooks/hooks.json`. The generator throws on unknown events.
 - Every entry in `lib/providers/copilot/tool-names.mjs` MUST round-trip — every Claude tool name referenced by a matcher in `hooks/hooks.json` MUST have a mapping. Generator throws on unmapped tool names.
 - Hook scripts in `hooks/*.sh` MUST NOT branch on provider — `CLAUDE_PROJECT_DIR` and the PascalCase stdin shape absorb the difference; any genuine divergence is isolated to `hooks/_parse-stdin.sh`.
-- `CopilotRepoInstructions` MUST be ≤ 4,000 characters so Copilot code review consumes it in full. Per-module overflow content moves into `CopilotModuleInstruction` files.
+- `CopilotRepoInstructions` MUST be ≤ 4,000 UTF-8 bytes so Copilot code review consumes it in full. Per-module overflow content moves into `CopilotModuleInstruction` files.
 - Every `CopilotModuleInstruction` MUST carry a non-empty `applyTo` frontmatter field — without it, Copilot does not auto-apply the file.
 - Every emitted `CopilotSkillTree` directory name MUST match `^[a-z0-9-]{1,64}$` and equal the `name:` frontmatter inside its `SKILL.md`. Adapter rejects installs with non-conforming names rather than silently renaming.
 - adev MUST NOT write a `.copilot-plugin/plugin.json` — no such manifest exists in Copilot's surface, and inventing one would create a stale artifact.
@@ -97,7 +97,7 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 | Hook drift test | `tests/copilot-hooks-sync.test.mjs` fails CI on out-of-sync committed `hooks.json` | must-have | v1 | review-passed |
 | Tool-name mapping table | `lib/providers/copilot/tool-names.mjs` maps Claude tool names (`Bash`, `Write`, `Edit`, `Read`, `WebFetch`, …) to Copilot tool names (`bash`, `create`, `edit`, `view`, `web_fetch`, …) for matcher regex translation | must-have | v1 | review-passed |
 | Translation-table coverage assertion | Generator throws on Claude events or tool names with no Copilot mapping | must-have | v1 | review-passed |
-| `.github/copilot-instructions.md` sync output | `/adev:sync` writes the repo-wide instructions file under 4,000 characters when `copilot` is a sync target | must-have | v1 | review-passed |
+| `.github/copilot-instructions.md` sync output | `/adev:sync` writes the repo-wide instructions file under 4,000 UTF-8 bytes when `copilot` is a sync target | must-have | v1 | review-passed |
 | `.github/instructions/<module>.instructions.md` sync output | `/adev:sync` writes one per-module instructions file with `applyTo` glob per registered module | must-have | v1 | review-passed |
 | Skill name compliance check | Install-time validation that every adev skill matches `^[a-z0-9-]{1,64}$` and the `name:` frontmatter equals its parent directory | must-have | v1 | review-passed |
 | CLI install integration | `adev install` accepts `copilot` as a target; routes through CopilotAdapter | must-have | v1 | review-passed |
@@ -130,6 +130,8 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 | `getCopilotHome()` | function | Resolve `~/.copilot` (honoring `$COPILOT_HOME`); no hardcoded paths to `~/.claude/` per constitution anti-pattern |
 | `build-copilot-hooks.mjs` (CLI) | script | `npm run build:copilot-hooks` — regenerate `providers/copilot/hooks.json` from canonical `hooks/hooks.json` |
 | `adev install --target copilot [--user]` | CLI verb | Surfaces `CopilotAdapter` through the existing install dispatcher; `--user` enables personal-scope seeding |
+| `/adev:sync` writes `.github/copilot-instructions.md` | sync-target output | Repo-wide constitution projection when `copilot` appears in `manifest.yaml:sync.targets`. ≤ 4,000 UTF-8 bytes. Carries SHA-256 tamper-evidence pointer. |
+| `/adev:sync` writes `.github/instructions/<module>.instructions.md` | sync-target output | One per registered module with a charter. Carries `applyTo` glob list (YAML double-quoted scalar) derived from `manifest.yaml:modules[].paths`. |
 
 ### Consumed APIs
 
@@ -151,8 +153,8 @@ adev-plugin currently installs into Claude Code, OpenCode, Codex, and (per the i
 | Manifest-free discipline | adev MUST NOT write a `.copilot-plugin/plugin.json` (no such manifest exists in Copilot's surface). The two-way version-parity invariant from the constitution is unchanged by this charter. |
 | Constitutional compliance | Pure ESM, Node built-ins only (no new dependencies). Hook protocol unchanged — PascalCase stdin shape, `0` allow / `2` deny exit codes, identical to Claude Code's contract. Skills remain markdown-only. Sits in the Autonomous lane per constitution because no hook protocol change is required. |
 | Hook script portability | Existing `hooks/*.sh` consumed by the Copilot adapter without modification; PascalCase stdin compatibility is free per Copilot CLI docs |
-| Sync-output discipline | `.github/copilot-instructions.md` ≤ 4,000 characters (code-review ceiling); per-module overflow lives in `.github/instructions/<module>.instructions.md` files with mandatory `applyTo` |
-| Code-review compatibility | Repo-wide instructions file fits under the 4,000-character code-review cap so Copilot's PR review reads the full constitution projection, not a truncated prefix |
+| Sync-output discipline | `.github/copilot-instructions.md` ≤ 4,000 UTF-8 bytes (code-review ceiling); per-module overflow lives in `.github/instructions/<module>.instructions.md` files with mandatory `applyTo` |
+| Code-review compatibility | Repo-wide instructions file fits under the 4,000-UTF-8-byte code-review cap (a deliberate tightening of the documented Copilot 4,000-character limit, chosen for unambiguous deterministic enforcement) so Copilot's PR review reads the full constitution projection, not a truncated prefix |
 | Auto-apply correctness | Every emitted `.instructions.md` carries a non-empty `applyTo` so Copilot loads it automatically; charter-stage gotcha eliminated |
 | Skill-name compliance | Adapter validates every skill's `name` against Copilot's `^[a-z0-9-]{1,64}$` constraint at install time, refusing installs with violating names rather than silently renaming |
 | Testability | Generator, adapter, and tool-name mapping are pure functions over file paths; testable with `tests/helpers.mjs` (`createTempDir`, `writeFixture`) without standing up Copilot CLI itself |
