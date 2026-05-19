@@ -8,7 +8,7 @@
 ---
 charter: copilot-provider
 kind: behavioral
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v1
 revision: 1
