@@ -15,15 +15,21 @@
 ---
 charter: agent-reliable-state-artifacts
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: 0.26.0
 revision: 1
 charter-revision: 6
 charter-extension: true
 created: 2026-05-18
-updated: 2026-05-18
+updated: 2026-05-19
 tracker-ref: issue-505
+source-manifest:
+  sha: "8af72f4"
+  files:
+    - lib/issues/json-adapter.mjs
+    - tests/issues/json-adapter-orphan-lock.test.mjs
+  computed-at: "2026-05-19T12:09:25.442Z"
 ---
 
 ## Behavioral Contract
