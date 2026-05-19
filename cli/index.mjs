@@ -527,7 +527,7 @@ function stampVersion() {
 }
 
 /**
- * Install providers (Claude Code, OpenCode, Codex).
+ * Install providers (Claude Code, OpenCode, Codex, Cursor).
  * @param {string[]} providerNames
  */
 async function installProviders(providerNames) {
