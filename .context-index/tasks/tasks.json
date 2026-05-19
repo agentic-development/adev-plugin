@@ -523,17 +523,17 @@
     },
     {
       "id": "epic-71",
-      "title": "Milestone 0.26.0 — Agent-Reliable State Artifacts",
+      "title": "Milestone 0.27.0 — Agent-Reliable State Artifacts",
       "status": "open",
-      "milestone": "0.26.0",
+      "milestone": "0.27.0",
       "created": "2026-05-11T20:22:25.846Z",
       "updated": "2026-05-11T20:22:48.725Z"
     },
     {
       "id": "epic-72",
-      "title": "0.27.0",
+      "title": "0.28.0",
       "status": "open",
-      "milestone": "0.27.0",
+      "milestone": "0.28.0",
       "created": "2026-05-11T21:19:31.520Z",
       "updated": "2026-05-11T21:19:31.520Z"
     },
