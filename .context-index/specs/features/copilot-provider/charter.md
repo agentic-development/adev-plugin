@@ -1,7 +1,7 @@
 ---
-status: evolving
+status: approved
 kind: feature
-revision: 3
+revision: 4
 updated: 2026-05-19
 ---
 
