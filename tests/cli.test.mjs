@@ -1,7 +1,8 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, mkdtempSync, rmSync } from "fs";
 import { join } from "path";
+import { tmpdir } from "os";
 import { execSync } from "child_process";
 import { createTempDir, createTempGitRepo, cleanupTempDir, writeFixture, PLUGIN_ROOT } from "./helpers.mjs";
 
@@ -13,6 +14,7 @@ import {
   detectConflicts,
   disableConflictingPlugin,
   selectProviders,
+  installProviders,
 } from "../cli/index.mjs";
 
 // --- scaffoldContextKit ---
@@ -421,3 +423,110 @@ describe("installProviders — cursor branch structure", () => {
     );
   });
 });
+
+// --- installProviders — cursor end-to-end (Task 5) ---
+
+describe("installProviders — cursor end-to-end", () => {
+  let originalEnv;
+  let homeDir;
+  let originalLog;
+  let originalErr;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    homeDir = mkdtempSync(join(tmpdir(), "cli-cursor-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+    // Silence CLI output for cleaner test runs.
+    originalLog = console.log;
+    originalErr = console.error;
+    console.log = () => {};
+    console.error = () => {};
+  });
+
+  afterEach(() => {
+    console.log = originalLog;
+    console.error = originalErr;
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it("resolves cursor via getProvider and copies the plugin tree to ~/.cursor/plugins/local/adev/", async () => {
+    await installProviders(["cursor"]);
+    const cacheDir = join(homeDir, ".cursor", "plugins", "local", "adev");
+    assert.ok(existsSync(cacheDir), "plugin must be installed to ~/.cursor/plugins/local/adev/");
+    assert.ok(
+      existsSync(join(cacheDir, ".cursor-plugin", "plugin.json")),
+      "Spec A manifest must be present"
+    );
+    assert.ok(
+      existsSync(join(cacheDir, "providers", "cursor", "hooks.json")),
+      "Spec C hooks must be present"
+    );
+  });
+
+  it("is idempotent on a second --provider cursor pass", async () => {
+    await installProviders(["cursor"]);
+    // Second pass should not throw and should report "already installed".
+    await assert.doesNotReject(() => installProviders(["cursor"]));
+  });
+
+  it("handles --provider cursor --provider cursor as a single CLI invocation (idempotency)", async () => {
+    // Spec Failure Modes row 5: repeated --provider cursor passes; second is
+    // idempotent. installProviders iterates the array, so passing
+    // ["cursor", "cursor"] mirrors parseProviderFlags' output for that CLI
+    // invocation.
+    await assert.doesNotReject(() => installProviders(["cursor", "cursor"]));
+  });
+
+  it("prompts to disable Superpowers when ~/.cursor/config.json names it as a plugin", async () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    writeFileSync(
+      join(cursorDir, "config.json"),
+      JSON.stringify({ plugins: { superpowers: { enabled: true } } })
+    );
+
+    const answers = ["no"]; // decline the disable prompt
+    const fakeAsk = async () => answers.shift() ?? "";
+
+    await assert.doesNotReject(() =>
+      installProviders(["cursor"], { ask: fakeAsk })
+    );
+    // Superpowers entry must still be present in config.json (user declined).
+    const cfg = JSON.parse(
+      readFileSync(join(cursorDir, "config.json"), "utf8")
+    );
+    assert.ok(
+      cfg.plugins.superpowers,
+      "Superpowers must remain when user declines disable"
+    );
+  });
+
+  it("removes Superpowers from config.json when the user accepts the disable prompt", async () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    writeFileSync(
+      join(cursorDir, "config.json"),
+      JSON.stringify({ plugins: { superpowers: { enabled: true } } })
+    );
+
+    const answers = ["yes"];
+    const fakeAsk = async () => answers.shift() ?? "";
+
+    await installProviders(["cursor"], { ask: fakeAsk });
+    const cfg = JSON.parse(
+      readFileSync(join(cursorDir, "config.json"), "utf8")
+    );
+    assert.ok(
+      !cfg.plugins?.superpowers,
+      "Superpowers must be removed after user accepts disable"
+    );
+  });
+});
+
+// Note: the "unknown provider" path is owned by parseProviderFlags (which
+// calls process.exit(1) directly). Asserting it cleanly requires a subprocess
+// invocation and is covered upstream by the CLI E2E suite — not duplicated
+// here per the Task 5 plan's "OR add a dedicated subprocess assertion" note.
+
