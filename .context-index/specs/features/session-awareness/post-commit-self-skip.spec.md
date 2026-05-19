@@ -18,7 +18,7 @@
 ---
 charter: session-awareness
 kind: behavioral
-status: implemented
+status: validated
 risk_level: low
 milestone: 0.26.0
 revision: 1
