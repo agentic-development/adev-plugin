@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 1
-updated: 2026-03-28
+revision: 2
+updated: 2026-05-19
 ---
 
 # Feature Charter: spec-lifecycle
@@ -9,6 +9,10 @@ updated: 2026-03-28
 ## Business Intent
 
 The spec-lifecycle module improves how charters and specs track their status, revision history, and relationship to implementation code. Note: this charter introduces a new skill (`/adev:status`) which requires human approval per Architecture Boundaries — approved during brainstorm. It eliminates status drift by making skills auto-transition status fields, introduces revision counters for drift detection at plan gates, adds source manifests to map specs to their implementing files via content hashes, and provides automatic session capture to record why decisions were made. The goal is that any developer or agent can read a single spec file and immediately know: is it current, has it been reviewed, and does the code match.
+
+### Storage Format Authority
+
+This charter retains ownership of *what* spec lifecycle state means: status transitions, revision counters, source-manifest semantics, charter-revision alignment, `/adev:status` projection. *How* per-spec lifecycle state is persisted on disk — `.context-index/lifecycle-state/<slug>.jsonl` append-only event log, `appendEvent` / `readEvents` / `currentState` / `requireGate` primitives, the canonical event schema, severity stamping at write time, and the build-state directory rename from `.context-index/build-state/` — is owned by the `agent-reliable-state-artifacts` charter. See `.context-index/specs/features/agent-reliable-state-artifacts/charter.md`.
 
 ## Scope and Boundaries
 
