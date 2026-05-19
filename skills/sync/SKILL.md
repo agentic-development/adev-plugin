@@ -12,7 +12,7 @@ Reads `.context-index/constitution.md` and generates tool-specific agent files b
 When syncing, detect which AI coding assistant is running:
 - Claude Code: `CLAUDE.md` (primary)
 - OpenCode: `AGENTS.md` (primary)
-- Cursor: `.cursorrules`
+- Cursor: `.cursor/rules/adev.mdc`
 - GitHub Copilot: `.github/copilot-instructions.md`
 
 If multiple providers are used, sync all enabled targets from the manifest.
@@ -81,8 +81,34 @@ If multiple providers are used, sync all enabled targets from the manifest.
    ### Copilot format (`.github/copilot-instructions.md`)
    Principles and coding standards only. Omit Context Routing (Copilot has limited file navigation).
 
-   ### Cursor format (`.cursorrules`)
-   Full constitution content. Convert Context Routing pointers to Cursor-compatible references where applicable.
+   ### Cursor format (`.cursor/rules/adev.mdc`)
+
+   Pointer projection of `.context-index/constitution.md` — NOT a duplicate of it. Cursor 2.5+ reads always-apply rules from `.cursor/rules/*.mdc`; adev owns exactly one file under that directory (`adev.mdc`). Any pre-existing sibling files in `.cursor/rules/` MUST NOT be read, modified, or deleted by this writer.
+
+   **Output path:** `.cursor/rules/adev.mdc` is the default emitted by the `setup`-charter scaffold (see `cli/index.mjs::handleDualSyncTargets`). Users may override `path:` per manifest entry; the format's writer always assumes `.mdc` extension and Cursor Rules semantics regardless of path.
+
+   **File composition (in this order):**
+
+   ```mdc
+   ---
+   description: <single-line summary; trimmed; ≤ 200 characters; no embedded newlines>
+   alwaysApply: true
+   ---
+
+   <pointer body — body word count ≤ 200 (frontmatter excluded)>
+
+   # User Additions
+   <preserved content from the prior file, if any>
+   ```
+
+   - **Frontmatter:** YAML block with exactly two keys — `description` (string) and `alwaysApply` (literal boolean `true`, not the string `"true"`). The frontmatter is owned by adev and rewritten wholesale on each sync.
+   - **Pointer body:** MUST NOT duplicate the constitution. It directs the reader to `.context-index/constitution.md` for the source of truth. The body MAY include: (a) the project identity sentence, (b) a one-line note that non-negotiable principles live in the constitution, (c) the relative path to `.context-index/constitution.md`, (d) a short pointer to `CLAUDE.md` and `AGENTS.md` for sibling agent-file projections.
+   - **Body word count cap:** ≤ 200 words. Count is the number of whitespace-delimited tokens between the frontmatter closing `---` and the `# User Additions` marker (or EOF when the marker is absent). The `## Learned Lessons` heading is excluded from the count; blank lines and the `# User Additions` heading itself are excluded.
+   - **Body oversize (`CURSOR_BODY_OVERSIZE`):** if the composed body exceeds 200 words, the writer throws `CURSOR_BODY_OVERSIZE` carrying the actual count, removes any sibling `.tmp` file, and writes NO `.cursor/rules/adev.mdc`. Cursor's always-apply guidance is the reason this limit exists — the failure is loud by design.
+   - **User Additions preservation:** the existing `# User Additions` protocol applies verbatim (step 4 below). User Additions are trusted as user-authored content reviewed at edit time, not at sync time — this matches the established CLAUDE.md/AGENTS.md trust model and is not a new attack surface introduced by this format.
+   - **Sibling-file non-interference:** the writer reads and writes only `.cursor/rules/adev.mdc` and its `.cursor/rules/adev.mdc.tmp` sibling. Any other file under `.cursor/rules/` is untouched (read or write).
+   - **Atomic write:** compose the full content in memory, write to `.cursor/rules/adev.mdc.tmp`, then rename to `.cursor/rules/adev.mdc`. On any thrown error before the rename, unlink the `.tmp` file before re-raising.
+   - **Dry-run:** `/adev:sync --dry-run` prints the proposed content (frontmatter + body) and the diff against the existing file (or "new file" when absent); no write occurs.
 
 3. **Inject Learned Lessons (conditional):**
 
@@ -97,8 +123,8 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - If no `high`-confidence entries exist, skip the section entirely. If a stale `## Learned Lessons` block is already present in the target file, remove it (replace from the heading to the next `##` heading or EOF, whichever comes first).
    - If entries exist, group by scope alphabetically. The `_global` scope sorts last.
    - Render each entry as: `- <title> (<scope>) — <pattern truncated to 80 chars>`
-   - **Placement in CLAUDE.md and AGENTS.md:** Place the `## Learned Lessons` section heading immediately before the `# User Additions` marker.
-   - **Placement in .cursorrules and copilot-instructions.md (`.github/copilot-instructions.md`):** Append the section at the end of the file.
+   - **Placement in CLAUDE.md, AGENTS.md, and `.cursor/rules/adev.mdc`:** Place the `## Learned Lessons` section heading immediately before the `# User Additions` marker.
+   - **Placement in `.github/copilot-instructions.md` (Copilot):** Append the section at the end of the file.
    - **On re-sync:** Detect an existing `## Learned Lessons` heading and remove the old block (from the heading to the next `##` or EOF), then write the fresh replacement in the correct position.
 
 4. **Preserve User Additions:**
