@@ -8,7 +8,7 @@
 > **Review:** PASS_WITH_NOTES (2026-05-18, structural-architect + security-reviewer + consistency-analyzer; 0 blockers, 6 warnings, 4 suggestions — all addressed inline below)
 > **Platform:** JavaScript (ESM, `.mjs`), Node.js 18+, npm, node:test
 > **Risk level:** medium
-> **Milestone:** 0.27.0
+> **Milestone:** 0.27.1
 > **Strategy:** unit (all tasks; pure `node:fs` recovery branch + manifest knob; no external infra)
 
 **Goal:** Add transparent orphan-lock recovery to `lib/issues/json-adapter.mjs::_write` so a `tasks.json.lock` left behind by a killed writer (SIGKILL, OOM, container crash) does not wedge the issue board read-only. On `EEXIST`, the helper checks the lock's mtime; if older than the configurable threshold (default 30s), it unlinks the orphan and retries `openSync(lockPath, "wx")` exactly once.

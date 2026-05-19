@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 59,
+  "seq": 60,
   "epics": [
     {
       "id": "epic-1",
@@ -521,9 +521,9 @@
     },
     {
       "id": "epic-71",
-      "title": "Milestone 0.27.0 — Agent-Reliable State Artifacts",
+      "title": "Milestone 0.27.1 — Agent-Reliable State Artifacts",
       "status": "open",
-      "milestone": "0.27.0",
+      "milestone": "0.27.1",
       "created": "2026-05-11T20:22:25.846Z",
       "updated": "2026-05-11T20:22:48.725Z"
     },
@@ -541,7 +541,7 @@
       "status": "open",
       "created": "2026-05-14T12:25:09.986Z",
       "updated": "2026-05-14T12:56:27.270Z",
-      "milestone": "0.27.0"
+      "milestone": "0.27.1"
     },
     {
       "id": "epic-74",
@@ -598,7 +598,7 @@
       "id": "epic-80",
       "title": "Charter: lifecycle-artifacts (Layer 1)",
       "status": "closed",
-      "milestone": "0.27.0",
+      "milestone": "0.27.1",
       "created": "2026-05-14T16:58:52.453Z",
       "updated": "2026-05-15T18:26:09.107Z",
       "notes": "Reconciled by /adev:reconcile: all 12 child issues closed. Layer 1 of spec-and-charter-taxonomy milestone delivered. Layers 2 (issue-463) and 3 (issue-464) remain deferred under epic-73."
@@ -3465,6 +3465,19 @@
       "next_action": "Run /adev:review-specs --module cursor-provider",
       "created": "2026-05-19T12:56:49.742Z",
       "updated": "2026-05-19T12:56:49.742Z"
+    },
+    {
+      "id": "issue-525",
+      "title": "milestone ship gates_pass auto-check broken — reads deprecated manifest.gates.test AND fails when populated",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-71",
+      "dependencies": [],
+      "notes": "Surfaced 2026-05-19 while running /adev:issues milestone ship 0.27.0. Two related defects in lib/milestones.mjs::evaluateShipCriteria (the gates_pass auto-check branch):\n\n1. CONFIG-LAYOUT DRIFT: the check reads `manifest.gates.test` directly. The post-0.26.0 layout moved gate definitions to .context-index/governance/gates.yaml (see manifest.yaml line 123: 'The legacy top-level gates: block here is no longer read'). evaluateShipCriteria was not updated when the move landed. Reproduces with any milestone whose manifest follows the new layout — gates_pass fails with detail: 'No test command configured in manifest.gates.test' even when governance/gates.yaml correctly defines the test gate.\n\n2. EXECUTION FAILURE WHEN POPULATED: workaround was to re-add `gates.test: \"npm test\"` to manifest.yaml. After that, gates_pass STILL fails with `passed: false, detail: \"\"` (empty stderr). The check uses `execFileSync(\"npm\", [\"test\"], { stdio: \"pipe\" })`. Manual `npm test` from same shell returns 0 (3426/0/0 green), so the failure path is in evaluateShipCriteria's invocation — possibly buffer overflow on large stdout, PATH resolution under execFileSync, or signal-handling difference.\n\nBlocks: /adev:issues milestone ship for any milestone using release-please/tag-only strategy with a real test suite. Workaround: `manual` strategy bypasses gates_pass (and skips release-please integration entirely).\n\nFix scope: (a) read `governance/gates.yaml` via the unified loader, OR (b) keep manifest.gates.test as the source but fix the execFileSync invocation. (a) is the right long-term fix per the post-0.26.0 architecture; (b) is the minimal patch.\n\nAffects: lib/milestones.mjs::evaluateShipCriteria (gates_pass branch); skills/issues/SKILL.md milestone-ship documentation.",
+      "next_action": "Spec the gates_pass migration to governance/gates.yaml under the milestone-lifecycle charter",
+      "created": "2026-05-19T19:53:44.923Z",
+      "updated": "2026-05-19T19:53:44.923Z"
     }
   ]
 }
