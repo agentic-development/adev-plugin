@@ -310,3 +310,26 @@ describe("setupGitHooks", () => {
     assert.ok(original.includes("custom"), "original hook should be preserved");
   });
 });
+
+// --- installProviders — cursor branch structure (Task 1) ---
+
+describe("installProviders — cursor branch structure", () => {
+  it("contains an explicit `cursor` provider branch with install({ scope: 'user' })", () => {
+    const src = readFileSync(
+      join(PLUGIN_ROOT, "cli/index.mjs"),
+      "utf8"
+    );
+    // The cursor branch must call provider.install({ scope: "user" }) per
+    // spec Output Contract bullet 3.
+    assert.match(
+      src,
+      /else if\s*\(\s*providerName\s*===\s*["']cursor["']\s*\)/,
+      "installProviders must contain a `cursor` branch"
+    );
+    assert.match(
+      src,
+      /provider\.install\(\s*\{\s*scope:\s*["']user["']\s*\}\s*\)/,
+      "cursor branch must call provider.install({ scope: 'user' })"
+    );
+  });
+});
