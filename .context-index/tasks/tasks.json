@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 60,
+  "seq": 62,
   "epics": [
     {
       "id": "epic-1",
@@ -522,10 +522,11 @@
     {
       "id": "epic-71",
       "title": "Milestone 0.27.1 — Agent-Reliable State Artifacts",
-      "status": "open",
+      "status": "closed",
       "milestone": "0.27.1",
       "created": "2026-05-11T20:22:25.846Z",
-      "updated": "2026-05-11T20:22:48.725Z"
+      "updated": "2026-05-19T20:08:06.968Z",
+      "notes": "Closed: Milestone 0.27.1 shipped (release tagged adev-cli-v0.27.1 on 2026-05-19, PR #152)"
     },
     {
       "id": "epic-72",
