@@ -358,6 +358,31 @@ describe("selectProviders — menu shape", () => {
   });
 });
 
+// --- cli charter — rev 4 with Cursor (Task 4) ---
+
+describe("cli charter — rev 4 with Cursor", () => {
+  it("frontmatter is on revision 4 and dated 2026-05-18", () => {
+    const md = readFileSync(
+      join(PLUGIN_ROOT, ".context-index/specs/features/cli/charter.md"),
+      "utf8"
+    );
+    assert.match(md, /^revision:\s*4\b/m, "cli charter must be on revision: 4");
+    assert.match(md, /^updated:\s*2026-05-18\b/m, "cli charter updated: must be set to spec landing date");
+  });
+
+  it("install command description names Cursor", () => {
+    const md = readFileSync(
+      join(PLUGIN_ROOT, ".context-index/specs/features/cli/charter.md"),
+      "utf8"
+    );
+    assert.match(
+      md,
+      /\*\*`install`\*\* — Register plugin with provider \(Claude Code, OpenCode, Codex, Cursor\)/,
+      "cli charter install description must name all four providers"
+    );
+  });
+});
+
 // --- installProviders — JSDoc names all four providers (Task 3) ---
 
 describe("installProviders — JSDoc names all four providers", () => {
