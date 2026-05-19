@@ -169,3 +169,39 @@ test("drift-test failure message contains the run-hint", () => {
   assert.match(caught.message, /run npm run build:copilot-hooks/);
 });
 
+// ─── Cloud-Agent-safe assertion (Task 9) ──────────────────────────────────
+//
+// Verifies the committed providers/copilot/hooks.json drops every event that
+// the Cloud Agent does not support: notification, permissionRequest,
+// errorOccurred (top-level event keys) and powershell (anywhere in the file).
+//
+// Spec: copilot-hook-generator.spec.md — Behavior §5, Acceptance Criterion
+//       "committed Copilot config contains zero entries for any
+//       cloudAgentSafe: false event".
+
+test("committed hooks.json contains zero notification/permissionRequest/errorOccurred keys", () => {
+  const committed = JSON.parse(
+    readFileSync(path.join(repoRoot, "providers/copilot/hooks.json"), "utf8"),
+  );
+  const forbidden = ["notification", "permissionRequest", "errorOccurred"];
+  for (const key of forbidden) {
+    assert.equal(
+      committed.hooks[key],
+      undefined,
+      `Cloud-Agent-unsafe event "${key}" found in committed config`,
+    );
+  }
+});
+
+test("committed hooks.json contains no powershell key at any level", () => {
+  const raw = readFileSync(
+    path.join(repoRoot, "providers/copilot/hooks.json"),
+    "utf8",
+  );
+  assert.equal(
+    /"powershell"/.test(raw),
+    false,
+    "powershell key found in committed config — Cloud Agent does not run powershell hooks",
+  );
+});
+
