@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 3
-updated: 2026-05-11
+revision: 4
+updated: 2026-05-19
 tracker-ref: issue-355
 ---
 
@@ -10,6 +10,10 @@ tracker-ref: issue-355
 ## Business Intent
 
 Milestones provide structured lifecycle management for release planning within the adev framework. Today, milestones are freeform strings scattered across charters, specs, epics, and `product.md` with no central definition, validation, or lifecycle. This module introduces `milestones.yaml` as the source of truth for milestone definitions, adds `milestone create/list/ship/defer` subcommands to `/adev:issues`, and integrates validation into existing lifecycle skills — enabling a streamlined two-command flow from milestone definition to tagged release.
+
+### Storage Format Authority
+
+This charter retains ownership of *what* milestones mean: lifecycle states (`planned`, `active`, `shipped`, `deferred`), ship-criteria evaluation, release-strategy semantics, milestone validation rules. *How* milestone state is persisted on disk — the `.context-index/milestones.json` schema (renamed from `milestones.yaml`), `lib/milestones.mjs` wrapper, atomic temp-rename writes — is owned by the `agent-reliable-state-artifacts` charter. See `.context-index/specs/features/agent-reliable-state-artifacts/charter.md`.
 
 ## Scope and Boundaries
 
