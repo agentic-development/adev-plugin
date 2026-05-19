@@ -420,7 +420,6 @@
       "title": "API Eval Project",
       "status": "closed",
       "planRef": ".context-index/specs/features/eval-projects/api-eval-project.plan.md",
-      "milestone": "v1",
       "created": "2026-05-06T17:00:13.462Z",
       "updated": "2026-05-06T17:13:01.835Z"
     },
@@ -461,7 +460,6 @@
       "title": "Foundation & Onboarding Documentation",
       "status": "closed",
       "planRef": ".context-index/specs/features/user-docs/foundation-onboarding.plan.md",
-      "milestone": "Reconciled: validated (2026-05-09)",
       "created": "2026-05-09T17:00:00.000Z",
       "updated": "2026-05-09T17:00:00.000Z"
     },
@@ -517,7 +515,7 @@
       "id": "epic-70",
       "title": "Create Domain Extension Packages",
       "status": "open",
-      "milestone": "0.27.0",
+      "milestone": "0.28.0",
       "created": "2026-05-11T15:02:19.426Z",
       "updated": "2026-05-11T20:31:51.666Z"
     },
@@ -543,7 +541,7 @@
       "status": "open",
       "created": "2026-05-14T12:25:09.986Z",
       "updated": "2026-05-14T12:56:27.270Z",
-      "milestone": "spec-and-charter-taxonomy"
+      "milestone": "0.27.0"
     },
     {
       "id": "epic-74",
@@ -600,7 +598,7 @@
       "id": "epic-80",
       "title": "Charter: lifecycle-artifacts (Layer 1)",
       "status": "closed",
-      "milestone": "spec-and-charter-taxonomy",
+      "milestone": "0.27.0",
       "created": "2026-05-14T16:58:52.453Z",
       "updated": "2026-05-15T18:26:09.107Z",
       "notes": "Reconciled by /adev:reconcile: all 12 child issues closed. Layer 1 of spec-and-charter-taxonomy milestone delivered. Layers 2 (issue-463) and 3 (issue-464) remain deferred under epic-73."
