@@ -35,6 +35,7 @@ source-manifest:
     - tests/lib/partial-artifact-validation.test.mjs
     - tests/lib/partial-artifact.test.mjs
   computed-at: "2026-05-17T22:02:42.030Z"
+drift_detected: true
 ---
 
 # Live Spec: Incremental artifact writes — `.partial` + atomic-rename for agent-authored artifacts
