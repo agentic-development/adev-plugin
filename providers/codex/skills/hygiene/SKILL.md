@@ -1,20 +1,21 @@
 ---
 name: adev:hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs fifteen audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index. In Codex, invoke with $adev:hygiene"
+description: "Audit all context for staleness, drift, and coverage gaps. Runs twenty audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index. In Codex, invoke with $adev:hygiene"
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and source code, generating actionable reports. Sixteen audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, and heuristic index health so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and source code, generating actionable reports. Twenty audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, heuristic index health, kind-discriminator validity, validate config drift, and platform drift so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all fifteen passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift)
+- No arguments: full audit (all twenty passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift, kind-validity, validate-config-drift, platform-drift)
+- `--pass <type>`: alias for `--check <type>` (accepted for symmetry with related skills; identical behavior)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
 
-  Valid status values: `draft`, `review-pending`, `review-passed`, `review-blocked`, `implemented`, `validated`
+  Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The `adev/status-enum-legal` diagnostic enforces this enum at write time.
 
 ## Prerequisites
 
@@ -25,7 +26,7 @@ The project must have `.context-index/` initialized. If it does not exist, sugge
 **If `--status <spec-path> <new-status>` is provided:**
 
 1. Validate the spec path exists and is a valid spec file
-2. Validate the new status value is one of: draft, review-pending, review-passed, review-blocked, implemented, validated
+2. Validate the new status value is in `SPEC_STATUSES` (imported from `lib/spec-status.mjs`). The seven legal values are defined there; the `adev/status-enum-legal` diagnostic enforces this enum at write time. Use `assertLegalStatus(value)` from that module to validate.
 3. Read the spec file
 4. Parse YAML frontmatter
 5. Record the old status value
@@ -38,7 +39,7 @@ Then exit (skip audit passes).
 **Otherwise (normal audit mode):**
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
-2. **Run audit passes:** Execute each of the fifteen passes below. If `--check` was provided, run only that pass.
+2. **Run audit passes:** Execute each of the eighteen passes below. If `--check` (or `--pass`) was provided, run only that pass.
 3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
@@ -244,9 +245,10 @@ Orientation: last updated 2026-03-01
    ## Session Analysis
 
    Skipped — no session capture provider configured in manifest.yaml.
-   To enable, set integrations.session_capture.provider to "jsonl".
+   To enable, set integrations.session_capture.provider to "native" or "jsonl".
    ```
-3. If `provider: jsonl`, read session logs from `.context-index/hygiene/sessions/`.
+3. If `provider: native`, read session tracking data from `.context-index/.session-tracking.jsonl` and session summaries from `.context-index/sessions/`. This is the default provider when hooks handle session capture directly.
+4. If `provider: jsonl`, read session logs from `.context-index/hygiene/sessions/`.
 
 **Steps (when session data is available):**
 
@@ -455,7 +457,7 @@ Total blockers: 5
 
 ## Audit Pass 11: Milestone Coverage
 
-**Goal:** Report delivery readiness per milestone by cross-referencing charter capability milestones with spec statuses. Identify capabilities with no phase, and milestones with missing or incomplete specs.
+**Goal:** Report delivery readiness per milestone by cross-referencing charter capability milestones with spec statuses. Identify capabilities with no milestone, and milestones with missing or incomplete specs.
 
 **Steps:**
 
@@ -506,22 +508,20 @@ Total blockers: 5
 **Steps:**
 
 1. **Scan all specs.** Read every `*.spec.md` file under `.context-index/specs/features/`. Parse frontmatter for `revision`, `charter-revision`, `status`, and `charter`.
-2. **Scan all review files.** Read every `.review.md` file. Parse `last-reviewed-revision` and `file-sha` fields.
+2. **Read lifecycle states.** Call `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` to get the per-spec lifecycle projection. The `state.steps.review` block carries the reviewed revision and content hash that were stamped by `/adev:review-specs` at write time.
 3. **Scan all charters.** Read every `charter.md`. Parse `revision` and the Capability Map table (including the `Status` column).
 
-4. **Revision drift check:** For each spec that has a corresponding `.review.md`:
-   - Compare spec's `revision` against the review's `last-reviewed-revision`.
+4. **Revision drift check:** For each spec, compare the spec's `revision` frontmatter against `state.steps.review.lastReviewedRevision` (from the lifecycle projection):
    - If the spec's revision is greater, flag as `REVISION_DRIFT`:
      ```
      - [ ] <spec-path>: REVISION_DRIFT — spec revision <N>, last reviewed revision <M>
      ```
 
-5. **File drift check:** For each spec that has a corresponding `.review.md` with a `file-sha` field:
-   - Run `git hash-object <spec-file-path>` and compare against `file-sha`.
-   - If they differ, flag as `FILE_DRIFT`:
-     ```
-     - [ ] <spec-path>: FILE_DRIFT — file hash changed since last review
-     ```
+5. **File drift check:** For each spec, call `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` (which compares the spec's stored content hash against the current file). If `hasDrift()` returns `true`, flag as `FILE_DRIFT`:
+   ```
+   - [ ] <spec-path>: FILE_DRIFT — content changed since last review
+   ```
+   Do NOT shell out to compute hashes from the skill — the helper computes the SHA-256 internally.
 
 6. **Charter-revision staleness check:** For each spec with a `charter-revision` field:
    - Read the parent charter's current `revision`.
@@ -538,14 +538,11 @@ Total blockers: 5
      - [ ] <charter-path>: STATUS_MISMATCH — capability "<name>" shows "<charter-status>" but spec status is "<spec-status>"
      ```
 
-8. **Reality drift check (codebase verification):** For each spec with status `implemented` or `validated`, verify the implementation actually exists in the codebase. Run via inline Node.js:
+8. **Reality drift check (codebase verification):** For each spec with status `implemented` or `validated`, verify the implementation actually exists in the codebase via the CLI:
    ```bash
-   node --input-type=module -e "
-   import { verifySpecImplemented } from '<ADEV_ROOT>/lib/reality-check.mjs';
-   const result = verifySpecImplemented('<specPath>', { projectRoot: '<projectRoot>' });
-   console.log(JSON.stringify(result));
-   "
+   adev verify spec --spec <specPath>
    ```
+   The verb wraps `lib/reality-check.mjs::verifySpecImplemented` and emits JSON `{ implemented, confidence, evidence }`.
    - If `confidence === "none"` (status claims implemented but no codebase evidence): flag as `REALITY_DRIFT`:
      ```
      - [ ] <spec-path>: REALITY_DRIFT — status is "<status>" but implementation not found in codebase (confidence: none)
@@ -555,7 +552,7 @@ Total blockers: 5
      - [ ] <spec-path>: REALITY_WARN — status is "<status>" but implementation evidence is weak (files untracked or missing)
      ```
    - If `confidence === "medium"` or `"high"`: no finding (status matches reality).
-   - If `lib/reality-check.mjs` fails to import, skip this step with note: "Reality check unavailable — skipping codebase verification."
+   - If `adev verify spec` exits non-zero, skip this step with note: "Reality check unavailable — skipping codebase verification."
 
 **Output format:**
 ```
@@ -798,16 +795,17 @@ Scanned: N source files, M commits
 
 ## Audit Pass 17: Code Drift
 
-**Goal:** Detect specs with `drift_detected: true` in their frontmatter, indicating implementation source files have been modified since the source manifest was last stamped.
+**Goal:** Detect specs with `drift_detected: true` in their frontmatter (the rolled-up view), indicating implementation source files have been modified since the source manifest was last stamped. The authoritative per-detection payload lives in the spec's lifecycle JSONL as `code_drift_detected` events.
 
 **Steps:**
 
 1. Scan all specs matching `.context-index/specs/**/*.spec.md`.
 2. For each spec, read the YAML frontmatter and check if `drift_detected: true` is present.
-3. If drifted specs are found, report WARN with a list:
+3. If drifted specs are found, run `adev verify spec --spec <path> --check-drift` to extract the latest unresolved `code_drift_detected` event's `drift_source` and `drift_at` fields from the spec's JSONL, then report WARN with a list:
    - Spec path
-   - `drift_source` (the file that triggered the drift)
-   - `drift_at` (timestamp of drift detection)
+   - `drift_source` (the file that triggered the latest unresolved drift detection)
+   - `drift_at` (timestamp of that detection)
+   - Legacy fallback: pre-migration specs may return `drift_source: null` / `drift_at: null`. The drift is still real — the historical source is recoverable from `git log <spec>`.
 4. If no drifted specs are found, report PASS.
 
 **Output format:**
@@ -827,6 +825,170 @@ Scanned: N source files, M commits
 **Integration with summary table:**
 ```
 | Code Drift | WARN | 2 drifted specs |
+```
+
+## Audit Pass 18: Kind Validity
+
+**Goal:** Validate the `kind:` discriminator on every `*.spec.md` and `charter.md` artifact under `.context-index/`. Detect missing, invalid, or cross-layer kind values, and cross-reference `kind: module` charters against `manifest.yaml:modules[]`.
+
+**Layer 1 posture (non-blocking):** All findings emitted by this pass — regardless of severity — are advisory in Layer 1. The pass never causes `/adev:hygiene` to exit non-zero on its own. Severity (`error` / `warn` / `info`) conveys human-triage priority, not gate-blocking semantics. A future Layer 2 enhancement (tracked under `issue-463`) may upgrade `error` findings to gate-blocking after the legacy backfill completes.
+
+**Steps:**
+
+1. Import `runKindValidityPass` from `<ADEV_ROOT>/lib/hygiene/kind-validity.mjs`.
+2. Invoke `await runKindValidityPass(projectRoot, { cutover, moduleFilter })`. Both options are optional:
+   - `cutover`: ISO 8601 timestamp distinguishing `MISSING_KIND` (warn, post-cutover) from `LEGACY_DEFAULTED` (info, pre-cutover). Defaults to `2026-05-14T00:00:00.000Z` (the date this audit landed).
+   - `moduleFilter`: when invoked as `/adev:hygiene --module <slug>`, restrict the audit to artifacts under `features/<slug>/`.
+3. Render each finding in the standard hygiene table:
+
+```
+| Path | Layer | Kind | Severity | Code | Reason |
+|---|---|---|---|---|---|
+```
+
+4. Surface `result.headerNotes` in the report header (e.g., when `manifest.yaml` is missing and the `MODULE_KIND_NO_MANIFEST` cross-reference was skipped).
+5. Attach the `timestampWarning` (when non-null) inline beside the relevant finding so reviewers can see when classification fell back from git to mtime.
+
+**Finding codes:**
+
+| Severity | Code | Trigger | Resolution Hint |
+|---|---|---|---|
+| `error` | `INVALID_KIND` | `kind:` present but value is not in `SPEC_KINDS` (for `*.spec.md`) or `CHARTER_KINDS` (for `charter.md`) — including cross-layer values | Fix the value to one of the valid kinds (see `lib/kinds.mjs`) |
+| `error` | `PARSE_ERROR` | Artifact's frontmatter cannot be parsed (missing fence, malformed YAML, etc.) | Inspect the artifact manually; the file is unreadable by the discriminator parser |
+| `warn` | `MISSING_KIND` | `kind:` field absent AND the artifact's creation timestamp is at or after the cutover | Run `/adev:specify` or `/adev:brainstorm` to re-author with explicit kind, or backfill manually |
+| `warn` | `MODULE_KIND_NO_MANIFEST` | `charter.md` has valid `kind: module` but the module slug (derived from `features/<slug>/charter.md`) is not declared in `manifest.yaml:modules[]` | Add the module to `manifest.yaml`, or change the charter kind to `feature` |
+| `info` | `LEGACY_DEFAULTED` | `kind:` field absent AND the artifact's creation timestamp is before the cutover | Backfill is part of Layer 2 (`issue-463`); no action required now |
+
+**Exit code policy:** None of the codes above gate the `/adev:hygiene` exit code in Layer 1. `error` findings are counted in the hygiene error total for triage prioritization only. The returned `findings` array is the sole signal — the pass does not throw and does not mutate `process.exitCode`.
+
+**Output format:**
+```
+## Kind Validity
+
+- PASS: All specs and charters have valid kind discriminators (or)
+- FINDINGS: N kind-validity findings (non-blocking)
+
+Header notes:
+- manifest.yaml is missing or has no modules[] — MODULE_KIND_NO_MANIFEST cross-reference skipped
+
+| Path | Layer | Kind | Severity | Code | Reason |
+|---|---|---|---|---|---|
+| .context-index/specs/features/foo/bar.spec.md | spec | nonsense | error | INVALID_KIND | kind 'nonsense' is not in the closed enumeration for layer 'spec' |
+| .context-index/specs/features/foo/baz.spec.md | spec | — | warn | MISSING_KIND | kind: field absent and artifact was created after the Layer 1 cutover |
+| .context-index/specs/features/orphan/charter.md | charter | module | warn | MODULE_KIND_NO_MANIFEST | charter declares kind:module but slug 'orphan' is not declared in manifest.yaml:modules[] |
+
+**Actions:**
+- [ ] Resolve `error`-severity findings (INVALID_KIND, PARSE_ERROR) — these indicate structural defects
+- [ ] Backfill `MISSING_KIND` artifacts via `/adev:specify` or `/adev:brainstorm` re-authoring
+- [ ] Reconcile `MODULE_KIND_NO_MANIFEST` charters by updating manifest.yaml or downgrading kind to `feature`
+```
+
+**Integration with summary table:**
+```
+| Kind Validity | WARN | 3 findings (1 error, 2 warn) |
+```
+
+## Audit Pass 19: Validate Config Drift
+
+**Goal:** Compare the project's `.context-index/governance/validate.yaml` against the resolved domain's `validate.yaml` starter and surface divergent registry entries as INFO findings. Per `validate-config-single-source.spec.md` (Behavior 8), the audit's purpose is **visibility, not nagging** — divergence is the expected outcome of project customization and the pass never blocks. When a plugin upgrade improves a starter prompt or adds a new check, this audit surfaces the divergence so operators can opt in deliberately.
+
+**Steps:**
+
+1. Resolve the project's domain (from manifest, charter frontmatter, or module slug — same resolution chain used by `/adev:validate` Step 0).
+2. Call `loadDomainConfig(domain, 'validate', repoRoot, pluginRoot)` to get the current domain starter.
+3. **Pre-condition guards (skip cases):**
+   - If `loadDomainConfig` returns `null`: SKIP with INFO "No validate.yaml starter for domain '<domain>' — drift check not applicable."
+   - If `.context-index/governance/validate.yaml` does not exist: SKIP with INFO "No governance/validate.yaml found — run /adev:init to scaffold."
+4. Load both files (starter via the returned object; project via `parseYaml(readFileSync(...))`). Build an id-keyed map of each registry's entries.
+5. **Diff by id, field-by-field.** For each `id` present in the starter:
+   - If absent in the project file: INFO "Starter contains id '<id>' not present in project config — consider adding."
+   - If present but differs: emit a per-field finding (see SEC-4 below).
+6. For each `id` present in the project but absent in the starter: INFO "Project adds id '<id>' (not in starter) — project customization."
+7. If no divergence: INFO "Validate config is current with domain starter."
+
+**SEC-4: per-field emission rules.** When emitting a per-field difference:
+- For `prompt:` and `context_pack:` fields: emit ONLY the field name and value **type** (e.g., `prompt: <plugin-URI> vs <project-relative-path>`). Do NOT emit the full string values. Project paths may contain internal codenames or sensitive labels that should not appear in hygiene output that may be shared in chat or PRs.
+- For all other fields: emit the literal starter value and project value side-by-side.
+
+**Severity policy.** All findings from this pass are **INFO**, not WARN. Divergence is expected; the audit is informational. Severity escalation would invert the purpose — make a Layer-2 issue if a project wants to be reminded about specific drift patterns.
+
+**Output format:**
+```
+## Validate Config Drift
+
+- PASS: Validate config is current with domain starter (no divergence)
+
+— or —
+
+- INFO: N divergent registry entries detected (non-blocking)
+
+| Check ID | Field | Starter | Project |
+|---|---|---|---|
+| validate.check-2-spec-compliance | severity | error | warning |
+| validate.check-4-constitution | prompt | <plugin-URI> | <project-relative-path> |
+| project.custom-check | (full entry) | — | (added by project) |
+
+**Actions:**
+- [ ] Review each divergence; adopt starter improvements where appropriate
+- [ ] Document intentional deviations in governance/validate.yaml comments
+```
+
+**Integration with summary table:**
+```
+| Validate Config Drift | INFO | 3 divergent entries |
+```
+
+## Audit Pass 20: Platform Drift
+
+**Goal:** Compare `.context-index/platform-context.yaml` tech stack declarations against `package.json` dependencies. Catches cases where the declared stack no longer matches what is actually installed. Migrated from `/adev:validate` Check 10 (removed in `check-set-restructure.spec.md`), where the same data is identical for every spec in a run — so it belongs at repo level (here) rather than per spec.
+
+**Pre-condition guards (skip cases):**
+- If `.context-index/platform-context.yaml` does not exist: SKIP with INFO "No platform-context.yaml found — platform drift check not applicable."
+- If `package.json` does not exist: SKIP with INFO "No package.json found — not a Node.js project, platform drift check not applicable."
+
+**Mapping rules** (same as former Check 10):
+
+For each field in `platform-context.yaml`, check the corresponding package in `package.json` (dependencies + devDependencies):
+
+| platform-context field | Expected package(s) | Example |
+|----------------------|---------------------|---------|
+| `framework` | Framework package present (`next`, `nuxt`, `astro`, `svelte`, etc.) | `framework: nextjs` → `next` in dependencies |
+| `version` | Framework package version satisfies declared version | `version: "16"` → `next` version starts with `16.x` |
+| `language` | If `typescript`, `typescript` in devDependencies | `language: typescript` → `typescript` present |
+| `orm` | ORM package present (`prisma`, `drizzle-orm`, `typeorm`, etc.) | `orm: prisma` → `prisma` or `@prisma/client` present |
+| `auth` | Auth package present (`@clerk/nextjs`, `next-auth`, etc.) | `auth: clerk` → `@clerk/nextjs` present |
+| `database` | DB driver or client present if applicable | `database: postgresql` → pg-related package or ORM handles it |
+| `testing` | Test framework present | `testing: vitest` → `vitest` in devDependencies |
+
+**Unknown fields or values:** Log as INFO (not a failure) — mapping is best-effort.
+
+**Version check:** Only performed for `framework` + `version`. Uses semver-compatible prefix matching (e.g., declared `"16"` matches installed `16.1.2`). Major version mismatch → WARN.
+
+Record per field: PASS (matches), WARN (mismatch), INFO (could not verify), or SKIP (field not declared).
+
+**Output format:**
+```
+## Platform Drift
+
+- PASS: All declared platform-context fields confirmed in package.json
+
+— or —
+
+- WARN: N field mismatches detected
+
+| Field | Declared | Installed | Status |
+|-------|----------|-----------|--------|
+| framework | nextjs | (not found) | WARN |
+| version   | 16     | 15.3.1    | WARN |
+
+**Actions:**
+- [ ] Update platform-context.yaml to match the installed stack
+- [ ] Or install the declared package(s) if the platform-context.yaml is authoritative
+```
+
+**Integration with summary table:**
+```
+| Platform Drift | WARN | 2 field mismatches |
 ```
 
 ## Report Format
@@ -861,6 +1023,10 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Code Provenance | WARN | 2 drifted, 3 untraced |
 | Issue Board Audit | FAIL | 2 orphaned, 1 stale epic |
 | Heuristic Index Health | WARN | 1 stale index entry, 2 orphan tags |
+| Code Drift | PASS | 0 issues |
+| Kind Validity | WARN | 3 findings (non-blocking) |
+| Validate Config Drift | INFO | 0 divergent entries |
+| Platform Drift | PASS | All declared fields match |
 
 ## Priority Actions
 
@@ -886,3 +1052,27 @@ Next steps:
 - Run /adev:hygiene again after fixes to verify
 - Schedule monthly hygiene audits to prevent drift
 ```
+
+## API reference
+
+Lifecycle projection (used by the Lifecycle Audit pass and other staleness checks):
+
+- `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregates per-spec lifecycle projections from `.context-index/lifecycle-state/*.jsonl`. Replaces the prior `.review.md` filesystem scan for revision/file-drift detection.
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — single-spec projection (`{ status, currentStep, steps, planTasks, ... }`).
+- `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` — fast drift flag read from the spec's frontmatter.
+- `verifyManifest(manifest, projectRoot)` from `<ADEV_ROOT>/lib/source-manifest.mjs` — recompute the content hash for a spec's source manifest and compare; fallback when `hasDrift()` returns false.
+
+Issue board (used by the Issue Board Audit pass and coverage scans):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
+
+Kind validity (used by the Kind Validity audit pass):
+
+- `runKindValidityPass(projectRoot, options?)` from `<ADEV_ROOT>/lib/hygiene/kind-validity.mjs` — walks every `*.spec.md` and `charter.md` under `.context-index/`, validates the frontmatter `kind:` discriminator against `SPEC_KINDS` / `CHARTER_KINDS`, and emits non-blocking findings. Options: `cutover` (ISO 8601 — defaults to `2026-05-14T00:00:00.000Z`), `moduleFilter` (slug to scope the audit). Returns `{ findings, headerNotes }`. Never throws; never mutates `process.exitCode`.
+- `parseSpecFrontmatter(filePath)` from `<ADEV_ROOT>/lib/meta-tools.mjs` — the underlying frontmatter discriminator parser; projects `kind`, `kindValid`, `kindResolved` sentinels onto each parsed result.
+- `getCreationTimestamp(filePath)` from `<ADEV_ROOT>/lib/git-timestamp.mjs` — resolves the authoritative creation timestamp (git first-add commit, mtime fallback); used to classify `MISSING_KIND` vs `LEGACY_DEFAULTED`.
