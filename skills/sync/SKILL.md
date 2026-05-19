@@ -110,6 +110,23 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - **Atomic write:** compose the full content in memory, write to `.cursor/rules/adev.mdc.tmp`, then rename to `.cursor/rules/adev.mdc`. On any thrown error before the rename, unlink the `.tmp` file before re-raising.
    - **Dry-run:** `/adev:sync --dry-run` prints the proposed content (frontmatter + body) and the diff against the existing file (or "new file" when absent); no write occurs.
 
+   **Body-composition algorithm (reproducible):**
+
+   1. **`description` derivation order** — trim the result; strip embedded newlines; cap at 200 characters; the value MUST fit on a single YAML line.
+      1. First H2 heading of `.context-index/constitution.md` (heading text without the `##` prefix).
+      2. Fallback: the constitution's "Identity" sentence (line 8 in the canonical template at `templates/constitution-template.md`).
+      3. Hard fallback: `manifest.yaml :: project.name`.
+   2. **`alwaysApply` value** — emit the literal YAML boolean `true` (not the string `"true"`). Parsers MUST see `typeof alwaysApply === "boolean"`.
+   3. **Pointer body structure** — five lines in this order:
+      - Line 1: project identity sentence (single line, sourced from the constitution's Identity section).
+      - Line 2: blank.
+      - Line 3: pointer paragraph — "Non-negotiable principles, coding standards, and architecture boundaries live in `.context-index/constitution.md` — see that file for the source of truth."
+      - Line 4: blank.
+      - Line 5: sibling pointer — "Companion projections: `CLAUDE.md` (Claude Code), `AGENTS.md` (OpenCode/Codex)."
+   4. **Body word-count rule** — sum the whitespace-delimited tokens between the frontmatter closing `---` and the `# User Additions` marker (or EOF when the marker is absent on first write). Blank lines, the `## Learned Lessons` heading, and the `# User Additions` heading itself are excluded from the count.
+   5. **Atomic write protocol** — compose the full content (frontmatter + body + optional `## Learned Lessons` + `# User Additions` block) in memory. Word-count the body before any write. If the count exceeds 200, throw `CURSOR_BODY_OVERSIZE` carrying the actual count and do NOT create the `.tmp` file (or if it was speculatively created, unlink it before re-raising); no `.cursor/rules/adev.mdc` is written. Otherwise, write the bytes to `.cursor/rules/adev.mdc.tmp` and rename to `.cursor/rules/adev.mdc`. On any thrown error after the `.tmp` write but before the rename, unlink the `.tmp` and re-raise.
+   6. **Sibling-file non-interference (SA-1)** — the writer's filesystem surface is exactly two paths: `.cursor/rules/adev.mdc` and `.cursor/rules/adev.mdc.tmp`. The writer MUST NOT read, modify, or delete any other file under `.cursor/rules/`.
+
 3. **Inject Learned Lessons (conditional):**
 
    Read high-confidence heuristics via inline Node.js using `retrieveHeuristics` and `renderHeuristic` from `lib/heuristics.mjs`. This step is non-blocking: if `retrieveHeuristics` throws, log a warning to stderr and proceed without the section.
