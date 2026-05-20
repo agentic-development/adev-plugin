@@ -1,7 +1,7 @@
 ---
-status: approved
-revision: 3
-updated: 2026-05-19
+status: evolving
+revision: 4
+updated: 2026-05-20
 ---
 
 # Feature Charter: Session Awareness
@@ -26,12 +26,16 @@ This charter retains ownership of *what* execution state means: session-start co
 - Session-start resume injection (Claude Code) — extend `session-start.sh` to read execution state and inject resumption context
 - Configurable reminder interval via `tasks.reminder_interval` in manifest.yaml
 - Skill-level instructions for checking and updating execution state at task boundaries (harness-agnostic)
+- Session capture trigger (configurable: `hook` | `post-commit` | `off`) — SessionEnd + PreCompact as the default capture mechanism for new projects; post-commit retained for back-compat
+- Session log persistence path (`.context-index/sessions/`, gitignored by default; opt-out via `sessions.gitignored: false`)
+- Retro consumption of session history — `/adev:retro` reads sessions within the analysis window to extract tool-use distribution, per-spec session counts, token/cost trends, and context gaps
+- Init-time prompt for session capture preferences — `/adev:init` asks the user which capture mode and whether to gitignore; defaults are detected from project state
 
 ### Out of Scope
 
 - Learnings/patterns capture (separate concern)
 - Context freshness hashing / stale spec detection (hygiene concern)
-- Session summary writing (already handled by `lib/session-summary.mjs`)
+- Session summary content composition (markdown body rendering from transcripts) — owned by `lib/session-summary.mjs`. This charter owns capture *triggering*, persistence path, and gitignore policy.
 - Modifications to the issue board format or task-management adapters
 - External consumers (MCP servers, sync services, dashboards) — designed for but not built here
 - Harness-specific integrations beyond Claude Code hooks
@@ -55,6 +59,7 @@ This charter retains ownership of *what* execution state means: session-start co
 | SessionLog | Append-only record of tool calls within a session | Sequence of SessionLogEntry records |
 | SessionLogEntry | Single tool invocation record | sessionId, tool (name), files (paths touched), timestamp |
 | ReminderConfig | Controls when and how reminders fire | interval (number of tool calls), commitTrigger (boolean) |
+| CaptureConfig | Per-project session capture configuration | capture (`hook`/`post-commit`/`off`), gitignored (boolean, default true) |
 
 ### Relationships
 
@@ -69,6 +74,10 @@ This charter retains ownership of *what* execution state means: session-start co
 - When status is `active`, planRef and currentTask are set
 - SessionLogEntry timestamp is monotonically increasing within a session
 - ExecutionState file is written atomically (temp-file-then-rename)
+- `CaptureConfig.capture` is one of `hook`, `post-commit`, `off`
+- When `capture: off`, no hook writes session files; consumers degrade silently
+- **New project** (no `.githooks/post-commit` capture and no tracked `sessions/*.md`): init prompt defaults to `capture: hook, gitignored: true`
+- **Existing project** (post-commit capture or tracked session files detected): init prompt defaults to `capture: post-commit, gitignored: false` — no behavior change unless user explicitly opts in
 
 ## Capability Map
 
@@ -85,7 +94,10 @@ This charter retains ownership of *what* execution state means: session-start co
 | Concurrent Access Safety | Atomic writes via temp-file-then-rename for execution state | should-have | 1 | validated |
 | Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | validated |
 | Token Cost Logging | Extend session tracking JSONL with optional per-entry token usage and cost fields | should-have | 2 | validated |
-| Session-Capture Self-Skip Guard | Post-commit hook self-skips when the commit only touches `.context-index/sessions/` paths, breaking the recursive "1 commit -> 1 capture -> 1 commit" amplification | should-have | 2 | validated |
+| Session-Capture Self-Skip Guard | Validated in 0.27.1. **Superseded** by Hook-Driven Session Capture (rev 4). Post-commit path remains available behind `capture: post-commit` but is no longer the recommended default. | should-have | 2 | superseded |
+| Hook-Driven Session Capture | SessionEnd + PreCompact capture into a configurable, gitignored-by-default sessions directory. Master via `sessions.capture` (`hook`/`post-commit`/`off`) and `sessions.gitignored` (boolean). | must-have | 0.28.0 | — |
+| Retro Session Consumption | `/adev:retro` reads `.context-index/sessions/` within the analysis window and emits a Session Activity section (tool-use distribution, per-spec session counts, token/cost trends, context gaps). Degrades silently when capture is off or directory empty. | should-have | 0.28.0 | — |
+| Init-Time Capture Configuration | `/adev:init` prompts for `sessions.capture` and `sessions.gitignored`; detects existing post-commit setup and tracked session files, defaulting those projects to back-compat (`post-commit, gitignored: false`). | should-have | 0.28.0 | — |
 
 ## Deferred Capabilities
 
@@ -104,6 +116,9 @@ This charter retains ownership of *what* execution state means: session-start co
 | `readExecutionState(projectRoot)` | function | Parse execution state file, return structured object |
 | `writeExecutionState(projectRoot, state)` | function | Atomic write of execution state file |
 | `clearExecutionState(projectRoot)` | function | Reset to idle state (e.g., when plan completes) |
+| `hooks/session-end.sh` | hook (Claude Code SessionEnd) | Consumes payload (session_id, transcript_path, cwd, reason); writes `<date>-<session_id>.md` derived from the transcript |
+| `hooks/pre-compact.sh` | hook (Claude Code PreCompact) | Captures pre-compaction snapshots for long sessions that auto-compact mid-conversation |
+| `manifest.yaml:sessions` | config | `{ capture: hook|post-commit|off, gitignored: bool }` |
 
 ### Consumed APIs
 
@@ -114,6 +129,9 @@ This charter retains ownership of *what* execution state means: session-start co
 | `manifest.yaml` (tasks section) | Setup | Read `reminder_interval` and `backend` config |
 | `session-start.sh` hook output | Hooks | Extend existing hook to include execution state in `additionalContext` |
 | Plan file structure (`.plan.md`) | Planning | Execution state references active plan |
+| Claude Code `SessionEnd` / `PreCompact` events | Claude Code harness | Source of session_id, transcript_path, cwd, reason |
+| `fromTranscript(transcriptPath)` | `lib/session-summary.mjs` | Renders summary markdown body from raw transcript JSONL |
+| `/adev:init` prompt sequence | Setup module | Init invokes a prompt step provided by this charter's spec during the init wizard |
 
 ## Quality Attributes
 
@@ -125,3 +143,5 @@ This charter retains ownership of *what* execution state means: session-start co
 | Simplicity | Zero new dependencies. Markdown + YAML frontmatter for state, JSONL for logs. No database, no server. |
 | Degradation | If execution state file is missing or malformed, hooks still exit 0 (never block agent work) but inject a warning via `additionalContext`: "Execution state file is missing or corrupt. Run /adev-issues to check issue board status." |
 | Testability | All logic testable with Node.js built-in test runner. Hook tested via `runHook()` helper. Lib tested with temp dirs. |
+| Configurability | Capture mode is per-project via `manifest.yaml:sessions`. `off` cleanly disables all hooks without breaking consumers. Switching modes is a manifest edit + installer re-run; no silent migration. |
+| Graceful absence | All consumers (`/adev:work`, `/adev:status`, `/adev:hygiene`, `/adev:retro`) handle empty/missing sessions directory without warnings or errors. |
