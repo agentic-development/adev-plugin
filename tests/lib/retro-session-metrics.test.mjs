@@ -655,8 +655,106 @@ describe('joinClosedIssueXref', () => {
   });
 });
 
-describe('scanContextGaps (stub — Task 11)', () => {
-  test('exists', () => {
-    assert.equal(typeof scanContextGaps, 'function');
+describe('scanContextGaps', () => {
+  test('counts "no matches" inside tool-output frame', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: ['prose', '```output', 'no matches', '```'].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    assert.ok(r.length >= 1);
+    assert.equal(r[0].spec, '.context-index/specs/features/x/y.spec.md');
+    assert.equal(r[0].count, 1);
+  });
+
+  test('ignores "no matches" outside tool-output frame (SEC-B1(b))', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: 'prose mentioning no matches without a frame',
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    assert.equal(r.length, 0);
+  });
+
+  test('aggregates per spec via body grep when frontmatter spec absent', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: [
+          'see .context-index/specs/features/foo/bar.spec.md',
+          '```output',
+          'no matches',
+          'file not found',
+          '```',
+        ].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    const row = r.find((x) => x.spec === '.context-index/specs/features/foo/bar.spec.md');
+    assert.ok(row);
+    assert.ok(row.count >= 1);
+  });
+
+  test('all three gap markers detected', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: [
+          '```output',
+          'no matches here',
+          'file not found anywhere',
+          '0 results returned',
+          '```',
+        ].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    // 3 markers in one session → 3 counts (or aggregated by marker)
+    const total = r.reduce((s, x) => s + x.count, 0);
+    assert.ok(total >= 3, `expected ≥3, got ${total}`);
+  });
+
+  test('non-hook-mode sessions ignored', () => {
+    const sessions = [
+      {
+        format: 'post-commit',
+        frontmatter: { type: 'commit', agent: 'git-hook', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: ['```output', 'no matches', '```'].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    assert.equal(r.length, 0);
+  });
+
+  test('empty input → empty array', () => {
+    assert.deepEqual(scanContextGaps([]), []);
+    assert.deepEqual(scanContextGaps(null), []);
+  });
+
+  test('top-10 ordering: descending by count', () => {
+    const mk = (spec, gaps) => ({
+      format: 'hook',
+      frontmatter: { kind: 'session-end', spec },
+      body: ['```output', ...gaps.map(() => 'no matches'), '```'].join('\n'),
+    });
+    const sessions = [];
+    // 12 distinct specs with descending gap counts.
+    for (let i = 1; i <= 12; i++) {
+      const spec = `.context-index/specs/features/m${String(i).padStart(2, '0')}/x.spec.md`;
+      const gaps = Array(13 - i).fill('x');
+      sessions.push(mk(spec, gaps));
+    }
+    const r = scanContextGaps(sessions);
+    assert.equal(r.length, 10);
+    // First row should have count 12 (m01).
+    assert.equal(r[0].count, 12);
   });
 });
