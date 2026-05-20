@@ -158,6 +158,172 @@ test('gatherSessionActivity: SEC-B4 — never reads files outside sessions dir',
   }
 });
 
+test('gatherSessionActivity: hook-only window → tool distribution populated', async () => {
+  const dir = createTempDir();
+  try {
+    const sessions = join(dir, '.context-index/sessions');
+    await mkdir(sessions, { recursive: true });
+    await writeFile(
+      join(sessions, '2026-05-10-h1.md'),
+      ['---', 'kind: session-end', 'session_id: h1', 'date: 2026-05-10', '---', '### Read', '### Bash'].join('\n')
+    );
+    await writeFile(
+      join(sessions, '2026-05-11-h2.md'),
+      ['---', 'kind: session-end', 'session_id: h2', 'date: 2026-05-11', '---', '### Read', '**Tool:** Edit'].join('\n')
+    );
+    const result = await gatherSessionActivity(dir, {
+      since: '2026-05-01',
+      until: '2026-05-31',
+    });
+    assert.equal(result.totalSessions, 2);
+    const read = result.toolUseDistribution.find((r) => r.tool === 'Read');
+    assert.equal(read.count, 2);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test('gatherSessionActivity: post-commit-only window → empty tool distribution', async () => {
+  const dir = createTempDir();
+  try {
+    const sessions = join(dir, '.context-index/sessions');
+    await mkdir(sessions, { recursive: true });
+    await writeFile(
+      join(sessions, '2026-05-10-pc1.md'),
+      ['---', 'date: 2026-05-10', 'type: commit', 'agent: git-hook', 'sha: pc1', '---', '### Read', '### Bash'].join('\n')
+    );
+    const result = await gatherSessionActivity(dir, {
+      since: '2026-05-01',
+      until: '2026-05-31',
+    });
+    assert.equal(result.totalSessions, 1);
+    assert.deepEqual(result.formatBreakdown, { hook: 0, 'post-commit': 1, unknown: 0 });
+    // Tool-use distribution is hook-mode-only.
+    assert.deepEqual(result.toolUseDistribution, []);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test('gatherSessionActivity: mixed window — both formats counted', async () => {
+  const dir = createTempDir();
+  try {
+    const sessions = join(dir, '.context-index/sessions');
+    await mkdir(sessions, { recursive: true });
+    await writeFile(
+      join(sessions, '2026-05-10-h1.md'),
+      '---\nkind: session-end\nsession_id: h1\ndate: 2026-05-10\n---\nbody'
+    );
+    await writeFile(
+      join(sessions, '2026-05-10-pc1.md'),
+      '---\ndate: 2026-05-10\ntype: commit\nagent: git-hook\nsha: pc1\n---\nbody'
+    );
+    const result = await gatherSessionActivity(dir, {
+      since: '2026-05-01',
+      until: '2026-05-31',
+    });
+    assert.equal(result.totalSessions, 2);
+    assert.deepEqual(result.formatBreakdown, { hook: 1, 'post-commit': 1, unknown: 0 });
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test('gatherSessionActivity: unknown-format files counted, no metrics extracted', async () => {
+  const dir = createTempDir();
+  try {
+    const sessions = join(dir, '.context-index/sessions');
+    await mkdir(sessions, { recursive: true });
+    await writeFile(
+      join(sessions, '2026-05-10-uk.md'),
+      '---\ndate: 2026-05-10\nrandom: noise\n---\n### Read\nbody'
+    );
+    const result = await gatherSessionActivity(dir, {
+      since: '2026-05-01',
+      until: '2026-05-31',
+    });
+    assert.equal(result.totalSessions, 1);
+    assert.deepEqual(result.formatBreakdown, { hook: 0, 'post-commit': 0, unknown: 1 });
+    // Unknown is excluded from hook-only sub-helpers.
+    assert.deepEqual(result.toolUseDistribution, []);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test('gatherSessionActivity: cost subsection emitted when fields present', async () => {
+  const dir = createTempDir();
+  try {
+    const sessions = join(dir, '.context-index/sessions');
+    await mkdir(sessions, { recursive: true });
+    await writeFile(
+      join(sessions, '2026-05-10-c1.md'),
+      [
+        '---',
+        'kind: session-end',
+        'session_id: c1',
+        'date: 2026-05-10',
+        'cost_usd: 0.05',
+        'input_tokens: 1000',
+        'output_tokens: 200',
+        'model: sonnet',
+        '---',
+        'body',
+      ].join('\n')
+    );
+    const result = await gatherSessionActivity(dir, {
+      since: '2026-05-01',
+      until: '2026-05-31',
+    });
+    assert.ok(result.costTokens);
+    assert.equal(result.costTokens.totals.cost_usd, 0.05);
+    assert.equal(result.costTokens.totals.input_tokens, 1000);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test('gatherSessionActivity: cost subsection null when no fields anywhere', async () => {
+  const dir = createTempDir();
+  try {
+    const sessions = join(dir, '.context-index/sessions');
+    await mkdir(sessions, { recursive: true });
+    await writeFile(
+      join(sessions, '2026-05-10-nc.md'),
+      '---\nkind: session-end\nsession_id: nc\ndate: 2026-05-10\n---\nbody'
+    );
+    const result = await gatherSessionActivity(dir, {
+      since: '2026-05-01',
+      until: '2026-05-31',
+    });
+    assert.equal(result.costTokens, null);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test('gatherSessionActivity: oversize body skipped for metrics, counted', async () => {
+  const dir = createTempDir();
+  try {
+    const sessions = join(dir, '.context-index/sessions');
+    await mkdir(sessions, { recursive: true });
+    const fm = '---\nkind: session-end\nsession_id: big\ndate: 2026-05-10\n---\n';
+    // Build a body larger than 5 MB to trigger isOversizeBody.
+    const big = 'a'.repeat(5 * 1024 * 1024 + 1024);
+    await writeFile(join(sessions, '2026-05-10-big.md'), fm + big);
+    const result = await gatherSessionActivity(dir, {
+      since: '2026-05-01',
+      until: '2026-05-31',
+    });
+    assert.equal(result.totalSessions, 1);
+    assert.equal(result.formatBreakdown.hook, 1);
+    // Oversize → no tool distribution from this session.
+    assert.deepEqual(result.toolUseDistribution, []);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
 test('gatherSessionActivity: format-breakdown line composed in core (SA-2)', async () => {
   const dir = createTempDir();
   try {
