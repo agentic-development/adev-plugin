@@ -53,3 +53,4 @@
 {"event":"validator_report","step":"validate","validator":"check-4-constitution-compliance","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.599Z"}
 {"event":"validator_report","step":"validate","validator":"check-12-lifecycle-reconciliation","severity":"warning","verdict":"PASS","ts":"2026-05-16T14:37:28.636Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-16T14:38:50.406Z"}
+{"event":"code_drift_detected","drift_source":"docs/extensions.md","drift_at":"2026-05-20T18:04:02.778Z","ts":"2026-05-20T18:04:02.779Z"}
