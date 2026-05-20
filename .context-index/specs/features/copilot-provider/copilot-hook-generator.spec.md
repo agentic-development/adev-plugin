@@ -6,7 +6,7 @@
 ---
 charter: copilot-provider
 kind: behavioral
-status: implemented
+status: validated
 risk_level: medium
 milestone: v1
 revision: 2

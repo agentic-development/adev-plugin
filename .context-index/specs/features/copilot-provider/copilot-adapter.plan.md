@@ -4,8 +4,8 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/copilot-provider/charter.md (rev 6, approved)
-> **Spec:** .context-index/specs/features/copilot-provider/copilot-adapter.spec.md (rev 2)
-> **Review:** PASS_WITH_NOTES (2026-05-19, rev 2)
+> **Spec:** .context-index/specs/features/copilot-provider/copilot-adapter.spec.md (rev 3, refined after implement-time blocker resolution)
+> **Review:** PASS_WITH_NOTES (2026-05-19, rev 2; rev 3 refines skill-name regex + hook-path rewriter to match actual codebase shape per blocker .context-index/hygiene/blockers/copilot-adapter-task-1.md Option A)
 > **Platform:** Node.js (ESM, `.mjs`), node:test, npm, no new external deps
 
 **Goal:** Ship the fifth peer provider adapter for GitHub Copilot. Materializes adev's skills + hooks into the consuming project's `.github/` tree (no plugin home — Copilot is file-convention-based). Optional `--user` flag mirrors a subset under `~/.copilot/`. State record at `.github/.adev-copilot-install.json` is the single source of truth for what `uninstall` touches, with re-validation against `^[a-z0-9-]{1,64}$` + path-confinement on uninstall to defend against state-record forgery.
@@ -153,9 +153,24 @@ function makeFixture(skills) {
   return dir;
 }
 
-test('valid skill names pass', () => {
-  const dir = makeFixture({ 'adev-init': '---\nname: adev-init\n---\n# X\n' });
-  assert.deepEqual(validateSkillNames(dir), ['adev-init']);
+test('adev-prefixed frontmatter passes when dirname matches name-without-prefix', () => {
+  // Reflects the real adev skill convention: dir 'init', frontmatter 'name: adev:init'.
+  const dir = makeFixture({ 'init': '---\nname: adev:init\n---\n# X\n' });
+  assert.deepEqual(validateSkillNames(dir), ['init']);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('unprefixed frontmatter passes when dirname byte-equals name', () => {
+  // Reflects skills/using-adev/SKILL.md: dir 'using-adev', frontmatter 'name: using-adev'.
+  const dir = makeFixture({ 'using-adev': '---\nname: using-adev\n---\n# X\n' });
+  assert.deepEqual(validateSkillNames(dir), ['using-adev']);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('SKILL.md without name frontmatter is skipped silently', () => {
+  // Reflects skills/standalone/SKILL.md per the blocker analysis.
+  const dir = makeFixture({ 'standalone': '# Just a heading\n' });
+  assert.deepEqual(validateSkillNames(dir), []);
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -165,15 +180,22 @@ test('uppercase directory name rejected with INVALID_SKILL_NAME', () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-test('frontmatter name mismatch rejected with SKILL_NAME_MISMATCH', () => {
-  const dir = makeFixture({ 'adev-init': '---\nname: adev-brainstorm\n---\n# X\n' });
-  assert.throws(() => validateSkillNames(dir), /SKILL_NAME_MISMATCH/);
+test('frontmatter name with uppercase rejected by regex even with adev: prefix', () => {
+  const dir = makeFixture({ 'init': '---\nname: adev:Init\n---\n# X\n' });
+  assert.throws(() => validateSkillNames(dir), /INVALID_SKILL_NAME/);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('prefix-stripped name mismatch rejected with SKILL_NAME_MISMATCH', () => {
+  // Dir 'init', frontmatter 'adev:brainstorm' → strip → 'brainstorm' != 'init'.
+  const dir = makeFixture({ 'init': '---\nname: adev:brainstorm\n---\n# X\n' });
+  assert.throws(() => validateSkillNames(dir), /SKILL_NAME_MISMATCH: init vs brainstorm/);
   rmSync(dir, { recursive: true, force: true });
 });
 
 test('oversize frontmatter rejected with INVALID_SKILL_FRONTMATTER', () => {
-  const huge = '---\nname: adev-init\ndescription: ' + 'A'.repeat(65 * 1024) + '\n---\n';
-  const dir = makeFixture({ 'adev-init': huge });
+  const huge = '---\nname: adev:init\ndescription: ' + 'A'.repeat(65 * 1024) + '\n---\n';
+  const dir = makeFixture({ 'init': huge });
   assert.throws(() => validateSkillNames(dir), /INVALID_SKILL_FRONTMATTER/);
   rmSync(dir, { recursive: true, force: true });
 });
@@ -181,7 +203,15 @@ test('oversize frontmatter rejected with INVALID_SKILL_FRONTMATTER', () => {
 
 - [ ] **Verify test fails:** module not found.
 
-- [ ] **Implement:** `validateSkillNames(skillsDir)` — `readdirSync`, for each dir: read `SKILL.md` (cap at 64 KiB via `readFileSync` + length check), parse frontmatter with a minimal allocation-bounded YAML reader (extract only the `name:` line), NFC-normalize both dir name and frontmatter name, assert both match `^[a-z0-9-]{1,64}$` AND byte-equal each other. Throws documented error codes; returns the validated dir names.
+- [ ] **Implement:** `validateSkillNames(skillsDir)` per spec rev 3 Behavior §6:
+  1. `readdirSync(skillsDir)`; for each entry, attempt to read `<entry>/SKILL.md` (cap 64 KiB).
+  2. Parse frontmatter with a minimal allocation-bounded YAML reader (extract `name:` line only).
+  3. If `SKILL.md` is missing or has no `name:` field, **skip silently** (not an adev-managed skill).
+  4. NFC-normalize the frontmatter name; assert it matches `^(adev:)?[a-z0-9-]{1,64}$` → else throw `INVALID_SKILL_NAME`.
+  5. NFC-normalize the directory name; assert it matches `^[a-z0-9-]{1,64}$` → else throw `INVALID_SKILL_NAME`.
+  6. Compute `normalizedName = frontmatterName.startsWith('adev:') ? frontmatterName.slice(5) : frontmatterName`.
+  7. Assert `normalizedName === dirName` → else throw `SKILL_NAME_MISMATCH: <dir> vs <normalized>`.
+  8. Return the validated **directory names** (Copilot-conformant lowercase-hyphen form, no `adev:` prefix). Pure (no filesystem writes).
 
 - [ ] **Verify test passes:** `node --test tests/copilot-skill-validator.test.mjs` → PASS.
 
@@ -288,19 +318,51 @@ test('absolute pluginRoot/hooks/foo.sh rewritten to ./scripts/foo.sh', () => {
   assert.deepEqual(scriptFiles, ['foo.sh']);
 });
 
-test('output contains zero absolute paths from pluginRoot', () => {
+test('${CLAUDE_PLUGIN_ROOT}/hooks/foo.sh runtime placeholder rewritten to ./scripts/foo.sh', () => {
+  // Mirrors the real shape emitted by providers/copilot/hooks.json after the hook-generator runs.
+  const pluginRoot = '/Users/dev/adev-plugin';
+  const input = {
+    version: 1,
+    hooks: {
+      preToolUse: [{ type: 'command', bash: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/foo.sh"', cwd: '.' }],
+    },
+  };
+  const { rewrittenConfig, scriptFiles } = rewriteHookConfigForCopilot(input, pluginRoot);
+  assert.equal(rewrittenConfig.hooks.preToolUse[0].bash, 'bash "./scripts/foo.sh"');
+  assert.deepEqual(scriptFiles, ['foo.sh']);
+});
+
+test('output contains zero absolute paths AND zero ${CLAUDE_PLUGIN_ROOT} substrings', () => {
   const pluginRoot = '/Users/dev/adev-plugin';
   const input = {
     version: 1,
     hooks: {
       preToolUse: [{ type: 'command', bash: '/Users/dev/adev-plugin/hooks/a.sh', cwd: '.' }],
-      postToolUse: [{ type: 'command', bash: '/Users/dev/adev-plugin/hooks/b.sh', cwd: '.' }],
+      postToolUse: [
+        { type: 'command', bash: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/b.sh"', cwd: '.' },
+        { type: 'command', bash: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/c.sh"', cwd: '.' },
+      ],
     },
   };
   const { rewrittenConfig } = rewriteHookConfigForCopilot(input, pluginRoot);
   const json = JSON.stringify(rewrittenConfig);
   assert.equal(json.includes(pluginRoot), false);
   assert.equal(json.includes('/Users/'), false);
+  assert.equal(json.includes('${CLAUDE_PLUGIN_ROOT}'), false);
+});
+
+test('mixed inputs (some absolute, some placeholder) all rewrite to ./scripts/', () => {
+  const pluginRoot = '/Users/dev/adev-plugin';
+  const input = {
+    hooks: {
+      preToolUse: [{ bash: '/Users/dev/adev-plugin/hooks/x.sh' }],
+      postToolUse: [{ bash: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/y.sh"' }],
+    },
+  };
+  const { rewrittenConfig, scriptFiles } = rewriteHookConfigForCopilot(input, pluginRoot);
+  assert.equal(rewrittenConfig.hooks.preToolUse[0].bash, './scripts/x.sh');
+  assert.equal(rewrittenConfig.hooks.postToolUse[0].bash, 'bash "./scripts/y.sh"');
+  assert.deepEqual(scriptFiles.sort(), ['x.sh', 'y.sh']);
 });
 
 test('script file list is deduplicated', () => {
@@ -318,7 +380,15 @@ test('script file list is deduplicated', () => {
 
 - [ ] **Verify test fails.**
 
-- [ ] **Implement:** deep-clone the config, walk every event array, for each entry replace `bash` field via `path.relative(path.join(pluginRoot, 'hooks'), entry.bash)` then prepend `./scripts/`; collect the basenames in a `Set`; return `{ rewrittenConfig, scriptFiles: [...set] }`.
+- [ ] **Implement** per spec rev 3 Task Map "Implement hook-path rewriter":
+  - Deep-clone the config.
+  - For each entry's `bash` field, run two replacements in this order:
+    1. Replace `${CLAUDE_PLUGIN_ROOT}/hooks/<name>.sh` substrings with `./scripts/<name>.sh` (capture each `<name>.sh`).
+    2. Replace absolute `<pluginRoot>/hooks/<name>.sh` substrings with `./scripts/<name>.sh` (capture each `<name>.sh`).
+  - Use a regex (`/\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/([a-z0-9_.-]+\.sh)/g`) and a `String#replaceAll` over the escaped pluginRoot to perform substitutions.
+  - Collect all captured basenames into a `Set` (deduplication).
+  - Return `{ rewrittenConfig, scriptFiles: [...set].sort() }`.
+  - Acceptance: the emitted config contains zero `${CLAUDE_PLUGIN_ROOT}` substrings AND zero pluginRoot absolute-path substrings.
 
 - [ ] **Verify test passes.**
 
@@ -591,8 +661,8 @@ test('tampered state record listing ../etc/passwd rejected (SUSPICIOUS_STATE_ENT
 test('symlinked state-record entry rejected (SEC-9 / SUSPICIOUS_STATE_ENTRY symlink)', () => {
   const projectRoot = makeInstalledRepo();
   // Replace one skill dir with a symlink to a sibling target
-  rmSync(path.join(projectRoot, '.github/skills/adev-init'), { recursive: true, force: true });
-  symlinkSync('/tmp', path.join(projectRoot, '.github/skills/adev-init'));
+  rmSync(path.join(projectRoot, '.github/skills/init'), { recursive: true, force: true });
+  symlinkSync('/tmp', path.join(projectRoot, '.github/skills/init'));
   const result = CopilotAdapter.uninstall({ projectRoot });
   assert.ok(result.residual.some(r => r.includes('symlink') || r.includes('SUSPICIOUS_STATE_ENTRY')));
   // /tmp must still exist
