@@ -1,6 +1,6 @@
 ---
-status: evolving
-revision: 4
+status: approved
+revision: 5
 updated: 2026-05-20
 ---
 
@@ -66,6 +66,7 @@ This charter retains ownership of *what* execution state means: session-start co
 - An ExecutionState references zero or one Plan (via planRef) and zero or one Issue (via issueBinding)
 - A SessionLog contains zero or more SessionLogEntries
 - ReminderConfig is read from manifest.yaml (`tasks.reminder_interval`)
+- CaptureConfig is read from manifest.yaml (`sessions`)
 
 ### Invariants
 
@@ -119,6 +120,7 @@ This charter retains ownership of *what* execution state means: session-start co
 | `hooks/session-end.sh` | hook (Claude Code SessionEnd) | Consumes payload (session_id, transcript_path, cwd, reason); writes `<date>-<session_id>.md` derived from the transcript |
 | `hooks/pre-compact.sh` | hook (Claude Code PreCompact) | Captures pre-compaction snapshots for long sessions that auto-compact mid-conversation |
 | `manifest.yaml:sessions` | config | `{ capture: hook|post-commit|off, gitignored: bool }` |
+| `detectExistingCapture(projectRoot)` | function | Inspects `.githooks/post-commit` and tracked `.context-index/sessions/*.md` for existing capture; init reads this to choose the default `sessions.capture` value for the prompt |
 
 ### Consumed APIs
 
