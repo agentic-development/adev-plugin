@@ -12,7 +12,7 @@ Reads `.context-index/constitution.md` and generates tool-specific agent files b
 When syncing, detect which AI coding assistant is running:
 - Claude Code: `CLAUDE.md` (primary)
 - OpenCode: `AGENTS.md` (primary)
-- Cursor: `.cursorrules`
+- Cursor: `.cursor/rules/adev.mdc`
 - GitHub Copilot: `.github/copilot-instructions.md`
 
 If multiple providers are used, sync all enabled targets from the manifest.
@@ -105,8 +105,51 @@ If multiple providers are used, sync all enabled targets from the manifest.
 
    The Copilot format does NOT touch `.github/skills/`, `.github/hooks/`, or `.github/.adev-copilot-install.json` — those paths belong to the Copilot adapter (`/adev:install --target copilot`), not the sync skill.
 
-   ### Cursor format (`.cursorrules`)
-   Full constitution content. Convert Context Routing pointers to Cursor-compatible references where applicable.
+   ### Cursor format (`.cursor/rules/adev.mdc`)
+
+   Pointer projection of `.context-index/constitution.md` — NOT a duplicate of it. Cursor 2.5+ reads always-apply rules from `.cursor/rules/*.mdc`; adev owns exactly one file under that directory (`adev.mdc`). Any pre-existing sibling files in `.cursor/rules/` MUST NOT be read, modified, or deleted by this writer.
+
+   **Output path:** `.cursor/rules/adev.mdc` is the default emitted by the `setup`-charter scaffold (see `cli/index.mjs::handleDualSyncTargets`). Users may override `path:` per manifest entry; the format's writer always assumes `.mdc` extension and Cursor Rules semantics regardless of path.
+
+   **File composition (in this order):**
+
+   ```mdc
+   ---
+   description: <single-line summary; trimmed; ≤ 200 characters; no embedded newlines>
+   alwaysApply: true
+   ---
+
+   <pointer body — body word count ≤ 200 (frontmatter excluded)>
+
+   # User Additions
+   <preserved content from the prior file, if any>
+   ```
+
+   - **Frontmatter:** YAML block with exactly two keys — `description` (string) and `alwaysApply` (literal boolean `true`, not the string `"true"`). The frontmatter is owned by adev and rewritten wholesale on each sync.
+   - **Pointer body:** MUST NOT duplicate the constitution. It directs the reader to `.context-index/constitution.md` for the source of truth. The body MAY include: (a) the project identity sentence, (b) a one-line note that non-negotiable principles live in the constitution, (c) the relative path to `.context-index/constitution.md`, (d) a short pointer to `CLAUDE.md` and `AGENTS.md` for sibling agent-file projections.
+   - **Body word count cap:** ≤ 200 words. Count is the number of whitespace-delimited tokens between the frontmatter closing `---` and the `# User Additions` marker (or EOF when the marker is absent). The `## Learned Lessons` heading is excluded from the count; blank lines and the `# User Additions` heading itself are excluded.
+   - **Body oversize (`CURSOR_BODY_OVERSIZE`):** if the composed body exceeds 200 words, the writer throws `CURSOR_BODY_OVERSIZE` carrying the actual count, removes any sibling `.tmp` file, and writes NO `.cursor/rules/adev.mdc`. Cursor's always-apply guidance is the reason this limit exists — the failure is loud by design.
+   - **User Additions preservation:** the existing `# User Additions` protocol applies verbatim (step 4 below). User Additions are trusted as user-authored content reviewed at edit time, not at sync time — this matches the established CLAUDE.md/AGENTS.md trust model and is not a new attack surface introduced by this format.
+   - **Sibling-file non-interference:** the writer reads and writes only `.cursor/rules/adev.mdc` and its `.cursor/rules/adev.mdc.tmp` sibling. Any other file under `.cursor/rules/` is untouched (read or write).
+   - **Atomic write:** compose the full content in memory, write to `.cursor/rules/adev.mdc.tmp`, then rename to `.cursor/rules/adev.mdc`. On any thrown error before the rename, unlink the `.tmp` file before re-raising.
+   - **Dry-run:** `/adev:sync --dry-run` prints the proposed content (frontmatter + body) and the diff against the existing file (or "new file" when absent); no write occurs.
+
+   **Body-composition algorithm (reproducible):**
+
+   1. **`description` derivation order** — trim the result; strip embedded newlines; cap at 200 characters; the value MUST fit on a single YAML line.
+      1. First H2 heading of `.context-index/constitution.md` (heading text without the `##` prefix).
+      2. Fallback: the constitution's "Identity" sentence (line 8 in the canonical template at `templates/constitution-template.md`).
+      3. Hard fallback: `manifest.yaml :: project.name`.
+   2. **`alwaysApply` value** — emit the literal YAML boolean `true` (not the string `"true"`). Parsers MUST see `typeof alwaysApply === "boolean"`.
+   3. **Pointer body structure** — five lines in this order:
+      - Line 1: project identity sentence (single line, sourced from the constitution's Identity section).
+      - Line 2: blank.
+      - Line 3: pointer paragraph — "Non-negotiable principles, coding standards, and architecture boundaries live in `.context-index/constitution.md` — see that file for the source of truth."
+      - Line 4: blank.
+      - Line 5: sibling pointer — "Companion projections: `CLAUDE.md` (Claude Code), `AGENTS.md` (OpenCode/Codex)."
+   4. **Body word-count rule** — sum the whitespace-delimited tokens between the frontmatter closing `---` and the `# User Additions` marker (or EOF when the marker is absent on first write). Blank lines, the `## Learned Lessons` heading, and the `# User Additions` heading itself are excluded from the count.
+   5. **Atomic write protocol** — compose the full content (frontmatter + body + optional `## Learned Lessons` + `# User Additions` block) in memory. Word-count the body before any write. If the count exceeds 200, throw `CURSOR_BODY_OVERSIZE` carrying the actual count and do NOT create the `.tmp` file (or if it was speculatively created, unlink it before re-raising); no `.cursor/rules/adev.mdc` is written. Otherwise, write the bytes to `.cursor/rules/adev.mdc.tmp` and rename to `.cursor/rules/adev.mdc`. On any thrown error after the `.tmp` write but before the rename, unlink the `.tmp` and re-raise.
+   6. **Sibling-file non-interference (SA-1)** — the writer's filesystem surface is exactly two paths: `.cursor/rules/adev.mdc` and `.cursor/rules/adev.mdc.tmp`. The writer MUST NOT read, modify, or delete any other file under `.cursor/rules/`.
 
 3. **Inject Learned Lessons (conditional):**
 
@@ -121,8 +164,8 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - If no `high`-confidence entries exist, skip the section entirely. If a stale `## Learned Lessons` block is already present in the target file, remove it (replace from the heading to the next `##` heading or EOF, whichever comes first).
    - If entries exist, group by scope alphabetically. The `_global` scope sorts last.
    - Render each entry as: `- <title> (<scope>) — <pattern truncated to 80 chars>`
-   - **Placement in CLAUDE.md and AGENTS.md:** Place the `## Learned Lessons` section heading immediately before the `# User Additions` marker.
-   - **Placement in .cursorrules and copilot-instructions.md (`.github/copilot-instructions.md`):** Append the section at the end of the file.
+   - **Placement in CLAUDE.md, AGENTS.md, and `.cursor/rules/adev.mdc`:** Place the `## Learned Lessons` section heading immediately before the `# User Additions` marker.
+   - **Placement in `.github/copilot-instructions.md` (Copilot):** Append the section at the end of the file.
    - **On re-sync:** Detect an existing `## Learned Lessons` heading and remove the old block (from the heading to the next `##` or EOF), then write the fresh replacement in the correct position.
 
 4. **Preserve User Additions:**

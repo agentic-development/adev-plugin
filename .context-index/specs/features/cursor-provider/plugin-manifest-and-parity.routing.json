@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Mechanical copy of `.claude-plugin/plugin.json` field shape with a version pin; spec gives exact JSON, blast radius is one new file at the plugin root, no boundary crossings."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "One-line array append into `release-please-config.json` with explicit diff in the spec; existing `.claude-plugin/plugin.json` entry provides direct precedent in the same array."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Plan ships a full node:test scaffold matching the repo's existing `tests/cli-driver-pattern.test.mjs` style; uses only built-ins, lives in `tests/`, touches no production code."
+    }
+  ]
+}
