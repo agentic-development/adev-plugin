@@ -176,3 +176,152 @@ describe('validateEntries', () => {
     assert.strictEqual(advisories[0].name, 'missing');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Task 4: runPicker + dispatchInstall
+// ---------------------------------------------------------------------------
+
+describe('runPicker', () => {
+  let tmpPluginRoot;
+  let tmpProjectRoot;
+
+  beforeEach(() => {
+    tmpPluginRoot = mkdtempSync(join(tmpdir(), 'adev-picker-pr-'));
+    tmpProjectRoot = mkdtempSync(join(tmpdir(), 'adev-picker-proj-'));
+    mkdirSync(join(tmpPluginRoot, 'templates'), { recursive: true });
+    mkdirSync(join(tmpPluginRoot, 'extensions', 'data-engineering'), { recursive: true });
+    mkdirSync(join(tmpPluginRoot, 'extensions', 'process-automation'), { recursive: true });
+    writeFileSync(
+      join(tmpPluginRoot, 'templates', 'extensions-catalog.json'),
+      JSON.stringify({
+        version: 1,
+        entries: [
+          { name: 'data-engineering', label: 'Data Engineering', description: 'd', path: 'extensions/data-engineering' },
+          { name: 'process-automation', label: 'Process Automation', description: 'd', path: 'extensions/process-automation' },
+        ],
+      })
+    );
+    mkdirSync(join(tmpProjectRoot, '.context-index'), { recursive: true });
+    writeFileSync(join(tmpProjectRoot, '.context-index', 'manifest.yaml'), 'project:\n  name: tp\n');
+  });
+
+  afterEach(() => {
+    rmSync(tmpPluginRoot, { recursive: true, force: true });
+    rmSync(tmpProjectRoot, { recursive: true, force: true });
+  });
+
+  it('returns action "software" when user selects software (choice 1)', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    const ask = async () => '1';
+    const installFn = async () => { throw new Error('should not be called'); };
+    const readStamps = () => [];
+    const result = await runPicker({
+      projectRoot: tmpProjectRoot,
+      pluginRoot: tmpPluginRoot,
+      ask, installFn, readStamps,
+    });
+    assert.strictEqual(result.action, 'software');
+    assert.strictEqual(result.domainName, 'software');
+    assert.strictEqual(result.sourcePath, null);
+  });
+
+  it('returns action "skip" → domainName "software" when user selects last option (skip)', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    // Catalog has 2 valid entries: software=1, data-engineering=2, process-automation=3, skip=4.
+    const ask = async () => '4';
+    const installFn = async () => { throw new Error('should not be called'); };
+    const readStamps = () => [];
+    const result = await runPicker({
+      projectRoot: tmpProjectRoot,
+      pluginRoot: tmpPluginRoot,
+      ask, installFn, readStamps,
+    });
+    assert.strictEqual(result.action, 'skip');
+    assert.strictEqual(result.domainName, 'software');
+    assert.strictEqual(result.sourcePath, null);
+  });
+
+  it('returns action "install" with resolved sourcePath when user selects data-engineering (choice 2)', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    let installCalledWith = null;
+    const ask = async () => '2';
+    const installFn = async (path, root, opts) => {
+      installCalledWith = { path, root, opts };
+      return { name: 'data-engineering', version: '0.1.0', filesWritten: [], mergesApplied: [], warnings: [] };
+    };
+    const readStamps = () => [];
+    const result = await runPicker({
+      projectRoot: tmpProjectRoot,
+      pluginRoot: tmpPluginRoot,
+      ask, installFn, readStamps,
+    });
+    assert.strictEqual(result.action, 'install');
+    assert.strictEqual(result.domainName, 'data-engineering');
+    assert.strictEqual(result.sourcePath, resolve(tmpPluginRoot, 'extensions/data-engineering'));
+    assert.ok(installCalledWith !== null, 'installFn should have been called');
+    assert.strictEqual(installCalledWith.path, resolve(tmpPluginRoot, 'extensions/data-engineering'));
+  });
+
+  it('throws PICKER_USER_ABORTED when ask returns null/undefined (Ctrl+C / EOF)', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    const ask = async () => null;
+    const installFn = async () => { throw new Error('should not be called'); };
+    const readStamps = () => [];
+    await assert.rejects(
+      runPicker({ projectRoot: tmpProjectRoot, pluginRoot: tmpPluginRoot, ask, installFn, readStamps }),
+      (err) => err.code === 'PICKER_USER_ABORTED'
+    );
+  });
+
+  it('returns action "already-installed" when readStamps reports a domain-profile extension', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    let askCalled = false;
+    const ask = async () => { askCalled = true; return '1'; };
+    const installFn = async () => { throw new Error('should not be called'); };
+    const readStamps = () => [
+      { name: 'data-engineering', version: '0.1.0', source_uri: '/x', kind: 'domain-profile' },
+    ];
+    const result = await runPicker({
+      projectRoot: tmpProjectRoot,
+      pluginRoot: tmpPluginRoot,
+      ask, installFn, readStamps,
+    });
+    assert.strictEqual(result.action, 'already-installed');
+    assert.strictEqual(result.domainName, 'data-engineering');
+    assert.strictEqual(askCalled, false, 'ask should NOT be called when a domain-profile is already installed');
+  });
+});
+
+describe('dispatchInstall', () => {
+  it('calls installFn with the resolved source path and returns installed:true on success', async () => {
+    const { dispatchInstall } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    let calledWith = null;
+    const installFn = async (path, root, opts) => {
+      calledWith = { path, root, opts };
+      return { name: 'data-engineering', version: '0.1.0', filesWritten: [] };
+    };
+    const entry = { name: 'data-engineering', resolvedPath: '/tmp/fake/data-engineering' };
+    const result = await dispatchInstall(entry, '/tmp/proj', { installFn });
+    assert.strictEqual(result.installed, true);
+    assert.strictEqual(calledWith.path, '/tmp/fake/data-engineering');
+    assert.strictEqual(calledWith.root, '/tmp/proj');
+  });
+
+  it('returns installed:false and the sanitized error on installFn throw', async () => {
+    const { dispatchInstall } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    const installFn = async () => {
+      const e = new Error('clone failed for https://user:secret@example.com/repo.git');
+      e.code = 'SOURCE_RESOLUTION';
+      throw e;
+    };
+    const entry = { name: 'data-engineering', resolvedPath: 'https://user:secret@example.com/repo.git' };
+    const result = await dispatchInstall(entry, '/tmp/proj', { installFn });
+    assert.strictEqual(result.installed, false);
+    assert.ok(result.err, 'err should be present');
+    assert.strictEqual(result.err.code, 'SOURCE_RESOLUTION');
+    assert.ok(
+      !result.err.message.includes('secret'),
+      `error message should not include raw credential 'secret', got: ${result.err.message}`
+    );
+  });
+});
