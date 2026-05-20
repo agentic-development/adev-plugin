@@ -98,6 +98,83 @@ test("plan-immutability: detectMutatedPlans handles missing projectRoot graceful
   assert.deepEqual(violations, []);
 });
 
+// ────────────────────────────────────────────────────────────────────────
+// Working-tree branch tests (PLAN_MUTATED_WITHOUT_SIDECAR)
+//
+// Spec: plan-routing-sidecar.spec.md Behaviors 6-7, Error Cases
+//
+// The legacy --diff-filter=M check misses inline `**Routing:**` blocks
+// committed as a single `A` commit (the cursor-provider pattern). The
+// working-tree branch greps the plan body for inline Routing/Scores/
+// Rationale and flags PLAN_MUTATED_WITHOUT_SIDECAR when no sibling
+// .routing.md exists at the same path — regardless of git history.
+// ────────────────────────────────────────────────────────────────────────
+
+// The new fixtures (clean-plan, mutate-then-single-add, sidecar-present-plus-
+// inline) each carry a lifecycle log with a 2020-01-01 pending event so the
+// detector enters its per-plan branch. Once the fixtures land in git, the
+// detector uses `git log --diff-filter=M` (which returns null for plans
+// committed as a single `A` commit), so no mtime check fires. Before the
+// fixtures are tracked, we backdate mtimes to 2019-01-01 in each test so the
+// untracked-fallback branch also yields null → no mtime violation, isolating
+// the new PLAN_MUTATED_WITHOUT_SIDECAR working-tree check.
+
+test("plan-immutability: clean fixture with no inline Routing and no sidecar yields no violations", async () => {
+  const past = new Date("2019-01-01T00:00:00.000Z");
+  const planPath = "tests/fixtures/plan-immutability/clean-plan/.context-index/specs/features/x/foo.plan.md";
+  utimesSync(planPath, past, past);
+
+  const { detectMutatedPlans } = await import("../../lib/plan-immutability.mjs");
+  const violations = await detectMutatedPlans(
+    "tests/fixtures/plan-immutability/clean-plan",
+  );
+  assert.deepEqual(
+    violations,
+    [],
+    `clean fixture must yield zero violations; got: ${JSON.stringify(violations)}`,
+  );
+});
+
+test("plan-immutability: mutate-then-single-add fixture flags PLAN_MUTATED_WITHOUT_SIDECAR", async () => {
+  const past = new Date("2019-01-01T00:00:00.000Z");
+  const planPath = "tests/fixtures/plan-immutability/mutate-then-single-add/.context-index/specs/features/x/foo.plan.md";
+  utimesSync(planPath, past, past);
+
+  const { detectMutatedPlans } = await import("../../lib/plan-immutability.mjs");
+  const violations = await detectMutatedPlans(
+    "tests/fixtures/plan-immutability/mutate-then-single-add",
+  );
+  // Expect at least one PLAN_MUTATED_WITHOUT_SIDECAR violation.
+  const mutated = violations.filter((v) => v.code === "PLAN_MUTATED_WITHOUT_SIDECAR");
+  assert.equal(
+    mutated.length,
+    1,
+    `expected one PLAN_MUTATED_WITHOUT_SIDECAR violation, got all: ${JSON.stringify(violations, null, 2)}`,
+  );
+  assert.match(mutated[0].path, /foo\.plan\.md$/);
+});
+
+test("plan-immutability: sidecar-present-plus-inline fixture tolerates inline blocks (no PLAN_MUTATED_WITHOUT_SIDECAR)", async () => {
+  const past = new Date("2019-01-01T00:00:00.000Z");
+  const planPath = "tests/fixtures/plan-immutability/sidecar-present-plus-inline/.context-index/specs/features/x/foo.plan.md";
+  utimesSync(planPath, past, past);
+
+  const { detectMutatedPlans } = await import("../../lib/plan-immutability.mjs");
+  const violations = await detectMutatedPlans(
+    "tests/fixtures/plan-immutability/sidecar-present-plus-inline",
+  );
+  // The working-tree branch must NOT flag this case because the sidecar
+  // is present — inline blocks are tolerated as legacy migration noise.
+  const mutatedWithoutSidecar = violations.filter(
+    (v) => v.code === "PLAN_MUTATED_WITHOUT_SIDECAR",
+  );
+  assert.deepEqual(
+    mutatedWithoutSidecar,
+    [],
+    `unexpected PLAN_MUTATED_WITHOUT_SIDECAR violations: ${JSON.stringify(violations, null, 2)}`,
+  );
+});
+
 test("plan-immutability: manifest exempt_commits suppresses a real modification violation", async () => {
   // Build a real git repo with a plan file, commit it, then commit a
   // modification — the M commit's hash is then listed under
