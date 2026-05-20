@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Fully specified seed data with exact row counts and NULL constraints; mechanical file creation with no architectural decisions."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Planted bug behavior is precisely specified with exact root cause location; standard Python CSV processing with config-driven pipeline."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "No dbt/DuckDB sample or precedent in codebase (pattern=1 override); dbt configuration, DuckDB adapter, and CSV export require domain-specific knowledge not present in golden samples."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Compare tool behavior is fully specified (row count diff, missing IDs, exit codes); single-file mechanical CSV comparison."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Test expectations are explicit (no NULL data constraint clearly stated); existing test helper samples provide general patterns; single-module scope."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Verification criteria are exact (25 vs 22 rows, 3 missing customers); no new files created, just running and asserting against prior work."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "README sections and TODO features are enumerated in spec and shared conventions; mechanical template application with 2 files."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Git submodule registration with a local repo requires careful setup; touches .gitmodules at repo root (cross-module boundary); no submodule registration sample exists."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Creating a mock .context-index/ inside a sub-repo requires composing manifest, constitution, and spec from scratch; no sample for this pattern; branch management adds complexity."
+    }
+  ]
+}

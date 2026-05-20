@@ -1,3 +1,11 @@
 {"event":"lifecycle_step","ts":"2026-05-11T22:49:47.754Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md"}
 {"event":"step_completed","ts":"2026-05-11T22:49:47.754Z","step":"review","actor":"migration/adev-cli"}
 {"event":"code_drift_detected","drift_source":"tests/lib/lifecycle-state.test.mjs","drift_at":"2026-05-17T19:39:56.829Z","ts":"2026-05-18T13:50:21.073Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-events.mjs","drift_at":"2026-05-20T03:34:26.674Z","ts":"2026-05-20T03:34:26.674Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:01.308Z","ts":"2026-05-20T03:35:01.308Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:13.926Z","ts":"2026-05-20T03:35:13.926Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:25.470Z","ts":"2026-05-20T03:35:25.470Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:36:39.924Z","ts":"2026-05-20T03:36:39.924Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:00.423Z","ts":"2026-05-20T03:37:00.423Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:08.885Z","ts":"2026-05-20T03:37:08.885Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:21.597Z","ts":"2026-05-20T03:37:21.597Z","diagnostic_warnings":["adev/frontmatter-present"]}

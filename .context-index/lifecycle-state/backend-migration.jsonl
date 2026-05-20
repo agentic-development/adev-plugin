@@ -47,3 +47,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"gates.yaml transitions empty — no transitions configured","ts":"2026-05-20T02:18:30.553Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"No UI files in diff — N/A; SKIP","ts":"2026-05-20T02:18:31.908Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-20T02:20:03.127Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.354Z","ts":"2026-05-20T12:58:34.354Z","diagnostic_warnings":["adev/frontmatter-present"]}

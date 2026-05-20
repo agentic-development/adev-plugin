@@ -28,6 +28,7 @@ source-manifest:
     - lib/cli/issues.mjs
     - tests/lib/cli-issues-migrate.test.mjs
   computed-at: "2026-05-20T01:57:16.716Z"
+drift_detected: true
 ---
 
 ## Postconditions

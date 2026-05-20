@@ -242,3 +242,16 @@ hygiene:
       # diagnostic-registry.plan.md from 0009 to 0010 when resolving the
       # duplicate ADR id. Reference-only update, not content change.
       - "dc27388f0e762c0519e1cb833bd98a55cc8f3e26"
+      # Milestone bulk-rename: stamped "0.26.0" → "0.27.0" on the
+      # orphan-lock-cleanup.plan.md milestone reference. Reference-only
+      # update, not content change.
+      - "975f3acbddce92a857c296ef2a2ec93db2cf7d08"
+      # Milestone bulk-rename: stamped "0.27.0" → "0.27.1" on the
+      # orphan-lock-cleanup.plan.md milestone reference along with the
+      # 0.27.1 milestone re-file. Reference-only update, not content change.
+      - "bad36e09824693d0fd183fcf46f11d2b4103fff1"
+      # JSON sidecar migration: updated the comment in the three
+      # plan-immutability fixture plan bodies from ".routing.md" to
+      # ".routing.json" to match the rev-2 sidecar shape. Documentation
+      # update inside test fixtures, not content change.
+      - "4d389a114bd8a00c66353afc92f623cbad5f8351"

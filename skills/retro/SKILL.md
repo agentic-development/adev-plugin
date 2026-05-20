@@ -120,6 +120,17 @@ Compute metrics and identify patterns from the gathered data.
 - **Most blocked areas:** Modules or components with the highest blocker count.
 - **Blocker duration:** Average time from blocker creation to resolution.
 
+### Review Revision History
+
+For each spec touched in the period, read `currentState(spec).steps.review.byRevision` (the per-revision projection from `lib/lifecycle-state.mjs` Task 3 of review-block-auto-retry). Render the revision history:
+
+- **Total revisions per spec:** Count of `byRevision[N]` entries. A value > 1 indicates the BLOCK→revise auto-retry loop ran.
+- **Final verdict:** The verdict on the latest revision (PASS / PASS_WITH_NOTES / FAIL).
+- **Convergence pattern:** Did the loop converge on PASS within budget, or did it terminate at NO_PROGRESS / REGRESSED / BUDGET_EXHAUSTED (read from `state.specRevisions` for `spec_revised` events)?
+- **Specs requiring `--require-human-final-pass`:** Specs with `human_approval_required` events in their lifecycle log (`state.humanApprovalsRequired`). These are domain hotspots where human sign-off was deemed necessary.
+
+Convergence patterns inform whether reviewer prompts or blocker categories need refinement. A high rate of NO_PROGRESS terminations suggests the reviewer is stuck in a local minimum and the spec template / reviewer prompt may need additional guidance.
+
 ### Context Gaps
 
 - **Missing references:** Scan git diffs for patterns where subagents searched context-index directories with no results (grep for file-not-found patterns in session logs if session capture is configured).

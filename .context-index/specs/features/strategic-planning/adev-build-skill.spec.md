@@ -9,19 +9,10 @@ charter: strategic-planning
 status: implemented
 risk_level: high
 milestone: v2
-revision: 7
+revision: 8
 charter-revision: 3
 created: 2026-04-05
-updated: 2026-05-05
-source-manifest:
-  sha: "83090b0"
-  files:
-    - skills/build/SKILL.md
-    - skills/build/resume-mode.md
-    - tests/skills/build-one-step-dispatch.test.mjs
-    - tests/skills/build-full-pipeline.test.mjs
-    - tests/skills/build-milestone-and-stale.test.mjs
-  computed-at: "2026-05-05T00:00:00.000Z"
+updated: 2026-05-19
 drift_detected: true
 ---
 
@@ -36,9 +27,9 @@ drift_detected: true
 
 The build skill has two pipeline modes. The mode determines the starting point and auto-fix loops available.
 
-**Full Pipeline** (`--full` flag): `specify → review (with blocker-fix loop) → plan → route → implement → validate (with retry loop)`
+**Full Pipeline** (`--full` flag): `specify → review (BLOCK → manual revision required) → plan → route → implement → validate (with retry loop)`
 
-Use when starting from scratch or when the spec needs to be written or revised as part of the build. Includes an auto-fix loop that re-authors the spec when review returns BLOCK, then re-runs review.
+Use when starting from scratch and a new spec needs to be authored as part of the build. When review returns BLOCK, the build writes a `<spec-stem>.blockers.md` sidecar and stops with instructions to revise manually and resume via `/adev:build --resume` (auto-retry is reserved for a future enhancement that requires `/adev:specify` to gain a revision workflow — see issue-527 family).
 
 **Implement Pipeline** (default, `--spec <path>`): `plan → route → implement → validate (with retry loop)`
 
@@ -49,16 +40,16 @@ Both modes support `--milestone <name>` to batch-build multiple specs. Route run
 ### Behaviors
 
 1. **When** `--spec <path>` is invoked without `--full` **then** the skill runs the Implement Pipeline: plan → route → implement → validate for that single spec
-2. **When** `--spec <path> --full` is invoked **then** the skill runs the Full Pipeline: specify → review (with blocker-fix loop) → plan → route → implement → validate for that single spec
+2. **When** `--spec <path> --full` is invoked **then** the skill runs the Full Pipeline: specify → review (BLOCK → manual revision required) → plan → route → implement → validate for that single spec
 3. **When** `--milestone <name>` is invoked without `--full` **then** the skill discovers all specs with `milestone: <name>` in frontmatter, filters to those with status `review-passed`, `implemented`, or `validated`, and builds each in dependency order using the Implement Pipeline. Specs with any other status are skipped with a visible note: "Skipped <spec> (status: <status>): not ready for Implement Pipeline. Run /adev:review-specs or use --full."
 3a. **When** `--milestone <name> --full` is invoked **then** the filter includes `review-pending` specs — the Full Pipeline runs specify and review for each before planning. Specs with status `review-blocked` are also included; the Full Pipeline re-specifies and re-reviews them, allowing auto-fix to resolve prior blockers
-4. **When** a step fails (e.g., review returns BLOCK and blocker-fix budget is exhausted) **then** the build stops, reports the failure with context, and saves build state for resume
+4. **When** a step fails (e.g., review returns BLOCK) **then** the build stops, reports the failure with context (a `<spec-stem>.blockers.md` sidecar for BLOCK; the failure details for other steps), and saves build state for resume
 5. **When** `--resume` is invoked **then** the skill reads `.context-index/lifecycle-state/<slug>.json`, identifies the last successful step, and resumes from the next step. Scans for stale builds (see Stale Build Detection below) and surfaces them if found
 5a. **When** `--resume --from <step>` is invoked **then** the skill overrides the automatic resume point and begins execution from the named step (e.g., `--from implement` skips plan and route, starting at implement). Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Invalid step name → print error and stop
 6. **When** `--dry-run` is invoked **then** the skill shows what would happen at each phase (specs found, pipeline mode, steps to execute, estimated task counts, retry policy) without executing any skill
 7. **When** a spec already has a plan (`.plan.md` exists) **then** the plan step is skipped
 8. **When** a spec has already passed review (`.review.md` exists with PASS verdict, not stale) **then** both the specify step (Step 0) and the review step (Step 1) are skipped in Full Pipeline — the pipeline continues from plan
-8a. **When** a spec file exists but has no `.review.md` **then** Full Pipeline Step 0 dispatches `/adev:specify` in `--revise` mode (not creation mode) to avoid clobbering an existing spec
+8a. **When** a spec file already exists OR the lifecycle log shows the `specify` step completed with verdict `PASS` or `PASS_WITH_NOTES` for that spec **then** Full Pipeline Step 0 records the step as `skipped` (without dispatching a subagent). The downstream `/adev:review-specs` and `/adev:validate` gates catch any drift between the spec on disk and the intended behavior; re-running specify would risk clobbering the existing spec since `/adev:specify` does NOT carry a `--revise` workflow flag (see issue-527).
 9. **When** the pipeline reaches the route step **then** the orchestrator MUST dispatch the route subagent — this step MUST NOT be skipped, inlined, or treated as a no-op even if no specialists are registered in the manifest. Use `--no-route` to explicitly disable route for the current build
 10. **When** building multiple specs via `--milestone` **then** each spec's build is independent — failure of one spec does not block others unless they have explicit dependencies
 11. **When** each step completes **then** the build state file is updated with the completed step and timestamp
@@ -67,8 +58,8 @@ Both modes support `--milestone <name>` to batch-build multiple specs. Route run
 14. **When** assembling a subagent prompt **then** the orchestrator includes two context sections: (a) pipeline context — spec path, spec title, phase, pipeline mode, pipeline position, workspace state, issue board config; (b) step context — step-specific fields read from artifact files on disk (e.g., review verdict from `.review.md`, plan path from `.plan.md`, task count, route annotations). Step context is always read from disk, never from prior subagent results, to ensure correctness across resumed builds
 15. **When** a subagent returns its STEP_RESULT **then** the orchestrator reads only the status, verdict, artifacts, summary, and error fields to make orchestration decisions (skip/stop/continue) and to persist in build state. The orchestrator does not parse or act on intermediate skill output
 16. **When** the build skill is loaded **then** it runs in a forked context (`context: fork` in frontmatter) to isolate the entire build pipeline from the parent conversation. Each pipeline step is further isolated by running as a subagent within this fork
-17. **When** review returns BLOCK in Full Pipeline mode **then** the orchestrator enters a specify→review blocker-fix loop: extracts the blocking issues from `.review.md`, dispatches a specify subagent with `--revise --blocker-context <findings>` to fix the spec, then re-dispatches review. The loop stops on: PASS verdict, budget exhaustion (`build.max_review_retries`, default 2), or no progress (same blockers reappear after revision)
-18. **When** `build.max_review_retries` is 0 **then** review BLOCK stops the build immediately (no auto-fix). When absent, the default of 2 applies
+17. **When** review returns BLOCK in Full Pipeline mode AND `build.max_review_retries > 0` (default 2 per `lib/manifest.mjs`) AND every BLOCK finding carries a canonical `blocker_id` (per `review-block-auto-retry.spec.md` Behavior 3) **then** the orchestrator dispatches the BLOCK→revise auto-retry loop: invoke `/adev:specify --revise <spec>` via the `adev specify revise` CLI verb to produce revision N+1 (targeted patch addressing each `blocker_id`), re-run `/adev:review-specs` against revision N+1, and apply the convergence detector (`lib/loop-convergence.mjs`) to decide PASS / PASS_PENDING_HUMAN / NO_PROGRESS / REGRESSED / BUDGET_EXHAUSTED / CONTINUE. The loop continues until one of the terminal verdicts is reached or the budget is exhausted. With `--require-human-final-pass` set, a PASS verdict halts the build at `PASS_PENDING_HUMAN` (emitting a `human_approval_required` lifecycle event) for operator acknowledgement via `/adev:build --resume`.
+18. **When** review returns BLOCK AND `build.max_review_retries === 0` (explicitly disabled by the operator) OR any BLOCK finding lacks a canonical `blocker_id` (legacy reviewer output) **then** the orchestrator writes the `<spec-stem>.blockers.md` sidecar via `lib/blockers-writer.mjs::writeBlockers`, records the review step as `failed` in build state with `verdict: BLOCK` and `error` pointing at the sidecar (legacy case adds advisory code `LEGACY_REVIEWER_OUTPUT`), and stops the build with a manual-revision-required message instructing the operator to revise the spec and resume via `/adev:build --resume`. Sidecar+fail-loud is the documented fallback path; no auto-retry dispatches.
 19. **When** validate returns FAIL and `build.max_retries > 0` and retry budget remains **then** the orchestrator enters a validate→implement retry loop — see Appendix: Retry Policy
 20. **When** `build.max_retries` is 0 or absent in user-config **then** validate FAIL is recorded and the build completes without retry (fail-fast default)
 21. **When** resolving `build.max_retries` or `build.max_review_retries` **then** follow the same hierarchy as persona resolution: local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default. Uses `parseUserConfig()` from `lib/persona.mjs`
@@ -115,14 +106,14 @@ Each step is dispatched as a fresh subagent via the Agent tool with a forked con
 **Full Pipeline** (`--full`):
 
 ```
-Step 0: Specify   — Agent dispatch → subagent invokes /adev:specify --spec <path>
-                     If spec file exists: dispatched with --revise (revision mode, not overwrite)
-                     If spec file does not exist: dispatched in creation mode
-                     Skip if spec exists AND .review.md exists with PASS verdict (spec is already reviewed)
+Step 0: Specify   — Agent dispatch → subagent invokes /adev:specify --spec <path> (creation mode only)
+                     Skip if spec file already exists on disk
+                     Skip if lifecycle log shows specify step completed with PASS or PASS_WITH_NOTES verdict
+                     Skip if .review.md exists with PASS verdict (spec is already reviewed)
 
 Step 1: Review    — Agent dispatch → subagent invokes /adev:review-specs --spec <path>
                      Skip if .review.md exists and is current (PASS verdict)
-                     If BLOCK: enter blocker-fix loop (re-specify → re-review, max build.max_review_retries)
+                     If BLOCK: write <spec-stem>.blockers.md sidecar, fail build with manual-revision-required message
                      STOP if still BLOCK after budget exhausted
 
 Step 2: Plan      — Agent dispatch → subagent invokes /adev:plan --spec <path>
@@ -205,7 +196,7 @@ Valid step names: `specify`, `review`, `plan`, `route`, `implement`, `validate`.
 | `--resume` but no build state file | Print "No interrupted build found" and stop | N/A |
 | Zombie build found on `--resume` | Report stale build with resume command; ask to resume or overwrite | N/A |
 | Review BLOCK (Full Pipeline, no retries) | Stop build, report review findings, save state | N/A |
-| Review BLOCK (Full Pipeline, blocker-fix loop exhausted) | Stop build, report all fix attempts failed, save state | N/A |
+| Review BLOCK (Full Pipeline) | Write `<spec-stem>.blockers.md` sidecar with fenced findings, stop build, save state, instruct user to revise + `--resume` | N/A |
 | Quality gates fail during implement | Stop build for that spec, report failures, save state | N/A |
 | Validation FAIL (max_retries = 0) | Report failures but mark build as completed (fail-fast default) | N/A |
 | Validation FAIL (retry loop exhausted or no progress) | Report final FAIL with retry history, mark build failed | N/A |
@@ -257,13 +248,13 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 - [ ] `--no-route` flag explicitly disables route for the current build
 - [ ] `--dry-run` shows pipeline mode, steps to execute, retry policy, and estimated task counts without executing
 
-### Review Blocker-Fix Loop (Full Pipeline)
-- [ ] When review returns BLOCK, orchestrator extracts blocking issues and dispatches specify subagent with `--revise --blocker-context <findings>`
-- [ ] Re-review is dispatched after revision; loop repeats up to `build.max_review_retries` (default 2)
-- [ ] Loop stops immediately on PASS
-- [ ] Loop stops on no-progress (same blockers after revision)
-- [ ] Loop stops after budget exhaustion; build stops with summary of all fix attempts
-- [ ] `build.max_review_retries = 0` disables auto-fix; BLOCK stops immediately
+### Review Blocker Handling (Full Pipeline)
+- [ ] When review returns BLOCK, orchestrator extracts blocking issues from `.review.md` and serializes them as a fenced markdown block (SEC-1)
+- [ ] Orchestrator writes the fenced block to `<spec-stem>.blockers.md` sidecar (mirrors `<plan-stem>.routing.json` from `/adev:route` per ADR-0012's `<stem>.<purpose>.<ext>` convention)
+- [ ] Build state records the review step as `failed` with `verdict: BLOCK` and `error` field pointing at the sidecar
+- [ ] Build stops with a clear manual-revision-required message naming the sidecar path and the resume command
+- [ ] No auto-dispatch of `/adev:specify` — the broken `--revise --blocker-context` flag combination from prior versions has been removed (issue-527 family; auto-retry requires a future `/adev:specify` revision workflow)
+- [ ] `build.max_review_retries > 0` emits a warning and behaves as 0 (fail-fast); the config slot is reserved for the future enhancement
 
 ### Validation Retry Loop (both modes)
 - [ ] `build.max_retries > 0` enables validate→implement retry loop (see Appendix)
@@ -273,7 +264,7 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 ### Skip Conditions
 - [ ] Plan step skipped if `.plan.md` exists
 - [ ] Full Pipeline Step 0 (Specify) skipped if `.review.md` exists with PASS verdict (spec already reviewed)
-- [ ] Full Pipeline Step 0 dispatches `/adev:specify --revise` when spec exists but has no `.review.md`
+- [ ] Full Pipeline Step 0 records `skipped` (not dispatches `--revise`) when the spec file exists or the lifecycle log shows specify completed with PASS — `/adev:specify` does not carry a `--revise` flag (issue-527)
 - [ ] Review step skipped in Full Pipeline if `.review.md` exists with PASS verdict and is not stale
 
 ### Resume and Stale Builds
