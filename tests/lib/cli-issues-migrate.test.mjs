@@ -1002,3 +1002,224 @@ describe("issues migrate live loop + state file (plan-task 6)", () => {
     }
   });
 });
+
+describe("issues migrate dependency replay (plan-task 7)", () => {
+  function makeIssue(id, overrides = {}) {
+    return {
+      id,
+      title: `${id} title`,
+      status: "open",
+      priority: 2,
+      type: "task",
+      dependencies: [],
+      notes: "",
+      next_action: null,
+      created: "2026-05-19T00:00:00.000Z",
+      updated: "2026-05-19T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it("replayDependencies calls addDependency for each in-scope edge (json → beads)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      // Pre-populate .beads-map.json so source ids map to target (beads) ids.
+      writeFileSync(
+        join(proj, ".context-index", "tasks", ".beads-map.json"),
+        JSON.stringify(
+          {
+            "issue-1": { beadsId: "br-1" },
+            "issue-2": { beadsId: "br-2" },
+            "issue-3": { beadsId: "br-3" },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const sourceIssues = [
+        makeIssue("issue-1"),
+        makeIssue("issue-2", { dependencies: ["issue-1"] }),
+        makeIssue("issue-3", { dependencies: ["issue-1", "issue-2"] }),
+      ];
+      const addDepCalls = [];
+      const targetAdapter = {
+        async addDependency(itemId, depId) {
+          addDepCalls.push({ itemId, depId });
+        },
+      };
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const result = await mod.replayDependencies({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        sourceIssues,
+        targetAdapter,
+      });
+
+      assert.equal(result.replayed, 3);
+      assert.equal(result.skippedEdges.length, 0);
+      assert.equal(addDepCalls.length, 3);
+      // For json → beads, addDependency is called with source ids; the
+      // adapter internally maps via .beads-map.json. The verb passes the
+      // source ids directly (the adapter handles translation).
+      assert.deepEqual(addDepCalls[0], { itemId: "issue-2", depId: "issue-1" });
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("replayDependencies warns and skips edges with out-of-scope endpoints (Behavior 14)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [
+        makeIssue("issue-1"),
+        makeIssue("issue-2", {
+          // depends on issue-99 which is NOT in sourceIssues (out of scope)
+          dependencies: ["issue-1", "issue-99"],
+        }),
+      ];
+      const addDepCalls = [];
+      const targetAdapter = {
+        async addDependency(itemId, depId) {
+          addDepCalls.push({ itemId, depId });
+        },
+      };
+
+      const originalErr = console.error;
+      const stderrBuf = [];
+      console.error = (msg) => stderrBuf.push(String(msg));
+
+      let result;
+      try {
+        const mod = await import("../../lib/cli/issues-migrate.mjs");
+        result = await mod.replayDependencies({
+          projectRoot: proj,
+          source: "json",
+          target: "beads",
+          sourceIssues,
+          targetAdapter,
+        });
+      } finally {
+        console.error = originalErr;
+      }
+
+      // Only (issue-2 → issue-1) is in-scope.
+      assert.equal(result.replayed, 1);
+      assert.equal(addDepCalls.length, 1);
+      assert.equal(result.skippedEdges.length, 1);
+      assert.deepEqual(result.skippedEdges[0], { from: "issue-2", to: "issue-99" });
+
+      // Warning text mentions both source ids.
+      const allErr = stderrBuf.join("\n");
+      assert.ok(
+        allErr.includes("issue-2") && allErr.includes("issue-99"),
+        `expected warning to mention both ids, got: ${allErr}`,
+      );
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("replayDependencies handles beads → json direction via target id lookup", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      // Source = beads with synthetic source ids.
+      const sourceIssues = [
+        makeIssue("br-1"),
+        makeIssue("br-2", { dependencies: ["br-1"] }),
+      ];
+      const addDepCalls = [];
+      // For beads → json, the verb resolves the target id by reading the
+      // target adapter's items and matching by (title, spec_ref) OR by
+      // `original_id: <source-id>` marker in notes. Stub a target adapter
+      // that exposes its list with original_id markers.
+      const targetAdapter = {
+        async list() {
+          return [
+            {
+              id: "issue-100",
+              title: "br-1 title",
+              notes: "original_id: br-1",
+            },
+            {
+              id: "issue-101",
+              title: "br-2 title",
+              notes: "original_id: br-2",
+            },
+          ];
+        },
+        async addDependency(itemId, depId) {
+          addDepCalls.push({ itemId, depId });
+        },
+      };
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const result = await mod.replayDependencies({
+        projectRoot: proj,
+        source: "beads",
+        target: "json",
+        sourceIssues,
+        targetAdapter,
+      });
+
+      assert.equal(result.replayed, 1);
+      assert.equal(addDepCalls.length, 1);
+      // Translated to target ids: issue-101 depends on issue-100.
+      assert.deepEqual(addDepCalls[0], { itemId: "issue-101", depId: "issue-100" });
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("replayDependencies skips edge when target id resolution fails (beads → json)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [
+        makeIssue("br-1"),
+        makeIssue("br-2", { dependencies: ["br-1"] }),
+      ];
+      const addDepCalls = [];
+      // Target adapter list returns ONLY br-2's target — br-1 missing on target.
+      const targetAdapter = {
+        async list() {
+          return [
+            { id: "issue-101", title: "br-2 title", notes: "original_id: br-2" },
+            // br-1 has no target match
+          ];
+        },
+        async addDependency(itemId, depId) {
+          addDepCalls.push({ itemId, depId });
+        },
+      };
+
+      const originalErr = console.error;
+      const stderrBuf = [];
+      console.error = (msg) => stderrBuf.push(String(msg));
+
+      let result;
+      try {
+        const mod = await import("../../lib/cli/issues-migrate.mjs");
+        result = await mod.replayDependencies({
+          projectRoot: proj,
+          source: "beads",
+          target: "json",
+          sourceIssues,
+          targetAdapter,
+        });
+      } finally {
+        console.error = originalErr;
+      }
+
+      assert.equal(addDepCalls.length, 0);
+      assert.equal(result.replayed, 0);
+      assert.equal(result.skippedEdges.length, 1);
+
+      const allErr = stderrBuf.join("\n");
+      assert.ok(allErr.toLowerCase().includes("br-1"), "expected warning to mention missing endpoint");
+    } finally {
+      cleanup(proj);
+    }
+  });
+});
