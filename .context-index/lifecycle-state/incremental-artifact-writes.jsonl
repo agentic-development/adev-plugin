@@ -84,6 +84,11 @@
 {"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS","notes":"All ACs PASS; OVERSIZE per-append guard now wired at lib/partial-artifact.mjs:640","ts":"2026-05-17T22:03:45.155Z"}
 {"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","notes":"all principles respected; only node:fs + node:path used","ts":"2026-05-17T22:03:45.207Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-17T22:04:28.721Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:14:57.056Z","ts":"2026-05-19T20:14:57.057Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:08.745Z","ts":"2026-05-19T20:15:08.746Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:27.771Z","ts":"2026-05-19T20:15:27.772Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:34.701Z","ts":"2026-05-19T20:15:34.702Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:49.841Z","ts":"2026-05-19T20:15:49.841Z"}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-19T19:49:28.663Z","ts":"2026-05-19T19:49:28.664Z"}
 {"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T02:15:24.290Z","ts":"2026-05-20T02:15:24.291Z"}
 {"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T02:18:21.636Z","ts":"2026-05-20T02:18:21.637Z"}

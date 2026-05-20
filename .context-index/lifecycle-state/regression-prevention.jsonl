@@ -27,6 +27,12 @@
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/regression-prevention.plan.md","task_id":"task-6","status":"done","notes":"Brief docs added to CLAUDE.md Git Hooks section","ts":"2026-05-14T21:50:27.274Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"implement","ts":"2026-05-14T21:51:27.565Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"CLAUDE.md","drift_at":"2026-05-17T21:03:49.915Z","ts":"2026-05-18T13:50:21.082Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:14:57.070Z","ts":"2026-05-19T20:14:57.070Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:08.756Z","ts":"2026-05-19T20:15:08.756Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:27.782Z","ts":"2026-05-19T20:15:27.783Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:34.711Z","ts":"2026-05-19T20:15:34.711Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:49.852Z","ts":"2026-05-19T20:15:49.852Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"CLAUDE.md","drift_at":"2026-05-20T00:27:49.803Z","ts":"2026-05-20T00:27:49.804Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:29.058Z","ts":"2026-05-20T02:39:29.058Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:35.038Z","ts":"2026-05-20T02:39:35.038Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:40:46.387Z","ts":"2026-05-20T02:40:46.387Z","diagnostic_warnings":["adev/frontmatter-present"]}
