@@ -610,6 +610,50 @@ async function installProviders(providerNames) {
   }
 }
 
+/**
+ * Apply integrations.session_capture mode by dispatching to the install
+ * helper (`lib/cli/install-session-capture.mjs`). Prints a one-line summary
+ * per action. No-op when the manifest has no `integrations.session_capture`
+ * block (treated as `off`, per Error Cases table).
+ *
+ * Spec: .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
+ * Plan-task: 11, 16
+ */
+async function applySessionCaptureMode() {
+  let dispatch;
+  try {
+    const mod = await import("../lib/cli/install-session-capture.mjs");
+    dispatch = mod.dispatchInstallerByCaptureMode;
+  } catch {
+    return; // module not present — skip silently
+  }
+  try {
+    const projectRoot = process.cwd();
+    const result = await dispatch(projectRoot, PLUGIN_ROOT);
+    if (result.actions.length > 0) {
+      console.log();
+      heading("Session Capture");
+      success(`Mode: ${result.mode}`);
+      for (const a of result.actions) {
+        success(a);
+      }
+      if (result.mode === "off" && result.sessionFiles.length > 0) {
+        console.log();
+        log(`Existing session files (preserved on disk):`);
+        for (const f of result.sessionFiles.slice(0, 10)) {
+          log(`  - ${f}`);
+        }
+        if (result.sessionFiles.length > 10) {
+          log(`  …and ${result.sessionFiles.length - 10} more`);
+        }
+      }
+    }
+  } catch (err) {
+    // Best-effort — never block install.
+    warn(`Session-capture dispatch skipped: ${err.message}`);
+  }
+}
+
 async function cmdInstall() {
   console.log();
   console.log("  adev — Agentic Development Framework");
@@ -659,15 +703,12 @@ async function cmdInstall() {
     for (const item of hookItems) {
       success(item);
     }
-    console.log();
-    log("Note: the post-commit hook auto-generates .context-index/sessions/<date>-<sha>.md");
-    log("      summary files (tracked content — not in the installer's .gitignore list).");
-    log("      Batch them periodically with: git commit -m 'chore(sessions): record YYYY-MM-DD transcripts'");
-    log("      Add .context-index/sessions/ to .gitignore if you'd rather skip the audit surface.");
-    log("      Full details: docs/hooks.md > Git Hooks > post-commit");
   } else {
     log("Git hooks already up to date.");
   }
+
+  // --- Session Capture (integrations.session_capture dispatch) ---
+  await applySessionCaptureMode();
 
   // --- Summary ---
   heading(`Done! Plugin installed — adev v${PLUGIN_VERSION}.`);
@@ -798,15 +839,12 @@ async function cmdUpgrade() {
     for (const item of hookItems) {
       success(item);
     }
-    console.log();
-    log("Note: the post-commit hook auto-generates .context-index/sessions/<date>-<sha>.md");
-    log("      summary files (tracked content — not in the installer's .gitignore list).");
-    log("      Batch them periodically with: git commit -m 'chore(sessions): record YYYY-MM-DD transcripts'");
-    log("      Add .context-index/sessions/ to .gitignore if you'd rather skip the audit surface.");
-    log("      Full details: docs/hooks.md > Git Hooks > post-commit");
   } else {
     log("Git hooks already up to date.");
   }
+
+  // --- Session Capture (integrations.session_capture dispatch) ---
+  await applySessionCaptureMode();
 
   // --- Dual sync targets ---
   await handleDualSyncTargets(providerNames);
