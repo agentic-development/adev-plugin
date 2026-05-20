@@ -454,6 +454,33 @@ When the user selects a backend:
 - **beads:** Check if `br` is on PATH. If yes, add `tasks:\n  backend: beads`. If no, warn: "`br` not found. Install beads_rust first, or use `file` backend." and re-prompt.
 - **skip:** Leave manifest unchanged. Note: "/adev:plan and /adev:implement will skip issue tracking."
 
+### Step 8a: Session Capture preferences
+
+```
+Step 8a/11: Session Capture
+  Session Capture writes a markdown summary of each agent session
+  to .context-index/sessions/<YYYY-MM-DD>-<session-id>.md.
+  Consumers like /adev:retro, /adev:work, /adev:status, and
+  /adev:hygiene read those summaries for cross-session context.
+
+  Modes:
+  - hook         driven by Claude Code's SessionEnd + PreCompact
+                 hooks (recommended for new projects)
+  - post-commit  legacy back-compat path: captures fire from
+                 .githooks/post-commit
+  - off          disable capture entirely
+
+  gitignored:    when true, the installer maintains a paired-marker
+                 block in .gitignore covering .context-index/sessions/
+                 (default true for new projects)
+```
+
+Invoke `adev init prompt session-capture` to drive this step. The verb owns the detection-based defaults (new project → `capture: hook, gitignored: true`; existing project → `capture: post-commit, gitignored: false`), surfaces the CON-8 conflict warning when stored manifest values disagree with detection signals, and writes the chosen values back to `manifest.yaml` under `integrations.session_capture.{capture, gitignored}` while preserving any existing `provider` key verbatim (SA-5).
+
+Re-running `/adev:init` on a project that already has these values reads them as the default-accept; user content outside the installer-managed paired markers in `.githooks/post-commit` and `.gitignore` is never touched.
+
+Spec: `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md`.
+
 ```
 Step 9/11: Sync Targets
   Your constitution will be synced to agent-specific files so
