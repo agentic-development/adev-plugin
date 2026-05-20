@@ -48,7 +48,7 @@ describe('picker error codes', () => {
       PICKER_USER_ABORTED,
       PICKER_MANIFEST_WRITE_FAILED,
       PICKER_CATALOG_PARSE_FAILED,
-    } = await import('../../../lib/cli/picker-errors.mjs');
+    } = await import('../../../lib/extensions/picker-errors.mjs');
 
     assert.strictEqual(PICKER_CATALOG_ENTRY_MISSING, 'PICKER_CATALOG_ENTRY_MISSING');
     assert.strictEqual(PICKER_USER_ABORTED, 'PICKER_USER_ABORTED');
