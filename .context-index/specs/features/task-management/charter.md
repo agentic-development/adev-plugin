@@ -121,7 +121,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | **Tree Walking** | `walkTree(parentId)` returns all descendant items via prefix match | must-have | 3 | — |
 | **Specify Integration** | `/adev:specify` creates a Feature work item bound 1:1 to each Live Spec it authors | should-have | 3 | — |
 | **Closure Cascade Guard** | Closing an item is blocked while unclosed children exist (mirrors existing dependency guard) | should-have | 3 | — |
-| **Backend Migration** | One-shot CLI conversion of the issue board between configured backends (json ↔ beads, json ↔ file). Idempotent via `.beads-map.json` mapping or title-match fallback; supports `--dry-run` and `--include-closed`. Prompts before flipping `tasks.backend` in manifest.yaml. Operationalizes the Consistency quality attribute. | must-have | 4 | implemented |
+| **Backend Migration** | One-shot CLI conversion of the issue board between configured backends (json ↔ beads, json ↔ file). Idempotent via `.beads-map.json` mapping or title-match fallback; supports `--dry-run` and `--include-closed`. Prompts before flipping `tasks.backend` in manifest.yaml. Operationalizes the Consistency quality attribute. | must-have | 4 | validated |
 
 ## Deferred Capabilities
 
