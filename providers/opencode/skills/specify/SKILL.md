@@ -22,6 +22,11 @@ Author a Live Spec that defines a behavioral contract for implementation, scoped
 
 **Workflow axis vs. kind axis (orthogonality).** `--extract`, `--refactor`, `--from-diff`, and `--cross-cutting` are **direct boolean flags** describing the *workflow* used to author the spec. `--kind` is a **separate axis** describing the *artifact shape* the spec takes. The two axes combine independently — any workflow flag may pair with any `--kind` value. No `--mode <name>` flag is introduced; the existing direct-flag syntax is preserved verbatim.
 
+Examples:
+- `/adev:specify --extract --kind artifact` — extract an artifact-kind spec from existing static deliverables
+- `/adev:specify --kind skill` — greenfield-author a skill-kind spec (standard workflow, skill shape)
+- `/adev:specify --refactor --kind refactor` — refactor workflow producing a refactor-kind spec (natural pairing)
+
 Workflow flags remain mutually exclusive with each other. If no workflow flag is supplied, standard mode is used. The `--kind` axis is independent of workflow flag selection.
 
 ## Prerequisites
@@ -118,18 +123,27 @@ Used by all modes (Cross-Cutting loads only constitution and product charter).
 - Any existing specs in the same module directory — to avoid duplication
 - `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
-**Heuristics:** Load module-scoped heuristics for the charter module.
-Derive the module slug from the resolved Feature Charter's module name (the `charter:` field or directory name).
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
+**Heuristics:** Load module-scoped heuristics for the charter module via the CLI:
+
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-When heuristics are present, include them in the working context alongside the charter and existing specs.
-Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+Derive the module slug from the resolved Feature Charter's module name (the `charter:` field or directory name).
+Stdout is either rendered markdown blocks (one per heuristic, separated by blank lines) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), include them in the working context alongside the charter and existing specs and prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+**Domain-Aware Spec Template:** After loading context, resolve the active domain via the CLI. This provides the resolved domain name needed to pick the correct spec template:
+
+```bash
+adev domain resolve --module <charter-module> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'). Stdout is a single JSON object whose `domain.resolved_domain` field names the domain.
+
+Load the domain spec template from `templates/domains/<resolved_domain>/spec-template.md` under the plugin root. If the file does not exist, fall back to `${CLAUDE_PLUGIN_ROOT}/templates/spec-template.behavioral.md`.
+The loaded template defines the spec's section structure. Use the template's H2 headings and table columns as the structure for this spec. Do not use hardcoded section names -- the template is the single source of truth for section structure.
 
 ## Shared: Frontmatter
 
@@ -152,15 +166,47 @@ created: <today's date YYYY-MM-DD>
 → Keep milestone "v1", or override? (enter to confirm / type new value)
 ```
 
+**Advisory milestone validation:** After the milestone value is confirmed (inherited or overridden), call `warnIfMilestoneUndefined(projectRoot, name)` from `lib/milestones.mjs`. If it returns a warning string, print it to the user. This is advisory only — never block spec creation based on this check.
+
 ## Shared: Summary Template
 
 After writing any spec, output the path, mode-specific stats (see each mode), and next steps: review the spec, `/adev:review-specs`, or write another spec.
+
+## Shared: Lifecycle Events
+
+Every mode (Standard, Extract, Refactor, From-Diff, Cross-Cutting) MUST emit a lifecycle entry event before writing any spec content and a matching exit event after the spec is saved. Without these events, the lifecycle log has no record of the specify step and `/adev:review-specs` blocks with `step "review" requires prior step "specify" to be completed`.
+
+**Entry event** (emit before Step 1 / earliest spec-related action):
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status started
+```
+
+**Exit event** (emit at the end of the Summary step):
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+```
+
+The `--verdict PASS` is required — downstream gates require the prior step to have completed with PASS or PASS_WITH_NOTES. The specify step has no failure path that reaches the Summary step (success implies the spec was written, status set to `review-pending`, and the Feature work item created or skipped), so success implies PASS. Failure paths emit `--status failed` separately and do not reach the exit emission.
+
+For `--cross-cutting` mode, the spec path is `.context-index/specs/cross-cutting/<slug>.spec.md` rather than `.context-index/specs/features/<module>/<slug>.spec.md`. The events are otherwise identical.
 
 ---
 
 ## Standard Mode (default)
 
 The primary path. Takes a Feature Charter and produces a Live Spec for one capability.
+
+### Step 0: Lifecycle entry event
+
+Before any spec authoring, emit a `lifecycle_step` event so the projection's `currentStep` reflects the active phase:
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status started
+```
+
+This skill does NOT carry severity stamping, gate adoption, or issue board adoption — it only emits step entry/exit. Charter capability-map mutation (acknowledged dual-write in the charter's Out-of-Scope) remains a markdown edit and is not migrated here.
 
 ### Step 1: Resolve Charter
 
@@ -224,12 +270,12 @@ import { isValidKind } from '<ADEV_ROOT>/lib/kinds.mjs';
 
 if (!isValidKind('spec', kind)) {
   // Reject with the closed-enumeration list and stop.
-  // Message must list the 6 valid kinds:
+  // Message must list the 6 valid kinds so the user can correct their invocation:
   //   "Invalid --kind 'xxx'. Valid options: behavioral, refactor, action, skill, integration, artifact."
 }
 ```
 
-If `isValidKind('spec', kind)` returns `false`, reject the invocation with a message naming the 6 valid options and halt.
+If `isValidKind('spec', kind)` returns `false`, reject the invocation with a message naming the 6 valid options and halt. Do not proceed to spec authoring.
 
 **If `--kind` was NOT supplied:** present the ask-first menu and have the user pick:
 
@@ -246,11 +292,19 @@ What kind of spec is this?
 → Pick a number or name (default: behavioral)
 ```
 
-**Strict-on-write semantics.** The kind axis is required at write time. If the user presses enter without picking a value, re-prompt with `"Kind is required for new specs. Pick a number or name."`. Continue re-prompting until a valid kind is supplied. **There is no silent defaulting at write time** — the chosen value is written verbatim to frontmatter.
+**Strict-on-write semantics.** The kind axis is required at write time. If the user presses enter without picking a value, re-prompt with:
+
+```
+Kind is required for new specs. Pick a number or name.
+```
+
+Continue re-prompting until a valid kind is supplied. **There is no silent defaulting at write time** — the chosen value is written verbatim to frontmatter. (Read-time defaulting applies only to legacy artifacts authored before this taxonomy landed; new artifacts must carry an explicit `kind:`.)
+
+After resolution, the `kind` variable is available for Step 5's `resolveTemplate('spec', kind, domain)` call.
 
 ### Step 4: Interactive Spec Authoring
 
-Guide the user through each section. Do not dump a blank template. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
+Guide the user through each section defined in the loaded domain template. Do not dump a blank template. Use the template's section names and structure -- do not substitute or rename sections. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
 
 **Behavioral Contract:**
 Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors in the **When...then** format:
@@ -317,21 +371,42 @@ infra_requirements:
 
 ### Step 5: Write the Spec
 
+**Incremental authoring (`.partial` pattern).** Per `incremental-artifact-writes.spec.md`, the spec body MUST be authored incrementally to `<spec-path>.partial` and atomically renamed to `<spec-path>` on completion. The first authored chunk MUST begin with a `partial_schema: spec@1` marker placed in an HTML comment:
+
+```markdown
+<!-- partial_schema: spec@1 -->
+
+---
+... frontmatter ...
+---
+
+# Live Spec: ...
+```
+
+Cadence: one section (H2 boundary — Behavioral Contract, System Constitution Reference, Module Impact Map, Integration Points, Acceptance Criteria, etc.) per append. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
+
+**Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE).** Before each append, run `adev partial check-size --artifact <spec-path>` to verify the in-progress partial has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior spec size, 50 KB)). Exit code 2 with `PARTIAL_ARTIFACT_OVERSIZE` is a hard stop: do NOT continue appending, do NOT commit the rename, preserve the partial for inspection, surface the error.
+
+Before writing, check for a prior `.partial`: run `adev partial inspect --artifact <spec-path>.partial`. If `partial_exists` is true and the schema marker is `spec@1`, offer the user **resume / discard / abort**. In `--auto` mode, default to resume; on a schema-mismatched marker, discard with a logged warning via `adev partial discard --artifact <spec-path>.partial --spec <spec-path>`.
+
+After writing the final section, the atomic rename `commit` step finalises the artifact. Use the CLI verb to drive this — SKILL.md stays markdown-only per the `cli-driver-surface` charter (no inline Node).
+
 1. Generate slug: lowercase, kebab-case, no special characters.
-2. **Resolve the template via `resolveTemplate('spec', kind, domain)`.** Call `resolveTemplate` from `<ADEV_ROOT>/lib/template-resolution.mjs`, passing the kind selected in Step 3.5 as the second argument and the active domain as the third. Use the returned absolute path as the template body. **Do not hardcode a template filename.**
+2. **Resolve the template via `resolveTemplate('spec', kind, domain)`.** Call `resolveTemplate` from `<ADEV_ROOT>/lib/template-resolution.mjs`, passing the kind selected in Step 3.5 as the second argument and the active domain from `resolveDomain(...)` (loaded in Step 2) as the third. Use the returned absolute path as the template body. **Do not hardcode a template filename.** This replaces the previous fall-back-to-`spec-template.behavioral.md` behavior for new specs.
 
    ```javascript
    import { resolveTemplate } from '<ADEV_ROOT>/lib/template-resolution.mjs';
    const templatePath = await resolveTemplate('spec', kind, domain.resolved_domain ?? null);
+   const templateBody = readFileSync(templatePath, 'utf8');
    ```
 
    **Error handling:**
-   - If `resolveTemplate` throws `TEMPLATE_NOT_FOUND`: fail with a diagnostic listing the attempted paths (the error's `attempted` array).
-   - If `resolveTemplate` throws `UNSAFE_TEMPLATE_PATH`: fail with the offending path (the error's `offendingPath` field). Do not silently fall back.
-   - If `resolveTemplate` throws `INVALID_KIND` or `INVALID_LAYER`: re-run Step 3.5.
+   - If `resolveTemplate` throws `TEMPLATE_NOT_FOUND`: fail with a diagnostic listing the attempted paths (the error's `attempted` array). Suggest checking that the bundled `templates/spec-template.<kind>.md` exists or that the domain extension provides the matching override.
+   - If `resolveTemplate` throws `UNSAFE_TEMPLATE_PATH`: fail with the offending path (the error's `offendingPath` field). This indicates a symlink or path-traversal escape and must be reported to the user verbatim — do not silently fall back.
+   - If `resolveTemplate` throws `INVALID_KIND` or `INVALID_LAYER`: re-run Step 3.5; this indicates the kind value was corrupted between resolution and write.
 
 3. Set frontmatter per shared section (including milestone inheritance). Additionally set:
-   - `kind: <chosen value>` — **explicit, no defaulting at write time.** Write the value resolved in Step 3.5 verbatim.
+   - `kind: <chosen value>` — **explicit, no defaulting at write time.** Write the value resolved in Step 3.5 verbatim. Specs authored after Layer 1 must carry an explicit `kind:` field — read-time defaulting applies only to legacy specs that pre-date this taxonomy.
    - `revision: 1`
    - `charter-revision: <the parent charter's current revision value>`
    - `updated: <today's date YYYY-MM-DD>`
@@ -342,6 +417,9 @@ infra_requirements:
 5. **Update charter Capability Map:** Read the parent charter, find the capability row that this spec covers in the Capability Map table, and update its `Status` column to `specified`.
 
 ### Step 5.5: Update Spec Status
+
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time.
 
 After saving the spec:
 
@@ -405,6 +483,8 @@ Assemble the Feature work item fields:
 
 Call `getIssueManager(manifest).create({ title, type: "feature", spec_ref, next_action, parent_id, notes })` (or update if the idempotency check in 5.6-2 found an existing Feature).
 
+**Board granularity invariant.** The Feature work item carries `spec_ref` only. It MUST NOT carry `planRef` or `planTask` — those fields belong to the lifecycle event log (`plan_task` events), not to the issue board. The `JsonAdapter` rejects `create()` calls that include both `planRef` and `planTask` with `BOARD_GRANULARITY_VIOLATION`. See `agent-reliable-state-artifacts/charter.md`.
+
 If the issue board adapter throws, log the error to the summary output but **do not block** spec completion — the spec is already written and status is already `review-pending`.
 
 #### 5.6 — Mode Variants
@@ -419,11 +499,21 @@ If the issue board adapter throws, log the error to the summary output but **do 
 
 Output path, charter, status, counts of behaviors/error cases/tasks/acceptance criteria, and next steps. Include any notes from Step 5.6 (Feature created/updated, skipped, or failed).
 
+Emit the lifecycle exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:review-specs::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `specify` step has no failure path that reaches this point (the spec was written, status set to `review-pending`, Feature work item created or skipped), so success implies PASS.
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+```
+
 ---
 
 ## Extract Mode (`--extract`)
 
 For brownfield codebases. Reads existing source code and produces a "snapshot spec" that captures current behavior. Documents what IS, not what SHOULD BE.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
 
 ### Step 1: Resolve Charter
 
@@ -486,6 +576,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 5: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Extracted from: <N> files (<N> lines analyzed)
@@ -505,6 +597,10 @@ Output the shared summary template with these stats:
 ## Refactor Mode (`--refactor`)
 
 Produces a refactoring spec with current state analysis, target state definition, a step-by-step migration path, and invariants.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
 
 ### Step 1: Resolve Charter
 
@@ -595,7 +691,7 @@ Ask for domain-specific invariants:
 
 Define the target behavior (what the system does AFTER refactoring). This gives `/adev:validate` something to verify against.
 
-1. **Resolve kind first** (apply Step 3.5 of Standard mode): if `--kind` was not passed, prompt with the ask-first menu. The natural pairing for a refactor workflow is `--kind refactor`, but any kind is permitted.
+1. **Resolve kind first** (apply Step 3.5 of Standard mode if not already supplied): if `--kind` was not passed, prompt with the ask-first menu. The natural pairing for a refactor workflow is `--kind refactor`, but any kind is permitted — the workflow and kind axes are orthogonal.
 2. **Resolve the template via `resolveTemplate('spec', kind, domain)`** (see Standard mode Step 5). Do not hardcode the template filename. Handle `TEMPLATE_NOT_FOUND` and `UNSAFE_TEMPLATE_PATH` the same way Standard mode does.
 3. Set frontmatter per the shared section with `mode: refactor` AND an explicit `kind: <chosen value>` field (no defaulting).
 4. Save to `.context-index/specs/features/<module>/<spec-slug>.spec.md`.
@@ -605,6 +701,8 @@ Define the target behavior (what the system does AFTER refactoring). This gives 
 After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
 
 ### Step 8: Summary
+
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
 
 Output the shared summary template with these stats:
 ```
@@ -623,6 +721,10 @@ Output the shared summary template with these stats:
 ## From-Diff Mode (`--from-diff`)
 
 Generates a retroactive Live Spec from a git diff or PR. Useful for documenting work done before adev was adopted, or hotfixes that skipped the spec milestone.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
 
 ### Step 1: Identify the Diff
 
@@ -693,6 +795,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 5: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Diff source: <source>
@@ -709,6 +813,10 @@ Output the shared summary template with these stats:
 ## Cross-Cutting Mode (`--cross-cutting`)
 
 Produces specs for concerns spanning multiple features: authentication, error handling, API versioning, logging, etc.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode. Note that for cross-cutting specs, the `--spec` path is `.context-index/specs/cross-cutting/<slug>.spec.md`, not `.context-index/specs/features/<module>/<slug>.spec.md`.
 
 ### Step 1: Prerequisites
 
@@ -763,6 +871,8 @@ Same process as standard mode (behavioral contract, constitution reference, task
 After saving the spec, update its status to `review-pending` (same as Step 5.5 in standard mode).
 
 ### Step 6: Summary
+
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`). The spec path is `.context-index/specs/cross-cutting/<slug>.spec.md`.
 
 Output the shared summary template with these stats:
 ```
@@ -823,3 +933,18 @@ Before creating a spec, check existing specs in the target directory:
 
 → Your choice?
 ```
+
+## API reference
+
+Lifecycle event log:
+
+- `reportStep(projectRoot, specPath, { step: "specify", status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `lifecycle_step` event at skill entry (`status: "started"`) and exit (`status: "completed"`). This skill does not carry severity, gate, or board adoption beyond `reportStep`.
+
+Issue board:
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter for Feature work-item binding (Step 5.6). The Feature carries `spec_ref` only; `planRef` / `planTask` belong to the lifecycle log.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

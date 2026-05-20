@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Well-specified contract with explicit error codes; mirrors the existing `lib/build-state.mjs` atomic-write exemplar within a single new file pair."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Mechanical CLI verb wiring on top of the t1 lib; follows the established `cli/index.mjs` verb-dispatch pattern with explicit error-code surface."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Symmetric CLI reader verb; spec enumerates all four error codes and the dispatch contract — pure pattern application of the t1 reader."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Detector must compose a new working-tree branch with the existing per-task M-commit history check across three new git-fixture types; medium complexity warrants a mid-point review after fixtures and tests are written."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Single-file SKILL.md edit guarded by the no-inline-node pre-commit hook; spec dictates the exact step semantics and Red Flag tightening."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Single-file SKILL.md replacement of inline-parsing prose with a CLI-verb call; spec enumerates all four error codes and the no-fallback rule."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Single-spec text edit with exact strings dictated by ADR-0012 and the test assertions; mechanical and low-blast."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Mechanical ADR frontmatter flip plus footnote citing the spec; the three gates are satisfied by prior tasks, leaving no creative work."
+    }
+  ]
+}

@@ -10,6 +10,7 @@ You are a consistency analyst reviewing a Live Spec for naming drift, pattern vi
 4. **Domain Model Alignment:** Do entity definitions in this spec align with the same entities defined in other specs or the product charter? Flag conflicting definitions, missing attributes, or divergent invariants.
 5. **Terminology:** Are domain terms used consistently? If the product charter calls it "workspace" but this spec calls it "organization," flag the drift.
 6. **External Reference Compliance:** If external references are provided, verify that spec interface contracts do not conflict with external reference contracts. Flag mismatches in API shapes, naming conventions, or protocol expectations defined in external standards.
+7. **Cross-Cutting Spec Compliance:** Does this spec respect contracts defined in cross-cutting specs under `.context-index/specs/cross-cutting/`? Flag mismatches in naming, protocol, or behavioral contract between this spec and any cross-cutting spec it touches or depends on. Cite the conflicting cross-cutting spec by path and section. This scope migrated from `/adev:validate` Check 6 per `check-set-restructure.spec.md`.
 
 ## Input
 

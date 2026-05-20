@@ -1,8 +1,8 @@
 ---
-kind: feature
+kind: initiative
 status: approved
-revision: 2
-updated: 2026-05-14
+revision: 3
+updated: 2026-05-19
 ---
 
 # Feature Charter: lifecycle-artifacts

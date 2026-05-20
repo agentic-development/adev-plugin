@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Well-specified H2 section matching with detailed behaviors and test expectations; existing overlay.mjs provides a close pattern but string-based section parsing is a novel composition."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Markdown-only change replacing hardcoded reviewer loading with domain-aware call; follows same wiring pattern as Tasks 8-9."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Markdown-only change replacing hardcoded gate loading with domain-aware call; follows same wiring pattern as Tasks 8-10."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Markdown change for verification config wiring with 3 type branches (visual, output, flow); slightly more complex than other wiring tasks due to type-dependent behavior."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Modifies hook code files (not just markdown) across hooks/ and lib/ directories; requires identifying which hooks call resolveGateConfig() and updating their call sites."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Markdown changes to 2 skill files adding domain-aware test config loading; follows established wiring pattern with clear spec behaviors."
+    },
+    {
+      "task_id": "t15",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Adding freeze-based invariant tests to existing test files; clear spec requirement with established Object.freeze test pattern from Tasks 1-6."
+    },
+    {
+      "task_id": "t16",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Large integration test spanning all 6 merge modules plus refactored modules; requires understanding the full config pipeline and exercising I/O paths with temp fixtures."
+    },
+    {
+      "task_id": "t17",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Documentation-only changes to 2 docs files with clear spec requirements on what to document; no code changes, no test risk."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Detailed merge behaviors with provenance tracking, merge_strategy, and defaults; overlay.mjs and review-config.mjs provide strong reference patterns."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Small scope with explicit ID-based merge, argv-list enforcement, and severity defaults; follows same merge pattern as Task 2 with simpler logic."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Well-specified validation/normalization with explicit type enum, pattern rejection rules, and tool validation; follows established merge module pattern."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Simple extraction function returning file_exclusions and bash_passthrough arrays; mechanical pattern application with no governance layer."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Simple extraction function returning permitted_tools, max_test_file_size, and skip_patterns; mechanical pattern application with no governance layer."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Modifies 4 existing modules across 2 directories with coupled refactoring; provenance tracking migration and API parameter changes require careful surgery on existing code."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Markdown-only change adding domain-aware startup instructions; clear spec behavior with explicit loading steps and example code."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Markdown-only change identical in pattern to Task 8; clear spec behavior for spec overlay loading."
+    }
+  ]
+}

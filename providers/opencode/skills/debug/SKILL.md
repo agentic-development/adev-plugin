@@ -63,23 +63,21 @@ Six phases. Complete each before proceeding to the next.
    - Run `git diff` and `git log --oneline -10` in the affected area.
    - New dependencies, config changes, environmental differences.
 
-4. **Heuristics:** Load module-scoped heuristics for the buggy file's module.
+4. **Heuristics:** Load module-scoped heuristics for the buggy file's module via the CLI:
+
+   ```bash
+   adev heuristics retrieve --module <module-slug> --tier summary --format text \
+       [--keyword <token>]...
+   ```
+
    Derive keywords from the error message or bug description: split on whitespace and punctuation,
    filter to tokens of 3+ characters, remove common stop words (the, and, is, was, not, for, with,
-   from, this, that, are, has, have, its, etc.), take the first 5 unique tokens as keywords.
-   Example: `"ERR_FS_CP_EINVAL: src and dest cannot be the same"` → `['src', 'dest', 'same', 'err', 'einval']`.
-   If fewer than 3 tokens are extracted, pass an empty keywords array and fall back to module-only retrieval.
-   **Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix.
-   Run inline Node.js:
-   ```javascript
-   const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-   const entries = await retrieveHeuristics(projectRoot, moduleSlug, { tier: 'summary', keywords });
-   const rendered = entries.map(renderHeuristic).join('\n\n');
-   ```
-   Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `moduleSlug` is the module owning
-   the buggy file, and `keywords` are the tokens derived above.
-   If the call fails or returns empty, proceed without heuristics — non-blocking.
-   When heuristics are present, prepend: "The following heuristics are lessons learned from past work
+   from, this, that, are, has, have, its, etc.), take the first 5 unique tokens as keywords. Pass each as a `--keyword` flag.
+   Example: `"ERR_FS_CP_EINVAL: src and dest cannot be the same"` → `--keyword src --keyword dest --keyword same --keyword err --keyword einval`.
+   If fewer than 3 tokens are extracted, omit `--keyword` entirely and fall back to module-only retrieval.
+
+   Stdout is either rendered markdown blocks (one per heuristic, separated by blank lines) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
+   When heuristics are present (output is not `__NONE__`), prepend: "The following heuristics are lessons learned from past work
    in this module. Use them as guidance, not as hard rules."
 
 ### Phase 1.5: Infrastructure Preflight
@@ -96,19 +94,15 @@ After reproducing the issue and loading heuristics, check whether the relevant s
 
 3. **Inference:** If neither tier 1 nor tier 2 produced a spec, determine the module from the buggy file's path via `manifest.yaml` modules. Glob specs in `.context-index/specs/features/<module>/` (cap at 10 spec files; validate each path is within the project root). Check each spec for `infra_requirements` in its frontmatter.
 
-**Invocation:** Run inline Node.js:
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: 10, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> [--plan <planPath>] [--timeout 10] [--no-infra]
 ```
 
-Where `<ADEV_ROOT>` is the resolved absolute plugin root path.
+Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
-**For tiers 1 and 2 (explicit spec/plan):** If `report.passed === false`, display the formatted report and block:
+**For tiers 1 and 2 (explicit spec/plan):** If the report has `passed === false` (exit 2), display the formatted report and block:
 
 ```
 Infrastructure Preflight: FAILED
@@ -154,6 +148,7 @@ This is the key difference from generic debugging. Before diving into code, load
 2. **Check specs for expected behavior.**
    - Read the relevant Feature Charter at `.context-index/specs/features/<module>/charter.md`.
    - Read the Live Spec if one exists for the current task.
+   - For spec status and prior reviewer/validator outcomes, call `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read `state.steps.review` for the latest review verdict and notes, and `state.steps.validate` for prior validator findings. Do NOT parse `.review.md` or `.validate.md` files directly.
    - Compare the observed behavior against the spec's behavioral contract.
    - The bug may be "working as specified" (spec problem, not code problem).
 
@@ -279,6 +274,20 @@ This is the key difference from generic debugging. Before diving into code, load
    - No other tests broken.
    - Issue actually resolved end-to-end.
 
+4. **Record the debug intervention in the lifecycle log.**
+
+   If the bug is tracked by a spec, emit a `debug_intervention` event so the projection captures the intervention (replaces any prior "append to debug log" prose):
+
+   ```javascript
+   import { reportIntervention } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+   reportIntervention(projectRoot, specPath, {
+     kind: "debug",
+     note: "<≤200-char operator summary of root cause and fix>",
+   });
+   ```
+
+   Severity is stamped at write time by the lib. `notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; ≤200 chars in practice).
+
 ### Phase 6: Validate and Record
 
 **Goal:** Confirm the fix is complete and capture any architectural insight.
@@ -300,17 +309,17 @@ This is the key difference from generic debugging. Before diving into code, load
 4. **Update issue board with confidence.**
    - Read `tasks.backend` from `manifest.yaml`. If not configured, skip.
    - Search the issue board for a bug issue matching the error description or spec reference (by title keyword match or `spec_ref`).
-   - If a matching issue is found and quality gates pass (step 1 above), update it:
+   - If a matching issue is found and quality gates pass (step 1 above), compute the confidence-annotated note via the CLI:
+
      ```bash
-     node --input-type=module -e "
-     import { formatConfidenceNote } from '<ADEV_ROOT>/lib/reality-check.mjs';
-     const note = formatConfidenceNote('Bug fixed', 'high', { testsPass: true, specPath: '<specPath>' });
-     console.log(JSON.stringify({ note }));
-     "
+     adev verify format-note --action "Bug fixed" --confidence high \
+                             --spec-path <specPath> --tests-pass true
      ```
+
+     The verb wraps `formatConfidenceNote` and emits a single JSON object `{note}` on stdout.
    - Update the issue: `update(id, { status: "closed", notes: "<confidence note>" })`
    - Only close with HIGH confidence (quality gates pass + fix verified against spec). If gates have not been run or fail, add a note but do not close: `update(id, { notes: "Fix applied but not yet validated — run /adev:validate" })`
-   - If `lib/reality-check.mjs` fails to import, skip this step (non-blocking).
+   - If the CLI invocation fails (e.g., `adev verify` not yet available in this environment), skip this step (non-blocking).
    - Report to user: "Updated issue `<id>` — closed with high confidence (tests pass, spec compliant)."
 
 ### Phase 7: Documentation Impact
@@ -373,3 +382,23 @@ If you catch yourself thinking any of these, STOP and return to Phase 1:
 | **5. Fix** | Create failing test, implement single fix, verify | Root cause resolved, tests pass |
 | **6. Validate** | Run quality gates, check spec compliance, consider ADR | Fix is complete, insight captured |
 | **7. Doc Impact** | Check if fix changes spec/charter/ADR assumptions | Documentation updated or confirmed unchanged |
+
+## API reference
+
+Lifecycle event log:
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection (`state.steps.review`, `state.steps.validate`, `state.interventions`). Replaces filesystem inspection of `.review.md` / `.validate.md` artifacts.
+- `reportIntervention(projectRoot, specPath, { kind: "debug", note })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `debug_intervention` event in Phase 5 step 4. Severity is stamped at write time.
+
+Issue board (Phase 6 step 4 update):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Reality check (confidence scoring before closing):
+
+- `formatConfidenceNote` and `verifyIssueCompleted` from `<ADEV_ROOT>/lib/reality-check.mjs`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

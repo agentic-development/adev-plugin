@@ -1,2 +1,3 @@
 {"event":"code_drift_detected","drift_source":"lib/repomap/index.mjs","drift_at":"2026-05-17T18:49:30.028Z","ts":"2026-05-18T13:50:21.102Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"package.json","drift_at":"2026-05-19T19:39:59.285Z","ts":"2026-05-19T19:39:59.285Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".gitignore","drift_at":"2026-05-20T01:47:50.097Z","ts":"2026-05-20T01:47:50.097Z","diagnostic_warnings":["adev/frontmatter-present"]}

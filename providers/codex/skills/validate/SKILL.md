@@ -1,6 +1,6 @@
 ---
 name: adev:validate
-description: "Post-implementation validation with 13 ordered checks including lifecycle reconciliation and browser-based visual verification for UI. Fail-fast on quality gates. Structured PASS/FAIL report with file references. Routes domain-specific review to specialists when applicable. Use when the user says 'validate the implementation', 'check if it works', 'run validation', 'verify the feature', or after implementation is complete and needs quality assurance. In Codex, invoke with $adev:validate"
+description: "Post-implementation validation with a trimmed code-time check set (quality gates, source manifest, code-drift advisory, spec compliance with scope-expansion sub-finding, constitution compliance with evidence-citation contract, optionally governance boundaries and transition gates, and visual verification for UI implementations). Fail-fast on quality gates. Structured PASS/FAIL report with migration-orientation footer pointing users to /adev:hygiene, /adev:reconcile, and /adev:review-specs for relocated concerns. Use when the user says 'validate the implementation', 'check if it works', 'run validation', 'verify the feature', or after implementation is complete and needs quality assurance. In Codex, invoke with $adev:validate"
 ---
 
 # Validate Implementation
@@ -21,6 +21,19 @@ Before starting, verify:
 1. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
 2. **Spec exists.** The target Live Spec must exist and be readable.
 3. **Implementation exists.** The files referenced in the spec or plan must exist. If the spec references files that do not exist, the implementation is incomplete. Report this immediately without running the full check suite.
+
+### Step 0a: Implement-step gate (FIRST action)
+
+Before any validation work, gate on the prior step via the lifecycle log, then emit the step-started event:
+
+```bash
+adev gate require --skill validate --spec <spec-path>
+adev report --type step --spec <spec-path> --step validate --status started
+```
+
+In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if the `implement` step did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+
+Emit a matching exit event in the new "Step Z: Emit lifecycle completion" section after the validation report is written. The exit event carries the aggregate verdict (PASS / PASS_WITH_NOTES / FAIL) computed from the consolidated check results.
 
 ## Workspace-Aware Validation Mode
 
@@ -47,17 +60,13 @@ After verifying prerequisites, check whether the spec declares `infra_requiremen
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Invocation:** Run inline Node.js:
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> [--plan <planPath>] [--timeout N] [--no-infra]
 ```
 
-Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (or `null` if not provided).
+Where `<specPath>` is the `--spec` argument and `<planPath>` is the `--plan` argument (omit `--plan` when not provided). Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
 If `report.passed === false`, display the formatted report and block:
 
@@ -73,31 +82,44 @@ If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure prefli
 
 ## Step 0: Load Check Registry
 
-**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module.
-Derive the module slug from the spec's `charter:` frontmatter field.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, charterModule, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
+**Heuristics:** Before loading the check registry, load module-scoped heuristics for the spec's charter module via the CLI:
+
+```bash
+adev heuristics retrieve --module <charter-module> --tier summary --format text
 ```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-When heuristics are present, include them in the validation context so checks can reference learned patterns.
-Prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
-Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader:
+Derive the module slug from the spec's `charter:` frontmatter field. Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
 
-- Reads bundled defaults from `templates/validate/defaults.yaml` (12 entries covering Check 1.5 + Checks 2–12). Check 1 is not in this registry; it continues to be sourced from `governance/gates.yaml`.
-- Overlays `.context-index/governance/validate.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
-- Validates each entry's `kind` (quality-gate | subagent-review | deterministic-check | observational).
-- For `kind: quality-gate`: rejects string-form `command`; rejects any argv token containing `{{...}}`, `$VAR`, `${VAR}`, or `%VAR%` interpolation; requires an explicit `profile` (no implicit default — authors must positively acknowledge that profile permissions scope the adapter's tool surface, NOT the spawned subprocess).
-- For `kind: observational`: rejects `severity: error`.
-- For `kind: deterministic-check`: rejects project-registered entries (only bundled ids allowed).
+When heuristics are present (output is not `__NONE__`), include them in the validation context so checks can reference learned patterns and prepend: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+**Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks via the CLI:
+
+```bash
+adev domain load-gates --module <module-slug> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'), loads `templates/domains/<domain>/gates.yaml`, and merges `.context-index/governance/gates.yaml` on top (governance wins on `id` conflict). Stdout is a single JSON object:
+
+```json
+{ "domain": { "resolved_domain": "...", "source_level": "..." }, "gates": [...], "warnings": [...] }
+```
+
+Log any warnings from the `warnings` field. The `gates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in. Gate commands continue to execute via `execFile` (no shell interpolation).
+
+Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader follows the **single-source model** (per `validate-config-single-source.spec.md`):
+
+- **Preflight (missing-file check):** If `.context-index/governance/validate.yaml` does not exist, `loadValidateConfig` throws `MISSING_VALIDATE_CONFIG` with the message: `"No governance/validate.yaml found. Run /adev:init to scaffold the validate configuration for your domain."` The skill catches this only to surface the message and stop — no checks dispatch, no report is written.
+- **Direct read:** Loads `.context-index/governance/validate.yaml` directly. There is no bundled-defaults file, no overlay merge. The project file is the entire registry. It was scaffolded at `/adev:init` time from `templates/domains/<domain>/validate.yaml`.
+- **Id allowlist (SEC-1):** Every entry's `id` is validated against `^[a-z0-9][a-z0-9._-]*$` BEFORE any `plugin:` URI construction. Non-conforming ids fail load with `INVALID_CHECK_ID` and the offending value is stripped to allowlist chars + truncated to 64 chars in the diagnostic.
+- **Prompt URI resolution:** For each entry's `prompt` field, the loader resolves `plugin:validate/checks/<id>.md` to `<pluginRoot>/skills/validate/checks/<id>.md` with path-containment and absolute/cross-plugin guards. Project-relative paths resolve under `.context-index/`. The resolved absolute path is stored on the check object as `resolvedPromptPath`.
+- **Per-kind validation:** Validates each entry's `kind` (`quality-gate` | `subagent-review` | `deterministic-check` | `observational`).
+  - `quality-gate`: rejects string-form `command`; rejects any argv token containing `{{...}}`, `$VAR`, `${VAR}`, or `%VAR%` interpolation; requires an explicit `profile` (no implicit default — authors must positively acknowledge that profile permissions scope the adapter's tool surface, NOT the spawned subprocess).
+  - `observational`: rejects `severity: error`.
+  - `deterministic-check`: only the bundled allowed-id set (`validate.check-1.5-source-manifest`) may use this kind; other ids fail with `DETERMINISTIC_PROJECT`.
 - Resolves each check's profile via `lib/profiles/` (MCP-missing fails load; required env missing fails load).
 - Topologically sorts by `after` with lex-by-id tie-break; cycles fail load; unknown `after` ids emit WARN.
 
-Abort on any loader error. Warnings surface in the report header.
+Abort on any loader error. Warnings surface in the report header. Check 1 (quality gates) is not in this registry; it continues to be sourced from `governance/gates.yaml`.
 
 ## Execution Strategy
 
@@ -112,18 +134,18 @@ Abort on any loader error. Warnings surface in the report header.
 
 **Project quality-gate checks:** invoke `runQualityGate(check, { env, redactor, cwd })` from `lib/governance/quality-gate.mjs`. The runner uses `execFile` with `shell: false`; the subprocess environment consists of the profile-resolved env plus a minimal startup whitelist (`PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TMPDIR`, `USER`, `LOGNAME`). `LD_PRELOAD`, `NODE_OPTIONS`, `PYTHONPATH`, `SSL_CERT_FILE`, and any other invoking-shell var is NOT inherited. stdout/stderr flow through the profile's redactor before report/display/dispatch-record use. Combined output is capped at 64 KiB with a tail-truncation marker.
 
-**Bundled `internal: true` subagent-review checks** (Checks 2–11): continue to execute via the per-check prose below. Each check's section begins with an `enabled` guard — if the registry marked it disabled, the check is skipped without running.
+**Subagent-review checks** (Checks 2, 4, 8, 9, 11): dispatch the subagent with the prompt body loaded from each check's `resolvedPromptPath` (resolved at registry-load time from the `plugin:validate/checks/<id>.md` URI). Each check's section begins with an `enabled` guard — if the registry marked it disabled, the check is skipped without running.
 
-**Check 12 (heuristic extraction) as observational**: never contributes to verdict per Behavior 9.
+## The Checks
 
-## The 12 Checks
+> **Source of truth for per-check prompts:** As of `validate-config-single-source.spec.md`, the substantive prompt body for each subagent-review / deterministic-check / observational check lives in `skills/validate/checks/<id>.md`, referenced from the registry via the `plugin:validate/checks/<id>.md` URI. The sections below describe each check's purpose, orchestration semantics, and execution guards. The dispatch loop reads the prompt from the registry entry's `resolvedPromptPath`, not from the prose in this file. When the two diverge, the externalized file wins.
 
 ### Check 1: Quality Gates (fail-fast, tiered)
 
 #### Gate Source Resolution
 
-1. If `governance/gates.yaml` exists → read all gates. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only). Group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c.
-2. If `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found. Quality gates are not configured. Run `/adev:init` to set up gates."
+1. Use the `mergedGates` list computed in Step 0 (domain gates merged with governance gates). If the merged list is non-empty, group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only).
+2. If the merged gate list is empty and `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found and no domain gates configured. Quality gates are not configured. Run `/adev:init` to set up gates."
 
 **Legacy gate detection:** If `manifest.yaml` contains a `gates:` section, emit a migration warning: "Legacy gates: section found in manifest.yaml. This is no longer used. Move gate definitions to governance/gates.yaml." This warning is informational and does not affect Check 1 execution.
 
@@ -164,16 +186,24 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 
 ### Check 1.5: Source Manifest Verification
 
-If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:implement`), verify it:
+If the spec's frontmatter contains a `source-manifest` block (stamped by `/adev:implement`), verify it via the CLI:
 
-1. Call `verifyManifest(specPath)` from `lib/source-manifest.mjs`.
-2. For each file in the manifest, compare the recorded SHA against the current `git hash-object` output.
-3. Report results:
-   - **Match:** All source files are unchanged since implementation. Record PASS.
-   - **Drift:** One or more files have been modified since the manifest was stamped. List each drifted file with its expected and actual SHA. Record WARN (does not cause overall FAIL, but signals that source may have diverged from the spec contract).
-   - **Missing files:** Source files in the manifest that no longer exist. Record FAIL.
+```bash
+adev source-manifest verify --spec <spec-path>
+```
 
-If the spec has no `source-manifest` block, skip this check with a note: "No source manifest found. Run /adev:implement to stamp one."
+The verb parses the `source-manifest` block from the spec's frontmatter (fields `sha`, `files`, and `computed-at`) and delegates to `verifyManifest(manifest, projectRoot)` from `lib/source-manifest.mjs` — passing the parsed manifest object and the project root path (NOT the spec file path). SHA comparison uses SHA-256 of file contents. The function returns `{ matches: bool, currentSha: string|null, missingFiles?: string[] }`; the verb classifies the result into one of the four outcomes below. Stdout is a single line; exit code follows the outcome.
+
+| Outcome | Stdout shape | Exit | Validator verdict |
+|---------|--------------|------|--------------------|
+| Match — all listed files unchanged since stamping | `Check 1.5: PASS — source manifest matches (sha: <sha>)` | 0 | PASS |
+| Drift — one or more files modified since stamping | `Check 1.5: WARN — source manifest drifted (...). Files: <list>` | 0 | PASS_WITH_NOTES (does not block) |
+| Missing file — a listed file no longer exists on disk | `Check 1.5: FAIL — missing source files: <list>` | 1 | FAIL |
+| No manifest block — spec has not been implemented yet | `Check 1.5: SKIP — no source manifest found. Run /adev:implement to stamp one.` | 0 | SKIP |
+
+Pass `--quiet` to suppress the PASS / SKIP stdout line (errors and WARN are still emitted). The validator should still emit a `validator_report` event per Check 1.5 outcome via `adev report --type validator --validator validate.check-1.5-source-manifest`.
+
+**Implementation existence check (post-CLI, validator-side):** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed." The CLI does not perform this git-tracked check (it only inspects file content vs. SHA); the validator wraps it around the CLI call.
 
 This check runs after quality gates (Check 1) regardless of their result, since it is a metadata check, not a code quality check.
 
@@ -181,24 +211,25 @@ This check runs after quality gates (Check 1) regardless of their result, since 
 
 Check for code-side drift via the `drift_detected` frontmatter flag. This check is **non-blocking** -- validation continues regardless of result.
 
-Run inline Node.js:
-```javascript
-const { hasDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
-try {
-  const drifted = await hasDrift(specPath);
-  if (drifted) {
-    // Read drift_source and drift_at from frontmatter
-    // Emit: "WARN: drift_detected flag set. Source file <drift_source>
-    // was modified at <drift_at>. Verify that spec still reflects
-    // implementation behavior."
-  }
-} catch {
-  // Emit: "WARN: drift check skipped — frontmatter unreadable"
-  // Record CODE_DRIFT_READ_ERROR
-}
+Run the drift check via the CLI:
+
+```bash
+adev verify spec --spec <specPath> --check-drift
 ```
 
-Also run `verifyManifest()` as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
+The `--check-drift` mode reads the spec's inline `drift_detected` boolean from frontmatter and sources the `drift_source` / `drift_at` payload from the spec's latest unresolved `code_drift_detected` event in `.context-index/lifecycle-state/<slug>.jsonl`. It emits a single JSON object on stdout:
+
+```json
+{ "drifted": <bool>, "drift_source": "<path|null>", "drift_at": "<timestamp|null>" }
+```
+
+If `drifted === true`, emit a WARN: "drift_detected flag set. Source file `<drift_source>` was modified at `<drift_at>`. Verify that spec still reflects implementation behavior."
+
+Legacy fallback: pre-migration specs may return `drift_source: null` / `drift_at: null` when the spec has the inline boolean but no JSONL event yet. The drift is still real; the historical source is recoverable from `git log <spec>`.
+
+If the verb exits non-zero (spec unreadable or path containment violation), record `CODE_DRIFT_READ_ERROR` and emit: "WARN: drift check skipped — spec unreadable".
+
+Also run `adev source-manifest verify --spec <specPath>` (see Check 1.5) as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
 
 This check is **non-blocking** — validation continues regardless. Record WARN if drift is detected, PASS otherwise.
 
@@ -206,11 +237,14 @@ This check is **non-blocking** — validation continues regardless. Record WARN 
 
 Load the Live Spec and walk through every acceptance criterion.
 
+**Before citing any file:line reference, you MUST use the Read tool to read the actual file content.** Do not infer, assume, or fabricate file contents from the spec or plan. Every PASS/FAIL/PARTIAL verdict must cite at least one file that was explicitly read in this validation run. If a criterion cannot be verified because no relevant files were found with Glob/Grep, record PARTIAL with the note "Unable to locate implementation files — criterion unverified."
+
 For each criterion:
-1. Identify which files and tests address it.
-2. Read the relevant code. Verify the behavior matches the criterion.
-3. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
-4. Verify test integrity: assertions must be strict and match the spec exactly.
+1. Use Glob and Grep to identify which files and tests address it.
+2. **Read the actual file content** using the Read tool. You MUST read the file before making any claims about its contents. Do NOT infer code structure, line numbers, or behavior from the spec alone — verify against the actual source. If you cite `file:line`, that line number must come from reading the file, not from guessing.
+3. Verify the behavior matches the criterion based on what you read.
+4. Check that a test exists for the criterion and that the test actually verifies the described behavior (not a trivial assertion).
+5. Verify test integrity: assertions must be strict and match the spec exactly.
    Flag any of these anti-patterns:
    - Loose matchers where exact values are expected (regex where string would do,
      `toContain` where `toEqual` is appropriate)
@@ -225,24 +259,16 @@ For each criterion:
      or ADRs were consulted (look for comments or commit messages referencing
      the context that justified the change)
 
+**Do NOT use plan file checkboxes (`[x]`) as evidence of completion.** A `[x]` checkbox in a `.plan.md` file means the implementer marked the step done — it does not prove the code was written correctly or at all. Check 2 must be grounded in reading actual source files and tests, not plan metadata.
+
 Record per criterion:
-- PASS: code and tests satisfy the criterion.
+- PASS: code and tests satisfy the criterion (cite file:line from actual file reads).
 - FAIL: code does not satisfy the criterion (with file:line references and explanation).
 - PARTIAL: code partially satisfies (describe what is missing).
 
+**Anti-fabrication rule:** Every file:line citation in the report MUST come from a Read tool call in this session. If you cannot read a file (it does not exist, is too large, etc.), say so explicitly rather than guessing its contents. A validation report with fabricated citations is worse than no report at all.
+
 **Cross-repo interface verification (workspace-aware validation mode only):** When workspace-aware validation mode is active and `crossRepoDeps` is non-empty, Check 2 gains an additional sub-step: for each acceptance criterion that references behaviour defined in a cross-repo dependency spec, verify that the implementation respects the interface contracts (API signatures, data shapes, event payloads) described in the dependency spec. Record findings per criterion as PASS / FAIL / PARTIAL with references to both the local code and the cross-repo dependency spec.
-
-### Check 3: Charter Consistency
-
-Load the Feature Charter referenced by the spec. Verify:
-
-- **Scope boundaries.** The implementation does not introduce functionality outside the charter's defined scope. New endpoints, models, or UI components that are not described in the charter's Capability Map are flagged.
-- **Domain model alignment.** Entity names, relationships, and boundaries in the code match the charter's Domain Model section.
-- **Interface contracts.** API signatures, request/response shapes, and event payloads match the charter's Interface Contracts section (if defined).
-
-Record PASS or FAIL with specific references to charter sections and code locations.
-
-**Cross-repo dependency context (workspace-aware validation mode only):** When workspace-aware validation mode is active, Check 3 includes the cross-repo dependency specs as additional scope context. The validator must verify that the implementation does not assume interfaces or behaviours from sibling repos that are not documented in the dependency specs. Undocumented cross-repo assumptions are flagged as WARN.
 
 ### Check 4: Constitution Compliance
 
@@ -253,45 +279,6 @@ Load `.context-index/constitution.md`. Check:
 - **Coding Standards.** Verify naming conventions, pattern usage, and structural conventions match the constitution. This complements the linter (Check 1) with standards that cannot be machine-checked.
 
 Record PASS or FAIL with specific principle/boundary violated and code location.
-
-### Check 5: ADR Compliance
-
-List all ADRs in `.context-index/adrs/`. For each ADR relevant to the implementation's domain:
-
-1. Read the ADR's decision and rationale.
-2. Check whether the implementation conflicts with, contradicts, or ignores the decision.
-3. If the implementation intentionally deviates from an ADR, flag it. The user must either update the ADR or change the implementation.
-
-If no ADRs exist or none are relevant, record PASS (no applicable ADRs).
-
-### Check 6: Cross-Cutting Spec Compliance
-
-List all specs in `.context-index/specs/cross-cutting/`. For each cross-cutting spec relevant to the implementation:
-
-1. Read the spec's requirements (e.g., error handling conventions, API versioning rules, auth flow requirements).
-2. Verify the implementation follows those requirements.
-
-Relevance is determined by the domain: if a cross-cutting spec covers error handling and the implementation includes error handling code, that spec is relevant.
-
-If no cross-cutting specs exist or none are relevant, record PASS (no applicable cross-cutting specs).
-
-### Check 7: Specialist Review
-
-Read the `specialists` registry from `.context-index/manifest.yaml`. Apply the same match scoring algorithm used by `/adev:implement`:
-
-1. Collect all files touched by the implementation (from the plan, or by diffing against the base branch).
-2. For each specialist, compute pattern score (2 points per matching glob + depth bonus) and keyword score (1 point per matching keyword in the spec title/description).
-3. If any specialist scores above 0, flag the implementation for domain-specific review.
-
-For each matched specialist:
-- If `invoke: skill`, note the skill name and recommend the user invoke it for a focused review.
-- If `invoke: subagent`, dispatch the specialist as a review subagent with:
-  - The specialist's prompt template from `.context-index/specialists/<name>.md`
-  - The list of files to review
-  - The relevant spec sections
-  - Instructions to check domain-specific quality (e.g., accessibility for frontend, injection vectors for security, migration safety for data-engineering)
-
-Record per specialist: PASS, FAIL (with specific findings), or SKIPPED (no specialist matched).
 
 ### Check 8: Boundary Compliance
 
@@ -315,38 +302,22 @@ If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merg
 3. Note `approver_role` if present (informational).
 4. If no transitions configured in `governance/gates.yaml` (or `governance/` absent) → SKIP: "No transitions configured."
 
-### Check 10: Platform Drift
-
-Compare `.context-index/platform-context.yaml` tech stack declarations against `package.json` dependencies. Catches cases where the declared stack no longer matches what is actually installed.
-
-**If `platform-context.yaml` does not exist:** SKIP (no platform context configured).
-**If `package.json` does not exist:** SKIP (not a Node.js project; platform drift check is not applicable).
-
-**Mapping rules:**
-
-For each field in `platform-context.yaml`, check the corresponding package in `package.json` (dependencies + devDependencies):
-
-| platform-context field | Expected package(s) | Example |
-|----------------------|---------------------|---------|
-| `framework` | Framework package present (`next`, `nuxt`, `astro`, `svelte`, etc.) | `framework: nextjs` → `next` in dependencies |
-| `version` | Framework package version satisfies declared version | `version: "16"` → `next` version starts with `16.x` |
-| `language` | If `typescript`, `typescript` in devDependencies | `language: typescript` → `typescript` present |
-| `orm` | ORM package present (`prisma`, `drizzle-orm`, `typeorm`, `@mikro-orm/core`, etc.) | `orm: prisma` → `prisma` or `@prisma/client` present |
-| `auth` | Auth package present (`@clerk/nextjs`, `next-auth`, `@auth0/nextjs-auth0`, etc.) | `auth: clerk` → `@clerk/nextjs` present |
-| `database` | DB driver or client present if applicable | `database: postgresql` → pg-related package or ORM handles it |
-| `testing` | Test framework present | `testing: vitest` → `vitest` in devDependencies |
-
-**Unknown fields or values:** If a `platform-context.yaml` field has a value the mapping does not recognize, log it as INFO (not a failure). The mapping is best-effort.
-
-**Version check:** Only performed for `framework` + `version`. Uses semver-compatible prefix matching (e.g., declared `"16"` matches installed `16.1.2`). If the major version does not match, flag as FAIL.
-
-Record per field: PASS (matches), FAIL (mismatch with details), WARN (could not verify), or SKIP (field not declared).
-
 ### Check 11: Visual Verification (UI projects)
 
-**Trigger:** If any file touched by the implementation matches UI patterns (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `components/**`, `app/**/page.*`, `app/**/layout.*`, `pages/**`).
+**Trigger guard (revised by `check-set-restructure.spec.md` Behaviors 5 + 6).** Before running visual verification, evaluate the implementation diff against UI file patterns (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `*.html`, files under `components/`, `pages/`, `views/`, `public/`, `app/**/page.*`, `app/**/layout.*`) and check whether the Playwright MCP server (`browser_navigate`, `browser_snapshot`) is available.
 
-**Playwright MCP required.** Check for the Playwright MCP browser tools (`browser_navigate`, `browser_snapshot`). If they are not available, **BLOCK validation** and tell the user:
+The four-case matrix:
+
+| UI files in diff? | Playwright available? | Outcome |
+|---|---|---|
+| No  | No  | **SKIP** — "No UI files in implementation diff — visual verification not applicable." |
+| Yes | No  | **BLOCK** — see message below (preserved from previous behavior). |
+| Yes | Yes | Proceed with the visual verification protocol below. |
+| No  | Yes | **SKIP** — "Playwright available but nothing to verify for this spec." |
+
+The full guard logic with rationale lives in `skills/validate/checks/validate.check-11-visual-verification.md` (Trigger Guard section).
+
+**BLOCK message** (Case B only):
 
 ```
 BLOCKED: This implementation includes UI files but no browser verification tool is available.
@@ -359,9 +330,7 @@ Then add it to your Claude Code MCP config and restart.
 Without visual verification, UI implementations cannot be fully validated.
 ```
 
-Do not record SKIP. Do not proceed without it. UI code without visual verification is unvalidated code.
-
-**If Playwright is available:**
+**If Playwright is available AND UI files match (Case C):**
 
 1. **Dev server.** Ensure the dev server is running. If not, start it. Wait for it to be ready.
 2. **Visual Expectations check.** If the spec has a `## Visual Expectations` section, verify each expectation:
@@ -383,220 +352,52 @@ Do not record SKIP. Do not proceed without it. UI code without visual verificati
 Record per visual expectation: PASS or FAIL with description.
 Overall: PASS if all expectations met, FAIL if any expectation fails or if page does not load.
 
-### Check 12: Lifecycle Reconciliation
+## Per-Check Event Emission
 
-Verify that lifecycle artifacts (issues, epics, spec status, charter capability map) are consistent with the implementation state. This check catches the drift that accumulates when implementation completes but bookkeeping is skipped.
-
-**If `tasks.backend` is not configured in `manifest.yaml`:** SKIP checks 12a–12c with note: "No task backend configured."
-
-#### 12a. Issue Status Alignment
-
-Find all issues with `plan-ref` matching the current spec's plan file.
-
-For each issue:
-1. Read the issue status.
-2. **Verify against codebase** (do NOT trust status fields alone): Run `verifyIssueCompleted(issue, { projectRoot })` from `lib/reality-check.mjs` via inline Node.js. This checks plan task checkboxes, file existence, and git-committed state.
-3. If the issue is still `open` or `in-progress` but `verifyIssueCompleted` returns `{ completed: true, confidence: "high" }` → flag as WARN: "Issue `<id>` (`<title>`) is still `<status>` but implementation verified (high confidence)."
-4. If `verifyIssueCompleted` returns `{ completed: true, confidence: "medium" }` → flag as INFO (not WARN): "Issue `<id>` appears complete but confidence is medium — manual check recommended."
-5. If `verifyIssueCompleted` returns `{ completed: false }` → the issue status is correct (still open). Record PASS.
-6. **`--fix` behavior:** Only auto-close issues with HIGH confidence. Update status to `closed` with confidence note from `formatConfidenceNote()`. MEDIUM confidence issues get a note added but remain open.
-
-#### 12b. Epic Completion
-
-Find the epic associated with the current spec's plan (via `epicRef` on child issues or plan frontmatter).
-
-If an epic is found:
-1. Count total child issues vs closed child issues.
-2. If ALL child issues are closed (or will be closed by 12a fix) but the epic is still `open` → flag as WARN: "Epic `<id>` (`<title>`) has all children closed but is still open."
-3. **`--fix` behavior:** Update epic status to `closed`.
-
-If no epic is found, record PASS (no epic to reconcile).
-
-#### 12c. Spec Status Consistency
-
-Read the current spec's `status` frontmatter field.
-
-1. If the spec status is `implemented` but all checks 1–11 passed → this is expected (validation will update it to `validated` in the "After Validation" step). Record PASS.
-2. If the spec status is `draft` or `review-pending` → flag as WARN: "Spec status is `<status>` but implementation exists and passes validation. Status may not have been updated after implementation."
-3. **`--fix` behavior:** Update spec status to `implemented` (the "After Validation" step will then promote to `validated`).
-
-#### 12d. Charter Capability Map Sync
-
-Read the parent charter's Capability Map. For each capability covered by this spec:
-
-1. Check the `Status` column value.
-2. If the capability status is `planned` or `in-progress` but the spec is validated → flag as WARN: "Charter capability `<name>` is `<status>` but spec is validated."
-3. **`--fix` behavior:** Update the capability status to `validated`.
-
-If no charter is referenced in the spec's frontmatter, SKIP with note: "No charter reference found."
-
-#### 12e. Plan Checkbox Completion
-
-If a `--plan` path was provided (or can be inferred as `<spec-path-without-ext>.plan.md`):
-
-**Optimization:** Use `getPlanProgress` from `<ADEV_ROOT>/lib/meta-tools.mjs` to get plan completion in a single call:
+For every surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11) that produces a verdict, emit a `validator_report` event to the lifecycle log via `adev report --type validator`. This makes the projection's `state.steps.validate` the canonical source of validator outcomes and removes the need to parse the prior `<spec-slug>.validate.md` file when computing aggregate verdict.
 
 ```bash
-node -e "import {getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; console.log(JSON.stringify(await getPlanProgress('<plan-path>')))"
+adev report --type validator \
+  --spec "<spec-path>" \
+  --step validate \
+  --validator "validate.check-2-spec-compliance" \
+  --verdict PASS \
+  [--error "<short summary>"] \
+  [--score <number>] \
+  [--duration-ms <number>] \
+  [--notes "<≤200-char summary>"]
 ```
 
-If the meta-tool call fails, fall back to the manual scan below.
+Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier that MUST match the `id:` declared in `governance/validate.yaml` (or the domain starter at `templates/domains/<domain>/validate.yaml`). The six registry-backed IDs in the bundled software domain are: `validate.check-1.5-source-manifest`, `validate.check-2-spec-compliance`, `validate.check-4-constitution`, `validate.check-8-boundaries`, `validate.check-9-transition-gates`, `validate.check-11-visual-verification`. Use these exact strings — emitting an unprefixed form (e.g., `check-2-spec-compliance`) bypasses `_resolveActorSeverity` lookup and defaults every event to `severity: warning`, suppressing blocker-severity FAILs in the aggregation table.
 
-1. Read the plan file and find all task sections (`### Task N:`).
-2. For each task section, count `- [ ]` (unchecked) and `- [x]` (checked) checkboxes.
-3. If any task has unchecked checkboxes but the corresponding issue is closed (or all tests pass) → flag as WARN: "Plan task N has N unchecked checkboxes but implementation is complete."
-4. **`--fix` behavior:** Mark all `- [ ]` checkboxes in completed task sections as `- [x]`.
+For Check 1 (quality gates, sourced from `gates.yaml` in a separate flow) and Check 1.6 (code-drift, observational), no registry entry exists today — events emitted with `--validator validate.check-1-quality-gates` or `validate.check-1.6-code-drift` will trip the unknown-validator fallback (severity defaults to warning). This is acceptable for these checks because they don't aggregate into blocker-severity verdicts; if that changes, add explicit entries to `templates/domains/<domain>/validate.yaml`.
 
-If no plan file exists or can be inferred, SKIP with note: "No plan file found."
+`--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
 
-**Output format:**
-```
-## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
-- Issue alignment: PASS | WARN [N issues still open]
-- Epic completion: PASS | WARN [epic still open] | N/A
-- Spec status: PASS | WARN [status is <current>]
-- Charter sync: PASS | WARN [N capabilities stale] | SKIP
-- Plan checkboxes: PASS | WARN [N tasks with unchecked boxes] | SKIP
-```
+Severity is stamped at write time by the lib from `validate.yaml` (each check's `severity:` field, per the single-source model in `validate-config-single-source.spec.md`). Neither the skill prose nor the CLI invocation computes or asserts severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
 
-**This check uses WARN severity, not FAIL.** Lifecycle drift does not invalidate the implementation — the code is correct. But warnings are prominently displayed so the user knows to run `/adev:reconcile` or apply `--fix` for automatic cleanup.
+When aggregating the overall validation verdict, read `state.steps.validate` from `currentState(projectRoot, specPath)` after all `adev report --type validator` invocations have landed. Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file.
 
-### Check 13: Success Heuristic Extraction
+`--notes` and `--error` arguments MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message. The lib caps at 4 KB and truncates with a `NOTES_TRUNCATED` warning; keep operator-facing summaries ≤ 200 characters.
 
-#### Overview
-
-On first-run PASS (all checks 1-12 passed with no FAIL results, and no prior validation report exists), extract a positive pattern heuristic at `medium` confidence via `lib/heuristics.mjs`. This check is observational — it never blocks the overall validation result.
-
-#### Spec-Slug Derivation Rule
-
-1. Take the target spec's absolute path.
-2. Compute `path.basename(path, '.md')` to get the filename stem.
-3. Lowercase and replace any non-alphanumeric characters with `-`.
-4. Collapse consecutive `-` characters; strip leading/trailing `-`.
-
-This rule is used consistently in (a) First-Run Detection, (b) id generation, and (c) report output.
-
-#### First-Run Detection Rule
-
-A validation is "first run" if and only if no file matching `<spec-slug>.validate.md` exists in the same directory as the target spec. Explicit deletion followed by re-validation IS treated as a first run (intentional: deletion signals the user wants to re-extract).
-
-#### Scope Derivation Rule
-
-1. Read the `charter:` field from the target spec's YAML frontmatter.
-2. Apply `path.basename()` to strip any traversal sequences.
-3. Check the result against `manifest.yaml modules[].slug`.
-4. If matched, use it as `scope`.
-5. Otherwise, fall back to `_global`.
-
-#### Title Derivation Rule
-
-Format: `"First-run PASS: <spec-title>"` where:
-
-- `<spec-title>` is the first-level heading (`# ...`) from the target spec file, with any leading `Live Spec: ` prefix removed.
-- If no heading exists, fall back to the spec-slug.
-- Cap at 120 chars total; if longer, truncate the title to 117 chars + `"..."`.
-
-#### ID Derivation Rule
-
-Format: `<spec-slug>-<hash>` where:
-
-- `<spec-slug>` is per the Spec-Slug Derivation Rule.
-- `<hash>` is 8 chars of lowercase hex SHA-256 of: `<lowercased-normalized-absolute-path>` + `"|"` + `<pattern-text>`.
-- Absolute path separators are normalized to `/` before lowercasing.
-- Including the path prevents id collisions between specs with identical titles.
-- Worked example: spec at `/project/.context-index/specs/features/hooks/foo.md` with pattern `X` → hash input is `/project/.context-index/specs/features/hooks/foo.md|X`.
-- For pathological filenames that would produce an empty spec-slug, Check 13 falls back to SKIP with note `"invalid spec slug"`.
-
-#### projectRoot Resolution
-
-Walk up from `process.cwd()` to find the nearest `.context-index/` directory. Fallback to `process.env.CLAUDE_PROJECT_ROOT`. Matches the convention in `lib/execution-state.mjs` and `/adev:recover` Step 7.
-
-#### Success Factor Derivation
-
-Priority order, first match wins:
-
-1. A **golden sample** referenced in the implementation's context packet → pattern describes the sample's role.
-2. An **ADR** referenced in the context packet → pattern describes the ADR's decision application.
-3. A **cross-cutting spec** or context packet noted as a pre-condition → pattern describes the structural/behavioral lesson.
-4. **Default**: `"First-run PASS for <spec-title>: implementation matched all acceptance criteria without revision"`.
-
-> **Distillation rule:** the pattern must describe the structural or behavioral lesson, NOT verbatim-copy packet content. Avoid preserving environment-specific paths, file names, credentials, or embedded configuration.
-
-`antiPattern` is ALWAYS empty for success heuristics (success describes what to do, not what to avoid).
-
-#### Confidence Rationale
-
-Initial `confidence: medium` is used (a stronger signal than `/adev:recover`'s `low`) because first-run PASS validates all 12 checks at once. The helper's absolute-threshold auto-promotion will raise the entry to `high` at the 3rd distinct-path evidence entry — print whatever confidence the helper returns from the write call, not the caller-supplied input.
-
-#### Contradiction Scan (before write)
-
-Before writing the new heuristic, scan for semantic contradictions with existing heuristics:
-
-1. Read existing heuristics for the target scope: call `readHeuristics(projectRoot, { module: scope })` via inline Node.js (importing from `<ADEV_ROOT>/lib/heuristics.mjs`, where `<ADEV_ROOT>` is the resolved plugin root).
-2. For each existing entry, compare semantically: does the new heuristic's `pattern` directly conflict with an existing entry's `antiPattern`, or does the new heuristic's `antiPattern` conflict with an existing entry's `pattern`?
-3. If a semantic contradiction is detected, call `addContradiction(projectRoot, existingId, { path: '<validation-report-path>', date: '<today>', source: 'validation' })` before writing the new heuristic. Wrap in try/catch — if `addContradiction` throws (e.g., `HEURISTICS_NOT_FOUND` because the entry was archived between read and write), log a warning and proceed.
-4. If no contradiction is detected, proceed directly to writeHeuristic.
-
-This is a best-effort semantic comparison performed by you (the agent), not a programmatic string match. When in doubt, do not record a contradiction — `/adev:retro` consolidation is the backstop for missed contradictions.
-
-#### Inline Node Invocation
-
-Run the extraction via an inline Node invocation that resolves `projectRoot`, imports `writeHeuristic` from the adev plugin's `lib/heuristics.mjs`, builds the entry using the derivation rules above, and wraps the call in `try`/`catch` so any failure degrades to a SKIP without affecting the overall PASS/FAIL. The process always exits with code 0. The `evidence[]` array must contain exactly one entry: `{ source: "validation", path: "<validation-report-path>", date: "<today>" }`. Initial `confidence: "medium"` is caller-supplied; the final confidence in the printed output must come from the `writeHeuristic` return value (which may auto-promote).
-
-**Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. For example, if this skill's base directory is `/path/to/adev/0.10.0/skills/validate`, the plugin root is `/path/to/adev/0.10.0`. Use the absolute path in the import.
-
-On import failure: SKIP with reason `"helper unavailable"`.
-On `HEURISTICS_SCHEMA_ERROR` or any thrown error: SKIP with the error message.
-
-Concrete invocation (replace `<ADEV_ROOT>` with the resolved absolute plugin root path):
-
-```bash
-node --input-type=module -e "
-try {
-  const { writeHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-  try {
-    const h = await writeHeuristic(projectRoot, {
-      id: 'foo-spec-a1b2c3d4',
-      scope: 'hooks',
-      title: 'First-run PASS: Foo Spec',
-      pattern: 'First-run PASS for Foo Spec: implementation matched all acceptance criteria without revision',
-      antiPattern: '',
-      confidence: 'medium',
-      evidence: [{ path: '.context-index/specs/features/hooks/foo-spec.validate.md', date: '2026-04-09', source: 'validation' }],
-    });
-    console.log(\`Check 13: Success Heuristic Extracted — \${h.id} (scope: \${h.scope}, confidence: \${h.confidence})\`);
-  } catch (err) {
-    console.log(\`Check 13: SKIP — \${err.message}\`);
-  }
-} catch (err) {
-  console.log('Check 13: SKIP — helper unavailable');
-}
-"
-```
-
-#### SKIP Semantics
-
-Explicit list of SKIP reasons:
-
-- `"not first-run PASS"` — prior `<spec-slug>.validate.md` exists.
-- `"non-PASS result"` — any of checks 1-12 FAILed.
-- `"helper unavailable"` — `lib/heuristics.mjs` import failed.
-- `"no charter scope"` — target spec has no `charter:` frontmatter field.
-- `"no report path"` — validation report path cannot be resolved.
-- `"invalid spec slug"` — spec filename produced empty slug.
-- `<HEURISTICS_SCHEMA_ERROR message>` — `writeHeuristic` validation failed.
-
-**Check 13 never changes the overall validation result.** SKIP is informational.
-
-#### Final Confirmation
-
-On success, Check 13 prints exactly: `Check 13: Success Heuristic Extracted — <id> (scope: <scope>, confidence: medium)` — or whatever confidence the helper returns after auto-promotion, since the confidence value must come from the `writeHeuristic` return value rather than the caller-supplied input.
+> Authority: `lib/cli/report.mjs` is the canonical implementation per `.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md` PR 2 (Task 2). Do not re-introduce inline `reportValidator` Node imports here — `tests/skills-no-inline-node.test.mjs` and `hooks/pre-commit-no-inline-node.sh` reject inline-Node patterns.
 
 ## Report Format
 
 **Persona adaptation:** The validation report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
 
-Write the validation report to `.context-index/specs/features/<module>/<spec-slug>.validate.md`.
+**Atomic write protocol (per epic-85 / issue-496):** Write the validation report in two steps so that a session terminated mid-write never leaves a partial `.validate.md` on disk:
+
+1. Use the Write tool to write the full report body to `.context-index/specs/features/<module>/<spec-slug>.validate.md.tmp` (note the `.tmp` suffix).
+2. Commit the artifact via the CLI:
+
+```bash
+adev artifact commit --spec .context-index/specs/features/<module>/<spec-slug>.spec.md --kind validate
+```
+
+The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec-path>.validate.md`) from the spec path, validates that the temp file exists and is non-empty (rejects zero-byte artifacts), and performs a same-directory `fs.renameSync` — atomic on POSIX. Until the commit step runs, the canonical `.validate.md` either reflects the prior run or is absent; the new content is never partially observable. On any failure the verb exits non-zero with a diagnostic message and the temp file remains for inspection.
+
+**Write-state suffix choice (`.tmp` not `.partial`).** Per the write-state suffix taxonomy invariant in `agent-reliable-state-artifacts/charter.md` (Invariant #10) and `incremental-artifact-writes.spec.md` Integration Point 4, validate keeps the existing `.tmp` (byte-level, ms-scale, never recovered) and does NOT migrate to `.partial` (artifact-level, minutes-to-hours, durable). Rationale: the entire validate report is computed in memory and written in a single Write call — there is no incremental-checkpoint surface for `.partial` to protect. The `.tmp` + `adev artifact commit` idiom is the right tool for byte-level atomicity here; `.partial` is the right tool for skills (like `/adev:plan`, `/adev:specify`, `/adev:implement`) that author across multiple Write calls over minutes.
 
 ```markdown
 # Validation Report: [Spec Title]
@@ -622,11 +423,6 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - [Criterion 2]: PASS
 - ...
 
-## Check 3: Charter Consistency — PASS | FAIL
-- Scope: PASS | FAIL [details]
-- Domain model: PASS | FAIL [details]
-- Interface contracts: PASS | FAIL [details]
-
 ## Cross-Repo Dependency Validation — PASS | WARN | N/A
 - [@repo-slug/spec-slug]: Resolved — interface contracts verified (PASS | FAIL | PARTIAL)
 - [@repo-slug/spec-slug]: WARN — reference unresolvable (repo not in workspace)
@@ -637,33 +433,12 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Non-negotiable principles: PASS | FAIL [principle violated, file:line]
 - Coding standards: PASS | FAIL [standard violated, file:line]
 
-## Check 5: ADR Compliance — PASS | FAIL | N/A
-- [ADR-001]: PASS | FAIL [conflict description]
-- ...
-
-## Check 6: Cross-Cutting Specs — PASS | FAIL | N/A
-- [error-handling.md]: PASS | FAIL [details]
-- ...
-
-## Check 7: Specialist Review — PASS | FAIL | SKIPPED
-- [frontend-design]: PASS | FAIL [findings]
-- [security]: PASS | FAIL [findings]
-- ...
-
 ## Check 8: Boundary Compliance — PASS | FAIL | N/A
 - [boundary-id]: PASS | FAIL | WARN [details]
 - ...
 
 ## Check 9: Transition Gates — PASS | FAIL | N/A
 - [transition-id]: PASS | FAIL [details]
-- ...
-
-## Check 10: Platform Drift — PASS | FAIL | SKIP
-- framework: PASS | FAIL [declared: X, found: Y]
-- version: PASS | FAIL [declared: X, installed: Y]
-- language: PASS | FAIL [details]
-- orm: PASS | FAIL [declared: X, not found in package.json]
-- auth: PASS | FAIL [details]
 - ...
 
 ## Check 11: Visual Verification — PASS | FAIL | N/A
@@ -674,27 +449,46 @@ Write the validation report to `.context-index/specs/features/<module>/<spec-slu
 - Responsive (1280px): PASS | FAIL [details]
 - Dark mode: PASS | FAIL | N/A [details]
 
-## Check 12: Lifecycle Reconciliation — PASS | WARN | SKIP
-- Issue alignment: PASS | WARN [N issues still open]
-- Epic completion: PASS | WARN [epic still open] | N/A
-- Spec status: PASS | WARN [status is <current>]
-- Charter sync: PASS | WARN [N capabilities stale] | SKIP
-
-## Check 13: Success Heuristic Extraction — PASS | SKIP
-- [PASS case] Heuristic extracted: <id> (scope: <scope>, confidence: medium)
-- [SKIP case] SKIP: <reason> (e.g., "not first-run PASS", "non-PASS result", "helper unavailable", "no charter scope", "no report path", "invalid spec slug", "<HEURISTICS_SCHEMA_ERROR message>")
-
 ---
 
 **Summary:** [N] passed, [N] failed, [N] skipped checks. [If any skipped due to missing configuration: "Run `/adev:init` to configure missing components."]
+
+---
+
+> **Note for users comparing with historic reports:** Checks 3, 5, 6, 7, 10, 11 (when no UI files), 12, and 13 have been relocated by `check-set-restructure.spec.md`. See:
+>
+> - `/adev:review-specs` — for ADR compliance (formerly Check 5), cross-cutting compliance (formerly Check 6), specialist review (formerly Check 7), and charter consistency (formerly Check 3, now covered by Check 2's scope-expansion sub-finding).
+> - `/adev:hygiene` Audit Pass 20 — for platform drift (formerly Check 10).
+> - `/adev:reconcile` lifecycle-sync — for lifecycle reconciliation (formerly Check 12, with `--fix` as the default mode).
+> - `hooks/post-validate-extract-heuristics.{sh,mjs}` — for heuristic extraction (formerly Check 13 / `check-12-heuristic-extraction`), now a non-blocking Stop-event hook.
+>
+> Historic `.validate.md` reports continue to use the pre-restructure numbering; the gaps in the surviving inventory (Checks 1, 1.5, 1.6, 2, 4, optionally 8 and 9) are intentional to preserve report readability.
 ```
 
 ## Overall Status
 
-- **PASS:** All 13 checks passed (WARN-only in Check 12 counts as PASS). The implementation is validated.
+- **PASS:** All dispatched checks (Check 1 quality gates plus the surviving registry — 1.5, 2, 4, and conditionally 8, 9, 11) passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev:validate`.
 
+## Step Z: Emit lifecycle completion event
+
+After the validation report has been written to disk (Step 14 / atomic-write commit), emit the matching exit event paired with Step 0a's `started` emission. The verdict is the aggregate computed from the consolidated check results:
+
+- All dispatched checks PASS → `--verdict PASS`
+- At least one check returned PASS_WITH_NOTES, no FAILs → `--verdict PASS_WITH_NOTES`
+- Any FAIL → `--verdict FAIL`
+
+```bash
+adev report --type step --spec <spec-path> --step validate --status completed --verdict <aggregate>
+```
+
+This event is REQUIRED. Without it, the lifecycle log shows `lifecycle_step:validate started` with no terminal event, and any future skill that gates on validate completion will block permanently.
+
 ## After Validation
+
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time; the
+> specific transition this skill drives is `implemented → validated`.
 
 If PASS:
 
@@ -709,28 +503,27 @@ If PASS:
 
 3. **Record validation outcome on issue board with confidence:** Read `tasks.backend` from `manifest.yaml`. If configured:
    - Find all issues with `plan-ref` matching the validated spec's plan file.
-   - For each issue, run reality-check verification via inline Node.js:
+   - For each issue, run reality-check verification via the CLI (pass the issue JSON object and the desired confidence-note action):
      ```bash
-     node --input-type=module -e "
-     import { verifyIssueCompleted, formatConfidenceNote } from '<ADEV_ROOT>/lib/reality-check.mjs';
-     const result = verifyIssueCompleted(issue, { projectRoot });
-     const note = formatConfidenceNote('Validated', result.confidence, { reportPath, filesVerified, testsPass });
-     console.log(JSON.stringify({ ...result, note }));
-     "
+     adev verify issue --issue-json '<issue-object-json>' \
+       --note Validated \
+       --report-path <validation-report-path> \
+       [--files-verified <n>] [--tests-pass <true|false>]
      ```
+     The verb wraps `verifyIssueCompleted` + `formatConfidenceNote` and emits JSON `{ completed, confidence, reason, note }`.
    - Update each issue with the confidence-annotated note:
      - PASS + HIGH confidence: `update(id, { status: "closed", notes: "<confidence note>" })`
      - PASS + MEDIUM confidence: `update(id, { notes: "<confidence note>. Manual verification recommended." })`
      - FAIL: `update(id, { notes: "Validated: FAIL (YYYY-MM-DD) — <validation-report-path>" })`
    - Only close issues automatically when confidence is HIGH (files committed, tests pass, spec criteria met). MEDIUM confidence adds a note but does not close.
    If `tasks.backend` is not configured, skip.
-   If `lib/reality-check.mjs` fails to import, fall back to the previous behavior (add note without confidence scoring).
+   If `adev verify issue` exits non-zero, fall back to the previous behavior (add note without confidence scoring).
 
 4. Read `completion.merge_policy` from manifest.yaml (default: "pr").
 
 If "pr" (or target branch is in `completion.protected_branches`):
 ```
-Validation passed. All 13 checks green.
+Validation passed. All dispatched checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -741,7 +534,7 @@ Do NOT merge directly to protected branches.
 
 If "merge" (and target branch is NOT protected):
 ```
-Validation passed. All 13 checks green.
+Validation passed. All dispatched checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -751,7 +544,7 @@ Ready to merge or proceed to the next feature.
 
 If "ask":
 ```
-Validation passed. All 13 checks green.
+Validation passed. All dispatched checks green.
 
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
@@ -772,11 +565,25 @@ Fix the issues above and re-run: /adev:validate --spec <path>
 
 **Never:**
 - Continue to Checks 2-13 if Check 1 (Quality Gates) failed
-- Skip any of the 13 checks (except when fail-fast applies to Check 1)
+- Skip any of the dispatched registry checks (except when fail-fast applies to Check 1)
 - Report PASS when any check has unresolved failures
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code
 - Skip specialist review when the scoring algorithm produces matches
-- Skip visual verification for UI files when Playwright is not available (block and ask the user to install it)
-- Record SKIP for Check 11 when UI files are present (N/A is only valid when no UI files are touched)
+- Skip visual verification for UI files when Playwright is not available (block and ask the user to install it — Case B in the Check 11 trigger guard)
+- Record SKIP for Check 11 when UI files ARE present (SKIP is only valid when no UI files are touched — Cases A and D)
 - Suggest merging to a protected branch (always suggest PR for protected branches)
+
+## API reference
+
+Lifecycle event log:
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection. `state.steps.validate` aggregates this skill's per-check results.
+- `requireGate(state, "implement", { mode })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — hard-blocks (or warns) when implementation is not complete.
+- `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode`.
+- `reportStep(projectRoot, specPath, { step: "validate", status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits skill entry/exit.
+- `reportValidator(projectRoot, specPath, { step, validator, verdict, error, score, duration_ms })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits one event per check. Severity is stamped at write time.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
