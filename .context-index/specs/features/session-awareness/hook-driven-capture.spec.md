@@ -3,10 +3,10 @@
 ---
 charter: session-awareness
 kind: behavioral
-status: review-passed
+status: review-pending
 risk_level: medium
 milestone: 0.28.0
-revision: 3
+revision: 4
 charter-revision: 6
 created: 2026-05-20
 updated: 2026-05-20
@@ -46,7 +46,21 @@ supersedes:
      comparison for both transcript_path and the transcripts-root anchor, plus
      a manifest-walk-from-realpath rule for the cwd check. The dropped
      `platform-context.yaml` override clause incidentally resolves the
-     duplicated SA-10 / CON-9 suggestion. -->
+     duplicated SA-10 / CON-9 suggestion.
+
+     Rev 4 adds optional SessionEnd frontmatter fields consumed by the
+     downstream Retro Session Consumption spec (`retro-session-consumption
+     .spec.md`, rev 1). Six optional fields land in the SessionEnd-rendered
+     `.md` file: `cost_usd`, `input_tokens`, `output_tokens`, `model`
+     (sourced from Claude Code transcript usage blocks), and `issue`,
+     `epic` (sourced from `.context-index/.execution-state.json` at
+     SessionEnd time when status is active). All six are strictly optional —
+     absent fields are not errors, and downstream consumers (retro) must
+     tolerate absence per their own contract. No behavior change in the
+     hook scripts themselves; the new fields are populated inside the
+     existing Node helper invoked by Task 5 (shared hook helper) and
+     Task 6 (fromTranscript), so the existing 22-task plan absorbs the
+     work without adding a new plan task. -->
 
 ## Behavioral Contract
 
@@ -89,6 +103,7 @@ supersedes:
 - **No silent migration.** Existing projects (detection signals present) default to `post-commit, gitignored: false` in the init prompt. The user must explicitly opt in to `hook` mode. The installer does not auto-rewrite existing project configs.
 - **Paired-marker idempotency (SA-3, SEC-5).** Installer-managed regions in `.githooks/post-commit` and `.gitignore` are delimited by paired sentinels: `# >>> adev:session-capture >>>` … `# <<< adev:session-capture <<<` for post-commit; `# >>> adev:session-capture-gitignore >>>` … `# <<< adev:session-capture-gitignore <<<` for `.gitignore`. The installer reads, writes, and removes content strictly between matched markers. User-authored content outside the markers is never touched. If sentinels are absent on a project that has the legacy capture (pre-rev-2), the installer prints a manual-migration instruction and does not guess at boundaries.
 - **Stderr diagnostic format (SEC-7).** Hook stderr lines have the shape `[adev:session-capture] <reason-code> <project-relative-path?>` where `<reason-code>` is one of `parse-error`, `path-error`, `permission-error`, `payload-error`, `validation-error`, or `disabled`. No interpolated user content; no absolute paths beyond a project-relative output filename when one is referenced.
+- **Optional SessionEnd frontmatter (rev 4 — for retro consumption).** When `fromTranscript()` succeeds, it MAY emit additional frontmatter keys derived from the transcript's usage blocks: `cost_usd: <float>` (sum across assistant turns), `input_tokens: <int>`, `output_tokens: <int>`, `model: <string>` (most-frequent model across turns; ties broken by last-used). When `.context-index/.execution-state.json` exists and has `status: "active"` with a non-empty `issueBinding`, the shared hook helper MAY also emit `issue: <issue-id>` (from `issueBinding`) and `epic: <epic-id>` (resolved from the issue's `epicId` on the issue board, when present). All six fields are strictly optional — absent fields are not errors at the producer side, and downstream consumers (retro) tolerate absence per their own contract. Field absence reasons documented in Error Cases.
 
 ### Behaviors
 
@@ -106,7 +121,7 @@ supersedes:
 
 7. **When** the installer runs with `capture: off` **then** it registers neither new hook, removes the sentinel-bounded legacy block from `.githooks/post-commit` if present, AND removes the sentinel-bounded gitignore block from `.gitignore` if it was previously added by the installer (SA-7). User-authored content outside the markers is never touched. Pre-existing files under `.context-index/sessions/` are preserved on disk (no deletion); the installer prints a one-line hint listing the directory so the user can clean up manually if desired (SEC-8).
 
-8. **When** Claude Code fires `SessionEnd` with payload `{ session_id, transcript_path, cwd, reason }` and the project manifest has `capture: hook` AND all three of *Session ID charset*, *Working directory check*, and *Transcript path containment* invariants pass **then** `hooks/session-end.sh` invokes the Node helper which calls `fromTranscript(transcriptPath)` from `lib/session-summary.mjs`, renders the summary markdown body with redaction applied (per *Transcript redaction* invariant), writes a YAML frontmatter including `kind: session-end`, `session_id`, `date`, and atomically renames to `<cwd>/.context-index/sessions/<YYYY-MM-DD>-<session_id>.md`.
+8. **When** Claude Code fires `SessionEnd` with payload `{ session_id, transcript_path, cwd, reason }` and the project manifest has `capture: hook` AND all three of *Session ID charset*, *Working directory check*, and *Transcript path containment* invariants pass **then** `hooks/session-end.sh` invokes the Node helper which calls `fromTranscript(transcriptPath)` from `lib/session-summary.mjs`, renders the summary markdown body with redaction applied (per *Transcript redaction* invariant), writes YAML frontmatter including the required keys `kind: session-end`, `session_id`, `date`, plus any of the six optional keys per the *Optional SessionEnd frontmatter* invariant (`cost_usd`, `input_tokens`, `output_tokens`, `model`, `issue`, `epic`) whose source data was available, and atomically renames to `<cwd>/.context-index/sessions/<YYYY-MM-DD>-<session_id>.md`.
 
 9. **When** Claude Code fires `PreCompact` and `capture: hook` AND all validation invariants pass AND the target path does NOT already exist with `kind: session-end` in its frontmatter **then** `hooks/pre-compact.sh` performs the same render-and-write as Behavior 8, but emits `kind: pre-compact` in the frontmatter. PreCompact captures act as recovery snapshots; the SessionEnd write overwrites with the final transcript.
 
@@ -152,6 +167,11 @@ supersedes:
 | Installer run on existing project with sentinel-bounded block already removed | Installer no-ops on the removal step (idempotent) |
 | `git diff-tree` unavailable when `capture: post-commit` (legacy path) | Pre-rev-4 behavior unchanged (fail-open to capture path) |
 | Manifest stores `capture: post-commit` but `detectExistingCapture()` finds no legacy block (or vice versa) | Init wizard surfaces an informational warning; stored config applied as-is (SA-4) |
+| Transcript JSONL has no parseable usage blocks (rev 4) | `cost_usd`, `input_tokens`, `output_tokens`, `model` are omitted from SessionEnd frontmatter; required keys still written; no error |
+| Transcript usage blocks present but contain non-numeric values for cost/tokens (rev 4) | Affected optional fields are omitted from frontmatter (skip-on-malformed); other valid fields still written; stderr diagnostic only if `--verbose` |
+| `.context-index/.execution-state.json` missing or `status: idle` (rev 4) | `issue` and `epic` are omitted from SessionEnd frontmatter; required keys still written; no error |
+| `.execution-state.json` has `issueBinding` but the referenced issue has no parent `epicId` (rev 4) | `issue` is written; `epic` is omitted; no error |
+| `.execution-state.json` references an issue id that is not present on the issue board (rev 4) | `issue` field is written with the recorded id; `epic` omitted; downstream retro renders the row with `(unknown)` annotation per its own contract |
 
 ## System Constitution Reference
 
@@ -243,3 +263,7 @@ supersedes:
 - [ ] All new code is pure ESM (Principle 3).
 - [ ] All new hooks exit 0 in every documented path (Principle 4).
 - [ ] Pre-commit hooks pass (no protected-branch or inline-Node violations).
+- [ ] (Rev 4) When transcript usage blocks are parseable, SessionEnd writes optional frontmatter fields `cost_usd`, `input_tokens`, `output_tokens`, `model` alongside the required keys. Field absence is not a failure.
+- [ ] (Rev 4) When `.context-index/.execution-state.json` has `status: "active"` with a non-empty `issueBinding`, SessionEnd writes optional `issue:` (from `issueBinding`) and `epic:` (from the issue's `epicId` on the board, when present) frontmatter fields.
+- [ ] (Rev 4) Malformed usage data, malformed execution-state, or missing source files do not block the SessionEnd write — required keys are always present, and only the optional fields whose source data was unavailable are omitted.
+- [ ] (Rev 4) Tests cover each optional field's presence-and-absence path independently, including the `issueBinding present but epic absent` and `transcript usage blocks malformed` cases.
