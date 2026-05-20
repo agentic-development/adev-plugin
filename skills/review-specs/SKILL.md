@@ -253,6 +253,10 @@ for (const reviewer of dispatchedReviewers) {
 
 **6b. Write the rendered review report** adjacent to the spec. The `.review.md` artifact is now a presentation/audit artifact for human consumption; the canonical reviewer state lives in the lifecycle log.
 
+**6b-bis. Write the `.blockers.md` sidecar (BLOCK only).** When the consolidated verdict is BLOCK, also write a `<spec-stem>.blockers.md` sidecar via `lib/blockers-writer.mjs::writeBlockers` (the canonical writer for the `.blockers.md` artifact). Entries are keyed by the canonical `blocker_id` emitted by reviewers (see Task 6 of review-block-auto-retry); each entry carries `section_anchor` per SA-1 to drive byte-identical preservation in `/adev:specify --revise`. Collisions (same `blocker_id` from two reviewers) are deduplicated with a `BLOCKER_ID_COLLISION` advisory in the writer's return value. The SEC-3 redaction set is applied per prose blob; each blob is truncated at 8 KiB.
+
+  When a reviewer emits a BLOCK finding without a `blocker_id` field (legacy reviewer output), the aggregator logs `LEGACY_REVIEWER_OUTPUT` advisory and does NOT include that finding in the sidecar. The fallback path is `/adev:build`'s pre-loop sidecar+fail-loud (see `skills/build/SKILL.md` blocker handling) — no auto-retry will dispatch for legacy outputs.
+
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
 - Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.spec.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
