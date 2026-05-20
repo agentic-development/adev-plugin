@@ -470,3 +470,202 @@ describe("issues migrate source read + scope filter (plan-task 4)", () => {
     }
   });
 });
+
+describe("issues migrate dry-run path (plan-task 5)", () => {
+  /**
+   * Seed a populated json board and return its project root.
+   * Dependency edges live on `dependencies` arrays.
+   */
+  function seedRichJsonBoard({ issues = [], epics = [] } = {}) {
+    const dir = makeTempProject({ backend: "json" });
+    writeFileSync(
+      join(dir, ".context-index", "tasks", "tasks.json"),
+      JSON.stringify({ version: 2, seq: 0, epics, issues }, null, 2) + "\n",
+    );
+    return dir;
+  }
+
+  function makeIssue(id, overrides = {}) {
+    return {
+      id,
+      title: `${id} title`,
+      status: "open",
+      priority: 2,
+      type: "task",
+      dependencies: [],
+      notes: "",
+      next_action: null,
+      created: "2026-05-19T00:00:00.000Z",
+      updated: "2026-05-19T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  function makeEpic(id, overrides = {}) {
+    return {
+      id,
+      title: `${id} title`,
+      status: "open",
+      created: "2026-05-19T00:00:00.000Z",
+      updated: "2026-05-19T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it("json → beads dry-run emits the documented JSON shape with no .beads-map.json (Behavior 15)", () => {
+    const proj = seedRichJsonBoard({
+      issues: [makeIssue("issue-1"), makeIssue("issue-2"), makeIssue("issue-3")],
+      epics: [makeEpic("epic-1")],
+    });
+    try {
+      // Snapshot tasks.json bytes BEFORE the run for Postcondition 7.
+      const tasksJsonBefore = readFileSync(
+        join(proj, ".context-index", "tasks", "tasks.json"),
+        "utf8",
+      );
+      const mapPathBefore = existsSync(
+        join(proj, ".context-index", "tasks", ".beads-map.json"),
+      );
+
+      // Use --from beads sentinel: not equal to target. But source must be a
+      // real adapter; use json source with `--to beads` since this is a
+      // json→beads scenario. We need br to be missing to avoid actually
+      // running br; the BEADS_NOT_AVAILABLE check fires before dry-run. So
+      // we restrict PATH like in Behavior 7's test... unless dry-run skips
+      // the env probe. Behavior 7 says env check fires BEFORE source read;
+      // Behavior 15 says dry-run is read-only. The conservative interpretation
+      // is that even dry-run needs br on PATH so the target adapter can be
+      // probed. We assume br IS available on the dev machine (we already
+      // saw `which br` succeed earlier in the env). For CI without br, this
+      // test will skip — guard accordingly.
+      const brCheck = spawnSync("which", ["br"], { encoding: "utf8" });
+      if ((brCheck.status ?? 1) !== 0) {
+        // br not on PATH — skip this assertion path.
+        return;
+      }
+
+      const { exitCode, stdout, stderr } = runCli(
+        ["issues", "migrate", "--to", "beads", "--dry-run"],
+        { cwd: proj },
+      );
+      assert.equal(exitCode, 0, `expected dry-run exit 0, got ${exitCode}; stderr=${stderr}`);
+
+      // Find the JSON object in stdout (verb may print other lines).
+      const jsonLine = stdout.split("\n").find((l) => l.trim().startsWith("{"));
+      assert.ok(jsonLine, `expected JSON object on stdout, got: ${stdout}`);
+      const report = JSON.parse(jsonLine);
+      assert.equal(report.source, "json");
+      assert.equal(report.target, "beads");
+      assert.deepEqual(report.in_scope, { issues: 3, epics: 1 });
+      assert.equal(report.already_migrated, 0);
+      assert.deepEqual(report.would_create, { issues: 3, epics: 1 });
+      assert.equal(report.dependencies_to_replay, 0);
+
+      // Postcondition 7: dry-run writes neither target state nor .beads-map.json.
+      const tasksJsonAfter = readFileSync(
+        join(proj, ".context-index", "tasks", "tasks.json"),
+        "utf8",
+      );
+      assert.equal(tasksJsonAfter, tasksJsonBefore, "tasks.json must be byte-equal after dry-run");
+      const mapPathAfter = existsSync(
+        join(proj, ".context-index", "tasks", ".beads-map.json"),
+      );
+      assert.equal(mapPathAfter, mapPathBefore, ".beads-map.json must not be created by dry-run");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("json → beads dry-run reads .beads-map.json to compute already_migrated (Behavior 15)", () => {
+    const proj = seedRichJsonBoard({
+      issues: [makeIssue("issue-1"), makeIssue("issue-2"), makeIssue("issue-3")],
+      epics: [makeEpic("epic-1")],
+    });
+    try {
+      // Pre-seed a .beads-map.json covering issue-1 and issue-2.
+      writeFileSync(
+        join(proj, ".context-index", "tasks", ".beads-map.json"),
+        JSON.stringify(
+          {
+            "issue-1": { beadsId: "br-1" },
+            "issue-2": { beadsId: "br-2" },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const brCheck = spawnSync("which", ["br"], { encoding: "utf8" });
+      if ((brCheck.status ?? 1) !== 0) return;
+
+      const { exitCode, stdout } = runCli(
+        ["issues", "migrate", "--to", "beads", "--dry-run"],
+        { cwd: proj },
+      );
+      assert.equal(exitCode, 0);
+      const jsonLine = stdout.split("\n").find((l) => l.trim().startsWith("{"));
+      const report = JSON.parse(jsonLine);
+      assert.equal(report.already_migrated, 2);
+      // would_create.issues = in_scope.issues - already_migrated = 3 - 2 = 1
+      assert.equal(report.would_create.issues, 1);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("dry-run counts in-scope dependency edges (Behavior 15)", () => {
+    const proj = seedRichJsonBoard({
+      issues: [
+        makeIssue("issue-1", { dependencies: [] }),
+        makeIssue("issue-2", { dependencies: ["issue-1"] }),
+        makeIssue("issue-3", { dependencies: ["issue-1", "issue-2"] }),
+      ],
+      epics: [],
+    });
+    try {
+      const brCheck = spawnSync("which", ["br"], { encoding: "utf8" });
+      if ((brCheck.status ?? 1) !== 0) return;
+
+      const { exitCode, stdout } = runCli(
+        ["issues", "migrate", "--to", "beads", "--dry-run"],
+        { cwd: proj },
+      );
+      assert.equal(exitCode, 0);
+      const jsonLine = stdout.split("\n").find((l) => l.trim().startsWith("{"));
+      const report = JSON.parse(jsonLine);
+      // 3 edges total, all in-scope: (2→1), (3→1), (3→2)
+      assert.equal(report.dependencies_to_replay, 3);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("dry-run excludes edges pointing to out-of-scope (closed) items (Behavior 14 + 15)", () => {
+    const proj = seedRichJsonBoard({
+      issues: [
+        makeIssue("issue-1"),
+        makeIssue("issue-2", { dependencies: ["issue-1"] }),
+        // issue-3 is closed (out of scope by default)
+        makeIssue("issue-3", { status: "closed" }),
+        makeIssue("issue-4", { dependencies: ["issue-3"] }), // depends on closed
+      ],
+    });
+    try {
+      const brCheck = spawnSync("which", ["br"], { encoding: "utf8" });
+      if ((brCheck.status ?? 1) !== 0) return;
+
+      const { exitCode, stdout } = runCli(
+        ["issues", "migrate", "--to", "beads", "--dry-run"],
+        { cwd: proj },
+      );
+      assert.equal(exitCode, 0);
+      const jsonLine = stdout.split("\n").find((l) => l.trim().startsWith("{"));
+      const report = JSON.parse(jsonLine);
+      // in-scope issues: 1, 2, 4. Edge (2→1) is in-scope. Edge (4→3) is NOT
+      // (endpoint 3 is closed). dependencies_to_replay = 1.
+      assert.equal(report.dependencies_to_replay, 1);
+    } finally {
+      cleanup(proj);
+    }
+  });
+});
