@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 2
-updated: 2026-05-11
+revision: 3
+updated: 2026-05-20
 ---
 
 # Feature Charter: Domain Extensions
@@ -26,7 +26,6 @@ Domain extension packages distribute domain-specific configuration (templates, r
 - Software profile extraction (stays bundled in `templates/domains/software/`)
 - Governance overlays, samples, skills, or hooks in these extensions (domain profiles only for now)
 - Extension authoring tooling or scaffolding commands
-- Auto-install during `adev init`
 - npm publishing (future — structure supports it but no `package.json` required for v1)
 
 ### Dependencies
@@ -67,6 +66,7 @@ Domain extension packages distribute domain-specific configuration (templates, r
 | Bundled Templates Cleanup | Remove extracted domains from `templates/domains/`, update `BUNDLED_DOMAIN_NAMES` constant to software only | Must-have | v1 | implemented |
 | Git Subdirectory Fragment Support | Enhance `resolve-source.mjs` to parse `repo#path` fragments, cloning the repo and resolving into the subdirectory | Must-have | v1 | implemented |
 | End-to-End Install Verification | Integration tests proving each extension installs and resolves correctly through `loadDomainConfig()` | Must-have | v1 | — |
+| Init-Time Domain Extension Picker | Catalog-driven prompt in `adev init` and `adev upgrade` that surfaces first-party domain extensions, reusing the existing `installExtension()` pipeline and writing `domain:` to `manifest.yaml` | Must-have | v2 | specified |
 
 ## Deferred Capabilities
 
