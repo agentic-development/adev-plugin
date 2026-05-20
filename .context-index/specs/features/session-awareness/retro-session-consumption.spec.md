@@ -3,7 +3,7 @@
 ---
 charter: session-awareness
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: low
 milestone: 0.28.0
 revision: 2
@@ -13,6 +13,28 @@ updated: 2026-05-20
 tracker-ref: issue-528
 depends-on:
   - .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
+source-manifest:
+  sha: "1fdabc8"
+  files:
+    - cli/index.mjs
+    - lib/cli/retro.mjs
+    - lib/retro/body-scan.mjs
+    - lib/retro/issue-id-validation.mjs
+    - lib/retro/safe-frontmatter.mjs
+    - lib/retro/session-activity.mjs
+    - lib/retro/session-format.mjs
+    - lib/retro/session-metrics.mjs
+    - skills/init/SKILL.md
+    - skills/retro/SKILL.md
+    - tests/cli/retro-session-activity.test.mjs
+    - tests/lib/retro-body-scan.test.mjs
+    - tests/lib/retro-issue-id-validation.test.mjs
+    - tests/lib/retro-safe-frontmatter.test.mjs
+    - tests/lib/retro-session-activity.test.mjs
+    - tests/lib/retro-session-format.test.mjs
+    - tests/lib/retro-session-metrics.test.mjs
+    - tests/skills/retro-session-section.test.mjs
+  computed-at: "2026-05-20T23:08:15.899Z"
 ---
 
 # Live Spec: Retro Session Consumption
