@@ -3,7 +3,7 @@
 > **Spec:** foo.spec.md
 
 This plan body contains inline `**Routing:**` blocks (legacy migration noise)
-AND a sibling `.routing.md`. The detector tolerates the inline blocks
+AND a sibling `.routing.json`. The detector tolerates the inline blocks
 because the sidecar is present; it must NOT flag
 `PLAN_MUTATED_WITHOUT_SIDECAR`. The per-task git-history `--diff-filter=M`
 check (handled by the existing detector path) still applies.

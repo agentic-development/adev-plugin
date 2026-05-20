@@ -2,15 +2,18 @@
  * Unit tests for lib/plan-routing-sidecar.mjs.
  *
  * Spec: .context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md
- *       Behaviors 1–3, Postconditions, Error Cases.
+ *       (rev 2 — JSON sidecar)
  *
  * Covers:
  *   - write/read roundtrip (Behavior 1 + 2)
- *   - deterministic markdown rendering keyed by task_id
+ *   - persisted format is JSON with version + entries[]
+ *   - deterministic output (sorted by task_id; stable key order)
  *   - atomic temp-then-rename semantics + SIDECAR_WRITE_FAILED error path
  *   - readRoutingSidecar throws ROUTING_SIDECAR_MISSING when sidecar absent
+ *   - readRoutingSidecar throws INVALID_SIDECAR_JSON for malformed / wrong-version files
  *   - lookupRoutingEntry throws ROUTING_ENTRY_MISSING for unknown task_id
- *   - sidecarPathFor derives the correct sibling path
+ *   - sidecarPathFor derives the correct sibling path (now `.routing.json`)
+ *   - renderRoutingMarkdown produces a deterministic markdown table view
  */
 
 import { test } from "node:test";
@@ -29,6 +32,7 @@ import {
   writeRoutingSidecar,
   readRoutingSidecar,
   lookupRoutingEntry,
+  renderRoutingMarkdown,
   sidecarPathFor,
 } from "../../lib/plan-routing-sidecar.mjs";
 
@@ -60,14 +64,14 @@ const ENTRY_T2 = {
   rationale: "ui-touch task; specialist routing",
 };
 
-test("sidecarPathFor: <stem>.plan.md → <stem>.routing.md", () => {
+test("sidecarPathFor: <stem>.plan.md → <stem>.routing.json", () => {
   assert.equal(
     sidecarPathFor("/x/y/foo.plan.md"),
-    "/x/y/foo.routing.md",
+    "/x/y/foo.routing.json",
   );
   assert.equal(
     sidecarPathFor("rel/foo-bar.plan.md"),
-    "rel/foo-bar.routing.md",
+    "rel/foo-bar.routing.json",
   );
 });
 
@@ -94,6 +98,26 @@ test("writeRoutingSidecar then readRoutingSidecar roundtrip preserves entries", 
     // Reader returns entries sorted by task_id ascending (deterministic).
     assert.deepEqual(round[0], ENTRY_T1);
     assert.deepEqual(round[1], ENTRY_T2);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("persisted sidecar is JSON with version + entries[]", () => {
+  const dir = mkPlanDir("json-shape");
+  try {
+    const planPath = join(dir, "foo.plan.md");
+    writeFileSync(planPath, "# Plan\n");
+    writeRoutingSidecar(planPath, [ENTRY_T1, ENTRY_T2]);
+
+    const body = readFileSync(sidecarPathFor(planPath), "utf8");
+    const doc = JSON.parse(body); // single-pass parse must succeed
+    assert.equal(doc.version, 1);
+    assert.equal(typeof doc._generated_by, "string");
+    assert.ok(Array.isArray(doc.entries));
+    assert.equal(doc.entries.length, 2);
+    assert.deepEqual(doc.entries[0], ENTRY_T1);
+    assert.deepEqual(doc.entries[1], ENTRY_T2);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -132,7 +156,7 @@ test("writeRoutingSidecar is writer-owned: re-run replaces, no append", () => {
   }
 });
 
-test("writeRoutingSidecar emits deterministic markdown sorted by task_id", () => {
+test("writeRoutingSidecar emits deterministic JSON sorted by task_id", () => {
   const dir = mkPlanDir("deterministic");
   try {
     const planPath = join(dir, "foo.plan.md");
@@ -146,9 +170,9 @@ test("writeRoutingSidecar emits deterministic markdown sorted by task_id", () =>
     const body2 = readFileSync(sidecarPathFor(planPath), "utf8");
 
     assert.equal(body1, body2, "ordering of input must not affect output");
-    // The t1 block must appear before the t2 block in the rendered body.
-    const idxT1 = body1.indexOf("task_id: t1");
-    const idxT2 = body1.indexOf("task_id: t2");
+    // The t1 entry must appear before the t2 entry in the rendered JSON.
+    const idxT1 = body1.indexOf('"task_id": "t1"');
+    const idxT2 = body1.indexOf('"task_id": "t2"');
     assert.ok(idxT1 >= 0 && idxT2 >= 0 && idxT1 < idxT2, "t1 must precede t2");
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -196,6 +220,72 @@ test("readRoutingSidecar throws ROUTING_SIDECAR_MISSING when sidecar absent", ()
     }
     assert.ok(caught, "reader must throw when sidecar absent");
     assert.equal(caught.code, "ROUTING_SIDECAR_MISSING");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("readRoutingSidecar throws INVALID_SIDECAR_JSON for malformed JSON", () => {
+  const dir = mkPlanDir("malformed-json");
+  try {
+    const planPath = join(dir, "foo.plan.md");
+    writeFileSync(planPath, "# Plan\n");
+    writeFileSync(sidecarPathFor(planPath), "{ not valid json");
+
+    let caught;
+    try {
+      readRoutingSidecar(planPath);
+    } catch (err) {
+      caught = err;
+    }
+    assert.ok(caught);
+    assert.equal(caught.code, "INVALID_SIDECAR_JSON");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("readRoutingSidecar throws INVALID_SIDECAR_JSON for wrong schema version", () => {
+  const dir = mkPlanDir("wrong-version");
+  try {
+    const planPath = join(dir, "foo.plan.md");
+    writeFileSync(planPath, "# Plan\n");
+    writeFileSync(
+      sidecarPathFor(planPath),
+      JSON.stringify({ version: 99, entries: [] }),
+    );
+
+    let caught;
+    try {
+      readRoutingSidecar(planPath);
+    } catch (err) {
+      caught = err;
+    }
+    assert.ok(caught);
+    assert.equal(caught.code, "INVALID_SIDECAR_JSON");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("readRoutingSidecar throws INVALID_SIDECAR_JSON when entries is not an array", () => {
+  const dir = mkPlanDir("missing-entries");
+  try {
+    const planPath = join(dir, "foo.plan.md");
+    writeFileSync(planPath, "# Plan\n");
+    writeFileSync(
+      sidecarPathFor(planPath),
+      JSON.stringify({ version: 1, entries: "nope" }),
+    );
+
+    let caught;
+    try {
+      readRoutingSidecar(planPath);
+    } catch (err) {
+      caught = err;
+    }
+    assert.ok(caught);
+    assert.equal(caught.code, "INVALID_SIDECAR_JSON");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -286,20 +376,21 @@ test("writeRoutingSidecar validates entry schema: missing scores dimension throw
   }
 });
 
-test("readRoutingSidecar tolerates trailing whitespace and recovers entries", () => {
-  const dir = mkPlanDir("whitespace");
-  try {
-    const planPath = join(dir, "foo.plan.md");
-    writeFileSync(planPath, "# Plan\n");
+test("renderRoutingMarkdown produces a deterministic markdown table view", () => {
+  // Pure function — no FS interaction.
+  const md1 = renderRoutingMarkdown([ENTRY_T2, ENTRY_T1]);
+  const md2 = renderRoutingMarkdown([ENTRY_T1, ENTRY_T2]);
+  assert.equal(md1, md2, "input order must not affect rendered output");
+  assert.ok(md1.includes("# Routing Sidecar"), "should carry heading");
+  assert.ok(md1.includes("| Task | Agent |"), "should carry table header");
+  // t1 row precedes t2 row.
+  const idxT1 = md1.indexOf("| t1 |");
+  const idxT2 = md1.indexOf("| t2 |");
+  assert.ok(idxT1 >= 0 && idxT2 >= 0 && idxT1 < idxT2);
+});
 
-    writeRoutingSidecar(planPath, [ENTRY_T1]);
-    const sidecarPath = sidecarPathFor(planPath);
-    const body = readFileSync(sidecarPath, "utf8");
-    writeFileSync(sidecarPath, body + "\n\n   \n");
-
-    const round = readRoutingSidecar(planPath);
-    assert.deepEqual(round, [ENTRY_T1]);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+test("renderRoutingMarkdown handles empty entries gracefully", () => {
+  const md = renderRoutingMarkdown([]);
+  assert.ok(md.includes("# Routing Sidecar"));
+  assert.ok(md.includes("_(no entries)_"));
 });

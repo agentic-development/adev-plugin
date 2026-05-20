@@ -64,7 +64,7 @@ If the CLI call fails, fall back to reading each file individually.
    Pass boundary rules to implementer subagents as additional constraints in prompt section 2
    (alongside constitution excerpt). If it does not exist, skip.
 8. **Routing decisions:** Routing decisions for each task live in the
-   sibling sidecar file `<plan-stem>.routing.md`, written by `/adev:route`.
+   sibling sidecar file `<plan-stem>.routing.json`, written by `/adev:route`.
    The plan markdown body is NOT a source of routing state — `**Routing:**`
    blocks in the plan body are forbidden by CON-8 and ignored by this skill
    (and flagged by `lib/plan-immutability.mjs` as

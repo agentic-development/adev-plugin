@@ -185,6 +185,23 @@ test("adev implement read-routing errors when --plan or --task-id missing", () =
   assert.match(res.stderr, /--plan|--task-id/);
 });
 
+test("adev implement read-routing errors with INVALID_SIDECAR_JSON when sidecar is malformed", () => {
+  const { dir, planPath } = makePlanWithSidecar("malformed", null);
+  try {
+    const sidecarPath = planPath.replace(/\.plan\.md$/, ".routing.json");
+    writeFileSync(sidecarPath, "{ not valid json");
+    const res = spawnSync(
+      "node",
+      [CLI, "implement", "read-routing", "--plan", planPath, "--task-id", "t1"],
+      { encoding: "utf8" },
+    );
+    assert.notEqual(res.status, 0);
+    assert.match(res.stderr, /INVALID_SIDECAR_JSON/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("adev implement read-routing errors when --plan does not end with .plan.md", () => {
   const dir = mkdtempSync(join(tmpdir(), "imp-cli-badpath-"));
   try {

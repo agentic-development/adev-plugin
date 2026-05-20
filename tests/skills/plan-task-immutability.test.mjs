@@ -107,7 +107,7 @@ test("plan-immutability: detectMutatedPlans handles missing projectRoot graceful
 // committed as a single `A` commit (the cursor-provider pattern). The
 // working-tree branch greps the plan body for inline Routing/Scores/
 // Rationale and flags PLAN_MUTATED_WITHOUT_SIDECAR when no sibling
-// .routing.md exists at the same path — regardless of git history.
+// .routing.json exists at the same path — regardless of git history.
 // ────────────────────────────────────────────────────────────────────────
 
 // The new fixtures (clean-plan, mutate-then-single-add, sidecar-present-plus-

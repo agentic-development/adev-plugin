@@ -108,7 +108,7 @@ For each task, sum the four dimension scores to get a total (range: 4-20).
 ## Step 4: Write Routing Sidecar
 
 If `--dry-run` was NOT passed, persist the routing decisions to the sibling
-sidecar file `<plan-stem>.routing.md` via the `adev route emit-sidecar` CLI
+sidecar file `<plan-stem>.routing.json` via the `adev route emit-sidecar` CLI
 verb. **The plan markdown body MUST NOT be modified by this skill.** Routing
 state is owned by the sidecar; plan files are read-only after `/adev:plan`
 authored them (CON-8 in `plan-task-events.spec.md`; ADR-0012).
@@ -146,6 +146,11 @@ Field contract (per spec Behavior 2):
 
 The verb is writer-owned: a re-run fully replaces the prior sidecar. No
 history is preserved inside the sidecar; consult git history for prior runs.
+
+**Human-readable view.** The sidecar is JSON (machine-primary). To inspect
+routing decisions as a markdown table without `jq`, run
+`adev route render-sidecar --plan <plan-path>` — it pretty-prints the
+sidecar to stdout. The persisted file remains JSON; markdown is on-demand.
 
 Exit codes:
 
@@ -193,7 +198,7 @@ Task 7: Custom analytics engine (score: 6/20)
 
 ## Integration with /adev:implement
 
-`/adev:implement` reads routing decisions from `<plan-stem>.routing.md` via
+`/adev:implement` reads routing decisions from `<plan-stem>.routing.json` via
 the `adev implement read-routing --plan <path> --task-id <id>` CLI verb. It
 does NOT parse `**Routing:**` blocks from the plan body — those will be
 ignored even if present (and flagged separately by the plan-immutability
@@ -233,9 +238,9 @@ To write annotations: /adev:route --plan <path>
   `**Rationale:**` blocks in the plan body are forbidden — they violate
   CON-8 in `plan-task-events.spec.md` and the `lib/plan-immutability.mjs`
   detector will surface them as `PLAN_MUTATED_WITHOUT_SIDECAR`. All routing
-  state lives in the sibling `<plan-stem>.routing.md` sidecar written via
+  state lives in the sibling `<plan-stem>.routing.json` sidecar written via
   `adev route emit-sidecar`.
-- Hand-edit `<plan-stem>.routing.md`. The sidecar is writer-owned; modify
+- Hand-edit `<plan-stem>.routing.json`. The sidecar is writer-owned; modify
   inputs to `/adev:route` and re-run instead.
 - Skip loading boundary rules or risk policies when the files exist
 - Route tasks based on task title alone without analyzing file targets and spec coverage

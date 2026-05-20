@@ -51,7 +51,7 @@ const ENTRY = {
   rationale: "ok",
 };
 
-test("adev route emit-sidecar writes <plan-stem>.routing.md and leaves plan body untouched", () => {
+test("adev route emit-sidecar writes <plan-stem>.routing.json and leaves plan body untouched", () => {
   const { dir, planPath } = makePlan("happy");
   try {
     const planBefore = readFileSync(planPath, "utf8");
@@ -65,7 +65,7 @@ test("adev route emit-sidecar writes <plan-stem>.routing.md and leaves plan body
     );
     assert.equal(res.status, 0, `stderr: ${res.stderr}`);
 
-    const sidecarPath = planPath.replace(/\.plan\.md$/, ".routing.md");
+    const sidecarPath = planPath.replace(/\.plan\.md$/, ".routing.json");
     assert.ok(existsSync(sidecarPath), "sidecar must be written");
     assert.equal(
       readFileSync(planPath, "utf8"),
@@ -74,8 +74,12 @@ test("adev route emit-sidecar writes <plan-stem>.routing.md and leaves plan body
     );
 
     const body = readFileSync(sidecarPath, "utf8");
-    assert.match(body, /task_id: t1/);
-    assert.match(body, /selected_agent: auto-agent/);
+    const doc = JSON.parse(body);
+    assert.equal(doc.version, 1);
+    assert.ok(Array.isArray(doc.entries));
+    assert.equal(doc.entries.length, 1);
+    assert.equal(doc.entries[0].task_id, "t1");
+    assert.equal(doc.entries[0].selected_agent, "auto-agent");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -93,7 +97,7 @@ test("adev route emit-sidecar writes JSON status report on success", () => {
     const out = JSON.parse(res.stdout);
     assert.equal(out.ok, true);
     assert.equal(out.entries, 1);
-    assert.match(out.sidecar, /\.routing\.md$/);
+    assert.match(out.sidecar, /\.routing\.json$/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -178,7 +182,7 @@ test("adev route emit-sidecar surfaces SIDECAR_WRITE_FAILED with non-zero exit w
   const { dir, planPath } = makePlan("rename-blocked");
   try {
     // Plant a directory at the destination so renameSync fails.
-    mkdirSync(planPath.replace(/\.plan\.md$/, ".routing.md"));
+    mkdirSync(planPath.replace(/\.plan\.md$/, ".routing.json"));
     const res = spawnSync(
       "node",
       [CLI, "route", "emit-sidecar", "--plan", planPath],
@@ -195,4 +199,43 @@ test("adev route emit-sidecar --help prints usage", () => {
   const res = spawnSync("node", [CLI, "route", "--help"], { encoding: "utf8" });
   assert.equal(res.status, 0);
   assert.match(res.stdout, /emit-sidecar/);
+  assert.match(res.stdout, /render-sidecar/);
+});
+
+test("adev route render-sidecar prints markdown view of the JSON sidecar", () => {
+  const { dir, planPath } = makePlan("render-hit");
+  try {
+    // Seed the sidecar via emit-sidecar.
+    spawnSync(
+      "node",
+      [CLI, "route", "emit-sidecar", "--plan", planPath],
+      { input: JSON.stringify([ENTRY]), encoding: "utf8" },
+    );
+
+    const res = spawnSync(
+      "node",
+      [CLI, "route", "render-sidecar", "--plan", planPath],
+      { encoding: "utf8" },
+    );
+    assert.equal(res.status, 0, `stderr: ${res.stderr}`);
+    assert.match(res.stdout, /# Routing Sidecar/);
+    assert.match(res.stdout, /\| t1 \| auto-agent \|/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("adev route render-sidecar errors when sidecar is missing", () => {
+  const { dir, planPath } = makePlan("render-miss");
+  try {
+    const res = spawnSync(
+      "node",
+      [CLI, "route", "render-sidecar", "--plan", planPath],
+      { encoding: "utf8" },
+    );
+    assert.notEqual(res.status, 0);
+    assert.match(res.stderr, /ROUTING_SIDECAR_MISSING/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
