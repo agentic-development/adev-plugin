@@ -1,1 +1,4 @@
 {"event":"code_drift_detected","drift_source":"lib/repomap/rank.mjs","drift_at":"2026-05-17T18:51:21.025Z","ts":"2026-05-18T13:50:21.115Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/repomap/languages/typescript.mjs","drift_at":"2026-05-18T22:15:03.964Z","ts":"2026-05-18T22:15:03.965Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"tests/repomap/parse.test.mjs","drift_at":"2026-05-18T22:24:57.941Z","ts":"2026-05-18T22:24:57.942Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/repomap/index.mjs","drift_at":"2026-05-18T22:25:03.405Z","ts":"2026-05-18T22:25:03.405Z","diagnostic_warnings":["adev/frontmatter-present"]}
