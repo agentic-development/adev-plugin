@@ -3479,6 +3479,32 @@
       "next_action": "Spec the gates_pass migration to governance/gates.yaml under the milestone-lifecycle charter",
       "created": "2026-05-19T19:53:44.923Z",
       "updated": "2026-05-19T19:53:44.923Z"
+    },
+    {
+      "id": "issue-526",
+      "title": "Plan-Routing Sidecar (.routing.md)",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md. Created by /adev:specify on 2026-05-19. Resolves issue-526 from the source board (sibling .routing.md sidecar per ADR-0012, variant a).",
+      "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts",
+      "created": "2026-05-20T02:14:56.879Z",
+      "updated": "2026-05-20T02:14:56.879Z"
+    },
+    {
+      "id": "issue-527",
+      "title": "Auto-Retry Loop on Review BLOCK",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/review-block-auto-retry.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/review-block-auto-retry.spec.md. Created by /adev:specify --cross-cutting on 2026-05-19. HIGH PRIORITY — restores the auto-retry loop removed in commit 7e333fd. Cross-cutting spec. Affects: agent-reliable-state-artifacts, spec-lifecycle, strategic-planning.",
+      "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts (primary anchor) and /adev:review-specs --module spec-lifecycle / strategic-planning for sibling reviews",
+      "created": "2026-05-20T02:18:11.461Z",
+      "updated": "2026-05-20T02:18:11.461Z"
     }
   ]
 }
