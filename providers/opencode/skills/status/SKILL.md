@@ -111,12 +111,13 @@ Specs (<N total>):
 ### Mode: `--milestone <name>`
 
 1. Read `tasks.backend` from `.context-index/manifest.yaml`. If not configured, print "Issue board not configured. Add `tasks.backend` to manifest.yaml." and stop.
-2. Query the issue board for all epics with `milestone` matching `<name>`
-3. If no epics match, print "No epics found for milestone '<name>'. Available milestones: <list of known milestones>" and stop
-4. For each matching epic, list all child issues with their statuses
-5. For each epic, find related specs (by matching charter or plan references) and report their statuses (draft / review-passed / implemented / validated)
-6. Compute aggregate progress: total issues, issues by status, percentage complete (closed / total)
-7. Display the milestone name, associated epics, issue breakdown, and spec statuses
+2. **Milestone metadata:** Call `getMilestoneStatusData(projectRoot, name)` from `lib/milestones.mjs`. If `found` is true, display milestone metadata (status, target_date, ship_criteria count, defer_reason if deferred) before the epic/issue breakdown. If not found but `milestones.yaml` exists, print advisory: "Note: milestone '<name>' is not defined in milestones.yaml."
+3. Query the issue board for all epics with `milestone` matching `<name>`
+4. If no epics match, print "No epics found for milestone '<name>'. Available milestones: <list of known milestones>" and stop
+5. For each matching epic, list all child issues with their statuses
+6. For each epic, find related specs (by matching charter or plan references) and report their statuses (draft / review-passed / implemented / validated)
+7. Compute aggregate progress: total issues, issues by status, percentage complete (closed / total)
+8. Display the milestone name, associated epics, issue breakdown, and spec statuses
 
 **Output format:**
 
@@ -145,13 +146,17 @@ Summary:
 
 ### Mode: `--all` (default)
 
-**Optimization:** Use `findSpecsByStatus` from `<ADEV_ROOT>/lib/meta-tools.mjs` to scan specs by status in a single Bash call instead of reading each file individually:
+**Optimization:** Use `adev state list --status <s>` to scan specs by status in a single call instead of reading each file individually. Loop over the lifecycle statuses:
 
 ```bash
-node -e "import {findSpecsByStatus} from '<ADEV_ROOT>/lib/meta-tools.mjs'; for (const s of ['draft','review-pending','review-passed','implemented','validated']) { const r = await findSpecsByStatus('*', s); console.log(JSON.stringify({status: s, count: r.length, specs: r})); }"
+for s in draft review-pending review-passed implemented validated; do
+  adev state list --status "$s"
+done
 ```
 
-If the meta-tool call fails, fall back to the manual scan below.
+Each invocation emits a single-line JSON `{ status, module, count, specs }`. The verb wraps `lib/meta-tools.mjs::findSpecsByStatus` and accepts `--module <slug>` to scope to a single charter (default `*` covers all features + cross-cutting).
+
+If the CLI call fails, fall back to the manual scan below.
 
 1. Scan all charters under `.context-index/specs/features/` and `.context-index/specs/cross-cutting/`
 2. Scan all `*.spec.md` files under the same directories
@@ -173,7 +178,7 @@ Aggregate capability counts across all charters.
 For each spec with a `source-manifest`, check using `lib/source-manifest.mjs`. Flag any spec where source files are missing or changed.
 
 #### Specs Needing Re-Review
-Flag specs where `revision` is greater than the last-reviewed revision (specs modified since last review pass).
+For each spec, call `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` and compare the spec's `revision` frontmatter against `state.steps.review.lastReviewedRevision`. Flag specs where `revision` is greater (modified since last review pass). For the project-wide view, `listLifecycleStates(projectRoot)` returns the full set in one call.
 
 #### Milestone Progress
 
@@ -184,6 +189,7 @@ If `tasks.backend` is configured in `manifest.yaml`, scan all epics for `milesto
 - Total issues across those epics
 - Issue counts by status: open / in_progress / closed
 - Percentage complete (closed issues / total issues)
+- **Milestone metadata** (from `milestones.json` via `lib/milestones.mjs`): call `getMilestoneStatusData(projectRoot, name)` for each milestone name. If found, include target_date, status, and ship_criteria count alongside the issue board aggregation.
 
 If no epics have milestones, skip this section entirely (unchanged behavior). If `tasks.backend` is not configured, skip this section silently.
 
@@ -429,3 +435,27 @@ Advisory: running repo-scoped inside workspace at <workspace-path>. Run /adev:st
 - If `.context-index/sessions/` does not exist, report "No sessions directory found" and skip session reporting.
 - If `lib/source-manifest.mjs` is not available, skip source manifest checks and note "source-manifest checking unavailable".
 - Use frontmatter parsing that tolerates missing fields — default to "unknown" for missing values.
+
+## API reference
+
+Lifecycle event log (the primary source for spec status, review verdicts, and re-review detection):
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — single-spec projection.
+- `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregate per-spec lifecycle states across the project (used by `--all` and the Specs Needing Re-Review scan).
+
+Issue board (board-level work-item aggregation):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Milestones:
+
+- `getMilestoneStatusData(projectRoot, name)` from `<ADEV_ROOT>/lib/milestones.mjs` — reads `.context-index/milestones.json`.
+
+Source-manifest drift:
+
+- `verifyManifest(manifest, projectRoot)` from `<ADEV_ROOT>/lib/source-manifest.mjs` — drift detection on `source-manifest` blocks.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

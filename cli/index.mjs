@@ -1444,6 +1444,10 @@ const VERB_REGISTRY = new Map([
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
   ["artifact",        () => import("../lib/cli/artifact.mjs")],
   ["partial",         () => import("../lib/cli/partial.mjs")],
+  ["route",           () => import("../lib/cli/route.mjs")],
+  ["implement",       () => import("../lib/cli/implement.mjs")],
+  ["specify",         () => import("../lib/cli/specify.mjs")],
+  ["issues",          () => import("../lib/cli/issues.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
@@ -1505,6 +1509,7 @@ async function dispatch(argv) {
     // New-contract modules (lib/cli/*.mjs) accept { projectRoot, argv, manifest }.
     // Legacy adapter closures (install/upgrade/etc.) take no args and read
     // process.argv internally. Branch on run.length.
+    let returnCode = 0;
     if (mod.run.length === 0) {
       await mod.run();
     } else {
@@ -1517,9 +1522,16 @@ async function dispatch(argv) {
         // contract helpers that need it should fail with their own error.
         manifest = null;
       }
-      await mod.run({ projectRoot, argv: verbArgs, manifest });
+      // New-pattern helpers may return a numeric exit code (e.g., issues
+      // sub-dispatcher returns 1 for unknown subcommand). Most existing
+      // helpers call process.exit() inline and return undefined; treat
+      // undefined / non-number as 0 for backward compatibility.
+      const ret = await mod.run({ projectRoot, argv: verbArgs, manifest });
+      if (typeof ret === "number" && Number.isInteger(ret)) {
+        returnCode = ret;
+      }
     }
-    process.exit(0);
+    process.exit(returnCode);
   } catch (err) {
     // GateError detection: use err.code === 'GATE_BLOCKED' rather than
     // instanceof — robust across module-instance boundaries.

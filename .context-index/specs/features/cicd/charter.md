@@ -1,7 +1,8 @@
 ---
+kind: cross-cutting
 status: approved
-revision: 1
-updated: 2026-03-24
+revision: 2
+updated: 2026-05-19
 ---
 
 # Feature Charter: cicd
