@@ -21,6 +21,15 @@ Produce a list of findings. Each finding must include:
 - **Finding:** Clear description of the issue
 - **Recommendation:** How to fix or improve it
 
+### Required fields when severity is `blocker`
+
+For every BLOCK finding (severity = `blocker`), also emit:
+
+- **`blocker_id`:** canonical `<reviewer-slug>:<finding-type>:<8-hex-sha-prefix>` (computed via `lib/blocker-id.mjs::buildBlockerId`). Reviewer-slug for this prompt is `structural-architect`. `finding-type` is a stable kebab-case category (e.g., `missing-precondition`, `ambiguous-behavior`, `adr-conflict`, `module-boundary-violation`). `<location-hash>` is the first 8 hex chars of `sha256(<spec-section-anchor>:<truncated-finding-text>)`.
+- **`section_anchor`:** the spec-section anchor the finding implicates (e.g., `preconditions`, `behaviors-3`, `error-cases`). Drives byte-identical preservation of unaffected sections in `/adev:specify --revise`.
+
+The aggregator in `skills/review-specs/SKILL.md` validates `blocker_id` shape; malformed IDs produce an `INVALID_BLOCKER_ID` advisory and fall through to the `LEGACY_REVIEWER_OUTPUT` path (no auto-retry).
+
 ## Rules
 
 - Be precise. Reference specific sections, entities, or contracts in the spec.
