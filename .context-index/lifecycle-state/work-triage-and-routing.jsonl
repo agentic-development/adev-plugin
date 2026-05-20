@@ -8,3 +8,4 @@
 {"event":"code_drift_detected","drift_source":"skills/route/SKILL.md","drift_at":"2026-05-20T12:08:14.831Z","ts":"2026-05-20T12:08:14.831Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.072Z","ts":"2026-05-20T13:03:18.073Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.985Z","ts":"2026-05-20T13:05:52.985Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/using-adev/SKILL.md","drift_at":"2026-05-20T19:48:53.520Z","ts":"2026-05-20T19:48:53.520Z","diagnostic_warnings":["adev/frontmatter-present"]}

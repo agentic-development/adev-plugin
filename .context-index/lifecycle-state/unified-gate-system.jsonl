@@ -7,3 +7,5 @@
 {"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:20.472Z","ts":"2026-05-20T04:14:20.472Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:31.191Z","ts":"2026-05-20T04:14:31.191Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.073Z","ts":"2026-05-20T12:08:30.073Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-05-20T17:22:29.063Z","ts":"2026-05-20T17:22:29.063Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-05-20T17:23:59.934Z","ts":"2026-05-20T17:23:59.934Z","diagnostic_warnings":["adev/frontmatter-present"]}
