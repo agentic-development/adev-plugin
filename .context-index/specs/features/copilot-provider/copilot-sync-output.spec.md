@@ -8,13 +8,28 @@
 ---
 charter: copilot-provider
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 2
 charter-revision: 6
 created: 2026-05-19
 updated: 2026-05-19
+source-manifest:
+  sha: "2857abc"
+  files:
+    - lib/sync/copilot.mjs
+    - tests/sync-copilot-dispatcher.test.mjs
+    - tests/sync-copilot-fixtures/constitution-dangerous-rm-rf-allowed.md
+    - tests/sync-copilot-fixtures/constitution-dangerous-rm-rf.md
+    - tests/sync-copilot-fixtures/constitution-identity-too-large.md
+    - tests/sync-copilot-fixtures/constitution-just-over.md
+    - tests/sync-copilot-fixtures/constitution-multi-byte.md
+    - tests/sync-copilot-fixtures/constitution-small.md
+    - tests/sync-copilot-render-instructions.test.mjs
+    - tests/sync-copilot-render-module.test.mjs
+    - tests/sync-copilot.test.mjs
+  computed-at: "2026-05-20T00:30:34.826Z"
 ---
 
 ## Behavioral Contract
