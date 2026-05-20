@@ -10,7 +10,7 @@
 ---
 charter: task-management
 kind: action
-status: implemented
+status: validated
 risk_level: medium
 milestone: 4
 revision: 1
