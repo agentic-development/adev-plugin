@@ -105,32 +105,58 @@ For each task, sum the four dimension scores to get a total (range: 4-20).
 
 **Secondary override:** If the task touches files flagged as `high` risk in `risk-policies.yaml`, force `assisted-agent` as the minimum routing.
 
-## Step 4: Write Routing Annotations
+## Step 4: Write Routing Sidecar
 
-If `--dry-run` was NOT passed, append routing metadata to each task in the plan file.
+If `--dry-run` was NOT passed, persist the routing decisions to the sibling
+sidecar file `<plan-stem>.routing.md` via the `adev route emit-sidecar` CLI
+verb. **The plan markdown body MUST NOT be modified by this skill.** Routing
+state is owned by the sidecar; plan files are read-only after `/adev:plan`
+authored them (CON-8 in `plan-task-events.spec.md`; ADR-0012).
 
-For each task, add the following block immediately after the task header line:
+Invoke the verb once per `/adev:route` run, passing the full entry list as a
+JSON array on stdin. The verb performs an atomic temp-then-rename write and
+surfaces `SIDECAR_WRITE_FAILED` on rename failure.
 
-```markdown
-**Routing:** auto-agent | assisted-agent | human-only (score: N/20)
-**Scores:** spec=N pattern=N blast=N novelty=N
-**Rationale:** <one sentence explaining the recommendation>
+```bash
+adev route emit-sidecar --plan <plan-path> <<'ENTRIES'
+[
+  {
+    "task_id": "t1",
+    "selected_agent": "auto-agent",
+    "scores": {
+      "spec_completeness": 0.9,
+      "pattern_coverage": 1.0,
+      "blast_radius": 0.8,
+      "novelty": 0.8
+    },
+    "rationale": "Well-specified CRUD route with a direct golden sample match and minimal blast radius."
+  }
+]
+ENTRIES
 ```
 
-Example:
+Field contract (per spec Behavior 2):
 
-```markdown
-### Task 3: Wire Dashboard Route [specialist: none]
+| Field            | Type       | Notes                                                                          |
+|------------------|------------|--------------------------------------------------------------------------------|
+| `task_id`        | string     | Matches the plan's anchor (`t1`, `t2`, …)                                      |
+| `selected_agent` | string     | `auto-agent` / `assisted-agent` / `human-only` or a specialist slug            |
+| `scores`         | object     | Four required dimensions, each `0..1`: `spec_completeness`, `pattern_coverage`, `blast_radius`, `novelty` |
+| `rationale`      | string     | ≤ 400 chars; one short sentence explaining the recommendation                  |
 
-**Routing:** auto-agent (score: 18/20)
-**Scores:** spec=5 pattern=5 blast=4 novelty=4
-**Rationale:** Well-specified CRUD route with a direct golden sample match and minimal blast radius.
+The verb is writer-owned: a re-run fully replaces the prior sidecar. No
+history is preserved inside the sidecar; consult git history for prior runs.
 
-**Charter capability:** dashboard-navigation
-...
-```
+Exit codes:
 
-If the task already has routing annotations (from a previous run), replace them with the new scores.
+- `0` — success; sidecar written
+- `1` — argument / JSON / schema error (`INVALID_PLAN_PATH`, `INVALID_ROUTING_ENTRY`)
+- `2` — `SIDECAR_WRITE_FAILED` (atomic rename failure; tmp path surfaced on stderr)
+
+**Do not write `**Routing:**` / `**Scores:**` / `**Rationale:**` blocks into
+the plan body.** `/adev:implement` reads routing exclusively via
+`adev implement read-routing`; inline blocks in the plan body will be
+flagged by `lib/plan-immutability.mjs` as `PLAN_MUTATED_WITHOUT_SIDECAR`.
 
 ## Step 5: Report to User
 
@@ -167,11 +193,23 @@ Task 7: Custom analytics engine (score: 6/20)
 
 ## Integration with /adev:implement
 
-When `/adev:implement` reads a task that has routing annotations, it adjusts its execution behavior:
+`/adev:implement` reads routing decisions from `<plan-stem>.routing.md` via
+the `adev implement read-routing --plan <path> --task-id <id>` CLI verb. It
+does NOT parse `**Routing:**` blocks from the plan body — those will be
+ignored even if present (and flagged separately by the plan-immutability
+detector).
+
+When a task's `selected_agent` is resolved from the sidecar, `/adev:implement`
+adjusts its execution behavior:
 
 - **auto-agent:** Standard dispatch. No additional checkpoints. The subagent implements the full TDD cycle (RED, GREEN, REFACTOR, COMMIT) without pausing.
 - **assisted-agent:** After the subagent writes tests and verifies they fail (RED phase), pause execution and present the test code to the user for review. Wait for approval before proceeding to the GREEN phase. This catches misunderstandings early, before implementation effort is spent.
 - **human-only:** Generate scaffolding only: file stubs with correct paths, type definitions from the spec, test structure with `describe`/`it` blocks and placeholder assertions, and import statements. Present this as a manual task checklist for the human to implement. Do not attempt the GREEN phase.
+
+If the sidecar is missing when `/adev:implement` runs, the read verb exits
+with `ROUTING_SIDECAR_MISSING` and instructs the operator to re-run
+`/adev:route` against the plan. There is no silent fallback to inline
+parsing.
 
 ## Dry-Run Mode
 
@@ -190,6 +228,14 @@ To write annotations: /adev:route --plan <path>
 **Never:**
 - Score a task without reading the actual spec sections relevant to it
 - Assign `auto-agent` to a task with any dimension scoring 1
-- Modify the plan file beyond adding or updating routing annotation blocks
+- **Mutate the plan markdown body.** The plan file is read-only after
+  `/adev:plan` authored it. Inline `**Routing:**`, `**Scores:**`, or
+  `**Rationale:**` blocks in the plan body are forbidden — they violate
+  CON-8 in `plan-task-events.spec.md` and the `lib/plan-immutability.mjs`
+  detector will surface them as `PLAN_MUTATED_WITHOUT_SIDECAR`. All routing
+  state lives in the sibling `<plan-stem>.routing.md` sidecar written via
+  `adev route emit-sidecar`.
+- Hand-edit `<plan-stem>.routing.md`. The sidecar is writer-owned; modify
+  inputs to `/adev:route` and re-run instead.
 - Skip loading boundary rules or risk policies when the files exist
 - Route tasks based on task title alone without analyzing file targets and spec coverage
