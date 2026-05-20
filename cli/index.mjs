@@ -622,7 +622,7 @@ async function installProviders(providerNames) {
 async function applySessionCaptureMode() {
   let dispatch;
   try {
-    const mod = await import("../lib/cli/install-session-capture.mjs");
+    const mod = await import("../lib/session-capture-installer.mjs");
     dispatch = mod.dispatchInstallerByCaptureMode;
   } catch {
     return; // module not present — skip silently

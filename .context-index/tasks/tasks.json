@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 99,
+  "seq": 110,
   "epics": [
     {
       "id": "epic-1",
@@ -60,9 +60,9 @@
       "id": "epic-8",
       "title": "Multi-Repo Workspace Phase 2",
       "status": "open",
-      "milestone": "multi-repo-workspace-phase-2",
+      "milestone": "0.28.0",
       "created": "2026-04-16T12:43:29.561Z",
-      "updated": "2026-04-16T12:43:29.561Z"
+      "updated": "2026-05-20T20:54:11.229Z"
     },
     {
       "id": "epic-9",
@@ -553,51 +553,52 @@
       "id": "epic-74",
       "title": "adev-compiler-discipline",
       "status": "open",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.169Z",
-      "updated": "2026-05-14T12:32:48.169Z"
+      "updated": "2026-05-20T20:49:46.875Z"
     },
     {
       "id": "epic-75",
       "title": "cli-driver-surface",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.184Z",
-      "updated": "2026-05-16T11:50:02.098Z"
+      "updated": "2026-05-20T20:49:46.891Z"
     },
     {
       "id": "epic-76",
       "title": "artifact-schemas",
-      "status": "open",
-      "milestone": "adev-compiler-discipline",
+      "status": "closed",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.190Z",
-      "updated": "2026-05-14T12:32:48.190Z"
+      "updated": "2026-05-20T20:49:46.906Z",
+      "notes": "Closed without work — placeholder epic from adev-compiler-discipline milestone planning; scope never started, no spec or plan authored"
     },
     {
       "id": "epic-77",
       "title": "trailer-enforcement",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.198Z",
-      "updated": "2026-05-14T12:40:01.175Z",
+      "updated": "2026-05-20T20:49:46.920Z",
       "notes": "Duplicate. Folded into spec-lifecycle/structured-commit-trailers.spec.md (validated). Audit P4 fail-closed commit-msg is a revision of that spec."
     },
     {
       "id": "epic-78",
       "title": "validate-citation-grounding",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.204Z",
-      "updated": "2026-05-14T12:40:01.181Z",
+      "updated": "2026-05-20T20:49:46.930Z",
       "notes": "Folded into validation charter. Citation grounding (P2 + P13) becomes a new spec under validation/, not a separate charter."
     },
     {
       "id": "epic-79",
       "title": "lifecycle-event-log-population",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.210Z",
-      "updated": "2026-05-14T12:40:01.185Z",
+      "updated": "2026-05-20T20:49:46.940Z",
       "notes": "Folded into agent-reliable-state-artifacts charter. P21 (wire reviewer_report from review-specs Step 6c) is a fix to lifecycle-skill-instruction-updates.spec.md."
     },
     {
@@ -660,11 +661,12 @@
     {
       "id": "epic-87",
       "title": "Lib-Import Control-Flow Extraction",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.plan.md",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-17T21:30:37.684Z",
-      "updated": "2026-05-17T21:30:37.684Z"
+      "updated": "2026-05-20T20:49:46.949Z",
+      "notes": "Demoted to issue-536 — childless epic converted to feature issue under epic-74 (adev-compiler-discipline parent). Scope did not warrant a separate epic; spec is review-passed and needs /adev:plan to proceed."
     },
     {
       "id": "epic-88",
@@ -3635,6 +3637,20 @@
       "next_action": null,
       "created": "2026-05-20T20:21:28.049Z",
       "updated": "2026-05-20T20:21:28.049Z"
+    },
+    {
+      "id": "issue-536",
+      "title": "Lib-Import Control-Flow Extraction",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-74",
+      "spec_ref": ".context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.spec.md",
+      "dependencies": [],
+      "notes": "Converted from epic-87 (childless epic, demoted to issue under epic-74 adev-compiler-discipline parent). Spec exists at .context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.spec.md (status: review-passed). Original epic-87 planRef pointed to lib-import-control-flow-extraction.plan.md which was never authored.",
+      "next_action": "Spec is review-passed; run /adev:plan to author the missing plan file before implementation can begin",
+      "created": "2026-05-20T20:47:52.841Z",
+      "updated": "2026-05-20T20:47:52.841Z"
     }
   ]
 }

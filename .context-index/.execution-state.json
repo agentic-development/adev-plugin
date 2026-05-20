@@ -1,10 +1,10 @@
 {
-  "status": "idle",
-  "planRef": "",
-  "currentTask": "",
+  "status": "active",
+  "planRef": ".context-index/specs/features/session-awareness/hook-driven-capture.plan.md",
+  "currentTask": 5,
   "issueBinding": "",
   "blockers": "",
-  "nextAction": "",
+  "nextAction": "Implement runCapture shared hook helper in lib/session-capture.mjs",
   "progress": [],
-  "updated": "2026-05-18T14:59:35.800Z"
+  "updated": "2026-05-20T21:01:29.497Z"
 }
