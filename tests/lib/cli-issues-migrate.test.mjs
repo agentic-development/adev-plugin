@@ -330,3 +330,143 @@ describe("issues migrate argument validation (plan-task 3)", () => {
     }
   });
 });
+
+describe("issues migrate source read + scope filter (plan-task 4)", () => {
+  /**
+   * Seed a tasks.json file with N open + M closed issues and one epic.
+   * @returns {string} project root path
+   */
+  function seedJsonBoard(openCount, closedCount, epicCount = 1) {
+    const dir = makeTempProject({ backend: "json" });
+    const issues = [];
+    for (let i = 0; i < openCount; i++) {
+      issues.push({
+        id: `issue-${i + 1}`,
+        title: `open ${i + 1}`,
+        status: "open",
+        priority: 2,
+        type: "task",
+        dependencies: [],
+        notes: "",
+        next_action: null,
+        created: "2026-05-19T00:00:00.000Z",
+        updated: "2026-05-19T00:00:00.000Z",
+      });
+    }
+    for (let i = 0; i < closedCount; i++) {
+      issues.push({
+        id: `issue-${openCount + i + 1}`,
+        title: `closed ${i + 1}`,
+        status: "closed",
+        priority: 2,
+        type: "task",
+        dependencies: [],
+        notes: "",
+        next_action: null,
+        created: "2026-05-19T00:00:00.000Z",
+        updated: "2026-05-19T00:00:00.000Z",
+      });
+    }
+    const epics = [];
+    for (let i = 0; i < epicCount; i++) {
+      epics.push({
+        id: `epic-${i + 1}`,
+        title: `epic ${i + 1}`,
+        status: "open",
+        created: "2026-05-19T00:00:00.000Z",
+        updated: "2026-05-19T00:00:00.000Z",
+      });
+    }
+    writeFileSync(
+      join(dir, ".context-index", "tasks", "tasks.json"),
+      JSON.stringify({ version: 2, seq: 0, epics, issues }, null, 2) + "\n",
+    );
+    return dir;
+  }
+
+  it("readSource() excludes closed items by default (Behavior 12)", async () => {
+    const proj = seedJsonBoard(3, 2, 1);
+    try {
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const manifest = { tasks: { backend: "json" } };
+      const { issues, epics } = await mod.readSource({
+        projectRoot: proj,
+        source: "json",
+        includeClosed: false,
+        manifest,
+      });
+      assert.equal(issues.length, 3, "expected 3 open issues");
+      assert.equal(epics.length, 1, "expected 1 epic");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("readSource() includes closed items with --include-closed (Behavior 12)", async () => {
+    const proj = seedJsonBoard(3, 2, 1);
+    try {
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const manifest = { tasks: { backend: "json" } };
+      const { issues, epics } = await mod.readSource({
+        projectRoot: proj,
+        source: "json",
+        includeClosed: true,
+        manifest,
+      });
+      assert.equal(issues.length, 5, "expected 5 items with --include-closed");
+      assert.equal(epics.length, 1);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("readSource() returns empty arrays on an empty board", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const manifest = { tasks: { backend: "json" } };
+      const { issues, epics } = await mod.readSource({
+        projectRoot: proj,
+        source: "json",
+        includeClosed: false,
+        manifest,
+      });
+      assert.equal(issues.length, 0);
+      assert.equal(epics.length, 0);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("readSource() surfaces MIGRATE_SOURCE_INVALID on malformed tasks.json (Behavior 8)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      // Overwrite tasks.json with invalid JSON.
+      writeFileSync(
+        join(proj, ".context-index", "tasks", "tasks.json"),
+        "{this is not json",
+      );
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const manifest = { tasks: { backend: "json" } };
+      let caught;
+      try {
+        await mod.readSource({
+          projectRoot: proj,
+          source: "json",
+          includeClosed: false,
+          manifest,
+        });
+      } catch (err) {
+        caught = err;
+      }
+      assert.ok(caught, "expected readSource to throw on malformed JSON");
+      assert.equal(caught.code, "MIGRATE_SOURCE_INVALID");
+      assert.ok(
+        caught.message.includes("tasks.json"),
+        `expected error message to include path context, got: ${caught.message}`,
+      );
+    } finally {
+      cleanup(proj);
+    }
+  });
+});
