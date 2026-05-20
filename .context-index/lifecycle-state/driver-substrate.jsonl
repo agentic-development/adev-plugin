@@ -36,3 +36,7 @@
 {"event":"validator_report","step":"validate","validator":"check-13-heuristic","severity":"warning","verdict":"PASS","error":null,"ts":"2026-05-14T17:14:18.188Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-14T17:14:18.188Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-16T00:48:30.135Z","ts":"2026-05-18T13:50:21.081Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:29.058Z","ts":"2026-05-20T02:39:29.058Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:35.037Z","ts":"2026-05-20T02:39:35.037Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:40:46.387Z","ts":"2026-05-20T02:40:46.387Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T03:59:47.617Z","ts":"2026-05-20T03:59:47.617Z","diagnostic_warnings":["adev/frontmatter-present"]}
