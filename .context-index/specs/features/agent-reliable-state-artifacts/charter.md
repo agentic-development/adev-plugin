@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 6
-updated: 2026-05-12
+revision: 8
+updated: 2026-05-19
 ---
 
 # Feature Charter: agent-reliable-state-artifacts
@@ -46,6 +46,16 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 - **Sibling charter amendments** — revisions to `task-management`, `spec-lifecycle`, `session-awareness`, and `milestone-lifecycle` charters that (a) reference this charter as the authority for storage format, (b) update normative paths from `.md`/`.yaml` to `.json`/`.jsonl` where applicable (e.g. session-awareness charter's `.execution-state.md` reference), and (c) note the format-ownership boundary. Performed as the last step of the rollout so amended charters reference completed reality.
 - **Constitution Context Routing update** — replace `Build state | .context-index/build-state/` row with `Lifecycle state | .context-index/lifecycle-state/` in `constitution.md`; sync to `CLAUDE.md` via `/adev:sync`.
 
+### Rev 7 additions (sidecar pattern + per-revision events)
+
+- **Plan-adjacent sidecar pattern** — formalize the `<artifact-stem>.<purpose>.<ext>` peer-file convention per [ADR-0012](../../../adrs/0012-plan-adjacent-sidecar-artifacts.md). Closed enum of four peers: `.review.md` (existing), `.validate.md` (existing), `.routing.json` (new in plan-routing-sidecar rev 2; replaces `/adev:route` plan mutation; machine-primary), `.blockers.md` (new in commit `7e333fd`, `/adev:build` BLOCK path). Extension follows primary consumer: `.md` human-primary, `.json` machine-primary (with `render-sidecar` for the on-demand markdown view). Adding a new peer requires an ADR amendment.
+- **`/adev:route` plan-mutation fix** — `skills/route/SKILL.md` Step 4 rewritten to write `<plan-stem>.routing.json` keyed by task ID; the plan file is NEVER mutated. Resolves `issue-526` and the CON-8 violation surfaced by `tests/skills/plan-task-immutability.test.mjs`.
+- **`/adev:implement` routing-reader update** — `skills/implement/SKILL.md` reads routing annotations from the sibling `.routing.json` sidecar instead of parsing inline `**Routing:**` blocks from the plan body.
+- **Plan-immutability detector enhancement** — `lib/plan-immutability.mjs` extended to catch the "mutate-then-single-add-commit" pattern by inspecting the plan body for inline `**Routing:**` blocks when no sibling `.routing.json` exists. Today's detector relies on `--diff-filter=M` history alone, which masks violations for plans committed as a single add (the cursor-provider Specs A–E pattern).
+- **CON-8 enumerated peers** — amend `plan-task-events.spec.md` invariant CON-8 to explicitly enumerate the four permitted sidecar peers with their extensions. Future readers cannot mistake a `<stem>.routing.json` file for a violation of the "plan markdown is read-only" rule.
+- **Cursor-provider 5-plan migration** — `lib/migrate-plan-routing.mjs` and `adev migrate plan-routing` CLI subcommand. One-shot: parse each of the 5 cursor-provider plans (`hook-config-generator`, `cursor-adapter`, `plugin-manifest-and-parity`, `cli-install-integration`, `sync-target-output`), extract `**Routing:**` / `**Scores:**` / `**Rationale:**` blocks into sibling `.routing.json` files, rewrite the plan bodies without them, stamp the resulting M-commit hash into `manifest.yaml :: hygiene.plan_immutability.exempt_commits[]` so the enhanced detector treats the migration commit as the canonical "first non-mutating state" baseline. Idempotent.
+- **Per-revision lifecycle event schema** — `reviewer_report` and `step_completed` events gain an optional `revision: N` field carrying the spec revision active at write time. Read side: `currentState()` projection exposes per-revision verdicts (e.g. `state.steps.review.byRevision[N]`). Foundation for the cross-charter auto-retry work tracked in `issue-527`; the schema bump itself is owned here because the event log shape lives in `lifecycle-event-log.spec.md` / `lib/lifecycle-state.mjs`.
+
 ### Out of Scope
 
 - **Charter capability map** — stays as a markdown table mutated by `/adev:implement`. Acknowledged dual-write risk; low frequency makes it tolerable. Migrated to JSON in a follow-up charter if it becomes a problem.
@@ -61,6 +71,14 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 - **Per-step aggregation rule override (majority / weighted voting)** — strict aggregation suffices for v1. Revisit if domains request it.
 - **Lifecycle log compaction** — not needed at current N. Add when individual logs exceed ~10k events.
 
+### Rev 7 — Out of Scope (cross-charter pointers for `issue-527`)
+
+- **`/adev:specify --revise` workflow** — owned by `spec-lifecycle` charter. The auto-retry pathway in `/adev:build` requires a real revision workflow on `/adev:specify` (today the workflow axis is closed at `{extract, refactor, from-diff, cross-cutting}` with no revise mode). When that charter adds the capability, it will consume this charter's per-revision lifecycle event schema as a substrate. Tracked as part of `issue-527`.
+- **Canonical blocker IDs (reviewer protocol)** — owned by `spec-lifecycle` charter (or wherever the reviewer registry lives). Reviewer subagents need to emit stable blocker identifiers alongside prose findings so convergence detection across revisions becomes possible. Tracked as part of `issue-527`.
+- **Convergence detection in `/adev:build`** — owned by `strategic-planning` charter (`adev-build-skill.spec.md` lives there). Compares blocker ID sets across revisions (addressed / persistent / new partitions) to decide loop continuation. Re-enables `build.max_review_retries` default of 2. Tracked as part of `issue-527`.
+- **Additional sidecar peers beyond the four enumerated** — adding a fifth `.<purpose>.md` peer requires an ADR amendment per ADR-0012. Out of scope for this revision.
+- **Per-revision spec-file storage** — revisions of the spec markdown itself are not retained on disk by this charter. The lifecycle log carries per-revision review verdicts (rev 7 schema bump); whether to retain prior spec bodies is a separate question owned by `spec-lifecycle`.
+
 ### Dependencies
 
 | Dependency | Type | Description |
@@ -73,6 +91,7 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 | `lib/build-state.mjs` (exemplar) | existing helper | Atomic-write pattern that this charter generalizes |
 | `lib/issues/registry.mjs` | existing helper | Adapter registry; gains `json` as a supported backend |
 | `node:fs` built-in | runtime | `fs.appendFile`, `fs.rename`, `fs.writeFile` — no external deps |
+| ADR-0012 | internal ADR | Establishes the plan-adjacent sidecar pattern; rev 7 capabilities implement its three acceptance gates (`/adev:route` fix, CON-8 amendment, detector enhancement) so the ADR can flip from Proposed to Accepted |
 
 ## Domain Model
 
@@ -96,7 +115,9 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 
 - **Severity** — enum: `blocker`, `error`, `warning`, `advisory`. Determined per actor from existing domain config (`reviewers.yaml::severity_cap`, `gates.yaml::severity`). Stamped on each ActorReport at write time.
 
-- **Verdict** — enum: `PASS`, `PASS_WITH_NOTES`, `FAIL`. Returned by actors; aggregated by the fold.
+- **Verdict** — enum: `PASS`, `PASS_WITH_NOTES`, `FAIL`. Returned by actors; aggregated by the fold. Rev 7 addition: each `ActorReport` event optionally carries `revision: N` (the spec revision active at write time); the projection surfaces per-revision verdicts via `state.steps.<step>.byRevision[N]` to support cross-revision convergence checks owned by sibling charters.
+
+- **SidecarArtifact** *(rev 7)* — sibling-file peer to a Live Spec or plan at `<artifact-stem>.<purpose>.md`. Closed enum of four variants per ADR-0012: `review` (writer: `/adev:review-specs`), `validate` (writer: `/adev:validate`), `routing` (writer: `/adev:route`, rev 7 introduces), `blockers` (writer: `/adev:build` BLOCK path, in use since commit `7e333fd`). Each sidecar is rewritten in full by its writer; consumers grep-discover by stem. Adding a fifth variant requires an ADR amendment.
 
 - **StepName** — enum: `specify`, `review`, `plan`, `route`, `implement`, `validate`. Extensible via the open event schema if future steps are added.
 
@@ -167,6 +188,12 @@ This module does NOT change *what* state is tracked, the issue lifecycle, the ga
 | Markdown rendering layer | `lib/issues/render-markdown.mjs` and `lib/lifecycle-state.mjs::renderMarkdown` produce human-readable markdown from authoritative JSON/JSONL on demand. Surfaced via `adev status --render`. | should-have | validated |
 | Spec pipeline aggregate view | `/adev:status` surfaces "where is each spec" by calling `listLifecycleStates()`. Pure read; no stored aggregate. Covered by `markdown-rendering-layer.spec.md` (`adev status --pipeline`). | should-have | validated |
 | `listLifecycleStates()` helper | Globs `.context-index/lifecycle-state/*.jsonl` and returns folded projections. Used by aggregate views, `/adev:retro`, `/adev:hygiene`. Signature in `lifecycle-event-log.spec.md`; full body in `markdown-rendering-layer.spec.md`. | should-have | validated |
+| Plan-adjacent sidecar pattern *(rev 7)* | Formalize the `<artifact-stem>.<purpose>.md` peer convention per ADR-0012. Closed enum of 4 peers: `review`, `validate`, `routing`, `blockers`. Adding a peer requires an ADR amendment. Acceptance gate for ADR-0012 transition Proposed → Accepted. | must-have | implemented (plan-routing-sidecar.spec.md) |
+| `/adev:route` plan-mutation fix *(rev 7)* | `skills/route/SKILL.md` Step 4 rewritten to write `<plan-stem>.routing.json` keyed by task ID instead of mutating the plan body. `skills/implement/SKILL.md` reader updated to load routing from the sidecar. Resolves `issue-526` and the CON-8 violation surfaced by `tests/skills/plan-task-immutability.test.mjs`. | must-have | implemented (plan-routing-sidecar.spec.md rev 2) |
+| CON-8 enumerated peers *(rev 7)* | Amend `plan-task-events.spec.md` invariant CON-8 to explicitly enumerate the four permitted sidecar peers with their extensions. Future readers cannot mistake a `<stem>.routing.json` file for a violation of the "plan markdown is read-only" rule. | must-have | implemented (plan-routing-sidecar.spec.md rev 2) |
+| Plan-immutability detector enhancement *(rev 7)* | `lib/plan-immutability.mjs` extended to catch the "mutate-then-single-add-commit" pattern by inspecting plan body for inline `**Routing:**` blocks when no sibling `.routing.json` exists. Today's detector relies on `--diff-filter=M` history alone, which masks violations introduced before the plan is first committed (the cursor-provider Specs A–E case). | must-have | implemented (plan-routing-sidecar.spec.md rev 2) |
+| Cursor-provider 5-plan migration *(rev 7)* | `lib/migrate-plan-routing.mjs` + `adev migrate plan-routing` CLI subcommand. One-shot: extracts inline `**Routing:**` / `**Scores:**` / `**Rationale:**` blocks from the 5 cursor-provider plans (`hook-config-generator`, `cursor-adapter`, `plugin-manifest-and-parity`, `cli-install-integration`, `sync-target-output`) into sibling `.routing.json` files, rewrites plan bodies without them, stamps the resulting M-commit in `manifest.yaml :: hygiene.plan_immutability.exempt_commits[]`. Idempotent. | must-have | — |
+| Per-revision lifecycle event schema *(rev 7)* | `reviewer_report` and `step_completed` events gain an optional `revision: N` field carrying the spec revision active at write time. `currentState()` projection exposes per-revision verdicts via `state.steps.<step>.byRevision[N]`. Foundation for the cross-charter auto-retry work in `issue-527` (the rest of which is owned by `spec-lifecycle` and `strategic-planning`). | must-have | implemented (review-block-auto-retry.spec.md — cross-cutting) |
 
 ## Deferred Capabilities
 

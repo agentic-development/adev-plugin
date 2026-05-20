@@ -9,10 +9,10 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 2
+revision: 3
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-05-12
+updated: 2026-05-19
 source-manifest:
   sha: "449d3d5"
   files:
@@ -27,6 +27,7 @@ source-manifest:
     - tests/lib/lifecycle-state-perf.test.mjs
     - tests/lib/lifecycle-state.test.mjs
   computed-at: "2026-05-17T20:42:36.797Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
@@ -37,7 +38,7 @@ The Lifecycle Event Log is a new library module (`lib/lifecycle-state.mjs`) that
 
 This spec mixes two distinct naming domains. They follow different conventions on purpose:
 
-- **Event-discriminator names and event-only fields** use `snake_case`: `lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `partial_recovery`, `task_id`, `aggregated_from`, `artifact_path`, `prior_partial_ts`, `dispatch_mode`. This matches the convention established by the existing `lib/build-state.mjs` JSON schema (`recordStepResult` writes `retry_history`, etc.) and is the natural shape for new code.
+- **Event-discriminator names and event-only fields** use `snake_case`: `lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `partial_recovery`, `spec_revised`, `human_approval_required`, `task_id`, `aggregated_from`, `artifact_path`, `prior_partial_ts`, `dispatch_mode`, `from_revision`, `to_revision`, `addressed_blocker_ids`, `unresolved_blocker_ids`. This matches the convention established by the existing `lib/build-state.mjs` JSON schema (`recordStepResult` writes `retry_history`, etc.) and is the natural shape for new code.
 - **Issue board WorkItem fields** preserve the existing `FileAdapter`/`IssueManagerInterface` convention, which is a mix: top-level fields like `id`, `title`, `status`, `priority`, `type`, `epicId`, `planRef`, `planTask` are camelCase, while the later-added fields `spec_ref` and `next_action` are snake_case. This mix is legacy of the file-adapter parser and is **preserved as-is** to keep the `IssueManagerInterface` stable across `FileAdapter`, `JsonAdapter`, and `BeadsAdapter`. Changing it is out of scope for this charter.
 - **StateProjection fields** are camelCase (`currentStep`, `currentTask`, `startedAt`, `updatedAt`). The internal projection object is new code, not subject to the WorkItem-legacy mix. **Note:** within the projection, the `plan_tasks` key is renamed to `planTasks` per this convention (correcting CON-2).
 
@@ -66,7 +67,7 @@ The module enforces a path-containment invariant on every public function that t
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Event schema + canonical variants | Define the open discriminated-union event shape and the canonical variants (`lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`). Include `ts` and `event` invariants. | small |
+| Event schema + canonical variants | Define the open discriminated-union event shape and the canonical variants (`lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `partial_recovery`, `spec_revised`, `human_approval_required`). Include `ts` and `event` invariants. The `reviewer_report`, `step_completed`, `step_failed`, and `lifecycle_step` variants accept an OPTIONAL integer `revision: N` field added by the `review-block-auto-retry` cross-cutting spec. | small |
 | `appendEvent` primitive | Atomic-append-one-line implementation using `fs.appendFile` with `O_APPEND` semantics. Validates required fields (`ts`, `event`). Stamps `ts` if absent. Creates parent dir + file if missing. | small |
 | `readEvents` primitive | Read file, split on newline, parse each line as JSON. Tolerates truncated final line (skip-and-continue). Returns `[]` for missing file. | small |
 | `slugFromSpec` / path helpers | Compute slug from spec filename. Resolve path to `<projectRoot>/.context-index/lifecycle-state/<slug>.jsonl`. | small |
@@ -133,7 +134,8 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 - **When** `readEvents` is called on a missing file **then** an empty array is returned (no error thrown).
 - **When** `reportReviewer({step, reviewer, verdict})` is called **then** the helper looks up the reviewer's `severity_cap` from `reviewers.yaml` in the resolved domain, stamps `severity` on the event, and appends. If the reviewer is not found in domain config, `severity` defaults to `warning` and a one-time console warning is emitted.
 - **When** `reportValidator({step, validator, verdict})` is called **then** the helper looks up the validator's `severity` from `gates.yaml`, stamps it on the event, and appends. Same default-to-warning fallback as reviewers.
-- **When** `currentState(projectRoot, specPath)` is called **then** the events are read, folded into a `StateProjection` object containing `{spec, status, currentStep, currentTask, steps{}, planTasks{}, interventions[], startedAt, updatedAt, unknownEvents[]}`, and that object is returned.
+- **When** `currentState(projectRoot, specPath)` is called **then** the events are read, folded into a `StateProjection` object containing `{spec, status, currentStep, currentTask, steps{}, planTasks{}, interventions[], partialRecoveries[], specRevisions?[], humanApprovalsRequired?[], startedAt, updatedAt, unknownEvents[]}`, and that object is returned. Each entry in `steps{}` carries the latest-revision projection plus a `byRevision[N]` map keyed by integer revision (`{ verdict, blockers[], completed_at, reports[] }`). Events without a `revision:` field fold into `byRevision[1]` (legacy-fold-as-rev-1); top-level `step.verdict`/`step.status` reflect the latest revision (no breaking change for callers that ignore the new field). Per-revision history is added by the `review-block-auto-retry` cross-cutting spec.
+- **When** any of `reviewer_report`, `step_completed`, `step_failed`, or `lifecycle_step` carries an optional integer `revision: N` (`N >= 1`) **then** the fold uses it to populate `steps.<step>.byRevision[N]`. Emitters that do not know the spec's revision MAY omit the field; the fold treats those events as revision 1 for projection purposes (forward-compatible / no breaking change for legacy events).
 - **When** the fold encounters reports from multiple actors on the same step **then** the step's aggregate verdict is computed by the explicit severity × verdict table below (SA-5):
 
   | Worst-case actor severity reporting FAIL | Aggregate step verdict | Aggregate step status |

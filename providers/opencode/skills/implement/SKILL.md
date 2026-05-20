@@ -10,7 +10,7 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 
 ## Arguments
 
-- `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>-plan.md`.
+- `<plan-path>`: path to the plan file (required). Usually `.context-index/specs/features/<module>/<spec-slug>.plan.md`.
 - `--task <N>`: execute only task N (useful for re-running a single task after a fix)
 - `--dry-run`: show routing decisions and specialist matches without executing
 - `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
@@ -22,7 +22,20 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 1. **Plan exists.** The plan file must exist and be readable.
 2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-3. **Spec review passed.** The plan must reference a spec with a passing `.review.md` file adjacent to it. If the review file is missing, has status BLOCK, or is older than the spec's last modification date, direct the user to run `/adev:review-specs` first.
+3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
+
+   ```bash
+   adev gate require --skill implement --spec <spec-path>
+   adev report --type step --spec <spec-path> --step implement --status started
+   ```
+
+   In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+
+   When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `implement` step only reaches this emission point after all tasks completed and the GREEN-phase gate fired in Step 4; success at this stage implies PASS. (Failure modes earlier in the skill emit `status: failed` separately and do not reach this line.)
+
+   ```bash
+   adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS
+   ```
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
@@ -31,13 +44,15 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
 Extract everything subagents will need so they never have to re-read these files themselves.
 
-**Optimization:** Load spec + charter + constitution in a single Bash call using `loadSpecContext` from `<ADEV_ROOT>/lib/meta-tools.mjs` (replaces items 2, 4, and 5 below with one turn). Use `getPlanProgress` to get plan completion status for resume detection:
+**Optimization:** Load spec + charter + constitution + plan progress in a single Bash call via the CLI (replaces items 2, 4, and 5 below with one turn):
 
 ```bash
-node -e "import {loadSpecContext, getPlanProgress} from '<ADEV_ROOT>/lib/meta-tools.mjs'; const [ctx, progress] = await Promise.all([loadSpecContext('<spec-path>'), getPlanProgress('<plan-path>')]); console.log(JSON.stringify({context: ctx, progress}))"
+adev context load --spec <spec-path> --plan <plan-path>
 ```
 
-If the meta-tool call fails, fall back to reading each file individually.
+The verb wraps `lib/meta-tools.mjs::loadSpecContext` + `getPlanProgress` and emits JSON `{ context, progress }`. Use `progress` for resume detection (look at `progress.completed` vs `progress.total` and the per-task `progress.tasks` array).
+
+If the CLI call fails, fall back to reading each file individually.
 
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
@@ -56,29 +71,86 @@ If the meta-tool call fails, fall back to reading each file individually.
 10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
     All subagent dispatches in this skill use the `capable` tier (implementer, spec reviewer, code quality reviewer, visual verifier).
     If `model_tiers` is absent or a tier is unset, use the hardcoded defaults from `.context-index/specs/cross-cutting/model-routing.md` and log a one-time advisory.
-11. **Heuristics:** Load module-scoped heuristics for injection into context packets.
-    Derive the module slug from the plan's spec `charter:` frontmatter field.
-    **Plugin root resolution:** The `lib/` directory lives at the adev plugin root, NOT the project root. Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Use the absolute path in imports. Replace `<ADEV_ROOT>` below with the resolved path.
-    Run inline Node.js:
+11. **Heuristics:** Load module-scoped heuristics for injection into context packets via the CLI:
+
     ```bash
-    node -e "import { retrieveHeuristics, renderHeuristic } from '<ADEV_ROOT>/lib/heuristics.mjs'; const h = await retrieveHeuristics(process.cwd(), '<module>', { injectionLimit: <limit-from-manifest-or-undefined> }); console.log(JSON.stringify({ count: h.length, rendered: h.map(renderHeuristic).join('\n\n') }));"
+    adev heuristics retrieve --module <charter-module> [--injection-limit N]
     ```
-    Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<module>` is the charter module slug, and `<limit>` comes from `heuristics.injection_limit` in manifest.yaml (omit if not set).
-    If the command fails or returns `count: 0`, proceed without heuristics — heuristic injection is strictly non-blocking.
+
+    Derive the module slug from the plan's spec `charter:` frontmatter field. Pass `--injection-limit` only when `heuristics.injection_limit` is configured in `manifest.yaml` (otherwise omit for the library default).
+    Stdout is a single JSON object `{count, rendered}` where `rendered` is the markdown blocks joined by blank lines. The verb exits 0 regardless — failures degrade to `{count:0, rendered:""}` so heuristic injection stays strictly non-blocking.
     Store the `rendered` output for use in Step 2a.
 
 Write the active plan path to `.context-index/hygiene/.active-plan` so the scope guard hook can monitor file scope during implementation. Clear this file in Step 4 (Completion).
 
-**Execution State Check:** Read `.context-index/.execution-state.md` using inline Node.js: `node -e "import { readExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."` (where `<ADEV_ROOT>` is the resolved absolute plugin root path). If the file exists with `status: "active"`, resume from the `currentTask` in the state file instead of task 1. If `status: "blocked"`, surface the blocker to the user and suggest running `/adev:recover` before continuing. If the file is missing or `status: "idle"`, start from task 1 as normal.
+**Execution State Check:** Read `.context-index/.execution-state.json` via `readExecutionState(projectRoot)` from `<ADEV_ROOT>/lib/execution-state.mjs`. Do NOT hand-parse the JSON or any prior YAML frontmatter — call the library helper:
+
+```javascript
+import { readExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs';
+const exec = readExecutionState(projectRoot);
+```
+
+If `exec.status === "active"`, resume from `exec.currentTask` instead of task 1. If `exec.status === "blocked"`, surface `exec.blockers` to the user and suggest running `/adev:recover` before continuing. If the state is missing or `status === "idle"`, start from task 1 as normal.
 
 **Update charter Capability Map:** At the start of implementation, read the parent charter and update the Capability Map. For each capability covered by this plan, set its `Status` column to `implementing`.
 
-**Load or create issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
-- If issues exist matching this plan's `plan-ref` (check via `list({ planRef: "<plan-file-path>" })`), load them.
-- If no issues exist, create them now: create an epic with the plan's title and `plan-ref`, then create one issue per plan task with title, type `task`, priority `2`, `plan-ref`, `plan-task` number, and `epic-id`. Record dependencies via `addDependency()` for tasks with `Depends on:` annotations.
-- Update the first task's issue status to `in_progress` via `update(id, { status: "in_progress" })`.
+**Load or create epic on the issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
+- If an epic exists matching this plan's `planRef`, load it.
+- If no epic exists, create one via `createEpic({ title: "<plan title>", planRef: "<plan-file-path>" })`. The epic is the **only** board entry created here — per-task Issue creation is forbidden by the board-granularity invariant (see `agent-reliable-state-artifacts/charter.md`).
+- **Do NOT call `create({ ..., planTask: ... })`.** Plan-task state lives in the lifecycle log, not as Issues on the board. The `JsonAdapter` rejects such calls with `BOARD_GRANULARITY_VIOLATION`.
 
-If `tasks.backend` is not configured, skip issue board operations.
+If `tasks.backend` is not configured, skip epic creation entirely (plan-task events are still emitted to the lifecycle log).
+
+### Task discovery and state
+
+The plan file is the source of truth for *what the tasks are*. The lifecycle log projection is the source of truth for *what state each task is in*.
+
+```javascript
+import { currentState, reportPlanTask } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
+
+const state = currentState(projectRoot, specPath);
+// planTasks shape: { [task_id]: { status, notes, plan, updated } }
+//
+// `/adev:plan` seeds one `pending` event per task at authoring time, so every
+// task in the plan should already appear here. If a task is missing from the
+// projection, the plan was authored before this surface was migrated — fall
+// back to treating it as `pending`.
+const nextTask = plan.tasks.find(t =>
+  state.planTasks[t.id]?.status === 'pending' ||
+  state.planTasks[t.id]?.status === 'in_progress' ||
+  state.planTasks[t.id] === undefined
+);
+```
+
+### Task transitions
+
+All state transitions go through `reportPlanTask`. The plan file is read-only after authoring — no checkbox flips, no inline state stamps, no per-task Issue updates.
+
+```javascript
+// At task start (before dispatching the implementer subagent):
+reportPlanTask(projectRoot, specPath, {
+  plan: planFilePath, task_id, status: 'in_progress', notes: null,
+});
+
+// At task done (after GREEN + REFACTOR + both reviews pass):
+reportPlanTask(projectRoot, specPath, {
+  plan: planFilePath, task_id, status: 'done',
+  notes: '<optional ≤200-char summary or null>',
+});
+
+// On a blocker the skill cannot resolve:
+reportPlanTask(projectRoot, specPath, {
+  plan: planFilePath, task_id, status: 'blocked',
+  notes: '<≤200-char operator-facing summary — no stack traces, no env values, no full command output>',
+});
+
+// On a user-declined optional task (e.g., user skips a REFACTOR-only task):
+reportPlanTask(projectRoot, specPath, {
+  plan: planFilePath, task_id, status: 'skipped', notes: null,
+});
+```
+
+**Blocker notes guidance:** Blocker `notes` must be a short operator-facing summary. Do not paste stack traces, env values, secrets, or full command output. The foundation caps `notes` at 4 KB but operators need a one-line description, not a dump.
 
 12. **Workspace detection:** Call `detectWorkspace(cwd)` and store the returned workspace state for use in Steps 2a and 2c. Workspace detection is re-run fresh per task as defensive hygiene (ensures state is current if workspace config changed during a long implementation session), not as concurrency support. If `detectWorkspace` returns `null`, proceed with the existing single-repo flow unchanged.
 
@@ -99,17 +171,13 @@ After loading context, check whether the spec or plan declares `infra_requiremen
 
 **`--no-infra` resolution:** Read `--no-infra` flag from arguments. If not passed, check `ADEV_NO_INFRA` env var (only exact value `1` activates bypass). Read once at skill entry, convert to `options.noInfra`. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously — if preflight fails, report the failure and wait for user direction.
 
-**Invocation:** Run inline Node.js (same pattern as heuristics loading):
+**Invocation:** Run the preflight via the CLI:
 
 ```bash
-node --input-type=module -e "
-import { runPreflight, formatPreflightReport } from '<ADEV_ROOT>/lib/infra-preflight.mjs';
-const report = await runPreflight('<specPath>', '<planPath>', { timeout: <timeout>, noInfra: <noInfra> });
-console.log(JSON.stringify(report));
-"
+adev preflight run --spec <specPath> --plan <planPath> [--timeout N] [--no-infra]
 ```
 
-Where `<ADEV_ROOT>` is the resolved absolute plugin root path, `<specPath>` is extracted from the plan's `Spec:` header, and `<planPath>` is the `<plan-path>` argument.
+Where `<specPath>` is extracted from the plan's `Spec:` header and `<planPath>` is the `<plan-path>` argument. Stdout is a single JSON object — the preflight report. Exit codes: 0 on PASS or skipped, 2 on FAIL, 1 on argument errors.
 
 Parse the JSON output. If `report.passed === false`, display the formatted report and block:
 
@@ -169,8 +237,8 @@ Before dispatching a subagent, check if the task's target files already exist an
    - Run the test files: `node --test <test-file>`.
    - If tests pass: the task is likely already implemented.
    - Report: "Task <N> appears already implemented — <file-list> exist and tests pass."
-   - Ask the user: "Skip this task and mark the issue as closed with 'Already implemented'?"
-   - If user confirms: update the issue status to `closed` with notes "Already implemented (detected by implementation probe)", skip to next task.
+   - Ask the user: "Skip this task and mark it as done with 'Already implemented'?"
+   - If user confirms: emit `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: "Already implemented (detected by implementation probe)" })`, skip to next task.
    - If user declines: proceed with normal dispatch.
 4. If files exist but tests fail (or no test files): proceed with normal dispatch (code exists but may be incomplete).
 5. If files don't exist: proceed with normal dispatch (standard case).
@@ -201,7 +269,7 @@ Before routing or dispatching, assemble the task's context packet:
 **Routing tag check:** If the task has a routing tag from `/adev:route`:
 - `auto-agent`: proceed with standard dispatch
 - `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
-- `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, mark the issue status as `deferred` with note "MANUAL — requires human implementation" via `update(id, { status: "deferred", notes: "MANUAL — requires human implementation" })`, skip to next task
+- `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, emit `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "skipped", notes: "MANUAL — requires human implementation" })`, skip to next task
 
 #### 2b. Specialist Routing
 
@@ -259,6 +327,14 @@ Build the implementer subagent prompt with these sections in order:
 
    **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
+   **Domain-Aware Test Config:** Load domain test config for test framework detection and gaming thresholds via the CLI:
+
+   ```bash
+   adev domain load-test-config --module <module-slug> [--charter <charter-path>]
+   ```
+
+   Stdout is a single JSON object `{ domain, config, warnings }` where `config` contains `permitted_tools`, `skip_patterns`, and `max_test_file_size`. Pass `config.permitted_tools` to the write-test subagent for test framework detection. Pass `config.skip_patterns` for domain-specific skipped test detection.
+
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
 9. **Escalation rules.** The subagent must report one of four status codes. It must never silently produce work it is unsure about. It is always acceptable to stop and escalate.
@@ -282,7 +358,19 @@ Keep your report under 2,000 tokens. List files and results concisely. Do not re
 
 **Cleanup before reporting.** Remove any debugging console.log, print, or debugger statements added during development. Remove commented-out exploration code. Verify all imports are used and no temporary files were left behind.
 
-**Update Execution State:** Before dispatching the implementer subagent, write execution state using inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."` with `status: "active"`, `planRef` set to the plan file path, `currentTask` set to the task number, `issueBinding` set to the issue ID (if `tasks.backend` is configured), `nextAction` set to the task description, and `progress` set to the full task checklist with completed tasks marked done. If `writeExecutionState` fails, log a warning and continue — do not block implementation.
+**Update Execution State:** Before dispatching the implementer subagent, write execution state via the CLI:
+
+```bash
+adev execution-state write \
+  --status active \
+  --plan-ref <plan-file-path> \
+  --current-task <task-number> \
+  [--issue-binding <issue-id>] \
+  --next-action "<task description>" \
+  --progress-json '<json-array-of-progress-items>'
+```
+
+The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call exits non-zero, log a warning and continue — do not block implementation.
 
 #### 2d. Dispatch and Handle Status
 
@@ -302,11 +390,31 @@ Dispatch the subagent. Handle the returned status:
 
 **BLOCKED.** The subagent cannot proceed.
 - Present the blocker description to the user immediately.
-- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution. Use inline Node.js: `node -e "import { writeExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`.
+- **Emit a `plan_task` blocked event:** `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "blocked", notes: "<≤200-char operator-facing summary>" })`. The `notes` field must NOT contain stack traces, env values, secrets, or full command output — those belong in the blocker file under `.context-index/hygiene/blockers/`, not in the lifecycle log.
+- **Update Execution State on Blocker:** Write execution state with `status: "blocked"`, `blockers` set to the blocker description, and `nextAction` set to the recommended resolution, via the CLI:
+  ```bash
+  adev execution-state write --status blocked \
+    --blockers "<blocker description>" \
+    --next-action "<recommended resolution>"
+  ```
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev:specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 
 #### 2e. Visual Verification (UI tasks)
+
+**Domain-Aware Verification Config:** Before checking UI patterns, resolve the active domain and load verification config via the CLI:
+
+```bash
+adev domain load-verification --module <module-slug> [--charter <charter-path>] [--mcp-server <name>]...
+```
+
+Pass each active MCP server name as `--mcp-server <name>` (repeat the flag for multiple). Stdout is a single JSON object `{ domain, config, warnings }`. If the verification tool listed in the domain config is not in the active MCP server set, `config` is `null` and a `TOOL_UNAVAILABLE` warning appears in `warnings`.
+
+Based on the verification `type`:
+- `visual`: use browser-based snapshot verification (existing Playwright flow below)
+- `output`: use output comparison via assertions — no browser, no MCP tool
+- `flow`: use assertion-based checks on workflow definitions
+If no verification config exists (`config` is null), log a warning and skip domain-specific verification.
 
 **Trigger:** If any file in the task's file list matches UI patterns: `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `components/**`, `app/**/page.*`, `app/**/layout.*`, `pages/**`.
 
@@ -395,10 +503,11 @@ After both reviews pass, if `governance/gates.yaml` exists:
 5. If `governance/gates.yaml` does not exist, skip governance gate checks.
 
 After both reviews pass:
-1. Update the issue status to `closed` via `close(id, "Implemented and reviewed")`.
-2. **Update plan file checkboxes.** Read the plan file and mark all `- [ ]` checkboxes within the current task's section as `- [x]`. The task section starts at `### Task N:` and ends at the next `### Task` heading or end of file. Write the updated plan file back. This provides a persistent, human-readable record of completion that outlives the ephemeral execution state.
-3. Record: specialist used (or "generic"), review cycles needed, concerns noted.
-4. Move to the next task.
+1. Emit a `plan_task` `done` event: `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.
+2. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).
+3. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
+4. Record: specialist used (or "generic"), review cycles needed, concerns noted.
+5. Move to the next task.
 
 ### Step 2-post: Integration Gate
 
@@ -440,7 +549,13 @@ If `governance/boundaries.yaml` exists, run final boundary compliance check: gre
 
 Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
 
-**Clear Execution State:** After all tasks are complete, clear the execution state using inline Node.js: `node -e "import { clearExecutionState } from '<ADEV_ROOT>/lib/execution-state.mjs'; ..."`. This resets the state to `idle` so the next session starts fresh. If `clearExecutionState` fails, log a warning — implementation is still considered complete.
+**Clear Execution State:** After all tasks are complete, clear the execution state via the CLI:
+
+```bash
+adev execution-state clear
+```
+
+This resets the state to `idle` so the next session starts fresh. If the CLI call exits non-zero, log a warning — implementation is still considered complete.
 
 Read the `completion.merge_policy` from manifest.yaml (default: "pr").
 
@@ -475,21 +590,45 @@ Do NOT merge directly to <target-branch>.
 
 ## Step 5: Update Spec Status and Source Manifest
 
+> Legal status values are defined in `lib/spec-status.mjs::SPEC_STATUSES`. The
+> `adev/status-enum-legal` diagnostic enforces this enum at write time.
+
 After all tasks are complete and before reporting completion:
 
 1. Read the spec file that this plan implements (the plan file references the spec)
 2. Parse YAML frontmatter
 3. Update status: `review-passed` → `implemented`
-4. **Compute source manifest:** Call `computeManifest(specPath)` from `lib/source-manifest.mjs` to generate a hash manifest of all source files produced by this implementation. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter:
+4. **Compute source manifest:** Collect all source files produced by this implementation, then call the CLI to compute a deterministic SHA-256 manifest. Stamp the result as a `source-manifest` block in the spec's YAML frontmatter.
+
+   **Collecting the file list:** Walk each task in the plan and collect every file listed under `Files: Modify:` and `Files: Create:` (exclude `Files: Reference:` — those are read-only context). Deduplicate and sort. These are project-root-relative paths (e.g., `lib/milestones.mjs`, not absolute paths).
+
+   **Invocation:**
+   ```bash
+   adev source-manifest compute --files <comma-separated-paths>
+   ```
+
+   Example:
+   ```bash
+   adev source-manifest compute --files lib/feature.mjs,tests/feature.test.mjs
+   ```
+
+   Stdout is a single-line JSON object matching `computeManifest()`'s return shape: `{ sha, files, computedAt }`. The `sha` is the first 7 characters of the composite SHA-256. The `files` array is sorted ascending. The `computedAt` is an ISO 8601 timestamp. Pass `--out <path>` to write the JSON to a file instead of stdout (the file is created with `mkdir -p` semantics for the parent directory). Exit codes: `0` on success, `1` on argument error, missing source file, or path traversal.
+
+   Write the returned manifest into the spec's YAML frontmatter:
    ```yaml
    source-manifest:
      sha: "abc1234"          # first 7 chars of composite SHA-256
      files:
-       - src/lib/feature.mjs
+       - lib/feature.mjs
        - tests/feature.test.mjs
      computed-at: "2026-04-01T10:00:00.000Z"
    ```
-5. Write the spec file back
+5. Write the spec file back.
+
+   **Incremental authoring for source-manifest stamping (`.partial` pattern):** When the spec file is non-trivial (~ 2 KB or larger, which is the common case for any reviewed Live Spec), the frontmatter rewrite MUST follow the `.partial` + atomic-rename protocol from `incremental-artifact-writes.spec.md`. Write the updated spec body to `<spec-path>.partial` with a `partial_schema: implement@1` marker in the first authored chunk (the chunk that carries the new frontmatter), then atomically rename to `<spec-path>` once the write completes. Use the existing artifact-commit CLI verb (`adev artifact commit ...`) which already implements the `.tmp` byte-level atomic-rename idiom — the `.partial` layer applies when the rewrite is performed by an agent over multiple Write calls rather than a single fs operation. On a mid-rewrite crash, the next `/adev:implement` invocation detects the partial and resumes.
+
+   **Runaway-write guard:** Before each Write to the spec's `.partial`, run `adev partial check-size --artifact <spec-path>` to verify the in-progress rewrite has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior spec size, 50 KB)). Exit code 2 with `PARTIAL_ARTIFACT_OVERSIZE` is a hard stop: do NOT continue rewriting, do NOT commit the rename, surface the error to the user. Protects against retry loops re-writing prior chunks.
+
 6. **Clear drift flag:** After re-stamping the source manifest, clear any drift flag on the spec:
    ```javascript
    const { clearDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');
@@ -570,3 +709,27 @@ If any item fails, report it but do NOT block completion. The implementation is 
 - Merge to a protected branch (main, master, or any branch listed in completion.protected_branches)
 - Push directly to a protected branch without opening a PR
 - Ignore merge_policy from manifest.yaml (default is "pr": never merge without explicit configuration)
+
+## API reference
+
+Lifecycle event log (gates, step tracking, debug interventions, plan-task channel):
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — reads the per-spec JSONL log and returns a `StateProjection`: `{ spec, status, currentStep, currentTask, steps, planTasks, interventions, startedAt, updatedAt }`.
+- `requireGate(state, "plan", { mode })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — hard-blocks (or warns, in advisory mode) when the `plan` step is not complete.
+- `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode` (`strict` default).
+- `reportStep(projectRoot, specPath, { step, status, verdict? })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `lifecycle_step` event at skill entry/exit.
+- `reportIntervention(projectRoot, specPath, { kind, note })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits a `debug_intervention` event when implementation hits a recoverable obstacle (rerouted to `/adev:debug`, prompt edits, etc.).
+- `reportPlanTask` and `state.planTasks` — plan-task state transitions are owned by this skill per `plan-task-events.spec.md`. See that spec for the full transition semantics (`pending` → `in_progress` → `completed` / `blocked`). This skill does NOT mutate plan-file checkboxes; the plan file is read-only after authoring.
+
+Execution state:
+
+- `readExecutionState(projectRoot)` / `writeExecutionState(projectRoot, state)` / `clearExecutionState(projectRoot)` from `<ADEV_ROOT>/lib/execution-state.mjs` — read/write/clear `.context-index/.execution-state.json` for cross-session resume tracking. Do not hand-parse the JSON.
+
+Issue board:
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter for epic-level work-item tracking (per-task issues are forbidden by the board-granularity invariant).
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

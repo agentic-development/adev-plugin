@@ -71,6 +71,14 @@ viz/dist/
 .context-index/tasks/tasks.json.lock
 .context-index/tasks/tasks.json.*.tmp
 
+# Backend-migration resume state. Written per-item by `adev issues migrate`
+# during a json↔beads conversion; removed on successful completion. Committing
+# would surface as a stale "wedged migration" on every clone and force the
+# next migration into a refuse-on-mismatch path. See
+# backend-migration.spec.md Postcondition 6 and the `.migrate-state.json`
+# schema documented in lib/cli/issues-migrate.mjs.
+.context-index/tasks/.migrate-state.json
+
 # Lifecycle gate advisory counter (runtime state)
 .context-index/.advisory-counter
 

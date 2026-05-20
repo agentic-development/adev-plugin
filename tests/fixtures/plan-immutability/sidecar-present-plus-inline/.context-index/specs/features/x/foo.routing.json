@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.9,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.5,
+        "novelty": 0.4
+      },
+      "rationale": "legacy fixture with sidecar present"
+    }
+  ]
+}

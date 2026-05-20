@@ -12,9 +12,11 @@ Interactive repair for mismatches between specs, plans, the issue board, and cod
 ## Arguments
 
 - No arguments: full reconciliation scan (all checks)
-- `--check <type>`: run a single check (epics, plans, issues, manifests, untraced)
+- `--check <type>`: run a single check (epics, plans, issues, manifests, untraced, lifecycle-sync)
 - `--batch`: apply fixes without confirmation prompts (use with caution)
 - `--dry-run`: show what would be fixed without making changes
+- `--fix`: apply all detected fixes automatically without per-item confirmation (this is the **default behavior** post-`check-set-restructure.spec.md`)
+- `--no-fix`: report-only mode — show findings without applying any fixes (opposite of the new default; preserves the historical "scan first, then ask" workflow for users who want it)
 
 ## Prerequisites
 
@@ -23,6 +25,8 @@ Interactive repair for mismatches between specs, plans, the issue board, and cod
 3. If a recent hygiene report exists at `.context-index/hygiene/drift-report.md`, read it for pre-computed findings. Otherwise, run detection inline.
 
 ## Process
+
+**Default mode:** `--fix` (applies fixes automatically). Pass `--no-fix` for a report-only run. This default was flipped as part of `check-set-restructure.spec.md` so that `/adev:reconcile` is the authoritative repair tool for lifecycle drift (the previous validate-time Check 12 only warned; it never fixed). User-facing prompts still appear interactively unless `--batch` or `--no-fix` is passed.
 
 ### Step 1: Detection Scan
 
@@ -49,11 +53,11 @@ Find specs with status `review-passed` that have no sibling `.plan.md` file.
 **Fix offered:** "Create a plan? → invoke `/adev:plan`"
 **Action:** Invoke `/adev:plan` on the spec (interactive, not batch-safe).
 
-#### 1c. Partial Epics
-Find epics where the number of child issues doesn't match the plan's task count.
+#### 1c. Per-Task Issues to Collapse
+Find epics or features that violate the board-granularity invariant — Issues that carry both `planRef` and `planTask` (the legacy per-task issue pattern). These should be collapsed and their state migrated to `plan_task` events in the lifecycle log.
 
-**Fix offered:** "Create missing issues?"
-**Action:** Read the plan, identify tasks without issues, create issues via `create()` on the adapter.
+**Fix offered:** "Collapse per-task issues for {epicId} into lifecycle log events?"
+**Action:** Invoke the `collapse-per-task-issues` operation (defined in `issue-board-granularity-cleanup.spec.md`): for each per-task issue, emit a matching `reportPlanTask` event with the issue's status, then `close()` the issue with reason `"Migrated to lifecycle log per board-granularity invariant"`. Post-migration invariant: no Issue carries both `planRef` and `planTask`.
 
 #### 1d. Orphaned Issues
 Find issues whose `planRef` points to a file that no longer exists.
@@ -73,8 +77,8 @@ If `lib/reality-check.mjs` fails to import, proceed without verification.
 #### 1e. Orphaned Plans
 Find `.plan.md` files that have no corresponding epic on the issue board.
 
-**Fix offered:** "Create an epic and issues for this plan?"
-**Action:** Create epic with `createEpic({ title, planRef })`, then create issues for each task.
+**Fix offered:** "Create an epic for this plan and seed plan-task events?"
+**Action:** Call `getIssueManager(manifest).createEpic({ title, planRef })` to create the epic at board-level granularity. Then call `reportPlanTask(projectRoot, specPath, { taskNumber, title, status: "pending" })` once per plan task to seed the lifecycle log's plan-task channel. Do NOT call `create({ planRef, planTask })` — per-task issues are forbidden by the board-granularity invariant.
 
 #### 1f. Untraced Code
 Find source files with no lifecycle trailers on any commit (post-pipeline only).
@@ -90,6 +94,24 @@ Find specs with status `implemented` or `validated` that have no `source-manifes
 **Action:** If the spec has a `.plan.md` with file lists, collect those files. If they exist, run `computeManifest()` and stamp the result in the spec frontmatter.
 
 **Batch prioritization:** Process specs that have existing `.plan.md` files first (29 specs). Specs without plans require heuristic file matching and should be reviewed individually.
+
+#### 1h. Lifecycle Sync
+
+Detect spec-status, charter-capability, and epic-status drift relative to the lifecycle event log. This is the equivalent of former `/adev:validate` Check 12 (relocated by `check-set-restructure.spec.md`), now running in its proper home at reconcile-time rather than per-spec validate-time. Lifecycle reconciliation belongs here because the data is repo-level (one answer per repo), not per-spec, so emitting it from validate produced 49% WARN noise without verdict signal.
+
+**What to check:**
+- Spec `status` frontmatter vs lifecycle log `currentStep` — flag mismatches (e.g., spec says `implemented` but log shows no `implement` completed event; or spec says `review-passed` but `validate` already completed with PASS).
+- Charter capability `Status` column vs lifecycle log per-spec state — flag capabilities listed as `planned` or `implementing` when all contributing specs are `validated`.
+- Plan-task projection drift — flag plans whose `currentState(spec).planTasks` projection has tasks marked `pending` long past the implement event's completion timestamp (only inform; never auto-flip).
+- Epic `status` on issue board vs child issue states — already covered by 1a (Stale Epics).
+
+**Fix offered (`--fix` mode, default):** Update spec frontmatter `status` field to match lifecycle log. Update charter capability Status column. For plan-task reconciliation, emit a `reportPlanTask` event via `lib/lifecycle-state.mjs` — do NOT write `- [x]` markdown checkbox state into plan files (plan files are immutable post-authoring per `plan-task-events.spec.md`; the authoritative state lives in the lifecycle log projection).
+
+**Fix offered (`--no-fix` mode):** Print WARN for each mismatch with the correct value side-by-side, so the operator can decide whether to apply manually.
+
+**Structural equivalence with historic Check 12 output:** Each finding from this section carries the same fields a Check 12 WARN body previously carried (path, severity, message, evidence) so users moving between historic `.validate.md` reports and new reconcile output can map between them without information loss. This satisfies the spec's "destinations preserve structural shape" invariant.
+
+**Prompt:** "Sync lifecycle for {spec}?" with options `[Y/n]` in default `--fix` mode; suppressed in `--batch`; printed as informational rows in `--no-fix`.
 
 ### Step 2: Present and Fix — One Category at a Time
 
@@ -142,6 +164,7 @@ Stale Epics: 2 fixed, 0 skipped.
 | Orphaned Plans | "Create epic + issues for {plan}?" | `[Y/n]` |
 | Untraced Code | "Create spec for {file}?" | `[Y/n/ignore]` — ignore marks as intentional |
 | Missing Source Manifests | "Stamp manifest for {spec}?" | `[Y/n]` |
+| Lifecycle Sync | "Sync lifecycle for {spec}?" | `[Y/n]` — `--fix` default applies; `--no-fix` prints WARN rows |
 
 **Skip empty categories entirely** — do not print headers for categories with zero findings.
 
@@ -182,7 +205,28 @@ Remaining:
 **Never:**
 - Delete spec files, plan files, or source code
 - Modify code to match specs (that's `/adev:implement`)
-- Create issues without a plan (issues need `planRef` and `planTask`)
+- Create per-task issues (`create({ planRef, planTask })`) — board granularity is epic / feature / bug only; plan-task state lives in the lifecycle log
 - Close issues that have unclosed dependencies
 - Run `/adev:plan` in batch mode (planning requires review)
 - Stamp a source manifest without verifying files exist
+
+## API reference
+
+Issue board (the reconciliation operations call into the manager, never the on-disk JSON directly):
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Lifecycle event log (plan-task channel migration during `collapse-per-task-issues`):
+
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection.
+- `reportPlanTask(projectRoot, specPath, { taskNumber, title, status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emit a `plan_task` event to migrate per-task issue state into the lifecycle log.
+- `appendEvent(projectRoot, specPath, event)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — low-level append. Reserved for explicit repair workflows that need to backfill a specific event variant; prefer the convenience writers (`reportPlanTask`, `reportReviewer`, etc.) wherever possible.
+
+Reality check helpers:
+
+- `verifyIssueCompleted(issueId, options)` and `verifySpecImplemented(specPath, options)` from `<ADEV_ROOT>/lib/reality-check.mjs` — confidence scoring before auto-closing or marking obsolete.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

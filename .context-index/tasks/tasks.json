@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 30,
+  "seq": 68,
   "epics": [
     {
       "id": "epic-1",
@@ -420,7 +420,6 @@
       "title": "API Eval Project",
       "status": "closed",
       "planRef": ".context-index/specs/features/eval-projects/api-eval-project.plan.md",
-      "milestone": "v1",
       "created": "2026-05-06T17:00:13.462Z",
       "updated": "2026-05-06T17:13:01.835Z"
     },
@@ -461,7 +460,6 @@
       "title": "Foundation & Onboarding Documentation",
       "status": "closed",
       "planRef": ".context-index/specs/features/user-docs/foundation-onboarding.plan.md",
-      "milestone": "Reconciled: validated (2026-05-09)",
       "created": "2026-05-09T17:00:00.000Z",
       "updated": "2026-05-09T17:00:00.000Z"
     },
@@ -517,23 +515,24 @@
       "id": "epic-70",
       "title": "Create Domain Extension Packages",
       "status": "open",
-      "milestone": "0.27.0",
+      "milestone": "0.28.0",
       "created": "2026-05-11T15:02:19.426Z",
       "updated": "2026-05-11T20:31:51.666Z"
     },
     {
       "id": "epic-71",
-      "title": "Milestone 0.26.0 — Agent-Reliable State Artifacts",
-      "status": "open",
-      "milestone": "0.26.0",
+      "title": "Milestone 0.27.1 — Agent-Reliable State Artifacts",
+      "status": "closed",
+      "milestone": "0.27.1",
       "created": "2026-05-11T20:22:25.846Z",
-      "updated": "2026-05-11T20:22:48.725Z"
+      "updated": "2026-05-19T20:08:06.968Z",
+      "notes": "Closed: Milestone 0.27.1 shipped (release tagged adev-cli-v0.27.1 on 2026-05-19, PR #152)"
     },
     {
       "id": "epic-72",
-      "title": "0.27.0",
+      "title": "0.28.0",
       "status": "open",
-      "milestone": "0.27.0",
+      "milestone": "0.28.0",
       "created": "2026-05-11T21:19:31.520Z",
       "updated": "2026-05-11T21:19:31.520Z"
     },
@@ -543,7 +542,7 @@
       "status": "open",
       "created": "2026-05-14T12:25:09.986Z",
       "updated": "2026-05-14T12:56:27.270Z",
-      "milestone": "spec-and-charter-taxonomy"
+      "milestone": "0.27.1"
     },
     {
       "id": "epic-74",
@@ -600,7 +599,7 @@
       "id": "epic-80",
       "title": "Charter: lifecycle-artifacts (Layer 1)",
       "status": "closed",
-      "milestone": "spec-and-charter-taxonomy",
+      "milestone": "0.27.1",
       "created": "2026-05-14T16:58:52.453Z",
       "updated": "2026-05-15T18:26:09.107Z",
       "notes": "Reconciled by /adev:reconcile: all 12 child issues closed. Layer 1 of spec-and-charter-taxonomy milestone delivered. Layers 2 (issue-463) and 3 (issue-464) remain deferred under epic-73."
@@ -667,6 +666,37 @@
       "planRef": ".context-index/specs/features/output-personas/verbosity-axis-and-output-trimming.plan.md",
       "created": "2026-05-18T14:32:19.618Z",
       "updated": "2026-05-18T14:32:19.618Z"
+    },
+    {
+      "id": "epic-89",
+      "title": "Feature Backlog",
+      "status": "open",
+      "created": "2026-05-18T21:22:52.638Z",
+      "updated": "2026-05-18T21:22:52.638Z"
+    },
+    {
+      "id": "epic-90",
+      "title": "CursorAdapter with Skill Name Sanitization",
+      "status": "closed",
+      "planRef": ".context-index/specs/features/cursor-provider/cursor-adapter.plan.md",
+      "created": "2026-05-18T21:56:54.280Z",
+      "updated": "2026-05-18T21:56:54.293Z"
+    },
+    {
+      "id": "epic-91",
+      "title": "CLI install integration (cursor-provider Spec D)",
+      "status": "closed",
+      "planRef": ".context-index/specs/features/cursor-provider/cli-install-integration.plan.md",
+      "created": "2026-05-19T11:57:37.598Z",
+      "updated": "2026-05-19T12:34:26.461Z"
+    },
+    {
+      "id": "epic-92",
+      "title": "Cursor sync-target output (Spec E)",
+      "status": "open",
+      "planRef": ".context-index/specs/features/cursor-provider/sync-target-output.plan.md",
+      "created": "2026-05-19T13:08:24.855Z",
+      "updated": "2026-05-19T13:08:24.855Z"
     }
   ],
   "issues": [
@@ -2258,15 +2288,15 @@
     {
       "id": "issue-381",
       "title": "Plan QG checkboxes never checked off + getPlanProgress boundary bug",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-72",
       "dependencies": [],
-      "notes": "Two compounding issues: (1) The plan template emits Quality Gates as checkboxes but nothing checks them off — validate writes results to .validate.md, not back to the plan. (2) getPlanProgress in lib/meta-tools.mjs does not stop at ## Quality Gates heading, so QG checkboxes get attributed to the last task, inflating totals and marking it incomplete. Fix: (A) Plan template emits QG as plain bullets. (B) getPlanProgress only counts checkboxes within ### Task N: sections.",
+      "notes": "Two compounding issues: (1) The plan template emits Quality Gates as checkboxes but nothing checks them off — validate writes results to .validate.md, not back to the plan. (2) getPlanProgress in lib/meta-tools.mjs does not stop at ## Quality Gates heading, so QG checkboxes get attributed to the last task, inflating totals and marking it incomplete. Fix: (A) Plan template emits QG as plain bullets. (B) getPlanProgress only counts checkboxes within ### Task N: sections.; Closed: Verified FIXED 2026-05-19. (a) lib/meta-tools.mjs:285-289 explicitly stops getPlanProgress at any ## heading (e.g., ## Quality Gates), preventing QG checkboxes from being attributed to the last task. (b) Plan template emits Quality Gates as plain bullets (- Tests pass:), not checkboxes — see skills/plan/SKILL.md and the orphan-lock-cleanup.plan.md authored 2026-05-18.",
       "next_action": null,
       "created": "2026-05-09T16:48:53.411Z",
-      "updated": "2026-05-11T21:19:31.559Z"
+      "updated": "2026-05-19T20:19:59.809Z"
     },
     {
       "id": "issue-382",
@@ -2284,27 +2314,27 @@
     {
       "id": "issue-387",
       "title": "Lifecycle gate hook does not block source edits when lifecycle.gate=block",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-72",
       "dependencies": [],
-      "notes": "",
+      "notes": "Closed: Verified FIXED 2026-05-19 by commit b289b8f 'fix(lifecycle-gate): block source edits when no lifecycle session is active' (committed 2026-05-09T17:50:58 — same day the issue was filed, 23:30Z, but commit pre-dates issue by 6 hours so the bug report likely lagged the fix). New logic: any non-excluded source file edit is blocked when no execution state (active/standalone) exists. The 'block' case in hooks/lifecycle-gate-edit.sh emits exit 2. tests/hooks/lifecycle-gate-edit.test.mjs runs 10 tests all PASS.",
       "next_action": null,
       "created": "2026-05-09T23:30:09.171Z",
-      "updated": "2026-05-11T21:19:31.570Z"
+      "updated": "2026-05-19T20:19:59.832Z"
     },
     {
       "id": "issue-429",
       "title": "adev:implement Step 5 skips source-manifest stamping when run via adev:build",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "dependencies": [],
-      "notes": "When /adev:implement runs via /adev:build orchestration, the subagent completes all plan tasks but Step 5 (spec status update + source-manifest stamping) does not execute. This leaves specs without source-manifest frontmatter blocks, causing /adev:validate Check 1.5 to skip instead of verifying file integrity. Root cause: session boundaries or context loss between task completion and the stamping step. All 4 domain-profiles specs were affected. Workaround: manually stamp via computeManifest() after implementation.",
+      "notes": "When /adev:implement runs via /adev:build orchestration, the subagent completes all plan tasks but Step 5 (spec status update + source-manifest stamping) does not execute. This leaves specs without source-manifest frontmatter blocks, causing /adev:validate Check 1.5 to skip instead of verifying file integrity. Root cause: session boundaries or context loss between task completion and the stamping step. All 4 domain-profiles specs were affected. Workaround: manually stamp via computeManifest() after implementation.; Closed: Verified FIXED 2026-05-19 by smoke evidence. Today's two /adev:build runs both successfully stamped source-manifests through the full pipeline: orphan-lock-cleanup (sha 16779ee, Check 1.5 PASS) and post-commit-self-skip (sha 16779ee, Check 1.5 PASS). skills/implement/SKILL.md:591-628 has explicit Step 5 source-manifest stamping with .partial pattern. No build-orchestrator bypass observed in current code.",
       "next_action": null,
       "created": "2026-05-11T00:34:30.405Z",
-      "updated": "2026-05-11T00:34:30.405Z"
+      "updated": "2026-05-19T20:19:59.850Z"
     },
     {
       "id": "issue-430",
@@ -2528,15 +2558,15 @@
     {
       "id": "issue-458",
       "title": "Post-commit session-capture loop generates a file per commit in interactive sessions",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-71",
       "dependencies": [],
-      "notes": "The .githooks/post-commit hook writes one .context-index/sessions/YYYY-MM-DD-<sha>.md per commit. When an interactive agent commits in-session, each commit triggers a new capture file, which itself must be committed, which triggers another capture — convergent but noisy (5+ commits in this session were hook artifacts, not user-meaningful changes).  Proposed fixes (pick one, possibly both): 1. Rolling daily session log: append commit summaries to a single .context-index/sessions/YYYY-MM-DD.jsonl (or .md with append semantics) rather than one file per commit. Idempotent, cheap to commit, no recursion. 2. Self-skip on session-capture commits: detect when the commit being recorded itself only touches .context-index/sessions/ and skip writing a new capture file in that case.  Surfaced 2026-05-11 during /adev:reconcile work for the 0.25.0 ship sequence. Fits under epic-71 (Agent-Reliable State Artifacts) since session captures ARE state artifacts.",
+      "notes": "Validated: PASS (2026-05-19) | Report: .context-index/specs/features/session-awareness/post-commit-self-skip.validate.md | Files verified: 2 | Tests: PASS. Implementation at .githooks/post-commit:30-44.",
       "next_action": "Spec the rolling-log vs self-skip approaches; pick one for /adev:specify",
       "created": "2026-05-11T20:52:28.803Z",
-      "updated": "2026-05-11T20:52:28.803Z"
+      "updated": "2026-05-19T13:12:07.717Z"
     },
     {
       "id": "issue-459",
@@ -2636,86 +2666,86 @@
     {
       "id": "issue-466",
       "title": "Driver Substrate",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-75",
       "spec_ref": "/Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/driver-substrate.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/driver-substrate.spec.md. Created by /adev:specify on 2026-05-14.",
+      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/driver-substrate.spec.md. Created by /adev:specify on 2026-05-14.; Closed: Spec driver-substrate.spec.md status=validated; implementation merged on main",
       "next_action": "Run /adev:implement --plan .context-index/specs/features/cli-driver-surface/driver-substrate.plan.md — note: cli charter rev 3 (drops single-file constraint) must land first",
       "created": "2026-05-14T14:00:47.392Z",
-      "updated": "2026-05-14T15:00:23.924Z"
+      "updated": "2026-05-18T21:04:01.305Z"
     },
     {
       "id": "issue-467",
       "title": "Diagnostic Registry",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-75",
       "spec_ref": "/Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/diagnostic-registry.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/diagnostic-registry.spec.md. Created by /adev:specify on 2026-05-14.",
+      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/diagnostic-registry.spec.md. Created by /adev:specify on 2026-05-14.; Closed: Spec diagnostic-registry.spec.md status=implemented; merged",
       "next_action": "Run /adev:plan --spec <path> to decompose into ordered tasks",
       "created": "2026-05-14T14:02:27.966Z",
-      "updated": "2026-05-14T14:38:45.393Z"
+      "updated": "2026-05-18T21:04:01.322Z"
     },
     {
       "id": "issue-468",
       "title": "adev diagnose CLI verb",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-75",
       "spec_ref": "/Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/adev-diagnose-cli.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/adev-diagnose-cli.spec.md. Created by /adev:specify on 2026-05-14.",
+      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/adev-diagnose-cli.spec.md. Created by /adev:specify on 2026-05-14.; Closed: Spec adev-diagnose-cli.spec.md status=implemented; merged",
       "next_action": "Run /adev:plan --spec <path> to decompose into ordered tasks",
       "created": "2026-05-14T14:03:31.572Z",
-      "updated": "2026-05-14T14:38:45.399Z"
+      "updated": "2026-05-18T21:04:01.336Z"
     },
     {
       "id": "issue-469",
       "title": "Write-time diagnostic hook",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-75",
       "spec_ref": "/Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/write-time-diagnostic-hook.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/write-time-diagnostic-hook.spec.md. Created by /adev:specify on 2026-05-14.",
+      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/write-time-diagnostic-hook.spec.md. Created by /adev:specify on 2026-05-14.; Closed: Spec write-time-diagnostic-hook.spec.md status=implemented; merged",
       "next_action": "Run /adev:plan --spec <path> to decompose into ordered tasks",
       "created": "2026-05-14T14:04:38.064Z",
-      "updated": "2026-05-14T14:38:45.407Z"
+      "updated": "2026-05-18T21:04:01.361Z"
     },
     {
       "id": "issue-470",
       "title": "Inline-Node extraction sweep",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-75",
       "spec_ref": "/Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md. Master spec — /adev:plan decomposes into 7+ extraction PRs. Created by /adev:specify on 2026-05-14.",
+      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md. Master spec — /adev:plan decomposes into 7+ extraction PRs. Created by /adev:specify on 2026-05-14.; Closed: Spec inline-node-extraction-sweep.spec.md status=implemented; merged",
       "next_action": "Run /adev:plan --spec <path> to decompose into ordered tasks",
       "created": "2026-05-14T14:05:57.807Z",
-      "updated": "2026-05-14T14:38:45.413Z"
+      "updated": "2026-05-18T21:04:01.373Z"
     },
     {
       "id": "issue-471",
       "title": "Regression prevention (constitution + pre-commit hook)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-75",
       "spec_ref": "/Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/regression-prevention.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/regression-prevention.spec.md. Created by /adev:specify on 2026-05-14.",
+      "notes": "Bound 1:1 to spec at /Users/dpavancini/Development/adev-plugin-hygiene/.context-index/specs/features/cli-driver-surface/regression-prevention.spec.md. Created by /adev:specify on 2026-05-14.; Closed: Spec regression-prevention.spec.md status=implemented; merged",
       "next_action": "Run /adev:plan --spec <path> to decompose into ordered tasks",
       "created": "2026-05-14T14:07:10.485Z",
-      "updated": "2026-05-14T14:38:45.419Z"
+      "updated": "2026-05-18T21:04:01.384Z"
     },
     {
       "id": "issue-472",
@@ -2949,14 +2979,14 @@
     {
       "id": "issue-488",
       "title": "drift-stamp hook overwrites drift_source/drift_at on every watched-file edit",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "dependencies": [],
-      "notes": "",
+      "notes": "Closed: Verified FIXED 2026-05-19 by commit 9cc9724 'feat(spec-drift-detection): stop writing drift_source/drift_at to frontmatter (Step 3)' (PR #142, merged). The drift-stamp hook no longer writes drift_source/drift_at to spec frontmatter at all — drift is now tracked exclusively via JSONL events in .context-index/lifecycle-state/<slug>.jsonl. Frontmatter retains only the boolean drift_detected flag. No churn on watched-file edits.",
       "next_action": null,
       "created": "2026-05-15T19:54:44.462Z",
-      "updated": "2026-05-15T19:54:44.462Z"
+      "updated": "2026-05-19T20:19:59.870Z"
     },
     {
       "id": "issue-489",
@@ -3133,17 +3163,17 @@
     {
       "id": "issue-502",
       "title": "Drift-stamp hook churn (cross-link to issue-488)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-85",
       "dependencies": [
         "issue-488"
       ],
-      "notes": "",
+      "notes": "Closed: Duplicate of issue-488 (cross-link noted in original notes). Both verified FIXED 2026-05-19 by commit 9cc9724 (PR #142). Drift-stamp hook churn eliminated by moving drift_source/drift_at to JSONL events.",
       "next_action": null,
       "created": "2026-05-16T11:58:30.465Z",
-      "updated": "2026-05-16T11:58:30.480Z"
+      "updated": "2026-05-19T20:19:59.887Z"
     },
     {
       "id": "issue-503",
@@ -3161,29 +3191,29 @@
     {
       "id": "issue-504",
       "title": "Subagent Write tool disconnects on large payloads — /adev:build fails dispatching /adev:plan and /adev:implement",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-71",
       "dependencies": [],
-      "notes": "Observed 2026-05-17 during build of concurrent-write-protection spec. Two consecutive Agent-tool dispatches to /adev:plan failed with \"API Error: The socket connection was closed unexpectedly\" at the moment of attempting Write tool call to author a ~15K-token markdown file. Pattern reproducible: subagent completes context gathering, attempts Write, dies 28-58s later. Different context sizes (115K and 69K cache_read) — not size-correlated. Reviewer subagent dispatches in same session (small <1.5K outputs) all succeeded. Foreground invocation of same skill, same payload, succeeded instantly. Root cause: streaming-response transport limit on large Write tool calls across subagent boundary. Full diagnosis in .context-index/research/subagent-write-disconnect.md. Affects all /adev:build runs of write-heavy skills (/adev:plan, /adev:implement, /adev:specify) until mitigated.",
+      "notes": "Observed 2026-05-17 during build of concurrent-write-protection spec. Two consecutive Agent-tool dispatches to /adev:plan failed with \"API Error: The socket connection was closed unexpectedly\" at the moment of attempting Write tool call to author a ~15K-token markdown file. Pattern reproducible: subagent completes context gathering, attempts Write, dies 28-58s later. Different context sizes (115K and 69K cache_read) — not size-correlated. Reviewer subagent dispatches in same session (small <1.5K outputs) all succeeded. Foreground invocation of same skill, same payload, succeeded instantly. Root cause: streaming-response transport limit on large Write tool calls across subagent boundary. Full diagnosis in .context-index/research/subagent-write-disconnect.md. Affects all /adev:build runs of write-heavy skills (/adev:plan, /adev:implement, /adev:specify) until mitigated.; Closed: PR #137 merged; incremental-artifact-writes.spec.md (rev 2) validated with PASS validate.md. Project-side mitigation (.partial + atomic-rename protocol) shipped. Upstream API bug remains out-of-scope per spec framing.",
       "next_action": "Run /adev:review-specs on incremental-artifact-writes spec; the spec reframes 504 as the project-side mitigation (the API bug itself remains upstream and out-of-scope).",
       "created": "2026-05-17T16:55:10.943Z",
-      "updated": "2026-05-17T18:32:23.852Z",
+      "updated": "2026-05-18T21:23:01.256Z",
       "spec_ref": ".context-index/specs/cross-cutting/incremental-artifact-writes.spec.md"
     },
     {
       "id": "issue-505",
       "title": "Auto-recover from stale tasks.json.lock (orphan-lock cleanup)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-71",
       "dependencies": [],
-      "notes": "The CAS layer in lib/issues/json-adapter.mjs acquires tasks.json.lock via O_EXCL before each write and releases it in the finally block. If the process is killed mid-write (SIGKILL, OS crash, container OOM), the lock file persists. Every subsequent CAS mutator then hits EEXIST → STALE_BOARD_WRITE_RETRY → bounded retry → STALE_BOARD_WRITE. The issue board becomes effectively read-only until someone manually deletes the orphan lock. The error message does not mention the lock file, making the failure hard to debug.\n\n.gitignore now excludes the lock file (committed in ba44d3b on the concurrent-write-protection branch) so it cannot propagate via git, but in-place developer environments still need recovery.\n\nProposed mitigation: when _write encounters EEXIST on the lock acquire, stat the existing lock file. If its mtime is older than a configurable threshold (default 30 seconds; override via manifest.tasks.cas_lock_stale_seconds), treat it as orphaned, unlink it, and retry the acquire (without consuming a CAS retry budget slot). Log a one-time warning on the recovery path so users notice if it happens repeatedly.\n\nSurfaced 2026-05-17 during PR review of concurrent-write-protection. Filed at user direction as a follow-up; not in scope for the original spec.",
+      "notes": "The CAS layer in lib/issues/json-adapter.mjs acquires tasks.json.lock via O_EXCL before each write and releases it in the finally block. If the process is killed mid-write (SIGKILL, OS crash, container OOM), the lock file persists. Every subsequent CAS mutator then hits EEXIST → STALE_BOARD_WRITE_RETRY → bounded retry → STALE_BOARD_WRITE. The issue board becomes effectively read-only until someone manually deletes the orphan lock. The error message does not mention the lock file, making the failure hard to debug.\n\n.gitignore now excludes the lock file (committed in ba44d3b on the concurrent-write-protection branch) so it cannot propagate via git, but in-place developer environments still need recovery.\n\nProposed mitigation: when _write encounters EEXIST on the lock acquire, stat the existing lock file. If its mtime is older than a configurable threshold (default 30 seconds; override via manifest.tasks.cas_lock_stale_seconds), treat it as orphaned, unlink it, and retry the acquire (without consuming a CAS retry budget slot). Log a one-time warning on the recovery path so users notice if it happens repeatedly.\n\nSurfaced 2026-05-17 during PR review of concurrent-write-protection. Filed at user direction as a follow-up; not in scope for the original spec.; Closed: [object Object]",
       "next_action": "Spec the stale-threshold and recovery semantics; pick a default for cas_lock_stale_seconds",
       "created": "2026-05-17T17:54:56.842Z",
-      "updated": "2026-05-17T17:54:56.842Z"
+      "updated": "2026-05-19T12:10:07.604Z"
     },
     {
       "id": "issue-506",
@@ -3201,85 +3231,85 @@
     {
       "id": "issue-507",
       "title": "Populate project governance/validate.yaml from domain starter",
-      "status": "in_progress",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "dependencies": [],
-      "notes": "The project's validate registry at .context-index/governance/validate.yaml is currently checks: [], leaving /adev:validate without a registry-driven check set. Under the single-source model, that file is authoritative and there are no bundled fallbacks — meaning only Check 1 (quality gates, sourced separately from governance/gates.yaml) should fire today.\n\nRequired entries to copy from templates/domains/software/validate.yaml:\n- validate.check-1.5-source-manifest\n- validate.check-2-spec-compliance\n- validate.check-4-constitution\n- validate.check-8-boundaries\n- validate.check-9-transition-gates\n- validate.check-11-visual-verification\n\nExplicitly excluded (removed by check-set-restructure.spec.md, migrated elsewhere): checks 3, 5, 6, 7, 10, 12, 13. The starter file documents which skill or hygiene pass each one moved to.\n\nWhy this matters:\n1. Operator configurability — disabling a check, overriding a severity, or adding a project-specific check is impossible until the registry is populated.\n2. Single-source-model integrity — registry vs prose currently contradict.\n3. Validator events emitted by /adev:validate trigger UNKNOWN_VALIDATOR_DEFAULTED warnings because the IDs are not declared in any registry the project knows about.\n\nAcceptance:\n- governance/validate.yaml contains the six entries above.\n- /adev:validate against a sample spec dispatches via the registry rather than skill prose.\n- No more UNKNOWN_VALIDATOR_DEFAULTED warnings on validator-event emission.\n\nReferences:\n- templates/domains/software/validate.yaml (starter to copy from)\n- .context-index/specs/features/validation/validate-config-single-source.spec.md\n- .context-index/specs/features/validation/check-set-restructure.spec.md\n\nSurfaced during /adev:validate of tree-sitter-repomap/non-code-reference-detection (PR #127, 2026-05-17).",
+      "notes": "The project's validate registry at .context-index/governance/validate.yaml is currently checks: [], leaving /adev:validate without a registry-driven check set. Under the single-source model, that file is authoritative and there are no bundled fallbacks — meaning only Check 1 (quality gates, sourced separately from governance/gates.yaml) should fire today.\n\nRequired entries to copy from templates/domains/software/validate.yaml:\n- validate.check-1.5-source-manifest\n- validate.check-2-spec-compliance\n- validate.check-4-constitution\n- validate.check-8-boundaries\n- validate.check-9-transition-gates\n- validate.check-11-visual-verification\n\nExplicitly excluded (removed by check-set-restructure.spec.md, migrated elsewhere): checks 3, 5, 6, 7, 10, 12, 13. The starter file documents which skill or hygiene pass each one moved to.\n\nWhy this matters:\n1. Operator configurability — disabling a check, overriding a severity, or adding a project-specific check is impossible until the registry is populated.\n2. Single-source-model integrity — registry vs prose currently contradict.\n3. Validator events emitted by /adev:validate trigger UNKNOWN_VALIDATOR_DEFAULTED warnings because the IDs are not declared in any registry the project knows about.\n\nAcceptance:\n- governance/validate.yaml contains the six entries above.\n- /adev:validate against a sample spec dispatches via the registry rather than skill prose.\n- No more UNKNOWN_VALIDATOR_DEFAULTED warnings on validator-event emission.\n\nReferences:\n- templates/domains/software/validate.yaml (starter to copy from)\n- .context-index/specs/features/validation/validate-config-single-source.spec.md\n- .context-index/specs/features/validation/check-set-restructure.spec.md\n\nSurfaced during /adev:validate of tree-sitter-repomap/non-code-reference-detection (PR #127, 2026-05-17).; Closed: PR #130 merged; governance/validate.yaml populated, all 3 ACs satisfied",
       "next_action": null,
       "created": "2026-05-17T19:22:53.449Z",
-      "updated": "2026-05-17T19:41:22.917Z",
+      "updated": "2026-05-18T21:04:01.409Z",
       "epicId": "epic-74",
       "notes_append": "\n\n2026-05-17 (later): AC3 closed too — root-cause fix in lib/lifecycle-state.mjs (commit 64e83ed in PR #130). Validator severity now resolves from validate.yaml instead of gates.yaml. All 3 ACs satisfied; ready to close when PR merges."
     },
     {
       "id": "issue-508",
       "title": "specify and implement skills emit step-completed without verdict, blocking downstream gates",
-      "status": "in_progress",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-74",
       "dependencies": [],
-      "notes": "Two skills emit `adev report --type step --status completed` without a verdict, which causes the next skill's gate (`adev gate require`) to block until an operator manually re-emits the completed event with --verdict.\n\nAffected skills:\n- skills/specify/SKILL.md:465 — emits `adev report --type step --step specify --status completed` (no verdict). /adev:review-specs then blocks until verdict is re-emitted.\n- skills/implement/SKILL.md:37 — emits `adev report --type step --step implement --status completed` (no verdict). /adev:validate then blocks.\n\nOther skills (review-specs, plan, validate) DO emit a verdict on completion. The contract is therefore not uniformly applied.\n\nObserved twice during 2026-05-17 lifecycle run on tree-sitter-repomap/non-code-reference-detection:\n- After /adev:specify, /adev:review-specs blocked with: \"step 'review' requires prior step 'specify' to be completed with PASS or PASS_WITH_NOTES (current: {status: completed, verdict: null})\". Workaround: manually re-emitted specify completion with --verdict PASS.\n- After /adev:implement, /adev:validate blocked with the same shape of error against the 'implement' prior step. Same workaround applied.\n\nFix (option A — chosen): make every skill emit a verdict on the completed event. specify is treated as PASS when it successfully writes the spec; implement is treated as PASS when the GREEN phase passes (which the skill already gates on internally). Two-line edits per skill.\n\nAlternative considered (option B — rejected): relax the gate to accept `status: completed` without a verdict for steps that don't naturally produce pass/fail. Rejected because it weakens the gate's contract for the three steps (review, plan, validate) that DO produce verdicts.\n\nAcceptance:\n- skills/specify/SKILL.md and skills/implement/SKILL.md include --verdict PASS in their step-completed emission.\n- A clean end-to-end lifecycle (specify → review → plan → implement → validate) succeeds without any manual verdict re-emission.\n- /adev:validate is no longer blocked by an absent implement verdict.\n\nOut of scope: changes to gate logic, changes to the failed-step verdict-emission path (specify/implement already correctly emit no verdict on failure — only the success path is affected).",
+      "notes": "Two skills emit `adev report --type step --status completed` without a verdict, which causes the next skill's gate (`adev gate require`) to block until an operator manually re-emits the completed event with --verdict.\n\nAffected skills:\n- skills/specify/SKILL.md:465 — emits `adev report --type step --step specify --status completed` (no verdict). /adev:review-specs then blocks until verdict is re-emitted.\n- skills/implement/SKILL.md:37 — emits `adev report --type step --step implement --status completed` (no verdict). /adev:validate then blocks.\n\nOther skills (review-specs, plan, validate) DO emit a verdict on completion. The contract is therefore not uniformly applied.\n\nObserved twice during 2026-05-17 lifecycle run on tree-sitter-repomap/non-code-reference-detection:\n- After /adev:specify, /adev:review-specs blocked with: \"step 'review' requires prior step 'specify' to be completed with PASS or PASS_WITH_NOTES (current: {status: completed, verdict: null})\". Workaround: manually re-emitted specify completion with --verdict PASS.\n- After /adev:implement, /adev:validate blocked with the same shape of error against the 'implement' prior step. Same workaround applied.\n\nFix (option A — chosen): make every skill emit a verdict on the completed event. specify is treated as PASS when it successfully writes the spec; implement is treated as PASS when the GREEN phase passes (which the skill already gates on internally). Two-line edits per skill.\n\nAlternative considered (option B — rejected): relax the gate to accept `status: completed` without a verdict for steps that don't naturally produce pass/fail. Rejected because it weakens the gate's contract for the three steps (review, plan, validate) that DO produce verdicts.\n\nAcceptance:\n- skills/specify/SKILL.md and skills/implement/SKILL.md include --verdict PASS in their step-completed emission.\n- A clean end-to-end lifecycle (specify → review → plan → implement → validate) succeeds without any manual verdict re-emission.\n- /adev:validate is no longer blocked by an absent implement verdict.\n\nOut of scope: changes to gate logic, changes to the failed-step verdict-emission path (specify/implement already correctly emit no verdict on failure — only the success path is affected).; Closed: PR #131 merged; specify/implement emit verdict on step completion",
       "next_action": null,
       "created": "2026-05-17T19:58:10.037Z",
-      "updated": "2026-05-17T20:02:14.999Z",
+      "updated": "2026-05-18T21:04:01.548Z",
       "notes_append": "\n\n2026-05-17: PR #131 opened."
     },
     {
       "id": "issue-509",
       "title": "/adev:validate emits no lifecycle events (no gate, no started, no completed)",
-      "status": "in_progress",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-74",
       "dependencies": [],
-      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-1, LIFE-3).\n\nskills/validate/SKILL.md Step 0a uses inline-Node imports of currentState/requireGate/resolveGateMode/reportStep instead of `adev gate require --skill validate --spec <p>` and `adev report --type step --status started`. Worse, no completion event is emitted — the section structure jumps from Check 11 to Overall Status to After Validation without ever calling `adev report --type step --step validate --status completed`.\n\nConsequence: after /adev:validate runs, the lifecycle log shows lifecycle_step:validate started with no terminal event. Any future skill that gates on validate completion would block permanently. Same shape of bug as issue-508 but for a different skill.\n\nFix:\n1. Replace the Step 0a inline-Node block with `adev gate require --skill validate --spec <p>` + `adev report --type step --step validate --status started`.\n2. Add a final emission step that calls `adev report --type step --step validate --status completed --verdict <aggregate>` where aggregate is PASS / PASS_WITH_NOTES / FAIL based on the consolidated check results.\n\nAcceptance:\n- /adev:validate runs end-to-end without inline-Node in its critical-path gate logic.\n- Lifecycle log after a validate run contains both lifecycle_step:validate started AND step_completed:validate with a verdict.\n- Manual verification: a fictional downstream skill calling `adev gate require --skill <next>` after validate does not block.",
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-1, LIFE-3).\n\nskills/validate/SKILL.md Step 0a uses inline-Node imports of currentState/requireGate/resolveGateMode/reportStep instead of `adev gate require --skill validate --spec <p>` and `adev report --type step --status started`. Worse, no completion event is emitted — the section structure jumps from Check 11 to Overall Status to After Validation without ever calling `adev report --type step --step validate --status completed`.\n\nConsequence: after /adev:validate runs, the lifecycle log shows lifecycle_step:validate started with no terminal event. Any future skill that gates on validate completion would block permanently. Same shape of bug as issue-508 but for a different skill.\n\nFix:\n1. Replace the Step 0a inline-Node block with `adev gate require --skill validate --spec <p>` + `adev report --type step --step validate --status started`.\n2. Add a final emission step that calls `adev report --type step --step validate --status completed --verdict <aggregate>` where aggregate is PASS / PASS_WITH_NOTES / FAIL based on the consolidated check results.\n\nAcceptance:\n- /adev:validate runs end-to-end without inline-Node in its critical-path gate logic.\n- Lifecycle log after a validate run contains both lifecycle_step:validate started AND step_completed:validate with a verdict.\n- Manual verification: a fictional downstream skill calling `adev gate require --skill <next>` after validate does not block.; Closed: PR #132 merged; validate skill emits canonical lifecycle events",
       "next_action": null,
       "created": "2026-05-17T20:31:01.507Z",
-      "updated": "2026-05-17T20:33:36.039Z",
+      "updated": "2026-05-18T21:04:01.563Z",
       "notes_append": "\n\n2026-05-17: PR #132 opened with the fix."
     },
     {
       "id": "issue-510",
       "title": "Validator ID prefix mismatch — skill prose drops the \"validate.\" prefix",
-      "status": "in_progress",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-74",
       "dependencies": [],
-      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-2). Partially negates PR #130.\n\nPR #130 routed validator-severity lookups from gates.yaml to validate.yaml. validate.yaml entries use the prefixed form `validate.check-2-spec-compliance`. But skills/validate/SKILL.md (lines 363–374 and elsewhere) tells operators to emit `adev report --type validator --validator check-2-spec-compliance` (NO prefix). The severity-resolution lookup then misses every entry and defaults to severity: warning, suppressing blocker-severity FAILs in the aggregation table.\n\nEffectively re-introduces the UNKNOWN_VALIDATOR_DEFAULTED symptom that issue-507 + PR #130 were supposed to eliminate.\n\nFix (pick ONE):\n- A. Update skill prose to use the prefixed form consistently (cheapest; pure markdown).\n- B. Strip the prefix from validate.yaml and the domain starter (touches more files; risks breaking the loader if other code references the prefixed form).\n\nOption A is recommended.\n\nAcceptance:\n- skills/validate/SKILL.md emits validators with the same ID strings declared in validate.yaml.\n- After emitting a real validator_report event, no UNKNOWN_VALIDATOR_DEFAULTED warning is printed.\n- Add a CI test that walks every id in governance/validate.yaml and asserts the skill prose calls `adev report --type validator --validator <id>` verbatim.",
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-2). Partially negates PR #130.\n\nPR #130 routed validator-severity lookups from gates.yaml to validate.yaml. validate.yaml entries use the prefixed form `validate.check-2-spec-compliance`. But skills/validate/SKILL.md (lines 363–374 and elsewhere) tells operators to emit `adev report --type validator --validator check-2-spec-compliance` (NO prefix). The severity-resolution lookup then misses every entry and defaults to severity: warning, suppressing blocker-severity FAILs in the aggregation table.\n\nEffectively re-introduces the UNKNOWN_VALIDATOR_DEFAULTED symptom that issue-507 + PR #130 were supposed to eliminate.\n\nFix (pick ONE):\n- A. Update skill prose to use the prefixed form consistently (cheapest; pure markdown).\n- B. Strip the prefix from validate.yaml and the domain starter (touches more files; risks breaking the loader if other code references the prefixed form).\n\nOption A is recommended.\n\nAcceptance:\n- skills/validate/SKILL.md emits validators with the same ID strings declared in validate.yaml.\n- After emitting a real validator_report event, no UNKNOWN_VALIDATOR_DEFAULTED warning is printed.\n- Add a CI test that walks every id in governance/validate.yaml and asserts the skill prose calls `adev report --type validator --validator <id>` verbatim.; Closed: PR #133 merged; validator IDs in skill prose match validate.yaml prefix",
       "next_action": null,
       "created": "2026-05-17T20:31:01.519Z",
-      "updated": "2026-05-17T20:36:33.820Z",
+      "updated": "2026-05-18T21:04:01.582Z",
       "notes_append": "\n\n2026-05-17: PR #133 opened."
     },
     {
       "id": "issue-511",
       "title": "/adev:specify non-Standard modes (Extract, Refactor, From-Diff, Cross-Cutting) emit no lifecycle events",
-      "status": "in_progress",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-74",
       "dependencies": [],
-      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-7). Issue-508 / PR #131 only covered Specify's Standard Mode.\n\nskills/specify/SKILL.md has five modes:\n- Standard (Steps 0/6) — emits lifecycle_step started/completed ✓\n- Extract (Steps 1–5) — emits nothing\n- Refactor (Steps 1–8) — emits nothing\n- From-Diff (Steps 1–5) — emits nothing\n- Cross-Cutting (Steps 1–6) — emits nothing\n\nSpecs authored via the four non-Standard modes have empty lifecycle-state/<slug>.jsonl files. requireGate(state, 'review', ...) reports currentStatus: {status: 'missing', verdict: null} for them, blocking /adev:review-specs in strict mode.\n\nFix: factor the started/completed emission into the Shared section so every mode inherits it (mirrors how PR #131 set it for Standard Mode). The verdict should be PASS for all five modes' success paths (each mode's emission line is reached only when the spec has been written).\n\nAcceptance:\n- All five Specify modes emit lifecycle_step started AND step_completed:specify with --verdict PASS on success.\n- A spec authored in Extract / Refactor / From-Diff / Cross-Cutting mode unblocks /adev:review-specs without manual verdict re-emission.",
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-7). Issue-508 / PR #131 only covered Specify's Standard Mode.\n\nskills/specify/SKILL.md has five modes:\n- Standard (Steps 0/6) — emits lifecycle_step started/completed ✓\n- Extract (Steps 1–5) — emits nothing\n- Refactor (Steps 1–8) — emits nothing\n- From-Diff (Steps 1–5) — emits nothing\n- Cross-Cutting (Steps 1–6) — emits nothing\n\nSpecs authored via the four non-Standard modes have empty lifecycle-state/<slug>.jsonl files. requireGate(state, 'review', ...) reports currentStatus: {status: 'missing', verdict: null} for them, blocking /adev:review-specs in strict mode.\n\nFix: factor the started/completed emission into the Shared section so every mode inherits it (mirrors how PR #131 set it for Standard Mode). The verdict should be PASS for all five modes' success paths (each mode's emission line is reached only when the spec has been written).\n\nAcceptance:\n- All five Specify modes emit lifecycle_step started AND step_completed:specify with --verdict PASS on success.\n- A spec authored in Extract / Refactor / From-Diff / Cross-Cutting mode unblocks /adev:review-specs without manual verdict re-emission.; Closed: PR #134 merged; specify emits lifecycle events for all 5 modes",
       "next_action": null,
       "created": "2026-05-17T20:31:01.532Z",
-      "updated": "2026-05-17T20:40:00.421Z",
+      "updated": "2026-05-18T21:04:01.606Z",
       "notes_append": "\n\n2026-05-17: PR #134 opened with the fix."
     },
     {
       "id": "issue-512",
       "title": "Extract embedded control-flow logic from plan/implement SKILL.md JS snippets",
-      "status": "in_progress",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-74",
       "dependencies": [],
-      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-6). The cli-driver-surface inline-Node-extraction-sweep was meant to migrate every skill from inline-Node lib imports to canonical adev verb CLI calls. Audit found six skills still using inline-Node patterns even though the CLI surface for each call exists. Skills affected: review-specs (reportReviewer), plan (reportPlanTask, filterEvents, hasDrift, verifyManifest), implement (readExecutionState, currentState, reportPlanTask), build (currentState pattern), debug (currentState, reportIntervention). validate Step 0a was addressed by PR #132. Pre-commit hook only catches NEW inline-Node patterns; grandfathered lines hide the violation from CI. Acceptance: every call site migrated to adev verb; new test walks all SKILL.md files asserting no inline-Node patterns appear. Out of scope: provider mirrors (separate epic).",
+      "notes": "Surfaced by lifecycle-event audit on 2026-05-17 (LIFE-6). The cli-driver-surface inline-Node-extraction-sweep was meant to migrate every skill from inline-Node lib imports to canonical adev verb CLI calls. Audit found six skills still using inline-Node patterns even though the CLI surface for each call exists. Skills affected: review-specs (reportReviewer), plan (reportPlanTask, filterEvents, hasDrift, verifyManifest), implement (readExecutionState, currentState, reportPlanTask), build (currentState pattern), debug (currentState, reportIntervention). validate Step 0a was addressed by PR #132. Pre-commit hook only catches NEW inline-Node patterns; grandfathered lines hide the violation from CI. Acceptance: every call site migrated to adev verb; new test walks all SKILL.md files asserting no inline-Node patterns appear. Out of scope: provider mirrors (separate epic).; Closed: PR #135 merged; lib-import control-flow extraction completed",
       "next_action": null,
       "created": "2026-05-17T20:42:39.691Z",
-      "updated": "2026-05-17T21:09:37.916Z",
+      "updated": "2026-05-18T21:04:01.637Z",
       "notes_append": "\n\n2026-05-17: PR #135 opened with constitution amendment, /adev:sync, narrow follow-up spec."
     },
     {
@@ -3344,6 +3374,160 @@
       "next_action": "Run /adev:specify --cross-cutting to author a reconciliation spec; or /adev:specify --refactor under cli-driver-surface. Backfill 130 specs as follow-on hygiene task.",
       "created": "2026-05-18T14:32:19.655Z",
       "updated": "2026-05-18T14:32:19.655Z"
+    },
+    {
+      "id": "issue-518",
+      "title": "Implement plan-mode-guard hook (spec review-passed)",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-89",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-18T21:23:09.406Z",
+      "updated": "2026-05-18T21:23:09.406Z"
+    },
+    {
+      "id": "issue-519",
+      "title": "Orphan-lock cleanup for the JSON issue board CAS layer",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-71",
+      "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/orphan-lock-cleanup.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/orphan-lock-cleanup.spec.md. Created by /adev:specify on 2026-05-18. Implements the fix proposed in issue-505 (orphan-lock auto-recovery on the CAS layer).; Closed: Build pipeline complete. Spec validated; all 13 validation checks PASS. 5 tasks landed across 8 commits. Closes the implementation track of issue-505.",
+      "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts",
+      "created": "2026-05-18T21:41:49.152Z",
+      "updated": "2026-05-19T12:19:19.003Z"
+    },
+    {
+      "id": "issue-520",
+      "title": "CLI install integration",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/cursor-provider/cli-install-integration.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/cli-install-integration.spec.md. Created by /adev:specify on 2026-05-19.",
+      "next_action": "Run /adev:review-specs --module cursor-provider",
+      "created": "2026-05-19T11:45:20.607Z",
+      "updated": "2026-05-19T11:45:20.607Z"
+    },
+    {
+      "id": "issue-521",
+      "title": "Rolling daily session-capture log (one file per day, append-only)",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-41",
+      "dependencies": [],
+      "notes": "Follow-up to issue-458 (Option B). Replace per-commit session-capture files with a single .context-index/sessions/YYYY-MM-DD.jsonl per day, appended on each post-commit hook fire. Eliminates per-commit noise entirely and removes the need for the self-skip guard landing for issue-458 (Option A). Defer until: (1) self-skip approach proves insufficient, OR (2) we want to reduce git noise further. Breaks the current per-commit-file pattern — any downstream consumer of .context-index/sessions/*.md must be updated.",
+      "next_action": "When ready: /adev:specify --module session-awareness rolling-daily-log",
+      "created": "2026-05-19T12:26:33.876Z",
+      "updated": "2026-05-19T12:26:33.876Z"
+    },
+    {
+      "id": "issue-522",
+      "title": "Post-commit hook self-skips on session-capture-only commits",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-71",
+      "spec_ref": ".context-index/specs/features/session-awareness/post-commit-self-skip.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/session-awareness/post-commit-self-skip.spec.md. Created by /adev:specify on 2026-05-19. Implements Option A from issue-458 (self-skip). Option B (rolling daily log) deferred to issue-521.; Closed: Build pipeline complete. Spec validated; all 13 checks PASS on re-run. Self-skip live-verified on commit a3d2350. Closes the implementation track of issue-458.",
+      "next_action": "Run /adev:review-specs --module session-awareness",
+      "created": "2026-05-19T12:28:05.426Z",
+      "updated": "2026-05-19T13:12:55.161Z"
+    },
+    {
+      "id": "issue-523",
+      "title": "retro/hygiene: codify durable-vs-transient artifact classification in manifest",
+      "status": "open",
+      "priority": 2,
+      "type": "enhancement",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-19T12:41:35.310Z",
+      "updated": "2026-05-19T12:41:35.310Z"
+    },
+    {
+      "id": "issue-524",
+      "title": "Cursor sync target output",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/cursor-provider/sync-target-output.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/sync-target-output.spec.md. Created by /adev:specify on 2026-05-19.",
+      "next_action": "Run /adev:review-specs --module cursor-provider",
+      "created": "2026-05-19T12:56:49.742Z",
+      "updated": "2026-05-19T12:56:49.742Z"
+    },
+    {
+      "id": "issue-525",
+      "title": "milestone ship gates_pass auto-check broken — reads deprecated manifest.gates.test AND fails when populated",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-71",
+      "dependencies": [],
+      "notes": "Surfaced 2026-05-19 while running /adev:issues milestone ship 0.27.0. Two related defects in lib/milestones.mjs::evaluateShipCriteria (the gates_pass auto-check branch):\n\n1. CONFIG-LAYOUT DRIFT: the check reads `manifest.gates.test` directly. The post-0.26.0 layout moved gate definitions to .context-index/governance/gates.yaml (see manifest.yaml line 123: 'The legacy top-level gates: block here is no longer read'). evaluateShipCriteria was not updated when the move landed. Reproduces with any milestone whose manifest follows the new layout — gates_pass fails with detail: 'No test command configured in manifest.gates.test' even when governance/gates.yaml correctly defines the test gate.\n\n2. EXECUTION FAILURE WHEN POPULATED: workaround was to re-add `gates.test: \"npm test\"` to manifest.yaml. After that, gates_pass STILL fails with `passed: false, detail: \"\"` (empty stderr). The check uses `execFileSync(\"npm\", [\"test\"], { stdio: \"pipe\" })`. Manual `npm test` from same shell returns 0 (3426/0/0 green), so the failure path is in evaluateShipCriteria's invocation — possibly buffer overflow on large stdout, PATH resolution under execFileSync, or signal-handling difference.\n\nBlocks: /adev:issues milestone ship for any milestone using release-please/tag-only strategy with a real test suite. Workaround: `manual` strategy bypasses gates_pass (and skips release-please integration entirely).\n\nFix scope: (a) read `governance/gates.yaml` via the unified loader, OR (b) keep manifest.gates.test as the source but fix the execFileSync invocation. (a) is the right long-term fix per the post-0.26.0 architecture; (b) is the minimal patch.\n\nAffects: lib/milestones.mjs::evaluateShipCriteria (gates_pass branch); skills/issues/SKILL.md milestone-ship documentation.",
+      "next_action": "Spec the gates_pass migration to governance/gates.yaml under the milestone-lifecycle charter",
+      "created": "2026-05-19T19:53:44.923Z",
+      "updated": "2026-05-19T19:53:44.923Z"
+    },
+    {
+      "id": "issue-526",
+      "title": "/adev:route mutates plan files — sibling .routing.md fix + cursor-provider 5-plan migration",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "dependencies": [],
+      "notes": "Source: cursor-provider retro 2026-05-19 + /adev:debug subagent transcript (agent ID affc19ea4ef7212c7).\nConsolidated re-filing after the prior issue-525 + issue-528 entries were lost in an external rollback of the shared tasks.json.\n\n## The bug\n\n/adev:route Step 4 (skills/route/SKILL.md:108-133) is explicitly instructed to write **Routing:** / **Scores:** / **Rationale:** blocks into each task header inside the plan markdown file. This runs AFTER /adev:plan Step 7 (skills/plan/SKILL.md:678-701) has already emitted plan_task pending events to the lifecycle log.\n\nThis directly violates the authoritative-channel invariant CON-8 in agent-reliable-state-artifacts/plan-task-events.spec.md:50-58 (\"Plan markdown is read-only after authoring ... /adev:plan writes the plan file once\") and AC bullet 5 (\"Plan markdown files are not mutated by /adev:plan or /adev:implement after initial authoring\").\n\nThe detector in lib/plan-immutability.mjs correctly catches this for untracked plans. Cursor-provider plans A-E currently \"pass\" the detector only because they were committed as a single add (no --diff-filter=M history), which masks rather than fixes the violation.\n\nReproduction (during cursor-provider session 2026-05-19): both Spec D (cli-install-integration.plan.md) and Spec E (sync-target-output.plan.md) plans had filesystem mtime 2-3 minutes later than their first plan_task pending event in the lifecycle log. Once the plans were committed in d0f8303 and 199928a, the detector relaxed (relied on git history instead of mtime). The underlying violation persists.\n\n## Design decision required\n\nTwo viable approaches:\n  (a) Sibling .routing.md — /adev:route writes <plan-stem>.routing.md keyed by task ID; /adev:implement reads from it. Preserves human readability, adds one file per plan. Matches the .blockers.md pattern already adopted in commit 7e333fd for review BLOCK handling.\n  (c) Lifecycle-log plan_task_routing event — /adev:route emits one event per task into the existing JSONL; /adev:implement reads it like other lifecycle state. No new file, but harder for humans to inspect routing decisions at a glance.\n\nVariant (b) auto-commit-after-plan was rejected during /adev:debug — it silences the immutability detector via git history but still violates CON-8 prose (\"read-only after authoring\"), and forces an uncommitted-plans-impossible workflow.\n\nRecommendation: variant (a) for consistency with the .blockers.md sidecar pattern.\n\n## Files to change (variant a)\n\n  - skills/route/SKILL.md:108-133 — Step 4: rewrite to write sibling .routing.md instead of mutating plan\n  - skills/route/SKILL.md:168-174 — Integration with /adev:implement: point reader at sidecar\n  - skills/route/SKILL.md:193 — Red Flag: tighten to \"never modify the plan file\"\n  - skills/implement/SKILL.md — reader change: load routing from sibling .routing.md\n  - .context-index/specs/features/agent-reliable-state-artifacts/plan-task-events.spec.md:50-58 — CON-8: enumerate .routing.md as a permitted peer artifact (alongside .review.md, .validate.md, .blockers.md)\n\n## Migration of 5 already-mutated cursor-provider plans\n\nOnce the fix lands, the existing plans on the cursor-provider/cursor-adapter branch will have stale inline annotations. Affected:\n  - .context-index/specs/features/cursor-provider/hook-config-generator.plan.md (Spec A)\n  - .context-index/specs/features/cursor-provider/cursor-adapter.plan.md (Spec B)\n  - .context-index/specs/features/cursor-provider/plugin-manifest-and-parity.plan.md (Spec C)\n  - .context-index/specs/features/cursor-provider/cli-install-integration.plan.md (Spec D)\n  - .context-index/specs/features/cursor-provider/sync-target-output.plan.md (Spec E)\n\nTwo migration options:\n  (i) Extract: parse each plan, lift the **Routing:**/**Scores:**/**Rationale:** blocks into a new sibling .routing.md, rewrite the plan body without them, stamp the M-commit hash into manifest.yaml hygiene.plan_immutability.exempt_commits[]. Cleanest end state, more work.\n  (ii) Leave as historical noise: do not rewrite. New /adev:route invocations on these plans would refuse to write (plan is locked), so any re-routing requires manual extraction. Simpler, but leaves the plans with inline annotations that future readers may mistake for the canonical format.\n\n## Followups flagged in /adev:debug\n\n  1. Draft an ADR titled \"Plan-adjacent sidecar artifacts\" documenting the .routing.md and .blockers.md sidecar pattern with rationale grounded in the authoritative-channel invariant. The pattern is now used twice (route + review BLOCK in commit 7e333fd) so a single ADR captures both.\n  2. Extend lib/plan-immutability.mjs to catch the \"mutate-then-single-add-commit\" pattern by checking plan body for inline **Routing:** blocks when no sibling .routing.md exists. Would have caught Specs A-E despite their clean git history.\n  3. Audit /adev:validate, /adev:review-specs, /adev:debug for any other plan-file writers — same invariant applies.\n\n## History note\n\nThe original /adev:debug invocation that produced this diagnosis was filed in this session against issues that were subsequently lost when the shared tasks.json was rolled back externally. The diagnosis is preserved in the /adev:debug subagent transcript (agent ID affc19ea4ef7212c7) and in the retro at .context-index/hygiene/retros/2026-05-19-cursor-provider.md.\n\nRe-filed on 2026-05-19 (consolidated from prior lost issue-525 + issue-528).",
+      "next_action": "Decide sidecar variant (a) sibling .routing.md vs (c) plan_task_routing lifecycle event. Author Live Specs covering route+implement updates and plan-immutability detector enhancement.",
+      "created": "2026-05-19T20:19:47.023Z",
+      "updated": "2026-05-19T20:19:47.023Z"
+    },
+    {
+      "id": "issue-527",
+      "title": "Auto-Retry Loop on Review BLOCK",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/review-block-auto-retry.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/review-block-auto-retry.spec.md. Created by /adev:specify --cross-cutting on 2026-05-19. HIGH PRIORITY — restores the auto-retry loop removed in commit 7e333fd. Cross-cutting spec. Affects: agent-reliable-state-artifacts, spec-lifecycle, strategic-planning.",
+      "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts (primary anchor) and /adev:review-specs --module spec-lifecycle / strategic-planning for sibling reviews",
+      "created": "2026-05-20T02:18:11.461Z",
+      "updated": "2026-05-20T02:18:11.461Z"
+    },
+    {
+      "id": "issue-528",
+      "title": "Migrate ~20 legacy plans with inline Routing blocks to .routing.json sidecars",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "Surfaced by `lib/plan-immutability.mjs` after the rev-2 plan-routing-sidecar migration (commit 3a32106). The working-tree detector flags 20 legacy plan files that carry inline `**Routing:**` / `**Scores:**` / `**Rationale:**` blocks but have no sibling `<plan-stem>.routing.json` — the same shape `issue-526` was filed against, just for plans authored *before* the rev-2 migration landed.\n\nSpec line 121 of `plan-routing-sidecar.spec.md` rev 2 explicitly puts this migration out of scope: \"This spec MUST work with un-migrated plans (detector flags them; migration is a follow-up).\" That follow-up is this issue.\n\n## Affected plans (20)\n  - .context-index/specs/features/agent-reliable-state-artifacts/orphan-lock-cleanup.plan.md\n  - .context-index/specs/features/cursor-provider/hook-config-generator.plan.md\n  - .context-index/specs/features/deploy/deploy-core.plan.md\n  - .context-index/specs/features/design/brainstorm-spec-grouping.plan.md\n  - .context-index/specs/features/domain-profiles/bundled-domain-profiles.plan.md\n  - .context-index/specs/features/domain-profiles/domain-aware-skill-integration.plan.md\n  - .context-index/specs/features/domain-profiles/domain-resolution-and-overlay-structure.plan.md\n  - .context-index/specs/features/eval-projects/api-eval-project.plan.md\n  - .context-index/specs/features/eval-projects/automation-eval-project.plan.md\n  - .context-index/specs/features/eval-projects/migration-eval-project.plan.md\n  - .context-index/specs/features/eval-projects/pipeline-eval-project.plan.md\n  - .context-index/specs/features/infra-preflight/skill-integration.plan.md\n  - .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.plan.md\n  - .context-index/specs/features/prototype-brainstorm/brainstorm-integration.plan.md\n  - .context-index/specs/features/prototype-brainstorm/prototype-core.plan.md\n  - .context-index/specs/features/prototype-brainstorm/standalone-invocation.plan.md\n  - .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md\n  - .context-index/specs/features/session-awareness/post-commit-self-skip.plan.md\n  - .context-index/specs/features/validation/check-set-restructure.plan.md\n  - .context-index/specs/features/validation/validate-config-single-source.plan.md\n\n## Overlap with the existing cursor-provider capability\n\nThe agent-reliable-state-artifacts charter rev 7 already enumerates a \"Cursor-provider 5-plan migration\" capability (`lib/migrate-plan-routing.mjs` + `adev migrate plan-routing` CLI subcommand) covering 5 plans under `.context-index/specs/features/cursor-provider/`. Of those 5, only `hook-config-generator.plan.md` shows in the flagged list above — the other four (`cursor-adapter`, `plugin-manifest-and-parity`, `cli-install-integration`, `sync-target-output`) are either already exempted, lack inline blocks, or have a sidecar of either extension already. The migration tool from that capability is the natural foundation for closing this issue: extend it to walk the broader set, not just cursor-provider, and the closure path is largely mechanical.\n\n## Acceptance criteria\n\n  - All 20 plans listed above carry a sibling `<plan-stem>.routing.json` with one entry per task (scores normalized 0-1 from the legacy 0-5 raw values inline).\n  - The inline `**Routing:**` blocks may remain in the plan body (detector tolerates them once the sibling sidecar exists, per Behavior 7 of plan-routing-sidecar.spec.md rev 2) — extraction-and-strip is preferred but not required.\n  - `tests/skills/plan-task-immutability.test.mjs` :: `plan-immutability: real repo has no violations` returns to PASS.\n  - Migration commit hash stamped into `manifest.yaml :: hygiene.plan_immutability.exempt_commits[]` so the per-task M-commit history branch of the detector treats the bulk migration as the canonical \"first non-mutating state\" baseline.\n  - Idempotent: re-running the migration tool on already-migrated plans is a no-op.\n\n## References\n\n  - Spec: `.context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md` rev 2 — Out-of-scope clause; Behaviors 6-7.\n  - ADR: `.context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md` — `<artifact-stem>.<purpose>.<ext>` naming convention; closed peer set.\n  - Charter capability: `agent-reliable-state-artifacts/charter.md` :: \"Cursor-provider 5-plan migration *(rev 7)*\" — existing tracker for 5 of the 20 plans; extend its tooling.\n  - Detector lib: `lib/plan-immutability.mjs::checkInlineRoutingWithoutSidecar`",
+      "next_action": "Extend `lib/migrate-plan-routing.mjs` (cursor-provider capability) to walk all 20 flagged plans, or fold this into the existing capability as a separate plan task. Re-run plan-immutability test to verify green.",
+      "created": "2026-05-20T12:55:17.307Z",
+      "updated": "2026-05-20T12:55:17.307Z"
+    },
+    {
+      "id": "issue-529",
+      "title": "Add configurable PR body composition: `adev pr body` CLI verb + manifest pr_template knob",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "adev currently has no PR-body composition surface. `skills/validate/SKILL.md` and `skills/implement/SKILL.md` both emit a literal \"Ready for PR. Run: gh pr create --base <target-branch>\" string with no body, no flag, no template reference. The CLI has no `pr` verb. The manifest `repo:` block carries adjacent metadata (`merge_policy: pr`, `branch_naming`, `conventional_commit_types`, `required_trailers`, `recommended_trailers`) but no `pr_template:` / `pr.body:` / `.github/PULL_REQUEST_TEMPLATE.md` reference.\n\nConfirmed absent by `grep -rln \"pr_template|pr-template|prTemplate\"` returning zero hits across `.context-index/`, `skills/`, `lib/`, `cli/`.\n\n## Why this is worth doing\n\nBy the time `/adev:validate` finishes, every input for a good PR body already exists as structured state:\n\n  - Spec title + charter module — from spec frontmatter and `# Live Spec:` heading\n  - Validate verdict + per-check tallies — from `<stem>.validate.md`\n  - Behaviors implemented — from spec body section\n  - Commits touching this spec — `git log --grep='Spec: <path>'` against the source manifest's referenced commits\n  - Reviewer notes (when review was PASS_WITH_NOTES) — from `<stem>.review.md`\n  - Source-manifest sha + file count — from spec frontmatter\n\nToday the human composes all of this by hand each PR. The data is already structured; only the rendering layer is missing.\n\n## Proposed shape\n\nMirror the markdown-render-on-demand pattern that the JSON sidecar migration just adopted (commit 4d389a1 + ADR-0012 rev-2 amendment):\n\n  - **CLI verb:** `adev pr body --spec <path>` reads the spec + its sidecars + source-manifest + the commit log, renders a markdown PR body to stdout. No file write. Operators pipe to `gh pr create --body-file -` or to `pbcopy`.\n  - **Lib:** `lib/pr-body.mjs` exports `renderPrBody(projectRoot, specPath, opts)` returning a string. Zero new dependencies (node:fs + node:child_process for `git log`).\n  - **Manifest knob (optional):** `repo.pr_template:` pointing at a template file (e.g. `.context-index/templates/pr-body.md`) with handlebars-style placeholders. When absent, the lib falls back to a built-in template; when present, the operator can customize sections, headings, trailers footer, etc.\n  - **Default template sections:** Summary (one paragraph from spec body), What changed (commits touching the spec, grouped by Plan-task), Validate report (per-check verdicts table), Reviewer notes (when present), Source manifest (sha + file count + drift flag), Test plan (acceptance criteria converted to a checklist).\n  - **`/adev:validate` integration:** after a PASS verdict, the skill emits a copy-pasteable invocation example: `adev pr body --spec <path> | gh pr create --base <branch> --body-file -`. Optional `--auto-pr` flag on `/adev:build` that runs the verb and dispatches `gh pr create` directly.\n\n## Acceptance criteria (draft)\n\n  - [ ] `adev pr body --spec <path>` exits 0 and writes a markdown body to stdout when the spec is `validated` (or `implemented` with a passing validate sidecar present).\n  - [ ] Body includes the six default sections (Summary / What changed / Validate report / Reviewer notes when present / Source manifest / Test plan).\n  - [ ] `repo.pr_template: <path>` in manifest is honored when present; missing file errors with a clear `PR_TEMPLATE_NOT_FOUND` code.\n  - [ ] Built-in template is used when manifest knob is absent — no error path for the unconfigured case.\n  - [ ] `/adev:validate` Step N (Summary) prints a copy-pasteable `adev pr body | gh pr create ...` line on PASS.\n  - [ ] All quality gates pass (tests, lint, typecheck).\n  - [ ] No constitutional violations introduced.\n\n## Out of scope\n\n  - Pushing the branch (operator decides when to push).\n  - Auto-merge orchestration (separate concern; merge_policy already exists for that).\n  - Issue references / cross-linking (could be a follow-up — would need an issue-ref scanner).\n\n## References\n\n  - Pattern precedent: `adev route render-sidecar` (machine-primary JSON → markdown view on demand) — same shape proposed here.\n  - Manifest block: `.context-index/manifest.yaml` :: `repo:` (where the new `pr_template:` key would land).\n  - Skill emission points: `skills/validate/SKILL.md` and `skills/implement/SKILL.md` (search for `gh pr create`).",
+      "next_action": "Decide whether to land as a standalone spec (likely under strategic-planning or a new pr-orchestration charter) or fold into an extension of the validate/implement skills. Author a Live Spec via /adev:specify.",
+      "created": "2026-05-20T16:32:34.166Z",
+      "updated": "2026-05-20T16:32:34.166Z"
     }
   ]
 }

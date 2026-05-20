@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Translation table fully enumerated in the spec with all 7 rows and timeout constants; pure data definition in a single new file with a matching ESM/test sample available."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Output contract, atomic-write protocol, canonical command regex, and exact throw messages are all enumerated in the spec; single-file change in scripts/ with golden samples for module structure and node:fs patterns."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Single-line addition to package.json scripts with the exact command string specified by the spec; trivial mechanical edit."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Generated artifact commit; expected JSON shape printed verbatim in the plan, single new file under providers/cursor/, no creative work required."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Spec enumerates all four assertions and exact failure messages; single test file in tests/ following the node:test patterns covered by the general-test-helpers golden sample."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Verification shell scripts and expected error messages are quoted verbatim in the spec; read-only perturb-and-restore sequence with no file artifacts."
+    }
+  ]
+}
