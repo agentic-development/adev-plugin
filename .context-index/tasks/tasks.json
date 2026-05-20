@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 83,
+  "seq": 99,
   "epics": [
     {
       "id": "epic-1",
@@ -107,10 +107,11 @@
     {
       "id": "epic-14",
       "title": "Cross-Cutting Concerns",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/cross-cutting/model-routing.plan.md",
       "created": "2026-04-24T00:00:00.000Z",
-      "updated": "2026-04-25T00:00:00.000Z"
+      "updated": "2026-05-20T20:12:25.686Z",
+      "notes": "Reconciled: spec model-routing.spec.md is validated; no open children"
     },
     {
       "id": "epic-15",
@@ -203,10 +204,11 @@
     {
       "id": "epic-26",
       "title": "Test Strategies Framework",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/test-strategies/test-strategies.plan.md",
       "created": "2026-04-24T00:00:00.000Z",
-      "updated": "2026-04-25T00:00:00.000Z"
+      "updated": "2026-05-20T20:12:25.704Z",
+      "notes": "Reconciled: all test-strategies specs validated; no open children"
     },
     {
       "id": "epic-27",
@@ -355,10 +357,11 @@
     {
       "id": "epic-48",
       "title": "Standardize Spec File Suffixes",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/cross-cutting/spec-file-suffixes.plan.md",
       "created": "2026-05-04T00:00:00.000Z",
-      "updated": "2026-05-04T00:00:00.000Z"
+      "updated": "2026-05-20T20:12:25.715Z",
+      "notes": "Reconciled: spec spec-file-suffixes.spec.md is validated; no open children"
     },
     {
       "id": "epic-49",
@@ -386,10 +389,11 @@
     {
       "id": "epic-52",
       "title": "API Eval Project",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/eval-projects/api-eval-project.plan.md",
       "created": "2026-05-06T16:54:35.127Z",
-      "updated": "2026-05-06T16:54:35.127Z"
+      "updated": "2026-05-20T20:12:25.727Z",
+      "notes": "Reconciled: spec api-eval-project.spec.md is validated; no open children"
     },
     {
       "id": "epic-53",
@@ -482,10 +486,11 @@
     {
       "id": "epic-64",
       "title": "Domain Resolution & Overlay Structure",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/domain-profiles/domain-resolution-and-overlay-structure.plan.md",
       "created": "2026-05-10T13:46:11.444Z",
-      "updated": "2026-05-10T13:46:11.444Z"
+      "updated": "2026-05-20T20:12:25.739Z",
+      "notes": "Reconciled: spec domain-resolution-and-overlay-structure.spec.md is validated; no open children"
     },
     {
       "id": "epic-65",
@@ -623,18 +628,20 @@
     {
       "id": "epic-83",
       "title": "Single-Source Validate Configuration",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/validation/validate-config-single-source.plan.md",
       "created": "2026-05-16T01:02:35.446Z",
-      "updated": "2026-05-16T01:02:35.446Z"
+      "updated": "2026-05-20T20:12:25.853Z",
+      "notes": "Reconciled: spec validate-config-single-source.spec.md is validated; no open children"
     },
     {
       "id": "epic-84",
       "title": "Validate Check Set Restructure",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/validation/check-set-restructure.plan.md",
       "created": "2026-05-16T02:01:28.910Z",
-      "updated": "2026-05-16T02:01:28.910Z"
+      "updated": "2026-05-20T20:12:25.888Z",
+      "notes": "Reconciled: spec check-set-restructure.spec.md is validated; no open children"
     },
     {
       "id": "epic-85",
@@ -662,10 +669,11 @@
     {
       "id": "epic-88",
       "title": "Implementation plan: Verbosity Axis and Output Trimming",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/output-personas/verbosity-axis-and-output-trimming.plan.md",
       "created": "2026-05-18T14:32:19.618Z",
-      "updated": "2026-05-18T14:32:19.618Z"
+      "updated": "2026-05-20T20:12:25.905Z",
+      "notes": "Reconciled: spec verbosity-axis-and-output-trimming.spec.md is validated; child issue-516 closed"
     },
     {
       "id": "epic-89",
@@ -693,10 +701,11 @@
     {
       "id": "epic-92",
       "title": "Cursor sync-target output (Spec E)",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/cursor-provider/sync-target-output.plan.md",
       "created": "2026-05-19T13:08:24.855Z",
-      "updated": "2026-05-19T13:08:24.855Z"
+      "updated": "2026-05-20T20:12:25.923Z",
+      "notes": "Reconciled: Spec E (sync-target-output) validated on feat/cursor-provider/cursor-adapter per hygiene drift-report 2026-05-19"
     },
     {
       "id": "epic-93",
@@ -3037,28 +3046,28 @@
     {
       "id": "issue-491",
       "title": "Validate Check Set Restructure",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/validation/check-set-restructure.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/check-set-restructure.spec.md. Created by /adev:specify on 2026-05-15. Tracker: issue-490.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/check-set-restructure.spec.md. Created by /adev:specify on 2026-05-15. Tracker: issue-490.; Closed: Reconciled: spec check-set-restructure.spec.md is validated",
       "next_action": "Run /adev:plan --spec check-set-restructure.spec.md",
       "created": "2026-05-15T22:37:11.805Z",
-      "updated": "2026-05-16T00:42:04.581Z"
+      "updated": "2026-05-20T20:12:25.940Z"
     },
     {
       "id": "issue-492",
       "title": "Single-Source Validate Configuration",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/validation/validate-config-single-source.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/validate-config-single-source.spec.md. Created by /adev:specify on 2026-05-15. Supersedes configurable-checks Behaviors 1, 2, 5 + AC #1.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/validate-config-single-source.spec.md. Created by /adev:specify on 2026-05-15. Supersedes configurable-checks Behaviors 1, 2, 5 + AC #1.; Closed: Reconciled: spec validate-config-single-source.spec.md is validated",
       "next_action": "Run /adev:plan --spec validate-config-single-source.spec.md",
       "created": "2026-05-16T00:10:45.789Z",
-      "updated": "2026-05-16T00:42:04.595Z"
+      "updated": "2026-05-20T20:12:25.953Z"
     },
     {
       "id": "issue-493",
@@ -3235,15 +3244,15 @@
     {
       "id": "issue-506",
       "title": "Incremental artifact writes — .partial + atomic-rename pattern",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/cross-cutting/incremental-artifact-writes.spec.md",
       "dependencies": [],
-      "notes": "Cross-cutting spec. Affects: cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts. Created by /adev:specify on 2026-05-17. Tracker: issue-504.",
+      "notes": "Cross-cutting spec. Affects: cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts. Created by /adev:specify on 2026-05-17. Tracker: issue-504.; Closed: Reconciled: spec incremental-artifact-writes.spec.md is validated",
       "next_action": "Spec review-passed at rev 2. Run /adev:plan --spec <path> or fold the 2 warnings + 7 suggestions from the review into plan tasks. Per the spec, the most actionable items are SA-10 (lock-steal TOCTOU) and SA-11 (stale-threshold precedence).",
       "created": "2026-05-17T18:32:23.789Z",
-      "updated": "2026-05-17T19:14:38.528Z"
+      "updated": "2026-05-20T20:12:25.964Z"
     },
     {
       "id": "issue-507",
@@ -3422,15 +3431,15 @@
     {
       "id": "issue-520",
       "title": "CLI install integration",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/cursor-provider/cli-install-integration.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/cli-install-integration.spec.md. Created by /adev:specify on 2026-05-19.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/cli-install-integration.spec.md. Created by /adev:specify on 2026-05-19.; Closed: Reconciled: spec cli-install-integration.spec.md validated on feat/cursor-provider/cursor-adapter per hygiene drift-report 2026-05-19",
       "next_action": "Run /adev:review-specs --module cursor-provider",
       "created": "2026-05-19T11:45:20.607Z",
-      "updated": "2026-05-19T11:45:20.607Z"
+      "updated": "2026-05-20T20:12:25.977Z"
     },
     {
       "id": "issue-521",
@@ -3474,15 +3483,15 @@
     {
       "id": "issue-524",
       "title": "Cursor sync target output",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/cursor-provider/sync-target-output.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/sync-target-output.spec.md. Created by /adev:specify on 2026-05-19.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/sync-target-output.spec.md. Created by /adev:specify on 2026-05-19.; Closed: Reconciled: spec sync-target-output.spec.md validated on feat/cursor-provider/cursor-adapter per hygiene drift-report 2026-05-19",
       "next_action": "Run /adev:review-specs --module cursor-provider",
       "created": "2026-05-19T12:56:49.742Z",
-      "updated": "2026-05-19T12:56:49.742Z"
+      "updated": "2026-05-20T20:12:25.988Z"
     },
     {
       "id": "issue-525",
@@ -3512,14 +3521,14 @@
     {
       "id": "issue-527",
       "title": "Replace post-commit session capture with SessionEnd/PreCompact hooks + gitignored sessions/",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "dependencies": [],
-      "notes": "## Problem\n\n`.githooks/post-commit` writes `.context-index/sessions/<date>-<sha>.md` after every git commit, leaving files tracked-and-uncommitted in a directory the installer does not gitignore. Users must batch-commit them manually under `chore(sessions):`. The installer itself half-apologizes for this workflow.\n\nResearch (`.context-index/research/session-logging-ux-improvements.md`) audited every consumer of `.context-index/sessions/` and confirmed no skill reads it across git history or across contributors — all three real consumers (`/adev:work`, `/adev:status`, `/adev:hygiene`) use local glob/readdir. The documented claim that `/adev:retro` consumes sessions (`skills/init/SKILL.md:761`) is wrong.\n\n## Recommended fix (research option #1 Hybrid)\n\nSwitch capture from `post-commit` to Claude Code `SessionEnd` + `PreCompact` hook events, and add `.context-index/sessions/` to the installer default `.gitignore` block. Matches the cross-tool norm (Aider, Cursor, JetBrains, Continue.dev all keep session data out of the project tree by default) and aligns with constitution principles (minimize external dependencies, hook protocol compliance).\n\n## Scope\n\n1. Add `hooks/session-end.sh` consuming the SessionEnd payload (session_id, transcript_path, cwd, reason); write `<date>-<session_id>.md` derived from the full conversation JSONL.\n2. Add `hooks/pre-compact.sh` on PreCompact to capture long sessions that auto-compact mid-conversation.\n3. Register both in `hooks/hooks.json` (matcher: *).\n4. Extend `lib/session-summary.mjs` with a `fromTranscript()` entry point so the hook does not fall into the inline-Node anti-pattern.\n5. Add `.context-index/sessions/` to the installer default `.gitignore` block.\n6. Remove the manual-batching note from `cli/index.mjs:759-763` and `:898-902`.\n7. Decommission the session-summary block in `.githooks/post-commit`.\n8. Migrate the 395 existing tracked session files — recommended: move to `.context-index/sessions/.archive/` and gitignore, or delete from main since git history preserves them.\n9. Fix documentation drift at `skills/init/SKILL.md:761` (claims `/adev:retro` consumes sessions — verified false).\n\n## Acceptance criteria\n\n- New sessions land in `.context-index/sessions/` but are gitignored.\n- Files captured at SessionEnd and PreCompact boundaries, one per Claude session, named `<date>-<session_id>.md`.\n- /adev:work, /adev:status, /adev:hygiene continue to function unchanged.\n- No `chore(sessions):` commits required in normal workflow.\n- Installer no longer prints the manual-batching note.\n- `skills/init/SKILL.md` no longer claims /adev:retro consumes sessions.\n\n## References\n\n- Research artifact: `.context-index/research/session-logging-ux-improvements.md`\n- Current capture: `.githooks/post-commit`, `hooks/session-capture.sh`\n- Claude Code hook docs: https://code.claude.com/docs/en/hooks\n- Latent capability: `lib/providers/copilot/event-table.mjs:30,33,36` (SessionEnd, SubagentStop, PreCompact already marked cloudAgentSafe: true)",
+      "notes": "## Problem\n\n`.githooks/post-commit` writes `.context-index/sessions/<date>-<sha>.md` after every git commit, leaving files tracked-and-uncommitted in a directory the installer does not gitignore. Users must batch-commit them manually under `chore(sessions):`. The installer itself half-apologizes for this workflow.\n\nResearch (`.context-index/research/session-logging-ux-improvements.md`) audited every consumer of `.context-index/sessions/` and confirmed no skill reads it across git history or across contributors — all three real consumers (`/adev:work`, `/adev:status`, `/adev:hygiene`) use local glob/readdir. The documented claim that `/adev:retro` consumes sessions (`skills/init/SKILL.md:761`) is wrong.\n\n## Recommended fix (research option #1 Hybrid)\n\nSwitch capture from `post-commit` to Claude Code `SessionEnd` + `PreCompact` hook events, and add `.context-index/sessions/` to the installer default `.gitignore` block. Matches the cross-tool norm (Aider, Cursor, JetBrains, Continue.dev all keep session data out of the project tree by default) and aligns with constitution principles (minimize external dependencies, hook protocol compliance).\n\n## Scope\n\n1. Add `hooks/session-end.sh` consuming the SessionEnd payload (session_id, transcript_path, cwd, reason); write `<date>-<session_id>.md` derived from the full conversation JSONL.\n2. Add `hooks/pre-compact.sh` on PreCompact to capture long sessions that auto-compact mid-conversation.\n3. Register both in `hooks/hooks.json` (matcher: *).\n4. Extend `lib/session-summary.mjs` with a `fromTranscript()` entry point so the hook does not fall into the inline-Node anti-pattern.\n5. Add `.context-index/sessions/` to the installer default `.gitignore` block.\n6. Remove the manual-batching note from `cli/index.mjs:759-763` and `:898-902`.\n7. Decommission the session-summary block in `.githooks/post-commit`.\n8. Migrate the 395 existing tracked session files — recommended: move to `.context-index/sessions/.archive/` and gitignore, or delete from main since git history preserves them.\n9. Fix documentation drift at `skills/init/SKILL.md:761` (claims `/adev:retro` consumes sessions — verified false).\n\n## Acceptance criteria\n\n- New sessions land in `.context-index/sessions/` but are gitignored.\n- Files captured at SessionEnd and PreCompact boundaries, one per Claude session, named `<date>-<session_id>.md`.\n- /adev:work, /adev:status, /adev:hygiene continue to function unchanged.\n- No `chore(sessions):` commits required in normal workflow.\n- Installer no longer prints the manual-batching note.\n- `skills/init/SKILL.md` no longer claims /adev:retro consumes sessions.\n\n## References\n\n- Research artifact: `.context-index/research/session-logging-ux-improvements.md`\n- Current capture: `.githooks/post-commit`, `hooks/session-capture.sh`\n- Claude Code hook docs: https://code.claude.com/docs/en/hooks\n- Latent capability: `lib/providers/copilot/event-table.mjs:30,33,36` (SessionEnd, SubagentStop, PreCompact already marked cloudAgentSafe: true); Closed: Reconciled: spec review-block-auto-retry.spec.md is validated",
       "next_action": null,
       "created": "2026-05-20T12:48:24.623Z",
-      "updated": "2026-05-20T12:49:14.081Z"
+      "updated": "2026-05-20T20:12:26.002Z"
     },
     {
       "id": "issue-528",
@@ -3605,11 +3614,27 @@
       "priority": 3,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/session-awareness/retro-session-consumption.spec.md",
-      "dependencies": ["issue-532"],
+      "dependencies": [
+        "issue-532"
+      ],
       "notes": "Bound 1:1 to spec at .context-index/specs/features/session-awareness/retro-session-consumption.spec.md. Created by /adev:specify on 2026-05-20. Tracks issue-528 (Wire /adev:retro to consume session history). Depends on issue-532 (hook-driven-capture) for the new session file format; specifically requires a small rev-4 amendment of hook-driven-capture.spec.md to add optional cost/tokens/issue/epic frontmatter fields written by SessionEnd.",
       "next_action": "Run /adev:review-specs --module session-awareness",
       "created": "2026-05-20T19:55:00.000Z",
       "updated": "2026-05-20T19:55:00.000Z"
+    },
+    {
+      "id": "issue-535",
+      "title": "Plan: Retro Session Consumption",
+      "status": "open",
+      "priority": 2,
+      "type": "epic",
+      "planRef": ".context-index/specs/features/session-awareness/retro-session-consumption.plan.md",
+      "spec_ref": ".context-index/specs/features/session-awareness/retro-session-consumption.spec.md",
+      "dependencies": [],
+      "notes": "Plan epic created by /adev:plan for 18-task implementation of Retro Session Consumption (charter capability, milestone 0.28.0). Feature work item: issue-534. Plan-task state lives in .context-index/lifecycle-state/retro-session-consumption.jsonl.",
+      "next_action": null,
+      "created": "2026-05-20T20:21:28.049Z",
+      "updated": "2026-05-20T20:21:28.049Z"
     }
   ]
 }
