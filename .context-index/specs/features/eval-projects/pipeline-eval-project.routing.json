@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Fully specified scaffolding with exact file contents; no golden sample but purely mechanical work."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Exact verification commands and assertions given; verification-only (no files modified); no verification sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Branch structure defined but context-index content is sketched not exact; requires composing constitution/manifest/spec for a Python project; no sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.2,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Commands given but touches repo-root .gitmodules; submodule URL may need adjustment; no submodule sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Seed data columns and constraints are explicit, but no golden sample for data generation exists (pattern=1 override to assisted)."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Implementation code is given in the plan with exact function signatures and SQL; no Python/DuckDB golden sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Exact SQL transformations and function structure given; no Python/DuckDB golden sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Code with deliberate bug is specified, but careful implementation needed to avoid hinting at the bug in comments or code; no golden sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Exact implementation code provided; no Python/DuckDB golden sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Full orchestrator code given with error handling; no Python pipeline orchestrator sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Test expectations described but exact assertions not given; must carefully avoid testing the planted bug's filter query; no pytest golden sample (pattern=1 override)."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Exact section structure and feature list defined; must not mention planted bug; no Python README golden sample (pattern=1 override)."
+    }
+  ]
+}

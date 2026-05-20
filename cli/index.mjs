@@ -1336,6 +1336,9 @@ const VERB_REGISTRY = new Map([
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
   ["artifact",        () => import("../lib/cli/artifact.mjs")],
   ["partial",         () => import("../lib/cli/partial.mjs")],
+  ["route",           () => import("../lib/cli/route.mjs")],
+  ["implement",       () => import("../lib/cli/implement.mjs")],
+  ["specify",         () => import("../lib/cli/specify.mjs")],
   ["issues",          () => import("../lib/cli/issues.mjs")],
 ]);
 
