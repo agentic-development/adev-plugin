@@ -3,7 +3,7 @@
 ---
 charter: session-awareness
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: 0.28.0
 revision: 5
@@ -13,6 +13,36 @@ updated: 2026-05-20
 tracker-ref: issue-527
 supersedes:
   - .context-index/specs/features/session-awareness/post-commit-self-skip.spec.md
+source-manifest:
+  sha: "192efcd"
+  files:
+    - .context-index/manifest.yaml
+    - .context-index/specs/features/session-awareness/post-commit-self-skip.spec.md
+    - .githooks/post-commit
+    - cli/index.mjs
+    - hooks/hooks.json
+    - hooks/pre-compact.sh
+    - hooks/session-end.sh
+    - lib/cli/init-prompt-session-capture.mjs
+    - lib/session-capture-installer.mjs
+    - lib/session-capture.mjs
+    - lib/session-summary.mjs
+    - skills/init/SKILL.md
+    - tests/cli/init-prompt-session-capture.test.mjs
+    - tests/cli/install-session-capture.test.mjs
+    - tests/fixtures/claude-code-payloads/payload-shape.test.mjs
+    - tests/fixtures/claude-code-payloads/pre-compact-v1.json
+    - tests/fixtures/claude-code-payloads/session-end-v1.json
+    - tests/hooks/post-commit-self-skip.test.mjs
+    - tests/hooks/pre-compact.test.mjs
+    - tests/hooks/session-end.test.mjs
+    - tests/lib/session-capture-detect.test.mjs
+    - tests/lib/session-capture-diagnostic.test.mjs
+    - tests/lib/session-capture-validate.test.mjs
+    - tests/lib/session-summary-from-transcript.test.mjs
+    - tests/lib/session-summary-redact.test.mjs
+    - tests/skills/sessions-graceful-absence.test.mjs
+  computed-at: "2026-05-20T21:32:29.900Z"
 ---
 
 # Live Spec: Hook-Driven Session Capture with Init-Time Configuration
