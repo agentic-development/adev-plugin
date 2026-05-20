@@ -248,3 +248,9 @@ hygiene:
       # diagnostic-registry.plan.md from 0009 to 0010 when resolving the
       # duplicate ADR id. Reference-only update, not content change.
       - "dc27388f0e762c0519e1cb833bd98a55cc8f3e26"
+      # session-awareness/hook-driven-capture: route step inscribed
+      # routing annotations after first plan_task pending event, and
+      # subsequent revert restored the plan to its first-pending state.
+      # Both modifications are advisory metadata, not content drift.
+      - "6d8863318039a6ab7bed383559ce7cccdb90fd73"
+      - "70c3ca3549d5889723c7b501df0279e432aca12b"
