@@ -78,8 +78,32 @@ If multiple providers are used, sync all enabled targets from the manifest.
    <!-- END TASK MANAGEMENT -->
    ```
 
-   ### Copilot format (`.github/copilot-instructions.md`)
-   Principles and coding standards only. Omit Context Routing (Copilot has limited file navigation).
+   ### Copilot format (`.github/copilot-instructions.md` + `.github/instructions/<module>.instructions.md`)
+
+   The Copilot format is produced by `syncCopilot(...)` from `<ADEV_ROOT>/lib/sync/copilot.mjs`. Do NOT hand-render Copilot artifacts in this skill — invoke the dispatcher directly so the documented byte caps (4,000 UTF-8 bytes for the repo-wide projection), SHA-256 tamper-evidence pointer, dangerous-pattern guardrail, slug/path validation, and `<path>.tmp` + `fsyncSync` + `renameSync` atomic-write contract are enforced uniformly.
+
+   Two artifacts are emitted per run:
+
+   1. `.github/copilot-instructions.md` — plain markdown projection of the constitution's `## Identity` (never dropped) + `## Non-Negotiable Principles` (overflow-trimmed tail-first to fit the 4,000-byte cap) + a trailing `<!-- Source: .context-index/constitution.md @ sha256:<16-hex>. Run /adev:sync to refresh. -->` comment.
+   2. `.github/instructions/<module>.instructions.md` — one file per registered module in `manifest.yaml:modules[]` that has a corresponding `charter.md`. Each carries YAML frontmatter with `applyTo` as a double-quoted comma-joined glob list and a `description` derived from the module name.
+
+   Invocation contract (Node usage; the corresponding CLI verb is `adev sync` — see API reference below):
+
+   ```js
+   import { syncCopilot } from '<ADEV_ROOT>/lib/sync/copilot.mjs';
+   const summary = syncCopilot({
+     projectRoot,
+     manifest,
+     constitutionText,
+     charters,              // { [slug]: string } — read per-module from .context-index/specs/features/<slug>/charter.md
+     dryRun: false,
+   });
+   // summary: { artifacts: [{ path, bytes }], warnings: string[], errors: string[] }
+   ```
+
+   The dispatcher returns warnings under stable codes (`SYNC_OVERFLOW`, `MODULE_NO_CHARTER`, `SYNC_PATHS_EMPTY`, `CHARTER_INCOMPLETE`, `CHARTER_TOO_LARGE`) and throws on fatal conditions (`MALFORMED_SYNC_TARGETS`, `MANIFEST_TOO_LARGE`, `CONSTITUTION_TOO_LARGE_TO_PARSE`, `TOO_MANY_MODULES`, `TOO_MANY_PATHS`, `INVALID_MODULE_SLUG`, `INVALID_MODULE_PATH`, `CONSTITUTION_TOO_LARGE`, `CONSTITUTION_DANGEROUS_PATTERN`, `CONSTITUTION_STRUCTURE_INVALID`, `SYNC_PATH_ESCAPE`). Pass each warning into the sync summary under the `copilot:` block (see step 5).
+
+   The Copilot format does NOT touch `.github/skills/`, `.github/hooks/`, or `.github/.adev-copilot-install.json` — those paths belong to the Copilot adapter (`/adev:install --target copilot`), not the sync skill.
 
    ### Cursor format (`.cursorrules`)
    Full constitution content. Convert Context Routing pointers to Cursor-compatible references where applicable.
@@ -108,7 +132,37 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - If target file does not exist, create it fresh
 
 5. **Report:**
-   List which files were updated and their line counts.
+
+   Emit a structured sync summary in the following format. Each format block lists every artifact written (path + size) and every warning emitted under its stable code (UPPER_SNAKE_CASE with `<payload>` after colon). The `copilot:` block is populated from the `{ artifacts, warnings }` return value of `syncCopilot(...)` (see API reference) and uses byte counts rather than line counts because the Copilot 4,000-UTF-8-byte cap is measured in bytes.
+
+   ```
+   sync summary:
+     claude:
+       artifacts:
+         - CLAUDE.md (N lines)
+       warnings: []
+     agents:
+       artifacts:
+         - AGENTS.md (N lines)
+       warnings: []
+     cursor:
+       artifacts:
+         - .cursorrules (N lines)
+       warnings: []
+     copilot:
+       artifacts:
+         - .github/copilot-instructions.md (N bytes)
+         - .github/instructions/<module>.instructions.md (N bytes)
+         - ...
+       warnings:
+         - SYNC_OVERFLOW: principles 5,4
+         - MODULE_NO_CHARTER: <slug>
+         - SYNC_PATHS_EMPTY: <slug>
+         - CHARTER_INCOMPLETE: <slug>
+         - CHARTER_TOO_LARGE: <slug>: <bytes>
+   ```
+
+   Omit a format's block entirely if that format is not in `manifest.yaml:sync.targets`. Within a block, omit empty `warnings` (do not print `warnings: []` if the array is empty) and omit empty `artifacts` (do not print the block if no files were written for that format).
 
 ## Dry-Run Mode
 
@@ -134,3 +188,8 @@ Heuristic injection (Step 3):
 Manifest:
 
 - `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`. Use when reading sync targets, `tasks.backend`, and `project.adev_version`.
+
+Copilot format (`.github/copilot-instructions.md` + `.github/instructions/<module>.instructions.md`):
+
+- `syncCopilot({ projectRoot, manifest, constitutionText, charters, dryRun })` from `<ADEV_ROOT>/lib/sync/copilot.mjs` — dispatcher that validates inputs, renders the constitution projection (≤ 4,000 UTF-8 bytes with SHA-256 tamper-evidence pointer + overflow trimming) and per-module instructions (with double-quoted `applyTo` scalar), and writes via `<path>.tmp` + `fsyncSync` + `renameSync` for crash-consistency. Returns `{ artifacts, warnings, errors }` (plus `wouldWrite` when `dryRun: true`).
+- `renderCopilotInstructions(constitutionText)` and `renderModuleInstruction(module, charterText)` from the same module — pure string renderers exported for tests and unusual orchestration; the normal entry point is `syncCopilot`.

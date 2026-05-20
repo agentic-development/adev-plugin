@@ -57,6 +57,11 @@
 {"event":"code_drift_detected","drift_source":"lib/diagnostics/event-schemas.mjs","drift_at":"2026-05-18T13:36:45.948Z","ts":"2026-05-18T13:50:21.080Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/hygiene/SKILL.md","drift_at":"2026-05-18T13:54:22.140Z","ts":"2026-05-18T13:54:22.140Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-05-18T13:54:34.126Z","ts":"2026-05-18T13:54:34.126Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:14:57.067Z","ts":"2026-05-19T20:14:57.067Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:08.754Z","ts":"2026-05-19T20:15:08.754Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:27.780Z","ts":"2026-05-19T20:15:27.780Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:34.709Z","ts":"2026-05-19T20:15:34.709Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:49.849Z","ts":"2026-05-19T20:15:49.849Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:29.057Z","ts":"2026-05-20T02:39:29.057Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:35.037Z","ts":"2026-05-20T02:39:35.037Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:40:46.386Z","ts":"2026-05-20T02:40:46.386Z","diagnostic_warnings":["adev/frontmatter-present"]}
