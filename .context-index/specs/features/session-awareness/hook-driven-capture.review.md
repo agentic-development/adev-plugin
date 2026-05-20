@@ -1,19 +1,19 @@
 ---
 spec: .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
-last-reviewed-revision: 2
-file-sha: 1bf56cc032939a803d6b028414aa1d8be32ed268e52f870778ad4357409af2e3
-verdict: PASS_WITH_NOTES
+last-reviewed-revision: 3
+file-sha: 7fa85c871e2ec3bd6275122bc40872064d07fd13ef3d07f69233625a402adbf9
+verdict: PASS
 date: 2026-05-20
-previous-verdict: BLOCK
-previous-revision: 1
+previous-verdict: PASS_WITH_NOTES
+previous-revision: 2
 ---
 
-# Architecture Review: hook-driven-capture (rev 2)
+# Architecture Review: hook-driven-capture (rev 3)
 
-> **Spec:** `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md` (rev 2)
+> **Spec:** `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md` (rev 3)
 > **Charter:** `.context-index/specs/features/session-awareness/charter.md` (rev 6, approved)
-> **Verdict:** **PASS_WITH_NOTES** — spec is ready to proceed to `/adev:plan`. Two warnings worth addressing before plan if convenient; six suggestions can fold into plan tasks or remain advisory.
-> **Previous review:** rev 1 verdict was BLOCK (3 security blockers, 8 warnings, 11 suggestions). All 23 prior findings addressed in rev 2 (verified by reviewer dispatch).
+> **Verdict:** **PASS** — spec is ready to proceed to `/adev:plan`. Both rev-2 warnings (SEC-9, SEC-10) have been resolved cleanly; only low-severity suggestions remain, all of which are acceptable as plan tasks.
+> **Previous review:** rev 2 verdict was PASS_WITH_NOTES (0 blockers, 2 warnings, 6 suggestions). The 2 warnings are addressed in rev 3; 3 of the 6 suggestions are also addressed (SA-10 / CON-9 duplicated pair resolved by dropping the `platform-context.yaml` override clause).
 
 ## Reviewers Dispatched
 
@@ -23,91 +23,63 @@ previous-revision: 1
 | security-reviewer | Security Reviewer | subagent | capable (claude-sonnet-4-6) | plugin:review-specs/prompts/security.md |
 | consistency-analyzer | Consistency Analyzer | subagent | fast (claude-haiku-4-5) | plugin:review-specs/prompts/consistency.md |
 
-## Prior-finding resolution
+## Prior-finding resolution (rev 2 → rev 3)
 
-| Finding | Status |
-|---|---|
-| SA-1 (external payload contract) | partially-addressed — reactive parse-error placeholder is in place, but no proactive payload-schema fixture pin. See new SA-9. |
-| SA-2 (PreCompact-after-SessionEnd) | addressed |
-| SA-3 (sentinel markers for post-commit removal) | addressed |
-| SA-4 (manifest-vs-detection conflict) | addressed |
-| SA-5 (init-wizard CLI verb) | addressed — `adev init prompt session-capture` named consistently |
-| SA-6 (Module Impact Map gaps) | addressed |
-| SA-7 (symmetric gitignore removal on capture: off) | addressed |
-| SA-8 (supersession bookkeeping) | addressed |
-| SEC-1 (transcript redaction policy) | addressed — see new SEC-9 for gap in pattern list |
-| SEC-2 (session_id charset) | addressed |
-| SEC-3 (transcript_path containment) | addressed — see new SEC-10 for realpath comparison tightening |
-| SEC-4 (temp-name PID collision) | addressed |
-| SEC-5 (paired gitignore markers) | addressed |
-| SEC-6 (bash-wrapper gate-check) | addressed |
-| SEC-7 (stable stderr format) | addressed — see new CON-10 for grammar refinement |
-| SEC-8 (mode-transition cleanup hint) | addressed |
-| CON-1 (`supersedes:` frontmatter) | addressed |
-| CON-2 (charter-extension omission) | addressed (intentional) |
-| CON-3 (session_id_short narrowing charter contract) | addressed — full session_id used consistently |
-| CON-4 (/adev:retro in Behavior 12) | addressed (Behavior 15 in rev 2) |
-| CON-5 (ADR 0014 stderr reference) | addressed |
-| CON-6 (provider key behavior coverage) | addressed |
-| CON-7 (kind: behavioral confirmation) | confirmed |
+| Finding | Severity (rev 2) | Status in rev 3 |
+|---|---|---|
+| SEC-9 (redaction list — PEM, Slack, Google, Stripe with underscore distinction) | warning | **addressed** — Invariant section lists PEM private-key blocks (multiline, processed first), Stripe `sk_(live\|test)_[0-9A-Za-z]{24,}` (underscore — explicit "do not collapse" note), Slack `xox[abprs]-`, Google `AIza[0-9A-Za-z_-]{35}`. AC item updated; pattern order asserted by tests. |
+| SEC-10 (realpath-vs-realpath containment for transcript root + cwd manifest walk) | warning | **addressed** — Invariant at line 73 requires "both operands of the prefix comparison must be the `realpath`-resolved forms — never compare resolved-vs-raw." Invariant at line 72 requires the manifest walk to "start from the **resolved** path... must NOT start from the raw input." Two new AC items pin the behavior. |
+| SA-9 (payload-schema fixture pin for upstream version-skew detection) | suggestion | carries forward — no schema-fixture row added to Preconditions or Module Impact Map. Acceptable as plan task. |
+| SA-10 (platform-context.yaml override clause has no contract) | suggestion | **addressed** — clause dropped; the rev 3 explanatory comment confirms incidentally resolving the duplicated CON-9. |
+| SEC-11 (sentinel-mismatch error case) | suggestion | carries forward — no Error Cases row added for unmatched sentinel pair. Acceptable as plan task. |
+| CON-8 (conflict-warning surface anchoring) | suggestion | carries forward — Behavior 3 still uses "surfaces" without anchoring the channel (prompt body vs. stderr). Acceptable as plan task. |
+| CON-9 (duplicate of SA-10) | suggestion | **addressed** by SA-10 resolution. |
+| CON-10 (stderr reason-code grammar — optional subject token) | suggestion | carries forward — invariant grammar at line 91 still says `<reason-code> <project-relative-path?>`, but Error Cases uses sub-tokens (`validation-error session-id`, `payload-error session-id-missing`, etc.). Acceptable as plan task. |
 
 ## Structural Architect (structural-architect)
 
-**Verdict:** PASS_WITH_NOTES
-**Summary:** All 8 prior SA findings addressed (SA-1 partially via reactive Error Cases; no proactive schema pin). Two new low-severity suggestions; neither blocks planning.
+**Verdict:** PASS
+**Summary:** SA-10 cleanly resolved by removing the unanchored override clause. SA-9 still carries forward as a suggestion (no schema-fixture pin), but the reactive parse-error placeholder behavior is in place and the suggestion was already classified as defer-to-plan in rev 2. No net-new structural findings. Module Impact Map and Actionable Task Map remain coherent; 16 behaviors decompose cleanly to AC items.
 
-- **SA-9** (suggestion, Preconditions / Module Impact Map — External Contracts gap) — SA-1 only half-addressed in rev 2 (reactive placeholder on missing fields, but no proactive payload-schema pin). A breaking upstream rename (e.g., `session_id` → `sessionId`) would silently degrade every capture to placeholder without alerting maintainers.
-  - *Suggestion:* Add an "External Contracts" Preconditions bullet or Module Impact row pinning a payload-schema fixture under `tests/fixtures/claude-code-payloads/` (versioned). Validator chain asserts the documented field shape; emit a distinct stderr reason code (e.g., `payload-error schema-skew`) when fields are present but shaped differently than expected.
-
-- **SA-10** (suggestion, Invariants — Transcript path containment / Preconditions) — The transcripts-root invariant references `platform-context.yaml` as an override location, but no other section of the spec defines, references, or links to that file. The override clause has no contract.
-  - *Suggestion:* Either drop the `platform-context.yaml` clause (rely solely on `~/.claude/projects/<cwd-encoded>/`), or add a Module Impact row + AC item committing to a schema for the override key. Prefer dropping unless there's a concrete need.
+- **SA-9** (suggestion, carried forward from rev 2; Preconditions / Module Impact Map — External Contracts gap) — Still no proactive payload-schema fixture pin. Reactive parse-error placeholder handles the runtime path, but a breaking upstream rename (`session_id` → `sessionId`) would silently degrade every capture to placeholder without a distinct signal.
+  - *Suggestion:* Plan task — add `tests/fixtures/claude-code-payloads/<version>.json`, a versioned schema assertion in the validator chain, and a distinct stderr reason code (e.g., `payload-error schema-skew`) when fields are present but shaped differently. Defer-to-plan is acceptable.
 
 ## Security Reviewer (security-reviewer)
 
-**Verdict:** PASS_WITH_NOTES
-**Summary:** All eight rev-1 security findings addressed precisely with testable contracts. Two new warnings (redaction-list gaps, realpath-vs-raw containment) and one suggestion (sentinel mismatch handling).
+**Verdict:** PASS
+**Summary:** Both rev-2 warnings (SEC-9 redaction list, SEC-10 realpath containment) are resolved with testable contracts. The PEM-block matcher is correctly positioned first in the pattern order (multiline match may contain `KEY=VALUE`-like tail; matching first avoids partial substring redaction). Stripe `sk_` vs LLM `sk-` distinction is explicit and documented as "do not collapse." The PEM regex uses backreference `\1?` to allow algorithm-marker mismatch between BEGIN/END — deliberate widening for defense-in-depth against malformed-but-recognizable blocks; correct posture for redaction. Realpath-vs-realpath comparison is now explicit for both operands; cwd manifest walk starts from the resolved path; AC items 219-220 pin the test surface for resolved-vs-raw rejection. No net-new security findings.
 
-- **SEC-9** (warning, Invariants — Transcript redaction) — Redaction pattern list misses high-impact secret classes: PEM private-key blocks (`-----BEGIN (RSA |EC |OPENSSH |DSA |)PRIVATE KEY-----`), Slack tokens (`xox[abprs]-…`), Google API keys (`AIza[0-9A-Za-z_-]{35}`), Stripe keys (`sk_(live|test)_[0-9A-Za-z]{24,}` — note the underscore distinction from the existing `sk-` pattern). PEM blocks are the highest-impact gap.
-  - *Suggestion:* Add PEM private-key block matcher (multiline, replace entire block with `[REDACTED:private-key]`), Slack, Google API, and Stripe `sk_(live|test)_` to the documented pattern list. Note the underscore-vs-hyphen distinction for Stripe vs OpenAI/Anthropic.
-
-- **SEC-10** (warning, Invariants — Transcript path containment / Working directory check) — `realpath` resolution for `transcript_path` is specified, but the spec does not require the SAME for the transcripts-root anchor (`~/.claude/projects/<cwd-encoded>/`). If the anchor itself is a symlink (e.g., `~/.claude` → `/tmp/...`), containment comparison may pass on string-prefix while still escaping. Same concern for `cwd`'s manifest-bearing-directory walk — the walk MUST start from the realpath, not the raw input.
-  - *Suggestion:* Tighten the invariant: "after `realpath` resolution of BOTH `transcript_path` AND the configured transcripts root, the resolved transcript_path must be a path-prefix child of the resolved root (compare resolved-vs-resolved, not resolved-vs-raw)." Apply the same `realpath`-then-walk discipline to `cwd`'s manifest-bearing-directory check.
-
-- **SEC-11** (suggestion, Invariants — Paired-marker idempotency / Behavior 13) — Sentinel-based regions are safe against accidental user edits, but the spec does not specify behavior when a malformed/unmatched sentinel pair is encountered (e.g., stray `# >>> adev:session-capture >>>` without its closing `<<<` due to user merge conflict). The installer could either greedily extend to EOF or silently no-op; both are surprising. Risk is install-time misbehavior, not exploitability.
-  - *Suggestion:* Add an Error Cases row: "Sentinel-bounded block has opening marker without matching closing marker (or vice versa) → installer exits 0 with stderr `[adev:session-capture] validation-error sentinel-mismatch <project-relative-file>`, no modification. User must repair manually."
+- **SEC-11** (suggestion, carried forward from rev 2; Invariants — Paired-marker idempotency / Behavior 13) — Spec still does not specify behavior for malformed/unmatched sentinel pair. Installer could either greedily extend to EOF or silently no-op. Risk is install-time misbehavior, not exploitability.
+  - *Suggestion:* Plan task — add Error Cases row: "Sentinel-bounded block has opening marker without matching closing marker (or vice versa) → installer exits 0 with stderr `[adev:session-capture] validation-error sentinel-mismatch <project-relative-file>`, no modification. User must repair manually." Defer-to-plan is acceptable.
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** PASS_WITH_NOTES
-**Summary:** All 7 prior consistency findings cleanly resolved. Sentinel markers, CLI verb naming, and session_id usage are consistent throughout. Three net-new suggestions on conflict-warning surface, `platform-context.yaml` stray reference, and stderr reason-code grammar.
+**Verdict:** PASS
+**Summary:** CON-9 resolved cleanly by SA-10's resolution (single edit removed both flags). Pattern-order assertion in the redaction invariant ("Pattern order is significant: PEM block first…") is consistent with the AC item ("PEM block matcher runs first; pattern order is asserted by tests"). Stripe-vs-LLM separator distinction is consistent across invariant, AC, and explanatory comment. Realpath-vs-realpath language is consistent across invariant lines 72-73 and AC lines 219-220. CON-8 and CON-10 carry forward as low-severity grammar/anchor refinements; neither blocks planning.
 
-- **CON-8** (suggestion, Behavior 3 / Error Cases / AC — SA-4 conflict-warning surface) — Behavior 3 and the SA-4 error-case row describe the manifest-vs-detection conflict warning, but neither location specifies WHERE the warning is emitted (stderr? prompt body? both?). Mild contract drift between invariant ("surfaces") and Behavior 3 (implied prompt-body rendering).
-  - *Suggestion:* Anchor the warning channel explicitly — e.g., "rendered in the prompt body above the default-accept question" — so `/adev:plan` and `/adev:write-test` can deterministically locate the surface to assert against.
+- **CON-8** (suggestion, carried forward from rev 2; Behavior 3 / Error Cases / AC — SA-4 conflict-warning surface) — Behavior 3 still describes the manifest-vs-detection conflict warning without naming the surface ("surfaces a one-line informational warning" — channel unspecified).
+  - *Suggestion:* Plan task — anchor the warning channel explicitly (e.g., "rendered in the prompt body above the default-accept question") so `/adev:plan` and `/adev:write-test` can deterministically locate the surface to assert against. Defer-to-plan is acceptable.
 
-- **CON-9** (suggestion, Invariants — Transcript path containment / Preconditions) — DUPLICATE of SA-10: `platform-context.yaml` override-file reference has no surrounding contract. (Two reviewers flagged the same issue, raising its priority.)
-  - *Suggestion:* Drop the override clause, or first-class it as a Precondition + Module Impact + AC.
-
-- **CON-10** (suggestion, Error Cases — `validation-error` reason-code subcategories) — The *Stderr diagnostic format* invariant enumerates six reason codes, but the Error Cases table uses sub-tokens (`validation-error session-id`, `validation-error cwd`) and `path-error transcript`. The invariant grammar is `<code>` but practice is `<code> <subject>`.
-  - *Suggestion:* Document the optional second token in the invariant as a subject identifier (e.g., `<reason-code>[ <subject>] <project-relative-path?>`), and enumerate legal subjects (`session-id`, `cwd`, `transcript`, `sessions-dir`, `session-id-missing`, `transcript-path-missing`, `sentinel-mismatch`).
+- **CON-10** (suggestion, carried forward from rev 2; Error Cases — `validation-error` reason-code subcategories) — The *Stderr diagnostic format* invariant enumerates six reason codes with grammar `<reason-code> <project-relative-path?>`, but Error Cases consistently uses sub-tokens (`validation-error session-id`, `validation-error cwd`, `path-error transcript`, `payload-error session-id-missing`, `payload-error transcript-path-missing`).
+  - *Suggestion:* Plan task — document the optional subject token in the invariant grammar (e.g., `<reason-code>[ <subject>] <project-relative-path?>`) and enumerate legal subjects (`session-id`, `cwd`, `transcript`, `sessions-dir`, `session-id-missing`, `transcript-path-missing`). Defer-to-plan is acceptable.
 
 ---
 
 ## Summary
 
-**Total findings:** 8 net-new (0 blockers, 2 warnings, 6 suggestions). All 23 prior findings resolved (1 partial: SA-1 → see SA-9).
-**Verdict:** PASS_WITH_NOTES. Spec is ready for `/adev:plan`.
+**Total findings:** 4 suggestions (0 blockers, 0 warnings, 4 suggestions). The 2 rev-2 warnings are resolved; 3 of 6 rev-2 suggestions are also resolved. The 4 carried-forward suggestions (SA-9, SEC-11, CON-8, CON-10) were already classified as defer-to-plan in the rev 2 review.
 
-### Recommended actions before plan
+**Verdict:** PASS. Spec is ready for `/adev:plan`.
 
-- **SEC-9** (warning) — Adding PEM block matcher to the redaction pattern list is one regex; defensible to do in this revision pass before plan. Stripe / Slack / Google can follow.
-- **SEC-10** (warning) — Tighten the containment invariant to compare realpath-vs-realpath. One sentence change to the invariant.
-- **SA-10 / CON-9** (suggestion, duplicated by two reviewers) — Drop the `platform-context.yaml` override clause unless there's a concrete need to support project-local transcripts roots.
-- **CON-8** (suggestion) — Anchor the conflict-warning surface explicitly in Behavior 3.
+### Recommended actions
+
+None blocking. The 4 carried-forward suggestions are appropriate as plan tasks; none require a spec revision.
 
 ### Defer-to-plan (acceptable as plan tasks)
 
-- **SA-9** (suggestion) — Payload-schema fixture for upstream version-skew detection. A plan task; a small fixture + assertion is enough.
-- **SEC-11** (suggestion) — Sentinel-mismatch error case. One row in the Error Cases table; can be added as a plan task.
-- **CON-10** (suggestion) — Stderr reason-code grammar documentation refinement.
+- **SA-9** — Payload-schema fixture for upstream version-skew detection (`tests/fixtures/claude-code-payloads/`, validator schema assertion, distinct `payload-error schema-skew` reason code).
+- **SEC-11** — Sentinel-mismatch error case (one row in Error Cases; `validation-error sentinel-mismatch` reason code).
+- **CON-8** — Anchor the conflict-warning channel in Behavior 3.
+- **CON-10** — Stderr reason-code grammar refinement to document the optional subject token.
 
-The spec's behavioral contract is otherwise complete and decomposable. `/adev:plan --spec hook-driven-capture.spec.md` will produce a clean task graph.
+The spec's behavioral contract is complete and decomposable. `/adev:plan --spec hook-driven-capture.spec.md` will produce a clean task graph.
