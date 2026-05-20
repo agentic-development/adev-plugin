@@ -1,0 +1,97 @@
+{
+  "hooks": {
+    "agentStop": [
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/post-validate-extract-heuristics.sh\"",
+        "cwd": ".",
+        "matcher": ".*",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "postToolUse": [
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-read-tracker.sh\"",
+        "cwd": ".",
+        "matcher": "view",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sync-trigger.sh\"",
+        "cwd": ".",
+        "matcher": "edit",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-capture.sh\"",
+        "cwd": ".",
+        "matcher": ".*",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/issue-reminder.sh\"",
+        "cwd": ".",
+        "matcher": ".*",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate-advisory.sh\"",
+        "cwd": ".",
+        "matcher": ".*",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "preToolUse": [
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-preflight.sh\"",
+        "cwd": ".",
+        "matcher": "edit",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/constitution-linter.sh\"",
+        "cwd": ".",
+        "matcher": "edit",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate-edit.sh\"",
+        "cwd": ".",
+        "matcher": "edit",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/merge-guard.sh\"",
+        "cwd": ".",
+        "matcher": "bash",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate-bash.sh\"",
+        "cwd": ".",
+        "matcher": "bash",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "sessionStart": [
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+        "cwd": ".",
+        "matcher": "startup|resume|clear|compact",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ]
+  },
+  "version": 1
+}
