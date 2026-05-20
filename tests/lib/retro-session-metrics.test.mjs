@@ -469,9 +469,189 @@ describe('aggregateCostTokens', () => {
   });
 });
 
-describe('joinClosedIssueXref (stub — Task 10)', () => {
-  test('exists', () => {
-    assert.equal(typeof joinClosedIssueXref, 'function');
+describe('joinClosedIssueXref', () => {
+  // Mock issue manager — supports list({ status, since, until }) and get(id).
+  function mockManager(closedIssues, allKnown = closedIssues) {
+    return {
+      async list(_opts) {
+        return closedIssues;
+      },
+      async get(id) {
+        return allKnown.find((i) => i.id === id) || null;
+      },
+    };
+  }
+
+  test('returns null when no sessions have issue/epic frontmatter', async () => {
+    const sessions = [
+      { format: 'hook', frontmatter: { kind: 'session-end', session_id: 'abc' }, body: '' },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager([]) });
+    assert.equal(r, null);
+  });
+
+  test('returns null when issueManager is null', async () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'abc', issue: 'issue-1' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: null });
+    assert.equal(r, null);
+  });
+
+  test('valid issue in window renders row with session_id_short and title', async () => {
+    const closed = [
+      { id: 'issue-1', title: 'Fix the thing', closed_at: '2026-05-15' },
+    ];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          session_id: 'abcdef1234567890',
+          issue: 'issue-1',
+        },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.ok(Array.isArray(r));
+    assert.equal(r.length, 1);
+    assert.equal(r[0].id, 'issue-1');
+    assert.equal(r[0].title, 'Fix the thing');
+    assert.deepEqual(r[0].sessionIds, ['abcdef12']); // 8-char prefix (CON-X3)
+  });
+
+  test('invalid-charset issue id renders (invalid) annotation, no board lookup', async () => {
+    let lookupCalled = false;
+    const manager = {
+      async list() {
+        return [];
+      },
+      async get(_id) {
+        lookupCalled = true;
+        return null;
+      },
+    };
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          session_id: 'badsess1',
+          issue: '../../etc/passwd',
+        },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: manager });
+    assert.ok(r);
+    const invalid = r.find((row) => row.annotation === '(invalid)');
+    assert.ok(invalid, 'expected (invalid) row');
+    assert.equal(lookupCalled, false, 'no board lookup for invalid charset');
+  });
+
+  test('unknown id (not on board) renders (unknown) annotation (CON-X5)', async () => {
+    const closed = []; // empty board
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          session_id: 'sess1234',
+          issue: 'issue-9999',
+        },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.ok(r);
+    const unknown = r.find((row) => row.annotation === '(unknown)');
+    assert.ok(unknown);
+    assert.equal(unknown.title, '(unknown)');
+    assert.equal(unknown.closedAt, null);
+  });
+
+  test('issue present on board but not closed in window → excluded from xref', async () => {
+    // mockManager.list() returns only the closed-in-window subset; the
+    // open issue is in `allKnown` so `get()` finds it but not `list()`.
+    const allKnown = [
+      { id: 'issue-1', title: 'open one' },
+      { id: 'issue-2', title: 'closed one', closed_at: '2026-05-15' },
+    ];
+    const closedInWindow = [allKnown[1]];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 's1', issue: 'issue-1' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 's2', issue: 'issue-2' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, {
+      issueManager: mockManager(closedInWindow, allKnown),
+    });
+    // Only issue-2 is in window; issue-1 is excluded (not in closed list).
+    assert.equal(r.length, 1);
+    assert.equal(r[0].id, 'issue-2');
+  });
+
+  test('epic-only reference (no issue: field) joins against epic', async () => {
+    const closed = [{ id: 'epic-5', title: 'Epic Five', closed_at: '2026-05-15' }];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'e5ses001', epic: 'epic-5' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.equal(r.length, 1);
+    assert.equal(r[0].id, 'epic-5');
+  });
+
+  test('XS-2: pre-compact and placeholder excluded', async () => {
+    const closed = [{ id: 'issue-1', title: 'I1', closed_at: '2026-05-15' }];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'pre-compact', session_id: 'pc', issue: 'issue-1' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'placeholder', session_id: 'ph', issue: 'issue-1' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.equal(r, null);
+  });
+
+  test('multiple sessions touching same issue → row aggregates sessionIds', async () => {
+    const closed = [{ id: 'issue-1', title: 'I1', closed_at: '2026-05-15' }];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'aaaaaaaa11', issue: 'issue-1' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'bbbbbbbb22', issue: 'issue-1' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.equal(r.length, 1);
+    assert.deepEqual(r[0].sessionIds.sort(), ['aaaaaaaa', 'bbbbbbbb']);
   });
 });
 
