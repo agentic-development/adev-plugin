@@ -85,3 +85,6 @@
 {"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","notes":"all principles respected; only node:fs + node:path used","ts":"2026-05-17T22:03:45.207Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-17T22:04:28.721Z"}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-19T19:49:28.663Z","ts":"2026-05-19T19:49:28.664Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.020Z","ts":"2026-05-20T01:26:28.021Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.753Z","ts":"2026-05-20T01:27:38.754Z"}
+{"event":"code_drift_detected","drift_source":".gitignore","drift_at":"2026-05-20T01:47:50.090Z","ts":"2026-05-20T01:47:50.091Z"}

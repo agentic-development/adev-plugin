@@ -39,3 +39,5 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T15:28:57.804Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T15:29:41.828Z"}
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-17T20:38:19.318Z","ts":"2026-05-18T13:48:57.242Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.036Z","ts":"2026-05-20T01:26:28.036Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.770Z","ts":"2026-05-20T01:27:38.770Z"}
