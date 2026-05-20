@@ -1,6 +1,6 @@
 ---
 status: approved
-revision: 5
+revision: 6
 updated: 2026-05-20
 ---
 
@@ -27,7 +27,7 @@ This charter retains ownership of *what* execution state means: session-start co
 - Configurable reminder interval via `tasks.reminder_interval` in manifest.yaml
 - Skill-level instructions for checking and updating execution state at task boundaries (harness-agnostic)
 - Session capture trigger (configurable: `hook` | `post-commit` | `off`) — SessionEnd + PreCompact as the default capture mechanism for new projects; post-commit retained for back-compat
-- Session log persistence path (`.context-index/sessions/`, gitignored by default; opt-out via `sessions.gitignored: false`)
+- Session log persistence path (`.context-index/sessions/`, gitignored by default; opt-out via `integrations.session_capture.gitignored: false`)
 - Retro consumption of session history — `/adev:retro` reads sessions within the analysis window to extract tool-use distribution, per-spec session counts, token/cost trends, and context gaps
 - Init-time prompt for session capture preferences — `/adev:init` asks the user which capture mode and whether to gitignore; defaults are detected from project state
 
@@ -66,7 +66,7 @@ This charter retains ownership of *what* execution state means: session-start co
 - An ExecutionState references zero or one Plan (via planRef) and zero or one Issue (via issueBinding)
 - A SessionLog contains zero or more SessionLogEntries
 - ReminderConfig is read from manifest.yaml (`tasks.reminder_interval`)
-- CaptureConfig is read from manifest.yaml (`sessions`)
+- CaptureConfig is read from manifest.yaml (`integrations.session_capture`)
 
 ### Invariants
 
@@ -96,9 +96,9 @@ This charter retains ownership of *what* execution state means: session-start co
 | Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | validated |
 | Token Cost Logging | Extend session tracking JSONL with optional per-entry token usage and cost fields | should-have | 2 | validated |
 | Session-Capture Self-Skip Guard | Validated in 0.27.1. **Superseded** by Hook-Driven Session Capture (rev 4). Post-commit path remains available behind `capture: post-commit` but is no longer the recommended default. | should-have | 2 | superseded |
-| Hook-Driven Session Capture | SessionEnd + PreCompact capture into a configurable, gitignored-by-default sessions directory. Master via `sessions.capture` (`hook`/`post-commit`/`off`) and `sessions.gitignored` (boolean). | must-have | 0.28.0 | — |
+| Hook-Driven Session Capture | SessionEnd + PreCompact capture into a configurable, gitignored-by-default sessions directory. Master via `integrations.session_capture.capture` (`hook`/`post-commit`/`off`) and `integrations.session_capture.gitignored` (boolean). | must-have | 0.28.0 | — |
 | Retro Session Consumption | `/adev:retro` reads `.context-index/sessions/` within the analysis window and emits a Session Activity section (tool-use distribution, per-spec session counts, token/cost trends, context gaps). Degrades silently when capture is off or directory empty. | should-have | 0.28.0 | — |
-| Init-Time Capture Configuration | `/adev:init` prompts for `sessions.capture` and `sessions.gitignored`; detects existing post-commit setup and tracked session files, defaulting those projects to back-compat (`post-commit, gitignored: false`). | should-have | 0.28.0 | — |
+| Init-Time Capture Configuration | `/adev:init` prompts for `integrations.session_capture.capture` and `integrations.session_capture.gitignored`; detects existing post-commit setup and tracked session files, defaulting those projects to back-compat (`post-commit, gitignored: false`). | should-have | 0.28.0 | — |
 
 ## Deferred Capabilities
 
@@ -119,7 +119,7 @@ This charter retains ownership of *what* execution state means: session-start co
 | `clearExecutionState(projectRoot)` | function | Reset to idle state (e.g., when plan completes) |
 | `hooks/session-end.sh` | hook (Claude Code SessionEnd) | Consumes payload (session_id, transcript_path, cwd, reason); writes `<date>-<session_id>.md` derived from the transcript |
 | `hooks/pre-compact.sh` | hook (Claude Code PreCompact) | Captures pre-compaction snapshots for long sessions that auto-compact mid-conversation |
-| `manifest.yaml:sessions` | config | `{ capture: hook|post-commit|off, gitignored: bool }` |
+| `manifest.yaml:integrations.session_capture` | config | `{ provider: native|<external>, capture: hook|post-commit|off, gitignored: bool }` (nests new `capture`/`gitignored` keys alongside the existing `provider` key) |
 | `detectExistingCapture(projectRoot)` | function | Inspects `.githooks/post-commit` and tracked `.context-index/sessions/*.md` for existing capture; init reads this to choose the default `sessions.capture` value for the prompt |
 
 ### Consumed APIs
@@ -145,5 +145,5 @@ This charter retains ownership of *what* execution state means: session-start co
 | Simplicity | Zero new dependencies. Markdown + YAML frontmatter for state, JSONL for logs. No database, no server. |
 | Degradation | If execution state file is missing or malformed, hooks still exit 0 (never block agent work) but inject a warning via `additionalContext`: "Execution state file is missing or corrupt. Run /adev-issues to check issue board status." |
 | Testability | All logic testable with Node.js built-in test runner. Hook tested via `runHook()` helper. Lib tested with temp dirs. |
-| Configurability | Capture mode is per-project via `manifest.yaml:sessions`. `off` cleanly disables all hooks without breaking consumers. Switching modes is a manifest edit + installer re-run; no silent migration. |
+| Configurability | Capture mode is per-project via `manifest.yaml:integrations.session_capture`. `off` cleanly disables all hooks without breaking consumers. Switching modes is a manifest edit + installer re-run; no silent migration. |
 | Graceful absence | All consumers (`/adev:work`, `/adev:status`, `/adev:hygiene`, `/adev:retro`) handle empty/missing sessions directory without warnings or errors. |
