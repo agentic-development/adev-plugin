@@ -1,19 +1,20 @@
 ---
 spec: .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
-last-reviewed-revision: 3
-file-sha: 7fa85c871e2ec3bd6275122bc40872064d07fd13ef3d07f69233625a402adbf9
-verdict: PASS
+last-reviewed-revision: 4
+file-sha: f5abe46032dfc0ca99c41c732d4cc404e957fa731ecd366a145690647dfcf353
+verdict: PASS_WITH_NOTES
 date: 2026-05-20
-previous-verdict: PASS_WITH_NOTES
-previous-revision: 2
+previous-verdict: PASS
+previous-revision: 3
 ---
 
-# Architecture Review: hook-driven-capture (rev 3)
+# Architecture Review: hook-driven-capture (rev 4)
 
-> **Spec:** `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md` (rev 3)
+> **Spec:** `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md` (rev 4)
 > **Charter:** `.context-index/specs/features/session-awareness/charter.md` (rev 6, approved)
-> **Verdict:** **PASS** — spec is ready to proceed to `/adev:plan`. Both rev-2 warnings (SEC-9, SEC-10) have been resolved cleanly; only low-severity suggestions remain, all of which are acceptable as plan tasks.
-> **Previous review:** rev 2 verdict was PASS_WITH_NOTES (0 blockers, 2 warnings, 6 suggestions). The 2 warnings are addressed in rev 3; 3 of the 6 suggestions are also addressed (SA-10 / CON-9 duplicated pair resolved by dropping the `platform-context.yaml` override clause).
+> **Verdict:** **PASS_WITH_NOTES** — spec is ready to proceed. Rev-4 amendment (six optional SessionEnd frontmatter fields for downstream retro consumption) opened two defense-in-depth gaps around producer-side validation that are worth addressing before plan.
+> **Previous review:** rev 3 was PASS. Rev 4 is a small amendment with a fresh review surface (one new invariant, expanded Behavior 8, five new error-case rows, four new ACs).
+> **Reviewed paired with:** `retro-session-consumption.spec.md` rev 1 (consumer). Cross-spec findings surfaced where the producer/consumer contract has gaps.
 
 ## Reviewers Dispatched
 
@@ -23,63 +24,53 @@ previous-revision: 2
 | security-reviewer | Security Reviewer | subagent | capable (claude-sonnet-4-6) | plugin:review-specs/prompts/security.md |
 | consistency-analyzer | Consistency Analyzer | subagent | fast (claude-haiku-4-5) | plugin:review-specs/prompts/consistency.md |
 
-## Prior-finding resolution (rev 2 → rev 3)
+## Structural Architect
 
-| Finding | Severity (rev 2) | Status in rev 3 |
-|---|---|---|
-| SEC-9 (redaction list — PEM, Slack, Google, Stripe with underscore distinction) | warning | **addressed** — Invariant section lists PEM private-key blocks (multiline, processed first), Stripe `sk_(live\|test)_[0-9A-Za-z]{24,}` (underscore — explicit "do not collapse" note), Slack `xox[abprs]-`, Google `AIza[0-9A-Za-z_-]{35}`. AC item updated; pattern order asserted by tests. |
-| SEC-10 (realpath-vs-realpath containment for transcript root + cwd manifest walk) | warning | **addressed** — Invariant at line 73 requires "both operands of the prefix comparison must be the `realpath`-resolved forms — never compare resolved-vs-raw." Invariant at line 72 requires the manifest walk to "start from the **resolved** path... must NOT start from the raw input." Two new AC items pin the behavior. |
-| SA-9 (payload-schema fixture pin for upstream version-skew detection) | suggestion | carries forward — no schema-fixture row added to Preconditions or Module Impact Map. Acceptable as plan task. |
-| SA-10 (platform-context.yaml override clause has no contract) | suggestion | **addressed** — clause dropped; the rev 3 explanatory comment confirms incidentally resolving the duplicated CON-9. |
-| SEC-11 (sentinel-mismatch error case) | suggestion | carries forward — no Error Cases row added for unmatched sentinel pair. Acceptable as plan task. |
-| CON-8 (conflict-warning surface anchoring) | suggestion | carries forward — Behavior 3 still uses "surfaces" without anchoring the channel (prompt body vs. stderr). Acceptable as plan task. |
-| CON-9 (duplicate of SA-10) | suggestion | **addressed** by SA-10 resolution. |
-| CON-10 (stderr reason-code grammar — optional subject token) | suggestion | carries forward — invariant grammar at line 91 still says `<reason-code> <project-relative-path?>`, but Error Cases uses sub-tokens (`validation-error session-id`, `payload-error session-id-missing`, etc.). Acceptable as plan task. |
+**Verdict:** PASS — 2 suggestions.
 
-## Structural Architect (structural-architect)
+- **SA-1** (suggestion, Invariants / Module Impact Map) — The new invariant says the helper MAY emit `epic` "resolved from the issue's `epicId` on the issue board, when present," but neither Preconditions nor Module Impact Map declares the dependency on the issue board reader. The SessionEnd helper now reads `lib/issues/` indirectly — should be named as a consumed API.
+  - *Suggestion:* Defer-to-plan. Add an Error Cases row "issue board read fails → `epic` omitted; `issue` still written; no error" and a Module Impact Map row for the read-only issue-board access from the SessionEnd helper.
 
-**Verdict:** PASS
-**Summary:** SA-10 cleanly resolved by removing the unanchored override clause. SA-9 still carries forward as a suggestion (no schema-fixture pin), but the reactive parse-error placeholder behavior is in place and the suggestion was already classified as defer-to-plan in rev 2. No net-new structural findings. Module Impact Map and Actionable Task Map remain coherent; 16 behaviors decompose cleanly to AC items.
+- **SA-2** (suggestion, Invariants / Preconditions) — `issueBinding` is read from `.execution-state.json`, which is owned by the `agent-reliable-state-artifacts` charter. The rev 4 amendment doesn't cite that ownership.
+  - *Suggestion:* Add a Precondition: "The `issueBinding` field is read-only from `agent-reliable-state-artifacts`; `epicId` is read-only from the task-management module."
 
-- **SA-9** (suggestion, carried forward from rev 2; Preconditions / Module Impact Map — External Contracts gap) — Still no proactive payload-schema fixture pin. Reactive parse-error placeholder handles the runtime path, but a breaking upstream rename (`session_id` → `sessionId`) would silently degrade every capture to placeholder without a distinct signal.
-  - *Suggestion:* Plan task — add `tests/fixtures/claude-code-payloads/<version>.json`, a versioned schema assertion in the validator chain, and a distinct stderr reason code (e.g., `payload-error schema-skew`) when fields are present but shaped differently. Defer-to-plan is acceptable.
+## Security Reviewer
 
-## Security Reviewer (security-reviewer)
+**Verdict:** PASS — 2 warnings, 1 suggestion.
 
-**Verdict:** PASS
-**Summary:** Both rev-2 warnings (SEC-9 redaction list, SEC-10 realpath containment) are resolved with testable contracts. The PEM-block matcher is correctly positioned first in the pattern order (multiline match may contain `KEY=VALUE`-like tail; matching first avoids partial substring redaction). Stripe `sk_` vs LLM `sk-` distinction is explicit and documented as "do not collapse." The PEM regex uses backreference `\1?` to allow algorithm-marker mismatch between BEGIN/END — deliberate widening for defense-in-depth against malformed-but-recognizable blocks; correct posture for redaction. Realpath-vs-realpath comparison is now explicit for both operands; cwd manifest walk starts from the resolved path; AC items 219-220 pin the test surface for resolved-vs-raw rejection. No net-new security findings.
+- **SEC-12** (warning, Invariants — Optional SessionEnd frontmatter / AC / Error Cases) — **Producer-side numeric validation missing.** `fromTranscript()` derives `cost_usd`, `input_tokens`, `output_tokens`, `model` from transcript JSONL usage blocks. A malicious or version-skewed harness can feed `"cost_usd": "<script>alert(1)</script>"`, `"input_tokens": "1e10000"` (NaN/Infinity coercion bait), a deeply-nested object, or a 10MB `model` string. The spec doesn't specify what kind check gates persistence. Once written, retro reads `model` verbatim into a per-model table — no revalidation downstream.
+  - *Suggestion:* Add to the invariant an explicit validation contract:
+    - `cost_usd`: `Number.isFinite(v) && v >= 0 && v < 1e6`, persisted at fixed precision (e.g., `toFixed(4)`). Otherwise omit.
+    - `input_tokens` / `output_tokens`: `Number.isInteger(v) && v >= 0 && v < 1e9`. Otherwise omit.
+    - `model`: `^[A-Za-z0-9._-]{1,64}$`. Otherwise omit. (Note YAML-frontmatter injection vector if unbounded.)
+    Add paired Error Cases row + AC asserting each rejection path.
 
-- **SEC-11** (suggestion, carried forward from rev 2; Invariants — Paired-marker idempotency / Behavior 13) — Spec still does not specify behavior for malformed/unmatched sentinel pair. Installer could either greedily extend to EOF or silently no-op. Risk is install-time misbehavior, not exploitability.
-  - *Suggestion:* Plan task — add Error Cases row: "Sentinel-bounded block has opening marker without matching closing marker (or vice versa) → installer exits 0 with stderr `[adev:session-capture] validation-error sentinel-mismatch <project-relative-file>`, no modification. User must repair manually." Defer-to-plan is acceptable.
+- **SEC-13** (warning, Invariants — Optional SessionEnd frontmatter / Error Cases) — **`issueBinding` charset validation missing.** `issue` and `epic` are sourced from `.context-index/.execution-state.json` and the issue board respectively. The execution-state file is in-repo but could be hand-edited or written by buggy code. Concrete vectors: `issueBinding: "../../../etc/passwd"` or `"\n- evil: true"` (YAML injection at frontmatter render). Even though IDs aren't directly sensitive, persisting unsanitized content into committed-by-mistake markdown is a defense-in-depth gap, and Spec B reads these without revalidation by default.
+  - *Suggestion:* Before writing `issue` / `epic` to frontmatter, validate against `^[a-z0-9][a-z0-9.-]{0,63}$` (matches existing `parseId()` charset in `lib/issues/id-utils.mjs`). On mismatch, omit the field and emit `[adev:session-capture] validation-error issue-id` to stderr. Add Error Cases row + AC.
 
-## Consistency Analyzer (consistency-analyzer)
+- **SEC-14** (suggestion, Invariants / Init prompt) — **Privacy: cost/model/tokens are usage telemetry that may surprise users when `gitignored: false`.** The redaction policy intentionally does NOT redact these fields (they're metrics, not secrets), but a user who chose `gitignored: false` may not realize captured sessions will commit their per-project LLM spend and usage patterns.
+  - *Suggestion:* Defer-to-plan acceptable. Add a one-line note in the `adev init prompt session-capture` verb output: "Note: captured sessions include cost, token counts, and model in frontmatter — these are usage telemetry, not secrets, but will be committed if `gitignored: false`."
 
-**Verdict:** PASS
-**Summary:** CON-9 resolved cleanly by SA-10's resolution (single edit removed both flags). Pattern-order assertion in the redaction invariant ("Pattern order is significant: PEM block first…") is consistent with the AC item ("PEM block matcher runs first; pattern order is asserted by tests"). Stripe-vs-LLM separator distinction is consistent across invariant, AC, and explanatory comment. Realpath-vs-realpath language is consistent across invariant lines 72-73 and AC lines 219-220. CON-8 and CON-10 carry forward as low-severity grammar/anchor refinements; neither blocks planning.
+## Consistency Analyzer
 
-- **CON-8** (suggestion, carried forward from rev 2; Behavior 3 / Error Cases / AC — SA-4 conflict-warning surface) — Behavior 3 still describes the manifest-vs-detection conflict warning without naming the surface ("surfaces a one-line informational warning" — channel unspecified).
-  - *Suggestion:* Plan task — anchor the warning channel explicitly (e.g., "rendered in the prompt body above the default-accept question") so `/adev:plan` and `/adev:write-test` can deterministically locate the surface to assert against. Defer-to-plan is acceptable.
+**Verdict:** PASS_WITH_NOTES — Field contract matrix verified; the six optional fields match naming, types, and absence semantics between Spec A and Spec B. Findings concentrated cross-spec; see Cross-Spec section below.
 
-- **CON-10** (suggestion, carried forward from rev 2; Error Cases — `validation-error` reason-code subcategories) — The *Stderr diagnostic format* invariant enumerates six reason codes with grammar `<reason-code> <project-relative-path?>`, but Error Cases consistently uses sub-tokens (`validation-error session-id`, `validation-error cwd`, `path-error transcript`, `payload-error session-id-missing`, `payload-error transcript-path-missing`).
-  - *Suggestion:* Plan task — document the optional subject token in the invariant grammar (e.g., `<reason-code>[ <subject>] <project-relative-path?>`) and enumerate legal subjects (`session-id`, `cwd`, `transcript`, `sessions-dir`, `session-id-missing`, `transcript-path-missing`). Defer-to-plan is acceptable.
+## Cross-Spec Findings (paired with retro-session-consumption.spec.md rev 1)
 
----
+- **XS-1** (warning, security trust boundary) — The producer/consumer contract is asymmetric on *malformed-but-present* values. Spec A says fields are "strictly optional — absent fields are not errors." Spec B's Error Cases anticipate "non-numeric → excluded from aggregate" — implying Spec B already expects Spec A to emit malformed data. The trust-boundary enforcement point is ambiguous.
+  - *Suggestion:* Recommended path: SEC-12/SEC-13 close this at the producer (Spec A validates at write time). Spec B keeps its tolerance rows as defense-in-depth. Add a sentence to both specs naming the validating party.
+
+- **XS-2** (suggestion, scope) — Spec A's *Optional SessionEnd frontmatter* invariant is scoped to `kind: session-end` files only (Behavior 8). Spec B Behaviors 9/11 treat the optional fields as available on *any* hook-mode file (including pre-compact / placeholder). No functional contradiction (absent fields are tolerated), but the scope mismatch invites reader confusion.
+  - *Suggestion:* Spec B should qualify Behaviors 9/11 with "session-end" rather than "hook-mode" to mirror the producer's narrower contract.
+
+- **XS-3** (suggestion, redaction-marker grammar) — Spec B body-grep patterns might accidentally match redaction-marker output from Spec A's `redactSecrets()` (`[REDACTED:<class>]`). Low-impact noise.
+  - *Suggestion:* Spec B add a one-line note that body-grep patterns are designed not to collide with `[REDACTED:[a-z-]+]` marker grammar.
 
 ## Summary
 
-**Total findings:** 4 suggestions (0 blockers, 0 warnings, 4 suggestions). The 2 rev-2 warnings are resolved; 3 of 6 rev-2 suggestions are also resolved. The 4 carried-forward suggestions (SA-9, SEC-11, CON-8, CON-10) were already classified as defer-to-plan in the rev 2 review.
+**Total findings:** 7 (0 blockers, 2 warnings, 5 suggestions).
+**Action required:** SEC-12 and SEC-13 are real defense-in-depth gaps that the rev-4 amendment introduced. Both are addressable with a single rev-5 amendment — validation contract for numeric fields and charset check for issue/epic. The other findings can defer to plan.
 
-**Verdict:** PASS. Spec is ready for `/adev:plan`.
+The two security warnings are independent of Spec B's findings — closing them at the producer simplifies Spec B's consumer-side validation requirements. Recommended: address SEC-12 and SEC-13 in a rev 5 pass before planning.
 
-### Recommended actions
-
-None blocking. The 4 carried-forward suggestions are appropriate as plan tasks; none require a spec revision.
-
-### Defer-to-plan (acceptable as plan tasks)
-
-- **SA-9** — Payload-schema fixture for upstream version-skew detection (`tests/fixtures/claude-code-payloads/`, validator schema assertion, distinct `payload-error schema-skew` reason code).
-- **SEC-11** — Sentinel-mismatch error case (one row in Error Cases; `validation-error sentinel-mismatch` reason code).
-- **CON-8** — Anchor the conflict-warning channel in Behavior 3.
-- **CON-10** — Stderr reason-code grammar refinement to document the optional subject token.
-
-The spec's behavioral contract is complete and decomposable. `/adev:plan --spec hook-driven-capture.spec.md` will produce a clean task graph.
+Spec A is otherwise structurally sound, internally consistent, and the rev-4 producer/consumer contract is correct on field names, types, and presence semantics.
