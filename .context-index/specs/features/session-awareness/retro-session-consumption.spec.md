@@ -6,7 +6,7 @@ kind: behavioral
 status: review-passed
 risk_level: low
 milestone: 0.28.0
-revision: 1
+revision: 2
 charter-revision: 6
 created: 2026-05-20
 updated: 2026-05-20
@@ -23,12 +23,13 @@ depends-on:
      distribution, per-spec session counts, token/cost trends, sessions ↔
      closed-issues cross-reference, and first-class Context Gaps.
 
-     Depends on `hook-driven-capture.spec.md` for the new SessionEnd file
-     format. Specifically requires a small **rev 4 amendment** to that spec to
-     document optional frontmatter fields written by SessionEnd:
+     Depends on `hook-driven-capture.spec.md` (rev 4/5 landed) for the
+     SessionEnd file format. The optional frontmatter fields written by
+     SessionEnd —
        cost_usd, input_tokens, output_tokens, model, issue, epic
-     Without those fields, behaviors 9 and 11 in this spec degrade to "data
-     absent" (no warning, section omitted).
+     — are now documented in the upstream spec (CON-X4 closed). When a session
+     file omits these fields, behaviors 9 and 11 in this spec degrade to
+     "data absent" (no warning, section omitted).
 
      This spec also closes the documentation drift at skills/init/SKILL.md:761
      which currently claims /adev:retro consumes sessions — true once this
@@ -45,15 +46,19 @@ depends-on:
   - **Post-commit-mode** (legacy): `<YYYY-MM-DD>-<sha>.md` with frontmatter `{ date, type: commit, mode, agent: git-hook, [sha] }`.
 - The target file for the new prose step is `skills/retro/SKILL.md`.
 - `lib/retro/session-activity.mjs` and `lib/retro/session-format.mjs` are new modules added by this spec.
+- The issue board is consumed read-only via `getIssueManager(manifest)` from `lib/issues/registry.mjs`; sessions ↔ closed-issues xref calls `list({ status: "closed", since, until })` against the analysis window. No board mutation.
 
 ### Invariants
 
 - **Graceful absence (charter QA).** When `.context-index/sessions/` is missing, empty, or contains only files outside the analysis window, the `## Session Activity` section is omitted entirely from the retro report. No placeholder text, no warning, no error.
 - **Format tolerance.** Unknown frontmatter shapes are counted toward the total session count for the window but skipped for deeper metric extraction. Retro never warns about "missing data" for unknown-format files.
-- **No raw transcript reading.** Retro consumes only the rendered markdown summary file. It never opens raw Claude Code transcript JSONLs and never fetches from `~/.claude/projects/`. Token/cost values are read from frontmatter verbatim.
+- **No raw transcript reading (SEC-B4).** Retro MUST NOT open any file outside `.context-index/sessions/` and the project's issue board. It never opens raw Claude Code transcript JSONLs and never fetches from `~/.claude/projects/`. Token/cost values are read from frontmatter verbatim. A session body containing `See ~/.ssh/id_rsa for context` cannot cause an accidental read.
 - **Best-effort cross-reference.** When `issue:` or `epic:` is absent from a session file's frontmatter, retro skips the cross-reference for that session rather than fabricating one from body content. Cross-reference is opt-in via upstream frontmatter.
 - **No mutation.** Retro never modifies, deletes, or creates session files. It is strictly a read-only consumer of `.context-index/sessions/`.
 - **Stable section position.** The `## Session Activity` section, when rendered, appears between the existing Data Gathering section (Step 1) and Pattern Analysis section (Step 2) in the retro report — positioned as logical subsection 1.8.
+- **Bounded body scans (SEC-B1).** (1) Body scans use literal `String.prototype.includes()` or non-backtracking regex; backtracking quantifiers (`.+`, `.*`) over body content are forbidden. (2) Session bodies above 5 MB are skipped for metric extraction (counted in total, classified separately). (3) Context Gaps "no matches" / "file not found" / "0 results" patterns must match inside a tool-output frame — a block delimited per the body-scan helper's frame definition.
+- **Issue-id validation (SEC-B2).** `issue` and `epic` frontmatter values are validated against `^[a-z0-9][a-z0-9.-]{0,63}$` AND `parseId(value)` recognition before any board lookup. Charset-mismatch values render the xref row with `(invalid)` annotation. Defense-in-depth — required even though hook-driven-capture rev 5 SEC-13 validates at the producer.
+- **Safe YAML parse (SEC-B3).** YAML frontmatter is parsed in safe-load mode — no custom tags, no functions, no aliases expanded > N times. Frontmatter exceeding 16 KB is skipped and classified `unknown`. If a third-party YAML library is introduced, an ADR is required (Principle 1).
 
 ### Behaviors
 
@@ -65,21 +70,23 @@ depends-on:
 
 4. **When** a session file has frontmatter `{ kind: session-end | pre-compact | placeholder, session_id, date, … }` **then** `classifyFormat(frontmatter)` returns `hook` and the hook-mode extraction path runs against it.
 
+   *CON-X1 note:* `hook` is the classifier's label, not a stored frontmatter value. Hook-mode files store `kind: session-end | pre-compact | placeholder`.
+
 5. **When** a session file has frontmatter `{ date, type: commit, agent: git-hook, … }` **then** `classifyFormat(frontmatter)` returns `post-commit` and the legacy extraction path runs against it.
 
 6. **When** a session file has any other frontmatter shape, malformed YAML, or no frontmatter at all **then** `classifyFormat()` returns `unknown`. The file counts toward the total but no metrics are extracted from it.
 
-7. **When** retro extracts tool-use distribution **then** it parses rendered markdown bodies of **hook-mode** sessions for tool mentions using documented patterns (`### <Tool>` headings, `**Tool:** <name>` lines, or whatever shape `lib/session-summary.mjs::fromTranscript()` produces) and emits a frequency table covering the top 10 tools across the window.
+7. **When** retro extracts tool-use distribution **then** it parses rendered markdown bodies of **hook-mode** sessions for tool mentions using exactly two consumer-pinned patterns: (a) literal `### <Tool>` headings at line start, and (b) literal `**Tool:** <name>` lines at line start (both case-sensitive). The frequency table covers the top 10 tools across the window. Note: per SA-3 path-b, Spec B's parser is decoupled from Spec A's body prose — any future body-shape change in `lib/session-summary.mjs::fromTranscript()` requires an explicit amendment to this behavior, not implicit adoption.
 
 8. **When** retro extracts per-spec session counts **then** it scans each session for spec-path references in two places: (a) the frontmatter `spec:` field if present, (b) the body grepped for `.context-index/specs/.../*.spec.md` substrings. Both contribute; a session referencing two specs counts toward both. The table renders descending by count, ties broken by spec slug ascending; specs with zero sessions in the window are omitted.
 
-9. **When** at least one session file in the window has at least one of the cost frontmatter fields (`cost_usd`, `input_tokens`, `output_tokens`, `model`) **then** the report renders a Cost & Token Trends subsection with: total `cost_usd`, total `input_tokens`, total `output_tokens`, per-model breakdown, per-spec breakdown. Sessions missing any field are excluded from that field's aggregate but still counted in the session-total.
+9. **When** at least one session file with `kind: session-end` in the window has at least one of the cost frontmatter fields (`cost_usd`, `input_tokens`, `output_tokens`, `model`) **then** the report renders a Cost & Token Trends subsection with: total `cost_usd`, total `input_tokens`, total `output_tokens`, per-model breakdown, per-spec breakdown. Sessions missing any field are excluded from that field's aggregate but still counted in the session-total. *XS-2 scope:* pre-compact and placeholder sessions are EXCLUDED from cost/token aggregation; only `kind: session-end` contributes.
 
-10. **When** no session file in the window has any cost frontmatter field **then** the Cost & Token Trends subsection is omitted (no zero-row table, no "data unavailable" note).
+10. **When** no session file with `kind: session-end` in the window has any cost frontmatter field **then** the Cost & Token Trends subsection is omitted (no zero-row table, no "data unavailable" note).
 
-11. **When** at least one session file has `issue:` and/or `epic:` frontmatter **then** retro renders a Sessions ↔ Closed Issues cross-reference table joining session entries against issues closed within the analysis window. Each row: closed issue id, title, list of session_id_short values that touched it.
+11. **When** at least one session file with `kind: session-end` has `issue:` and/or `epic:` frontmatter **then** retro renders a Sessions ↔ Closed Issues cross-reference table joining session entries against issues closed within the analysis window. Each row: closed issue id, title, list of `session_id_short` values that touched it. *XS-2 scope:* pre-compact and placeholder sessions are EXCLUDED from xref aggregation; only `kind: session-end` contributes. *CON-X3:* `session_id_short` is defined as the first 8 hex characters of `session_id`, for display only; the underlying join uses the full `session_id`. *CON-X5:* When the referenced issue id is not present on the board at all, the row renders with `(unknown)` as title and no closed-date column value.
 
-12. **When** the Context Gaps analysis runs **then** it scans **hook-mode** session bodies for documented "no matches" / "file not found" / "0 results" patterns from prior search-tool output, aggregates by the spec the session was touching (frontmatter `spec:` field or grepped body reference), and renders the top 10 spec-gap pairs as ADR / missing-reference candidates. This replaces the conditional placeholder at `skills/retro/SKILL.md:125` ("if session capture is configured").
+12. **When** the Context Gaps analysis runs **then** it scans **hook-mode** session bodies for documented "no matches" / "file not found" / "0 results" patterns from prior search-tool output, aggregates by the spec the session was touching (frontmatter `spec:` field or grepped body reference), and renders the top 10 spec-gap pairs as ADR / missing-reference candidates. *SA-1 placement:* the existing conditional Context Gaps logic at `skills/retro/SKILL.md:125` (currently inside Step 2) is REMOVED; the first-class replacement renders inside § 1.8 in Step 1. The frame-anchored constraint from SEC-B1(3) applies: matches must occur inside a tool-output frame.
 
 13. **When** the retro report is rendered **then** the `## Session Activity` section contains, in this order: (a) total session count + format breakdown line `(hook: N, post-commit: M, unknown: K)`; (b) Tool-Use Distribution (top 10); (c) Per-Spec Session Counts; (d) Cost & Token Trends if applicable; (e) Sessions ↔ Closed Issues if applicable; (f) Context Gaps (top 10).
 
@@ -115,21 +122,25 @@ depends-on:
 
 | Module | Impact | Changes Required |
 |---|---|---|
-| `skills/retro/SKILL.md` | Medium | Add Step 1.8 (Session Activity) between § 1.7 and Step 2. Rewrite the existing Context Gaps section (currently Step 2 line 123, conditional/half-wired) to first-class using the new helper. Update the Output Format section to include Session Activity rendering. |
-| `lib/retro/session-activity.mjs` | High | NEW module. Exposes `gatherSessionActivity(projectRoot, analysisWindow)` returning `{ totalSessions, formatBreakdown, toolUseDistribution, perSpecCounts, costTokens, issueXrefs, contextGaps }`. Glob, filter by date, classify, extract metrics, return structured object. |
+| `skills/retro/SKILL.md` | Medium | (a) Add § 1.8 Session Activity step between § 1.7 and Step 2 (calls CLI verb). (b) DELETE the existing conditional "Context Gaps" subsection from Step 2 — the first-class replacement renders inside § 1.8 (SA-1). (c) Update Output Format to render Session Activity. |
+| `lib/retro/session-activity.mjs` | High | NEW module. Exposes `gatherSessionActivity(projectRoot, analysisWindow, opts?)` returning `{ totalSessions, formatBreakdown, toolUseDistribution, perSpecCounts, costTokens, issueXrefs, contextGaps }`. Glob, filter by date, classify, dispatch to sub-helpers, assemble return object. Owns the format-breakdown line composition (SA-2: format-breakdown stays in the orchestrator core, not delegated to a sub-helper). |
 | `lib/retro/session-format.mjs` | Medium | NEW module. Exposes `classifyFormat(frontmatter)` returning one of `hook | post-commit | unknown`. Pure function — frontmatter in, classification out. |
-| `lib/retro/session-metrics/` (helpers) | Medium | NEW sub-helpers: tool-use parser, per-spec counter, cost aggregator, issue/epic xref, context-gaps scanner. One file each or one rollup file. Plan decides shape. |
+| `lib/retro/session-metrics.mjs` (single rollup file) | Medium | NEW. One module exporting all sub-helpers as named exports: `parseToolUseDistribution`, `countPerSpec`, `aggregateCostTokens`, `joinClosedIssueXref`, `scanContextGaps` (SA-2 — single file, not a directory). |
+| `lib/retro/body-scan.mjs` | Medium | NEW. Bounded body-scan helpers (5 MB cap, `String.prototype.includes()` scanning, frame-anchored gap matcher). Defense-in-depth for SEC-B1. |
+| `lib/retro/safe-frontmatter.mjs` | Medium | NEW. YAML safe-load wrapper around `lib/meta-tools.mjs::parseFrontmatter` with 16 KB size cap and anchor/alias/custom-tag rejection. Defense-in-depth for SEC-B3. |
+| `lib/retro/issue-id-validation.mjs` | Low | NEW. `validateIssueId(value)` returning `{ ok, normalized, reason }`. Charset `^[a-z0-9][a-z0-9.-]{0,63}$` AND `parseId()` recognition. Defense-in-depth for SEC-B2. |
+| `lib/issues/registry.mjs` | None (read-only consumer) | Consumed via `getIssueManager(manifest)` + `list({ status: "closed", since, until })` by `joinClosedIssueXref()`. No edits. |
 | `skills/init/SKILL.md` | Low | Line 761 documentation drift fix: update wording so the (now-accurate) claim about `/adev:retro` session consumption points at the Session Activity step. |
 | `tests/lib/retro-session-activity.test.mjs` | High | NEW. Cover empty dir, hook-only window, post-commit-only window, mixed-format window, unknown-format files, malformed frontmatter, cost aggregation (with and without fields), issue xref (with and without fields), context-gaps extraction. |
 | `tests/lib/retro-session-format.test.mjs` | Low | NEW. Direct unit test of `classifyFormat()` over a matrix of frontmatter shapes including malformed cases. |
 | `tests/skills/retro-session-section.test.mjs` | Medium | NEW end-to-end. Run retro against a fixture project with deterministic session files; snapshot-assert the rendered Session Activity output shape (counts, ordering, omissions). |
-| `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md` | Low (upstream amendment) | **Dependency, not owned by this spec.** Must reach **rev 4** documenting that SessionEnd writes optional frontmatter fields `cost_usd`, `input_tokens`, `output_tokens`, `model`, `issue`, `epic`. Sources: cost/tokens from the Claude Code transcript JSONL final usage block; issue/epic from `.context-index/.execution-state.json` at SessionEnd time. Without the amendment, behaviors 9 and 11 in this spec degrade silently to "section omitted." This dependency is filed as the upstream's rev-4 task list addition; see `Actionable Task Map` row 1 below. |
+| `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md` | None (upstream landed) | **Dependency satisfied (CON-X4).** Optional SessionEnd frontmatter fields `cost_usd`, `input_tokens`, `output_tokens`, `model`, `issue`, `epic` are documented in **hook-driven-capture rev 4/5**. Sources: cost/tokens from the Claude Code transcript JSONL final usage block; issue/epic from `.context-index/.execution-state.json` at SessionEnd time. Read-only reference here. |
 
 ## Actionable Task Map
 
 | Task | Description | Complexity |
 |---|---|---|
-| Upstream amendment (rev 4 of hook-driven-capture) | Bump hook-driven-capture spec to rev 4 adding optional `cost_usd, input_tokens, output_tokens, model, issue, epic` SessionEnd frontmatter fields. Add one plan task to its existing 22-task plan: "Populate optional frontmatter fields from transcript-usage block + .execution-state.json at SessionEnd write time." Re-run `/adev:review-specs` on the amended spec. | small |
+| ~~Upstream amendment (rev 4 of hook-driven-capture)~~ — **landed in hook-driven-capture rev 4/5** (CON-X4 closed) | Read-only dependency. Optional SessionEnd frontmatter fields are documented upstream and validated at the producer (SEC-12/SEC-13). | n/a |
 | `classifyFormat()` helper | New `lib/retro/session-format.mjs`. Pure function over parsed frontmatter. Tests for hook / post-commit / unknown / malformed. | small |
 | `gatherSessionActivity()` core | New `lib/retro/session-activity.mjs`. Orchestrates glob, date-window filter, classify, dispatch to sub-helpers, assemble return object. | medium |
 | Tool-use distribution parser | Sub-helper. Parses rendered markdown bodies of hook-mode sessions for tool mentions; verify against the actual shape `fromTranscript()` produces. | small |
