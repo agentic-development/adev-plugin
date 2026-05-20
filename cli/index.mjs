@@ -1305,6 +1305,17 @@ const VERB_REGISTRY = new Map([
   ["upgrade",   () => ({ run: () => cmdUpgrade(),                help: () => cmdHelp() })],
   ["uninstall", () => ({ run: () => cmdUninstall(),              help: () => cmdHelp() })],
   ["init",      () => ({ run: async () => {
+                          // Sub-verb: `adev init prompt session-capture` delegates to the
+                          // init-prompt-session-capture module (SA-5). This keeps the
+                          // skills/init/SKILL.md prose readable as a 3-token verb while
+                          // the dispatcher remains a single-token registry.
+                          const sub = process.argv[3];
+                          if (sub === "prompt" && process.argv[4] === "session-capture") {
+                            const mod = await import("../lib/cli/init-prompt-session-capture.mjs");
+                            const projectRoot = process.cwd();
+                            await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
+                            return;
+                          }
                           warn("`init` is deprecated. Use `install` (first-time) or `upgrade` (existing).");
                           console.log();
                           const state = detectProjectState();
