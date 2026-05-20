@@ -254,3 +254,11 @@ hygiene:
       # Both modifications are advisory metadata, not content drift.
       - "6d8863318039a6ab7bed383559ce7cccdb90fd73"
       - "70c3ca3549d5889723c7b501df0279e432aca12b"
+      # agent-reliable-state-artifacts/orphan-lock-cleanup: two
+      # milestone-rename commits modified the plan's `Milestone:`
+      # line after first plan_task pending event; subsequent revert
+      # restored the plan to its first-pending state. Bookkeeping,
+      # not content drift.
+      - "975f3acbddce92a857c296ef2a2ec93db2cf7d08"
+      - "bad36e09824693d0fd183fcf46f11d2b4103fff1"
+      - "c9a6c94fdcc22a22065985ad5b0f154a93ef7764"
