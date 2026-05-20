@@ -6,7 +6,7 @@ kind: behavioral
 status: review-passed
 risk_level: medium
 milestone: 0.28.0
-revision: 4
+revision: 5
 charter-revision: 6
 created: 2026-05-20
 updated: 2026-05-20
@@ -60,7 +60,19 @@ supersedes:
      hook scripts themselves; the new fields are populated inside the
      existing Node helper invoked by Task 5 (shared hook helper) and
      Task 6 (fromTranscript), so the existing 22-task plan absorbs the
-     work without adding a new plan task. -->
+     work without adding a new plan task.
+
+     Rev 5 closes the two security warnings (SEC-12, SEC-13) raised in the
+     rev 4 paired review against retro-session-consumption rev 1. The rev 4
+     optional-frontmatter contract is tightened with explicit producer-side
+     validation: numeric fields are range/finite-checked; string fields are
+     charset/length-bounded. Validation failure on any individual field
+     omits that field from frontmatter (consistent with rev 4's
+     skip-on-malformed posture) and emits a stable stderr diagnostic with
+     a new `validation-error <field>` reason code. Required keys
+     (`kind`, `session_id`, `date`) are unaffected by per-field validation
+     failures. Closes the producer/consumer trust-boundary asymmetry (XS-1)
+     at the producer end. -->
 
 ## Behavioral Contract
 
@@ -103,7 +115,12 @@ supersedes:
 - **No silent migration.** Existing projects (detection signals present) default to `post-commit, gitignored: false` in the init prompt. The user must explicitly opt in to `hook` mode. The installer does not auto-rewrite existing project configs.
 - **Paired-marker idempotency (SA-3, SEC-5).** Installer-managed regions in `.githooks/post-commit` and `.gitignore` are delimited by paired sentinels: `# >>> adev:session-capture >>>` … `# <<< adev:session-capture <<<` for post-commit; `# >>> adev:session-capture-gitignore >>>` … `# <<< adev:session-capture-gitignore <<<` for `.gitignore`. The installer reads, writes, and removes content strictly between matched markers. User-authored content outside the markers is never touched. If sentinels are absent on a project that has the legacy capture (pre-rev-2), the installer prints a manual-migration instruction and does not guess at boundaries.
 - **Stderr diagnostic format (SEC-7).** Hook stderr lines have the shape `[adev:session-capture] <reason-code> <project-relative-path?>` where `<reason-code>` is one of `parse-error`, `path-error`, `permission-error`, `payload-error`, `validation-error`, or `disabled`. No interpolated user content; no absolute paths beyond a project-relative output filename when one is referenced.
-- **Optional SessionEnd frontmatter (rev 4 — for retro consumption).** When `fromTranscript()` succeeds, it MAY emit additional frontmatter keys derived from the transcript's usage blocks: `cost_usd: <float>` (sum across assistant turns), `input_tokens: <int>`, `output_tokens: <int>`, `model: <string>` (most-frequent model across turns; ties broken by last-used). When `.context-index/.execution-state.json` exists and has `status: "active"` with a non-empty `issueBinding`, the shared hook helper MAY also emit `issue: <issue-id>` (from `issueBinding`) and `epic: <epic-id>` (resolved from the issue's `epicId` on the issue board, when present). All six fields are strictly optional — absent fields are not errors at the producer side, and downstream consumers (retro) tolerate absence per their own contract. Field absence reasons documented in Error Cases.
+- **Optional SessionEnd frontmatter (rev 4 — for retro consumption; rev 5 adds producer-side validation).** When `fromTranscript()` succeeds, it MAY emit additional frontmatter keys derived from the transcript's usage blocks: `cost_usd: <float>` (sum across assistant turns), `input_tokens: <int>`, `output_tokens: <int>`, `model: <string>` (most-frequent model across turns; ties broken by last-used). When `.context-index/.execution-state.json` exists and has `status: "active"` with a non-empty `issueBinding`, the shared hook helper MAY also emit `issue: <issue-id>` (from `issueBinding`) and `epic: <epic-id>` (resolved from the issue's `epicId` on the issue board, when present). All six fields are strictly optional — absent fields are not errors at the producer side, and downstream consumers (retro) tolerate absence per their own contract. Field absence reasons documented in Error Cases.
+- **Optional-field validation contract (SEC-12, SEC-13).** Before persisting any optional field into SessionEnd frontmatter, the producer validates it per-field. On validation failure for any individual field, the field is OMITTED (not written with a sentinel; not replaced with placeholder; not skipped entirely). Other valid fields still write. Required keys (`kind`, `session_id`, `date`) are unaffected. Each rejection emits one stderr line `[adev:session-capture] validation-error <field>` per the *Stderr diagnostic format* invariant (`<field>` extends the documented subject token enumeration with `cost-usd`, `input-tokens`, `output-tokens`, `model`, `issue-id`, `epic-id`). The per-field validation rules are:
+  - `cost_usd` — accept iff `Number.isFinite(v) && v >= 0 && v < 1e6`. Persist at fixed precision (4 decimal places, e.g. `0.0500`). Reject `NaN`, `Infinity`, negative, ≥ 1 000 000, non-numeric.
+  - `input_tokens` / `output_tokens` — accept iff `Number.isInteger(v) && v >= 0 && v < 1e9`. Reject non-integer, negative, ≥ 1 000 000 000, non-numeric.
+  - `model` — accept iff value matches `^[A-Za-z0-9._-]{1,64}$`. Reject empty, > 64 chars, or any character outside the documented class. This caps both length (YAML-injection vector mitigation) and charset (prevents control-character or quote injection into rendered YAML).
+  - `issue` / `epic` — accept iff value matches `^[a-z0-9][a-z0-9.-]{0,63}$` AND `parseId(value)` from `lib/issues/id-utils.mjs` returns non-null. The charset bound and parser-validation pair prevents path-traversal payloads (`../`), YAML-injection sequences, and unbounded strings from reaching the consumer.
 
 ### Behaviors
 
@@ -172,6 +189,11 @@ supersedes:
 | `.context-index/.execution-state.json` missing or `status: idle` (rev 4) | `issue` and `epic` are omitted from SessionEnd frontmatter; required keys still written; no error |
 | `.execution-state.json` has `issueBinding` but the referenced issue has no parent `epicId` (rev 4) | `issue` is written; `epic` is omitted; no error |
 | `.execution-state.json` references an issue id that is not present on the issue board (rev 4) | `issue` field is written with the recorded id; `epic` omitted; downstream retro renders the row with `(unknown)` annotation per its own contract |
+| `cost_usd` derived from transcript is non-finite, negative, ≥ 1e6, or non-numeric (rev 5 / SEC-12) | Field omitted from frontmatter; stderr `[adev:session-capture] validation-error cost-usd`; other valid optional fields still write |
+| `input_tokens` or `output_tokens` is non-integer, negative, ≥ 1e9, or non-numeric (rev 5 / SEC-12) | Field omitted; stderr `[adev:session-capture] validation-error input-tokens` (or `output-tokens`); other valid fields still write |
+| `model` from transcript is empty, > 64 chars, or contains characters outside `[A-Za-z0-9._-]` (rev 5 / SEC-12) | Field omitted; stderr `[adev:session-capture] validation-error model`; other valid fields still write |
+| `issueBinding` from execution-state contains a value that fails `^[a-z0-9][a-z0-9.-]{0,63}$` OR `parseId()` returns null (rev 5 / SEC-13) | `issue` field omitted; `epic` also omitted (cannot resolve without a valid issue); stderr `[adev:session-capture] validation-error issue-id`; required keys still write |
+| `epicId` resolved from the board fails the same charset/`parseId()` check (rev 5 / SEC-13) | `epic` field omitted; `issue` still written if it passed; stderr `[adev:session-capture] validation-error epic-id` |
 
 ## System Constitution Reference
 
@@ -267,3 +289,9 @@ supersedes:
 - [ ] (Rev 4) When `.context-index/.execution-state.json` has `status: "active"` with a non-empty `issueBinding`, SessionEnd writes optional `issue:` (from `issueBinding`) and `epic:` (from the issue's `epicId` on the board, when present) frontmatter fields.
 - [ ] (Rev 4) Malformed usage data, malformed execution-state, or missing source files do not block the SessionEnd write — required keys are always present, and only the optional fields whose source data was unavailable are omitted.
 - [ ] (Rev 4) Tests cover each optional field's presence-and-absence path independently, including the `issueBinding present but epic absent` and `transcript usage blocks malformed` cases.
+- [ ] (Rev 5 / SEC-12) `cost_usd` validation: accept iff `Number.isFinite(v) && v >= 0 && v < 1e6`. Rejects NaN, Infinity, negative, ≥ 1e6, non-numeric. Persisted at fixed precision (4 decimal places). Field omitted on rejection, stderr emits `validation-error cost-usd`.
+- [ ] (Rev 5 / SEC-12) `input_tokens` / `output_tokens` validation: accept iff `Number.isInteger(v) && v >= 0 && v < 1e9`. Field omitted on rejection with stderr `validation-error input-tokens` / `validation-error output-tokens`.
+- [ ] (Rev 5 / SEC-12) `model` validation: accept iff value matches `^[A-Za-z0-9._-]{1,64}$`. Rejects empty, > 64 chars, control chars, YAML-special chars. Field omitted on rejection with stderr `validation-error model`.
+- [ ] (Rev 5 / SEC-13) `issue` / `epic` validation: accept iff value matches `^[a-z0-9][a-z0-9.-]{0,63}$` AND `parseId(value)` from `lib/issues/id-utils.mjs` returns non-null. Path-traversal payloads (`../`), YAML-injection, unbounded strings all rejected. Field omitted on rejection with stderr `validation-error issue-id` / `validation-error epic-id`.
+- [ ] (Rev 5) When `issue` fails validation, `epic` is also omitted (cannot resolve epic without valid issue). When only `epic` fails, `issue` still writes.
+- [ ] (Rev 5) Tests cover each validation rejection independently — for each field, exercise at least one failing input and verify (a) the field is omitted, (b) other valid optional fields still write, (c) required keys (`kind`, `session_id`, `date`) still write, (d) the documented stderr diagnostic is emitted with the correct subject token.
