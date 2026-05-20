@@ -216,6 +216,12 @@ repomap:
 
 integrations:
   session_capture:
+    # provider: native      — captures session events via the native plugin (no third-party SDK)
+    # capture: hook         — drives capture from Claude Code SessionEnd + PreCompact hooks (recommended for new projects)
+    # capture: post-commit  — legacy back-compat path: capture fires from .githooks/post-commit
+    # capture: off          — capture disabled; no hooks register, no files write
+    # gitignored: true|false — when true, installer maintains a paired-marker block in .gitignore
+    #                         covering .context-index/sessions/ (default true for new projects)
     provider: native
 
 hygiene:
