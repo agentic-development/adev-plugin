@@ -70,9 +70,29 @@ A context-preflight hook will warn if you edit source code without reading `.con
 
 ## Skill Invocation Rule
 
-If any `/adev:*` skill applies to the current task, invoke it before proceeding. Even a 1% chance it applies means you should check. The skill can always be skipped if it turns out to be irrelevant.
+**Before doing ANY work — code, documentation, configuration, refactoring, content authoring, or file creation — check whether an `/adev:*` skill applies.** If there is even a 1% chance a skill applies, invoke it. The skill can always exit early if irrelevant; skipping it cannot be undone.
 
-Bug fixes are the most common case where agents skip skills. A "simple" fix without context risks violating spec assumptions or missing the root cause entirely.
+**This is a hard gate, not a suggestion.** Do not create files, write code, launch research agents, or build task lists until you have either invoked the matching skill or confirmed no skill applies.
+
+### Common bypass patterns to catch yourself on
+
+| Rationalization | Why it's wrong |
+|---|---|
+| "This isn't code, it's just docs/config/content" | Non-code deliverables have scope, audience, and quality attributes — they need a charter too |
+| "It's a simple/quick fix" | Simple fixes without context risk violating spec assumptions or missing root cause |
+| "I'll use TaskCreate to plan instead" | Session tasks are progress tracking, not lifecycle planning — they don't replace `/adev:plan` |
+| "Let me research first, then decide" | Research without a skill means you're already executing without governance |
+| "The skill seems heavyweight for this" | Skills scale to complexity — a small feature gets a small charter |
+
+### Routing quick-reference
+
+| Work type | Skill |
+|---|---|
+| New feature, capability, or deliverable | `/adev:brainstorm` |
+| Bug fix or unexpected behavior | `/adev:debug` |
+| Unclear what to do | `/adev:work` |
+| Existing plan needs execution | `/adev:implement` |
+| Quality check after implementation | `/adev:validate` |
 
 ## Persona Output Override
 

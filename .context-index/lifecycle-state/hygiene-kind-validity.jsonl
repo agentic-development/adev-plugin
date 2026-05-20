@@ -38,3 +38,5 @@
 {"event":"validator_report","step":"validate","validator":"check-12-lifecycle","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":0,"ts":"2026-05-15T17:01:25.421Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T17:02:13.957Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T17:02:34.583Z"}
+{"event":"code_drift_detected","drift_source":"skills/hygiene/SKILL.md","drift_at":"2026-05-16T02:20:26.515Z","ts":"2026-05-18T13:48:57.238Z"}
+{"event":"code_drift_detected","drift_source":"skills/hygiene/SKILL.md","drift_at":"2026-05-18T13:54:22.144Z","ts":"2026-05-18T13:54:22.144Z"}

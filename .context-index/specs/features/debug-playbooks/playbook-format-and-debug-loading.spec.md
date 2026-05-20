@@ -18,8 +18,6 @@ source-manifest:
     - tests/templates/debug-playbook-template.test.mjs
   computed-at: "2026-04-24T23:00:36.167Z"
 drift_detected: true
-drift_source: skills/debug/SKILL.md
-drift_at: 2026-05-16T01:01:48.867Z
 ---
 
 ## Behavioral Contract

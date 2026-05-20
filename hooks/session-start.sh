@@ -50,7 +50,7 @@ SKILL_CONTENT=$(cat "$SKILL_FILE")
 RESUME_BLOCK=""
 RESUME_BLOCK=$(ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" ADEV_EXECUTION_STATE_MODE=resume-block node "$PLUGIN_ROOT/hooks/_execution-state.mjs" 2>/dev/null || true)
 
-# Resolve persona and load directive
+# Resolve persona + verbosity and load combined directive
 PERSONA_BLOCK=""
 PERSONA_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROOT:-}" node -e '
   const fs = require("fs");
@@ -60,6 +60,16 @@ PERSONA_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROO
     const pluginRoot = process.env.ADEV_PLUGIN_ROOT || ".";
     const contextRoot = process.env.ADEV_CONTEXT_ROOT || process.cwd();
     const templatesDir = path.join(pluginRoot, "templates", "personas");
+    const verbosityDir = path.join(pluginRoot, "templates", "verbosity");
+
+    const VERBOSITY_ENUM = ["terse", "normal", "deep"];
+    const VERBOSITY_DEFAULTS = { architect: "normal", developer: "normal", product: "terse" };
+
+    function isValidVerbosity(v) {
+      if (typeof v !== "string" || !v) return false;
+      if (/[\/\\]|\.\./.test(v)) return false;
+      return VERBOSITY_ENUM.includes(v);
+    }
 
     function parseConfig(filePath) {
       try {
@@ -70,7 +80,11 @@ PERSONA_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROO
           if (!trimmed || trimmed.startsWith("#")) continue;
           const idx = trimmed.indexOf("=");
           if (idx === -1) continue;
-          config[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+          const key = trimmed.slice(0, idx).trim();
+          const value = trimmed.slice(idx + 1).trim();
+          // Parse-time validation for verbosity key (defense in depth)
+          if (key === "verbosity" && !isValidVerbosity(value)) continue;
+          config[key] = value;
         }
         return config;
       } catch { return {}; }
@@ -81,21 +95,45 @@ PERSONA_BLOCK=$(ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_CONTEXT_ROOT="${CONTEXT_ROO
 
     let persona = localConfig.persona || globalConfig.persona || "developer";
 
-    // Validate: reject path separators
+    // Validate persona: reject path separators
     if (/[\/\\]|\.\./.test(persona)) persona = "developer";
 
-    // Validate: check against actual templates
+    // Validate persona: check against actual templates
     if (!fs.existsSync(templatesDir)) process.exit(0);
     const available = fs.readdirSync(templatesDir)
       .filter(f => f.endsWith(".md"))
       .map(f => f.slice(0, -3));
     if (!available.includes(persona)) persona = "developer";
 
-    // Load directive
+    // Load persona directive
     const directivePath = path.join(templatesDir, persona + ".md");
     if (!fs.existsSync(directivePath)) process.exit(0);
     const directive = fs.readFileSync(directivePath, "utf-8");
-    console.log(directive);
+
+    // Resolve verbosity: local > global > per-persona default
+    let verbosity = null;
+    if (isValidVerbosity(localConfig.verbosity)) verbosity = localConfig.verbosity;
+    else if (isValidVerbosity(globalConfig.verbosity)) verbosity = globalConfig.verbosity;
+    if (!verbosity) verbosity = VERBOSITY_DEFAULTS[persona] || "normal";
+
+    // Load verbosity overlay (degrade-and-continue per SEC-4)
+    let overlay = "";
+    if (fs.existsSync(verbosityDir)) {
+      const overlayPath = path.join(verbosityDir, verbosity + ".md");
+      if (fs.existsSync(overlayPath)) {
+        try { overlay = fs.readFileSync(overlayPath, "utf-8"); } catch {}
+      } else if (verbosity !== "normal") {
+        // Fall back to normal.md
+        const fallbackPath = path.join(verbosityDir, "normal.md");
+        if (fs.existsSync(fallbackPath)) {
+          try { overlay = fs.readFileSync(fallbackPath, "utf-8"); } catch {}
+        }
+      }
+    }
+
+    // Concatenate: persona directive, blank line, verbosity overlay
+    const combined = overlay ? directive + "\n\n" + overlay : directive;
+    console.log(combined);
   } catch { process.exit(0); }
 ' 2>/dev/null || true)
 

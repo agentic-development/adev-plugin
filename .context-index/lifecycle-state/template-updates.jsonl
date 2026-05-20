@@ -1,0 +1,9 @@
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-16T01:37:53.392Z","ts":"2026-05-18T13:50:21.109Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".githooks/post-commit","drift_at":"2026-05-19T12:43:51.844Z","ts":"2026-05-19T12:43:51.845Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:29.062Z","ts":"2026-05-20T02:39:29.062Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:35.040Z","ts":"2026-05-20T02:39:35.040Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:40:46.391Z","ts":"2026-05-20T02:40:46.391Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T03:59:47.621Z","ts":"2026-05-20T03:59:47.621Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.039Z","ts":"2026-05-20T01:26:28.039Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.773Z","ts":"2026-05-20T01:27:38.773Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.353Z","ts":"2026-05-20T12:58:34.353Z","diagnostic_warnings":["adev/frontmatter-present"]}

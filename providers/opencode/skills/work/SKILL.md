@@ -28,11 +28,13 @@ Stop processing. No other steps run.
 
 Scan for in-progress work using **parallel** tool calls in a single round:
 
-1. **Incomplete plans:** Glob for `.context-index/specs/features/*/*.plan.md`. For each plan found, grep for `- [ ]` (unchecked tasks) and `- [x]` (checked tasks) to compute progress (e.g., "3/7 tasks complete").
+1. **In-progress execution state:** Call `readExecutionState(projectRoot)` from `<ADEV_ROOT>/lib/execution-state.mjs`. If `status === "active"` or `status === "blocked"`, the project has resumable work — surface the `planRef`, `currentTask`, and any `blockers` to the user.
 
-2. **Unreviewed specs:** Glob for `.context-index/specs/features/**/*.md`. Exclude files matching `charter.md`, `*.review.md`, and `*.plan.md`. For each remaining spec, check if a sibling `.review.md` exists (same base name with `.review.md` suffix). Specs without a review file are "unreviewed."
+2. **Plan task projection:** For each plan referenced by an existing lifecycle log, call `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` and inspect `state.planTasks`. Tasks with `status === "pending"` or `status === "in_progress"` are open. **Do not grep plan files for `- [ ]` checkboxes** — the plan file is read-only after authoring; canonical task status lives in the lifecycle log. (Plan-task channel ownership is defined in `plan-task-events.spec.md`; redirect plan-task work to `/adev:implement`, which is the only writer.)
 
-3. **Recent sessions:** Glob for `.context-index/sessions/*.md`. Read the 3 most recent files (sorted by filename date prefix, descending). Extract the session summary line.
+3. **Pipeline status overview:** Call `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` to aggregate per-spec lifecycle states across the project. Specs whose `currentStep` is `specify` with `status: "completed"` but no `review` step are "unreviewed."
+
+4. **Recent sessions:** Glob for `.context-index/sessions/*.md`. Read the 3 most recent files (sorted by filename date prefix, descending). Extract the session summary line.
 
 ### If in-progress work is found
 
@@ -101,7 +103,7 @@ Before proposing a route, check whether the state scan (Step 1) should override 
 
    > Module **X** has an active plan with incomplete tasks. Routing to `/adev:implement` to continue the plan.
 
-2. **Gate warning:** If the user says "plan X" but specs for module X have not passed review (no `.review.md` or review verdict is BLOCK), warn:
+2. **Gate warning:** If the user says "plan X" but the lifecycle projection shows specs for module X have not passed review (`state.steps.review` missing or `verdict: BLOCK`), warn:
 
    > Specs for **X** haven't been reviewed yet. Want to run `/adev:review-specs` first, or proceed to planning anyway?
 
@@ -192,7 +194,7 @@ When `--intake "<description>"` is provided (or the user provides a description 
    >
    > Create this issue? (yes / edit / cancel)
 
-5. On confirmation, create the issue via the configured adapter
+5. On confirmation, create the issue via the issue manager: `getIssueManager(manifest).create({ title, type, priority, epicId })`.
 6. Report: "Created `<id>`: <title> (type: <type>, priority: <N>, epic: <epic-id or Unassigned>)"
 
 When `--intake` is provided without a description, prompt the user interactively:
@@ -232,4 +234,22 @@ When `--intake --file <path>` is provided:
 - **Propose, don't assume.** Always present a route proposal and wait for confirmation before invoking a skill.
 - **State-aware.** Let project state refine or override keyword classification.
 - **Fast path for clear cases.** If the intent is obvious, propose immediately — no unnecessary questions.
-- **Graceful degradation.** If state scan files are missing or malformed, skip them and continue. The skill works even with an empty `.context-index/`.
+- **Graceful degradation.** If state scan or projection reads fail, skip them and continue. The skill works even with an empty `.context-index/`.
+- **Plan-task channel:** plan-task state is owned by the lifecycle event log (`reportPlanTask`). This skill **reads** `state.planTasks` but never writes — that work belongs to `/adev:implement`. See `plan-task-events.spec.md`.
+
+## API reference
+
+Execution state and lifecycle projection:
+
+- `readExecutionState(projectRoot)` from `<ADEV_ROOT>/lib/execution-state.mjs` — reads `.context-index/.execution-state.json`. Do not hand-parse.
+- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — returns `{ status, currentStep, currentTask, steps, planTasks, interventions, ... }` for a single spec.
+- `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregates per-spec lifecycle state across the project (read-only directory walk over `.context-index/lifecycle-state/*.jsonl`).
+
+Issue board:
+
+- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active issue adapter (json / file / beads).
+- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`. Intake mode (Step 6) calls `create()` per request.
+
+Manifest:
+
+- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.

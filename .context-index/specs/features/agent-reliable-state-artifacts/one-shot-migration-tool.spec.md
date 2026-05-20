@@ -27,8 +27,6 @@ source-manifest:
     - tests/lib/migrate-state-artifacts.test.mjs
   computed-at: "2026-05-12T03:09:20.310Z"
 drift_detected: true
-drift_source: cli/index.mjs
-drift_at: 2026-05-16T01:37:53.390Z
 ---
 
 ## Behavioral Contract

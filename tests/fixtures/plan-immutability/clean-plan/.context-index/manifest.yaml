@@ -1,0 +1,12 @@
+project:
+  name: "plan-immutability-clean-plan-fixture"
+  adev_version: "0.27.0"
+tasks:
+  backend: json
+hygiene:
+  plan_immutability:
+    # Exempt the JSON sidecar migration commit (4d389a1) that updated the
+    # fixture body comment from ".routing.md" to ".routing.json".
+    # Documentation-only edit; the fixture's content semantics are unchanged.
+    exempt_commits:
+      - "4d389a114bd8a00c66353afc92f623cbad5f8351"

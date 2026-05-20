@@ -63,9 +63,34 @@ If the CLI call fails, fall back to reading each file individually.
 7. **Boundary rules:** If `.context-index/governance/boundaries.yaml` exists, read it.
    Pass boundary rules to implementer subagents as additional constraints in prompt section 2
    (alongside constitution excerpt). If it does not exist, skip.
-8. **Routing tags:** If tasks have routing annotations (from `/adev:route`), read them.
-   Adjust execution strategy per task based on `auto-agent`, `assisted-agent`, or `human-only` tags.
-   If no routing tags exist, treat all tasks as `auto-agent` (default behavior).
+8. **Routing decisions:** Routing decisions for each task live in the
+   sibling sidecar file `<plan-stem>.routing.json`, written by `/adev:route`.
+   The plan markdown body is NOT a source of routing state — `**Routing:**`
+   blocks in the plan body are forbidden by CON-8 and ignored by this skill
+   (and flagged by `lib/plan-immutability.mjs` as
+   `PLAN_MUTATED_WITHOUT_SIDECAR`).
+
+   For each task, resolve routing via the CLI verb at dispatch time
+   (Step 2a — Context Packet Assembly):
+
+   ```bash
+   adev implement read-routing --plan <plan-path> --task-id <task-id> [--agents-allowlist <csv>]
+   ```
+
+   The verb prints the routing entry as JSON on stdout on success. On
+   failure, it exits non-zero and writes a typed error code to stderr.
+   Handle each error code as follows:
+
+   | Exit | Code                       | Action                                                                                |
+   |------|----------------------------|---------------------------------------------------------------------------------------|
+   | 0    | (success)                  | Parse JSON; dispatch using `selected_agent`                                           |
+   | 2    | `ROUTING_SIDECAR_MISSING`  | Stop the skill. Instruct the operator to run `/adev:route --plan <path>` and re-invoke `/adev:implement`. Do NOT silently fall back to inline parsing or default routing. |
+   | 3    | `ROUTING_ENTRY_MISSING`    | Stop for this task. Instruct the operator to re-run `/adev:route` (plan grew tasks since the last route) and re-invoke `/adev:implement --task <N>`.                     |
+   | 4    | `ROUTING_AGENT_INVALID`    | Stop for this task. The sidecar names an agent slug not in the allowlist (passed via `--agents-allowlist`). Instruct the operator to re-run `/adev:route` after fixing manifest specialists.                              |
+   | 1    | `INVALID_PLAN_PATH`        | Argument bug — surface immediately; do not retry.                                     |
+
+   If the sidecar is absent entirely, no fallback to inline parsing or
+   default routing is permitted. The skill stops and surfaces the error.
 9. **Completion policy:** Read `completion.merge_policy` from manifest.yaml (default: "pr").
    Read `completion.protected_branches` (default: ["main", "master"]).
 10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
@@ -505,8 +530,9 @@ After both reviews pass, if `governance/gates.yaml` exists:
 After both reviews pass:
 1. Emit a `plan_task` `done` event: `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.
 2. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).
-3. Record: specialist used (or "generic"), review cycles needed, concerns noted.
-4. Move to the next task.
+3. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
+4. Record: specialist used (or "generic"), review cycles needed, concerns noted.
+5. Move to the next task.
 
 ### Step 2-post: Integration Gate
 
@@ -622,7 +648,12 @@ After all tasks are complete and before reporting completion:
        - tests/feature.test.mjs
      computed-at: "2026-04-01T10:00:00.000Z"
    ```
-5. Write the spec file back
+5. Write the spec file back.
+
+   **Incremental authoring for source-manifest stamping (`.partial` pattern):** When the spec file is non-trivial (~ 2 KB or larger, which is the common case for any reviewed Live Spec), the frontmatter rewrite MUST follow the `.partial` + atomic-rename protocol from `incremental-artifact-writes.spec.md`. Write the updated spec body to `<spec-path>.partial` with a `partial_schema: implement@1` marker in the first authored chunk (the chunk that carries the new frontmatter), then atomically rename to `<spec-path>` once the write completes. Use the existing artifact-commit CLI verb (`adev artifact commit ...`) which already implements the `.tmp` byte-level atomic-rename idiom — the `.partial` layer applies when the rewrite is performed by an agent over multiple Write calls rather than a single fs operation. On a mid-rewrite crash, the next `/adev:implement` invocation detects the partial and resumes.
+
+   **Runaway-write guard:** Before each Write to the spec's `.partial`, run `adev partial check-size --artifact <spec-path>` to verify the in-progress rewrite has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior spec size, 50 KB)). Exit code 2 with `PARTIAL_ARTIFACT_OVERSIZE` is a hard stop: do NOT continue rewriting, do NOT commit the rename, surface the error to the user. Protects against retry loops re-writing prior chunks.
+
 6. **Clear drift flag:** After re-stamping the source manifest, clear any drift flag on the spec:
    ```javascript
    const { clearDrift } = await import('<ADEV_ROOT>/lib/spec-drift.mjs');

@@ -31,8 +31,6 @@ source-manifest:
     - tests/lib/lifecycle-state.test.mjs
   computed-at: "2026-05-14T21:41:53.147Z"
 drift_detected: true
-drift_source: tests/lib/lifecycle-state.test.mjs
-drift_at: 2026-05-17T19:39:56.832Z
 ---
 
 > **Rev 2 amendment (2026-05-14):** Updated illustrative diagnostic IDs to match `diagnostic-registry.spec.md` rev 2. The example previously used `adev/lifecycle-prerequisite-met`, which was dropped from the Tier-1 producer set in `diagnostic-registry` rev 2 (lifecycle step-order is now enforced by `requireGate`, not by a diagnostic). Examples now use `adev/event-schema-valid` (a real Tier-1 producer). Behavior contracts are unchanged; this is a documentation alignment, not a contract change. Status returned to `review-pending` because cross-spec example payloads changed.

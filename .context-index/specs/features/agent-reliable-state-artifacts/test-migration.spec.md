@@ -22,6 +22,7 @@ source-manifest:
     - tests/lib/issues/json-adapter.test.mjs
     - tests/lib/issues/markdown-parser.test.mjs
   computed-at: "2026-05-13T08:40:13.650Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

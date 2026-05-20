@@ -19,8 +19,9 @@ Author a Live Spec that defines a behavioral contract for implementation, scoped
 | `--refactor` | No | Refactor mode: current state + target state + migration path. |
 | `--from-diff` | No | From-diff mode: generate a retroactive spec from a git diff or PR. |
 | `--cross-cutting` | No | Cross-cutting mode: spec spans multiple charters (auth, logging, error handling, etc.). |
+| `--revise <spec-path>` | No | Revise mode: read a BLOCKED spec at revision N together with its `<spec-stem>.review.md` + `<spec-stem>.blockers.md` sidecars and produce revision N+1 as a targeted patch. Bumps `revision:` N → N+1, sets `updated:` to today, transitions `status: review-blocked → review-pending`, clears `.blockers.md`, and emits a `spec_revised` lifecycle event. The actual work runs in the CLI verb `adev specify revise --spec <path>` (see Step-set: Revise below). |
 
-**Workflow axis vs. kind axis (orthogonality).** `--extract`, `--refactor`, `--from-diff`, and `--cross-cutting` are **direct boolean flags** describing the *workflow* used to author the spec. `--kind` is a **separate axis** describing the *artifact shape* the spec takes. The two axes combine independently — any workflow flag may pair with any `--kind` value. No `--mode <name>` flag is introduced; the existing direct-flag syntax is preserved verbatim.
+**Workflow axis vs. kind axis (orthogonality).** `--extract`, `--refactor`, `--from-diff`, `--cross-cutting`, and `--revise` are **direct boolean flags** describing the *workflow* used to author the spec. `--kind` is a **separate axis** describing the *artifact shape* the spec takes. The two axes combine independently — any workflow flag may pair with any `--kind` value. No `--mode <name>` flag is introduced; the existing direct-flag syntax is preserved verbatim.
 
 Examples:
 - `/adev:specify --extract --kind artifact` — extract an artifact-kind spec from existing static deliverables
@@ -28,6 +29,8 @@ Examples:
 - `/adev:specify --refactor --kind refactor` — refactor workflow producing a refactor-kind spec (natural pairing)
 
 Workflow flags remain mutually exclusive with each other. If no workflow flag is supplied, standard mode is used. The `--kind` axis is independent of workflow flag selection.
+
+`--revise` is mutually exclusive with `--extract`, `--refactor`, `--from-diff`, and `--cross-cutting`. Combining any two of these flags exits non-zero with `CONFLICTING_FLAGS`.
 
 ## Prerequisites
 
@@ -171,6 +174,26 @@ created: <today's date YYYY-MM-DD>
 ## Shared: Summary Template
 
 After writing any spec, output the path, mode-specific stats (see each mode), and next steps: review the spec, `/adev:review-specs`, or write another spec.
+
+## Shared: Lifecycle Events
+
+Every mode (Standard, Extract, Refactor, From-Diff, Cross-Cutting) MUST emit a lifecycle entry event before writing any spec content and a matching exit event after the spec is saved. Without these events, the lifecycle log has no record of the specify step and `/adev:review-specs` blocks with `step "review" requires prior step "specify" to be completed`.
+
+**Entry event** (emit before Step 1 / earliest spec-related action):
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status started
+```
+
+**Exit event** (emit at the end of the Summary step):
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+```
+
+The `--verdict PASS` is required — downstream gates require the prior step to have completed with PASS or PASS_WITH_NOTES. The specify step has no failure path that reaches the Summary step (success implies the spec was written, status set to `review-pending`, and the Feature work item created or skipped), so success implies PASS. Failure paths emit `--status failed` separately and do not reach the exit emission.
+
+For `--cross-cutting` mode, the spec path is `.context-index/specs/cross-cutting/<slug>.spec.md` rather than `.context-index/specs/features/<module>/<slug>.spec.md`. The events are otherwise identical.
 
 ---
 
@@ -351,6 +374,26 @@ infra_requirements:
 
 ### Step 5: Write the Spec
 
+**Incremental authoring (`.partial` pattern).** Per `incremental-artifact-writes.spec.md`, the spec body MUST be authored incrementally to `<spec-path>.partial` and atomically renamed to `<spec-path>` on completion. The first authored chunk MUST begin with a `partial_schema: spec@1` marker placed in an HTML comment:
+
+```markdown
+<!-- partial_schema: spec@1 -->
+
+---
+... frontmatter ...
+---
+
+# Live Spec: ...
+```
+
+Cadence: one section (H2 boundary — Behavioral Contract, System Constitution Reference, Module Impact Map, Integration Points, Acceptance Criteria, etc.) per append. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
+
+**Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE).** Before each append, run `adev partial check-size --artifact <spec-path>` to verify the in-progress partial has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior spec size, 50 KB)). Exit code 2 with `PARTIAL_ARTIFACT_OVERSIZE` is a hard stop: do NOT continue appending, do NOT commit the rename, preserve the partial for inspection, surface the error.
+
+Before writing, check for a prior `.partial`: run `adev partial inspect --artifact <spec-path>.partial`. If `partial_exists` is true and the schema marker is `spec@1`, offer the user **resume / discard / abort**. In `--auto` mode, default to resume; on a schema-mismatched marker, discard with a logged warning via `adev partial discard --artifact <spec-path>.partial --spec <spec-path>`.
+
+After writing the final section, the atomic rename `commit` step finalises the artifact. Use the CLI verb to drive this — SKILL.md stays markdown-only per the `cli-driver-surface` charter (no inline Node).
+
 1. Generate slug: lowercase, kebab-case, no special characters.
 2. **Resolve the template via `resolveTemplate('spec', kind, domain)`.** Call `resolveTemplate` from `<ADEV_ROOT>/lib/template-resolution.mjs`, passing the kind selected in Step 3.5 as the second argument and the active domain from `resolveDomain(...)` (loaded in Step 2) as the third. Use the returned absolute path as the template body. **Do not hardcode a template filename.** This replaces the previous fall-back-to-`spec-template.behavioral.md` behavior for new specs.
 
@@ -471,6 +514,10 @@ adev report --type step --spec <spec-path> --step specify --status completed --v
 
 For brownfield codebases. Reads existing source code and produces a "snapshot spec" that captures current behavior. Documents what IS, not what SHOULD BE.
 
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
+
 ### Step 1: Resolve Charter
 
 Use the shared Resolve Charter section above.
@@ -532,6 +579,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 5: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Extracted from: <N> files (<N> lines analyzed)
@@ -551,6 +600,10 @@ Output the shared summary template with these stats:
 ## Refactor Mode (`--refactor`)
 
 Produces a refactoring spec with current state analysis, target state definition, a step-by-step migration path, and invariants.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
 
 ### Step 1: Resolve Charter
 
@@ -652,6 +705,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 8: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Current state: <N> files, <N> problems identified
@@ -669,6 +724,10 @@ Output the shared summary template with these stats:
 ## From-Diff Mode (`--from-diff`)
 
 Generates a retroactive Live Spec from a git diff or PR. Useful for documenting work done before adev was adopted, or hotfixes that skipped the spec milestone.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode.
 
 ### Step 1: Identify the Diff
 
@@ -739,6 +798,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 5: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`).
+
 Output the shared summary template with these stats:
 ```
   Diff source: <source>
@@ -755,6 +816,10 @@ Output the shared summary template with these stats:
 ## Cross-Cutting Mode (`--cross-cutting`)
 
 Produces specs for concerns spanning multiple features: authentication, error handling, API versioning, logging, etc.
+
+### Step 0: Lifecycle entry event
+
+Emit the entry event from the Shared: Lifecycle Events section before any other action in this mode. Note that for cross-cutting specs, the `--spec` path is `.context-index/specs/cross-cutting/<slug>.spec.md`, not `.context-index/specs/features/<module>/<slug>.spec.md`.
 
 ### Step 1: Prerequisites
 
@@ -810,6 +875,8 @@ After saving the spec, update its status to `review-pending` (same as Step 5.5 i
 
 ### Step 6: Summary
 
+Emit the lifecycle exit event from the Shared: Lifecycle Events section (`--status completed --verdict PASS`). The spec path is `.context-index/specs/cross-cutting/<slug>.spec.md`.
+
 Output the shared summary template with these stats:
 ```
   Affects: <N> modules
@@ -819,6 +886,63 @@ Output the shared summary template with these stats:
 
   Review the module impact with each module's maintainer.
 ```
+
+---
+
+## Revise Mode (`--revise <spec-path>`)
+
+Sixth workflow axis. Reads a BLOCKED spec at revision N together with the reviewer's `<spec-stem>.review.md` + `<spec-stem>.blockers.md` sidecars and produces revision N+1 as a **targeted patch**.
+
+**Preconditions:**
+
+1. The spec exists on disk and ends with `.spec.md`.
+2. `<spec-stem>.review.md` exists alongside the spec (latest reviewer findings).
+3. `<spec-stem>.blockers.md` exists alongside the spec (canonical `blocker_id` set that triggered BLOCK).
+4. The spec's `status:` frontmatter field is `review-blocked` (in `--auto` mode this is enforced; in interactive mode a warning is printed and the operator confirms).
+
+**Steps:**
+
+1. **Gate** the prior step via the lifecycle log (the `review` step must have completed; the revise workflow only makes sense after a BLOCK).
+2. **Run the CLI verb** that does the revise work:
+
+   ```bash
+   adev specify revise --spec <spec-path> [--auto]
+   ```
+
+   The verb wraps `lib/specify-revise.mjs::reviseSpec` and:
+   - Reads `revision:` from the spec frontmatter and increments it through the `adev/revision-monotonic` diagnostic (`REVISION_NOT_INCREMENTED` is a hard stop).
+   - Sets `updated:` to today and transitions `status: review-blocked → review-pending`.
+   - Preserves frontmatter fields not implicated by blocker entries byte-identically.
+   - Preserves spec body sections whose anchor is NOT in any blocker entry byte-identically.
+   - Writes the new spec atomically (temp-then-rename).
+   - Clears `<spec-stem>.blockers.md` (the next `/adev:review-specs` invocation re-evaluates and rewrites if any blockers remain).
+   - Does NOT clear `<spec-stem>.review.md` — the next review invocation rewrites it.
+   - Emits a `spec_revised` lifecycle event with `{ from_revision, to_revision, addressed_blocker_ids, unresolved_blocker_ids }`.
+
+3. **Path containment (SEC-1):** the CLI verb re-asserts `assertWithin(projectRoot, specPath)` and rejects path-traversal with `INVALID_SPEC_PATH`. The skill MUST NOT pre-validate paths.
+
+4. **Mutual-exclusion contract:** combining `--revise` with any of `--extract`, `--refactor`, `--from-diff`, or `--cross-cutting` exits non-zero with `CONFLICTING_FLAGS`.
+
+5. **Report** the result to the user (read from the verb's JSON stdout):
+
+   ```
+   Revised <spec-path>: rev <N> → <N+1>
+     Addressed blockers: <count>
+     Unresolved blockers: <count>
+   Next step: run /adev:review-specs --spec <spec-path> to re-evaluate.
+   ```
+
+**Error cases:**
+
+| Condition | CLI exit | Error code | Action |
+|-----------|----------|------------|--------|
+| Missing `<spec-stem>.review.md` or `<spec-stem>.blockers.md` | 1 | `NO_REVIEW_SIDECARS` | Tell the user to run `/adev:review-specs` first |
+| Spec status not `review-blocked` under `--auto` | 2 | `SPEC_NOT_BLOCKED` | Stop; ask the user to confirm explicit revision intent |
+| Path traversal or spec outside `projectRoot` | 1 | `INVALID_SPEC_PATH` | Stop; report the malformed path |
+| `revision:` did not increment by exactly 1 | 1 | `REVISION_NOT_INCREMENTED` | Stop; report — usually a bug in the library, not user input |
+| Combining `--revise` with another workflow flag | 1 | `CONFLICTING_FLAGS` | Stop; report which flags conflict |
+
+**Constitution alignment:** The skill names the CLI verb (`adev specify revise`) and contains no inline Node — the CLI verb wraps the library per the `cli-driver-surface` charter. The library uses only Node.js built-ins.
 
 ---
 

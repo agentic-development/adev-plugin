@@ -1,1 +1,6 @@
 {"event":"debug_intervention","kind":"debug","note":"Orchestrator self-aborted on false-positive Agent-tool-unavailable check (deferred-tools scan returned empty because Agent is eagerly loaded). Fix: Red Flag + Dispatch Optimism subsection mandating optimistic Agent() call; harness is sole authority on availability.","ts":"2026-05-14T17:26:59.304Z"}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-15T18:27:08.638Z","ts":"2026-05-18T13:50:21.110Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:13:52.247Z","ts":"2026-05-20T04:13:52.247Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:11.251Z","ts":"2026-05-20T04:14:11.251Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:20.472Z","ts":"2026-05-20T04:14:20.472Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:31.191Z","ts":"2026-05-20T04:14:31.191Z","diagnostic_warnings":["adev/frontmatter-present"]}

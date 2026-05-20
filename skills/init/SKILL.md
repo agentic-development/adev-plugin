@@ -756,6 +756,12 @@ If the user enters `skip` or presses enter without a value, do not create the fi
 
 Ensure `.context-index/user-config` is listed in the project's `.gitignore` (the CLI already handles this during installation, but verify it is present).
 
+## Session History Files
+
+The CLI installer ships a git `post-commit` hook (`.githooks/post-commit`) that auto-generates one session summary file per commit at `.context-index/sessions/<date>-<shortSHA>.md`. These files contain commit metadata + subject/body and are consumed by `/adev:retro`, `/adev:hygiene`, and audit skills.
+
+The installer's `.gitignore` block intentionally does **not** include `.context-index/sessions/` — the convention is tracked content, batch-committed under `chore(sessions): record YYYY-MM-DD transcripts` messages. If the project prefers to keep them local-only, add `.context-index/sessions/` to `.gitignore`. Surface this choice to the user during init when relevant. Full reference: `docs/hooks.md` > Git Hooks > `post-commit`.
+
 ## After Initialization
 
 ```

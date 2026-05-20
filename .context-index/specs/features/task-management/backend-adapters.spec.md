@@ -19,8 +19,6 @@ source-manifest:
     - tests/lib/issues-registry.test.mjs
   computed-at: "2026-04-01T13:43:22.545Z"
 drift_detected: true
-drift_source: lib/issues/file-adapter.mjs
-drift_at: 2026-05-12T00:31:48.524Z
 ---
 
 ## Behavioral Contract

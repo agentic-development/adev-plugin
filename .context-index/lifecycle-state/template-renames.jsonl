@@ -38,3 +38,14 @@
 {"event":"validator_report","step":"validate","validator":"check-13-heuristic-extraction","severity":"warning","verdict":"PASS_WITH_NOTES","error":"SKIP: non-PASS result","score":null,"duration_ms":null,"ts":"2026-05-15T15:28:57.804Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T15:28:57.804Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T15:29:41.828Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-17T20:38:19.318Z","ts":"2026-05-18T13:48:57.242Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:29.060Z","ts":"2026-05-20T02:39:29.060Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:35.039Z","ts":"2026-05-20T02:39:35.039Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:40:46.389Z","ts":"2026-05-20T02:40:46.389Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T03:59:47.619Z","ts":"2026-05-20T03:59:47.619Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:03.897Z","ts":"2026-05-20T04:01:03.897Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:09.307Z","ts":"2026-05-20T04:01:09.307Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:41.404Z","ts":"2026-05-20T04:01:41.404Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.036Z","ts":"2026-05-20T01:26:28.036Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.770Z","ts":"2026-05-20T01:27:38.770Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.352Z","ts":"2026-05-20T12:58:34.352Z"}

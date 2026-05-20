@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t01",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Pure lib + unit test; spec Behavior 3 + SEC-2 give exact format; high-risk spec forces assisted-agent floor (RED-phase checkpoint)."
+    },
+    {
+      "task_id": "t02",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Adds 2 event variants + optional field with explicit payload shape; touches one core lib; high-risk override floors at assisted-agent."
+    },
+    {
+      "task_id": "t03",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "byRevision[N] projection with legacy fold-as-1 contract; one lib + its test; high-risk override applies."
+    },
+    {
+      "task_id": "t04",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Sibling-spec amendment (SA-2 gate); single spec file edit; byte-identical preservation required so human eyes on RED checkpoint help."
+    },
+    {
+      "task_id": "t05",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "SKILL.md + writer lib + redaction set reuse; combines patterns with SA-1/SEC-3; assisted-agent floor on high-risk spec."
+    },
+    {
+      "task_id": "t06",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Three reviewer prompt files + SKILL.md aggregator; well-specified schema; 4-file blast radius across review module."
+    },
+    {
+      "task_id": "t07",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Large companion lib with byte-identical preservation, atomic write, multiple error codes; high novelty and high-risk both push toward assisted-agent."
+    },
+    {
+      "task_id": "t08",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Simple monotonic diagnostic; clear contract; high-risk floors at assisted-agent."
+    },
+    {
+      "task_id": "t09",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "New CLI verb following report/gate verb pattern; modifies cli/index.mjs registration; SEC-1 path-containment well-specified."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Add sixth workflow axis to skills/specify/SKILL.md; pure markdown; pre-commit no-inline-Node hook enforces compliance."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Pure-function convergence detector with explicit partitions and stop conditions; well-specified by Behaviors 7-9."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Manifest default flip + load-time validation; trivial pattern, but high-risk spec forces assisted-agent floor regardless of total."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Replace Behaviors 17-18 in skills/build/SKILL.md with loop semantics + new flag; touches orchestration; assisted-agent given high blast on operator-facing skill."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Sibling-spec amendment (CON-1 gate); preserve unaffected sections byte-identically; one spec file edit."
+    },
+    {
+      "task_id": "t15",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.4
+      },
+      "rationale": "End-to-end integration fixture with synthetic reviewer subagent; novelty=2 because fixture composition is non-trivial; high-risk override + low novelty both warrant assisted-agent."
+    },
+    {
+      "task_id": "t16",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Legacy reviewer fallback fixture; simpler than t15 but still composes loop + sidecar+fail-loud assertions."
+    },
+    {
+      "task_id": "t17",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Status + retro SKILL.md updates to render byRevision; lower spec specificity for the rendering details; depends on Task 3."
+    },
+    {
+      "task_id": "t18",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Charter Capability Map row flip; mechanical edit; high-risk spec floors routing at assisted-agent regardless of total score."
+    }
+  ]
+}

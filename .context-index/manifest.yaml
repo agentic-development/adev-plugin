@@ -151,6 +151,16 @@ tasks:
 # lifecycle:
 #   gate_mode: strict
 
+# Partial-artifact (`.partial` + atomic-rename) knobs — incremental-artifact-writes.spec.md.
+# These knobs govern lifecycle-artifact write-state, which is a lifecycle concern
+# even though the per-knob behavior is artifact-byte-management (CON-9 recommendation B).
+# lifecycle:
+#   partial_stale_seconds: 30           # lock-steal threshold (default 30)
+#   partial_stale_hours:   24           # orphan-content sweep threshold (default 24)
+#   partial_oversize_multiplier: 3      # runaway-write guard (default 3× expected size)
+#   partial_expected_size_default: 51200  # floor for expected size when no prior version exists (bytes, default 50 KB)
+#   partial_roots: []                   # optional containment-allowlist roots beyond .context-index/
+
 # ============================================================================
 # Provenance Tracking
 # ============================================================================
@@ -232,3 +242,16 @@ hygiene:
       # diagnostic-registry.plan.md from 0009 to 0010 when resolving the
       # duplicate ADR id. Reference-only update, not content change.
       - "dc27388f0e762c0519e1cb833bd98a55cc8f3e26"
+      # Milestone bulk-rename: stamped "0.26.0" → "0.27.0" on the
+      # orphan-lock-cleanup.plan.md milestone reference. Reference-only
+      # update, not content change.
+      - "975f3acbddce92a857c296ef2a2ec93db2cf7d08"
+      # Milestone bulk-rename: stamped "0.27.0" → "0.27.1" on the
+      # orphan-lock-cleanup.plan.md milestone reference along with the
+      # 0.27.1 milestone re-file. Reference-only update, not content change.
+      - "bad36e09824693d0fd183fcf46f11d2b4103fff1"
+      # JSON sidecar migration: updated the comment in the three
+      # plan-immutability fixture plan bodies from ".routing.md" to
+      # ".routing.json" to match the rev-2 sidecar shape. Documentation
+      # update inside test fixtures, not content change.
+      - "4d389a114bd8a00c66353afc92f623cbad5f8351"
