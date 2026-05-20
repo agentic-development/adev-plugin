@@ -379,7 +379,7 @@ describe("cli charter — rev 4 with Cursor", () => {
     );
     assert.match(
       md,
-      /\*\*`install`\*\* — Register plugin with provider \(Claude Code, OpenCode, Codex, Cursor\)/,
+      /\*\*`install`\*\* — Register plugin with provider \(Claude Code, OpenCode, Codex, Cursor[^)]*\)/,
       "cli charter install description must name all four providers"
     );
   });

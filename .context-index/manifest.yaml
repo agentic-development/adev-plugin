@@ -255,3 +255,10 @@ hygiene:
       # ".routing.json" to match the rev-2 sidecar shape. Documentation
       # update inside test fixtures, not content change.
       - "4d389a114bd8a00c66353afc92f623cbad5f8351"
+      # Copilot-adapter spec-rev refinement: spec rev 2 → 3 was refined
+      # during /adev:build after an implement-time blocker (see
+      # .context-index/hygiene/blockers/copilot-adapter-task-1.md). The
+      # plan body was updated to reference the new spec rev and to
+      # mirror the refined test fixtures the spec rev 3 introduced.
+      # Documented + intentional plan-time refinement, not silent drift.
+      - "79d895aaac13a3482a22d5edc3b2ac1722508c88"

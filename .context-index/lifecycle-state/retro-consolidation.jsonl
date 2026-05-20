@@ -1,4 +1,9 @@
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-17T18:58:52.728Z","ts":"2026-05-18T13:50:21.094Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/retro/SKILL.md","drift_at":"2026-05-19T12:39:55.712Z","ts":"2026-05-19T12:39:55.713Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/retro/SKILL.md","drift_at":"2026-05-19T12:40:06.515Z","ts":"2026-05-19T12:40:06.516Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/retro/SKILL.md","drift_at":"2026-05-19T12:40:20.507Z","ts":"2026-05-19T12:40:20.507Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/retro/SKILL.md","drift_at":"2026-05-19T12:40:31.825Z","ts":"2026-05-19T12:40:31.826Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/retro/SKILL.md","drift_at":"2026-05-19T12:40:48.497Z","ts":"2026-05-19T12:40:48.498Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-19T19:49:28.672Z","ts":"2026-05-19T19:49:28.672Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/retro/SKILL.md","drift_at":"2026-05-20T04:18:30.126Z","ts":"2026-05-20T04:18:30.126Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.070Z","ts":"2026-05-20T13:03:18.070Z","diagnostic_warnings":["adev/frontmatter-present"]}
