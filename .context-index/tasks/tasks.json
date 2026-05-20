@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 73,
+  "seq": 78,
   "epics": [
     {
       "id": "epic-1",
@@ -3529,6 +3529,44 @@
       "next_action": null,
       "created": "2026-05-20T12:52:03.142Z",
       "updated": "2026-05-20T12:52:03.142Z"
+    },
+    {
+      "id": "issue-530",
+      "title": "Surface domain extensions during adev init (extension picker / discovery hint)",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "## Problem\n\nA user installing adev into a new project sees only the bundled `software` domain. The framework has already moved non-software domains into installable extension packages (`extensions/data-engineering/`, `extensions/process-automation/`, both with validated specs PASS), and the install pipeline (`adev extension install <source>`) is fully implemented in `cli/index.mjs:956-997` and `lib/extensions/install.mjs`. But `adev init` (or the equivalent install wizard) does not mention extensions at all — there is no discovery surface telling the user that data-engineering, process-automation, or future domains are available.\n\nSymptom: the user picks software-with-wrong-fit, or writes a custom domain from scratch (re-discovering `extends: software` + `.context-index/domains/<name>/` + `domain: <name>` in manifest.yaml), or simply does not realize extensions exist.\n\n## Charter context\n\n`.context-index/specs/features/domain-extensions/charter.md:29` *explicitly* lists \"Auto-install during `adev init`\" as out of scope for v1 of the extension work. The wording \"for v1\" was deliberate — that v1 was the content+pipeline; the install-UX bridge is the natural v2 follow-on. This issue is that follow-on.\n\n## Recommended fix\n\nAdd an extension-discovery prompt to the init flow. Two implementation paths, ranked:\n\n1. **First-party catalog with picker** *(preferred)*. After the providers prompt and before the context-index scaffold step, scan a known set of first-party extensions (start with the two that exist: `data-engineering`, `process-automation`). Present:\n   ```\n   Heading: Domain Extensions\n   Select a domain extension to install (or skip for software-only):\n     1. software (bundled) — general-purpose [default]\n     2. data-engineering — pipelines, ETL, dbt, data quality\n     3. process-automation — workflow automation, CI/CD orchestration\n     4. skip\n   ```\n   On selection, call `installExtension(<path>, projectRoot, opts)` (the same function the CLI verb wraps). The first-party catalog can live as a small JSON manifest in `templates/` or embedded in `cli/index.mjs`. Multi-select also reasonable.\n\n2. **Discovery hint only** *(minimal)*. After init completes, print a one-line note:\n   ```\n   Tip: To use a domain other than software, install an extension:\n         adev extension install ./extensions/data-engineering\n         adev extension install <git-url>\n         (or browse: https://agentic-dev.org/extensions)\n   ```\n   No prompt, no install — just discoverability.\n\nOption 1 fixes the UX gap; option 2 reduces it. Both close the report-symptom that prompted this issue.\n\n## Scope\n\n1. Decide between picker (option 1) vs hint (option 2). Picker recommended.\n2. If picker: define the first-party catalog (which extensions ship as known options). Start with the two that exist in this monorepo.\n3. Wire the catalog into `cli/index.mjs` init/upgrade flows.\n4. Reuse `installExtension()` from `lib/extensions/install.mjs` for the actual install — no new install machinery.\n5. Persist the choice in `manifest.yaml` (`domain: <name>` plus extension stamp via existing `readManifestStamps()` flow).\n6. Update `skills/init/SKILL.md` to walk the user through the picker.\n7. Update the install-completion message to confirm which domain extension (if any) was selected.\n8. Test: integration test exercising init with each catalog choice.\n\n## Acceptance criteria\n\n- `adev init` surfaces available domain extensions to the user.\n- User can select one (or skip) without leaving the init flow.\n- Selected extension is installed via the existing `installExtension()` pipeline.\n- `manifest.yaml` is stamped with the chosen domain and extension provenance.\n- `adev upgrade` offers the same picker if no domain extension is installed.\n- A new project where the user picks data-engineering has working `.context-index/domains/data-engineering/` after init (or whatever path the extension resolves to).\n- The install-completion message shows the selected domain.\n\n## References\n\n- Charter (and out-of-scope note): `.context-index/specs/features/domain-extensions/charter.md:29`\n- Install verb implementation: `cli/index.mjs:956-997`\n- Install pipeline: `lib/extensions/install.mjs`\n- Existing first-party extensions: `extensions/data-engineering/`, `extensions/process-automation/`\n- Adjacent open issues: issue-447 (extract non-software domains), issue-448 (data-engineering package), issue-450 (remove from bundled templates) — those address packaging; this issue addresses discoverability/install UX, which they do not.\n- Source of report: a user installing adev into a new project who only saw `software` and did not realize extensions were available.",
+      "next_action": null,
+      "created": "2026-05-20T13:10:16.802Z",
+      "updated": "2026-05-20T13:10:16.802Z"
+    },
+    {
+      "id": "issue-531",
+      "title": "Init-Time Domain Extension Picker",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/domain-extensions/init-extension-picker.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/domain-extensions/init-extension-picker.spec.md. Created by /adev:specify on 2026-05-20. Implements issue-530.",
+      "next_action": "Run /adev:plan --spec .context-index/specs/features/domain-extensions/init-extension-picker.spec.md (review-passed at rev 2)",
+      "created": "2026-05-20T16:20:03.165Z",
+      "updated": "2026-05-20T16:44:06.093Z"
+    },
+    {
+      "id": "issue-532",
+      "title": "Hook-Driven Session Capture with Init-Time Configuration",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/session-awareness/hook-driven-capture.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/session-awareness/hook-driven-capture.spec.md. Created by /adev:specify on 2026-05-20. Tracks issue-527 (Hook-Driven Session Capture) and bundles the Init-Time Capture Configuration capability added in charter rev 4 via brainstorm.",
+      "next_action": "Run /adev:review-specs --module session-awareness",
+      "created": "2026-05-20T16:50:00.000Z",
+      "updated": "2026-05-20T16:50:00.000Z"
     }
   ]
 }
