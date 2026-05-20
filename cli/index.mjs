@@ -9,6 +9,7 @@ import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
 import { resolveExtensionSource } from "../lib/extensions/resolve-source.mjs";
 import { installExtension, readManifestStamps } from "../lib/extensions/install.mjs";
 import { loadManifest } from "../lib/manifest.mjs";
+import { runPicker } from "../lib/cli/domain-extension-picker.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -727,6 +728,66 @@ async function cmdStatusCopilot() {
   }
 }
 
+/**
+ * Run the init-time domain-extension picker.
+ *
+ * Wraps lib/cli/domain-extension-picker.mjs::runPicker with the CLI's ask
+ * helper and the install-pipeline functions, plus user-facing output for the
+ * "Domain Extension" step heading and any install errors.
+ *
+ * Returns the picker result (used by the caller's completion banner), or
+ * `null` if the picker step could not run (no manifest.yaml found — e.g.
+ * scaffold was skipped). The caller treats `null` as "no banner line".
+ */
+async function runDomainPicker() {
+  const projectRoot = process.cwd();
+  const manifestPath = join(projectRoot, ".context-index", "manifest.yaml");
+  if (!existsSync(manifestPath)) {
+    return null;
+  }
+  heading("Domain Extension");
+  try {
+    const result = await runPicker({
+      projectRoot,
+      pluginRoot: PLUGIN_ROOT,
+      ask,
+      installFn: installExtension,
+      readStamps: readManifestStamps,
+    });
+    if (result.action === "skipped-workspace-root") {
+      log("Picker skipped (workspace root). Run inside a registered repo to pick a domain extension.");
+    } else if (result.action === "install") {
+      success(`Installed domain extension: ${result.domainName}`);
+    } else if (result.action === "install-failed") {
+      error(`Install failed for selected extension (${result.installError?.code || "ERROR"}): ${result.installError?.message || "unknown"}`);
+      log("Domain left unset — re-run with `adev extension install <source>` to retry.");
+    } else if (result.action === "already-installed") {
+      log(`Existing domain extension detected: ${result.domainName} (no change).`);
+    } else if (result.action === "software") {
+      log("Domain set to software (bundled default).");
+    } else if (result.action === "skip") {
+      log("Domain extension skipped. Re-run with `adev extension install <source>` to pick one later.");
+    }
+    if (Array.isArray(result.advisories) && result.advisories.length > 0) {
+      for (const adv of result.advisories) {
+        warn(`Catalog entry "${adv.name}" dropped: ${adv.reason}`);
+      }
+    }
+    return result;
+  } catch (err) {
+    if (err && err.code === "PICKER_USER_ABORTED") {
+      log("Picker aborted by user. Domain left unset.");
+      return null;
+    }
+    if (err && err.code === "PICKER_CATALOG_PARSE_FAILED") {
+      warn(`Domain catalog unavailable (${err.message}). Falling through to software default.`);
+      return null;
+    }
+    error(`Picker failed: ${err.message}`);
+    return null;
+  }
+}
+
 async function cmdInstall() {
   // --target <name> branch: per-target adapter invocation (Copilot uses this).
   // Skips the interactive provider selection + scaffolding flow used by the
@@ -777,6 +838,9 @@ async function cmdInstall() {
   // --- Stamp adev_version in manifest ---
   stampVersion();
 
+  // --- Domain Extension picker ---
+  const installPickerResult = await runDomainPicker();
+
   // --- Git hooks ---
   heading("Git Hooks");
   const hookItems = await setupGitHooks();
@@ -796,6 +860,9 @@ async function cmdInstall() {
 
   // --- Summary ---
   heading(`Done! Plugin installed — adev v${PLUGIN_VERSION}.`);
+  if (installPickerResult && installPickerResult.action !== 'skipped-workspace-root') {
+    log(`Domain: ${installPickerResult.domainName}`);
+  }
 
   log("Next steps:");
   console.log();
@@ -916,6 +983,9 @@ async function cmdUpgrade() {
     }
   }
 
+  // --- Domain Extension picker ---
+  const upgradePickerResult = await runDomainPicker();
+
   // --- Git hooks ---
   heading("Git Hooks");
   const hookItems = await setupGitHooks();
@@ -942,6 +1012,9 @@ async function cmdUpgrade() {
     heading(`Done! Upgraded from v${fromLabel} to v${PLUGIN_VERSION}.`);
   } else {
     heading(`Done! adev v${PLUGIN_VERSION} is up to date.`);
+  }
+  if (upgradePickerResult && upgradePickerResult.action !== 'skipped-workspace-root') {
+    log(`Domain: ${upgradePickerResult.domainName}`);
   }
 
   log("Next steps:");
