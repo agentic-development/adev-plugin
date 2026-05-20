@@ -2,9 +2,17 @@
 
 ## Status
 
-**Proposed**
+**Accepted**
 
 > **Proposed 2026-05-19**: Establishes the sibling-file convention for skills that produce auxiliary data tied to a Live Spec or plan but must not mutate it. Resolves the architectural tension between (a) `CON-8` in `plan-task-events.spec.md` (the artifact markdown is read-only after authoring) and (b) the legitimate need for skills like `/adev:route` and `/adev:review-specs` to record per-task or per-finding metadata alongside the primary artifact. The pattern is already exercised by `<spec-stem>.review.md` and `<spec-stem>.validate.md`; this ADR formalises it as the canonical solution and enumerates current and planned peers.
+>
+> **Accepted 2026-05-19**: All three acceptance gates landed via `.context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md`:
+>
+> 1. `/adev:route` no longer mutates plans — Step 4 now writes `<plan-stem>.routing.md` via the `adev route emit-sidecar` CLI verb (plan-routing-sidecar plan-task t5).
+> 2. CON-8 in `plan-task-events.spec.md` was amended to enumerate the four permitted sidecar peers (`.review.md`, `.validate.md`, `.routing.md`, `.blockers.md`) with this ADR as the cross-reference for the closed set (plan-routing-sidecar plan-task t7).
+> 3. `lib/plan-immutability.mjs` gained a working-tree inspection branch that flags `PLAN_MUTATED_WITHOUT_SIDECAR` for plans with inline `**Routing:**` blocks and no sibling `.routing.md`, independent of `--diff-filter=M` git history — closing the mutate-then-single-add gap (plan-routing-sidecar plan-task t4).
+>
+> The convention now governs future additions to the sidecar enumeration via ADR amendments.
 
 ## Date
 
@@ -126,6 +134,7 @@ When all three are in, the ADR status flips from `Proposed` to `Accepted`. The c
 
 ## References
 
+- `.context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md` (acceptance gate — drives this ADR's Proposed → Accepted transition)
 - `.context-index/specs/features/agent-reliable-state-artifacts/plan-task-events.spec.md` (CON-8)
 - `lib/plan-immutability.mjs` (detector)
 - `skills/route/SKILL.md` (Step 4 — current violation site)
