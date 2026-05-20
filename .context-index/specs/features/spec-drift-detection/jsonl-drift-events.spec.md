@@ -27,6 +27,7 @@ source-manifest:
     - tests/lib/spec-drift.test.mjs
     - tests/scripts/migrate-drift-fields.test.mjs
   computed-at: "2026-05-18T13:59:32.083Z"
+drift_detected: true
 ---
 
 ## Revision History

@@ -1,2 +1,11 @@
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-17T19:58:38.627Z","ts":"2026-05-18T13:50:21.078Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/plan/SKILL.md","drift_at":"2026-05-18T13:54:06.160Z","ts":"2026-05-18T13:54:06.160Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"tests/skills/plan-task-immutability.test.mjs","drift_at":"2026-05-20T02:41:59.547Z","ts":"2026-05-20T02:41:59.548Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"tests/skills/plan-task-immutability.test.mjs","drift_at":"2026-05-20T02:42:40.124Z","ts":"2026-05-20T02:42:40.125Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"tests/skills/plan-task-immutability.test.mjs","drift_at":"2026-05-20T02:42:57.155Z","ts":"2026-05-20T02:42:57.156Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/plan-immutability.mjs","drift_at":"2026-05-20T02:43:41.981Z","ts":"2026-05-20T02:43:41.981Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T02:46:31.720Z","ts":"2026-05-20T02:46:31.720Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/plan-immutability.mjs","drift_at":"2026-05-20T12:07:42.089Z","ts":"2026-05-20T12:07:42.089Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.040Z","ts":"2026-05-20T12:08:30.041Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"tests/skills/plan-task-immutability.test.mjs","drift_at":"2026-05-20T12:15:44.207Z","ts":"2026-05-20T12:15:44.208Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/plan-immutability.mjs","drift_at":"2026-05-20T12:22:13.546Z","ts":"2026-05-20T12:22:13.546Z","diagnostic_warnings":["adev/frontmatter-present"]}
