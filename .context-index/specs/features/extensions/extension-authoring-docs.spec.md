@@ -29,6 +29,7 @@ source-manifest:
     - tests/integration/extension-validate-flow.test.mjs
     - tests/lib/extensions/example-validation-check-install.test.mjs
   computed-at: "2026-05-16T14:34:35.795Z"
+drift_detected: true
 ---
 
 # Live Spec: Extension Authoring Documentation Bundle
