@@ -23,3 +23,5 @@
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/adev-diagnose-cli.plan.md","task_id":"task-6","status":"done","notes":null,"ts":"2026-05-14T21:23:38.439Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-14T21:24:09.783Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-16T00:48:30.134Z","ts":"2026-05-18T13:50:21.079Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.030Z","ts":"2026-05-20T01:26:28.030Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.764Z","ts":"2026-05-20T01:27:38.764Z","diagnostic_warnings":["adev/frontmatter-present"]}
