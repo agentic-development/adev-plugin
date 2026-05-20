@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 68,
+  "seq": 73,
   "epics": [
     {
       "id": "epic-1",
@@ -3491,6 +3491,44 @@
       "next_action": "Decide sidecar variant (a) sibling .routing.md vs (c) plan_task_routing lifecycle event. Author Live Specs covering route+implement updates and plan-immutability detector enhancement.",
       "created": "2026-05-19T20:19:47.023Z",
       "updated": "2026-05-19T20:19:47.023Z"
+    },
+    {
+      "id": "issue-527",
+      "title": "Replace post-commit session capture with SessionEnd/PreCompact hooks + gitignored sessions/",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "## Problem\n\n`.githooks/post-commit` writes `.context-index/sessions/<date>-<sha>.md` after every git commit, leaving files tracked-and-uncommitted in a directory the installer does not gitignore. Users must batch-commit them manually under `chore(sessions):`. The installer itself half-apologizes for this workflow.\n\nResearch (`.context-index/research/session-logging-ux-improvements.md`) audited every consumer of `.context-index/sessions/` and confirmed no skill reads it across git history or across contributors — all three real consumers (`/adev:work`, `/adev:status`, `/adev:hygiene`) use local glob/readdir. The documented claim that `/adev:retro` consumes sessions (`skills/init/SKILL.md:761`) is wrong.\n\n## Recommended fix (research option #1 Hybrid)\n\nSwitch capture from `post-commit` to Claude Code `SessionEnd` + `PreCompact` hook events, and add `.context-index/sessions/` to the installer default `.gitignore` block. Matches the cross-tool norm (Aider, Cursor, JetBrains, Continue.dev all keep session data out of the project tree by default) and aligns with constitution principles (minimize external dependencies, hook protocol compliance).\n\n## Scope\n\n1. Add `hooks/session-end.sh` consuming the SessionEnd payload (session_id, transcript_path, cwd, reason); write `<date>-<session_id>.md` derived from the full conversation JSONL.\n2. Add `hooks/pre-compact.sh` on PreCompact to capture long sessions that auto-compact mid-conversation.\n3. Register both in `hooks/hooks.json` (matcher: *).\n4. Extend `lib/session-summary.mjs` with a `fromTranscript()` entry point so the hook does not fall into the inline-Node anti-pattern.\n5. Add `.context-index/sessions/` to the installer default `.gitignore` block.\n6. Remove the manual-batching note from `cli/index.mjs:759-763` and `:898-902`.\n7. Decommission the session-summary block in `.githooks/post-commit`.\n8. Migrate the 395 existing tracked session files — recommended: move to `.context-index/sessions/.archive/` and gitignore, or delete from main since git history preserves them.\n9. Fix documentation drift at `skills/init/SKILL.md:761` (claims `/adev:retro` consumes sessions — verified false).\n\n## Acceptance criteria\n\n- New sessions land in `.context-index/sessions/` but are gitignored.\n- Files captured at SessionEnd and PreCompact boundaries, one per Claude session, named `<date>-<session_id>.md`.\n- /adev:work, /adev:status, /adev:hygiene continue to function unchanged.\n- No `chore(sessions):` commits required in normal workflow.\n- Installer no longer prints the manual-batching note.\n- `skills/init/SKILL.md` no longer claims /adev:retro consumes sessions.\n\n## References\n\n- Research artifact: `.context-index/research/session-logging-ux-improvements.md`\n- Current capture: `.githooks/post-commit`, `hooks/session-capture.sh`\n- Claude Code hook docs: https://code.claude.com/docs/en/hooks\n- Latent capability: `lib/providers/copilot/event-table.mjs:30,33,36` (SessionEnd, SubagentStop, PreCompact already marked cloudAgentSafe: true)",
+      "next_action": null,
+      "created": "2026-05-20T12:48:24.623Z",
+      "updated": "2026-05-20T12:49:14.081Z"
+    },
+    {
+      "id": "issue-528",
+      "title": "Wire /adev:retro to consume session history (close documentation drift)",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "dependencies": [
+        "issue-527"
+      ],
+      "notes": "## Problem\n\n`skills/init/SKILL.md:761` documents that `.context-index/sessions/` is consumed by `/adev:retro`, `/adev:hygiene`, and audit skills. The 2026-05-20 consumer audit (`.context-index/research/session-logging-ux-improvements.md` § Verification) found this is half true: `/adev:hygiene`, `/adev:status`, and `/adev:work` do read the sessions directory, but `/adev:retro` does not. A comprehensive grep against `skills/retro/SKILL.md` for `.context-index/sessions`, `sessions/`, and `session-tracking` returned zero hits. The only session mention (`skills/retro/SKILL.md:125`, Context Gaps) is a conditional, tangential note about grepping logs *if session capture is configured* — not a data-gathering step.\n\nTwo ways to resolve: (a) fix the docs to remove the false claim, or (b) actually wire retro to consume sessions. This issue takes path (b) — sessions contain signal that genuinely improves the retrospective.\n\n## What sessions add to retro\n\nToday, retro reads git history, validation reports, recovery records, blocker files, plan files, and hygiene reports (`skills/retro/SKILL.md` § 1.1-1.7). Session data adds:\n\n- **Tool-use patterns** — which tools dominated the period (Edit vs Bash vs Agent), distribution per spec, and outliers. Already captured per-session by `hooks/session-capture.sh`.\n- **Time-to-resolution per spec** — first session touch vs final session touch, comparable to commit-based estimates but at conversational granularity.\n- **Context gaps** (already mentioned in `skills/retro/SKILL.md:125` but unwired) — files searched with no results, specs read but never edited.\n- **Specialist routing effectiveness** — sessions involving subagent dispatch correlated against validation outcomes for the same spec.\n- **Token / cost trends** — `hooks/session-capture.sh` already records per-session `usage.cost_usd`, `usage.input_tokens`, etc. Retro could surface period-over-period cost and tokens-per-spec efficiency.\n- **Issue/epic binding** — session entries carry `issue` and `epic` fields when execution state is active. Lets retro cross-reference closed issues against the sessions that resolved them.\n\n## Scope\n\n1. Add a new step (e.g., § 1.8 Session Activity) to `skills/retro/SKILL.md` that reads `.context-index/sessions/*.md` (and/or the raw `.context-index/.session-tracking.jsonl`) within the analysis date range.\n2. Define which metrics retro extracts: at minimum tool-use distribution, token/cost totals, and per-spec session counts.\n3. Cross-reference session entries with closed issues (via the `issue` field already present) and with validation reports (via spec paths).\n4. Wire the existing Context Gaps section (`skills/retro/SKILL.md:125`) from conditional to first-class — concrete grep patterns and reporting format.\n5. Update `skills/init/SKILL.md:761` to accurately describe retro consumption (the wording is correct *after* this issue ships).\n6. Add a regression test that retro reports session metrics when session data is available and degrades gracefully when it is not.\n\n## Acceptance criteria\n\n- `/adev:retro` outputs a `Session Activity` section in its report when sessions exist in the analysis range.\n- Section includes: tool-use distribution, total tokens / cost (if `usage` enrichment present), per-spec session counts, and Context Gaps.\n- Retro degrades silently when `.context-index/sessions/` is absent or empty (no warnings, no errors).\n- `skills/init/SKILL.md:761` documentation is accurate.\n- Test added to `tests/` verifying both populated and empty cases.\n\n## Dependency\n\nShould be designed *after* or *alongside* issue-527 (SessionEnd/PreCompact capture migration), since the file format and per-file granularity will change: `<date>-<session_id>.md` instead of `<date>-<sha>.md`, one file per Claude session instead of one per git commit. If retro is wired against the current per-commit format first, it will need rework when issue-527 ships. Recommended ordering: ship 527, then this.\n\n## References\n\n- Research artifact: `.context-index/research/session-logging-ux-improvements.md` (§ Verification documents the consumer-audit finding)\n- Documentation drift: `skills/init/SKILL.md:761`\n- Retro skill: `skills/retro/SKILL.md` (data-gathering steps 1.1-1.7; current session mention at line 125)\n- Tracking format: `hooks/session-capture.sh` (JSONL schema including `tool`, `files`, `issue`, `epic`, `usage`)\n- Related issue: issue-527 (SessionEnd/PreCompact capture migration — design dependency)",
+      "next_action": null,
+      "created": "2026-05-20T12:50:53.026Z",
+      "updated": "2026-05-20T12:50:53.043Z"
+    },
+    {
+      "id": "issue-529",
+      "title": "Add versioning to context-index for adev version migration",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-05-20T12:52:03.142Z",
+      "updated": "2026-05-20T12:52:03.142Z"
     }
   ]
 }
