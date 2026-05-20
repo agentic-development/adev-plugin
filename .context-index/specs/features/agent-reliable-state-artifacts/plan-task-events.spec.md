@@ -9,8 +9,8 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 1
-charter-revision: 3
+revision: 2
+charter-revision: 8
 created: 2026-05-12
 updated: 2026-05-12
 source-manifest:
@@ -52,6 +52,27 @@ Plan-task state has exactly one writer surface and exactly one reader surface:
 - **Writer:** `lib/lifecycle-state.mjs::reportPlanTask(projectRoot, specPath, { plan, task_id, status, notes })`. Both `/adev:plan` (when authoring the plan, emitting `pending` rows for each task) and `/adev:implement` (when transitioning a task through `in_progress` → `done` / `blocked` / `skipped`) call this helper. No other write path exists.
 - **Reader:** `currentState(projectRoot, specPath).planTasks`. `/adev:implement`, `/adev:work`, `/adev:status`, `/adev:reconcile`, and the markdown rendering layer all read from the projection. No code path reads task state from the plan markdown.
 - **Plan markdown is read-only after authoring.** `/adev:plan` writes the plan file once. `/adev:implement` reads it for the task list, expected complexity, and TDD expectations, but never edits it. No skill flips checkboxes, no skill appends "✅ done" inline.
+
+### Permitted sidecar peers
+
+Plan markdown is read-only, but adjacent state artifacts MAY live as
+sibling files next to the plan. The closed enumeration of permitted
+sidecar peers — keyed off the plan's stem `<plan-stem>` — is exactly four
+(per ADR-0012):
+
+| Sidecar peer            | Owner skill                 | Purpose                                              |
+|-------------------------|-----------------------------|------------------------------------------------------|
+| `<plan-stem>.review.md` | `/adev:review-specs`        | Reviewer verdict + structured findings               |
+| `<plan-stem>.validate.md` | `/adev:validate`          | Post-implementation validation report                |
+| `<plan-stem>.routing.md` | `/adev:route`              | Per-task routing decisions written via `adev route emit-sidecar` |
+| `<plan-stem>.blockers.md` | `/adev:implement` / `/adev:debug` | Structured blockers when a task cannot proceed |
+
+**Adding a fifth peer requires an ADR amendment per ADR-0012**
+(`.context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md`). The
+`plan-immutability` detector and the `hygiene` skill flag any
+non-enumerated sidecar peer as `UNKNOWN_SIDECAR_PEER` (advisory). Skills
+MUST NOT write sibling files outside this enumeration without first
+landing an amendment to ADR-0012 and this section.
 
 If a consumer needs to render the plan with current task statuses, it uses `renderMarkdown(state)` from `markdown-rendering-layer.spec.md` to produce a derived markdown view from the projection; the plan file itself is unchanged.
 
