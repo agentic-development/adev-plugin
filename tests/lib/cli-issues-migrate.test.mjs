@@ -1223,3 +1223,52 @@ describe("issues migrate dependency replay (plan-task 7)", () => {
     }
   });
 });
+
+describe("issues migrate final report + cleanup (plan-task 8)", () => {
+  it("buildLiveRunReport returns the documented JSON shape", async () => {
+    const mod = await import("../../lib/cli/issues-migrate.mjs");
+    const report = mod.buildLiveRunReport({
+      source: "json",
+      target: "beads",
+      created: { issues: 5, epics: 1 },
+      skipped: 2,
+      dependenciesReplayed: 3,
+      errors: [],
+    });
+    assert.equal(report.source, "json");
+    assert.equal(report.target, "beads");
+    assert.deepEqual(report.created, { issues: 5, epics: 1 });
+    assert.equal(report.skipped, 2);
+    assert.equal(report.dependencies_replayed, 3);
+    assert.equal(report.manifest_update_suggested, true);
+    assert.deepEqual(report.errors, []);
+  });
+
+  it(".gitignore contains .context-index/tasks/.migrate-state.json (Postcondition 8)", () => {
+    // Real repo gitignore must have the new line. This is a direct file check.
+    const gi = readFileSync(resolve(PROJECT_ROOT, ".gitignore"), "utf8");
+    assert.ok(
+      gi.includes(".context-index/tasks/.migrate-state.json"),
+      ".gitignore must list .context-index/tasks/.migrate-state.json",
+    );
+  });
+
+  it("clearMigrateState removes the state file if present and is a no-op if absent", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const statePath = join(proj, ".context-index", "tasks", ".migrate-state.json");
+      writeFileSync(statePath, JSON.stringify({ source: "json", target: "beads", last_successful_index: 2, scope_args: {} }));
+      assert.ok(existsSync(statePath));
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      mod.clearMigrateState(proj);
+      assert.equal(existsSync(statePath), false, "expected state file removed");
+
+      // No-op when absent.
+      mod.clearMigrateState(proj);
+      assert.equal(existsSync(statePath), false);
+    } finally {
+      cleanup(proj);
+    }
+  });
+});
