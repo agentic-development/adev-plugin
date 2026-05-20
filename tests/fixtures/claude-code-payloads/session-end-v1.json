@@ -1,0 +1,7 @@
+{
+  "_comment": "Reference SessionEnd payload (v1) per SA-9. Shape pinned for upstream-rename detection. Tests in tests/fixtures/claude-code-payloads/payload-shape.test.mjs assert that all required keys remain present. Update version (v2.json, etc.) if Claude Code introduces a breaking payload change.",
+  "session_id": "0bd909e2-1a2b-3c4d-9e8f-7654321abcde",
+  "transcript_path": "/Users/example/.claude/projects/-Users-example-projects-adev-plugin/0bd909e2-1a2b-3c4d-9e8f-7654321abcde.jsonl",
+  "cwd": "/Users/example/projects/adev-plugin",
+  "reason": "exit"
+}
