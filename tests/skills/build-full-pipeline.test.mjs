@@ -51,11 +51,14 @@ describe("adev:build SKILL.md — Full Pipeline and blocker-fix loop", () => {
       "Must describe a blocker-fix loop when review returns BLOCK");
   });
 
-  it("blocker-context is enclosed in a fenced block to prevent prompt injection", () => {
-    assert.match(skill, /blocker.context/i,
-      "Must reference --blocker-context flag");
-    assert.match(skill, /fenced|```|code fence/i,
-      "Must require blocker-context to be enclosed in a fenced block (SEC-1)");
+  it("BLOCK→revise loop replaces the legacy --blocker-context flag with canonical blocker_id sidecars", () => {
+    // The legacy --blocker-context flag was removed by commit 7e333fd and replaced
+    // by /adev:specify --revise (per review-block-auto-retry.spec.md). The
+    // canonical .blockers.md sidecar keyed by blocker_id is the new transport.
+    assert.match(skill, /blockers\.md|blocker_id/i,
+      "Must reference the .blockers.md sidecar or canonical blocker_id transport");
+    assert.match(skill, /specify.*--revise|--revise.*specify/i,
+      "Must dispatch /adev:specify --revise on BLOCK (the auto-retry loop)");
   });
 
   it("resolves build.max_review_retries from user-config with default 2", () => {
