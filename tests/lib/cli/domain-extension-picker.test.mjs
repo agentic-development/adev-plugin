@@ -409,3 +409,69 @@ describe('workspace mode', () => {
     assert.strictEqual(result.action, 'software');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Task 6: writeDomainKey
+// ---------------------------------------------------------------------------
+
+describe('writeDomainKey', () => {
+  let tmpProjectRoot;
+  let manifestPath;
+
+  beforeEach(() => {
+    tmpProjectRoot = mkdtempSync(join(tmpdir(), 'adev-picker-wd-'));
+    mkdirSync(join(tmpProjectRoot, '.context-index'), { recursive: true });
+    manifestPath = join(tmpProjectRoot, '.context-index', 'manifest.yaml');
+  });
+
+  afterEach(() => {
+    rmSync(tmpProjectRoot, { recursive: true, force: true });
+  });
+
+  it('appends a top-level domain: key to a manifest that has none', async () => {
+    writeFileSync(manifestPath, 'project:\n  name: test\n');
+    const { writeDomainKey } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    writeDomainKey(tmpProjectRoot, 'data-engineering');
+    const content = readFileSync(manifestPath, 'utf8');
+    assert.match(content, /^domain: data-engineering$/m);
+    // existing content preserved
+    assert.match(content, /project:\n {2}name: test/);
+  });
+
+  it('replaces an existing top-level domain: key idempotently', async () => {
+    writeFileSync(manifestPath, 'project:\n  name: test\ndomain: software\n');
+    const { writeDomainKey } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    writeDomainKey(tmpProjectRoot, 'data-engineering');
+    const content = readFileSync(manifestPath, 'utf8');
+    const matches = content.match(/^domain:/gm) || [];
+    assert.strictEqual(matches.length, 1, 'should have exactly one domain: key');
+    assert.match(content, /^domain: data-engineering$/m);
+  });
+
+  it('is byte-identical when called twice with the same value (idempotent)', async () => {
+    writeFileSync(manifestPath, 'project:\n  name: test\n');
+    const { writeDomainKey } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    writeDomainKey(tmpProjectRoot, 'data-engineering');
+    const first = readFileSync(manifestPath, 'utf8');
+    writeDomainKey(tmpProjectRoot, 'data-engineering');
+    const second = readFileSync(manifestPath, 'utf8');
+    assert.strictEqual(first, second);
+  });
+
+  it('writes domain: software for skip / software outcomes', async () => {
+    writeFileSync(manifestPath, 'project:\n  name: test\n');
+    const { writeDomainKey } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    writeDomainKey(tmpProjectRoot, 'software');
+    const content = readFileSync(manifestPath, 'utf8');
+    assert.match(content, /^domain: software$/m);
+  });
+
+  it('throws PICKER_MANIFEST_WRITE_FAILED when manifest.yaml is missing', async () => {
+    const { writeDomainKey } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    // no manifest written
+    assert.throws(
+      () => writeDomainKey(tmpProjectRoot, 'data-engineering'),
+      (err) => err.code === 'PICKER_MANIFEST_WRITE_FAILED'
+    );
+  });
+});
