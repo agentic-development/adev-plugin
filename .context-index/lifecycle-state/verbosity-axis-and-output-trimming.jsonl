@@ -56,3 +56,4 @@
 {"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","notes":"PASS — see validate.md","ts":"2026-05-18T14:06:13.708Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-18T14:06:27.845Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-18T14:06:57.093Z"}
+{"event":"code_drift_detected","drift_source":"package.json","drift_at":"2026-05-19T19:39:59.284Z","ts":"2026-05-19T19:39:59.284Z"}

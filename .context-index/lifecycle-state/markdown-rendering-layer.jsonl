@@ -1,1 +1,6 @@
 {"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-17T19:39:17.064Z","ts":"2026-05-18T13:50:21.075Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:14:57.062Z","ts":"2026-05-19T20:14:57.062Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:08.750Z","ts":"2026-05-19T20:15:08.750Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:27.776Z","ts":"2026-05-19T20:15:27.776Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:34.706Z","ts":"2026-05-19T20:15:34.706Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:49.846Z","ts":"2026-05-19T20:15:49.846Z","diagnostic_warnings":["adev/frontmatter-present"]}
