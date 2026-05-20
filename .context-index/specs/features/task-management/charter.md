@@ -1,6 +1,6 @@
 ---
 status: approved
-revision: 4
+revision: 6
 updated: 2026-05-19
 ---
 
@@ -121,6 +121,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | **Tree Walking** | `walkTree(parentId)` returns all descendant items via prefix match | must-have | 3 | — |
 | **Specify Integration** | `/adev:specify` creates a Feature work item bound 1:1 to each Live Spec it authors | should-have | 3 | — |
 | **Closure Cascade Guard** | Closing an item is blocked while unclosed children exist (mirrors existing dependency guard) | should-have | 3 | — |
+| **Backend Migration** | One-shot CLI conversion of the issue board between configured backends (json ↔ beads, json ↔ file). Idempotent via `.beads-map.json` mapping or title-match fallback; supports `--dry-run` and `--include-closed`. Prompts before flipping `tasks.backend` in manifest.yaml. Operationalizes the Consistency quality attribute. | must-have | 4 | validated |
 
 ## Deferred Capabilities
 
@@ -150,6 +151,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | `IssueManager.updateEpic(id, changes)` | function | (Deprecated, kept for back-compat) Calls `update()` |
 | `getIssueManager(manifest)` | function | Registry: returns active backend adapter; reads tier config from manifest |
 | `/adev:issues` | skill | User-facing skill — supports tiered creation and tree views |
+| `adev issues migrate --to <backend>` | CLI verb | Convert the active issue board to the target backend. Defaults: scope=open/in_progress/deferred (use `--include-closed` for full history), source=current `tasks.backend` (override with `--from`). Idempotent via `.beads-map.json` (or title-match fallback). Supports `--dry-run`. Prompts before flipping `tasks.backend` in manifest.yaml — never auto-writes. |
 
 ### Consumed APIs
 
@@ -166,7 +168,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | Attribute | Requirement |
 |-----------|-------------|
 | Portability | File backend works on any system with Node.js. Beads backend degrades gracefully when `br` is absent. |
-| Consistency | Both backends produce identical logical state. Switching backends mid-project must not lose data semantics. |
+| Consistency | Both backends produce identical logical state. Switching backends mid-project must not lose data semantics — operationalized by the **Backend Migration** capability with idempotent re-runs and dry-run preview. |
 | Simplicity | File backend is a single readable markdown file. No database, no build step, no config beyond a few manifest fields. |
 | Extensibility | New backends added by implementing the interface and registering in the registry. New tier conventions added via manifest config without code changes. |
 | Testability | All adapters testable with Node.js built-in test runner. Beads adapter testable with mocked execSync. |
@@ -185,3 +187,7 @@ This is revision 3 (2026-04-16). Revision 2 introduced the Epic → Issue model;
 - Skills updated to write `next_action` will treat the field as optional when reading old work items that lack it
 
 The migration is opt-in. Projects can adopt tiered IDs, `next_action`, and generic types incrementally without rewriting existing work items.
+
+Revision 5 (2026-05-19) adds the **Backend Migration** capability as the operational realization of the Consistency quality attribute. No domain-model changes — only an interface addition (`adev issues migrate` CLI verb). The verb is idempotent and dry-runnable; manifest writes require user confirmation.
+
+Not to be confused with `adev migrate` (format-shape migration of legacy state artifacts, owned by the `agent-reliable-state-artifacts` charter). `adev issues migrate` operates one level up — it converts the *configured backend* of the issue board using existing adapters, while `adev migrate` converts artifact *shapes* (e.g., markdown/YAML → JSON/JSONL).

@@ -119,3 +119,9 @@
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.020Z","ts":"2026-05-20T12:08:30.021Z"}
 {"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T12:12:27.368Z","ts":"2026-05-20T12:12:27.369Z"}
 {"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T12:12:50.666Z","ts":"2026-05-20T12:12:50.667Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.020Z","ts":"2026-05-20T01:26:28.021Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.753Z","ts":"2026-05-20T01:27:38.754Z"}
+{"event":"code_drift_detected","drift_source":".gitignore","drift_at":"2026-05-20T01:47:50.090Z","ts":"2026-05-20T01:47:50.091Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.342Z","ts":"2026-05-20T12:58:34.342Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.065Z","ts":"2026-05-20T13:03:18.066Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.977Z","ts":"2026-05-20T13:05:52.978Z"}
