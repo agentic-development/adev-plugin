@@ -985,3 +985,127 @@ test('listLifecycleStates skips a malformed file mid-glob and continues', () => 
     cleanupTempDir(root);
   }
 });
+
+// ── byRevision[N] projection (review-block-auto-retry Task 3) ──────────────
+
+test('currentState projects state.steps.<step>.byRevision[N] when events carry revision', () => {
+  const { root, specPath } = makeProject();
+  try {
+    // rev 1 review FAIL → BLOCK
+    reportReviewer(root, specPath, {
+      step: 'review', reviewer: 'structural-architect', verdict: 'FAIL',
+      notes: 'block on rev 1', revision: 1,
+    });
+    reportStep(root, specPath, { step: 'review', status: 'failed', verdict: 'FAIL', revision: 1 });
+    // rev 2 review PASS
+    reportReviewer(root, specPath, {
+      step: 'review', reviewer: 'structural-architect', verdict: 'PASS',
+      notes: 'rev 2 ok', revision: 2,
+    });
+    reportStep(root, specPath, { step: 'review', status: 'completed', verdict: 'PASS', revision: 2 });
+
+    const state = currentState(root, specPath);
+    const review = state.steps.review;
+    assert.ok(review.byRevision, 'review step must expose byRevision');
+    assert.ok(review.byRevision[1], 'byRevision[1] must exist');
+    assert.ok(review.byRevision[2], 'byRevision[2] must exist');
+    assert.equal(review.byRevision[1].verdict, 'FAIL');
+    assert.equal(review.byRevision[2].verdict, 'PASS');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState top-level state.steps.<step> reflects the latest revision (no breaking change)', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportReviewer(root, specPath, {
+      step: 'review', reviewer: 'structural-architect', verdict: 'FAIL',
+      notes: 'block', revision: 1,
+    });
+    reportStep(root, specPath, { step: 'review', status: 'failed', verdict: 'FAIL', revision: 1 });
+    reportReviewer(root, specPath, {
+      step: 'review', reviewer: 'structural-architect', verdict: 'PASS',
+      notes: 'fixed', revision: 2,
+    });
+    reportStep(root, specPath, { step: 'review', status: 'completed', verdict: 'PASS', revision: 2 });
+
+    const state = currentState(root, specPath);
+    // Top-level reflects latest revision
+    assert.equal(state.steps.review.verdict, 'PASS');
+    assert.equal(state.steps.review.status, 'completed');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState folds legacy events without revision into byRevision[1]', () => {
+  const { root, specPath } = makeProject();
+  try {
+    // No revision: field — legacy emitter
+    reportReviewer(root, specPath, {
+      step: 'review', reviewer: 'structural-architect', verdict: 'PASS',
+      notes: 'legacy',
+    });
+    reportStep(root, specPath, { step: 'review', status: 'completed', verdict: 'PASS' });
+
+    const state = currentState(root, specPath);
+    assert.ok(state.steps.review.byRevision, 'byRevision projection always present');
+    assert.ok(state.steps.review.byRevision[1], 'legacy events fold into revision 1');
+    assert.equal(state.steps.review.byRevision[1].verdict, 'PASS');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState byRevision[N] entries carry verdict + completed_at + blockers', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportReviewer(root, specPath, {
+      step: 'review', reviewer: 'security-reviewer', verdict: 'FAIL',
+      notes: 'block', revision: 1,
+    });
+    reportStep(root, specPath, { step: 'review', status: 'failed', verdict: 'FAIL', revision: 1 });
+    const state = currentState(root, specPath);
+    const rev1 = state.steps.review.byRevision[1];
+    assert.equal(rev1.verdict, 'FAIL');
+    assert.ok(typeof rev1.completed_at === 'string' && rev1.completed_at.length > 0);
+    assert.ok(Array.isArray(rev1.blockers));
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState byRevision works across multiple step names (review, plan, implement)', () => {
+  const { root, specPath } = makeProject();
+  try {
+    reportStep(root, specPath, { step: 'plan', status: 'completed', verdict: 'PASS', revision: 1 });
+    reportStep(root, specPath, { step: 'review', status: 'failed', verdict: 'FAIL', revision: 1 });
+    reportStep(root, specPath, { step: 'implement', status: 'completed', verdict: 'PASS', revision: 1 });
+    const state = currentState(root, specPath);
+    assert.ok(state.steps.plan.byRevision[1]);
+    assert.ok(state.steps.review.byRevision[1]);
+    assert.ok(state.steps.implement.byRevision[1]);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState reports spec_revised events as part of the projection (folds without crash)', () => {
+  const { root, specPath } = makeProject();
+  try {
+    // Emit a spec_revised event directly
+    appendEvent(root, specPath, {
+      event: 'spec_revised',
+      from_revision: 1,
+      to_revision: 2,
+      addressed_blocker_ids: ['x:y:abc12345'],
+      unresolved_blocker_ids: [],
+    });
+    // Should not throw and not appear under unknownEvents
+    const state = currentState(root, specPath);
+    assert.equal(state.unknownEvents.length, 0, 'spec_revised must be recognized as canonical');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
