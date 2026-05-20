@@ -785,7 +785,7 @@ Ensure `.context-index/user-config` is listed in the project's `.gitignore` (the
 
 ## Session History Files
 
-The CLI installer ships a git `post-commit` hook (`.githooks/post-commit`) that auto-generates one session summary file per commit at `.context-index/sessions/<date>-<shortSHA>.md`. These files contain commit metadata + subject/body and are consumed by `/adev:retro`, `/adev:hygiene`, and audit skills.
+The CLI installer ships a git `post-commit` hook (`.githooks/post-commit`) that auto-generates one session summary file per commit at `.context-index/sessions/<date>-<shortSHA>.md`. These files contain commit metadata + subject/body and are consumed by `/adev:retro` (via the `## Session Activity` section in Step 1.8 — see `skills/retro/SKILL.md`), `/adev:hygiene`, and audit skills. `/adev:retro` reads both post-commit-mode files (this hook) and hook-mode files (`hook-driven-capture`) within the analysis window and renders tool-use distribution, per-spec session counts, token/cost trends, sessions ↔ closed-issues cross-reference, and frame-anchored Context Gaps.
 
 The installer's `.gitignore` block intentionally does **not** include `.context-index/sessions/` — the convention is tracked content, batch-committed under `chore(sessions): record YYYY-MM-DD transcripts` messages. If the project prefers to keep them local-only, add `.context-index/sessions/` to `.gitignore`. Surface this choice to the user during init when relevant. Full reference: `docs/hooks.md` > Git Hooks > `post-commit`.
 
