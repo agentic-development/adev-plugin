@@ -1272,3 +1272,392 @@ describe("issues migrate final report + cleanup (plan-task 8)", () => {
     }
   });
 });
+
+describe("issues migrate coverage sweep (plan-task 9)", () => {
+  function makeIssue(id, overrides = {}) {
+    return {
+      id,
+      title: `${id} title`,
+      status: "open",
+      priority: 2,
+      type: "task",
+      dependencies: [],
+      notes: "",
+      next_action: null,
+      created: "2026-05-19T00:00:00.000Z",
+      updated: "2026-05-19T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it("uses manifest tasks.backend as source when --from is absent (Behavior 1)", () => {
+    // manifest tasks.backend=json, --to=beads → source resolves to 'json'.
+    // We assert this indirectly via the noop check: if --to=json, NOOP fires
+    // (proving source resolved from manifest); if it did not, this would not
+    // be a noop.
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const { exitCode, stderr } = runCli(
+        ["issues", "migrate", "--to", "json"],
+        { cwd: proj },
+      );
+      assert.notEqual(exitCode, 0);
+      assert.ok(stderr.includes("MIGRATE_NOOP"));
+      // The NOOP message includes "both '<source>'" — confirms manifest
+      // was used as source.
+      assert.ok(stderr.includes("'json'"), `expected source 'json' in NOOP message, got: ${stderr}`);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("manifest.yaml is byte-equal before and after a dry-run (Postcondition 5, Behavior 19)", () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const manifestPath = join(proj, ".context-index", "manifest.yaml");
+      const before = readFileSync(manifestPath, "utf8");
+
+      const brCheck = spawnSync("which", ["br"], { encoding: "utf8" });
+      if ((brCheck.status ?? 1) !== 0) return; // skip if no br
+
+      const { exitCode } = runCli(
+        ["issues", "migrate", "--to", "beads", "--dry-run"],
+        { cwd: proj },
+      );
+      assert.equal(exitCode, 0);
+
+      const after = readFileSync(manifestPath, "utf8");
+      assert.equal(after, before, "manifest.yaml must be byte-equal after dry-run");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("manifest.yaml is byte-equal before and after a live run under --auto (Behavior 19)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const manifestPath = join(proj, ".context-index", "manifest.yaml");
+
+      // Seed a populated json board.
+      writeFileSync(
+        join(proj, ".context-index", "tasks", "tasks.json"),
+        JSON.stringify(
+          {
+            version: 2,
+            seq: 0,
+            epics: [],
+            issues: [makeIssue("issue-1"), makeIssue("issue-2")],
+          },
+          null,
+          2,
+        ) + "\n",
+      );
+
+      const before = readFileSync(manifestPath, "utf8");
+
+      // Use runLiveMigration directly with stub adapters — bypasses the need
+      // for real br and isolates the manifest-write policy assertion.
+      const sourceAdapter = {
+        async list() { return [makeIssue("issue-1"), makeIssue("issue-2")]; },
+        async listEpics() { return []; },
+      };
+      const targetAdapter = {
+        async create() { return { id: "tgt-x" }; },
+        async createEpic() { return { id: "tgt-epic" }; },
+        async addDependency() {},
+      };
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      await mod.runLiveMigration({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        sourceAdapter,
+        targetAdapter,
+        sourceIssues: [makeIssue("issue-1"), makeIssue("issue-2")],
+        sourceEpics: [],
+        alreadyMigratedIssueIds: new Set(),
+        alreadyMigratedEpicIds: new Set(),
+        startIndex: 0,
+        scopeArgs: { includeClosed: false },
+      });
+
+      const after = readFileSync(manifestPath, "utf8");
+      assert.equal(after, before, "manifest.yaml must be byte-equal after live run (Behavior 19)");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("resumes from next index on re-invocation after partial failure (Behavior 18, Postcondition 6)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [
+        makeIssue("issue-1"),
+        makeIssue("issue-2"),
+        makeIssue("issue-3"),
+        makeIssue("issue-4"),
+      ];
+
+      // First call: fail at index 2 (3rd item).
+      let createIdx = 0;
+      const failingTarget = {
+        async create() {
+          if (createIdx === 2) {
+            createIdx++;
+            const err = new Error("simulated br failure");
+            err.code = "BEADS_COMMAND_FAILED";
+            err.stderr = "br create: simulated failure\n";
+            throw err;
+          }
+          createIdx++;
+          return { id: `tgt-${createIdx}` };
+        },
+      };
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const stubSrc = { async list() { return sourceIssues; }, async listEpics() { return []; } };
+
+      let caught;
+      try {
+        await mod.runLiveMigration({
+          projectRoot: proj,
+          source: "json",
+          target: "beads",
+          sourceAdapter: stubSrc,
+          targetAdapter: failingTarget,
+          sourceIssues,
+          sourceEpics: [],
+          alreadyMigratedIssueIds: new Set(),
+          alreadyMigratedEpicIds: new Set(),
+          startIndex: 0,
+          scopeArgs: { includeClosed: false },
+        });
+      } catch (err) {
+        caught = err;
+      }
+      assert.equal(caught.code, "MIGRATE_PARTIAL_FAILURE");
+
+      // .migrate-state.json should record last_successful_index = 1.
+      const statePath = join(proj, ".context-index", "tasks", ".migrate-state.json");
+      const state = JSON.parse(readFileSync(statePath, "utf8"));
+      assert.equal(state.last_successful_index, 1);
+
+      // Second call: resume. Use a passing target adapter; loadResumeState
+      // should yield startIndex=2 so only issue-3 and issue-4 are created.
+      const passingTargetCalls = [];
+      const passingTarget = {
+        async create(input) {
+          passingTargetCalls.push(input);
+          return { id: `tgt-resumed-${passingTargetCalls.length}` };
+        },
+      };
+
+      const resume = mod.loadResumeState({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        scopeArgs: { includeClosed: false },
+      });
+      assert.equal(resume.startIndex, 2);
+
+      const second = await mod.runLiveMigration({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        sourceAdapter: stubSrc,
+        targetAdapter: passingTarget,
+        sourceIssues,
+        sourceEpics: [],
+        alreadyMigratedIssueIds: new Set(),
+        alreadyMigratedEpicIds: new Set(),
+        startIndex: resume.startIndex,
+        scopeArgs: { includeClosed: false },
+      });
+
+      assert.equal(second.created.issues, 2, "expected only 2 items created on resume (issue-3, issue-4)");
+      assert.equal(passingTargetCalls.length, 2);
+      assert.equal(passingTargetCalls[0].title, "issue-3 title");
+      assert.equal(passingTargetCalls[1].title, "issue-4 title");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("passes the documented field set verbatim to target create() (Behaviors 9-10)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const rich = {
+        id: "issue-1",
+        title: "rich issue",
+        status: "in_progress",
+        priority: 1,
+        type: "feature",
+        epicId: "epic-1",
+        parent_id: "e1",
+        planRef: "/path/to/plan.md",
+        spec_ref: "/path/to/spec.md",
+        next_action: "/adev:test",
+        notes: "some notes",
+        dependencies: ["issue-99"], // will be stripped — replayed separately
+        created: "2026-05-19T00:00:00.000Z",
+        updated: "2026-05-19T00:00:00.000Z",
+      };
+
+      const calls = [];
+      const targetAdapter = {
+        async create(input) {
+          calls.push(input);
+          return { ...input, id: "tgt-1" };
+        },
+      };
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      await mod.runLiveMigration({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        sourceAdapter: { async list() { return [rich]; }, async listEpics() { return []; } },
+        targetAdapter,
+        sourceIssues: [rich],
+        sourceEpics: [],
+        alreadyMigratedIssueIds: new Set(),
+        alreadyMigratedEpicIds: new Set(),
+        startIndex: 0,
+        scopeArgs: { includeClosed: false },
+      });
+
+      const passed = calls[0];
+      // Documented field set per Behaviors 9-10: title, type, priority, notes,
+      // epicId, parent_id, planRef, spec_ref, next_action. ID, dependencies,
+      // created, updated are NOT passed through (handled separately).
+      assert.equal(passed.title, "rich issue");
+      assert.equal(passed.type, "feature");
+      assert.equal(passed.priority, 1);
+      assert.equal(passed.notes, "some notes");
+      assert.equal(passed.epicId, "epic-1");
+      assert.equal(passed.parent_id, "e1");
+      assert.equal(passed.planRef, "/path/to/plan.md");
+      assert.equal(passed.spec_ref, "/path/to/spec.md");
+      assert.equal(passed.next_action, "/adev:test");
+      assert.equal(passed.id, undefined, "source id must NOT be passed (adapter assigns)");
+      assert.equal(passed.dependencies, undefined, "dependencies replayed separately");
+      assert.equal(passed.created, undefined, "created stripped");
+      assert.equal(passed.updated, undefined, "updated stripped");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("beads → json migration stamps original_id marker in target notes (idempotency)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [makeIssue("br-7", { notes: "" })];
+      const calls = [];
+      const targetAdapter = {
+        async create(input) {
+          calls.push(input);
+          return { ...input, id: "issue-1" };
+        },
+      };
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      await mod.runLiveMigration({
+        projectRoot: proj,
+        source: "beads",
+        target: "json",
+        sourceAdapter: { async list() { return sourceIssues; }, async listEpics() { return []; } },
+        targetAdapter,
+        sourceIssues,
+        sourceEpics: [],
+        alreadyMigratedIssueIds: new Set(),
+        alreadyMigratedEpicIds: new Set(),
+        startIndex: 0,
+        scopeArgs: { includeClosed: false },
+      });
+
+      assert.equal(calls.length, 1);
+      assert.ok(
+        calls[0].notes.includes("original_id: br-7"),
+        `expected original_id marker in notes, got: ${calls[0].notes}`,
+      );
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("partial-failure errors[] includes underlying adapter stderr verbatim (SEC-1)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [makeIssue("issue-1"), makeIssue("issue-2")];
+      const failingTarget = {
+        async create() {
+          const err = new Error("br exec failed");
+          err.code = "BEADS_COMMAND_FAILED";
+          err.stderr =
+            "Error: br create failed: tasks.beads is corrupt at line 42\n  caused by: db_lock_held\n";
+          throw err;
+        },
+      };
+
+      const originalErr = console.error;
+      const stderrBuf = [];
+      console.error = (msg) => stderrBuf.push(String(msg));
+
+      let caught;
+      try {
+        const mod = await import("../../lib/cli/issues-migrate.mjs");
+        await mod.runLiveMigration({
+          projectRoot: proj,
+          source: "json",
+          target: "beads",
+          sourceAdapter: { async list() { return sourceIssues; }, async listEpics() { return []; } },
+          targetAdapter: failingTarget,
+          sourceIssues,
+          sourceEpics: [],
+          alreadyMigratedIssueIds: new Set(),
+          alreadyMigratedEpicIds: new Set(),
+          startIndex: 0,
+          scopeArgs: { includeClosed: false },
+        });
+      } catch (err) {
+        caught = err;
+      } finally {
+        console.error = originalErr;
+      }
+
+      assert.equal(caught.code, "MIGRATE_PARTIAL_FAILURE");
+      // errors[] carries stderr verbatim.
+      assert.equal(caught.errors.length, 1);
+      assert.ok(
+        caught.errors[0].stderr.includes("tasks.beads is corrupt at line 42"),
+        "expected stderr verbatim in errors[0].stderr",
+      );
+      // Stderr also printed to terminal at failure time (SEC-1).
+      const allStderr = stderrBuf.join("\n");
+      assert.ok(
+        allStderr.includes("tasks.beads is corrupt at line 42"),
+        "expected stderr verbatim on terminal at failure time",
+      );
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("non-dry-run live runtime emits manifest-update suggestion text", () => {
+    // This is a contract check on the helper: the suggestion text mentions
+    // manifest.yaml AND the target name AND the never-writes guarantee.
+    const text =
+      // Import via dynamic to avoid top-level pollution.
+      // We can use the synchronously-imported runMigrate's manifestUpdateSuggestion
+      // via default export.
+      undefined;
+    // Re-use the already-imported mod via dynamic import:
+    return import("../../lib/cli/issues-migrate.mjs").then((mod) => {
+      const s = mod.manifestUpdateSuggestion("beads");
+      assert.ok(s.includes("manifest.yaml"), "expected mention of manifest.yaml");
+      assert.ok(s.includes("'beads'"), "expected mention of target backend");
+      assert.ok(s.toLowerCase().includes("never writes"), "expected never-writes guarantee");
+    });
+  });
+});
