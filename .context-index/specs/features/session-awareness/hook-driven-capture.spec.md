@@ -6,7 +6,7 @@ kind: behavioral
 status: review-passed
 risk_level: medium
 milestone: 0.28.0
-revision: 2
+revision: 3
 charter-revision: 6
 created: 2026-05-20
 updated: 2026-05-20
@@ -37,7 +37,16 @@ supersedes:
      gitignore removal on capture: off (SA-7), supersession bookkeeping for
      post-commit-self-skip.spec.md (SA-8), pinned bash-wrapper gate-check
      (SEC-6), stable stderr diagnostic format (SEC-7), and full session_id in
-     filenames (resolves CON-3 — supersedes the prior 8-char prefix). -->
+     filenames (resolves CON-3 — supersedes the prior 8-char prefix).
+
+     Rev 3 addresses the rev 2 review's two warnings without changing any
+     behavior: SEC-9 expands the redaction pattern list (adds PEM private-key
+     blocks, Slack/Google/Stripe keys, distinguishes Stripe `sk_` from
+     LLM `sk-`), SEC-10 tightens containment to realpath-vs-realpath
+     comparison for both transcript_path and the transcripts-root anchor, plus
+     a manifest-walk-from-realpath rule for the cwd check. The dropped
+     `platform-context.yaml` override clause incidentally resolves the
+     duplicated SA-10 / CON-9 suggestion. -->
 
 ## Behavioral Contract
 
@@ -60,9 +69,20 @@ supersedes:
 - **Atomic writes (SEC-4).** Every session file is written via temp-rename `<path>.tmp-<pid>-<8hex>` → `<path>`, where `<8hex>` is 8 hex characters from `crypto.randomBytes(4)`. The random suffix prevents collisions across worktrees or recycled PIDs. The rename is atomic per POSIX; last-writer-wins at the rename syscall is the intentional resolution for concurrent fires.
 - **One file per session per day.** PreCompact and SessionEnd from the same `session_id` write to the same path `<YYYY-MM-DD>-<session_id>.md` (full session_id, sanitized per the *Session ID charset* invariant). Last write wins, EXCEPT a PreCompact write MUST NOT overwrite an existing file whose YAML frontmatter contains `kind: session-end` (SA-2 — handles delayed-delivery PreCompact-after-SessionEnd).
 - **Session ID charset (SEC-2).** `session_id` from the hook payload must match `^[A-Za-z0-9_-]+$` (Claude session IDs are UUID-like). The hook rejects any session_id outside this charset by exiting 0 with stderr diagnostic; no file is written.
-- **Working directory check.** `cwd` from the hook payload must be an absolute path that, after `realpath` resolution, lies inside a directory containing `manifest.yaml`. Hooks reject (exit 0, stderr) when `cwd` fails this check.
-- **Transcript path containment (SEC-3).** `transcript_path` from the hook payload must (a) end in `.jsonl`, and (b) after `realpath` resolution lie under the Claude Code transcripts root for the current `cwd` — by convention `~/.claude/projects/<cwd-encoded>/` or a project-local override declared in `platform-context.yaml`. Hooks reject (exit 0, stderr) any path failing containment; `fromTranscript()` never opens a file outside this root.
-- **Transcript redaction (SEC-1).** `fromTranscript()` calls `redactSecrets()` over every user-facing token before rendering the markdown body. Redaction patterns include AWS access keys (`AKIA[A-Z0-9]{16}`), GitHub tokens (`gh[pousr]_[A-Za-z0-9]{36,}`), OpenAI/Anthropic keys (`sk-(ant-)?[A-Za-z0-9_-]{20,}`), generic JWTs (`eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}`), `Authorization: Bearer …` headers, and `.env`-style `KEY=VALUE` where KEY matches `(?i)(api[_-]?key|token|secret|password|auth)`. Each redacted token is replaced with `[REDACTED:<class>]`. Redaction applies unconditionally regardless of `gitignored` value — defense-in-depth against accidental `git add`.
+- **Working directory check (SEC-10).** `cwd` from the hook payload must be an absolute path. After `realpath` resolution the helper walks upward starting from the **resolved** path looking for `manifest.yaml`; the walk must NOT start from the raw input. Hooks reject (exit 0, stderr) when `cwd` is not absolute or when no `manifest.yaml` is found in the realpath-resolved ancestry.
+- **Transcript path containment (SEC-3, SEC-10).** `transcript_path` from the hook payload must (a) end in `.jsonl`, and (b) after `realpath` resolution be a path-prefix child of the Claude Code transcripts root **also after its own realpath resolution**. The transcripts root is `~/.claude/projects/<cwd-encoded>/` (resolved against `process.env.HOME`); both operands of the prefix comparison must be the `realpath`-resolved forms — never compare resolved-vs-raw, which lets symlinks escape (e.g., `~/.claude` → `/tmp/...`). Hooks reject (exit 0, stderr) any path failing containment; `fromTranscript()` never opens a file outside this root.
+- **Transcript redaction (SEC-1, SEC-9).** `fromTranscript()` calls `redactSecrets()` over every user-facing token before rendering the markdown body. Redaction patterns include:
+  - **PEM private-key blocks** — multiline match `-----BEGIN (RSA |EC |OPENSSH |DSA |PGP |ENCRYPTED )?PRIVATE KEY-----[\s\S]*?-----END \1?PRIVATE KEY-----`; the entire block (header + body + footer) is replaced with `[REDACTED:private-key]`. Highest-impact pattern; processed first.
+  - **AWS access keys** — `AKIA[A-Z0-9]{16}` → `[REDACTED:aws-access-key]`
+  - **GitHub tokens** — `gh[pousr]_[A-Za-z0-9]{36,}` → `[REDACTED:github-token]`
+  - **OpenAI / Anthropic keys** — `sk-(ant-)?[A-Za-z0-9_-]{20,}` (hyphen separator) → `[REDACTED:llm-key]`
+  - **Stripe keys** — `sk_(live|test)_[0-9A-Za-z]{24,}` (underscore separator — distinct from the LLM-key pattern; do not collapse) → `[REDACTED:stripe-key]`
+  - **Slack tokens** — `xox[abprs]-[0-9A-Za-z-]+` → `[REDACTED:slack-token]`
+  - **Google API keys** — `AIza[0-9A-Za-z_-]{35}` → `[REDACTED:google-api-key]`
+  - **Generic JWTs** — `eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}` → `[REDACTED:jwt]`
+  - **`Authorization: Bearer …` headers** — `(?i)authorization:\s*bearer\s+[A-Za-z0-9._-]+` → `Authorization: [REDACTED:bearer]`
+  - **`.env`-style secret KEY=VALUE** — `KEY` matches `(?i)(api[_-]?key|token|secret|password|auth|private[_-]?key)`, value is any non-whitespace run → replaces the value with `[REDACTED:env-secret]`
+  Redaction applies unconditionally regardless of `gitignored` value — defense-in-depth against accidental `git add`. Pattern order is significant: PEM block first (multiline, may contain `KEY=VALUE`-like tail), then specific key patterns, then generic Bearer / env-secret fallbacks.
 - **Detection is pure.** `detectExistingCapture(projectRoot)` is a read-only function over `.githooks/post-commit` (looks for the sentinel block or, on legacy projects, the legacy capture-write call signature) and tracked `.context-index/sessions/*.md`. It never writes.
 - **Configurability is per-project, read on every fire.** Hooks re-read `manifest.yaml:integrations.session_capture` on each invocation. No cached state. A manifest edit takes effect on the next event without re-running the installer.
 - **Stored config trumps detection (SA-4).** When the manifest already contains `integrations.session_capture.capture`, the value there wins over `detectExistingCapture()` signals — but the init wizard surfaces a one-line warning when the two disagree (stored=`post-commit` but legacy block already removed, or stored=`hook` but `.githooks/post-commit` still contains the legacy block). The warning is informational; the stored config is applied as-is.
@@ -195,7 +215,9 @@ supersedes:
 - [ ] `validateSessionId(id)` rejects (returns false / throws — pick the contract in plan) any session_id outside `^[A-Za-z0-9_-]+$`.
 - [ ] `validateTranscriptPath(path, cwd)` rejects any path outside the Claude Code transcripts root or not ending in `.jsonl`.
 - [ ] `validateCwd(cwd)` rejects non-absolute paths or paths outside a `manifest.yaml`-bearing directory after `realpath` resolution.
-- [ ] `redactSecrets(text)` redacts AWS keys, GitHub tokens, OpenAI/Anthropic keys, JWTs, `Authorization: Bearer` headers, and `.env`-style secret KEY=VALUE pairs with `[REDACTED:<class>]` substitutions.
+- [ ] `redactSecrets(text)` redacts the full documented pattern list with `[REDACTED:<class>]` substitutions: PEM private-key blocks (header + body + footer, multiline match), AWS access keys, GitHub tokens, OpenAI/Anthropic `sk-` keys, Stripe `sk_(live|test)_` keys (separator distinguishes from LLM keys), Slack tokens, Google API keys, JWTs, `Authorization: Bearer` headers, and `.env`-style secret KEY=VALUE pairs. PEM block matcher runs first; pattern order is asserted by tests.
+- [ ] `validateTranscriptPath()` compares the `realpath`-resolved `transcript_path` against the `realpath`-resolved transcripts-root anchor (`~/.claude/projects/<cwd-encoded>/`); resolved-vs-raw comparisons are rejected by test coverage.
+- [ ] `validateCwd()` walks upward starting from the `realpath`-resolved `cwd` (not the raw input) when looking for the `manifest.yaml`-bearing directory.
 - [ ] Hooks gate-check `manifest.yaml` in the bash wrapper BEFORE spawning the Node helper — verified by test that a `capture: off` invocation never executes the Node helper.
 - [ ] On `capture: hook`, installer idempotently registers `session-end.sh` and `pre-compact.sh` in `hooks/hooks.json` under the `SessionEnd` and `PreCompact` matchers.
 - [ ] On `capture: hook` or `capture: off`, installer removes sentinel-bounded session-capture block from `.githooks/post-commit`; user content outside markers is preserved.
