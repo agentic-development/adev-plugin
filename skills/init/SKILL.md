@@ -778,3 +778,47 @@ Next steps:
 The constitution linter hook is active — it will validate
 your constitution whenever you edit it.
 ```
+
+## Domain Extension Picker
+
+After the providers and context-index scaffold steps, `adev install` (and
+`adev upgrade` on projects with no installed domain profile) presents a
+single picker prompt to surface installed first-party domain extensions.
+
+The picker presents:
+
+1. `software (bundled, default)` — the bundled software profile, no install.
+2. One option per first-party domain extension (e.g. `data-engineering`,
+   `process-automation`) whose source directory exists on disk under the
+   plugin root.
+3. `skip` — picks no extension and writes `domain: software` to
+   `manifest.yaml`.
+
+Consequences per choice:
+
+- **`software`** or **`skip`** — writes `domain: software` into the project's
+  `.context-index/manifest.yaml`. No extension install runs.
+- **A catalog entry** (e.g. `data-engineering`) — installs that extension via
+  the existing `installExtension()` pipeline and writes
+  `domain: <name>` into `manifest.yaml`.
+
+After the picker completes, the install-completion summary prints exactly:
+
+```
+Domain: <name>
+```
+
+(canonical wording, no variant). The same banner string is used by `adev
+install`, `adev upgrade`, and this SKILL doc — they stay in lockstep.
+
+If you skip at picker time, you can install a domain extension later with:
+
+```
+adev extension install <source>
+```
+
+where `<source>` is a local path, npm package, or git URL.
+
+The picker is skipped silently when invoked at a workspace root (no
+current repo slug from `detectWorkspace()`). Workspace isolation rules
+(ADR-0005) prevent the picker from writing to a sibling repo's manifest.
