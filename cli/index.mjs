@@ -97,7 +97,7 @@ function parseBooleanFlag(name) {
   return process.argv.includes(name);
 }
 
-async function selectProviders() {
+async function selectProviders({ ask: askFn = ask } = {}) {
   const explicitProviders = parseProviderFlags();
   if (explicitProviders.length > 0) {
     return explicitProviders;
@@ -107,11 +107,12 @@ async function selectProviders() {
   console.log("    [1] Claude Code only (default)");
   console.log("    [2] OpenCode only");
   console.log("    [3] OpenAI Codex only");
-  console.log("    [4] Claude Code and OpenCode");
-  console.log("    [5] Claude Code and OpenAI Codex");
-  console.log("    [6] All three providers\n");
+  console.log("    [4] Cursor only");
+  console.log("    [5] Claude Code and OpenCode");
+  console.log("    [6] Claude Code and OpenAI Codex");
+  console.log("    [7] All four providers (Claude Code, OpenCode, Codex, Cursor)\n");
 
-  const answer = await ask("Enter choice (1-6) [1]: ");
+  const answer = await askFn("Enter choice (1-7) [1]: ");
 
   switch (answer) {
     case "2":
@@ -119,11 +120,13 @@ async function selectProviders() {
     case "3":
       return ["codex"];
     case "4":
-      return ["claude-code", "opencode"];
+      return ["cursor"];
     case "5":
-      return ["claude-code", "codex"];
+      return ["claude-code", "opencode"];
     case "6":
-      return ["claude-code", "opencode", "codex"];
+      return ["claude-code", "codex"];
+    case "7":
+      return ["claude-code", "opencode", "codex", "cursor"];
     default:
       return ["claude-code"];
   }
@@ -488,9 +491,9 @@ async function handleDualSyncTargets(providerNames) {
       providers: [opencode]
 
     # Cursor
-    # - path: .cursorrules
-    #   format: cursor
-    #   providers: [cursor]
+    - path: .cursor/rules/adev.mdc
+      format: cursor
+      providers: [cursor]
 
     # GitHub Copilot
     # - path: .github/copilot-instructions.md
@@ -550,10 +553,12 @@ function stampVersion() {
 }
 
 /**
- * Install providers (Claude Code, OpenCode, Codex).
+ * Install providers (Claude Code, OpenCode, Codex, Cursor).
  * @param {string[]} providerNames
+ * @param {{ ask?: (q: string) => Promise<string> }} [opts] — optional ask
+ *   injector for testability. Default uses the production readline ask helper.
  */
-async function installProviders(providerNames) {
+async function installProviders(providerNames, { ask: askFn = ask } = {}) {
   for (const providerName of providerNames) {
     const provider = getProvider(providerName);
     heading(`Installing for ${provider.name}`);
@@ -566,7 +571,7 @@ async function installProviders(providerNames) {
         success(`Plugin v${PLUGIN_VERSION} already installed`);
       }
 
-      const scope = await ask("Install for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
       const settingsPath = provider.enable(scope === "project" ? "project" : "user");
       success(`Plugin enabled in ${settingsPath}`);
 
@@ -576,7 +581,7 @@ async function installProviders(providerNames) {
       } else {
         for (const conflict of conflicts) {
           warn(`${conflict.name} — ${conflict.reason}`);
-          const disable = await ask(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
           if (disable === "yes" || disable === "y") {
             provider.disableConflictingPlugin(conflict.key);
             success(`${conflict.name} disabled for this project`);
@@ -621,7 +626,7 @@ async function installProviders(providerNames) {
 
       log("Skills are available via ~/.config/opencode/skills/");
     } else if (providerName === "codex") {
-      const scope = await ask("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
       const targetScope = scope === "project" ? "project" : "user";
       const { installed, path: pluginPath } = await provider.install({ scope: targetScope });
       if (installed) {
@@ -632,6 +637,30 @@ async function installProviders(providerNames) {
 
       const skillsPath = provider.enable(targetScope);
       success(`Codex skills linked in ${skillsPath}`);
+    } else if (providerName === "cursor") {
+      const { installed, path: pluginPath } = await provider.install({ scope: "user" });
+      if (installed) {
+        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+      } else {
+        success(`Plugin v${PLUGIN_VERSION} already installed`);
+      }
+
+      const conflicts = provider.detectConflicts();
+      if (conflicts.length === 0) {
+        success("No conflicting plugins detected");
+      } else {
+        for (const conflict of conflicts) {
+          warn(`${conflict.name} — ${conflict.reason}`);
+          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          if (disable === "yes" || disable === "y") {
+            // claude-code surfaces { key } for the disable target; the cursor
+            // adapter's Superpowers guard returns { name, reason } only.
+            // Prefer key when present, fall back to name.
+            provider.disableConflictingPlugin(conflict.key ?? conflict.name);
+            success(`${conflict.name} disabled for this project`);
+          }
+        }
+      }
     }
   }
 }
@@ -1369,6 +1398,7 @@ export {
   PLUGIN_ROOT,
   PLUGIN_VERSION,
   selectProviders,
+  installProviders,
 };
 
 // Re-export Claude Code adapter functions for backward compatibility

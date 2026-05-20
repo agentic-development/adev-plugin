@@ -2,7 +2,7 @@
 kind: module
 status: evolving
 revision: 4
-updated: 2026-05-19
+updated: 2026-05-18
 ---
 
 # Feature Charter: CLI

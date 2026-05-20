@@ -1,7 +1,8 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, mkdtempSync, rmSync } from "fs";
 import { join } from "path";
+import { tmpdir } from "os";
 import { execSync } from "child_process";
 import { createTempDir, createTempGitRepo, cleanupTempDir, writeFixture, PLUGIN_ROOT } from "./helpers.mjs";
 
@@ -12,6 +13,8 @@ import {
   enablePlugin,
   detectConflicts,
   disableConflictingPlugin,
+  selectProviders,
+  installProviders,
 } from "../cli/index.mjs";
 
 // --- scaffoldContextKit ---
@@ -310,3 +313,247 @@ describe("setupGitHooks", () => {
     assert.ok(original.includes("custom"), "original hook should be preserved");
   });
 });
+
+// --- selectProviders — menu shape (Task 2) ---
+
+describe("selectProviders — menu shape", () => {
+  it("returns standalone cursor for the cursor menu entry (choice 4)", async () => {
+    const fakeAsk = async () => "4";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["cursor"]);
+  });
+
+  it("returns the four-element list for the 'all four providers' choice (choice 7)", async () => {
+    const fakeAsk = async () => "7";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code", "opencode", "codex", "cursor"]);
+  });
+
+  it("preserves the default (claude-code only) on empty input", async () => {
+    const fakeAsk = async () => "";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code"]);
+  });
+
+  it("returns opencode for choice 2", async () => {
+    const fakeAsk = async () => "2";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["opencode"]);
+  });
+
+  it("returns codex for choice 3", async () => {
+    const fakeAsk = async () => "3";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["codex"]);
+  });
+
+  it("returns claude-code + opencode for choice 5 (renumbered from 4)", async () => {
+    const fakeAsk = async () => "5";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code", "opencode"]);
+  });
+
+  it("returns claude-code + codex for choice 6 (renumbered from 5)", async () => {
+    const fakeAsk = async () => "6";
+    const result = await selectProviders({ ask: fakeAsk });
+    assert.deepEqual(result, ["claude-code", "codex"]);
+  });
+});
+
+// --- cli charter — rev 4 with Cursor (Task 4) ---
+
+describe("cli charter — rev 4 with Cursor", () => {
+  it("frontmatter is on revision 4 and dated 2026-05-18", () => {
+    const md = readFileSync(
+      join(PLUGIN_ROOT, ".context-index/specs/features/cli/charter.md"),
+      "utf8"
+    );
+    assert.match(md, /^revision:\s*4\b/m, "cli charter must be on revision: 4");
+    assert.match(md, /^updated:\s*2026-05-18\b/m, "cli charter updated: must be set to spec landing date");
+  });
+
+  it("install command description names Cursor", () => {
+    const md = readFileSync(
+      join(PLUGIN_ROOT, ".context-index/specs/features/cli/charter.md"),
+      "utf8"
+    );
+    assert.match(
+      md,
+      /\*\*`install`\*\* — Register plugin with provider \(Claude Code, OpenCode, Codex, Cursor[^)]*\)/,
+      "cli charter install description must name all four providers"
+    );
+  });
+});
+
+// --- installProviders — JSDoc names all four providers (Task 3) ---
+
+describe("installProviders — JSDoc names all four providers", () => {
+  it("the JSDoc header lists Claude Code, OpenCode, Codex, and Cursor", () => {
+    const src = readFileSync(
+      join(PLUGIN_ROOT, "cli/index.mjs"),
+      "utf8"
+    );
+    assert.match(
+      src,
+      /\*\s*Install providers \(Claude Code, OpenCode, Codex, Cursor\)/,
+      "installProviders JSDoc must name all four providers"
+    );
+  });
+});
+
+// --- installProviders — cursor branch structure (Task 1) ---
+
+describe("installProviders — cursor branch structure", () => {
+  it("contains an explicit `cursor` provider branch with install({ scope: 'user' })", () => {
+    const src = readFileSync(
+      join(PLUGIN_ROOT, "cli/index.mjs"),
+      "utf8"
+    );
+    // The cursor branch must call provider.install({ scope: "user" }) per
+    // spec Output Contract bullet 3.
+    assert.match(
+      src,
+      /else if\s*\(\s*providerName\s*===\s*["']cursor["']\s*\)/,
+      "installProviders must contain a `cursor` branch"
+    );
+    assert.match(
+      src,
+      /provider\.install\(\s*\{\s*scope:\s*["']user["']\s*\}\s*\)/,
+      "cursor branch must call provider.install({ scope: 'user' })"
+    );
+  });
+});
+
+// --- installProviders — cursor end-to-end (Task 5) ---
+
+describe("installProviders — cursor end-to-end", () => {
+  let originalEnv;
+  let homeDir;
+  let originalLog;
+  let originalErr;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    homeDir = mkdtempSync(join(tmpdir(), "cli-cursor-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+    // Silence CLI output for cleaner test runs.
+    originalLog = console.log;
+    originalErr = console.error;
+    console.log = () => {};
+    console.error = () => {};
+  });
+
+  afterEach(() => {
+    console.log = originalLog;
+    console.error = originalErr;
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it("resolves cursor via getProvider and copies the plugin tree to ~/.cursor/plugins/local/adev/", async () => {
+    await installProviders(["cursor"]);
+    const cacheDir = join(homeDir, ".cursor", "plugins", "local", "adev");
+    assert.ok(existsSync(cacheDir), "plugin must be installed to ~/.cursor/plugins/local/adev/");
+    assert.ok(
+      existsSync(join(cacheDir, ".cursor-plugin", "plugin.json")),
+      "Spec A manifest must be present"
+    );
+    assert.ok(
+      existsSync(join(cacheDir, "providers", "cursor", "hooks.json")),
+      "Spec C hooks must be present"
+    );
+  });
+
+  it("is idempotent on a second --provider cursor pass", async () => {
+    await installProviders(["cursor"]);
+    // Second pass should not throw and should report "already installed".
+    await assert.doesNotReject(() => installProviders(["cursor"]));
+  });
+
+  it("handles --provider cursor --provider cursor as a single CLI invocation (idempotency)", async () => {
+    // Spec Failure Modes row 5: repeated --provider cursor passes; second is
+    // idempotent. installProviders iterates the array, so passing
+    // ["cursor", "cursor"] mirrors parseProviderFlags' output for that CLI
+    // invocation.
+    await assert.doesNotReject(() => installProviders(["cursor", "cursor"]));
+  });
+
+  it("prompts to disable Superpowers when ~/.cursor/config.json names it as a plugin", async () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    writeFileSync(
+      join(cursorDir, "config.json"),
+      JSON.stringify({ plugins: { superpowers: { enabled: true } } })
+    );
+
+    const answers = ["no"]; // decline the disable prompt
+    const fakeAsk = async () => answers.shift() ?? "";
+
+    await assert.doesNotReject(() =>
+      installProviders(["cursor"], { ask: fakeAsk })
+    );
+    // Superpowers entry must still be present in config.json (user declined).
+    const cfg = JSON.parse(
+      readFileSync(join(cursorDir, "config.json"), "utf8")
+    );
+    assert.ok(
+      cfg.plugins.superpowers,
+      "Superpowers must remain when user declines disable"
+    );
+  });
+
+  it("removes Superpowers from config.json when the user accepts the disable prompt", async () => {
+    const cursorDir = join(homeDir, ".cursor");
+    mkdirSync(cursorDir, { recursive: true });
+    writeFileSync(
+      join(cursorDir, "config.json"),
+      JSON.stringify({ plugins: { superpowers: { enabled: true } } })
+    );
+
+    const answers = ["yes"];
+    const fakeAsk = async () => answers.shift() ?? "";
+
+    await installProviders(["cursor"], { ask: fakeAsk });
+    const cfg = JSON.parse(
+      readFileSync(join(cursorDir, "config.json"), "utf8")
+    );
+    assert.ok(
+      !cfg.plugins?.superpowers,
+      "Superpowers must be removed after user accepts disable"
+    );
+  });
+});
+
+// Note: the "unknown provider" path is owned by parseProviderFlags (which
+// calls process.exit(1) directly). Asserting it cleanly requires a subprocess
+// invocation and is covered upstream by the CLI E2E suite — not duplicated
+// here per the Task 5 plan's "OR add a dedicated subprocess assertion" note.
+
+// --- handleDualSyncTargets — cursor scaffold stub (sync-target-output Task 2) ---
+
+describe("handleDualSyncTargets — cursor scaffold stub", () => {
+  it("emits an active cursor block with .cursor/rules/adev.mdc (not the commented .cursorrules)", () => {
+    const src = readFileSync(
+      join(PLUGIN_ROOT, "cli/index.mjs"),
+      "utf8"
+    );
+    // The manifest-template substitution in handleDualSyncTargets must
+    // contain an UNCOMMENTED cursor entry pointing at .cursor/rules/adev.mdc.
+    // Per spec Output Contract step 1 + Acceptance Criterion 2.
+    assert.match(
+      src,
+      /# Cursor\n\s*- path: \.cursor\/rules\/adev\.mdc\n\s*format: cursor\n\s*providers: \[cursor\]/,
+      "handleDualSyncTargets must emit an uncommented cursor block at .cursor/rules/adev.mdc"
+    );
+    // The legacy `.cursorrules` literal must not survive in the template
+    // substitution — its presence in any form (commented or not) indicates
+    // the scaffold stub was not activated.
+    assert.doesNotMatch(
+      src,
+      /#\s*-\s*path:\s*\.cursorrules/,
+      "handleDualSyncTargets must not retain the legacy commented .cursorrules block"
+    );
+  });
+});
+
