@@ -43,7 +43,7 @@ import {
   removeSessionCaptureGitignoreBlock,
   removeSessionCapturePostCommitBlock,
   wrapLegacyPostCommitWithSentinels,
-} from "../../lib/cli/install-session-capture.mjs";
+} from "../../lib/session-capture-installer.mjs";
 
 function makeManifest(dir, capture, gitignored) {
   const ciDir = join(dir, ".context-index");

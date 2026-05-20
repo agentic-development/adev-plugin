@@ -27,7 +27,7 @@ import {
   appendSessionCaptureGitignoreBlock,
   removeSessionCaptureGitignoreBlock,
   removeSessionCapturePostCommitBlock,
-} from "../../lib/cli/install-session-capture.mjs";
+} from "../../lib/session-capture-installer.mjs";
 
 function makeBareProject() {
   const dir = createTempDir();

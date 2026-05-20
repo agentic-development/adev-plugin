@@ -1,3 +1,4 @@
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-17T18:58:52.725Z","ts":"2026-05-18T13:50:21.084Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/hygiene/SKILL.md","drift_at":"2026-05-18T13:54:22.142Z","ts":"2026-05-18T13:54:22.142Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-19T19:49:28.670Z","ts":"2026-05-19T19:49:28.670Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T20:38:48.937Z","ts":"2026-05-20T20:38:48.937Z","diagnostic_warnings":["adev/frontmatter-present"]}
