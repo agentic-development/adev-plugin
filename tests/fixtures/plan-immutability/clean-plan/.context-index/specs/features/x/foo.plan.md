@@ -3,7 +3,7 @@
 > **Spec:** foo.spec.md
 
 This plan body contains NO inline `Routing` / `Scores` / `Rationale` blocks,
-and no sibling `.routing.md` exists. The detector must NOT flag this as a
+and no sibling `.routing.json` exists. The detector must NOT flag this as a
 violation.
 
 ## Tasks

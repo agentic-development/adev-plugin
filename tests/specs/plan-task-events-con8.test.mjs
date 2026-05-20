@@ -25,7 +25,9 @@ function loadCon8Block() {
 
 test("plan-task-events.spec.md CON-8 enumerates the four permitted sidecar peers", () => {
   const con8 = loadCon8Block();
-  for (const peer of [".review.md", ".validate.md", ".routing.md", ".blockers.md"]) {
+  // Per plan-routing-sidecar.spec.md rev 2, the routing peer is `.routing.json`
+  // (machine-primary), not `.routing.md`. The other three remain markdown.
+  for (const peer of [".review.md", ".validate.md", ".routing.json", ".blockers.md"]) {
     assert.match(
       con8,
       new RegExp(peer.replace(/\./g, "\\.")),

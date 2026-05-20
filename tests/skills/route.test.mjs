@@ -6,8 +6,9 @@
 //       Behavior 1; Red Flag tightening; cli-driver-surface boundary.
 // Plan-task: t5
 //
-// /adev:route MUST write routing decisions to <plan-stem>.routing.md via the
+// /adev:route MUST write routing decisions to <plan-stem>.routing.json via the
 // `adev route emit-sidecar` CLI verb. The plan body MUST NOT be mutated.
+// (Per plan-routing-sidecar.spec.md rev 2, the sidecar is JSON, not markdown.)
 
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
@@ -24,9 +25,18 @@ test("/adev:route Step 4 names `adev route emit-sidecar`", () => {
   );
 });
 
-test("/adev:route Step 4 references the <plan-stem>.routing.md sidecar", () => {
+test("/adev:route Step 4 references the <plan-stem>.routing.json sidecar", () => {
   const md = readFileSync(SKILL_PATH, "utf8");
-  assert.match(md, /routing\.md/, "Step 4 must reference the sidecar file");
+  assert.match(md, /routing\.json/, "Step 4 must reference the JSON sidecar file");
+});
+
+test("/adev:route Step 4 references the render-sidecar CLI verb for the markdown view", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  assert.match(
+    md,
+    /adev route render-sidecar/,
+    "Step 4 prose must point operators at the on-demand markdown view",
+  );
 });
 
 test("/adev:route does NOT instruct appending Routing blocks to the plan body", () => {
