@@ -76,6 +76,8 @@ Lifecycle hooks copied into the active provider's `hooks.json` (Claude Code, Cod
 
 A 7-file directory installed to `.context-index/domains/<name>/` with a generated `domain.yaml` containing `extends: <parent>` (one level deep, see Charter Invariants). `BUNDLED_DOMAIN_NAMES` (software, data-engineering, process-automation) cannot be overridden — install fails with `BUNDLED_COLLISION` if you try.
 
+**Init-time discovery:** First-party domain extensions listed in `templates/extensions-catalog.json` are surfaced during `adev install` and `adev upgrade` via a picker prompt. Users can pick one without leaving the install flow; the picker dispatches to the same `installExtension()` pipeline this guide documents and writes a top-level `domain:` key into the user's `manifest.yaml`. See [Installation > Domain Extension Picker](installation.md#domain-extension-picker) for the end-user view. Third-party or off-catalog domain extensions remain a manual `adev extension install <source>` invocation.
+
 ### `provides.samples`
 
 Golden samples copied into `.context-index/samples/`. Each entry can be a string (same path under both `source` and `dest`) or `{src, dest}`. Both paths are containment-checked; any escape fails with `PATH_TRAVERSAL`.
