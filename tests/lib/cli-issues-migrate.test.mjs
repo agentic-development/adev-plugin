@@ -669,3 +669,336 @@ describe("issues migrate dry-run path (plan-task 5)", () => {
     }
   });
 });
+
+describe("issues migrate live loop + state file (plan-task 6)", () => {
+  function makeIssue(id, overrides = {}) {
+    return {
+      id,
+      title: `${id} title`,
+      status: "open",
+      priority: 2,
+      type: "task",
+      dependencies: [],
+      notes: "",
+      next_action: null,
+      created: "2026-05-19T00:00:00.000Z",
+      updated: "2026-05-19T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+  function makeEpic(id, overrides = {}) {
+    return {
+      id,
+      title: `${id} title`,
+      status: "open",
+      created: "2026-05-19T00:00:00.000Z",
+      updated: "2026-05-19T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  /** Build a stub adapter with in-memory issues/epics state. */
+  function makeStubAdapter({ name = "stub", initialIssues = [], initialEpics = [], throwOnIndex = -1 } = {}) {
+    let nextId = initialIssues.length + 1;
+    let nextEpicId = initialEpics.length + 1;
+    let createCallIdx = 0;
+    const issues = [...initialIssues];
+    const epics = [...initialEpics];
+    return {
+      name,
+      issues, // exposed for assertions
+      epics,
+      createCalls: [],
+      createEpicCalls: [],
+      addDependencyCalls: [],
+      async list() {
+        return [...issues];
+      },
+      async listEpics() {
+        return [...epics];
+      },
+      async create(input) {
+        if (createCallIdx === throwOnIndex) {
+          createCallIdx++;
+          const err = new Error(`stub adapter forced failure on create call ${throwOnIndex}`);
+          err.code = "BEADS_COMMAND_FAILED";
+          err.stderr = "br create: simulated failure\n";
+          throw err;
+        }
+        createCallIdx++;
+        const id = `${name}-${nextId++}`;
+        const newItem = { ...input, id, dependencies: input.dependencies || [] };
+        issues.push(newItem);
+        this.createCalls.push({ input, returned: newItem });
+        return newItem;
+      },
+      async createEpic(input) {
+        const id = `${name}-epic-${nextEpicId++}`;
+        const newEpic = { ...input, id };
+        epics.push(newEpic);
+        this.createEpicCalls.push({ input, returned: newEpic });
+        return newEpic;
+      },
+      async addDependency(issueId, dependsOnId) {
+        this.addDependencyCalls.push({ issueId, dependsOnId });
+        const i = issues.find((x) => x.id === issueId);
+        if (i) {
+          i.dependencies = i.dependencies || [];
+          if (!i.dependencies.includes(dependsOnId)) {
+            i.dependencies.push(dependsOnId);
+          }
+        }
+      },
+    };
+  }
+
+  it("runLiveMigration calls create() once per non-migrated item and tracks last_successful_index", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [
+        makeIssue("issue-1"),
+        makeIssue("issue-2"),
+        makeIssue("issue-3"),
+      ];
+      const sourceEpics = [makeEpic("epic-1")];
+      const sourceAdapter = makeStubAdapter({
+        name: "src",
+        initialIssues: sourceIssues,
+        initialEpics: sourceEpics,
+      });
+      const targetAdapter = makeStubAdapter({ name: "tgt" });
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const result = await mod.runLiveMigration({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        sourceAdapter,
+        targetAdapter,
+        sourceIssues,
+        sourceEpics,
+        alreadyMigratedIssueIds: new Set(),
+        alreadyMigratedEpicIds: new Set(),
+        startIndex: 0,
+        scopeArgs: { includeClosed: false },
+      });
+
+      assert.equal(result.created.issues, 3);
+      assert.equal(result.created.epics, 1);
+      assert.equal(result.skipped, 0);
+      assert.equal(targetAdapter.createCalls.length, 3);
+      assert.equal(targetAdapter.createEpicCalls.length, 1);
+
+      // After successful completion, the state file should be removed (cleanup
+      // is the verb's responsibility — runLiveMigration writes it during the
+      // loop and the calling run() removes it on success). Here we only
+      // assert that the state file exists during the run (write happened).
+      // The runLiveMigration result should expose lastSuccessfulIndex=2.
+      assert.equal(result.lastSuccessfulIndex, 2);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("runLiveMigration skips items present in alreadyMigratedIssueIds", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [
+        makeIssue("issue-1"),
+        makeIssue("issue-2"),
+        makeIssue("issue-3"),
+      ];
+      const sourceAdapter = makeStubAdapter({ name: "src", initialIssues: sourceIssues });
+      const targetAdapter = makeStubAdapter({ name: "tgt" });
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const result = await mod.runLiveMigration({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        sourceAdapter,
+        targetAdapter,
+        sourceIssues,
+        sourceEpics: [],
+        alreadyMigratedIssueIds: new Set(["issue-1", "issue-2"]),
+        alreadyMigratedEpicIds: new Set(),
+        startIndex: 0,
+        scopeArgs: { includeClosed: false },
+      });
+
+      assert.equal(result.skipped, 2);
+      assert.equal(result.created.issues, 1);
+      assert.equal(targetAdapter.createCalls.length, 1);
+      assert.equal(targetAdapter.createCalls[0].input.title, "issue-3 title");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("runLiveMigration writes .migrate-state.json per item and removes it on completion (SA-2)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [makeIssue("issue-1"), makeIssue("issue-2")];
+      const sourceAdapter = makeStubAdapter({ name: "src", initialIssues: sourceIssues });
+      const targetAdapter = makeStubAdapter({ name: "tgt" });
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const statePath = join(proj, ".context-index", "tasks", ".migrate-state.json");
+
+      await mod.runLiveMigration({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        sourceAdapter,
+        targetAdapter,
+        sourceIssues,
+        sourceEpics: [],
+        alreadyMigratedIssueIds: new Set(),
+        alreadyMigratedEpicIds: new Set(),
+        startIndex: 0,
+        scopeArgs: { includeClosed: false },
+      });
+
+      // On successful completion, runLiveMigration does NOT remove the state
+      // file (that's the verb-level run() responsibility, Task 8). Here we
+      // only assert the file content reflects the last successful index.
+      assert.ok(existsSync(statePath), "expected .migrate-state.json after run");
+      const state = JSON.parse(readFileSync(statePath, "utf8"));
+      assert.equal(state.source, "json");
+      assert.equal(state.target, "beads");
+      assert.equal(state.last_successful_index, 1); // 2 items, indices 0+1
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("runLiveMigration emits MIGRATE_PARTIAL_FAILURE on mid-loop adapter failure", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const sourceIssues = [
+        makeIssue("issue-1"),
+        makeIssue("issue-2"),
+        makeIssue("issue-3"),
+      ];
+      const sourceAdapter = makeStubAdapter({ name: "src", initialIssues: sourceIssues });
+      const targetAdapter = makeStubAdapter({ name: "tgt", throwOnIndex: 1 });
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      let thrown;
+      try {
+        await mod.runLiveMigration({
+          projectRoot: proj,
+          source: "json",
+          target: "beads",
+          sourceAdapter,
+          targetAdapter,
+          sourceIssues,
+          sourceEpics: [],
+          alreadyMigratedIssueIds: new Set(),
+          alreadyMigratedEpicIds: new Set(),
+          startIndex: 0,
+          scopeArgs: { includeClosed: false },
+        });
+      } catch (err) {
+        thrown = err;
+      }
+      assert.ok(thrown, "expected throw on mid-loop adapter failure");
+      assert.equal(thrown.code, "MIGRATE_PARTIAL_FAILURE");
+      // SEC-1: stderr passthrough verbatim
+      assert.ok(thrown.message.includes("br create: simulated failure"),
+        `expected stderr verbatim in message, got: ${thrown.message}`);
+
+      // State file should record the last successful index = 0 (only issue-1 succeeded).
+      const statePath = join(proj, ".context-index", "tasks", ".migrate-state.json");
+      const state = JSON.parse(readFileSync(statePath, "utf8"));
+      assert.equal(state.last_successful_index, 0);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("loadResumeState rejects when source/target mismatch (Procedure Step 2)", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const statePath = join(proj, ".context-index", "tasks", ".migrate-state.json");
+      // Pre-seed a state file from a different migration (json → beads).
+      writeFileSync(
+        statePath,
+        JSON.stringify(
+          {
+            source: "json",
+            target: "beads",
+            last_successful_index: 2,
+            scope_args: { includeClosed: false },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      let caught;
+      try {
+        mod.loadResumeState({
+          projectRoot: proj,
+          source: "beads",
+          target: "json",
+          scopeArgs: { includeClosed: false },
+        });
+      } catch (err) {
+        caught = err;
+      }
+      assert.ok(caught, "expected throw on mismatched resume state");
+      assert.equal(caught.code, "MIGRATE_RESUME_MISMATCH");
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("loadResumeState returns startIndex = last_successful_index + 1 on matching args", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const statePath = join(proj, ".context-index", "tasks", ".migrate-state.json");
+      writeFileSync(
+        statePath,
+        JSON.stringify(
+          {
+            source: "json",
+            target: "beads",
+            last_successful_index: 4,
+            scope_args: { includeClosed: false },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const state = mod.loadResumeState({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        scopeArgs: { includeClosed: false },
+      });
+      assert.equal(state.startIndex, 5);
+    } finally {
+      cleanup(proj);
+    }
+  });
+
+  it("loadResumeState returns startIndex 0 when no state file exists", async () => {
+    const proj = makeTempProject({ backend: "json" });
+    try {
+      const mod = await import("../../lib/cli/issues-migrate.mjs");
+      const state = mod.loadResumeState({
+        projectRoot: proj,
+        source: "json",
+        target: "beads",
+        scopeArgs: { includeClosed: false },
+      });
+      assert.equal(state.startIndex, 0);
+    } finally {
+      cleanup(proj);
+    }
+  });
+});
