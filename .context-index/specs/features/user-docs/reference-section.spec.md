@@ -15,6 +15,7 @@ source-manifest:
     - docs/configuration.md
     - docs/hooks.md
   computed-at: "2026-05-10T23:51:35.315Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

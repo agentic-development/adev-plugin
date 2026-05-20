@@ -20,6 +20,7 @@ source-manifest:
     - hooks/merge-guard.sh
     - tests/hooks/merge-guard.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
