@@ -63,9 +63,34 @@ If the CLI call fails, fall back to reading each file individually.
 7. **Boundary rules:** If `.context-index/governance/boundaries.yaml` exists, read it.
    Pass boundary rules to implementer subagents as additional constraints in prompt section 2
    (alongside constitution excerpt). If it does not exist, skip.
-8. **Routing tags:** If tasks have routing annotations (from `/adev:route`), read them.
-   Adjust execution strategy per task based on `auto-agent`, `assisted-agent`, or `human-only` tags.
-   If no routing tags exist, treat all tasks as `auto-agent` (default behavior).
+8. **Routing decisions:** Routing decisions for each task live in the
+   sibling sidecar file `<plan-stem>.routing.md`, written by `/adev:route`.
+   The plan markdown body is NOT a source of routing state — `**Routing:**`
+   blocks in the plan body are forbidden by CON-8 and ignored by this skill
+   (and flagged by `lib/plan-immutability.mjs` as
+   `PLAN_MUTATED_WITHOUT_SIDECAR`).
+
+   For each task, resolve routing via the CLI verb at dispatch time
+   (Step 2a — Context Packet Assembly):
+
+   ```bash
+   adev implement read-routing --plan <plan-path> --task-id <task-id> [--agents-allowlist <csv>]
+   ```
+
+   The verb prints the routing entry as JSON on stdout on success. On
+   failure, it exits non-zero and writes a typed error code to stderr.
+   Handle each error code as follows:
+
+   | Exit | Code                       | Action                                                                                |
+   |------|----------------------------|---------------------------------------------------------------------------------------|
+   | 0    | (success)                  | Parse JSON; dispatch using `selected_agent`                                           |
+   | 2    | `ROUTING_SIDECAR_MISSING`  | Stop the skill. Instruct the operator to run `/adev:route --plan <path>` and re-invoke `/adev:implement`. Do NOT silently fall back to inline parsing or default routing. |
+   | 3    | `ROUTING_ENTRY_MISSING`    | Stop for this task. Instruct the operator to re-run `/adev:route` (plan grew tasks since the last route) and re-invoke `/adev:implement --task <N>`.                     |
+   | 4    | `ROUTING_AGENT_INVALID`    | Stop for this task. The sidecar names an agent slug not in the allowlist (passed via `--agents-allowlist`). Instruct the operator to re-run `/adev:route` after fixing manifest specialists.                              |
+   | 1    | `INVALID_PLAN_PATH`        | Argument bug — surface immediately; do not retry.                                     |
+
+   If the sidecar is absent entirely, no fallback to inline parsing or
+   default routing is permitted. The skill stops and surfaces the error.
 9. **Completion policy:** Read `completion.merge_policy` from manifest.yaml (default: "pr").
    Read `completion.protected_branches` (default: ["main", "master"]).
 10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
