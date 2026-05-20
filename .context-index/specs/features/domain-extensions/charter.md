@@ -67,7 +67,7 @@ Domain extension packages distribute domain-specific configuration (templates, r
 | Bundled Templates Cleanup | Remove extracted domains from `templates/domains/`, update `BUNDLED_DOMAIN_NAMES` constant to software only | Must-have | v1 | implemented |
 | Git Subdirectory Fragment Support | Enhance `resolve-source.mjs` to parse `repo#path` fragments, cloning the repo and resolving into the subdirectory | Must-have | v1 | implemented |
 | End-to-End Install Verification | Integration tests proving each extension installs and resolves correctly through `loadDomainConfig()` | Must-have | v1 | — |
-| Init-Time Domain Extension Picker | Catalog-driven prompt in `adev install` and `adev upgrade` that surfaces first-party domain extensions, reusing the existing `installExtension()` pipeline and writing `domain:` to `manifest.yaml` | Must-have | v2 | implemented |
+| Init-Time Domain Extension Picker | Catalog-driven prompt in `adev install` and `adev upgrade` that surfaces first-party domain extensions, reusing the existing `installExtension()` pipeline and writing `domain:` to `manifest.yaml` | Must-have | v2 | validated |
 
 ## Deferred Capabilities
 

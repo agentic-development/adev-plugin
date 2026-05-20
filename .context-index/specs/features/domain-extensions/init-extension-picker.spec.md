@@ -9,7 +9,7 @@
 ---
 charter: domain-extensions
 kind: behavioral
-status: implemented
+status: validated
 risk_level: low
 milestone: v2
 revision: 2
