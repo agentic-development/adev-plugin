@@ -259,9 +259,213 @@ describe('countPerSpec', () => {
   });
 });
 
-describe('aggregateCostTokens (stub — Task 9)', () => {
-  test('exists', () => {
-    assert.equal(typeof aggregateCostTokens, 'function');
+describe('aggregateCostTokens', () => {
+  test('returns null when no session-end has any cost field', () => {
+    const sessions = [
+      { format: 'hook', frontmatter: { kind: 'session-end' }, body: '' },
+      { format: 'hook', frontmatter: { kind: 'pre-compact', cost_usd: 0.05 }, body: '' },
+    ];
+    // pre-compact excluded (XS-2); no session-end has cost → null
+    assert.equal(aggregateCostTokens(sessions), null);
+  });
+
+  test('returns null on empty input', () => {
+    assert.equal(aggregateCostTokens([]), null);
+    assert.equal(aggregateCostTokens(null), null);
+  });
+
+  test('aggregates totals across session-end sessions', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+          output_tokens: 200,
+          model: 'sonnet',
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.10,
+          input_tokens: 2000,
+          output_tokens: 400,
+          model: 'opus',
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.ok(r);
+    assert.ok(Math.abs(r.totals.cost_usd - 0.15) < 1e-9);
+    assert.equal(r.totals.input_tokens, 3000);
+    assert.equal(r.totals.output_tokens, 600);
+  });
+
+  test('per-model breakdown', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+          output_tokens: 200,
+          model: 'sonnet',
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.03,
+          input_tokens: 500,
+          output_tokens: 100,
+          model: 'sonnet',
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.10,
+          input_tokens: 2000,
+          output_tokens: 400,
+          model: 'opus',
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    // Per-model approximate equal (floating-point safe).
+    assert.ok(Math.abs(r.perModel.sonnet.cost_usd - 0.08) < 1e-9);
+    assert.equal(r.perModel.sonnet.input_tokens, 1500);
+    assert.equal(r.perModel.opus.cost_usd, 0.10);
+  });
+
+  test('per-spec breakdown using frontmatter spec field', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          spec: '.context-index/specs/features/foo/bar.spec.md',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    const specKey = '.context-index/specs/features/foo/bar.spec.md';
+    assert.equal(r.perSpec[specKey].cost_usd, 0.05);
+    assert.equal(r.perSpec[specKey].input_tokens, 1000);
+  });
+
+  test('excludes sessions missing a particular field from that field aggregate', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          // no cost_usd
+          input_tokens: 500,
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.05);
+    assert.equal(r.totals.input_tokens, 1500);
+  });
+
+  test('non-numeric cost_usd recorded as parseError, excluded from aggregate', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: '$0.05' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 0.10 },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.10);
+    assert.equal(r.parseErrors.length, 1);
+    assert.equal(r.parseErrors[0].field, 'cost_usd');
+    assert.equal(r.parseErrors[0].value, '$0.05');
+  });
+
+  test('XS-2: pre-compact and placeholder sessions excluded', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'pre-compact', cost_usd: 5.0, input_tokens: 99999 },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'placeholder', cost_usd: 3.0, input_tokens: 88888 },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 0.01, input_tokens: 100 },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.01);
+    assert.equal(r.totals.input_tokens, 100);
+  });
+
+  test('numeric cost_usd parses cleanly with integers and floats', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 1, input_tokens: 1 },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 2.5, input_tokens: 2 },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 3.5);
+    assert.equal(r.totals.input_tokens, 3);
+  });
+
+  test('numeric strings (parseable) accepted as cost values', () => {
+    // YAML frontmatter is parsed as strings; '0.05' should aggregate.
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: '0.05' },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.05);
   });
 });
 
