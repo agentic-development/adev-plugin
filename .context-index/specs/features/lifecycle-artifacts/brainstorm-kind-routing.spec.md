@@ -19,8 +19,6 @@ source-manifest:
     - tests/skills/brainstorm-kind-routing.test.mjs
   computed-at: "2026-05-15T16:16:10.334Z"
 drift_detected: true
-drift_source: skills/brainstorm/SKILL.md
-drift_at: 2026-05-16T00:52:30.257Z
 ---
 
 # Live Spec: `/adev:brainstorm` Kind Routing

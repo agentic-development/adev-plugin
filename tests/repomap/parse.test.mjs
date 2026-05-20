@@ -26,6 +26,7 @@ describe('Language Query Module: TypeScript', () => {
     assert.ok(typescript.extensions.includes('.tsx'));
     assert.ok(typescript.extensions.includes('.js'));
     assert.ok(typescript.extensions.includes('.jsx'));
+    assert.ok(typescript.extensions.includes('.mjs'));
 
     assert.equal(typeof typescript.queries, 'object');
     assert.equal(typeof typescript.queries.exports, 'string');

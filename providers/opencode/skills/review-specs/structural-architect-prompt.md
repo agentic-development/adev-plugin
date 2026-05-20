@@ -9,6 +9,7 @@ You are a structural architect reviewing a Live Spec for architectural soundness
 3. **Module Boundaries:** Does this spec respect its charter's scope? Does it reach into concerns that belong to other modules? Does it introduce coupling that will be hard to reverse?
 4. **Dependency Direction:** Do dependencies point inward (toward domain logic) rather than outward (toward infrastructure)? Are there hidden dependencies not declared in the charter?
 5. **Consistency with Constitution:** Does the spec violate any architectural boundaries defined in the constitution? Does it introduce patterns that contradict established conventions?
+6. **ADR Compliance:** Does this spec respect existing Architecture Decision Records under `.context-index/adrs/`? If the spec introduces a pattern that conflicts with an ADR decision, flag it as a `blocker`. If the spec implicitly supersedes an ADR (i.e., the ADR's decision still stands on paper but the spec proposes a different choice), flag it as a `warning` — the ADR should be updated or explicitly superseded. Cite the conflicting ADR by filename and section. This scope migrated from `/adev:validate` Check 5 per `check-set-restructure.spec.md`.
 
 ## Output Format
 

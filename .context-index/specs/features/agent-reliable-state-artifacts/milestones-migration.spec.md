@@ -23,8 +23,6 @@ source-manifest:
     - tests/milestones.test.mjs
   computed-at: "2026-05-12T02:15:39.244Z"
 drift_detected: true
-drift_source: templates/manifest-template.yaml
-drift_at: 2026-05-14T21:34:08.368Z
 ---
 
 ## Behavioral Contract

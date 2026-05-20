@@ -23,8 +23,6 @@ source-manifest:
     - tests/cli/fixtures/diagnose/expected.json
   computed-at: "2026-05-14T21:26:32.169Z"
 drift_detected: true
-drift_source: cli/index.mjs
-drift_at: 2026-05-16T00:48:30.134Z
 ---
 
 ## Behavioral Contract

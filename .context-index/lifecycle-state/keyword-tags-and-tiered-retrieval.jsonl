@@ -1,0 +1,1 @@
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/heuristics/retrieval-filtering.spec.md","drift_at":"2026-05-14T19:00:40.058Z","ts":"2026-05-18T13:50:21.092Z","diagnostic_warnings":["adev/frontmatter-present"]}

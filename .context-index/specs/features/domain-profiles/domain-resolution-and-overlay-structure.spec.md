@@ -24,8 +24,6 @@ source-manifest:
     - tests/lib/domains/resolve.test.mjs
   computed-at: "2026-05-11T16:09:28.530Z"
 drift_detected: true
-drift_source: lib/domains/constants.mjs
-drift_at: 2026-05-16T01:24:57.924Z
 ---
 
 ## Behavioral Contract

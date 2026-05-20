@@ -45,6 +45,7 @@ source-manifest:
     - tests/repomap/rank.test.mjs
     - tests/repomap/render-non-code-sections.test.mjs
   computed-at: "2026-05-17T19:00:21.169Z"
+drift_detected: true
 ---
 
 ## Schema Evolution Rule

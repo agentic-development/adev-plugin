@@ -21,8 +21,6 @@ source-manifest:
     - tests/lib/prototype-server.test.mjs
   computed-at: "2026-05-08T10:23:01.417Z"
 drift_detected: true
-drift_source: skills/prototype/SKILL.md
-drift_at: 2026-05-16T01:05:37.197Z
 ---
 
 ## Behavioral Contract

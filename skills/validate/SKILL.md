@@ -24,21 +24,16 @@ Before starting, verify:
 
 ### Step 0a: Implement-step gate (FIRST action)
 
-Before any validation work, gate on the prior step via the lifecycle log:
+Before any validation work, gate on the prior step via the lifecycle log, then emit the step-started event:
 
-```javascript
-import { currentState, requireGate, resolveGateMode, reportStep } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-const state = currentState(projectRoot, specPath);
-const mode = resolveGateMode(loadManifest(projectRoot));
-requireGate(state, "validate", { mode });
-reportStep(projectRoot, specPath, { step: "validate", status: "started" });
+```bash
+adev gate require --skill validate --spec <spec-path>
+adev report --type step --spec <spec-path> --step validate --status started
 ```
 
-`requireGate(state, "validate", ...)` follows the lib contract: pass the step about to begin; the lib resolves its prior (`implement`) and asserts that step is completed with a passing verdict. In strict mode (default), it throws `GateError` when implement is incomplete. In advisory mode, it warns and continues. Do NOT catch `GateError`. The lib enforces path-containment (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
+In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if the `implement` step did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
-Emit a matching `reportStep` exit (`status: "completed"`, including the aggregate verdict) after the report is written in Step 14.
+Emit a matching exit event in the new "Step Z: Emit lifecycle completion" section after the validation report is written. The exit event carries the aggregate verdict (PASS / PASS_WITH_NOTES / FAIL) computed from the consolidated check results.
 
 ## Workspace-Aware Validation Mode
 
@@ -206,7 +201,7 @@ The verb parses the `source-manifest` block from the spec's frontmatter (fields 
 | Missing file — a listed file no longer exists on disk | `Check 1.5: FAIL — missing source files: <list>` | 1 | FAIL |
 | No manifest block — spec has not been implemented yet | `Check 1.5: SKIP — no source manifest found. Run /adev:implement to stamp one.` | 0 | SKIP |
 
-Pass `--quiet` to suppress the PASS / SKIP stdout line (errors and WARN are still emitted). The validator should still emit a `validator_report` event per Check 1.5 outcome via `adev report --type validator --validator check-1.5-source-manifest`.
+Pass `--quiet` to suppress the PASS / SKIP stdout line (errors and WARN are still emitted). The validator should still emit a `validator_report` event per Check 1.5 outcome via `adev report --type validator --validator validate.check-1.5-source-manifest`.
 
 **Implementation existence check (post-CLI, validator-side):** For each file in the manifest, verify it has been committed to git (`git log --oneline -1 -- <file>`). If a file exists on disk but has NEVER been committed (untracked or only staged), it was not implemented through the normal workflow — record FAIL with: "Source file `<file>` exists but was never committed. Implementation may be incomplete or was not committed." The CLI does not perform this git-tracked check (it only inspects file content vs. SHA); the validator wraps it around the CLI call.
 
@@ -222,7 +217,7 @@ Run the drift check via the CLI:
 adev verify spec --spec <specPath> --check-drift
 ```
 
-The `--check-drift` mode reads the spec's frontmatter and emits a single JSON object on stdout:
+The `--check-drift` mode reads the spec's inline `drift_detected` boolean from frontmatter and sources the `drift_source` / `drift_at` payload from the spec's latest unresolved `code_drift_detected` event in `.context-index/lifecycle-state/<slug>.jsonl`. It emits a single JSON object on stdout:
 
 ```json
 { "drifted": <bool>, "drift_source": "<path|null>", "drift_at": "<timestamp|null>" }
@@ -230,7 +225,9 @@ The `--check-drift` mode reads the spec's frontmatter and emits a single JSON ob
 
 If `drifted === true`, emit a WARN: "drift_detected flag set. Source file `<drift_source>` was modified at `<drift_at>`. Verify that spec still reflects implementation behavior."
 
-If the verb exits non-zero (frontmatter unreadable), record `CODE_DRIFT_READ_ERROR` and emit: "WARN: drift check skipped — frontmatter unreadable".
+Legacy fallback: pre-migration specs may return `drift_source: null` / `drift_at: null` when the spec has the inline boolean but no JSONL event yet. The drift is still real; the historical source is recoverable from `git log <spec>`.
+
+If the verb exits non-zero (spec unreadable or path containment violation), record `CODE_DRIFT_READ_ERROR` and emit: "WARN: drift check skipped — spec unreadable".
 
 Also run `adev source-manifest verify --spec <specPath>` (see Check 1.5) as a fallback for non-Claude-Code hosts where the hook never fired. If SHA mismatches, emit the same warning.
 
@@ -363,7 +360,7 @@ For every surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11) that produces a verdict,
 adev report --type validator \
   --spec "<spec-path>" \
   --step validate \
-  --validator "check-2-spec-compliance" \
+  --validator "validate.check-2-spec-compliance" \
   --verdict PASS \
   [--error "<short summary>"] \
   [--score <number>] \
@@ -371,9 +368,13 @@ adev report --type validator \
   [--notes "<≤200-char summary>"]
 ```
 
-Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier (e.g., `check-1-quality-gates`, `check-1.5-source-manifest`, `check-2-spec-compliance`, `check-4-constitution`, `check-8-boundaries`, `check-9-transition-gates`, `check-11-visual-verification`). `--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
+Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier that MUST match the `id:` declared in `governance/validate.yaml` (or the domain starter at `templates/domains/<domain>/validate.yaml`). The six registry-backed IDs in the bundled software domain are: `validate.check-1.5-source-manifest`, `validate.check-2-spec-compliance`, `validate.check-4-constitution`, `validate.check-8-boundaries`, `validate.check-9-transition-gates`, `validate.check-11-visual-verification`. Use these exact strings — emitting an unprefixed form (e.g., `check-2-spec-compliance`) bypasses `_resolveActorSeverity` lookup and defaults every event to `severity: warning`, suppressing blocker-severity FAILs in the aggregation table.
 
-Severity is stamped at write time by the lib from `gates.yaml` domain config — neither the skill prose nor the CLI invocation computes or asserts severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
+For Check 1 (quality gates, sourced from `gates.yaml` in a separate flow) and Check 1.6 (code-drift, observational), no registry entry exists today — events emitted with `--validator validate.check-1-quality-gates` or `validate.check-1.6-code-drift` will trip the unknown-validator fallback (severity defaults to warning). This is acceptable for these checks because they don't aggregate into blocker-severity verdicts; if that changes, add explicit entries to `templates/domains/<domain>/validate.yaml`.
+
+`--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
+
+Severity is stamped at write time by the lib from `validate.yaml` (each check's `severity:` field, per the single-source model in `validate-config-single-source.spec.md`). Neither the skill prose nor the CLI invocation computes or asserts severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`).
 
 When aggregating the overall validation verdict, read `state.steps.validate` from `currentState(projectRoot, specPath)` after all `adev report --type validator` invocations have landed. Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file.
 
@@ -395,6 +396,8 @@ adev artifact commit --spec .context-index/specs/features/<module>/<spec-slug>.s
 ```
 
 The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec-path>.validate.md`) from the spec path, validates that the temp file exists and is non-empty (rejects zero-byte artifacts), and performs a same-directory `fs.renameSync` — atomic on POSIX. Until the commit step runs, the canonical `.validate.md` either reflects the prior run or is absent; the new content is never partially observable. On any failure the verb exits non-zero with a diagnostic message and the temp file remains for inspection.
+
+**Write-state suffix choice (`.tmp` not `.partial`).** Per the write-state suffix taxonomy invariant in `agent-reliable-state-artifacts/charter.md` (Invariant #10) and `incremental-artifact-writes.spec.md` Integration Point 4, validate keeps the existing `.tmp` (byte-level, ms-scale, never recovered) and does NOT migrate to `.partial` (artifact-level, minutes-to-hours, durable). Rationale: the entire validate report is computed in memory and written in a single Write call — there is no incremental-checkpoint surface for `.partial` to protect. The `.tmp` + `adev artifact commit` idiom is the right tool for byte-level atomicity here; `.partial` is the right tool for skills (like `/adev:plan`, `/adev:specify`, `/adev:implement`) that author across multiple Write calls over minutes.
 
 ```markdown
 # Validation Report: [Spec Title]
@@ -466,6 +469,20 @@ The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec
 
 - **PASS:** All dispatched checks (Check 1 quality gates plus the surviving registry — 1.5, 2, 4, and conditionally 8, 9, 11) passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev:validate`.
+
+## Step Z: Emit lifecycle completion event
+
+After the validation report has been written to disk (Step 14 / atomic-write commit), emit the matching exit event paired with Step 0a's `started` emission. The verdict is the aggregate computed from the consolidated check results:
+
+- All dispatched checks PASS → `--verdict PASS`
+- At least one check returned PASS_WITH_NOTES, no FAILs → `--verdict PASS_WITH_NOTES`
+- Any FAIL → `--verdict FAIL`
+
+```bash
+adev report --type step --spec <spec-path> --step validate --status completed --verdict <aggregate>
+```
+
+This event is REQUIRED. Without it, the lifecycle log shows `lifecycle_step:validate started` with no terminal event, and any future skill that gates on validate completion will block permanently.
 
 ## After Validation
 

@@ -14,6 +14,7 @@ source-manifest:
   files:
     - .githooks/prepare-commit-msg
   computed-at: "2026-04-01T13:43:22.538Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
@@ -76,6 +77,7 @@ source-manifest:
 - [ ] Duplicate trailers are not added
 - [ ] Missing or empty tracking file results in no trailers, no error
 - [ ] `git log --grep="Spec: <path>"` returns relevant commits
+- [ ] All injected trailers form a single contiguous block at the end of the message (verified via `git interpret-trailers --parse` returning every trailer the hook injected — see `tests/githooks/prepare-commit-msg.test.mjs`)
 - [ ] Hook never blocks a commit (always exits 0)
 - [ ] All quality gates pass (tests, lint, typecheck)
 - [ ] No constitutional violations introduced

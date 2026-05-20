@@ -48,6 +48,11 @@ viz/dist/
 .context-index/.session-tracking.jsonl
 .context-index/user-config
 
+# Execution state (transient per-session resume cursor — owned by lib/execution-state.mjs).
+# Committed copies appeared on cursor-provider branches due to /adev:implement
+# staging the file; ignore here so future builds don't repeat that mistake.
+.context-index/.execution-state.json
+
 # Prototype artifacts (adev)
 .adev/
 
@@ -66,5 +71,23 @@ viz/dist/
 .context-index/tasks/tasks.json.lock
 .context-index/tasks/tasks.json.*.tmp
 
+# Backend-migration resume state. Written per-item by `adev issues migrate`
+# during a json↔beads conversion; removed on successful completion. Committing
+# would surface as a stale "wedged migration" on every clone and force the
+# next migration into a refuse-on-mismatch path. See
+# backend-migration.spec.md Postcondition 6 and the `.migrate-state.json`
+# schema documented in lib/cli/issues-migrate.mjs.
+.context-index/tasks/.migrate-state.json
+
 # Lifecycle gate advisory counter (runtime state)
 .context-index/.advisory-counter
+
+# Incremental-artifact writes (.partial + atomic-rename pattern).
+# Per incremental-artifact-writes.spec.md, *.partial files represent
+# in-progress agent authoring committed via atomic rename to the final
+# filename. *.partial.lock files are sidecar coordination state holding
+# {pid, started_at} for steal-on-stale detection. Both are runtime state
+# and never committed — a committed orphan would surface as a "wedged
+# artifact" on every clone. (Analogous treatment to tasks.json.lock above.)
+*.partial
+*.partial.lock

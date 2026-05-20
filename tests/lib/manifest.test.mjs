@@ -105,3 +105,104 @@ test("loadManifest: returns nested fields beyond db_path (full YAML parse)", () 
     cleanupTempDir(root);
   }
 });
+
+// ── build.max_review_retries default flip + validation (Task 12) ─────────
+
+test("loadManifest: defaults build.max_review_retries to 2 when omitted", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\n",
+    );
+    const m = loadManifest(root);
+    // build is materialized (defaults applied) — invariant test
+    assert.ok(m.build, "build section must be materialized with defaults");
+    assert.equal(m.build.max_review_retries, 2,
+      "default build.max_review_retries must be 2 per review-block-auto-retry");
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: respects explicit build.max_review_retries: 0 (disables loop)", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nbuild:\n  max_review_retries: 0\n",
+    );
+    const m = loadManifest(root);
+    assert.equal(m.build.max_review_retries, 0);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: respects explicit build.max_review_retries: 5", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nbuild:\n  max_review_retries: 5\n",
+    );
+    const m = loadManifest(root);
+    assert.equal(m.build.max_review_retries, 5);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects negative build.max_review_retries — INVALID_MAX_REVIEW_RETRIES", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nbuild:\n  max_review_retries: -1\n",
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_MAX_REVIEW_RETRIES",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects non-integer build.max_review_retries — INVALID_MAX_REVIEW_RETRIES", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      'project:\n  name: t\nbuild:\n  max_review_retries: "two"\n',
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_MAX_REVIEW_RETRIES",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects fractional build.max_review_retries — INVALID_MAX_REVIEW_RETRIES", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nbuild:\n  max_review_retries: 2.5\n",
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_MAX_REVIEW_RETRIES",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});

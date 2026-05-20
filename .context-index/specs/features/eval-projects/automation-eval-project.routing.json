@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Fully specified project skeleton with exact file list and contents; pure boilerplate creation with adev-data-eval as structural reference."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Branch invariants specified but exact constitution/manifest content for the Python project requires inference from shared conventions; human checkpoint ensures context index correctness."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "README template and TODO features fully specified in shared conventions and spec; eval harness scaffold is boilerplate .gitkeep files across two directories."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Row counts, schemas, and format requirements clearly specified; data generation is mechanical with minor creative latitude for realistic values."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Validation rules per file type are explicitly specified with error cases; standard CSV validation pattern requires no novel design."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Exact transformation rules (date normalization, currency parsing, multi-category assignment) specified in Behavior 3; well-understood data pipeline pattern."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Planted bug requires precise implementation at exact location; human checkpoint ensures the intentional defect is correctly placed without being too obvious or too hidden."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Trivial file-move with timestamp prefix; fully specified behavior with mechanical implementation using stdlib shutil/pathlib."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Full error case table and behavioral contracts specified; standard pipeline orchestration pattern with adev-data-eval as structural reference."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Tests must carefully avoid exercising the reporter's totals aggregation with multi-category rows; human checkpoint ensures the planted bug remains undetectable by the test suite."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Acceptance criteria provide exact verification commands and expected outputs; no files created or modified, purely observational."
+    }
+  ]
+}

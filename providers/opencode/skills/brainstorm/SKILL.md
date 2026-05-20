@@ -61,6 +61,7 @@ Complete these steps in order. Do not skip steps.
 1. **Explore context** — load constitution, platform context, existing charters, ADRs, orientation
 2. **Clarify** — ask questions one at a time to understand the feature idea
 3. **Propose 2-3 approaches** — present options with trade-offs, validate against constitution
+3b. **Offer prototype** — after user selects approach, offer `/adev:prototype` before detailed design
 4. **Present design sections** — walk through each charter section, get approval per section
 5. **Write charter** — save to `.context-index/specs/features/<module>/charter.md`
 5b. **Product.md bootstrap** — bootstrap or update product.md (skipped with `--no-bootstrap` or `--module`)
@@ -97,19 +98,28 @@ Read on-demand as the conversation touches these areas:
 
 After reading, summarize findings in 3-5 bullet points covering: what the project builds, existing modules and boundaries, architectural constraints, tech stack, and cross-cutting concerns.
 
-**Heuristics:** Load module-scoped heuristics for the target module.
-Derive the module slug from the `--module <name>` argument if provided, or from the feature idea once identified.
-If the module is new (no existing scope file in `.context-index/memory/heuristics/`), use `_global` only.
-**Plugin root resolution:** Derive the plugin root from this skill file's base directory by stripping the `skills/<name>/` suffix. Replace `<ADEV_ROOT>` with the resolved path.
-Run inline Node.js:
-```javascript
-const { retrieveHeuristics, renderHeuristic } = await import('<ADEV_ROOT>/lib/heuristics.mjs');
-const entries = await retrieveHeuristics(projectRoot, moduleSlug, { tier: 'summary' });
-const rendered = entries.map(renderHeuristic).join('\n\n');
+**Heuristics:** Load module-scoped heuristics for the target module via the CLI:
+
+```bash
+adev heuristics retrieve --module <module-slug> --tier summary --format text
 ```
-If the call fails or returns empty, proceed without heuristics — non-blocking.
-When heuristics are present, prepend: "The following heuristics are lessons learned from past work
-in this module. Use them as guidance, not as hard rules."
+
+Derive the module slug from the `--module <name>` argument if provided, or from the feature idea once identified.
+If the module is new (no existing scope file in `.context-index/memory/heuristics/`), use `_global`.
+Stdout is either rendered markdown blocks (one per heuristic, separated by blank lines) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — failures degrade to an empty/`__NONE__` result so heuristic injection stays non-blocking.
+
+When heuristics are present (output is not `__NONE__`), prepend the advisory preamble: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+**Domain-Aware Charter Template:** After loading context, resolve the active domain via the CLI:
+
+```bash
+adev domain resolve --module <module-slug> [--charter <charter-path>]
+```
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'). Stdout is a single JSON object whose `resolved_domain` field is passed to `resolveTemplate('charter', kind, resolved_domain)` in Step 5. The full template is loaded in Step 5 once the kind is also known (resolved in Step 2.1); Step 1 only resolves the domain so subsequent steps can pass it through.
+
+The final section structure is determined by the kind-resolved template in Step 5. Use the template's H2 headings as the section names for this charter. Do not use hardcoded section names — the resolved template is the single source of truth for section structure.
+If the template includes a Quality Attributes section, present domain-specific quality attribute suggestions to the user (e.g., data-engineering suggests freshness, completeness, accuracy; software suggests latency, throughput, availability).
 
 ## Step 2: Clarify
 
@@ -170,12 +180,7 @@ After resolution, the `kind` variable is available for Step 5's `resolveTemplate
 ### Step 2.2: Other Clarifying Questions
 
 **Questions to answer (adapt to the idea, not mechanical):**
-- What problem does this solve? (Business Intent)
-- What is in/out of scope? (Scope and Boundaries)
-- Key entities and relationships? (Domain Model)
-- What capabilities does it provide? (Capability Map)
-- How do other modules interact? (Interface Contracts)
-- What quality attributes matter? (Quality Attributes)
+Ask questions to fill each section defined in the loaded domain template. Map each question to the corresponding H2 section in the template. For the default software domain, this typically covers Business Intent, Scope and Boundaries, Domain Model, Capability Map, Interface Contracts, and Quality Attributes -- but always use the template's actual section names rather than hardcoded defaults.
 - (Optional) Is there an external tracker reference for this feature? If so, record it as `tracker-ref` in the charter frontmatter (e.g., `tracker-ref: JIRA-1234`).
 
 **Constitution check during clarification:**
@@ -205,16 +210,57 @@ Once you understand the feature, propose 2-3 design approaches. For each:
 
 Lead with your recommended approach. Wait for user to choose before proceeding.
 
+## Step 3b: Offer Prototype
+
+After the user selects an approach, offer the option to prototype before proceeding to detailed design:
+
+> Would you like to prototype the selected approach before proceeding to detailed design? This lets you see a working sketch before committing to charter sections. (yes / no)
+
+If the user declines, proceed to Step 4.
+
+If the user opts in, dispatch `/adev:prototype` with the following structured context:
+
+```
+BRAINSTORM_CONTEXT:
+  module: <module-slug>
+  approach_summary: <selected approach description from Step 3>
+  platform_context: <parsed contents of platform-context.yaml>
+  constitution_constraints: <relevant constitutional principles identified during brainstorm, or []>
+```
+
+Where:
+- `module` (string, required) — the charter module slug (kebab-case, matches directory name under `specs/features/`)
+- `approach_summary` (string, required) — the full description of the approach the user selected in Step 3
+- `platform_context` (object, required) — the parsed contents of `platform-context.yaml` (the actual object, not a file path or raw YAML string)
+- `constitution_constraints` (array of strings, optional, defaults to `[]`) — any constitutional principles that were flagged during the brainstorm clarification phase as relevant constraints for this feature
+
+When brainstorm context is provided, prototype skips its own charter lookup and proceeds directly to tier selection.
+
+**Handling the prototype return result:**
+
+After `/adev:prototype` completes, it returns a `PROTOTYPE_RESULT` with:
+- `status`: `"completed"` or `"discarded"`
+- `tier`: the prototype tier used (`"wireframe"`, `"mockup"`, or `"functional"`)
+- `visual_references`: array of `{ path, description }` for any captured images
+- `heuristics_saved`: count of design decisions saved as heuristics
+- `persistence`: `"project"` (files kept) or `"ephemeral"` (temp files removed)
+
+Present a summary of the prototype session to the user:
+
+> **Prototype session complete.**
+> - Status: `<status>`
+> - Tier: `<tier>`
+> - Visual references: `<count>` captured
+> - Heuristics saved: `<count>`
+> - Persistence: `<persistence>`
+
+Then continue to Step 4 (Present Design Sections) with the enriched context from prototyping. The prototype experience should inform the design sections — for example, visual references can guide Quality Attributes, and design decisions captured as heuristics can refine the Domain Model or Capability Map.
+
 ## Step 4: Present Design Sections
 
-For each section 4a-4f below, present the content and ask "Does this look right?" before moving to the next. Scale detail to complexity — straightforward sections get 2-3 sentences, nuanced ones get detailed tables.
+For each H2 section in the loaded domain template, present the content and ask "Does this look right?" before moving to the next. Scale detail to complexity -- straightforward sections get 2-3 sentences, nuanced ones get detailed tables.
 
-- **4a. Business Intent:** 2-3 sentences — why the module exists and what problem it solves.
-- **4b. Scope and Boundaries:** Three lists — In Scope (owned capabilities), Out of Scope (explicitly excluded), Dependencies (other modules, with direction).
-- **4c. Domain Model:** Entities table (name, description, key attributes), relationships, and invariants (testable business rules).
-- **4d. Capability Map:** Table with name, description, priority (must/should/nice-to-have), and phase. Each capability is a candidate for a future Live Spec. Order by priority.
-- **4e. Interface Contracts:** Exposed APIs (what this module offers) and Consumed APIs (what it needs). Each with name, type (REST/function/event/message), and description.
-- **4f. Quality Attributes:** Table of non-functional requirements (performance, availability, security, observability). Only include attributes with meaningful requirements.
+Use the template's section names and structure directly. Do not substitute or rename sections. The domain template is the single source of truth for which sections appear and what they are called.
 
 After the user approves all sections, proceed to writing.
 
@@ -476,16 +522,100 @@ If changes requested: make them, re-run Step 6, ask for approval again. Only pro
 
 ## Step 8: Transition to Specification
 
-Once approved, transition to Live Spec authoring:
+Once approved, transition to Live Spec authoring. Before listing capabilities,
+render a **Spec Organization Plan** so the downstream `/adev:specify` calls have
+a deterministic starting grouping. The plan is advisory — the user may always
+override it.
 
-> The charter for **<module>** is complete. The next step is to create Live Specs for specific capabilities.
+### 8.1 Charter-size routing
+
+Count the **must-have** capabilities from the approved charter and route:
+
+- **0 must-have capabilities** — skip the grouping plan entirely. Render only:
+  > No must-have capabilities yet — extend the charter or proceed to `/adev:specify` directly.
+- **exactly 1 must-have capability** — skip the grouping table. Render the
+  single-capability prompt below (preserved from the prior Step 8 wording).
+- **≥2 and ≤12 must-have capabilities** — render the full Spec Organization
+  Plan (grouping table + optional ASCII dependency graph).
+- **>12 must-have capabilities** — render the table for the top 12 by
+  Priority/Milestone and append the note:
+  > Charter has N capabilities; grouping shown for top 12. Consider splitting the charter.
+
+### 8.2 Grouping heuristics (inline definitions)
+
+Each row of the grouping table cites exactly **one** of these three named
+heuristics. Their definitions are pinned here verbatim so the rendering stays
+reproducible across model runs:
+
+- **cohesion** — capabilities sharing an invariant (e.g., a multi-file
+  version-parity rule) belong together.
+- **dependency-chain** — capability X consumes capability Y → both in one spec
+  unless Y is reused by other specs.
+- **blast-radius** — capabilities that touch the same module/file cluster
+  belong together; capabilities that touch independent surfaces should split.
+
+**Heuristic conflict rule.** When two heuristics disagree on the same
+capability pair, prefer the more conservative grouping (separate specs) and
+emit a note such as:
+
+> ambiguous: `<cap-1>` and `<cap-2>` — cohesion suggests together, blast-radius suggests apart.
+
+### 8.3 Capability grouping table
+
+Render the table:
+
+```
+| Spec | Capabilities | Rationale |
+|---|---|---|
+| <spec-slug> | <cap-1>, <cap-2> | <one of: cohesion / dependency-chain / blast-radius> reason |
+```
+
+Every rationale cell MUST cite exactly one of the three heuristic names above.
+If a row touches multiple heuristics, pick the dominant one and note the
+runner-up in prose ("also: <name>") rather than listing two names.
+
+### 8.4 ASCII dependency graph (conditional)
+
+When two or more grouped specs have ordering dependencies, render an inline
+ASCII diagram immediately after the table:
+
+```
+spec-A  ┐
+        ├─→ spec-B ─→ spec-C
+spec-D ─┘
+```
+
+When all grouped specs are independent, **omit the graph entirely** — do not
+render an empty diagram or a placeholder.
+
+### 8.5 Retained capability list and dual-path handoff
+
+After the Spec Organization Plan, retain the existing top-priority capability
+list and offer the user two paths:
+
+> The charter for **<module>** is complete. The next step is to create Live Specs.
 >
 > Top-priority capabilities from the charter:
 > 1. [capability-1] (must-have)
 > 2. [capability-2] (must-have)
 > 3. [capability-3] (should-have)
 >
-> Would you like to specify one of these now? I will invoke `/adev:specify` to create a Live Spec.
+> Two paths:
+>
+> - **Specify one group** — invoke `/adev:specify` to write one spec covering N
+>   capabilities, using the proposed grouping.
+> - **Specify one capability** — invoke `/adev:specify` for a single capability,
+>   overriding the grouping for that one spec.
+
+### 8.6 Override stickiness
+
+When the user picks **Specify one capability** (overriding the group), do not re-render the grouping table on subsequent turns of the same session. The override is a per-session decision; treat the remaining capabilities as a flat backlog from that point on.
+
+### 8.7 No new files
+
+Step 8 is a chat-only enrichment. **No new files are written by Step 8.**
+Output is durable only via the user's subsequent `/adev:specify` calls; the
+charter is not edited here.
 
 **The terminal state is invoking `/adev:specify`.** Do NOT invoke `/adev:plan`, `/adev:implement`, or any other implementation skill.
 

@@ -20,8 +20,6 @@ source-manifest:
     - .githooks/post-commit
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
-drift_source: cli/index.mjs
-drift_at: 2026-05-16T01:37:53.392Z
 ---
 
 ## Behavioral Contract

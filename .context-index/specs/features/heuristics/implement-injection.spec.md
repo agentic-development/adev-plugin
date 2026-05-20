@@ -26,8 +26,6 @@ source-manifest:
     - .context-index/specs/features/heuristics/retrieval-filtering.spec.md
   computed-at: "2026-04-25T21:55:13.503Z"
 drift_detected: true
-drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-17T19:58:38.629Z
 ---
 
 ## Behavioral Contract

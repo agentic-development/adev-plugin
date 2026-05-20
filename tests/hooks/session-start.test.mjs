@@ -243,4 +243,57 @@ describe("session-start hook", () => {
 
     assert.equal(exitCode, 0);
   });
+
+  it("injects persona directive concatenated with verbosity overlay", () => {
+    const { exitCode, stdout } = runHook("session-start.sh", {
+      env: { CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
+    });
+
+    assert.equal(exitCode, 0);
+    const parsed = JSON.parse(stdout);
+    const ctx = parsed.hookSpecificOutput.additionalContext;
+    // Default config resolves to developer + normal. Both must appear.
+    assert.ok(
+      /Output Persona:/i.test(ctx),
+      "additionalContext should include persona directive"
+    );
+    assert.ok(
+      /Verbosity Overlay:/i.test(ctx),
+      "additionalContext should include verbosity overlay"
+    );
+  });
+
+  it("degrades to persona-only directive when verbosity overlay dir is missing", () => {
+    const tempDir = createTempDir();
+    try {
+      // Build a minimal plugin root with personas only (no templates/verbosity)
+      const fakePluginRoot = join(tempDir, "fake-plugin");
+      mkdirSync(join(fakePluginRoot, "skills", "using-adev"), { recursive: true });
+      writeFileSync(
+        join(fakePluginRoot, "skills", "using-adev", "SKILL.md"),
+        "# using-adev\n"
+      );
+      mkdirSync(join(fakePluginRoot, "templates", "personas"), { recursive: true });
+      writeFileSync(
+        join(fakePluginRoot, "templates", "personas", "developer.md"),
+        "# Output Persona: Developer\nBalanced.\n"
+      );
+      writeFileSync(
+        join(fakePluginRoot, "package.json"),
+        JSON.stringify({ name: "fake", version: "0.0.0" })
+      );
+
+      const { exitCode, stdout } = runHook("session-start.sh", {
+        env: { CLAUDE_PLUGIN_ROOT: fakePluginRoot },
+      });
+
+      assert.equal(exitCode, 0);
+      const parsed = JSON.parse(stdout);
+      const ctx = parsed.hookSpecificOutput.additionalContext;
+      assert.ok(/Output Persona: Developer/.test(ctx), "persona directive must still inject");
+      assert.ok(!/Verbosity Overlay:/.test(ctx), "overlay must not inject when dir is missing");
+    } finally {
+      cleanupTempDir(tempDir);
+    }
+  });
 });

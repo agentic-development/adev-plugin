@@ -16,8 +16,6 @@ source-manifest:
     - tests/hooks/issue-reminder.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
-drift_source: hooks/hooks.json
-drift_at: 2026-05-16T02:31:19.736Z
 ---
 
 # Live Spec: Issue Reminder Hook

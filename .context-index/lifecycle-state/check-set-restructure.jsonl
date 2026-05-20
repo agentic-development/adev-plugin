@@ -71,3 +71,8 @@
 {"event":"validator_report","step":"validate","validator":"check-9-transition-gates","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":20,"ts":"2026-05-16T03:38:20.403Z"}
 {"event":"validator_report","step":"validate","validator":"check-11-visual-verification","severity":"warning","verdict":"PASS","error":null,"score":null,"duration_ms":15,"ts":"2026-05-16T03:38:20.403Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-16T03:40:37.894Z"}
+{"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-05-17T20:31:49.574Z","ts":"2026-05-18T13:48:57.293Z"}
+{"event":"code_drift_detected","drift_source":"skills/hygiene/SKILL.md","drift_at":"2026-05-18T13:54:22.147Z","ts":"2026-05-18T13:54:22.147Z"}
+{"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-05-18T13:54:34.142Z","ts":"2026-05-18T13:54:34.142Z"}
+{"event":"code_drift_detected","drift_source":"skills/review-specs/structural-architect-prompt.md","drift_at":"2026-05-20T03:52:27.772Z","ts":"2026-05-20T03:52:27.772Z"}
+{"event":"code_drift_detected","drift_source":"skills/review-specs/consistency-analyzer-prompt.md","drift_at":"2026-05-20T03:54:56.346Z","ts":"2026-05-20T03:54:56.347Z"}

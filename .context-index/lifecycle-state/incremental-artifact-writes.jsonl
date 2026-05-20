@@ -1,0 +1,127 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-17T18:32:23.674Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-05-17T18:32:23.728Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-17T18:37:31.225Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"FAIL","notes":"1 blocker (SA-1 event-variant collision), 3 warnings (.tmp/.partial taxonomy, scanner-invisibility, schema-version marker), 3 suggestions","ts":"2026-05-17T19:05:27.739Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Zero blockers. 2 warnings (orphan-lock liveness blocks for 24h on SIGKILL; path-containment not specified for helpers/verbs), 3 suggestions","ts":"2026-05-17T19:05:27.798Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"2 blockers (CON-1 event-variant collision same as SA-1; CON-2 reportIntervention field-shape mismatch), 2 warnings, 4 suggestions","ts":"2026-05-17T19:05:27.850Z"}
+{"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-05-17T19:05:52.976Z"}
+{"event":"debug_intervention","kind":"spec-revise","note":"Rev 1 → rev 2: resolves 2 blockers (event-variant collision + reportIntervention shape) and 6 warnings. Authored via .partial pattern.","ts":"2026-05-17T19:10:56.617Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-05-17T19:10:56.674Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-17T19:11:06.334Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Rev-2 re-review: SA-1/2/3/6/7 RESOLVED. 2 new warnings (SA-10 lock-steal TOCTOU; SA-11 stale-threshold overlap) on the lock-stealing logic added in rev 2. 2 suggestions.","ts":"2026-05-17T19:14:25.118Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"Rev-2 re-review: all 4 rev-1 warnings RESOLVED. 3 new suggestions (partial_schema regex; lock payload validation; dispatch_mode disclosure note).","ts":"2026-05-17T19:14:25.170Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Rev-2 re-review: CON-1/2/3/4/5 RESOLVED. CON-6 partial. 3 new suggestions (knob namespace; projection field; marker syntax).","ts":"2026-05-17T19:14:25.222Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-17T19:14:38.467Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-17T19:16:55.211Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-05-17T19:20:45.699Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-05-17T19:20:45.752Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-05-17T19:20:45.803Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"4","status":"pending","notes":null,"ts":"2026-05-17T19:20:45.855Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"5","status":"pending","notes":null,"ts":"2026-05-17T19:20:45.906Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"6","status":"pending","notes":null,"ts":"2026-05-17T19:20:45.957Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"7","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.009Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"8","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.062Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"9","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.113Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"10","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.166Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"11","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.218Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"12","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.271Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"13","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.323Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"14","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.374Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"15","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.425Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"16","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.477Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"17","status":"pending","notes":null,"ts":"2026-05-17T19:20:46.529Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-17T19:20:46.580Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-17T19:26:34.478Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-17T19:38:46.179Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-05-17T19:39:42.887Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"1","status":"done","notes":"Paired-spec amendments: variant + taxonomy invariant","ts":"2026-05-17T19:45:21.833Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"2","status":"in_progress","notes":null,"ts":"2026-05-17T19:45:26.412Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"2","status":"done","notes":"Helper skeleton: partialPath/lockPath/commitPartial/assertWithin","ts":"2026-05-17T19:46:46.101Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"3","status":"in_progress","notes":null,"ts":"2026-05-17T19:46:50.509Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"3","status":"done","notes":"Schema-marker grammar + allowlist","ts":"2026-05-17T19:47:55.109Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"4","status":"in_progress","notes":null,"ts":"2026-05-17T19:47:59.832Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"4","status":"done","notes":"Lock acquire + steal-on-stale (stolen→discarded)","ts":"2026-05-17T19:50:09.998Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"5","status":"in_progress","notes":null,"ts":"2026-05-17T19:50:14.548Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"5","status":"done","notes":"findPartials + isPartialStale","ts":"2026-05-17T19:51:27.653Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"6","status":"in_progress","notes":null,"ts":"2026-05-17T19:51:32.948Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"6","status":"done","notes":"reportPartialRecovery + partialRecoveries[] projection","ts":"2026-05-17T19:58:26.627Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"7","status":"in_progress","notes":null,"ts":"2026-05-17T19:58:37.045Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"7","status":"done","notes":"Manifest knobs (lifecycle.partial_*)","ts":"2026-05-17T20:00:15.248Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"8","status":"in_progress","notes":null,"ts":"2026-05-17T20:00:20.445Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"8","status":"done","notes":"gitignore *.partial and *.partial.lock","ts":"2026-05-17T20:00:49.300Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"9","status":"in_progress","notes":null,"ts":"2026-05-17T20:00:54.586Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"9","status":"done","notes":"CLI verbs adev partial {detect,resume,discard,inspect}","ts":"2026-05-17T20:08:46.202Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"10","status":"in_progress","notes":null,"ts":"2026-05-17T20:08:52.543Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"10","status":"done","notes":".partial pattern + Step 0 resume detection","ts":"2026-05-17T20:13:46.056Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"11","status":"in_progress","notes":null,"ts":"2026-05-17T20:13:51.040Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"11","status":"done","notes":"commit-per-task MUST + .partial for source-manifest staging","ts":"2026-05-17T20:18:40.320Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"12","status":"in_progress","notes":null,"ts":"2026-05-17T20:18:46.831Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"12","status":"done","notes":".partial pattern with partial_schema: spec@1","ts":"2026-05-17T20:23:02.626Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"13","status":"in_progress","notes":null,"ts":"2026-05-17T20:23:08.035Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"13","status":"done","notes":".tmp stay-put per suffix taxonomy","ts":"2026-05-17T20:23:41.939Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"14","status":"in_progress","notes":null,"ts":"2026-05-17T20:23:46.786Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"14","status":"done","notes":"Orchestrator resume: partial-artifact detection step","ts":"2026-05-17T20:28:21.068Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"15","status":"in_progress","notes":null,"ts":"2026-05-17T20:28:30.867Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"15","status":"done","notes":"Scanner-invisibility regression test","ts":"2026-05-17T20:30:39.045Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"16","status":"in_progress","notes":null,"ts":"2026-05-17T20:30:44.328Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"16","status":"done","notes":"End-to-end integration test (3 scenarios)","ts":"2026-05-17T20:32:55.261Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"17","status":"in_progress","notes":null,"ts":"2026-05-17T20:33:01.178Z"}
+{"event":"plan_task","plan":".context-index/specs/cross-cutting/incremental-artifact-writes.plan.md","task_id":"17","status":"done","notes":"docs/partial-artifacts.md explainer","ts":"2026-05-17T20:34:06.204Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-17T21:19:09.286Z"}
+{"event":"step_completed","step":"implement","ts":"2026-05-17T21:24:18.905Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-17T21:25:22.544Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-17T21:25:33.381Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS","notes":"npm test 3222/3222 pass","ts":"2026-05-17T21:30:17.715Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"source-manifest matches sha f97c13f","ts":"2026-05-17T21:30:17.768Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-drift-detection","severity":"warning","verdict":"PASS","notes":"drift flag false; source-manifest matches","ts":"2026-05-17T21:33:45.741Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS_WITH_NOTES","notes":"PARTIAL on OVERSIZE per-append (knob loaded but no fire-site); all other ACs PASS","ts":"2026-05-17T21:33:45.796Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","notes":"all principles respected; assertWithin mirrored","ts":"2026-05-17T21:33:45.852Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-17T21:33:53.699Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-17T22:03:29.897Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"PASS","notes":"npm test 3237/3237 pass (15 new tests for OVERSIZE guard)","ts":"2026-05-17T22:03:44.997Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"source-manifest matches sha a53bfcc","ts":"2026-05-17T22:03:45.050Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-drift-detection","severity":"warning","verdict":"PASS","notes":"drift flag false; source-manifest matches","ts":"2026-05-17T22:03:45.102Z"}
+{"event":"validator_report","step":"validate","validator":"check-2-spec-compliance","severity":"warning","verdict":"PASS","notes":"All ACs PASS; OVERSIZE per-append guard now wired at lib/partial-artifact.mjs:640","ts":"2026-05-17T22:03:45.155Z"}
+{"event":"validator_report","step":"validate","validator":"check-4-constitution","severity":"warning","verdict":"PASS","notes":"all principles respected; only node:fs + node:path used","ts":"2026-05-17T22:03:45.207Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-17T22:04:28.721Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-19T19:49:28.663Z","ts":"2026-05-19T19:49:28.664Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T02:15:24.290Z","ts":"2026-05-20T02:15:24.291Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T02:18:21.636Z","ts":"2026-05-20T02:18:21.637Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T02:22:35.316Z","ts":"2026-05-20T02:22:35.317Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T02:30:43.925Z","ts":"2026-05-20T02:30:43.926Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:29.050Z","ts":"2026-05-20T02:39:29.051Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:35.031Z","ts":"2026-05-20T02:39:35.032Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:40:46.379Z","ts":"2026-05-20T02:40:46.380Z"}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T02:46:31.715Z","ts":"2026-05-20T02:46:31.715Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T02:58:39.563Z","ts":"2026-05-20T02:58:39.564Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-events.mjs","drift_at":"2026-05-20T03:34:26.670Z","ts":"2026-05-20T03:34:26.670Z"}
+{"event":"code_drift_detected","drift_source":"lib/diagnostics/event-schemas.mjs","drift_at":"2026-05-20T03:34:39.268Z","ts":"2026-05-20T03:34:39.269Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:01.304Z","ts":"2026-05-20T03:35:01.305Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:13.923Z","ts":"2026-05-20T03:35:13.924Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:25.467Z","ts":"2026-05-20T03:35:25.467Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:36:39.920Z","ts":"2026-05-20T03:36:39.921Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:00.419Z","ts":"2026-05-20T03:37:00.420Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:08.882Z","ts":"2026-05-20T03:37:08.882Z"}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:21.592Z","ts":"2026-05-20T03:37:21.593Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md","drift_at":"2026-05-20T03:45:27.033Z","ts":"2026-05-20T03:45:27.034Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md","drift_at":"2026-05-20T03:45:39.033Z","ts":"2026-05-20T03:45:39.033Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md","drift_at":"2026-05-20T03:45:48.136Z","ts":"2026-05-20T03:45:48.137Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md","drift_at":"2026-05-20T03:46:03.450Z","ts":"2026-05-20T03:46:03.450Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T03:59:47.606Z","ts":"2026-05-20T03:59:47.607Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:03.889Z","ts":"2026-05-20T04:01:03.890Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:09.301Z","ts":"2026-05-20T04:01:09.302Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:41.397Z","ts":"2026-05-20T04:01:41.398Z"}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:13:52.241Z","ts":"2026-05-20T04:13:52.241Z"}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:11.245Z","ts":"2026-05-20T04:14:11.246Z"}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:20.466Z","ts":"2026-05-20T04:14:20.467Z"}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:31.185Z","ts":"2026-05-20T04:14:31.185Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T04:19:21.731Z","ts":"2026-05-20T04:19:21.731Z"}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.020Z","ts":"2026-05-20T12:08:30.021Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T12:12:27.368Z","ts":"2026-05-20T12:12:27.369Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/agent-reliable-state-artifacts/charter.md","drift_at":"2026-05-20T12:12:50.666Z","ts":"2026-05-20T12:12:50.667Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.020Z","ts":"2026-05-20T01:26:28.021Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.753Z","ts":"2026-05-20T01:27:38.754Z"}
+{"event":"code_drift_detected","drift_source":".gitignore","drift_at":"2026-05-20T01:47:50.090Z","ts":"2026-05-20T01:47:50.091Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.342Z","ts":"2026-05-20T12:58:34.342Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.065Z","ts":"2026-05-20T13:03:18.066Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.977Z","ts":"2026-05-20T13:05:52.978Z"}

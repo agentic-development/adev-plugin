@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Spec prescribes 8 output-contract steps and Failure Modes table; sibling claude/agents writer sections in the same SKILL.md provide a direct pattern; single-file edit, no boundary crossings."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Mechanical three-line uncomment plus literal path replacement; spec quotes the exact lines; pattern matches the adjacent active sync-target entries in the same template; minimal blast radius."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Spec defines composition algorithm, description-derivation order, atomic write, and oversize fail-loud explicitly; mirrors sibling claude/agents writer sections; single-file edit; minor synthesis to phrase the body-composition algorithm in prose."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Spec enumerates all 7 sub-cases; tests/cursor-hooks-sync.test.mjs provides the fixture-setup pattern but no curated golden sample for sync-format tests; first test under tests/sync/ requires CLI-driver vs helper-import choice; single new file in a new subdirectory."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Verification task on a single bullet at a known line; explicit no-op-or-tiny-edit instruction with a defined commit fallback; documentation-only, single file, mechanical."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Two line-specific wording substitutions prescribed verbatim by the plan, plus a revision bump; doc-only edit; single file; zero design choices required."
+    }
+  ]
+}

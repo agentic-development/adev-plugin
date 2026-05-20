@@ -16,8 +16,6 @@ source-manifest:
     - skills/validate/SKILL.md
   computed-at: "2026-04-12T11:48:02.769Z"
 drift_detected: true
-drift_source: skills/implement/SKILL.md
-drift_at: 2026-05-17T19:58:38.631Z
 ---
 
 ## Behavioral Contract
