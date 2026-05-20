@@ -216,10 +216,6 @@ Groups D and B can run concurrently after Group A. Group F is independent of all
 
 ### Task 1: Manifest schema documentation for `integrations.session_capture.{capture, gitignored}` [specialist: none]
 
-**Routing:** auto-agent (score: 19/20)
-**Scores:** spec=5 pattern=5 blast=5 novelty=4
-**Rationale:** Trivial doc-comment edit to a single manifest line with explicit spec preconditions and existing comment style.
-
 **Charter capability:** Init-Time Capture Configuration
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -254,10 +250,6 @@ git commit -m "docs(manifest): document integrations.session_capture keys"
 ```
 
 ### Task 2: `validateSessionId()`, `validateCwd()`, `validateTranscriptPath()` helpers [specialist: none]
-
-**Routing:** auto-agent (score: 17/20)
-**Scores:** spec=5 pattern=3 blast=5 novelty=4
-**Rationale:** Validators have explicit regex/realpath invariants and full error-case coverage; pure functions in a single new module with no curated sample for path-realpath comparison.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -316,10 +308,6 @@ git commit -m "feat(session-awareness): add validators in lib/session-capture.mj
 
 ### Task 3: `redactSecrets(text)` helper in `lib/session-summary.mjs` [specialist: none]
 
-**Routing:** auto-agent (score: 17/20)
-**Scores:** spec=5 pattern=3 blast=5 novelty=4
-**Rationale:** Spec enumerates each pattern class, ordering rules, and replacement tokens with high precision; mechanical regex application in a single module.
-
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -377,10 +365,6 @@ git commit -m "feat(session-awareness): add redactSecrets to lib/session-summary
 
 ### Task 4: `detectExistingCapture(projectRoot)` helper [specialist: none]
 
-**Routing:** auto-agent (score: 17/20)
-**Scores:** spec=5 pattern=3 blast=5 novelty=4
-**Rationale:** Pure read-only function with documented signal list and clear return contract; straightforward filesystem inspection in a single module.
-
 **Charter capability:** Init-Time Capture Configuration
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 2
@@ -431,10 +415,6 @@ git commit -m "feat(session-awareness): add detectExistingCapture"
 
 ### Task 5: Shared hook-helper entry point in `lib/session-capture.mjs` [specialist: none]
 
-**Routing:** assisted-agent (score: 13/20)
-**Scores:** spec=4 pattern=3 blast=3 novelty=3
-**Rationale:** Composes validation chain, atomic write, frontmatter assembly, and PreCompact skip branch; touches behavior across multiple invariants and lacks a direct sample for atomic-write+frontmatter composition.
-
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 2, Task 3, Task 4
@@ -465,10 +445,6 @@ git commit -m "feat(session-awareness): add runCapture helper for SessionEnd/Pre
 ```
 
 ### Task 6: `fromTranscript(transcriptPath, opts)` extension to `lib/session-summary.mjs` [specialist: none]
-
-**Routing:** auto-agent (score: 16/20)
-**Scores:** spec=4 pattern=4 blast=5 novelty=3
-**Rationale:** Existing git-derived summarizer provides markdown-shape parity reference; placeholder fallback and redaction integration are well-specified.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -528,10 +504,6 @@ git commit -m "feat(session-awareness): add fromTranscript to lib/session-summar
 ```
 
 ### Task 7: `hooks/session-end.sh` bash wrapper [specialist: none]
-
-**Routing:** auto-agent (score: 18/20)
-**Scores:** spec=5 pattern=5 blast=5 novelty=3
-**Rationale:** Two golden samples (hook-pretooluse-merge-guard, hook-sessionstart-session-start) plus existing `hooks/session-capture.sh` provide direct templates; gate-check pattern is documented verbatim.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -596,10 +568,6 @@ git commit -m "feat(hooks): add session-end.sh wrapper for SessionEnd capture"
 
 ### Task 8: `hooks/pre-compact.sh` bash wrapper [specialist: none]
 
-**Routing:** auto-agent (score: 18/20)
-**Scores:** spec=5 pattern=5 blast=5 novelty=3
-**Rationale:** Mirrors Task 7 pattern with golden-sample coverage; the SA-2 skip-if-session-end branch is fully specified and lives in the Node helper.
-
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 5
@@ -645,10 +613,6 @@ git commit -m "feat(hooks): add pre-compact.sh wrapper with SA-2 skip"
 ```
 
 ### Task 9: `adev init prompt session-capture` CLI verb [specialist: none]
-
-**Routing:** auto-agent (score: 16/20)
-**Scores:** spec=5 pattern=3 blast=4 novelty=4
-**Rationale:** Behaviors 1-4, SA-4, and CON-8 warning placement are all explicit; existing `lib/cli/` verb shapes provide patterns even without a curated CRUD-prompt sample.
 
 **Charter capability:** Init-Time Capture Configuration
 **Strategy:** unit (source: fallback, confidence: high)
@@ -719,10 +683,6 @@ git commit -m "feat(cli): add adev init prompt session-capture verb"
 
 ### Task 10: Verb registration in `cli/index.mjs` [specialist: none]
 
-**Routing:** auto-agent (score: 19/20)
-**Scores:** spec=5 pattern=5 blast=4 novelty=5
-**Rationale:** Trivial single-line dispatch addition following the existing verb-registration shape in `cli/index.mjs`.
-
 **Charter capability:** Init-Time Capture Configuration
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 9
@@ -752,10 +712,6 @@ git commit -m "feat(cli): register init prompt session-capture verb"
 ```
 
 ### Task 11: Installer dispatch by `capture` mode [specialist: none]
-
-**Routing:** assisted-agent (score: 14/20)
-**Scores:** spec=4 pattern=3 blast=3 novelty=4
-**Rationale:** Three-branch installer dispatch composes Tasks 12, 13, 15, 16 with cross-file post-conditions; well-specified but no direct sample for capture-mode dispatch.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -794,10 +750,6 @@ git commit -m "feat(cli): dispatch installer by integrations.session_capture.cap
 
 ### Task 12: Installer gitignore paired-marker management [specialist: none]
 
-**Routing:** auto-agent (score: 17/20)
-**Scores:** spec=5 pattern=3 blast=5 novelty=4
-**Rationale:** Sentinel-marker idempotency invariant (SA-3, SEC-5) is fully specified with exact marker strings; mechanical line-by-line read/replace in a single module.
-
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 11
@@ -828,10 +780,6 @@ git commit -m "feat(cli): paired-marker gitignore management for sessions/"
 ```
 
 ### Task 13: Installer post-commit cleanup + SEC-11 sentinel-mismatch branch [specialist: none]
-
-**Routing:** auto-agent (score: 17/20)
-**Scores:** spec=5 pattern=3 blast=5 novelty=4
-**Rationale:** All three branches (both-present, neither-present, mismatched) have explicit spec behaviors with exact stderr text; mirrors Task 12 sentinel mechanics.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -866,10 +814,6 @@ git commit -m "feat(cli): post-commit sentinel cleanup + sentinel-mismatch branc
 ```
 
 ### Task 14: Stderr diagnostic helper with CON-10 subject-token contract [specialist: none]
-
-**Routing:** auto-agent (score: 19/20)
-**Scores:** spec=5 pattern=5 blast=5 novelty=4
-**Rationale:** Tiny pure formatting helper with the implementation skeleton already in the plan; SEC-7 invariant prescribes the exact output shape.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -911,10 +855,6 @@ git commit -m "feat(session-awareness): centralize stderr diagnostic format"
 
 ### Task 15: One-time post-commit sentinel-wrap migration [specialist: none]
 
-**Routing:** auto-agent (score: 16/20)
-**Scores:** spec=4 pattern=3 blast=5 novelty=4
-**Rationale:** SA-3 invariant specifies the marker contract; legacy-block detection by signature is a single-file scan with idempotent re-run semantics.
-
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 13
@@ -944,10 +884,6 @@ git commit -m "feat(cli): one-time sentinel-wrap migration for legacy post-commi
 ```
 
 ### Task 16: Remove manual-batching warning + update `hooks/hooks.json` registration [specialist: none]
-
-**Routing:** auto-agent (score: 19/20)
-**Scores:** spec=5 pattern=4 blast=5 novelty=5
-**Rationale:** Trivial deletion plus idempotent JSON merge into `hooks/hooks.json`; mechanical edit with no design decisions.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -979,10 +915,6 @@ git commit -m "feat(cli): register SessionEnd/PreCompact hooks; drop batching wa
 ```
 
 ### Task 17: Add prompt step to `skills/init/SKILL.md` (markdown only) [specialist: none]
-
-**Routing:** auto-agent (score: 19/20)
-**Scores:** spec=5 pattern=4 blast=5 novelty=5
-**Rationale:** Pure markdown insert naming the CLI verb; pre-commit `no-inline-node` hook enforces the constraint and existing prompt steps provide the template.
 
 **Charter capability:** Init-Time Capture Configuration
 **Strategy:** unit (source: fallback, confidence: high)
@@ -1020,10 +952,6 @@ git commit -m "docs(init): add session-capture prompt step (markdown only)"
 
 ### Task 18: Supersede `post-commit-self-skip.spec.md` + gate legacy regression test [specialist: none]
 
-**Routing:** auto-agent (score: 19/20)
-**Scores:** spec=5 pattern=4 blast=5 novelty=5
-**Rationale:** Frontmatter-only spec update plus a single test-fixture gate line; SA-8 bookkeeping is fully prescribed.
-
 **Charter capability:** Hook-Driven Session Capture (charter-bookkeeping)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -1057,10 +985,6 @@ git commit -m "chore(session-awareness): supersede post-commit-self-skip spec"
 ```
 
 ### Task 19: Versioned Claude Code payload fixtures (SA-9) [specialist: none]
-
-**Routing:** auto-agent (score: 17/20)
-**Scores:** spec=4 pattern=4 blast=5 novelty=4
-**Rationale:** Two static JSON fixture files with documented key set and a shape-assertion test; the only design choice is realistic example values.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
@@ -1107,10 +1031,6 @@ git commit -m "test(session-awareness): pin versioned Claude Code payload fixtur
 
 ### Task 20: Consumer regression coverage (CON-4) [specialist: none]
 
-**Routing:** assisted-agent (score: 14/20)
-**Scores:** spec=4 pattern=3 blast=3 novelty=4
-**Rationale:** Behavior 15 sets clear "no warnings/errors" assertion but four consumer skills (`work`, `status`, `hygiene`, `retro`) span multiple modules — checkpoint helps verify test scope before broad coverage.
-
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 11
@@ -1156,10 +1076,6 @@ git commit -m "test(session-awareness): regression coverage for sessions/ absenc
 
 ### Task 21: End-to-end installer test (3 modes, sentinel round-trip, SEC-11) [specialist: none]
 
-**Routing:** assisted-agent (score: 14/20)
-**Scores:** spec=5 pattern=3 blast=3 novelty=3
-**Rationale:** Postconditions table fully prescribes subtests but the end-to-end installer test composes Tasks 11-16 across multiple files; checkpoint after subtest scaffolding catches missed edge cases early.
-
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 13, Task 15
@@ -1201,10 +1117,6 @@ git commit -m "test(cli): end-to-end installer coverage for session-capture mode
 ```
 
 ### Task 22: Smoke test (manual) [specialist: none]
-
-**Routing:** human-only (score: 9/20)
-**Scores:** spec=4 pattern=3 blast=1 novelty=1
-**Rationale:** Plan explicitly marks this as a manual procedure on a fresh tempdir; agent cannot exercise an interactive `adev init` flow end-to-end without human verification of side effects across the filesystem.
 
 **Charter capability:** Hook-Driven Session Capture
 **Strategy:** unit (source: fallback, confidence: high)
