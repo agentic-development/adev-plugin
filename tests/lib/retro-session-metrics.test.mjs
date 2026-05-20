@@ -132,10 +132,130 @@ describe('parseToolUseDistribution', () => {
   });
 });
 
-// Stubbed sections for sub-helpers added in Tasks 8–11.
-describe('countPerSpec (stub — Task 8)', () => {
-  test('exists', () => {
-    assert.equal(typeof countPerSpec, 'function');
+describe('countPerSpec', () => {
+  test('frontmatter spec: field counts toward that spec', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/foo/bar.spec.md' },
+        body: '',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].spec, '.context-index/specs/features/foo/bar.spec.md');
+    assert.equal(r[0].count, 1);
+  });
+
+  test('body grep finds spec path references', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: 'mentions .context-index/specs/features/foo/bar.spec.md somewhere',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].spec, '.context-index/specs/features/foo/bar.spec.md');
+  });
+
+  test('frontmatter + body both contribute when distinct', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/foo/a.spec.md' },
+        body: 'see .context-index/specs/features/bar/b.spec.md',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 2);
+    const a = r.find((x) => x.spec.endsWith('a.spec.md'));
+    const b = r.find((x) => x.spec.endsWith('b.spec.md'));
+    assert.equal(a.count, 1);
+    assert.equal(b.count, 1);
+  });
+
+  test('dedupe per (session, spec): body mentioning same spec twice counts once', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: '.context-index/specs/features/x/y.spec.md once\n.context-index/specs/features/x/y.spec.md twice',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r[0].count, 1);
+  });
+
+  test('frontmatter + body referencing same spec dedupes per session', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: '.context-index/specs/features/x/y.spec.md mentioned in body too',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].count, 1);
+  });
+
+  test('two sessions touching same spec accumulate', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: '',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].count, 2);
+  });
+
+  test('zero-count specs omitted (nothing to omit if input empty)', () => {
+    assert.deepEqual(countPerSpec([]), []);
+  });
+
+  test('sort: descending by count, ties broken by spec slug ascending', () => {
+    const mk = (spec) => ({
+      format: 'hook',
+      frontmatter: { kind: 'session-end', spec },
+      body: '',
+    });
+    const sessions = [
+      mk('.context-index/specs/features/c/c.spec.md'), // count 1
+      mk('.context-index/specs/features/a/a.spec.md'), // count 2
+      mk('.context-index/specs/features/a/a.spec.md'),
+      mk('.context-index/specs/features/b/b.spec.md'), // count 2
+      mk('.context-index/specs/features/b/b.spec.md'),
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r[0].spec, '.context-index/specs/features/a/a.spec.md');
+    assert.equal(r[0].count, 2);
+    assert.equal(r[1].spec, '.context-index/specs/features/b/b.spec.md');
+    assert.equal(r[1].count, 2);
+    assert.equal(r[2].spec, '.context-index/specs/features/c/c.spec.md');
+    assert.equal(r[2].count, 1);
+  });
+
+  test('all session formats counted (not just hook-mode)', () => {
+    // Behavior 8 does not narrow to hook-mode.
+    const sessions = [
+      {
+        format: 'post-commit',
+        frontmatter: { type: 'commit', agent: 'git-hook' },
+        body: 'see .context-index/specs/features/x/y.spec.md',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
   });
 });
 
