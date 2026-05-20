@@ -325,3 +325,87 @@ describe('dispatchInstall', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Task 5: workspace-mode guard
+// ---------------------------------------------------------------------------
+
+describe('workspace mode', () => {
+  let tmpPluginRoot;
+  let tmpProjectRoot;
+
+  beforeEach(() => {
+    tmpPluginRoot = mkdtempSync(join(tmpdir(), 'adev-picker-ws-'));
+    tmpProjectRoot = mkdtempSync(join(tmpdir(), 'adev-picker-ws-proj-'));
+    mkdirSync(join(tmpPluginRoot, 'templates'), { recursive: true });
+    mkdirSync(join(tmpPluginRoot, 'extensions', 'data-engineering'), { recursive: true });
+    writeFileSync(
+      join(tmpPluginRoot, 'templates', 'extensions-catalog.json'),
+      JSON.stringify({
+        version: 1,
+        entries: [
+          { name: 'data-engineering', label: 'Data Engineering', description: 'd', path: 'extensions/data-engineering' },
+        ],
+      })
+    );
+    mkdirSync(join(tmpProjectRoot, '.context-index'), { recursive: true });
+    writeFileSync(join(tmpProjectRoot, '.context-index', 'manifest.yaml'), 'project:\n  name: tp\n');
+  });
+
+  afterEach(() => {
+    rmSync(tmpPluginRoot, { recursive: true, force: true });
+    rmSync(tmpProjectRoot, { recursive: true, force: true });
+  });
+
+  it('skips picker silently with action "skipped-workspace-root" when invoked at workspace root', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    // detectWorkspace returns non-null with currentRepoSlug=null → workspace root
+    const detectWorkspace = () => ({ root: tmpProjectRoot, config: {}, currentRepoSlug: null });
+    let askCalled = false;
+    const ask = async () => { askCalled = true; return '1'; };
+    const installFn = async () => { throw new Error('should not be called'); };
+    const readStamps = () => [];
+
+    const result = await runPicker({
+      projectRoot: tmpProjectRoot,
+      pluginRoot: tmpPluginRoot,
+      ask, installFn, readStamps,
+      detectWorkspace,
+    });
+    assert.strictEqual(result.action, 'skipped-workspace-root');
+    assert.strictEqual(askCalled, false, 'prompt should NOT be issued at workspace root');
+    assert.strictEqual(result.sourcePath, null);
+  });
+
+  it('proceeds normally when invoked inside a registered repo (currentRepoSlug set)', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    const detectWorkspace = () => ({ root: '/some/ws', config: {}, currentRepoSlug: 'repo-a' });
+    const ask = async () => '1';  // software
+    const installFn = async () => { throw new Error('should not be called'); };
+    const readStamps = () => [];
+
+    const result = await runPicker({
+      projectRoot: tmpProjectRoot,
+      pluginRoot: tmpPluginRoot,
+      ask, installFn, readStamps,
+      detectWorkspace,
+    });
+    assert.strictEqual(result.action, 'software');
+  });
+
+  it('proceeds normally when detectWorkspace returns null (single-repo mode)', async () => {
+    const { runPicker } = await import('../../../lib/cli/domain-extension-picker.mjs');
+    const detectWorkspace = () => null;
+    const ask = async () => '1';
+    const installFn = async () => { throw new Error('should not be called'); };
+    const readStamps = () => [];
+
+    const result = await runPicker({
+      projectRoot: tmpProjectRoot,
+      pluginRoot: tmpPluginRoot,
+      ask, installFn, readStamps,
+      detectWorkspace,
+    });
+    assert.strictEqual(result.action, 'software');
+  });
+});
