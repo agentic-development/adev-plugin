@@ -9,14 +9,27 @@
 ---
 charter: domain-extensions
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: low
 milestone: v2
 revision: 2
-charter-revision: 3
+charter-revision: 4
 created: 2026-05-20
 updated: 2026-05-20
 tracker-ref: issue-530
+source-manifest:
+  sha: "da43889"
+  files:
+    - cli/index.mjs
+    - lib/cli/domain-extension-picker.mjs
+    - lib/extensions/picker-errors.mjs
+    - skills/init/SKILL.md
+    - templates/extensions-catalog.json
+    - templates/manifest-template.yaml
+    - tests/cli/init-extension-picker.test.mjs
+    - tests/lib/cli/domain-extension-picker.test.mjs
+    - tests/skills/init-picker-doc.test.mjs
+  computed-at: "2026-05-20T17:34:35.328Z"
 ---
 
 ## Behavioral Contract
