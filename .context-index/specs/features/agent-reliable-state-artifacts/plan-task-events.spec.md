@@ -58,13 +58,18 @@ Plan-task state has exactly one writer surface and exactly one reader surface:
 Plan markdown is read-only, but adjacent state artifacts MAY live as
 sibling files next to the plan. The closed enumeration of permitted
 sidecar peers — keyed off the plan's stem `<plan-stem>` — is exactly four
-(per ADR-0012):
+(per ADR-0012). Per ADR-0012's naming convention, the file extension
+follows the artifact's primary consumer: `.md` for human-primary sidecars
+(review, validate, blockers) and `.json` for machine-primary sidecars
+(routing). Machine-primary sidecars provide a markdown view on demand via
+a dedicated `adev <verb> render-sidecar` subcommand; the persisted file
+remains JSON.
 
 | Sidecar peer            | Owner skill                 | Purpose                                              |
 |-------------------------|-----------------------------|------------------------------------------------------|
 | `<plan-stem>.review.md` | `/adev:review-specs`        | Reviewer verdict + structured findings               |
 | `<plan-stem>.validate.md` | `/adev:validate`          | Post-implementation validation report                |
-| `<plan-stem>.routing.md` | `/adev:route`              | Per-task routing decisions written via `adev route emit-sidecar` |
+| `<plan-stem>.routing.json` | `/adev:route`            | Per-task routing decisions (JSON; machine-primary) written via `adev route emit-sidecar`. Render to markdown on demand via `adev route render-sidecar`. |
 | `<plan-stem>.blockers.md` | `/adev:implement` / `/adev:debug` | Structured blockers when a task cannot proceed |
 
 **Adding a fifth peer requires an ADR amendment per ADR-0012**

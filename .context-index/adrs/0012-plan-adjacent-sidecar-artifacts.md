@@ -8,11 +8,13 @@
 >
 > **Accepted 2026-05-19**: All three acceptance gates landed via `.context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md`:
 >
-> 1. `/adev:route` no longer mutates plans — Step 4 now writes `<plan-stem>.routing.md` via the `adev route emit-sidecar` CLI verb (plan-routing-sidecar plan-task t5).
-> 2. CON-8 in `plan-task-events.spec.md` was amended to enumerate the four permitted sidecar peers (`.review.md`, `.validate.md`, `.routing.md`, `.blockers.md`) with this ADR as the cross-reference for the closed set (plan-routing-sidecar plan-task t7).
-> 3. `lib/plan-immutability.mjs` gained a working-tree inspection branch that flags `PLAN_MUTATED_WITHOUT_SIDECAR` for plans with inline `**Routing:**` blocks and no sibling `.routing.md`, independent of `--diff-filter=M` git history — closing the mutate-then-single-add gap (plan-routing-sidecar plan-task t4).
+> 1. `/adev:route` no longer mutates plans — Step 4 now writes `<plan-stem>.routing.json` via the `adev route emit-sidecar` CLI verb (plan-routing-sidecar plan-task t5).
+> 2. CON-8 in `plan-task-events.spec.md` was amended to enumerate the four permitted sidecar peers (`.review.md`, `.validate.md`, `.routing.json`, `.blockers.md`) with this ADR as the cross-reference for the closed set (plan-routing-sidecar plan-task t7).
+> 3. `lib/plan-immutability.mjs` gained a working-tree inspection branch that flags `PLAN_MUTATED_WITHOUT_SIDECAR` for plans with inline `**Routing:**` blocks and no sibling `.routing.json`, independent of `--diff-filter=M` git history — closing the mutate-then-single-add gap (plan-routing-sidecar plan-task t4).
 >
 > The convention now governs future additions to the sidecar enumeration via ADR amendments.
+>
+> **Amended 2026-05-20 (rev 2 of plan-routing-sidecar.spec.md):** The naming convention is generalised from a single-extension shape to two: `.md` for human-primary sidecars (review, validate, blockers) and `.json` for machine-primary sidecars (routing). Machine-primary sidecars provide a markdown view on demand via a dedicated `render-sidecar` CLI verb. Rationale: routing data is relational/structured, not narrative — JSON keeps reads as a single `JSON.parse` rather than two-pass markdown-then-YAML parsing, matching the charter's "JSON for relational state" principle (the same reasoning that drove `tasks.md` → `tasks.json`). The closed enumeration stays at four peers.
 
 ## Date
 
@@ -43,11 +45,12 @@ Adopt **sibling-file artifacts** with a documented naming convention as the cano
 ### Naming convention
 
 ```
-<artifact-stem>.<purpose>.md
+<artifact-stem>.<purpose>.<ext>
 ```
 
 - `<artifact-stem>` is the spec or plan filename without its kind suffix (e.g. `cli-install-integration` for both `cli-install-integration.spec.md` and `cli-install-integration.plan.md`).
 - `<purpose>` is a short verb-or-noun describing what the sidecar carries.
+- `<ext>` is `.md` for **human-primary** sidecars (narrative reports primarily read by humans at the terminal) or `.json` for **machine-primary** sidecars (relational/structured data primarily consumed by skills via the CLI). Machine-primary sidecars MUST provide a markdown view on demand via a dedicated `render-sidecar` subverb so humans can still inspect them without `jq`.
 
 ### Permitted peers (as of this ADR)
 
@@ -56,7 +59,7 @@ Adopt **sibling-file artifacts** with a documented naming convention as the cano
 | `<spec-stem>.review.md` | `/adev:review-specs` | `/adev:build` (skip-condition), hygiene Pass 12 | Rewritten on each review run |
 | `<spec-stem>.validate.md` | `/adev:validate` | `/adev:build` (skip-condition), hygiene | Rewritten on each validate run |
 | `<spec-stem>.blockers.md` | `/adev:build` Step 1 (BLOCK path) | Human reviser; future `/adev:specify --revise` (`issue-527`) | Written on review BLOCK; cleared when superseded review passes |
-| `<plan-stem>.routing.md` | `/adev:route` (target shape per `issue-526`) | `/adev:implement` | Rewritten on each route run |
+| `<plan-stem>.routing.json` | `/adev:route` | `/adev:implement` (via `adev implement read-routing`) | Rewritten on each route run. Machine-primary; markdown view via `adev route render-sidecar`. |
 
 The set is closed by ADR. Adding a new peer requires either an ADR amendment or a follow-on ADR that enumerates it. Skills MUST NOT write arbitrary `<stem>.<x>.md` files outside this enumeration.
 
@@ -73,33 +76,34 @@ When in doubt, prefer the lifecycle log — sidecars are an exception for per-ar
 
 ### Update to CON-8
 
-`plan-task-events.spec.md` CON-8 SHOULD be amended to enumerate the permitted sidecar peers explicitly, so future readers do not mistake the existence of `<stem>.routing.md` (etc.) for a violation. Suggested wording:
+`plan-task-events.spec.md` CON-8 SHOULD be amended to enumerate the permitted sidecar peers explicitly, so future readers do not mistake the existence of `<stem>.routing.json` (etc.) for a violation. Suggested wording:
 
-> Plan markdown (`<stem>.plan.md`) and spec markdown (`<stem>.spec.md`) are read-only after authoring. The following sibling sidecars are permitted and do not constitute mutations of the primary artifact: `<stem>.review.md`, `<stem>.validate.md`, `<stem>.blockers.md`, `<stem>.routing.md`. Adding a new permitted sidecar requires an ADR.
+> Plan markdown (`<stem>.plan.md`) and spec markdown (`<stem>.spec.md`) are read-only after authoring. The following sibling sidecars are permitted and do not constitute mutations of the primary artifact: `<stem>.review.md`, `<stem>.validate.md`, `<stem>.blockers.md`, `<stem>.routing.json`. Adding a new permitted sidecar requires an ADR.
 
 ### Detector enhancement
 
-`lib/plan-immutability.mjs` SHOULD be extended (as part of `issue-526`) to detect the "mutate-then-single-add-commit" pattern by checking the plan body for inline `**Routing:**` blocks when no sibling `.routing.md` exists. The current detector relies on `--diff-filter=M` history, which masks violations introduced before the plan is first committed.
+`lib/plan-immutability.mjs` SHOULD be extended (as part of `issue-526`) to detect the "mutate-then-single-add-commit" pattern by checking the plan body for inline `**Routing:**` blocks when no sibling `.routing.json` exists. The current detector relies on `--diff-filter=M` history, which masks violations introduced before the plan is first committed.
 
 ## Consequences
 
 ### Positive
 
 - **CON-8 stays enforceable.** Skills that need auxiliary data write to sidecars instead of mutating the primary artifact. The plan-immutability detector becomes meaningful again.
-- **Pattern consistency.** The four documented peers (`.review.md`, `.validate.md`, `.blockers.md`, `.routing.md`) all follow the same naming convention. Future skills inherit the pattern without re-deciding.
-- **Resolves issue-526 cleanly.** The /adev:route fix becomes mechanical: rewrite Step 4 to write `.routing.md` instead of mutating the plan. The migration plan for the 5 already-mutated cursor-provider plans gets a clear target file shape.
+- **Pattern consistency.** The four documented peers (`.review.md`, `.validate.md`, `.blockers.md`, `.routing.json`) all follow the same `<stem>.<purpose>.<ext>` naming convention. Future skills inherit the pattern without re-deciding; the extension is chosen by primary consumer (`.md` for human, `.json` for machine).
+- **Resolves issue-526 cleanly.** The /adev:route fix becomes mechanical: rewrite Step 4 to write `.routing.json` instead of mutating the plan. The migration plan for the 5 already-mutated cursor-provider plans gets a clear target file shape.
 - **Unblocks issue-527 design.** A real `/adev:specify --revise` workflow can read `<spec-stem>.blockers.md` (already established by commit `7e333fd`) plus the spec at revision N to produce revision N+1. The input-side artifact contract is settled.
 - **Backwards-compatible.** `.review.md` and `.validate.md` already exist and work; this ADR retroactively legitimizes them and bounds the namespace going forward.
 
 ### Negative
 
-- **One more file per task lifecycle stage.** A fully-built spec now has up to six adjacent files: `.spec.md`, `.plan.md`, `.routing.md`, `.review.md`, `.validate.md`, plus the issued-only `.blockers.md` when review BLOCKs. Repository layout gets denser.
+- **One more file per task lifecycle stage.** A fully-built spec now has up to six adjacent files: `.spec.md`, `.plan.md`, `.routing.json`, `.review.md`, `.validate.md`, plus the issued-only `.blockers.md` when review BLOCKs. Repository layout gets denser.
+- **Mixed extensions.** The four-peer set now has two file extensions instead of one. Tooling that globs sidecars by extension (e.g. backup scripts, hygiene scans) must check both `*.md` and `*.json` siblings. The closed enumeration in CON-8 keeps the set bounded, but `find -name '*.md'` is no longer a complete sidecar inventory.
 - **Closed-enum maintenance.** Each new sidecar requires an ADR amendment. A skill that wants auxiliary data must justify why a sidecar is right (vs lifecycle event) before adding to the enumeration. This is intentional friction.
 - **Migration cost for cursor-provider plans.** Five existing plans (`hook-config-generator.plan.md`, `cursor-adapter.plan.md`, `plugin-manifest-and-parity.plan.md`, `cli-install-integration.plan.md`, `sync-target-output.plan.md`) carry inline routing annotations and must be migrated to the sidecar shape per `issue-526`. Two migration options are documented in that issue.
 
 ### Neutral
 
-- The convention does NOT prescribe whether the sidecar is tracked in git. `<spec-stem>.review.md` and `<spec-stem>.validate.md` are tracked today; `<plan-stem>.routing.md` and `<spec-stem>.blockers.md` will be tracked too. The decision per peer follows from whether the sidecar is a durable record (track) or a transient artefact (gitignore).
+- The convention does NOT prescribe whether the sidecar is tracked in git. `<spec-stem>.review.md` and `<spec-stem>.validate.md` are tracked today; `<plan-stem>.routing.json` and `<spec-stem>.blockers.md` will be tracked too. The decision per peer follows from whether the sidecar is a durable record (track) or a transient artefact (gitignore).
 - Sidecars do not replace the lifecycle event log — both coexist. The log emits per-event timestamps and structured payloads; sidecars carry per-artifact narrative reports.
 
 ## Alternatives Considered
@@ -112,7 +116,7 @@ Rejected: lifecycle events are designed for per-event timestamps. Cramming a mul
 
 Rejected: this would undo CON-8 and re-introduce the failure mode `issue-526` describes. Once we allow `/adev:route` to mutate the plan, every subsequent skill will want the same affordance, and the read-only invariant becomes nominal rather than enforced. The plan-immutability detector exists precisely because experience has shown silent mutations cause downstream drift.
 
-### C. Per-task subdirectories (e.g. `<plan-stem>.d/routing.md`, `<plan-stem>.d/review.md`)
+### C. Per-task subdirectories (e.g. `<plan-stem>.d/routing.json`, `<plan-stem>.d/review.md`)
 
 Rejected: adds nesting without buying much. The flat sibling convention already keeps related files together in directory listings (they sort alphabetically by stem). Adding `.d/` directories would also break the simple grep-discoverable filename pattern used by `/adev:build`, hygiene, and retro.
 

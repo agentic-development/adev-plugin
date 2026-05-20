@@ -250,7 +250,7 @@ See the `workspace-aware-vision` spec for the full workspace topology spec.
 
 ### Review Blocker Handling (Full Pipeline)
 - [ ] When review returns BLOCK, orchestrator extracts blocking issues from `.review.md` and serializes them as a fenced markdown block (SEC-1)
-- [ ] Orchestrator writes the fenced block to `<spec-stem>.blockers.md` sidecar (mirrors `<spec-stem>.routing.md` from `/adev:route`)
+- [ ] Orchestrator writes the fenced block to `<spec-stem>.blockers.md` sidecar (mirrors `<plan-stem>.routing.json` from `/adev:route` per ADR-0012's `<stem>.<purpose>.<ext>` convention)
 - [ ] Build state records the review step as `failed` with `verdict: BLOCK` and `error` field pointing at the sidecar
 - [ ] Build stops with a clear manual-revision-required message naming the sidecar path and the resume command
 - [ ] No auto-dispatch of `/adev:specify` — the broken `--revise --blocker-context` flag combination from prior versions has been removed (issue-527 family; auto-retry requires a future `/adev:specify` revision workflow)
