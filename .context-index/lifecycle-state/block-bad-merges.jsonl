@@ -1,0 +1,2 @@
+{"event":"code_drift_detected","drift_source":"tests/hooks/merge-guard.test.mjs","drift_at":"2026-05-18T14:49:28.684Z","ts":"2026-05-18T14:49:28.685Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"hooks/merge-guard.sh","drift_at":"2026-05-18T14:50:04.670Z","ts":"2026-05-18T14:50:04.672Z","diagnostic_warnings":["adev/frontmatter-present"]}
