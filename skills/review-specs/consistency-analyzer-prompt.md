@@ -33,6 +33,15 @@ Produce a list of findings. Each finding must include:
 - **Conflicts With:** What the other spec/charter/constitution says (with file reference)
 - **Recommendation:** Which side should change, or how to reconcile
 
+### Required fields when severity is `blocker`
+
+For every BLOCK finding (severity = `blocker`), also emit:
+
+- **`blocker_id`:** canonical `<reviewer-slug>:<finding-type>:<8-hex-sha-prefix>` computed via `lib/blocker-id.mjs::buildBlockerId`. Reviewer-slug for this prompt is `consistency-analyzer`. `finding-type` is a stable kebab-case category aligned with the **Category** field above (e.g., `naming`, `pattern`, `contract`, `domain-model`, `terminology`). `<location-hash>` is the first 8 hex chars of `sha256(<spec-section-anchor>:<truncated-finding-text>)`.
+- **`section_anchor`:** the spec-section anchor the finding implicates.
+
+The aggregator validates `blocker_id` shape; malformed IDs produce `INVALID_BLOCKER_ID` advisory and fall through to `LEGACY_REVIEWER_OUTPUT` (no auto-retry).
+
 ## Rules
 
 - Always cite the specific file and section where the conflict exists.

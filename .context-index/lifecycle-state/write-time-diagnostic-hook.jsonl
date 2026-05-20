@@ -27,3 +27,12 @@
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/write-time-diagnostic-hook.plan.md","task_id":"task-7","status":"done","notes":"Set event_diagnostics: off in 7 baseline test fixtures","ts":"2026-05-14T21:41:46.985Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-14T21:42:19.539Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/diagnostics/event-schemas.mjs","drift_at":"2026-05-18T13:36:45.951Z","ts":"2026-05-18T13:50:21.082Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-events.mjs","drift_at":"2026-05-20T03:34:26.685Z","ts":"2026-05-20T03:34:26.685Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/diagnostics/event-schemas.mjs","drift_at":"2026-05-20T03:34:39.273Z","ts":"2026-05-20T03:34:39.273Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:01.311Z","ts":"2026-05-20T03:35:01.311Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:13.929Z","ts":"2026-05-20T03:35:13.929Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:35:25.472Z","ts":"2026-05-20T03:35:25.472Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:36:39.926Z","ts":"2026-05-20T03:36:39.926Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:00.426Z","ts":"2026-05-20T03:37:00.426Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:08.887Z","ts":"2026-05-20T03:37:08.887Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:21.600Z","ts":"2026-05-20T03:37:21.600Z","diagnostic_warnings":["adev/frontmatter-present"]}

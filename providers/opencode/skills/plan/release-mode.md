@@ -28,7 +28,7 @@ When `detectWorkspace(cwd)` returns non-null **AND** `currentRepoSlug === null` 
 ```
 Release plan for '<name>' written to workspace product.md only.
 Workspace-level issue-board sync is deferred to the Shared Issue Tracking
-capability (Phase 2). See multi-repo-workspace charter Deferred Capabilities.
+capability deferred. See multi-repo-workspace charter Deferred Capabilities.
 ```
 
 ### Release Mode Flow

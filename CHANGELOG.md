@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.27.1](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.0...adev-cli-v0.27.1) (2026-05-19)
+
+
+### Features
+
+* **0.27.0:** ship milestone — orphan-lock + post-commit self-skip + board audit ([b7b7889](https://github.com/agentic-development/adev-plugin/commit/b7b788929357ed199d5472dfed2a12b4e0d4ecf3))
+* **agent-reliable-state-artifacts:** stamp orphan-lock-cleanup as implemented ([83c9fc8](https://github.com/agentic-development/adev-plugin/commit/83c9fc82dab5d029fc3acdc957773007aa15fb0b))
+* **hooks:** self-skip post-commit on sessions-only commits ([4b4b6f5](https://github.com/agentic-development/adev-plugin/commit/4b4b6f519fc306e64f605302f668602d4730c92a))
+
+
+### Bug Fixes
+
+* **repomap:** include .mjs in typescript extensions + docs refresh ([e98d422](https://github.com/agentic-development/adev-plugin/commit/e98d422b0f364f3c4345c3b242fbf11d039c039b))
+
 ## [0.27.0](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.26.0...adev-cli-v0.27.0) (2026-05-18)
 
 

@@ -1,0 +1,8 @@
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:04:35.281Z","ts":"2026-05-18T22:04:35.281Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:04:51.463Z","ts":"2026-05-18T22:04:51.463Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:16:43.575Z","ts":"2026-05-18T22:16:43.576Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:17:03.030Z","ts":"2026-05-18T22:17:03.031Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:21:57.908Z","ts":"2026-05-18T22:21:57.909Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:22:04.354Z","ts":"2026-05-18T22:22:04.354Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:22:36.119Z","ts":"2026-05-18T22:22:36.120Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-05-18T22:40:24.158Z","ts":"2026-05-18T22:40:24.158Z","diagnostic_warnings":["adev/frontmatter-present"]}

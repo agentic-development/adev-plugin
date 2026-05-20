@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Deploy"
+  short_description: "Run adev:deploy"
+  default_prompt: "Use $adev:deploy to run this skill."
