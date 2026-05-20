@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Medium blast radius across 3+ directories (12 new files + 2 modifications) and no golden sample for SKILL.md prose extraction or URI-wiring pattern; human review at mid-point catches copy-paste losses across the 12 check files."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Single-file prose update with clear content requirements (four bullet points from the plan); well-constrained scope despite lacking verbatim text; peer charter files in the same directory provide structural reference."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Spans 3 test files across 2 modules with 15 coverage requirements; integration across all Tasks 1-8 means subtle gaps in test setup (fixtures vs real files) are a real risk; mid-point review after failing tests are written verifies coverage before implementation proceeds."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Three enumerated edits to constants plus a verbatim code guard; identical extension pattern already applied for other configTypes in the same files; fully mechanical."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Mechanical file copy from Task 1-modified defaults.yaml; direct peer files exist in templates/domains/software/ as structural reference; single-file create with minimal blast radius."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Step content fully spelled out in the plan; single SKILL.md file with minimal blast radius; insertion-point finding in SKILL.md is the main risk, manageable without a checkpoint given the low file count."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Highest-risk migration step — removes overlay merge logic and updates SKILL.md simultaneously; cross-module blast radius and three-pattern composition (removal + single-source read + id allowlist) warrants mid-point review of failing tests before GREEN phase."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Trivially mechanical — grep for consumers, delete, run tests; perfectly specified with no design decisions."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "No golden sample for hygiene SKILL.md audit pass additions; the SEC-4 value-type-only emission for sensitive fields is a novel constraint requiring careful implementation; mid-point review verifies the diff format before full prose is committed."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "CLI subcommand extension with three distinct branches; no golden sample for CLI migrate extension; existing adev migrate pattern at line ~1091 must be discovered and adapted; mid-point review before full implementation validates the branch logic and exit-code handling."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Exact annotation text and frontmatter field provided verbatim in the plan; pure documentation insertion into two files with zero code impact."
+    }
+  ]
+}

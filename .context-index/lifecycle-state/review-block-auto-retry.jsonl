@@ -53,3 +53,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","notes":"boundaries.yaml has no rules configured","ts":"2026-05-20T04:39:58.835Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"transitions: {} — no transitions configured","ts":"2026-05-20T04:39:58.868Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-20T04:41:23.154Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.345Z","ts":"2026-05-20T12:58:34.345Z","diagnostic_warnings":["adev/frontmatter-present"]}

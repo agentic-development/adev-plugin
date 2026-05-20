@@ -64,3 +64,5 @@
 {"event":"validator_report","step":"validate","validator":"check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"No UI files in implementation diff — visual verification not applicable","ts":"2026-05-17T19:10:04.619Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-17T19:11:06.963Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-19T19:49:28.673Z","ts":"2026-05-19T19:49:28.673Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.071Z","ts":"2026-05-20T13:03:18.071Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.984Z","ts":"2026-05-20T13:05:52.984Z","diagnostic_warnings":["adev/frontmatter-present"]}

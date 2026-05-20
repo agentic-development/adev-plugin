@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 62,
+  "seq": 68,
   "epics": [
     {
       "id": "epic-1",
@@ -2288,15 +2288,15 @@
     {
       "id": "issue-381",
       "title": "Plan QG checkboxes never checked off + getPlanProgress boundary bug",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-72",
       "dependencies": [],
-      "notes": "Two compounding issues: (1) The plan template emits Quality Gates as checkboxes but nothing checks them off — validate writes results to .validate.md, not back to the plan. (2) getPlanProgress in lib/meta-tools.mjs does not stop at ## Quality Gates heading, so QG checkboxes get attributed to the last task, inflating totals and marking it incomplete. Fix: (A) Plan template emits QG as plain bullets. (B) getPlanProgress only counts checkboxes within ### Task N: sections.",
+      "notes": "Two compounding issues: (1) The plan template emits Quality Gates as checkboxes but nothing checks them off — validate writes results to .validate.md, not back to the plan. (2) getPlanProgress in lib/meta-tools.mjs does not stop at ## Quality Gates heading, so QG checkboxes get attributed to the last task, inflating totals and marking it incomplete. Fix: (A) Plan template emits QG as plain bullets. (B) getPlanProgress only counts checkboxes within ### Task N: sections.; Closed: Verified FIXED 2026-05-19. (a) lib/meta-tools.mjs:285-289 explicitly stops getPlanProgress at any ## heading (e.g., ## Quality Gates), preventing QG checkboxes from being attributed to the last task. (b) Plan template emits Quality Gates as plain bullets (- Tests pass:), not checkboxes — see skills/plan/SKILL.md and the orphan-lock-cleanup.plan.md authored 2026-05-18.",
       "next_action": null,
       "created": "2026-05-09T16:48:53.411Z",
-      "updated": "2026-05-11T21:19:31.559Z"
+      "updated": "2026-05-19T20:19:59.809Z"
     },
     {
       "id": "issue-382",
@@ -2314,27 +2314,27 @@
     {
       "id": "issue-387",
       "title": "Lifecycle gate hook does not block source edits when lifecycle.gate=block",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-72",
       "dependencies": [],
-      "notes": "",
+      "notes": "Closed: Verified FIXED 2026-05-19 by commit b289b8f 'fix(lifecycle-gate): block source edits when no lifecycle session is active' (committed 2026-05-09T17:50:58 — same day the issue was filed, 23:30Z, but commit pre-dates issue by 6 hours so the bug report likely lagged the fix). New logic: any non-excluded source file edit is blocked when no execution state (active/standalone) exists. The 'block' case in hooks/lifecycle-gate-edit.sh emits exit 2. tests/hooks/lifecycle-gate-edit.test.mjs runs 10 tests all PASS.",
       "next_action": null,
       "created": "2026-05-09T23:30:09.171Z",
-      "updated": "2026-05-11T21:19:31.570Z"
+      "updated": "2026-05-19T20:19:59.832Z"
     },
     {
       "id": "issue-429",
       "title": "adev:implement Step 5 skips source-manifest stamping when run via adev:build",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "dependencies": [],
-      "notes": "When /adev:implement runs via /adev:build orchestration, the subagent completes all plan tasks but Step 5 (spec status update + source-manifest stamping) does not execute. This leaves specs without source-manifest frontmatter blocks, causing /adev:validate Check 1.5 to skip instead of verifying file integrity. Root cause: session boundaries or context loss between task completion and the stamping step. All 4 domain-profiles specs were affected. Workaround: manually stamp via computeManifest() after implementation.",
+      "notes": "When /adev:implement runs via /adev:build orchestration, the subagent completes all plan tasks but Step 5 (spec status update + source-manifest stamping) does not execute. This leaves specs without source-manifest frontmatter blocks, causing /adev:validate Check 1.5 to skip instead of verifying file integrity. Root cause: session boundaries or context loss between task completion and the stamping step. All 4 domain-profiles specs were affected. Workaround: manually stamp via computeManifest() after implementation.; Closed: Verified FIXED 2026-05-19 by smoke evidence. Today's two /adev:build runs both successfully stamped source-manifests through the full pipeline: orphan-lock-cleanup (sha 16779ee, Check 1.5 PASS) and post-commit-self-skip (sha 16779ee, Check 1.5 PASS). skills/implement/SKILL.md:591-628 has explicit Step 5 source-manifest stamping with .partial pattern. No build-orchestrator bypass observed in current code.",
       "next_action": null,
       "created": "2026-05-11T00:34:30.405Z",
-      "updated": "2026-05-11T00:34:30.405Z"
+      "updated": "2026-05-19T20:19:59.850Z"
     },
     {
       "id": "issue-430",
@@ -2979,14 +2979,14 @@
     {
       "id": "issue-488",
       "title": "drift-stamp hook overwrites drift_source/drift_at on every watched-file edit",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "dependencies": [],
-      "notes": "",
+      "notes": "Closed: Verified FIXED 2026-05-19 by commit 9cc9724 'feat(spec-drift-detection): stop writing drift_source/drift_at to frontmatter (Step 3)' (PR #142, merged). The drift-stamp hook no longer writes drift_source/drift_at to spec frontmatter at all — drift is now tracked exclusively via JSONL events in .context-index/lifecycle-state/<slug>.jsonl. Frontmatter retains only the boolean drift_detected flag. No churn on watched-file edits.",
       "next_action": null,
       "created": "2026-05-15T19:54:44.462Z",
-      "updated": "2026-05-15T19:54:44.462Z"
+      "updated": "2026-05-19T20:19:59.870Z"
     },
     {
       "id": "issue-489",
@@ -3163,17 +3163,17 @@
     {
       "id": "issue-502",
       "title": "Drift-stamp hook churn (cross-link to issue-488)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "bug",
       "epicId": "epic-85",
       "dependencies": [
         "issue-488"
       ],
-      "notes": "",
+      "notes": "Closed: Duplicate of issue-488 (cross-link noted in original notes). Both verified FIXED 2026-05-19 by commit 9cc9724 (PR #142). Drift-stamp hook churn eliminated by moving drift_source/drift_at to JSONL events.",
       "next_action": null,
       "created": "2026-05-16T11:58:30.465Z",
-      "updated": "2026-05-16T11:58:30.480Z"
+      "updated": "2026-05-19T20:19:59.887Z"
     },
     {
       "id": "issue-503",
@@ -3482,16 +3482,15 @@
     },
     {
       "id": "issue-526",
-      "title": "Plan-Routing Sidecar (.routing.md)",
+      "title": "/adev:route mutates plan files — sibling .routing.md fix + cursor-provider 5-plan migration",
       "status": "open",
       "priority": 2,
-      "type": "feature",
-      "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md",
+      "type": "bug",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md. Created by /adev:specify on 2026-05-19. Resolves issue-526 from the source board (sibling .routing.md sidecar per ADR-0012, variant a).",
-      "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts",
-      "created": "2026-05-20T02:14:56.879Z",
-      "updated": "2026-05-20T02:14:56.879Z"
+      "notes": "Source: cursor-provider retro 2026-05-19 + /adev:debug subagent transcript (agent ID affc19ea4ef7212c7).\nConsolidated re-filing after the prior issue-525 + issue-528 entries were lost in an external rollback of the shared tasks.json.\n\n## The bug\n\n/adev:route Step 4 (skills/route/SKILL.md:108-133) is explicitly instructed to write **Routing:** / **Scores:** / **Rationale:** blocks into each task header inside the plan markdown file. This runs AFTER /adev:plan Step 7 (skills/plan/SKILL.md:678-701) has already emitted plan_task pending events to the lifecycle log.\n\nThis directly violates the authoritative-channel invariant CON-8 in agent-reliable-state-artifacts/plan-task-events.spec.md:50-58 (\"Plan markdown is read-only after authoring ... /adev:plan writes the plan file once\") and AC bullet 5 (\"Plan markdown files are not mutated by /adev:plan or /adev:implement after initial authoring\").\n\nThe detector in lib/plan-immutability.mjs correctly catches this for untracked plans. Cursor-provider plans A-E currently \"pass\" the detector only because they were committed as a single add (no --diff-filter=M history), which masks rather than fixes the violation.\n\nReproduction (during cursor-provider session 2026-05-19): both Spec D (cli-install-integration.plan.md) and Spec E (sync-target-output.plan.md) plans had filesystem mtime 2-3 minutes later than their first plan_task pending event in the lifecycle log. Once the plans were committed in d0f8303 and 199928a, the detector relaxed (relied on git history instead of mtime). The underlying violation persists.\n\n## Design decision required\n\nTwo viable approaches:\n  (a) Sibling .routing.md — /adev:route writes <plan-stem>.routing.md keyed by task ID; /adev:implement reads from it. Preserves human readability, adds one file per plan. Matches the .blockers.md pattern already adopted in commit 7e333fd for review BLOCK handling.\n  (c) Lifecycle-log plan_task_routing event — /adev:route emits one event per task into the existing JSONL; /adev:implement reads it like other lifecycle state. No new file, but harder for humans to inspect routing decisions at a glance.\n\nVariant (b) auto-commit-after-plan was rejected during /adev:debug — it silences the immutability detector via git history but still violates CON-8 prose (\"read-only after authoring\"), and forces an uncommitted-plans-impossible workflow.\n\nRecommendation: variant (a) for consistency with the .blockers.md sidecar pattern.\n\n## Files to change (variant a)\n\n  - skills/route/SKILL.md:108-133 — Step 4: rewrite to write sibling .routing.md instead of mutating plan\n  - skills/route/SKILL.md:168-174 — Integration with /adev:implement: point reader at sidecar\n  - skills/route/SKILL.md:193 — Red Flag: tighten to \"never modify the plan file\"\n  - skills/implement/SKILL.md — reader change: load routing from sibling .routing.md\n  - .context-index/specs/features/agent-reliable-state-artifacts/plan-task-events.spec.md:50-58 — CON-8: enumerate .routing.md as a permitted peer artifact (alongside .review.md, .validate.md, .blockers.md)\n\n## Migration of 5 already-mutated cursor-provider plans\n\nOnce the fix lands, the existing plans on the cursor-provider/cursor-adapter branch will have stale inline annotations. Affected:\n  - .context-index/specs/features/cursor-provider/hook-config-generator.plan.md (Spec A)\n  - .context-index/specs/features/cursor-provider/cursor-adapter.plan.md (Spec B)\n  - .context-index/specs/features/cursor-provider/plugin-manifest-and-parity.plan.md (Spec C)\n  - .context-index/specs/features/cursor-provider/cli-install-integration.plan.md (Spec D)\n  - .context-index/specs/features/cursor-provider/sync-target-output.plan.md (Spec E)\n\nTwo migration options:\n  (i) Extract: parse each plan, lift the **Routing:**/**Scores:**/**Rationale:** blocks into a new sibling .routing.md, rewrite the plan body without them, stamp the M-commit hash into manifest.yaml hygiene.plan_immutability.exempt_commits[]. Cleanest end state, more work.\n  (ii) Leave as historical noise: do not rewrite. New /adev:route invocations on these plans would refuse to write (plan is locked), so any re-routing requires manual extraction. Simpler, but leaves the plans with inline annotations that future readers may mistake for the canonical format.\n\n## Followups flagged in /adev:debug\n\n  1. Draft an ADR titled \"Plan-adjacent sidecar artifacts\" documenting the .routing.md and .blockers.md sidecar pattern with rationale grounded in the authoritative-channel invariant. The pattern is now used twice (route + review BLOCK in commit 7e333fd) so a single ADR captures both.\n  2. Extend lib/plan-immutability.mjs to catch the \"mutate-then-single-add-commit\" pattern by checking plan body for inline **Routing:** blocks when no sibling .routing.md exists. Would have caught Specs A-E despite their clean git history.\n  3. Audit /adev:validate, /adev:review-specs, /adev:debug for any other plan-file writers — same invariant applies.\n\n## History note\n\nThe original /adev:debug invocation that produced this diagnosis was filed in this session against issues that were subsequently lost when the shared tasks.json was rolled back externally. The diagnosis is preserved in the /adev:debug subagent transcript (agent ID affc19ea4ef7212c7) and in the retro at .context-index/hygiene/retros/2026-05-19-cursor-provider.md.\n\nRe-filed on 2026-05-19 (consolidated from prior lost issue-525 + issue-528).",
+      "next_action": "Decide sidecar variant (a) sibling .routing.md vs (c) plan_task_routing lifecycle event. Author Live Specs covering route+implement updates and plan-immutability detector enhancement.",
+      "created": "2026-05-19T20:19:47.023Z",
+      "updated": "2026-05-19T20:19:47.023Z"
     },
     {
       "id": "issue-527",

@@ -55,6 +55,7 @@ source-manifest:
     - tests/lib/specify-revise.test.mjs
     - tests/skills/review-specs-blocker-id-emission.test.mjs
   computed-at: "2026-05-20T04:27:36.454Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
