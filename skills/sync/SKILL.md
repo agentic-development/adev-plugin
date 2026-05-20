@@ -132,7 +132,37 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - If target file does not exist, create it fresh
 
 5. **Report:**
-   List which files were updated and their line counts.
+
+   Emit a structured sync summary in the following format. Each format block lists every artifact written (path + size) and every warning emitted under its stable code (UPPER_SNAKE_CASE with `<payload>` after colon). The `copilot:` block is populated from the `{ artifacts, warnings }` return value of `syncCopilot(...)` (see API reference) and uses byte counts rather than line counts because the Copilot 4,000-UTF-8-byte cap is measured in bytes.
+
+   ```
+   sync summary:
+     claude:
+       artifacts:
+         - CLAUDE.md (N lines)
+       warnings: []
+     agents:
+       artifacts:
+         - AGENTS.md (N lines)
+       warnings: []
+     cursor:
+       artifacts:
+         - .cursorrules (N lines)
+       warnings: []
+     copilot:
+       artifacts:
+         - .github/copilot-instructions.md (N bytes)
+         - .github/instructions/<module>.instructions.md (N bytes)
+         - ...
+       warnings:
+         - SYNC_OVERFLOW: principles 5,4
+         - MODULE_NO_CHARTER: <slug>
+         - SYNC_PATHS_EMPTY: <slug>
+         - CHARTER_INCOMPLETE: <slug>
+         - CHARTER_TOO_LARGE: <slug>: <bytes>
+   ```
+
+   Omit a format's block entirely if that format is not in `manifest.yaml:sync.targets`. Within a block, omit empty `warnings` (do not print `warnings: []` if the array is empty) and omit empty `artifacts` (do not print the block if no files were written for that format).
 
 ## Dry-Run Mode
 
