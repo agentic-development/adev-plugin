@@ -96,9 +96,9 @@ This charter retains ownership of *what* execution state means: session-start co
 | Format Documentation | Document file formats as public contracts in `.context-index/` | nice-to-have | 2 | validated |
 | Token Cost Logging | Extend session tracking JSONL with optional per-entry token usage and cost fields | should-have | 2 | validated |
 | Session-Capture Self-Skip Guard | Validated in 0.27.1. **Superseded** by Hook-Driven Session Capture (rev 4). Post-commit path remains available behind `capture: post-commit` but is no longer the recommended default. | should-have | 2 | superseded |
-| Hook-Driven Session Capture | SessionEnd + PreCompact capture into a configurable, gitignored-by-default sessions directory. Master via `integrations.session_capture.capture` (`hook`/`post-commit`/`off`) and `integrations.session_capture.gitignored` (boolean). | must-have | 0.28.0 | — |
+| Hook-Driven Session Capture | SessionEnd + PreCompact capture into a configurable, gitignored-by-default sessions directory. Master via `integrations.session_capture.capture` (`hook`/`post-commit`/`off`) and `integrations.session_capture.gitignored` (boolean). | must-have | 0.28.0 | specified |
 | Retro Session Consumption | `/adev:retro` reads `.context-index/sessions/` within the analysis window and emits a Session Activity section (tool-use distribution, per-spec session counts, token/cost trends, context gaps). Degrades silently when capture is off or directory empty. | should-have | 0.28.0 | — |
-| Init-Time Capture Configuration | `/adev:init` prompts for `integrations.session_capture.capture` and `integrations.session_capture.gitignored`; detects existing post-commit setup and tracked session files, defaulting those projects to back-compat (`post-commit, gitignored: false`). | should-have | 0.28.0 | — |
+| Init-Time Capture Configuration | `/adev:init` prompts for `integrations.session_capture.capture` and `integrations.session_capture.gitignored`; detects existing post-commit setup and tracked session files, defaulting those projects to back-compat (`post-commit, gitignored: false`). | should-have | 0.28.0 | specified |
 
 ## Deferred Capabilities
 
