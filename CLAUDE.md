@@ -105,6 +105,7 @@ Plan-task: <task-number>          # when implementing a plan task
 | Research artifacts | `.context-index/research/` |
 | Roadmaps | `.context-index/specs/roadmap/` |
 | Lifecycle state | `.context-index/lifecycle-state/` |
+| Sync helpers | `lib/sync/` |
 
 ## Quality Gates
 
