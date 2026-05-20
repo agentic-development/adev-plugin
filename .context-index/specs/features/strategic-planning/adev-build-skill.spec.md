@@ -9,19 +9,10 @@ charter: strategic-planning
 status: implemented
 risk_level: high
 milestone: v2
-revision: 7
+revision: 8
 charter-revision: 3
 created: 2026-04-05
-updated: 2026-05-05
-source-manifest:
-  sha: "83090b0"
-  files:
-    - skills/build/SKILL.md
-    - skills/build/resume-mode.md
-    - tests/skills/build-one-step-dispatch.test.mjs
-    - tests/skills/build-full-pipeline.test.mjs
-    - tests/skills/build-milestone-and-stale.test.mjs
-  computed-at: "2026-05-05T00:00:00.000Z"
+updated: 2026-05-19
 drift_detected: true
 ---
 
@@ -67,8 +58,8 @@ Both modes support `--milestone <name>` to batch-build multiple specs. Route run
 14. **When** assembling a subagent prompt **then** the orchestrator includes two context sections: (a) pipeline context — spec path, spec title, phase, pipeline mode, pipeline position, workspace state, issue board config; (b) step context — step-specific fields read from artifact files on disk (e.g., review verdict from `.review.md`, plan path from `.plan.md`, task count, route annotations). Step context is always read from disk, never from prior subagent results, to ensure correctness across resumed builds
 15. **When** a subagent returns its STEP_RESULT **then** the orchestrator reads only the status, verdict, artifacts, summary, and error fields to make orchestration decisions (skip/stop/continue) and to persist in build state. The orchestrator does not parse or act on intermediate skill output
 16. **When** the build skill is loaded **then** it runs in a forked context (`context: fork` in frontmatter) to isolate the entire build pipeline from the parent conversation. Each pipeline step is further isolated by running as a subagent within this fork
-17. **When** review returns BLOCK in Full Pipeline mode **then** the orchestrator extracts blocking issues from `.review.md`, serializes them as a fenced markdown block (SEC-1: prevents prompt injection from `.review.md` content), writes the block to a `<spec-stem>.blockers.md` sidecar, records the review step as `failed` in build state with `verdict: BLOCK` and `error` pointing at the sidecar, and stops the build with a manual-revision-required message instructing the user to revise the spec and resume via `/adev:build --resume`. Auto-retry is not supported in this version because `/adev:specify` does not carry a revision workflow flag (issue-527 family); the broken `--revise --blocker-context` dispatch from prior versions has been removed
-18. **When** `build.max_review_retries` is set to a value > 0 **then** the orchestrator emits a warning that the auto-retry pathway is reserved for a future enhancement (pending `/adev:specify` revision workflow) and behaves as if the value were 0 (default). Setting 0 explicitly is identical behavior: BLOCK stops the build immediately with the manual-revision sidecar and message
+17. **When** review returns BLOCK in Full Pipeline mode AND `build.max_review_retries > 0` (default 2 per `lib/manifest.mjs`) AND every BLOCK finding carries a canonical `blocker_id` (per `review-block-auto-retry.spec.md` Behavior 3) **then** the orchestrator dispatches the BLOCK→revise auto-retry loop: invoke `/adev:specify --revise <spec>` via the `adev specify revise` CLI verb to produce revision N+1 (targeted patch addressing each `blocker_id`), re-run `/adev:review-specs` against revision N+1, and apply the convergence detector (`lib/loop-convergence.mjs`) to decide PASS / PASS_PENDING_HUMAN / NO_PROGRESS / REGRESSED / BUDGET_EXHAUSTED / CONTINUE. The loop continues until one of the terminal verdicts is reached or the budget is exhausted. With `--require-human-final-pass` set, a PASS verdict halts the build at `PASS_PENDING_HUMAN` (emitting a `human_approval_required` lifecycle event) for operator acknowledgement via `/adev:build --resume`.
+18. **When** review returns BLOCK AND `build.max_review_retries === 0` (explicitly disabled by the operator) OR any BLOCK finding lacks a canonical `blocker_id` (legacy reviewer output) **then** the orchestrator writes the `<spec-stem>.blockers.md` sidecar via `lib/blockers-writer.mjs::writeBlockers`, records the review step as `failed` in build state with `verdict: BLOCK` and `error` pointing at the sidecar (legacy case adds advisory code `LEGACY_REVIEWER_OUTPUT`), and stops the build with a manual-revision-required message instructing the operator to revise the spec and resume via `/adev:build --resume`. Sidecar+fail-loud is the documented fallback path; no auto-retry dispatches.
 19. **When** validate returns FAIL and `build.max_retries > 0` and retry budget remains **then** the orchestrator enters a validate→implement retry loop — see Appendix: Retry Policy
 20. **When** `build.max_retries` is 0 or absent in user-config **then** validate FAIL is recorded and the build completes without retry (fail-fast default)
 21. **When** resolving `build.max_retries` or `build.max_review_retries` **then** follow the same hierarchy as persona resolution: local `.context-index/user-config` → global `<PLUGIN_ROOT>/user-config` → default. Uses `parseUserConfig()` from `lib/persona.mjs`
