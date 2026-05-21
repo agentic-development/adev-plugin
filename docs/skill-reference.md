@@ -621,9 +621,9 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:retro`
 
-**Purpose:** Analyze completed work over a time period to extract lessons, compute delivery metrics, and generate improvement recommendations. Examines git history, validation reports, recovery records, blocker files, hygiene reports, and plan files.
+**Purpose:** Analyze completed work over a time period to extract lessons, compute delivery metrics, and generate improvement recommendations. Examines git history, validation reports, recovery records, blocker files, hygiene reports, plan files, and **session capture artifacts** under `.context-index/sessions/` (when `integrations.session_capture.capture: hook` is enabled — see [Configuration](configuration.md#integrations)).
 
-**Prerequisites:** Git history and `.context-index/` must exist.
+**Prerequisites:** Git history and `.context-index/` must exist. Session activity in the report requires session capture to be on; if no sessions are captured, the section is omitted gracefully.
 
 **Arguments:**
 - `--since <date>`: start date (default: 2 weeks ago). Accepts ISO format or relative expressions
@@ -637,7 +637,9 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 /adev:retro --charter auth --auto-apply
 ```
 
-**Expected Output:** A retrospective report with patterns, delivery metrics, and actionable improvement recommendations.
+**Related CLI:** `adev retro session-activity --since <date>` renders just the session-activity table (tool calls, files touched, durations) from captured sessions without running the full retro.
+
+**Expected Output:** A retrospective report with patterns, delivery metrics, actionable improvement recommendations, and (when sessions are captured) a session-activity section cross-referenced against the issue board.
 
 **Related Guides:** [Maintain](maintain.md)
 

@@ -4,6 +4,10 @@ import assert from 'node:assert/strict';
 import { PRICE_TABLE, getRate, computeCost } from '../../lib/token-pricing.mjs';
 
 describe('PRICE_TABLE', () => {
+  it('contains claude-opus-4-7', () => {
+    assert.ok('claude-opus-4-7' in PRICE_TABLE);
+  });
+
   it('contains claude-opus-4-6', () => {
     assert.ok('claude-opus-4-6' in PRICE_TABLE);
   });
@@ -26,8 +30,8 @@ describe('PRICE_TABLE', () => {
   });
 
   it('rates are per-token (not per-million)', () => {
-    // opus input is $15/M → 0.000015 per token
-    assert.ok(PRICE_TABLE['claude-opus-4-6'].input < 0.001, 'input rate should be per-token, not per-million');
+    // opus input is $5/M → 0.000005 per token
+    assert.ok(PRICE_TABLE['claude-opus-4-7'].input < 0.001, 'input rate should be per-token, not per-million');
   });
 });
 
@@ -81,25 +85,25 @@ describe('computeCost', () => {
   });
 
   it('computes correct cost for opus with only input tokens', () => {
-    // 1,000,000 input tokens at $15/M = $15.000000
+    // 1,000,000 input tokens at $5/M = $5.000000
     const cost = computeCost('claude-opus-4-6', {
       inputTokens: 1_000_000,
       outputTokens: 0,
       cacheReadTokens: 0,
       cacheCreationTokens: 0,
     });
-    assert.strictEqual(cost, 15.0);
+    assert.strictEqual(cost, 5.0);
   });
 
   it('computes correct cost for opus with only output tokens', () => {
-    // 1,000,000 output tokens at $75/M = $75.000000
+    // 1,000,000 output tokens at $25/M = $25.000000
     const cost = computeCost('claude-opus-4-6', {
       inputTokens: 0,
       outputTokens: 1_000_000,
       cacheReadTokens: 0,
       cacheCreationTokens: 0,
     });
-    assert.strictEqual(cost, 75.0);
+    assert.strictEqual(cost, 25.0);
   });
 
   it('computes correct cost for sonnet with mixed tokens', () => {
@@ -117,15 +121,28 @@ describe('computeCost', () => {
   });
 
   it('includes cache tokens in cost', () => {
-    // opus cacheRead $1.50/M, cacheCreation $18.75/M
-    // 1M cache read = $1.50, 1M cache creation = $18.75
+    // opus cacheRead $0.50/M, cacheCreation $6.25/M (5m write)
+    // 1M cache read = $0.50, 1M cache creation = $6.25
     const cost = computeCost('claude-opus-4-6', {
       inputTokens: 0,
       outputTokens: 0,
       cacheReadTokens: 1_000_000,
       cacheCreationTokens: 1_000_000,
     });
-    assert.strictEqual(cost, 20.25); // 1.50 + 18.75
+    assert.strictEqual(cost, 6.75); // 0.50 + 6.25
+  });
+
+  it('computes correct cost for opus-4-7 matching opus-4-6 rates', () => {
+    // Opus 4.7 carries the same per-token rates as Opus 4.5 / 4.6;
+    // this guards against regressing the entry to the legacy
+    // Opus 4 / 4.1 rate sheet ($15/$75) by mistake.
+    const cost = computeCost('claude-opus-4-7', {
+      inputTokens: 1_000_000,
+      outputTokens: 1_000_000,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 0,
+    });
+    assert.strictEqual(cost, 30.0); // 5 + 25
   });
 
   it('rounds to 6 decimal places', () => {
@@ -136,9 +153,9 @@ describe('computeCost', () => {
       cacheReadTokens: 0,
       cacheCreationTokens: 0,
     });
-    // haiku: input $0.80/M = 8e-7, output $4/M = 4e-6
-    // total = 4.8e-6; Math.round(4.8) / 1e6 = 5e-6 = 0.000005
-    assert.strictEqual(cost, 0.000005);
+    // haiku: input $1/M = 1e-6, output $5/M = 5e-6
+    // total = 6e-6; Math.round(6) / 1e6 = 6e-6 = 0.000006
+    assert.strictEqual(cost, 0.000006);
     // verify decimal places
     const decimals = cost.toString().replace(/^[^.]*\.?/, '').length;
     assert.ok(decimals <= 6, `expected ≤6 decimal places, got ${decimals}`);

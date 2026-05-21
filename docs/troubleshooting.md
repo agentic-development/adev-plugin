@@ -98,7 +98,7 @@ This page covers common issues you may encounter when using adev, organized by s
 
 ### Can I use adev with tools other than Claude Code?
 
-Yes. adev supports Claude Code, OpenCode, and OpenAI Codex. The plugin architecture is provider-agnostic — skills are markdown files that any AI assistant can interpret. Install with `npx @adev-org/adev-cli install` and use `--provider` to select your tool. The `.context-index/` directory works identically across all supported providers.
+Yes. adev supports Claude Code, Cursor, GitHub Copilot, OpenCode, and OpenAI Codex. The plugin architecture is provider-agnostic — skills are markdown files that any AI assistant can interpret. Install with `npx @adev-org/adev-cli install` and use `--provider claude-code|cursor|opencode|codex` to select an interactive-menu provider, or `--target copilot [--user] [--dry-run]` for the file-based GitHub Copilot adapter. The `.context-index/` directory works identically across all supported providers.
 
 ### Do I have to follow every lifecycle step?
 
