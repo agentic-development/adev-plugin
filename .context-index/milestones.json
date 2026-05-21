@@ -71,12 +71,12 @@
       "defer_reason": null
     },
     {
-      "name": "adev-compiler-discipline",
+      "name": "0.28.0",
       "status": "planned",
-      "epic_id": "epic-74",
-      "target_date": null,
+      "epic_id": "epic-72",
+      "target_date": "2026-05-24",
       "release": {
-        "strategy": "manual"
+        "strategy": "release-please"
       },
       "ship_criteria": [
         {
@@ -86,10 +86,10 @@
           "check": "gates_pass"
         },
         {
-          "confirm": "All 5 sub-epic charters reviewed"
+          "confirm": "CHANGELOG updated"
         },
         {
-          "confirm": "Constitution amendments synced"
+          "confirm": "README updated"
         }
       ],
       "defer_reason": null

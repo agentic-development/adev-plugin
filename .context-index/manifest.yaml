@@ -216,6 +216,12 @@ repomap:
 
 integrations:
   session_capture:
+    # provider: native      — captures session events via the native plugin (no third-party SDK)
+    # capture: hook         — drives capture from Claude Code SessionEnd + PreCompact hooks (recommended for new projects)
+    # capture: post-commit  — legacy back-compat path: capture fires from .githooks/post-commit
+    # capture: off          — capture disabled; no hooks register, no files write
+    # gitignored: true|false — when true, installer maintains a paired-marker block in .gitignore
+    #                         covering .context-index/sessions/ (default true for new projects)
     provider: native
 
 hygiene:
@@ -242,6 +248,12 @@ hygiene:
       # diagnostic-registry.plan.md from 0009 to 0010 when resolving the
       # duplicate ADR id. Reference-only update, not content change.
       - "dc27388f0e762c0519e1cb833bd98a55cc8f3e26"
+      # session-awareness/hook-driven-capture: route step inscribed
+      # routing annotations after first plan_task pending event, and
+      # subsequent revert restored the plan to its first-pending state.
+      # Both modifications are advisory metadata, not content drift.
+      - "6d8863318039a6ab7bed383559ce7cccdb90fd73"
+      - "70c3ca3549d5889723c7b501df0279e432aca12b"
       # Milestone bulk-rename: stamped "0.26.0" → "0.27.0" on the
       # orphan-lock-cleanup.plan.md milestone reference. Reference-only
       # update, not content change.
@@ -250,6 +262,10 @@ hygiene:
       # orphan-lock-cleanup.plan.md milestone reference along with the
       # 0.27.1 milestone re-file. Reference-only update, not content change.
       - "bad36e09824693d0fd183fcf46f11d2b4103fff1"
+      # agent-reliable-state-artifacts/orphan-lock-cleanup: revert
+      # restored the plan to its first-pending state after the two
+      # milestone-rename commits above. Bookkeeping, not content drift.
+      - "c9a6c94fdcc22a22065985ad5b0f154a93ef7764"
       # JSON sidecar migration: updated the comment in the three
       # plan-immutability fixture plan bodies from ".routing.md" to
       # ".routing.json" to match the rev-2 sidecar shape. Documentation
@@ -262,3 +278,10 @@ hygiene:
       # mirror the refined test fixtures the spec rev 3 introduced.
       # Documented + intentional plan-time refinement, not silent drift.
       - "79d895aaac13a3482a22d5edc3b2ac1722508c88"
+      # session-awareness/retro-session-consumption: artifact-landing
+      # commit inadvertently swept in 72 lines of inline route
+      # annotations on the plan body. Subsequent merge commit
+      # restored the plan to its first-pending state during the
+      # main→branch merge. Advisory metadata, not content drift.
+      - "62caa688a2d94a84697cc1f7c55bfa099264a2da"
+      - "1a6af4f953f789eba11c825329eb4d1b3f697f78"

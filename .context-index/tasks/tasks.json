@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 68,
+  "seq": 111,
   "epics": [
     {
       "id": "epic-1",
@@ -60,9 +60,9 @@
       "id": "epic-8",
       "title": "Multi-Repo Workspace Phase 2",
       "status": "open",
-      "milestone": "multi-repo-workspace-phase-2",
+      "milestone": "0.28.0",
       "created": "2026-04-16T12:43:29.561Z",
-      "updated": "2026-04-16T12:43:29.561Z"
+      "updated": "2026-05-20T20:54:11.229Z"
     },
     {
       "id": "epic-9",
@@ -107,10 +107,11 @@
     {
       "id": "epic-14",
       "title": "Cross-Cutting Concerns",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/cross-cutting/model-routing.plan.md",
       "created": "2026-04-24T00:00:00.000Z",
-      "updated": "2026-04-25T00:00:00.000Z"
+      "updated": "2026-05-20T20:12:25.686Z",
+      "notes": "Reconciled: spec model-routing.spec.md is validated; no open children"
     },
     {
       "id": "epic-15",
@@ -203,10 +204,11 @@
     {
       "id": "epic-26",
       "title": "Test Strategies Framework",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/test-strategies/test-strategies.plan.md",
       "created": "2026-04-24T00:00:00.000Z",
-      "updated": "2026-04-25T00:00:00.000Z"
+      "updated": "2026-05-20T20:12:25.704Z",
+      "notes": "Reconciled: all test-strategies specs validated; no open children"
     },
     {
       "id": "epic-27",
@@ -355,10 +357,11 @@
     {
       "id": "epic-48",
       "title": "Standardize Spec File Suffixes",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/cross-cutting/spec-file-suffixes.plan.md",
       "created": "2026-05-04T00:00:00.000Z",
-      "updated": "2026-05-04T00:00:00.000Z"
+      "updated": "2026-05-20T20:12:25.715Z",
+      "notes": "Reconciled: spec spec-file-suffixes.spec.md is validated; no open children"
     },
     {
       "id": "epic-49",
@@ -386,10 +389,11 @@
     {
       "id": "epic-52",
       "title": "API Eval Project",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/eval-projects/api-eval-project.plan.md",
       "created": "2026-05-06T16:54:35.127Z",
-      "updated": "2026-05-06T16:54:35.127Z"
+      "updated": "2026-05-20T20:12:25.727Z",
+      "notes": "Reconciled: spec api-eval-project.spec.md is validated; no open children"
     },
     {
       "id": "epic-53",
@@ -482,10 +486,11 @@
     {
       "id": "epic-64",
       "title": "Domain Resolution & Overlay Structure",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/domain-profiles/domain-resolution-and-overlay-structure.plan.md",
       "created": "2026-05-10T13:46:11.444Z",
-      "updated": "2026-05-10T13:46:11.444Z"
+      "updated": "2026-05-20T20:12:25.739Z",
+      "notes": "Reconciled: spec domain-resolution-and-overlay-structure.spec.md is validated; no open children"
     },
     {
       "id": "epic-65",
@@ -548,51 +553,52 @@
       "id": "epic-74",
       "title": "adev-compiler-discipline",
       "status": "open",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.169Z",
-      "updated": "2026-05-14T12:32:48.169Z"
+      "updated": "2026-05-20T20:49:46.875Z"
     },
     {
       "id": "epic-75",
       "title": "cli-driver-surface",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.184Z",
-      "updated": "2026-05-16T11:50:02.098Z"
+      "updated": "2026-05-20T20:49:46.891Z"
     },
     {
       "id": "epic-76",
       "title": "artifact-schemas",
-      "status": "open",
-      "milestone": "adev-compiler-discipline",
+      "status": "closed",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.190Z",
-      "updated": "2026-05-14T12:32:48.190Z"
+      "updated": "2026-05-20T20:49:46.906Z",
+      "notes": "Closed without work — placeholder epic from adev-compiler-discipline milestone planning; scope never started, no spec or plan authored"
     },
     {
       "id": "epic-77",
       "title": "trailer-enforcement",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.198Z",
-      "updated": "2026-05-14T12:40:01.175Z",
+      "updated": "2026-05-20T20:49:46.920Z",
       "notes": "Duplicate. Folded into spec-lifecycle/structured-commit-trailers.spec.md (validated). Audit P4 fail-closed commit-msg is a revision of that spec."
     },
     {
       "id": "epic-78",
       "title": "validate-citation-grounding",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.204Z",
-      "updated": "2026-05-14T12:40:01.181Z",
+      "updated": "2026-05-20T20:49:46.930Z",
       "notes": "Folded into validation charter. Citation grounding (P2 + P13) becomes a new spec under validation/, not a separate charter."
     },
     {
       "id": "epic-79",
       "title": "lifecycle-event-log-population",
       "status": "closed",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-14T12:32:48.210Z",
-      "updated": "2026-05-14T12:40:01.185Z",
+      "updated": "2026-05-20T20:49:46.940Z",
       "notes": "Folded into agent-reliable-state-artifacts charter. P21 (wire reviewer_report from review-specs Step 6c) is a fix to lifecycle-skill-instruction-updates.spec.md."
     },
     {
@@ -623,18 +629,20 @@
     {
       "id": "epic-83",
       "title": "Single-Source Validate Configuration",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/validation/validate-config-single-source.plan.md",
       "created": "2026-05-16T01:02:35.446Z",
-      "updated": "2026-05-16T01:02:35.446Z"
+      "updated": "2026-05-20T20:12:25.853Z",
+      "notes": "Reconciled: spec validate-config-single-source.spec.md is validated; no open children"
     },
     {
       "id": "epic-84",
       "title": "Validate Check Set Restructure",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/validation/check-set-restructure.plan.md",
       "created": "2026-05-16T02:01:28.910Z",
-      "updated": "2026-05-16T02:01:28.910Z"
+      "updated": "2026-05-20T20:12:25.888Z",
+      "notes": "Reconciled: spec check-set-restructure.spec.md is validated; no open children"
     },
     {
       "id": "epic-85",
@@ -653,19 +661,21 @@
     {
       "id": "epic-87",
       "title": "Lib-Import Control-Flow Extraction",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.plan.md",
-      "milestone": "adev-compiler-discipline",
+      "milestone": "0.28.0",
       "created": "2026-05-17T21:30:37.684Z",
-      "updated": "2026-05-17T21:30:37.684Z"
+      "updated": "2026-05-20T20:49:46.949Z",
+      "notes": "Demoted to issue-536 — childless epic converted to feature issue under epic-74 (adev-compiler-discipline parent). Scope did not warrant a separate epic; spec is review-passed and needs /adev:plan to proceed."
     },
     {
       "id": "epic-88",
       "title": "Implementation plan: Verbosity Axis and Output Trimming",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/output-personas/verbosity-axis-and-output-trimming.plan.md",
       "created": "2026-05-18T14:32:19.618Z",
-      "updated": "2026-05-18T14:32:19.618Z"
+      "updated": "2026-05-20T20:12:25.905Z",
+      "notes": "Reconciled: spec verbosity-axis-and-output-trimming.spec.md is validated; child issue-516 closed"
     },
     {
       "id": "epic-89",
@@ -693,10 +703,28 @@
     {
       "id": "epic-92",
       "title": "Cursor sync-target output (Spec E)",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/features/cursor-provider/sync-target-output.plan.md",
       "created": "2026-05-19T13:08:24.855Z",
-      "updated": "2026-05-19T13:08:24.855Z"
+      "updated": "2026-05-20T20:12:25.923Z",
+      "notes": "Reconciled: Spec E (sync-target-output) validated on feat/cursor-provider/cursor-adapter per hygiene drift-report 2026-05-19"
+    },
+    {
+      "id": "epic-93",
+      "title": "Charter: domain-extensions",
+      "status": "open",
+      "planRef": ".context-index/specs/features/domain-extensions/init-extension-picker.plan.md",
+      "milestone": "v2",
+      "created": "2026-05-20T17:06:11.108Z",
+      "updated": "2026-05-20T17:06:11.108Z"
+    },
+    {
+      "id": "epic-94",
+      "title": "Hook-Driven Session Capture with Init-Time Configuration",
+      "status": "open",
+      "planRef": ".context-index/specs/features/session-awareness/hook-driven-capture.plan.md",
+      "created": "2026-05-20T17:59:35.816Z",
+      "updated": "2026-05-20T17:59:35.816Z"
     }
   ],
   "issues": [
@@ -3020,28 +3048,28 @@
     {
       "id": "issue-491",
       "title": "Validate Check Set Restructure",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/validation/check-set-restructure.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/check-set-restructure.spec.md. Created by /adev:specify on 2026-05-15. Tracker: issue-490.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/check-set-restructure.spec.md. Created by /adev:specify on 2026-05-15. Tracker: issue-490.; Closed: Reconciled: spec check-set-restructure.spec.md is validated",
       "next_action": "Run /adev:plan --spec check-set-restructure.spec.md",
       "created": "2026-05-15T22:37:11.805Z",
-      "updated": "2026-05-16T00:42:04.581Z"
+      "updated": "2026-05-20T20:12:25.940Z"
     },
     {
       "id": "issue-492",
       "title": "Single-Source Validate Configuration",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/validation/validate-config-single-source.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/validate-config-single-source.spec.md. Created by /adev:specify on 2026-05-15. Supersedes configurable-checks Behaviors 1, 2, 5 + AC #1.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/validation/validate-config-single-source.spec.md. Created by /adev:specify on 2026-05-15. Supersedes configurable-checks Behaviors 1, 2, 5 + AC #1.; Closed: Reconciled: spec validate-config-single-source.spec.md is validated",
       "next_action": "Run /adev:plan --spec validate-config-single-source.spec.md",
       "created": "2026-05-16T00:10:45.789Z",
-      "updated": "2026-05-16T00:42:04.595Z"
+      "updated": "2026-05-20T20:12:25.953Z"
     },
     {
       "id": "issue-493",
@@ -3218,15 +3246,15 @@
     {
       "id": "issue-506",
       "title": "Incremental artifact writes — .partial + atomic-rename pattern",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/cross-cutting/incremental-artifact-writes.spec.md",
       "dependencies": [],
-      "notes": "Cross-cutting spec. Affects: cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts. Created by /adev:specify on 2026-05-17. Tracker: issue-504.",
+      "notes": "Cross-cutting spec. Affects: cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts. Created by /adev:specify on 2026-05-17. Tracker: issue-504.; Closed: Reconciled: spec incremental-artifact-writes.spec.md is validated",
       "next_action": "Spec review-passed at rev 2. Run /adev:plan --spec <path> or fold the 2 warnings + 7 suggestions from the review into plan tasks. Per the spec, the most actionable items are SA-10 (lock-steal TOCTOU) and SA-11 (stale-threshold precedence).",
       "created": "2026-05-17T18:32:23.789Z",
-      "updated": "2026-05-17T19:14:38.528Z"
+      "updated": "2026-05-20T20:12:25.964Z"
     },
     {
       "id": "issue-507",
@@ -3405,15 +3433,15 @@
     {
       "id": "issue-520",
       "title": "CLI install integration",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/cursor-provider/cli-install-integration.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/cli-install-integration.spec.md. Created by /adev:specify on 2026-05-19.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/cli-install-integration.spec.md. Created by /adev:specify on 2026-05-19.; Closed: Reconciled: spec cli-install-integration.spec.md validated on feat/cursor-provider/cursor-adapter per hygiene drift-report 2026-05-19",
       "next_action": "Run /adev:review-specs --module cursor-provider",
       "created": "2026-05-19T11:45:20.607Z",
-      "updated": "2026-05-19T11:45:20.607Z"
+      "updated": "2026-05-20T20:12:25.977Z"
     },
     {
       "id": "issue-521",
@@ -3457,15 +3485,15 @@
     {
       "id": "issue-524",
       "title": "Cursor sync target output",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/cursor-provider/sync-target-output.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/sync-target-output.spec.md. Created by /adev:specify on 2026-05-19.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/cursor-provider/sync-target-output.spec.md. Created by /adev:specify on 2026-05-19.; Closed: Reconciled: spec sync-target-output.spec.md validated on feat/cursor-provider/cursor-adapter per hygiene drift-report 2026-05-19",
       "next_action": "Run /adev:review-specs --module cursor-provider",
       "created": "2026-05-19T12:56:49.742Z",
-      "updated": "2026-05-19T12:56:49.742Z"
+      "updated": "2026-05-20T20:12:25.988Z"
     },
     {
       "id": "issue-525",
@@ -3512,7 +3540,7 @@
       "priority": 2,
       "type": "feature",
       "dependencies": [],
-      "notes": "Surfaced by `lib/plan-immutability.mjs` after the rev-2 plan-routing-sidecar migration (commit 3a32106). The working-tree detector flags 20 legacy plan files that carry inline `**Routing:**` / `**Scores:**` / `**Rationale:**` blocks but have no sibling `<plan-stem>.routing.json` — the same shape `issue-526` was filed against, just for plans authored *before* the rev-2 migration landed.\n\nSpec line 121 of `plan-routing-sidecar.spec.md` rev 2 explicitly puts this migration out of scope: \"This spec MUST work with un-migrated plans (detector flags them; migration is a follow-up).\" That follow-up is this issue.\n\n## Affected plans (20)\n  - .context-index/specs/features/agent-reliable-state-artifacts/orphan-lock-cleanup.plan.md\n  - .context-index/specs/features/cursor-provider/hook-config-generator.plan.md\n  - .context-index/specs/features/deploy/deploy-core.plan.md\n  - .context-index/specs/features/design/brainstorm-spec-grouping.plan.md\n  - .context-index/specs/features/domain-profiles/bundled-domain-profiles.plan.md\n  - .context-index/specs/features/domain-profiles/domain-aware-skill-integration.plan.md\n  - .context-index/specs/features/domain-profiles/domain-resolution-and-overlay-structure.plan.md\n  - .context-index/specs/features/eval-projects/api-eval-project.plan.md\n  - .context-index/specs/features/eval-projects/automation-eval-project.plan.md\n  - .context-index/specs/features/eval-projects/migration-eval-project.plan.md\n  - .context-index/specs/features/eval-projects/pipeline-eval-project.plan.md\n  - .context-index/specs/features/infra-preflight/skill-integration.plan.md\n  - .context-index/specs/features/multi-repo-workspace/workspace-aware-vision.plan.md\n  - .context-index/specs/features/prototype-brainstorm/brainstorm-integration.plan.md\n  - .context-index/specs/features/prototype-brainstorm/prototype-core.plan.md\n  - .context-index/specs/features/prototype-brainstorm/standalone-invocation.plan.md\n  - .context-index/specs/features/prototype-brainstorm/visual-reference-capture.plan.md\n  - .context-index/specs/features/session-awareness/post-commit-self-skip.plan.md\n  - .context-index/specs/features/validation/check-set-restructure.plan.md\n  - .context-index/specs/features/validation/validate-config-single-source.plan.md\n\n## Overlap with the existing cursor-provider capability\n\nThe agent-reliable-state-artifacts charter rev 7 already enumerates a \"Cursor-provider 5-plan migration\" capability (`lib/migrate-plan-routing.mjs` + `adev migrate plan-routing` CLI subcommand) covering 5 plans under `.context-index/specs/features/cursor-provider/`. Of those 5, only `hook-config-generator.plan.md` shows in the flagged list above — the other four (`cursor-adapter`, `plugin-manifest-and-parity`, `cli-install-integration`, `sync-target-output`) are either already exempted, lack inline blocks, or have a sidecar of either extension already. The migration tool from that capability is the natural foundation for closing this issue: extend it to walk the broader set, not just cursor-provider, and the closure path is largely mechanical.\n\n## Acceptance criteria\n\n  - All 20 plans listed above carry a sibling `<plan-stem>.routing.json` with one entry per task (scores normalized 0-1 from the legacy 0-5 raw values inline).\n  - The inline `**Routing:**` blocks may remain in the plan body (detector tolerates them once the sibling sidecar exists, per Behavior 7 of plan-routing-sidecar.spec.md rev 2) — extraction-and-strip is preferred but not required.\n  - `tests/skills/plan-task-immutability.test.mjs` :: `plan-immutability: real repo has no violations` returns to PASS.\n  - Migration commit hash stamped into `manifest.yaml :: hygiene.plan_immutability.exempt_commits[]` so the per-task M-commit history branch of the detector treats the bulk migration as the canonical \"first non-mutating state\" baseline.\n  - Idempotent: re-running the migration tool on already-migrated plans is a no-op.\n\n## References\n\n  - Spec: `.context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md` rev 2 — Out-of-scope clause; Behaviors 6-7.\n  - ADR: `.context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md` — `<artifact-stem>.<purpose>.<ext>` naming convention; closed peer set.\n  - Charter capability: `agent-reliable-state-artifacts/charter.md` :: \"Cursor-provider 5-plan migration *(rev 7)*\" — existing tracker for 5 of the 20 plans; extend its tooling.\n  - Detector lib: `lib/plan-immutability.mjs::checkInlineRoutingWithoutSidecar`",
+      "notes": "Surfaced by `lib/plan-immutability.mjs` after the rev-2 plan-routing-sidecar migration (commit 3a32106). The working-tree detector flags 20 legacy plan files that carry inline `**Routing:**` / `**Scores:**` / `**Rationale:**` blocks but have no sibling `<plan-stem>.routing.json` — the same shape `issue-526` was filed against, just for plans authored *before* the rev-2 migration landed.\n\nSpec line 121 of `plan-routing-sidecar.spec.md` rev 2 explicitly puts this migration out of scope: \"This spec MUST work with un-migrated plans (detector flags them; migration is a follow-up).\" That follow-up is this issue.",
       "next_action": "Extend `lib/migrate-plan-routing.mjs` (cursor-provider capability) to walk all 20 flagged plans, or fold this into the existing capability as a separate plan task. Re-run plan-immutability test to verify green.",
       "created": "2026-05-20T12:55:17.307Z",
       "updated": "2026-05-20T12:55:17.307Z"
@@ -3524,10 +3552,104 @@
       "priority": 3,
       "type": "feature",
       "dependencies": [],
-      "notes": "adev currently has no PR-body composition surface. `skills/validate/SKILL.md` and `skills/implement/SKILL.md` both emit a literal \"Ready for PR. Run: gh pr create --base <target-branch>\" string with no body, no flag, no template reference. The CLI has no `pr` verb. The manifest `repo:` block carries adjacent metadata (`merge_policy: pr`, `branch_naming`, `conventional_commit_types`, `required_trailers`, `recommended_trailers`) but no `pr_template:` / `pr.body:` / `.github/PULL_REQUEST_TEMPLATE.md` reference.\n\nConfirmed absent by `grep -rln \"pr_template|pr-template|prTemplate\"` returning zero hits across `.context-index/`, `skills/`, `lib/`, `cli/`.\n\n## Why this is worth doing\n\nBy the time `/adev:validate` finishes, every input for a good PR body already exists as structured state:\n\n  - Spec title + charter module — from spec frontmatter and `# Live Spec:` heading\n  - Validate verdict + per-check tallies — from `<stem>.validate.md`\n  - Behaviors implemented — from spec body section\n  - Commits touching this spec — `git log --grep='Spec: <path>'` against the source manifest's referenced commits\n  - Reviewer notes (when review was PASS_WITH_NOTES) — from `<stem>.review.md`\n  - Source-manifest sha + file count — from spec frontmatter\n\nToday the human composes all of this by hand each PR. The data is already structured; only the rendering layer is missing.\n\n## Proposed shape\n\nMirror the markdown-render-on-demand pattern that the JSON sidecar migration just adopted (commit 4d389a1 + ADR-0012 rev-2 amendment):\n\n  - **CLI verb:** `adev pr body --spec <path>` reads the spec + its sidecars + source-manifest + the commit log, renders a markdown PR body to stdout. No file write. Operators pipe to `gh pr create --body-file -` or to `pbcopy`.\n  - **Lib:** `lib/pr-body.mjs` exports `renderPrBody(projectRoot, specPath, opts)` returning a string. Zero new dependencies (node:fs + node:child_process for `git log`).\n  - **Manifest knob (optional):** `repo.pr_template:` pointing at a template file (e.g. `.context-index/templates/pr-body.md`) with handlebars-style placeholders. When absent, the lib falls back to a built-in template; when present, the operator can customize sections, headings, trailers footer, etc.\n  - **Default template sections:** Summary (one paragraph from spec body), What changed (commits touching the spec, grouped by Plan-task), Validate report (per-check verdicts table), Reviewer notes (when present), Source manifest (sha + file count + drift flag), Test plan (acceptance criteria converted to a checklist).\n  - **`/adev:validate` integration:** after a PASS verdict, the skill emits a copy-pasteable invocation example: `adev pr body --spec <path> | gh pr create --base <branch> --body-file -`. Optional `--auto-pr` flag on `/adev:build` that runs the verb and dispatches `gh pr create` directly.\n\n## Acceptance criteria (draft)\n\n  - [ ] `adev pr body --spec <path>` exits 0 and writes a markdown body to stdout when the spec is `validated` (or `implemented` with a passing validate sidecar present).\n  - [ ] Body includes the six default sections (Summary / What changed / Validate report / Reviewer notes when present / Source manifest / Test plan).\n  - [ ] `repo.pr_template: <path>` in manifest is honored when present; missing file errors with a clear `PR_TEMPLATE_NOT_FOUND` code.\n  - [ ] Built-in template is used when manifest knob is absent — no error path for the unconfigured case.\n  - [ ] `/adev:validate` Step N (Summary) prints a copy-pasteable `adev pr body | gh pr create ...` line on PASS.\n  - [ ] All quality gates pass (tests, lint, typecheck).\n  - [ ] No constitutional violations introduced.\n\n## Out of scope\n\n  - Pushing the branch (operator decides when to push).\n  - Auto-merge orchestration (separate concern; merge_policy already exists for that).\n  - Issue references / cross-linking (could be a follow-up — would need an issue-ref scanner).\n\n## References\n\n  - Pattern precedent: `adev route render-sidecar` (machine-primary JSON → markdown view on demand) — same shape proposed here.\n  - Manifest block: `.context-index/manifest.yaml` :: `repo:` (where the new `pr_template:` key would land).\n  - Skill emission points: `skills/validate/SKILL.md` and `skills/implement/SKILL.md` (search for `gh pr create`).",
+      "notes": "adev currently has no PR-body composition surface. `skills/validate/SKILL.md` and `skills/implement/SKILL.md` both emit a literal \"Ready for PR. Run: gh pr create --base <target-branch>\" string with no body, no flag, no template reference. The CLI has no `pr` verb. The manifest `repo:` block carries adjacent metadata (`merge_policy: pr`, `branch_naming`, `conventional_commit_types`, `required_trailers`, `recommended_trailers`) but no `pr_template:` / `pr.body:` / `.github/PULL_REQUEST_TEMPLATE.md` reference.",
       "next_action": "Decide whether to land as a standalone spec (likely under strategic-planning or a new pr-orchestration charter) or fold into an extension of the validate/implement skills. Author a Live Spec via /adev:specify.",
       "created": "2026-05-20T16:32:34.166Z",
       "updated": "2026-05-20T16:32:34.166Z"
+    },
+    {
+      "id": "issue-530",
+      "title": "Surface domain extensions during adev init (extension picker / discovery hint)",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "## Problem\n\nA user installing adev into a new project sees only the bundled `software` domain. The framework has already moved non-software domains into installable extension packages (`extensions/data-engineering/`, `extensions/process-automation/`, both with validated specs PASS), and the install pipeline (`adev extension install <source>`) is fully implemented in `cli/index.mjs:956-997` and `lib/extensions/install.mjs`. But `adev init` (or the equivalent install wizard) does not mention extensions at all — there is no discovery surface telling the user that data-engineering, process-automation, or future domains are available.\n\nSymptom: the user picks software-with-wrong-fit, or writes a custom domain from scratch (re-discovering `extends: software` + `.context-index/domains/<name>/` + `domain: <name>` in manifest.yaml), or simply does not realize extensions exist.\n\n## Charter context\n\n`.context-index/specs/features/domain-extensions/charter.md:29` *explicitly* lists \"Auto-install during `adev init`\" as out of scope for v1 of the extension work. The wording \"for v1\" was deliberate — that v1 was the content+pipeline; the install-UX bridge is the natural v2 follow-on. This issue is that follow-on.\n\n## Recommended fix\n\nAdd an extension-discovery prompt to the init flow. Two implementation paths, ranked:\n\n1. **First-party catalog with picker** *(preferred)*. After the providers prompt and before the context-index scaffold step, scan a known set of first-party extensions (start with the two that exist: `data-engineering`, `process-automation`). Present:\n   ```\n   Heading: Domain Extensions\n   Select a domain extension to install (or skip for software-only):\n     1. software (bundled) — general-purpose [default]\n     2. data-engineering — pipelines, ETL, dbt, data quality\n     3. process-automation — workflow automation, CI/CD orchestration\n     4. skip\n   ```\n   On selection, call `installExtension(<path>, projectRoot, opts)` (the same function the CLI verb wraps). The first-party catalog can live as a small JSON manifest in `templates/` or embedded in `cli/index.mjs`. Multi-select also reasonable.\n\n2. **Discovery hint only** *(minimal)*. After init completes, print a one-line note:\n   ```\n   Tip: To use a domain other than software, install an extension:\n         adev extension install ./extensions/data-engineering\n         adev extension install <git-url>\n         (or browse: https://agentic-dev.org/extensions)\n   ```\n   No prompt, no install — just discoverability.\n\nOption 1 fixes the UX gap; option 2 reduces it. Both close the report-symptom that prompted this issue.\n\n## Scope\n\n1. Decide between picker (option 1) vs hint (option 2). Picker recommended.\n2. If picker: define the first-party catalog (which extensions ship as known options). Start with the two that exist in this monorepo.\n3. Wire the catalog into `cli/index.mjs` init/upgrade flows.\n4. Reuse `installExtension()` from `lib/extensions/install.mjs` for the actual install — no new install machinery.\n5. Persist the choice in `manifest.yaml` (`domain: <name>` plus extension stamp via existing `readManifestStamps()` flow).\n6. Update `skills/init/SKILL.md` to walk the user through the picker.\n7. Update the install-completion message to confirm which domain extension (if any) was selected.\n8. Test: integration test exercising init with each catalog choice.\n\n## Acceptance criteria\n\n- `adev init` surfaces available domain extensions to the user.\n- User can select one (or skip) without leaving the init flow.\n- Selected extension is installed via the existing `installExtension()` pipeline.\n- `manifest.yaml` is stamped with the chosen domain and extension provenance.\n- `adev upgrade` offers the same picker if no domain extension is installed.\n- A new project where the user picks data-engineering has working `.context-index/domains/data-engineering/` after init (or whatever path the extension resolves to).\n- The install-completion message shows the selected domain.\n\n## References\n\n- Charter (and out-of-scope note): `.context-index/specs/features/domain-extensions/charter.md:29`\n- Install verb implementation: `cli/index.mjs:956-997`\n- Install pipeline: `lib/extensions/install.mjs`\n- Existing first-party extensions: `extensions/data-engineering/`, `extensions/process-automation/`\n- Adjacent open issues: issue-447 (extract non-software domains), issue-448 (data-engineering package), issue-450 (remove from bundled templates) — those address packaging; this issue addresses discoverability/install UX, which they do not.\n- Source of report: a user installing adev into a new project who only saw `software` and did not realize extensions were available.",
+      "next_action": null,
+      "created": "2026-05-20T13:10:16.802Z",
+      "updated": "2026-05-20T13:10:16.802Z"
+    },
+    {
+      "id": "issue-531",
+      "title": "Init-Time Domain Extension Picker",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/domain-extensions/init-extension-picker.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/domain-extensions/init-extension-picker.spec.md. Created by /adev:specify on 2026-05-20. Implements issue-530. Reparented under epic-93 by /adev:plan on 2026-05-20.",
+      "next_action": "Run /adev:implement --plan .context-index/specs/features/domain-extensions/init-extension-picker.plan.md",
+      "created": "2026-05-20T16:20:03.165Z",
+      "updated": "2026-05-20T17:06:11.125Z",
+      "epic": "epic-93"
+    },
+    {
+      "id": "issue-532",
+      "title": "Hook-Driven Session Capture with Init-Time Configuration",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/session-awareness/hook-driven-capture.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/session-awareness/hook-driven-capture.spec.md. Created by /adev:specify on 2026-05-20. Tracks issue-527 (Hook-Driven Session Capture) and bundles the Init-Time Capture Configuration capability added in charter rev 4 via brainstorm.",
+      "next_action": "Run /adev:review-specs --module session-awareness",
+      "created": "2026-05-20T16:50:00.000Z",
+      "updated": "2026-05-20T16:50:00.000Z"
+    },
+    {
+      "id": "issue-533",
+      "title": "Author docs/cli-reference.md — agent-facing CLI verb reference for all 24 verbs",
+      "status": "open",
+      "priority": 2,
+      "type": "task",
+      "dependencies": [],
+      "notes": "## Problem\n\n`adev help` shows 5 of 24 CLI verbs. The remaining 19 (gate, report, build-state, partial, heuristics, source-manifest, domain, context, verify, state, execution-state, preflight, prototype, artifact, issues, diagnose, etc.) are referenced only in scattered SKILL.md prose. Agents looking for verb signatures or argument shapes have to (a) grep `cli/index.mjs` for the dispatch table, (b) read multiple SKILL.md files, or (c) run `node cli/index.mjs <verb> --help` against guesses. None of these is a usable discovery surface.\n\nConfirmed by a session audit (2026-05-20): the agent-load path (SessionStart hook → using-adev SKILL.md → CLAUDE.md → Context Routing table) contains zero pointers to a CLI verb reference. `docs/skill-reference.md` exists for the /adev:* skills but there is no equivalent for the underlying CLI verbs.\n\n## Recommended fix\n\nCreate `docs/cli-reference.md` mirroring the format and tone of `docs/skill-reference.md`. One section per CLI verb, grouped by audience.\n\n## Scope\n\n1. New file `docs/cli-reference.md` with two top-level sections:\n   - **User-facing verbs** (5): `install`, `upgrade`, `uninstall`, `extension`, `migrate`. These are the public surface invoked via `npx @adev-org/adev-cli <verb>`.\n   - **Lifecycle / internal verbs** (~19): `gate`, `report`, `build-state`, `partial`, `heuristics`, `source-manifest`, `domain`, `context`, `verify`, `state`, `execution-state`, `preflight`, `prototype`, `artifact`, `issues`, `diagnose`, `init`, `status`, `help`. These are invoked from SKILL.md prose and by other CLI verbs; agents need them for orchestration.\n2. Per-verb entry format: one-line description, full argument signature (flags + types + defaults), one example invocation, link to implementing module (`lib/cli/<verb>.mjs` or anchor in `cli/index.mjs`), cross-references to relevant SKILL.md files that invoke it.\n3. Add `docs/cli-reference.md` to `docs/README.md` under the Reference section (next to `skill-reference.md`).\n4. Update the `using-adev` SKILL.md's existing reference to drop the 'when present' qualifier once the file lands.\n5. Tests: optionally add a script-based check that every verb in the `cli/index.mjs` dispatch table has a corresponding section in `docs/cli-reference.md` (drift guard). Can ship as a v2 follow-on.\n\n## Acceptance criteria\n\n- `docs/cli-reference.md` exists and documents all 24 verbs currently registered in `cli/index.mjs`.\n- Each verb has: one-line description, full argument signature, at least one example, link to implementing file.\n- Verbs are grouped into user-facing vs lifecycle/internal sections.\n- `docs/README.md` lists the new file under Reference.\n- `skills/using-adev/SKILL.md` qualification ('when present') is removed.\n- Spot-check: an agent asked about a specific verb (e.g., `adev partial`) should be able to answer from the new doc without reading source.\n\n## References\n\n- Session audit that surfaced this gap: this session's analysis of agent doc entrypoints (2026-05-20)\n- Existing per-skill reference: `docs/skill-reference.md`\n- CLI dispatch table source: `cli/index.mjs:1424-1450` (verb registry)\n- Per-verb implementations: `lib/cli/*.mjs`\n- Constitution Context Routing update: this session's edit to `.context-index/constitution.md` (added `docs/*.md` row) — landed on branch `feat/domain-extensions/init-extension-picker`.",
+      "next_action": null,
+      "created": "2026-05-20T19:49:59.116Z",
+      "updated": "2026-05-20T19:49:59.116Z"
+    },
+    {
+      "id": "issue-534",
+      "title": "Retro Session Consumption",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/session-awareness/retro-session-consumption.spec.md",
+      "dependencies": [
+        "issue-532"
+      ],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/session-awareness/retro-session-consumption.spec.md. Created by /adev:specify on 2026-05-20. Tracks issue-528 (Wire /adev:retro to consume session history). Depends on issue-532 (hook-driven-capture) for the new session file format; specifically requires a small rev-4 amendment of hook-driven-capture.spec.md to add optional cost/tokens/issue/epic frontmatter fields written by SessionEnd.",
+      "next_action": "Run /adev:review-specs --module session-awareness",
+      "created": "2026-05-20T19:55:00.000Z",
+      "updated": "2026-05-20T19:55:00.000Z"
+    },
+    {
+      "id": "issue-535",
+      "title": "Plan: Retro Session Consumption",
+      "status": "open",
+      "priority": 2,
+      "type": "epic",
+      "planRef": ".context-index/specs/features/session-awareness/retro-session-consumption.plan.md",
+      "spec_ref": ".context-index/specs/features/session-awareness/retro-session-consumption.spec.md",
+      "dependencies": [],
+      "notes": "Validated: PASS (2026-05-20) — .context-index/specs/features/session-awareness/retro-session-consumption.validate.md. All 8 dispatched checks green; spec status flipped to validated; charter Capability Map updated. Reality-check NONE confidence due to plan-body path-mention mismatches (lib/cli/retro.mjs vs plan mention of lib/cli/retro/session-activity.mjs) — source-manifest verify PASS confirms all 18 source files match sha 1fdabc8; manual close recommended.",
+      "next_action": null,
+      "created": "2026-05-20T20:21:28.049Z",
+      "updated": "2026-05-21T00:45:01.714Z"
+    },
+    {
+      "id": "issue-536",
+      "title": "Lib-Import Control-Flow Extraction",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-74",
+      "spec_ref": ".context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.spec.md",
+      "dependencies": [],
+      "notes": "Converted from epic-87 (childless epic, demoted to issue under epic-74 adev-compiler-discipline parent). Spec exists at .context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.spec.md (status: review-passed). Original epic-87 planRef pointed to lib-import-control-flow-extraction.plan.md which was never authored.",
+      "next_action": "Spec is review-passed; run /adev:plan to author the missing plan file before implementation can begin",
+      "created": "2026-05-20T20:47:52.841Z",
+      "updated": "2026-05-20T20:47:52.841Z"
     }
   ]
 }

@@ -1,0 +1,760 @@
+// tests/lib/retro-session-metrics.test.mjs
+//
+// Tests for the session-metrics rollup. One describe block per sub-helper.
+
+import { test, describe } from 'node:test';
+import { strict as assert } from 'node:assert';
+import {
+  parseToolUseDistribution,
+  countPerSpec,
+  aggregateCostTokens,
+  joinClosedIssueXref,
+  scanContextGaps,
+} from '../../lib/retro/session-metrics.mjs';
+
+describe('parseToolUseDistribution', () => {
+  test('counts ### Tool headings (hook-mode only)', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: '### Read\nfoo\n### Bash\nbar\n### Read\n',
+      },
+    ];
+    const result = parseToolUseDistribution(sessions);
+    const read = result.find((r) => r.tool === 'Read');
+    const bash = result.find((r) => r.tool === 'Bash');
+    assert.equal(read.count, 2);
+    assert.equal(bash.count, 1);
+  });
+
+  test('counts **Tool:** lines', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: '**Tool:** Grep\n**Tool:** Grep\n**Tool:** Edit\n',
+      },
+    ];
+    const result = parseToolUseDistribution(sessions);
+    assert.equal(result.find((r) => r.tool === 'Grep').count, 2);
+    assert.equal(result.find((r) => r.tool === 'Edit').count, 1);
+  });
+
+  test('combines both patterns in same body', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: '### Read\nbody\n**Tool:** Read\n',
+      },
+    ];
+    const result = parseToolUseDistribution(sessions);
+    assert.equal(result.find((r) => r.tool === 'Read').count, 2);
+  });
+
+  test('ignores non-hook-mode sessions (post-commit, unknown)', () => {
+    const sessions = [
+      {
+        format: 'post-commit',
+        frontmatter: { type: 'commit', agent: 'git-hook' },
+        body: '### Read\n',
+      },
+      { format: 'unknown', frontmatter: {}, body: '### Read\n' },
+    ];
+    const result = parseToolUseDistribution(sessions);
+    assert.equal(result.length, 0);
+  });
+
+  test('top-10 ordering: descending by count, alphabetical tie-break', () => {
+    // Construct 12 distinct tools with controlled counts.
+    const lines = [];
+    const tools = ['Apple', 'Bear', 'Cat', 'Dog', 'Eel', 'Fox', 'Goat', 'Hare', 'Ibis', 'Jay', 'Kite', 'Lynx'];
+    // Apple:12, Bear:11, ... Lynx:1
+    tools.forEach((t, i) => {
+      const n = 12 - i;
+      for (let j = 0; j < n; j++) lines.push(`### ${t}`);
+    });
+    const sessions = [{ format: 'hook', frontmatter: { kind: 'session-end' }, body: lines.join('\n') }];
+    const result = parseToolUseDistribution(sessions);
+    assert.equal(result.length, 10);
+    assert.equal(result[0].tool, 'Apple');
+    assert.equal(result[0].count, 12);
+    assert.equal(result[9].tool, 'Jay');
+  });
+
+  test('alphabetical tie-break when counts equal', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: '### Zebra\n### Alpha\n### Mango\n',
+      },
+    ];
+    const result = parseToolUseDistribution(sessions);
+    // All count = 1; tie-break alphabetical → Alpha, Mango, Zebra
+    assert.deepEqual(result.map((r) => r.tool), ['Alpha', 'Mango', 'Zebra']);
+  });
+
+  test('empty input → empty array', () => {
+    assert.deepEqual(parseToolUseDistribution([]), []);
+    assert.deepEqual(parseToolUseDistribution(null), []);
+    assert.deepEqual(parseToolUseDistribution(undefined), []);
+  });
+
+  test('ignores patterns NOT at line start (defense per SA-3)', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        // ' ### Read' (leading space) is not at line start → ignored
+        body: ' ### Read\n#### Read\n##### Read\nprefix ### Read suffix\n',
+      },
+    ];
+    const result = parseToolUseDistribution(sessions);
+    assert.equal(result.length, 0);
+  });
+
+  test('case-sensitive (per SA-3)', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: '### read\n### READ\n### Read\n',
+      },
+    ];
+    const result = parseToolUseDistribution(sessions);
+    // All three count as distinct tools.
+    assert.equal(result.length, 3);
+    assert.equal(result.find((r) => r.tool === 'Read').count, 1);
+    assert.equal(result.find((r) => r.tool === 'read').count, 1);
+    assert.equal(result.find((r) => r.tool === 'READ').count, 1);
+  });
+});
+
+describe('countPerSpec', () => {
+  test('frontmatter spec: field counts toward that spec', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/foo/bar.spec.md' },
+        body: '',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].spec, '.context-index/specs/features/foo/bar.spec.md');
+    assert.equal(r[0].count, 1);
+  });
+
+  test('body grep finds spec path references', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: 'mentions .context-index/specs/features/foo/bar.spec.md somewhere',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].spec, '.context-index/specs/features/foo/bar.spec.md');
+  });
+
+  test('frontmatter + body both contribute when distinct', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/foo/a.spec.md' },
+        body: 'see .context-index/specs/features/bar/b.spec.md',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 2);
+    const a = r.find((x) => x.spec.endsWith('a.spec.md'));
+    const b = r.find((x) => x.spec.endsWith('b.spec.md'));
+    assert.equal(a.count, 1);
+    assert.equal(b.count, 1);
+  });
+
+  test('dedupe per (session, spec): body mentioning same spec twice counts once', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: '.context-index/specs/features/x/y.spec.md once\n.context-index/specs/features/x/y.spec.md twice',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r[0].count, 1);
+  });
+
+  test('frontmatter + body referencing same spec dedupes per session', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: '.context-index/specs/features/x/y.spec.md mentioned in body too',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].count, 1);
+  });
+
+  test('two sessions touching same spec accumulate', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: '',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].count, 2);
+  });
+
+  test('zero-count specs omitted (nothing to omit if input empty)', () => {
+    assert.deepEqual(countPerSpec([]), []);
+  });
+
+  test('sort: descending by count, ties broken by spec slug ascending', () => {
+    const mk = (spec) => ({
+      format: 'hook',
+      frontmatter: { kind: 'session-end', spec },
+      body: '',
+    });
+    const sessions = [
+      mk('.context-index/specs/features/c/c.spec.md'), // count 1
+      mk('.context-index/specs/features/a/a.spec.md'), // count 2
+      mk('.context-index/specs/features/a/a.spec.md'),
+      mk('.context-index/specs/features/b/b.spec.md'), // count 2
+      mk('.context-index/specs/features/b/b.spec.md'),
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r[0].spec, '.context-index/specs/features/a/a.spec.md');
+    assert.equal(r[0].count, 2);
+    assert.equal(r[1].spec, '.context-index/specs/features/b/b.spec.md');
+    assert.equal(r[1].count, 2);
+    assert.equal(r[2].spec, '.context-index/specs/features/c/c.spec.md');
+    assert.equal(r[2].count, 1);
+  });
+
+  test('all session formats counted (not just hook-mode)', () => {
+    // Behavior 8 does not narrow to hook-mode.
+    const sessions = [
+      {
+        format: 'post-commit',
+        frontmatter: { type: 'commit', agent: 'git-hook' },
+        body: 'see .context-index/specs/features/x/y.spec.md',
+      },
+    ];
+    const r = countPerSpec(sessions);
+    assert.equal(r.length, 1);
+  });
+});
+
+describe('aggregateCostTokens', () => {
+  test('returns null when no session-end has any cost field', () => {
+    const sessions = [
+      { format: 'hook', frontmatter: { kind: 'session-end' }, body: '' },
+      { format: 'hook', frontmatter: { kind: 'pre-compact', cost_usd: 0.05 }, body: '' },
+    ];
+    // pre-compact excluded (XS-2); no session-end has cost → null
+    assert.equal(aggregateCostTokens(sessions), null);
+  });
+
+  test('returns null on empty input', () => {
+    assert.equal(aggregateCostTokens([]), null);
+    assert.equal(aggregateCostTokens(null), null);
+  });
+
+  test('aggregates totals across session-end sessions', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+          output_tokens: 200,
+          model: 'sonnet',
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.10,
+          input_tokens: 2000,
+          output_tokens: 400,
+          model: 'opus',
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.ok(r);
+    assert.ok(Math.abs(r.totals.cost_usd - 0.15) < 1e-9);
+    assert.equal(r.totals.input_tokens, 3000);
+    assert.equal(r.totals.output_tokens, 600);
+  });
+
+  test('per-model breakdown', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+          output_tokens: 200,
+          model: 'sonnet',
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.03,
+          input_tokens: 500,
+          output_tokens: 100,
+          model: 'sonnet',
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.10,
+          input_tokens: 2000,
+          output_tokens: 400,
+          model: 'opus',
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    // Per-model approximate equal (floating-point safe).
+    assert.ok(Math.abs(r.perModel.sonnet.cost_usd - 0.08) < 1e-9);
+    assert.equal(r.perModel.sonnet.input_tokens, 1500);
+    assert.equal(r.perModel.opus.cost_usd, 0.10);
+  });
+
+  test('per-spec breakdown using frontmatter spec field', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          spec: '.context-index/specs/features/foo/bar.spec.md',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    const specKey = '.context-index/specs/features/foo/bar.spec.md';
+    assert.equal(r.perSpec[specKey].cost_usd, 0.05);
+    assert.equal(r.perSpec[specKey].input_tokens, 1000);
+  });
+
+  test('excludes sessions missing a particular field from that field aggregate', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          cost_usd: 0.05,
+          input_tokens: 1000,
+        },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          // no cost_usd
+          input_tokens: 500,
+        },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.05);
+    assert.equal(r.totals.input_tokens, 1500);
+  });
+
+  test('non-numeric cost_usd recorded as parseError, excluded from aggregate', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: '$0.05' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 0.10 },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.10);
+    assert.equal(r.parseErrors.length, 1);
+    assert.equal(r.parseErrors[0].field, 'cost_usd');
+    assert.equal(r.parseErrors[0].value, '$0.05');
+  });
+
+  test('XS-2: pre-compact and placeholder sessions excluded', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'pre-compact', cost_usd: 5.0, input_tokens: 99999 },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'placeholder', cost_usd: 3.0, input_tokens: 88888 },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 0.01, input_tokens: 100 },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.01);
+    assert.equal(r.totals.input_tokens, 100);
+  });
+
+  test('numeric cost_usd parses cleanly with integers and floats', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 1, input_tokens: 1 },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: 2.5, input_tokens: 2 },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 3.5);
+    assert.equal(r.totals.input_tokens, 3);
+  });
+
+  test('numeric strings (parseable) accepted as cost values', () => {
+    // YAML frontmatter is parsed as strings; '0.05' should aggregate.
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', cost_usd: '0.05' },
+        body: '',
+      },
+    ];
+    const r = aggregateCostTokens(sessions);
+    assert.equal(r.totals.cost_usd, 0.05);
+  });
+});
+
+describe('joinClosedIssueXref', () => {
+  // Mock issue manager — supports list({ status, since, until }) and get(id).
+  function mockManager(closedIssues, allKnown = closedIssues) {
+    return {
+      async list(_opts) {
+        return closedIssues;
+      },
+      async get(id) {
+        return allKnown.find((i) => i.id === id) || null;
+      },
+    };
+  }
+
+  test('returns null when no sessions have issue/epic frontmatter', async () => {
+    const sessions = [
+      { format: 'hook', frontmatter: { kind: 'session-end', session_id: 'abc' }, body: '' },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager([]) });
+    assert.equal(r, null);
+  });
+
+  test('returns null when issueManager is null', async () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'abc', issue: 'issue-1' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: null });
+    assert.equal(r, null);
+  });
+
+  test('valid issue in window renders row with session_id_short and title', async () => {
+    const closed = [
+      { id: 'issue-1', title: 'Fix the thing', closed_at: '2026-05-15' },
+    ];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          session_id: 'abcdef1234567890',
+          issue: 'issue-1',
+        },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.ok(Array.isArray(r));
+    assert.equal(r.length, 1);
+    assert.equal(r[0].id, 'issue-1');
+    assert.equal(r[0].title, 'Fix the thing');
+    assert.deepEqual(r[0].sessionIds, ['abcdef12']); // 8-char prefix (CON-X3)
+  });
+
+  test('invalid-charset issue id renders (invalid) annotation, no board lookup', async () => {
+    let lookupCalled = false;
+    const manager = {
+      async list() {
+        return [];
+      },
+      async get(_id) {
+        lookupCalled = true;
+        return null;
+      },
+    };
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          session_id: 'badsess1',
+          issue: '../../etc/passwd',
+        },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: manager });
+    assert.ok(r);
+    const invalid = r.find((row) => row.annotation === '(invalid)');
+    assert.ok(invalid, 'expected (invalid) row');
+    assert.equal(lookupCalled, false, 'no board lookup for invalid charset');
+  });
+
+  test('unknown id (not on board) renders (unknown) annotation (CON-X5)', async () => {
+    const closed = []; // empty board
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: {
+          kind: 'session-end',
+          session_id: 'sess1234',
+          issue: 'issue-9999',
+        },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.ok(r);
+    const unknown = r.find((row) => row.annotation === '(unknown)');
+    assert.ok(unknown);
+    assert.equal(unknown.title, '(unknown)');
+    assert.equal(unknown.closedAt, null);
+  });
+
+  test('issue present on board but not closed in window → excluded from xref', async () => {
+    // mockManager.list() returns only the closed-in-window subset; the
+    // open issue is in `allKnown` so `get()` finds it but not `list()`.
+    const allKnown = [
+      { id: 'issue-1', title: 'open one' },
+      { id: 'issue-2', title: 'closed one', closed_at: '2026-05-15' },
+    ];
+    const closedInWindow = [allKnown[1]];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 's1', issue: 'issue-1' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 's2', issue: 'issue-2' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, {
+      issueManager: mockManager(closedInWindow, allKnown),
+    });
+    // Only issue-2 is in window; issue-1 is excluded (not in closed list).
+    assert.equal(r.length, 1);
+    assert.equal(r[0].id, 'issue-2');
+  });
+
+  test('epic-only reference (no issue: field) joins against epic', async () => {
+    const closed = [{ id: 'epic-5', title: 'Epic Five', closed_at: '2026-05-15' }];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'e5ses001', epic: 'epic-5' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.equal(r.length, 1);
+    assert.equal(r[0].id, 'epic-5');
+  });
+
+  test('XS-2: pre-compact and placeholder excluded', async () => {
+    const closed = [{ id: 'issue-1', title: 'I1', closed_at: '2026-05-15' }];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'pre-compact', session_id: 'pc', issue: 'issue-1' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'placeholder', session_id: 'ph', issue: 'issue-1' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.equal(r, null);
+  });
+
+  test('multiple sessions touching same issue → row aggregates sessionIds', async () => {
+    const closed = [{ id: 'issue-1', title: 'I1', closed_at: '2026-05-15' }];
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'aaaaaaaa11', issue: 'issue-1' },
+        body: '',
+      },
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', session_id: 'bbbbbbbb22', issue: 'issue-1' },
+        body: '',
+      },
+    ];
+    const r = await joinClosedIssueXref(sessions, { issueManager: mockManager(closed) });
+    assert.equal(r.length, 1);
+    assert.deepEqual(r[0].sessionIds.sort(), ['aaaaaaaa', 'bbbbbbbb']);
+  });
+});
+
+describe('scanContextGaps', () => {
+  test('counts "no matches" inside tool-output frame', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: ['prose', '```output', 'no matches', '```'].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    assert.ok(r.length >= 1);
+    assert.equal(r[0].spec, '.context-index/specs/features/x/y.spec.md');
+    assert.equal(r[0].count, 1);
+  });
+
+  test('ignores "no matches" outside tool-output frame (SEC-B1(b))', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: 'prose mentioning no matches without a frame',
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    assert.equal(r.length, 0);
+  });
+
+  test('aggregates per spec via body grep when frontmatter spec absent', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end' },
+        body: [
+          'see .context-index/specs/features/foo/bar.spec.md',
+          '```output',
+          'no matches',
+          'file not found',
+          '```',
+        ].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    const row = r.find((x) => x.spec === '.context-index/specs/features/foo/bar.spec.md');
+    assert.ok(row);
+    assert.ok(row.count >= 1);
+  });
+
+  test('all three gap markers detected', () => {
+    const sessions = [
+      {
+        format: 'hook',
+        frontmatter: { kind: 'session-end', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: [
+          '```output',
+          'no matches here',
+          'file not found anywhere',
+          '0 results returned',
+          '```',
+        ].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    // 3 markers in one session → 3 counts (or aggregated by marker)
+    const total = r.reduce((s, x) => s + x.count, 0);
+    assert.ok(total >= 3, `expected ≥3, got ${total}`);
+  });
+
+  test('non-hook-mode sessions ignored', () => {
+    const sessions = [
+      {
+        format: 'post-commit',
+        frontmatter: { type: 'commit', agent: 'git-hook', spec: '.context-index/specs/features/x/y.spec.md' },
+        body: ['```output', 'no matches', '```'].join('\n'),
+      },
+    ];
+    const r = scanContextGaps(sessions);
+    assert.equal(r.length, 0);
+  });
+
+  test('empty input → empty array', () => {
+    assert.deepEqual(scanContextGaps([]), []);
+    assert.deepEqual(scanContextGaps(null), []);
+  });
+
+  test('top-10 ordering: descending by count', () => {
+    const mk = (spec, gaps) => ({
+      format: 'hook',
+      frontmatter: { kind: 'session-end', spec },
+      body: ['```output', ...gaps.map(() => 'no matches'), '```'].join('\n'),
+    });
+    const sessions = [];
+    // 12 distinct specs with descending gap counts.
+    for (let i = 1; i <= 12; i++) {
+      const spec = `.context-index/specs/features/m${String(i).padStart(2, '0')}/x.spec.md`;
+      const gaps = Array(13 - i).fill('x');
+      sessions.push(mk(spec, gaps));
+    }
+    const r = scanContextGaps(sessions);
+    assert.equal(r.length, 10);
+    // First row should have count 12 (m01).
+    assert.equal(r[0].count, 12);
+  });
+});
