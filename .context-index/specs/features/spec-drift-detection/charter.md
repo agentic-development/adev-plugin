@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 3
-updated: 2026-05-17
+revision: 4
+updated: 2026-05-21
 tracker-ref: issue-213
 ---
 
@@ -72,20 +72,20 @@ When both signals are present on the same spec, both independently block `/adev:
 - `drift_detected` can only be `true` if the spec has a `source-manifest` block
 - `drift_source` must be a file listed in the spec's `source-manifest.files[]`
 - Clearing the drift flag requires re-computing and re-stamping the source manifest SHA
-- Every detection appends a `code_drift_detected` event to the spec's JSONL; the inline `drift_detected` boolean is the derived rolled-up view. Multiple sources are preserved as separate events, not overwritten. (Rev 3 — supersedes the prior overwrite-only invariant per `jsonl-drift-events.spec.md`.)
+- The first detection per clean→drifted transition appends a `code_drift_detected` event to the spec's JSONL and stamps `drift_detected: true` on the spec frontmatter. Subsequent stamps on an already-drifted spec are no-ops; a second event for the same spec only appears after `clearDrift` removes the inline boolean (and emits `code_drift_cleared`) and the next `stampDrift` re-arms detection. (Rev 4 — supersedes the rev 3 "every detection appends" invariant per `jsonl-drift-events.spec.md` rev 3. Motivation: 95% reduction in per-PR JSONL churn, eliminating merge conflicts that the `merge=union` driver could not reach under rebase/fork/squash merge strategies.)
 
 ## Capability Map
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Edit-Time Drift Scan | Scan spec frontmatter for source manifests matching the edited file path | must-have |  | validated |
-| Drift Flag Stamping | Append `code_drift_detected` JSONL event + inline `drift_detected: true` boolean (rev 3 — `drift_source`/`drift_at` removed from frontmatter) | must-have |  | validated |
+| Drift Flag Stamping | Append `code_drift_detected` JSONL event + inline `drift_detected: true` boolean on the first detection per clean→drifted transition (rev 4 — idempotent: subsequent stamps on an already-drifted spec are no-ops until `clearDrift` re-arms detection) | must-have |  | validated |
 | Advisory Warning Output | Emit a human-readable warning via hook stdout identifying the affected spec | must-have |  | validated |
 | Drift Flag Clearing | `/adev:implement` appends `code_drift_cleared` JSONL event and removes inline `drift_detected` boolean | must-have |  | validated |
 | Plan Gate Integration | `/adev:plan` blocks when target spec has `drift_detected: true` | must-have |  | validated |
 | Validate Integration | `/adev:validate` warns (non-blocking) when spec has `drift_detected: true` | should-have |  | validated |
 | Hygiene Integration | `/adev:hygiene` reports all specs with `drift_detected: true` in its audit | should-have |  | validated |
-| Multi-file Drift Tracking | Every drift detection appended to per-spec JSONL; inline boolean is the derived view. Multi-source history preserved. | must-have |  | validated |
+| Idempotent Drift Stamping | First detection per clean→drifted transition appends one JSONL event and stamps the inline boolean. Subsequent stamps on an already-drifted spec are no-ops; `clearDrift` re-arms the next stamp. (Rev 4 — replaces the rev 3 `Multi-file Drift Tracking` capability; no consumer reads multi-source history, and the per-PR append storm was producing merge conflicts the `merge=union` driver could not consistently resolve.) | must-have |  | validated |
 
 ## Deferred Capabilities
 
