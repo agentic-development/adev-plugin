@@ -12,6 +12,8 @@ Before you begin, ensure you have:
 - **Git** (any recent version)
 - **An AI coding assistant** — one of:
   - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (default and recommended — fully supported)
+  - [Cursor](https://cursor.com)
+  - [GitHub Copilot](https://github.com/features/copilot)
   - OpenCode (alpha)
   - Codex (alpha)
 
@@ -26,6 +28,8 @@ npx @adev-org/adev-cli install
 The CLI will prompt you to select your AI coding assistant. Choose the one you use:
 
 - **Claude Code** (fully supported) — Registers as a Claude Code plugin with skills and hooks
+- **Cursor** — Installs a peer plugin manifest at `.cursor-plugin/plugin.json` (version-locked to `package.json` and `.claude-plugin/plugin.json`) plus a generated `providers/cursor/hooks.json` that maps Claude's hook lifecycle onto Cursor's events while preserving fail-closed deny semantics. Skill names are sanitized from `adev:<x>` to `adev-<x>` at install time per Cursor's naming rules.
+- **GitHub Copilot** — File-convention adapter (Copilot has no plugin home). Materializes skills and hooks into `.github/` and records a state file at `.github/.adev-copilot-install.json` so `uninstall` can reverse exactly what was written. Optional `--user` mirrors a subset under `~/.copilot/`. Invoke directly with `npx @adev-org/adev-cli install --target copilot [--user] [--dry-run]`.
 - **OpenCode** (alpha) — Generates an AGENTS.md file. Basic lifecycle skills work, but hooks and session capture are not yet available.
 - **Codex** (alpha) — Generates an AGENTS.md file. Basic lifecycle skills work, but hooks and session capture are not yet available.
 
