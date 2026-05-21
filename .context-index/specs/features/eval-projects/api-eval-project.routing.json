@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Well-specified project scaffold with clear structure requirements and strong pattern precedent from adev-data-eval."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "TODO features listed verbatim in spec; shared conventions define exact 6-section format; pure template-following."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Submodule registration follows adev-data-eval precedent; touches .gitmodules in parent repo but pattern is established."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.4
+      },
+      "rationale": "Requires designing project-specific constitution, manifest, and extracted spec for the eval project -- design decisions not fully prescribed by the spec."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Standard Docker Compose + pg pool setup with explicit spec requirements and existing eval project precedent."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Standard Express boilerplate with explicit health endpoint contract; no golden sample but well-known pattern."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Seed data requirements are precisely specified including planted bug trigger data; standard SQL DDL with careful data crafting."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Behavioral contract and planted bug SQL are precisely specified; standard CRUD route with intentional bug insertion."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Simple CRUD endpoint with subquery; follows same Express route pattern as other tasks in this plan."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Explicit behavioral contract and error case for rating validation; mechanical CRUD + validation implementation."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Error cases table provides explicit status codes and messages; standard Express error middleware pattern."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Test expectations are explicit and golden sample for test helpers exists; requires careful mocking to keep planted bug invisible."
+    }
+  ]
+}

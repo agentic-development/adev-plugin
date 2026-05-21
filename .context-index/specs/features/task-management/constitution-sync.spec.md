@@ -14,6 +14,7 @@ source-manifest:
     - skills/sync/SKILL.md
     - templates/constitution-template.md
   computed-at: "2026-04-12T11:48:02.767Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

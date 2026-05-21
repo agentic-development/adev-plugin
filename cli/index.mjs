@@ -71,7 +71,33 @@ function parseProviderFlags() {
   return providers;
 }
 
-async function selectProviders() {
+/**
+ * Parse `--target <name>` (Copilot's CLI surface — `adev install --target copilot`).
+ * Returns the target name or null. Validates the name is a known provider.
+ *
+ * @returns {string|null}
+ */
+function parseTargetFlag() {
+  const argv = process.argv;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--target" && argv[i + 1]) {
+      const t = argv[i + 1];
+      if (!getProviderNames().includes(t)) {
+        error(`Unknown target: ${t}`);
+        error(`Available: ${getProviderNames().join(", ")}`);
+        process.exit(1);
+      }
+      return t;
+    }
+  }
+  return null;
+}
+
+function parseBooleanFlag(name) {
+  return process.argv.includes(name);
+}
+
+async function selectProviders({ ask: askFn = ask } = {}) {
   const explicitProviders = parseProviderFlags();
   if (explicitProviders.length > 0) {
     return explicitProviders;
@@ -81,11 +107,12 @@ async function selectProviders() {
   console.log("    [1] Claude Code only (default)");
   console.log("    [2] OpenCode only");
   console.log("    [3] OpenAI Codex only");
-  console.log("    [4] Claude Code and OpenCode");
-  console.log("    [5] Claude Code and OpenAI Codex");
-  console.log("    [6] All three providers\n");
+  console.log("    [4] Cursor only");
+  console.log("    [5] Claude Code and OpenCode");
+  console.log("    [6] Claude Code and OpenAI Codex");
+  console.log("    [7] All four providers (Claude Code, OpenCode, Codex, Cursor)\n");
 
-  const answer = await ask("Enter choice (1-6) [1]: ");
+  const answer = await askFn("Enter choice (1-7) [1]: ");
 
   switch (answer) {
     case "2":
@@ -93,11 +120,13 @@ async function selectProviders() {
     case "3":
       return ["codex"];
     case "4":
-      return ["claude-code", "opencode"];
+      return ["cursor"];
     case "5":
-      return ["claude-code", "codex"];
+      return ["claude-code", "opencode"];
     case "6":
-      return ["claude-code", "opencode", "codex"];
+      return ["claude-code", "codex"];
+    case "7":
+      return ["claude-code", "opencode", "codex", "cursor"];
     default:
       return ["claude-code"];
   }
@@ -462,9 +491,9 @@ async function handleDualSyncTargets(providerNames) {
       providers: [opencode]
 
     # Cursor
-    # - path: .cursorrules
-    #   format: cursor
-    #   providers: [cursor]
+    - path: .cursor/rules/adev.mdc
+      format: cursor
+      providers: [cursor]
 
     # GitHub Copilot
     # - path: .github/copilot-instructions.md
@@ -524,10 +553,12 @@ function stampVersion() {
 }
 
 /**
- * Install providers (Claude Code, OpenCode, Codex).
+ * Install providers (Claude Code, OpenCode, Codex, Cursor).
  * @param {string[]} providerNames
+ * @param {{ ask?: (q: string) => Promise<string> }} [opts] — optional ask
+ *   injector for testability. Default uses the production readline ask helper.
  */
-async function installProviders(providerNames) {
+async function installProviders(providerNames, { ask: askFn = ask } = {}) {
   for (const providerName of providerNames) {
     const provider = getProvider(providerName);
     heading(`Installing for ${provider.name}`);
@@ -540,7 +571,7 @@ async function installProviders(providerNames) {
         success(`Plugin v${PLUGIN_VERSION} already installed`);
       }
 
-      const scope = await ask("Install for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
       const settingsPath = provider.enable(scope === "project" ? "project" : "user");
       success(`Plugin enabled in ${settingsPath}`);
 
@@ -550,7 +581,7 @@ async function installProviders(providerNames) {
       } else {
         for (const conflict of conflicts) {
           warn(`${conflict.name} — ${conflict.reason}`);
-          const disable = await ask(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
           if (disable === "yes" || disable === "y") {
             provider.disableConflictingPlugin(conflict.key);
             success(`${conflict.name} disabled for this project`);
@@ -595,7 +626,7 @@ async function installProviders(providerNames) {
 
       log("Skills are available via ~/.config/opencode/skills/");
     } else if (providerName === "codex") {
-      const scope = await ask("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Install Codex skills for all projects (user) or this project only (project)? [user/project]");
       const targetScope = scope === "project" ? "project" : "user";
       const { installed, path: pluginPath } = await provider.install({ scope: targetScope });
       if (installed) {
@@ -606,6 +637,30 @@ async function installProviders(providerNames) {
 
       const skillsPath = provider.enable(targetScope);
       success(`Codex skills linked in ${skillsPath}`);
+    } else if (providerName === "cursor") {
+      const { installed, path: pluginPath } = await provider.install({ scope: "user" });
+      if (installed) {
+        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+      } else {
+        success(`Plugin v${PLUGIN_VERSION} already installed`);
+      }
+
+      const conflicts = provider.detectConflicts();
+      if (conflicts.length === 0) {
+        success("No conflicting plugins detected");
+      } else {
+        for (const conflict of conflicts) {
+          warn(`${conflict.name} — ${conflict.reason}`);
+          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
+          if (disable === "yes" || disable === "y") {
+            // claude-code surfaces { key } for the disable target; the cursor
+            // adapter's Superpowers guard returns { name, reason } only.
+            // Prefer key when present, fall back to name.
+            provider.disableConflictingPlugin(conflict.key ?? conflict.name);
+            success(`${conflict.name} disabled for this project`);
+          }
+        }
+      }
     }
   }
 }
@@ -654,7 +709,77 @@ async function applySessionCaptureMode() {
   }
 }
 
+/**
+ * `adev install --target copilot [--user] [--dry-run]` — per-target adapter
+ * invocation. Routes through CopilotAdapter.install() and prints its return
+ * value as a status line. Mirrors the documented Behaviors §7 surface.
+ */
+async function cmdInstallCopilot() {
+  const adapter = getProvider("copilot");
+  const dryRun = parseBooleanFlag("--dry-run");
+  const user = parseBooleanFlag("--user");
+  try {
+    const result = adapter.install({ projectRoot: process.cwd(), dryRun, user });
+    if (result.dryRun) {
+      console.log(`Would write ${result.wouldWrite.length} paths under ${result.location}${user ? " and " + adapter.getCopilotHome() : ""}`);
+      for (const p of result.wouldWrite) console.log(`  + ${p}`);
+    } else if (result.installed) {
+      success(`Copilot adapter v${result.version} installed at ${result.location}${result.userSeeded ? " (user-scope mirrored to " + adapter.getCopilotHome() + ")" : ""}`);
+    } else {
+      log(`Copilot adapter already installed at ${result.location}`);
+    }
+  } catch (err) {
+    error(err.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * `adev uninstall --target copilot [--force]` — per-target adapter invocation.
+ */
+async function cmdUninstallCopilot() {
+  const adapter = getProvider("copilot");
+  const force = parseBooleanFlag("--force");
+  try {
+    const result = adapter.uninstall({ projectRoot: process.cwd(), force });
+    if (result.removed) {
+      success(`Copilot adapter uninstalled from ${process.cwd()}/.github`);
+      if (result.residual && result.residual.length > 0) {
+        warn(`Residual entries (skipped — not removed):`);
+        for (const r of result.residual) warn(`  ${r}`);
+      }
+    } else {
+      log(`Copilot adapter was not installed; nothing to uninstall.`);
+    }
+  } catch (err) {
+    error(err.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * `adev status --target copilot` — per-target status query.
+ */
+async function cmdStatusCopilot() {
+  const adapter = getProvider("copilot");
+  try {
+    const result = adapter.status({ projectRoot: process.cwd() });
+    console.log(JSON.stringify(result, null, 2));
+  } catch (err) {
+    error(err.message);
+    process.exit(1);
+  }
+}
+
 async function cmdInstall() {
+  // --target <name> branch: per-target adapter invocation (Copilot uses this).
+  // Skips the interactive provider selection + scaffolding flow used by the
+  // generic `adev install` entry point.
+  const target = parseTargetFlag();
+  if (target === "copilot") {
+    return cmdInstallCopilot();
+  }
+
   console.log();
   console.log("  adev — Agentic Development Framework");
   console.log("  ─────────────────────────────────────");
@@ -869,6 +994,12 @@ async function cmdUpgrade() {
 }
 
 async function cmdUninstall() {
+  // --target <name> branch: per-target adapter invocation (Copilot uses this).
+  const target = parseTargetFlag();
+  if (target === "copilot") {
+    return cmdUninstallCopilot();
+  }
+
   const providerNames = await selectProviders();
 
   for (const providerName of providerNames) {
@@ -996,6 +1127,12 @@ async function cmdExtension() {
  * pipeline. SA-3: composite exit code is the max of the two halves.
  */
 async function cmdStatus() {
+  // --target <name> branch: per-target adapter status query (Copilot uses this).
+  const target = parseTargetFlag();
+  if (target === "copilot") {
+    return cmdStatusCopilot();
+  }
+
   const args = process.argv.slice(3);
   const wantRender = args.includes("--render");
   const wantPipeline = args.includes("--pipeline");
@@ -1299,6 +1436,7 @@ export {
   PLUGIN_ROOT,
   PLUGIN_VERSION,
   selectProviders,
+  installProviders,
 };
 
 // Re-export Claude Code adapter functions for backward compatibility
@@ -1385,6 +1523,9 @@ const VERB_REGISTRY = new Map([
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
   ["artifact",        () => import("../lib/cli/artifact.mjs")],
   ["partial",         () => import("../lib/cli/partial.mjs")],
+  ["route",           () => import("../lib/cli/route.mjs")],
+  ["implement",       () => import("../lib/cli/implement.mjs")],
+  ["specify",         () => import("../lib/cli/specify.mjs")],
   ["issues",          () => import("../lib/cli/issues.mjs")],
   ["retro",           () => import("../lib/cli/retro.mjs")],
 ]);

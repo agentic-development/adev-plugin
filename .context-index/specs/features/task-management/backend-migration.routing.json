@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Pure ADR authoring with explicit Status/Context/Decision/Consequences template, single-file blast radius, and SEC-1 rationale already spelled out in the plan."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Direct application of the existing VERB_REGISTRY pattern with exact line references and worked sample code in the plan."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Each error code maps to an explicit behavior and Error Cases table row; SUPPORTED_BACKENDS source-of-truth is pre-identified."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Pure composition of existing getIssueManager + list/listEpics with a clear scope-filter rule from Behavior 12."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Output shape is fully specified; minor novelty comes from combining .beads-map.json reads with idempotency counting in both directions."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Composition of multiple patterns (atomic state writes, per-item idempotency, resume, partial-failure) but each is individually well-specified and the SA-2 granularity requirement is explicit."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "addDependency is idempotent in both adapters; the only variation is id resolution direction (.beads-map.json vs original_id) which Behavior 14 makes explicit."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Output shape and Behavior 19 manifest-never-write rule are explicit; touches two files but both changes are mechanical."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Spec enumerates every Behavior/Postcondition/Error Case; existing test pattern (tests/lib/issues-beads-adapter.test.mjs with mocked execFileSync) is the direct precedent."
+    }
+  ]
+}

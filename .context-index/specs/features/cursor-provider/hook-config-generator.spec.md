@@ -5,7 +5,7 @@ status: implemented
 risk_level: low
 milestone: v1
 revision: 2
-charter-revision: 2
+charter-revision: 3
 created: 2026-05-18
 updated: 2026-05-18
 source-manifest:
@@ -16,6 +16,7 @@ source-manifest:
     - scripts/build-cursor-hooks.mjs
     - tests/cursor-hooks-sync.test.mjs
   computed-at: "2026-05-18T14:59:40.081Z"
+drift_detected: true
 ---
 
 # Skill Spec: Hook Config Generator with Translation Table and Drift Test

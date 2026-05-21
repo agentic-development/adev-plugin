@@ -3,3 +3,11 @@
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T20:38:48.941Z","ts":"2026-05-20T20:38:48.941Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T22:32:44.241Z","ts":"2026-05-20T22:32:44.241Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T23:43:54.089Z","ts":"2026-05-20T23:43:54.089Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/route/SKILL.md","drift_at":"2026-05-20T02:44:54.202Z","ts":"2026-05-20T02:44:54.203Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/route/SKILL.md","drift_at":"2026-05-20T02:45:06.968Z","ts":"2026-05-20T02:45:06.969Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/route/SKILL.md","drift_at":"2026-05-20T02:45:17.044Z","ts":"2026-05-20T02:45:17.044Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/status/SKILL.md","drift_at":"2026-05-20T04:18:05.654Z","ts":"2026-05-20T04:18:05.654Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/route/SKILL.md","drift_at":"2026-05-20T12:08:07.380Z","ts":"2026-05-20T12:08:07.380Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/route/SKILL.md","drift_at":"2026-05-20T12:08:14.831Z","ts":"2026-05-20T12:08:14.831Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.072Z","ts":"2026-05-20T13:03:18.073Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.985Z","ts":"2026-05-20T13:05:52.985Z","diagnostic_warnings":["adev/frontmatter-present"]}
