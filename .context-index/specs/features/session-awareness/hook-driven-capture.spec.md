@@ -3,7 +3,7 @@
 ---
 charter: session-awareness
 kind: behavioral
-status: implemented
+status: validated
 risk_level: medium
 milestone: 0.28.0
 revision: 5
@@ -43,6 +43,7 @@ source-manifest:
     - tests/lib/session-summary-redact.test.mjs
     - tests/skills/sessions-graceful-absence.test.mjs
   computed-at: "2026-05-20T21:32:29.900Z"
+drift_detected: true
 ---
 
 # Live Spec: Hook-Driven Session Capture with Init-Time Configuration

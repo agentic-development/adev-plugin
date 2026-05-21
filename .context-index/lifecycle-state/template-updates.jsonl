@@ -7,3 +7,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:10.599Z","ts":"2026-05-20T21:10:10.599Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:21.764Z","ts":"2026-05-20T21:10:21.764Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:26:03.974Z","ts":"2026-05-20T21:26:03.975Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.119Z","ts":"2026-05-20T22:55:07.119Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 110,
+  "seq": 111,
   "epics": [
     {
       "id": "epic-1",
@@ -3633,10 +3633,10 @@
       "planRef": ".context-index/specs/features/session-awareness/retro-session-consumption.plan.md",
       "spec_ref": ".context-index/specs/features/session-awareness/retro-session-consumption.spec.md",
       "dependencies": [],
-      "notes": "Plan epic created by /adev:plan for 18-task implementation of Retro Session Consumption (charter capability, milestone 0.28.0). Feature work item: issue-534. Plan-task state lives in .context-index/lifecycle-state/retro-session-consumption.jsonl.",
+      "notes": "Validated: PASS (2026-05-20) — .context-index/specs/features/session-awareness/retro-session-consumption.validate.md. All 8 dispatched checks green; spec status flipped to validated; charter Capability Map updated. Reality-check NONE confidence due to plan-body path-mention mismatches (lib/cli/retro.mjs vs plan mention of lib/cli/retro/session-activity.mjs) — source-manifest verify PASS confirms all 18 source files match sha 1fdabc8; manual close recommended.",
       "next_action": null,
       "created": "2026-05-20T20:21:28.049Z",
-      "updated": "2026-05-20T20:21:28.049Z"
+      "updated": "2026-05-21T00:45:01.714Z"
     },
     {
       "id": "issue-536",
