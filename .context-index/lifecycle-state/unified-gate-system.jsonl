@@ -3,3 +3,9 @@
 {"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-05-18T13:54:34.142Z","ts":"2026-05-18T13:54:34.142Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-05-20T21:15:29.760Z","ts":"2026-05-20T21:15:29.761Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-05-20T22:56:58.840Z","ts":"2026-05-20T22:56:58.840Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T02:46:31.731Z","ts":"2026-05-20T02:46:31.731Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:13:52.248Z","ts":"2026-05-20T04:13:52.248Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:11.252Z","ts":"2026-05-20T04:14:11.252Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:20.472Z","ts":"2026-05-20T04:14:20.472Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-20T04:14:31.191Z","ts":"2026-05-20T04:14:31.191Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.073Z","ts":"2026-05-20T12:08:30.073Z","diagnostic_warnings":["adev/frontmatter-present"]}

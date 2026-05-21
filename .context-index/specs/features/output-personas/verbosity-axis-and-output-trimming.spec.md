@@ -37,6 +37,7 @@ source-manifest:
     - tests/persona.test.mjs
     - tests/scripts/persona-jsonl-analysis.test.mjs
   computed-at: "2026-05-18T13:48:31.614Z"
+drift_detected: true
 ---
 
 # Live Spec: Verbosity Axis and Output Trimming

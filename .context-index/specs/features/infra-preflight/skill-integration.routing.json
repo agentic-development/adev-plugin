@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Well-specified mandatory skill integration with explicit behavioral contracts (Behaviors 1-8), single-file SKILL.md edit, and mechanical insertion pattern."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Well-specified mandatory skill integration with explicit placement and blocking message (Behaviors 9-10), single-file edit."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Simplest task -- document --no-infra arg and ADEV_NO_INFRA passthrough, no preflight step to insert, single-file edit."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Well-specified with dispatch detection (ADEV_DISPATCHED_BY) and strategy-aware skip adding minor novelty over basic insertion."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Three-tier resolution strategy (args > active plan > inference) with non-blocking advisory adds composition novelty, but all tiers are well-specified."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Layer-aware skip logic adds minor novelty; otherwise straightforward conditional skill integration with single-file edit."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Corrective context injection for infra root causes adds minor novelty; well-specified behavior with formatPreflightReport integration."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Test file follows specify-feature-binding.test.mjs golden sample pattern; cross-cutting assertions combine 7 skill checks but each is mechanical string matching."
+    }
+  ]
+}

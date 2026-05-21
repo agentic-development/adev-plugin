@@ -1,0 +1,48 @@
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-05-18T20:47:07.068Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-18T20:48:47.883Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Internal contradiction: Task 3 says sanitized skill is regenerated file, Postcondition says symlink. Acceptance criterion line 91 contains escaped editorial text. Behavioral contract & module boundary otherwise sound.","ts":"2026-05-18T20:50:05.221Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Shell cp -r via execSync inherited from OpenCode precedent; consider fs.cpSync (Node>=18) for safer path handling. Sanitization scope (frontmatter only vs full-body regex) underspecified.","ts":"2026-05-18T20:50:05.225Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Symlink vs regenerated-file contradiction between Postconditions and Task Map. Stray editorial text in acceptance criterion line 91. Otherwise consistent with charter, OpenCode precedent, and constitution.","ts":"2026-05-18T20:50:05.226Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-18T20:51:41.000Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-18T20:54:33.407Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS","notes":"Rev 2 resolves SA-1/CON-1 (symlink→copy unification with rationale) and SA-2 (clean prose on AC line 91). No new structural issues.","ts":"2026-05-18T20:55:27.173Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"Rev 2 resolves SEC-1 (fs.cpSync mandated, no shell-out) and SEC-2 (sanitization scope pinned to YAML frontmatter only, enforced as AC). No new security findings.","ts":"2026-05-18T20:55:29.808Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Rev 2 resolves CON-1 (symlink/copy contradiction). One new minor suggestion: AC line 93 'flip from —' framing is stale; charter rows are already at review-passed. Non-blocking.","ts":"2026-05-18T20:55:32.326Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-18T20:56:28.111Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-18T20:57:47.116Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-05-18T21:01:40.805Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-05-18T21:01:40.850Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-05-18T21:01:40.888Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"4","status":"pending","notes":null,"ts":"2026-05-18T21:01:40.928Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"5","status":"pending","notes":null,"ts":"2026-05-18T21:01:40.966Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"6","status":"pending","notes":null,"ts":"2026-05-18T21:01:41.005Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"7","status":"pending","notes":null,"ts":"2026-05-18T21:01:41.045Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-05-18T21:01:44.673Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS_WITH_NOTES","ts":"2026-05-18T21:02:08.193Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-18T21:04:55.985Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-05-18T21:05:55.065Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"1","status":"done","notes":"Adapter skeleton with stubs in place","ts":"2026-05-18T21:06:34.992Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"2","status":"in_progress","notes":null,"ts":"2026-05-18T21:06:34.995Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"2","status":"done","notes":"install() copies plugin tree via fs.cpSync; idempotent","ts":"2026-05-18T21:07:57.064Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"3","status":"in_progress","notes":null,"ts":"2026-05-18T21:07:57.067Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"3","status":"done","notes":"sanitizeSkillName + publishSkillsFromCache; frontmatter-only scope verified","ts":"2026-05-18T21:10:36.195Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"4","status":"in_progress","notes":null,"ts":"2026-05-18T21:10:36.198Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"4","status":"done","notes":"uninstall removes plugin + adev-* skills; idempotent","ts":"2026-05-18T21:12:51.678Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"5","status":"in_progress","notes":null,"ts":"2026-05-18T21:12:51.681Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"5","status":"done","notes":"detect/detectConflicts/disable; Superpowers guard","ts":"2026-05-18T21:13:41.082Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"6","status":"in_progress","notes":null,"ts":"2026-05-18T21:13:41.085Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"6","status":"done","notes":"CursorAdapter registered in lib/provider/registry.mjs","ts":"2026-05-18T21:19:50.726Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"7","status":"in_progress","notes":null,"ts":"2026-05-18T21:19:50.729Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-18T21:21:36.978Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-18T21:25:20.887Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cursor-adapter.plan.md","task_id":"7","status":"done","notes":"Test consolidation + AC line 10 source-constraint test; npm test green for adapter suite","ts":"2026-05-18T21:36:00.000Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-18T21:36:00.000Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-18T21:39:21.749Z"}
+{"event":"validator_report","step":"validate","validator":"check-1-quality-gates","severity":"warning","verdict":"FAIL","error":"plan-task-immutability test failed: cursor-adapter.plan.md modified after firstPendingTs (pre-existing, unrelated to adapter code)","notes":"3240 pass / 1 fail / 0 skipped. Adapter suite 26/26 pass.","ts":"2026-05-18T21:43:58.678Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"SKIP — no source manifest block in spec frontmatter","ts":"2026-05-18T21:44:00.643Z"}
+{"event":"validator_report","step":"validate","validator":"check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"drift_detected=false, no drift advisory","ts":"2026-05-18T21:44:01.638Z"}
+{"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-05-18T21:44:51.366Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-18T21:45:52.353Z"}
+{"event":"step_completed","step":"implement","ts":"2026-05-18T21:49:57.294Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-18T21:50:57.964Z"}
+{"event":"step_completed","step":"implement","ts":"2026-05-18T21:56:58.178Z"}

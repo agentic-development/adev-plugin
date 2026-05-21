@@ -1,0 +1,47 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-05-19T11:43:50.922Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-05-19T11:45:25.054Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-19T11:48:07.067Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-05-19T11:48:41.589Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS","notes":"No findings; spec is well-bounded dispatch wiring, all deps point inward, Autonomous lane.","ts":"2026-05-19T11:51:11.737Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"No new attack surface; local FS only, no secrets/network/auth, validators reused, no hardcoded paths.","ts":"2026-05-19T11:51:13.697Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"CON-1 charter row names --target but impl uses --provider; CON-2 'from —' framing stale. Both suggestion-severity.","ts":"2026-05-19T11:51:15.447Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-05-19T11:51:40.361Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-19T11:52:17.648Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-05-19T11:53:06.078Z"}
+{"event":"plan_task","plan":"/Users/dpavancini/Development/adev-test/.context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-05-19T11:57:24.854Z"}
+{"event":"plan_task","plan":"/Users/dpavancini/Development/adev-test/.context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-05-19T11:57:29.364Z"}
+{"event":"plan_task","plan":"/Users/dpavancini/Development/adev-test/.context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-05-19T11:57:29.403Z"}
+{"event":"plan_task","plan":"/Users/dpavancini/Development/adev-test/.context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"4","status":"pending","notes":null,"ts":"2026-05-19T11:57:29.454Z"}
+{"event":"plan_task","plan":"/Users/dpavancini/Development/adev-test/.context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"5","status":"pending","notes":null,"ts":"2026-05-19T11:57:29.496Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-05-19T11:57:42.113Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-05-19T11:58:46.783Z"}
+{"event":"step_completed","step":"route","verdict":"PASS","ts":"2026-05-19T12:00:20.299Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-19T12:00:32.672Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-19T12:01:25.133Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-05-19T12:01:28.820Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-05-19T12:03:15.074Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"1","status":"done","notes":"cursor branch added to installProviders dispatch","ts":"2026-05-19T12:16:21.400Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"2","status":"in_progress","notes":null,"ts":"2026-05-19T12:16:26.465Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"2","status":"done","notes":"Cursor added to selectProviders menu with ask injector","ts":"2026-05-19T12:21:51.175Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"3","status":"in_progress","notes":null,"ts":"2026-05-19T12:21:56.053Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"3","status":"done","notes":"JSDoc updated to name all four providers","ts":"2026-05-19T12:22:37.878Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"4","status":"in_progress","notes":null,"ts":"2026-05-19T12:22:42.679Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"4","status":"done","notes":"cli charter bumped to rev 4 with Cursor in install description","ts":"2026-05-19T12:23:28.802Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"5","status":"in_progress","notes":null,"ts":"2026-05-19T12:23:34.211Z"}
+{"event":"plan_task","plan":".context-index/specs/features/cursor-provider/cli-install-integration.plan.md","task_id":"5","status":"done","notes":"cursor end-to-end tests + ask injector added","ts":"2026-05-19T12:33:00.912Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-19T12:34:32.403Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-19T12:40:35.546Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-19T12:40:47.255Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-05-19T12:41:49.085Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1-quality-gates","severity":"warning","verdict":"FAIL","error":"plan-task-immutability flagged this plan file (pre-existing)","notes":"3256/3259 pass; 1 fail in plan-task-immutability test flags this plan's mtime — predates Spec D source files","ts":"2026-05-19T12:46:48.810Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"source manifest matches sha 181f1f4; 3 files committed","ts":"2026-05-19T12:46:55.838Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"no drift detected","ts":"2026-05-19T12:46:57.350Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"warning","verdict":"PASS","notes":"all 8 acceptance criteria satisfied; cursor branch, menu, JSDoc, charter rev 4, tests cover all FM rows","ts":"2026-05-19T12:46:59.379Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"warning","verdict":"PASS","notes":"Pure ESM no new deps no hardcoded paths; autonomous lane respected; trailers present","ts":"2026-05-19T12:47:01.603Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"warning","verdict":"PASS","notes":"boundaries.yaml has empty rule list","ts":"2026-05-19T12:47:03.116Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"no transitions configured","ts":"2026-05-19T12:47:05.187Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"no UI files in diff — N/A per trigger guard Case A","ts":"2026-05-19T12:47:06.660Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-19T12:49:18.170Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-19T12:49:46.894Z"}
+{"event":"code_drift_detected","drift_source":"tests/cli.test.mjs","drift_at":"2026-05-19T13:15:50.403Z","ts":"2026-05-19T13:15:50.403Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T13:16:00.465Z","ts":"2026-05-19T13:16:00.465Z"}

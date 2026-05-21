@@ -54,3 +54,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:26:03.975Z","ts":"2026-05-20T21:26:03.975Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.119Z","ts":"2026-05-20T22:55:07.119Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".gitignore","drift_at":"2026-05-21T02:26:41.913Z","ts":"2026-05-21T02:26:41.913Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.354Z","ts":"2026-05-20T12:58:34.354Z","diagnostic_warnings":["adev/frontmatter-present"]}

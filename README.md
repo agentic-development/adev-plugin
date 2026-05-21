@@ -1,9 +1,9 @@
 # adev — Agentic Development Framework
 > Last updated: 2026-05-09
 
-A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenCode](https://github.com/opencode-ai/opencode) (alpha), and [OpenAI Codex](https://openai.com/index/codex/) (alpha) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
+A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.com), [GitHub Copilot](https://github.com/features/copilot), [OpenCode](https://github.com/opencode-ai/opencode) (alpha), and [OpenAI Codex](https://openai.com/index/codex/) (alpha) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
 
-> **Harness support:** Claude Code is the fully supported harness with complete skill and hook coverage. OpenCode and Codex support is in alpha — basic lifecycle skills work via AGENTS.md, but hooks, session capture, and some advanced features are not yet available.
+> **Harness support:** Claude Code is the fully supported harness with complete skill and hook coverage. Cursor ships with a peer plugin manifest plus a generated `hooks.json` translation table. GitHub Copilot syncs skills and hooks into `.github/` via a file-convention adapter (no plugin home — Copilot is file-based). OpenCode and Codex support is in alpha — basic lifecycle skills work via AGENTS.md, but hooks, session capture, and some advanced features are not yet available.
 
 Based on the [Agentic Development Handbook](https://www.agentic-dev.org/en/handbook). Zero dependencies.
 
@@ -15,7 +15,7 @@ npx @adev-org/adev-cli install
 
 > **Note:** Always use `npx` to run the installer — do not `npm install` this package as a project dependency. The CLI sets up your AI assistant's plugin configuration and is not meant to be imported.
 
-The installer registers the plugin, scaffolds a minimal `.context-index/`, and sets up git hooks. Run `/adev:init` inside your AI assistant to configure constitution, governance, and project context. Use `--provider claude-code|opencode|codex` to skip the prompt.
+The installer registers the plugin, scaffolds a minimal `.context-index/`, and sets up git hooks. Run `/adev:init` inside your AI assistant to configure constitution, governance, and project context. Use `--provider claude-code|cursor|opencode|codex` to skip the prompt, or `--target copilot [--user] [--dry-run]` for the GitHub Copilot adapter.
 
 To upgrade an existing installation:
 

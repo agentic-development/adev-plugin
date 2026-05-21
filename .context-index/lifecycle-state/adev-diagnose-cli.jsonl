@@ -23,6 +23,15 @@
 {"event":"plan_task","plan":".context-index/specs/features/cli-driver-surface/adev-diagnose-cli.plan.md","task_id":"task-6","status":"done","notes":null,"ts":"2026-05-14T21:23:38.439Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-05-14T21:24:09.783Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-16T00:48:30.134Z","ts":"2026-05-18T13:50:21.079Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:14:57.066Z","ts":"2026-05-19T20:14:57.066Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:08.752Z","ts":"2026-05-19T20:15:08.752Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:27.779Z","ts":"2026-05-19T20:15:27.779Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:34.708Z","ts":"2026-05-19T20:15:34.708Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T20:15:49.848Z","ts":"2026-05-19T20:15:49.848Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:29.056Z","ts":"2026-05-20T02:39:29.056Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:39:35.036Z","ts":"2026-05-20T02:39:35.036Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T02:40:46.385Z","ts":"2026-05-20T02:40:46.385Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T03:59:47.614Z","ts":"2026-05-20T03:59:47.614Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.030Z","ts":"2026-05-20T01:26:28.030Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.764Z","ts":"2026-05-20T01:27:38.764Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:07:28.339Z","ts":"2026-05-20T21:07:28.339Z","diagnostic_warnings":["adev/frontmatter-present"]}
@@ -31,3 +40,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:21.758Z","ts":"2026-05-20T21:10:21.758Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:26:03.969Z","ts":"2026-05-20T21:26:03.969Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.112Z","ts":"2026-05-20T22:55:07.112Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.348Z","ts":"2026-05-20T12:58:34.348Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Well-specified audit-pass addition with direct structural precedent in existing hygiene passes 1-19; single-file modification with minimal blast radius."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Same pure-deletion pattern as Tasks 5 and 8; single YAML entry and corresponding SKILL.md section removed with explicit test assertions."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Migration-orientation footer content is verbatim in the plan; only inference needed is the exact placement within the SKILL.md report template structure."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Behavior 11 is fully specified with error codes and test assertions; however, the mechanism to detect isProjectOwned vs plugin-supplied entries requires inference from the existing validate-config loader internals, and no curated golden sample covers validate-config extension specifically."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Plan provides the exact replacement text; test asserts absence of stale phrases; single documentation file with zero design decisions."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Measurement task requires locating pre-restructure session JSONL data and interpreting results; the methodology is documented but the exploratory navigation of session files and the judgment call on what constitutes a representative pre-restructure baseline warrants a mid-point human review."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Spec provides full AC including --fix default behavior and reportPlanTask channel contract; adding a detection section to an existing SKILL.md is well-precedented, though the cross-spec reportPlanTask constraint introduces a minor compositional dimension."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Plan provides exact additive scope text to insert into two existing review-specs prompt files; pure text append with no design decisions required."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Golden samples for bash hook and ESM helper patterns exist; plan provides near-complete implementation code; input scoping and non-blocking constraints are fully specified."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Pure deletion task with explicit test assertions on what IDs must be absent; zero design decisions, maximum spec clarity."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Exact 4-case trigger guard text is provided in the plan; behaviors 5 and 6 are unambiguous; direct copy-in to an existing check prompt file with a well-established pattern."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Scope-expansion logic is well-specified with SA-2 contract and CON-3 edge case; plan provides exact markdown text and the git-diff fallback path is documented; 2-path algorithm is a minor variation on existing check prompt patterns."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Pure deletion of three YAML entries and their corresponding SKILL.md prose sections; maximum spec clarity and zero novelty."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Plan provides the exact Evidence Contract text block to prepend; single-file change to a check prompt with no design decisions required."
+    }
+  ]
+}

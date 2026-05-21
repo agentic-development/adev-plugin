@@ -1,8 +1,8 @@
 ---
 status: approved
 kind: feature
-revision: 2
-updated: 2026-05-17
+revision: 3
+updated: 2026-05-19
 ---
 
 # Feature Charter: cursor-provider
@@ -76,17 +76,17 @@ adev-plugin currently installs into Claude Code, OpenCode, and Codex via three p
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-----------|--------|
-| Cursor plugin manifest | Write `.cursor-plugin/plugin.json` with version locked to package.json + claude-plugin | must-have | v1 | — |
-| Three-way version parity | Extend existing parity check to include `.cursor-plugin/plugin.json` | must-have | v1 | — |
-| Release-please extra-files update | Add `.cursor-plugin/plugin.json` to `release-please-config.json:extra-files` per ADR-0008 so automated Release PRs bump all three manifests in lockstep | must-have | v1 | — |
-| CursorAdapter install/uninstall/status | Fourth peer adapter mirroring `providers/opencode/adapter.mjs` shape | must-have | v1 | — |
+| Cursor plugin manifest | Write `.cursor-plugin/plugin.json` with version locked to package.json + claude-plugin | must-have | v1 | validated |
+| Three-way version parity | Extend existing parity check to include `.cursor-plugin/plugin.json` | must-have | v1 | validated |
+| Release-please extra-files update | Add `.cursor-plugin/plugin.json` to `release-please-config.json:extra-files` per ADR-0008 so automated Release PRs bump all three manifests in lockstep | must-have | v1 | validated |
+| CursorAdapter install/uninstall/status | Fourth peer adapter mirroring `providers/opencode/adapter.mjs` shape | must-have | v1 | implemented |
 | Hook config generator | `scripts/build-cursor-hooks.mjs` + translation table; emits `providers/cursor/hooks.json` | must-have | v1 | implemented |
 | Hook drift test | `tests/cursor-hooks-sync.test.mjs` fails CI on out-of-sync committed hooks.json | must-have | v1 | implemented |
 | Translation-table coverage assertion | Generator throws on Claude events with no Cursor mapping | must-have | v1 | implemented |
-| CLI install integration | `adev install` accepts `cursor` as a target; routes through CursorAdapter | must-have | v1 | — |
-| `.cursor/rules/adev.mdc` sync output | `/adev:sync` writes alwaysApply rule when `cursor` is a sync target | must-have | v1 | — |
-| Skill name sanitization | Install-time rename of `adev:<x>` skills to `adev-<x>` — Cursor docs require lowercase + hyphens matching the folder name, so colons are invalid | must-have | v1 | — |
-| CLI charter revision | Update `cli` charter install verb description (rev 3 → rev 4) | must-have | v1 | — |
+| CLI install integration | `adev install` accepts `cursor` as a target; routes through CursorAdapter | must-have | v1 | validated |
+| `.cursor/rules/adev.mdc` sync output | `/adev:sync` writes alwaysApply pointer rule when `cursor` is a sync target | must-have | v1 | validated |
+| Skill name sanitization | Install-time rename of `adev:<x>` skills to `adev-<x>` — Cursor docs require lowercase + hyphens matching the folder name, so colons are invalid | must-have | v1 | implemented |
+| CLI charter revision | Update `cli` charter install verb description (rev 3 → rev 4) | must-have | v1 | validated |
 | Smoke install verification | Manual local install into `~/.cursor/plugins/local/adev` + open Cursor + verify skill discovery | should-have | v1 | — |
 
 ## Deferred Capabilities
@@ -129,6 +129,6 @@ adev-plugin currently installs into Claude Code, OpenCode, and Codex via three p
 | Version parity | Three-way lock: `package.json:version` = `.claude-plugin/plugin.json:version` = `.cursor-plugin/plugin.json:version`; existing parity-check extended to include the third file |
 | Constitutional compliance | Pure ESM, Node built-ins only (no new dependencies). Hook protocol unchanged — `0 allow / 2 deny`, JSON stdin/stdout. Skills remain markdown-only. Sits in the Autonomous lane per constitution because no hook protocol or install path-structure change is required. |
 | Hook script portability | Existing `hooks/*.sh` consumed by both providers without modification; `CLAUDE_PROJECT_DIR` alias makes this free per Cursor docs |
-| Sync output discipline | `.cursor/rules/adev.mdc` under 200 words; functions as a pointer to `.context-index/constitution.md`, not a duplicate of it |
+| Sync output discipline | `.cursor/rules/adev.mdc` body under 200 words (frontmatter excluded); functions as a pointer to `.context-index/constitution.md`, not a duplicate of it |
 | Testability | Generator and adapter are pure functions over file paths; testable with `tests/helpers.mjs` (`createTempDir`, `writeFixture`) without standing up Cursor itself |
 | Offline install | Local plugin install requires no network; mirrors existing provider adapters |

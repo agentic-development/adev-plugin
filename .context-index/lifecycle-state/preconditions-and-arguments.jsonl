@@ -4,3 +4,5 @@
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T20:38:48.937Z","ts":"2026-05-20T20:38:48.937Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T22:32:44.236Z","ts":"2026-05-20T22:32:44.236Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T23:43:54.086Z","ts":"2026-05-20T23:43:54.086Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.069Z","ts":"2026-05-20T13:03:18.069Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.981Z","ts":"2026-05-20T13:05:52.981Z","diagnostic_warnings":["adev/frontmatter-present"]}

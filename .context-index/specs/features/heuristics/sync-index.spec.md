@@ -20,6 +20,7 @@ source-manifest:
     - skills/sync/SKILL.md
     - lib/heuristics.mjs
   computed-at: "2026-05-10T23:51:54.631Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
