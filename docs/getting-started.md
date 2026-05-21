@@ -29,6 +29,8 @@ npx @adev-org/adev-cli install
 The installer prompts you to select your AI coding assistant:
 
 - **Claude Code** (default, fully supported) — Registers as a Claude Code plugin with skills and hooks
+- **Cursor** — Installs a peer plugin manifest at `.cursor-plugin/plugin.json` and writes a generated `providers/cursor/hooks.json` translation table so Cursor's hook lifecycle fires the same fail-closed gates as Claude Code
+- **GitHub Copilot** — File-based adapter (no plugin home); syncs skills and hooks into `.github/` with an optional `--user` flag to mirror a subset under `~/.copilot/`
 - **OpenCode** (alpha) — Generates an AGENTS.md configuration file
 - **Codex** (alpha) — Generates an AGENTS.md configuration file
 

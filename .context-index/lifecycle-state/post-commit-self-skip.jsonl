@@ -30,3 +30,5 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"no transitions configured","ts":"2026-05-19T13:10:11.688Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"no UI files in diff — N/A","ts":"2026-05-19T13:10:13.354Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-19T13:12:12.105Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"tests/hooks/post-commit-self-skip.test.mjs","drift_at":"2026-05-20T21:16:11.206Z","ts":"2026-05-20T21:16:11.207Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"tests/hooks/post-commit-self-skip.test.mjs","drift_at":"2026-05-20T21:16:56.296Z","ts":"2026-05-20T21:16:56.297Z","diagnostic_warnings":["adev/frontmatter-present"]}

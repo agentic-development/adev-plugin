@@ -237,8 +237,18 @@ External service integrations.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `session_capture.provider` | string | `"native"` | Session capture provider: `native` (built-in file-based capture) |
+| `session_capture.capture` | string | `"hook"` | Capture trigger mode: `hook` (Claude Code SessionEnd + PreCompact events), `post-commit` (legacy `.githooks/post-commit` trigger), `off` (disabled) |
+| `session_capture.gitignored` | boolean | `true` | When `true`, the installer maintains a paired-marker block in `.gitignore` covering `.context-index/sessions/` so captures stay local |
 
-**When to override:** Currently only `native` is supported. Future providers may include external logging services.
+**Capture modes:**
+
+- **`hook`** — Recommended for new projects. `hooks/session-end.sh` and `hooks/pre-compact.sh` are registered in `hooks/hooks.json` at install time and write a session summary to `.context-index/sessions/<date>-<sessionId>.md` when Claude Code ends or compacts. PreCompact is skipped if a SessionEnd already wrote a file for the same session.
+- **`post-commit`** — Legacy mode. Capture fires from `.githooks/post-commit` after each commit. Use only when Claude Code is not the active runtime.
+- **`off`** — No hooks register and no files write, regardless of which scripts are on disk.
+
+The `adev init prompt session-capture` verb walks the user through picking a mode interactively. `adev install` then dispatches to the right installer branch.
+
+**When to override:** Set `capture: off` in projects that already log sessions externally. Set `gitignored: false` only if you intentionally want sessions checked into the repo.
 
 > **Security:** Integration credentials must be stored in environment variables, not in this configuration file. If a future provider requires authentication, configure it via `ADEV_INTEGRATION_*` environment variables.
 
@@ -247,6 +257,8 @@ External service integrations.
 integrations:
   session_capture:
     provider: native
+    capture: hook
+    gitignored: true
 ```
 
 ---

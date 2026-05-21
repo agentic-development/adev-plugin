@@ -53,6 +53,12 @@
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:41.404Z","ts":"2026-05-20T04:01:41.404Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.036Z","ts":"2026-05-20T01:26:28.036Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.770Z","ts":"2026-05-20T01:27:38.770Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:07:28.345Z","ts":"2026-05-20T21:07:28.345Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:02.924Z","ts":"2026-05-20T21:10:02.924Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:10.597Z","ts":"2026-05-20T21:10:10.597Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:21.762Z","ts":"2026-05-20T21:10:21.762Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:26:03.973Z","ts":"2026-05-20T21:26:03.973Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.116Z","ts":"2026-05-20T22:55:07.116Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.352Z","ts":"2026-05-20T12:58:34.352Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:20:49.446Z","ts":"2026-05-20T17:20:49.446Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.499Z","ts":"2026-05-20T17:21:03.499Z"}

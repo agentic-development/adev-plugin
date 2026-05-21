@@ -18,14 +18,15 @@
 ---
 charter: session-awareness
 kind: behavioral
-status: validated
+status: superseded
+superseded-by: .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
 risk_level: low
 milestone: 0.27.1
 revision: 1
 charter-revision: 1
 charter-extension: true
 created: 2026-05-19
-updated: 2026-05-19
+updated: 2026-05-20
 tracker-ref: issue-458
 source-manifest:
   sha: "16779ee"
@@ -33,6 +34,7 @@ source-manifest:
     - .githooks/post-commit
     - tests/hooks/post-commit-self-skip.test.mjs
   computed-at: "2026-05-19T12:50:38.632Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

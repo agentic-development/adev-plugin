@@ -83,6 +83,12 @@
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.046Z","ts":"2026-05-20T12:08:30.047Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.031Z","ts":"2026-05-20T01:26:28.031Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.765Z","ts":"2026-05-20T01:27:38.765Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:07:28.340Z","ts":"2026-05-20T21:07:28.340Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:02.920Z","ts":"2026-05-20T21:10:02.920Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:10.593Z","ts":"2026-05-20T21:10:10.593Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:21.759Z","ts":"2026-05-20T21:10:21.759Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:26:03.970Z","ts":"2026-05-20T21:26:03.970Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.113Z","ts":"2026-05-20T22:55:07.113Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.349Z","ts":"2026-05-20T12:58:34.349Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:20:49.440Z","ts":"2026-05-20T17:20:49.440Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.494Z","ts":"2026-05-20T17:21:03.494Z","diagnostic_warnings":["adev/frontmatter-present"]}
