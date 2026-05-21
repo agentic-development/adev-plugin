@@ -160,7 +160,7 @@ Hooks run automatically to enforce conventions:
 
 ## Integrations
 
-- **Session capture:** Built-in JSONL session logger via hooks. Configure `integrations.session_capture.provider` in `manifest.yaml`.
+- **Session capture:** Built-in session logger driven by Claude Code SessionEnd and PreCompact hooks. Captures land as redacted markdown summaries under `.context-index/sessions/` and feed `/adev:retro`. Configure via `integrations.session_capture.{provider, capture, gitignored}` in `manifest.yaml`, or run `adev init prompt session-capture` for an interactive walkthrough.
 - **Blueprints:** adev is a methodology choice in the [claude-blueprints-plugin](https://github.com/agentic-development/claude-blueprints-plugin) scaffold workflow.
 
 ## Learn More

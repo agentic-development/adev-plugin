@@ -29,9 +29,11 @@ All hooks follow the same protocol:
 | `lifecycle-gate-bash` | PreToolUse | Bash | Blocks | Block bash commands that bypass lifecycle gates |
 | `context-read-tracker` | PostToolUse | Read | Advisory | Track which context files have been read |
 | `sync-trigger` | PostToolUse | Edit | Advisory | Trigger sync after constitution edits |
-| `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives |
+| `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives (legacy post-commit mode) |
 | `issue-reminder` | PostToolUse | `.*` (all) | Advisory | Remind about relevant open issues |
 | `lifecycle-gate-advisory` | PostToolUse | `.*` (all) | Advisory | Emit advisory warnings about lifecycle state |
+| `session-end` | SessionEnd | `.*` | Advisory | Write a session summary to `.context-index/sessions/` when Claude Code ends a session (registered dynamically when `integrations.session_capture.capture: hook`) |
+| `pre-compact` | PreCompact | `.*` | Advisory | Write a session summary before Claude Code compacts the transcript, skipping if SessionEnd already wrote one for this session (registered dynamically when `integrations.session_capture.capture: hook`) |
 
 ---
 
@@ -209,6 +211,8 @@ These hooks fire after a tool executes. They are always advisory (exit 0) and do
 - Records file paths and operation types
 - Writes session data to the configured capture provider
 
+> **Note:** This is the legacy PostToolUse capture surface, kept around for projects on `integrations.session_capture.capture: post-commit`. New projects default to the SessionEnd / PreCompact hooks below, which capture once per session instead of once per tool call.
+
 ---
 
 ### issue-reminder
@@ -237,6 +241,52 @@ These hooks fire after a tool executes. They are always advisory (exit 0) and do
 - Checks for lifecycle state issues that are not severe enough to block
 - Emits advisory warnings (e.g., "spec is stale", "plan has uncompleted tasks")
 - Warnings are informational and do not prevent the operation
+
+---
+
+## SessionEnd Hooks
+
+These hooks fire when Claude Code ends a session. They are registered dynamically by `adev install` when `integrations.session_capture.capture: hook` is set (see [Configuration](configuration.md#integrations)). When `capture: post-commit` or `capture: off`, no SessionEnd entry is added to `hooks/hooks.json`.
+
+### session-end
+
+**Script:** `hooks/session-end.sh`
+**Matcher:** `.*`
+**Behavior:** Advisory (exit 0 always; failures log to stderr)
+
+**Purpose:** Writes a session summary to `.context-index/sessions/<date>-<sessionId>.md` so `/adev:retro` can read concrete session activity (tool calls, files touched, durations) instead of inferring from git alone.
+
+**What it does:**
+- Reads the JSON payload Claude Code passes on stdin (`session_id`, `cwd`, `transcript_path`, plus optional fields)
+- Validates the inputs (session id shape, real cwd, transcript path inside the project)
+- Calls `lib/session-summary.mjs::fromTranscript()` to render a redacted markdown summary
+- Writes the file atomically via `lib/session-capture.mjs::runCapture()` (skipping the write if a sibling capture already exists for the same session id)
+- Returns exit 0 on every branch — capture failures must never block Claude Code
+
+**Configuration knobs:**
+- `integrations.session_capture.capture: hook` (default for new projects) — enables this hook
+- `integrations.session_capture.gitignored: true` (default) — keeps the written summaries out of git via a paired-marker block in `.gitignore`
+
+---
+
+## PreCompact Hooks
+
+These hooks fire when Claude Code is about to compact the in-memory transcript. Like SessionEnd, they are registered dynamically by `adev install` only in `hook` capture mode.
+
+### pre-compact
+
+**Script:** `hooks/pre-compact.sh`
+**Matcher:** `.*`
+**Behavior:** Advisory (exit 0 always)
+
+**Purpose:** Captures a session summary before the transcript is compacted, so retros still see the session's activity in long-running flows that never hit SessionEnd.
+
+**What it does:**
+- Reuses the SessionEnd capture pipeline (`runCapture()`)
+- Skips the write if a SessionEnd capture for the same session has already landed (the SA-2 skip-if-session-end branch in `lib/session-capture.mjs`)
+- Returns exit 0 unconditionally
+
+**Why it exists:** SessionEnd may not fire on long-running interactive sessions that compact mid-flight. PreCompact gives `/adev:retro` a chance to consume a partial session record before context is dropped.
 
 ---
 
