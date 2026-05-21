@@ -91,3 +91,7 @@ viz/dist/
 # artifact" on every clone. (Analogous treatment to tasks.json.lock above.)
 *.partial
 *.partial.lock
+
+# >>> adev:session-capture-gitignore >>>
+.context-index/sessions/
+# <<< adev:session-capture-gitignore <<<

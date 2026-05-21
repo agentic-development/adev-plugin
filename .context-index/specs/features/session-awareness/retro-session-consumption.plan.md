@@ -237,6 +237,10 @@ All 18 tasks resolve to `strategy: unit` (source: fallback, confidence: high). N
 
 ### Task 1: Spec rev 2 polish — fold review notes [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=3
+**Rationale:** Pure spec-text edit with 12 explicit, enumerated bullets to apply (SA-1..SEC-B4); single-file change with no code blast radius.
+
 **Charter capability:** Retro Session Consumption (foundation for all subsequent tasks; ensures implementation reads against a polished spec)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -302,6 +306,10 @@ Plan-task: 1"
 
 
 ### Task 2: `lib/retro/body-scan.mjs` — bounded, non-backtracking body-scan helpers [specialist: none]
+
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Pure helper module with explicit API surface, test cases enumerated, and an exhaustive failing-test stub in the plan; minimal blast radius (1 lib file + 1 test).
 
 **Charter capability:** Retro Session Consumption (defense-in-depth for body-grep operations — SEC-B1)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -390,6 +398,10 @@ Plan-task: 2"
 
 ### Task 3: `lib/retro/issue-id-validation.mjs` — issue-id charset + parseId validator [specialist: none]
 
+**Routing:** auto-agent (score: 19/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=5
+**Rationale:** Mechanical pattern-application — the implementation snippet is in the plan verbatim and the test matrix is enumerated; single-file, no surprises.
+
 **Charter capability:** Retro Session Consumption (defense-in-depth issue-id validation before board lookup — SEC-B2)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -472,6 +484,10 @@ Plan-task: 3"
 ```
 
 ### Task 4: `lib/retro/safe-frontmatter.mjs` — YAML safe-load + size cap [specialist: none]
+
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=3
+**Rationale:** Wraps the existing parser in `lib/meta-tools.mjs`; algorithm steps are itemized and the failing-test stub covers each rejection class; small adaptation around existing pattern.
 
 **Charter capability:** Retro Session Consumption (defense-in-depth YAML parsing — SEC-B3)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -557,6 +573,10 @@ Plan-task: 4"
 
 ### Task 5: `lib/retro/session-format.mjs` — `classifyFormat()` [specialist: none]
 
+**Routing:** auto-agent (score: 19/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=5
+**Rationale:** Pure function classifier with three documented branches; failing-test stub and implementation contract both inline in the plan.
+
 **Charter capability:** Retro Session Consumption (foundation classifier — Behaviors 4, 5, 6)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -628,6 +648,10 @@ Plan-task: 5"
 ```
 
 ### Task 6: `lib/retro/session-activity.mjs` — orchestrator core [specialist: none]
+
+**Routing:** assisted-agent (score: 15/20)
+**Scores:** spec=5 pattern=3 blast=4 novelty=3
+**Rationale:** Orchestrator composes several new helpers and must enforce SEC-B4 path-containment; the implementation skeleton is sketched but not complete — pause after RED to confirm composition shape before GREEN.
 
 **Charter capability:** Retro Session Consumption (orchestration — Behaviors 1, 2, 3, 13.a; SEC-B4 path-containment)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -751,6 +775,10 @@ Plan-task: 6"
 
 ### Task 7: Sub-helper — `parseToolUseDistribution()` [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Patterns pinned by SA-3 to literal `### <Tool>` and `**Tool:** <name>`; top-10 + tie-break rules explicit; one named export to a rollup file.
+
 **Charter capability:** Retro Session Consumption (Behavior 7 — tool-use distribution)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -823,6 +851,10 @@ Plan-task: 7"
 
 ### Task 8: Sub-helper — `countPerSpec()` [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Spec Behavior 8 enumerates the two contribution sources, dedupe rule, omit rule, and sort tiebreak; reuses Task 2's literal scanner.
+
 **Charter capability:** Retro Session Consumption (Behavior 8 — per-spec session counts)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -858,6 +890,10 @@ Plan-task: 8"
 ```
 
 ### Task 9: Sub-helper — `aggregateCostTokens()` [specialist: none]
+
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Behaviors 9, 10 (post XS-2 narrowing) precisely define inclusion criteria, totals, per-model/per-spec breakdowns, and parseError sampling; small sum-and-bucket implementation.
 
 **Charter capability:** Retro Session Consumption (Behaviors 9, 10 — cost & token trends)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -897,6 +933,10 @@ Plan-task: 9"
 ```
 
 ### Task 10: Sub-helper — `joinClosedIssueXref()` [specialist: none]
+
+**Routing:** assisted-agent (score: 15/20)
+**Scores:** spec=5 pattern=3 blast=4 novelty=3
+**Rationale:** Touches the issue board contract (`getIssueManager`, `list({status:closed})`) plus three render-branch annotations (`(invalid)`, `(unknown)`, omit); checkpoint after RED to confirm board-manager mocking shape.
 
 **Charter capability:** Retro Session Consumption (Behavior 11 — sessions ↔ closed issues; SEC-B2 validation; CON-X3 session_id_short; CON-X5 unknown-id semantics)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -943,6 +983,10 @@ Plan-task: 10"
 
 ### Task 11: Sub-helper — `scanContextGaps()` (frame-anchored) [specialist: none]
 
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=3
+**Rationale:** Frame-anchored scan reuses Task 2's `scanWithinToolOutputFrame`; aggregation rules and top-10 sort explicit; novelty in defining gap markers but those are itemized.
+
 **Charter capability:** Retro Session Consumption (Behavior 12 — first-class Context Gaps; SEC-B1(b))
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -984,6 +1028,10 @@ Plan-task: 11"
 
 ### Task 12: CLI verb `adev retro session-activity` [specialist: none]
 
+**Routing:** assisted-agent (score: 14/20)
+**Scores:** spec=4 pattern=3 blast=3 novelty=4
+**Rationale:** Touches `cli/index.mjs` verb registration and adds `--format text` markdown rendering not yet specified in detail; pause after RED so the text-render shape matches Behavior 13 ordering before GREEN.
+
 **Charter capability:** Retro Session Consumption (cli-driver-surface — exposes orchestrator to skill prose without inline-Node)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -1023,6 +1071,10 @@ Plan-task: 12"
 ```
 
 ### Task 13: Orchestrator regression tests — comprehensive coverage [specialist: none]
+
+**Routing:** auto-agent (score: 17/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=3
+**Rationale:** Test-only extension with an explicit case-matrix from the spec's Error Cases and Acceptance Criteria; helpers (`createTempDir`, `writeFixture`) already exist.
 
 **Charter capability:** Retro Session Consumption (Acceptance Criteria coverage)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -1069,6 +1121,10 @@ Plan-task: 13"
 ```
 
 ### Task 14: Skill prose — add § 1.8 Session Activity step to `skills/retro/SKILL.md` [specialist: none]
+
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Markdown insertion with the exact prose block authored in the plan; constitution Architecture Boundaries lists skill-markdown edits as autonomous; pre-commit hook guards inline-Node.
 
 **Charter capability:** Retro Session Consumption (skill prose — Behaviors 2, 13; Stable section position invariant)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -1131,6 +1187,10 @@ Plan-task: 14"
 
 ### Task 15: Skill prose — remove Step 2 "Context Gaps" conditional [specialist: none]
 
+**Routing:** auto-agent (score: 19/20)
+**Scores:** spec=5 pattern=5 blast=5 novelty=4
+**Rationale:** Pure deletion of a known text block with absence assertions in the test; trivial blast radius and minimal novelty.
+
 **Charter capability:** Retro Session Consumption (SA-1 — Context Gaps placement)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -1166,6 +1226,10 @@ Plan-task: 15"
 
 ### Task 16: Skill prose — Output Format renders Session Activity [specialist: none]
 
+**Routing:** auto-agent (score: 18/20)
+**Scores:** spec=5 pattern=4 blast=5 novelty=4
+**Rationale:** Single-file Output Format documentation update; Behavior 13 enumerates the six subsections and conditional rendering precisely.
+
 **Charter capability:** Retro Session Consumption (Behavior 13 — output ordering)
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
@@ -1196,6 +1260,10 @@ Plan-task: 16"
 ```
 
 ### Task 17: Doc-drift fix — `skills/init/SKILL.md:761` [specialist: none]
+
+**Routing:** auto-agent (score: 19/20)
+**Scores:** spec=5 pattern=5 blast=5 novelty=4
+**Rationale:** Trivial single-line documentation fix with the exact replacement text included in the implementation step.
 
 **Charter capability:** Retro Session Consumption (Postconditions — issue-528 doc-drift)
 **Strategy:** unit (source: fallback, confidence: high)
@@ -1231,6 +1299,10 @@ Plan-task: 17"
 ```
 
 ### Task 18: End-to-end skill snapshot test [specialist: none]
+
+**Routing:** assisted-agent (score: 15/20)
+**Scores:** spec=5 pattern=3 blast=4 novelty=3
+**Rationale:** Snapshot tests are stable only when fixture determinism is right; pause after RED to review the fixture data and the snapshot shape before GREEN locks in the byte-for-byte expected output.
 
 **Charter capability:** Retro Session Consumption (end-to-end Acceptance Criteria validation)
 **Strategy:** unit (source: fallback, confidence: high)
