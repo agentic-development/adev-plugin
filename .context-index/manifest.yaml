@@ -278,3 +278,10 @@ hygiene:
       # mirror the refined test fixtures the spec rev 3 introduced.
       # Documented + intentional plan-time refinement, not silent drift.
       - "79d895aaac13a3482a22d5edc3b2ac1722508c88"
+      # session-awareness/retro-session-consumption: artifact-landing
+      # commit inadvertently swept in 72 lines of inline route
+      # annotations on the plan body. Subsequent merge commit
+      # restored the plan to its first-pending state during the
+      # main→branch merge. Advisory metadata, not content drift.
+      - "62caa688a2d94a84697cc1f7c55bfa099264a2da"
+      - "1a6af4f953f789eba11c825329eb4d1b3f697f78"
