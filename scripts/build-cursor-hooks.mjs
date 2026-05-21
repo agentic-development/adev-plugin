@@ -37,6 +37,13 @@ export const TRANSLATION_TABLE = [
   },
   {
     claudeEvent: "PreToolUse",
+    claudeMatcher: "Write|Edit",
+    cursorEvent: "preToolUse",
+    cursorMatcher: "Write|Edit",
+    intent: "fail-closed",
+  },
+  {
+    claudeEvent: "PreToolUse",
     claudeMatcher: "Bash",
     cursorEvent: "beforeShellExecution",
     cursorMatcher: null,

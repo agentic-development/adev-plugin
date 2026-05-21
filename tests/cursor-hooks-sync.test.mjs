@@ -15,10 +15,11 @@ import {
   buildCursorHooks,
 } from "../scripts/build-cursor-hooks.mjs";
 
-test("TRANSLATION_TABLE covers all 7 Claude event/matcher pairs in hooks.json", () => {
+test("TRANSLATION_TABLE covers all 8 Claude event/matcher pairs in hooks.json", () => {
   // Expected pairs from hooks/hooks.json:
   //   SessionStart / startup|resume|clear|compact
   //   PreToolUse / Edit
+  //   PreToolUse / Write|Edit
   //   PreToolUse / Bash
   //   PostToolUse / Read
   //   PostToolUse / Edit
@@ -31,6 +32,7 @@ test("TRANSLATION_TABLE covers all 7 Claude event/matcher pairs in hooks.json", 
     "PostToolUse/Read",
     "PreToolUse/Bash",
     "PreToolUse/Edit",
+    "PreToolUse/Write|Edit",
     "SessionStart/startup|resume|clear|compact",
     "Stop/.*",
   ]);
@@ -43,7 +45,11 @@ test("fail-closed entries have correct intent and timeout constants", () => {
   const failClosedPairs = failClosed
     .map((e) => `${e.claudeEvent}/${e.claudeMatcher}`)
     .sort();
-  assert.deepEqual(failClosedPairs, ["PreToolUse/Bash", "PreToolUse/Edit"]);
+  assert.deepEqual(failClosedPairs, [
+    "PreToolUse/Bash",
+    "PreToolUse/Edit",
+    "PreToolUse/Write|Edit",
+  ]);
   // Semantic invariant: every fail-closed entry maps to a pre-action Cursor event.
   for (const e of failClosed) {
     assert.ok(
