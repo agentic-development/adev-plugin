@@ -29,3 +29,8 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.117Z","ts":"2026-05-20T22:55:07.117Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-05-20T22:56:58.837Z","ts":"2026-05-20T22:56:58.837Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.353Z","ts":"2026-05-20T12:58:34.353Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:20:49.447Z","ts":"2026-05-20T17:20:49.447Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.500Z","ts":"2026-05-20T17:21:03.500Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.834Z","ts":"2026-05-20T17:21:19.834Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.157Z","ts":"2026-05-20T17:21:37.157Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-05-20T17:23:59.926Z","ts":"2026-05-20T17:23:59.926Z","diagnostic_warnings":["adev/frontmatter-present"]}

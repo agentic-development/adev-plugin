@@ -34,9 +34,9 @@ The installer prompts you to select your AI coding assistant:
 - **OpenCode** (alpha) — Generates an AGENTS.md configuration file
 - **Codex** (alpha) — Generates an AGENTS.md configuration file
 
-The CLI registers the plugin, scaffolds a minimal `.context-index/` directory, and sets up git hooks for provenance tracking.
+The CLI registers the plugin, scaffolds a minimal `.context-index/` directory, sets up git hooks for provenance tracking, and presents a one-line **domain extension picker** so you can pick a domain profile (software / data-engineering / process-automation / skip) without leaving the install flow. The chosen domain lands in your `manifest.yaml` automatically.
 
-For detailed setup options, see [Installation & Setup](installation.md).
+For detailed setup options including the picker walkthrough, see [Installation & Setup](installation.md).
 
 ## Step 2: Initialize Your Project Context
 
@@ -162,22 +162,41 @@ If all checks pass, the spec status is promoted to `validated`. If any check fai
 
 ## Choosing a Domain Profile
 
-After initialization, you can configure a domain profile to tailor the framework's vocabulary, reviewers, gates, and verification to your project's domain. Set the `domain` field in your manifest:
+A domain profile tailors the framework's vocabulary, reviewers, gates, and verification to your project's domain. The simplest way to pick one is **during `adev install`** — the installer presents a picker prompt and writes your choice into `manifest.yaml` automatically:
+
+```
+══ Domain Extension ══
+Pick a domain (1-4) [1]:
+  1. software (bundled, default)
+  2. Data Engineering (data-engineering)
+  3. Process Automation (process-automation)
+  4. skip — pick a domain later via `adev extension install <source>`
+```
+
+Three first-party profiles are available:
+
+- **software** (default) — Standard software development with visual verification, three reviewers (structural, security, consistency), and general-purpose test tooling. The bundled profile — no extension install needed.
+- **data-engineering** — Data pipeline development with data contracts, pipeline stages, data quality expectations, dbt integration, and output-based verification.
+- **process-automation** — Workflow automation with integration points, recovery actions, flow verification, and workflow-specific gates.
+
+If you skipped at picker time or want to change the choice later, install or swap the extension manually:
+
+```bash
+adev extension install ./extensions/data-engineering
+# or via git URL:
+adev extension install https://github.com/agentic-development/adev-plugin#extensions/data-engineering
+```
+
+For manual configuration without the picker, you can also set the `domain` field in your manifest directly:
 
 ```yaml
 # .context-index/manifest.yaml
 project:
   name: my-project
-  domain: data-engineering  # or: software, process-automation
+  domain: data-engineering
 ```
 
-Three bundled profiles are available:
-
-- **software** (default) — Standard software development with visual verification, three reviewers (structural, security, consistency), and general-purpose test tooling.
-- **data-engineering** — Data pipeline development with data contracts, pipeline stages, data quality expectations, dbt integration, and output-based verification.
-- **process-automation** — Workflow automation with integration points, recovery actions, flow verification, and workflow-specific gates.
-
-If no `domain` is set, the `software` profile is used automatically. For details on what each profile provides and how to customize them, see [Project Types Guide](project-types.md).
+If no `domain` is set, the `software` profile is used automatically. For details on what each profile provides and how to customize them, see [Project Types Guide](project-types.md). For the full picker contract and error semantics, see [Installation > Domain Extension Picker](installation.md#domain-extension-picker).
 
 ## What's Next?
 

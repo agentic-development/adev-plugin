@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t01",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 4,
+        "blast_radius": 5,
+        "novelty": 5
+      },
+      "rationale": "Single-file static JSON catalog with literal schema spelled out in the spec and inline plan body; pure pattern application with minimal blast radius."
+    },
+    {
+      "task_id": "t02",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 5,
+        "blast_radius": 5,
+        "novelty": 5
+      },
+      "rationale": "Trivial constants module with exact string values enumerated in the spec and plan; existing `lib/extensions/install.mjs` error-code style is a direct precedent."
+    },
+    {
+      "task_id": "t03",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 4,
+        "blast_radius": 5,
+        "novelty": 4
+      },
+      "rationale": "Catalog Contract section gives explicit validation rules (name regex, path-traversal guard, existsSync), with `resolveGit` and `parseExtensionManifest` cited as exact precedent; small two-file blast radius."
+    },
+    {
+      "task_id": "t04",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 3,
+        "blast_radius": 4,
+        "novelty": 4
+      },
+      "rationale": "Behaviors #1-#7 spell out each prompt outcome and dispatch contract; DI-style test seam is novel but the `ask`/`installExtension` helpers exist; touches two files in one module."
+    },
+    {
+      "task_id": "t05",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 4,
+        "blast_radius": 5,
+        "novelty": 4
+      },
+      "rationale": "ADR-0005 prescribes exact `detectWorkspace`/`assertPathInWorkspace` usage; precondition wording is verbatim; small additive change to one helper."
+    },
+    {
+      "task_id": "t06",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 4,
+        "blast_radius": 4,
+        "novelty": 4
+      },
+      "rationale": "Behaviors #2/#3/#5 spell out write/preserve semantics per action, and `writeManifestStamp` is cited as the idempotent-upsert precedent; minor novelty in atomic YAML splice for the new top-level key."
+    },
+    {
+      "task_id": "t07",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 4,
+        "blast_radius": 4,
+        "novelty": 4
+      },
+      "rationale": "Integration Points #1/#3 + Behaviors #1/#4/#5/#6 prescribe insertion point and shared-call pattern; only `cli/index.mjs` is touched and the picker helper does the heavy lifting."
+    },
+    {
+      "task_id": "t08",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 4,
+        "blast_radius": 5,
+        "novelty": 5
+      },
+      "rationale": "Behavior #6 mandates the canonical literal `Domain: <name>` wording (no variant); single-line edit to one file."
+    },
+    {
+      "task_id": "t09",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 5,
+        "blast_radius": 5,
+        "novelty": 5
+      },
+      "rationale": "Single commented YAML line addition with the exact text shown in the plan body; pure mechanical template edit."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 5,
+        "blast_radius": 5,
+        "novelty": 4
+      },
+      "rationale": "Behavior #8 + Integration Point #4 enumerate exactly what to document (canonical wording, four sub-points); pure markdown edit with the anti-pattern guard rails called out inline."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 4,
+        "blast_radius": 5,
+        "novelty": 3
+      },
+      "rationale": "Ten scenarios enumerated in plan body map 1:1 to acceptance criteria; precedent files (`tests/cli-extension.test.mjs`, `tests/helpers.mjs`) are cited; stdin-piped CLI subprocess test composition is the only novelty."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 5,
+        "pattern_coverage": 5,
+        "blast_radius": 5,
+        "novelty": 5
+      },
+      "rationale": "Three mechanical charter edits (revision bump, one-line note, status-column flip) with verbatim wording in the plan body."
+    }
+  ]
+}

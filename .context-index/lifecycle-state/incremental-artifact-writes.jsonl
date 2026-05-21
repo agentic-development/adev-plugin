@@ -140,3 +140,7 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.342Z","ts":"2026-05-20T12:58:34.342Z"}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.065Z","ts":"2026-05-20T13:03:18.066Z"}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.977Z","ts":"2026-05-20T13:05:52.978Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:20:49.431Z","ts":"2026-05-20T17:20:49.432Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.486Z","ts":"2026-05-20T17:21:03.486Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.817Z","ts":"2026-05-20T17:21:19.818Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.141Z","ts":"2026-05-20T17:21:37.142Z"}
