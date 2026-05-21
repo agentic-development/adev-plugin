@@ -65,5 +65,8 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-17T19:11:06.963Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/repomap/index.mjs","drift_at":"2026-05-18T22:25:03.406Z","ts":"2026-05-18T22:25:03.406Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-19T19:49:28.673Z","ts":"2026-05-19T19:49:28.673Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T20:38:48.940Z","ts":"2026-05-20T20:38:48.940Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T22:32:44.240Z","ts":"2026-05-20T22:32:44.240Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T23:43:54.088Z","ts":"2026-05-20T23:43:54.088Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.071Z","ts":"2026-05-20T13:03:18.071Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.984Z","ts":"2026-05-20T13:05:52.984Z","diagnostic_warnings":["adev/frontmatter-present"]}

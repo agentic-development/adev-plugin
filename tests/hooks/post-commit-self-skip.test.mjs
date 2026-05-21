@@ -23,9 +23,35 @@ describe("post-commit git hook self-skip", () => {
   // `git diff-tree HEAD` output (which would defeat the sessions-only skip
   // guard). Using `.git/info/exclude` keeps the exclusion local to the temp
   // repo without committing a .gitignore.
+  //
+  // SA-8 / Plan-task 18 — this test exercises only the post-commit back-compat
+  // path. After hook-driven-capture lands, the legacy capture lives behind
+  // `integrations.session_capture.capture: post-commit` in the manifest. Each
+  // fixture writes that manifest so the test continues to gate the post-commit
+  // hook even after the spec it covers (post-commit-self-skip.spec.md) is
+  // marked `superseded` by hook-driven-capture.spec.md.
   function setupHookEnv(dir) {
     symlinkSync(join(PLUGIN_ROOT, "lib"), join(dir, "lib"), "dir");
-    writeFileSync(join(dir, ".git", "info", "exclude"), "lib\n");
+    // Exclude both the symlinked lib AND the post-commit-mode manifest from
+    // `git add -A` so neither appears in `git diff-tree HEAD` output (which
+    // would defeat the sessions-only skip guard).
+    writeFileSync(
+      join(dir, ".git", "info", "exclude"),
+      "lib\n.context-index/manifest.yaml\n",
+    );
+    writeFixture(
+      dir,
+      ".context-index/manifest.yaml",
+      [
+        "project:",
+        "  name: test",
+        "integrations:",
+        "  session_capture:",
+        "    capture: post-commit",
+        "    gitignored: false",
+        "",
+      ].join("\n"),
+    );
   }
 
   // Helper: stage a set of files then create a commit, return the SHA.

@@ -15,6 +15,7 @@ source-manifest:
     - lib/session-summary.mjs
     - tests/lib/session-summary.test.mjs
   computed-at: "2026-04-01T13:43:22.535Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

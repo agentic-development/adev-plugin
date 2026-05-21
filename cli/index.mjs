@@ -666,6 +666,50 @@ async function installProviders(providerNames, { ask: askFn = ask } = {}) {
 }
 
 /**
+ * Apply integrations.session_capture mode by dispatching to the install
+ * helper (`lib/cli/install-session-capture.mjs`). Prints a one-line summary
+ * per action. No-op when the manifest has no `integrations.session_capture`
+ * block (treated as `off`, per Error Cases table).
+ *
+ * Spec: .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
+ * Plan-task: 11, 16
+ */
+async function applySessionCaptureMode() {
+  let dispatch;
+  try {
+    const mod = await import("../lib/session-capture-installer.mjs");
+    dispatch = mod.dispatchInstallerByCaptureMode;
+  } catch {
+    return; // module not present — skip silently
+  }
+  try {
+    const projectRoot = process.cwd();
+    const result = await dispatch(projectRoot, PLUGIN_ROOT);
+    if (result.actions.length > 0) {
+      console.log();
+      heading("Session Capture");
+      success(`Mode: ${result.mode}`);
+      for (const a of result.actions) {
+        success(a);
+      }
+      if (result.mode === "off" && result.sessionFiles.length > 0) {
+        console.log();
+        log(`Existing session files (preserved on disk):`);
+        for (const f of result.sessionFiles.slice(0, 10)) {
+          log(`  - ${f}`);
+        }
+        if (result.sessionFiles.length > 10) {
+          log(`  …and ${result.sessionFiles.length - 10} more`);
+        }
+      }
+    }
+  } catch (err) {
+    // Best-effort — never block install.
+    warn(`Session-capture dispatch skipped: ${err.message}`);
+  }
+}
+
+/**
  * `adev install --target copilot [--user] [--dry-run]` — per-target adapter
  * invocation. Routes through CopilotAdapter.install() and prints its return
  * value as a status line. Mirrors the documented Behaviors §7 surface.
@@ -784,15 +828,12 @@ async function cmdInstall() {
     for (const item of hookItems) {
       success(item);
     }
-    console.log();
-    log("Note: the post-commit hook auto-generates .context-index/sessions/<date>-<sha>.md");
-    log("      summary files (tracked content — not in the installer's .gitignore list).");
-    log("      Batch them periodically with: git commit -m 'chore(sessions): record YYYY-MM-DD transcripts'");
-    log("      Add .context-index/sessions/ to .gitignore if you'd rather skip the audit surface.");
-    log("      Full details: docs/hooks.md > Git Hooks > post-commit");
   } else {
     log("Git hooks already up to date.");
   }
+
+  // --- Session Capture (integrations.session_capture dispatch) ---
+  await applySessionCaptureMode();
 
   // --- Summary ---
   heading(`Done! Plugin installed — adev v${PLUGIN_VERSION}.`);
@@ -923,15 +964,12 @@ async function cmdUpgrade() {
     for (const item of hookItems) {
       success(item);
     }
-    console.log();
-    log("Note: the post-commit hook auto-generates .context-index/sessions/<date>-<sha>.md");
-    log("      summary files (tracked content — not in the installer's .gitignore list).");
-    log("      Batch them periodically with: git commit -m 'chore(sessions): record YYYY-MM-DD transcripts'");
-    log("      Add .context-index/sessions/ to .gitignore if you'd rather skip the audit surface.");
-    log("      Full details: docs/hooks.md > Git Hooks > post-commit");
   } else {
     log("Git hooks already up to date.");
   }
+
+  // --- Session Capture (integrations.session_capture dispatch) ---
+  await applySessionCaptureMode();
 
   // --- Dual sync targets ---
   await handleDualSyncTargets(providerNames);
@@ -1443,6 +1481,17 @@ const VERB_REGISTRY = new Map([
   ["upgrade",   () => ({ run: () => cmdUpgrade(),                help: () => cmdHelp() })],
   ["uninstall", () => ({ run: () => cmdUninstall(),              help: () => cmdHelp() })],
   ["init",      () => ({ run: async () => {
+                          // Sub-verb: `adev init prompt session-capture` delegates to the
+                          // init-prompt-session-capture module (SA-5). This keeps the
+                          // skills/init/SKILL.md prose readable as a 3-token verb while
+                          // the dispatcher remains a single-token registry.
+                          const sub = process.argv[3];
+                          if (sub === "prompt" && process.argv[4] === "session-capture") {
+                            const mod = await import("../lib/cli/init-prompt-session-capture.mjs");
+                            const projectRoot = process.cwd();
+                            await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
+                            return;
+                          }
                           warn("`init` is deprecated. Use `install` (first-time) or `upgrade` (existing).");
                           console.log();
                           const state = detectProjectState();
@@ -1478,6 +1527,7 @@ const VERB_REGISTRY = new Map([
   ["implement",       () => import("../lib/cli/implement.mjs")],
   ["specify",         () => import("../lib/cli/specify.mjs")],
   ["issues",          () => import("../lib/cli/issues.mjs")],
+  ["retro",           () => import("../lib/cli/retro.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr

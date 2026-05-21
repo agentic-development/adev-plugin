@@ -1,2 +1,4 @@
 {"event":"code_drift_detected","drift_source":"lib/domains/constants.mjs","drift_at":"2026-05-16T01:24:57.924Z","ts":"2026-05-18T13:50:21.088Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"docs/configuration.md","drift_at":"2026-05-21T02:15:07.688Z","ts":"2026-05-21T02:15:07.688Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"docs/skill-reference.md","drift_at":"2026-05-21T02:15:58.453Z","ts":"2026-05-21T02:15:58.454Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/configuration.md","drift_at":"2026-05-18T21:49:27.999Z","ts":"2026-05-18T21:49:27.999Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -127,6 +127,16 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:26:28.020Z","ts":"2026-05-20T01:26:28.021Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T01:27:38.753Z","ts":"2026-05-20T01:27:38.754Z"}
 {"event":"code_drift_detected","drift_source":".gitignore","drift_at":"2026-05-20T01:47:50.090Z","ts":"2026-05-20T01:47:50.091Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T20:38:48.932Z","ts":"2026-05-20T20:38:48.933Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:07:28.331Z","ts":"2026-05-20T21:07:28.332Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:02.910Z","ts":"2026-05-20T21:10:02.911Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:10.584Z","ts":"2026-05-20T21:10:10.585Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:10:21.751Z","ts":"2026-05-20T21:10:21.752Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:26:03.962Z","ts":"2026-05-20T21:26:03.963Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T22:32:44.227Z","ts":"2026-05-20T22:32:44.228Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.106Z","ts":"2026-05-20T22:55:07.107Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T23:43:54.082Z","ts":"2026-05-20T23:43:54.082Z"}
+{"event":"code_drift_detected","drift_source":".gitignore","drift_at":"2026-05-21T02:26:41.908Z","ts":"2026-05-21T02:26:41.909Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.342Z","ts":"2026-05-20T12:58:34.342Z"}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.065Z","ts":"2026-05-20T13:03:18.066Z"}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.977Z","ts":"2026-05-20T13:05:52.978Z"}

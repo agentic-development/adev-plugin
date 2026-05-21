@@ -88,7 +88,34 @@ Also scan `.context-index/memory/heuristics/archive/` for recently archived entr
 
 If the heuristics directory does not exist or `readHeuristics` throws, note "No heuristics found" and proceed. The consolidation steps (Heuristic Health in Step 2 and Heuristic Consolidation in Step 3) are skipped when no heuristics are gathered.
 
-### 1.8 Uncommitted Artifacts
+### 1.8 Session Activity
+
+When `.context-index/sessions/` exists and the analysis window contains at
+least one session file, gather and render Session Activity:
+
+```bash
+adev retro session-activity --since <since> --until <until> --format text
+```
+
+Capture the rendered markdown and include it verbatim in the Step 1 report,
+positioned after § 1.7 (Heuristics) and before § 1.9 (Uncommitted Artifacts).
+When the directory is missing or no sessions fall within the analysis
+window, the CLI verb emits an empty result and the Session Activity section
+is omitted entirely from the report (Graceful absence invariant).
+
+The verb wraps `lib/retro/session-activity.mjs::gatherSessionActivity()`
+and produces the six subsections in the documented order: (a) total +
+format breakdown line `(hook: N, post-commit: M, unknown: K)`,
+(b) Tool-Use Distribution (top 10), (c) Per-Spec Session Counts,
+(d) Cost & Token Trends (when any session-end has cost frontmatter),
+(e) Sessions ↔ Closed Issues (when any session-end has `issue:`/`epic:`),
+and (f) Context Gaps (frame-anchored, top 10).
+
+For deeper analysis without rendering, request `--format json` instead and
+post-process the structured result `{ totalSessions, formatBreakdown,
+toolUseDistribution, perSpecCounts, costTokens, issueXrefs, contextGaps }`.
+
+### 1.9 Uncommitted Artifacts
 
 Scan the working tree to surface durable artifacts that have been written but never committed. This is distinct from the rest of Step 1, which inspects only committed history — uncommitted artifacts are invisible without an explicit scan.
 
@@ -160,10 +187,6 @@ For each spec touched in the period, read `currentState(spec).steps.review.byRev
 
 Convergence patterns inform whether reviewer prompts or blocker categories need refinement. A high rate of NO_PROGRESS terminations suggests the reviewer is stuck in a local minimum and the spec template / reviewer prompt may need additional guidance.
 
-### Context Gaps
-
-- **Missing references:** Scan git diffs for patterns where subagents searched context-index directories with no results (grep for file-not-found patterns in session logs if session capture is configured).
-- **Frequently referenced files:** Files outside `.context-index/` that were read by multiple implementation tasks. These are de facto reference files that lack formal curation.
 
 ### Specialist Effectiveness
 
@@ -334,6 +357,23 @@ If `--charter <module>` was provided, save to `.context-index/hygiene/retros/<en
 > **Validation pass rate:** N% (first-run)
 > **Recoveries:** N (top cause: <category>)
 > **Blockers:** N
+
+## Session Activity
+
+<Render the verbatim markdown produced by `adev retro session-activity
+--since <since> --until <until> --format text`. Section appears here —
+between the period header and Throughput — per Behavior 13 of
+retro-session-consumption.spec.md (Stable section position invariant).
+Omit this section entirely when the CLI verb's output is empty
+(Graceful absence — no sessions in window).>
+
+Subsections rendered by the verb, in order:
+  (a) Total + format breakdown line `(hook: N, post-commit: M, unknown: K)`
+  (b) Tool-Use Distribution (top 10)
+  (c) Per-Spec Session Counts
+  (d) Cost & Token Trends (only when at least one session-end has cost frontmatter)
+  (e) Sessions ↔ Closed Issues (only when at least one session-end has `issue:`/`epic:`)
+  (f) Context Gaps (top 10, frame-anchored — replaces former Step 2 conditional grep)
 
 ## Throughput
 
