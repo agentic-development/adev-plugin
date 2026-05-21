@@ -218,13 +218,22 @@ describe("stampDrift", () => {
     assert.equal(events.length, 0);
   });
 
-  it("records multiple sources as separate code_drift_detected events (multi-source history)", async () => {
+  it("subsequent stamps on an already-drifted spec are no-ops (idempotent JSONL emit)", async () => {
     const fresh = makeSpec(root, "multi-evt", { sourceManifestFiles: ["a.mjs", "b.mjs", "c.mjs"] });
     await stampDrift(fresh, "a.mjs");
     await stampDrift(fresh, "b.mjs");
     await stampDrift(fresh, "c.mjs");
     const events = readEvents(root, fresh).filter(e => e.event === "code_drift_detected");
-    assert.deepEqual(events.map(e => e.drift_source), ["a.mjs", "b.mjs", "c.mjs"]);
+    assert.deepEqual(events.map(e => e.drift_source), ["a.mjs"]);
+  });
+
+  it("clearDrift re-arms stamping — next stamp after clear emits a new event", async () => {
+    const fresh = makeSpec(root, "rearm-evt", { sourceManifestFiles: ["a.mjs", "b.mjs"] });
+    await stampDrift(fresh, "a.mjs");
+    await clearDrift(fresh);
+    await stampDrift(fresh, "b.mjs");
+    const events = readEvents(root, fresh).filter(e => e.event === "code_drift_detected");
+    assert.deepEqual(events.map(e => e.drift_source), ["a.mjs", "b.mjs"]);
   });
 
   it("no longer writes drift_source or drift_at to spec frontmatter (Migration Step 3)", async () => {
@@ -333,16 +342,18 @@ describe("stampDrift concurrency (SEC-6: per-spec lock-scope)", () => {
     assert.equal(evB.length, 1);
   });
 
-  it("concurrent stampDrift calls on the same spec serialize correctly (no duplicate, no corruption)", async () => {
+  it("concurrent stampDrift calls on the same spec produce exactly one event (idempotency under contention)", async () => {
     const specPath = makeSpec(root, "lock-same-spec", { sourceManifestFiles: ["a.mjs", "b.mjs"] });
     await Promise.all([
       stampDrift(specPath, "a.mjs"),
       stampDrift(specPath, "b.mjs"),
     ]);
     const events = readEvents(root, specPath).filter(e => e.event === "code_drift_detected");
-    assert.equal(events.length, 2, "both stamps must be present");
-    const sources = events.map(e => e.drift_source).sort();
-    assert.deepEqual(sources, ["a.mjs", "b.mjs"]);
+    // Whichever call won the lock first transitions clean → drifted and emits
+    // its event; the loser sees `drift_detected: true` and no-ops. Source can
+    // be either "a.mjs" or "b.mjs" depending on scheduling.
+    assert.equal(events.length, 1, "exactly one event lands under contention");
+    assert.ok(["a.mjs", "b.mjs"].includes(events[0].drift_source));
   });
 });
 
