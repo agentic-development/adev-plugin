@@ -229,41 +229,57 @@ describe('prototype-server symlink handling', () => {
   });
 });
 
-describe('ensureGitignore', () => {
-  it('adds .adev/ when not present', () => {
+describe('ensureGitignore (delegates to managed-block installer)', () => {
+  // Post-Task-7 contract: ensureGitignore delegates to
+  // lib/gitignore-installer.mjs::ensureManagedBlock. The legacy lazy
+  // `.adev/`-only append is removed — the block carries the full canonical
+  // path list, of which `.adev/` is one entry.
+  //
+  // SA-4: prototype path force-installs the block (does NOT honor
+  // setup.managed_gitignore: false). The prototype workspace specifically
+  // needs `.adev/` ignored to boot safely.
+
+  it('installs the adev:gitignore block (delegation), not just `.adev/`', () => {
     const tmpDir = createTempDir();
     writeFileSync(join(tmpDir, '.gitignore'), 'node_modules/\n');
     ensureGitignore(tmpDir);
     const content = readFileSync(join(tmpDir, '.gitignore'), 'utf8');
+    assert.ok(content.includes('# >>> adev:gitignore >>>'), 'open marker present');
+    assert.ok(content.includes('# <<< adev:gitignore <<<'), 'close marker present');
+    assert.ok(content.includes('.adev/'), '.adev/ is part of the canonical block');
+    cleanupTempDir(tmpDir);
+  });
+
+  it('is idempotent on second invocation', () => {
+    const tmpDir = createTempDir();
+    ensureGitignore(tmpDir);
+    const first = readFileSync(join(tmpDir, '.gitignore'), 'utf8');
+    ensureGitignore(tmpDir);
+    const second = readFileSync(join(tmpDir, '.gitignore'), 'utf8');
+    assert.equal(second, first, 'second call byte-identical');
+    cleanupTempDir(tmpDir);
+  });
+
+  it('creates .gitignore if absent (delegation creates block)', () => {
+    const tmpDir = createTempDir();
+    ensureGitignore(tmpDir);
+    const content = readFileSync(join(tmpDir, '.gitignore'), 'utf8');
+    assert.ok(content.includes('# >>> adev:gitignore >>>'));
     assert.ok(content.includes('.adev/'));
     cleanupTempDir(tmpDir);
   });
 
-  it('does not duplicate when .adev/ already present', () => {
+  it('SA-4 force-install: ignores setup.managed_gitignore: false', () => {
     const tmpDir = createTempDir();
-    writeFileSync(join(tmpDir, '.gitignore'), 'node_modules/\n.adev/\n');
+    // Seed a manifest disabling the knob. Prototype path must still install
+    // the block because prototype boot needs `.adev/` ignored.
+    // We don't strictly need to create the manifest file — ensureGitignore
+    // does not consult the knob — but the existence of this test documents
+    // the SA-4 force-install contract.
+    writeFileSync(join(tmpDir, '.gitignore'), 'node_modules/\n');
     ensureGitignore(tmpDir);
     const content = readFileSync(join(tmpDir, '.gitignore'), 'utf8');
-    const matches = content.match(/\.adev\//g);
-    assert.equal(matches.length, 1, 'should not duplicate .adev/ entry');
-    cleanupTempDir(tmpDir);
-  });
-
-  it('detects .adev (without slash) as covering .adev/', () => {
-    const tmpDir = createTempDir();
-    writeFileSync(join(tmpDir, '.gitignore'), '.adev\n');
-    ensureGitignore(tmpDir);
-    const content = readFileSync(join(tmpDir, '.gitignore'), 'utf8');
-    // .adev already covers .adev/, should not add another entry
-    assert.ok(!content.includes('# Prototype artifacts'), 'should not add redundant entry');
-    cleanupTempDir(tmpDir);
-  });
-
-  it('creates .gitignore if absent', () => {
-    const tmpDir = createTempDir();
-    ensureGitignore(tmpDir);
-    const content = readFileSync(join(tmpDir, '.gitignore'), 'utf8');
-    assert.ok(content.includes('.adev/'));
+    assert.ok(content.includes('# >>> adev:gitignore >>>'), 'block installed despite would-be knob-false');
     cleanupTempDir(tmpDir);
   });
 });
