@@ -1632,6 +1632,14 @@ const VERB_REGISTRY = new Map([
                             await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
                             return;
                           }
+                          if (sub === "ensure-gitignore") {
+                            const mod = await import("../lib/cli/init-ensure-gitignore.mjs");
+                            const projectRoot = process.cwd();
+                            let m = null;
+                            try { m = loadManifest(projectRoot); } catch { m = null; }
+                            await mod.run({ projectRoot, argv: process.argv.slice(4), manifest: m });
+                            return;
+                          }
                           warn("`init` is deprecated. Use `install` (first-time) or `upgrade` (existing).");
                           console.log();
                           const state = detectProjectState();
