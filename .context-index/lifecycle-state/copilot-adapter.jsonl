@@ -62,3 +62,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"No transitions configured in governance/gates.yaml","ts":"2026-05-19T20:27:02.408Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP: no UI files in implementation (CLI/adapter only)","ts":"2026-05-19T20:27:03.531Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-19T20:28:00.437Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-22T12:56:01.511Z","ts":"2026-05-22T12:56:01.511Z","diagnostic_warnings":["adev/frontmatter-present"]}
