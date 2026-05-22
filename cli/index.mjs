@@ -1601,6 +1601,7 @@ const VERB_REGISTRY = new Map([
   ["specify",         () => import("../lib/cli/specify.mjs")],
   ["issues",          () => import("../lib/cli/issues.mjs")],
   ["retro",           () => import("../lib/cli/retro.mjs")],
+  ["cost",            () => import("../lib/cli/cost.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
