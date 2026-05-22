@@ -34,6 +34,7 @@ source-manifest:
     - tests/copilot-skill-validator.test.mjs
     - tests/copilot-symlink-scanner.test.mjs
   computed-at: "2026-05-19T20:22:00.045Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
