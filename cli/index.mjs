@@ -711,6 +711,51 @@ async function applySessionCaptureMode() {
 }
 
 /**
+ * Apply the managed `adev:gitignore` block dispatcher. Gated by the
+ * `setup.managed_gitignore` manifest knob (default: `true`). When `false`,
+ * prints the advisory line and returns without writing. Errors from the
+ * installer are downgraded to stderr warnings — installer failure must
+ * never block `adev install` / `adev upgrade`.
+ *
+ * Spec: .context-index/specs/features/setup/managed-gitignore-block.spec.md
+ * Plan-task: 5
+ *
+ * @param {string} projectRoot
+ * @param {object|null} manifest - parsed manifest.yaml or null
+ */
+export async function maybeEnsureManagedGitignore(projectRoot, manifest) {
+  const knob = manifest?.setup?.managed_gitignore;
+  const enabled = knob !== false; // default true; only literal false disables
+  if (!enabled) {
+    console.log("managed gitignore: disabled by manifest");
+    return;
+  }
+  let ensureManagedBlock;
+  try {
+    const mod = await import("../lib/gitignore-installer.mjs");
+    ensureManagedBlock = mod.ensureManagedBlock;
+  } catch {
+    return; // module not present — skip silently
+  }
+  try {
+    const result = ensureManagedBlock(projectRoot);
+    if (result !== "noop") {
+      console.log(`managed gitignore: ${result}`);
+    }
+  } catch (err) {
+    if (err?.code === "UNSAFE_GITIGNORE_PATH") {
+      console.error("warn: adev:gitignore not written — path-containment violation");
+      return;
+    }
+    if (err?.code === "EACCES") {
+      console.error("warn: adev:gitignore not written — .gitignore is read-only");
+      return;
+    }
+    console.error(`warn: adev:gitignore dispatch skipped: ${err.message}`);
+  }
+}
+
+/**
  * `adev install --target copilot [--user] [--dry-run]` — per-target adapter
  * invocation. Routes through CopilotAdapter.install() and prints its return
  * value as a status line. Mirrors the documented Behaviors §7 surface.
@@ -899,6 +944,17 @@ async function cmdInstall() {
   // --- Session Capture (integrations.session_capture dispatch) ---
   await applySessionCaptureMode();
 
+  // --- Managed gitignore block (setup.managed_gitignore dispatch) ---
+  {
+    let m = null;
+    try {
+      m = loadManifest(process.cwd());
+    } catch {
+      m = null;
+    }
+    await maybeEnsureManagedGitignore(process.cwd(), m);
+  }
+
   // --- Summary ---
   heading(`Done! Plugin installed — adev v${PLUGIN_VERSION}.`);
   if (installPickerResult && installPickerResult.action !== 'skipped-workspace-root') {
@@ -1040,6 +1096,17 @@ async function cmdUpgrade() {
 
   // --- Session Capture (integrations.session_capture dispatch) ---
   await applySessionCaptureMode();
+
+  // --- Managed gitignore block (setup.managed_gitignore dispatch) ---
+  {
+    let m = null;
+    try {
+      m = loadManifest(process.cwd());
+    } catch {
+      m = null;
+    }
+    await maybeEnsureManagedGitignore(process.cwd(), m);
+  }
 
   // --- Dual sync targets ---
   await handleDualSyncTargets(providerNames);
