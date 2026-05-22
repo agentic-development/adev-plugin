@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Canonical path list fully enumerated in spec with SEC-3 invariants; small 1-file create, mechanical data-module authoring with explicit ordering."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Configuration section text and manifest-template stanza both prescribed verbatim in plan; CON-2 namespace rationale fully captured."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Mirror of session-capture-installer paired-marker pattern with three named hardenings (SEC-1/2/6) prescribed in plan; single-file create, all algorithms specified line-by-line."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "12 test cases fully enumerated with expected results; standard node:test idempotency-pattern test authoring against a fresh module."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Dogfood parity test with concrete code template in plan; single test file, byte-equality check via renderBlock export."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Manifest-gated installer dispatch adjacent to existing session-capture call site; helper code fully spec'd in plan, 2-test coverage prescribed."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "New sub-verb adapter mirroring init-prompt-session-capture shape with 5 test cases enumerated; exit-code semantics for UNSAFE_GITIGNORE_PATH explicitly prescribed."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Mechanical 4-line delegation in ensureGitignore with SA-4 force-install rationale and 3-case test update prescribed."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Dogfood task: run sub-verb on this repo's .gitignore; Task 4 dogfood parity test is the gating assertion. Pure mechanical re-baseline."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Docs-only edit: replace two stale '5 ephemeral paths' phrases with pointer to lib/gitignore-paths.mjs; verifier is grep count."
+    },
+    {
+      "task_id": "t9b",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Cross-cutting spec line replacement with exact before/after text supplied; bump revision and updated date. Pure docs edit."
+    }
+  ]
+}

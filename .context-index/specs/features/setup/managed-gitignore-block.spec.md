@@ -2,7 +2,7 @@
 
 ---
 charter: setup
-status: implemented
+status: validated
 kind: behavioral
 risk_level: low
 milestone:
