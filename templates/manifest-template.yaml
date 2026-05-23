@@ -301,6 +301,25 @@ repomap:
 # ============================================================================
 
 # ============================================================================
+# Setup
+# Scaffold-time install behavior. Run at every `adev install` / `adev upgrade`.
+# Distinct from `integrations:` (which gates runtime-feature install behavior
+# for opt-in integrations like session-capture).
+# ============================================================================
+
+# setup:
+#   # When true (default), `adev install` and `adev upgrade` write or refresh
+#   # an `adev:gitignore` paired-marker block in your project's .gitignore
+#   # listing ephemeral adev artifacts (lifecycle state, atomic-write temps,
+#   # partial writes, prototype workspace, etc.). The canonical path list lives
+#   # in lib/gitignore-paths.mjs.
+#   #
+#   # Set to false to opt out. Existing blocks are NOT removed automatically;
+#   # run `adev init ensure-gitignore --remove` to excise an installed block
+#   # (the --remove subverb always bypasses this knob).
+#   managed_gitignore: true
+
+# ============================================================================
 # Integrations
 # External tool integrations for session capture, notifications, etc.
 # ============================================================================
