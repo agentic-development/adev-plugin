@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.27.3](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.2...adev-cli-v0.27.3) (2026-05-23)
+
+
+### Features
+
+* **build:** integrate adev cost summary ticker between pipeline steps ([9af2cc5](https://github.com/agentic-development/adev-plugin/commit/9af2cc50365d2c785d639a11a5cf5ef18860e884))
+* **cli:** register adev cost verb in VERB_REGISTRY ([2043a5a](https://github.com/agentic-development/adev-plugin/commit/2043a5aa6bc27635c189d38e0de8db757036d070))
+* **session-awareness:** add cost summary CLI verb module ([6c79689](https://github.com/agentic-development/adev-plugin/commit/6c796891bb9f59231974cd33b96134948a6e42a1))
+* **session-awareness:** add cost-summary aggregator library ([6a43934](https://github.com/agentic-development/adev-plugin/commit/6a439341c10111bf40be8be7fc6ca6234035e8d8))
+* **session-awareness:** add cost-summary text and JSON formatters ([63f0ad0](https://github.com/agentic-development/adev-plugin/commit/63f0ad0d18820b12423195108aef521e2eb757eb))
+* **session-awareness:** per-spec cost ticker between /adev:build steps ([a84be4d](https://github.com/agentic-development/adev-plugin/commit/a84be4d4367ec727b53519146d399b0c26b0f6aa))
+* **setup:** add adev init ensure-gitignore [--remove] sub-verb ([53d5bca](https://github.com/agentic-development/adev-plugin/commit/53d5bcaca93e87ace5139693ca932427a6852efa))
+* **setup:** add MANAGED_GITIGNORE_PATHS canonical list ([e2dbe05](https://github.com/agentic-development/adev-plugin/commit/e2dbe05ae24660f2cf8db6164c3692030b78933e))
+* **setup:** adev-managed .gitignore block + ensureManagedBlock installer ([1e2a485](https://github.com/agentic-development/adev-plugin/commit/1e2a4855da50b64f22d46866cfda3cbdec0adb59))
+* **setup:** implement ensureManagedBlock / removeManagedBlock ([a7f7437](https://github.com/agentic-development/adev-plugin/commit/a7f7437582b908af5749d4c12bb88c81fe93d011))
+* **setup:** wire ensureManagedBlock into adev install/upgrade ([6dac1ec](https://github.com/agentic-development/adev-plugin/commit/6dac1ec494dd125acefd5d01246e924fe49ea19b))
+
 ## [0.27.2](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.1...adev-cli-v0.27.2) (2026-05-21)
 
 
