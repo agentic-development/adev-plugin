@@ -280,19 +280,31 @@ test("ensure-gitignore creates .gitignore with .adev/ entry", () => {
   }
 });
 
-test("ensure-gitignore is idempotent (does not duplicate .adev/)", () => {
+test("ensure-gitignore is idempotent (block is canonical; re-runs produce byte-identical output)", () => {
+  // Post-Task-7 contract: ensureGitignore delegates to ensureManagedBlock.
+  // The block's canonical body lists `.adev/` once. Pre-existing bare
+  // `.adev/` user lines outside the block are preserved (one bare line +
+  // one in-block line is the expected steady state).
   const dir = makeTempProject();
   writeFileSync(join(dir, ".gitignore"), ".adev/\n");
   try {
-    const r = spawnSync(
-      "node",
-      [CLI, "prototype", "ensure-gitignore"],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 0);
-    const gitignore = readFileSync(join(dir, ".gitignore"), "utf8");
-    const matches = gitignore.match(/\.adev\//g) || [];
-    assert.strictEqual(matches.length, 1);
+    const r1 = spawnSync("node", [CLI, "prototype", "ensure-gitignore"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    assert.strictEqual(r1.status, 0);
+    const first = readFileSync(join(dir, ".gitignore"), "utf8");
+    assert.ok(first.includes("# >>> adev:gitignore >>>"), "block installed");
+    assert.ok(first.includes(".adev/"), ".adev/ present");
+
+    // Re-run: should be a noop.
+    const r2 = spawnSync("node", [CLI, "prototype", "ensure-gitignore"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    assert.strictEqual(r2.status, 0);
+    const second = readFileSync(join(dir, ".gitignore"), "utf8");
+    assert.strictEqual(second, first, "second run byte-identical");
   } finally {
     cleanup(dir);
   }

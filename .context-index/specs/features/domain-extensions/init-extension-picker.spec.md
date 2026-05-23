@@ -30,6 +30,7 @@ source-manifest:
     - tests/lib/cli/domain-extension-picker.test.mjs
     - tests/skills/init-picker-doc.test.mjs
   computed-at: "2026-05-20T17:34:35.328Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

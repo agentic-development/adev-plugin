@@ -263,6 +263,71 @@ integrations:
 
 ---
 
+## Managed gitignore block (`setup.managed_gitignore`)
+
+The `adev install` and `adev upgrade` flows maintain an idempotent
+paired-marker `.gitignore` block bracketed by the sentinels:
+
+```
+# >>> adev:gitignore >>>
+…
+# <<< adev:gitignore <<<
+```
+
+The block lists ephemeral adev artifacts that must never be committed —
+lifecycle state, hygiene reports, atomic-write temps, partial-artifact
+writes, the prototype workspace, and similar. The canonical path list
+lives in `lib/gitignore-paths.mjs` and is the single source of truth: the
+installer renders it verbatim, and a dogfood parity test
+(`tests/lib/gitignore-paths-dogfood.test.mjs`) pins this repo's own
+`.gitignore` block to it.
+
+### Knob
+
+```yaml
+setup:
+  managed_gitignore: true  # default; set false to skip block writes
+```
+
+When `false`, both `adev install` / `adev upgrade` AND `adev init
+ensure-gitignore` (write path) skip the block and emit the advisory:
+
+```
+managed gitignore: disabled by manifest
+```
+
+`adev init ensure-gitignore --remove` **always bypasses the knob** —
+operators must still be able to remove a block they previously installed
+after toggling the install-time write off.
+
+### Why `setup.*` and not `integrations.*`?
+
+The sibling knob `integrations.session_capture.gitignored` lives under
+`integrations.*` because it gates **runtime-feature install behavior** for
+an opt-in integration (session capture). `setup.managed_gitignore` lives
+under `setup.*` because it governs **scaffold-time install behavior**
+that runs at every `adev install` / `adev upgrade`, regardless of which
+integrations a project has opted into. Different lifecycles → different
+namespaces.
+
+### Manual operations
+
+```bash
+adev init ensure-gitignore           # install or refresh the block
+adev init ensure-gitignore --remove  # excise the block (always works)
+```
+
+### Separately owned
+
+The pre-existing `# >>> adev:session-capture-gitignore >>>` block (which
+covers `.context-index/sessions/`) remains separately owned by
+`lib/session-capture-installer.mjs` and is **not** absorbed by the
+managed-gitignore installer. The two blocks coexist independently.
+
+**Spec:** `.context-index/specs/features/setup/managed-gitignore-block.spec.md`
+
+---
+
 ## Domain Profiles
 
 Domain profiles adapt adev's behavior to the type of project you are building. They control overlay files for charters, specs, reviewers, gates, verification, and test configuration, allowing the framework to apply domain-appropriate defaults and constraints.
