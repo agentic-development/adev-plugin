@@ -99,7 +99,7 @@ This charter retains ownership of *what* execution state means: session-start co
 | Hook-Driven Session Capture | SessionEnd + PreCompact capture into a configurable, gitignored-by-default sessions directory. Master via `integrations.session_capture.capture` (`hook`/`post-commit`/`off`) and `integrations.session_capture.gitignored` (boolean). | must-have | 0.28.0 | implemented |
 | Retro Session Consumption | `/adev:retro` reads `.context-index/sessions/` within the analysis window and emits a Session Activity section (tool-use distribution, per-spec session counts, token/cost trends, context gaps). Degrades silently when capture is off or directory empty. | should-have | 0.28.0 | validated |
 | Init-Time Capture Configuration | `/adev:init` prompts for `integrations.session_capture.capture` and `integrations.session_capture.gitignored`; detects existing post-commit setup and tracked session files, defaulting those projects to back-compat (`post-commit, gitignored: false`). | should-have | 0.28.0 | implemented |
-| Per-Spec Cost Ticker | `adev cost summary --spec <path>` aggregates per-spec / per-step token + USD totals from `.session-tracking.jsonl`; `/adev:build` invokes it between pipeline steps to surface a running cost ticker. Read-only verb; optional `build.cost_warn_usd` threshold emits a one-shot `[cost warn]` line. | should-have | 0.28.0 | implemented |
+| Per-Spec Cost Ticker | `adev cost summary --spec <path>` aggregates per-spec / per-step token + USD totals from `.session-tracking.jsonl`; `/adev:build` invokes it between pipeline steps to surface a running cost ticker. Read-only verb; optional `build.cost_warn_usd` threshold emits a one-shot `[cost warn]` line. | should-have | 0.28.0 | validated |
 
 ## Deferred Capabilities
 
