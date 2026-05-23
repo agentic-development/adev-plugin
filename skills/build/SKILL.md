@@ -1,6 +1,7 @@
 ---
 name: adev:build
 description: "End-to-end build orchestrator. Chains review, plan, route, implement, and validate for one or more specs through a full lifecycle pipeline. Use when the user says 'build', 'end to end', 'full pipeline', 'build the spec', 'build the milestone', 'run the whole pipeline', or wants to execute multiple lifecycle steps in sequence without manual handoffs."
+model: claude-sonnet-4-6
 ---
 
 # Build Pipeline Orchestrator
@@ -51,7 +52,7 @@ Use when the spec already exists with a valid `.review.md` (PASS or PASS_WITH_NO
 
 Use when starting from scratch or when the spec needs authoring. Step 0 dispatches `/adev:specify` only when no spec file exists AND the lifecycle log has no completed `specify` event for this spec; otherwise Step 0 is recorded as `skipped` (the prior session's spec work is authoritative — `review-specs` and downstream gates catch any drift). Step 1 runs `/adev:review-specs`; on BLOCK with `build.max_review_retries > 0`, the build dispatches the BLOCK→revise auto-retry loop documented under "Blocker handling" below — `/adev:specify --revise <spec>` re-authors the spec, `/adev:review-specs` re-evaluates, and the convergence detector (`lib/loop-convergence.mjs`) decides PASS / CONTINUE / NO_PROGRESS / REGRESSED / BUDGET_EXHAUSTED. With `--require-human-final-pass`, a PASS verdict halts the build at `PASS_PENDING_HUMAN` for operator acknowledgement. Includes the validate→implement retry loop if `build.max_retries > 0`.
 
-**Model tier:** The build orchestrator runs at the `build-orchestrator` role tier (`reasoning` by default, per the subagent-cost-routing spec). Override via `model_routing.subagent_overrides.build-orchestrator` in `manifest.yaml`.
+**Model:** The build orchestrator pins `claude-sonnet-4-6` via the skill's frontmatter `model:` field. The orchestrator's work is mechanical (gate-check, dispatch, record), and the 2026-05-16 validation-charter retro found Opus on the orchestrator was ~5× the Sonnet cost on cache reads — the dominant cost class. Per-step worker skills still resolve their own tier from `platform-context.yaml:model_tiers` (see `.context-index/specs/cross-cutting/model-routing.spec.md`). This is a temporary hardcode; the config-driven binding via `/adev:sync` is tracked by issue-538.
 
 ---
 
@@ -290,7 +291,23 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
 
    This is MANDATORY even if the subagent reported ALREADY_COMPLETE or similar — any COMPLETED status means the step succeeded. The helper atomically writes the state file and recalculates build status.
 
-6. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
+6. **Cost ticker between steps (cost-ticker.spec.md Behaviors 8 + 9).** After the just-completed step in `{review, plan, route, implement, validate}` has been recorded in step 5 and **before** dispatching the next step, invoke the cost ticker:
+
+   ```bash
+   # Interactive mode (default — ticker prints to stderr for visibility):
+   ADEV_BUILD_TICKER=1 adev cost summary --spec <SPEC_PATH> --include-checkpoints
+
+   # --auto mode (suppress informational output; cost-warn lines still surface on stderr):
+   ADEV_BUILD_TICKER=1 adev cost summary --spec <SPEC_PATH> --include-checkpoints --quiet
+   ```
+
+   The ticker is informational. A non-zero exit from the verb does NOT block the build — record the ticker invocation outcome in build state if useful and continue to the next step.
+
+   **Per-build cost-warn dedup (SA-1 resolution from review).** The verb itself does NOT dedup `[cost warn]` lines across invocations. The orchestrator owns the dedup contract: after the first `[cost warn]` line is observed for a `(spec, threshold)` pair, set a `cost_warn_emitted` boolean for the spec in `build-state.json` (or an equivalent in-memory marker for the duration of the build). Subsequent ticker invocations for the same spec suppress the `[cost warn]` line — pipe the verb's stderr through a filter that drops `[cost warn] spec cost` lines when the flag is true, or run the verb without redisplaying the warn line. The flag resets at the start of each new build.
+
+   Skip this section entirely for the `specify` step (cost ticker scopes to `{review, plan, route, implement, validate}` only).
+
+7. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
    - If `next` from step 5 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
    - If `next` is null or `buildStatus` is `"completed"` or `"failed"`: do NOT re-invoke. Print the final summary and exit without re-invocation.
 
