@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.4](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.3...adev-cli-v0.27.4) (2026-05-24)
+
+
+### Bug Fixes
+
+* **release:** document npm token rotation requirement ([32cf2ee](https://github.com/agentic-development/adev-plugin/commit/32cf2ee086a572c91478853aa7aff84770230246))
+* **release:** document npm token rotation requirement ([3725660](https://github.com/agentic-development/adev-plugin/commit/3725660f6ac3ee597d1de14e4950d6eef787f890))
+
 ## [0.27.3](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.2...adev-cli-v0.27.3) (2026-05-23)
 
 
