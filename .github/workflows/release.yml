@@ -59,6 +59,9 @@ jobs:
           fi
 
       - name: Publish to npm
+        # NPM_TOKEN must be a valid automation or granular access token with publish
+        # rights on @adev-org/*. A 404 PUT response from npm here typically means
+        # the token is expired/revoked, not that the package or version is missing.
         run: npm publish --access=public --provenance --tag ${{ steps.dist-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
