@@ -33,3 +33,13 @@ import { CANONICAL_EVENTS } from '../../lib/lifecycle-events.mjs';
 test('CANONICAL_EVENTS includes cost_checkpoint', () => {
   assert.ok(CANONICAL_EVENTS.has('cost_checkpoint'), 'CANONICAL_EVENTS must contain cost_checkpoint');
 });
+
+// ── Task 2: REQUIRED_FIELDS_BY_EVENT ─────────────────────────────────────────
+
+import { REQUIRED_FIELDS_BY_EVENT } from '../../lib/diagnostics/event-schemas.mjs';
+
+test('REQUIRED_FIELDS_BY_EVENT has cost_checkpoint entry with correct fields', () => {
+  const fields = REQUIRED_FIELDS_BY_EVENT['cost_checkpoint'];
+  assert.ok(Array.isArray(fields), 'cost_checkpoint entry must be an array');
+  assert.deepStrictEqual([...fields], ['event', 'ts', 'step', 'totals']);
+});
