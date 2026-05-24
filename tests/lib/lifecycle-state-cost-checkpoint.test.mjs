@@ -108,6 +108,22 @@ test('reportCostCheckpoint appends optional fields when provided', (t) => {
   assert.strictEqual(checkpoints[0].spec_ref, specPath);
 });
 
+// ── Task 6: lifecycle-event-log spec cross-spec consistency ──────────────────
+
+test('lifecycle-event-log.spec.md canonical-events table includes cost_checkpoint', () => {
+  const content = readFileSync(
+    resolve(
+      PROJECT_ROOT,
+      '.context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md',
+    ),
+    'utf8',
+  );
+  assert.ok(
+    content.includes('cost_checkpoint'),
+    'lifecycle-event-log.spec.md must mention cost_checkpoint in the canonical-events table',
+  );
+});
+
 // ── Task 5: build skill prose presence ───────────────────────────────────────
 
 test('skills/build/SKILL.md step 6 contains exactly one cost-checkpoint invocation', () => {
