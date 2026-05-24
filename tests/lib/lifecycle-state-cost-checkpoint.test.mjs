@@ -26,17 +26,25 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname, '..', '..');
 
-// ── Task 1: CANONICAL_EVENTS ──────────────────────────────────────────────────
+// ── Imports ───────────────────────────────────────────────────────────────────
 
 import { CANONICAL_EVENTS } from '../../lib/lifecycle-events.mjs';
+import { REQUIRED_FIELDS_BY_EVENT } from '../../lib/diagnostics/event-schemas.mjs';
+import {
+  appendEvent,
+  reportCostCheckpoint,
+  readEvents,
+  GateError,
+  _clearEventDiagnosticsRegistryCache,
+} from '../../lib/lifecycle-state.mjs';
+
+// ── Task 1: CANONICAL_EVENTS ──────────────────────────────────────────────────
 
 test('CANONICAL_EVENTS includes cost_checkpoint', () => {
   assert.ok(CANONICAL_EVENTS.has('cost_checkpoint'), 'CANONICAL_EVENTS must contain cost_checkpoint');
 });
 
 // ── Task 2: REQUIRED_FIELDS_BY_EVENT ─────────────────────────────────────────
-
-import { REQUIRED_FIELDS_BY_EVENT } from '../../lib/diagnostics/event-schemas.mjs';
 
 test('REQUIRED_FIELDS_BY_EVENT has cost_checkpoint entry with correct fields', () => {
   const fields = REQUIRED_FIELDS_BY_EVENT['cost_checkpoint'];
@@ -45,8 +53,6 @@ test('REQUIRED_FIELDS_BY_EVENT has cost_checkpoint entry with correct fields', (
 });
 
 // ── Task 3: reportCostCheckpoint emitter ─────────────────────────────────────
-
-import { reportCostCheckpoint, readEvents } from '../../lib/lifecycle-state.mjs';
 
 function makeTempProject() {
   const dir = mkdtempSync(join(tmpdir(), 'adev-cost-checkpoint-'));
@@ -161,4 +167,88 @@ test('reportCostCheckpoint throws on invalid args', (t) => {
     () => reportCostCheckpoint(root, specPath, { step: 'review', totals: [1, 2] }),
     (err) => err.code === 'EVENT_SCHEMA_INVALID',
   );
+});
+
+// ── Task 7: Additional coverage ──────────────────────────────────────────────
+
+// 7a: Unknown discriminator regression guard — additive-change requirement
+// (AC: "Logs containing events with unknown discriminators continue to parse
+//  and project under unknownEvents[]")
+test('unknown discriminators still project under unknownEvents[] (additive-change regression guard)', (t) => {
+  const root = makeTempProject();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const specPath = '.context-index/specs/features/test/my-feature.spec.md';
+  writeFileSync(join(root, specPath), '# Spec\n');
+
+  // appendEvent does not validate the discriminator for unknown types — it just
+  // logs them through. We write a cost_foo event (unknown) directly.
+  // We must create a manifest with no event_diagnostics so there is no gate.
+  const root2 = mkdtempSync(join(tmpdir(), 'adev-rcc-unknown-'));
+  t.after(() => rmSync(root2, { recursive: true, force: true }));
+  mkdirSync(join(root2, '.context-index', 'specs', 'features', 'test'), { recursive: true });
+  writeFileSync(
+    join(root2, '.context-index', 'manifest.yaml'),
+    'project:\n  name: t\n  adev_version: "0.28.0"\n',
+  );
+  const sp2 = '.context-index/specs/features/test/my-feature.spec.md';
+  writeFileSync(join(root2, sp2), '# Spec\n');
+
+  // Append an unknown event then a known cost_checkpoint event
+  appendEvent(root2, sp2, { event: 'cost_foo', step: 'review', totals: {} });
+  reportCostCheckpoint(root2, sp2, { step: 'review', totals: { input_tokens: 1, output_tokens: 1, cache_read_tokens: 0, cache_creation_tokens: 0, cost_usd: 0, wall_seconds: 0 } });
+
+  const events = readEvents(root2, sp2);
+  const unknown = events.filter((e) => e.event === 'cost_foo');
+  const checkpoints = events.filter((e) => e.event === 'cost_checkpoint');
+  assert.strictEqual(unknown.length, 1, 'unknown event must be preserved on read');
+  assert.strictEqual(checkpoints.length, 1, 'cost_checkpoint event must be present');
+});
+
+// 7b: Diagnostic schema test — cost_checkpoint missing 'step' throws GateError in strict mode
+test('cost_checkpoint event missing step is rejected in strict event_diagnostics mode', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'adev-rcc-strict-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(join(root, '.context-index', 'governance'), { recursive: true });
+  mkdirSync(join(root, '.context-index', 'specs', 'features', 'test'), { recursive: true });
+  writeFileSync(
+    join(root, '.context-index', 'manifest.yaml'),
+    'project:\n  name: t\n  adev_version: "0.28.0"\nlifecycle:\n  event_diagnostics: strict\n',
+  );
+  writeFileSync(
+    join(root, '.context-index', 'governance', 'diagnostics.yaml'),
+    [
+      'diagnostics:',
+      '  - id: adev/event-schema-valid',
+      '    runner: plugin:tier1/event-schema-valid.mjs',
+      '    severity: error',
+      '    tier: 1',
+      '    scope: event-impact',
+    ].join('\n') + '\n',
+  );
+  _clearEventDiagnosticsRegistryCache();
+
+  const specPath = '.context-index/specs/features/test/my-feature.spec.md';
+  writeFileSync(join(root, specPath), '# Spec\n');
+
+  // A cost_checkpoint event is missing the required 'step' field — must throw GateError
+  assert.throws(
+    () => appendEvent(root, specPath, { event: 'cost_checkpoint', totals: { input_tokens: 1 } }),
+    (err) => err instanceof GateError,
+  );
+});
+
+// 7c: Append-only — duplicate (spec, step) pair appends new event (Behavior 9)
+test('reportCostCheckpoint appends new event for same (spec, step) pair (append-only, Behavior 9)', (t) => {
+  const root = makeTempProject();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const specPath = '.context-index/specs/features/test/my-feature.spec.md';
+  writeFileSync(join(root, specPath), '# Spec\n');
+
+  const totals = { input_tokens: 10, output_tokens: 20, cache_read_tokens: 0, cache_creation_tokens: 0, cost_usd: 0.001, wall_seconds: 1 };
+  reportCostCheckpoint(root, specPath, { step: 'implement', totals });
+  reportCostCheckpoint(root, specPath, { step: 'implement', totals });
+
+  const events = readEvents(root, specPath);
+  const checkpoints = events.filter((e) => e.event === 'cost_checkpoint' && e.step === 'implement');
+  assert.strictEqual(checkpoints.length, 2, 'both events must be appended (append-only, Behavior 9)');
 });
