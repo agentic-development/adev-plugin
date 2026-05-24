@@ -108,6 +108,21 @@ test('reportCostCheckpoint appends optional fields when provided', (t) => {
   assert.strictEqual(checkpoints[0].spec_ref, specPath);
 });
 
+// ── Task 5: build skill prose presence ───────────────────────────────────────
+
+test('skills/build/SKILL.md step 6 contains exactly one cost-checkpoint invocation', () => {
+  const content = readFileSync(
+    resolve(PROJECT_ROOT, 'skills/build/SKILL.md'),
+    'utf8',
+  );
+  const matches = content.match(/adev report --type cost-checkpoint --from-summary/g) ?? [];
+  assert.strictEqual(
+    matches.length,
+    1,
+    `Expected exactly one cost-checkpoint invocation in skills/build/SKILL.md, found ${matches.length}`,
+  );
+});
+
 test('reportCostCheckpoint throws on invalid args', (t) => {
   const root = makeTempProject();
   t.after(() => rmSync(root, { recursive: true, force: true }));

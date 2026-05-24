@@ -307,6 +307,14 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
 
    Skip this section entirely for the `specify` step (cost ticker scopes to `{review, plan, route, implement, validate}` only).
 
+   **Cost-checkpoint persistence (cost-checkpoint-events.spec.md Behavior 7).** After the cost ticker call above, persist the aggregated cost into the lifecycle log. This is informational — a non-zero exit does NOT block the build:
+
+   ```bash
+   adev report --type cost-checkpoint --from-summary --spec <SPEC_PATH> --step <STEP_NAME>
+   ```
+
+   The `--step` argument echoes the step name just passed to `adev build-state record`. When the aggregator has no data for the spec (`totals: null`), the call exits 0 with no event appended (Behavior 6 — silent no-op).
+
 7. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
    - If `next` from step 5 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
    - If `next` is null or `buildStatus` is `"completed"` or `"failed"`: do NOT re-invoke. Print the final summary and exit without re-invocation.
