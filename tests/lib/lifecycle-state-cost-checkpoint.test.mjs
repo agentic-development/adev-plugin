@@ -43,3 +43,91 @@ test('REQUIRED_FIELDS_BY_EVENT has cost_checkpoint entry with correct fields', (
   assert.ok(Array.isArray(fields), 'cost_checkpoint entry must be an array');
   assert.deepStrictEqual([...fields], ['event', 'ts', 'step', 'totals']);
 });
+
+// ── Task 3: reportCostCheckpoint emitter ─────────────────────────────────────
+
+import { reportCostCheckpoint, readEvents } from '../../lib/lifecycle-state.mjs';
+
+function makeTempProject() {
+  const dir = mkdtempSync(join(tmpdir(), 'adev-cost-checkpoint-'));
+  mkdirSync(join(dir, '.context-index', 'specs', 'features', 'test'), { recursive: true });
+  writeFileSync(
+    join(dir, '.context-index', 'manifest.yaml'),
+    'project:\n  name: t\n  adev_version: "0.28.0"\n',
+  );
+  return dir;
+}
+
+test('reportCostCheckpoint appends a cost_checkpoint event', (t) => {
+  const root = makeTempProject();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const specPath = '.context-index/specs/features/test/my-feature.spec.md';
+  writeFileSync(join(root, specPath), '# Spec\n');
+
+  const totals = {
+    input_tokens: 100,
+    output_tokens: 200,
+    cache_read_tokens: 0,
+    cache_creation_tokens: 0,
+    cost_usd: 0.001,
+    wall_seconds: 5,
+  };
+  reportCostCheckpoint(root, specPath, { step: 'review', totals });
+
+  const events = readEvents(root, specPath);
+  const checkpoints = events.filter((e) => e.event === 'cost_checkpoint');
+  assert.strictEqual(checkpoints.length, 1);
+  assert.strictEqual(checkpoints[0].step, 'review');
+  assert.deepStrictEqual(checkpoints[0].totals, totals);
+  assert.ok(typeof checkpoints[0].ts === 'string', 'ts must be a string');
+});
+
+test('reportCostCheckpoint appends optional fields when provided', (t) => {
+  const root = makeTempProject();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const specPath = '.context-index/specs/features/test/my-feature.spec.md';
+  writeFileSync(join(root, specPath), '# Spec\n');
+
+  const totals = { input_tokens: 10, output_tokens: 20, cache_read_tokens: 0, cache_creation_tokens: 0, cost_usd: 0.0001, wall_seconds: 1 };
+  const model_breakdown = [{ model: 'claude-sonnet-4-6', cost_usd: 0.0001, share: 1.0 }];
+  reportCostCheckpoint(root, specPath, {
+    step: 'implement',
+    totals,
+    model_breakdown,
+    since: '2026-05-01T00:00:00.000Z',
+    skipped_lines: 3,
+    spec_ref: specPath,
+  });
+
+  const events = readEvents(root, specPath);
+  const checkpoints = events.filter((e) => e.event === 'cost_checkpoint');
+  assert.strictEqual(checkpoints.length, 1);
+  assert.deepStrictEqual(checkpoints[0].model_breakdown, model_breakdown);
+  assert.strictEqual(checkpoints[0].since, '2026-05-01T00:00:00.000Z');
+  assert.strictEqual(checkpoints[0].skipped_lines, 3);
+  assert.strictEqual(checkpoints[0].spec_ref, specPath);
+});
+
+test('reportCostCheckpoint throws on invalid args', (t) => {
+  const root = makeTempProject();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const specPath = '.context-index/specs/features/test/my-feature.spec.md';
+  writeFileSync(join(root, specPath), '# Spec\n');
+
+  assert.throws(
+    () => reportCostCheckpoint(root, specPath, null),
+    (err) => err.code === 'EVENT_SCHEMA_INVALID',
+  );
+  assert.throws(
+    () => reportCostCheckpoint(root, specPath, { step: '', totals: {} }),
+    (err) => err.code === 'EVENT_SCHEMA_INVALID',
+  );
+  assert.throws(
+    () => reportCostCheckpoint(root, specPath, { step: 'review', totals: null }),
+    (err) => err.code === 'EVENT_SCHEMA_INVALID',
+  );
+  assert.throws(
+    () => reportCostCheckpoint(root, specPath, { step: 'review', totals: [1, 2] }),
+    (err) => err.code === 'EVENT_SCHEMA_INVALID',
+  );
+});
