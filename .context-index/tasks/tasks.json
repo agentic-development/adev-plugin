@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 114,
+  "seq": 116,
   "epics": [
     {
       "id": "epic-1",
@@ -3679,16 +3679,16 @@
     {
       "id": "issue-539",
       "title": "Cost-checkpoint lifecycle events (persist per-step cost into the event log)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-72",
       "spec_ref": ".context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md. Sibling to cost-ticker.spec.md (read-side); this is the write-side that persists per-step cost into the lifecycle event log via a new cost_checkpoint discriminator. Origin: 2026-05-24 conversation — lifecycle log had zero cost entries despite cost-ticker work.",
+      "notes": "Validated: HIGH confidence (2026-05-24) | Report: .context-index/specs/features/session-awareness/cost-checkpoint-events.validate.md | Files verified: 8 | Tests: PASS; Closed: undefined",
       "next_action": "Run /adev:review-specs --spec .context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
       "created": "2026-05-24T15:19:06.507Z",
-      "updated": "2026-05-24T15:19:06.507Z"
+      "updated": "2026-05-24T22:12:43.717Z"
     }
   ]
 }
