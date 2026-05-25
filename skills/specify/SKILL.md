@@ -188,7 +188,7 @@ adev report --type step --spec <spec-path> --step specify --status started
 **Exit event** (emit at the end of the Summary step):
 
 ```bash
-adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS --from-summary
 ```
 
 The `--verdict PASS` is required — downstream gates require the prior step to have completed with PASS or PASS_WITH_NOTES. The specify step has no failure path that reaches the Summary step (success implies the spec was written, status set to `review-pending`, and the Feature work item created or skipped), so success implies PASS. Failure paths emit `--status failed` separately and do not reach the exit emission.
@@ -505,7 +505,7 @@ Output path, charter, status, counts of behaviors/error cases/tasks/acceptance c
 Emit the lifecycle exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:review-specs::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `specify` step has no failure path that reaches this point (the spec was written, status set to `review-pending`, Feature work item created or skipped), so success implies PASS.
 
 ```bash
-adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS --from-summary
 ```
 
 ---
