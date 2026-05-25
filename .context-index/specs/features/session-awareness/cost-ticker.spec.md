@@ -32,6 +32,7 @@ source-manifest:
     - tests/lib/cost-summary.test.mjs
     - tests/skills/build/cost-ticker-prose.test.mjs
   computed-at: "2026-05-22T14:38:32.264Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
