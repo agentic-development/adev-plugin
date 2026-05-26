@@ -40,3 +40,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"no transitions configured in gates.yaml — SKIP/N/A","ts":"2026-05-22T14:51:42.141Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"no UI files in diff — visual verification not applicable","ts":"2026-05-22T14:51:43.055Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-22T14:53:11.181Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-24T21:49:05.181Z","ts":"2026-05-24T21:49:05.181Z","diagnostic_warnings":["adev/frontmatter-present"]}

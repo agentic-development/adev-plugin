@@ -906,7 +906,7 @@ Lifecycle event log (gating between sub-skills, step events, next-step discovery
 - `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — read the projection (`steps`, `currentStep`, `planTasks`, `interventions`).
 - `requireGate(state, "<prior-step>", { mode })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — hard-blocks (or warns) before dispatching each sub-skill.
 - `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode` (`strict` default, or `advisory`).
-- `reportStep(projectRoot, specPath, { step, status, verdict? })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emit step entry/exit so the next turn's `currentState` is fresh.
+- `reportStep(projectRoot, specPath, { step, status, verdict?, totals?, model_breakdown?, skipped_lines? })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emit step entry/exit so the next turn's `currentState` is fresh. Cost fields are optional and only included in `step_completed` events.
 - `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregate per-spec projections (used by milestone-mode and the no-args resume scan).
 
 Build orchestrator resume cache:

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 112,
+  "seq": 116,
   "epics": [
     {
       "id": "epic-1",
@@ -724,6 +724,14 @@
       "planRef": ".context-index/specs/features/session-awareness/hook-driven-capture.plan.md",
       "created": "2026-05-20T17:59:35.816Z",
       "updated": "2026-05-20T17:59:35.816Z"
+    },
+    {
+      "id": "epic-95",
+      "title": "Cost-Checkpoint Lifecycle Events",
+      "status": "open",
+      "planRef": ".context-index/specs/features/session-awareness/cost-checkpoint-events.plan.md",
+      "created": "2026-05-24T20:57:34.712Z",
+      "updated": "2026-05-24T20:57:34.712Z"
     }
   ],
   "issues": [
@@ -3666,6 +3674,20 @@
       "created": "2026-05-22T00:00:00.000Z",
       "updated": "2026-05-22T00:00:00.000Z",
       "description": "Long-term replacement for the hardcoded `model:` frontmatter introduced in skills/build/SKILL.md alongside issue-497. Wires Claude Code's skill-frontmatter `model:` field into the existing `model_tiers` mechanism so SKILL.md sources stay provider-agnostic per model-routing.spec.md.\n\n## Background\nClaude Code skill frontmatter supports a `model:` field that pins the model for the skill's turn (docs: https://code.claude.com/docs/en/skills.md). adev's cross-cutting `model-routing.spec.md` (AC: 'No SKILL.md file contains a hardcoded model name') forbids concrete model IDs in SKILL.md sources — they should declare a tier (`fast` / `capable` / `reasoning`) and resolve at runtime from `platform-context.yaml:model_tiers`.\n\nThese two facts conflict: the frontmatter parser is static YAML, so a tier name there is meaningless to Claude Code. The reconciliation is a build-time materialization: bind skills to tiers in `manifest.yaml`, and have `/adev:sync` resolve the binding and write the concrete model ID into the on-disk SKILL.md frontmatter.\n\nIssue-497 lands a one-off hardcoded `model: claude-sonnet-4-6` in `skills/build/SKILL.md` to ship the Sonnet migration on milestone 0.28.0. This issue tracks replacing that hardcode with the config-driven mechanism.\n\n## Scope\n1. Manifest schema: add `skill_models:` block. Keys are skill names (e.g. `adev:build`); values are tier names (`fast` / `capable` / `reasoning`).\n2. CLI verb `adev model apply`: reads `skill_models`, resolves each tier from `platform-context.yaml:model_tiers`, writes the resolved model ID into the corresponding SKILL.md frontmatter `model:` line. Idempotent.\n3. `--check` mode: exit non-zero if any bound skill's on-disk `model:` value disagrees with the resolved binding. For CI / pre-commit.\n4. `/adev:sync` integration: invoke `adev model apply` as part of the sync flow so updating the binding propagates automatically.\n5. Amend `model-routing.spec.md` to document the rendered-vs-source distinction (source SKILL.md MAY contain `model:` populated by the apply step; manual edits to that field are discouraged).\n6. Replace the hardcoded `model: claude-sonnet-4-6` in `skills/build/SKILL.md` with the binding flow: declare `\"adev:build\": capable` in manifest, run apply.\n\n## Acceptance\n- `skill_models` schema is documented in manifest.yaml + templates/manifest.yaml.tmpl\n- `adev model apply` resolves tiers and writes frontmatter; tests cover write, idempotency, missing-tier fallback, malformed-binding rejection.\n- `adev model apply --check` returns non-zero on drift; CI / pre-commit can use it.\n- `/adev:sync` runs the apply step automatically.\n- `model-routing.spec.md` amended to reflect the source-vs-rendered model contract.\n- `skills/build/SKILL.md` switched from hardcode to binding; existing Sonnet behavior preserved.\n\n## References\n- issue-497 — short-term hardcoded migration (this is the long-term replacement)\n- issue-501 — cost ticker (independent, but enables A/B measurement of the binding's effect)\n- `.context-index/specs/cross-cutting/model-routing.spec.md` — invariant being preserved\n- `skills/build/SKILL.md:54` — currently makes an aspirational claim about `model_routing.subagent_overrides` that this work makes real (under a different schema name)"
+    },
+    {
+      "id": "issue-539",
+      "title": "Cost-checkpoint lifecycle events (persist per-step cost into the event log)",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-72",
+      "spec_ref": ".context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
+      "dependencies": [],
+      "notes": "Validated: HIGH confidence (2026-05-24) | Report: .context-index/specs/features/session-awareness/cost-checkpoint-events.validate.md | Files verified: 8 | Tests: PASS; Closed: undefined",
+      "next_action": "Run /adev:review-specs --spec .context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
+      "created": "2026-05-24T15:19:06.507Z",
+      "updated": "2026-05-24T22:12:43.717Z"
     }
   ]
 }
