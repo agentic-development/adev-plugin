@@ -662,7 +662,6 @@
       "id": "epic-87",
       "title": "Lib-Import Control-Flow Extraction",
       "status": "closed",
-      "planRef": ".context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.plan.md",
       "milestone": "0.28.0",
       "created": "2026-05-17T21:30:37.684Z",
       "updated": "2026-05-20T20:49:46.949Z",
