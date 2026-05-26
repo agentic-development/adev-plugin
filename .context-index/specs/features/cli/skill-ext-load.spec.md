@@ -3,7 +3,7 @@
 ---
 charter: cli
 kind: behavioral
-status: implemented
+status: validated
 risk_level: low
 revision: 2
 charter-revision: 4

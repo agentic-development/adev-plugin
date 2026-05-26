@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Well-specified verb with full behavioral contract and error cases; established lib/cli pattern in codebase with gate.mjs as direct reference; single new file, no boundary crossings."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Single-line VERB_REGISTRY insertion with direct pattern match from existing entries; exact line provided by plan; fully mechanical with no design decisions."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "All 13 test cases enumerated in spec/plan; gate.test.mjs provides direct subprocess pattern; single new file with minor adaptation for symlink/realpath SEC-1 test case."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Trivially mechanical: create empty .gitkeep, add one .gitignore line; both deliverables are fully specified with exact content; same-family template pattern exists."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Exact prose to insert is provided verbatim in the plan; single markdown file edit with precise insertion point; established pattern of adev-verb calls in skill Load Context steps."
+    }
+  ]
+}

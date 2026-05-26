@@ -36,3 +36,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-24T22:13:16.439Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/lifecycle-events.mjs","drift_at":"2026-05-24T23:57:19.750Z","ts":"2026-05-24T23:57:19.750Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","totals":{"input_tokens":14230,"output_tokens":8812,"cache_read_tokens":1183440,"cache_creation_tokens":21302,"cost_usd":0.398218,"wall_seconds":0},"model_breakdown":[{"model":"claude-sonnet-4-6","cost_usd":0.398218,"share":1}],"ts":"2026-05-25T00:18:32.207Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-26T00:04:42.752Z","ts":"2026-05-26T00:04:42.752Z","diagnostic_warnings":["adev/frontmatter-present"]}

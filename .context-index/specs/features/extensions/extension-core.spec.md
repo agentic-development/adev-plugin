@@ -21,6 +21,7 @@ source-manifest:
     - tests/lib/extensions/resolve-source.test.mjs
     - tests/lib/extensions/version-check.test.mjs
   computed-at: "2026-05-11T16:09:28.535Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
