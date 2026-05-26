@@ -95,6 +95,7 @@ The domain-profiles module (now validated) provides the foundation: `loadDomainC
 | Manifest Stamp | Write `installed_extensions` entry in manifest.yaml on successful install | Must-have |  | validated |
 | Extension List Command | `extension list` reads manifest and displays installed extensions with version and date | Should-have |  | validated |
 | Extension Authoring Documentation Bundle | `docs/extensions.md` author guide, `templates/adev-extension.example.yaml` manifest template, and `extensions/example-validation-check/` reference extension demonstrating the full provides.* surface (especially `provides.governance` wiring a `kind: quality-gate` check that integrates with `adev report --type validator`). Closes the post-cli-driver-surface documentation gap (issue-485). | Must-have | 0.27.0 | validated |
+| Skill Extension Installation (`provides.skill_extensions`) | Extensions declare a map of skill name → source `.md` file. `adev extension install` copies each to `.context-index/skill-extensions/_<ext-name>/<skill>.md`. Read at skill invocation time by `adev skill-ext load` (cli charter). Project-level file at `skill-extensions/<skill>.md` is never touched. | Should-have | | implemented |
 
 ## Interface Contracts
 
