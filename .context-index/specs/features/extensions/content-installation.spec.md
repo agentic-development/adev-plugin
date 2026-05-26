@@ -15,6 +15,7 @@ source-manifest:
     - lib/extensions/content-install.mjs
     - tests/lib/extensions/content-install.test.mjs
   computed-at: "2026-05-11T16:09:28.534Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

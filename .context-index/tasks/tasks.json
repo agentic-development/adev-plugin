@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 116,
+  "seq": 118,
   "epics": [
     {
       "id": "epic-1",
@@ -733,6 +733,14 @@
       "planRef": ".context-index/specs/features/session-awareness/cost-checkpoint-events.plan.md",
       "created": "2026-05-24T20:57:34.712Z",
       "updated": "2026-05-24T20:57:34.712Z"
+    },
+    {
+      "id": "epic-96",
+      "title": "provides.skill_extensions — Skill Extension Install",
+      "status": "open",
+      "planRef": ".context-index/specs/features/extensions/skill-extension-install.plan.md",
+      "created": "2026-05-26T00:41:16.535Z",
+      "updated": "2026-05-26T00:41:16.535Z"
     }
   ],
   "issues": [
@@ -3689,6 +3697,19 @@
       "next_action": "Run /adev:review-specs --spec .context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
       "created": "2026-05-24T15:19:06.507Z",
       "updated": "2026-05-24T22:12:43.717Z"
+    },
+    {
+      "id": "issue-540",
+      "title": "skill-ext load — Skill Extension Verb",
+      "status": "closed",
+      "priority": 2,
+      "type": "epic",
+      "planRef": ".context-index/specs/features/cli/skill-ext-load.plan.md",
+      "dependencies": [],
+      "notes": "Validated: PASS (2026-05-25) — .context-index/specs/features/cli/skill-ext-load.validate.md | All 13 acceptance criteria PASS, 4139/4139 tests PASS. HIGH confidence: all files committed, tests pass, spec criteria met.",
+      "next_action": null,
+      "created": "2026-05-25T23:57:08.062Z",
+      "updated": "2026-05-26T00:15:54.964Z"
     }
   ]
 }
