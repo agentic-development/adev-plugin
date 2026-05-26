@@ -18,6 +18,7 @@
     "hooks/",
     "skills/",
     "templates/",
+    "extensions/",
     ".claude-plugin/",
     ".githooks/"
   ],
