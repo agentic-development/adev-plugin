@@ -175,7 +175,7 @@ Before planning, verify the spec has passed architecture review by reading the l
    After the plan file is written at the end of the skill, emit the matching exit event with the produced plan's verdict:
 
    ```bash
-   adev report --type step --spec <spec-path> --step plan --status completed --verdict <verdict>
+   adev report --type step --spec <spec-path> --step plan --status completed --verdict <verdict> --from-summary
    ```
 
 ### Spec Mode — Workspace-Aware Target-Repo Detection

@@ -479,7 +479,7 @@ After the validation report has been written to disk (Step 14 / atomic-write com
 - Any FAIL → `--verdict FAIL`
 
 ```bash
-adev report --type step --spec <spec-path> --step validate --status completed --verdict <aggregate>
+adev report --type step --spec <spec-path> --step validate --status completed --verdict <aggregate> --from-summary
 ```
 
 This event is REQUIRED. Without it, the lifecycle log shows `lifecycle_step:validate started` with no terminal event, and any future skill that gates on validate completion will block permanently.
