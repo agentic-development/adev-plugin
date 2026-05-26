@@ -32,6 +32,7 @@ source-manifest:
     - tests/lib/gitignore-paths.test.mjs
     - tests/lib/prototype-server.test.mjs
   computed-at: "2026-05-22T13:12:27.680Z"
+drift_detected: true
 ---
 
 <!-- Live Spec within the setup charter.

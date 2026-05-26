@@ -842,6 +842,7 @@ async function runDomainPicker() {
       ask,
       installFn: installExtension,
       readStamps: readManifestStamps,
+      print: log,
     });
     if (result.action === "skipped-workspace-root") {
       log("Picker skipped (workspace root). Run inside a registered repo to pick a domain extension.");
