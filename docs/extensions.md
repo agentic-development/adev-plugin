@@ -82,6 +82,40 @@ A 7-file directory installed to `.context-index/domains/<name>/` with a generate
 
 Golden samples copied into `.context-index/samples/`. Each entry can be a string (same path under both `source` and `dest`) or `{src, dest}`. Both paths are containment-checked; any escape fails with `PATH_TRAVERSAL`.
 
+### `provides.skill_extensions`
+
+Extensions can ship **skill augmentation files** that append instructions to specific adev skills at the project level.
+
+```yaml
+provides:
+  skill_extensions:
+    implement: skills/implement-extension.md
+    plan: skills/plan-extension.md
+```
+
+**Key:** skill name (must match `[a-zA-Z0-9_-]+`)
+**Value:** path to a `.md` file within the extension root
+
+**Install behavior:**
+
+At install time, `adev extension install` copies each declared file to:
+
+```
+.context-index/skill-extensions/_<ext-name>/<skill>.md
+```
+
+The `_<ext-name>/` prefix signals that the file is extension-managed. It is distinct from the project-level file at `.context-index/skill-extensions/<skill>.md`, which is **never touched** by the installer.
+
+**Idempotency:** Re-running `adev extension install` overwrites the `_<ext-name>/` files with the latest content from the extension source.
+
+**Consumption:** Skill extension files are read at skill invocation time by `adev skill-ext load` (see `.context-index/specs/features/cli/skill-ext-load.spec.md`). The `adev skill-ext load <skill>` verb concatenates the project-level and all extension-level files for the named skill and returns the merged instructions.
+
+**Constraints:**
+- Skill names must match `[a-zA-Z0-9_-]+` (fails with `INVALID_SKILL_NAME`).
+- Source paths must not escape the extension root (fails with `PATH_TRAVERSAL`).
+- Declared source files must exist (fails with `MISSING_SKILL_EXT_FILE`).
+- Source files must be `.md` (fails with `INVALID_FILE_TYPE`).
+
 ## Install-time merge semantics
 
 `npx adev-cli extension install <source>` walks each slot and merges per the rules below. The decision and rationale live in [ADR-0003: Data-Driven Registry for Review and Validate Skills](../.context-index/adrs/0003-configurable-review-registry.md) — read the ADR if the rules below ever surprise you.
