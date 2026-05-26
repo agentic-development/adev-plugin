@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.6](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.5...adev-cli-v0.27.6) (2026-05-26)
+
+
+### Bug Fixes
+
+* **install:** show picker menu and ship bundled domain extensions ([5b9a75f](https://github.com/agentic-development/adev-plugin/commit/5b9a75fc037a7e79044f9aaa3df9364b23e8df1b))
+* **install:** show picker menu and ship bundled domain extensions ([1b0366f](https://github.com/agentic-development/adev-plugin/commit/1b0366fc082cdb213fd8153b82fda322c2a1f2b9))
+
 ## [0.27.5](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.4...adev-cli-v0.27.5) (2026-05-26)
 
 
