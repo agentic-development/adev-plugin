@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.27.5](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.4...adev-cli-v0.27.5) (2026-05-26)
+
+
+### Features
+
+* **session-awareness:** add adev report --type cost-checkpoint CLI arm ([b89feb1](https://github.com/agentic-development/adev-plugin/commit/b89feb13ec06ae0f8782b13f6314a92bf0a958e0))
+* **session-awareness:** add cost_checkpoint to CANONICAL_EVENTS ([9da353d](https://github.com/agentic-development/adev-plugin/commit/9da353d456c51a2f0f879cb1aa07be8076fe7fa0))
+* **session-awareness:** add cost_checkpoint to REQUIRED_FIELDS_BY_EVENT ([de35bda](https://github.com/agentic-development/adev-plugin/commit/de35bda2318c5f7c008d8bd0440668a1458e3d88))
+* **session-awareness:** add reportCostCheckpoint emitter to lifecycle-state ([594f030](https://github.com/agentic-development/adev-plugin/commit/594f030fa2f71d9d664ebe4d1c89a9a89645bbc8))
+* **session-awareness:** decompose cost-checkpoint-events spec into 7 TDD tasks ([0f1cf1d](https://github.com/agentic-development/adev-plugin/commit/0f1cf1db9e0404fcb7efba9fcc5564544bc843bf))
+* **session-awareness:** embed per-step cost into step_completed via --from-summary ([bd684f0](https://github.com/agentic-development/adev-plugin/commit/bd684f0a30fa39bfa8a956fc7b91b3d82ae207f2))
+* **session-awareness:** wire cost-checkpoint persistence into build skill step 6 ([2544478](https://github.com/agentic-development/adev-plugin/commit/25444781705b31845019702077a7f0fa2671a8b0))
+
 ## [0.27.4](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.3...adev-cli-v0.27.4) (2026-05-24)
 
 
