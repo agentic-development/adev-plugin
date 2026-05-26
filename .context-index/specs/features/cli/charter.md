@@ -58,6 +58,7 @@ The dispatcher catches `GateError` (detected via `err.code === 'GATE_BLOCKED'`) 
 - **`gate require --skill <name> --spec <path>`** — Helper-side gate primitive. Loads lifecycle state for `<spec>`, evaluates whether the lifecycle step entered by `<skill>` is allowed (prior step complete with PASS or PASS_WITH_NOTES verdict). Exit 0 (pass), 2 (gate blocked), 1 (argument error). Per `cli-driver-surface/driver-substrate.spec.md`.
 - **`diagnose [--spec <p>] [--tier 1|2|3] [--json] [--only <ids>]`** — Runs the diagnostic registry, reports firing diagnostics. Exit 0 if clean, 2 if any error-severity diagnostic fires. Per `cli-driver-surface/adev-diagnose-cli.spec.md`.
 - **Future verbs** — `heuristics extract`, `report --type validator|step`, `schema check`, `trailer check`, and others from the `cli-driver-surface/inline-node-extraction-sweep` master spec. Each follows the same `lib/cli/<verb>.mjs` contract; charter Capability Map updates as each lands.
+- **`skill-ext load --skill <name>`** — project-level skill extension injection. Reads `.context-index/skill-extensions/<name>.md` and outputs content or `__NONE__`. Skills call this at Load Context to incorporate project-authored append instructions without modifying the plugin. Spec: `skill-ext-load.spec.md` (status: implemented).
 
 ## Key Responsibilities
 
