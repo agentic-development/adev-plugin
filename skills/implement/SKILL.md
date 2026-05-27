@@ -1,7 +1,6 @@
 ---
 name: adev:implement
 description: "Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. Use after planning to begin development."
-context: fork
 ---
 
 # Implement Plan
