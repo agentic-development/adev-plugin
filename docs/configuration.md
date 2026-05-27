@@ -7,6 +7,7 @@ adev uses three configuration files that live in the `.context-index/` directory
 - **`manifest.yaml`** — Framework behavior: modules, sync targets, specialists, gates, completion policy, and integrations
 - **`constitution.md`** — Project identity and principles: the source of truth for how the project works
 - **`platform-context.yaml`** — Tech stack metadata: language, runtime, test runner, and model tier configuration
+- **`governance/review.yaml`** — Project-level reviewer overlay: disable, augment, or cap domain-provided reviewers for `/adev:review-specs`
 
 > **Security note:** Never store integration credentials, API keys, or secrets in any of these configuration files. Use environment variables for sensitive values. Configuration files are committed to version control and are readable by all project contributors.
 
@@ -413,6 +414,104 @@ Domain names must match the pattern `/^[a-z0-9][a-z0-9-]*$/` (lowercase alphanum
 ### Resetting Customizations
 
 To reset all customizations and return to the bundled defaults, change `domain:` in your manifest back to a bundled domain name (e.g., `software`). The bundled profile is always pristine.
+
+---
+
+## governance/review.yaml
+
+`governance/review.yaml` is the project-level overlay for `/adev:review-specs`. It lives at `.context-index/governance/review.yaml` and is merged on top of the active domain's `reviewers.yaml`. Governance entries win on ID conflict, so this file is the right place to suppress, replace, or augment domain-provided reviewers.
+
+> **Key distinction:** this file does not control the three bundled reviewers (structural-architect, security-reviewer, consistency-analyzer). Those are loaded from `templates/review-specs/defaults.yaml` and are always present unless a domain's `reviewers.yaml` explicitly replaces them. `governance/review.yaml` is a project-level overlay applied *after* the domain layer.
+
+### Reviewer schema
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `id` | string | — | **(Required)** Unique reviewer identifier |
+| `dispatch` | string | `"always"` | When to run: `always`, `triggered`, or `never` |
+| `profile` | string | `"reviewer-capable"` | Execution profile: `reviewer-capable` or `read-only` |
+| `prompt` | string | — | Path to the reviewer's prompt file (relative to `.context-index/`) |
+| `patterns` | array | `[]` | File glob patterns that trigger this reviewer (used when `dispatch: triggered`) |
+| `keywords` | array | `[]` | Keywords in the spec content that trigger this reviewer (used when `dispatch: triggered`) |
+| `min_score` | number | `1` | Minimum pattern+keyword score required to trigger (used when `dispatch: triggered`) |
+| `severity_cap` | string | `"blocker"` | Cap all findings at this severity: `blocker`, `warning`, or `suggestion` |
+| `context_pack` | string | `"base"` | Context pack to load for this reviewer |
+
+### Disabling a domain reviewer
+
+To prevent a domain reviewer from running, add an entry for it with `dispatch: never`:
+
+```yaml
+# .context-index/governance/review.yaml
+reviewers:
+  - id: data-migration-reviewer
+    dispatch: never
+```
+
+The governance entry is merged on top of the domain entry by ID match, overriding `dispatch: always` with `dispatch: never`. The reviewer is excluded before any subagent is launched.
+
+> **`reviewers: []` is a no-op.** An empty list does not suppress domain reviewers — it simply means the governance overlay adds nothing. To suppress a specific reviewer you must name it explicitly with `dispatch: never`.
+
+### Triggered reviewers
+
+Reviewers with `dispatch: triggered` only run when the spec content scores above `min_score`. Score is computed as:
+
+- **2 points** per matching `patterns` glob
+- **1 point** per path segment in the spec path beyond the root
+- **1 point** per matching `keywords` term
+
+```yaml
+reviewers:
+  - id: security-deep-dive
+    dispatch: triggered
+    prompt: prompts/security-deep-dive.md
+    patterns:
+      - "**/*auth*"
+      - "**/*session*"
+    keywords:
+      - authentication
+      - token
+      - credential
+    min_score: 2
+```
+
+### Overriding a domain reviewer's severity cap
+
+To keep a domain reviewer running but limit its impact (e.g., treat all findings as warnings during a migration):
+
+```yaml
+reviewers:
+  - id: data-migration-reviewer
+    severity_cap: warning
+```
+
+This merges into the domain entry, leaving `dispatch`, `prompt`, and other fields inherited from the domain.
+
+### Merge order summary
+
+```
+bundled defaults (templates/review-specs/defaults.yaml)
+  ↓  domain reviewers (templates/domains/<domain>/reviewers.yaml)
+       — replace bundled defaults when domainReviewers is non-empty
+  ↓  governance overlay (.context-index/governance/review.yaml)
+       — governance wins on ID conflict
+```
+
+The result is the final reviewer list passed to `shouldDispatch()` for each spec.
+
+### Context packs
+
+The optional `context_packs` key declares additional files loaded for all reviewers:
+
+```yaml
+context_packs:
+  base:
+    include:
+      - .context-index/constitution.md
+      - .context-index/specs/cross-cutting/security-policy.md
+```
+
+Paths are resolved relative to the project root. Files matching the denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) are rejected at load time.
 
 ---
 
