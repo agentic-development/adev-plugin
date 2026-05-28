@@ -96,6 +96,8 @@ In particular:
 
 The Agent tool only accepts a `prompt` string — there are no env vars, JSON params, or other channels. All context the subagent needs must be serialized into the prompt. The orchestrator assembles a **context packet** per step with two sections: **pipeline context** (common to all steps) and **step context** (specific to each step).
 
+**Do not pass `isolation: "worktree"` on the `Agent({...})` call.** Build's five steps are serial and share the orchestrator's working tree by design. From inside an existing worktree (i.e., `cwd` contains `.claude/worktrees/`), worktree isolation creates a new worktree *inside* the parent's tree; the parent then captures it as untracked content under `.claude/worktrees/`, and every subsequent dispatch nests another level. Pass only `description` and `prompt`.
+
 #### Pipeline Context (included in every step's prompt)
 
 The orchestrator reads these once at build start and includes them in every subagent prompt:
