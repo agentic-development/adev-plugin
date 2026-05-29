@@ -398,7 +398,9 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
-Dispatch the subagent. Handle the returned status:
+Dispatch the subagent with a bare `Agent({description, prompt})`. **Do not pass `isolation: "worktree"`.** Implement runs tasks serially against the orchestrator's branch; the subagent must write to the same working tree. From inside an existing worktree (`cwd` contains `.claude/worktrees/`), worktree isolation nests a new worktree inside the parent — the parent then captures it as untracked `.claude/worktrees/agent-<id>/` content, and every per-task dispatch adds another level (8+ deep observed in field reports). Subagents that commit also defeat the harness's auto-cleanup contract, leaving the nested trees on disk forever.
+
+Handle the returned status:
 
 **DONE.** Proceed to visual verification (step 2e) then 2-stage review (steps 2f-2g).
 
