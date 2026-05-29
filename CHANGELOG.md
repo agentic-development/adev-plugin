@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.27.7](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.6...adev-cli-v0.27.7) (2026-05-29)
+
+
+### Bug Fixes
+
+* **build:** remove hardcoded model: claude-sonnet-4-6 from frontmatter ([99ff246](https://github.com/agentic-development/adev-plugin/commit/99ff246bebab3765cd16cb313b06854010544f52))
+* **implement:** remove context: fork to restore subagent dispatch ([bc5a8d9](https://github.com/agentic-development/adev-plugin/commit/bc5a8d9135acbec349461c4463101052824e06d9))
+* **implement:** remove context: fork to restore subagent dispatch capability ([b822488](https://github.com/agentic-development/adev-plugin/commit/b8224889b2188727f71bd80d0361df075357ffe2))
+* **skills:** guard build and implement against recursive worktree nesting ([eba1483](https://github.com/agentic-development/adev-plugin/commit/eba1483dabf7a6891e57488a58ca2335a7380e35))
+* **skills:** guard build and implement against recursive worktree nesting ([074087e](https://github.com/agentic-development/adev-plugin/commit/074087e9abaeca32bee192b18d66cceaef439ab8))
+
 ## [0.27.6](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.5...adev-cli-v0.27.6) (2026-05-26)
 
 
