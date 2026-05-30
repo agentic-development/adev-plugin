@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 118,
+  "seq": 120,
   "epics": [
     {
       "id": "epic-1",
@@ -3710,6 +3710,19 @@
       "next_action": null,
       "created": "2026-05-25T23:57:08.062Z",
       "updated": "2026-05-26T00:15:54.964Z"
+    },
+    {
+      "id": "issue-541",
+      "title": "Universal Skill Extensions",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/universal-skill-extensions.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/universal-skill-extensions.spec.md. Created by /adev:specify on 2026-05-30. Cross-cutting spec. Affects: 28 modules across the skill catalog.; Closed: [object Object]",
+      "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/universal-skill-extensions.spec.md",
+      "created": "2026-05-30T15:20:11.084Z",
+      "updated": "2026-05-30T17:19:00.914Z"
     }
   ]
 }
