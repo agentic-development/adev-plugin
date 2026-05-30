@@ -110,6 +110,8 @@ The `_<ext-name>/` prefix signals that the file is extension-managed. It is dist
 
 **Consumption:** Skill extension files are read at skill invocation time by `adev skill-ext load` (see `.context-index/specs/features/cli/skill-ext-load.spec.md`). The `adev skill-ext load <skill>` verb concatenates the project-level and all extension-level files for the named skill and returns the merged instructions.
 
+**Universal consumption:** Every adev skill calls `adev skill-ext load --skill <slug>` during its earliest context-loading step. An extension pack can ship `provides.skill_extensions: { plan: "...", validate: "...", specify: "...", ... }` for any skill name and the corresponding skill will pick it up on its next invocation. See `.context-index/specs/cross-cutting/universal-skill-extensions.spec.md` for the coverage contract.
+
 **Constraints:**
 - Skill names must match `[a-zA-Z0-9_-]+` (fails with `INVALID_SKILL_NAME`).
 - Source paths must not escape the extension root (fails with `PATH_TRAVERSAL`).
