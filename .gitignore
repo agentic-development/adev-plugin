@@ -94,3 +94,42 @@ viz/dist/
 
 # Skill extension layers managed by `adev extension install` — not committed.
 .context-index/skill-extensions/_*/
+
+# >>> adev:gitignore >>>
+# hygiene reports (regenerated)
+.context-index/hygiene/
+# review packets (regenerated)
+.context-index/packets/
+# session-tracking cursor
+.context-index/.token-cursor.json
+# issue-reminder counter
+.context-index/.reminder-counter
+# session telemetry
+.context-index/.session-tracking.jsonl
+# local user config override
+.context-index/user-config
+# preflight session flag
+.context-index/.context-preflight-ok
+# execution state (transient)
+.context-index/.execution-state.json
+# lifecycle-gate advisory counter
+.context-index/.advisory-counter
+# build-state JSON (jsonl event logs ARE committed; only *.json build-state ignored) — SA-1
+.context-index/lifecycle-state/*.json
+# legacy build-state (pre-rename)
+.context-index/build-state/*.json
+# issue-board CAS lock
+.context-index/tasks/tasks.json.lock
+# issue-board atomic-write temp
+.context-index/tasks/tasks.json.*.tmp
+# backend-migration resume state
+.context-index/tasks/.migrate-state.json
+# incremental artifact write — satisfies cross-cutting/incremental-artifact-writes:236
+*.partial
+# incremental artifact lock
+*.partial.lock
+# gitignore-installer atomic-write temp (SEC-2)
+.gitignore.*.tmp
+# prototype workspace
+.adev/
+# <<< adev:gitignore <<<

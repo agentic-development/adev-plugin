@@ -18,6 +18,7 @@ source-manifest:
     - templates/adev-extension.example.yaml
     - tests/extensions/skill-extension-install.test.mjs
   computed-at: "2026-05-26T00:52:25.468Z"
+drift_detected: true
 ---
 
 # Live Spec: `provides.skill_extensions` — Domain Extension Skill Injection
