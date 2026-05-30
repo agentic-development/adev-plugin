@@ -14,6 +14,16 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 - `--dry-run`: shows what would be created without writing any files
 - `--workspace`: initialize a workspace root that aggregates multiple child repos under one `adev-workspace.yaml`
 
+### Load Skill Extensions
+
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill init
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Behavior by Project State
 
 ### No `.context-index/` exists (First Run)

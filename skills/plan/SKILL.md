@@ -220,6 +220,14 @@ If the CLI call fails, fall back to reading each file individually.
 
 5. **Review verdict and notes:** The review-gate read in Step 1 already returned `state.steps.review`. Use its `verdict` and `notes` fields directly — do not re-read or parse the `.review.md` artifact. The plan should address or acknowledge any `PASS_WITH_NOTES` notes.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill plan
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ### Workspace-Aware Target-Repo Context Loading
 
 When in workspace-aware Spec Mode (target-repo detected), load context from the target repo instead of (or in addition to) the current repo:
@@ -770,7 +778,11 @@ Plan complete and saved to <path to plan file>.
 <N> tasks covering <M> acceptance criteria from the spec.
 <S> tasks tagged with specialist routing.
 
-To implement: /adev:implement --plan <path>
+Next: /adev:route --plan <path>
+  Scores each task on a four-dimensional routing matrix and writes a
+  `<plan-stem>.routing.json` sidecar that /adev:implement reads to decide
+  auto-agent / assisted-agent / human-only execution per task.
+Then: /adev:implement --plan <path>
 To review the plan: open <path to plan file>
 To re-plan after spec changes: /adev:plan --spec <path>
 ```

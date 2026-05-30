@@ -126,6 +126,14 @@ Used by all modes (Cross-Cutting loads only constitution and product charter).
 - Any existing specs in the same module directory — to avoid duplication
 - `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill specify
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 **Heuristics:** Load module-scoped heuristics for the charter module via the CLI:
 
 ```bash
