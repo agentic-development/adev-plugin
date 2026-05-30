@@ -75,6 +75,14 @@ Log a one-time advisory when fallback is active: "model_tiers not configured in 
 
 **This skill never contains hardcoded model names.** Use only tier names (`fast`, `capable`, `reasoning`) in all subagent dispatch instructions.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill write-test
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ---
 
 ## Step 1a: Infrastructure Preflight
