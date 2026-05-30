@@ -7,7 +7,7 @@
 
 project:
   name: "adev-plugin"
-  adev_version: "0.26.0"
+  adev_version: "0.27.7"
   description: "Claude Code plugin and CLI implementing a full-lifecycle Agentic Development Framework"
   type: cli
 
@@ -285,3 +285,5 @@ hygiene:
       # main→branch merge. Advisory metadata, not content drift.
       - "62caa688a2d94a84697cc1f7c55bfa099264a2da"
       - "1a6af4f953f789eba11c825329eb4d1b3f697f78"
+
+domain: software

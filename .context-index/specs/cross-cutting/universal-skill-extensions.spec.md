@@ -3,7 +3,7 @@
 ---
 mode: cross-cutting
 kind: behavioral
-status: implemented
+status: validated
 risk_level: low
 revision: 1
 created: 2026-05-30

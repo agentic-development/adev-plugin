@@ -19,6 +19,7 @@ source-manifest:
     - skills/document/SKILL.md
     - tests/skills/document.test.mjs
   computed-at: "2026-04-12T11:48:02.739Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

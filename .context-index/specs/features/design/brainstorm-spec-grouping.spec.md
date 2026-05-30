@@ -14,6 +14,7 @@ source-manifest:
     - skills/brainstorm/SKILL.md
     - tests/skills/brainstorm-spec-grouping.test.mjs
   computed-at: "2026-05-18T12:44:21.316Z"
+drift_detected: true
 ---
 
 # Skill Spec: Brainstorm Step 8 Capability Grouping Suggestions
