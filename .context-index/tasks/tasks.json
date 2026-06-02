@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 116,
+  "seq": 117,
   "epics": [
     {
       "id": "epic-1",
@@ -3688,6 +3688,18 @@
       "next_action": "Run /adev:review-specs --spec .context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
       "created": "2026-05-24T15:19:06.507Z",
       "updated": "2026-05-24T22:12:43.717Z"
+    },
+    {
+      "id": "issue-540",
+      "title": "Make adev terminal skills /goal-friendly with transcript-provable completion tokens",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-06-02T13:33:26.948Z",
+      "updated": "2026-06-02T13:33:26.948Z"
     }
   ]
 }
