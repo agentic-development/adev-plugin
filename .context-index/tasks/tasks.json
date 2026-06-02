@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 116,
+  "seq": 117,
   "epics": [
     {
       "id": "epic-1",
@@ -2109,7 +2109,8 @@
       "notes": "Currently brainstorm step 8 suggests capabilities but does not suggest how to group them into specs. The skill should recommend optimal capability grouping into live specs based on cohesion, complexity, and dependency relationships.",
       "next_action": null,
       "created": "2026-05-08T00:39:10.470Z",
-      "updated": "2026-05-08T00:39:10.470Z"
+      "updated": "2026-06-02T14:35:51.451Z",
+      "planRef": ".context-index/specs/features/prototype-brainstorm/prototype-core.plan.md"
     },
     {
       "id": "issue-339",
