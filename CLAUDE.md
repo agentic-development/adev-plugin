@@ -121,12 +121,12 @@ This project uses the Agentic Development Framework (adev).
 - Constitution: `.context-index/constitution.md`
 - Manifest: `.context-index/manifest.yaml`
 - Platform: JavaScript (ESM), Node.js, npm, node:test
-- Available skills: /adev:brainstorm, /adev:specify, /adev:review-specs, /adev:plan, /adev:implement, /adev:write-test, /adev:validate, /adev:debug, /adev:hygiene, /adev:issues
+- Available skills (31): /adev:init, /adev:sync, /adev:using-adev, /adev:work, /adev:brainstorm, /adev:specify, /adev:review-specs, /adev:prototype, /adev:plan, /adev:route, /adev:implement, /adev:write-test, /adev:build, /adev:validate, /adev:debug, /adev:eval, /adev:recover, /adev:deploy, /adev:standalone, /adev:issues, /adev:status, /adev:hygiene, /adev:retro, /adev:codehealth, /adev:repomap, /adev:reconcile, /adev:sample, /adev:document, /adev:research, /adev:learn, /adev:assess (see `docs/skill-reference.md`)
 
 <!-- BEGIN TASK MANAGEMENT -->
 ## Task Management
 
-Issues are tracked using the file backend. The issue board lives at `.context-index/tasks/tasks.md`.
+Issues are tracked using the JSON backend. The issue board lives at `.context-index/tasks/tasks.json` (rendered to a human-readable board on demand).
 
 - Use `/adev:issues` to manage issues interactively (create, update, close, view board)
 - Use `/adev:issues ready` to see actionable issues (open and unblocked)

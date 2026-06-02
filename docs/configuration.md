@@ -33,7 +33,7 @@ Project metadata used by skills for identification and context.
 ```yaml
 project:
   name: "my-project"
-  adev_version: "0.22.0"
+  adev_version: "0.27.7"
   description: "A web application for task management"
   type: web
   domain: software
