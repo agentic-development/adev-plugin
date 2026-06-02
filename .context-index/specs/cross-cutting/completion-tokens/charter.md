@@ -1,7 +1,7 @@
 ---
-status: draft
+status: approved
 kind: cross-cutting
-revision: 1
+revision: 2
 updated: 2026-06-02
 tracker-ref: issue-540
 ---
