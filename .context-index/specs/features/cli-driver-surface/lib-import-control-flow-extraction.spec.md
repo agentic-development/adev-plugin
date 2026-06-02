@@ -3,7 +3,7 @@ charter: cli-driver-surface
 kind: refactor
 status: review-passed
 risk_level: low
-milestone: adev-compiler-discipline
+milestone:
 revision: 2
 charter-revision: 3
 created: 2026-05-17

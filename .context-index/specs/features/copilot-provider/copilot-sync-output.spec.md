@@ -3,7 +3,7 @@ charter: copilot-provider
 kind: behavioral
 status: validated
 risk_level: medium
-milestone: v1
+milestone:
 revision: 2
 charter-revision: 6
 created: 2026-05-19

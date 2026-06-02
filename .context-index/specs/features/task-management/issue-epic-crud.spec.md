@@ -3,7 +3,7 @@
 ---
 charter: task-management
 status: validated
-milestone: 1
+milestone:
 revision: 1
 charter-revision: 3
 created: 2026-03-31

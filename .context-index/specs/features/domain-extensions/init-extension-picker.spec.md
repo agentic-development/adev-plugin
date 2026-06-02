@@ -3,7 +3,7 @@ charter: domain-extensions
 kind: behavioral
 status: validated
 risk_level: low
-milestone: v2
+milestone:
 revision: 2
 charter-revision: 4
 created: 2026-05-20

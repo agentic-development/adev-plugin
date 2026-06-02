@@ -2,7 +2,7 @@
 charter: task-management
 status: validated
 risk_level: medium
-milestone: strategic-planning-consolidation
+milestone:
 revision: 1
 charter-revision: 3
 created: 2026-04-16
