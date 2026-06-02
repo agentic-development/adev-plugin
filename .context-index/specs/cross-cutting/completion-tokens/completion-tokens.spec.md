@@ -1,8 +1,8 @@
 ---
 charter: completion-tokens
 kind: behavioral
-status: review-pending
-affects: [strategic-planning, validation, output-personas]
+status: review-passed
+affects: [strategic-planning, validation, setup]
 mode: cross-cutting
 revision: 1
 charter-revision: 2
@@ -23,17 +23,17 @@ Defines the behavioral contract for the `/goal`-friendly completion tokens that 
 - **B2 — validate FAIL.** When `/adev:validate` finishes with overall FAIL (any check failed, including a fail-fast quality-gate failure), then the last line of its chat output is exactly `ADEV-VALIDATE: FAIL`.
 - **B3 — build COMPLETE.** When `/adev:build` runs every required pipeline step to completion and the terminal validate step reports PASS, then the last line of its chat output is exactly `ADEV-BUILD: COMPLETE`.
 - **B4 — build FAILED.** When `/adev:build` terminates because a non-review step errored (implement/validate/plan/etc. returned a failure that halts the pipeline), then the last line of its chat output is exactly `ADEV-BUILD: FAILED`.
-- **B5 — build BLOCKED.** When `/adev:build` terminates because `/adev:review-specs` returned BLOCK and the BLOCK→revise loop stopped without reaching PASS — i.e. the convergence detector (`lib/loop-convergence.mjs`) returned a terminal stop verdict (`BUDGET_EXHAUSTED`, `NO_PROGRESS`, or `REGRESSED`), **or** `build.max_review_retries` was `0` so the first BLOCK is terminal — then the last line of its chat output is exactly `ADEV-BUILD: BLOCKED`.
+- **B5 — build BLOCKED.** When `/adev:build` terminates without reaching `COMPLETE` because of an unresolved review state, then the last line of its chat output is exactly `ADEV-BUILD: BLOCKED`. This covers two terminal cases from the convergence detector (`lib/loop-convergence.mjs`): (a) the BLOCK→revise loop stopped on a stop verdict (`BUDGET_EXHAUSTED`, `NO_PROGRESS`, or `REGRESSED`), or `build.max_review_retries` was `0` so the first BLOCK is terminal; and (b) the loop reached PASS but halted on `PASS_PENDING_HUMAN` (the `--require-human-final-pass` path) awaiting operator sign-off. In both cases the pipeline has not reached `COMPLETE`, so `BLOCKED` is the honest terminal token; the human-pending case is distinguished in the prose above the token, not in the token enum.
 - **B6 — persona-independence.** When any persona (Product / Developer / Architect) or verbosity level is active, then the completion-token line is emitted verbatim and unmodified. Persona and verbosity rules MUST NOT trim, reword, translate, summarize away, or fence the token.
 - **B7 — last-line anchoring.** When a terminal skill emits a completion token, then it is the final line of that skill's chat output for the run — no prose, blank-line-trailed sign-off, or follow-up question appears after it — so a transcript reader can anchor on it deterministically.
-- **B8 — exactly one token per terminal run.** A single `/adev:build` or `/adev:validate` invocation emits its completion token exactly once, at terminal state. Intermediate per-step progress lines are not tokens and must not match the token grammar.
+- **B8 — exactly one token per terminal run.** A single `/adev:build` or `/adev:validate` invocation emits its completion token exactly once, at terminal state. Intermediate per-step progress lines are not tokens and must not match the token grammar. Subagents dispatched by these skills (implement/validate-check/reviewer subagents) MUST NOT emit a completion-token-grammar line — only the top-level terminal skill emits the token, so a transcript reader anchored on the last match is never misled by an inner dispatch.
 
 **Persona-independence mechanism (pinned).** The mechanism is a **per-SKILL.md output directive plus a persona-overlay exemption clause** — not a change to the persona template renderer:
 
 1. Each terminal SKILL.md (`build`, `validate`) gains an explicit instruction in its report/output section: "Emit `ADEV-<SKILL>: <STATE>` as the final line, verbatim, regardless of active persona or verbosity."
 2. The persona overlay (the `## Persona Output Override` section consumed at session start, mirrored from `skills/using-adev/SKILL.md`) gains a clause adding completion tokens to the existing "always emitted regardless of persona" carve-out that today covers on-disk artifacts. Completion tokens join disk artifacts as persona-exempt output.
 
-**BLOCKED↔convergence-verdict mapping (pinned).** `ADEV-BUILD: BLOCKED` is the terminal token **iff** the build stopped on an unresolved review BLOCK. Concretely, the build's terminal status is BLOCKED when the review step's final convergence verdict ∈ {`BUDGET_EXHAUSTED`, `NO_PROGRESS`, `REGRESSED`} or `build.max_review_retries == 0` and review returned BLOCK. A `PASS`/`PASS_WITH_NOTES` convergence verdict continues the pipeline (eventually `COMPLETE`); a non-review step error yields `FAILED`.
+**BLOCKED↔convergence-verdict mapping (pinned).** `ADEV-BUILD: BLOCKED` is the terminal token **iff** the build stopped on an unresolved review state. Concretely, the build's terminal status is BLOCKED when the review step's final convergence verdict ∈ {`BUDGET_EXHAUSTED`, `NO_PROGRESS`, `REGRESSED`, `PASS_PENDING_HUMAN`}, or `build.max_review_retries == 0` and review returned BLOCK. A `PASS`/`PASS_WITH_NOTES` convergence verdict continues the pipeline (eventually `COMPLETE`); a non-review step error yields `FAILED`. (`PASS_PENDING_HUMAN` is a genuine *halt awaiting operator sign-off* under `--require-human-final-pass`, not a defect — but the pipeline has not reached `COMPLETE`, so the token reports `BLOCKED`.)
 
 ## System Constitution Reference
 
@@ -47,7 +47,7 @@ Defines the behavioral contract for the `/goal`-friendly completion tokens that 
 |---|---|---|
 | `validation` (`skills/validate/SKILL.md`) | Low | Add a final-line directive: emit `ADEV-VALIDATE: PASS\|FAIL` from the overall verdict (Behaviors B1–B2, B6–B8). |
 | `strategic-planning` (`skills/build/SKILL.md`) | Low | Add a final-line directive: emit `ADEV-BUILD: COMPLETE\|FAILED\|BLOCKED` from terminal status, with the convergence→BLOCKED mapping (Behaviors B3–B8). |
-| `output-personas` (persona overlay in `skills/using-adev/SKILL.md`) | Low | Add completion tokens to the persona-exempt output carve-out (Behavior B6). |
+| `setup` (persona overlay in `skills/using-adev/SKILL.md` `## Persona Output Override`) | Low | Add completion tokens as a new bullet in the persona-exempt output carve-out, alongside disk artifacts (Behavior B6). |
 | docs | Low | Document the token convention and a worked `/goal` example (e.g. in `docs/concepts.md` or a new unattended-runs guide). |
 
 ## Integration Points
