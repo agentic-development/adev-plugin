@@ -205,6 +205,8 @@ repomap:
     - "coverage/**"
     - "*.min.js"
     - "*.generated.*"
+    - ".claude/**"
+    - ".context-index/hygiene/**"
 
 # ============================================================================
 # Hygiene
