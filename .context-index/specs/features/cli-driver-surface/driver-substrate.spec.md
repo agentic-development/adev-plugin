@@ -3,7 +3,7 @@ charter: cli-driver-surface
 kind: behavioral
 status: validated
 risk_level: medium
-milestone: adev-compiler-discipline
+milestone:
 revision: 1
 charter-revision: 2
 created: 2026-05-14

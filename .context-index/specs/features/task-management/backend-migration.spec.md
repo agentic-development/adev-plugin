@@ -3,7 +3,7 @@ charter: task-management
 kind: action
 status: validated
 risk_level: medium
-milestone: 4
+milestone:
 revision: 1
 charter-revision: 6
 created: 2026-05-19

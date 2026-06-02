@@ -3,7 +3,7 @@ charter: tree-sitter-repomap
 kind: behavioral
 status: validated
 risk_level: medium
-milestone: v0.5.2
+milestone:
 revision: 3
 charter-revision: 1
 charter-extension: true
