@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 118,
+  "seq": 119,
   "epics": [
     {
       "id": "epic-1",
@@ -732,6 +732,14 @@
       "planRef": ".context-index/specs/features/session-awareness/cost-checkpoint-events.plan.md",
       "created": "2026-05-24T20:57:34.712Z",
       "updated": "2026-05-24T20:57:34.712Z"
+    },
+    {
+      "id": "epic-96",
+      "title": "Terminal Completion Tokens",
+      "status": "open",
+      "planRef": ".context-index/specs/cross-cutting/completion-tokens/completion-tokens.plan.md",
+      "created": "2026-06-02T23:55:24.415Z",
+      "updated": "2026-06-02T23:55:24.415Z"
     }
   ],
   "issues": [
