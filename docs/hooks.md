@@ -27,11 +27,13 @@ All hooks follow the same protocol:
 | `lifecycle-gate-edit` | PreToolUse | Edit | Blocks | Block edits that bypass lifecycle gates |
 | `merge-guard` | PreToolUse | Bash | Blocks | Block merges to protected branches |
 | `lifecycle-gate-bash` | PreToolUse | Bash | Blocks | Block bash commands that bypass lifecycle gates |
+| `plan-body-write-guard` | PreToolUse | `Write\|Edit` | Blocks | Block direct writes to immutable plan-task bodies |
 | `context-read-tracker` | PostToolUse | Read | Advisory | Track which context files have been read |
 | `sync-trigger` | PostToolUse | Edit | Advisory | Trigger sync after constitution edits |
 | `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives (legacy post-commit mode) |
 | `issue-reminder` | PostToolUse | `.*` (all) | Advisory | Remind about relevant open issues |
 | `lifecycle-gate-advisory` | PostToolUse | `.*` (all) | Advisory | Emit advisory warnings about lifecycle state |
+| `post-validate-extract-heuristics` | Stop | `.*` | Advisory | Extract reusable heuristics from the session after `/adev:validate` completes |
 | `session-end` | SessionEnd | `.*` | Advisory | Write a session summary to `.context-index/sessions/` when Claude Code ends a session (registered dynamically when `integrations.session_capture.capture: hook`) |
 | `pre-compact` | PreCompact | `.*` | Advisory | Write a session summary before Claude Code compacts the transcript, skipping if SessionEnd already wrote one for this session (registered dynamically when `integrations.session_capture.capture: hook`) |
 
