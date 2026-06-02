@@ -64,17 +64,21 @@ dead. No action needed. Examples: `lib/cli/domain-extension-picker.mjs`
 `lib/profiles/adapters/{claude-code,opencode}.mjs` (`HARNESS`, `capabilities`,
 `prepareForDispatch`, …), `providers/copilot/adapter.mjs` (`getCopilotHome`).
 
-### Genuine dead-export candidates (7)
-No reference anywhere in source or tests. Low-value cleanup — each coexists with
-referenced exports in its file (hence medium, not high). Verify before removing
-(some may be intended public surface or recently added):
+### Genuine dead-export candidates (7) — RESOLVED 2026-06-02
+On inspection, all 7 are **used internally** within their own file (0 references
+in any other file, including tests) — i.e. over-exported, not dead code. 4 were
+plain internal helpers and have been un-exported; 3 are intentional/borderline
+public API and were left exported (rationale below).
 
-| File | Line | Symbol | Note |
-|------|------|--------|------|
-| lib/sync/cursor-writer.mjs | 38 | `deriveDescription` | 4 unused helpers clustered in one file — likely internal helpers that should drop `export`, or genuinely unused |
-| lib/sync/cursor-writer.mjs | 69 | `deriveIdentitySentence` | " |
-| lib/sync/cursor-writer.mjs | 80 | `defaultPointerBody` | " |
-| lib/sync/cursor-writer.mjs | 164 | `extractUserAdditions` | " |
+| File | Line | Symbol | Resolution |
+|------|------|--------|------------|
+| lib/sync/cursor-writer.mjs | 38 | `deriveDescription` | **un-exported** (internal helper) |
+| lib/sync/cursor-writer.mjs | 69 | `deriveIdentitySentence` | **un-exported** (internal helper) |
+| lib/sync/cursor-writer.mjs | 80 | `defaultPointerBody` | **un-exported** (internal helper) |
+| lib/sync/cursor-writer.mjs | 164 | `extractUserAdditions` | **un-exported** (internal helper) |
+| lib/plan-routing-sidecar.mjs | 353 | `unlinkSidecarTmp` | kept — code comment documents it as a deliberate re-export for external cleanup callers |
+| lib/providers/copilot/matcher.mjs | 15 | `MAX_MATCHER_BYTES` | kept — spec-anchored limit constant (MATCHER_TOO_LARGE), plausibly exported for boundary tests |
+| lib/repomap/index.mjs | 84 | `readManifest` | kept — module utility with public API JSDoc; part of the repomap module surface |
 | lib/plan-routing-sidecar.mjs | 353 | `unlinkSidecarTmp` | possibly a test-teardown helper that lost its caller |
 | lib/providers/copilot/matcher.mjs | 15 | `MAX_MATCHER_BYTES` | unused constant |
 | lib/repomap/index.mjs | 84 | `readManifest` | used internally by `run()` in same file — over-exported, not dead; consider un-exporting |
@@ -111,7 +115,8 @@ duplicate-logic` if needed.
 - The real find here was the **repomap-exclude gap** (worktree pollution), now
   fixed in `manifest.yaml` (`repomap.exclude` += `.claude/**`,
   `.context-index/hygiene/**`).
-- Optional: trim the 7 genuine dead-export candidates (notably the 4 in
-  `lib/sync/cursor-writer.mjs`).
+- Done: trimmed 4 of the 7 dead-export candidates (un-exported internal helpers
+  in `lib/sync/cursor-writer.mjs`); the other 3 were intentional public API and
+  kept.
 - Consider teaching the repomap graph about the CLI verb table so future scans
   don't need manual dynamic-dispatch suppression.
