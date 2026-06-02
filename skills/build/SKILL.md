@@ -840,6 +840,16 @@ Build complete.
   Retry cycles: 0 | N of M (checks fixed: [...], regressions: [...])
 ```
 
+### Completion token (`/goal`-friendly)
+
+When the build reaches a terminal state for a single spec (or the final spec of a `--charter`/`--milestone` run), the **final line** of your chat output for that run MUST be the build completion token — emit it verbatim, mapped from the terminal status:
+
+- All required steps completed and the terminal Validate step reported PASS → `ADEV-BUILD: COMPLETE`
+- A non-review step errored and halted the pipeline (e.g. implement/validate failure with `build.max_retries == 0`) → `ADEV-BUILD: FAILED`
+- The pipeline stopped on an unresolved review state → `ADEV-BUILD: BLOCKED`. This is the terminal token when the review step's final convergence verdict (from `lib/loop-convergence.mjs`) is one of `BUDGET_EXHAUSTED`, `NO_PROGRESS`, `REGRESSED`, or `PASS_PENDING_HUMAN` (the `--require-human-final-pass` halt awaiting operator sign-off), or when `build.max_review_retries == 0` and review returned BLOCK.
+
+Rules: emit it exactly once, as plain text (no code fence, no backticks, no trailing prose after it), as the very last line, regardless of the active persona or verbosity level. It is a transcript-provable marker so Claude Code's `/goal` evaluator can read completion from the transcript (see `.context-index/specs/cross-cutting/completion-tokens/`). Subagents and per-step sub-skills (review/plan/implement/validate) MUST NOT emit a build completion-token line — only this top-level orchestrator does, once, at terminal state.
+
 ---
 
 ## Error Cases
