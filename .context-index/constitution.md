@@ -105,7 +105,7 @@ Plan-task: <task-number>          # when implementing a plan task
 | Roadmaps | `.context-index/specs/roadmap/` |
 | Lifecycle state | `.context-index/lifecycle-state/` |
 | Sync helpers | `lib/sync/` |
-| End-user & agent reference docs | `docs/*.md` — start at `docs/README.md` for the index. Includes `skill-reference.md` (per-skill usage + args), `cli-reference.md` (all CLI verbs by audience, when present), `installation.md`, `getting-started.md`, `concepts.md`, `configuration.md`, `governance.md`, `hooks.md`, `extensions.md`, `troubleshooting.md`. Agents should consult these when looking up CLI verb signatures, lifecycle procedures, or end-user-facing explanations rather than reverse-engineering from source. |
+| End-user & agent reference docs | `docs/*.md` — start at `docs/README.md` for the index. Includes `skill-reference.md` (per-skill usage + args), `cli-reference.md` (all CLI verbs by audience), `installation.md`, `getting-started.md`, `concepts.md`, `configuration.md`, `governance.md`, `hooks.md`, `extensions.md`, `troubleshooting.md`. Agents should consult these when looking up CLI verb signatures, lifecycle procedures, or end-user-facing explanations rather than reverse-engineering from source. |
 
 ## Quality Gates
 
