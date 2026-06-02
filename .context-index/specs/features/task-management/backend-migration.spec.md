@@ -1,12 +1,3 @@
-# Live Spec: Backend Migration
-
-<!-- Action Spec within the task-management charter.
-     One-shot CLI verb (`adev issues migrate`) that converts the configured
-     issue board from one backend to another. Idempotent via .beads-map.json
-     and title/spec_ref matching; supports --dry-run and --include-closed.
-     Parent Charter: .context-index/specs/features/task-management/charter.md
-     Exemplar: .context-index/specs/features/lifecycle-artifacts/smoke-validation.spec.md -->
-
 ---
 charter: task-management
 kind: action
@@ -30,6 +21,15 @@ source-manifest:
   computed-at: "2026-05-20T01:57:16.716Z"
 drift_detected: true
 ---
+
+# Live Spec: Backend Migration
+
+<!-- Action Spec within the task-management charter.
+     One-shot CLI verb (`adev issues migrate`) that converts the configured
+     issue board from one backend to another. Idempotent via .beads-map.json
+     and title/spec_ref matching; supports --dry-run and --include-closed.
+     Parent Charter: .context-index/specs/features/task-management/charter.md
+     Exemplar: .context-index/specs/features/lifecycle-artifacts/smoke-validation.spec.md -->
 
 ## Postconditions
 

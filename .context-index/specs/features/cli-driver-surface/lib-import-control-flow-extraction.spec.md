@@ -1,13 +1,3 @@
-# Live Spec: Lib-Import Control-Flow Extraction
-
-<!-- Live Spec within the cli-driver-surface charter.
-     This is a focused follow-up to inline-node-extraction-sweep.spec.md.
-     That spec removed EXECUTABLE inline-Node patterns (`node -e`, `Run inline Node:`,
-     `--input-type=module -e`) and is implemented. This spec covers a different,
-     narrower scope: DESCRIPTIVE fenced JavaScript blocks in skill prose that
-     embed agent-side CONTROL-FLOW logic (branching, iteration, lookup) and
-     should live inside the corresponding CLI verb's implementation instead. -->
-
 ---
 charter: cli-driver-surface
 kind: refactor
@@ -19,6 +9,16 @@ charter-revision: 3
 created: 2026-05-17
 updated: 2026-05-17
 ---
+
+# Live Spec: Lib-Import Control-Flow Extraction
+
+<!-- Live Spec within the cli-driver-surface charter.
+     This is a focused follow-up to inline-node-extraction-sweep.spec.md.
+     That spec removed EXECUTABLE inline-Node patterns (`node -e`, `Run inline Node:`,
+     `--input-type=module -e`) and is implemented. This spec covers a different,
+     narrower scope: DESCRIPTIVE fenced JavaScript blocks in skill prose that
+     embed agent-side CONTROL-FLOW logic (branching, iteration, lookup) and
+     should live inside the corresponding CLI verb's implementation instead. -->
 
 ## Current State
 

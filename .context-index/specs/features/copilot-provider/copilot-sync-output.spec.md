@@ -1,10 +1,3 @@
-# Live Spec: Copilot Sync-Target Output
-
-<!-- Live Spec within the copilot-provider charter.
-     Parent Charter: .context-index/specs/features/copilot-provider/charter.md
-     Covers: `.github/copilot-instructions.md` sync output,
-             `.github/instructions/<module>.instructions.md` sync output. -->
-
 ---
 charter: copilot-provider
 kind: behavioral
@@ -31,6 +24,13 @@ source-manifest:
     - tests/sync-copilot.test.mjs
   computed-at: "2026-05-20T00:30:34.826Z"
 ---
+
+# Live Spec: Copilot Sync-Target Output
+
+<!-- Live Spec within the copilot-provider charter.
+     Parent Charter: .context-index/specs/features/copilot-provider/charter.md
+     Covers: `.github/copilot-instructions.md` sync output,
+             `.github/instructions/<module>.instructions.md` sync output. -->
 
 ## Behavioral Contract
 
