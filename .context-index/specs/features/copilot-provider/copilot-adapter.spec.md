@@ -1,11 +1,3 @@
-# Live Spec: CopilotAdapter — install / uninstall / status
-
-<!-- Live Spec within the copilot-provider charter.
-     Parent Charter: .context-index/specs/features/copilot-provider/charter.md
-     Covers: CopilotAdapter install/uninstall/status, Skill name compliance check,
-     CLI install integration, CLI charter revision, --user flag seeding,
-     AGENTS.md compat confirmation, Smoke install verification. -->
-
 ---
 charter: copilot-provider
 kind: behavioral
@@ -36,6 +28,14 @@ source-manifest:
   computed-at: "2026-05-19T20:22:00.045Z"
 drift_detected: true
 ---
+
+# Live Spec: CopilotAdapter — install / uninstall / status
+
+<!-- Live Spec within the copilot-provider charter.
+     Parent Charter: .context-index/specs/features/copilot-provider/charter.md
+     Covers: CopilotAdapter install/uninstall/status, Skill name compliance check,
+     CLI install integration, CLI charter revision, --user flag seeding,
+     AGENTS.md compat confirmation, Smoke install verification. -->
 
 ## Behavioral Contract
 

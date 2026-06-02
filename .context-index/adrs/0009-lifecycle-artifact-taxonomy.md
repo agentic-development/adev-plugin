@@ -4,6 +4,8 @@
 
 Accepted
 
+> **Update 2026-06-02 (path correction)**: This ADR's decision was implemented. The single-template references below (`charter-template.md`, `live-spec-template.md` / `.live-spec-template.md`, `refactoring-spec-template.md`) were replaced by the kind-suffixed template set now on disk: `templates/charter-template.{feature,module,cross-cutting,initiative}.md` and `templates/spec-template.{behavioral,refactor,action,skill,integration,artifact}.md`. The taxonomy described here is current; only the template filenames changed.
+
 ## Date
 
 2026-05-14

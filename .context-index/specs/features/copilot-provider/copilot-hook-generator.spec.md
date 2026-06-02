@@ -1,8 +1,3 @@
-# Live Spec: Copilot Hook Config Generator
-
-<!-- Live Spec within the copilot-provider charter.
-     Parent Charter: .context-index/specs/features/copilot-provider/charter.md -->
-
 ---
 charter: copilot-provider
 kind: behavioral
@@ -29,6 +24,11 @@ source-manifest:
     - tests/copilot-tool-names.test.mjs
   computed-at: "2026-05-19T19:48:52.956Z"
 ---
+
+# Live Spec: Copilot Hook Config Generator
+
+<!-- Live Spec within the copilot-provider charter.
+     Parent Charter: .context-index/specs/features/copilot-provider/charter.md -->
 
 ## Behavioral Contract
 

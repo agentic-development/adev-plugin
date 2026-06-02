@@ -6,6 +6,8 @@
 
 > **Proposed 2026-05-17**: Articulates which lifecycle skill may overwrite an existing `source-manifest` block in a spec's frontmatter. Resolves an ambiguity in `spec-lifecycle/charter.md` (which says the manifest is "recomputable by any skill") versus `source-manifest.spec.md` (which only describes `/adev:implement` as the writer). Without an explicit rule, auditing tools and validation tools are unclear on whether they may re-stamp drifted manifests or must escalate to a manual workflow.
 
+> **Update 2026-06-02 (path correction)**: The drift-detection mechanism described below as `hooks/spec-drift.sh` was implemented in `lib/spec-drift.mjs` (`scanForDrift()` / `stampDrift()` / `clearDrift()` / `hasDrift()`), invoked from the write-time hook chain (`hooks/sync-trigger.sh`) rather than a standalone shell hook. The decision in this ADR is unchanged; only the implementation location differs.
+
 ## Date
 
 2026-05-17

@@ -1,9 +1,3 @@
-# Live Spec: Inline-Node Extraction Sweep
-
-<!-- Live Spec within the cli-driver-surface charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/cli-driver-surface/charter.md -->
-
 ---
 charter: cli-driver-surface
 kind: refactor
@@ -15,6 +9,12 @@ charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-15
 ---
+
+# Live Spec: Inline-Node Extraction Sweep
+
+<!-- Live Spec within the cli-driver-surface charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/cli-driver-surface/charter.md -->
 
 ## Behavioral Contract
 

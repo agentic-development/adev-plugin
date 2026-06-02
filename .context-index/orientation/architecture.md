@@ -11,7 +11,7 @@ adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). 
 ```
 adev-plugin/
 ├── cli/index.mjs              # Single-file CLI — install, scaffold, conflict detection
-├── skills/                     # 28 skill directories, each with a SKILL.md
+├── skills/                     # 31 skill directories, each with a SKILL.md
 │   ├── using-adev/             # Gateway skill — injected at session start
 │   ├── adev:init/              # This wizard
 │   ├── adev:brainstorm/        # Idea exploration → Feature Charter
@@ -39,7 +39,10 @@ adev-plugin/
 │   ├── adev:research/          # Structured multi-agent research
 │   ├── adev:document/          # Developer documentation generation
 │   ├── adev:reconcile/         # Interactive repair for lifecycle mismatches
-│   └── adev:codehealth/        # Dead code and orphan file detection
+│   ├── adev:codehealth/        # Dead code and orphan file detection
+│   ├── adev:deploy/            # Run a deployment pipeline from .context-index/deploy.yaml
+│   ├── adev:prototype/         # Sketch UI screens, flows, and API surface from charters
+│   └── adev:standalone/        # Toggle lifecycle-gate enforcement off for ad-hoc work
 ├── hooks/                      # 12 hook files (11 .sh + 1 .mjs) + hooks.json config
 │   ├── hooks.json              # Hook registration (which events trigger which scripts)
 │   ├── session-start.sh        # SessionStart — injects using-adev skill
@@ -56,6 +59,11 @@ adev-plugin/
 │   ├── issue-reminder.sh       # PostToolUse — periodic issue board reminders
 │   └── issue-reminder.mjs      # Helper module for issue reminder logic
 ├── templates/                  # 31 scaffold template files consumed by /adev:init (includes governance/, personas/, review-specs/, validate/ subdirs)
+├── extensions/                 # Domain extension packs (adev-extension.yaml + README per pack)
+│   ├── data-engineering/       # Data-engineering domain pack
+│   ├── process-automation/     # Process-automation domain pack
+│   └── example-validation-check/ # Reference pack: custom validation check
+
 ├── tests/                      # Node.js built-in test runner (node:test)
 │   ├── helpers.mjs             # Shared test utilities (temp dirs, fixtures, runHook)
 │   ├── cli.test.mjs            # CLI unit tests
