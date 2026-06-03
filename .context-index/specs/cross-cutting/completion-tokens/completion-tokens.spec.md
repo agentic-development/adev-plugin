@@ -1,7 +1,7 @@
 ---
 charter: completion-tokens
 kind: behavioral
-status: implemented
+status: validated
 affects: [strategic-planning, validation, setup]
 mode: cross-cutting
 revision: 1
