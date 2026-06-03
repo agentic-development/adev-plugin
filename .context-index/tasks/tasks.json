@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 119,
+  "seq": 120,
   "epics": [
     {
       "id": "epic-1",
@@ -736,10 +736,10 @@
     {
       "id": "epic-96",
       "title": "Terminal Completion Tokens",
-      "status": "open",
+      "status": "closed",
       "planRef": ".context-index/specs/cross-cutting/completion-tokens/completion-tokens.plan.md",
       "created": "2026-06-02T23:55:24.415Z",
-      "updated": "2026-06-02T23:55:24.415Z"
+      "updated": "2026-06-03T00:04:05.759Z"
     }
   ],
   "issues": [
