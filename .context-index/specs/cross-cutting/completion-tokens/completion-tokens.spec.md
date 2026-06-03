@@ -1,14 +1,23 @@
 ---
 charter: completion-tokens
 kind: behavioral
-status: review-passed
+status: implemented
 affects: [strategic-planning, validation, setup]
 mode: cross-cutting
 revision: 1
 charter-revision: 2
 created: 2026-06-02
-updated: 2026-06-02
+updated: 2026-06-03
 tracker-ref: issue-540
+source-manifest:
+  sha: "7e2eeff"
+  files:
+    - docs/concepts.md
+    - skills/build/SKILL.md
+    - skills/using-adev/SKILL.md
+    - skills/validate/SKILL.md
+    - tests/skills/completion-tokens.test.mjs
+  computed-at: "2026-06-03T00:03:40.302Z"
 ---
 
 # Live Spec: Terminal Completion Tokens
