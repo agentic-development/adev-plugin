@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 120,
+  "seq": 121,
   "epics": [
     {
       "id": "epic-1",
@@ -3712,15 +3712,15 @@
     {
       "id": "issue-541",
       "title": "Terminal Completion Tokens",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/cross-cutting/completion-tokens/completion-tokens.spec.md",
       "dependencies": [],
-      "notes": "Cross-cutting spec. Affects: strategic-planning, validation, output-personas. Bound 1:1 to spec. Implements issue-540 (/goal Option 2). Created by /adev:specify 2026-06-02.",
+      "notes": "Cross-cutting spec. Affects: strategic-planning, validation, output-personas. Bound 1:1 to spec. Implements issue-540 (/goal Option 2). Created by /adev:specify 2026-06-02.; Closed: Validated PASS — ADEV-<SKILL>: <STATE> tokens implemented, tested (3/3), docs + mirrors synced. Closes issue-540 work.",
       "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/completion-tokens/completion-tokens.spec.md",
       "created": "2026-06-02T23:49:13.289Z",
-      "updated": "2026-06-02T23:49:13.289Z"
+      "updated": "2026-06-03T00:07:29.942Z"
     }
   ]
 }
