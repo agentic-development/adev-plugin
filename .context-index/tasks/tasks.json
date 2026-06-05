@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 121,
+  "seq": 122,
   "epics": [
     {
       "id": "epic-1",
@@ -3721,6 +3721,19 @@
       "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/completion-tokens/completion-tokens.spec.md",
       "created": "2026-06-02T23:49:13.289Z",
       "updated": "2026-06-03T00:07:29.942Z"
+    },
+    {
+      "id": "issue-542",
+      "title": "Severity stamper ignores governance/review.yaml + gates.yaml overrides (Defect B)",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-06-05T13:58:45.471Z",
+      "updated": "2026-06-05T13:58:45.471Z"
     }
   ]
 }
