@@ -126,7 +126,7 @@ This project uses the Agentic Development Framework (adev).
 <!-- BEGIN TASK MANAGEMENT -->
 ## Task Management
 
-Issues are tracked using the file backend. The issue board lives at `.context-index/tasks/tasks.md`.
+Issues are tracked using the json backend. The issue board lives at `.context-index/tasks/tasks.json`.
 
 - Use `/adev:issues` to manage issues interactively (create, update, close, view board)
 - Use `/adev:issues ready` to see actionable issues (open and unblocked)
