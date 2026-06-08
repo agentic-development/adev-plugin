@@ -73,7 +73,14 @@ Sessions: <N sessions>
 
 Plan: <found | not found>
 Tests: <found | not found>
+
+Review revisions (when present):
+  - rev 1: <verdict>  (<completed_at>)  [<N blockers>]
+  - rev 2: <verdict>  (<completed_at>)  [<N blockers>]
+  - rev 3: <verdict>  (<completed_at>)  [<N blockers>]
 ```
+
+**Review revisions section** — only render when `currentState(spec).steps.review.byRevision` is populated with more than one revision (i.e., the BLOCK→revise auto-retry loop ran at least once for this spec). The per-revision projection is produced by `lib/lifecycle-state.mjs` Task 3 of review-block-auto-retry; consume `byRevision[N]` directly without re-folding the log. Each entry carries `verdict`, `completed_at`, and a `blockers[]` list of canonical `blocker_id`s. Order by ascending revision integer. If only one revision exists, the standard `Revision: <N>` line covers it — no separate section needed (non-breaking output for specs that never blocked).
 
 ### Mode: `--charter <name>`
 
