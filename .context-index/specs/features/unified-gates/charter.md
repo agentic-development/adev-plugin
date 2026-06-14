@@ -1,4 +1,5 @@
 ---
+kind: cross-cutting
 status: approved
 revision: 2
 updated: 2026-04-15
