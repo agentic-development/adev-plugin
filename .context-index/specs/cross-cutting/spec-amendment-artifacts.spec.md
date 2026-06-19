@@ -3,7 +3,7 @@
 ---
 mode: cross-cutting
 kind: behavioral
-status: implemented
+status: validated
 risk_level: medium
 revision: 1
 charter-revision: 1
