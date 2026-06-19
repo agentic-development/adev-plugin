@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 116,
+  "seq": 119,
   "epics": [
     {
       "id": "epic-1",
@@ -732,6 +732,15 @@
       "planRef": ".context-index/specs/features/session-awareness/cost-checkpoint-events.plan.md",
       "created": "2026-05-24T20:57:34.712Z",
       "updated": "2026-05-24T20:57:34.712Z"
+    },
+    {
+      "id": "epic-96",
+      "title": "Implementation Plan: First-Class Spec Amendments",
+      "status": "closed",
+      "planRef": ".context-index/specs/cross-cutting/spec-amendment-artifacts.plan.md",
+      "spec_ref": ".context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md",
+      "created": "2026-06-19T13:42:00.000Z",
+      "updated": "2026-06-19T14:10:39.305Z"
     }
   ],
   "issues": [
@@ -3688,6 +3697,19 @@
       "next_action": "Run /adev:review-specs --spec .context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
       "created": "2026-05-24T15:19:06.507Z",
       "updated": "2026-05-24T22:12:43.717Z"
+    },
+    {
+      "id": "issue-540",
+      "title": "First-Class Spec Amendments",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md. Created by /adev:specify on 2026-06-19. Cross-cutting spec. Affects: lifecycle-artifacts, spec-lifecycle, agent-reliable-state-artifacts, cli-driver-surface.",
+      "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md",
+      "created": "2026-06-19T13:20:31.061Z",
+      "updated": "2026-06-19T13:20:31.061Z"
     }
   ]
 }
