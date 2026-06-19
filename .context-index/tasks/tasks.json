@@ -3701,15 +3701,15 @@
     {
       "id": "issue-540",
       "title": "First-Class Spec Amendments",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md. Created by /adev:specify on 2026-06-19. Cross-cutting spec. Affects: lifecycle-artifacts, spec-lifecycle, agent-reliable-state-artifacts, cli-driver-surface.",
-      "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md",
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md. Created by /adev:specify on 2026-06-19. Cross-cutting spec. Affects: lifecycle-artifacts, spec-lifecycle, agent-reliable-state-artifacts, cli-driver-surface. | Validated: PASS (HIGH confidence) 2026-06-19 — all 9 acceptance criteria met, 4201 tests pass (0 fail), files committed. Report: .context-index/specs/cross-cutting/spec-amendment-artifacts.validate.md",
+      "next_action": "Ready for PR.",
       "created": "2026-06-19T13:20:31.061Z",
-      "updated": "2026-06-19T13:20:31.061Z"
+      "updated": "2026-06-19T14:23:31.175Z"
     }
   ]
 }
