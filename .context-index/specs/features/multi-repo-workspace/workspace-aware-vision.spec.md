@@ -2,7 +2,7 @@
 charter: multi-repo-workspace
 status: validated
 risk_level: medium
-milestone: phase-2
+milestone:
 revision: 3
 charter-revision: 4
 created: 2026-04-16

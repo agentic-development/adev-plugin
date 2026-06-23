@@ -64,7 +64,7 @@ brainstorm --> specify --> review --> plan --> implement --> validate
 5. **Implement** — Each task is executed following test-driven development (TDD), with two-stage review (spec compliance, then code quality) after each task.
 6. **Validate** — A comprehensive check suite verifies the implementation against the spec, constitution, and quality gates.
 
-This lifecycle is not rigid — you can enter at any point, skip phases for simple changes, or iterate within a phase. But for new features, following the full lifecycle produces the most reliable results.
+The diagram above shows the core path; two optional steps sit alongside it — **route** (after plan: scores each task as auto / assisted / human-only) and **eval** (after validate: graduated 0–100 quality scoring). This lifecycle is not rigid — you can enter at any point, skip phases for simple changes, or iterate within a phase. But for new features, following the full lifecycle produces the most reliable results.
 
 ## Output Personas
 

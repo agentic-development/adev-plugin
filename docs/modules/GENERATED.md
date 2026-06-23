@@ -6,17 +6,17 @@ Generated output lives under `docs/modules/` (this directory). The top level of 
 
 | File | Generated Sections | Last Commit | Last Run |
 |------|--------------------|-------------|----------|
-| docs/modules/cli.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/hooks.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/lib.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/setup.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/triage.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/design.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/assessment.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/planning.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/implementation.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/validation.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/strategic-planning.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
-| docs/modules/maintenance.md | Purpose \| Key Exports \| Dependencies \| Specs | `3f2551f` | 2026-05-18 |
+| docs/modules/cli.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/hooks.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/lib.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/setup.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/triage.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/design.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/assessment.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/planning.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/implementation.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/validation.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/strategic-planning.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
+| docs/modules/maintenance.md | Purpose \| Key Exports \| Dependencies \| Specs | `adff9123` | 2026-06-02 |
 
 Each file above carries an adev:generated / adev:human marker pair (HTML comments). Content above the human marker is regenerated on every run; content below is preserved.

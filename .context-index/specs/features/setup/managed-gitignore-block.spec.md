@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: setup
 status: validated
@@ -34,6 +32,8 @@ source-manifest:
   computed-at: "2026-05-22T13:12:27.680Z"
 drift_detected: true
 ---
+
+<!-- partial_schema: spec@1 -->
 
 <!-- Live Spec within the setup charter.
      Adds a new capability not currently enumerated in setup/charter.md.

@@ -4,7 +4,7 @@
 charter: debug-playbooks
 status: validated
 risk_level: low
-milestone: 1
+milestone:
 revision: 2
 charter-revision: 2
 created: 2026-04-24

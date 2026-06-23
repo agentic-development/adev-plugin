@@ -28,6 +28,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 | `/adev:eval` | Validation | Graduated evaluation harness scoring 0-100 | Implementation complete |
 | `/adev:recover` | Validation | Structured diagnosis when agents get stuck | Active implementation |
 | `/adev:deploy` | Operations | Run a structured deployment pipeline from deploy.yaml | deploy.yaml exists |
+| `/adev:standalone` | Operations | Disable lifecycle gate enforcement for the session | Context index exists |
 | `/adev:issues` | Maintenance | Manage project issues and epics | Task backend configured |
 | `/adev:status` | Maintenance | Query project status dashboard (read-only) | Context index exists |
 | `/adev:hygiene` | Maintenance | Audit context for staleness, drift, and coverage gaps | Context index exists |
@@ -533,6 +534,25 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 **Companion code:** All deploy logic lives in `lib/deploy.mjs` (config loading, validation, step execution, rollback, version resolution, output formatting).
 
 **Related Guides:** [Build Phase](build-phase.md)
+
+---
+
+### `/adev:standalone`
+
+**Purpose:** Disable lifecycle gate enforcement for the current session. Use for exploratory coding without a plan, quick fixes to non-tracked code, or prototyping before committing to a spec.
+
+**Prerequisites:** `.context-index/` must be initialized.
+
+**Arguments:** None.
+
+**Example:**
+```
+/adev:standalone
+```
+
+**Behavior:** Writes `status: standalone` to `.context-index/.execution-state.json` (via `adev execution-state write --status standalone`). All lifecycle gates pass for the remainder of the session. The next session start resets to `idle` unless `ADEV_STANDALONE=1` is set in the environment.
+
+**Related Guides:** [Governance & Lifecycle Gates](governance.md), [Configuration Reference](configuration.md)
 
 ---
 
