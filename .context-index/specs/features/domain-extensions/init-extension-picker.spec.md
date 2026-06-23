@@ -1,17 +1,9 @@
-# Live Spec: Init-Time Domain Extension Picker
-
-<!-- Live Spec within the domain-extensions charter.
-     Surfaces installed domain extensions to the user during `adev init` and
-     `adev upgrade`, closing the discoverability gap reported in issue-530.
-     Parent Charter: .context-index/specs/features/domain-extensions/charter.md
-     Capability: "Init-Time Domain Extension Picker" (Capability Map, v2). -->
-
 ---
 charter: domain-extensions
 kind: behavioral
 status: validated
 risk_level: low
-milestone: v2
+milestone:
 revision: 2
 charter-revision: 4
 created: 2026-05-20
@@ -32,6 +24,14 @@ source-manifest:
   computed-at: "2026-05-20T17:34:35.328Z"
 drift_detected: true
 ---
+
+# Live Spec: Init-Time Domain Extension Picker
+
+<!-- Live Spec within the domain-extensions charter.
+     Surfaces installed domain extensions to the user during `adev init` and
+     `adev upgrade`, closing the discoverability gap reported in issue-530.
+     Parent Charter: .context-index/specs/features/domain-extensions/charter.md
+     Capability: "Init-Time Domain Extension Picker" (Capability Map, v2). -->
 
 ## Behavioral Contract
 

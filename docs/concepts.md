@@ -64,7 +64,7 @@ brainstorm --> specify --> review --> plan --> implement --> validate
 5. **Implement** — Each task is executed following test-driven development (TDD), with two-stage review (spec compliance, then code quality) after each task.
 6. **Validate** — A comprehensive check suite verifies the implementation against the spec, constitution, and quality gates.
 
-This lifecycle is not rigid — you can enter at any point, skip phases for simple changes, or iterate within a phase. But for new features, following the full lifecycle produces the most reliable results.
+The diagram above shows the core path; two optional steps sit alongside it — **route** (after plan: scores each task as auto / assisted / human-only) and **eval** (after validate: graduated 0–100 quality scoring). This lifecycle is not rigid — you can enter at any point, skip phases for simple changes, or iterate within a phase. But for new features, following the full lifecycle produces the most reliable results.
 
 ## Output Personas
 
@@ -95,6 +95,7 @@ Three rules hold regardless of which persona × verbosity combination is active:
 - **Next-Actions invariant.** Every assistant turn ends with a clear next-action suggestion. The Next Actions dimension is never trimmed, even under `verbosity: terse`. (Terse mode biases toward a single most-likely suggestion rather than enumerating a menu of alternatives, but the line is always present.)
 - **Anti-redundancy rule.** If a disk artifact (`.review.md`, `.plan.md`, `.validate.md`, `.spec.md`, or any file under `.context-index/`) captures the detail, chat summarizes in 1–3 sentences and links to the path rather than recapitulating contents. The Next Actions dimension is exempt — forward-looking suggestions are not duplicates of disk content.
 - **No hard word caps.** Templates bias tone, never enforce a hard "N words max." (The Anthropic April-2026 Claude Code postmortem found that hard word caps cost 3% quality.)
+- **Completion tokens are exempt.** The `/goal`-friendly terminal markers (`ADEV-BUILD: <STATE>`, `ADEV-VALIDATE: <STATE>`) are always emitted verbatim as the final line, regardless of persona or verbosity — they are machine-readable, like disk artifacts. See *Unattended runs with `/goal`* below.
 
 ### Configuration
 
@@ -114,6 +115,28 @@ verbosity=terse
 Unknown values produce a non-fatal warning and fall back. Values containing `/`, `\`, or `..` are rejected (defense-in-depth path-traversal guard). If a verbosity overlay template is missing, the session-start hook degrades to persona-only directive injection — it never blocks the session.
 
 See [Configuration Reference → Personas & Verbosity](configuration.md#personas-verbosity) for the full schema and adoption guide.
+
+## Unattended runs with `/goal`
+
+Claude Code's built-in `/goal` command keeps a session running across turns until a small evaluator model confirms a completion condition — but the evaluator only sees the **transcript** (it cannot run tools or read files). To make adev pipelines reliably drivable by `/goal`, the two terminal skills emit a fixed, machine-checkable completion token as the **final line** of their output:
+
+| Skill | Token | States |
+|-------|-------|--------|
+| `/adev:validate` | `ADEV-VALIDATE: <STATE>` | `PASS` · `FAIL` |
+| `/adev:build` | `ADEV-BUILD: <STATE>` | `COMPLETE` · `FAILED` · `BLOCKED` |
+
+The token is plain text (never fenced), emitted exactly once, and **persona/verbosity-independent** — it is never trimmed or reworded. A `/goal` condition can therefore match it verbatim:
+
+```
+/goal /adev:build --auto --spec .context-index/specs/features/auth/login.spec.md
+      has run and the transcript contains "ADEV-BUILD: COMPLETE" and "ADEV-VALIDATE: PASS"
+```
+
+`/goal` supplies the per-turn continuation; adev's deterministic gates supply the real done-check — the evaluator only confirms what `/adev:validate` already proved. `ADEV-BUILD: BLOCKED` means the pipeline halted on an unresolved review (including the `--require-human-final-pass` sign-off halt), so a goal wrapping a build won't spin forever on a blocked spec.
+
+> **A note on exemptions.** Completion tokens are deliberately the *second* persona-exempt output class (after disk artifacts). Keep such exemptions rare — they exist only because a machine reads the output, not a human.
+
+This convention is governed by the `completion-tokens` cross-cutting charter (`.context-index/specs/cross-cutting/completion-tokens/`).
 
 ## Key Terms
 

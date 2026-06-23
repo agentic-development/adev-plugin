@@ -4,7 +4,7 @@
 charter: user-docs
 status: validated
 risk_level: low
-milestone: 1
+milestone:
 revision: 1
 charter-revision: 2
 created: 2026-05-09

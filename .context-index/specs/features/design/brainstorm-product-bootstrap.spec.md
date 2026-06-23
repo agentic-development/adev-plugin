@@ -2,7 +2,7 @@
 charter: design
 status: validated
 risk_level: low
-milestone: strategic-planning-consolidation
+milestone:
 revision: 1
 charter-revision: 2
 created: 2026-04-16

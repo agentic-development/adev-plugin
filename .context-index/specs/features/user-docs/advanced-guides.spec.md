@@ -4,7 +4,7 @@
 charter: user-docs
 status: validated
 risk_level: low
-milestone: 1
+milestone:
 revision: 1
 charter-revision: 2
 created: 2026-05-09
@@ -15,6 +15,7 @@ source-manifest:
     - docs/governance.md
     - docs/test-strategies.md
   computed-at: "2026-05-10T23:51:35.315Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

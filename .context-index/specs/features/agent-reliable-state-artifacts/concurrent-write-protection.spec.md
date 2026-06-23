@@ -1,3 +1,17 @@
+---
+charter: agent-reliable-state-artifacts
+kind: behavioral
+status: validated
+risk_level: high
+milestone: 0.26.0
+revision: 2
+charter-revision: 6
+charter-extension: true
+created: 2026-05-17
+updated: 2026-05-17
+tracker-ref: issue-459
+---
+
 # Live Spec: Concurrent-write protection for the JSON issue board (CAS over atomic rename)
 
 <!-- Live Spec within the agent-reliable-state-artifacts charter.
@@ -13,20 +27,6 @@
      `revision` to `seq` to disambiguate from the schema `version` field and
      the spec frontmatter's own `revision`. Error codes renamed to follow the
      subject-first BOARD_* convention. -->
-
----
-charter: agent-reliable-state-artifacts
-kind: behavioral
-status: validated
-risk_level: high
-milestone: 0.26.0
-revision: 2
-charter-revision: 6
-charter-extension: true
-created: 2026-05-17
-updated: 2026-05-17
-tracker-ref: issue-459
----
 
 ## Behavioral Contract
 

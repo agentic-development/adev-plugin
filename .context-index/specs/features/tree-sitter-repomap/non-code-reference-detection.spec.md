@@ -1,28 +1,9 @@
-# Live Spec: Non-Code Reference Detection
-
-<!-- Live Spec within the tree-sitter-repomap charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/tree-sitter-repomap/charter.md
-     This spec extends the charter's Capability Map with a new should-have capability:
-     "Non-code reference detection — recognize source-file references in skill markdown and
-     declared public-API exports as inbound references contributing to dead-code suppression."
-
-     REVISION HISTORY
-     - rev 1 (2026-05-17): initial draft
-     - rev 2 (2026-05-17): incorporates /adev:review-specs findings — schema reconciliation
-       (renamed field collisions, additive evolution rule), regex-mode reconciliation
-       (markdown-only surface in regex mode), manifest-driven path roots, REPOMAP_ error-code
-       prefix, post-rank semantics, performance baseline clarification, scoped exports shapes.
-     - rev 3 (2026-05-17): clarifying polish from rev-2 review (SA-10 through SA-13) — adds
-       PageRank `score` vs `references` count distinction, conditional-object skip behavior,
-       multi-language extension scoping note, and a downstream-consumer tolerance follow-up. -->
-
 ---
 charter: tree-sitter-repomap
 kind: behavioral
 status: validated
 risk_level: medium
-milestone: v0.5.2
+milestone:
 revision: 3
 charter-revision: 1
 charter-extension: true
@@ -47,6 +28,25 @@ source-manifest:
   computed-at: "2026-05-17T19:00:21.169Z"
 drift_detected: true
 ---
+
+# Live Spec: Non-Code Reference Detection
+
+<!-- Live Spec within the tree-sitter-repomap charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/tree-sitter-repomap/charter.md
+     This spec extends the charter's Capability Map with a new should-have capability:
+     "Non-code reference detection — recognize source-file references in skill markdown and
+     declared public-API exports as inbound references contributing to dead-code suppression."
+
+     REVISION HISTORY
+     - rev 1 (2026-05-17): initial draft
+     - rev 2 (2026-05-17): incorporates /adev:review-specs findings — schema reconciliation
+       (renamed field collisions, additive evolution rule), regex-mode reconciliation
+       (markdown-only surface in regex mode), manifest-driven path roots, REPOMAP_ error-code
+       prefix, post-rank semantics, performance baseline clarification, scoped exports shapes.
+     - rev 3 (2026-05-17): clarifying polish from rev-2 review (SA-10 through SA-13) — adds
+       PageRank `score` vs `references` count distinction, conditional-object skip behavior,
+       multi-language extension scoping note, and a downstream-consumer tolerance follow-up. -->
 
 ## Schema Evolution Rule
 

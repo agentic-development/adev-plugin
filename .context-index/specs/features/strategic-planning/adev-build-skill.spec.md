@@ -8,7 +8,7 @@
 charter: strategic-planning
 status: implemented
 risk_level: high
-milestone: v2
+milestone:
 revision: 8
 charter-revision: 3
 created: 2026-04-05
