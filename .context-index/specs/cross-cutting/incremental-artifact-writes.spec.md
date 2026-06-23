@@ -4,9 +4,9 @@ kind: behavioral
 status: validated
 risk_level: medium
 mode: cross-cutting
-revision: 2
+revision: 3
 created: 2026-05-17
-updated: 2026-05-17
+updated: 2026-05-22
 tracker-ref: issue-504
 source-manifest:
   sha: "a53bfcc"
@@ -233,7 +233,7 @@ drift_detected: true
 - [ ] Error codes use subject-first naming: `PARTIAL_ARTIFACT_SCHEMA_MISMATCH`, `PARTIAL_ARTIFACT_LOCKED`, `PARTIAL_ARTIFACT_OVERSIZE`, `INVALID_PARTIAL_PATH`. (No adjective-only `PARTIAL_*` codes.)
 - [ ] `PARTIAL_ARTIFACT_OVERSIZE` fires when partial size exceeds 3× expected (configurable via `manifest.lifecycle.partial_oversize_multiplier`). Check runs on every append, not just at rename.
 - [ ] Lifecycle event `partial_recovery` carries `artifact_path` as a **project-root-relative** path. No absolute paths in committed JSONL.
-- [ ] `*.partial` and `*.partial.lock` patterns in repo-wide `.gitignore`. CI gate or test fixture verifies.
+- [ ] `*.partial` and `*.partial.lock` patterns in repo-wide `.gitignore`. Enforced by the `adev:gitignore` managed block (`lib/gitignore-paths.mjs`); the dogfood parity test (`tests/lib/gitignore-paths-dogfood.test.mjs`) is the verification vector. See `setup/managed-gitignore-block.spec.md` for ownership.
 - [ ] Scanner-invisibility regression test passes: dropping `.spec.md.partial` / `.plan.md.partial` / `.review.md.partial` / `.validate.md.partial` into the workspace does NOT cause `/adev:hygiene`, `/adev:status`, `/adev:repomap`, or any other canonical-suffix scanner to pick them up.
 - [ ] At least one adopting skill's SKILL.md prose is updated AND exercised by an integration test that proves: kill the skill mid-write → `.partial` + `.partial.lock` exist → re-dispatch → final artifact correct. (One end-to-end proof sufficient for v1; full coverage of all four adopting skills is a follow-up.)
 - [ ] No new runtime dependencies introduced (constitution Principle 1).

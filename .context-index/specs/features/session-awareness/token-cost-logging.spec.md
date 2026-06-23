@@ -10,7 +10,7 @@ charter: session-awareness
 charter-extension: true
 status: validated
 risk_level: medium
-milestone: 2
+milestone:
 revision: 2
 charter-revision: 2
 created: 2026-04-20

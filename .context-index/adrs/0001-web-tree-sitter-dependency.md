@@ -1,4 +1,4 @@
-# ADR 0001: Add web-tree-sitter as Optional Dependency
+# ADR 0001: Add web-tree-sitter as Direct Dependency
 
 ## Status
 
@@ -21,14 +21,16 @@ Industry research (Aider, Sourcegraph/Cody, Augment Code, Greptile) confirms con
 
 ## Decision
 
-Add `web-tree-sitter` (WASM-based tree-sitter bindings) as an **optional** dependency:
+Add `web-tree-sitter` (WASM-based tree-sitter bindings) and `tree-sitter-typescript` as **direct** dependencies in `package.json`.
 
-- It is NOT added to `package.json` dependencies. Users install it on demand via a prompt in `/adev:repomap` or `/adev:init` ("Install tree-sitter parser? yes/no").
-- Language grammar WASM files are downloaded per-language on first use.
-- `web-tree-sitter` uses WASM, not native C bindings — no C compiler required.
-- `lib/repomap/check-deps.mjs` detects availability at runtime.
+**Original decision (2026-03-23):** Both packages were initially scoped as optional — users would install on demand via a prompt in `/adev:repomap` or `/adev:init`. Language grammar WASM files would be downloaded per-language on first use, and `lib/repomap/check-deps.mjs` would detect availability at runtime.
 
-The existing regex-based repomap remains the zero-dependency default. Tree-sitter is a progressive enhancement: better data when available, graceful degradation when not.
+**Updated decision:** Both packages are now listed in `package.json` `dependencies` (shipped with every install). The on-demand installation path has been removed. `web-tree-sitter` uses WASM, not native C bindings — no C compiler required, keeping the install frictionless.
+
+- `web-tree-sitter`: `^0.26.7` (WASM runtime)
+- `tree-sitter-typescript`: `^0.23.2` (TypeScript/JavaScript grammar)
+
+The existing regex-based repomap remains as a fallback for environments where WASM cannot load.
 
 ## Alternatives Considered
 

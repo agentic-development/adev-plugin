@@ -8,7 +8,7 @@
 charter: prototype-brainstorm
 status: implemented
 risk_level: medium
-milestone: 1
+milestone:
 revision: 2
 charter-revision: 2
 created: 2026-05-07

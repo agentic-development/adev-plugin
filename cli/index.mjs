@@ -134,8 +134,44 @@ async function selectProviders({ ask: askFn = ask } = {}) {
 }
 
 /**
+ * Determine whether an existing `.context-index/` has actually been configured
+ * by the user, versus still being in the pristine template state that
+ * `adev install` scaffolds (and `/adev:init` later fills in).
+ *
+ * `adev install` copies `manifest.yaml` and `constitution.md` verbatim from the
+ * templates (only `adev_version` is stamped), so unreplaced `{{ project_name }}` /
+ * `{{ project_description }}` placeholders are a reliable "not yet configured"
+ * signal. This mirrors the detection rule in skills/init/SKILL.md.
+ *
+ * @param {string} contextIndex - Absolute path to the `.context-index/` directory.
+ * @returns {boolean} true if configured (placeholders replaced), false if pristine.
+ */
+function isContextIndexConfigured(contextIndex) {
+  const placeholder = /\{\{\s*project_(?:name|description)\s*\}\}/;
+  const candidates = ["manifest.yaml", "constitution.md"];
+  let sawAny = false;
+  for (const rel of candidates) {
+    const p = join(contextIndex, rel);
+    if (!existsSync(p)) continue;
+    sawAny = true;
+    try {
+      if (placeholder.test(readFileSync(p, "utf8"))) return false;
+    } catch {}
+  }
+  // If neither file exists, treat as unconfigured (nothing real to diagnose).
+  return sawAny;
+}
+
+/**
  * Detect the project state for init routing.
- * @returns {{ mode: 'greenfield'|'brownfield-no-adev'|'brownfield-outdated'|'brownfield-current', version: string|null, hasGit: boolean, hasCode: boolean }}
+ *
+ * `configured` distinguishes a context index the user has actually set up from
+ * one that `adev install` merely scaffolded from templates. Existence of
+ * `.context-index/` alone is NOT enough — install always creates it before the
+ * user runs `/adev:init`. Callers gate "use upgrade" / diagnostic behavior on
+ * `configured`, not on `mode` alone.
+ *
+ * @returns {{ mode: 'greenfield'|'brownfield-no-adev'|'brownfield-outdated'|'brownfield-current', version: string|null, hasGit: boolean, hasCode: boolean, configured: boolean }}
  */
 function detectProjectState() {
   const cwd = process.cwd();
@@ -147,8 +183,10 @@ function detectProjectState() {
   const hasCode = codeMarkers.some(m => existsSync(join(cwd, m))) || existsSync(join(cwd, "src"));
 
   if (!existsSync(contextIndex)) {
-    return { mode: hasCode ? "brownfield-no-adev" : "greenfield", version: null, hasGit, hasCode };
+    return { mode: hasCode ? "brownfield-no-adev" : "greenfield", version: null, hasGit, hasCode, configured: false };
   }
+
+  const configured = isContextIndexConfigured(contextIndex);
 
   // Context index exists — check version
   let installedVersion = null;
@@ -162,14 +200,14 @@ function detectProjectState() {
 
   if (!installedVersion) {
     // Has context-index but no version stamp — pre-versioning install
-    return { mode: "brownfield-outdated", version: null, hasGit, hasCode };
+    return { mode: "brownfield-outdated", version: null, hasGit, hasCode, configured };
   }
 
   if (installedVersion === PLUGIN_VERSION) {
-    return { mode: "brownfield-current", version: installedVersion, hasGit, hasCode };
+    return { mode: "brownfield-current", version: installedVersion, hasGit, hasCode, configured };
   }
 
-  return { mode: "brownfield-outdated", version: installedVersion, hasGit, hasCode };
+  return { mode: "brownfield-outdated", version: installedVersion, hasGit, hasCode, configured };
 }
 
 /**
@@ -711,6 +749,51 @@ async function applySessionCaptureMode() {
 }
 
 /**
+ * Apply the managed `adev:gitignore` block dispatcher. Gated by the
+ * `setup.managed_gitignore` manifest knob (default: `true`). When `false`,
+ * prints the advisory line and returns without writing. Errors from the
+ * installer are downgraded to stderr warnings — installer failure must
+ * never block `adev install` / `adev upgrade`.
+ *
+ * Spec: .context-index/specs/features/setup/managed-gitignore-block.spec.md
+ * Plan-task: 5
+ *
+ * @param {string} projectRoot
+ * @param {object|null} manifest - parsed manifest.yaml or null
+ */
+export async function maybeEnsureManagedGitignore(projectRoot, manifest) {
+  const knob = manifest?.setup?.managed_gitignore;
+  const enabled = knob !== false; // default true; only literal false disables
+  if (!enabled) {
+    console.log("managed gitignore: disabled by manifest");
+    return;
+  }
+  let ensureManagedBlock;
+  try {
+    const mod = await import("../lib/gitignore-installer.mjs");
+    ensureManagedBlock = mod.ensureManagedBlock;
+  } catch {
+    return; // module not present — skip silently
+  }
+  try {
+    const result = ensureManagedBlock(projectRoot);
+    if (result !== "noop") {
+      console.log(`managed gitignore: ${result}`);
+    }
+  } catch (err) {
+    if (err?.code === "UNSAFE_GITIGNORE_PATH") {
+      console.error("warn: adev:gitignore not written — path-containment violation");
+      return;
+    }
+    if (err?.code === "EACCES") {
+      console.error("warn: adev:gitignore not written — .gitignore is read-only");
+      return;
+    }
+    console.error(`warn: adev:gitignore dispatch skipped: ${err.message}`);
+  }
+}
+
+/**
  * `adev install --target copilot [--user] [--dry-run]` — per-target adapter
  * invocation. Routes through CopilotAdapter.install() and prints its return
  * value as a status line. Mirrors the documented Behaviors §7 surface.
@@ -797,6 +880,7 @@ async function runDomainPicker() {
       ask,
       installFn: installExtension,
       readStamps: readManifestStamps,
+      print: log,
     });
     if (result.action === "skipped-workspace-root") {
       log("Picker skipped (workspace root). Run inside a registered repo to pick a domain extension.");
@@ -849,7 +933,7 @@ async function cmdInstall() {
   // --- Detect project state ---
   const state = detectProjectState();
 
-  if (state.mode === "brownfield-outdated" || state.mode === "brownfield-current") {
+  if ((state.mode === "brownfield-outdated" || state.mode === "brownfield-current") && state.configured) {
     log(`Detected: existing adev install (v${state.version || "pre-versioning"})`);
     log("Use `npx @adev-org/adev-cli@latest upgrade` to update to the latest version.");
     console.log();
@@ -860,6 +944,11 @@ async function cmdInstall() {
     log("Detected: new project (no existing code or context index)");
   } else if (state.mode === "brownfield-no-adev") {
     log("Detected: existing project without adev");
+  } else {
+    // .context-index/ exists but is still pristine template state (placeholders
+    // not yet replaced). install previously bounced these to `upgrade`; instead
+    // continue setup idempotently — scaffold fills any missing files, re-stamps.
+    log("Detected: scaffolded adev context index (not yet configured) — continuing setup");
   }
 
   console.log();
@@ -898,6 +987,17 @@ async function cmdInstall() {
 
   // --- Session Capture (integrations.session_capture dispatch) ---
   await applySessionCaptureMode();
+
+  // --- Managed gitignore block (setup.managed_gitignore dispatch) ---
+  {
+    let m = null;
+    try {
+      m = loadManifest(process.cwd());
+    } catch {
+      m = null;
+    }
+    await maybeEnsureManagedGitignore(process.cwd(), m);
+  }
 
   // --- Summary ---
   heading(`Done! Plugin installed — adev v${PLUGIN_VERSION}.`);
@@ -1040,6 +1140,17 @@ async function cmdUpgrade() {
 
   // --- Session Capture (integrations.session_capture dispatch) ---
   await applySessionCaptureMode();
+
+  // --- Managed gitignore block (setup.managed_gitignore dispatch) ---
+  {
+    let m = null;
+    try {
+      m = loadManifest(process.cwd());
+    } catch {
+      m = null;
+    }
+    await maybeEnsureManagedGitignore(process.cwd(), m);
+  }
 
   // --- Dual sync targets ---
   await handleDualSyncTargets(providerNames);
@@ -1506,6 +1617,8 @@ function cmdHelp() {
 export {
   scaffoldContextKit,
   setupGitHooks,
+  detectProjectState,
+  isContextIndexConfigured,
   PLUGIN_ROOT,
   PLUGIN_VERSION,
   selectProviders,
@@ -1565,10 +1678,18 @@ const VERB_REGISTRY = new Map([
                             await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
                             return;
                           }
+                          if (sub === "ensure-gitignore") {
+                            const mod = await import("../lib/cli/init-ensure-gitignore.mjs");
+                            const projectRoot = process.cwd();
+                            let m = null;
+                            try { m = loadManifest(projectRoot); } catch { m = null; }
+                            await mod.run({ projectRoot, argv: process.argv.slice(4), manifest: m });
+                            return;
+                          }
                           warn("`init` is deprecated. Use `install` (first-time) or `upgrade` (existing).");
                           console.log();
                           const state = detectProjectState();
-                          if (state.mode === "brownfield-outdated" || state.mode === "brownfield-current") {
+                          if ((state.mode === "brownfield-outdated" || state.mode === "brownfield-current") && state.configured) {
                             await cmdUpgrade();
                           } else {
                             await cmdInstall();

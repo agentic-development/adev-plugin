@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 120,
+  "seq": 122,
   "epics": [
     {
       "id": "epic-1",
@@ -662,7 +662,6 @@
       "id": "epic-87",
       "title": "Lib-Import Control-Flow Extraction",
       "status": "closed",
-      "planRef": ".context-index/specs/features/cli-driver-surface/lib-import-control-flow-extraction.plan.md",
       "milestone": "0.28.0",
       "created": "2026-05-17T21:30:37.684Z",
       "updated": "2026-05-20T20:49:46.949Z",
@@ -736,6 +735,23 @@
     },
     {
       "id": "epic-96",
+      "title": "Terminal Completion Tokens",
+      "status": "closed",
+      "planRef": ".context-index/specs/cross-cutting/completion-tokens/completion-tokens.plan.md",
+      "created": "2026-06-02T23:55:24.415Z",
+      "updated": "2026-06-03T00:04:05.759Z"
+    },
+    {
+      "id": "epic-97",
+      "title": "Implementation Plan: First-Class Spec Amendments",
+      "status": "closed",
+      "planRef": ".context-index/specs/cross-cutting/spec-amendment-artifacts.plan.md",
+      "spec_ref": ".context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md",
+      "created": "2026-06-19T13:42:00.000Z",
+      "updated": "2026-06-19T14:10:39.305Z"
+    },
+    {
+      "id": "epic-98",
       "title": "provides.skill_extensions — Skill Extension Install",
       "status": "open",
       "planRef": ".context-index/specs/features/extensions/skill-extension-install.plan.md",
@@ -2118,7 +2134,8 @@
       "notes": "Currently brainstorm step 8 suggests capabilities but does not suggest how to group them into specs. The skill should recommend optimal capability grouping into live specs based on cohesion, complexity, and dependency relationships.",
       "next_action": null,
       "created": "2026-05-08T00:39:10.470Z",
-      "updated": "2026-05-08T00:39:10.470Z"
+      "updated": "2026-06-02T14:35:51.451Z",
+      "planRef": ".context-index/specs/features/prototype-brainstorm/prototype-core.plan.md"
     },
     {
       "id": "issue-339",
@@ -3618,14 +3635,14 @@
     {
       "id": "issue-533",
       "title": "Author docs/cli-reference.md — agent-facing CLI verb reference for all 24 verbs",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "task",
       "dependencies": [],
-      "notes": "## Problem\n\n`adev help` shows 5 of 24 CLI verbs. The remaining 19 (gate, report, build-state, partial, heuristics, source-manifest, domain, context, verify, state, execution-state, preflight, prototype, artifact, issues, diagnose, etc.) are referenced only in scattered SKILL.md prose. Agents looking for verb signatures or argument shapes have to (a) grep `cli/index.mjs` for the dispatch table, (b) read multiple SKILL.md files, or (c) run `node cli/index.mjs <verb> --help` against guesses. None of these is a usable discovery surface.\n\nConfirmed by a session audit (2026-05-20): the agent-load path (SessionStart hook → using-adev SKILL.md → CLAUDE.md → Context Routing table) contains zero pointers to a CLI verb reference. `docs/skill-reference.md` exists for the /adev:* skills but there is no equivalent for the underlying CLI verbs.\n\n## Recommended fix\n\nCreate `docs/cli-reference.md` mirroring the format and tone of `docs/skill-reference.md`. One section per CLI verb, grouped by audience.\n\n## Scope\n\n1. New file `docs/cli-reference.md` with two top-level sections:\n   - **User-facing verbs** (5): `install`, `upgrade`, `uninstall`, `extension`, `migrate`. These are the public surface invoked via `npx @adev-org/adev-cli <verb>`.\n   - **Lifecycle / internal verbs** (~19): `gate`, `report`, `build-state`, `partial`, `heuristics`, `source-manifest`, `domain`, `context`, `verify`, `state`, `execution-state`, `preflight`, `prototype`, `artifact`, `issues`, `diagnose`, `init`, `status`, `help`. These are invoked from SKILL.md prose and by other CLI verbs; agents need them for orchestration.\n2. Per-verb entry format: one-line description, full argument signature (flags + types + defaults), one example invocation, link to implementing module (`lib/cli/<verb>.mjs` or anchor in `cli/index.mjs`), cross-references to relevant SKILL.md files that invoke it.\n3. Add `docs/cli-reference.md` to `docs/README.md` under the Reference section (next to `skill-reference.md`).\n4. Update the `using-adev` SKILL.md's existing reference to drop the 'when present' qualifier once the file lands.\n5. Tests: optionally add a script-based check that every verb in the `cli/index.mjs` dispatch table has a corresponding section in `docs/cli-reference.md` (drift guard). Can ship as a v2 follow-on.\n\n## Acceptance criteria\n\n- `docs/cli-reference.md` exists and documents all 24 verbs currently registered in `cli/index.mjs`.\n- Each verb has: one-line description, full argument signature, at least one example, link to implementing file.\n- Verbs are grouped into user-facing vs lifecycle/internal sections.\n- `docs/README.md` lists the new file under Reference.\n- `skills/using-adev/SKILL.md` qualification ('when present') is removed.\n- Spot-check: an agent asked about a specific verb (e.g., `adev partial`) should be able to answer from the new doc without reading source.\n\n## References\n\n- Session audit that surfaced this gap: this session's analysis of agent doc entrypoints (2026-05-20)\n- Existing per-skill reference: `docs/skill-reference.md`\n- CLI dispatch table source: `cli/index.mjs:1424-1450` (verb registry)\n- Per-verb implementations: `lib/cli/*.mjs`\n- Constitution Context Routing update: this session's edit to `.context-index/constitution.md` (added `docs/*.md` row) — landed on branch `feat/domain-extensions/init-extension-picker`.",
+      "notes": "## Problem\n\n`adev help` shows 5 of 24 CLI verbs. The remaining 19 (gate, report, build-state, partial, heuristics, source-manifest, domain, context, verify, state, execution-state, preflight, prototype, artifact, issues, diagnose, etc.) are referenced only in scattered SKILL.md prose. Agents looking for verb signatures or argument shapes have to (a) grep `cli/index.mjs` for the dispatch table, (b) read multiple SKILL.md files, or (c) run `node cli/index.mjs <verb> --help` against guesses. None of these is a usable discovery surface.\n\nConfirmed by a session audit (2026-05-20): the agent-load path (SessionStart hook → using-adev SKILL.md → CLAUDE.md → Context Routing table) contains zero pointers to a CLI verb reference. `docs/skill-reference.md` exists for the /adev:* skills but there is no equivalent for the underlying CLI verbs.\n\n## Recommended fix\n\nCreate `docs/cli-reference.md` mirroring the format and tone of `docs/skill-reference.md`. One section per CLI verb, grouped by audience.\n\n## Scope\n\n1. New file `docs/cli-reference.md` with two top-level sections:\n   - **User-facing verbs** (5): `install`, `upgrade`, `uninstall`, `extension`, `migrate`. These are the public surface invoked via `npx @adev-org/adev-cli <verb>`.\n   - **Lifecycle / internal verbs** (~19): `gate`, `report`, `build-state`, `partial`, `heuristics`, `source-manifest`, `domain`, `context`, `verify`, `state`, `execution-state`, `preflight`, `prototype`, `artifact`, `issues`, `diagnose`, `init`, `status`, `help`. These are invoked from SKILL.md prose and by other CLI verbs; agents need them for orchestration.\n2. Per-verb entry format: one-line description, full argument signature (flags + types + defaults), one example invocation, link to implementing module (`lib/cli/<verb>.mjs` or anchor in `cli/index.mjs`), cross-references to relevant SKILL.md files that invoke it.\n3. Add `docs/cli-reference.md` to `docs/README.md` under the Reference section (next to `skill-reference.md`).\n4. Update the `using-adev` SKILL.md's existing reference to drop the 'when present' qualifier once the file lands.\n5. Tests: optionally add a script-based check that every verb in the `cli/index.mjs` dispatch table has a corresponding section in `docs/cli-reference.md` (drift guard). Can ship as a v2 follow-on.\n\n## Acceptance criteria\n\n- `docs/cli-reference.md` exists and documents all 24 verbs currently registered in `cli/index.mjs`.\n- Each verb has: one-line description, full argument signature, at least one example, link to implementing file.\n- Verbs are grouped into user-facing vs lifecycle/internal sections.\n- `docs/README.md` lists the new file under Reference.\n- `skills/using-adev/SKILL.md` qualification ('when present') is removed.\n- Spot-check: an agent asked about a specific verb (e.g., `adev partial`) should be able to answer from the new doc without reading source.\n\n## References\n\n- Session audit that surfaced this gap: this session's analysis of agent doc entrypoints (2026-05-20)\n- Existing per-skill reference: `docs/skill-reference.md`\n- CLI dispatch table source: `cli/index.mjs:1424-1450` (verb registry)\n- Per-verb implementations: `lib/cli/*.mjs`\n- Constitution Context Routing update: this session's edit to `.context-index/constitution.md` (added `docs/*.md` row) — landed on branch `feat/domain-extensions/init-extension-picker`.; Closed: Authored docs/cli-reference.md documenting all 29 CLI verbs (8 user-facing + 21 lifecycle), grouped by audience with signatures/examples/impl links/cross-refs; wired into docs/README.md; dropped the when-present qualifier in constitution, CLAUDE.md, and using-adev.",
       "next_action": null,
       "created": "2026-05-20T19:49:59.116Z",
-      "updated": "2026-05-20T19:49:59.116Z"
+      "updated": "2026-06-02T18:08:53.287Z"
     },
     {
       "id": "issue-534",
@@ -3700,6 +3717,57 @@
     },
     {
       "id": "issue-540",
+      "title": "Make adev terminal skills /goal-friendly with transcript-provable completion tokens",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-06-02T13:33:26.948Z",
+      "updated": "2026-06-02T13:33:26.948Z"
+    },
+    {
+      "id": "issue-541",
+      "title": "Terminal Completion Tokens",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/completion-tokens/completion-tokens.spec.md",
+      "dependencies": [],
+      "notes": "Cross-cutting spec. Affects: strategic-planning, validation, output-personas. Bound 1:1 to spec. Implements issue-540 (/goal Option 2). Created by /adev:specify 2026-06-02.; Closed: Validated PASS — ADEV-<SKILL>: <STATE> tokens implemented, tested (3/3), docs + mirrors synced. Closes issue-540 work.",
+      "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/completion-tokens/completion-tokens.spec.md",
+      "created": "2026-06-02T23:49:13.289Z",
+      "updated": "2026-06-03T00:07:29.942Z"
+    },
+    {
+      "id": "issue-542",
+      "title": "Severity stamper ignores governance/review.yaml + gates.yaml overrides (Defect B)",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-06-05T13:58:45.471Z",
+      "updated": "2026-06-05T13:58:45.471Z"
+    },
+    {
+      "id": "issue-543",
+      "title": "First-Class Spec Amendments",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md. Created by /adev:specify on 2026-06-19. Cross-cutting spec. Affects: lifecycle-artifacts, spec-lifecycle, agent-reliable-state-artifacts, cli-driver-surface. | Validated: PASS (HIGH confidence) 2026-06-19 — all 9 acceptance criteria met, 4201 tests pass (0 fail), files committed. Report: .context-index/specs/cross-cutting/spec-amendment-artifacts.validate.md",
+      "next_action": "Ready for PR.",
+      "created": "2026-06-19T13:20:31.061Z",
+      "updated": "2026-06-19T14:23:31.175Z"
+    },
+    {
+      "id": "issue-544",
       "title": "skill-ext load — Skill Extension Verb",
       "status": "closed",
       "priority": 2,
@@ -3712,7 +3780,7 @@
       "updated": "2026-05-26T00:15:54.964Z"
     },
     {
-      "id": "issue-541",
+      "id": "issue-545",
       "title": "Universal Skill Extensions",
       "status": "closed",
       "priority": 2,

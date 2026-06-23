@@ -121,6 +121,14 @@ Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governan
 
 Abort on any loader error. Warnings surface in the report header. Check 1 (quality gates) is not in this registry; it continues to be sourced from `governance/gates.yaml`.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill validate
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Execution Strategy
 
 **Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 13 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev:validate`. **Exception:** Check 11 (Visual Verification) is triggered independently for UI files. If quality gates fail but the implementation includes UI files, still note that visual verification is pending.
@@ -470,6 +478,15 @@ The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec
 - **PASS:** All dispatched checks (Check 1 quality gates plus the surviving registry — 1.5, 2, 4, and conditionally 8, 9, 11) passed. The implementation is validated.
 - **FAIL:** One or more checks failed. The report lists every failure with file references. The user should fix the issues and re-run `/adev:validate`.
 
+### Completion token (`/goal`-friendly)
+
+After the Overall Status is known, the **final line** of your chat output for this run MUST be the completion token — emit it verbatim:
+
+- Overall PASS → `ADEV-VALIDATE: PASS`
+- Overall FAIL → `ADEV-VALIDATE: FAIL`
+
+Rules: emit it exactly once, as plain text (no code fence, no backticks, no trailing prose after it), regardless of the active persona or verbosity level. This is a transcript-provable marker so Claude Code's `/goal` evaluator can read completion from the transcript (see `.context-index/specs/cross-cutting/completion-tokens/`). Subagents dispatched by this skill MUST NOT emit a completion-token line — only this top-level skill does.
+
 ## Step Z: Emit lifecycle completion event
 
 After the validation report has been written to disk (Step 14 / atomic-write commit), emit the matching exit event paired with Step 0a's `started` emission. The verdict is the aggregate computed from the consolidated check results:
@@ -479,7 +496,7 @@ After the validation report has been written to disk (Step 14 / atomic-write com
 - Any FAIL → `--verdict FAIL`
 
 ```bash
-adev report --type step --spec <spec-path> --step validate --status completed --verdict <aggregate>
+adev report --type step --spec <spec-path> --step validate --status completed --verdict <aggregate> --from-summary
 ```
 
 This event is REQUIRED. Without it, the lifecycle log shows `lifecycle_step:validate started` with no terminal event, and any future skill that gates on validate completion will block permanently.

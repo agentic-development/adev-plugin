@@ -8,7 +8,7 @@
 charter: domain-extensions
 status: implemented
 risk_level: medium
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 2
 created: 2026-05-11

@@ -2,7 +2,7 @@
 charter: infra-preflight
 status: validated
 risk_level: medium
-milestone: 1
+milestone:
 revision: 3
 charter-revision: 1
 created: 2026-05-01

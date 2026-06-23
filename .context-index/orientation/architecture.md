@@ -4,14 +4,14 @@
 
 ## Overview
 
-adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). It has four main subsystems: the CLI installer, skills (markdown instructions), hooks (bash lifecycle scripts), and templates (scaffolding files). Runtime dependencies are minimal — `web-tree-sitter` is the only external dependency, installed optionally for AST-based symbol extraction (see ADR 0001). `typescript` is a dev dependency used only by the repomap eval harness (see ADR 0002).
+adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). It has four main subsystems: the CLI installer, skills (markdown instructions), hooks (bash lifecycle scripts), and templates (scaffolding files). Runtime dependencies are minimal — `web-tree-sitter` and `tree-sitter-typescript` back AST-based symbol extraction for the repomap, with graceful fallback to regex parsing when they cannot be loaded (see ADR 0001). `typescript` and `@dotenvx/dotenvx` are dev dependencies (the former used by the repomap eval harness, see ADR 0002).
 
 ## Directory Map
 
 ```
 adev-plugin/
 ├── cli/index.mjs              # Single-file CLI — install, scaffold, conflict detection
-├── skills/                     # 28 skill directories, each with a SKILL.md
+├── skills/                     # 31 skill directories, each with a SKILL.md
 │   ├── using-adev/             # Gateway skill — injected at session start
 │   ├── adev:init/              # This wizard
 │   ├── adev:brainstorm/        # Idea exploration → Feature Charter
@@ -39,8 +39,11 @@ adev-plugin/
 │   ├── adev:research/          # Structured multi-agent research
 │   ├── adev:document/          # Developer documentation generation
 │   ├── adev:reconcile/         # Interactive repair for lifecycle mismatches
-│   └── adev:codehealth/        # Dead code and orphan file detection
-├── hooks/                      # 12 hook files (11 .sh + 1 .mjs) + hooks.json config
+│   ├── adev:codehealth/        # Dead code and orphan file detection
+│   ├── adev:deploy/            # Run a deployment pipeline from .context-index/deploy.yaml
+│   ├── adev:prototype/         # Sketch UI screens, flows, and API surface from charters
+│   └── adev:standalone/        # Toggle lifecycle-gate enforcement off for ad-hoc work
+├── hooks/                      # 22 hook files (17 .sh + 5 .mjs) + hooks.json config
 │   ├── hooks.json              # Hook registration (which events trigger which scripts)
 │   ├── session-start.sh        # SessionStart — injects using-adev skill
 │   ├── session-capture.sh      # PostToolUse — records session events to .context-index/sessions/
@@ -52,15 +55,33 @@ adev-plugin/
 │   ├── lifecycle-gate-advisory.sh # PostToolUse — advisory warnings when no lifecycle session is active
 │   ├── lifecycle-gate-bash.sh  # PreToolUse:Bash — blocks shell commands outside lifecycle scope
 │   ├── lifecycle-gate-edit.sh  # PreToolUse:Edit — blocks source edits outside lifecycle scope
+│   ├── plan-body-write-guard.sh # PreToolUse:Edit — blocks edits to immutable plan-task bodies
+│   ├── pre-commit-no-inline-node.sh # Git pre-commit — rejects inline-Node added to skills/**/SKILL.md
+│   ├── pre-compact.sh          # PreCompact — captures session state before context compaction
+│   ├── session-end.sh          # SessionEnd — finalizes session capture
+│   ├── post-validate-extract-heuristics.sh # PostToolUse — extracts heuristics after /adev:validate
 │   ├── _parse-stdin.sh         # Shared stdin JSON parser sourced by other hooks
 │   ├── issue-reminder.sh       # PostToolUse — periodic issue board reminders
-│   └── issue-reminder.mjs      # Helper module for issue reminder logic
-├── templates/                  # 31 scaffold template files consumed by /adev:init (includes governance/, personas/, review-specs/, validate/ subdirs)
+│   └── *.mjs helpers           # issue-reminder, post-validate-extract-heuristics, _execution-state, _lifecycle-gate-check-{bash,edit}
+├── templates/                  # 19 top-level scaffold templates (.md) + governance/, personas/, review-specs/, validate/ subdirs (48 files total), consumed verbatim by /adev:init
+├── extensions/                 # Domain extension packs (adev-extension.yaml + README per pack)
+│   ├── data-engineering/       # Data-engineering domain pack
+│   ├── process-automation/     # Process-automation domain pack
+│   └── example-validation-check/ # Reference pack: custom validation check
+
 ├── tests/                      # Node.js built-in test runner (node:test)
 │   ├── helpers.mjs             # Shared test utilities (temp dirs, fixtures, runHook)
 │   ├── cli.test.mjs            # CLI unit tests
 │   └── hooks/                  # Per-hook integration tests
 ├── lib/                        # Companion code for skills
+│   ├── cli/                    # One <verb>.mjs per `adev <verb>` (cli-driver-surface): gate, diagnose, report, verify, source-manifest, route, implement, specify, retro, issues, … — dispatched dynamically from cli/index.mjs
+│   ├── diagnostics/            # Tier-1 write-time diagnostic producers (adev diagnose)
+│   ├── domains/                # Domain config resolution (review/validate starters per domain)
+│   ├── extensions/             # Domain extension pack loading (extensions/*/adev-extension.yaml)
+│   ├── hygiene/                # Hygiene pass helpers (e.g. kind-validity)
+│   ├── providers/              # Provider adapters (e.g. copilot matcher/adapter)
+│   ├── sync/                   # Agent-file sync writers (CLAUDE.md, cursor, etc.)
+│   ├── retro/                  # Retrospective analysis helpers
 │   ├── repomap/                # Tree-sitter and regex parsers for /adev:repomap
 │   │   ├── index.mjs           # Main entry — parser mode detection, pipeline orchestration
 │   │   ├── check-deps.mjs      # Runtime detection of web-tree-sitter availability
@@ -152,11 +173,11 @@ adev-plugin/
 
 ## Skill Lifecycle Order
 
-Skills follow a strict pipeline: init → brainstorm → specify → review-specs → plan → route → implement → validate → eval. Supporting skills (assess, debug, recover, sample, status, write-test, retro, hygiene, repomap, sync) can run at any point.
+Skills follow a strict pipeline: init → brainstorm → specify → review-specs → plan → route → implement → validate → eval. The `build` skill orchestrates that pipeline end-to-end, and `work` triages incoming requests onto it. Supporting skills (assess, debug, recover, sample, status, write-test, retro, hygiene, repomap, codehealth, document, reconcile, sync, research, issues, learn, deploy, prototype, standalone) can run at any point.
 
 ## Key Design Decisions
 
 - **Skills are markdown, not code** — they are portable across AI tools and contain no executable logic (companion code is allowed but not required).
 - **Hooks are bash** — they execute in the shell, read JSON from stdin and `CLAUDE_TOOL_INPUT_*` env vars, and communicate via exit codes and JSON stdout.
 - **Templates are static** — changes to templates only affect newly scaffolded projects, not existing ones.
-- **Single-file CLI** — all CLI logic lives in `cli/index.mjs` (~913 lines, grown from ~400 with the install/upgrade split and provider routing).
+- **CLI dispatcher + verb modules** — `cli/index.mjs` (~1790 lines) handles install/scaffold/upgrade and dispatches `adev <verb>` commands, each implemented as `lib/cli/<verb>.mjs` (the cli-driver-surface model: prose names the verb, a helper does the work).

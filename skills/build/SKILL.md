@@ -1,7 +1,6 @@
 ---
 name: adev:build
 description: "End-to-end build orchestrator. Chains review, plan, route, implement, and validate for one or more specs through a full lifecycle pipeline. Use when the user says 'build', 'end to end', 'full pipeline', 'build the spec', 'build the milestone', 'run the whole pipeline', or wants to execute multiple lifecycle steps in sequence without manual handoffs."
-model: claude-sonnet-4-6
 ---
 
 # Build Pipeline Orchestrator
@@ -104,6 +103,8 @@ In particular:
 ### Context Packet Assembly
 
 The Agent tool only accepts a `prompt` string — there are no env vars, JSON params, or other channels. All context the subagent needs must be serialized into the prompt. The orchestrator assembles a **context packet** per step with two sections: **pipeline context** (common to all steps) and **step context** (specific to each step).
+
+**Do not pass `isolation: "worktree"` on the `Agent({...})` call.** Build's five steps are serial and share the orchestrator's working tree by design. From inside an existing worktree (i.e., `cwd` contains `.claude/worktrees/`), worktree isolation creates a new worktree *inside* the parent's tree; the parent then captures it as untracked content under `.claude/worktrees/`, and every subsequent dispatch nests another level. Pass only `description` and `prompt`.
 
 #### Pipeline Context (included in every step's prompt)
 
@@ -846,6 +847,16 @@ Build complete.
     5. Validate  — PASS | FAIL | PASS (after N retry cycles)
   Retry cycles: 0 | N of M (checks fixed: [...], regressions: [...])
 ```
+
+### Completion token (`/goal`-friendly)
+
+When the build reaches a terminal state for a single spec (or the final spec of a `--charter`/`--milestone` run), the **final line** of your chat output for that run MUST be the build completion token — emit it verbatim, mapped from the terminal status:
+
+- All required steps completed and the terminal Validate step reported PASS → `ADEV-BUILD: COMPLETE`
+- A non-review step errored and halted the pipeline (e.g. implement/validate failure with `build.max_retries == 0`) → `ADEV-BUILD: FAILED`
+- The pipeline stopped on an unresolved review state → `ADEV-BUILD: BLOCKED`. This is the terminal token when the review step's final convergence verdict (from `lib/loop-convergence.mjs`) is one of `BUDGET_EXHAUSTED`, `NO_PROGRESS`, `REGRESSED`, or `PASS_PENDING_HUMAN` (the `--require-human-final-pass` halt awaiting operator sign-off), or when `build.max_review_retries == 0` and review returned BLOCK.
+
+Rules: emit it exactly once, as plain text (no code fence, no backticks, no trailing prose after it), as the very last line, regardless of the active persona or verbosity level. It is a transcript-provable marker so Claude Code's `/goal` evaluator can read completion from the transcript (see `.context-index/specs/cross-cutting/completion-tokens/`). Subagents and per-step sub-skills (review/plan/implement/validate) MUST NOT emit a build completion-token line — only this top-level orchestrator does, once, at terminal state.
 
 ---
 
