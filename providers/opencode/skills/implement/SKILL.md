@@ -53,6 +53,14 @@ The verb wraps `lib/meta-tools.mjs::loadSpecContext` + `getPlanProgress` and emi
 
 If the CLI call fails, fall back to reading each file individually.
 
+**Load Skill Extensions:** After loading the spec context bundle, load any skill extension instructions:
+
+```bash
+adev skill-ext load --skill implement
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
 3. `.context-index/manifest.yaml`. Extract the `specialists` registry.

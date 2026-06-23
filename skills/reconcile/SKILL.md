@@ -28,6 +28,14 @@ Interactive repair for mismatches between specs, plans, the issue board, and cod
 
 **Default mode:** `--fix` (applies fixes automatically). Pass `--no-fix` for a report-only run. This default was flipped as part of `check-set-restructure.spec.md` so that `/adev:reconcile` is the authoritative repair tool for lifecycle drift (the previous validate-time Check 12 only warned; it never fixed). User-facing prompts still appear interactively unless `--batch` or `--no-fix` is passed.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill reconcile
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ### Step 1: Detection Scan
 
 Run each detection check and collect findings:

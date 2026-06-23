@@ -69,6 +69,14 @@ Read the following files to ground the research in project context:
    - Read the linked issue to understand its context and requirements. Use `getIssueManager(manifest)` patterns from `lib/issues/registry.mjs`.
    - If the issue is not found, print a warning ("Issue `<id>` not found, skipping issue linking") and continue.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill research
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ### Step 4: Conduct Research — Parallel Researcher Dispatch
 
 Execute source-specific research by dispatching one researcher subagent per enabled source in parallel. This is the behavioral core of the skill.

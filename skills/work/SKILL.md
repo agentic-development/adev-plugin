@@ -58,6 +58,14 @@ Proceed directly to Step 2.
 - If a file is missing during the scan, skip it silently (normal — not all projects have sessions or plans).
 - If a file is present but malformed or unreadable, skip it and emit a visible warning: "Skipped one file that could not be read: `<path>`."
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill work
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Step 2: Classify Work
 
 If the user provided a description (as an argument, or in response to the state scan prompt, or as their initial message), classify it into exactly one work type.

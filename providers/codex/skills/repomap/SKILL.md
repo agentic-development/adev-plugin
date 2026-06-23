@@ -32,6 +32,14 @@ If multiple language markers exist (e.g., a monorepo with `package.json` and `go
 
 Read `.context-index/manifest.yaml` for any `exclude` patterns. Fall back to `.gitignore` for exclusions. Always exclude: `node_modules/`, `vendor/`, `dist/`, `build/`, `.git/`, `.context-index/hygiene/`.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill repomap
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ### Step 2: Discover Source Files
 
 Use Glob to find source files for each detected language:

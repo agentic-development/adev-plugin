@@ -24,6 +24,14 @@ If multiple providers are used, sync all enabled targets from the manifest.
    - `.context-index/manifest.yaml` (required, for sync targets)
    - `.context-index/platform-context.yaml` (optional, for tech stack summary)
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill sync
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 2. **For each sync target in manifest:**
 
    ### Claude format (`CLAUDE.md`)

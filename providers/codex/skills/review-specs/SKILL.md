@@ -76,6 +76,14 @@ For each spec to be reviewed, gather the context package that all reviewers will
 
 If a charter or constitution file is missing, warn the user and ask whether to proceed with reduced context or abort.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill review-specs
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Step 2b: Validate Cross-Repo `depends-on` References
 
 After loading the spec, inspect its `depends-on` frontmatter field for cross-repo references. A cross-repo reference uses the format `@repo-slug/spec-slug`.
