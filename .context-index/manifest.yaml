@@ -7,7 +7,7 @@
 
 project:
   name: "adev-plugin"
-  adev_version: "0.26.0"
+  adev_version: "0.27.7"
   description: "Claude Code plugin and CLI implementing a full-lifecycle Agentic Development Framework"
   type: cli
 
@@ -205,6 +205,8 @@ repomap:
     - "coverage/**"
     - "*.min.js"
     - "*.generated.*"
+    - ".claude/**"
+    - ".context-index/hygiene/**"
 
 # ============================================================================
 # Hygiene
@@ -223,6 +225,7 @@ integrations:
     # gitignored: true|false — when true, installer maintains a paired-marker block in .gitignore
     #                         covering .context-index/sessions/ (default true for new projects)
     provider: native
+    capture: hook
 
 hygiene:
   staleness_threshold_days: 30

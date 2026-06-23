@@ -1,15 +1,9 @@
-# Live Spec: Diagnostic Registry
-
-<!-- Live Spec within the cli-driver-surface charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/cli-driver-surface/charter.md -->
-
 ---
 charter: cli-driver-surface
 kind: behavioral
 status: implemented
 risk_level: high
-milestone: adev-compiler-discipline
+milestone:
 revision: 2
 charter-revision: 2
 created: 2026-05-14
@@ -53,6 +47,12 @@ source-manifest:
   computed-at: "2026-05-14T21:13:35.721Z"
 drift_detected: true
 ---
+
+# Live Spec: Diagnostic Registry
+
+<!-- Live Spec within the cli-driver-surface charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/cli-driver-surface/charter.md -->
 
 > **Rev 2 amendment (2026-05-14):**
 >
