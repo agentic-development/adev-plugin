@@ -16,7 +16,33 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 
 ## Behavior by Project State
 
-### No `.context-index/` exists (First Run)
+### Detecting First Run vs. Diagnostic Mode
+
+**The presence of `.context-index/` does NOT mean the project has been configured.**
+`adev install` (the CLI step that runs *before* `/adev:init`) always scaffolds a
+minimal `.context-index/` from templates — it creates `manifest.yaml`,
+`constitution.md`, the directory tree, and stamps `adev_version` — then tells the
+user to run `/adev:init` next. So on a fresh install the directory always exists,
+but it is still in **pristine template state** (unconfigured).
+
+Decide the mode by whether the context index has actually been **configured**, not
+by whether the directory exists:
+
+1. `.context-index/` is absent → **First Run** (onboarding wizard).
+2. `.context-index/` exists but is still in pristine template state → **First Run**
+   (onboarding wizard). Treat it as unconfigured when ANY of these hold:
+   - `manifest.yaml` is missing, or still contains the template placeholders
+     `{{ project_name }}` / `{{ project_description }}`.
+   - `constitution.md` is missing, or still contains the template placeholder
+     `{{ project_name }}` or the unfilled principle stubs (`1. ...`, `2. ...`).
+   In this case do NOT report "existing project" or run the health check — the
+   install merely scaffolded the skeleton; the user has not configured anything
+   yet. Proceed with the onboarding wizard below (files already present are
+   overwritten/filled in as the user answers each step).
+3. `.context-index/` exists AND is configured (placeholders replaced with real
+   values) → **Diagnostic Mode** (health check).
+
+### No `.context-index/` exists, or it is unconfigured (First Run)
 
 This IS the onboarding experience. Walk through each layer interactively:
 
@@ -624,9 +650,13 @@ repos:
     name: infra
 ```
 
-### `.context-index/` already exists (Diagnostic Mode)
+### `.context-index/` exists AND is configured (Diagnostic Mode)
 
-When run on a project that already has `.context-index/`, the wizard becomes a health check:
+When run on a project whose `.context-index/` has already been configured (template
+placeholders replaced with real values — see "Detecting First Run vs. Diagnostic
+Mode" above), the wizard becomes a health check. Do NOT enter this mode merely
+because the directory exists; a freshly installed-but-unconfigured skeleton must go
+through First Run instead.
 
 ```
 adev Context Index — Health Check
