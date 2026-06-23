@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 118,
+  "seq": 122,
   "epics": [
     {
       "id": "epic-1",
@@ -732,6 +732,14 @@
       "planRef": ".context-index/specs/features/session-awareness/cost-checkpoint-events.plan.md",
       "created": "2026-05-24T20:57:34.712Z",
       "updated": "2026-05-24T20:57:34.712Z"
+    },
+    {
+      "id": "epic-96",
+      "title": "Terminal Completion Tokens",
+      "status": "closed",
+      "planRef": ".context-index/specs/cross-cutting/completion-tokens/completion-tokens.plan.md",
+      "created": "2026-06-02T23:55:24.415Z",
+      "updated": "2026-06-03T00:04:05.759Z"
     }
   ],
   "issues": [
@@ -3689,6 +3697,44 @@
       "next_action": "Run /adev:review-specs --spec .context-index/specs/features/session-awareness/cost-checkpoint-events.spec.md",
       "created": "2026-05-24T15:19:06.507Z",
       "updated": "2026-05-24T22:12:43.717Z"
+    },
+    {
+      "id": "issue-540",
+      "title": "Make adev terminal skills /goal-friendly with transcript-provable completion tokens",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-06-02T13:33:26.948Z",
+      "updated": "2026-06-02T13:33:26.948Z"
+    },
+    {
+      "id": "issue-541",
+      "title": "Terminal Completion Tokens",
+      "status": "closed",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/cross-cutting/completion-tokens/completion-tokens.spec.md",
+      "dependencies": [],
+      "notes": "Cross-cutting spec. Affects: strategic-planning, validation, output-personas. Bound 1:1 to spec. Implements issue-540 (/goal Option 2). Created by /adev:specify 2026-06-02.; Closed: Validated PASS — ADEV-<SKILL>: <STATE> tokens implemented, tested (3/3), docs + mirrors synced. Closes issue-540 work.",
+      "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/completion-tokens/completion-tokens.spec.md",
+      "created": "2026-06-02T23:49:13.289Z",
+      "updated": "2026-06-03T00:07:29.942Z"
+    },
+    {
+      "id": "issue-542",
+      "title": "Severity stamper ignores governance/review.yaml + gates.yaml overrides (Defect B)",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "spec_ref": ".context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md",
+      "dependencies": [],
+      "notes": "",
+      "next_action": null,
+      "created": "2026-06-05T13:58:45.471Z",
+      "updated": "2026-06-05T13:58:45.471Z"
     }
   ]
 }
