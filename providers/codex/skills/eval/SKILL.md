@@ -60,6 +60,14 @@ If `report.passed === true` and `report.skipped === false`, proceed silently.
 
 If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure preflight library could not be loaded: <error>. Fix the library before proceeding."
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill eval
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Layer 1: Deterministic Checks (Automated)
 
 Run all quality gates from `governance/gates.yaml` (or constitution fallback). This mirrors `/adev:validate` Check 1 but records detailed scores:

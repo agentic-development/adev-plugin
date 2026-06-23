@@ -7,6 +7,16 @@ description: "Gateway skill for the Agentic Development Framework. Injected at s
 
 This project uses the **Agentic Development Framework**, a full-lifecycle methodology for AI-assisted software delivery grounded in four pillars: Context-First Architecture, Ephemeral Infrastructure, Gate-Based Governance, and Hybrid Engineering.
 
+### Load Skill Extensions
+
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill using-adev
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Context Index
 
 All structured context lives in `.context-index/`:
@@ -49,6 +59,8 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 | `/adev:issues` | Issue Management | Create, update, and track issues and epics (with milestone support) |
 | `/adev:hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
 | `/adev:repomap` | Maintenance | Generate AST-based symbol index for drift detection |
+
+For full per-skill usage, argument signatures, and worked examples, see [`docs/skill-reference.md`](../../docs/skill-reference.md). For the complete CLI verb surface (including internal verbs like `adev gate`, `adev report`, `adev build-state`, `adev partial`, `adev heuristics`, `adev source-manifest`, `adev domain`, etc. that this gateway does not list), consult [`docs/cli-reference.md`](../../docs/cli-reference.md) or `node cli/index.mjs <verb> --help` for any specific verb. End-user-facing topics — installation, getting-started, governance, hooks, extensions, troubleshooting — are indexed at [`docs/README.md`](../../docs/README.md).
 
 ## Lifecycle Gates
 
@@ -101,4 +113,5 @@ A persona directive (Product, Developer, or Architect) is injected at session st
 When a skill has a "Report to User", "Output Format", or similar section with prescriptive formatting (tables, code blocks, blocker codes), treat that format as the **default for the Developer persona**. If a different persona is active, adapt the chat summary to that persona's output rules:
 
 - **Artifacts written to disk** (`.review.md`, `.plan.md`, validation reports) always use the full technical format regardless of persona.
+- **Completion tokens** — the `/goal`-friendly terminal markers emitted by `/adev:build` (`ADEV-BUILD: <STATE>`) and `/adev:validate` (`ADEV-VALIDATE: <STATE>`) — are always emitted verbatim as the final line of output regardless of persona or verbosity. Persona and verbosity rules MUST NOT trim, reword, translate, summarize away, or fence them; like disk artifacts, they are exempt from persona adaptation (see `.context-index/specs/cross-cutting/completion-tokens/`).
 - **Chat responses to the user** follow the active persona's dimension rules for verbosity, code references, review verdicts, test results, and next actions.

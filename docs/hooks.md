@@ -27,11 +27,13 @@ All hooks follow the same protocol:
 | `lifecycle-gate-edit` | PreToolUse | Edit | Blocks | Block edits that bypass lifecycle gates |
 | `merge-guard` | PreToolUse | Bash | Blocks | Block merges to protected branches |
 | `lifecycle-gate-bash` | PreToolUse | Bash | Blocks | Block bash commands that bypass lifecycle gates |
+| `plan-body-write-guard` | PreToolUse | `Write\|Edit` | Blocks | Block direct writes to immutable plan-task bodies |
 | `context-read-tracker` | PostToolUse | Read | Advisory | Track which context files have been read |
 | `sync-trigger` | PostToolUse | Edit | Advisory | Trigger sync after constitution edits |
 | `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives (legacy post-commit mode) |
 | `issue-reminder` | PostToolUse | `.*` (all) | Advisory | Remind about relevant open issues |
 | `lifecycle-gate-advisory` | PostToolUse | `.*` (all) | Advisory | Emit advisory warnings about lifecycle state |
+| `post-validate-extract-heuristics` | Stop | `.*` | Advisory | Extract reusable heuristics from the session after `/adev:validate` completes |
 | `session-end` | SessionEnd | `.*` | Advisory | Write a session summary to `.context-index/sessions/` when Claude Code ends a session (registered dynamically when `integrations.session_capture.capture: hook`) |
 | `pre-compact` | PreCompact | `.*` | Advisory | Write a session summary before Claude Code compacts the transcript, skipping if SessionEnd already wrote one for this session (registered dynamically when `integrations.session_capture.capture: hook`) |
 
@@ -351,7 +353,7 @@ Bypass with `git commit --no-verify` only when justified. Provider mirrors under
 
 | Question | Answer |
 |---|---|
-| Are they tracked content? | **Yes** by default. The installer's `.gitignore` block lists 5 ephemeral paths (`hygiene/`, `.token-cursor.json`, `.reminder-counter`, `.session-tracking.jsonl`, `user-config`) but **does not** include `.context-index/sessions/`. So `git status` will show them after each commit. |
+| Are they tracked content? | **Yes** by default. The installer's `adev:gitignore` paired-marker block (canonical list at `lib/gitignore-paths.mjs`) ignores ephemeral adev artifacts — lifecycle state, hygiene reports, atomic-write temps, the prototype workspace, and more — but **does not** include `.context-index/sessions/` (session files are separately owned by `lib/session-capture-installer.mjs::appendSessionCaptureGitignoreBlock`). So `git status` will show session files after each commit. |
 | How should they be committed? | **Batch them periodically** under one `chore(sessions): record YYYY-MM-DD transcripts` commit at session end or once per day. Do not interleave them with feature commits — that pollutes diff scope. The session file referencing the *most recent* commit will always be "one behind" (it's generated *after* the commit lands), which is fine; the next batch picks it up. |
 | Can I gitignore them instead? | **Yes**, if your project does not run `/adev:retro` or other audit skills that consume the files. Add `.context-index/sessions/` to your `.gitignore`. You will lose the pre-parsed session-activity surface but `git log` still has the canonical commit record. |
 | Why not auto-batch in the post-commit hook? | Auto-batching would create amend-loops, fight with `rebase`/`squash`, and surprise users with extra commits they didn't author. The convention is intentionally manual. |

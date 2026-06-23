@@ -1,9 +1,3 @@
-# Refactoring Spec: JSONL Drift Events
-
-<!-- Refactoring spec within the spec-drift-detection charter.
-     Extends the Live Spec format with current-state/target-state analysis and migration path.
-     Parent Charter: .context-index/specs/features/spec-drift-detection/charter.md -->
-
 ---
 charter: spec-drift-detection
 kind: refactor
@@ -29,6 +23,12 @@ source-manifest:
   computed-at: "2026-05-18T13:59:32.083Z"
 drift_detected: true
 ---
+
+# Refactoring Spec: JSONL Drift Events
+
+<!-- Refactoring spec within the spec-drift-detection charter.
+     Extends the Live Spec format with current-state/target-state analysis and migration path.
+     Parent Charter: .context-index/specs/features/spec-drift-detection/charter.md -->
 
 ## Revision History
 

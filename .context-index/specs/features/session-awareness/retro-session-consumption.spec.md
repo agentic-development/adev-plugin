@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: session-awareness
 kind: behavioral
@@ -37,6 +35,8 @@ source-manifest:
   computed-at: "2026-05-20T23:08:15.899Z"
 drift_detected: true
 ---
+
+<!-- partial_schema: spec@1 -->
 
 # Live Spec: Retro Session Consumption
 

@@ -1,3 +1,14 @@
+---
+charter: agent-reliable-state-artifacts
+kind: behavioral
+status: review-pending
+risk_level: medium
+revision: 2
+charter-revision: 8
+created: 2026-05-19
+updated: 2026-05-20
+---
+
 # Live Spec: Plan-Routing Sidecar (`.routing.json`)
 
 <!-- Live Spec within the agent-reliable-state-artifacts charter.
@@ -16,17 +27,6 @@
          YAML); native JSON is one. ADR-0012 amended in lockstep to generalise the
          naming convention to `<stem>.<purpose>.<ext>` with `.md` for human-primary
          and `.json` for machine-primary sidecars. -->
-
----
-charter: agent-reliable-state-artifacts
-kind: behavioral
-status: review-pending
-risk_level: medium
-revision: 2
-charter-revision: 8
-created: 2026-05-19
-updated: 2026-05-20
----
 
 ## Behavioral Contract
 

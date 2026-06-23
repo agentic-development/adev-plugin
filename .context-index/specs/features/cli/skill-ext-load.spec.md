@@ -19,6 +19,7 @@ source-manifest:
     - templates/skill-extensions/.gitkeep
     - tests/cli/skill-ext.test.mjs
   computed-at: "2026-05-26T00:05:48.486Z"
+drift_detected: true
 ---
 
 # Live Spec: `adev skill-ext load` — Skill Extension Verb

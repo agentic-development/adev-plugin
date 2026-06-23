@@ -1,3 +1,34 @@
+---
+charter: session-awareness
+charter-extension: true
+status: validated
+kind: behavioral
+risk_level: low
+milestone: 0.28.0
+revision: 2
+charter-revision: 6
+created: 2026-05-24
+updated: 2026-05-24
+tracker-ref: issue-539
+source-manifest:
+  sha: "1497f00"
+  files:
+    - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md
+    - lib/cli/report.mjs
+    - lib/diagnostics/event-schemas.mjs
+    - lib/lifecycle-events.mjs
+    - lib/lifecycle-state.mjs
+    - skills/build/SKILL.md
+    - skills/implement/SKILL.md
+    - skills/plan/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/specify/SKILL.md
+    - skills/validate/SKILL.md
+    - tests/cli/report-step-from-summary.test.mjs
+    - tests/lib/lifecycle-state-step-cost.test.mjs
+  computed-at: "2026-06-19T14:11:21.242Z"
+---
+
 # Live Spec: Per-Step Cost in Lifecycle Events
 
 <!-- Live Spec within the session-awareness charter.
@@ -14,38 +45,6 @@
               refactored to embed cost fields directly in `step_completed` via `--from-summary`
               on the existing `adev report --type step` arm. One event per step instead of two;
               sub-skills own the emission at their exit point. -->
-
----
-charter: session-awareness
-charter-extension: true
-status: validated
-kind: behavioral
-risk_level: low
-milestone: 0.28.0
-revision: 2
-charter-revision: 6
-created: 2026-05-24
-updated: 2026-05-24
-tracker-ref: issue-539
-source-manifest:
-  sha: "b2f4697"
-  files:
-    - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md
-    - lib/cli/report.mjs
-    - lib/diagnostics/event-schemas.mjs
-    - lib/lifecycle-events.mjs
-    - lib/lifecycle-state.mjs
-    - skills/build/SKILL.md
-    - skills/implement/SKILL.md
-    - skills/plan/SKILL.md
-    - skills/review-specs/SKILL.md
-    - skills/specify/SKILL.md
-    - skills/validate/SKILL.md
-    - tests/cli/report-step-from-summary.test.mjs
-    - tests/lib/lifecycle-state-step-cost.test.mjs
-  computed-at: "2026-05-24T22:30:00.000Z"
-drift_detected: true
----
 
 ## Behavioral Contract
 

@@ -1,5 +1,62 @@
 # Changelog
 
+## [0.27.7](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.6...adev-cli-v0.27.7) (2026-05-29)
+
+
+### Bug Fixes
+
+* **build:** remove hardcoded model: claude-sonnet-4-6 from frontmatter ([99ff246](https://github.com/agentic-development/adev-plugin/commit/99ff246bebab3765cd16cb313b06854010544f52))
+* **implement:** remove context: fork to restore subagent dispatch ([bc5a8d9](https://github.com/agentic-development/adev-plugin/commit/bc5a8d9135acbec349461c4463101052824e06d9))
+* **implement:** remove context: fork to restore subagent dispatch capability ([b822488](https://github.com/agentic-development/adev-plugin/commit/b8224889b2188727f71bd80d0361df075357ffe2))
+* **skills:** guard build and implement against recursive worktree nesting ([eba1483](https://github.com/agentic-development/adev-plugin/commit/eba1483dabf7a6891e57488a58ca2335a7380e35))
+* **skills:** guard build and implement against recursive worktree nesting ([074087e](https://github.com/agentic-development/adev-plugin/commit/074087e9abaeca32bee192b18d66cceaef439ab8))
+
+## [0.27.6](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.5...adev-cli-v0.27.6) (2026-05-26)
+
+
+### Bug Fixes
+
+* **install:** show picker menu and ship bundled domain extensions ([5b9a75f](https://github.com/agentic-development/adev-plugin/commit/5b9a75fc037a7e79044f9aaa3df9364b23e8df1b))
+* **install:** show picker menu and ship bundled domain extensions ([1b0366f](https://github.com/agentic-development/adev-plugin/commit/1b0366fc082cdb213fd8153b82fda322c2a1f2b9))
+
+## [0.27.5](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.4...adev-cli-v0.27.5) (2026-05-26)
+
+
+### Features
+
+* **session-awareness:** add adev report --type cost-checkpoint CLI arm ([b89feb1](https://github.com/agentic-development/adev-plugin/commit/b89feb13ec06ae0f8782b13f6314a92bf0a958e0))
+* **session-awareness:** add cost_checkpoint to CANONICAL_EVENTS ([9da353d](https://github.com/agentic-development/adev-plugin/commit/9da353d456c51a2f0f879cb1aa07be8076fe7fa0))
+* **session-awareness:** add cost_checkpoint to REQUIRED_FIELDS_BY_EVENT ([de35bda](https://github.com/agentic-development/adev-plugin/commit/de35bda2318c5f7c008d8bd0440668a1458e3d88))
+* **session-awareness:** add reportCostCheckpoint emitter to lifecycle-state ([594f030](https://github.com/agentic-development/adev-plugin/commit/594f030fa2f71d9d664ebe4d1c89a9a89645bbc8))
+* **session-awareness:** decompose cost-checkpoint-events spec into 7 TDD tasks ([0f1cf1d](https://github.com/agentic-development/adev-plugin/commit/0f1cf1db9e0404fcb7efba9fcc5564544bc843bf))
+* **session-awareness:** embed per-step cost into step_completed via --from-summary ([bd684f0](https://github.com/agentic-development/adev-plugin/commit/bd684f0a30fa39bfa8a956fc7b91b3d82ae207f2))
+* **session-awareness:** wire cost-checkpoint persistence into build skill step 6 ([2544478](https://github.com/agentic-development/adev-plugin/commit/25444781705b31845019702077a7f0fa2671a8b0))
+
+## [0.27.4](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.3...adev-cli-v0.27.4) (2026-05-24)
+
+
+### Bug Fixes
+
+* **release:** document npm token rotation requirement ([32cf2ee](https://github.com/agentic-development/adev-plugin/commit/32cf2ee086a572c91478853aa7aff84770230246))
+* **release:** document npm token rotation requirement ([3725660](https://github.com/agentic-development/adev-plugin/commit/3725660f6ac3ee597d1de14e4950d6eef787f890))
+
+## [0.27.3](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.2...adev-cli-v0.27.3) (2026-05-23)
+
+
+### Features
+
+* **build:** integrate adev cost summary ticker between pipeline steps ([9af2cc5](https://github.com/agentic-development/adev-plugin/commit/9af2cc50365d2c785d639a11a5cf5ef18860e884))
+* **cli:** register adev cost verb in VERB_REGISTRY ([2043a5a](https://github.com/agentic-development/adev-plugin/commit/2043a5aa6bc27635c189d38e0de8db757036d070))
+* **session-awareness:** add cost summary CLI verb module ([6c79689](https://github.com/agentic-development/adev-plugin/commit/6c796891bb9f59231974cd33b96134948a6e42a1))
+* **session-awareness:** add cost-summary aggregator library ([6a43934](https://github.com/agentic-development/adev-plugin/commit/6a439341c10111bf40be8be7fc6ca6234035e8d8))
+* **session-awareness:** add cost-summary text and JSON formatters ([63f0ad0](https://github.com/agentic-development/adev-plugin/commit/63f0ad0d18820b12423195108aef521e2eb757eb))
+* **session-awareness:** per-spec cost ticker between /adev:build steps ([a84be4d](https://github.com/agentic-development/adev-plugin/commit/a84be4d4367ec727b53519146d399b0c26b0f6aa))
+* **setup:** add adev init ensure-gitignore [--remove] sub-verb ([53d5bca](https://github.com/agentic-development/adev-plugin/commit/53d5bcaca93e87ace5139693ca932427a6852efa))
+* **setup:** add MANAGED_GITIGNORE_PATHS canonical list ([e2dbe05](https://github.com/agentic-development/adev-plugin/commit/e2dbe05ae24660f2cf8db6164c3692030b78933e))
+* **setup:** adev-managed .gitignore block + ensureManagedBlock installer ([1e2a485](https://github.com/agentic-development/adev-plugin/commit/1e2a4855da50b64f22d46866cfda3cbdec0adb59))
+* **setup:** implement ensureManagedBlock / removeManagedBlock ([a7f7437](https://github.com/agentic-development/adev-plugin/commit/a7f7437582b908af5749d4c12bb88c81fe93d011))
+* **setup:** wire ensureManagedBlock into adev install/upgrade ([6dac1ec](https://github.com/agentic-development/adev-plugin/commit/6dac1ec494dd125acefd5d01246e924fe49ea19b))
+
 ## [0.27.2](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.1...adev-cli-v0.27.2) (2026-05-21)
 
 

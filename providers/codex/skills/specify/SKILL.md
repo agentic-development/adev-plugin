@@ -19,8 +19,10 @@ Author a Live Spec that defines a behavioral contract for implementation, scoped
 | `--refactor` | No | Refactor mode: current state + target state + migration path. |
 | `--from-diff` | No | From-diff mode: generate a retroactive spec from a git diff or PR. |
 | `--cross-cutting` | No | Cross-cutting mode: spec spans multiple charters (auth, logging, error handling, etc.). |
+| `--revise <spec-path>` | No | Revise mode: read a BLOCKED spec at revision N together with its `<spec-stem>.review.md` + `<spec-stem>.blockers.md` sidecars and produce revision N+1 as a targeted patch. Bumps `revision:` N → N+1, sets `updated:` to today, transitions `status: review-blocked → review-pending`, clears `.blockers.md`, and emits a `spec_revised` lifecycle event. The actual work runs in the CLI verb `adev specify revise --spec <path>` (see Step-set: Revise below). |
+| `--amend <base-spec>` | No | Amend mode: scaffold a **new co-located amendment** of an already-shipped (validated) base spec **without mutating the base**. Produces `<base-stem>-rev-<target>-<descriptor>.spec.md` carrying `amends:` + `target-revision:` frontmatter (inherited/overridable `kind:`, `revision: 1`, `status: review-pending`) and emits a `spec_amended` lifecycle event on the **base** spec's log. Distinct from `--revise` (which bumps a not-yet-shipped, review-blocked spec in place). The actual work runs in the CLI verb `adev specify amend --spec <base-spec>` (see Amend Mode below). |
 
-**Workflow axis vs. kind axis (orthogonality).** `--extract`, `--refactor`, `--from-diff`, and `--cross-cutting` are **direct boolean flags** describing the *workflow* used to author the spec. `--kind` is a **separate axis** describing the *artifact shape* the spec takes. The two axes combine independently — any workflow flag may pair with any `--kind` value. No `--mode <name>` flag is introduced; the existing direct-flag syntax is preserved verbatim.
+**Workflow axis vs. kind axis (orthogonality).** `--extract`, `--refactor`, `--from-diff`, `--cross-cutting`, `--revise`, and `--amend` are **direct boolean flags** describing the *workflow* used to author the spec. `--kind` is a **separate axis** describing the *artifact shape* the spec takes. The two axes combine independently — any workflow flag may pair with any `--kind` value. No `--mode <name>` flag is introduced; the existing direct-flag syntax is preserved verbatim. Note that **amendment is not a `kind:` value** — it is the `amends:` relationship overlay; `--kind amendment` is rejected with `INVALID_KIND`.
 
 Examples:
 - `/adev:specify --extract --kind artifact` — extract an artifact-kind spec from existing static deliverables
@@ -28,6 +30,10 @@ Examples:
 - `/adev:specify --refactor --kind refactor` — refactor workflow producing a refactor-kind spec (natural pairing)
 
 Workflow flags remain mutually exclusive with each other. If no workflow flag is supplied, standard mode is used. The `--kind` axis is independent of workflow flag selection.
+
+`--revise` is mutually exclusive with `--extract`, `--refactor`, `--from-diff`, and `--cross-cutting`. Combining any two of these flags exits non-zero with `CONFLICTING_FLAGS`.
+
+`--amend` is likewise mutually exclusive with `--revise`, `--extract`, `--refactor`, `--from-diff`, and `--cross-cutting`. Combining `--amend` with any of these exits non-zero with `CONFLICTING_FLAGS`.
 
 ## Prerequisites
 
@@ -123,6 +129,14 @@ Used by all modes (Cross-Cutting loads only constitution and product charter).
 - Any existing specs in the same module directory — to avoid duplication
 - `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill specify
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 **Heuristics:** Load module-scoped heuristics for the charter module via the CLI:
 
 ```bash
@@ -185,7 +199,7 @@ adev report --type step --spec <spec-path> --step specify --status started
 **Exit event** (emit at the end of the Summary step):
 
 ```bash
-adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS --from-summary
 ```
 
 The `--verdict PASS` is required — downstream gates require the prior step to have completed with PASS or PASS_WITH_NOTES. The specify step has no failure path that reaches the Summary step (success implies the spec was written, status set to `review-pending`, and the Feature work item created or skipped), so success implies PASS. Failure paths emit `--status failed` separately and do not reach the exit emission.
@@ -502,7 +516,7 @@ Output path, charter, status, counts of behaviors/error cases/tasks/acceptance c
 Emit the lifecycle exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:review-specs::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `specify` step has no failure path that reaches this point (the spec was written, status set to `review-pending`, Feature work item created or skipped), so success implies PASS.
 
 ```bash
-adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS
+adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS --from-summary
 ```
 
 ---
@@ -883,6 +897,125 @@ Output the shared summary template with these stats:
 
   Review the module impact with each module's maintainer.
 ```
+
+---
+
+## Revise Mode (`--revise <spec-path>`)
+
+Sixth workflow axis. Reads a BLOCKED spec at revision N together with the reviewer's `<spec-stem>.review.md` + `<spec-stem>.blockers.md` sidecars and produces revision N+1 as a **targeted patch**.
+
+**Preconditions:**
+
+1. The spec exists on disk and ends with `.spec.md`.
+2. `<spec-stem>.review.md` exists alongside the spec (latest reviewer findings).
+3. `<spec-stem>.blockers.md` exists alongside the spec (canonical `blocker_id` set that triggered BLOCK).
+4. The spec's `status:` frontmatter field is `review-blocked` (in `--auto` mode this is enforced; in interactive mode a warning is printed and the operator confirms).
+
+**Steps:**
+
+1. **Gate** the prior step via the lifecycle log (the `review` step must have completed; the revise workflow only makes sense after a BLOCK).
+2. **Run the CLI verb** that does the revise work:
+
+   ```bash
+   adev specify revise --spec <spec-path> [--auto]
+   ```
+
+   The verb wraps `lib/specify-revise.mjs::reviseSpec` and:
+   - Reads `revision:` from the spec frontmatter and increments it through the `adev/revision-monotonic` diagnostic (`REVISION_NOT_INCREMENTED` is a hard stop).
+   - Sets `updated:` to today and transitions `status: review-blocked → review-pending`.
+   - Preserves frontmatter fields not implicated by blocker entries byte-identically.
+   - Preserves spec body sections whose anchor is NOT in any blocker entry byte-identically.
+   - Writes the new spec atomically (temp-then-rename).
+   - Clears `<spec-stem>.blockers.md` (the next `/adev:review-specs` invocation re-evaluates and rewrites if any blockers remain).
+   - Does NOT clear `<spec-stem>.review.md` — the next review invocation rewrites it.
+   - Emits a `spec_revised` lifecycle event with `{ from_revision, to_revision, addressed_blocker_ids, unresolved_blocker_ids }`.
+
+3. **Path containment (SEC-1):** the CLI verb re-asserts `assertWithin(projectRoot, specPath)` and rejects path-traversal with `INVALID_SPEC_PATH`. The skill MUST NOT pre-validate paths.
+
+4. **Mutual-exclusion contract:** combining `--revise` with any of `--extract`, `--refactor`, `--from-diff`, or `--cross-cutting` exits non-zero with `CONFLICTING_FLAGS`.
+
+5. **Report** the result to the user (read from the verb's JSON stdout):
+
+   ```
+   Revised <spec-path>: rev <N> → <N+1>
+     Addressed blockers: <count>
+     Unresolved blockers: <count>
+   Next step: run /adev:review-specs --spec <spec-path> to re-evaluate.
+   ```
+
+**Error cases:**
+
+| Condition | CLI exit | Error code | Action |
+|-----------|----------|------------|--------|
+| Missing `<spec-stem>.review.md` or `<spec-stem>.blockers.md` | 1 | `NO_REVIEW_SIDECARS` | Tell the user to run `/adev:review-specs` first |
+| Spec status not `review-blocked` under `--auto` | 2 | `SPEC_NOT_BLOCKED` | Stop; ask the user to confirm explicit revision intent |
+| Path traversal or spec outside `projectRoot` | 1 | `INVALID_SPEC_PATH` | Stop; report the malformed path |
+| `revision:` did not increment by exactly 1 | 1 | `REVISION_NOT_INCREMENTED` | Stop; report — usually a bug in the library, not user input |
+| Combining `--revise` with another workflow flag | 1 | `CONFLICTING_FLAGS` | Stop; report which flags conflict |
+
+**Constitution alignment:** The skill names the CLI verb (`adev specify revise`) and contains no inline Node — the CLI verb wraps the library per the `cli-driver-surface` charter. The library uses only Node.js built-ins.
+
+---
+
+## Amend Mode (`--amend <base-spec>`)
+
+Seventh workflow axis. Scaffolds a **new co-located amendment** of an already-shipped (validated) base spec **without editing the base in place**. This formalizes the ad-hoc `<base>-rev-N-<descriptor>.spec.md` pattern into a governed relationship field plus a scaffolding verb.
+
+**Distinct from `--revise`:** `--revise` bumps a *not-yet-shipped, review-blocked* spec in place (N → N+1, clears `.blockers.md`). `--amend` produces a *new artifact* that amends a *shipped/validated* spec while keeping the base immutable.
+
+**Preconditions:**
+
+1. The base spec exists on disk and ends with `.spec.md`.
+2. The base is resolvable within the project root.
+
+**Steps:**
+
+1. **Resolve the descriptor.** `<descriptor>` is a kebab-case slug naming the amendment (e.g., `drop-coupon-field`). If the author did not supply `--descriptor`, prompt for it:
+
+   ```
+   → Descriptor for this amendment (kebab-case, e.g. drop-coupon-field):
+   ```
+
+   The descriptor is sanitized by the CLI verb against a strict kebab-case allowlist (SEC-1); illegal or path-traversal values are rejected with `INVALID_AMENDMENT_DESCRIPTOR`.
+
+2. **Run the CLI verb** that does the amend work:
+
+   ```bash
+   adev specify amend --spec <base-spec> [--descriptor <slug>] [--kind <kind>] [--target-revision <N>]
+   ```
+
+   The verb wraps `lib/specify-amend.mjs::amendSpec` and:
+   - Computes the co-located path `<base-dir>/<base-stem>-rev-<target>-<descriptor>.spec.md`.
+   - Writes frontmatter `amends: <base path>`, `target-revision: <N>`, an inherited/overridable `kind:`, `revision: 1`, `status: review-pending` (keeps the `.spec.md` extension).
+   - Sets `target-revision` to `base.revision + 1` by default; an explicit `--target-revision` must be strictly greater than the base revision, else `INVALID_TARGET_REVISION`.
+   - Writes the amendment atomically (temp-then-rename) and never modifies the base spec.
+   - Emits a `spec_amended` lifecycle event on the **base** spec's log carrying `{ amendment_slug, amendment_path, target_revision }`.
+
+3. **Path containment (SEC-1):** the CLI verb re-asserts `assertWithin(projectRoot, specPath)` and rejects path-traversal with `INVALID_SPEC_PATH`. The skill MUST NOT pre-validate paths.
+
+4. **Kind contract:** `--kind amendment` is rejected with the closed-enum `INVALID_KIND` — amendment is the `amends:` relationship overlay, not a kind.
+
+5. **Mutual-exclusion contract:** combining `--amend` with any of `--revise`, `--extract`, `--refactor`, `--from-diff`, or `--cross-cutting` exits non-zero with `CONFLICTING_FLAGS`.
+
+6. **Report** the result to the user (read from the verb's JSON stdout):
+
+   ```
+   Amended <base-spec>: new amendment <amendment-path> targeting rev <N>
+   Next step: run /adev:review-specs --spec <amendment-path> to review the amendment.
+   ```
+
+**Error cases:**
+
+| Condition | CLI exit | Error code | Action |
+|-----------|----------|------------|--------|
+| Base spec missing on disk | 1 | `INVALID_AMENDMENT_BASE` | Stop; report the missing base |
+| Path traversal or spec outside `projectRoot` | 1 | `INVALID_SPEC_PATH` | Stop; report the malformed path |
+| Illegal / traversal descriptor | 1 | `INVALID_AMENDMENT_DESCRIPTOR` | Re-prompt for a kebab-case descriptor |
+| `--target-revision` ≤ base `revision:` | 1 | `INVALID_TARGET_REVISION` | Stop; report; the target must be strictly greater |
+| `--kind amendment` supplied | 1 | `INVALID_KIND` | Stop; amendment is not a kind |
+| Combining `--amend` with another workflow flag | 1 | `CONFLICTING_FLAGS` | Stop; report which flags conflict |
+
+**Constitution alignment:** The skill names the CLI verb (`adev specify amend`) and contains no inline Node — all amend control flow (base resolution, target-revision computation, descriptor sanitization, event emission) lives in `lib/specify-amend.mjs` per the `cli-driver-surface` charter. The library uses only Node.js built-ins.
 
 ---
 

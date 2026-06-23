@@ -21,16 +21,19 @@ Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is help
 >
 > **Zero-config is fine.** Bundled defaults ship with the plugin and reproduce the pre-0.18.0 hardcoded flow byte-for-byte. Nothing below is required.
 
-## The four governance files
+## The governance files
 
 | File | Owner skill | What it does |
 |------|-------------|--------------|
 | `.context-index/governance/gates.yaml` | [`/adev:validate`](skill-reference.md) Check 1 | Tiered quality gates (fast/integration/e2e). Pre-0.18.0 behavior, unchanged. |
 | `.context-index/governance/review.yaml` | [`/adev:review-specs`](skill-reference.md) | Project reviewer registry — add, disable, override, trigger. |
-| `.context-index/governance/validate.yaml` | [`/adev:validate`](skill-reference.md) Checks 2-12 | Project check registry — enable/disable, add custom checks, gate on topology. |
+| `.context-index/governance/validate.yaml` | [`/adev:validate`](skill-reference.md) | Project check registry — enable/disable, add custom checks, gate on topology. |
+| `.context-index/governance/boundaries.yaml` | [`/adev:plan`](skill-reference.md), [`/adev:validate`](skill-reference.md) | Architectural boundary rules — regex patterns that raise errors/warnings when violated. |
+| `.context-index/governance/risk-policies.yaml` | governance enforcement | Maps spec `risk_level` (high/medium/low) to gate-escalation policy. |
+| `.context-index/governance/diagnostics.yaml` | `adev diagnose` (write-time) | Tier-1 diagnostic producer registry tagging lifecycle events. |
 | `.context-index/profiles.yaml` | cross-cutting | Execution profiles: tool permissions, env allowlist, model tier, redaction. Consumed by every reviewer and check. |
 
-All four are optional. Absent files mean "use bundled defaults."
+All are optional. Absent files mean "use bundled defaults."
 
 ## Profiles — the foundation
 

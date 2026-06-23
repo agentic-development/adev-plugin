@@ -27,6 +27,14 @@ Query and display the current status of adev lifecycle artifacts. This skill is 
 
 The project must have `.context-index/` initialized. If it does not exist, suggest running `/adev:init` first.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill status
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Process
 
 ### Mode: `--spec <path>`
@@ -73,7 +81,14 @@ Sessions: <N sessions>
 
 Plan: <found | not found>
 Tests: <found | not found>
+
+Review revisions (when present):
+  - rev 1: <verdict>  (<completed_at>)  [<N blockers>]
+  - rev 2: <verdict>  (<completed_at>)  [<N blockers>]
+  - rev 3: <verdict>  (<completed_at>)  [<N blockers>]
 ```
+
+**Review revisions section** — only render when `currentState(spec).steps.review.byRevision` is populated with more than one revision (i.e., the BLOCK→revise auto-retry loop ran at least once for this spec). The per-revision projection is produced by `lib/lifecycle-state.mjs` Task 3 of review-block-auto-retry; consume `byRevision[N]` directly without re-folding the log. Each entry carries `verdict`, `completed_at`, and a `blockers[]` list of canonical `blocker_id`s. Order by ascending revision integer. If only one revision exists, the standard `Revision: <N>` line covers it — no separate section needed (non-breaking output for specs that never blocked).
 
 ### Mode: `--charter <name>`
 
@@ -447,6 +462,12 @@ Issue board (board-level work-item aggregation):
 
 - `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
 - `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
+
+Amendment graph (base↔amendment relationships and effective revision):
+
+- `reportRelationship(projectRoot, specPath)` from `<ADEV_ROOT>/lib/amendment-graph.mjs` — for a spec carrying `amends:`, returns `{ isAmendment, amends, targetRevision, amendmentStatus, baseExists, line }`. Render the `line` (e.g. "amends `<base>` targeting rev `<N>`, status `<amendment-status>`") in the per-spec view when `isAmendment` is true.
+- `computeEffectiveRevision(projectRoot, baseSpecPath)` from `<ADEV_ROOT>/lib/amendment-graph.mjs` — returns `{ baseRevision, effectiveRevision, validatedAmendments, pendingAmendments }`. Effective revision = `max(base.revision, highest target-revision among VALIDATED amendments)` (SA-2). Render the effective revision alongside the base spec's own `revision:`; pending/unvalidated amendments are listed but excluded from the max. The base file is never rewritten.
+- `resolveAmendmentChain(projectRoot, specPath)` from `<ADEV_ROOT>/lib/amendment-graph.mjs` — returns `{ chain, cycle, cycleCode, danglingAt }`; render the full chain for an amendment-of-an-amendment, and report `AMENDMENT_CYCLE` instead of looping when `cycle` is true.
 
 Milestones:
 

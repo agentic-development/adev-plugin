@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Doc-only frontmatter contract + template comment; behaviors 2/8 explicit, mechanical, 2 files in one area."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "BOUNDARY: human-approved taxonomy change adding spec_amended to CANONICAL_EVENTS (ADR-0009-governed schema). SA-1 pins fields and it mirrors spec_revised, but the governed event-schema touch warrants a mid-point checkpoint."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Behaviors 1-4 + all error cases fully specified; direct specify-revise.mjs mirror; single new file + test."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "CLI subcommand mirroring the revise dispatch; flag mutual-exclusion + INVALID_KIND reuse; one file modified."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Markdown-only skill axis mirroring the Revise Mode section; AC 8 no-inline-Node guard; single file."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "New amendment-graph module with cycle detection and SA-2 effective-revision logic, wired into both status and hygiene (2 modules). Novel composition warrants a RED-phase checkpoint."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Doc-only ADR-0009 amendment following the existing accepted-deviation style; human pre-approved, no code risk."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "End-to-end integration suite over implemented surfaces using existing test helpers; round-trip orchestration but no novel runtime logic."
+    }
+  ]
+}
