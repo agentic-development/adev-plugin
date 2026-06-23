@@ -11,7 +11,7 @@ created: 2026-05-24
 updated: 2026-05-24
 tracker-ref: issue-539
 source-manifest:
-  sha: "b2f4697"
+  sha: "1497f00"
   files:
     - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md
     - lib/cli/report.mjs
@@ -26,8 +26,7 @@ source-manifest:
     - skills/validate/SKILL.md
     - tests/cli/report-step-from-summary.test.mjs
     - tests/lib/lifecycle-state-step-cost.test.mjs
-  computed-at: "2026-05-24T22:30:00.000Z"
-drift_detected: true
+  computed-at: "2026-06-19T14:11:21.242Z"
 ---
 
 # Live Spec: Per-Step Cost in Lifecycle Events
