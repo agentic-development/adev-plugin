@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.27.8](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.7...adev-cli-v0.27.8) (2026-06-23)
+
+
+### Features
+
+* add completion-tokens cross-cutting charter ([7cf2ded](https://github.com/agentic-development/adev-plugin/commit/7cf2dede5414f32275b583c819eabd0426b7756d))
+* **agent-reliable-state-artifacts:** add spec_amended canonical event + schema + emitter ([3f74590](https://github.com/agentic-development/adev-plugin/commit/3f74590b2cd76c85ce4eda5a6d733af32c6216ce))
+* **cli-driver-surface:** add 'adev specify amend' subcommand ([5ddf09c](https://github.com/agentic-development/adev-plugin/commit/5ddf09c4829626d088fb61523baf4f80069a25ad))
+* **cli-driver-surface:** add /adev:specify --amend workflow axis ([4bd810f](https://github.com/agentic-development/adev-plugin/commit/4bd810f1437ec7d097b5793a124c8212c2bea6c1))
+* **cli-driver-surface:** add lib/specify-amend.mjs amendment scaffolder ([37e28fa](https://github.com/agentic-development/adev-plugin/commit/37e28fa1151b4d54633e6a52a4cd6e832aa6ff81))
+* **completion-tokens:** /goal-friendly terminal completion tokens ([f256c3d](https://github.com/agentic-development/adev-plugin/commit/f256c3d430e6b2f86d31011302cc859d072e4d86))
+* **completion-tokens:** add implementation plan (5 TDD tasks) ([20ed686](https://github.com/agentic-development/adev-plugin/commit/20ed6865249743519319aecd5bed3a2e5e7cffa3))
+* **completion-tokens:** add Live Spec for terminal completion tokens ([ce94ed8](https://github.com/agentic-development/adev-plugin/commit/ce94ed8a562deb5364ce932cbb72d886495c6180))
+* **completion-tokens:** document /goal convention + sync provider mirrors (task 5) ([94683bd](https://github.com/agentic-development/adev-plugin/commit/94683bddabd8f0dd6bb88bf55d25452cb5480503))
+* **completion-tokens:** emit ADEV-&lt;SKILL&gt;: &lt;STATE&gt; tokens (tasks 1-4) ([b63d000](https://github.com/agentic-development/adev-plugin/commit/b63d00077d0aebf8380e3962fb15181f8341ecbb))
+* **completion-tokens:** review-passed (PASS_WITH_NOTES) ([fb5298f](https://github.com/agentic-development/adev-plugin/commit/fb5298f1b8fe29b7d721cb45d9c84ed7ccd86d88))
+* **completion-tokens:** stamp source-manifest, status implemented ([a80c712](https://github.com/agentic-development/adev-plugin/commit/a80c712483d65f333d73a8d5da5da1e2b137140d))
+* **completion-tokens:** validated PASS ([5d68da5](https://github.com/agentic-development/adev-plugin/commit/5d68da52360e67ea02b24f0ee3963348f98767a1))
+* first-class spec amendments (amends: relationship overlay) ([07ad46c](https://github.com/agentic-development/adev-plugin/commit/07ad46c3edaacc3e13c8ea963a1f9f1e8a085e87))
+* **lifecycle-artifacts:** document amends/target-revision frontmatter contract ([272156b](https://github.com/agentic-development/adev-plugin/commit/272156bb9189cc9cb0374cd82aa596854171c2a9))
+* **skills:** wire universal Load Skill Extensions block into 30 SKILL.md files ([f8f6982](https://github.com/agentic-development/adev-plugin/commit/f8f69829f105f7ac392434c6d39705af75f72f85))
+* **spec-lifecycle:** traverse amends graph in status + hygiene with effective-revision ([5c846b9](https://github.com/agentic-development/adev-plugin/commit/5c846b98764fe412cdb5cf9cdca513e46b23c296))
+
+
+### Bug Fixes
+
+* **context:** restore spec frontmatter machine-readability + refresh orientation/ADRs ([5ef98c4](https://github.com/agentic-development/adev-plugin/commit/5ef98c43bd5b19fe5b887b7cc260e88289354fbe))
+* **docs,test:** restore main to green after batch merge ([6e87379](https://github.com/agentic-development/adev-plugin/commit/6e873795c178425454de84e82d2a579487b9a3ec))
+* **docs,test:** restore main to green after batch merge ([3c82ff1](https://github.com/agentic-development/adev-plugin/commit/3c82ff19daf81ec197052ceddaf1a9eefe08dee7))
+* **init:** distinguish scaffolded-but-unconfigured context index from existing project ([1be8ad3](https://github.com/agentic-development/adev-plugin/commit/1be8ad3fa4f876baec709bb02f26b81fc5bb0031))
+* **init:** don't flag a freshly-scaffolded context index as an existing project ([5f9aa5f](https://github.com/agentic-development/adev-plugin/commit/5f9aa5f59c3c6aa926e37a744e4c68844331afd7))
+* **lifecycle-state:** self-derive plugin root for severity stamping ([ed23f6a](https://github.com/agentic-development/adev-plugin/commit/ed23f6aeda2d9fc3efa68f6d0b42f818a5650161))
+* **lifecycle-state:** self-derive plugin root for severity stamping ([ddfdae4](https://github.com/agentic-development/adev-plugin/commit/ddfdae4ea1a343daaab6d696df35cfbf3bf70075))
+* **repomap:** exclude .claude/ worktrees from symbol index + codehealth report ([e390412](https://github.com/agentic-development/adev-plugin/commit/e390412471a8a189d9354769439c5962ac9d8ad5))
+* **spec-lifecycle:** derive validated status from SPEC_STATUSES enum index ([8197229](https://github.com/agentic-development/adev-plugin/commit/8197229bccda0d73cab68d68b4669ef1cf032690))
+
 ## [0.27.7](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.6...adev-cli-v0.27.7) (2026-05-29)
 
 
