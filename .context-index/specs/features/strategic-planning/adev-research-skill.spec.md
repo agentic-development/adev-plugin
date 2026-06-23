@@ -29,6 +29,7 @@ source-manifest:
     - templates/research-template.md
     - tests/skills/research.test.mjs
   computed-at: "2026-04-09T17:22:23.021Z"
+drift_detected: true
 ---
 
 ## Current State

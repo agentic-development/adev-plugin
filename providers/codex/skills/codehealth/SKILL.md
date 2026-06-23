@@ -64,6 +64,14 @@ Resolve the set of files to scan:
 3. Subtract `hygiene.coverage_exclude` glob patterns (e.g., `["tests/**", "skills/*/evals/**"]`)
 4. The resulting file list is the scan scope for all passes
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill codehealth
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ---
 
 ## Detection Passes

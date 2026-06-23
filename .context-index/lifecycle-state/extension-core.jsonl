@@ -1,0 +1,1 @@
+{"event":"code_drift_detected","drift_source":"lib/extensions/install.mjs","drift_at":"2026-05-26T00:45:36.683Z","ts":"2026-05-26T00:45:36.684Z","diagnostic_warnings":["adev/frontmatter-present"]}

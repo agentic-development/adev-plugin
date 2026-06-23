@@ -288,3 +288,5 @@ hygiene:
       # main→branch merge. Advisory metadata, not content drift.
       - "62caa688a2d94a84697cc1f7c55bfa099264a2da"
       - "1a6af4f953f789eba11c825329eb4d1b3f697f78"
+
+domain: software

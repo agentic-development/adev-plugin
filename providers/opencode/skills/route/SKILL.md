@@ -37,6 +37,14 @@ Read the following files. Each informs the scoring decisions that follow.
 
 7. **Risk policies:** If `.context-index/governance/risk-policies.yaml` exists, read it. Risk levels inform whether override rules apply.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill route
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ## Step 2: Score Each Task
 
 For each task in the plan (or the single task specified by `--task`), compute four dimension scores. Each dimension is scored 1 through 5.

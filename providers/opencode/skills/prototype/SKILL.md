@@ -127,6 +127,14 @@ If heuristics are found (output is not `__NONE__`), present them to the user:
 
 If `retrieveHeuristics()` fails or returns empty, proceed silently. Do not block the session.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill prototype
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ### Step 2: Tier Selection
 
 **If `--tier` was provided as an argument:**

@@ -92,6 +92,9 @@ viz/dist/
 *.partial
 *.partial.lock
 
+# Skill extension layers managed by `adev extension install` — not committed.
+.context-index/skill-extensions/_*/
+
 # >>> adev:gitignore >>>
 # hygiene reports (regenerated)
 .context-index/hygiene/

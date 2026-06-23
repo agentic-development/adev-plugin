@@ -105,3 +105,21 @@ provides:
     - samples/example.md
     # - src: samples/long-name.md
     #   dest: my-extension/example.md
+
+  # ── provides.skill_extensions ──────────────────────────────────────────
+  #
+  # Map of skill name → source markdown file path (relative to extension root).
+  # At install time, each file is copied to:
+  #   .context-index/skill-extensions/_<ext-name>/<skill>.md
+  #
+  # Skill names must match [a-zA-Z0-9_-]+. Source files must be .md.
+  # The `_<ext-name>/` prefix signals extension-managed content.
+  # The project-level file skill-extensions/<skill>.md is never touched.
+  # Install is idempotent: re-running overwrites the _<ext-name>/ files.
+  #
+  # These files are read at skill invocation time by `adev skill-ext load`
+  # (defined in cli/skill-ext-load.spec.md).
+  #
+  # skill_extensions:
+  #   implement: skills/implement-extension.md
+  #   plan: skills/plan-extension.md

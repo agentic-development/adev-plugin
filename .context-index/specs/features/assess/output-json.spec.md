@@ -18,6 +18,7 @@ source-manifest:
   files:
     - skills/assess/SKILL.md
   computed-at: "2026-04-12T11:48:02.729Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

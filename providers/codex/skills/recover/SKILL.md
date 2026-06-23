@@ -93,6 +93,14 @@ If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure prefli
 
 **Infrastructure-related recovery context:** When the recovery skill classifies the root cause as infrastructure-related (e.g., TOOL_FAILURE caused by unreachable services, missing credentials, or connection failures), include the formatted preflight report (from `formatPreflightReport()`, not the raw object) in the corrective context injected into the re-dispatched subagent. This gives the subagent awareness of current infrastructure state.
 
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill recover
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
 ### Step 2: Gather Evidence
 
 Collect every piece of context relevant to the stuck task. The goal is to see exactly what the subagent saw (and what it did not see).
