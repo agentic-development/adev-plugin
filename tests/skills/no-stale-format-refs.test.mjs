@@ -211,11 +211,15 @@ const STALE_PATTERNS_AUDIT = [
 //   - `issues/SKILL.md`: legacy-read prose under deprecation block may
 //     mention `tasks.md` as the read-only consumer view target.
 //   - `status/SKILL.md`: `--render` produces `tasks.md` as a write target.
+//   - `sync/SKILL.md`: when `tasks.backend` is "file", the synced agent-file
+//     task-management section points at the legacy `tasks.md` board; the prose
+//     names that path as the file-backend reference target.
 //   - `review-specs/SKILL.md`: owns `last-reviewed-revision` and `file-sha`
 //     field writes; prose describes those fields directly.
 const ALLOW_FILE_PATTERNS_AUDIT = {
   "issues/SKILL.md": ["tasks.md parsing outside render/issues"],
   "status/SKILL.md": ["tasks.md parsing outside render/issues"],
+  "sync/SKILL.md": ["tasks.md parsing outside render/issues"],
   "review-specs/SKILL.md": [
     "last-reviewed-revision field manipulation",
     "file-sha field manipulation",
