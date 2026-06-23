@@ -134,8 +134,44 @@ async function selectProviders({ ask: askFn = ask } = {}) {
 }
 
 /**
+ * Determine whether an existing `.context-index/` has actually been configured
+ * by the user, versus still being in the pristine template state that
+ * `adev install` scaffolds (and `/adev:init` later fills in).
+ *
+ * `adev install` copies `manifest.yaml` and `constitution.md` verbatim from the
+ * templates (only `adev_version` is stamped), so unreplaced `{{ project_name }}` /
+ * `{{ project_description }}` placeholders are a reliable "not yet configured"
+ * signal. This mirrors the detection rule in skills/init/SKILL.md.
+ *
+ * @param {string} contextIndex - Absolute path to the `.context-index/` directory.
+ * @returns {boolean} true if configured (placeholders replaced), false if pristine.
+ */
+function isContextIndexConfigured(contextIndex) {
+  const placeholder = /\{\{\s*project_(?:name|description)\s*\}\}/;
+  const candidates = ["manifest.yaml", "constitution.md"];
+  let sawAny = false;
+  for (const rel of candidates) {
+    const p = join(contextIndex, rel);
+    if (!existsSync(p)) continue;
+    sawAny = true;
+    try {
+      if (placeholder.test(readFileSync(p, "utf8"))) return false;
+    } catch {}
+  }
+  // If neither file exists, treat as unconfigured (nothing real to diagnose).
+  return sawAny;
+}
+
+/**
  * Detect the project state for init routing.
- * @returns {{ mode: 'greenfield'|'brownfield-no-adev'|'brownfield-outdated'|'brownfield-current', version: string|null, hasGit: boolean, hasCode: boolean }}
+ *
+ * `configured` distinguishes a context index the user has actually set up from
+ * one that `adev install` merely scaffolded from templates. Existence of
+ * `.context-index/` alone is NOT enough — install always creates it before the
+ * user runs `/adev:init`. Callers gate "use upgrade" / diagnostic behavior on
+ * `configured`, not on `mode` alone.
+ *
+ * @returns {{ mode: 'greenfield'|'brownfield-no-adev'|'brownfield-outdated'|'brownfield-current', version: string|null, hasGit: boolean, hasCode: boolean, configured: boolean }}
  */
 function detectProjectState() {
   const cwd = process.cwd();
@@ -147,8 +183,10 @@ function detectProjectState() {
   const hasCode = codeMarkers.some(m => existsSync(join(cwd, m))) || existsSync(join(cwd, "src"));
 
   if (!existsSync(contextIndex)) {
-    return { mode: hasCode ? "brownfield-no-adev" : "greenfield", version: null, hasGit, hasCode };
+    return { mode: hasCode ? "brownfield-no-adev" : "greenfield", version: null, hasGit, hasCode, configured: false };
   }
+
+  const configured = isContextIndexConfigured(contextIndex);
 
   // Context index exists — check version
   let installedVersion = null;
@@ -162,14 +200,14 @@ function detectProjectState() {
 
   if (!installedVersion) {
     // Has context-index but no version stamp — pre-versioning install
-    return { mode: "brownfield-outdated", version: null, hasGit, hasCode };
+    return { mode: "brownfield-outdated", version: null, hasGit, hasCode, configured };
   }
 
   if (installedVersion === PLUGIN_VERSION) {
-    return { mode: "brownfield-current", version: installedVersion, hasGit, hasCode };
+    return { mode: "brownfield-current", version: installedVersion, hasGit, hasCode, configured };
   }
 
-  return { mode: "brownfield-outdated", version: installedVersion, hasGit, hasCode };
+  return { mode: "brownfield-outdated", version: installedVersion, hasGit, hasCode, configured };
 }
 
 /**
@@ -895,7 +933,7 @@ async function cmdInstall() {
   // --- Detect project state ---
   const state = detectProjectState();
 
-  if (state.mode === "brownfield-outdated" || state.mode === "brownfield-current") {
+  if ((state.mode === "brownfield-outdated" || state.mode === "brownfield-current") && state.configured) {
     log(`Detected: existing adev install (v${state.version || "pre-versioning"})`);
     log("Use `npx @adev-org/adev-cli@latest upgrade` to update to the latest version.");
     console.log();
@@ -906,6 +944,11 @@ async function cmdInstall() {
     log("Detected: new project (no existing code or context index)");
   } else if (state.mode === "brownfield-no-adev") {
     log("Detected: existing project without adev");
+  } else {
+    // .context-index/ exists but is still pristine template state (placeholders
+    // not yet replaced). install previously bounced these to `upgrade`; instead
+    // continue setup idempotently — scaffold fills any missing files, re-stamps.
+    log("Detected: scaffolded adev context index (not yet configured) — continuing setup");
   }
 
   console.log();
@@ -1574,6 +1617,8 @@ function cmdHelp() {
 export {
   scaffoldContextKit,
   setupGitHooks,
+  detectProjectState,
+  isContextIndexConfigured,
   PLUGIN_ROOT,
   PLUGIN_VERSION,
   selectProviders,
@@ -1644,7 +1689,7 @@ const VERB_REGISTRY = new Map([
                           warn("`init` is deprecated. Use `install` (first-time) or `upgrade` (existing).");
                           console.log();
                           const state = detectProjectState();
-                          if (state.mode === "brownfield-outdated" || state.mode === "brownfield-current") {
+                          if ((state.mode === "brownfield-outdated" || state.mode === "brownfield-current") && state.configured) {
                             await cmdUpgrade();
                           } else {
                             await cmdInstall();
