@@ -1,20 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
-# Live Spec: Post-commit hook self-skips on session-capture-only commits
-
-<!-- Live Spec within the session-awareness charter.
-     Adds a guard to `.githooks/post-commit` that exits without writing a
-     new capture file when the commit being recorded only touches the
-     `.context-index/sessions/` directory. Prevents the recursive "1 commit
-     -> 1 capture file -> 1 commit -> 1 capture file" amplification seen
-     when agents commit in-session.
-
-     Filed as charter-extension; roll into a session-awareness charter
-     revision in a follow-up sweep. Companion to issue-521 (rolling daily
-     log, deferred).
-
-     Parent Charter: .context-index/specs/features/session-awareness/charter.md -->
-
 ---
 charter: session-awareness
 kind: behavioral
@@ -36,6 +19,23 @@ source-manifest:
   computed-at: "2026-05-19T12:50:38.632Z"
 drift_detected: true
 ---
+
+<!-- partial_schema: spec@1 -->
+
+# Live Spec: Post-commit hook self-skips on session-capture-only commits
+
+<!-- Live Spec within the session-awareness charter.
+     Adds a guard to `.githooks/post-commit` that exits without writing a
+     new capture file when the commit being recorded only touches the
+     `.context-index/sessions/` directory. Prevents the recursive "1 commit
+     -> 1 capture file -> 1 commit -> 1 capture file" amplification seen
+     when agents commit in-session.
+
+     Filed as charter-extension; roll into a session-awareness charter
+     revision in a follow-up sweep. Companion to issue-521 (rolling daily
+     log, deferred).
+
+     Parent Charter: .context-index/specs/features/session-awareness/charter.md -->
 
 ## Behavioral Contract
 

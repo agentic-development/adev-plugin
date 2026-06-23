@@ -1,5 +1,5 @@
 # adev — Agentic Development Framework
-> Last updated: 2026-05-09
+> Last updated: 2026-06-02
 
 A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.com), [GitHub Copilot](https://github.com/features/copilot), [OpenCode](https://github.com/opencode-ai/opencode) (alpha), and [OpenAI Codex](https://openai.com/index/codex/) (alpha) that gives your AI coding assistant a structured methodology for building software — from idea to validated implementation.
 
@@ -59,6 +59,7 @@ Skills are slash commands that guide your AI assistant through each phase of dev
 | `/adev:work` | Classifies your request and routes to the right skill |
 | `/adev:init` | Sets up `.context-index/` for a new or existing project |
 | `/adev:sync` | Syncs project principles to CLAUDE.md and other agent files |
+| `/adev:using-adev` | Gateway overview of the framework, skills, and context routing (auto-injected at session start) |
 
 ### Building Features
 
@@ -69,12 +70,14 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 | `/adev:brainstorm` | Explore an idea interactively, produce a Feature Charter; bootstraps `product.md` on first charter |
 | `/adev:specify` | Write a behavioral spec (preconditions, behaviors, error cases); creates a Feature work item bound to the spec |
 | `/adev:review-specs` | Three specialist agents review your spec before coding begins |
+| `/adev:prototype` | Rapidly sketch UI screens, flows, and API surface from a charter |
 | `/adev:plan` | Decompose at any scope: spec→tasks (default), or `--feature`, `--release`, `--milestone`, `--epic` |
 | `/adev:route` | Score tasks: which can run autonomously vs. need human review |
 | `/adev:build` | Run the full pipeline end-to-end — single spec (`--spec`), all specs in a charter (`--charter`), or a milestone phase (`--phase`) |
 | `/adev:implement` | Execute tasks with TDD — each in a fresh subagent |
 | `/adev:write-test` | Standalone TDD test authoring with gaming detection |
 | `/adev:validate` | 13-check verification against specs, constitution, and ADRs |
+| `/adev:deploy` | Run a structured deployment pipeline defined in `deploy.yaml` |
 
 ### Fixing and Debugging
 
@@ -82,6 +85,7 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 |-------|-------------|
 | `/adev:debug` | Systematic debugging — checks ADRs, specs, and architecture first |
 | `/adev:recover` | Diagnose and resume a stuck agent |
+| `/adev:standalone` | Disable lifecycle-gate enforcement for ad-hoc/exploratory work this session |
 
 ### Project Management
 
@@ -95,6 +99,8 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 | Skill | What It Does |
 |-------|-------------|
 | `/adev:hygiene` | Audit for stale specs, code drift, and coverage gaps |
+| `/adev:reconcile` | Interactive repair for lifecycle mismatches (stale epics, untraced code, drift) |
+| `/adev:codehealth` | Scan for dead exports, orphan files, and unused dependencies |
 | `/adev:assess` | Score codebase readiness for agentic development |
 | `/adev:repomap` | Generate AST-based symbol index |
 | `/adev:document` | Generate architecture docs from repomap |
@@ -102,6 +108,7 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 | `/adev:eval` | Graduated quality scoring (deterministic to LLM-as-a-Judge) |
 | `/adev:retro` | Sprint retrospective with delivery metrics |
 | `/adev:research` | Structured research across web, GitHub, and codebase |
+| `/adev:learn` | Capture a lesson learned as a persistent heuristic |
 
 For the full skill reference with prerequisites and a lifecycle flowchart, see the [documentation](docs/README.md).
 

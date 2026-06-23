@@ -1,12 +1,3 @@
-# Live Spec: Per-Spec Cost Ticker
-
-<!-- Live Spec within the session-awareness charter.
-     Charter-extension: true — this capability is not yet in the Capability Map.
-     Parent Charter: .context-index/specs/features/session-awareness/charter.md
-     Consumes: token-cost-logging.spec.md (validated, rev 2) — the data-collection layer.
-     Origin: .context-index/hygiene/retros/2026-05-16-validation-charter-build.md improvement #7
-     Tracker: issue-501 (epic-72, milestone 0.28.0) -->
-
 ---
 charter: session-awareness
 charter-extension: true
@@ -34,6 +25,15 @@ source-manifest:
   computed-at: "2026-05-22T14:38:32.264Z"
 drift_detected: true
 ---
+
+# Live Spec: Per-Spec Cost Ticker
+
+<!-- Live Spec within the session-awareness charter.
+     Charter-extension: true — this capability is not yet in the Capability Map.
+     Parent Charter: .context-index/specs/features/session-awareness/charter.md
+     Consumes: token-cost-logging.spec.md (validated, rev 2) — the data-collection layer.
+     Origin: .context-index/hygiene/retros/2026-05-16-validation-charter-build.md improvement #7
+     Tracker: issue-501 (epic-72, milestone 0.28.0) -->
 
 ## Behavioral Contract
 

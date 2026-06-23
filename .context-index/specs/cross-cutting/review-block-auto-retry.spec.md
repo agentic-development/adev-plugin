@@ -1,17 +1,3 @@
-# Live Spec: Auto-Retry Loop on Review BLOCK
-
-<!-- Cross-cutting Live Spec spanning agent-reliable-state-artifacts (per-revision events,
-     reviewer-emitted blocker IDs), spec-lifecycle (/adev:specify --revise workflow), and
-     strategic-planning (/adev:build loop reintegration).
-     Resolves issue-527 (HIGH PRIORITY) — restore the blocker-fix loop that commit
-     7e333fd removed when it replaced the broken --revise + --blocker-context invocation
-     with the sidecar+fail-loud fallback.
-     Related artifacts:
-       - .context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md (sidecar pattern)
-       - .context-index/specs/features/agent-reliable-state-artifacts/plan-task-events.spec.md (CON-8)
-       - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md (event schema)
-       - Commit history: c080e13, e384afe, 7e333fd, ee41a5f -->
-
 ---
 affects: [agent-reliable-state-artifacts, spec-lifecycle, strategic-planning]
 kind: behavioral
@@ -57,6 +43,20 @@ source-manifest:
   computed-at: "2026-05-20T04:27:36.454Z"
 drift_detected: true
 ---
+
+# Live Spec: Auto-Retry Loop on Review BLOCK
+
+<!-- Cross-cutting Live Spec spanning agent-reliable-state-artifacts (per-revision events,
+     reviewer-emitted blocker IDs), spec-lifecycle (/adev:specify --revise workflow), and
+     strategic-planning (/adev:build loop reintegration).
+     Resolves issue-527 (HIGH PRIORITY) — restore the blocker-fix loop that commit
+     7e333fd removed when it replaced the broken --revise + --blocker-context invocation
+     with the sidecar+fail-loud fallback.
+     Related artifacts:
+       - .context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md (sidecar pattern)
+       - .context-index/specs/features/agent-reliable-state-artifacts/plan-task-events.spec.md (CON-8)
+       - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md (event schema)
+       - Commit history: c080e13, e384afe, 7e333fd, ee41a5f -->
 
 ## Behavioral Contract
 

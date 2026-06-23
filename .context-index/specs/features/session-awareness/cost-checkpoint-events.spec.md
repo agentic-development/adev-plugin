@@ -1,20 +1,3 @@
-# Live Spec: Per-Step Cost in Lifecycle Events
-
-<!-- Live Spec within the session-awareness charter.
-     Charter-extension: true — this capability is not yet in the Capability Map.
-     Parent Charter: .context-index/specs/features/session-awareness/charter.md
-     Sibling: cost-ticker.spec.md (read-side aggregator) — this spec is the write-side
-              that persists per-step cost into the lifecycle event log.
-     Consumes: cost-ticker.spec.md (validated) — calls aggregate() internally.
-     Origin: conversation 2026-05-24 — observed that the lifecycle log has zero cost entries
-             despite the cost-ticker work; downstream consumers (/adev:retro, /adev:status,
-             /adev:hygiene) cannot query cost without re-aggregating from
-             `.session-tracking.jsonl`.
-     Revised: 2026-05-24 — initial design used a separate `cost_checkpoint` discriminator;
-              refactored to embed cost fields directly in `step_completed` via `--from-summary`
-              on the existing `adev report --type step` arm. One event per step instead of two;
-              sub-skills own the emission at their exit point. -->
-
 ---
 charter: session-awareness
 charter-extension: true
@@ -46,6 +29,23 @@ source-manifest:
   computed-at: "2026-05-24T22:30:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Per-Step Cost in Lifecycle Events
+
+<!-- Live Spec within the session-awareness charter.
+     Charter-extension: true — this capability is not yet in the Capability Map.
+     Parent Charter: .context-index/specs/features/session-awareness/charter.md
+     Sibling: cost-ticker.spec.md (read-side aggregator) — this spec is the write-side
+              that persists per-step cost into the lifecycle event log.
+     Consumes: cost-ticker.spec.md (validated) — calls aggregate() internally.
+     Origin: conversation 2026-05-24 — observed that the lifecycle log has zero cost entries
+             despite the cost-ticker work; downstream consumers (/adev:retro, /adev:status,
+             /adev:hygiene) cannot query cost without re-aggregating from
+             `.session-tracking.jsonl`.
+     Revised: 2026-05-24 — initial design used a separate `cost_checkpoint` discriminator;
+              refactored to embed cost fields directly in `step_completed` via `--from-summary`
+              on the existing `adev report --type step` arm. One event per step instead of two;
+              sub-skills own the emission at their exit point. -->
 
 ## Behavioral Contract
 
