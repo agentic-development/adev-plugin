@@ -33,7 +33,7 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
    When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `implement` step only reaches this emission point after all tasks completed and the GREEN-phase gate fired in Step 4; success at this stage implies PASS. (Failure modes earlier in the skill emit `status: failed` separately and do not reach this line.)
 
    ```bash
-   adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS
+   adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS --from-summary
    ```
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
@@ -62,9 +62,34 @@ If the CLI call fails, fall back to reading each file individually.
 7. **Boundary rules:** If `.context-index/governance/boundaries.yaml` exists, read it.
    Pass boundary rules to implementer subagents as additional constraints in prompt section 2
    (alongside constitution excerpt). If it does not exist, skip.
-8. **Routing tags:** If tasks have routing annotations (from `/adev:route`), read them.
-   Adjust execution strategy per task based on `auto-agent`, `assisted-agent`, or `human-only` tags.
-   If no routing tags exist, treat all tasks as `auto-agent` (default behavior).
+8. **Routing decisions:** Routing decisions for each task live in the
+   sibling sidecar file `<plan-stem>.routing.json`, written by `/adev:route`.
+   The plan markdown body is NOT a source of routing state — `**Routing:**`
+   blocks in the plan body are forbidden by CON-8 and ignored by this skill
+   (and flagged by `lib/plan-immutability.mjs` as
+   `PLAN_MUTATED_WITHOUT_SIDECAR`).
+
+   For each task, resolve routing via the CLI verb at dispatch time
+   (Step 2a — Context Packet Assembly):
+
+   ```bash
+   adev implement read-routing --plan <plan-path> --task-id <task-id> [--agents-allowlist <csv>]
+   ```
+
+   The verb prints the routing entry as JSON on stdout on success. On
+   failure, it exits non-zero and writes a typed error code to stderr.
+   Handle each error code as follows:
+
+   | Exit | Code                       | Action                                                                                |
+   |------|----------------------------|---------------------------------------------------------------------------------------|
+   | 0    | (success)                  | Parse JSON; dispatch using `selected_agent`                                           |
+   | 2    | `ROUTING_SIDECAR_MISSING`  | Stop the skill. Instruct the operator to run `/adev:route --plan <path>` and re-invoke `/adev:implement`. Do NOT silently fall back to inline parsing or default routing. |
+   | 3    | `ROUTING_ENTRY_MISSING`    | Stop for this task. Instruct the operator to re-run `/adev:route` (plan grew tasks since the last route) and re-invoke `/adev:implement --task <N>`.                     |
+   | 4    | `ROUTING_AGENT_INVALID`    | Stop for this task. The sidecar names an agent slug not in the allowlist (passed via `--agents-allowlist`). Instruct the operator to re-run `/adev:route` after fixing manifest specialists.                              |
+   | 1    | `INVALID_PLAN_PATH`        | Argument bug — surface immediately; do not retry.                                     |
+
+   If the sidecar is absent entirely, no fallback to inline parsing or
+   default routing is permitted. The skill stops and surfaces the error.
 9. **Completion policy:** Read `completion.merge_policy` from manifest.yaml (default: "pr").
    Read `completion.protected_branches` (default: ["main", "master"]).
 10. **Model tier resolution:** Read `model_tiers` from `.context-index/platform-context.yaml`.
@@ -373,7 +398,9 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
-Dispatch the subagent. Handle the returned status:
+Dispatch the subagent with a bare `Agent({description, prompt})`. **Do not pass `isolation: "worktree"`.** Implement runs tasks serially against the orchestrator's branch; the subagent must write to the same working tree. From inside an existing worktree (`cwd` contains `.claude/worktrees/`), worktree isolation nests a new worktree inside the parent — the parent then captures it as untracked `.claude/worktrees/agent-<id>/` content, and every per-task dispatch adds another level (8+ deep observed in field reports). Subagents that commit also defeat the harness's auto-cleanup contract, leaving the nested trees on disk forever.
+
+Handle the returned status:
 
 **DONE.** Proceed to visual verification (step 2e) then 2-stage review (steps 2f-2g).
 

@@ -16,7 +16,33 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 
 ## Behavior by Project State
 
-### No `.context-index/` exists (First Run)
+### Detecting First Run vs. Diagnostic Mode
+
+**The presence of `.context-index/` does NOT mean the project has been configured.**
+`adev install` (the CLI step that runs *before* `/adev:init`) always scaffolds a
+minimal `.context-index/` from templates — it creates `manifest.yaml`,
+`constitution.md`, the directory tree, and stamps `adev_version` — then tells the
+user to run `/adev:init` next. So on a fresh install the directory always exists,
+but it is still in **pristine template state** (unconfigured).
+
+Decide the mode by whether the context index has actually been **configured**, not
+by whether the directory exists:
+
+1. `.context-index/` is absent → **First Run** (onboarding wizard).
+2. `.context-index/` exists but is still in pristine template state → **First Run**
+   (onboarding wizard). Treat it as unconfigured when ANY of these hold:
+   - `manifest.yaml` is missing, or still contains the template placeholders
+     `{{ project_name }}` / `{{ project_description }}`.
+   - `constitution.md` is missing, or still contains the template placeholder
+     `{{ project_name }}` or the unfilled principle stubs (`1. ...`, `2. ...`).
+   In this case do NOT report "existing project" or run the health check — the
+   install merely scaffolded the skeleton; the user has not configured anything
+   yet. Proceed with the onboarding wizard below (files already present are
+   overwritten/filled in as the user answers each step).
+3. `.context-index/` exists AND is configured (placeholders replaced with real
+   values) → **Diagnostic Mode** (health check).
+
+### No `.context-index/` exists, or it is unconfigured (First Run)
 
 This IS the onboarding experience. Walk through each layer interactively:
 
@@ -454,6 +480,33 @@ When the user selects a backend:
 - **beads:** Check if `br` is on PATH. If yes, add `tasks:\n  backend: beads`. If no, warn: "`br` not found. Install beads_rust first, or use `file` backend." and re-prompt.
 - **skip:** Leave manifest unchanged. Note: "/adev:plan and /adev:implement will skip issue tracking."
 
+### Step 8a: Session Capture preferences
+
+```
+Step 8a/11: Session Capture
+  Session Capture writes a markdown summary of each agent session
+  to .context-index/sessions/<YYYY-MM-DD>-<session-id>.md.
+  Consumers like /adev:retro, /adev:work, /adev:status, and
+  /adev:hygiene read those summaries for cross-session context.
+
+  Modes:
+  - hook         driven by Claude Code's SessionEnd + PreCompact
+                 hooks (recommended for new projects)
+  - post-commit  legacy back-compat path: captures fire from
+                 .githooks/post-commit
+  - off          disable capture entirely
+
+  gitignored:    when true, the installer maintains a paired-marker
+                 block in .gitignore covering .context-index/sessions/
+                 (default true for new projects)
+```
+
+Invoke `adev init prompt session-capture` to drive this step. The verb owns the detection-based defaults (new project → `capture: hook, gitignored: true`; existing project → `capture: post-commit, gitignored: false`), surfaces the CON-8 conflict warning when stored manifest values disagree with detection signals, and writes the chosen values back to `manifest.yaml` under `integrations.session_capture.{capture, gitignored}` while preserving any existing `provider` key verbatim (SA-5).
+
+Re-running `/adev:init` on a project that already has these values reads them as the default-accept; user content outside the installer-managed paired markers in `.githooks/post-commit` and `.gitignore` is never touched.
+
+Spec: `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md`.
+
 ```
 Step 9/11: Sync Targets
   Your constitution will be synced to agent-specific files so
@@ -597,9 +650,13 @@ repos:
     name: infra
 ```
 
-### `.context-index/` already exists (Diagnostic Mode)
+### `.context-index/` exists AND is configured (Diagnostic Mode)
 
-When run on a project that already has `.context-index/`, the wizard becomes a health check:
+When run on a project whose `.context-index/` has already been configured (template
+placeholders replaced with real values — see "Detecting First Run vs. Diagnostic
+Mode" above), the wizard becomes a health check. Do NOT enter this mode merely
+because the directory exists; a freshly installed-but-unconfigured skeleton must go
+through First Run instead.
 
 ```
 adev Context Index — Health Check
@@ -756,6 +813,12 @@ If the user enters `skip` or presses enter without a value, do not create the fi
 
 Ensure `.context-index/user-config` is listed in the project's `.gitignore` (the CLI already handles this during installation, but verify it is present).
 
+## Session History Files
+
+The CLI installer ships a git `post-commit` hook (`.githooks/post-commit`) that auto-generates one session summary file per commit at `.context-index/sessions/<date>-<shortSHA>.md`. These files contain commit metadata + subject/body and are consumed by `/adev:retro` (via the `## Session Activity` section in Step 1.8 — see `skills/retro/SKILL.md`), `/adev:hygiene`, and audit skills. `/adev:retro` reads both post-commit-mode files (this hook) and hook-mode files (`hook-driven-capture`) within the analysis window and renders tool-use distribution, per-spec session counts, token/cost trends, sessions ↔ closed-issues cross-reference, and frame-anchored Context Gaps.
+
+The installer's `.gitignore` block intentionally does **not** include `.context-index/sessions/` — the convention is tracked content, batch-committed under `chore(sessions): record YYYY-MM-DD transcripts` messages. If the project prefers to keep them local-only, add `.context-index/sessions/` to `.gitignore`. Surface this choice to the user during init when relevant. Full reference: `docs/hooks.md` > Git Hooks > `post-commit`.
+
 ## After Initialization
 
 ```
@@ -772,3 +835,47 @@ Next steps:
 The constitution linter hook is active — it will validate
 your constitution whenever you edit it.
 ```
+
+## Domain Extension Picker
+
+After the providers and context-index scaffold steps, `adev install` (and
+`adev upgrade` on projects with no installed domain profile) presents a
+single picker prompt to surface installed first-party domain extensions.
+
+The picker presents:
+
+1. `software (bundled, default)` — the bundled software profile, no install.
+2. One option per first-party domain extension (e.g. `data-engineering`,
+   `process-automation`) whose source directory exists on disk under the
+   plugin root.
+3. `skip` — picks no extension and writes `domain: software` to
+   `manifest.yaml`.
+
+Consequences per choice:
+
+- **`software`** or **`skip`** — writes `domain: software` into the project's
+  `.context-index/manifest.yaml`. No extension install runs.
+- **A catalog entry** (e.g. `data-engineering`) — installs that extension via
+  the existing `installExtension()` pipeline and writes
+  `domain: <name>` into `manifest.yaml`.
+
+After the picker completes, the install-completion summary prints exactly:
+
+```
+Domain: <name>
+```
+
+(canonical wording, no variant). The same banner string is used by `adev
+install`, `adev upgrade`, and this SKILL doc — they stay in lockstep.
+
+If you skip at picker time, you can install a domain extension later with:
+
+```
+adev extension install <source>
+```
+
+where `<source>` is a local path, npm package, or git URL.
+
+The picker is skipped silently when invoked at a workspace root (no
+current repo slug from `detectWorkspace()`). Workspace isolation rules
+(ADR-0005) prevent the picker from writing to a sibling repo's manifest.

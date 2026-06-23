@@ -175,7 +175,7 @@ Before planning, verify the spec has passed architecture review by reading the l
    After the plan file is written at the end of the skill, emit the matching exit event with the produced plan's verdict:
 
    ```bash
-   adev report --type step --spec <spec-path> --step plan --status completed --verdict <verdict>
+   adev report --type step --spec <spec-path> --step plan --status completed --verdict <verdict> --from-summary
    ```
 
 ### Spec Mode — Workspace-Aware Target-Repo Detection
@@ -770,7 +770,11 @@ Plan complete and saved to <path to plan file>.
 <N> tasks covering <M> acceptance criteria from the spec.
 <S> tasks tagged with specialist routing.
 
-To implement: /adev:implement --plan <path>
+Next: /adev:route --plan <path>
+  Scores each task on a four-dimensional routing matrix and writes a
+  `<plan-stem>.routing.json` sidecar that /adev:implement reads to decide
+  auto-agent / assisted-agent / human-only execution per task.
+Then: /adev:implement --plan <path>
 To review the plan: open <path to plan file>
 To re-plan after spec changes: /adev:plan --spec <path>
 ```
