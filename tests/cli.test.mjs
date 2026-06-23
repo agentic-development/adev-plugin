@@ -15,6 +15,9 @@ import {
   disableConflictingPlugin,
   selectProviders,
   installProviders,
+  detectProjectState,
+  isContextIndexConfigured,
+  PLUGIN_VERSION,
 } from "../cli/index.mjs";
 
 // --- scaffoldContextKit ---
@@ -107,6 +110,109 @@ describe("scaffoldContextKit", () => {
 
     const gitignore = readFileSync(join(tempDir, ".gitignore"), "utf8");
     assert.ok(gitignore.includes(".context-index/hygiene/"), "Hygiene entry should be present");
+  });
+});
+
+// --- detectProjectState / isContextIndexConfigured ---
+//
+// Regression: `adev install` scaffolds `.context-index/` from templates and
+// stamps adev_version *before* the user runs /adev:init. Detection must not
+// treat that pristine skeleton as a configured "existing project".
+
+describe("isContextIndexConfigured", () => {
+  let tempDir;
+  let origCwd;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+    origCwd = process.cwd();
+    process.chdir(tempDir);
+  });
+
+  afterEach(() => {
+    process.chdir(origCwd);
+    cleanupTempDir(tempDir);
+  });
+
+  const ci = () => join(tempDir, ".context-index");
+
+  it("returns false for a freshly scaffolded (pristine template) context index", () => {
+    scaffoldContextKit();
+    assert.equal(isContextIndexConfigured(ci()), false);
+  });
+
+  it("returns true once template placeholders are replaced", () => {
+    scaffoldContextKit();
+    // Replace placeholders in both manifest and constitution.
+    for (const rel of ["manifest.yaml", "constitution.md"]) {
+      const p = join(ci(), rel);
+      const filled = readFileSync(p, "utf8")
+        .replaceAll("{{ project_name }}", "AcmeApp")
+        .replaceAll("{{ project_description }}", "A real project");
+      writeFileSync(p, filled);
+    }
+    assert.equal(isContextIndexConfigured(ci()), true);
+  });
+
+  it("returns false when neither manifest nor constitution exists", () => {
+    mkdirSync(ci(), { recursive: true });
+    assert.equal(isContextIndexConfigured(ci()), false);
+  });
+});
+
+describe("detectProjectState", () => {
+  let tempDir;
+  let origCwd;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+    origCwd = process.cwd();
+    process.chdir(tempDir);
+  });
+
+  afterEach(() => {
+    process.chdir(origCwd);
+    cleanupTempDir(tempDir);
+  });
+
+  function stampVersionInManifest(version) {
+    const p = join(tempDir, ".context-index", "manifest.yaml");
+    const raw = readFileSync(p, "utf8");
+    writeFileSync(p, `adev_version: "${version}"\n${raw}`);
+  }
+
+  it("reports greenfield with configured:false when no context index exists", () => {
+    const state = detectProjectState();
+    assert.equal(state.mode, "greenfield");
+    assert.equal(state.configured, false);
+  });
+
+  it("a fresh scaffold stamped at the current version is NOT configured", () => {
+    // Mirrors what `adev install` does: scaffold + stamp current version.
+    scaffoldContextKit();
+    stampVersionInManifest(PLUGIN_VERSION);
+
+    const state = detectProjectState();
+    assert.equal(state.mode, "brownfield-current");
+    assert.equal(state.configured, false,
+      "pristine scaffold must not be flagged as a configured existing project");
+  });
+
+  it("a configured context index at the current version is configured", () => {
+    scaffoldContextKit();
+    stampVersionInManifest(PLUGIN_VERSION);
+    // Configure: replace placeholders.
+    for (const rel of ["manifest.yaml", "constitution.md"]) {
+      const p = join(tempDir, ".context-index", rel);
+      const filled = readFileSync(p, "utf8")
+        .replaceAll("{{ project_name }}", "AcmeApp")
+        .replaceAll("{{ project_description }}", "A real project");
+      writeFileSync(p, filled);
+    }
+
+    const state = detectProjectState();
+    assert.equal(state.mode, "brownfield-current");
+    assert.equal(state.configured, true);
   });
 });
 
