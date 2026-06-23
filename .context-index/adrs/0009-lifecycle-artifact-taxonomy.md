@@ -106,6 +106,22 @@ Two specific deviations are accepted within Layer 1 and documented per-spec:
 
 - **Per-spec ownership of cross-cutting parser fields.** The parser output fields `kind`, `kindValid`, `kindResolved` are owned by `frontmatter-discriminator.spec.md` and consumed (not introduced) by `read-time-defaulting.spec.md`. Documented in both specs to prevent ownership drift.
 
+### 8. Amendment as a relationship overlay (not a 7th kind)
+
+> **Amendment (2026-06-19, `spec-amendment-artifacts.spec.md`).** First-class spec amendments are introduced **without** extending the closed `kind:` enum.
+
+`spec-amendment-artifacts.spec.md` adds a governed way to amend an already-shipped (validated) spec via a new artifact rather than editing the base in place. The decisions recorded here:
+
+1. **Amendment is modeled as an orthogonal relationship field, NOT a 7th `kind:` value.** `kind:` denotes an artifact's *shape*, and an amendment of (e.g.) a behavioral spec is still behavioral-shaped. The relationship is expressed by the paired frontmatter fields `amends:` (project-root-relative base path) and `target-revision:` (the base revision targeted). This mirrors adev's existing workflow-axis-vs-kind-axis orthogonality (see §2 and the `/adev:specify` workflow flags).
+
+2. **The closed 6-value `kind:` enumeration (§1) is unchanged.** `SPEC_KINDS` remains `[behavioral, refactor, action, skill, integration, artifact]`. An amendment inherits its base spec's `kind:` (overridable to any other valid kind).
+
+3. **`--kind amendment` is intentionally rejected with the closed-enum `INVALID_KIND` error.** Because "amendment" is not a shape, supplying it as a `kind:` is a category error. The rejection is recorded here so it is a deliberate decision, not a gap. (`lib/cli/specify.mjs` rejects `--kind amendment`; `lib/kinds.mjs` carries a confirming comment.)
+
+4. **A new `spec_amended` canonical lifecycle event is added.** Emitted on the **base** spec's event log when an amendment is scaffolded, carrying `{ amendment_slug, amendment_path, target_revision }`. This is a sanctioned, human-approved addition to the ADR-0009-governed lifecycle event schema (`lib/lifecycle-events.mjs::CANONICAL_EVENTS` + `lib/diagnostics/event-schemas.mjs`). See `agent-reliable-state-artifacts/lifecycle-event-log.spec.md` for event-log authority.
+
+**Accepted exception class:** orthogonal relationship overlays (a frontmatter field pair plus a co-located artifact and a lifecycle event) may extend lifecycle semantics without touching the closed `kind:` enum, provided the decision is recorded here.
+
 ## Consequences
 
 - **Public-API surface change:** Templates are part of the plugin's public API. Renaming `live-spec-template.md` and adding seven new templates is a constitutional surface change captured by this ADR.
@@ -125,3 +141,4 @@ Two specific deviations are accepted within Layer 1 and documented per-spec:
 - `.context-index/research/cross-framework-artifact-kinds.md` — K8s, PEP, MADR, OpenAPI, C4, etc.
 - `.context-index/research/sdd-frameworks-comparison.md` — Kiro, Spec-Kit, OpenSpec, Agent OS, BMAD, Devin, Tessl
 - Epic `epic-73` (milestone `spec-and-charter-taxonomy`); Layer 1 tracker `issue-465`; Layer 2 `issue-463`; Layer 3 `issue-464`
+- `.context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md` — First-Class Spec Amendments (source of §8, the amendment relationship-overlay decision and the `spec_amended` canonical event)
