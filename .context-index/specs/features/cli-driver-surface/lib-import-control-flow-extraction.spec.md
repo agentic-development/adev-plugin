@@ -1,3 +1,15 @@
+---
+charter: cli-driver-surface
+kind: refactor
+status: review-passed
+risk_level: low
+milestone:
+revision: 2
+charter-revision: 3
+created: 2026-05-17
+updated: 2026-05-17
+---
+
 # Live Spec: Lib-Import Control-Flow Extraction
 
 <!-- Live Spec within the cli-driver-surface charter.
@@ -7,18 +19,6 @@
      narrower scope: DESCRIPTIVE fenced JavaScript blocks in skill prose that
      embed agent-side CONTROL-FLOW logic (branching, iteration, lookup) and
      should live inside the corresponding CLI verb's implementation instead. -->
-
----
-charter: cli-driver-surface
-kind: refactor
-status: review-passed
-risk_level: low
-milestone: adev-compiler-discipline
-revision: 2
-charter-revision: 3
-created: 2026-05-17
-updated: 2026-05-17
----
 
 ## Current State
 

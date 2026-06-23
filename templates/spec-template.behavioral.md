@@ -13,6 +13,15 @@ revision: 1
 charter-revision: 1
 created: {{ date }}
 updated: {{ date }}
+# amends:               # Optional. Set ONLY on an amendment spec scaffolded via
+#                       # `/adev:specify --amend <base>`. Project-root-relative path
+#                       # to the already-shipped (validated) base spec this amends.
+#                       # Amendment is a relationship overlay, NOT a 7th `kind:`
+#                       # value (the closed `kind:` enum is unchanged — see ADR-0009).
+# target-revision:      # Optional, REQUIRED whenever `amends:` is set (the two form a
+#                       # paired contract). Integer ≥ 2 — the base revision this
+#                       # amendment targets (base.revision + 1 by default). Declaring
+#                       # exactly one of the pair is flagged INCOMPLETE_AMENDMENT_LINK.
 # infra_requirements:   # Optional. Declare when this capability touches external systems.
 #   env_file: ".env.test"            # Optional. Path to env file (must be within project root). Default: .env.test
 #   systems:

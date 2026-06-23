@@ -1,17 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
-# Live Spec: Orphan-lock cleanup for the JSON issue board CAS layer
-
-<!-- Live Spec within the agent-reliable-state-artifacts charter.
-     Follow-up to concurrent-write-protection.spec.md (validated). That spec
-     introduced O_EXCL acquisition of tasks.json.lock for CAS coordination
-     but left no recovery path when the lock-holder is killed mid-write
-     (SIGKILL, OS crash, container OOM). This spec adds transparent
-     orphan-lock recovery so the issue board self-heals instead of wedging
-     read-only until manual cleanup. Filed as charter-extension; roll into
-     charter rev 8 in a follow-up sweep. Parent Charter:
-     .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
-
 ---
 charter: agent-reliable-state-artifacts
 kind: behavioral
@@ -31,6 +17,20 @@ source-manifest:
     - tests/issues/json-adapter-orphan-lock.test.mjs
   computed-at: "2026-05-19T12:09:25.442Z"
 ---
+
+<!-- partial_schema: spec@1 -->
+
+# Live Spec: Orphan-lock cleanup for the JSON issue board CAS layer
+
+<!-- Live Spec within the agent-reliable-state-artifacts charter.
+     Follow-up to concurrent-write-protection.spec.md (validated). That spec
+     introduced O_EXCL acquisition of tasks.json.lock for CAS coordination
+     but left no recovery path when the lock-holder is killed mid-write
+     (SIGKILL, OS crash, container OOM). This spec adds transparent
+     orphan-lock recovery so the issue board self-heals instead of wedging
+     read-only until manual cleanup. Filed as charter-extension; roll into
+     charter rev 8 in a follow-up sweep. Parent Charter:
+     .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
 
 ## Behavioral Contract
 

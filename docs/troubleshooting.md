@@ -22,7 +22,7 @@ This page covers common issues you may encounter when using adev, organized by s
 
 **Why it happens:** The constitution linter hook runs after every edit to `constitution.md`. It checks that the file follows the expected structure (Identity, Non-Negotiable Principles, Coding Standards, etc.) and stays within a reasonable size. A malformed or oversized constitution can degrade agent performance because every skill reads it.
 
-**How to fix it:** Review your constitution for sections that grew too long. Move detailed guidelines into specialist files (`.context-index/specialists/`) or ADRs (`.context-index/adrs/`). Keep the constitution under ~200 lines. Run `/adev:sync` after making changes to propagate updates to agent files.
+**How to fix it:** Review your constitution for sections that grew too long. Move detailed guidelines into ADRs (`.context-index/adrs/`) or feature charters/specs under `.context-index/specs/`. Keep the constitution under ~200 lines. Run `/adev:sync` after making changes to propagate updates to agent files.
 
 #### "context-preflight warning"
 

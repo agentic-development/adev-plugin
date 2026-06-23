@@ -1,18 +1,12 @@
-# Refactoring Spec: JSONL Drift Events
-
-<!-- Refactoring spec within the spec-drift-detection charter.
-     Extends the Live Spec format with current-state/target-state analysis and migration path.
-     Parent Charter: .context-index/specs/features/spec-drift-detection/charter.md -->
-
 ---
 charter: spec-drift-detection
 kind: refactor
 mode: refactor
 status: validated
-revision: 2
-charter-revision: 3
+revision: 3
+charter-revision: 4
 created: 2026-05-18
-updated: 2026-05-17
+updated: 2026-05-21
 tracker-ref: issue-516
 source-manifest:
   sha: "735c4c4"
@@ -30,8 +24,15 @@ source-manifest:
 drift_detected: true
 ---
 
+# Refactoring Spec: JSONL Drift Events
+
+<!-- Refactoring spec within the spec-drift-detection charter.
+     Extends the Live Spec format with current-state/target-state analysis and migration path.
+     Parent Charter: .context-index/specs/features/spec-drift-detection/charter.md -->
+
 ## Revision History
 
+- **rev 3 (2026-05-21):** Amended `stampDrift` emission contract to be idempotent on the JSONL side. Subsequent stamps on an already-drifted spec (frontmatter `drift_detected: true`) are no-ops; the second JSONL event only appears after a `clearDrift` re-arms detection. Motivation: a single edit to a hot file (e.g. `cli/index.mjs` is referenced by ~28 specs' source-manifests) generated 28 JSONL appends, and multiplied across in-flight PRs that storm produced merge conflicts even with `.gitattributes merge=union` in place (the union driver does not reliably fire under interactive rebase, fork merges, or non-merge-commit strategies). Idempotency drops per-PR drift churn by ~95% so the remaining cases (first transition on different branches) merge cleanly via the union driver. Behaviors 1 & 2 updated. Charter Invariant rewritten and the `Multi-file Drift Tracking` capability replaced with `Idempotent Drift Stamping` (the previously-deferred multi-source history is rescinded — no consumer reads it; `/adev:hygiene`, `/adev:validate`, `/adev:plan`, and `adev verify --check-drift` all consume only the latest unresolved event).
 - **rev 2 (2026-05-18):** Folded review findings (1 blocker, 5 warnings, 6 suggestions). Renamed events to `code_drift_detected` / `code_drift_cleared` (CON-1) with `drift_source` / `drift_at` payload fields (CON-2). Added Migration Step 0 to canonicalize events in `lifecycle-event-log.spec.md` (CON-4 blocker). Added Behavior 3b for ADR 0011 coordination (SA-2). Added invariants for path canonicalization (SEC-1) and JSON serialization (SEC-2). Clarified migration idempotency mechanism (SA-3), lock-during-migration (SEC-3), legacy frontmatter validation (SEC-4), legacy null-field operator note (SA-1), explicit Deferred-row removal (CON-3), read-path performance criterion (CON-5).
 - **rev 1 (2026-05-18):** Initial draft. Reviewed → BLOCK.
 
@@ -78,19 +79,19 @@ drift_detected: true
 | `lib/cli/verify.mjs` | `adev verify check-drift` reads the latest non-cleared `code_drift_detected` event from the spec's JSONL | JSON output shape preserved (`{drifted, drift_source, drift_at}`); `drifted` derives from the inline boolean (cheap), `drift_source`/`drift_at` derive from the latest unresolved JSONL event |
 | `scripts/migrate-drift-fields.mjs` | One-shot migration: scan every `.spec.md` for `drift_source`/`drift_at`; emit a `{event: "code_drift_detected", drift_source, drift_at}` JSONL line; strip both fields from frontmatter; leave `drift_detected: true` if it was true | Idempotent; lock-protected; safe to re-run; reports a count |
 | `.context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md` | Canonical event-variant table extended | Adds rows for `code_drift_detected` and `code_drift_cleared` so projections can recognize them as canonical (not unknown extensions) |
-| `tests/lib/spec-drift.test.mjs` | Existing test cases continue to pass; new cases assert append-only multi-source recording and JSONL event shape | |
+| `tests/lib/spec-drift.test.mjs` | Existing test cases continue to pass; new cases assert idempotent JSONL emission (no-op on already-drifted), `clearDrift`-re-arms-stamping, single-event-under-contention, and JSONL event shape (rev 3) | |
 
 ### Improvements
 
 1. **Spurious conflicts disappear.** `drift_detected: true` is byte-identical on both sides of a concurrent stamp → git's three-way merge auto-applies the identical "both added" line. JSONL events live in per-spec files and append only — no shared lines for branches to fight over.
 
-2. **Multi-source history.** Every detection is recorded. A spec drifted from three SKILL.md files in one day shows three `code_drift_detected` events instead of one overwritten last-write.
+2. **Idempotent stamping.** Once a spec transitions clean→drifted, further edits to any tracked source produce no JSONL appends until `clearDrift` re-arms detection. A hot source file (e.g. `cli/index.mjs` referenced by ~28 specs) generates 28 appends on the first edit since the last clear cycle, and zero on every subsequent edit — eliminating the per-PR churn that produced JSONL merge conflicts even with `merge=union` configured. (Rev 3: rescinds the prior "multi-source history" property — see Revision History.)
 
 3. **Conflict-resolution lossless.** No drift event is ever discarded by a rebase, because no rebase touches the JSONL append region of two branches at the same offset (each branch's events are at the end of its own copy, and append-only files merge cleanly when both branches add disjoint lines).
 
 4. **Clean `git log <spec>`.** Drift events live in `.context-index/lifecycle-state/<slug>.jsonl`, not in the spec body. A `git log` against a spec shows real spec edits only.
 
-5. **Charter Invariant 4 rescinded.** The "single drift_source, last-write-wins" constraint is replaced by "every detection is appended; the boolean is a derived view." The previously-deferred capability "Multi-file Drift Tracking" lands here.
+5. **Charter Invariant rewritten (rev 3).** The "single drift_source, last-write-wins" constraint from charter rev 2 was replaced by "every detection is appended" in charter rev 3. Charter rev 4 rewrites it again to: "First detection per clean→drifted transition appends a `code_drift_detected` event and stamps `drift_detected: true`; subsequent stamps on an already-drifted spec are no-ops until `clearDrift` re-arms detection." The `Multi-file Drift Tracking` capability is replaced with `Idempotent Drift Stamping`.
 
 ## Changes Catalog
 
@@ -203,8 +204,8 @@ drift_detected: true
 
 ### Behaviors
 
-1. **When** a file edit triggers `sync-trigger.sh` and the edited path appears in some spec's `source-manifest.files[]`, **then** `stampDrift` canonicalizes the edited path to a project-relative form, appends a `{event: "code_drift_detected", drift_source: <canonical relative path>, drift_at: <ISO timestamp>}` line to `.context-index/lifecycle-state/<spec-slug>.jsonl` AND ensures `drift_detected: true` is present in that spec's frontmatter.
-2. **When** the same spec is stamped repeatedly from different source files (e.g. `implement/SKILL.md` then `validate/SKILL.md` then `specify/SKILL.md`), **then** the JSONL accumulates three `code_drift_detected` events in chronological order; the inline boolean remains a single `drift_detected: true`.
+1. **When** a file edit triggers `sync-trigger.sh` and the edited path appears in some spec's `source-manifest.files[]` AND the spec's frontmatter does NOT already contain `drift_detected: true`, **then** `stampDrift` canonicalizes the edited path to a project-relative form, appends a `{event: "code_drift_detected", drift_source: <canonical relative path>, drift_at: <ISO timestamp>}` line to `.context-index/lifecycle-state/<spec-slug>.jsonl` AND writes `drift_detected: true` to that spec's frontmatter. (Rev 3: emission gated on the clean→drifted transition. The path-canonicalization and traversal-rejection invariants from SEC-1 still apply whenever a stamp WOULD emit.)
+2. **When** the same spec is stamped repeatedly while already drifted (frontmatter `drift_detected: true` present, no intervening `clearDrift`), **then** every stamp after the first is a no-op: no JSONL event is appended, no frontmatter mutation occurs. A second `code_drift_detected` event for the same spec is only produced after `clearDrift` removes the inline boolean (and emits `code_drift_cleared`) and the next `stampDrift` re-arms detection. (Rev 3: replaces the prior "multi-source accumulation" behavior. No downstream consumer reads the historical events; only the latest unresolved detection is surfaced by `/adev:hygiene`, `/adev:validate`, `/adev:plan`, and `adev verify --check-drift`.)
 3. **When** `/adev:implement` (or any caller of `clearDrift`) resolves drift on a spec, **then** `clearDrift` appends a `{event: "code_drift_cleared", drift_at: <ISO timestamp>}` event to the JSONL AND removes the inline `drift_detected: true` boolean from frontmatter.
 3b. **When** `/adev:validate --restamp` re-stamps the source-manifest (per ADR 0011), **then** it does NOT call `clearDrift`. The drift flag remains until `/adev:implement` clears it. Rationale: validation confirms code-matches-spec; implementation confirms the plan cycle is complete. Two distinct authority signals; only the implementation signal clears drift.
 4. **When** `hasDrift(specPath)` is called, **then** it returns `true` iff the spec's frontmatter contains `drift_detected: true` (no JSONL traversal in the hot path).
@@ -221,7 +222,7 @@ drift_detected: true
 | `stampDrift` called with a `driftSource` not in the spec's `source-manifest.files[]` | Event is still appended (the hook scans against the manifest, so this case is unreachable in production; but the lib does not re-validate to avoid duplicate IO) | — |
 | `stampDrift` called with a `driftSource` that resolves outside `projectRoot` (traversal escape) | Throws `PATH_TRAVERSAL_REJECTED`; no event written; no frontmatter mutation | `PATH_TRAVERSAL_REJECTED` |
 | JSONL file is missing when `clearDrift` or `verify` runs | Treated as "no events"; for `verify`, the inline boolean alone determines `drifted` (returns `{drifted, drift_source: null, drift_at: null}`) | — |
-| Concurrent `stampDrift` calls against the same spec | Both append cleanly to the JSONL via lock-protected append (reuse existing `lib/lifecycle-state.mjs` concurrency discipline from agent-reliable-state-artifacts) | — |
+| Concurrent `stampDrift` calls against the same spec | Whichever call wins the spec's lock first reads `drift_detected: false`, emits the JSONL event, and writes the frontmatter boolean. The contending call(s) re-read frontmatter under the lock, observe `drift_detected: true`, and no-op. Exactly one event lands per clean→drifted transition. (Rev 3: replaces the prior "both append cleanly" behavior — see Behavior 2.) | — |
 | Concurrent migration-script + hook fire against the same spec | Migration acquires the spec's lock before reading frontmatter; the concurrent hook waits, then sees stripped frontmatter and appends only the new event. No duplicate events. | — |
 | Migration script encounters a malformed spec frontmatter | Logs a warning, skips that spec, continues; non-zero exit at the end if any spec was skipped | exit 1 with summary |
 | Migration script extracts a `drift_source` that fails canonicalization (traversal escape, non-UTF-8) | Logs a warning naming the spec + value, skips the spec, continues; exit 1 with summary | exit 1 with summary |

@@ -35,6 +35,42 @@ The CLI will prompt you to select your AI coding assistant. Choose the one you u
 
 The installer registers the plugin, scaffolds a minimal `.context-index/` directory, and configures git hooks for provenance tracking.
 
+## Domain Extension Picker
+
+After the provider and scaffold steps, the installer presents a single prompt to pick a domain profile:
+
+```
+══ Domain Extension ══
+Pick a domain (1-4) [1]:
+  1. software (bundled, default)
+  2. Data Engineering (data-engineering)
+  3. Process Automation (process-automation)
+  4. skip — pick a domain later via `adev extension install <source>`
+```
+
+What each choice does:
+
+- **`software`** or **`skip`** — writes `domain: software` into `.context-index/manifest.yaml`. No extension is installed.
+- **A catalog entry** (e.g. `data-engineering`) — installs the extension via the standard install pipeline and writes `domain: <name>` into `manifest.yaml`.
+
+The completion banner names the active domain:
+
+```
+Domain: data-engineering
+```
+
+If you skip at picker time, you can install a domain extension later:
+
+```bash
+adev extension install <source>
+```
+
+where `<source>` is a local path, npm package, or git URL. See [Extensions](extensions.md) for details.
+
+The picker is skipped silently when invoked at a workspace root (no current repo slug). Workspace isolation rules ([ADR-0005](../.context-index/adrs/0005-workspace-isolation-invariant.md)) prevent the picker from writing to a sibling repo's manifest.
+
+The picker only lists catalog entries whose source directory exists on disk under the plugin root — missing entries are dropped with an advisory and do not abort install. If the bundled catalog (`templates/extensions-catalog.json`) is missing or malformed, the installer falls through to `software` with a one-line note rather than crashing.
+
 ## Initialize Your Project
 
 Open your AI coding assistant in your project directory and run:

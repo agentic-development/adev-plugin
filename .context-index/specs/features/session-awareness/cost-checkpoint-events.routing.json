@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Add single string to CANONICAL_EVENTS Set; fully specified in Behavior 1 with explicit test expectation; 1 file, no boundary crossings, pure mechanical addition."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Add one map entry to REQUIRED_FIELDS_BY_EVENT following existing pattern; fully specified with exact field array; 1 file, fully mechanical."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Add reportCostCheckpoint mirroring reportStep; Behavior 3 fully specified with payload shape and API contract; plan provides complete implementation; 1 file."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "CLI arm combining existing report.mjs patterns with async aggregate() integration and mutual-exclusion; moderate novelty from --from-summary SA-1 cutoff-capture requirement warrants mid-point review."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Markdown prose addition to skills/build/SKILL.md step 6; Behavior 7 specifies exact invocation string and placement; adjacent ticker block is direct template; 1 file."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Append one row to lifecycle-event-log.spec.md canonical-events table; row content fully specified in plan; 1 file, fully mechanical documentation update."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "19 test cases across 2 files spanning unit, integration, and diagnostic-gate scenarios; --from-summary fixture and strict-mode appendEvent test require non-trivial test composition warranting mid-point review."
+    }
+  ]
+}

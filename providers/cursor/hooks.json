@@ -26,6 +26,12 @@
         "failClosed": true,
         "timeout": 30,
         "matcher": "Edit"
+      },
+      {
+        "command": "./hooks/plan-body-write-guard.sh",
+        "failClosed": true,
+        "timeout": 30,
+        "matcher": "Write|Edit"
       }
     ],
     "beforeShellExecution": [

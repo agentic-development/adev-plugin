@@ -447,7 +447,12 @@ test("adev verify spec --check-drift returns drift_source from the latest code_d
     const rel = makeDriftSpec(dir, "drift-a", { sourceManifestFiles: ["a.mjs", "b.mjs"] });
     const abs = join(dir, rel);
     return Promise.resolve()
+      // stampDrift is idempotent on the JSONL side — the second call on an
+      // already-drifted spec is a no-op. To accumulate two detection events
+      // we cycle through clearDrift between stamps, which mirrors the real
+      // /adev:implement → re-drift sequence.
       .then(() => stampDrift(abs, "a.mjs"))
+      .then(() => clearDrift(abs))
       .then(() => stampDrift(abs, "b.mjs"))
       .then(() => {
         const r = spawnSync(
@@ -575,7 +580,19 @@ test("adev verify spec --check-drift completes in <100ms with 100 accumulated JS
     const abs = join(dir, rel);
     return Promise.resolve()
       .then(async () => {
-        for (const f of files) await stampDrift(abs, f);
+        // stampDrift is idempotent (first detection lands; subsequent calls
+        // are no-ops until a clearDrift re-arms), so we seed the JSONL
+        // directly via appendEvent to populate 100 events for the CON-5
+        // read-path benchmark. The first stamp ensures `drift_detected: true`
+        // is on the spec frontmatter so --check-drift returns drifted=true.
+        await stampDrift(abs, files[0]);
+        for (let i = 1; i < files.length; i++) {
+          appendEvent(dir, abs, {
+            event: "code_drift_detected",
+            drift_source: files[i],
+            drift_at: new Date().toISOString(),
+          });
+        }
       })
       .then(() => {
         const start = Date.now();

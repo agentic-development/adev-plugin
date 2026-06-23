@@ -132,6 +132,12 @@ const ALLOWED_FILES_SELF_REFERENCE = new Set([
   // legacy markdown sibling file is not written — which requires naming the
   // legacy path in the assertion.
   "tests/lib/execution-state.test.mjs",
+  // The MANAGED_GITIGNORE_PATHS canonical list (per SA-1 absorption in
+  // managed-gitignore-block.spec.md) carries `.context-index/build-state/*.json`
+  // as an ignored legacy path. The shape-contract test names that string in its
+  // ordered-entry assertion. The reference is to the .gitignore path list, not
+  // an on-disk storage-format assumption.
+  "tests/lib/gitignore-paths.test.mjs",
 ]);
 
 describe("architectural — no legacy storage-format assertions outside allowed paths", () => {

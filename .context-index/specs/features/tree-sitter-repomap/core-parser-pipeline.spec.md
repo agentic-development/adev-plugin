@@ -16,7 +16,7 @@
 charter: tree-sitter-repomap
 status: validated
 risk_level: medium
-milestone: v0.5.0
+milestone:
 revision: 2
 charter-revision: 1
 created: 2026-03-23

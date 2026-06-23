@@ -9,7 +9,7 @@
 charter: eval-projects
 status: review-pending
 risk_level: medium
-milestone: v2
+milestone:
 revision: 1
 charter-revision: 1
 created: 2026-05-06

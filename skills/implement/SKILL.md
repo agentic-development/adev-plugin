@@ -1,7 +1,6 @@
 ---
 name: adev:implement
 description: "Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. Use after planning to begin development."
-context: fork
 ---
 
 # Implement Plan
@@ -34,7 +33,7 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
    When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `implement` step only reaches this emission point after all tasks completed and the GREEN-phase gate fired in Step 4; success at this stage implies PASS. (Failure modes earlier in the skill emit `status: failed` separately and do not reach this line.)
 
    ```bash
-   adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS
+   adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS --from-summary
    ```
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
@@ -399,7 +398,9 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
-Dispatch the subagent. Handle the returned status:
+Dispatch the subagent with a bare `Agent({description, prompt})`. **Do not pass `isolation: "worktree"`.** Implement runs tasks serially against the orchestrator's branch; the subagent must write to the same working tree. From inside an existing worktree (`cwd` contains `.claude/worktrees/`), worktree isolation nests a new worktree inside the parent — the parent then captures it as untracked `.claude/worktrees/agent-<id>/` content, and every per-task dispatch adds another level (8+ deep observed in field reports). Subagents that commit also defeat the harness's auto-cleanup contract, leaving the nested trees on disk forever.
+
+Handle the returned status:
 
 **DONE.** Proceed to visual verification (step 2e) then 2-stage review (steps 2f-2g).
 

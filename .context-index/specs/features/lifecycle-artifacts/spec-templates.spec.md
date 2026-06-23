@@ -3,7 +3,7 @@ charter: lifecycle-artifacts
 kind: artifact
 status: implemented
 risk_level: low
-milestone: spec-and-charter-taxonomy
+milestone:
 revision: 1
 charter-revision: 2
 created: 2026-05-14
