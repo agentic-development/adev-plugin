@@ -16,7 +16,33 @@ Interactive setup wizard for the Agentic Development Framework. Walks through ea
 
 ## Behavior by Project State
 
-### No `.context-index/` exists (First Run)
+### Detecting First Run vs. Diagnostic Mode
+
+**The presence of `.context-index/` does NOT mean the project has been configured.**
+`adev install` (the CLI step that runs *before* `/adev:init`) always scaffolds a
+minimal `.context-index/` from templates — it creates `manifest.yaml`,
+`constitution.md`, the directory tree, and stamps `adev_version` — then tells the
+user to run `/adev:init` next. So on a fresh install the directory always exists,
+but it is still in **pristine template state** (unconfigured).
+
+Decide the mode by whether the context index has actually been **configured**, not
+by whether the directory exists:
+
+1. `.context-index/` is absent → **First Run** (onboarding wizard).
+2. `.context-index/` exists but is still in pristine template state → **First Run**
+   (onboarding wizard). Treat it as unconfigured when ANY of these hold:
+   - `manifest.yaml` is missing, or still contains the template placeholders
+     `{{ project_name }}` / `{{ project_description }}`.
+   - `constitution.md` is missing, or still contains the template placeholder
+     `{{ project_name }}` or the unfilled principle stubs (`1. ...`, `2. ...`).
+   In this case do NOT report "existing project" or run the health check — the
+   install merely scaffolded the skeleton; the user has not configured anything
+   yet. Proceed with the onboarding wizard below (files already present are
+   overwritten/filled in as the user answers each step).
+3. `.context-index/` exists AND is configured (placeholders replaced with real
+   values) → **Diagnostic Mode** (health check).
+
+### No `.context-index/` exists, or it is unconfigured (First Run)
 
 This IS the onboarding experience. Walk through each layer interactively:
 
@@ -624,9 +650,13 @@ repos:
     name: infra
 ```
 
-### `.context-index/` already exists (Diagnostic Mode)
+### `.context-index/` exists AND is configured (Diagnostic Mode)
 
-When run on a project that already has `.context-index/`, the wizard becomes a health check:
+When run on a project whose `.context-index/` has already been configured (template
+placeholders replaced with real values — see "Detecting First Run vs. Diagnostic
+Mode" above), the wizard becomes a health check. Do NOT enter this mode merely
+because the directory exists; a freshly installed-but-unconfigured skeleton must go
+through First Run instead.
 
 ```
 adev Context Index — Health Check
@@ -805,3 +835,47 @@ Next steps:
 The constitution linter hook is active — it will validate
 your constitution whenever you edit it.
 ```
+
+## Domain Extension Picker
+
+After the providers and context-index scaffold steps, `adev install` (and
+`adev upgrade` on projects with no installed domain profile) presents a
+single picker prompt to surface installed first-party domain extensions.
+
+The picker presents:
+
+1. `software (bundled, default)` — the bundled software profile, no install.
+2. One option per first-party domain extension (e.g. `data-engineering`,
+   `process-automation`) whose source directory exists on disk under the
+   plugin root.
+3. `skip` — picks no extension and writes `domain: software` to
+   `manifest.yaml`.
+
+Consequences per choice:
+
+- **`software`** or **`skip`** — writes `domain: software` into the project's
+  `.context-index/manifest.yaml`. No extension install runs.
+- **A catalog entry** (e.g. `data-engineering`) — installs that extension via
+  the existing `installExtension()` pipeline and writes
+  `domain: <name>` into `manifest.yaml`.
+
+After the picker completes, the install-completion summary prints exactly:
+
+```
+Domain: <name>
+```
+
+(canonical wording, no variant). The same banner string is used by `adev
+install`, `adev upgrade`, and this SKILL doc — they stay in lockstep.
+
+If you skip at picker time, you can install a domain extension later with:
+
+```
+adev extension install <source>
+```
+
+where `<source>` is a local path, npm package, or git URL.
+
+The picker is skipped silently when invoked at a workspace root (no
+current repo slug from `detectWorkspace()`). Workspace isolation rules
+(ADR-0005) prevent the picker from writing to a sibling repo's manifest.

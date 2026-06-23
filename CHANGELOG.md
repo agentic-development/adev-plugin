@@ -1,5 +1,164 @@
 # Changelog
 
+## [0.27.7](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.6...adev-cli-v0.27.7) (2026-05-29)
+
+
+### Bug Fixes
+
+* **build:** remove hardcoded model: claude-sonnet-4-6 from frontmatter ([99ff246](https://github.com/agentic-development/adev-plugin/commit/99ff246bebab3765cd16cb313b06854010544f52))
+* **implement:** remove context: fork to restore subagent dispatch ([bc5a8d9](https://github.com/agentic-development/adev-plugin/commit/bc5a8d9135acbec349461c4463101052824e06d9))
+* **implement:** remove context: fork to restore subagent dispatch capability ([b822488](https://github.com/agentic-development/adev-plugin/commit/b8224889b2188727f71bd80d0361df075357ffe2))
+* **skills:** guard build and implement against recursive worktree nesting ([eba1483](https://github.com/agentic-development/adev-plugin/commit/eba1483dabf7a6891e57488a58ca2335a7380e35))
+* **skills:** guard build and implement against recursive worktree nesting ([074087e](https://github.com/agentic-development/adev-plugin/commit/074087e9abaeca32bee192b18d66cceaef439ab8))
+
+## [0.27.6](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.5...adev-cli-v0.27.6) (2026-05-26)
+
+
+### Bug Fixes
+
+* **install:** show picker menu and ship bundled domain extensions ([5b9a75f](https://github.com/agentic-development/adev-plugin/commit/5b9a75fc037a7e79044f9aaa3df9364b23e8df1b))
+* **install:** show picker menu and ship bundled domain extensions ([1b0366f](https://github.com/agentic-development/adev-plugin/commit/1b0366fc082cdb213fd8153b82fda322c2a1f2b9))
+
+## [0.27.5](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.4...adev-cli-v0.27.5) (2026-05-26)
+
+
+### Features
+
+* **session-awareness:** add adev report --type cost-checkpoint CLI arm ([b89feb1](https://github.com/agentic-development/adev-plugin/commit/b89feb13ec06ae0f8782b13f6314a92bf0a958e0))
+* **session-awareness:** add cost_checkpoint to CANONICAL_EVENTS ([9da353d](https://github.com/agentic-development/adev-plugin/commit/9da353d456c51a2f0f879cb1aa07be8076fe7fa0))
+* **session-awareness:** add cost_checkpoint to REQUIRED_FIELDS_BY_EVENT ([de35bda](https://github.com/agentic-development/adev-plugin/commit/de35bda2318c5f7c008d8bd0440668a1458e3d88))
+* **session-awareness:** add reportCostCheckpoint emitter to lifecycle-state ([594f030](https://github.com/agentic-development/adev-plugin/commit/594f030fa2f71d9d664ebe4d1c89a9a89645bbc8))
+* **session-awareness:** decompose cost-checkpoint-events spec into 7 TDD tasks ([0f1cf1d](https://github.com/agentic-development/adev-plugin/commit/0f1cf1db9e0404fcb7efba9fcc5564544bc843bf))
+* **session-awareness:** embed per-step cost into step_completed via --from-summary ([bd684f0](https://github.com/agentic-development/adev-plugin/commit/bd684f0a30fa39bfa8a956fc7b91b3d82ae207f2))
+* **session-awareness:** wire cost-checkpoint persistence into build skill step 6 ([2544478](https://github.com/agentic-development/adev-plugin/commit/25444781705b31845019702077a7f0fa2671a8b0))
+
+## [0.27.4](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.3...adev-cli-v0.27.4) (2026-05-24)
+
+
+### Bug Fixes
+
+* **release:** document npm token rotation requirement ([32cf2ee](https://github.com/agentic-development/adev-plugin/commit/32cf2ee086a572c91478853aa7aff84770230246))
+* **release:** document npm token rotation requirement ([3725660](https://github.com/agentic-development/adev-plugin/commit/3725660f6ac3ee597d1de14e4950d6eef787f890))
+
+## [0.27.3](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.2...adev-cli-v0.27.3) (2026-05-23)
+
+
+### Features
+
+* **build:** integrate adev cost summary ticker between pipeline steps ([9af2cc5](https://github.com/agentic-development/adev-plugin/commit/9af2cc50365d2c785d639a11a5cf5ef18860e884))
+* **cli:** register adev cost verb in VERB_REGISTRY ([2043a5a](https://github.com/agentic-development/adev-plugin/commit/2043a5aa6bc27635c189d38e0de8db757036d070))
+* **session-awareness:** add cost summary CLI verb module ([6c79689](https://github.com/agentic-development/adev-plugin/commit/6c796891bb9f59231974cd33b96134948a6e42a1))
+* **session-awareness:** add cost-summary aggregator library ([6a43934](https://github.com/agentic-development/adev-plugin/commit/6a439341c10111bf40be8be7fc6ca6234035e8d8))
+* **session-awareness:** add cost-summary text and JSON formatters ([63f0ad0](https://github.com/agentic-development/adev-plugin/commit/63f0ad0d18820b12423195108aef521e2eb757eb))
+* **session-awareness:** per-spec cost ticker between /adev:build steps ([a84be4d](https://github.com/agentic-development/adev-plugin/commit/a84be4d4367ec727b53519146d399b0c26b0f6aa))
+* **setup:** add adev init ensure-gitignore [--remove] sub-verb ([53d5bca](https://github.com/agentic-development/adev-plugin/commit/53d5bcaca93e87ace5139693ca932427a6852efa))
+* **setup:** add MANAGED_GITIGNORE_PATHS canonical list ([e2dbe05](https://github.com/agentic-development/adev-plugin/commit/e2dbe05ae24660f2cf8db6164c3692030b78933e))
+* **setup:** adev-managed .gitignore block + ensureManagedBlock installer ([1e2a485](https://github.com/agentic-development/adev-plugin/commit/1e2a4855da50b64f22d46866cfda3cbdec0adb59))
+* **setup:** implement ensureManagedBlock / removeManagedBlock ([a7f7437](https://github.com/agentic-development/adev-plugin/commit/a7f7437582b908af5749d4c12bb88c81fe93d011))
+* **setup:** wire ensureManagedBlock into adev install/upgrade ([6dac1ec](https://github.com/agentic-development/adev-plugin/commit/6dac1ec494dd125acefd5d01246e924fe49ea19b))
+
+## [0.27.2](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.1...adev-cli-v0.27.2) (2026-05-21)
+
+
+### Features
+
+* **agent-reliable-state-artifacts:** add canonical blocker_id emitter ([8adbac6](https://github.com/agentic-development/adev-plugin/commit/8adbac6a50b1105b4a07ded5444a3814ad31bd54))
+* **agent-reliable-state-artifacts:** add spec_revised + human_approval_required event variants ([d84c543](https://github.com/agentic-development/adev-plugin/commit/d84c5434639e9ff18d23fb33c06f866f94207f4d))
+* **agent-reliable-state-artifacts:** charter rev 8 — sidecar pattern + per-revision events ([fb68e73](https://github.com/agentic-development/adev-plugin/commit/fb68e73bf491235852a9e89bc4252f637e20064c))
+* **agent-reliable-state-artifacts:** expose state.steps.&lt;step&gt;.byRevision[N] ([53c1f45](https://github.com/agentic-development/adev-plugin/commit/53c1f45000a8c2359429cdb5c0809f77dc007e63))
+* **agent-reliable-state-artifacts:** key .blockers.md entries by canonical blocker_id ([90604b2](https://github.com/agentic-development/adev-plugin/commit/90604b2c68bbc7df0e3c2e2b73d1e68e38d858ce))
+* **cli-driver-surface:** add adev specify revise CLI verb ([1da9b0d](https://github.com/agentic-development/adev-plugin/commit/1da9b0dc665a5628fabf2af414838d60aad15d4e))
+* **cli:** add 'adev implement read-routing' verb ([5544b4c](https://github.com/agentic-development/adev-plugin/commit/5544b4c81c41abbe9f9f864840f3fb3ceb8319d8))
+* **cli:** add 'adev retro session-activity' verb ([f60143e](https://github.com/agentic-development/adev-plugin/commit/f60143e2748d41cb418775ea668a5d6270c02696))
+* **cli:** add 'adev route emit-sidecar' verb ([1335b21](https://github.com/agentic-development/adev-plugin/commit/1335b2170f61c5495d99480622259b8e548415f4))
+* **cli:** add adev init prompt session-capture verb ([77ad1b7](https://github.com/agentic-development/adev-plugin/commit/77ad1b7b58bfbe1de34ee28b0e322869fbb3890d))
+* **cli:** final report, manifest-update prompt, and cleanup for issues migrate ([539c337](https://github.com/agentic-development/adev-plugin/commit/539c337f6c4a43f74c51f9790011238ee6fbbcd5))
+* **cli:** implement dry-run path for issues migrate ([be45ed6](https://github.com/agentic-development/adev-plugin/commit/be45ed61b3b1d4772cea65e9fe42619c7e5e54b3))
+* **cli:** implement live migration loop with resumable partial-failure ([a133385](https://github.com/agentic-development/adev-plugin/commit/a1333856c380959fea5a6eaaf40d7c510198968c))
+* **cli:** installer dispatch by integrations.session_capture.capture ([928ba39](https://github.com/agentic-development/adev-plugin/commit/928ba39228a149a714ede77b1aa88565c2fe3b81))
+* **cli:** parse arguments and validate environment for issues migrate ([47f0755](https://github.com/agentic-development/adev-plugin/commit/47f0755a54b7d6a7442b69337dd87334e3ba6c04))
+* **cli:** read source backend and apply scope filter ([4978c40](https://github.com/agentic-development/adev-plugin/commit/4978c40cf7f2a7180ad618b57b33a78b18e4e099))
+* **cli:** replay dependency edges with out-of-scope warnings ([6060f9c](https://github.com/agentic-development/adev-plugin/commit/6060f9c4b350194989ff48410f966286de992615))
+* **cli:** scaffold issues verb with migrate sub-verb ([9b27847](https://github.com/agentic-development/adev-plugin/commit/9b27847ecf264c72497a1d7e6ebfa19a38db50f7))
+* **copilot-provider:** add CopilotAdapter install/uninstall/status ([83436f7](https://github.com/agentic-development/adev-plugin/commit/83436f72eece558a33078c157bc6bec2c75354e5))
+* **copilot-provider:** add hook-config rewriter (absolute and placeholder to ./scripts/) ([cd62244](https://github.com/agentic-development/adev-plugin/commit/cd62244415f7017ba3b257a4fe7797b3729c09a0))
+* **copilot-provider:** add pre-copy symlink scanner ([d55387f](https://github.com/agentic-development/adev-plugin/commit/d55387f8aa5f97cf1faaaaf6951adf1f470e7058))
+* **copilot-provider:** add renderCopilotInstructions with SHA-256 tamper-evidence + overflow + dangerous-pattern guardrail ([7c855ac](https://github.com/agentic-development/adev-plugin/commit/7c855ac8f6b3928e084b3287a008cbc24d14a291))
+* **copilot-provider:** add renderModuleInstruction with slug/path validation + YAML escaping ([81842a4](https://github.com/agentic-development/adev-plugin/commit/81842a44ba52486a2505426bf98aec27bce4c444))
+* **copilot-provider:** add skill-name validator with NFC + regex + frontmatter checks ([5151606](https://github.com/agentic-development/adev-plugin/commit/5151606001a8706ad565f3221166943548d37a47))
+* **copilot-provider:** add syncCopilot dispatcher with input caps + path-confinement + atomic write ([86fa159](https://github.com/agentic-development/adev-plugin/commit/86fa15933f24fea018df241d0a4c521ab3591c3f))
+* **copilot-provider:** charter + three review-passed specs for GitHub Copilot adapter ([5af6a7c](https://github.com/agentic-development/adev-plugin/commit/5af6a7cf8f2be913453c31baff27e79dd47a145f))
+* **copilot-provider:** emit copilot: block in sync summary ([23619c9](https://github.com/agentic-development/adev-plugin/commit/23619c9bec811b72f226c3ff1b602f93551c5871))
+* **copilot-provider:** wire adev install/uninstall/status --target copilot ([21caf90](https://github.com/agentic-development/adev-plugin/commit/21caf90c434d33138b4edaa14b1d2b22e1a8d7ca))
+* **copilot-provider:** wire format: copilot into /adev:sync dispatcher ([2e40ba6](https://github.com/agentic-development/adev-plugin/commit/2e40ba607d35de1cc04902667faaa1fa1bfa4c3e))
+* **cursor-provider:** add Cursor as fourth provider (Specs A–E) ([295f0ad](https://github.com/agentic-development/adev-plugin/commit/295f0adbde59697926511fb9f28752f655fbd540))
+* **hooks:** add pre-compact.sh wrapper with SA-2 skip ([32cc041](https://github.com/agentic-development/adev-plugin/commit/32cc04199feaadc5d9612e70bbe448efbc7d547e))
+* **hooks:** add session-end.sh wrapper for SessionEnd capture ([61a1740](https://github.com/agentic-development/adev-plugin/commit/61a1740389240e01753f853a28d7fbec677ffc3b))
+* **lib/retro:** add aggregateCostTokens sub-helper ([68977a7](https://github.com/agentic-development/adev-plugin/commit/68977a76881154c1df91df5b713d8ae5144bb787))
+* **lib/retro:** add bounded non-backtracking body-scan helpers ([96a5d1d](https://github.com/agentic-development/adev-plugin/commit/96a5d1d38c2dab37f4a58c670eea61c7b5a7cb59))
+* **lib/retro:** add classifyFormat (hook | post-commit | unknown) ([2ce74a8](https://github.com/agentic-development/adev-plugin/commit/2ce74a878c29d4ee73b9702a2006440f35f25f30))
+* **lib/retro:** add countPerSpec sub-helper ([ad2cc14](https://github.com/agentic-development/adev-plugin/commit/ad2cc14432ec9dac41bbb3b9bc94db9c8bcce71d))
+* **lib/retro:** add gatherSessionActivity orchestrator core ([bffed39](https://github.com/agentic-development/adev-plugin/commit/bffed391bf375aae03c123637e6b24889e0af0b1))
+* **lib/retro:** add issue-id validator (charset + parseId) ([0933749](https://github.com/agentic-development/adev-plugin/commit/09337496600ed62edca5a07f553906ee1f246a19))
+* **lib/retro:** add joinClosedIssueXref sub-helper ([9f2c265](https://github.com/agentic-development/adev-plugin/commit/9f2c265277a600588b03a20bbdccce8c5a60be0a))
+* **lib/retro:** add parseToolUseDistribution sub-helper ([42bf2c0](https://github.com/agentic-development/adev-plugin/commit/42bf2c0813f3a9062a0ba348b6770c9c38142f07))
+* **lib/retro:** add safe YAML frontmatter reader ([55c0e8d](https://github.com/agentic-development/adev-plugin/commit/55c0e8d37f5cb27a0cb77b950713629d77203ab0))
+* **lib/retro:** add scanContextGaps sub-helper (frame-anchored) ([38c9147](https://github.com/agentic-development/adev-plugin/commit/38c9147c27fbe74bbcaf527f121233cf7fcd330b))
+* **lib:** add plan-routing sidecar writer/reader ([8f8b961](https://github.com/agentic-development/adev-plugin/commit/8f8b9613679f31d6380d5e66630e3127827eab05))
+* **lib:** detect inline Routing blocks without sidecar regardless of git history ([dceedd6](https://github.com/agentic-development/adev-plugin/commit/dceedd6a0aaa7c72ef7faea30e57ce343aaf7da6))
+* **plan-routing-sidecar:** switch from markdown to JSON before ship ([4d389a1](https://github.com/agentic-development/adev-plugin/commit/4d389a114bd8a00c66353afc92f623cbad5f8351))
+* **retro:** classify uncommitted artifacts as durable vs transient ([a66443f](https://github.com/agentic-development/adev-plugin/commit/a66443fabe4bc00dfa746e393336a049a319a6c1))
+* **review:** emit canonical blocker_id + section_anchor from reviewer subagents ([039c93b](https://github.com/agentic-development/adev-plugin/commit/039c93be593371736306c1f4cb84240e3f1a02f0))
+* **session-awareness:** add detectExistingCapture ([bf269f9](https://github.com/agentic-development/adev-plugin/commit/bf269f9e6870e4997f70eddd4960c13373c14a4a))
+* **session-awareness:** add fromTranscript to lib/session-summary.mjs ([d91d833](https://github.com/agentic-development/adev-plugin/commit/d91d833e45c29dae2f5fd18556566ada325becb2))
+* **session-awareness:** add redactSecrets to lib/session-summary.mjs ([4fba5e6](https://github.com/agentic-development/adev-plugin/commit/4fba5e67ddb5a63fc50872818d5e7d992a8bdf41))
+* **session-awareness:** add runCapture helper for SessionEnd/PreCompact ([d6353d2](https://github.com/agentic-development/adev-plugin/commit/d6353d229e7d9c5375da237e9d8d2020b39b405e))
+* **session-awareness:** add validators in lib/session-capture.mjs ([17ff13b](https://github.com/agentic-development/adev-plugin/commit/17ff13bbe9f24e4ca915fe7c21f13be977091e7b))
+* **session-awareness:** amend hook-driven-capture spec to rev 4 — optional SessionEnd frontmatter ([de5dc54](https://github.com/agentic-development/adev-plugin/commit/de5dc54a0ff2a2219d691e3d9dd6f55dfb07e26e))
+* **session-awareness:** approve charter rev 5 ([f589c1b](https://github.com/agentic-development/adev-plugin/commit/f589c1b2981832561c8fdbb6175e848647d93244))
+* **session-awareness:** centralize stderr diagnostic format ([39a3583](https://github.com/agentic-development/adev-plugin/commit/39a358312a1564d2acdb2fd9f8a67e8e4232b8ac))
+* **session-awareness:** charter rev 4 — hook-driven capture + retro consumption + init prompt ([cf1f583](https://github.com/agentic-development/adev-plugin/commit/cf1f58328684a1f6a109bdc38f049b7e92da99ba))
+* **session-awareness:** plan hook-driven-capture — 22 tasks, TDD-ordered ([f605159](https://github.com/agentic-development/adev-plugin/commit/f60515946fe253650ddcc4ab2b098dc13de5dd99))
+* **session-awareness:** plan retro-session-consumption — 18 tasks, TDD-ordered ([9839361](https://github.com/agentic-development/adev-plugin/commit/9839361640a2f0b14804fe3c6cf7e51cc629fe65))
+* **session-awareness:** ship hook-driven-capture + retro consumption ([4434cc7](https://github.com/agentic-development/adev-plugin/commit/4434cc7c859bdef1ec236186d89c1be142b01e0a))
+* **session-awareness:** write hook-driven-capture.spec.md ([7b4d51d](https://github.com/agentic-development/adev-plugin/commit/7b4d51db897feda2f6319925935e4bf2bb21bd77))
+* **session-awareness:** write retro-session-consumption.spec.md ([de226b8](https://github.com/agentic-development/adev-plugin/commit/de226b8f4beacb664b9331351aeefd568e7e1cb6))
+* **skills:** /adev:implement reads routing from sidecar instead of plan body ([0900bef](https://github.com/agentic-development/adev-plugin/commit/0900bef0ba9f1095999fd984e3d602b0d18d9af5))
+* **skills/retro:** add § 1.8 Session Activity step + remove Step 2 conditional ([28af95d](https://github.com/agentic-development/adev-plugin/commit/28af95de03f44528ac15840d290022c70e9ec68f))
+* **skills:** rewrite /adev:route Step 4 to emit sidecar instead of mutating plan ([f81802a](https://github.com/agentic-development/adev-plugin/commit/f81802a3d88121a7943a0991a9e141d9d92e4518))
+* **spec-lifecycle:** add --revise workflow axis to /adev:specify ([31ae338](https://github.com/agentic-development/adev-plugin/commit/31ae3383cab7464aeda6b68eb19ac25a548241d7))
+* **spec-lifecycle:** add revision-monotonic diagnostic for --revise writes ([fbe9035](https://github.com/agentic-development/adev-plugin/commit/fbe903568b500991af5125757710dce2eacf4680))
+* **spec-lifecycle:** add specify-revise companion library ([b9ffc74](https://github.com/agentic-development/adev-plugin/commit/b9ffc74e439b95ff549b66e9b498248e5bad637a))
+* **strategic-planning:** add loop-convergence detector ([6d642ee](https://github.com/agentic-development/adev-plugin/commit/6d642ee6d20eb942cc195f843a067a879be14676))
+* **strategic-planning:** flip build.max_review_retries default to 2 and validate at load ([9e58a27](https://github.com/agentic-development/adev-plugin/commit/9e58a27dc56dec38a46c6edc2f042a6a19f32838))
+* **strategic-planning:** reinstate BLOCK-&gt;revise auto-retry loop in /adev:build ([cce30c7](https://github.com/agentic-development/adev-plugin/commit/cce30c7b7ded0408563743a247a7c3d2ea07f52e))
+* **strategic-planning:** render byRevision history in /adev:status and /adev:retro ([ca91483](https://github.com/agentic-development/adev-plugin/commit/ca91483f610fe0ea1cf60d65f941d457dc3dce51))
+* **task-management:** add backend-migration CLI verb ([77607cb](https://github.com/agentic-development/adev-plugin/commit/77607cbdf060445fdb4c242e0b99e5f9c01d8fee))
+
+
+### Bug Fixes
+
+* **build:** remove broken blocker-fix loop — write sidecar + fail loud ([5ec433c](https://github.com/agentic-development/adev-plugin/commit/5ec433ca38a1e85c0fca0bdf0004eac08e5fc43f))
+* **build:** Step 0 specify-skip reads lifecycle log instead of dispatching --revise ([a29a95d](https://github.com/agentic-development/adev-plugin/commit/a29a95d16fd0f55f6859c666c0246dc1ee1db7d2))
+* **githooks:** prepare-commit-msg appends trailers in same paragraph ([45f5dbd](https://github.com/agentic-development/adev-plugin/commit/45f5dbd154039cd3ce0cc9d92e789fcc52ec9b7d))
+* lifecycle cleanup (provenance hook, build orchestrator) + sidecar foundation ([8e7d782](https://github.com/agentic-development/adev-plugin/commit/8e7d782fb444f4f83dbe206d216623bf7fbdb52a))
+* **plan-immutability:** block inline routing annotations via PreToolUse hook ([9167f33](https://github.com/agentic-development/adev-plugin/commit/9167f339527b23386f4d967112cbbe657da07298))
+* **plan-immutability:** block inline routing in plan bodies via PreToolUse hook ([748cab4](https://github.com/agentic-development/adev-plugin/commit/748cab4b53f1b71e4c300decd8e23d66304447f1))
+* **session-awareness:** correct token-pricing table + add Opus 4.7 ([e69cc06](https://github.com/agentic-development/adev-plugin/commit/e69cc06e680efb9a1726a32fc64d3046337930f0))
+* **session-awareness:** hook-driven-capture spec rev 3 — address SEC-9, SEC-10 ([d6ca1b2](https://github.com/agentic-development/adev-plugin/commit/d6ca1b25f6ebccaeb25a02a97b583c9ae75630fe))
+* **session-awareness:** hook-driven-capture spec rev 3 — address SEC-9, SEC-10 ([d2abf0f](https://github.com/agentic-development/adev-plugin/commit/d2abf0fc7bb1489b27386002bd62043819aae98a))
+* **session-awareness:** hook-driven-capture spec rev 5 — address SEC-12, SEC-13 ([d6ca1b2](https://github.com/agentic-development/adev-plugin/commit/d6ca1b25f6ebccaeb25a02a97b583c9ae75630fe))
+* **session-awareness:** revise hook-driven-capture spec to rev 2 ([3158b5a](https://github.com/agentic-development/adev-plugin/commit/3158b5aba047a9b14da968e31910e231875b4b54))
+* **spec-drift-detection:** idempotent stampDrift to eliminate PR JSONL conflicts ([a108b5f](https://github.com/agentic-development/adev-plugin/commit/a108b5fb6261177ebadc366a2565964c9ffe754e))
+* **spec-drift-detection:** make stampDrift idempotent on the JSONL side ([05324ae](https://github.com/agentic-development/adev-plugin/commit/05324ae80c0f05f9d6be82fa60fe27c6b7ea12fc))
+
+
+### Reverts
+
+* **agent-reliable-state-artifacts:** restore orphan-lock-cleanup plan to first-pending state ([c9a6c94](https://github.com/agentic-development/adev-plugin/commit/c9a6c94fdcc22a22065985ad5b0f154a93ef7764))
+* **gitignore:** drop session-capture paired-marker block ([c185323](https://github.com/agentic-development/adev-plugin/commit/c185323358f0c9d1a9b5a7cc0830caa815636cd8))
+* **session-awareness:** restore hook-driven-capture plan to first-pending state ([70c3ca3](https://github.com/agentic-development/adev-plugin/commit/70c3ca3549d5889723c7b501df0279e432aca12b))
+
 ## [0.27.1](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.0...adev-cli-v0.27.1) (2026-05-19)
 
 

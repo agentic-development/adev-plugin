@@ -32,7 +32,7 @@ When reviewing in bulk (`--charter` or no-args), apply the gate per-spec inside 
 In Step 8, emit the matching exit event with the consolidated review verdict:
 
 ```bash
-adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict>
+adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict> --from-summary
 ```
 
 ## Step 1: Identify Target Specs

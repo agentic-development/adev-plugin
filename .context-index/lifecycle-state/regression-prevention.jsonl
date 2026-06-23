@@ -46,3 +46,8 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T21:26:03.971Z","ts":"2026-05-20T21:26:03.971Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T22:55:07.115Z","ts":"2026-05-20T22:55:07.115Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.351Z","ts":"2026-05-20T12:58:34.351Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:20:49.443Z","ts":"2026-05-20T17:20:49.443Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.497Z","ts":"2026-05-20T17:21:03.497Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.830Z","ts":"2026-05-20T17:21:19.830Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.153Z","ts":"2026-05-20T17:21:37.153Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"CLAUDE.md","drift_at":"2026-05-20T19:48:31.088Z","ts":"2026-05-20T19:48:31.088Z","diagnostic_warnings":["adev/frontmatter-present"]}

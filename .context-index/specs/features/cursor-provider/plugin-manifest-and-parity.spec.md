@@ -3,7 +3,7 @@ charter: cursor-provider
 kind: artifact
 status: validated
 risk_level: low
-milestone: v1
+milestone:
 revision: 1
 charter-revision: 3
 created: 2026-05-18

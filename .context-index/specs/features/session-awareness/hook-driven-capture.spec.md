@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: session-awareness
 kind: behavioral
@@ -45,6 +43,8 @@ source-manifest:
   computed-at: "2026-05-20T21:32:29.900Z"
 drift_detected: true
 ---
+
+<!-- partial_schema: spec@1 -->
 
 # Live Spec: Hook-Driven Session Capture with Init-Time Configuration
 

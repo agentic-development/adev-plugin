@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "name": "data-engineering",
+      "label": "Data Engineering",
+      "description": "Pipelines, ETL, dbt, data quality workflows",
+      "path": "extensions/data-engineering"
+    },
+    {
+      "name": "process-automation",
+      "label": "Process Automation",
+      "description": "Workflow automation, RPA, and event-driven processes",
+      "path": "extensions/process-automation"
+    }
+  ]
+}

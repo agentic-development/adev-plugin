@@ -68,3 +68,13 @@ test("/adev:implement states no silent fallback to inline parsing on ROUTING_SID
     "must explicitly forbid silent fallback to inline parsing",
   );
 });
+
+test("/adev:implement frontmatter must NOT declare context: fork", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  const frontmatterEnd = md.indexOf("---", 3);
+  const frontmatter = md.slice(0, frontmatterEnd);
+  assert.ok(
+    !frontmatter.includes("context: fork"),
+    "implement dispatches subagents via the Agent tool; context: fork sandboxes the execution context and makes Agent unavailable — orchestrators must not fork",
+  );
+});

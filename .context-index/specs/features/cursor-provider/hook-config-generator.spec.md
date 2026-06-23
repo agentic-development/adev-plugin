@@ -3,7 +3,7 @@ charter: cursor-provider
 kind: skill
 status: implemented
 risk_level: low
-milestone: v1
+milestone:
 revision: 2
 charter-revision: 3
 created: 2026-05-18

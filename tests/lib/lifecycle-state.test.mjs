@@ -412,6 +412,42 @@ test('_resolveActorSeverity returns "warning" when domain config lookup throws',
   assert.equal(sev, 'warning');
 });
 
+test('_resolveActorSeverity self-derives the plugin root when pluginRoot is omitted (consumer-repo CLI path)', () => {
+  // Regression: the `adev report` CLI never threads a pluginRoot, so the lib
+  // received pluginRoot === undefined and fell back to repoRoot. In a consumer
+  // repo (repoRoot is NOT the plugin tree) the bundled domain config was never
+  // found, every event degraded to "warning" with DOMAIN_CONFIG_DEGRADED.
+  // The lib must locate its own bundled templates regardless of caller.
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'structural-architect', // severity_cap: blocker in bundled software domain
+    repoRoot: '/tmp/__consumer_repo_not_plugin_tree__',
+    // pluginRoot intentionally omitted — mirrors the CLI's args object.
+  });
+  assert.equal(sev, 'blocker');
+});
+
+test('reportReviewer stamps the domain severity_cap without an explicit pluginRoot', () => {
+  // End-to-end mirror of the CLI path: lib/cli/report.mjs builds args with no
+  // pluginRoot. The event on disk must carry the configured blocker severity,
+  // not a degraded warning.
+  const { root, specPath } = makeProject();
+  try {
+    reportReviewer(root, specPath, {
+      step: 'review',
+      reviewer: 'structural-architect',
+      verdict: 'FAIL',
+      // pluginRoot intentionally omitted.
+    });
+    const events = readEvents(root, specPath);
+    const ev = events.find((e) => e.event === 'reviewer_report');
+    assert.equal(ev.severity, 'blocker');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
 // ── Task 7: convenience writers ─────────────────────────────────────────────
 
 test('reportReviewer appends a reviewer_report event with stamped severity', () => {

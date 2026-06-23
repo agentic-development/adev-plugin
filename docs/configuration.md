@@ -7,6 +7,7 @@ adev uses three configuration files that live in the `.context-index/` directory
 - **`manifest.yaml`** — Framework behavior: modules, sync targets, specialists, gates, completion policy, and integrations
 - **`constitution.md`** — Project identity and principles: the source of truth for how the project works
 - **`platform-context.yaml`** — Tech stack metadata: language, runtime, test runner, and model tier configuration
+- **`governance/review.yaml`** — Project-level reviewer overlay: disable, augment, or cap domain-provided reviewers for `/adev:review-specs`
 
 > **Security note:** Never store integration credentials, API keys, or secrets in any of these configuration files. Use environment variables for sensitive values. Configuration files are committed to version control and are readable by all project contributors.
 
@@ -32,7 +33,7 @@ Project metadata used by skills for identification and context.
 ```yaml
 project:
   name: "my-project"
-  adev_version: "0.22.0"
+  adev_version: "0.27.7"
   description: "A web application for task management"
   type: web
   domain: software
@@ -263,6 +264,71 @@ integrations:
 
 ---
 
+## Managed gitignore block (`setup.managed_gitignore`)
+
+The `adev install` and `adev upgrade` flows maintain an idempotent
+paired-marker `.gitignore` block bracketed by the sentinels:
+
+```
+# >>> adev:gitignore >>>
+…
+# <<< adev:gitignore <<<
+```
+
+The block lists ephemeral adev artifacts that must never be committed —
+lifecycle state, hygiene reports, atomic-write temps, partial-artifact
+writes, the prototype workspace, and similar. The canonical path list
+lives in `lib/gitignore-paths.mjs` and is the single source of truth: the
+installer renders it verbatim, and a dogfood parity test
+(`tests/lib/gitignore-paths-dogfood.test.mjs`) pins this repo's own
+`.gitignore` block to it.
+
+### Knob
+
+```yaml
+setup:
+  managed_gitignore: true  # default; set false to skip block writes
+```
+
+When `false`, both `adev install` / `adev upgrade` AND `adev init
+ensure-gitignore` (write path) skip the block and emit the advisory:
+
+```
+managed gitignore: disabled by manifest
+```
+
+`adev init ensure-gitignore --remove` **always bypasses the knob** —
+operators must still be able to remove a block they previously installed
+after toggling the install-time write off.
+
+### Why `setup.*` and not `integrations.*`?
+
+The sibling knob `integrations.session_capture.gitignored` lives under
+`integrations.*` because it gates **runtime-feature install behavior** for
+an opt-in integration (session capture). `setup.managed_gitignore` lives
+under `setup.*` because it governs **scaffold-time install behavior**
+that runs at every `adev install` / `adev upgrade`, regardless of which
+integrations a project has opted into. Different lifecycles → different
+namespaces.
+
+### Manual operations
+
+```bash
+adev init ensure-gitignore           # install or refresh the block
+adev init ensure-gitignore --remove  # excise the block (always works)
+```
+
+### Separately owned
+
+The pre-existing `# >>> adev:session-capture-gitignore >>>` block (which
+covers `.context-index/sessions/`) remains separately owned by
+`lib/session-capture-installer.mjs` and is **not** absorbed by the
+managed-gitignore installer. The two blocks coexist independently.
+
+**Spec:** `.context-index/specs/features/setup/managed-gitignore-block.spec.md`
+
+---
+
 ## Domain Profiles
 
 Domain profiles adapt adev's behavior to the type of project you are building. They control overlay files for charters, specs, reviewers, gates, verification, and test configuration, allowing the framework to apply domain-appropriate defaults and constraints.
@@ -348,6 +414,104 @@ Domain names must match the pattern `/^[a-z0-9][a-z0-9-]*$/` (lowercase alphanum
 ### Resetting Customizations
 
 To reset all customizations and return to the bundled defaults, change `domain:` in your manifest back to a bundled domain name (e.g., `software`). The bundled profile is always pristine.
+
+---
+
+## governance/review.yaml
+
+`governance/review.yaml` is the project-level overlay for `/adev:review-specs`. It lives at `.context-index/governance/review.yaml` and is merged on top of the active domain's `reviewers.yaml`. Governance entries win on ID conflict, so this file is the right place to suppress, replace, or augment domain-provided reviewers.
+
+> **Key distinction:** this file does not control the three bundled reviewers (structural-architect, security-reviewer, consistency-analyzer). Those are loaded from `templates/review-specs/defaults.yaml` and are always present unless a domain's `reviewers.yaml` explicitly replaces them. `governance/review.yaml` is a project-level overlay applied *after* the domain layer.
+
+### Reviewer schema
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `id` | string | — | **(Required)** Unique reviewer identifier |
+| `dispatch` | string | `"always"` | When to run: `always`, `triggered`, or `never` |
+| `profile` | string | `"reviewer-capable"` | Execution profile: `reviewer-capable` or `read-only` |
+| `prompt` | string | — | Path to the reviewer's prompt file (relative to `.context-index/`) |
+| `patterns` | array | `[]` | File glob patterns that trigger this reviewer (used when `dispatch: triggered`) |
+| `keywords` | array | `[]` | Keywords in the spec content that trigger this reviewer (used when `dispatch: triggered`) |
+| `min_score` | number | `1` | Minimum pattern+keyword score required to trigger (used when `dispatch: triggered`) |
+| `severity_cap` | string | `"blocker"` | Cap all findings at this severity: `blocker`, `warning`, or `suggestion` |
+| `context_pack` | string | `"base"` | Context pack to load for this reviewer |
+
+### Disabling a domain reviewer
+
+To prevent a domain reviewer from running, add an entry for it with `dispatch: never`:
+
+```yaml
+# .context-index/governance/review.yaml
+reviewers:
+  - id: data-migration-reviewer
+    dispatch: never
+```
+
+The governance entry is merged on top of the domain entry by ID match, overriding `dispatch: always` with `dispatch: never`. The reviewer is excluded before any subagent is launched.
+
+> **`reviewers: []` is a no-op.** An empty list does not suppress domain reviewers — it simply means the governance overlay adds nothing. To suppress a specific reviewer you must name it explicitly with `dispatch: never`.
+
+### Triggered reviewers
+
+Reviewers with `dispatch: triggered` only run when the spec content scores above `min_score`. Score is computed as:
+
+- **2 points** per matching `patterns` glob
+- **1 point** per path segment in the spec path beyond the root
+- **1 point** per matching `keywords` term
+
+```yaml
+reviewers:
+  - id: security-deep-dive
+    dispatch: triggered
+    prompt: prompts/security-deep-dive.md
+    patterns:
+      - "**/*auth*"
+      - "**/*session*"
+    keywords:
+      - authentication
+      - token
+      - credential
+    min_score: 2
+```
+
+### Overriding a domain reviewer's severity cap
+
+To keep a domain reviewer running but limit its impact (e.g., treat all findings as warnings during a migration):
+
+```yaml
+reviewers:
+  - id: data-migration-reviewer
+    severity_cap: warning
+```
+
+This merges into the domain entry, leaving `dispatch`, `prompt`, and other fields inherited from the domain.
+
+### Merge order summary
+
+```
+bundled defaults (templates/review-specs/defaults.yaml)
+  ↓  domain reviewers (templates/domains/<domain>/reviewers.yaml)
+       — replace bundled defaults when domainReviewers is non-empty
+  ↓  governance overlay (.context-index/governance/review.yaml)
+       — governance wins on ID conflict
+```
+
+The result is the final reviewer list passed to `shouldDispatch()` for each spec.
+
+### Context packs
+
+The optional `context_packs` key declares additional files loaded for all reviewers:
+
+```yaml
+context_packs:
+  base:
+    include:
+      - .context-index/constitution.md
+      - .context-index/specs/cross-cutting/security-policy.md
+```
+
+Paths are resolved relative to the project root. Files matching the denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) are rejected at load time.
 
 ---
 

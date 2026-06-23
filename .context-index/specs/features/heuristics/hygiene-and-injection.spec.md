@@ -9,7 +9,7 @@
 charter: heuristics
 status: validated
 risk_level: low
-milestone: 2
+milestone:
 test_strategy: unit
 revision: 1
 charter-revision: 5

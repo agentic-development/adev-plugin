@@ -1,3 +1,6 @@
 {"event":"lifecycle_step","ts":"2026-05-09T17:00:00Z","step":"review","status":"started","actor":"migration/adev-cli","spec":".context-index/specs/features/user-docs/foundation-onboarding.spec.md"}
 {"event":"step_completed","ts":"2026-05-09T17:00:00Z","step":"review","actor":"migration/adev-cli"}
 {"event":"code_drift_detected","drift_source":"docs/README.md","drift_at":"2026-05-16T14:28:10.503Z","ts":"2026-05-18T13:50:21.117Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"docs/installation.md","drift_at":"2026-05-20T18:03:50.504Z","ts":"2026-05-20T18:03:50.505Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"docs/getting-started.md","drift_at":"2026-05-20T18:04:10.937Z","ts":"2026-05-20T18:04:10.937Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"docs/getting-started.md","drift_at":"2026-05-20T18:04:27.074Z","ts":"2026-05-20T18:04:27.074Z","diagnostic_warnings":["adev/frontmatter-present"]}
