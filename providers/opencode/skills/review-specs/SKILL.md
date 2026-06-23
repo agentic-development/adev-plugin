@@ -32,7 +32,7 @@ When reviewing in bulk (`--charter` or no-args), apply the gate per-spec inside 
 In Step 8, emit the matching exit event with the consolidated review verdict:
 
 ```bash
-adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict>
+adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict> --from-summary
 ```
 
 ## Step 1: Identify Target Specs
@@ -252,6 +252,16 @@ for (const reviewer of dispatchedReviewers) {
 `notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; truncated with a `NOTES_TRUNCATED` warning).
 
 **6b. Write the rendered review report** adjacent to the spec. The `.review.md` artifact is now a presentation/audit artifact for human consumption; the canonical reviewer state lives in the lifecycle log.
+
+**6b-bis. Write the `.blockers.md` sidecar (BLOCK only).** When the consolidated verdict is BLOCK, also write a `<spec-stem>.blockers.md` sidecar via `lib/blockers-writer.mjs::writeBlockers` (the canonical writer for the `.blockers.md` artifact). Entries are keyed by the canonical `blocker_id` emitted by reviewers (see Task 6 of review-block-auto-retry); each entry carries `section_anchor` per SA-1 to drive byte-identical preservation in `/adev:specify --revise`. Collisions (same `blocker_id` from two reviewers) are deduplicated with a `BLOCKER_ID_COLLISION` advisory in the writer's return value. The SEC-3 redaction set is applied per prose blob; each blob is truncated at 8 KiB.
+
+**Aggregator `blocker_id` validation:** For every reviewer finding with severity `blocker`, the aggregator validates the emitted `blocker_id` and `section_anchor` fields:
+
+1. **Missing `blocker_id`** on a BLOCK finding → log `LEGACY_REVIEWER_OUTPUT` advisory and exclude the finding from the sidecar. The build skill's caller (e.g., `/adev:build --full`) detects the legacy-output marker and falls through to the pre-loop sidecar+fail-loud path; no `/adev:specify --revise` dispatch occurs.
+2. **Malformed `blocker_id`** (parsing via `parseBlockerId` from `lib/blocker-id.mjs` throws `INVALID_BLOCKER_ID`) → log `INVALID_BLOCKER_ID` advisory, treat the finding as legacy (same fallback as above).
+3. **Missing `section_anchor`** on a well-formed `blocker_id` → log `MISSING_SECTION_ANCHOR` advisory, write the entry to the sidecar with `section_anchor: (none)`. `/adev:specify --revise` then patches the spec body conservatively (it cannot pinpoint the implicated section).
+
+The sidecar revision is included in the `.blockers.md` header so `/adev:specify --revise` can verify it matches the spec's current `revision:` frontmatter before producing rev N+1.
 
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
 - Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.spec.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
