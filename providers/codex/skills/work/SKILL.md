@@ -43,16 +43,16 @@ Scan for in-progress work using **parallel** tool calls in a single round:
 
 ### If in-progress work is found
 
-Surface it before classification:
+Surface it, and **propose the concrete next step** — not just "resume?". For each in-progress item, compute its next lifecycle action using the Next-Step Projection table (Step 3), then lead with the single most relevant one:
 
 > I found in-progress work:
-> - **hooks** plan: 3/7 tasks incomplete
-> - **design** spec `drag-drop.md`: unreviewed
+> - **hooks** plan: 3/7 tasks incomplete → next: **`/adev:implement`** (continue the plan)
+> - **design** spec `drag-drop.md`: specified but unreviewed → next: **`/adev:review-specs`**
 > - Recent session (2026-03-28): "Implemented auth login flow"
 >
-> Want to resume one of these, or start something new?
+> Want me to continue with `/adev:implement` on **hooks**, pick another, or start something new?
 
-Wait for the user's response before proceeding.
+Wait for the user's response before proceeding. If the user says "continue", "resume", "what's next", or gives no new description, route directly to the projected next step for the most recently active item (see Step 3) — do not re-ask what to work on.
 
 ### If no in-progress work is found
 
@@ -128,6 +128,25 @@ Ask a single classifying question:
 Wait for the user's response, then classify.
 
 ## Step 3: State-Aware Routing Refinement
+
+### Next-Step Projection
+
+Map each in-progress spec's lifecycle position to its next action. Derive position from `currentState(projectRoot, specPath).steps` and `readExecutionState` (Step 1) — do not guess from file presence.
+
+| Current lifecycle position | Next step |
+|---|---|
+| Execution state `active` with a `currentTask` | `/adev:implement` (resume the current task) |
+| Execution state `blocked` | `/adev:recover` (or `/adev:debug` if it is a code fault) |
+| `specify` completed, no `review` step | `/adev:review-specs` |
+| `review` passed (PASS / PASS_WITH_NOTES), no `plan` | `/adev:plan` |
+| `plan` completed, no `route` and no `implement` | `/adev:route` (or `/adev:implement` if routing is skipped) |
+| `implement` completed for all tasks, no `validate` | `/adev:validate` |
+| `validate` passed | Done — offer `/adev:deploy`, `/adev:retro`, or new work |
+| `review` verdict BLOCK | `/adev:specify --revise` (address the blockers) |
+
+**When invoked with no description, or when the user says "continue" / "next" / "resume", route directly to the projected next step for the most recently active spec — do not re-ask what to work on.** This is the no-argument conductor path: `/adev:work` alone means "advance my current work."
+
+Then apply the refinements below before proposing a route:
 
 Before proposing a route, check whether the state scan (Step 1) should override or refine the classification:
 

@@ -252,3 +252,9 @@ To write annotations: /adev:route --plan <path>
   inputs to `/adev:route` and re-run instead.
 - Skip loading boundary rules or risk policies when the files exist
 - Route tasks based on task title alone without analyzing file targets and spec coverage
+
+## Next Step in the Lifecycle
+
+Tasks scored. The next step is **`/adev:implement`**.
+
+If invoked via `/adev:work`, offer to continue: *"Routing done. Continue to `/adev:implement`?"* The user can stop here.
