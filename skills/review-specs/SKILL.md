@@ -409,3 +409,11 @@ Spec drift:
 Manifest:
 
 - `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
+
+## Next Step in the Lifecycle
+
+Review complete. The next step depends on the verdict:
+- **PASS / PASS_WITH_NOTES** → **`/adev:plan`**
+- **BLOCK** → **`/adev:specify --revise`** to address the blockers, then re-review.
+
+If invoked via `/adev:work`, offer to continue to the appropriate next step. The user can stop here.
