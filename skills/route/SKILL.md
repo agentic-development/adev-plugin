@@ -113,6 +113,10 @@ For each task, sum the four dimension scores to get a total (range: 4-20).
 
 **Secondary override:** If the task touches files flagged as `high` risk in `risk-policies.yaml`, force `assisted-agent` as the minimum routing.
 
+### Rigor Tier Signal (graduated-rigor-tiers)
+
+Alongside the routing mode, emit a **rigor tier** recommendation that the gate skills consume (`graduated-rigor-tiers.spec.md`). A task is "easy" — eligible for `tier: quick` — when it routes `auto-agent` (total ≥ 16) AND no dimension scores below 3 (low blast radius, high pattern coverage). Otherwise recommend `tier: full`. `quick` narrows review/validation breadth but never skips a gate; when in doubt, recommend `full`. The consuming skills (`/adev:review-specs`, `/adev:validate`, `/adev:build`) receive this as `--tier quick`; the spec's declarative `risk_level` remains the fallback when routing has not run.
+
 ## Step 4: Write Routing Sidecar
 
 If `--dry-run` was NOT passed, persist the routing decisions to the sibling

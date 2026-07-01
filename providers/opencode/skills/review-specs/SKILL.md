@@ -15,6 +15,7 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 - No arguments: review all unreviewed specs (specs without a `.review.md` file, or where the spec is newer than the review)
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
+- `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) dispatches the three parallel specialists; `quick` dispatches a single synthesized reviewer. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
 
 ## Step 0: Specify-step gate (FIRST action)
 
@@ -111,6 +112,19 @@ Do not treat missing workspace as a blocking error; proceed with the rest of the
 
 **If no cross-repo references are present:** skip this step entirely.
 
+## Step 2.5: Resolve Rigor Tier
+
+Resolve the **rigor tier** (`full` | `quick`) that governs how this spec is reviewed. Per `graduated-rigor-tiers.spec.md`, `quick` never skips the gate — it dispatches a single synthesized reviewer instead of the three specialists, still producing the `.review.md` and the `review` lifecycle event.
+
+Resolution precedence (highest first) — this is the `resolveRigorMode(...)` contract in `lib/governance/rigor-mode.mjs`:
+
+1. **Explicit `--tier <full|quick>`** on invocation. Reject any other value with `INVALID_TIER`.
+2. **Routing signal** — if the caller (`/adev:route`, `/adev:work`, or `/adev:build`) passed `--tier quick` because the work is "easy" (low blast-radius, high pattern coverage).
+3. **Risk policy** — read `.context-index/governance/risk-policies.yaml`; map the spec's `risk_level` frontmatter (default `medium`) to `policies.<level>.review_mode`.
+4. **Default** — `full`.
+
+When reviewing in bulk, resolve the tier per spec. Record the resolved tier in the review report header.
+
 ## Step 3: Load Reviewer Registry
 
 **Domain-Aware Reviewer Loading:** Resolve the active domain and load domain-aware reviewers before calling `loadReviewConfig` via the CLI:
@@ -148,6 +162,8 @@ adev heuristics retrieve --module <charter-module> --tier summary --format text
 Derive the module slug from the spec's `charter:` frontmatter field. Stdout is either rendered markdown blocks (one per heuristic) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic injection stays non-blocking.
 
 When heuristics are present (output is not `__NONE__`), include them in each reviewer's context pack under a `## Heuristics` section, prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+**Quick tier branch (Step 2.5).** If the resolved rigor tier is `quick`, **skip the registry loop below** and dispatch exactly one subagent — the synthesized reviewer — using the bundled prompt `plugin:review-specs/quick-synthesized-reviewer-prompt.md` under the `reviewer-capable` profile, with the same rendered context pack and target spec appended. It returns `SA-`/`SEC-`/`CON-` findings in the standard format plus a consolidated verdict. Apply the same severity cap, `blocker_id` validation, and parse-failure fallback as any other reviewer, then proceed to Step 5. Do not dispatch the three specialist defaults in `quick` mode. If the bundled prompt file is missing, fail loud (do not silently fall back to a weaker or empty review). Otherwise (tier `full`, the default), dispatch the registry reviewers as described next.
 
 For each reviewer returned by the registry, call `shouldDispatch(reviewer, { targetSpecPath, specContent })` from the same module. Reviewers with `dispatch: always` always dispatch; `triggered` compute a score (2 points per matching glob + 1 per path segment beyond root, 1 point per keyword) and dispatch when score ≥ `min_score` (default 1); `never` are skipped.
 
@@ -405,6 +421,11 @@ Lifecycle event log:
 Spec drift:
 
 - `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` — detects spec-content drift since last validation; used in Step 1 to identify specs needing re-review.
+
+Rigor tiers:
+
+- `resolveRigorMode({ skill: "review", riskLevel, policies, tierOverride, routingEasy })` from `<ADEV_ROOT>/lib/governance/rigor-mode.mjs` — resolves `full` | `quick` (Step 2.5). Precedence: tier override > routing signal > risk policy > `full`.
+- `loadRigorPolicies(projectRoot)` from `<ADEV_ROOT>/lib/governance/rigor-mode.mjs` — reads `risk-policies.yaml` `policies` map (`review_mode` / `validate_mode`).
 
 Manifest:
 
