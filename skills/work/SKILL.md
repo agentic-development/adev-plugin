@@ -207,10 +207,10 @@ If the user rejects the proposal or requests a different route, ask what they wo
 
   > Plan complete. The next step in the lifecycle is `/adev:implement`. Want me to continue, or stop here?
 
-- **Rigor lane (advisory).** Match the depth of the arc to the risk of the work — the same graduated-rigor idea as the Express Lane in `.context-index/research/adev-simplification-synthesis.md`:
-  - **Low-risk / pattern-following** (small bug fix, formulaic spec, low blast radius): offer a lighter path — skip optional gates (`review-specs`, `eval`) and route straight to implement + a fast `validate`.
-  - **High blast-radius or novel** work: keep the full arc, including review.
-  - When the risk is unclear, ask once: *"This looks low-risk — take the fast path (skip review/eval), or run the full lifecycle?"*
+- **Rigor lane (graduated tiers).** Match review/validation depth to risk via the **quick rigor tier** (`graduated-rigor-tiers.spec.md`) — do **not** skip gates (skipping `review-specs` stalls the strict gate chain):
+  - **Low-risk / pattern-following** (small bug fix, formulaic spec, low blast radius): classify the work as "easy" and propagate `--tier quick` to `/adev:review-specs` and `/adev:validate` (or `/adev:build --tier quick`). The gates still run — just as a single synthesized reviewer and a fail-fast + synthesized compliance check.
+  - **High blast-radius or novel** work: keep the full arc (`--tier full`, the default), including the three-specialist review.
+  - When the risk is unclear, ask once: *"This looks low-risk — run the quick review/validate tier, or the full lifecycle?"*
 
 The goal: a user can start at `/adev:work` and never need to pick another command unless they *want* fine-grained control.
 

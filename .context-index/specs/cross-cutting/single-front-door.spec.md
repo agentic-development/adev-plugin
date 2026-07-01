@@ -72,7 +72,7 @@ Observable behavior each surface MUST hold on every invocation path:
 - Classification covers the full skill surface (≥ 26 routes spanning brainstorm, specify, review-specs, plan, route, build, implement, write-test, debug, validate, eval, status, hygiene, reconcile, codehealth, issues, research, document, deploy, retro, sample, learn, init, sync, prototype, repomap).
 - Contains a **Next-Step Projection** table mapping a spec's lifecycle position (derived from `currentState(...).steps` + `readExecutionState(...)`, never from file presence) to its concrete next skill.
 - No-argument / continue / resume routes **directly** to the projected next step for the most recently active spec; it does not re-ask what to work on when in-progress work exists.
-- Conductor Mode: after a stage, hands full build flows into `/adev:build`'s engine or proposes the next stage; offers a lighter rigor lane for low-risk work (advisory).
+- Conductor Mode: after a stage, hands full build flows into `/adev:build`'s engine or proposes the next stage; for low-risk/easy work it propagates the **quick rigor tier** (`--tier quick`) to the gate skills rather than skipping any gate — the gate still runs, just cheaper (see `graduated-rigor-tiers.spec.md`; resolves the CON-1 review finding). Lane selection MUST NOT weaken hard gates — the non-main-branch stop, quality-gate fail-fast, and constitution checks remain in force regardless of tier (resolves SEC-1).
 - Does **not** write lifecycle/plan-task state itself (reads `state.planTasks`; writing belongs to `/adev:implement`). Preserves the existing plan-task channel invariant.
 
 **Spine skills**
