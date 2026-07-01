@@ -1,6 +1,6 @@
 ---
 kind: skill
-status: review-pending
+status: review-passed
 mode: cross-cutting
 risk_level: medium
 affects: [using-adev, work, brainstorm, specify, review-specs, plan, route, implement]
