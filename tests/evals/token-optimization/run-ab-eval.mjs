@@ -30,6 +30,9 @@
  *   # (graduated-rigor-tiers.spec.md), N interleaved samples each, totals
  *   # include subagent tokens. No baseline worktree needed.
  *   node tests/evals/token-optimization/run-ab-eval.mjs --tier-ab --samples 3
+ *   # add --judge to also score output quality (LLM judge) alongside verdict
+ *   # agreement, so the comparison covers quality, not just cost:
+ *   node tests/evals/token-optimization/run-ab-eval.mjs --tier-ab --samples 2 --judge
  *
  * Output:
  *   tests/evals/token-optimization/results/eval-<date>.md
@@ -69,6 +72,9 @@ const samples = (() => {
   const n = i >= 0 ? parseInt(args[i + 1], 10) : 3;
   return Number.isFinite(n) && n > 0 ? n : 3;
 })();
+// Quality dimension: capture the verdict from each run's artifact (always, cheap)
+// and — with --judge — score output quality via an LLM judge (extra claude call).
+const useJudge = args.includes('--judge');
 
 // ─── Eval Task Definitions ────────────────────────────────────────────────────
 //
@@ -246,6 +252,68 @@ const TIER_TASKS = [
   },
 ];
 
+// Artifact each gate skill writes — read for the QUALITY dimension before the
+// next sandbox reset wipes it.
+const TIER_ARTIFACTS = {
+  'review-specs': '.context-index/specs/features/orders/customer-orders.review.md',
+  'validate': '.context-index/specs/features/orders/customer-orders.validation.md',
+};
+
+// Read the produced artifact and extract the verdict + finding counts. Runs
+// after each session, before the next resetSandbox(). Returns { verdict, ... }.
+function captureArtifact(taskId) {
+  const rel = TIER_ARTIFACTS[taskId];
+  const p = rel ? join(SANDBOX, rel) : null;
+  if (!p || !existsSync(p)) return { verdict: 'MISSING', raw: '', bytes: 0 };
+  const raw = readFileSync(p, 'utf-8');
+  let verdict = 'UNKNOWN';
+  const m = raw.match(/Verdict:\s*\**\s*(PASS_WITH_NOTES|PASS_PENDING_HUMAN|PASS|BLOCK|FAIL)/i);
+  if (m) {
+    verdict = m[1].toUpperCase();
+  } else if (taskId === 'validate') {
+    // Validate reports an overall status rather than a single Verdict: line.
+    const om = raw.match(/Overall\s*Status[:\s*]*\**\s*(PASS|FAIL)/i);
+    if (om) verdict = om[1].toUpperCase();
+    else if (/\bFAIL\b/.test(raw)) verdict = 'FAIL';
+    else if (/\bPASS\b/.test(raw)) verdict = 'PASS';
+  }
+  const fm = raw.match(/Total findings:\s*\**\s*(\d+)\s*\((\d+)\s*blocker/i);
+  const findings = fm ? { total: Number(fm[1]), blockers: Number(fm[2]) } : null;
+  return { verdict, findings, raw, bytes: raw.length };
+}
+
+// LLM-judge the QUALITY of an artifact (0-100). Uses stdin (execSync `input`) to
+// avoid shell-escaping the artifact. Returns { score, rationale } or null.
+function judgeQuality(taskId, artifactText) {
+  if (!artifactText) return null;
+  const kind = taskId === 'validate' ? 'post-implementation validation report' : 'spec architecture review';
+  const prompt = [
+    `You are an impartial evaluator scoring the QUALITY of an adev ${kind}.`,
+    `Score 0-100 weighing: thoroughness (examined the artifact comprehensively),`,
+    `specificity (concrete section/file references, not vague), correctness (findings`,
+    `are valid, no hallucinated issues), and actionability (clear next steps).`,
+    `A short, correct review of a clean artifact can still score high.`,
+    `Return ONLY compact JSON: {"score": <0-100 integer>, "rationale": "<=200 chars"}.`,
+    ``,
+    `=== ARTIFACT UNDER REVIEW ===`,
+    artifactText.slice(0, 24000),
+  ].join('\n');
+  try {
+    const out = execSync('claude --print --output-format json --dangerously-skip-permissions', {
+      input: prompt, encoding: 'utf-8', timeout: 120000, stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' },
+    });
+    const result = (JSON.parse(out).result ?? '').toString();
+    const jm = result.match(/\{[\s\S]*\}/);
+    if (!jm) return null;
+    const parsed = JSON.parse(jm[0]);
+    const score = Number(parsed.score);
+    return Number.isFinite(score) ? { score, rationale: (parsed.rationale || '').slice(0, 200) } : null;
+  } catch {
+    return null;
+  }
+}
+
 function resetSandbox() {
   try {
     execSync('git checkout -- tests/evals/integration-sandbox/', { cwd: REPO_ROOT, stdio: 'pipe' });
@@ -296,7 +364,22 @@ async function runTierAb() {
         const run = runClaudeCapture(task.prompt(tier), `${task.id}:${tier}#${s + 1}`);
         if (!run.success || !run.sessionId) { console.log('    (skipped — no session id)'); continue; }
         const stats = analyzeSession(join(SESSIONS_DIR, run.sessionId + '.jsonl'));
-        if (stats) { stats.durationMs = run.durationMs; collected[task.id][tier].push(stats); }
+        if (!stats) continue;
+        stats.durationMs = run.durationMs;
+        // Quality dimension — read the artifact this run produced BEFORE the next
+        // iteration's resetSandbox() wipes it.
+        const art = captureArtifact(task.id);
+        stats.verdict = art.verdict;
+        stats.findings = art.findings;
+        if (useJudge && art.raw) {
+          const q = judgeQuality(task.id, art.raw);
+          stats.qualityScore = q ? q.score : null;
+          stats.qualityRationale = q ? q.rationale : null;
+          console.log(`    verdict=${art.verdict}  quality=${q ? q.score : 'n/a'}`);
+        } else {
+          console.log(`    verdict=${art.verdict}`);
+        }
+        collected[task.id][tier].push(stats);
       }
     }
   }
@@ -316,7 +399,7 @@ function generateTierReport(collected) {
   report += `**Date:** ${new Date().toISOString().split('T')[0]}\n`;
   report += `**Spec:** graduated-rigor-tiers.spec.md\n`;
   report += `**Sandbox:** tests/evals/integration-sandbox/\n\n`;
-  report += `Means over N samples per (task, tier), interleaved order. Totals **include subagent tokens** (the tier signal). Cost uses Opus pricing (in $15, out $75, cache-create $18.75, cache-read $1.5 /Mtok).\n\n`;
+  report += `Means over N samples per (task, tier), interleaved order. Totals **include subagent tokens** (the tier signal). Cost uses Opus pricing (in $15, out $75, cache-create $18.75, cache-read $1.5 /Mtok). **Quality** = verdict parsed from each run's artifact + (with --judge) an LLM 0-100 output-quality score. A cheaper tier is only a win if quality/verdict hold.\n\n`;
 
   let sumFull = 0, sumQuick = 0;
   for (const task of TIER_TASKS) {
@@ -331,7 +414,30 @@ function generateTierReport(collected) {
     report += `| Output tokens | ${Math.round(agg(full, 'outputInclSub')).toLocaleString()} | ${Math.round(agg(quick, 'outputInclSub')).toLocaleString()} | ${d('outputInclSub')} |\n`;
     report += `| Total tokens | ${Math.round(agg(full, 'totalTokensInclSub')).toLocaleString()} | ${Math.round(agg(quick, 'totalTokensInclSub')).toLocaleString()} | ${d('totalTokensInclSub')} |\n`;
     report += `| Duration (ms) | ${Math.round(agg(full, 'durationMs')).toLocaleString()} | ${Math.round(agg(quick, 'durationMs')).toLocaleString()} | ${d('durationMs')} |\n`;
+    // Quality row (mean LLM-judge score), when --judge was used.
+    const qFull = full.filter(r => typeof r.qualityScore === 'number').map(r => r.qualityScore);
+    const qQuick = quick.filter(r => typeof r.qualityScore === 'number').map(r => r.qualityScore);
+    if (qFull.length || qQuick.length) {
+      const mf = qFull.length ? mean(qFull).toFixed(0) : 'n/a';
+      const mq = qQuick.length ? mean(qQuick).toFixed(0) : 'n/a';
+      const dq = (qFull.length && qQuick.length && mean(qFull) !== 0)
+        ? `${Math.round(((mean(qQuick) - mean(qFull)) / mean(qFull)) * 100)}%` : 'N/A';
+      report += `| Output quality (LLM judge 0-100) | ${mf} | ${mq} | ${dq} |\n`;
+    }
     report += `| **Cost** | **$${costFull.toFixed(3)}** | **$${costQuick.toFixed(3)}** | **${d('costInclSub')}** |\n\n`;
+
+    // Verdict agreement — the key safety check: did quick under-call vs full?
+    const vFull = full.map(r => r.verdict || '?');
+    const vQuick = quick.map(r => r.verdict || '?');
+    report += `**Verdicts** — full: [${vFull.join(', ')}] · quick: [${vQuick.join(', ')}]\n\n`;
+    const strictness = { PASS: 0, PASS_WITH_NOTES: 1, PASS_PENDING_HUMAN: 1, FAIL: 2, BLOCK: 2, UNKNOWN: -1, MISSING: -1 };
+    const maxFull = Math.max(-1, ...vFull.map(v => strictness[v] ?? -1));
+    const maxQuick = Math.max(-1, ...vQuick.map(v => strictness[v] ?? -1));
+    if (maxFull >= 2 && maxQuick < maxFull) {
+      report += `> ⚠ QUALITY REGRESSION: full reached a blocking verdict but quick did not — quick may miss issues full catches on this spec.\n\n`;
+    } else if (maxFull >= 0 && maxQuick >= 0) {
+      report += `> Verdict parity: quick did not under-call relative to full on this spec.\n\n`;
+    }
   }
   if (sumFull > 0) {
     report += `## Aggregate cost (both tasks)\n\n| | full | quick | Δ |\n|---|---:|---:|---:|\n`;
@@ -342,6 +448,7 @@ function generateTierReport(collected) {
   report += `- Sandbox reset (\`git checkout\` + \`git clean\`) before every run.\n`;
   report += `- Session identified by \`session_id\` from \`--output-format json\` (exact, not mtime-matched).\n`;
   report += `- Totals include subagent JSONL (\`<session-id>/subagents/\`) — full dispatches 3 reviewers / 5 validate checks, quick dispatches 1 each.\n`;
+  report += `- Quality: verdict parsed from each run's artifact (.review.md / .validation.md); \`--judge\` adds an LLM 0-100 output-quality score. "Verdict parity" means quick did not under-call vs full; a regression flag fires if full blocks and quick does not.\n`;
   report += `- Single-run noise remains; read the mean over n≥3, not any one run.\n`;
   return report;
 }
