@@ -253,18 +253,22 @@ const TIER_TASKS = [
 ];
 
 // Artifact each gate skill writes — read for the QUALITY dimension before the
-// next sandbox reset wipes it.
+// next sandbox reset wipes it. Naming is inconsistent across skills (review uses
+// `.review.md`, validate uses `-validation.md`), so list candidates.
 const TIER_ARTIFACTS = {
-  'review-specs': '.context-index/specs/features/orders/customer-orders.review.md',
-  'validate': '.context-index/specs/features/orders/customer-orders.validation.md',
+  'review-specs': ['.context-index/specs/features/orders/customer-orders.review.md'],
+  'validate': [
+    '.context-index/specs/features/orders/customer-orders-validation.md',
+    '.context-index/specs/features/orders/customer-orders.validation.md',
+  ],
 };
 
 // Read the produced artifact and extract the verdict + finding counts. Runs
 // after each session, before the next resetSandbox(). Returns { verdict, ... }.
 function captureArtifact(taskId) {
-  const rel = TIER_ARTIFACTS[taskId];
-  const p = rel ? join(SANDBOX, rel) : null;
-  if (!p || !existsSync(p)) return { verdict: 'MISSING', raw: '', bytes: 0 };
+  const candidates = TIER_ARTIFACTS[taskId] || [];
+  const p = candidates.map((rel) => join(SANDBOX, rel)).find((abs) => existsSync(abs));
+  if (!p) return { verdict: 'MISSING', raw: '', bytes: 0 };
   const raw = readFileSync(p, 'utf-8');
   let verdict = 'UNKNOWN';
   const m = raw.match(/Verdict:\s*\**\s*(PASS_WITH_NOTES|PASS_PENDING_HUMAN|PASS|BLOCK|FAIL)/i);
