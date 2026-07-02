@@ -26,6 +26,11 @@
  *   # Analyze previously-run sessions by ID
  *   node tests/evals/token-optimization/run-ab-eval.mjs --analyze
  *
+ *   # Rigor-tier A/B: --tier full vs --tier quick for the gate skills
+ *   # (graduated-rigor-tiers.spec.md), N interleaved samples each, totals
+ *   # include subagent tokens. No baseline worktree needed.
+ *   node tests/evals/token-optimization/run-ab-eval.mjs --tier-ab --samples 3
+ *
  * Output:
  *   tests/evals/token-optimization/results/eval-<date>.md
  *
@@ -56,6 +61,14 @@ const args = process.argv.slice(2);
 const baselineOnly = args.includes('--baseline-only');
 const optimizedOnly = args.includes('--optimized-only');
 const analyzeOnly = args.includes('--analyze');
+// Rigor-tier A/B mode (graduated-rigor-tiers.spec.md): compare --tier full vs
+// --tier quick for the gate skills, N interleaved samples each.
+const tierAb = args.includes('--tier-ab');
+const samples = (() => {
+  const i = args.indexOf('--samples');
+  const n = i >= 0 ? parseInt(args[i + 1], 10) : 3;
+  return Number.isFinite(n) && n > 0 ? n : 3;
+})();
 
 // ─── Eval Task Definitions ────────────────────────────────────────────────────
 //
@@ -161,7 +174,9 @@ function analyzeSession(filePath) {
         const sub = {
           id: f.replace('.jsonl', ''),
           turns: subTurns.length,
+          input: subTurns.reduce((s, t) => s + t.input, 0),
           output: subTurns.reduce((s, t) => s + t.output, 0),
+          cacheCreate: subTurns.reduce((s, t) => s + t.cacheCreate, 0),
           cacheRead: subTurns.reduce((s, t) => s + t.cacheRead, 0),
           noToolTurns: subTurns.filter(t => t.isNoTool).length,
         };
@@ -171,6 +186,20 @@ function analyzeSession(filePath) {
   }
   stats.subagentTurns = stats.subagents.reduce((s, a) => s + a.turns, 0);
   stats.subagentNoToolTurns = stats.subagents.reduce((s, a) => s + a.noToolTurns, 0);
+  stats.subagentCount = stats.subagents.length;
+
+  // Fold subagent tokens into an "including subagents" total + cost. The tier
+  // comparison lives here (full review = 3 reviewer subagents, quick = 1), so
+  // main-session-only totals would miss the entire signal.
+  const subIn = stats.subagents.reduce((s, a) => s + a.input, 0);
+  const subOut = stats.subagents.reduce((s, a) => s + a.output, 0);
+  const subCC = stats.subagents.reduce((s, a) => s + a.cacheCreate, 0);
+  const subCR = stats.subagents.reduce((s, a) => s + a.cacheRead, 0);
+  stats.totalTokensInclSub = stats.totalTokens + subIn + subOut + subCC + subCR;
+  stats.outputInclSub = stats.output + subOut;
+  stats.costInclSub = stats.cost + (
+    (subIn / 1e6) * 15 + (subOut / 1e6) * 75 + (subCC / 1e6) * 18.75 + (subCR / 1e6) * 1.5
+  );
 
   return stats;
 }
@@ -200,6 +229,121 @@ function runClaude(task, pluginDir, variant) {
     console.log(`  [${variant}] ✗ ${task.id} failed after ${(durationMs / 1000).toFixed(1)}s`);
     return { success: false, error: err.message?.substring(0, 200), output: err.stdout || '', durationMs };
   }
+}
+
+// ─── Rigor-Tier A/B (full vs quick) ───────────────────────────────────────────
+
+const TIER_TASKS = [
+  {
+    id: 'review-specs',
+    name: '/adev:review-specs',
+    prompt: (tier) => `/adev:review-specs --spec .context-index/specs/features/orders/customer-orders.md --tier ${tier}`,
+  },
+  {
+    id: 'validate',
+    name: '/adev:validate',
+    prompt: (tier) => `/adev:validate --spec .context-index/specs/features/orders/customer-orders.md --tier ${tier}`,
+  },
+];
+
+function resetSandbox() {
+  try {
+    execSync('git checkout -- tests/evals/integration-sandbox/', { cwd: REPO_ROOT, stdio: 'pipe' });
+    execSync('git clean -fdq tests/evals/integration-sandbox/', { cwd: REPO_ROOT, stdio: 'pipe' });
+  } catch { /* best effort */ }
+}
+
+// Run one claude session, capturing session_id from --output-format json so we
+// analyze the EXACT session (main + subagents) — no fragile mtime matching.
+function runClaudeCapture(prompt, label) {
+  console.log(`  [${label}] ${prompt}`);
+  const startTime = Date.now();
+  try {
+    const out = execSync(
+      `claude --print --output-format json --dangerously-skip-permissions --plugin-dir "${REPO_ROOT}" -p "${prompt}"`,
+      { cwd: SANDBOX, encoding: 'utf-8', timeout: 300000, env: { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' }, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const durationMs = Date.now() - startTime;
+    let sessionId = null;
+    try { sessionId = JSON.parse(out).session_id || null; } catch { /* non-JSON */ }
+    console.log(`  [${label}] ✓ ${(durationMs / 1000).toFixed(1)}s  session=${sessionId?.slice(0, 8) || '?'}`);
+    return { success: true, sessionId, durationMs };
+  } catch (err) {
+    const durationMs = Date.now() - startTime;
+    console.log(`  [${label}] ✗ failed after ${(durationMs / 1000).toFixed(1)}s`);
+    return { success: false, sessionId: null, durationMs, error: err.message?.slice(0, 200) };
+  }
+}
+
+const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+
+async function runTierAb() {
+  mkdirSync(RESULTS_DIR, { recursive: true });
+  console.log('═══ Rigor-Tier A/B (full vs quick) ═══');
+  console.log(`Samples per (task, tier): ${samples}. Tier order interleaved to balance cache warming.\n`);
+
+  const collected = {};
+  for (const task of TIER_TASKS) collected[task.id] = { full: [], quick: [] };
+
+  for (const task of TIER_TASKS) {
+    console.log(`━━━ ${task.name} ━━━`);
+    for (let s = 0; s < samples; s++) {
+      // Alternate which tier runs first each sample so neither consistently
+      // benefits from a warm 5-min prompt cache.
+      const order = s % 2 === 0 ? ['full', 'quick'] : ['quick', 'full'];
+      for (const tier of order) {
+        resetSandbox();
+        const run = runClaudeCapture(task.prompt(tier), `${task.id}:${tier}#${s + 1}`);
+        if (!run.success || !run.sessionId) { console.log('    (skipped — no session id)'); continue; }
+        const stats = analyzeSession(join(SESSIONS_DIR, run.sessionId + '.jsonl'));
+        if (stats) { stats.durationMs = run.durationMs; collected[task.id][tier].push(stats); }
+      }
+    }
+  }
+  resetSandbox();
+
+  const report = generateTierReport(collected);
+  const reportPath = join(RESULTS_DIR, `tier-eval-${new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]}.md`);
+  writeFileSync(reportPath, report);
+  console.log('\n' + report);
+  console.log(`Report saved: ${reportPath}`);
+  writeFileSync(join(RESULTS_DIR, 'last-tier-run.json'), JSON.stringify({ collected, samples, timestamp: new Date().toISOString() }, null, 2));
+}
+
+function generateTierReport(collected) {
+  const agg = (runs, field) => mean(runs.map(r => r[field] || 0));
+  let report = `# Rigor-Tier A/B Eval (full vs quick)\n\n`;
+  report += `**Date:** ${new Date().toISOString().split('T')[0]}\n`;
+  report += `**Spec:** graduated-rigor-tiers.spec.md\n`;
+  report += `**Sandbox:** tests/evals/integration-sandbox/\n\n`;
+  report += `Means over N samples per (task, tier), interleaved order. Totals **include subagent tokens** (the tier signal). Cost uses Opus pricing (in $15, out $75, cache-create $18.75, cache-read $1.5 /Mtok).\n\n`;
+
+  let sumFull = 0, sumQuick = 0;
+  for (const task of TIER_TASKS) {
+    const full = collected[task.id].full, quick = collected[task.id].quick;
+    if (!full.length || !quick.length) { report += `## ${task.name}\n\nMissing runs (full=${full.length}, quick=${quick.length}).\n\n`; continue; }
+    const d = (f) => { const bf = agg(full, f); return bf === 0 ? 'N/A' : `${Math.round(((agg(quick, f) - bf) / bf) * 100)}%`; };
+    const costFull = agg(full, 'costInclSub'), costQuick = agg(quick, 'costInclSub');
+    sumFull += costFull; sumQuick += costQuick;
+    report += `## ${task.name}  (n=${full.length} full / ${quick.length} quick)\n\n`;
+    report += `| Metric (mean, incl. subagents) | full | quick | Δ |\n|---|---:|---:|---:|\n`;
+    report += `| Subagents dispatched | ${agg(full, 'subagentCount').toFixed(1)} | ${agg(quick, 'subagentCount').toFixed(1)} | ${d('subagentCount')} |\n`;
+    report += `| Output tokens | ${Math.round(agg(full, 'outputInclSub')).toLocaleString()} | ${Math.round(agg(quick, 'outputInclSub')).toLocaleString()} | ${d('outputInclSub')} |\n`;
+    report += `| Total tokens | ${Math.round(agg(full, 'totalTokensInclSub')).toLocaleString()} | ${Math.round(agg(quick, 'totalTokensInclSub')).toLocaleString()} | ${d('totalTokensInclSub')} |\n`;
+    report += `| Duration (ms) | ${Math.round(agg(full, 'durationMs')).toLocaleString()} | ${Math.round(agg(quick, 'durationMs')).toLocaleString()} | ${d('durationMs')} |\n`;
+    report += `| **Cost** | **$${costFull.toFixed(3)}** | **$${costQuick.toFixed(3)}** | **${d('costInclSub')}** |\n\n`;
+  }
+  if (sumFull > 0) {
+    report += `## Aggregate cost (both tasks)\n\n| | full | quick | Δ |\n|---|---:|---:|---:|\n`;
+    report += `| Mean cost/run | $${sumFull.toFixed(3)} | $${sumQuick.toFixed(3)} | ${Math.round(((sumQuick - sumFull) / sumFull) * 100)}% |\n\n`;
+  }
+  report += `## Methodology\n\n`;
+  report += `- Each (task, tier) run N times; tier order interleaved per sample to balance the 5-min prompt-cache warming.\n`;
+  report += `- Sandbox reset (\`git checkout\` + \`git clean\`) before every run.\n`;
+  report += `- Session identified by \`session_id\` from \`--output-format json\` (exact, not mtime-matched).\n`;
+  report += `- Totals include subagent JSONL (\`<session-id>/subagents/\`) — full dispatches 3 reviewers / 5 validate checks, quick dispatches 1 each.\n`;
+  report += `- Single-run noise remains; read the mean over n≥3, not any one run.\n`;
+  return report;
 }
 
 // ─── Worktree Management ──────────────────────────────────────────────────────
@@ -336,6 +480,9 @@ function generateReport(results) {
 async function main() {
   mkdirSync(RESULTS_DIR, { recursive: true });
 
+  // Rigor-tier A/B (full vs quick) is a self-contained mode.
+  if (tierAb) { await runTierAb(); return; }
+
   console.log('═══════════════════════════════════════════════');
   console.log('  Token Optimization A/B Eval');
   console.log('═══════════════════════════════════════════════\n');
@@ -452,8 +599,15 @@ async function main() {
   );
 }
 
-main().catch(err => {
-  console.error('Eval failed:', err.message);
-  cleanupBaseline();
-  process.exit(1);
-});
+// Only run the eval when executed directly (`node run-ab-eval.mjs ...`), not
+// when imported (e.g. by a smoke test of the analysis functions).
+const isDirect = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isDirect) {
+  main().catch(err => {
+    console.error('Eval failed:', err.message);
+    cleanupBaseline();
+    process.exit(1);
+  });
+}
+
+export { analyzeSession, generateTierReport, TIER_TASKS };
