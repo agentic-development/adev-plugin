@@ -1,0 +1,291 @@
+{
+  "collected": {
+    "review-specs": {
+      "full": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/f60cd790-6896-4206-95e2-bd0e59ce003f.jsonl",
+          "totalTurns": 44,
+          "toolTurns": 20,
+          "noToolTurns": 24,
+          "parallelTurns": 0,
+          "input": 33102,
+          "output": 70574,
+          "cacheCreate": 369392,
+          "cacheRead": 2151640,
+          "outputChars": 5424,
+          "totalTokens": 2624708,
+          "cost": 15.94314,
+          "toolBreakdown": {
+            "Bash": 11,
+            "Read": 3,
+            "Agent": 3,
+            "ToolSearch": 1,
+            "ScheduleWakeup": 1,
+            "Write": 1
+          },
+          "subagents": [
+            {
+              "id": "agent-a5fde083a285da5a0",
+              "turns": 1,
+              "input": 6193,
+              "output": 1,
+              "cacheCreate": 6592,
+              "cacheRead": 6061,
+              "noToolTurns": 1
+            },
+            {
+              "id": "agent-aead07a5132d18201",
+              "turns": 1,
+              "input": 6193,
+              "output": 1,
+              "cacheCreate": 6532,
+              "cacheRead": 6061,
+              "noToolTurns": 1
+            },
+            {
+              "id": "agent-afce2139a1aeb9b79",
+              "turns": 1,
+              "input": 6193,
+              "output": 1430,
+              "cacheCreate": 13323,
+              "cacheRead": 0,
+              "noToolTurns": 1
+            }
+          ],
+          "subagentTurns": 3,
+          "subagentNoToolTurns": 3,
+          "subagentCount": 3,
+          "totalTokensInclSub": 2683288,
+          "outputInclSub": 72006,
+          "costInclSub": 16.843289249999998,
+          "durationMs": 228937
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/1b29ff5d-4dc5-4b44-9c9b-25aa35d11473.jsonl",
+          "totalTurns": 47,
+          "toolTurns": 22,
+          "noToolTurns": 25,
+          "parallelTurns": 0,
+          "input": 38686,
+          "output": 70458,
+          "cacheCreate": 300803,
+          "cacheRead": 2380299,
+          "outputChars": 4709,
+          "totalTokens": 2790246,
+          "cost": 15.07514475,
+          "toolBreakdown": {
+            "Bash": 6,
+            "Read": 10,
+            "Agent": 3,
+            "ToolSearch": 1,
+            "TaskGet": 1,
+            "Write": 1
+          },
+          "subagents": [
+            {
+              "id": "agent-a25c0da64cda575d9",
+              "turns": 1,
+              "input": 6193,
+              "output": 1296,
+              "cacheCreate": 13189,
+              "cacheRead": 0,
+              "noToolTurns": 1
+            },
+            {
+              "id": "agent-af2e101105e9b1c90",
+              "turns": 1,
+              "input": 6193,
+              "output": 85,
+              "cacheCreate": 6362,
+              "cacheRead": 6061,
+              "noToolTurns": 1
+            },
+            {
+              "id": "agent-afa32e475416b7c50",
+              "turns": 1,
+              "input": 6193,
+              "output": 516,
+              "cacheCreate": 6298,
+              "cacheRead": 6061,
+              "noToolTurns": 1
+            }
+          ],
+          "subagentTurns": 3,
+          "subagentNoToolTurns": 3,
+          "subagentCount": 3,
+          "totalTokensInclSub": 2848693,
+          "outputInclSub": 72355,
+          "costInclSub": 15.9989565,
+          "durationMs": 215253
+        }
+      ],
+      "quick": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/9640d522-bf33-4eb0-93a7-eab9e018347f.jsonl",
+          "totalTurns": 19,
+          "toolTurns": 9,
+          "noToolTurns": 10,
+          "parallelTurns": 0,
+          "input": 34753,
+          "output": 15120,
+          "cacheCreate": 109001,
+          "cacheRead": 705821,
+          "outputChars": 3245,
+          "totalTokens": 864695,
+          "cost": 4.757795249999999,
+          "toolBreakdown": {
+            "Bash": 6,
+            "Read": 3
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 864695,
+          "outputInclSub": 15120,
+          "costInclSub": 4.757795249999999,
+          "durationMs": 88383
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/f55975fb-3a4b-4609-aa2f-1ca71874c83a.jsonl",
+          "totalTurns": 22,
+          "toolTurns": 11,
+          "noToolTurns": 11,
+          "parallelTurns": 0,
+          "input": 34228,
+          "output": 21793,
+          "cacheCreate": 108572,
+          "cacheRead": 859881,
+          "outputChars": 4391,
+          "totalTokens": 1024474,
+          "cost": 5.4734415,
+          "toolBreakdown": {
+            "Bash": 6,
+            "Read": 5
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 1024474,
+          "outputInclSub": 21793,
+          "costInclSub": 5.4734415,
+          "durationMs": 102366
+        }
+      ]
+    },
+    "validate": {
+      "full": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/4d7b4bb7-7679-4f5f-912c-0c3959f633ef.jsonl",
+          "totalTurns": 28,
+          "toolTurns": 12,
+          "noToolTurns": 16,
+          "parallelTurns": 0,
+          "input": 26001,
+          "output": 38368,
+          "cacheCreate": 159258,
+          "cacheRead": 1374390,
+          "outputChars": 5030,
+          "totalTokens": 1598017,
+          "cost": 8.3152875,
+          "toolBreakdown": {
+            "Bash": 7,
+            "Read": 5
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 1598017,
+          "outputInclSub": 38368,
+          "costInclSub": 8.3152875,
+          "durationMs": 180079
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/a263692d-ff3f-4007-b536-7a2bb7664f49.jsonl",
+          "totalTurns": 36,
+          "toolTurns": 15,
+          "noToolTurns": 21,
+          "parallelTurns": 0,
+          "input": 25783,
+          "output": 42517,
+          "cacheCreate": 94185,
+          "cacheRead": 1931329,
+          "outputChars": 4994,
+          "totalTokens": 2093814,
+          "cost": 8.23848225,
+          "toolBreakdown": {
+            "Bash": 10,
+            "Read": 4,
+            "Write": 1
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 2093814,
+          "outputInclSub": 42517,
+          "costInclSub": 8.23848225,
+          "durationMs": 181619
+        }
+      ],
+      "quick": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/e724cdc4-e916-4f24-b33b-097ada8dfe8c.jsonl",
+          "totalTurns": 14,
+          "toolTurns": 6,
+          "noToolTurns": 8,
+          "parallelTurns": 0,
+          "input": 34424,
+          "output": 13170,
+          "cacheCreate": 146042,
+          "cacheRead": 534566,
+          "outputChars": 3182,
+          "totalTokens": 728202,
+          "cost": 5.0442465,
+          "toolBreakdown": {
+            "Bash": 5,
+            "Read": 1
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 728202,
+          "outputInclSub": 13170,
+          "costInclSub": 5.0442465,
+          "durationMs": 67440
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/32551e04-072b-43f3-9b2d-2547fa595364.jsonl",
+          "totalTurns": 12,
+          "toolTurns": 4,
+          "noToolTurns": 8,
+          "parallelTurns": 0,
+          "input": 25806,
+          "output": 13929,
+          "cacheCreate": 54497,
+          "cacheRead": 534434,
+          "outputChars": 2629,
+          "totalTokens": 628666,
+          "cost": 3.2552347499999996,
+          "toolBreakdown": {
+            "Bash": 3,
+            "Read": 1
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 628666,
+          "outputInclSub": 13929,
+          "costInclSub": 3.2552347499999996,
+          "durationMs": 79980
+        }
+      ]
+    }
+  },
+  "samples": 2,
+  "timestamp": "2026-07-02T00:28:13.835Z"
+}
