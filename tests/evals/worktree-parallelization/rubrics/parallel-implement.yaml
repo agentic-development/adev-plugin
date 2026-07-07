@@ -1,0 +1,80 @@
+# Rubric: parallel-implement — /adev:implement --parallel using adev-managed worktrees
+# Target: a spec whose plan contains >=2 file-disjoint parallelization groups
+# Difficulty: HARD — must produce a merged result byte-identical in behavior to serial
+#
+# Follows the adev eval design: required_elements = Layer 1 (deterministic pass/fail),
+# quality_dimensions = Layer 3 (LLM-judge, 1-5). Scoring 50/50 (deterministic vs quality).
+
+skill: adev:implement
+scenario: parallel-implement
+
+# ──────────────────────────────────────────────────────────────────
+# LAYER 1 — Required Elements (binary pass/fail, regex over run artifacts)
+# ──────────────────────────────────────────────────────────────────
+required_elements:
+  - id: worktree_per_group
+    description: "Created one adev worktree per independent plan group (adev/<slug>)"
+    match_pattern: "\\.adev/worktrees/|adev worktree add"
+
+  - id: anchored_main_root
+    description: "Worktrees anchored to main repo root, never nested under .claude/worktrees or another .adev worktree"
+    match_pattern: "mainRoot|--git-common-dir"
+
+  - id: no_nested_worktrees
+    description: "No worktree path contains a second .adev/worktrees or a .claude/worktrees segment"
+    match_pattern: "nested\\\"?\\s*[:=]\\s*false|no nested"
+
+  - id: all_groups_merged
+    description: "Every non-conflicting group branch merged back to the orchestrator branch"
+    match_pattern: "merged\\\"?\\s*[:=]\\s*true|worktree merge"
+
+  - id: worktrees_cleaned
+    description: "Worktrees removed after merge (list empty at end)"
+    match_pattern: "worktree remove|list.*\\[\\]|removed\\\"?\\s*[:=]\\s*true"
+
+  - id: board_writes_survived
+    description: "Concurrent issue-board writes from parallel groups all landed (no STALE_BOARD_WRITE lost update)"
+    match_pattern: "STALE_BOARD_WRITE_RETRY|seq|CAS|all issues updated"
+
+  - id: per_worktree_lifecycle
+    description: "Each group's lifecycle events stayed per-worktree (no cross-branch event pollution)"
+    match_pattern: "lifecycle-state/|per-worktree"
+
+  - id: serial_fallback_documented
+    description: "Falls back to serial when invoked from inside a worktree (guard nested=true)"
+    match_pattern: "nested.*true|fall.?back.*serial|guard"
+
+  - id: quality_gates_pass
+    description: "Post-merge quality gates (npm test) pass on the integrated result"
+    match_pattern: "pass 4\\d{3}|0 fail|gates.*pass"
+
+  - id: partial_failure_isolated
+    description: "A failing group leaves its worktree for inspection and merges the successful ones"
+    match_pattern: "left for inspection|partial|isolated failure"
+
+# ──────────────────────────────────────────────────────────────────
+# LAYER 3 — Quality Dimensions (LLM judge, 1-5, weighted)
+# ──────────────────────────────────────────────────────────────────
+quality_dimensions:
+  - id: result_equivalence
+    description: "Parallel merged result is behaviorally equivalent to the serial baseline (same tests pass, same public API)"
+    weight: 3
+
+  - id: merge_ordering_soundness
+    description: "Merge order avoids avoidable conflicts; shared high-churn files handled deterministically"
+    weight: 2
+
+  - id: failure_semantics
+    description: "Partial-failure handling is transactional-minded: no half-updated board, clear operator report"
+    weight: 2
+
+  - id: no_orphaned_state
+    description: "No orphaned worktrees, dangling adev/* branches, or stale tasks.json.lock after the run"
+    weight: 1.5
+
+# ──────────────────────────────────────────────────────────────────
+# Scoring — matches adev eval Layer1/Layer3 proxy weighting
+# ──────────────────────────────────────────────────────────────────
+scoring:
+  required_element_weight: 50   # (elements_passed / total) * 50
+  quality_dimension_weight: 50  # (weighted_quality_avg / 5) * 50
