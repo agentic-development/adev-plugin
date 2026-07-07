@@ -9,13 +9,12 @@ charter-revision: 3
 created: 2026-05-19
 updated: 2026-05-19
 source-manifest:
-  sha: "181f1f4"
+  sha: "e9cf9ee"
   files:
     - .context-index/specs/features/cli/charter.md
     - cli/index.mjs
     - tests/cli.test.mjs
-  computed-at: "2026-05-19T12:33:18.188Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.426Z"
 ---
 
 # Skill Spec: CLI install integration

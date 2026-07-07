@@ -45,3 +45,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP - no UI files in implementation diff (case A)","ts":"2026-05-22T13:18:02.370Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-22T13:19:19.415Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-24T15:04:31.479Z","ts":"2026-05-24T15:04:31.479Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.667Z","ts":"2026-07-03T22:27:11.667Z"}

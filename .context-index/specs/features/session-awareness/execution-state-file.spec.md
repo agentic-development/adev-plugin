@@ -8,14 +8,13 @@ charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
 source-manifest:
-  sha: "3f1ac2d"
+  sha: "a373460"
   files:
     - lib/execution-state.mjs
     - lib/issues/file-adapter.mjs
     - lib/session-summary.mjs
     - tests/lib/execution-state.test.mjs
-  computed-at: "2026-04-12T11:47:08.345Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.314Z"
 ---
 
 # Live Spec: Execution State File

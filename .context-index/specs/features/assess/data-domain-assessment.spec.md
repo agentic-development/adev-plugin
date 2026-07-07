@@ -15,12 +15,11 @@ created: 2026-03-24
 updated: 2026-05-04
 charter-extension: true
 source-manifest:
-  sha: "5202d88"
+  sha: "4a34158"
   files:
     - skills/assess/SKILL.md
     - tests/skills/assess.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.365Z"
 ---
 
 ## Behavioral Contract

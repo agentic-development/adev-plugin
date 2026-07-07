@@ -14,13 +14,12 @@ charter-revision: 2
 created: 2026-05-07
 updated: 2026-05-08
 source-manifest:
-  sha: "5d99123"
+  sha: "a4864e0"
   files:
     - lib/prototype-server.mjs
     - skills/prototype/SKILL.md
     - tests/lib/prototype-server.test.mjs
-  computed-at: "2026-05-08T10:23:01.417Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.335Z"
 ---
 
 ## Behavioral Contract

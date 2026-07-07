@@ -16,7 +16,7 @@ updated: 2026-05-04
 cross-cutting-refs:
   - .context-index/specs/cross-cutting/model-routing.md
 source-manifest:
-  sha: "794bc64"
+  sha: "f9fc681"
   files:
     - skills/write-test/SKILL.md
     - skills/write-test/detect-framework.mjs
@@ -28,8 +28,7 @@ source-manifest:
     - tests/write-test/detect-framework.test.mjs
     - tests/write-test/detect-gaming.test.mjs
     - tests/write-test/write-handoff.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.371Z"
 ---
 
 ## Behavioral Contract

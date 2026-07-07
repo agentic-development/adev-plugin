@@ -45,3 +45,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-19T12:49:46.894Z"}
 {"event":"code_drift_detected","drift_source":"tests/cli.test.mjs","drift_at":"2026-05-19T13:15:50.403Z","ts":"2026-05-19T13:15:50.403Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-19T13:16:00.465Z","ts":"2026-05-19T13:16:00.465Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.977Z","ts":"2026-07-03T22:27:11.977Z"}

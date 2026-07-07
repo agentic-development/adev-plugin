@@ -12,12 +12,11 @@ created: 2026-05-19
 updated: 2026-05-20
 tracker-ref: issue-458
 source-manifest:
-  sha: "16779ee"
+  sha: "e1ede30"
   files:
     - .githooks/post-commit
     - tests/hooks/post-commit-self-skip.test.mjs
-  computed-at: "2026-05-19T12:50:38.632Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.313Z"
 ---
 
 <!-- partial_schema: spec@1 -->

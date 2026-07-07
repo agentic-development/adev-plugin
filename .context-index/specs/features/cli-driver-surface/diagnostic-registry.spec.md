@@ -9,7 +9,7 @@ charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-14
 source-manifest:
-  sha: "02cf5b1"
+  sha: "ded07fd"
   files:
     - cli/index.mjs
     - lib/diagnostics/event-schemas.mjs
@@ -44,8 +44,7 @@ source-manifest:
     - tests/lib/lifecycle-state.test.mjs
     - tests/lib/spec-status-no-bare-literals.test.mjs
     - tests/lib/spec-status.test.mjs
-  computed-at: "2026-05-14T21:13:35.721Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.406Z"
 ---
 
 # Live Spec: Diagnostic Registry

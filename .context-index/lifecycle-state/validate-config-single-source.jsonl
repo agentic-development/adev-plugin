@@ -98,3 +98,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.837Z","ts":"2026-05-20T17:21:19.837Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.160Z","ts":"2026-05-20T17:21:37.160Z"}
 {"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-05-20T17:23:59.938Z","ts":"2026-05-20T17:23:59.938Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:12.056Z","ts":"2026-07-03T22:27:12.056Z"}

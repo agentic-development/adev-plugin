@@ -10,7 +10,7 @@ charter-revision: 4
 created: 2026-05-25
 updated: 2026-05-26
 source-manifest:
-  sha: "85ab95c"
+  sha: "a3d8c5f"
   files:
     - .gitignore
     - cli/index.mjs
@@ -18,8 +18,7 @@ source-manifest:
     - skills/implement/SKILL.md
     - templates/skill-extensions/.gitkeep
     - tests/cli/skill-ext.test.mjs
-  computed-at: "2026-05-26T00:05:48.486Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.346Z"
 ---
 
 # Live Spec: `adev skill-ext load` — Skill Extension Verb

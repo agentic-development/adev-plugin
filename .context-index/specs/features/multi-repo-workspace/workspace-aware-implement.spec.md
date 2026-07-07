@@ -14,13 +14,12 @@ depends-on:
   - "workspace-aware-specify"
 tracker-ref: issue-67
 source-manifest:
-  sha: "2e11ef8"
+  sha: "9b3c18f"
   files:
     - skills/implement/SKILL.md
     - lib/workspace.mjs
     - tests/skills/implement-workspace-mode.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.449Z"
 ---
 
 # Live Spec: Workspace-Aware /adev:implement

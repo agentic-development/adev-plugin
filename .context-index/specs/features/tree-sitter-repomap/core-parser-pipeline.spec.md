@@ -22,7 +22,7 @@ charter-revision: 1
 created: 2026-03-23
 updated: 2026-05-17
 source-manifest:
-  sha: "34b531d"
+  sha: "f06e6cb"
   files:
     - .context-index/adrs/0001-web-tree-sitter-dependency.md
     - lib/repomap/check-deps.mjs
@@ -44,8 +44,7 @@ source-manifest:
     - tests/repomap/index.test.mjs
     - tests/repomap/parse.test.mjs
     - tests/repomap/rank.test.mjs
-  computed-at: "2026-04-12T11:48:02.771Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.444Z"
 ---
 
 ## Behavioral Contract

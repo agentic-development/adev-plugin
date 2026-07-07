@@ -2,3 +2,4 @@
 {"event":"code_drift_detected","drift_source":"lib/session-summary.mjs","drift_at":"2026-05-20T20:48:37.981Z","ts":"2026-05-20T20:48:37.981Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/session-summary.mjs","drift_at":"2026-05-20T20:48:55.834Z","ts":"2026-05-20T20:48:55.834Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/session-summary.mjs","drift_at":"2026-05-20T20:53:17.945Z","ts":"2026-05-20T20:53:17.945Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.533Z","ts":"2026-07-03T22:27:11.534Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -10,7 +10,7 @@ created: 2026-05-19
 updated: 2026-05-20
 tracker-ref: issue-528
 source-manifest:
-  sha: "fc0c9a5"
+  sha: "c44d249"
   files:
     - .context-index/adrs/0014-backend-migration-stderr-policy.md
     - .gitignore
@@ -18,8 +18,7 @@ source-manifest:
     - lib/cli/issues-migrate.mjs
     - lib/cli/issues.mjs
     - tests/lib/cli-issues-migrate.test.mjs
-  computed-at: "2026-05-20T01:57:16.716Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.305Z"
 ---
 
 # Live Spec: Backend Migration

@@ -14,7 +14,7 @@ charter-revision: 4
 created: 2026-05-12
 updated: 2026-05-12
 source-manifest:
-  sha: "553870d"
+  sha: "b17b8f7"
   files:
     - lib/issues/render-markdown.mjs
     - lib/manifest.mjs
@@ -39,8 +39,7 @@ source-manifest:
     - tests/lib/manifest.test.mjs
     - tests/skills/api-reference-appendix.test.mjs
     - tests/skills/no-stale-format-refs.test.mjs
-  computed-at: "2026-05-12T18:38:32.899Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.293Z"
 ---
 
 ## Behavioral Contract

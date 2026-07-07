@@ -21,3 +21,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.492Z","ts":"2026-05-20T17:21:03.492Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.824Z","ts":"2026-05-20T17:21:19.825Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.148Z","ts":"2026-05-20T17:21:37.148Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.558Z","ts":"2026-07-03T22:27:11.558Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -12,7 +12,7 @@ updated: 2026-05-15
 plan-ref: .context-index/specs/features/lifecycle-artifacts/spec-templates.plan.md
 
 source-manifest:
-  sha: "08df430"
+  sha: "323269a"
   files:
     - .context-index/specs/features/.spec-template.action.md
     - .context-index/specs/features/.spec-template.artifact.md
@@ -23,8 +23,7 @@ source-manifest:
     - templates/spec-template.integration.md
     - templates/spec-template.skill.md
     - tests/lib/template-resolution.test.mjs
-  computed-at: "2026-05-15T13:58:22.832Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.348Z"
 ---
 
 # Live Spec: Spec Templates

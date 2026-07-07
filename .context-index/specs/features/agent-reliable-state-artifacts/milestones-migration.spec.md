@@ -14,15 +14,14 @@ charter-revision: 3
 created: 2026-05-11
 updated: 2026-05-12
 source-manifest:
-  sha: "bc04faf"
+  sha: "1b3f2f7"
   files:
     - lib/milestones.mjs
     - templates/manifest-template.yaml
     - tests/architectural-milestones.test.mjs
     - tests/milestones-integration.test.mjs
     - tests/milestones.test.mjs
-  computed-at: "2026-05-12T02:15:39.244Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.292Z"
 ---
 
 ## Behavioral Contract

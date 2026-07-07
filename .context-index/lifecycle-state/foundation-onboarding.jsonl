@@ -4,3 +4,4 @@
 {"event":"code_drift_detected","drift_source":"docs/installation.md","drift_at":"2026-05-20T18:03:50.504Z","ts":"2026-05-20T18:03:50.505Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/getting-started.md","drift_at":"2026-05-20T18:04:10.937Z","ts":"2026-05-20T18:04:10.937Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/getting-started.md","drift_at":"2026-05-20T18:04:27.074Z","ts":"2026-05-20T18:04:27.074Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.697Z","ts":"2026-07-03T22:27:11.697Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -10,7 +10,7 @@ charter-revision: 3
 created: 2026-04-21
 updated: 2026-04-21
 source-manifest:
-  sha: "1ffe0d4"
+  sha: "b9aeaf2"
   files:
     - cli/index.mjs
     - hooks/session-start.sh
@@ -21,8 +21,7 @@ source-manifest:
     - templates/personas/developer.md
     - templates/personas/product.md
     - tests/persona.test.mjs
-  computed-at: "2026-04-21T13:05:58.708Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.431Z"
 ---
 
 ## Behavioral Contract

@@ -14,14 +14,13 @@ charter-revision: 1
 created: 2026-04-05
 updated: 2026-05-04
 source-manifest:
-  sha: "eeb4fb1"
+  sha: "92f7f5c"
   files:
     - lib/issues/registry.mjs
     - skills/issues/SKILL.md
     - skills/work/SKILL.md
     - tests/skills/assess.test.mjs
-  computed-at: "2026-04-12T11:48:02.754Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.402Z"
 ---
 
 ## Behavioral Contract

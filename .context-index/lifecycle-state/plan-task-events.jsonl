@@ -9,3 +9,4 @@
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.040Z","ts":"2026-05-20T12:08:30.041Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"tests/skills/plan-task-immutability.test.mjs","drift_at":"2026-05-20T12:15:44.207Z","ts":"2026-05-20T12:15:44.208Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/plan-immutability.mjs","drift_at":"2026-05-20T12:22:13.546Z","ts":"2026-05-20T12:22:13.546Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.562Z","ts":"2026-07-03T22:27:11.562Z","diagnostic_warnings":["adev/frontmatter-present"]}

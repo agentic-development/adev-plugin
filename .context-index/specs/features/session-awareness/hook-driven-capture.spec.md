@@ -12,7 +12,7 @@ tracker-ref: issue-527
 supersedes:
   - .context-index/specs/features/session-awareness/post-commit-self-skip.spec.md
 source-manifest:
-  sha: "192efcd"
+  sha: "bc1565e"
   files:
     - .context-index/manifest.yaml
     - .context-index/specs/features/session-awareness/post-commit-self-skip.spec.md
@@ -40,8 +40,7 @@ source-manifest:
     - tests/lib/session-summary-from-transcript.test.mjs
     - tests/lib/session-summary-redact.test.mjs
     - tests/skills/sessions-graceful-absence.test.mjs
-  computed-at: "2026-05-20T21:32:29.900Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.325Z"
 ---
 
 <!-- partial_schema: spec@1 -->

@@ -14,15 +14,14 @@ charter-revision: 6
 created: 2026-05-12
 updated: 2026-05-13
 source-manifest:
-  sha: "4e3a17f"
+  sha: "27bbaa0"
   files:
     - lib/issues/json-adapter.mjs
     - tests/architectural-legacy-format-fixtures.test.mjs
     - tests/lib/issues/json-adapter.schema-version.test.mjs
     - tests/lib/issues/json-adapter.test.mjs
     - tests/lib/issues/markdown-parser.test.mjs
-  computed-at: "2026-05-13T08:40:13.650Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.298Z"
 ---
 
 ## Behavioral Contract

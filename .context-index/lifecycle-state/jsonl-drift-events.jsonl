@@ -66,3 +66,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"reload-test","ts":"2026-05-18T14:32:26.324Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/lifecycle-events.mjs","drift_at":"2026-05-20T03:34:26.686Z","ts":"2026-05-20T03:34:26.686Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/diagnostics/event-schemas.mjs","drift_at":"2026-05-20T03:34:39.273Z","ts":"2026-05-20T03:34:39.273Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.597Z","ts":"2026-07-03T22:27:11.597Z"}

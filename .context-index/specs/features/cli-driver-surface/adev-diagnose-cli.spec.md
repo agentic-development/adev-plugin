@@ -9,14 +9,13 @@ charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-14
 source-manifest:
-  sha: "0a68e9c"
+  sha: "9b5fbd3"
   files:
     - cli/index.mjs
     - lib/cli/diagnose.mjs
     - tests/cli/diagnose.test.mjs
     - tests/cli/fixtures/diagnose/expected.json
-  computed-at: "2026-05-14T21:26:32.169Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.405Z"
 ---
 
 # Live Spec: `adev diagnose` CLI Verb

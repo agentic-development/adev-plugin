@@ -9,7 +9,7 @@ charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-14
 source-manifest:
-  sha: "1ac7197"
+  sha: "e308107"
   files:
     - cli/index.mjs
     - lib/cli/gate.mjs
@@ -19,8 +19,7 @@ source-manifest:
     - tests/fixtures/cli/conforming.mjs
     - tests/fixtures/cli/non-conforming-no-gate.mjs
     - tests/fixtures/cli/non-conforming-no-run.mjs
-  computed-at: "2026-05-14T17:01:01.991Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.417Z"
 ---
 
 # Live Spec: Driver Substrate

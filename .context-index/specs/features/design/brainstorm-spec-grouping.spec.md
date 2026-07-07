@@ -9,12 +9,11 @@ created: 2026-05-18
 updated: 2026-05-18
 tracker-ref: issue-338
 source-manifest:
-  sha: "55633ed"
+  sha: "18fe7fd"
   files:
     - skills/brainstorm/SKILL.md
     - tests/skills/brainstorm-spec-grouping.test.mjs
-  computed-at: "2026-05-18T12:44:21.316Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.256Z"
 ---
 
 # Skill Spec: Brainstorm Step 8 Capability Grouping Suggestions

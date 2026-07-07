@@ -11,7 +11,7 @@ updated: 2026-05-18  # rev 2: addressed review warnings; implemented via /adev:i
 charter-extension: true
 partial_schema: spec@1
 source-manifest:
-  sha: "78f90cf"
+  sha: "22b0df5"
   files:
     - .claude-plugin/plugin.json
     - hooks/session-start.sh
@@ -36,8 +36,7 @@ source-manifest:
     - tests/hooks/session-start.test.mjs
     - tests/persona.test.mjs
     - tests/scripts/persona-jsonl-analysis.test.mjs
-  computed-at: "2026-05-18T13:48:31.614Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.433Z"
 ---
 
 # Live Spec: Verbosity Axis and Output Trimming

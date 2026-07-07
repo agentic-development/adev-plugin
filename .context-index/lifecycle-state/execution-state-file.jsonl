@@ -3,3 +3,4 @@
 {"event":"code_drift_detected","drift_source":"lib/session-summary.mjs","drift_at":"2026-05-20T20:48:37.976Z","ts":"2026-05-20T20:48:37.977Z"}
 {"event":"code_drift_detected","drift_source":"lib/session-summary.mjs","drift_at":"2026-05-20T20:48:55.829Z","ts":"2026-05-20T20:48:55.830Z"}
 {"event":"code_drift_detected","drift_source":"lib/session-summary.mjs","drift_at":"2026-05-20T20:53:17.940Z","ts":"2026-05-20T20:53:17.941Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.644Z","ts":"2026-07-03T22:27:11.644Z"}

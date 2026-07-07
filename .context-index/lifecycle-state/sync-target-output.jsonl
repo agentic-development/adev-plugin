@@ -47,3 +47,4 @@
 {"event":"code_drift_detected","drift_source":".context-index/specs/features/cursor-provider/charter.md","drift_at":"2026-05-19T13:45:17.739Z","ts":"2026-05-19T13:45:17.740Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-19T13:45:24.459Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-19T13:45:44.137Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.978Z","ts":"2026-07-03T22:27:11.978Z"}

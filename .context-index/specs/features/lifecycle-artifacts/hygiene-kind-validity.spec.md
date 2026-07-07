@@ -11,13 +11,12 @@ created: 2026-05-14
 plan-ref: .context-index/specs/features/lifecycle-artifacts/hygiene-kind-validity.plan.md
 
 source-manifest:
-  sha: "17d1951"
+  sha: "dc9d64e"
   files:
     - lib/hygiene/kind-validity.mjs
     - skills/hygiene/SKILL.md
     - tests/lib/hygiene-kind-validity.test.mjs
-  computed-at: "2026-05-15T16:48:47.137Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.354Z"
 ---
 
 # Live Spec: Hygiene Kind Validity Audit

@@ -15,7 +15,7 @@ supersedes:
   - .context-index/specs/features/tiered-test-gates/build-tier-passthrough.md
   - .context-index/specs/features/tiered-test-gates/e2e-playwright-scripts.md
 source-manifest:
-  sha: "7ceb782"
+  sha: "0c5f5d1"
   files:
     - templates/gates-template.yaml
     - templates/manifest-template.yaml
@@ -29,8 +29,7 @@ source-manifest:
     - .context-index/specs/features/unified-gates/unified-gate-system.spec.md
     - .context-index/specs/features/unified-gates/charter.md
     - .context-index/constitution.md
-  computed-at: "2026-04-25T21:55:13.860Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.429Z"
 ---
 
 ## Behavioral Contract

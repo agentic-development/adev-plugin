@@ -9,7 +9,7 @@ created: 2026-05-19
 updated: 2026-05-20
 tracker-ref: issue-527
 source-manifest:
-  sha: "2111755"
+  sha: "aa5db3f"
   files:
     - cli/index.mjs
     - lib/blocker-id.mjs
@@ -40,8 +40,7 @@ source-manifest:
     - tests/lib/loop-convergence.test.mjs
     - tests/lib/specify-revise.test.mjs
     - tests/skills/review-specs-blocker-id-emission.test.mjs
-  computed-at: "2026-05-20T04:27:36.454Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.227Z"
 ---
 
 # Live Spec: Auto-Retry Loop on Review BLOCK

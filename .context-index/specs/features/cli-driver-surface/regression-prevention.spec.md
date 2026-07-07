@@ -9,7 +9,7 @@ charter-revision: 2
 created: 2026-05-14
 updated: 2026-05-14
 source-manifest:
-  sha: "5f6e0f2"
+  sha: "743b94f"
   files:
     - .context-index/constitution.md
     - .githooks/pre-commit
@@ -20,8 +20,7 @@ source-manifest:
     - tests/cli.test.mjs
     - tests/constitution.test.mjs
     - tests/hooks/pre-commit-no-inline-node.test.mjs
-  computed-at: "2026-05-14T21:51:01.790Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.419Z"
 ---
 
 # Live Spec: Regression Prevention (Constitution Amendment + Pre-Commit Hook)

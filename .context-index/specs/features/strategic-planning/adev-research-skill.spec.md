@@ -19,7 +19,7 @@ charter-revision: 1
 created: 2026-04-05
 updated: 2026-04-09
 source-manifest:
-  sha: "dc37ad7"
+  sha: "6e1ff95"
   files:
     - skills/research/SKILL.md
     - skills/research/github-researcher-prompt.md
@@ -28,8 +28,7 @@ source-manifest:
     - skills/research/web-researcher-prompt.md
     - templates/research-template.md
     - tests/skills/research.test.mjs
-  computed-at: "2026-04-09T17:22:23.021Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.401Z"
 ---
 
 ## Current State

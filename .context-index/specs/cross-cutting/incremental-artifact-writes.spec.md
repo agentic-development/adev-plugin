@@ -9,7 +9,7 @@ created: 2026-05-17
 updated: 2026-05-22
 tracker-ref: issue-504
 source-manifest:
-  sha: "a53bfcc"
+  sha: "5c34db4"
   files:
     - .context-index/manifest.yaml
     - .context-index/specs/features/agent-reliable-state-artifacts/charter.md
@@ -34,8 +34,7 @@ source-manifest:
     - tests/lib/partial-artifact-concurrency.test.mjs
     - tests/lib/partial-artifact-validation.test.mjs
     - tests/lib/partial-artifact.test.mjs
-  computed-at: "2026-05-17T22:02:42.030Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.212Z"
 ---
 
 # Live Spec: Incremental artifact writes — `.partial` + atomic-rename for agent-authored artifacts

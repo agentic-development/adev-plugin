@@ -10,7 +10,7 @@ created: 2026-05-20
 updated: 2026-05-20
 tracker-ref: issue-530
 source-manifest:
-  sha: "da43889"
+  sha: "0b59e42"
   files:
     - cli/index.mjs
     - lib/cli/domain-extension-picker.mjs
@@ -21,8 +21,7 @@ source-manifest:
     - tests/cli/init-extension-picker.test.mjs
     - tests/lib/cli/domain-extension-picker.test.mjs
     - tests/skills/init-picker-doc.test.mjs
-  computed-at: "2026-05-20T17:34:35.328Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.427Z"
 ---
 
 # Live Spec: Init-Time Domain Extension Picker

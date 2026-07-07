@@ -13,7 +13,7 @@ affects:
   - strategic-planning
   - maintenance
 source-manifest:
-  sha: "814d829"
+  sha: "f249dca"
   files:
     - hooks/lifecycle-gate-edit.sh
     - hooks/lifecycle-gate-bash.sh
@@ -24,8 +24,7 @@ source-manifest:
     - lib/lifecycle-gate-helpers.mjs
     - lib/execution-state.mjs
     - skills/standalone/SKILL.md
-  computed-at: "2026-05-05T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.221Z"
 ---
 
 ## Behavioral Contract

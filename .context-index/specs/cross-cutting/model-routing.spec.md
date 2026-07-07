@@ -19,7 +19,7 @@ affects:
   - design
   - adev:write-test
 source-manifest:
-  sha: "08a5996"
+  sha: "01fae0a"
   files:
     - templates/platform-context.yaml
     - skills/implement/SKILL.md
@@ -27,8 +27,7 @@ source-manifest:
     - skills/review-specs/SKILL.md
     - skills/brainstorm/SKILL.md
     - skills/write-test/SKILL.md
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.225Z"
 ---
 
 ## Behavioral Contract

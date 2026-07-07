@@ -11,3 +11,4 @@
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.073Z","ts":"2026-05-20T12:08:30.073Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-05-20T17:22:29.063Z","ts":"2026-05-20T17:22:29.063Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-05-20T17:23:59.934Z","ts":"2026-05-20T17:23:59.934Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.989Z","ts":"2026-07-03T22:27:11.989Z","diagnostic_warnings":["adev/frontmatter-present"]}

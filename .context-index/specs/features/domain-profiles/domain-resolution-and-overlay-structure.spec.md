@@ -14,7 +14,7 @@ charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
 source-manifest:
-  sha: "f6a29b0"
+  sha: "40d6000"
   files:
     - docs/configuration.md
     - docs/skill-reference.md
@@ -22,8 +22,7 @@ source-manifest:
     - lib/domains/resolve.mjs
     - tests/lib/domains/constants.test.mjs
     - tests/lib/domains/resolve.test.mjs
-  computed-at: "2026-05-11T16:09:28.530Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.395Z"
 ---
 
 ## Behavioral Contract

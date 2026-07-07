@@ -10,12 +10,11 @@ charter-revision: 2
 created: 2026-05-10
 updated: 2026-05-11
 source-manifest:
-  sha: "65f2c91"
+  sha: "b2179e7"
   files:
     - lib/extensions/content-install.mjs
     - tests/lib/extensions/content-install.test.mjs
-  computed-at: "2026-05-11T16:09:28.534Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.364Z"
 ---
 
 ## Behavioral Contract

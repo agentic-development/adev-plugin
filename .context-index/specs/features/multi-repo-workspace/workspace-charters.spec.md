@@ -8,14 +8,13 @@ created: 2026-04-15
 updated: 2026-04-15
 depends-on: ["workspace-foundation"]
 source-manifest:
-  sha: "0705163"
+  sha: "4d6d6ed"
   files:
     - skills/brainstorm/SKILL.md
     - skills/specify/SKILL.md
     - tests/skills/brainstorm-workspace-bootstrap.test.mjs
     - tests/skills/specify-workspace-mode.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.452Z"
 ---
 
 # Live Spec: Workspace-Level Charters

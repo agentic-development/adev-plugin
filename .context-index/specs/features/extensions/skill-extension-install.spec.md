@@ -10,15 +10,14 @@ charter-revision: 4
 created: 2026-05-25
 updated: 2026-05-26
 source-manifest:
-  sha: "eb3728c"
+  sha: "bc9ee7e"
   files:
     - docs/extensions.md
     - lib/extensions/content-install.mjs
     - lib/extensions/install.mjs
     - templates/adev-extension.example.yaml
     - tests/extensions/skill-extension-install.test.mjs
-  computed-at: "2026-05-26T00:52:25.468Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.356Z"
 ---
 
 # Live Spec: `provides.skill_extensions` — Domain Extension Skill Injection

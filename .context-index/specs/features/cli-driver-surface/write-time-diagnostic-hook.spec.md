@@ -9,7 +9,7 @@ charter-revision: 3
 created: 2026-05-14
 updated: 2026-05-14
 source-manifest:
-  sha: "9f7eaab"
+  sha: "a4c55b3"
   files:
     - lib/diagnostics/event-schemas.mjs
     - lib/lifecycle-events.mjs
@@ -23,8 +23,7 @@ source-manifest:
     - tests/lib/lifecycle-state-perf.test.mjs
     - tests/lib/lifecycle-state.render.test.mjs
     - tests/lib/lifecycle-state.test.mjs
-  computed-at: "2026-05-14T21:41:53.147Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.403Z"
 ---
 
 # Live Spec: Write-Time Diagnostic Hook

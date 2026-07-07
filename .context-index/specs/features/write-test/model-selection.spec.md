@@ -16,13 +16,12 @@ updated: 2026-05-04
 cross-cutting-refs:
   - .context-index/specs/cross-cutting/model-routing.md
 source-manifest:
-  sha: "794bc64"
+  sha: "8a9fc79"
   files:
     - skills/write-test/SKILL.md
     - templates/platform-context.yaml
     - tests/write-test/platform-context-template.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.375Z"
 ---
 
 ## Behavioral Contract

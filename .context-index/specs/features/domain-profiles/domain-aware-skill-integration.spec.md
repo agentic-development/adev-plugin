@@ -14,7 +14,7 @@ charter-revision: 5
 created: 2026-05-07
 updated: 2026-05-10
 source-manifest:
-  sha: "4a296cf"
+  sha: "0301196"
   files:
     - docs/configuration.md
     - docs/hooks.md
@@ -40,8 +40,7 @@ source-manifest:
     - tests/lib/domains/merge-test-config.test.mjs
     - tests/lib/domains/merge-verification.test.mjs
     - tests/lib/domains/refactor-constants.test.mjs
-  computed-at: "2026-05-11T16:09:28.518Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.388Z"
 ---
 
 ## Behavioral Contract

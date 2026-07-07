@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"docs/governance.md","drift_at":"2026-05-23T01:00:58.974Z","ts":"2026-05-23T01:00:58.975Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.702Z","ts":"2026-07-03T22:27:11.702Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"docs/README.md","drift_at":"2026-05-16T14:28:10.506Z","ts":"2026-05-18T13:50:21.117Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.700Z","ts":"2026-07-03T22:27:11.700Z","diagnostic_warnings":["adev/frontmatter-present"]}

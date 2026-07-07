@@ -14,7 +14,7 @@ charter-revision: 8
 created: 2026-05-12
 updated: 2026-05-12
 source-manifest:
-  sha: "a4cef4c"
+  sha: "ce90de4"
   files:
     - lib/migrate-state-artifacts.mjs
     - lib/plan-immutability.mjs
@@ -27,8 +27,7 @@ source-manifest:
     - tests/lib/migrate-state-artifacts.test.mjs
     - tests/skills/no-stale-format-refs.test.mjs
     - tests/skills/plan-task-immutability.test.mjs
-  computed-at: "2026-05-12T18:02:31.778Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.275Z"
 ---
 
 ## Behavioral Contract

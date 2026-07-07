@@ -11,7 +11,7 @@ created: 2026-05-22
 updated: 2026-05-22
 tracker-ref: issue-501
 source-manifest:
-  sha: "93e83cd"
+  sha: "d8f4a76"
   files:
     - cli/index.mjs
     - lib/cli/cost.mjs
@@ -22,8 +22,7 @@ source-manifest:
     - tests/lib/cost-formatters.test.mjs
     - tests/lib/cost-summary.test.mjs
     - tests/skills/build/cost-ticker-prose.test.mjs
-  computed-at: "2026-05-22T14:38:32.264Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.311Z"
 ---
 
 # Live Spec: Per-Spec Cost Ticker

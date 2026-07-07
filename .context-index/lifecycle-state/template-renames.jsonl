@@ -64,3 +64,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.499Z","ts":"2026-05-20T17:21:03.499Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.833Z","ts":"2026-05-20T17:21:19.833Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.155Z","ts":"2026-05-20T17:21:37.155Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.722Z","ts":"2026-07-03T22:27:11.722Z"}

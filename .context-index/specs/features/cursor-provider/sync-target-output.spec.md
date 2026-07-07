@@ -9,7 +9,7 @@ charter-revision: 3
 created: 2026-05-19
 updated: 2026-05-19
 source-manifest:
-  sha: "fec6dfd"
+  sha: "91af8ba"
   files:
     - .context-index/specs/features/cursor-provider/charter.md
     - cli/index.mjs
@@ -17,8 +17,7 @@ source-manifest:
     - skills/sync/SKILL.md
     - tests/cli.test.mjs
     - tests/sync/cursor-format.test.mjs
-  computed-at: "2026-05-19T13:32:14.199Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.426Z"
 ---
 
 # Skill Spec: Cursor sync target output

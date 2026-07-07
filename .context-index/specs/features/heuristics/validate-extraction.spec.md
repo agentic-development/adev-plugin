@@ -17,14 +17,13 @@ charter-revision: 5
 created: 2026-04-09
 updated: 2026-04-09
 source-manifest:
-  sha: "de8e964"
+  sha: "7e11203"
   files:
     - skills/validate/SKILL.md
     - tests/skills/validate-extraction.test.mjs
     - tests/skills/validate-success-heuristic-harness.mjs
     - tests/skills/validate-success-heuristic.test.mjs
-  computed-at: "2026-04-10T00:28:19.351Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.239Z"
 ---
 
 ## Behavioral Contract

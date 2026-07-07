@@ -16,15 +16,14 @@ charter-revision: 5
 created: 2026-04-23
 updated: 2026-04-23
 source-manifest:
-  sha: "888c762"
+  sha: "45bfc1c"
   files:
     - lib/heuristics.mjs
     - .context-index/memory/heuristics/_format.md
     - tests/lib/heuristics-tags-and-tiers.test.mjs
     - tests/lib/heuristics.test.mjs
     - .context-index/specs/features/heuristics/retrieval-filtering.spec.md
-  computed-at: "2026-04-25T21:55:13.273Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.236Z"
 ---
 
 ## Behavioral Contract

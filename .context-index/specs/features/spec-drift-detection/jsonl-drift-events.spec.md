@@ -9,7 +9,7 @@ created: 2026-05-18
 updated: 2026-05-21
 tracker-ref: issue-516
 source-manifest:
-  sha: "735c4c4"
+  sha: "b6133d7"
   files:
     - lib/cli/verify.mjs
     - lib/diagnostics/event-schemas.mjs
@@ -20,8 +20,7 @@ source-manifest:
     - tests/integration/spec-drift-no-merge-conflict.test.mjs
     - tests/lib/spec-drift.test.mjs
     - tests/scripts/migrate-drift-fields.test.mjs
-  computed-at: "2026-05-18T13:59:32.083Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.301Z"
 ---
 
 # Refactoring Spec: JSONL Drift Events

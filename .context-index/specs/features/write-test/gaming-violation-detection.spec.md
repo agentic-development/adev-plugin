@@ -13,15 +13,14 @@ charter-revision: 1
 created: 2026-03-27
 updated: 2026-05-04
 source-manifest:
-  sha: "c2d7e43"
+  sha: "61d89c2"
   files:
     - skills/write-test/detect-gaming.mjs
     - skills/write-test/detect-gaming.sh
     - skills/write-test/SKILL.md
     - lib/test-strategies/gaming.mjs
     - tests/write-test/detect-gaming.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.367Z"
 ---
 
 ## Behavioral Contract

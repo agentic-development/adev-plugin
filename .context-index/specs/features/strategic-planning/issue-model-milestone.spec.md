@@ -14,7 +14,7 @@ charter-revision: 1
 created: 2026-04-05
 updated: 2026-05-04
 source-manifest:
-  sha: "70b0372"
+  sha: "5ee4bb9"
   files:
     - lib/issues/beads-adapter.mjs
     - lib/issues/file-adapter.mjs
@@ -24,8 +24,7 @@ source-manifest:
     - tests/lib/issues-file-adapter.test.mjs
     - tests/lib/issues-interface.test.mjs
     - tests/lib/issues-milestone.test.mjs
-  computed-at: "2026-04-12T11:48:02.757Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.398Z"
 ---
 
 ## Behavioral Contract

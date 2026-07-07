@@ -12,3 +12,4 @@
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:09.306Z","ts":"2026-05-20T04:01:09.306Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:41.403Z","ts":"2026-05-20T04:01:41.403Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.049Z","ts":"2026-05-20T12:08:30.049Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.912Z","ts":"2026-07-03T22:27:11.912Z","diagnostic_warnings":["adev/frontmatter-present"]}

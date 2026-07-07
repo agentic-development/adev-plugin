@@ -10,3 +10,4 @@
 {"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:08.885Z","ts":"2026-05-20T03:37:08.885Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/lifecycle-state.mjs","drift_at":"2026-05-20T03:37:21.597Z","ts":"2026-05-20T03:37:21.597Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"debug_intervention","kind":"debug","note":"adev report omitted pluginRoot; _resolveActorSeverity fell back to repoRoot, never found bundled templates/ in consumer repos, degraded all severities to warning. Fixed: lib self-derives pluginRoot from its own location.","ts":"2026-06-05T13:58:36.096Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.550Z","ts":"2026-07-03T22:27:11.550Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -8,13 +8,12 @@ created: 2026-04-15
 updated: 2026-04-15
 depends-on: ["workspace-foundation"]
 source-manifest:
-  sha: "01702c0"
+  sha: "6c5ccfb"
   files:
     - skills/init/SKILL.md
     - templates/workspace-template.yaml
     - tests/skills/init-workspace.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.451Z"
 ---
 
 # Live Spec: Init Workspace

@@ -14,7 +14,7 @@ charter-revision: 3
 created: 2026-05-11
 updated: 2026-05-11
 source-manifest:
-  sha: "2f19a02"
+  sha: "6215ef2"
   files:
     - hooks/_execution-state.mjs
     - hooks/lifecycle-gate-advisory.sh
@@ -33,8 +33,7 @@ source-manifest:
     - tests/hooks/session-start-resume.test.mjs
     - tests/hooks/session-start.test.mjs
     - tests/lib/execution-state.test.mjs
-  computed-at: "2026-05-12T01:20:29.444Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.279Z"
 ---
 
 ## Behavioral Contract
