@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
-import { loadSpecContext, findSpecsByStatus, getPlanProgress } from '../../lib/meta-tools.mjs';
+import { loadSpecContext, findSpecsByStatus, getPlanProgress, parseSpecFrontmatter } from '../../lib/meta-tools.mjs';
 
 const TEMP_ROOT = join(import.meta.dirname, '..', '..', '.test-meta-tools-temp');
 
@@ -354,6 +354,87 @@ status: draft
       assert.equal(result.remaining, 0);
       assert.equal(result.percent, 0);
       assert.deepEqual(result.tasks, []);
+    });
+  });
+
+  describe('parseSpecFrontmatter — leading content before the fence', () => {
+    const specDir = join(TEMP_ROOT, '.context-index', 'specs', 'features', 'task-boards');
+
+    it('reads frontmatter when the fence is at byte 0 (baseline)', () => {
+      const p = join(specDir, 'fence-first.spec.md');
+      writeFileSync(p, `---
+charter: task-boards
+kind: refactor
+status: validated
+revision: 3
+---
+
+# Body
+`);
+      const fm = parseSpecFrontmatter(p);
+      assert.equal(fm.kind, 'refactor');
+      assert.equal(fm.kindResolved, 'explicit');
+      assert.equal(fm.status, 'validated');
+      assert.equal(fm.revision, '3');
+    });
+
+    it('reads frontmatter after a leading <!-- partial_schema --> marker', () => {
+      const p = join(specDir, 'marker-first.spec.md');
+      writeFileSync(p, `<!-- partial_schema: spec@1 -->
+
+---
+charter: task-boards
+kind: behavioral
+status: validated
+revision: 2
+---
+
+# Body
+`);
+      const fm = parseSpecFrontmatter(p);
+      assert.equal(fm.kind, 'behavioral');
+      assert.equal(fm.kindResolved, 'explicit');
+      assert.equal(fm.status, 'validated');
+      assert.equal(fm.revision, '2');
+      assert.equal(fm.charter, 'task-boards');
+    });
+
+    it('reads frontmatter after a leading heading + comment', () => {
+      const p = join(specDir, 'heading-first.spec.md');
+      writeFileSync(p, `# Live Spec: Deploy Core
+
+<!-- Live Spec within the deploy charter. -->
+
+---
+charter: task-boards
+kind: action
+status: implemented
+---
+
+# Body
+`);
+      const fm = parseSpecFrontmatter(p);
+      assert.equal(fm.kind, 'action');
+      assert.equal(fm.kindResolved, 'explicit');
+      assert.equal(fm.status, 'implemented');
+    });
+
+    it('does not mistake a body thematic break for frontmatter', () => {
+      const p = join(specDir, 'no-frontmatter.spec.md');
+      writeFileSync(p, `# Title
+
+Some prose.
+
+---
+
+More prose after a horizontal rule.
+
+---
+`);
+      const fm = parseSpecFrontmatter(p);
+      // No real frontmatter → kind defaults, status absent.
+      assert.equal(fm.kindResolved, 'default');
+      assert.equal(fm.status, undefined);
     });
   });
 });
