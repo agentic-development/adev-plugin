@@ -10,7 +10,7 @@ charter-revision: 1
 created: 2026-03-23
 updated: 2026-05-04
 source-manifest:
-  sha: "fab36e5"
+  sha: "edaa612"
   files:
     - .context-index/adrs/0002-typescript-dev-dependency.md
     - .gitignore
@@ -26,8 +26,7 @@ source-manifest:
     - tests/evals/repomap/repos.json
     - tests/evals/repomap/run-eval.mjs
     - tests/repomap/index.test.mjs
-  computed-at: "2026-04-12T11:48:02.741Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.377Z"
 ---
 
 ## Behavioral Contract

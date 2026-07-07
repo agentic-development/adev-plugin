@@ -18,14 +18,13 @@ charter-revision: 5
 created: 2026-04-09
 updated: 2026-04-09
 source-manifest:
-  sha: "902e44b"
+  sha: "2c02b55"
   files:
     - skills/recover/SKILL.md
     - tests/skills/recover-extract-heuristic-harness.mjs
     - tests/skills/recover-extract-heuristic.test.mjs
     - tests/skills/recover-extraction.test.mjs
-  computed-at: "2026-04-10T00:08:54.070Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.243Z"
 ---
 
 ## Behavioral Contract

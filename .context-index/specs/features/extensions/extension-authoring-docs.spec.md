@@ -17,7 +17,7 @@ depends-on:
   - .context-index/specs/features/cli-driver-surface/write-time-diagnostic-hook.spec.md
   - .context-index/adrs/0003-configurable-review-registry.md
 source-manifest:
-  sha: "58fffc2"
+  sha: "f5944fc"
   files:
     - docs/README.md
     - docs/extensions.md
@@ -28,8 +28,7 @@ source-manifest:
     - tests/docs/extensions-links.test.mjs
     - tests/integration/extension-validate-flow.test.mjs
     - tests/lib/extensions/example-validation-check-install.test.mjs
-  computed-at: "2026-05-16T14:34:35.795Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.358Z"
 ---
 
 # Live Spec: Extension Authoring Documentation Bundle

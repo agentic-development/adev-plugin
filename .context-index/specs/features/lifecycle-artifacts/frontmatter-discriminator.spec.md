@@ -11,11 +11,11 @@ created: 2026-05-14
 plan-ref: .context-index/specs/features/lifecycle-artifacts/frontmatter-discriminator.plan.md
 
 source-manifest:
-  sha: "3d4f1fe"
+  sha: "59b27ba"
   files:
     - lib/meta-tools.mjs
     - tests/lib/frontmatter-kind-field.test.mjs
-  computed-at: "2026-05-15T11:27:41.571Z"
+  computed-at: "2026-07-03T22:27:11.354Z"
 ---
 
 # Live Spec: Frontmatter Discriminator

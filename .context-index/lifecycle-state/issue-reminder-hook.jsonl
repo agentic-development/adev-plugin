@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"hooks/hooks.json","drift_at":"2026-05-16T02:31:19.736Z","ts":"2026-05-18T13:48:57.269Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.660Z","ts":"2026-07-03T22:27:11.660Z"}

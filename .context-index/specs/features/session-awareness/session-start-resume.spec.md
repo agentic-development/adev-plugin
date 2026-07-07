@@ -8,13 +8,12 @@ charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
 source-manifest:
-  sha: "63258a9"
+  sha: "d09af97"
   files:
     - hooks/session-start.sh
     - lib/execution-state.mjs
     - tests/hooks/session-start.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.310Z"
 ---
 
 # Live Spec: Session-Start Resume

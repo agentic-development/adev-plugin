@@ -18,14 +18,13 @@ charter-revision: 5
 created: 2026-04-12
 updated: 2026-04-12
 source-manifest:
-  sha: "2e11ef8"
+  sha: "1a2f004"
   files:
     - skills/implement/SKILL.md
     - tests/skills/implement-heuristic-injection.test.mjs
     - lib/heuristics.mjs
     - .context-index/specs/features/heuristics/retrieval-filtering.spec.md
-  computed-at: "2026-04-25T21:55:13.503Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.242Z"
 ---
 
 ## Behavioral Contract

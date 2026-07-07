@@ -10,8 +10,7 @@ source-manifest:
     - skills/write-test/SKILL.md
     - lib/test-strategies/profiles.mjs
     - lib/test-strategies/gaming.mjs
-  computed-at: "2026-05-10T23:51:01.456Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.336Z"
 ---
 
 # Spec: Write-Test Dispatch

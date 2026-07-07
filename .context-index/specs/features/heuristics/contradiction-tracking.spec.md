@@ -18,15 +18,14 @@ charter-revision: 5
 created: 2026-04-12
 updated: 2026-04-12
 source-manifest:
-  sha: "443737f"
+  sha: "090be8d"
   files:
     - skills/validate/SKILL.md
     - skills/recover/SKILL.md
     - tests/skills/contradiction-tracking.test.mjs
     - lib/heuristics.mjs
     - .context-index/specs/features/heuristics/store-and-helper.spec.md
-  computed-at: "2026-04-25T21:55:13.449Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.234Z"
 ---
 
 ## Behavioral Contract

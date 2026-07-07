@@ -23,3 +23,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP: No UI files in implementation diff","ts":"2026-05-26T01:05:42.012Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-26T01:07:38.660Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/extensions.md","drift_at":"2026-05-30T17:18:05.118Z","ts":"2026-05-30T17:18:05.118Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.760Z","ts":"2026-07-03T22:27:11.760Z","diagnostic_warnings":["adev/frontmatter-present"]}

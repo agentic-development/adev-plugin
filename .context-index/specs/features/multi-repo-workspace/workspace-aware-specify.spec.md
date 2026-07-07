@@ -13,12 +13,11 @@ depends-on:
   - "context-resolution"
 tracker-ref: issue-66
 source-manifest:
-  sha: "9eb9e2d"
+  sha: "86d30a0"
   files:
     - skills/specify/SKILL.md
     - tests/skills/specify-workspace-mode.test.mjs
-  computed-at: "2026-04-17T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.451Z"
 ---
 
 # Live Spec: Workspace-Aware /adev:specify

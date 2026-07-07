@@ -13,7 +13,6 @@ revision: 8
 charter-revision: 3
 created: 2026-04-05
 updated: 2026-05-19
-drift_detected: true
 ---
 
 ## Behavioral Contract

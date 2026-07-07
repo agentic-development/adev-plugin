@@ -8,12 +8,11 @@ charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
 source-manifest:
-  sha: "f078dad"
+  sha: "82208e6"
   files:
     - templates/manifest-template.yaml
     - tests/templates/manifest-template.test.mjs
-  computed-at: "2026-04-12T11:47:08.344Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.322Z"
 ---
 
 # Live Spec: Configurable Reminder Interval

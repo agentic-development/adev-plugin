@@ -10,11 +10,10 @@ charter-revision: 1
 created: 2026-03-27
 updated: 2026-03-28
 source-manifest:
-  sha: "67a8425"
+  sha: "4f9573e"
   files:
     - .githooks/prepare-commit-msg
-  computed-at: "2026-04-01T13:43:22.538Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.252Z"
 ---
 
 ## Behavioral Contract

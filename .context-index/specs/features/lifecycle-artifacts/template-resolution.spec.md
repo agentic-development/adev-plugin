@@ -11,12 +11,11 @@ created: 2026-05-14
 plan-ref: .context-index/specs/features/lifecycle-artifacts/template-resolution.plan.md
 
 source-manifest:
-  sha: "460d98e"
+  sha: "fe535b6"
   files:
     - lib/template-resolution.mjs
     - tests/lib/template-resolution.test.mjs
-  computed-at: "2026-05-15T13:32:34.277Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.348Z"
 ---
 
 # Live Spec: Template Resolution

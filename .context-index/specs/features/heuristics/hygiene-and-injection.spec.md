@@ -24,8 +24,7 @@ source-manifest:
     - skills/review-specs/SKILL.md
     - skills/validate/SKILL.md
     - lib/heuristics.mjs
-  computed-at: "2026-05-10T23:51:54.631Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.240Z"
 ---
 
 ## Behavioral Contract

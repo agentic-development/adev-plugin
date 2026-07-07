@@ -42,3 +42,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-15T13:48:31.788Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T13:49:10.457Z"}
 {"event":"code_drift_detected","drift_source":"tests/lib/template-resolution.test.mjs","drift_at":"2026-05-15T14:23:30.746Z","ts":"2026-05-18T13:48:57.245Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.715Z","ts":"2026-07-03T22:27:11.715Z"}

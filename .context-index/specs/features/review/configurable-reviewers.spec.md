@@ -19,8 +19,7 @@ source-manifest:
     - lib/governance/dispatch-shape.mjs
     - skills/review-specs/SKILL.md
     - templates/review-specs/defaults.yaml
-  computed-at: "2026-05-10T23:51:35.315Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.380Z"
 ---
 
 ## Behavioral Contract

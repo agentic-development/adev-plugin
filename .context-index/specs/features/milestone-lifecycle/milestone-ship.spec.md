@@ -10,13 +10,12 @@ charter-revision: 3
 created: 2026-05-09
 updated: 2026-05-11
 source-manifest:
-  sha: "8a43cf5"
+  sha: "675033f"
   files:
     - lib/milestones.mjs
     - skills/issues/SKILL.md
     - tests/milestones.test.mjs
-  computed-at: "2026-05-11T15:53:40.792Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.259Z"
 ---
 
 ## Behavioral Contract

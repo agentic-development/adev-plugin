@@ -20,7 +20,6 @@ source-manifest:
     - skills/vision/SKILL.md
     - tests/skills/assess.test.mjs
   computed-at: "2026-04-12T11:48:02.756Z"
-drift_detected: true
 ---
 
 ## Behavioral Contract

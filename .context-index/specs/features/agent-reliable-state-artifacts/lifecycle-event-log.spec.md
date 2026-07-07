@@ -14,7 +14,7 @@ charter-revision: 3
 created: 2026-05-11
 updated: 2026-05-19
 source-manifest:
-  sha: "449d3d5"
+  sha: "3daa586"
   files:
     - lib/lifecycle-events.mjs
     - lib/lifecycle-state.mjs
@@ -26,8 +26,7 @@ source-manifest:
     - tests/lib/lifecycle-state-partial-recovery.test.mjs
     - tests/lib/lifecycle-state-perf.test.mjs
     - tests/lib/lifecycle-state.test.mjs
-  computed-at: "2026-05-17T20:42:36.797Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.268Z"
 ---
 
 ## Behavioral Contract

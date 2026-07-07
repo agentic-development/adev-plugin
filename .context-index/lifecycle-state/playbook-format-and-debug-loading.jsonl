@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"skills/debug/SKILL.md","drift_at":"2026-05-16T01:01:48.867Z","ts":"2026-05-18T13:50:21.085Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:12.013Z","ts":"2026-07-03T22:27:12.013Z","diagnostic_warnings":["adev/frontmatter-present"]}

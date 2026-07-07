@@ -10,14 +10,13 @@ charter-revision: 1
 created: 2026-04-02
 updated: 2026-04-02
 source-manifest:
-  sha: "4e2d51a"
+  sha: "becef6e"
   files:
     - .context-index/manifest.yaml
     - skills/codehealth/SKILL.md
     - skills/hygiene/SKILL.md
     - tests/skills/codehealth.test.mjs
-  computed-at: "2026-04-12T11:48:02.735Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.422Z"
 ---
 
 ## Behavioral Contract

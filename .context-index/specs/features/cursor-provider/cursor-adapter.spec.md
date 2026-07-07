@@ -9,13 +9,12 @@ charter-revision: 3
 created: 2026-05-18
 updated: 2026-05-18
 source-manifest:
-  sha: "7243b87"
+  sha: "c8c4d2f"
   files:
     - cli/index.mjs
     - providers/cursor/adapter.mjs
     - tests/provider/cursor-adapter.test.mjs
-  computed-at: "2026-05-18T21:49:33.622Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.424Z"
 ---
 
 # Behavioral Spec: CursorAdapter with Skill Name Sanitization

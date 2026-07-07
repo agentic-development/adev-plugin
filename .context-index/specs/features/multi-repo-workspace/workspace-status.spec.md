@@ -8,13 +8,12 @@ created: 2026-04-15
 updated: 2026-04-15
 depends-on: ["workspace-foundation", "context-resolution"]
 source-manifest:
-  sha: "e286eb2"
+  sha: "c79c5f1"
   files:
     - skills/status/SKILL.md
     - lib/workspace.mjs
     - tests/skills/status-workspace-mode.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.449Z"
 ---
 
 # Live Spec: Workspace Status

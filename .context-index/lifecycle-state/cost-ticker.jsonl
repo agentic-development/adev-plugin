@@ -42,3 +42,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-22T14:53:11.181Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/build/SKILL.md","drift_at":"2026-05-24T21:49:05.181Z","ts":"2026-05-24T21:49:05.181Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-24T15:04:31.475Z","ts":"2026-05-24T15:04:31.475Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.630Z","ts":"2026-07-03T22:27:11.630Z"}

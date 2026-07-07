@@ -13,8 +13,7 @@ source-manifest:
   files:
     - docs/troubleshooting.md
     - docs/README.md
-  computed-at: "2026-05-10T23:51:35.315Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.342Z"
 ---
 
 ## Behavioral Contract

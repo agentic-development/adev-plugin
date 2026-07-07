@@ -38,3 +38,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T16:29:25.498Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-15T16:30:02.872Z"}
 {"event":"code_drift_detected","drift_source":"skills/brainstorm/SKILL.md","drift_at":"2026-05-16T00:52:30.257Z","ts":"2026-05-18T13:48:57.235Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.733Z","ts":"2026-07-03T22:27:11.733Z"}

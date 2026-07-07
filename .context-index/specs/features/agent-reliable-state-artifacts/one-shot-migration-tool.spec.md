@@ -14,7 +14,7 @@ charter-revision: 3
 created: 2026-05-11
 updated: 2026-05-12
 source-manifest:
-  sha: "ff7d26d"
+  sha: "82a105d"
   files:
     - cli/index.mjs
     - lib/migrate-state-artifacts.mjs
@@ -25,8 +25,7 @@ source-manifest:
     - tests/lib/migrate-state-artifacts.idempotency.test.mjs
     - tests/lib/migrate-state-artifacts.redaction.test.mjs
     - tests/lib/migrate-state-artifacts.test.mjs
-  computed-at: "2026-05-12T03:09:20.310Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.271Z"
 ---
 
 ## Behavioral Contract

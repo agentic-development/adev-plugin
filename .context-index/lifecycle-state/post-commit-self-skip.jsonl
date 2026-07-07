@@ -32,3 +32,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-19T13:12:12.105Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"tests/hooks/post-commit-self-skip.test.mjs","drift_at":"2026-05-20T21:16:11.206Z","ts":"2026-05-20T21:16:11.207Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"tests/hooks/post-commit-self-skip.test.mjs","drift_at":"2026-05-20T21:16:56.296Z","ts":"2026-05-20T21:16:56.297Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.634Z","ts":"2026-07-03T22:27:11.634Z"}

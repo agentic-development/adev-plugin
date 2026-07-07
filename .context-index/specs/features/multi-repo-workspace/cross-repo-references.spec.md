@@ -8,13 +8,12 @@ created: 2026-04-15
 updated: 2026-04-15
 depends-on: ["workspace-foundation", "context-resolution"]
 source-manifest:
-  sha: "3fb772e"
+  sha: "8a4a40d"
   files:
     - lib/workspace.mjs
     - skills/review-specs/SKILL.md
     - tests/lib/workspace.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.453Z"
 ---
 
 # Live Spec: Cross-Repo References

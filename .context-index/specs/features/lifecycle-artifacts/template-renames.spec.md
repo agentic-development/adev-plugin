@@ -11,7 +11,7 @@ created: 2026-05-14
 plan-ref: .context-index/specs/features/lifecycle-artifacts/template-renames.plan.md
 
 source-manifest:
-  sha: "0fefc10"
+  sha: "22f3fac"
   files:
     - .context-index/specs/features/.spec-template.behavioral.md
     - .context-index/specs/features/.spec-template.refactor.md
@@ -25,8 +25,7 @@ source-manifest:
     - tests/lib/infra-preflight.test.mjs
     - tests/templates/spec-template.behavioral.test.mjs
     - tests/visual-verification.test.mjs
-  computed-at: "2026-05-15T15:14:03.286Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.350Z"
 ---
 
 # Refactoring Spec: Template Renames

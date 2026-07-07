@@ -14,3 +14,4 @@
 {"event":"code_drift_detected","drift_source":"skills/retro/SKILL.md","drift_at":"2026-05-20T04:18:30.126Z","ts":"2026-05-20T04:18:30.126Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.070Z","ts":"2026-05-20T13:03:18.070Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.982Z","ts":"2026-05-20T13:05:52.982Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.523Z","ts":"2026-07-03T22:27:11.523Z","diagnostic_warnings":["adev/frontmatter-present"]}

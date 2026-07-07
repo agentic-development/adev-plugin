@@ -37,3 +37,4 @@
 {"event":"validator_report","step":"validate","validator":"check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"drift_detected=false; no code-side drift.","ts":"2026-05-18T15:14:43.324Z"}
 {"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-05-18T15:15:28.228Z"}
 {"event":"code_drift_detected","drift_source":"package.json","drift_at":"2026-05-19T19:39:59.280Z","ts":"2026-05-19T19:39:59.281Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.974Z","ts":"2026-07-03T22:27:11.974Z"}

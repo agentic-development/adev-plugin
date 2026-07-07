@@ -15,7 +15,7 @@ depends-on:
   - "@planning/multi-scope-plan"
 tracker-ref: issue-65
 source-manifest:
-  sha: "9ffc1ad"
+  sha: "3222ebb"
   files:
     - lib/workspace.mjs
     - skills/brainstorm/SKILL.md
@@ -23,8 +23,7 @@ source-manifest:
     - tests/lib/workspace-hardening.test.mjs
     - tests/skills/brainstorm-workspace-bootstrap.test.mjs
     - tests/skills/plan-workspace-mode.test.mjs
-  computed-at: "2026-04-17T09:26:13.441Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.454Z"
 ---
 
 # Live Spec: Workspace-Aware Strategic Planning

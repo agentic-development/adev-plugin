@@ -12,7 +12,7 @@ tracker-ref: issue-528
 depends-on:
   - .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
 source-manifest:
-  sha: "1fdabc8"
+  sha: "b5888b6"
   files:
     - cli/index.mjs
     - lib/cli/retro.mjs
@@ -32,8 +32,7 @@ source-manifest:
     - tests/lib/retro-session-format.test.mjs
     - tests/lib/retro-session-metrics.test.mjs
     - tests/skills/retro-session-section.test.mjs
-  computed-at: "2026-05-20T23:08:15.899Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.315Z"
 ---
 
 <!-- partial_schema: spec@1 -->

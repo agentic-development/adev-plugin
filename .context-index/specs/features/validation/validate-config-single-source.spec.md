@@ -18,7 +18,7 @@ supersedes-behaviors:
   - configurable-checks.spec.md#behavior-5
   - configurable-checks.spec.md#ac-zero-config
 source-manifest:
-  sha: "0a6fe1e"
+  sha: "a12ddd0"
   files:
     - cli/index.mjs
     - lib/domains/constants.mjs
@@ -46,8 +46,7 @@ source-manifest:
     - tests/evals/configurable-governance/setup-fixture.sh
     - tests/governance/validate-config-single-source.test.mjs
     - tests/governance/validate-config.test.mjs
-  computed-at: "2026-05-16T01:42:03.195Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.460Z"
 ---
 
 > **Revision 2 (2026-05-15):** Addresses blockers SEC-1 (id sanitization) and CON-4 (loadValidateConfig signature) plus warnings SA-1, SA-2, SA-3, SA-6, SA-7, CON-1, CON-3, SEC-2, SEC-3, SEC-4, SEC-5 from the rev-1 review. Reclassified from `kind: refactor` to `kind: behavioral` to accurately reflect that this spec introduces a required artifact rather than purely refactoring storage; the migration tool (Step 8) mitigates the one-time break for upgrading projects.

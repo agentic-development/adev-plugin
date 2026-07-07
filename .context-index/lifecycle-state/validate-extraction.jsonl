@@ -10,3 +10,4 @@
 {"event":"step_completed","ts":"2026-04-10T00:30:00Z","step":"validate","actor":"migration/adev-cli"}
 {"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-05-17T20:31:49.572Z","ts":"2026-05-18T13:50:21.095Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-05-18T13:54:34.133Z","ts":"2026-05-18T13:54:34.133Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.508Z","ts":"2026-07-03T22:27:11.508Z","diagnostic_warnings":["adev/frontmatter-present"]}

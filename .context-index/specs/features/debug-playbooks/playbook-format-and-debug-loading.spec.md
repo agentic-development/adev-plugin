@@ -10,14 +10,13 @@ charter-revision: 2
 created: 2026-04-24
 updated: 2026-04-24
 source-manifest:
-  sha: "54a8482"
+  sha: "c6ec42c"
   files:
     - skills/debug/SKILL.md
     - templates/debug-playbook-template.md
     - tests/skills/debug-playbook-loading.test.mjs
     - tests/templates/debug-playbook-template.test.mjs
-  computed-at: "2026-04-24T23:00:36.167Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.448Z"
 ---
 
 ## Behavioral Contract

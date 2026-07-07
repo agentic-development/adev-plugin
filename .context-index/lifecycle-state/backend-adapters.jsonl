@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"lib/issues/file-adapter.mjs","drift_at":"2026-05-12T00:31:48.524Z","ts":"2026-05-18T13:50:21.113Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.619Z","ts":"2026-07-03T22:27:11.619Z","diagnostic_warnings":["adev/frontmatter-present"]}

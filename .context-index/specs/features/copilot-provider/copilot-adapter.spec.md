@@ -9,7 +9,7 @@ charter-revision: 6
 created: 2026-05-19
 updated: 2026-05-19
 source-manifest:
-  sha: "4995177"
+  sha: "7a0dbe0"
   files:
     - .context-index/specs/features/cli/charter.md
     - cli/index.mjs
@@ -25,8 +25,7 @@ source-manifest:
     - tests/copilot-hook-config-rewriter.test.mjs
     - tests/copilot-skill-validator.test.mjs
     - tests/copilot-symlink-scanner.test.mjs
-  computed-at: "2026-05-19T20:22:00.045Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.438Z"
 ---
 
 # Live Spec: CopilotAdapter — install / uninstall / status

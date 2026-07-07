@@ -10,7 +10,7 @@ created: 2026-05-22
 updated: 2026-05-22
 charter-extension: true
 source-manifest:
-  sha: "4bef164"
+  sha: "ddf44f1"
   files:
     - .context-index/specs/cross-cutting/incremental-artifact-writes.spec.md
     - .gitignore
@@ -29,8 +29,7 @@ source-manifest:
     - tests/lib/gitignore-paths-dogfood.test.mjs
     - tests/lib/gitignore-paths.test.mjs
     - tests/lib/prototype-server.test.mjs
-  computed-at: "2026-05-22T13:12:27.680Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.330Z"
 ---
 
 <!-- partial_schema: spec@1 -->

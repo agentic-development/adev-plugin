@@ -1,2 +1,3 @@
 {"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-05-14T21:34:08.370Z","ts":"2026-05-18T13:48:57.266Z"}
 {"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-05-20T17:22:29.061Z","ts":"2026-05-20T17:22:29.061Z"}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.654Z","ts":"2026-07-03T22:27:11.654Z"}

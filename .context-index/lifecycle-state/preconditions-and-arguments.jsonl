@@ -6,3 +6,4 @@
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T23:43:54.086Z","ts":"2026-05-20T23:43:54.086Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:03:18.069Z","ts":"2026-05-20T13:03:18.069Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-05-20T13:05:52.981Z","ts":"2026-05-20T13:05:52.981Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.959Z","ts":"2026-07-03T22:27:11.959Z","diagnostic_warnings":["adev/frontmatter-present"]}

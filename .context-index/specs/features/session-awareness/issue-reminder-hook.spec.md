@@ -8,14 +8,13 @@ charter-revision: 2
 created: 2026-04-06
 updated: 2026-04-06
 source-manifest:
-  sha: "85a9e32"
+  sha: "0f45f4d"
   files:
     - hooks/issue-reminder.sh
     - hooks/issue-reminder.mjs
     - hooks/hooks.json
     - tests/hooks/issue-reminder.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.323Z"
 ---
 
 # Live Spec: Issue Reminder Hook

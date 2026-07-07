@@ -9,14 +9,13 @@ charter-revision: 3
 created: 2026-05-18
 updated: 2026-05-18
 source-manifest:
-  sha: "0d49109"
+  sha: "20e668c"
   files:
     - package.json
     - providers/cursor/hooks.json
     - scripts/build-cursor-hooks.mjs
     - tests/cursor-hooks-sync.test.mjs
-  computed-at: "2026-05-18T14:59:40.081Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.425Z"
 ---
 
 # Skill Spec: Hook Config Generator with Translation Table and Drift Test

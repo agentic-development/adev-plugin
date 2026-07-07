@@ -1,2 +1,3 @@
 {"event":"code_drift_detected","drift_source":"skills/codehealth/SKILL.md","drift_at":"2026-05-17T18:54:07.767Z","ts":"2026-05-18T13:50:21.084Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/hygiene/SKILL.md","drift_at":"2026-05-18T13:54:22.141Z","ts":"2026-05-18T13:54:22.141Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-03T22:27:11.957Z","ts":"2026-07-03T22:27:11.957Z","diagnostic_warnings":["adev/frontmatter-present"]}

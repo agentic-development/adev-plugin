@@ -11,14 +11,13 @@ created: 2026-05-14
 plan-ref: .context-index/specs/features/lifecycle-artifacts/brainstorm-kind-routing.plan.md
 
 source-manifest:
-  sha: "4358a4c"
+  sha: "8c7310a"
   files:
     - providers/codex/skills/brainstorm/SKILL.md
     - providers/opencode/skills/brainstorm/SKILL.md
     - skills/brainstorm/SKILL.md
     - tests/skills/brainstorm-kind-routing.test.mjs
-  computed-at: "2026-05-15T16:16:10.334Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.355Z"
 ---
 
 # Live Spec: `/adev:brainstorm` Kind Routing

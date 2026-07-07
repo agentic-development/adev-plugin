@@ -13,13 +13,12 @@ depends-on:
   - "workspace-aware-specify"
 tracker-ref: issue-71
 source-manifest:
-  sha: "443737f"
+  sha: "3c68fde"
   files:
     - skills/validate/SKILL.md
     - lib/workspace.mjs
     - tests/skills/validate-workspace-mode.test.mjs
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.454Z"
 ---
 
 # Live Spec: Workspace-Aware Validate

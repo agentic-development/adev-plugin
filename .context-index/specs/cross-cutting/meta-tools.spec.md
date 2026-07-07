@@ -19,10 +19,11 @@ affects:
   - maintenance
   - strategic-planning
 source-manifest:
+  sha: "be13188"
+  computed-at: "2026-07-03T22:28:53.288Z"
   files:
     - lib/meta-tools.mjs
     - tests/lib/meta-tools.test.mjs
-drift_detected: true
 ---
 
 ## Behavioral Contract

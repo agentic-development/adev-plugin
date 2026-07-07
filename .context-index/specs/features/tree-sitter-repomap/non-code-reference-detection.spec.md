@@ -10,7 +10,7 @@ charter-extension: true
 created: 2026-05-17
 updated: 2026-05-17
 source-manifest:
-  sha: "4fb0ecb"
+  sha: "531e3f5"
   files:
     - .context-index/manifest.yaml
     - .context-index/specs/features/tree-sitter-repomap/core-parser-pipeline.spec.md
@@ -25,8 +25,7 @@ source-manifest:
     - tests/repomap/public-api-entries.test.mjs
     - tests/repomap/rank.test.mjs
     - tests/repomap/render-non-code-sections.test.mjs
-  computed-at: "2026-05-17T19:00:21.169Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.441Z"
 ---
 
 # Live Spec: Non-Code Reference Detection

@@ -8,8 +8,7 @@ updated: 2026-04-27
 source-manifest:
   files:
     - skills/plan/SKILL.md
-  computed-at: "2026-05-10T23:51:01.456Z"
-drift_detected: true
+  computed-at: "2026-07-03T22:27:11.337Z"
 ---
 
 # Live Spec: Plan Infrastructure Requirements
