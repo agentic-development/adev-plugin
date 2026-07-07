@@ -2,3 +2,4 @@
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:03.900Z","ts":"2026-05-20T04:01:03.900Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:09.310Z","ts":"2026-05-20T04:01:09.310Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-05-20T04:01:41.407Z","ts":"2026-05-20T04:01:41.407Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-07T00:08:39.318Z","ts":"2026-07-07T00:08:39.318Z","diagnostic_warnings":["adev/frontmatter-present"]}

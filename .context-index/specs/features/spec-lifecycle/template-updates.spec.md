@@ -10,16 +10,15 @@ charter-revision: 1
 created: 2026-03-27
 updated: 2026-03-28
 source-manifest:
-  sha: "bf6c53c"
+  sha: "de2833d"
   files:
-    - templates/charter-template.md
-    - templates/live-spec-template.md
+    - templates/charter-template.feature.md
+    - templates/spec-template.behavioral.md
     - templates/manifest-template.yaml
     - cli/index.mjs
     - .githooks/prepare-commit-msg
     - .githooks/post-commit
-  computed-at: "2025-04-25T00:00:00.000Z"
-drift_detected: true
+  computed-at: "2026-07-07T00:08:39.367Z"
 ---
 
 ## Behavioral Contract

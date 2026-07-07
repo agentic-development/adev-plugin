@@ -23,3 +23,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.835Z","ts":"2026-05-20T17:21:19.835Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.158Z","ts":"2026-05-20T17:21:37.158Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-05-20T17:22:29.062Z","ts":"2026-05-20T17:22:29.062Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_cleared","drift_at":"2026-07-07T00:08:39.379Z","ts":"2026-07-07T00:08:39.379Z","diagnostic_warnings":["adev/frontmatter-present"]}
