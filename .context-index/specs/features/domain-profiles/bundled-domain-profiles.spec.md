@@ -6,7 +6,8 @@
 
 ---
 charter: domain-profiles
-status: validated
+status: superseded
+superseded-by: .context-index/specs/features/domain-extensions/bundled-templates-cleanup.spec.md
 risk_level: low
 milestone:
 revision: 6
@@ -36,7 +37,6 @@ source-manifest:
     - tests/domains/backward-compat.test.mjs
     - tests/domains/bundled-profiles.test.mjs
   computed-at: "2026-05-11T16:09:28.512Z"
-drift_detected: true
 ---
 
 ## Behavioral Contract

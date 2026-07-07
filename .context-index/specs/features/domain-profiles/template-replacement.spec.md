@@ -7,7 +7,8 @@
 
 ---
 charter: domain-profiles
-status: validated
+status: superseded
+superseded-by: .context-index/specs/features/domain-extensions/bundled-templates-cleanup.spec.md
 mode: refactor
 risk_level: medium
 milestone:
@@ -27,7 +28,6 @@ source-manifest:
     - templates/domains/software/charter-template.md
     - templates/domains/software/spec-template.md
   computedAt: "2026-05-11T00:29:38.436Z"
-drift_detected: true
 ---
 
 ## Current State
