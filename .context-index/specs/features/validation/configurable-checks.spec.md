@@ -14,18 +14,18 @@ depends-on:
   - .context-index/specs/cross-cutting/execution-profiles.md
   - .context-index/specs/features/unified-gates/unified-gate-system.md
 source-manifest:
+  sha: "3a013d9"
   files:
     - lib/governance/validate-config.mjs
     - lib/governance/quality-gate.mjs
     - lib/governance/context-pack.mjs
     - skills/validate/SKILL.md
-    - templates/validate/defaults.yaml
-  computed-at: "2026-05-10T23:51:35.315Z"
+    - templates/domains/software/validate.yaml
+  computed-at: "2026-07-07T00:08:39.384Z"
 superseded-by-behaviors:
   - validate-config-single-source.spec.md#behavior-1
   - validate-config-single-source.spec.md#behavior-2
   - validate-config-single-source.spec.md#behavior-5
-drift_detected: true
 ---
 
 
