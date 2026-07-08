@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 125,
+  "seq": 126,
   "epics": [
     {
       "id": "epic-1",
@@ -3825,6 +3825,19 @@
       "next_action": "Run /adev:review-specs --module worktree-parallelization",
       "created": "2026-07-08T01:24:56.118Z",
       "updated": "2026-07-08T01:24:56.118Z"
+    },
+    {
+      "id": "issue-548",
+      "title": "Equivalence Eval",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/worktree-parallelization/equivalence-eval.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/worktree-parallelization/equivalence-eval.spec.md. Load-bearing parallel≡serial gate. Created by /adev:specify on 2026-07-08.",
+      "next_action": "Run /adev:review-specs --module worktree-parallelization",
+      "created": "2026-07-08T10:44:24.636Z",
+      "updated": "2026-07-08T10:44:24.636Z"
     }
   ]
 }
