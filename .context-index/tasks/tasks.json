@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 126,
+  "seq": 127,
   "epics": [
     {
       "id": "epic-1",
@@ -765,6 +765,14 @@
       "planRef": ".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md",
       "created": "2026-07-08T01:53:53.043Z",
       "updated": "2026-07-08T01:53:53.043Z"
+    },
+    {
+      "id": "epic-100",
+      "title": "Equivalence Eval",
+      "status": "open",
+      "planRef": ".context-index/specs/features/worktree-parallelization/equivalence-eval.plan.md",
+      "created": "2026-07-08T11:01:52.629Z",
+      "updated": "2026-07-08T11:01:52.629Z"
     }
   ],
   "issues": [
