@@ -1,12 +1,32 @@
 ---
 charter: worktree-parallelization
 kind: behavioral
-status: review-passed
+status: implemented
 milestone: v1
 revision: 2
 charter-revision: 2
 created: 2026-07-07
 updated: 2026-07-07
+source-manifest:
+  sha: "abc9600"
+  files:
+    - cli/index.mjs
+    - lib/cli/parallel.mjs
+    - lib/parallel/baseline.mjs
+    - lib/parallel/config.mjs
+    - lib/parallel/gitignore.mjs
+    - lib/parallel/groups.mjs
+    - lib/parallel/verify.mjs
+    - lib/worktree.mjs
+    - skills/implement/SKILL.md
+    - tests/cli/parallel.test.mjs
+    - tests/lib/parallel/baseline.test.mjs
+    - tests/lib/parallel/config.test.mjs
+    - tests/lib/parallel/gitignore.test.mjs
+    - tests/lib/parallel/groups.test.mjs
+    - tests/lib/parallel/verify.test.mjs
+    - tests/skills/implement-parallel.test.mjs
+  computed-at: "2026-07-08T02:16:32.325Z"
 ---
 
 # Live Spec: Parallel Implement
