@@ -95,6 +95,15 @@ describe("lib/worktree", () => {
       assert.equal(git(["branch", "--show-current"], res.path), "adev/grp-a");
     });
 
+    it("rejects a dash-prefixed baseRef (argument-injection hardening, SEC-1)", () => {
+      assert.throws(
+        () => add({ slug: "grp-inj", baseRef: "--foo", cwd: repo }),
+        (e) => e instanceof WorktreeError && e.code === "INVALID_BASEREF",
+      );
+      // and no worktree/branch was created for the rejected slug
+      assert.equal(list({ cwd: repo }).find((w) => w.slug === "grp-inj"), undefined);
+    });
+
     it("is idempotent — re-add returns created:false", () => {
       const res = add({ slug: "grp-a", cwd: repo });
       assert.equal(res.created, false);
