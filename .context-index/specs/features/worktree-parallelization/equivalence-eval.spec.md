@@ -1,12 +1,26 @@
 ---
 charter: worktree-parallelization
 kind: behavioral
-status: review-passed
+status: implemented
 milestone: v1
 revision: 2
 charter-revision: 2
 created: 2026-07-08
 updated: 2026-07-08
+source-manifest:
+  sha: "dd75314"
+  files:
+    - lib/parallel/eval/divergence.mjs
+    - lib/parallel/eval/report.mjs
+    - lib/parallel/eval/state-check.mjs
+    - tests/evals/worktree-parallelization/fixture/example.plan.md
+    - tests/evals/worktree-parallelization/run-ab-eval.mjs
+    - tests/evals/worktree-parallelization/run-ab-eval.smoke.test.mjs
+    - tests/lib/parallel/eval/divergence.test.mjs
+    - tests/lib/parallel/eval/fixture.test.mjs
+    - tests/lib/parallel/eval/report.test.mjs
+    - tests/lib/parallel/eval/state-check.test.mjs
+  computed-at: "2026-07-08T11:17:20.645Z"
 ---
 
 # Live Spec: Equivalence Eval
