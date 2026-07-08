@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 124,
+  "seq": 125,
   "epics": [
     {
       "id": "epic-1",
@@ -757,6 +757,14 @@
       "planRef": ".context-index/specs/features/extensions/skill-extension-install.plan.md",
       "created": "2026-05-26T00:41:16.535Z",
       "updated": "2026-05-26T00:41:16.535Z"
+    },
+    {
+      "id": "epic-99",
+      "title": "Parallel Implement",
+      "status": "open",
+      "planRef": ".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md",
+      "created": "2026-07-08T01:53:53.043Z",
+      "updated": "2026-07-08T01:53:53.043Z"
     }
   ],
   "issues": [
