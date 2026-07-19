@@ -108,10 +108,10 @@ the result.
 |-----------|-------------|----------|-------|--------|
 | worktree-primitive | adev-managed worktree add/list/merge/remove/guard — main-root-anchored, slug-safe, conflict-aborting | must-have | v1 | review-passed |
 | worktree-cli-verb | `adev worktree` CLI surface: JSON stdout, exit codes 0/1 | must-have | v1 | review-passed |
-| parallel-implement | `/adev:implement --parallel` consumes plan `## Parallelization` groups; runs disjoint groups in worktrees; merges back | must-have | v1 | implemented |
-| merge-back-semantics | conflict detection/abort, merge ordering, partial-failure isolation (retain failed, merge successes) | must-have | v1 | implemented |
+| parallel-implement | `/adev:implement --parallel` consumes plan `## Parallelization` groups; runs disjoint groups in worktrees; merges back | must-have | v1 | validated |
+| merge-back-semantics | conflict detection/abort, merge ordering, partial-failure isolation (retain failed, merge successes) | must-have | v1 | validated |
 | serial-fallback | detect nesting; degrade to serial with a stated reason | must-have | v1 | review-passed |
-| equivalence-eval | A/B serial-vs-parallel eval (adev 4-layer harness) proving result equivalence is the ship gate | should-have | v1 | implemented |
+| equivalence-eval | A/B serial-vs-parallel eval (adev 4-layer harness) proving result equivalence is the ship gate | should-have | v1 | validated |
 | parallel-build-milestone | `/adev:build --milestone` builds dependency-independent specs in parallel worktrees | should-have | v2 | — |
 
 ## Deferred Capabilities

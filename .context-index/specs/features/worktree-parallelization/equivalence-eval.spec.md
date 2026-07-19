@@ -1,7 +1,7 @@
 ---
 charter: worktree-parallelization
 kind: behavioral
-status: implemented
+status: validated
 milestone: v1
 revision: 2
 charter-revision: 2
