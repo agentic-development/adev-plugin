@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main, 'release/0.x']
+    branches: [main, 'release/0.x', 'release/next']
 
 permissions:
   contents: write
@@ -23,6 +23,9 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # Without this, release-please targets the repo default branch (main)
+          # even when triggered by a push to release/0.x or release/next.
+          target-branch: ${{ github.ref_name }}
 
   publish:
     needs: release-please
@@ -52,11 +55,11 @@ jobs:
       - name: Determine npm dist-tag
         id: dist-tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=legacy" >> "$GITHUB_OUTPUT"
-          fi
+          case "${{ github.ref_name }}" in
+            main)         echo "tag=latest" >> "$GITHUB_OUTPUT" ;;
+            release/next) echo "tag=next"   >> "$GITHUB_OUTPUT" ;;
+            *)            echo "tag=legacy" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       - name: Publish to npm
         # NPM_TOKEN must be a valid automation or granular access token with publish
