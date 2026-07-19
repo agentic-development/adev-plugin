@@ -104,7 +104,9 @@ In particular:
 
 The Agent tool only accepts a `prompt` string — there are no env vars, JSON params, or other channels. All context the subagent needs must be serialized into the prompt. The orchestrator assembles a **context packet** per step with two sections: **pipeline context** (common to all steps) and **step context** (specific to each step).
 
-**Do not pass `isolation: "worktree"` on the `Agent({...})` call.** Build's five steps are serial and share the orchestrator's working tree by design. From inside an existing worktree (i.e., `cwd` contains `.claude/worktrees/`), worktree isolation creates a new worktree *inside* the parent's tree; the parent then captures it as untracked content under `.claude/worktrees/`, and every subsequent dispatch nests another level. Pass only `description` and `prompt`.
+**Do not pass `isolation: "worktree"` on the `Agent({...})` call.** Build's five steps are serial and share the orchestrator's working tree by design. From inside an existing worktree (i.e., `cwd` contains `.claude/worktrees/`), worktree isolation creates a new worktree *inside* the parent's tree; the parent then captures it as untracked content under `.claude/worktrees/`, and every subsequent dispatch nests another level. Pass only `description`, `prompt`, and `run_in_background: false`.
+
+**Always pass `run_in_background: false` on the `Agent({...})` call.** The harness backgrounds Agent dispatches by default: the call returns immediately with a task ID and the caller is only re-invoked by a completion notification. That notification path is reliable only at the top level of a session — inside a nested subagent context it does not re-invoke the caller, so a backgrounded dispatch stalls the pipeline (field-observed as build steps that auto-background and never return a STEP_RESULT). Synchronous dispatch returns the subagent's final report directly in the tool result, which is what the STEP_RESULT protocol below requires.
 
 #### Pipeline Context (included in every step's prompt)
 
@@ -284,7 +286,7 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
 
    If no `.partial` exists for the step, proceed normally.
 
-4. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step. Wait for its STEP_RESULT.
+4. **Dispatch ONE subagent.** Dispatch exactly one subagent via the Agent tool for the determined step, always with `run_in_background: false` (see Subagent Dispatch Model). Wait for its STEP_RESULT.
 
 5. **Record result. (MANDATORY — this step uses a programmatic helper to prevent skipping.)**
 
@@ -378,6 +380,7 @@ Emit a matching `reportStep` exit (`status: "completed"`) immediately after the 
 ```
 Agent({
   description: "Build Step 0: Specify <spec-name>",
+  run_in_background: false,
   prompt: <subagent prompt template with skill="adev:specify" args="--spec <path>">
 })
 ```
@@ -400,6 +403,7 @@ Stop the build. Do not proceed to plan.
 ```
 Agent({
   description: "Build Step 1: Review <spec-name>",
+  run_in_background: false,
   prompt: <subagent prompt template with skill="adev:review-specs" args="--spec <path>">
 })
 ```
@@ -475,6 +479,7 @@ When `--full` is NOT set: review BLOCK stops the build immediately (no auto-retr
 ```
 Agent({
   description: "Build Step 2: Plan <spec-name>",
+  run_in_background: false,
   prompt: <subagent prompt template with skill="adev:plan" args="--spec <path>">
 })
 ```
@@ -492,6 +497,7 @@ Agent({
 ```
 Agent({
   description: "Build Step 3: Route <spec-name>",
+  run_in_background: false,
   prompt: <subagent prompt template with skill="adev:route" args="--plan <plan-path>">
 })
 ```
@@ -511,6 +517,7 @@ When `--no-infra` is passed to build, set `ADEV_NO_INFRA=1` in the environment f
 ```
 Agent({
   description: "Build Step 4: Implement <spec-name>",
+  run_in_background: false,
   prompt: <subagent prompt template with skill="adev:implement" args="<plan-path>">
 })
 ```
@@ -530,6 +537,7 @@ This is the longest-running step. The implement skill manages TDD loops, special
 ```
 Agent({
   description: "Build Step 5: Validate <spec-name>",
+  run_in_background: false,
   prompt: <subagent prompt template with skill="adev:validate" args="--spec <path> --plan <plan-path>">
 })
 ```
