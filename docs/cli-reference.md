@@ -53,6 +53,8 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `heuristics` | Extract/retrieve/write project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
+| `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
+| `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
 
 ---
 
@@ -453,6 +455,33 @@ adev cost summary --spec .context-index/specs/features/auth/login.spec.md --form
 ```
 
 **Implementation:** `lib/cli/cost.mjs`. **Called by:** `/adev:build`.
+
+### `worktree`
+
+**Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
+
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+
+**Example:**
+```
+adev worktree add --slug login-group-a
+adev worktree remove --slug login-group-a --force
+```
+
+**Implementation:** `lib/cli/worktree.mjs`. **Called by:** `/adev:implement --parallel`.
+
+### `parallel`
+
+**Purpose:** Decision helpers for the `/adev:implement --parallel` orchestration — group parsing and deterministic merge order, orchestrator-pollution assertion, per-group completeness verification, the concurrency cap, and re-run collision detection. The skill orchestrates; these verbs compute the checks.
+
+**Signature:** `parallel <groups|baseline|assert-clean|verify|max-parallel|collision> [flags]` — e.g. `parallel groups --plan <path>`, `parallel baseline`, `parallel assert-clean --base-head <sha>`, `parallel verify --branch <b> --base <sha> --tasks <ids> --done <ids>`, `parallel collision --slug <slug>`.
+
+**Example:**
+```
+adev parallel groups --plan .context-index/specs/features/auth/login.plan.md
+```
+
+**Implementation:** `lib/cli/parallel.mjs`. **Called by:** `/adev:implement --parallel`.
 
 ---
 
