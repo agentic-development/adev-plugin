@@ -66,6 +66,19 @@ brainstorm --> specify --> review --> plan --> implement --> validate
 
 The diagram above shows the core path; two optional steps sit alongside it — **route** (after plan: scores each task as auto / assisted / human-only) and **eval** (after validate: graduated 0–100 quality scoring). This lifecycle is not rigid — you can enter at any point, skip phases for simple changes, or iterate within a phase. But for new features, following the full lifecycle produces the most reliable results.
 
+### The Front Door: `/adev:work`
+
+You do not have to memorize which skill to run at each step. `/adev:work` is the **single front door and conductor** — run it when you are unsure where to start or what comes next. It scans lifecycle state and either classifies new work and routes it to the right skill, or, when work is already underway, projects the next lifecycle step and can advance the pipeline for you (`/adev:work continue`). It is the manual counterpart to the fully-automated `/adev:build` orchestrator: `/adev:work` keeps you in the loop between steps, while `/adev:build` runs the whole pipeline hands-off.
+
+## Graduated Rigor Tiers
+
+Not every change deserves the same depth of review. adev's review and validation gates support two **rigor tiers** so low-risk work moves fast without ever *skipping* a gate:
+
+- **`full`** (default) — the complete treatment. `/adev:review-specs` dispatches its three parallel specialists (structural, security, consistency); `/adev:validate` runs the full check suite.
+- **`quick`** — a narrowed pass for low-blast-radius, high-pattern-coverage work. `/adev:review-specs` dispatches a single synthesized reviewer instead of three; `/adev:validate` runs a trimmed check set. Crucially, `quick` **still produces the gate's artifact and emits its lifecycle event** — it narrows breadth, it does not bypass governance. The gate chain downstream is satisfied exactly as it is under `full`.
+
+The tier is resolved by precedence: an explicit `--tier full|quick` flag wins, then a routing signal (`/adev:route`, `/adev:work`, or `/adev:build` may propagate `--tier quick` for work it scored as "easy"), then a per-risk-level policy in `governance/risk-policies.yaml`, defaulting to `full`. This keeps Gate-Based Governance intact — every stage still runs — while letting the framework spend reviewer effort where the risk actually is.
+
 ## Output Personas
 
 adev adapts its communication style on **two orthogonal axes**: a **persona** that controls the audience pitch (who is reading), and a **verbosity** dial that controls how much detail lands in chat (how much they need to see). Neither axis changes what the framework does — they change how it talks to you. Artifacts written to disk (validation reports, review files, plans) always use the full technical format regardless of either axis.
