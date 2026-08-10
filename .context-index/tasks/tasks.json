@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 122,
+  "seq": 127,
   "epics": [
     {
       "id": "epic-1",
@@ -757,6 +757,22 @@
       "planRef": ".context-index/specs/features/extensions/skill-extension-install.plan.md",
       "created": "2026-05-26T00:41:16.535Z",
       "updated": "2026-05-26T00:41:16.535Z"
+    },
+    {
+      "id": "epic-99",
+      "title": "Parallel Implement",
+      "status": "open",
+      "planRef": ".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md",
+      "created": "2026-07-08T01:53:53.043Z",
+      "updated": "2026-07-08T01:53:53.043Z"
+    },
+    {
+      "id": "epic-100",
+      "title": "Equivalence Eval",
+      "status": "open",
+      "planRef": ".context-index/specs/features/worktree-parallelization/equivalence-eval.plan.md",
+      "created": "2026-07-08T11:01:52.629Z",
+      "updated": "2026-07-08T11:01:52.629Z"
     }
   ],
   "issues": [
@@ -3791,6 +3807,45 @@
       "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/universal-skill-extensions.spec.md",
       "created": "2026-05-30T15:20:11.084Z",
       "updated": "2026-05-30T17:19:00.914Z"
+    },
+    {
+      "id": "issue-546",
+      "title": "Worktree Primitive",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/worktree-parallelization/worktree-primitive.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/worktree-parallelization/worktree-primitive.spec.md. Created by /adev:specify on 2026-07-07.",
+      "next_action": "Run /adev:review-specs --module worktree-parallelization",
+      "created": "2026-07-08T01:03:20.959Z",
+      "updated": "2026-07-08T01:03:20.959Z"
+    },
+    {
+      "id": "issue-547",
+      "title": "Parallel Implement",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/worktree-parallelization/parallel-implement.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/worktree-parallelization/parallel-implement.spec.md. Created by /adev:specify on 2026-07-07.",
+      "next_action": "Run /adev:review-specs --module worktree-parallelization",
+      "created": "2026-07-08T01:24:56.118Z",
+      "updated": "2026-07-08T01:24:56.118Z"
+    },
+    {
+      "id": "issue-548",
+      "title": "Equivalence Eval",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "spec_ref": ".context-index/specs/features/worktree-parallelization/equivalence-eval.spec.md",
+      "dependencies": [],
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/worktree-parallelization/equivalence-eval.spec.md. Load-bearing parallel≡serial gate. Created by /adev:specify on 2026-07-08.",
+      "next_action": "Run /adev:review-specs --module worktree-parallelization",
+      "created": "2026-07-08T10:44:24.636Z",
+      "updated": "2026-07-08T10:44:24.636Z"
     }
   ]
 }
