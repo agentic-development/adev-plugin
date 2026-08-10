@@ -1,0 +1,11 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-07-08T01:03:05.515Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-07-08T01:03:05.607Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-07-08T01:27:13.119Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PASS_WITH_NOTES; see .review.md","ts":"2026-07-08T01:31:42.869Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PASS_WITH_NOTES; see .review.md","ts":"2026-07-08T01:31:42.872Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PASS_WITH_NOTES; see .review.md","ts":"2026-07-08T01:31:42.873Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-07-08T01:31:42.981Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-07-08T01:41:46.415Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev2 warnings resolved","ts":"2026-07-08T01:43:42.784Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev2 warnings resolved","ts":"2026-07-08T01:43:42.791Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-07-08T01:43:42.912Z"}
