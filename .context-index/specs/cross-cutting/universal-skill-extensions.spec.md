@@ -76,6 +76,7 @@ affects:
   - setup
   - eval-projects
 infra_requirements: none
+drift_detected: true
 ---
 
 # Live Spec: Universal Skill Extensions

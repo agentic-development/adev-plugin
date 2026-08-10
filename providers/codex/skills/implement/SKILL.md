@@ -406,7 +406,11 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
-Dispatch the subagent with a bare `Agent({description, prompt})`. **Do not pass `isolation: "worktree"`.** Implement runs tasks serially against the orchestrator's branch; the subagent must write to the same working tree. From inside an existing worktree (`cwd` contains `.claude/worktrees/`), worktree isolation nests a new worktree inside the parent — the parent then captures it as untracked `.claude/worktrees/agent-<id>/` content, and every per-task dispatch adds another level (8+ deep observed in field reports). Subagents that commit also defeat the harness's auto-cleanup contract, leaving the nested trees on disk forever.
+Dispatch the subagent with `Agent({description, prompt, run_in_background: false})` and nothing else.
+
+**Always pass `run_in_background: false`.** The harness backgrounds Agent dispatches by default: the call returns immediately with a task ID and the caller is only re-invoked by a completion notification. That notification path is reliable only at the top level of a session — inside a nested subagent context (implement usually runs as a build-step subagent) it does not re-invoke the caller, so a backgrounded dispatch stalls the task loop (field-observed as implement subagents that auto-background and never report a status). This applies to **every** subagent dispatch in this skill: implementer, write-test, spec reviewer, code quality reviewer, visual verifier, and final reviewer.
+
+**Do not pass `isolation: "worktree"`.** Implement runs tasks serially against the orchestrator's branch; the subagent must write to the same working tree. From inside an existing worktree (`cwd` contains `.claude/worktrees/`), worktree isolation nests a new worktree inside the parent — the parent then captures it as untracked `.claude/worktrees/agent-<id>/` content, and every per-task dispatch adds another level (8+ deep observed in field reports). Subagents that commit also defeat the harness's auto-cleanup contract, leaving the nested trees on disk forever.
 
 Handle the returned status:
 
