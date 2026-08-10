@@ -1,0 +1,38 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-07-08T01:24:55.928Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-07-08T01:24:56.019Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-07-08T01:27:13.249Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PASS_WITH_NOTES; see .review.md","ts":"2026-07-08T01:31:42.880Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PASS_WITH_NOTES; see .review.md","ts":"2026-07-08T01:31:42.881Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"PASS_WITH_NOTES; see .review.md","ts":"2026-07-08T01:31:42.882Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-07-08T01:31:43.066Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-07-08T01:41:46.485Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev2 warnings resolved","ts":"2026-07-08T01:43:42.800Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev2 warnings resolved","ts":"2026-07-08T01:43:42.804Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-07-08T01:43:43.007Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-07-08T01:49:21.381Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.975Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.980Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.980Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"4","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.981Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"5","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.982Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"6","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.982Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"7","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.983Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"8","status":"pending","notes":null,"ts":"2026-07-08T01:53:52.983Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-07-08T01:53:53.142Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-07-08T01:56:39.023Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"1","status":"done","notes":"groups parser + merge order","ts":"2026-07-08T01:57:37.390Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"2","status":"done","notes":"baseline record + pollution assert","ts":"2026-07-08T01:58:29.295Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"3","status":"done","notes":"per-task completeness verify","ts":"2026-07-08T01:59:45.917Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"4","status":"done","notes":"max_parallel clamp + rerun collision","ts":"2026-07-08T02:00:33.197Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"7","status":"done","notes":"baseRef hardening","ts":"2026-07-08T02:01:29.721Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"8","status":"done","notes":"managed gitignore block","ts":"2026-07-08T02:02:07.909Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"5","status":"done","notes":"adev parallel CLI verb","ts":"2026-07-08T02:03:15.121Z"}
+{"event":"plan_task","plan":".context-index/specs/features/worktree-parallelization/parallel-implement.plan.md","task_id":"6","status":"done","notes":"--parallel orchestration prose","ts":"2026-07-08T02:05:04.911Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-07-08T02:16:14.119Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-07-19T12:07:26.379Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS","ts":"2026-07-19T12:09:00.010Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS","ts":"2026-07-19T12:09:00.077Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","ts":"2026-07-19T12:09:00.143Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","ts":"2026-07-19T12:09:00.209Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","ts":"2026-07-19T12:09:00.274Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-07-19T12:09:00.360Z"}
