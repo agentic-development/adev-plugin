@@ -35,6 +35,18 @@ The CLI will prompt you to select your AI coding assistant. Choose the one you u
 
 The installer registers the plugin, scaffolds a minimal `.context-index/` directory, and configures git hooks for provenance tracking.
 
+### Pre-release channel (`@next`)
+
+Fixes and features land on the `next` npm dist-tag before they reach a stable release. To install the pre-release build:
+
+```bash
+npx @adev-org/adev-cli@next install
+```
+
+Pre-release versions look like `0.28.0-next.N` and are cut from the `release/next` branch. They pass the full test suite but may include changes that have not yet shipped in a stable release. To return to stable, re-run the installer without the tag (`npx @adev-org/adev-cli install`) and remove any stale plugin cache versions.
+
+Maintainers: see [Releasing](releasing.md) for how these channels are cut and published.
+
 ## Domain Extension Picker
 
 After the provider and scaffold steps, the installer presents a single prompt to pick a domain profile:
