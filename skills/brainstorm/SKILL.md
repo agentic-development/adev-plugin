@@ -638,3 +638,9 @@ charter is not edited here.
 - **Charter, not code.** The charter defines WHAT, not HOW. No implementation details or code examples.
 - **Incremental validation.** Present each section, get approval, then move on.
 - **Existing work matters.** Always check existing charters, ADRs, and cross-cutting specs for conflicts.
+
+## Next Step in the Lifecycle
+
+Charter approved and written. The next step is **`/adev:specify`** — author Live Specs within this charter's scope.
+
+If you arrived here via `/adev:work` (the front door), offer to continue automatically: *"Charter ready. Continue to `/adev:specify`?"* Otherwise, name this as the next step. The user can always stop here.

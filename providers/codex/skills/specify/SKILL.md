@@ -1081,3 +1081,9 @@ Issue board:
 Manifest:
 
 - `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
+
+## Next Step in the Lifecycle
+
+Spec authored. The next step is **`/adev:review-specs`** — architecture review before planning.
+
+If invoked via `/adev:work`, offer to continue: *"Spec ready. Continue to `/adev:review-specs`?"* The user can stop here.

@@ -795,3 +795,9 @@ Issue board:
 Manifest:
 
 - `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
+
+## Next Step in the Lifecycle
+
+Implementation complete. The next step is **`/adev:validate`** — post-implementation checks against the spec and constitution.
+
+If invoked via `/adev:work`, offer to continue: *"Implementation done. Continue to `/adev:validate`?"* The user can stop here.
