@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.27.9-next](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.8...adev-cli-v0.27.9-next) (2026-08-10)
+
+
+### Features
+
+* add worktree-parallelization feature charter ([f9e2231](https://github.com/agentic-development/adev-plugin/commit/f9e2231035a5d36bebda35f0a3d6993e83888cad))
+* **governance:** graduated rigor tiers for review and validate gates ([bdb52cb](https://github.com/agentic-development/adev-plugin/commit/bdb52cb14204cdbb91afd1bc55d6673f96f4cfe0))
+* make /adev:work the single front door and conductor ([bfbcd15](https://github.com/agentic-development/adev-plugin/commit/bfbcd15860c8c29b0444188ff4568a45e062b532))
+* **skills:** deep-wire conductor continue path and next-step chaining ([5021df2](https://github.com/agentic-development/adev-plugin/commit/5021df2935ec0ce9c17bcb2300c66f7a5b8aff0c))
+* **skills:** make /adev:work the single front door and conductor ([b0d0252](https://github.com/agentic-development/adev-plugin/commit/b0d0252cf1f76b58d6bd2c8efef93315cbcbace5))
+* **worktree:** /adev:implement --parallel orchestration prose ([c415afd](https://github.com/agentic-development/adev-plugin/commit/c415afd83b24c2eb74259b8c2eb3182fcb723b9d))
+* **worktree:** 3-arm equivalence eval harness (run-ab-eval) ([b27c9c1](https://github.com/agentic-development/adev-plugin/commit/b27c9c15d4c9ca4af4341441f516090bb4a72e6b))
+* **worktree:** adev parallel CLI verb wiring the orchestration helpers ([39035d9](https://github.com/agentic-development/adev-plugin/commit/39035d9c612b51e1d4628233af9c646c180f7ee2))
+* **worktree:** adev-managed git worktrees for parallel isolated execution ([409f2b3](https://github.com/agentic-development/adev-plugin/commit/409f2b3e2d2874c6076ba670b9b7b4a7353b41a0))
+* **worktree:** adev-managed worktrees + /adev:implement --parallel + equivalence eval ([8dbc8f7](https://github.com/agentic-development/adev-plugin/commit/8dbc8f70bdfcf2906303fdcf3987c8d37dc7cd08))
+* **worktree:** equivalence divergence comparator + determinism gate ([978d78e](https://github.com/agentic-development/adev-plugin/commit/978d78e5a7d8925215972d4c6441d37e260d10f2))
+* **worktree:** eval group-selection + orphaned-state checks ([057358f](https://github.com/agentic-development/adev-plugin/commit/057358f7f2cdcc2e605b62315edb5f0d574a82d9))
+* **worktree:** eval results renderer + rubric scoring ([feacf98](https://github.com/agentic-development/adev-plugin/commit/feacf98f830cd863c639105d85d49171eb2b7f59))
+* **worktree:** managed .adev/worktrees git-ignore block ([59a94f0](https://github.com/agentic-development/adev-plugin/commit/59a94f0770429a116211177dd4f54dd4874b0c7c))
+* **worktree:** max_parallel clamp + rerun-collision detection (SEC-2, SEC-5) ([fb95c4e](https://github.com/agentic-development/adev-plugin/commit/fb95c4e90fe2da8337049553caba0b959bca97fb))
+* **worktree:** orchestrator baseline record + pollution assertion (SA-2) ([5c8e089](https://github.com/agentic-development/adev-plugin/commit/5c8e0896f1306368ae7de12e8353bba4f9103d39))
+* **worktree:** parse Parallelization groups + deterministic merge order ([c9ae3aa](https://github.com/agentic-development/adev-plugin/commit/c9ae3aafa244792f95fc2946e296e95523a954ab))
+* **worktree:** per-task completeness verification for parallel groups (SA-1) ([c9d2f24](https://github.com/agentic-development/adev-plugin/commit/c9d2f2400693d553606789dbf014f8fb242f4e8c))
+
+
+### Bug Fixes
+
+* **implement:** parallel dispatch must be synchronous single-message; wire --fresh ([9f6d232](https://github.com/agentic-development/adev-plugin/commit/9f6d232365c35d2ab445d87de46f5446ca60f4e7))
+* **lib:** parseFrontmatter drops frontmatter when a marker/heading precedes the fence ([eb0a948](https://github.com/agentic-development/adev-plugin/commit/eb0a948c11abad097f563a454be8361b1ff6d3c8))
+* **lib:** parseFrontmatter drops frontmatter when a marker/heading precedes the fence ([e160bce](https://github.com/agentic-development/adev-plugin/commit/e160bcef99823fd27a73485e9746a00d2617bbe3))
+* **review-specs:** pin run_in_background:false on quick-tier reviewer dispatch ([4fe2f18](https://github.com/agentic-development/adev-plugin/commit/4fe2f1813a04749dd40f6d8080a016beb516ca9a))
+* **skills:** pin run_in_background:false on all Agent dispatches ([ef856f1](https://github.com/agentic-development/adev-plugin/commit/ef856f1bb3701c656eb275a653a601f741ed48d0))
+* **skills:** pin run_in_background:false on all Agent dispatches ([ef84d91](https://github.com/agentic-development/adev-plugin/commit/ef84d9184f73674a1451087560897e9c72fd7fa0))
+* **worktree:** harden baseRef against git argument injection (SEC-1) ([728db1e](https://github.com/agentic-development/adev-plugin/commit/728db1e2a2e6b528c7072a81779d76e756942fd0))
+
 ## [0.27.8](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.7...adev-cli-v0.27.8) (2026-06-23)
 
 
