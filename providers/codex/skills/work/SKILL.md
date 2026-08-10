@@ -1,13 +1,18 @@
 ---
 name: adev:work
-description: "Pre-lifecycle triage that classifies incoming work and routes to the correct /adev:* skill. Scans for in-progress plans, unreviewed specs, and recent sessions before classifying. Use when the user says 'I need to work on something', 'what should I work on', 'what should I do', 'I have a bug', 'implement the feature', or any time the user is unsure which adev skill to invoke. In Codex, invoke with $adev:work"
+description: "The single front door to adev. Classifies incoming work, reads in-progress project state, routes to the right lifecycle skill, and can drive the whole lifecycle end-to-end so the user never has to pick another command. Use whenever the user is unsure which skill to use, wants to start new work, resume in-progress work, or says 'what should I do', 'I need to work on something', 'help me get started', 'build X', 'fix this', 'where do I start'. In Codex, invoke with $adev:work"
 ---
 
-# Work Triage and Routing
+# Work — the Single Front Door
 
-Classify incoming work, detect in-progress project state, and route to the correct `/adev:*` skill. This is the universal entry point — use it when you are unsure which skill to invoke.
+Classify incoming work, detect in-progress project state, route to the correct `/adev:*` skill, and — when the user wants — **drive the lifecycle through to completion** so they never have to choose another command. This is the single entry point to adev: use it whenever the user is unsure which skill to invoke, is starting new work, or is resuming.
 
-**Announce at start:** "I'm using the adev:work skill to triage your work and route to the right skill."
+Two things distinguish this skill from a plain router:
+
+1. **It reads state first.** It resumes in-progress work by proposing the *next* lifecycle step, not by re-asking what to do.
+2. **It stays with the work (Conductor Mode).** After a stage completes it proposes — or drives — the next stage, instead of dropping the user back to an empty prompt. See "Conductor Mode" below.
+
+**Announce at start:** "I'm using the adev:work skill as your front door — I'll figure out the right step and can drive it through."
 
 ## Arguments
 
@@ -38,16 +43,16 @@ Scan for in-progress work using **parallel** tool calls in a single round:
 
 ### If in-progress work is found
 
-Surface it before classification:
+Surface it, and **propose the concrete next step** — not just "resume?". For each in-progress item, compute its next lifecycle action using the Next-Step Projection table (Step 3), then lead with the single most relevant one:
 
 > I found in-progress work:
-> - **hooks** plan: 3/7 tasks incomplete
-> - **design** spec `drag-drop.md`: unreviewed
+> - **hooks** plan: 3/7 tasks incomplete → next: **`/adev:implement`** (continue the plan)
+> - **design** spec `drag-drop.md`: specified but unreviewed → next: **`/adev:review-specs`**
 > - Recent session (2026-03-28): "Implemented auth login flow"
 >
-> Want to resume one of these, or start something new?
+> Want me to continue with `/adev:implement` on **hooks**, pick another, or start something new?
 
-Wait for the user's response before proceeding.
+Wait for the user's response before proceeding. If the user says "continue", "resume", "what's next", or gives no new description, route directly to the projected next step for the most recently active item (see Step 3) — do not re-ask what to work on.
 
 ### If no in-progress work is found
 
@@ -72,17 +77,36 @@ If the user provided a description (as an argument, or in response to the state 
 
 ### Work Type Classification Table
 
-| Slug | Signal Keywords / Patterns | Target Skill |
-|------|---------------------------|-------------|
-| `new-feature` | "new feature", "add capability", "build", "I want to create" | `/adev:brainstorm` |
-| `new-spec` | "write a spec", "specify", "define behavior for" + existing charter | `/adev:specify` |
-| `update-spec` | "update the spec", "change the spec", "revise" + existing spec reference | `/adev:specify --module <module>` |
-| `review` | "review specs", "architecture review", "are the specs ready" | `/adev:review-specs` |
-| `plan` | "plan the work", "break into tasks", "create tasks" + reviewed spec reference | `/adev:plan` |
-| `implement` | "implement", "start coding", "build the plan" + existing plan reference | `/adev:implement` |
-| `bug-fix` | "bug", "broken", "failing test", "error", "not working" | `/adev:debug` |
-| `refactor` | "refactor", "clean up", "tech debt", "restructure" | `/adev:specify --refactor` |
-| `maintenance` | "audit", "staleness", "drift", "hygiene", "context health" | `/adev:hygiene` |
+This table covers the full skill surface — route any intent to exactly one target. Grouped by lifecycle area; the first several rows are the common path.
+
+| Intent | Signal Keywords / Patterns | Target Skill |
+|--------|---------------------------|-------------|
+| New feature / capability | "new feature", "add capability", "build X", "I want to create" | `/adev:brainstorm` |
+| New spec (charter exists) | "write a spec", "specify", "define behavior for" | `/adev:specify` |
+| Update / refactor a spec | "update the spec", "revise", "refactor", "clean up", "tech debt" | `/adev:specify --module <m>` / `--refactor` |
+| Review specs | "review specs", "architecture review", "are the specs ready" | `/adev:review-specs` |
+| Plan work | "plan", "break into tasks", "create tasks" | `/adev:plan` |
+| Ship a spec end-to-end | "build it", "end to end", "run the pipeline", "review through validate" | `/adev:build` |
+| Implement a plan | "implement", "start coding", "build the plan" | `/adev:implement` |
+| Write tests first | "write tests", "TDD", "failing test for" | `/adev:write-test` |
+| Bug / broken behavior | "bug", "broken", "failing test", "error", "not working" | `/adev:debug` |
+| Validate an implementation | "validate", "check it works", "verify the feature" | `/adev:validate` |
+| Score / grade quality | "eval", "score", "grade", "how good is" | `/adev:eval` |
+| Project status | "status", "where do things stand", "progress", "what's done" | `/adev:status` |
+| Context health / drift | "audit", "staleness", "drift", "hygiene", "context health" | `/adev:hygiene` |
+| Fix lifecycle mismatches | "reconcile", "orphaned", "stale epics", "untraced code" | `/adev:reconcile` |
+| Dead / stale code | "dead code", "unused exports", "orphan files" | `/adev:codehealth` |
+| Manage work items | "create an issue", "file a bug", "issue board", "what needs doing" | `/adev:issues` |
+| Research a topic | "research", "investigate", "compare", "best practices for" | `/adev:research` |
+| Generate docs | "generate docs", "document the codebase", "architecture docs" | `/adev:document` |
+| Deploy / release | "deploy", "publish", "push to production", "release" | `/adev:deploy` |
+| Retrospective | "retro", "what went well", "delivery metrics", "review the sprint" | `/adev:retro` |
+| Curate golden samples | "find good examples", "reference code", "golden samples" | `/adev:sample` |
+| Capture a lesson | "remember this", "save this lesson", "heuristic" | `/adev:learn` |
+| Set up / repair adev | "set up adev", "initialize", "diagnose context-index" | `/adev:init` |
+| Sync agent files | "sync agent files", "constitution changed", "update CLAUDE.md" | `/adev:sync` |
+| Sketch UI / API | "prototype", "mockup", "sketch the screen" | `/adev:prototype` |
+| Map the repo | "map the codebase", "symbol index", "repomap" | `/adev:repomap` |
 
 ### Classification rules
 
@@ -104,6 +128,25 @@ Ask a single classifying question:
 Wait for the user's response, then classify.
 
 ## Step 3: State-Aware Routing Refinement
+
+### Next-Step Projection
+
+Map each in-progress spec's lifecycle position to its next action. Derive position from `currentState(projectRoot, specPath).steps` and `readExecutionState` (Step 1) — do not guess from file presence.
+
+| Current lifecycle position | Next step |
+|---|---|
+| Execution state `active` with a `currentTask` | `/adev:implement` (resume the current task) |
+| Execution state `blocked` | `/adev:recover` (or `/adev:debug` if it is a code fault) |
+| `specify` completed, no `review` step | `/adev:review-specs` |
+| `review` passed (PASS / PASS_WITH_NOTES), no `plan` | `/adev:plan` |
+| `plan` completed, no `route` and no `implement` | `/adev:route` (or `/adev:implement` if routing is skipped) |
+| `implement` completed for all tasks, no `validate` | `/adev:validate` |
+| `validate` passed | Done — offer `/adev:deploy`, `/adev:retro`, or new work |
+| `review` verdict BLOCK | `/adev:specify --revise` (address the blockers) |
+
+**When invoked with no description, or when the user says "continue" / "next" / "resume", route directly to the projected next step for the most recently active spec — do not re-ask what to work on.** This is the no-argument conductor path: `/adev:work` alone means "advance my current work."
+
+Then apply the refinements below before proposing a route:
 
 Before proposing a route, check whether the state scan (Step 1) should override or refine the classification:
 
@@ -153,6 +196,23 @@ Once the user confirms (explicitly with "yes", "sounds right", "go", "proceed", 
    - `/adev:review-specs --module <module>` for reviews
 
 If the user rejects the proposal or requests a different route, ask what they would prefer and re-propose.
+
+## Conductor Mode — Drive the Arc, Don't Just Hand Off
+
+`/adev:work` is the front door *and* the conductor for the whole lifecycle. After a stage completes, do not drop the user back to an empty prompt — carry them forward.
+
+- **Full build flows.** When the classified intent is to take a feature or spec all the way to shipped (New feature, Ship a spec end-to-end, "build it end to end"), prefer routing to `/adev:build`, which already conducts review → plan → route → implement → validate as fresh subagents with gate checks and resume. `/adev:work` sets up the preconditions (does a charter/spec exist? is a non-main branch ready?) and hands into `/adev:build` rather than invoking each stage by hand. If the front of the arc is missing (no charter yet), start at `/adev:brainstorm`, then offer to continue into `/adev:build`.
+
+- **Single-stage requests.** When the user asked for exactly one stage (e.g., just `/adev:plan`), run it, then surface the natural next step from the lifecycle state and offer to continue:
+
+  > Plan complete. The next step in the lifecycle is `/adev:implement`. Want me to continue, or stop here?
+
+- **Rigor lane (graduated tiers).** Match review/validation depth to risk via the **quick rigor tier** (`graduated-rigor-tiers.spec.md`) — do **not** skip gates (skipping `review-specs` stalls the strict gate chain):
+  - **Low-risk / pattern-following** (small bug fix, formulaic spec, low blast radius): classify the work as "easy" and propagate `--tier quick` to `/adev:review-specs` and `/adev:validate` (or `/adev:build --tier quick`). The gates still run — just as a single synthesized reviewer and a fail-fast + synthesized compliance check.
+  - **High blast-radius or novel** work: keep the full arc (`--tier full`, the default), including the three-specialist review.
+  - When the risk is unclear, ask once: *"This looks low-risk — run the quick review/validate tier, or the full lifecycle?"*
+
+The goal: a user can start at `/adev:work` and never need to pick another command unless they *want* fine-grained control.
 
 ## Step 6: Intake Mode
 
@@ -238,6 +298,8 @@ When `--intake --file <path>` is provided:
 
 ## Key Principles
 
+- **Single front door.** The user should not have to know which skill they need. Accept any description of intent, classify it, and route — never send them back to "pick a skill."
+- **Conductor, not just router.** After routing, stay with the work: propose or drive the next lifecycle step (see Conductor Mode). A hand-off that strands the user at the next decision is a failure of this skill.
 - **One question at a time.** Never dump multiple questions in a single message.
 - **Propose, don't assume.** Always present a route proposal and wait for confirmation before invoking a skill.
 - **State-aware.** Let project state refine or override keyword classification.

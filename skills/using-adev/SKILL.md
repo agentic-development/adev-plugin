@@ -39,26 +39,35 @@ All structured context lives in `.context-index/`:
 
 The constitution is synced into CLAUDE.md (and other agent files). For deeper context, use agentic search (Glob/Grep/Read) against `.context-index/`.
 
-## Available Skills
+## The Single Front Door
 
-| Skill | Phase | When to Use |
-|-------|-------|-------------|
-| `/adev:work` | Triage | Classify incoming work and route to the right skill |
-| `/adev:research` | Research | Persistent structured research using web, GitHub, and codebase sources |
-| `/adev:init` | Context Setup | Scaffold `.context-index/` for a new or existing project |
-| `/adev:sync` | Context Setup | Sync constitution to CLAUDE.md and other agent files |
-| `/adev:brainstorm` | Brainstorming | Explore an idea and produce a Feature Charter; bootstraps `product.md` identity on first charter |
-| `/adev:specify` | Specification | Write Live Specs within a charter's scope; binds each spec to a Feature work item |
-| `/adev:review-specs` | Architecture Review | Principal architect agents review specs before planning |
-| `/adev:plan` | Planning | Decompose at any scope: `--spec` (default), `--feature`, `--release`, `--milestone`, `--epic` |
-| `/adev:build` | Build | End-to-end orchestrator: review → plan → route → implement → validate |
-| `/adev:implement` | Implementation | Execute tasks with TDD, specialist routing, subagent review |
-| `/adev:write-test` | Implementation | Standalone TDD test authoring with gaming detection |
-| `/adev:validate` | Validation | Post-implementation checks against specs and constitution |
-| `/adev:debug` | Debugging | Context-aware systematic debugging |
-| `/adev:issues` | Issue Management | Create, update, and track issues and epics (with milestone support) |
-| `/adev:hygiene` | Maintenance | Audit context staleness, drift, and coverage gaps |
-| `/adev:repomap` | Maintenance | Generate AST-based symbol index for drift detection |
+**You never need to choose among the skills below.** Describe what you want in plain language, or run `/adev:work`. It is the one entry point: it reads your project's in-progress state, classifies your intent, routes to the right place, and can **drive the whole lifecycle for you** — pausing only at gates and decisions. The lifecycle skills are the *stages* `/adev:work` runs; invoke one directly only when you already know exactly which stage you want.
+
+### Start here
+
+| Skill | When to Use |
+|-------|-------------|
+| `/adev:work` | **The front door.** Unsure what to do, starting new work, or resuming — begin here. Classifies, routes, and drives. |
+| `/adev:init` | First-time setup: scaffold `.context-index/` for a new or existing project. |
+| `/adev:status` | See where everything stands — charters, specs, plans, progress. |
+| `/adev:issues` | Manage work items — create, update, and track issues and epics. |
+
+### Lifecycle stages (`/adev:work` runs these for you)
+
+| Stage | Skill |
+|-------|-------|
+| Explore an idea → Feature Charter | `/adev:brainstorm` |
+| Write a Live Spec within a charter | `/adev:specify` |
+| Architecture review of specs | `/adev:review-specs` |
+| Decompose specs into tasks | `/adev:plan` |
+| Score tasks for autonomy vs review | `/adev:route` |
+| Execute tasks (TDD, subagent review) | `/adev:implement` |
+| End-to-end pipeline (review → validate) | `/adev:build` |
+| Post-implementation checks | `/adev:validate` |
+| Systematic debugging | `/adev:debug` |
+| Audit context staleness & drift | `/adev:hygiene` |
+| Repair lifecycle mismatches | `/adev:reconcile` |
+| Everything else | `research`, `eval`, `deploy`, `document`, `retro`, `sample`, `learn`, `sync`, `repomap`, `codehealth`, `prototype`, `write-test` |
 
 For full per-skill usage, argument signatures, and worked examples, see [`docs/skill-reference.md`](../../docs/skill-reference.md). For the complete CLI verb surface (including internal verbs like `adev gate`, `adev report`, `adev build-state`, `adev partial`, `adev heuristics`, `adev source-manifest`, `adev domain`, etc. that this gateway does not list), consult [`docs/cli-reference.md`](../../docs/cli-reference.md) or `node cli/index.mjs <verb> --help` for any specific verb. End-user-facing topics — installation, getting-started, governance, hooks, extensions, troubleshooting — are indexed at [`docs/README.md`](../../docs/README.md).
 
@@ -80,31 +89,23 @@ These gates enforce quality:
 
 A context-preflight hook will warn if you edit source code without reading `.context-index/` files first. Treat this warning as a stop signal — read context before continuing.
 
-## Skill Invocation Rule
+## Route Through the Front Door
 
-**Before doing ANY work — code, documentation, configuration, refactoring, content authoring, or file creation — check whether an `/adev:*` skill applies.** If there is even a 1% chance a skill applies, invoke it. The skill can always exit early if irrelevant; skipping it cannot be undone.
+**Before doing ANY substantive work — code, documentation, configuration, refactoring, content authoring, or file creation — route it through adev.** The simplest way: describe your goal, or run `/adev:work`. It picks the right stage (and can drive the rest). **You do not have to identify the correct skill yourself — that is the front door's job.**
 
-**This is a hard gate, not a suggestion.** Do not create files, write code, launch research agents, or build task lists until you have either invoked the matching skill or confirmed no skill applies.
+**This is a hard gate, not a suggestion.** Do not create files, write code, launch research agents, or build task lists until the work has been routed through a skill — directly, or via `/adev:work`. A skill can always exit early if it turns out not to apply; skipping governance cannot be undone.
 
 ### Common bypass patterns to catch yourself on
 
 | Rationalization | Why it's wrong |
 |---|---|
-| "This isn't code, it's just docs/config/content" | Non-code deliverables have scope, audience, and quality attributes — they need a charter too |
+| "This isn't code, it's just docs/config/content" | Non-code deliverables have scope, audience, and quality attributes — they route too |
 | "It's a simple/quick fix" | Simple fixes without context risk violating spec assumptions or missing root cause |
 | "I'll use TaskCreate to plan instead" | Session tasks are progress tracking, not lifecycle planning — they don't replace `/adev:plan` |
-| "Let me research first, then decide" | Research without a skill means you're already executing without governance |
-| "The skill seems heavyweight for this" | Skills scale to complexity — a small feature gets a small charter |
+| "I don't know which skill applies" | Then run `/adev:work` — choosing the skill is *its* job, not yours |
+| "The skill seems heavyweight for this" | Skills scale to complexity — and `/adev:work` can route low-risk work to a lighter path |
 
-### Routing quick-reference
-
-| Work type | Skill |
-|---|---|
-| New feature, capability, or deliverable | `/adev:brainstorm` |
-| Bug fix or unexpected behavior | `/adev:debug` |
-| Unclear what to do | `/adev:work` |
-| Existing plan needs execution | `/adev:implement` |
-| Quality check after implementation | `/adev:validate` |
+**When in doubt, `/adev:work`.** It is always a safe first move: it will resume in-progress work, or classify and route new work — and it can carry the work through the rest of the lifecycle so you never have to pick another command.
 
 ## Persona Output Override
 

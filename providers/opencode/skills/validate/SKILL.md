@@ -13,6 +13,7 @@ Run post-implementation validation against specs, constitution, charters, ADRs, 
 - `--plan <path>`: cross-reference the implementation plan (optional, improves traceability)
 - `--fix`: attempt to auto-fix minor issues (lint errors, formatting) before reporting
 - `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
+- `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) runs the whole check set; `quick` runs Check 1 (quality gates, fail-fast) plus a single synthesized spec+constitution compliance check, and skips the remaining checks. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
 
 ## Prerequisites
 
@@ -130,6 +131,23 @@ adev skill-ext load --skill validate
 If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
 
 ## Execution Strategy
+
+### Resolve Rigor Tier (before running checks)
+
+Resolve the **rigor tier** (`full` | `quick`) per `graduated-rigor-tiers.spec.md`. `quick` never skips the gate — it always runs Check 1 and emits the `validate` lifecycle event. Resolution precedence (this is the `resolveRigorMode({ skill: "validate", ... })` contract in `lib/governance/rigor-mode.mjs`):
+
+1. **Explicit `--tier <full|quick>`** on invocation (reject other values with `INVALID_TIER`).
+2. **Routing signal** — `--tier quick` propagated by `/adev:route`, `/adev:work`, or `/adev:build` for "easy" work.
+3. **Risk policy** — `.context-index/governance/risk-policies.yaml` → the spec's `risk_level` (default `medium`) → `policies.<level>.validate_mode`.
+4. **Default** — `full`.
+
+**Quick tier behavior.** When the resolved tier is `quick`:
+- Run **Check 1 (Quality Gates)** exactly as in full mode, with the same fail-fast semantics (a Check-1 FAIL still fails validation and stops).
+- Then run **one synthesized compliance check** — a single subagent that verifies spec compliance (Check 2) and constitution compliance (Check 4) in one pass against the changed files, emitting a PASS/FAIL with cited evidence.
+- **Skip** the remaining checks (1.5, 1.6, 8, 9, and the separate Check 2/Check 4 dispatches). Check 11 (Visual Verification) still triggers independently if the implementation includes UI files.
+- Record skipped checks as `SKIP` with reason `"Skipped — quick rigor tier."` in the report; note the resolved tier in the report header. The `validate` lifecycle event is emitted as usual with the aggregate verdict.
+
+When the resolved tier is `full` (default), run the whole check set as described below.
 
 **Fail-fast on Check 1 (Quality Gates).** If tests, lint, or typecheck fail, skip Checks 2 through 13 and report immediately. There is no value in checking spec compliance on code that does not compile or pass its own tests. The user must fix quality gate failures first and re-run `/adev:validate`. **Exception:** Check 11 (Visual Verification) is triggered independently for UI files. If quality gates fail but the implementation includes UI files, still note that visual verification is pending.
 
@@ -582,7 +600,7 @@ Fix the issues above and re-run: /adev:validate --spec <path>
 
 **Never:**
 - Continue to Checks 2-13 if Check 1 (Quality Gates) failed
-- Skip any of the dispatched registry checks (except when fail-fast applies to Check 1)
+- Skip any of the dispatched registry checks (except when fail-fast applies to Check 1, or when the `quick` rigor tier is resolved — see Execution Strategy → Resolve Rigor Tier)
 - Report PASS when any check has unresolved failures
 - Modify implementation code during validation (validation is read-only, except `--fix` for lint/formatting)
 - Trust implementer claims without reading the actual code
@@ -600,6 +618,11 @@ Lifecycle event log:
 - `resolveGateMode(loadManifest(projectRoot))` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — resolves `manifest.lifecycle.gate_mode`.
 - `reportStep(projectRoot, specPath, { step: "validate", status })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits skill entry/exit.
 - `reportValidator(projectRoot, specPath, { step, validator, verdict, error, score, duration_ms })` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — emits one event per check. Severity is stamped at write time.
+
+Rigor tiers:
+
+- `resolveRigorMode({ skill: "validate", riskLevel, policies, tierOverride, routingEasy })` from `<ADEV_ROOT>/lib/governance/rigor-mode.mjs` — resolves `full` | `quick` (Execution Strategy). Precedence: tier override > routing signal > risk policy (`validate_mode`) > `full`.
+- `loadRigorPolicies(projectRoot)` from `<ADEV_ROOT>/lib/governance/rigor-mode.mjs` — reads `risk-policies.yaml` `policies` map.
 
 Manifest:
 

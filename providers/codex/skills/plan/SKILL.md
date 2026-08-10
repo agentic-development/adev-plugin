@@ -849,3 +849,9 @@ Issue board (cross-reference; the plan skill no longer creates per-task issues �
 Manifest loader:
 
 - `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
+
+## Next Step in the Lifecycle
+
+Plan ready. The next step is **`/adev:route`** (score tasks for autonomy vs review — optional) and then **`/adev:implement`**.
+
+If invoked via `/adev:work`, offer to continue: *"Plan ready. Continue to `/adev:route`, or straight to `/adev:implement`?"* The user can stop here.
