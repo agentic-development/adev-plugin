@@ -22,8 +22,9 @@ describe("implement --parallel documentation contract", () => {
 
   it("preserves the anti-isolation:\"worktree\" guardrail", () => {
     assert.match(skill, /Do not pass `isolation: "worktree"`/);
-    // and the parallel section reiterates bare/never-isolation dispatch
-    assert.match(skill, /bare `Agent\(\{description, prompt\}\)`|bare `Agent/);
+    // and the parallel section reiterates never-isolation, synchronous, single-message dispatch
+    assert.match(skill, /`Agent\(\{description, prompt, run_in_background: false\}\)`/);
+    assert.match(skill, /concurrently in a single message/);
   });
 
   it("documents the worktree-binding prompt contract (absolute / git -C)", () => {
@@ -41,6 +42,8 @@ describe("implement --parallel documentation contract", () => {
     assert.match(skill, /adev worktree merge/);
     assert.match(skill, /RERUN_COLLISION/);
     assert.match(skill, /--fresh/);
+    // recovery from a retained worktree uses the implemented force-remove path
+    assert.match(skill, /adev worktree remove --slug <…> --force/);
   });
 
   it("documents all serial-fallback reasons", () => {
