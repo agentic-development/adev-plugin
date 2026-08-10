@@ -42,6 +42,14 @@ Use this to get a fix into users' hands before it is ready for a stable release.
 
 Promoting a pre-release to stable needs no special step: the same commits are already on `main`, so the next stable release includes them.
 
+### Automated propagation
+
+Step 2 above (merging `main` into `release/next`) is automated by the **Propagate main to release/next** workflow (`.github/workflows/propagate-to-next.yml`). Every push to `main` merges `main` into `release/next` and pushes it, so release-please keeps the pre-release PR current without a manual merge. You still review and merge the pre-release PR yourself — automation only advances the branch, it never publishes.
+
+The merge is always a merge commit (never a fast-forward, because `release/next` carries a branch-only prerelease-config commit) and the three-way merge preserves `release/next`'s own `release-please-config.json`. The job aborts loudly on a merge conflict or if the prerelease config is lost, rather than risk mis-tagging a release.
+
+**Required secret — `RELEASE_PLEASE_PAT`.** A push made with the default `GITHUB_TOKEN` does not trigger other workflows (GitHub's recursion guard), so the automated push would advance `release/next` but never re-run the Release workflow — the pre-release PR would go stale. Configure a repo secret `RELEASE_PLEASE_PAT` (a fine-grained PAT or GitHub App installation token with `contents: write`) so the push originates from a non-Actions identity and the Release workflow fires. Without it, the branch still advances but you must re-run the Release workflow on `release/next` manually. If `release/next` has branch protection, the token's identity must be allowed to push to it.
+
 ## Branch-scoped configuration
 
 `release-please-config.json` differs by branch **on purpose**, and the difference must not be merged across:
