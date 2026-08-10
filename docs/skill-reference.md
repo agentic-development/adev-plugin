@@ -116,24 +116,26 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:work`
 
-**Purpose:** Pre-lifecycle triage that classifies incoming work and routes to the correct `/adev:*` skill. Scans for in-progress plans, unreviewed specs, and recent sessions before making a recommendation.
+**Purpose:** The **single front door and conductor** for the framework. Classifies incoming work and routes it to the correct `/adev:*` skill, and — once you are inside the lifecycle — projects the next step and can drive the pipeline forward. When in doubt about which skill to run, start here. It scans for in-progress plans, unreviewed specs, and recent sessions before recommending or advancing.
 
 **Prerequisites:** `.context-index/` must be initialized.
 
 **Arguments:**
-- No arguments: interactive triage (scans state, asks what you are working on)
+- No arguments: triage — scans lifecycle state and either projects the next step (e.g., "your spec passed review; next is `/adev:plan`") or asks what you are working on.
 - Free-text description: classify and propose a route (e.g., `/adev:work fix the broken test in hooks`)
-- `--intake [<description>]`: intake mode -- classify and triage an incoming work request into an issue
-- `--intake --file <path>`: batch intake mode -- read a file containing multiple requests
+- `continue` / `resume`: advance the current work to its projected next lifecycle step (conductor mode).
+- `--intake [<description>]`: intake mode — classify and triage an incoming work request into an issue
+- `--intake --file <path>`: batch intake mode — read a file containing multiple requests
 
 **Example:**
 ```
 /adev:work
 /adev:work fix the broken test in hooks
+/adev:work continue
 /adev:work --intake "Add dark mode support"
 ```
 
-**Expected Output:** A classification of the work type (feature, bug, refactor, etc.) and a recommendation to invoke a specific skill (e.g., "This looks like a bug. Run `/adev:debug`").
+**Expected Output:** Either a classification of the work type (feature, bug, refactor, etc.) with a recommendation to invoke a specific skill, or — when work is already underway — the projected next lifecycle step, optionally advanced for you (conductor mode). Full-build intents hand off to `/adev:build`.
 
 **Related Guides:** [Getting Started Tutorial](getting-started.md)
 
@@ -210,12 +212,14 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - No arguments: review all unreviewed specs
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
+- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) dispatches the three parallel specialists; `quick` dispatches a single synthesized reviewer. `quick` never skips the gate — it still produces the `.review.md` and the review lifecycle event. Overrides any routing or risk-policy signal.
 
 **Example:**
 ```
 /adev:review-specs
 /adev:review-specs --spec .context-index/specs/features/auth/login.spec.md
 /adev:review-specs --charter auth
+/adev:review-specs --spec .context-index/specs/features/auth/login.spec.md --tier quick
 ```
 
 **Expected Output:** A review file at `<spec-path>.review.md` with PASS, PASS_WITH_NOTES, or BLOCK verdict from each specialist reviewer.
@@ -316,6 +320,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `<plan-path>`: path to the plan file (required)
 - `--task <N>`: execute only task N
 - `--dry-run`: show routing decisions without executing
+- `--parallel`: run file-disjoint task groups concurrently in adev-managed worktrees (falls back to serial when the plan has no usable `## Parallelization` section). See [Build Phase → Parallel Execution](build-phase.md#parallel-execution---parallel).
+- `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree and continue instead of aborting with `RERUN_COLLISION`. No effect without `--parallel`.
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 - `--verbose`: enable step-by-step narration for debugging
 
@@ -324,6 +330,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 /adev:implement .context-index/specs/features/auth/login.plan.md
 /adev:implement .context-index/specs/features/auth/login.plan.md --task 3
 /adev:implement --dry-run .context-index/specs/features/auth/login.plan.md
+/adev:implement --parallel .context-index/specs/features/auth/login.plan.md
 ```
 
 **Expected Output:** Implemented code for each task, with tests written first (TDD), spec compliance verified, and code quality reviewed. Commits created per task with Spec and Plan-task trailers.
@@ -401,6 +408,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--spec <path>`: validate against a specific Live Spec (required)
 - `--plan <path>`: cross-reference the implementation plan (optional)
 - `--fix`: attempt to auto-fix minor issues before reporting
+- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) runs the complete check suite; `quick` runs a narrowed set while still enforcing the fail-fast quality gate and emitting the validate lifecycle event. Overrides any routing or risk-policy signal.
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 
 **Example:**
