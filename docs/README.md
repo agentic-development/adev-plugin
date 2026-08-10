@@ -38,3 +38,10 @@ Specialized guides for power users and complex setups.
 - [Test Strategies](test-strategies.md) — Domain-specific TDD configuration and patterns
 - [Project Types](project-types.md) — Worked examples for different project architectures
 - [Troubleshooting & FAQ](troubleshooting.md) — Common issues and recovery steps
+
+## Maintainers
+
+Procedures for people who ship adev itself, rather than build with it.
+
+- [Releasing](releasing.md) — Release channels (`latest` / `next` / `legacy`), how release-please cuts versions, and how to publish a pre-release
+- [Copilot Smoke-Install Verification](smoke-install-copilot.md) — Manual checklist for verifying the GitHub Copilot adapter against a live project

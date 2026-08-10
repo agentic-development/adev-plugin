@@ -18,6 +18,7 @@ source-manifest:
     - skills/validate/SKILL.md
     - tests/skills/completion-tokens.test.mjs
   computed-at: "2026-06-03T00:03:40.302Z"
+drift_detected: true
 ---
 
 # Live Spec: Terminal Completion Tokens
