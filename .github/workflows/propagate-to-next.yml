@@ -1,0 +1,103 @@
+name: Propagate main to release/next
+
+# Keeps the long-lived release/next pre-release branch current with main so
+# release-please can (re)open the pre-release PR without a manual merge.
+#
+# Flow: every push to main merges main into release/next and pushes it. The
+# push then re-triggers the Release workflow on release/next, whose
+# release-please step updates the X.Y.Z-next pre-release PR. Merging that PR
+# publishes to the npm "next" dist-tag. See docs/releasing.md.
+#
+# IMPORTANT — token choice governs whether the cascade works:
+#   A push made with the default GITHUB_TOKEN does NOT trigger other workflows
+#   (GitHub's recursion guard). If this job pushes with GITHUB_TOKEN, the
+#   Release workflow will NOT run on release/next and the pre-release PR will
+#   not update. Set a repo secret RELEASE_PLEASE_PAT (a fine-grained PAT or a
+#   GitHub App installation token with `contents: write` on this repo) so the
+#   push originates from a non-Actions identity and the cascade fires.
+#   Without it the branch still advances, but you must nudge release-please
+#   manually (re-run the Release workflow on release/next).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Serialize: two quick pushes to main must not race on pushing release/next.
+concurrency:
+  group: propagate-to-next
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  propagate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Prefer the PAT so the downstream Release workflow fires (see header).
+          token: ${{ secrets.RELEASE_PLEASE_PAT || github.token }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "adev-release-bot"
+          git config user.email "release-bot@users.noreply.github.com"
+
+      - name: Merge main into release/next
+        id: merge
+        run: |
+          set -euo pipefail
+
+          if ! git ls-remote --exit-code --heads origin release/next >/dev/null 2>&1; then
+            echo "::error::release/next branch does not exist. Create it before enabling auto-propagation (see docs/releasing.md)."
+            exit 1
+          fi
+
+          git checkout -B release/next origin/release/next
+
+          # release/next can never fast-forward (it carries a branch-only
+          # prerelease-config commit main lacks), so this is always a merge
+          # commit. A three-way merge keeps release/next's own version of
+          # release-please-config.json because only that branch changed those
+          # lines — main must never impose prerelease: false here.
+          if git merge origin/main --no-edit --no-ff \
+               -m "chore(release): merge main into release/next"; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort || true
+            echo "::error::Merge conflict merging main into release/next. Resolve manually: git checkout release/next && git merge origin/main. Do NOT take main's release-please-config.json."
+            exit 1
+          fi
+
+          # Guard: the prerelease config must survive the merge. If it didn't,
+          # something merged release/next's config away — fail loudly rather
+          # than publish a stable version to the next channel.
+          if ! grep -q '"prerelease": true' release-please-config.json; then
+            echo "::error::release-please-config.json on release/next lost \"prerelease\": true after merge. Aborting to avoid mis-tagging."
+            exit 1
+          fi
+
+          if [ -z "$(git rev-list origin/release/next..HEAD)" ]; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "release/next already up to date with main; nothing to push."
+          else
+            git push origin release/next
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.merge.outputs.pushed }}" = "true" ]; then
+            echo "Propagated main -> release/next." >> "$GITHUB_STEP_SUMMARY"
+            if [ -z "${{ secrets.RELEASE_PLEASE_PAT }}" ]; then
+              echo "⚠️ Pushed with GITHUB_TOKEN — the Release workflow will NOT auto-run on release/next. Re-run it manually or set RELEASE_PLEASE_PAT." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Release workflow will run on release/next and update the pre-release PR." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "No changes to propagate; release/next already current." >> "$GITHUB_STEP_SUMMARY"
+          fi
