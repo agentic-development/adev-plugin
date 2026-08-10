@@ -27,6 +27,7 @@ source-manifest:
     - tests/cli/report-step-from-summary.test.mjs
     - tests/lib/lifecycle-state-step-cost.test.mjs
   computed-at: "2026-06-19T14:11:21.242Z"
+drift_detected: true
 ---
 
 # Live Spec: Per-Step Cost in Lifecycle Events
