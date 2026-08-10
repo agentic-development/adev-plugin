@@ -1,0 +1,306 @@
+{
+  "collected": {
+    "review-specs": {
+      "full": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/e97aa71b-df14-49ef-b113-ddaa46fe69ab.jsonl",
+          "totalTurns": 48,
+          "toolTurns": 19,
+          "noToolTurns": 29,
+          "parallelTurns": 0,
+          "input": 31912,
+          "output": 72709,
+          "cacheCreate": 311738,
+          "cacheRead": 2552585,
+          "outputChars": 5718,
+          "totalTokens": 2968944,
+          "cost": 15.605820000000001,
+          "toolBreakdown": {
+            "Bash": 11,
+            "Read": 2,
+            "Agent": 3,
+            "ToolSearch": 1,
+            "Write": 2
+          },
+          "subagents": [
+            {
+              "id": "agent-a45eba0dc91aa13ba",
+              "turns": 9,
+              "input": 23716,
+              "output": 1631,
+              "cacheCreate": 65727,
+              "cacheRead": 101063,
+              "noToolTurns": 3
+            },
+            {
+              "id": "agent-a911a163531ade97a",
+              "turns": 5,
+              "input": 25799,
+              "output": 1882,
+              "cacheCreate": 34803,
+              "cacheRead": 37143,
+              "noToolTurns": 2
+            },
+            {
+              "id": "agent-aa1dfbeab953f5eb4",
+              "turns": 5,
+              "input": 25799,
+              "output": 1553,
+              "cacheCreate": 60552,
+              "cacheRead": 13069,
+              "noToolTurns": 2
+            }
+          ],
+          "subagentTurns": 19,
+          "subagentNoToolTurns": 7,
+          "subagentCount": 3,
+          "totalTokensInclSub": 3361681,
+          "outputInclSub": 77775,
+          "costInclSub": 20.36268,
+          "durationMs": 298977,
+          "verdict": "PASS_WITH_NOTES",
+          "findings": {
+            "total": 10,
+            "blockers": 0
+          },
+          "qualityScore": 91,
+          "qualityRationale": "Thorough 3-reviewer coverage with precise section/file refs (AC §4, revenue-by-customer.md, platform-context.yaml). Findings valid and non-hallucinated; SA-3 white-box coupling and CON-1 fixture drift"
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/84a6413a-cbb1-47fb-a0f0-4146950d99d8.jsonl",
+          "totalTurns": 10,
+          "toolTurns": 3,
+          "noToolTurns": 7,
+          "parallelTurns": 0,
+          "input": 25802,
+          "output": 6742,
+          "cacheCreate": 26633,
+          "cacheRead": 376169,
+          "outputChars": 2572,
+          "totalTokens": 435346,
+          "cost": 1.9563022499999998,
+          "toolBreakdown": {
+            "Bash": 2,
+            "Read": 1
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 435346,
+          "outputInclSub": 6742,
+          "costInclSub": 1.9563022499999998,
+          "durationMs": 48741,
+          "verdict": "PASS_WITH_NOTES",
+          "findings": {
+            "total": 10,
+            "blockers": 0
+          },
+          "qualityScore": 88,
+          "qualityRationale": "Thorough 3-reviewer pass with specific section refs (AC §3/§4, Behavioral Contract), valid findings, OWASP citation, tracks unresolved rev-1 items, clear recommendations. Minor: SA-3/CON-2 duplicate, "
+        }
+      ],
+      "quick": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/5cf7617d-52a8-44b7-b5c5-9a35d2020dde.jsonl",
+          "totalTurns": 48,
+          "toolTurns": 19,
+          "noToolTurns": 29,
+          "parallelTurns": 0,
+          "input": 31218,
+          "output": 48769,
+          "cacheCreate": 241933,
+          "cacheRead": 2354142,
+          "outputChars": 5633,
+          "totalTokens": 2676062,
+          "cost": 12.19340175,
+          "toolBreakdown": {
+            "Bash": 9,
+            "Read": 6,
+            "Agent": 1,
+            "ToolSearch": 1,
+            "TaskOutput": 1,
+            "Write": 1
+          },
+          "subagents": [
+            {
+              "id": "agent-aab6f677ac2bf2ab0",
+              "turns": 3,
+              "input": 11,
+              "output": 789,
+              "cacheCreate": 21246,
+              "cacheRead": 9984,
+              "noToolTurns": 2
+            }
+          ],
+          "subagentTurns": 3,
+          "subagentNoToolTurns": 2,
+          "subagentCount": 1,
+          "totalTokensInclSub": 2708092,
+          "outputInclSub": 49558,
+          "costInclSub": 12.66608025,
+          "durationMs": 225440,
+          "verdict": "PASS_WITH_NOTES",
+          "findings": {
+            "total": 3,
+            "blockers": 0
+          },
+          "qualityScore": 86,
+          "qualityRationale": "Thorough for quick tier; concrete refs (AC4, customerId, lib/db.mjs, sibling spec, prior revision). Valid non-hallucinated findings, each actionable with clear verdict. CON-1 is a self-admitted non-fi"
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/c3b1b550-d80e-476c-b72f-5e6beb12de81.jsonl",
+          "totalTurns": 19,
+          "toolTurns": 7,
+          "noToolTurns": 12,
+          "parallelTurns": 0,
+          "input": 27378,
+          "output": 18023,
+          "cacheCreate": 58583,
+          "cacheRead": 792698,
+          "outputChars": 3847,
+          "totalTokens": 896682,
+          "cost": 4.04987325,
+          "toolBreakdown": {
+            "Bash": 4,
+            "Read": 3
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 896682,
+          "outputInclSub": 18023,
+          "costInclSub": 4.04987325,
+          "durationMs": 92669,
+          "verdict": "PASS_WITH_NOTES",
+          "findings": {
+            "total": 10,
+            "blockers": 0
+          },
+          "qualityScore": 89,
+          "qualityRationale": "Thorough 3-reviewer coverage, concrete section/env-var/sibling-spec references, valid findings each with actionable recs, accurate finding counts. Minor overlap (SA-3/CON-2) and gap-numbered IDs (no C"
+        }
+      ]
+    },
+    "validate": {
+      "full": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/d12a03d6-9f1e-4617-bf7d-20fd2f4e9d11.jsonl",
+          "totalTurns": 38,
+          "toolTurns": 16,
+          "noToolTurns": 22,
+          "parallelTurns": 0,
+          "input": 34743,
+          "output": 43404,
+          "cacheCreate": 198150,
+          "cacheRead": 1966138,
+          "outputChars": 5388,
+          "totalTokens": 2242435,
+          "cost": 10.4409645,
+          "toolBreakdown": {
+            "Bash": 9,
+            "Read": 6,
+            "Write": 1
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 2242435,
+          "outputInclSub": 43404,
+          "costInclSub": 10.4409645,
+          "durationMs": 179770,
+          "verdict": "MISSING"
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/7c6cea08-75c0-452c-85e2-cd1bbcf692d1.jsonl",
+          "totalTurns": 40,
+          "toolTurns": 19,
+          "noToolTurns": 21,
+          "parallelTurns": 0,
+          "input": 27616,
+          "output": 49814,
+          "cacheCreate": 151010,
+          "cacheRead": 2203828,
+          "outputChars": 5100,
+          "totalTokens": 2432268,
+          "cost": 10.2874695,
+          "toolBreakdown": {
+            "Bash": 10,
+            "Read": 8,
+            "Write": 1
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 2432268,
+          "outputInclSub": 49814,
+          "costInclSub": 10.2874695,
+          "durationMs": 189063,
+          "verdict": "MISSING"
+        }
+      ],
+      "quick": [
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/32d2c2e7-f9bd-4371-95d5-91724b2003f2.jsonl",
+          "totalTurns": 16,
+          "toolTurns": 6,
+          "noToolTurns": 10,
+          "parallelTurns": 0,
+          "input": 26084,
+          "output": 16390,
+          "cacheCreate": 125147,
+          "cacheRead": 675039,
+          "outputChars": 3360,
+          "totalTokens": 842660,
+          "cost": 4.979574749999999,
+          "toolBreakdown": {
+            "Bash": 4,
+            "Read": 2
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 842660,
+          "outputInclSub": 16390,
+          "costInclSub": 4.979574749999999,
+          "durationMs": 89095,
+          "verdict": "MISSING"
+        },
+        {
+          "sessionFile": "/Users/dpavancini/.claude/projects/-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox/8da4ff6b-b59a-4cd6-95ba-605d27df3118.jsonl",
+          "totalTurns": 32,
+          "toolTurns": 11,
+          "noToolTurns": 21,
+          "parallelTurns": 0,
+          "input": 26284,
+          "output": 35034,
+          "cacheCreate": 77068,
+          "cacheRead": 1731647,
+          "outputChars": 3682,
+          "totalTokens": 1870033,
+          "cost": 7.064305500000001,
+          "toolBreakdown": {
+            "Bash": 9,
+            "Read": 1,
+            "Write": 1
+          },
+          "subagents": [],
+          "subagentTurns": 0,
+          "subagentNoToolTurns": 0,
+          "subagentCount": 0,
+          "totalTokensInclSub": 1870033,
+          "outputInclSub": 35034,
+          "costInclSub": 7.064305500000001,
+          "durationMs": 186785,
+          "verdict": "MISSING"
+        }
+      ]
+    }
+  },
+  "samples": 2,
+  "timestamp": "2026-07-02T01:22:10.426Z"
+}
