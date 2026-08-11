@@ -1,6 +1,6 @@
 ---
 charter: test-strategies
-status: review-pending
+status: review-passed
 kind: behavioral
 risk_level: medium
 milestone:
@@ -187,15 +187,24 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
      scan, because shipped task **titles** legitimately contain the word
      (`### Task 1: Context-pack library`, `### Task 2: Prototype Context Reception`) and a
      substring rule would misclassify them. A **task-body heading** for N is any
-     `^#{2,4}\s+Task <N>\b` heading that is not context-family.
+     `^#{2,4}\s+Task <N>\b` heading that is not context-family. Plural range headings
+     (`### Tasks 10-14 Context`) fail the `Task <N>` pattern outright — `Tasks` is not
+     `Task` — so they are never task-body headings and never open or close a region,
+     whichever family they belong to.
    - `--task-id` `t<N>` resolves to the region opened by the **first task-body heading for
      N** and closed by the next task-body heading **for a different task number**, or end of
      file. Context-family headings never open or close a region; same-task sub-headings
      (`### Task N — Tests`) fall inside it.
 
-   Pinned here because no shipped artifact defines this join: plan bodies carry `Task N`
-   headings while `.routing.json` keys on `t<N>` anchors. A `--task-id` resolving to no
-   task-body heading yields zero paths and degrades exactly like an absent block. The parse
+   `<N>` is the numeric task number (`\d+`), and only `t<N>` anchors in that form
+   participate in the mapping; suffixed or ranged headings (`### Task 9b:`,
+   `### Tasks 7–9:`) are outside the mapping's contract — a `--task-id` targeting one
+   resolves to no region and degrades visibly, and a suffixed heading neither opens nor
+   closes a region (its paths, if any, fall into the enclosing numeric task's region, which
+   can only widen it — the monotone-safe direction). Pinned here because no shipped artifact
+   defines this join: plan bodies carry `Task N` headings while `.routing.json` keys on
+   `t<N>` anchors. A `--task-id` resolving to no task-body heading yields zero paths and
+   degrades exactly like an absent block. The parse
    of a resolved region:
 
    - scans both shipped shapes: the block form (label line followed by `Create:` / `Modify:` /
@@ -388,6 +397,12 @@ coverage.
   Standalone has no plan task to key policy or an assignment event to. Reaching it requires
   deliberately authoring outside the lifecycle — `/adev:implement` resolves for every plan task
   and there is no implement→standalone route.
+- **A handful of pre-convention plans degrade wholesale.** A few shipped plans predate the
+  `Task N Context` packet-heading convention and title their packet headings freely
+  (`### Task 1 — Module skeleton`); those headings classify as task bodies, so `t<N>`
+  resolves to the packet and yields zero paths — the specified degrade
+  (`floor_inputs: "unavailable"`, surfaced by Behavior 20), not a wrong answer, and the
+  current template does not reproduce the shape.
 - **The floor reads declared paths, not written paths.** `targetPaths` comes from the task's
   agent-authored `**Files:**` block and `**Tests:**` field, and plan immutability is enforced
   only post-hoc. Removing a path before `resolve` runs removes the path leg's view of it;
@@ -669,6 +684,7 @@ string-matching its content.
 - [ ] Against a plan emitted by the current template — `## Context Packets` with `### Task N Context` entries preceding `## Task Structure` — `readTaskFiles()` resolves `t<N>` to the task **body** region containing its `**Files:**` block, never to the context packet; an unresolvable `--task-id` degrades like an absent block
 - [ ] Context-family headings (`Task N Context`, `Task N-N Context`, `Tasks 10-14 Context`) never open or close a task region; a same-task sub-heading (`Task N — Tests`) stays inside it
 - [ ] A task-body heading whose **title** contains the word (`### Task 1: Context-pack library`, `### Task 2: Prototype Context Reception`) still opens its region, and that region contains its `**Files:**` block
+- [ ] A suffixed heading (`### Task 9b:`) neither opens nor closes a region; a `--task-id` targeting it resolves to no region and degrades visibly
 - [ ] `readTaskFiles()` parses both shipped `**Files:**` shapes — block form with labelled and unlabelled sub-bullets, and inline label form — plus the `**Tests:**` field, unwrapping backticks, tolerating surrounding prose, stripping `Modify:` line ranges, and normalising to repo-relative POSIX
 - [ ] One predicate governs backticked and bare tokens alike — a token is a path iff it contains `/` or its final segment matches `\.[A-Za-z0-9_-]+$` — so `.gitignore` and `.env.production` are accepted while `--dry-run`, `_acquireLock`, and `(no source changes)` yield nothing
 - [ ] A task whose parse yields zero paths resolves with the sensitive-path leg skipped, records `floor_inputs: "unavailable"`, and remains implementable; the `risk_level` and boundary legs still evaluate
