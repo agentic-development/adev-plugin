@@ -64,7 +64,7 @@ Two independent axes, resolved at different lifecycle points because they are co
 different points (ADR-0016):
 
 - **Granularity** — how suites map onto units of change: `per-task`, `per-behavior`,
-  `per-spec`. Consumed by `/adev:plan` when emitting each task's `tests:` field, so it
+  `per-spec`. Consumed by `/adev:plan` when emitting each task's `**Tests:**` field, so it
   resolves at **plan time from static configuration only** — deterministic, no routing input.
 - **Depth** — how many case classes a suite must cover: `minimal` (happy path plus declared
   acceptance criteria), `standard` (adds declared error cases), `thorough` (adds boundary and
@@ -114,14 +114,14 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
    one behavior share one suite.
 
 2. **When** the manifest declares `test_policy.granularity` **then** `/adev:plan` emits
-   `tests:` fields accordingly: one suite path per task under `per-task`, one per spec
+   `**Tests:**` fields accordingly: one suite path per task under `per-task`, one per spec
    behavior statement under `per-behavior`, one for the whole spec under `per-spec`. Every
    task `/adev:plan` emits carries its own `**Files:**` block (the per-task format at
    `skills/plan/SKILL.md:608`), so newly authored plans always give depth resolution its
-   path inputs; granularity governs only the `tests:` field.
+   path inputs; granularity governs only the `**Tests:**` field.
 
 3. **When** granularity permits reuse and a suite already covers the target behavior **then**
-   `/adev:plan` emits a `tests:` field referencing that existing suite and the task
+   `/adev:plan` emits a `**Tests:**` field referencing that existing suite and the task
    instruction reads "extend" rather than "create". Depth is not reconciled across tasks
    sharing a suite: see Known Limitations.
 
@@ -149,10 +149,12 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
    the spec's `risk_level: high`; a boundary rule crossed per `boundaries.yaml`; and any
    target path matching the effective sensitive-path set (this last leg is skipped when the
    task's path inputs are unavailable — Behavior 8). The assignment records
-   `floor_applied: true` and a `DEPTH_FLOOR_APPLIED` advisory is emitted whenever the
-   evaluated **floor conditions held**, whether or not the floor changed the resolved value —
-   so a sensitive-path task that escalation already raised to `thorough` is still recorded as
-   floored.
+   `floor_applied: true` together with `floor_legs` — the list of evaluated legs that held,
+   drawn from `"risk-level" | "boundary" | "sensitive-path"`, mirroring the
+   `escalation_skipped` discriminator precedent — and a `DEPTH_FLOOR_APPLIED` advisory is
+   emitted whenever any evaluated **floor condition held**, whether or not the floor changed
+   the resolved value: a sensitive-path task that escalation already raised to `thorough` is
+   still recorded as floored, and the record names which leg fired.
 
 7. **When** the effective sensitive-path set is computed **then** it is the union of the
    built-in `DEFAULT_SENSITIVE_PATHS` constant and any entries in
@@ -169,14 +171,29 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
 8. **When** `resolve` gathers `targetPaths` for a task **then** it parses that task's own
    `**Files:**` block and its `**Tests:**` field — per task, because the shipped format
    (`skills/plan/SKILL.md:608`) places both per task, and shipped plans cover the block only
-   partially, so any rule keyed per plan misfits the format. The parse:
+   partially, so any rule keyed per plan misfits the format.
+
+   **Task-region mapping.** `--task-id` `t<N>` resolves to the plan region opened by the first
+   heading matching `^#{2,4}\s+Task <N>\b` (shipped plans use `## Task N` and `### Task N`;
+   suffix variants like `Task N Context` fall inside the region) and closed by the next
+   heading matching `^#{2,4}\s+Task \d` or end of file. Pinned here because no shipped
+   artifact defines this join: plan bodies carry `Task N` headings while `.routing.json` keys
+   on `t<N>` anchors. A `--task-id` resolving to no region yields zero paths and degrades
+   exactly like an absent block. The parse of a resolved region:
 
    - scans both shipped shapes: the block form (label line followed by `Create:` / `Modify:` /
      `Test:` sub-bullets, plus unlabelled sub-bullets) and the inline form
      (`- **Files:** \`path\``, paths on the label line itself);
-   - accepts a token as a path when it is backticked, or bare and either contains `/` or ends
-     in a dot-extension; all other tokens (prose, parentheticals like `(no source changes)`,
-     backticked identifiers without `/` or extension) contribute nothing;
+   - applies **one predicate to every candidate token, backticked or bare** — backticks only
+     delimit a token, they are never themselves sufficient: a token is a path iff it contains
+     `/` **or** its final segment matches `\.[A-Za-z0-9_-]+$` (a dot-extension; the rule covers
+     leading-dot files such as `.gitignore` and `.env.production`). Everything else — prose,
+     parentheticals like `(no source changes)`, backticked identifiers and flags such as
+     `_acquireLock` or `--dry-run`, em-dash annotations — contributes nothing. Extension-less
+     bare names (`Makefile`) are a known false negative, accepted for predicate simplicity;
+   - treats sub-bullet labels as advisory, not gating: shipped plans use labels beyond the
+     three named (`Delete:`, `Regenerate:`), and the token predicate — not the label — decides
+     what enters `targetPaths`;
    - strips a trailing line range (`existing.ts:123-145`) before matching — the floor matches
      paths, not spans;
    - includes `Test:` sub-bullet paths and the `**Tests:**` field's paths: a test file under a
@@ -188,7 +205,9 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
    skipped for that task and the assignment records `floor_inputs: "unavailable"`; the
    `risk_level` and boundary legs still evaluate, and the task remains implementable.
    **When** it yields one or more paths **then** the assignment records
-   `floor_inputs: "available"`.
+   `floor_inputs: "available"` — meaning **at least one** parsed path, not necessarily every
+   path the task touches; a partially declared task records `"available"` on the declared
+   subset.
 
    *Decision note.* A fail-closed alternative (hard-fail tasks without path inputs, or only
    legacy plans exempt) was considered and rejected: it either reinstates two opposite
@@ -234,7 +253,8 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
 
 13. **When** depth is resolved for a plan task **then** a `test_depth_assigned` event is
     appended carrying
-    `{ plan, task_id, depth, source, escalated, escalation_skipped?, floor_applied, floor_inputs, dimensions? }`.
+    `{ plan, task_id, depth, source, escalated, escalation_skipped?, floor_applied, floor_legs, floor_inputs, dimensions? }`
+    (`floor_legs` is the possibly-empty list of evaluated floor legs that held).
     A task may accumulate **more than one** such event across re-routes and recovery
     re-invocations; the event log is append-only and never rewritten. Where a single value is
     required, the **most recent** event for that `plan` + `task_id` wins, "most recent"
@@ -256,10 +276,12 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
     built-in and configured entries distinguished — these are operator-authored configuration
     patterns, not task data. **When** `adev test-policy explain --plan <path> --task-id <id>`
     runs **then** it reports, from the most recent assignment event: the winning chain layer,
-    whether escalation fired or why it was skipped, the contributing scores, and the floor
-    state as one of three values — **held** (`floor_applied: true`), **not held**
-    (`floor_applied: false`, `floor_inputs: "available"`), or **path leg not evaluated**
-    (`floor_inputs: "unavailable"`) — and labels the floor advisory. `explain` never echoes
+    whether escalation fired or why it was skipped, the contributing scores, and the floor as
+    **two orthogonal facets rendered together** — whether any evaluated leg held
+    (`floor_applied`, with the holding legs from `floor_legs`) and whether the path leg was
+    evaluated (`floor_inputs`) — because the facets are not exclusive: a `risk_level: high`
+    task with no parseable block is both *floored* and *path-leg-not-evaluated*, and rendering
+    either alone would over-state what was checked. `explain` labels the floor advisory. `explain` never echoes
     `targetPaths` or any task file path; the assignment payload carries none. **When**
     `explain` targets a task with no assignment event **then** it reports that the task
     predates the policy (`NO_RECORDED_ASSIGNMENT`, warning).
@@ -287,6 +309,11 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
 
 19. **When** any test suite is scanned for gaming patterns **then** the full cross-strategy and
     strategy-profile blocker set applies regardless of resolved depth.
+
+20. **When** `/adev:hygiene` runs its test-policy drift pass **then** it reports every task
+    whose most recent assignment records `floor_inputs: "unavailable"`, naming the plan and
+    task id — this is the third visibility mechanism the Behavior 8 decision note relies on,
+    so it is specified here rather than existing only as a Task Map row.
 
 ### Postconditions
 
@@ -343,9 +370,12 @@ coverage.
   deliberately authoring outside the lifecycle — `/adev:implement` resolves for every plan task
   and there is no implement→standalone route.
 - **The floor reads declared paths, not written paths.** `targetPaths` comes from the task's
-  agent-authored `**Files:**` block, and plan immutability is enforced only post-hoc. Removing
-  a path before `resolve` runs removes the path leg's view of it; omitting the block entirely
-  skips the path leg — visibly, as `floor_inputs: "unavailable"`, but skipped nonetheless.
+  agent-authored `**Files:**` block and `**Tests:**` field, and plan immutability is enforced
+  only post-hoc. Removing a path before `resolve` runs removes the path leg's view of it;
+  omitting every path source skips the leg — visibly, as `floor_inputs: "unavailable"`. A
+  **partial** omission is worse: dropping one path while keeping others records
+  `floor_inputs: "available"` and is indistinguishable in the record from an honest clean
+  resolution.
 - **Two of the three floor legs are project-mutable, and flooring governance edits is
   visibility, not protection.** Only the sensitive-path leg is bounded below by
   `DEFAULT_SENSITIVE_PATHS`. `risk_level` is author-set spec frontmatter, `boundaries.yaml` is
@@ -519,15 +549,15 @@ its pre-convention plan tasks resolve in Behavior 8's degraded mode rather than 
 |-----------|------|-------------|
 | `adev test-policy resolve --plan <path> --task-id <id>` | CLI verb | Sole depth-resolution entry point and **sole writer** of `test_depth_assigned`. Chain → escalation → floor; JSON stdout; validated `--task-id` (`INVALID_TASK_ID`), containment (`PATH_OUTSIDE_ROOT`), workspace guard (`WORKSPACE_ROOT_REFUSED`); typed non-zero exits. |
 | `adev test-policy assert-assigned --plan <path> --task-id <id>` | CLI verb | **Presence check only** — verifies an assignment event exists for the task and exits non-zero with `MISSING_DEPTH_ASSIGNMENT`. Does not verify the authored suite against the assigned depth (Scope Boundary). Called by `/adev:implement` so the check is a verb, not skill prose. |
-| `adev test-policy show \| set \| explain` | CLI verb | Operator surface. `set` performs validated, workspace-guarded, atomic writes. `explain` renders the three floor states and labels the floor advisory. |
-| `resolveTestDepth({ spec, riskLevel, policies, moduleOverride, domainDefault, routingScore, escalationRules, escalationEnabled, boundaryCrossing, targetPaths, sensitivePaths })` | function | Pure. `targetPaths` may be empty: the sensitive-path leg is then skipped and the returned assignment carries `floor_inputs: "unavailable"`. `sensitivePaths` is the already-unioned effective set. |
-| `readTaskFiles(planPath, taskId)` | function | The plan-task file reader (Behavior 8): parses the task's `**Files:**` block and `**Tests:**` field in both shipped shapes, applies the token predicate and normalisation, returns `{ targetPaths, available }`. |
+| `adev test-policy show \| set \| explain` | CLI verb | Operator surface. `set` performs validated, workspace-guarded, atomic writes. `explain` renders the floor as two orthogonal facets (held-with-legs; path leg evaluated or not) and labels the floor advisory. |
+| `resolveTestDepth({ spec, riskLevel, policies, moduleOverride, domainDefault, routingScore, escalationRules, escalationEnabled, boundaryCrossing, targetPaths, sensitivePaths })` | function | Pure. `targetPaths` may be empty: the sensitive-path leg is then skipped and the returned assignment carries `floor_inputs: "unavailable"`. Returns `floor_legs`, the evaluated legs that held. `sensitivePaths` is the already-unioned effective set. |
+| `readTaskFiles(planPath, taskId)` | function | The plan-task file reader (Behavior 8): resolves `t<N>` to its plan region per Behavior 8's pinned mapping, parses the region's `**Files:**` block and `**Tests:**` field in both shipped shapes, applies the token predicate and normalisation, returns `{ targetPaths, available }`. |
 | `effectiveSensitivePaths(configured)` | function | Returns `DEFAULT_SENSITIVE_PATHS ∪ configured`. Never returns fewer entries than the built-in default. Malformed input degrades to the built-in set with an `INVALID_SENSITIVE_PATHS` advisory. |
 | `resolveGranularity({ moduleOverride, manifestPolicy, domainDefault })` | function | Plan-time resolution; no routing input. Pure. |
 | `loadRigorPolicies(projectRoot)` | reused | Existing loader, extended read-only to surface `test_depth`. No behavior change for existing callers. |
 | `parseTestPolicy(manifest)` | function | Parses/validates `test_policy`. Returns the built-in default when absent. |
 | `inferGranularity(projectRoot, sourceRoots)` | function | Brownfield inference; returns a proposed granularity plus its evidence. |
-| `test_depth_assigned` | lifecycle event | Registered in **both** `CANONICAL_EVENTS` (`lib/lifecycle-events.mjs`) and `REQUIRED_FIELDS_BY_EVENT` (`lib/diagnostics/event-schemas.mjs`). Payload carries `plan` (matching every shipped task-scoped event) and `floor_inputs`; carries no `granularity` — a plan-time property already visible in the plan's `tests:` fields — and no file paths. |
+| `test_depth_assigned` | lifecycle event | Registered in **both** `CANONICAL_EVENTS` (`lib/lifecycle-events.mjs`) and `REQUIRED_FIELDS_BY_EVENT` (`lib/diagnostics/event-schemas.mjs`). Payload carries `plan` (matching every shipped task-scoped event), `floor_inputs`, and `floor_legs`; carries no `granularity` — a plan-time property already visible in the plan's `**Tests:**` fields — and no file paths. |
 
 ## Documentation Requirements
 
@@ -541,7 +571,7 @@ configures.
 | `docs/test-strategies.md` | Both axes, both chains, the two monotonic passes, why escalation is upward-only, standalone write-test behavior, worked examples under each granularity — and a plain statement that **the floor is advisory**: it assigns depth and records it, it does not verify suites. Extends the existing `## Priority chain` section. |
 | `docs/governance.md` | `test_depth` in `risk-policies.yaml`; `sensitive-paths.yaml` as an extend-only overlay on `DEFAULT_SENSITIVE_PATHS`; the independence of rigor and depth; and the same plain **advisory-floor** statement — this page is where an operator forms their belief about what the floor guarantees. |
 | `docs/configuration.md` | The `test_policy` block: fields, enumerations, defaults, `modules[]` override forms, the pinned rule grammar, the escalation-threshold intent. |
-| `docs/cli-reference.md` | `adev test-policy resolve \| assert-assigned \| show \| set \| explain`, including the three floor states `explain` renders. |
+| `docs/cli-reference.md` | `adev test-policy resolve \| assert-assigned \| show \| set \| explain`, including the two floor facets `explain` renders. |
 | `docs/getting-started.md` | What init asks, what the answer changes, and the brownfield inference path. |
 | `docs/README.md` | Index entries accurate for every page touched. |
 
@@ -577,7 +607,6 @@ string-matching its content.
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| ADR-0016 revision | Record the descope in §2/§4 and Consequences ("audit trail", not enforcement); add `floor_inputs` to the §4 payload; align the standalone rule with Behavior 17 | small |
 | Amend `plan-test-mapping.spec.md` | Per `spec-amendment-artifacts.spec.md`: supersede its Behavior 3 counting rule | medium |
 | Extend specify frontmatter contract | `/adev:specify` accepts `test_depth:` as legal frontmatter (SKILL.md legal-field set + spec templates); amend specify's spec if required. Without this, depth chain stage 1 has no authoring path | medium |
 | Charter revision 3 | Capability row, qualified Out of Scope, governance dependency, `TestDepthAssignment` entity, and `Spec test_depth field \| design` Consumed-API row. Bump `charter-revision:` to 3 in this spec when it lands | small |
@@ -586,16 +615,16 @@ string-matching its content.
 | Risk-policy extension | `test_depth` in `risk-policies.yaml` + init template; extend `loadRigorPolicies()` read-only | small |
 | Granularity resolution | `resolveGranularity()` + plan-time wiring | small |
 | Depth resolution | `resolveTestDepth()`: chain, monotonic escalation pass, floor legs with `floor_inputs` recording | medium |
-| Plan-task file reader | `readTaskFiles()` per Behavior 8: both shipped shapes, token predicate, line-range stripping, `**Tests:**` field, POSIX normalisation, degrade-on-zero. No such reader exists in `lib/` today | medium |
+| Plan-task file reader | `readTaskFiles()` per Behavior 8: pinned `t<N>`→task-region mapping, both shipped shapes, one token predicate, line-range stripping, `**Tests:**` field, POSIX normalisation, degrade-on-zero. No such reader exists in `lib/` today | medium |
 | Event canon | `test_depth_assigned` in `CANONICAL_EVENTS` **and** `event-schemas.mjs` (payload incl. `floor_inputs`), projection, unknown-event handling. Canon additions carry a `[BOUNDARY: human-approved]` marker and review confirmation, per the `spec_amended` precedent (`lib/lifecycle-events.mjs:61-63`) | medium |
-| `adev test-policy` verb | `resolve` / `assert-assigned` / `show` / `set` / `explain`; guarded atomic writes; validated `--task-id`; three floor states in `explain` | medium |
+| `adev test-policy` verb | `resolve` / `assert-assigned` / `show` / `set` / `explain`; guarded atomic writes; validated `--task-id`; two floor facets in `explain` | medium |
 | Implement integration | Call `resolve` per task, pass depth into the write-test subagent, call `assert-assigned` (presence only) before accepting a suite | medium |
 | Status integration | `/adev:status` counts task completion from plan-task lifecycle events instead of test-file existence (Behavior 18; `skills/status/SKILL.md:60` currently checks file existence) | small |
 | Suite path resolution | `resolveSuitePath()`; detect existing coverage so tasks extend rather than create | medium |
-| Plan integration | Replace the per-task `tests:` mandate with granularity-driven emission; every emitted task carries a `**Files:**` block (Behavior 2) | medium |
+| Plan integration | Replace the per-task `**Tests:**` mandate with granularity-driven emission; every emitted task carries a `**Files:**` block (Behavior 2) | medium |
 | Write-test standalone | Pin standalone mode to the built-in `standard` depth; no policy reads, no event | small |
 | Init integration | Two-file emission, placeholder guard, brownfield inference | medium |
-| Hygiene drift pass | Declared policy versus actual test-tree layout; flags tasks whose assignments record `floor_inputs: "unavailable"`; feeds the test-debt audit | medium |
+| Hygiene drift pass | Declared policy versus actual test-tree layout; reports tasks whose assignments record `floor_inputs: "unavailable"` (Behavior 20); feeds the test-debt audit | medium |
 | Documentation | The six doc updates, upgrade note, defaults verified against shipped values | medium |
 
 ## Acceptance Criteria
@@ -618,10 +647,12 @@ string-matching its content.
 - [ ] The floor fires on a sensitive-path match with `risk_level: low` and `boundaries: []`
 - [ ] `floor_applied: true` and a `DEPTH_FLOOR_APPLIED` advisory are recorded whenever evaluated floor conditions held, including when escalation had already raised the depth to `thorough`
 - [ ] The floor legs with available inputs are evaluated last — after chain and escalation — in every resolution path within `resolveTestDepth`, and only escalate
+- [ ] `readTaskFiles()` resolves `t<N>` to the region opened by `^#{2,4}\s+Task <N>\b` and closed by the next task heading or EOF; an unresolvable `--task-id` degrades like an absent block
 - [ ] `readTaskFiles()` parses both shipped `**Files:**` shapes — block form with labelled and unlabelled sub-bullets, and inline label form — plus the `**Tests:**` field, unwrapping backticks, tolerating surrounding prose, stripping `Modify:` line ranges, and normalising to repo-relative POSIX
-- [ ] A token is accepted as a path only when backticked, or bare with a `/` or a dot-extension; `(no source changes)` and backticked non-path identifiers yield nothing
+- [ ] One predicate governs backticked and bare tokens alike — a token is a path iff it contains `/` or its final segment matches `\.[A-Za-z0-9_-]+$` — so `.gitignore` and `.env.production` are accepted while `--dry-run`, `_acquireLock`, and `(no source changes)` yield nothing
 - [ ] A task whose parse yields zero paths resolves with the sensitive-path leg skipped, records `floor_inputs: "unavailable"`, and remains implementable; the `risk_level` and boundary legs still evaluate
-- [ ] A task whose parse yields paths records `floor_inputs: "available"`
+- [ ] A task whose parse yields paths records `floor_inputs: "available"` (defined as at least one parsed path, not necessarily all paths the task touches)
+- [ ] The assignment records `floor_legs`, naming which evaluated legs held; a `risk_level: high` task with no parseable block records `floor_applied: true`, `floor_legs: ["risk-level"]`, and `floor_inputs: "unavailable"` together
 - [ ] A task declaring a test path under a sensitive directory — via the `Test:` sub-bullet or the `**Tests:**` field — is assigned `thorough` via the floor
 - [ ] Every task emitted by `/adev:plan` after this change carries its own `**Files:**` block
 - [ ] `resolveRigorMode`, its precedence, its signature, and `tests/governance/rigor-mode.test.mjs` are unchanged by this change
@@ -630,14 +661,15 @@ string-matching its content.
 - [ ] `/adev:implement` calls `adev test-policy assert-assigned` — the check is a verb, not skill-prose branching — and fails the step with `MISSING_DEPTH_ASSIGNMENT` when no event exists
 - [ ] `assert-assigned` performs a presence check only and makes no claim about suite content
 - [ ] A task may carry more than one assignment event; the last in append order wins, and `explain` reports from it
-- [ ] `explain` renders three distinct floor states — held, not held, path leg not evaluated — and labels the floor advisory
+- [ ] `explain` renders the floor as two orthogonal facets — whether any evaluated leg held (with `floor_legs`) and whether the path leg was evaluated — and labels the floor advisory
 - [ ] `explain` never echoes `targetPaths` or any task file path; `show` prints only operator-authored configuration patterns
 - [ ] Standalone `/adev:write-test` in all three invocation forms, with or without `.context-index/`, authors at `standard`, reads no policy config, evaluates no floor, and emits no event
-- [ ] `test_depth_assigned` is registered in `CANONICAL_EVENTS` and `event-schemas.mjs`, carries `plan` and `floor_inputs`, carries no `granularity` and no file paths, and does not land in `unknownEvents[]`
+- [ ] `test_depth_assigned` is registered in `CANONICAL_EVENTS` and `event-schemas.mjs`, carries `plan`, `floor_inputs`, and `floor_legs`, carries no `granularity` and no file paths, and does not land in `unknownEvents[]`
 - [ ] Sensitive-path matching is repo-relative POSIX via the existing `matchGlob`; `src/auth.ts` and `services/api/.env.production` both floor
 - [ ] adev's own `governance/sensitive-paths.yaml` extends the default with `lib/test-strategies/**`, `lib/governance/**`, and `lib/lifecycle-events.mjs`
 - [ ] A suite authored at `minimal` is scanned with the identical blocker set as one authored at `thorough`
 - [ ] `/adev:status` counts completion from plan-task events and reports correctly under `per-spec`
+- [ ] `/adev:hygiene`'s test-policy drift pass reports every task whose most recent assignment records `floor_inputs: "unavailable"`, naming the plan and task id
 - [ ] An amendment to `plan-test-mapping.spec.md` ships in the same change
 - [ ] A spec authored through `/adev:specify` can declare `test_depth:` without the frontmatter being rejected, so depth chain stage 1 has an authoring path
 - [ ] Charter revision 3 lands with the capability row, qualified Out of Scope, governance dependency, `TestDepthAssignment` entity, and the `test_depth` Consumed-API row; this spec's `charter-revision:` is bumped to 3 at that point
