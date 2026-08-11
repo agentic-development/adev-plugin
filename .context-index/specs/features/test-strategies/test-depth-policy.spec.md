@@ -1,6 +1,6 @@
 ---
 charter: test-strategies
-status: review-pending
+status: review-blocked
 kind: behavioral
 risk_level: medium
 milestone:
