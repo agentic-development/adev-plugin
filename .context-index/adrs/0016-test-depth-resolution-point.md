@@ -4,6 +4,8 @@
 
 **Proposed**
 
+> **Revised 2026-08-11** (revisions 6-7 of the spec): end-to-end floor *enforcement* is descoped — the floor assigns and records depth, and nothing verifies the authored suite against it (see the spec's Scope Boundary; follow-on filed as issue-559). The event log described in §4 is therefore this capability's product: an advisory intent signal plus audit trail, not an enforcement mechanism. Missing floor path inputs degrade visibly (`floor_inputs: "unavailable"`) rather than failing.
+>
 > **Proposed 2026-08-10**: Resolves blocker `structural-architect:adr-conflict:02511dad` raised against `.context-index/specs/features/test-strategies/test-depth-policy.spec.md` at revision 1. That spec proposed scaling test depth from `/adev:route` dimension scores, but placed the resolution at `/adev:plan` time — where routing scores do not yet exist, because `/adev:route` requires an already-authored plan. The spec additionally named no persistence site for the resulting assignment, and all three candidate sites are closed by ADR-0012 and `plan-task-events.spec.md` CON-8. This ADR settles both questions: **where** depth resolves, and **how** the assignment persists.
 
 ## Date
@@ -45,7 +47,7 @@ Split the two axes by resolution point, and persist depth assignments as lifecyc
 
 Depth is resolved when tests are authored, and **`/adev:implement` owns that resolution**. It already reads the routing sidecar per task (`adev implement read-routing`) and dispatches write-test (`skills/implement/SKILL.md:362`), so it holds every input at the moment tests are authored. It resolves depth by invoking `adev test-policy resolve` — which is the **sole writer** of the assignment event — and passes the resolved depth into the write-test subagent. `/adev:write-test` consumes what it is given and never resolves depth itself.
 
-Standalone `/adev:write-test` (no plan, no routing sidecar) reads no policy configuration at all: it authors at the built-in `standard` depth, resolves no chain, evaluates no floor, and emits no assignment event, since there is no plan task to key one to. (Superseded the earlier "resolves from the static chain alone" formulation, which left the fail-closed floor applying to invocations that have no task to floor.) Naming a single owner closes the "write-test *or* implement" ambiguity the first draft of this ADR left open.
+Standalone `/adev:write-test` (no plan, no routing sidecar) reads no policy configuration at all: it authors at the built-in `standard` depth, resolves no chain, evaluates no floor, and emits no assignment event, since there is no plan task to key one to. (Supersedes the earlier "resolves from the static chain alone" formulation, under which the floor — then specified fail-closed — would have applied to invocations that have no task to floor.) Naming a single owner closes the "write-test *or* implement" ambiguity the first draft of this ADR left open.
 
 This also places depth where it is consumed: the RED phase is the only stage that acts on "how many case classes must this suite cover."
 
@@ -63,7 +65,7 @@ A consequence worth stating: escalation is a ratchet. Loosening its thresholds s
 
 ### 4. Depth assignments persist as lifecycle events, not a sidecar
 
-Each resolved assignment is appended to the lifecycle event log as a `test_depth_assigned` event carrying `{ plan, task_id, depth, source, escalated, escalation_skipped?, floor_applied, dimensions? }`. The payload carries no `granularity` — that is a plan-time property already visible in the plan's `tests:` fields, and it has no producer at resolve time. The `plan` field matches every shipped task-scoped event (`lib/diagnostics/event-schemas.mjs`), and registration must land in **both** `CANONICAL_EVENTS` (`lib/lifecycle-events.mjs`) and `REQUIRED_FIELDS_BY_EVENT` — registering only the latter would leave the event in `unknownEvents[]`.
+Each resolved assignment is appended to the lifecycle event log as a `test_depth_assigned` event carrying `{ plan, task_id, depth, source, escalated, escalation_skipped?, floor_applied, floor_inputs, dimensions? }`. `floor_inputs` (`"available" | "unavailable"`) records whether the task's path inputs could be parsed from its `**Files:**` block — when unavailable, the sensitive-path floor leg was skipped and the record says so, which is what lets `adev test-policy explain` render three distinct floor states (held / not held / path leg not evaluated). The payload carries no `granularity` — that is a plan-time property already visible in the plan's `tests:` fields, and it has no producer at resolve time. The `plan` field matches every shipped task-scoped event (`lib/diagnostics/event-schemas.mjs`), and registration must land in **both** `CANONICAL_EVENTS` (`lib/lifecycle-events.mjs`) and `REQUIRED_FIELDS_BY_EVENT` — registering only the latter would leave the event in `unknownEvents[]`.
 
 **ADR-0012's closed peer set is deliberately left unamended.** Its own sidecar-versus-event guidance selects the event log for exactly this data shape:
 
@@ -85,7 +87,7 @@ Because assignments accumulate as immutable events, a later policy change cannot
 - **Escalation becomes implementable.** Resolution reads a sidecar that provably exists at that point in the lifecycle; the routing read reuses the shipped `adev implement read-routing` verb, while depth resolution itself is a new verb (`adev test-policy resolve`) introduced by the spec.
 - **Plan stays deterministic.** `/adev:plan` acquires no dependency on `/adev:route`, so plan output remains reproducible from static config alone. The lifecycle order is unchanged; no skill needs reordering.
 - **No new artifact.** The four-peer sidecar enumeration survives intact, and the repository does not gain a seventh adjacent file per spec.
-- **Audit trail by construction.** Because assignments are append-only events, `adev test-policy explain` can report what a task resolved to *and when*, including across re-routes — which a replace-on-rerun sidecar could not.
+- **Audit trail by construction.** Because assignments are append-only events, `adev test-policy explain` can report what a task resolved to *and when*, including across re-routes — which a replace-on-rerun sidecar could not. The trail records assignments, not compliance: the floor is advisory, and nothing verifies the authored suite against the assigned depth.
 - **Mid-flight stability falls out for free.** Immutable events mean a policy change cannot rewrite history; no explicit "do not rewrite plans" enforcement is needed.
 - **Consistent with the sibling mechanism.** `graduated-rigor-tiers` consumes the same routing signal for review and validation breadth. Depth now consumes it at the analogous point for test authoring.
 
