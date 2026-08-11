@@ -180,9 +180,14 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
    would resolve to the context packet and never reach the `**Files:**` block. The mapping
    therefore distinguishes them:
 
-   - A **task-body heading** for task N is a heading matching `^#{2,4}\s+Task <N>\b` whose
-     remainder does **not** contain `Context` — in shipped plans the body form carries a
-     colon (`### Task 1: Paired-spec amendments …`) and context headings never do.
+   - A heading matching `^#{2,4}\s+Task <N>\b` is **context-family** iff its remainder —
+     the text after `Task <N>` — matches `^(\s*[-–]\s*\d+)?\s+Context\b` (case-sensitive):
+     the word `Context` in the position the context-packet template puts it, with an
+     optional range suffix (`Task 1-3 Context`). The test is positional, not a substring
+     scan, because shipped task **titles** legitimately contain the word
+     (`### Task 1: Context-pack library`, `### Task 2: Prototype Context Reception`) and a
+     substring rule would misclassify them. A **task-body heading** for N is any
+     `^#{2,4}\s+Task <N>\b` heading that is not context-family.
    - `--task-id` `t<N>` resolves to the region opened by the **first task-body heading for
      N** and closed by the next task-body heading **for a different task number**, or end of
      file. Context-family headings never open or close a region; same-task sub-headings
@@ -565,7 +570,7 @@ its pre-convention plan tasks resolve in Behavior 8's degraded mode rather than 
 | `adev test-policy assert-assigned --plan <path> --task-id <id>` | CLI verb | **Presence check only** — verifies an assignment event exists for the task and exits non-zero with `MISSING_DEPTH_ASSIGNMENT`. Does not verify the authored suite against the assigned depth (Scope Boundary). Called by `/adev:implement` so the check is a verb, not skill prose. |
 | `adev test-policy show \| set \| explain` | CLI verb | Operator surface. `set` performs validated, workspace-guarded, atomic writes. `explain` renders the floor as two orthogonal facets (held-with-legs; path leg evaluated or not) and labels the floor advisory. |
 | `resolveTestDepth({ spec, riskLevel, policies, moduleOverride, domainDefault, routingScore, escalationRules, escalationEnabled, boundaryCrossing, targetPaths, sensitivePaths })` | function | Pure. `targetPaths` may be empty: the sensitive-path leg is then skipped and the returned assignment carries `floor_inputs: "unavailable"`. Returns `floor_legs`, the evaluated legs that held. `sensitivePaths` is the already-unioned effective set. |
-| `readTaskFiles(planPath, taskId)` | function | The plan-task file reader (Behavior 8): resolves `t<N>` to its plan region per Behavior 8's pinned mapping, parses the region's `**Files:**` block and `**Tests:**` field in both shipped shapes, applies the token predicate and normalisation, returns `{ targetPaths, available }`. |
+| `readTaskFiles(planPath, taskId)` | function | The plan-task file reader (Behavior 8): resolves `t<N>` to its plan region per Behavior 8's pinned mapping, parses the region's `**Files:**` block and `**Tests:**` field in both shipped shapes, applies the token predicate and normalisation, returns `{ targetPaths, available }`, where `available` is the boolean the caller maps onto the assignment's `floor_inputs` enum. |
 | `effectiveSensitivePaths(configured)` | function | Returns `DEFAULT_SENSITIVE_PATHS ∪ configured`. Never returns fewer entries than the built-in default. Malformed input degrades to the built-in set with an `INVALID_SENSITIVE_PATHS` advisory. |
 | `resolveGranularity({ moduleOverride, manifestPolicy, domainDefault })` | function | Plan-time resolution; no routing input. Pure. |
 | `loadRigorPolicies(projectRoot)` | reused | Existing loader, extended read-only to surface `test_depth`. No behavior change for existing callers. |
@@ -663,6 +668,7 @@ string-matching its content.
 - [ ] The floor legs with available inputs are evaluated last — after chain and escalation — in every resolution path within `resolveTestDepth`, and only escalate
 - [ ] Against a plan emitted by the current template — `## Context Packets` with `### Task N Context` entries preceding `## Task Structure` — `readTaskFiles()` resolves `t<N>` to the task **body** region containing its `**Files:**` block, never to the context packet; an unresolvable `--task-id` degrades like an absent block
 - [ ] Context-family headings (`Task N Context`, `Task N-N Context`, `Tasks 10-14 Context`) never open or close a task region; a same-task sub-heading (`Task N — Tests`) stays inside it
+- [ ] A task-body heading whose **title** contains the word (`### Task 1: Context-pack library`, `### Task 2: Prototype Context Reception`) still opens its region, and that region contains its `**Files:**` block
 - [ ] `readTaskFiles()` parses both shipped `**Files:**` shapes — block form with labelled and unlabelled sub-bullets, and inline label form — plus the `**Tests:**` field, unwrapping backticks, tolerating surrounding prose, stripping `Modify:` line ranges, and normalising to repo-relative POSIX
 - [ ] One predicate governs backticked and bare tokens alike — a token is a path iff it contains `/` or its final segment matches `\.[A-Za-z0-9_-]+$` — so `.gitignore` and `.env.production` are accepted while `--dry-run`, `_acquireLock`, and `(no source changes)` yield nothing
 - [ ] A task whose parse yields zero paths resolves with the sensitive-path leg skipped, records `floor_inputs: "unavailable"`, and remains implementable; the `risk_level` and boundary legs still evaluate
