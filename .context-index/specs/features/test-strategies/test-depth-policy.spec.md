@@ -173,13 +173,25 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
    (`skills/plan/SKILL.md:608`) places both per task, and shipped plans cover the block only
    partially, so any rule keyed per plan misfits the format.
 
-   **Task-region mapping.** `--task-id` `t<N>` resolves to the plan region opened by the first
-   heading matching `^#{2,4}\s+Task <N>\b` (shipped plans use `## Task N` and `### Task N`;
-   suffix variants like `Task N Context` fall inside the region) and closed by the next
-   heading matching `^#{2,4}\s+Task \d` or end of file. Pinned here because no shipped
-   artifact defines this join: plan bodies carry `Task N` headings while `.routing.json` keys
-   on `t<N>` anchors. A `--task-id` resolving to no region yields zero paths and degrades
-   exactly like an absent block. The parse of a resolved region:
+   **Task-region mapping.** Two heading families share the `Task N` prefix in shipped plans,
+   and the *context-packet* family (`### Task N Context`, `### Task N-N Context`,
+   `### Tasks 10-14 Context`, under `## Context Packets`) appears **before** the task bodies
+   (under `## Task Structure`, `skills/plan/SKILL.md:420,597`) — so a naive first-match rule
+   would resolve to the context packet and never reach the `**Files:**` block. The mapping
+   therefore distinguishes them:
+
+   - A **task-body heading** for task N is a heading matching `^#{2,4}\s+Task <N>\b` whose
+     remainder does **not** contain `Context` — in shipped plans the body form carries a
+     colon (`### Task 1: Paired-spec amendments …`) and context headings never do.
+   - `--task-id` `t<N>` resolves to the region opened by the **first task-body heading for
+     N** and closed by the next task-body heading **for a different task number**, or end of
+     file. Context-family headings never open or close a region; same-task sub-headings
+     (`### Task N — Tests`) fall inside it.
+
+   Pinned here because no shipped artifact defines this join: plan bodies carry `Task N`
+   headings while `.routing.json` keys on `t<N>` anchors. A `--task-id` resolving to no
+   task-body heading yields zero paths and degrades exactly like an absent block. The parse
+   of a resolved region:
 
    - scans both shipped shapes: the block form (label line followed by `Create:` / `Modify:` /
      `Test:` sub-bullets, plus unlabelled sub-bullets) and the inline form
@@ -213,10 +225,11 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
    legacy plans exempt) was considered and rejected: it either reinstates two opposite
    policies for one input class or blocks the in-flight plans whose tasks predate the block
    convention, and under an **advisory** floor a hard failure protects nothing — the record is
-   the product. Degradation is instead made visible: the event field, the third floor state in
-   `explain` (Behavior 15), and the hygiene drift pass (Task Map) all surface it, and
-   Behavior 2 makes newly authored plans always carry the block, so the degraded population
-   only shrinks.
+   the product. Degradation is instead made visible: the event field, the `floor_inputs`
+   facet `explain` renders (Behavior 15), and the hygiene drift pass (Behavior 20) all
+   surface it. And because the task-region mapping above resolves the task **body** — not the
+   context packet — a plan emitted by the current template parses correctly, so Behavior 2's
+   per-task `**Files:**` requirement means the degraded population only shrinks.
 
 9. **When** any configured value is outside its closed enumeration — `granularity`,
    `test_depth` from any source, `escalation` (boolean), an `escalation_rules` dimension
@@ -324,8 +337,9 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
   Where routing scores vary between runs, variation can only raise depth.
 - For every plan task, the floor legs with available inputs have been evaluated last in every
   resolution path within `resolveTestDepth`, over an effective path set never smaller than the
-  built-in default. Tasks resolved with `floor_inputs: "unavailable"` had the path leg skipped
-  and that fact recorded; standalone `/adev:write-test` is out of scope (Behavior 17).
+  built-in default, with the holding legs recorded in `floor_legs`. Tasks resolved with
+  `floor_inputs: "unavailable"` had the path leg skipped and that fact recorded; standalone
+  `/adev:write-test` is out of scope (Behavior 17).
 - Gaming-blocker enforcement is identical at every depth.
 - `resolveRigorMode` and `graduated-rigor-tiers` are unchanged by this spec.
 
@@ -402,7 +416,7 @@ coverage.
 | An `escalation_rules` `when:` expression fails the pinned grammar | Fails; names the offending expression | `INVALID_ESCALATION_RULE_EXPRESSION` |
 | `escalation_rules` exceeds the cap (32) | Fails; names the count and the cap | `ESCALATION_RULES_LIMIT_EXCEEDED` |
 | Two escalation rules match with different depths | Take the highest; advisory naming both | `CONFLICTING_ESCALATION_RULE` (warning) |
-| Evaluated floor conditions held | Recorded `floor_applied: true`; advisory | `DEPTH_FLOOR_APPLIED` (warning) |
+| Evaluated floor conditions held | Recorded `floor_applied: true` with the holding legs in `floor_legs`; advisory | `DEPTH_FLOOR_APPLIED` (warning) |
 | `sensitive-paths.yaml` present but unparseable, or an entry is not a string | Proceed on the built-in set alone; advisory names the offending file or entry | `INVALID_SENSITIVE_PATHS` (warning) |
 | `resolve` receives a `--task-id` failing the pinned grammar | Reject before any append | `INVALID_TASK_ID` |
 | `resolve` or `set` given a path resolving outside the project root | Reject before any write | `PATH_OUTSIDE_ROOT` |
@@ -614,9 +628,9 @@ string-matching its content.
 | Policy schema and parser | `parseTestPolicy()`; enum, grammar, and cap validation | small |
 | Risk-policy extension | `test_depth` in `risk-policies.yaml` + init template; extend `loadRigorPolicies()` read-only | small |
 | Granularity resolution | `resolveGranularity()` + plan-time wiring | small |
-| Depth resolution | `resolveTestDepth()`: chain, monotonic escalation pass, floor legs with `floor_inputs` recording | medium |
+| Depth resolution | `resolveTestDepth()`: chain, monotonic escalation pass, floor legs with `floor_legs` and `floor_inputs` recording | medium |
 | Plan-task file reader | `readTaskFiles()` per Behavior 8: pinned `t<N>`→task-region mapping, both shipped shapes, one token predicate, line-range stripping, `**Tests:**` field, POSIX normalisation, degrade-on-zero. No such reader exists in `lib/` today | medium |
-| Event canon | `test_depth_assigned` in `CANONICAL_EVENTS` **and** `event-schemas.mjs` (payload incl. `floor_inputs`), projection, unknown-event handling. Canon additions carry a `[BOUNDARY: human-approved]` marker and review confirmation, per the `spec_amended` precedent (`lib/lifecycle-events.mjs:61-63`) | medium |
+| Event canon | `test_depth_assigned` in `CANONICAL_EVENTS` **and** `event-schemas.mjs` (payload incl. `floor_inputs` and `floor_legs`), projection, unknown-event handling. Canon additions carry a `[BOUNDARY: human-approved]` marker and review confirmation, per the `spec_amended` precedent (`lib/lifecycle-events.mjs:61-63`) | medium |
 | `adev test-policy` verb | `resolve` / `assert-assigned` / `show` / `set` / `explain`; guarded atomic writes; validated `--task-id`; two floor facets in `explain` | medium |
 | Implement integration | Call `resolve` per task, pass depth into the write-test subagent, call `assert-assigned` (presence only) before accepting a suite | medium |
 | Status integration | `/adev:status` counts task completion from plan-task lifecycle events instead of test-file existence (Behavior 18; `skills/status/SKILL.md:60` currently checks file existence) | small |
@@ -647,7 +661,8 @@ string-matching its content.
 - [ ] The floor fires on a sensitive-path match with `risk_level: low` and `boundaries: []`
 - [ ] `floor_applied: true` and a `DEPTH_FLOOR_APPLIED` advisory are recorded whenever evaluated floor conditions held, including when escalation had already raised the depth to `thorough`
 - [ ] The floor legs with available inputs are evaluated last — after chain and escalation — in every resolution path within `resolveTestDepth`, and only escalate
-- [ ] `readTaskFiles()` resolves `t<N>` to the region opened by `^#{2,4}\s+Task <N>\b` and closed by the next task heading or EOF; an unresolvable `--task-id` degrades like an absent block
+- [ ] Against a plan emitted by the current template — `## Context Packets` with `### Task N Context` entries preceding `## Task Structure` — `readTaskFiles()` resolves `t<N>` to the task **body** region containing its `**Files:**` block, never to the context packet; an unresolvable `--task-id` degrades like an absent block
+- [ ] Context-family headings (`Task N Context`, `Task N-N Context`, `Tasks 10-14 Context`) never open or close a task region; a same-task sub-heading (`Task N — Tests`) stays inside it
 - [ ] `readTaskFiles()` parses both shipped `**Files:**` shapes — block form with labelled and unlabelled sub-bullets, and inline label form — plus the `**Tests:**` field, unwrapping backticks, tolerating surrounding prose, stripping `Modify:` line ranges, and normalising to repo-relative POSIX
 - [ ] One predicate governs backticked and bare tokens alike — a token is a path iff it contains `/` or its final segment matches `\.[A-Za-z0-9_-]+$` — so `.gitignore` and `.env.production` are accepted while `--dry-run`, `_acquireLock`, and `(no source changes)` yield nothing
 - [ ] A task whose parse yields zero paths resolves with the sensitive-path leg skipped, records `floor_inputs: "unavailable"`, and remains implementable; the `risk_level` and boundary legs still evaluate

@@ -16,7 +16,7 @@
 
 `test-depth-policy.spec.md` introduces two independent axes governing test volume:
 
-- **Granularity** (`per-task | per-behavior | per-spec`) — how test suites map onto units of change. Consumed by `/adev:plan` when it emits each task's `tests:` field.
+- **Granularity** (`per-task | per-behavior | per-spec`) — how test suites map onto units of change. Consumed by `/adev:plan` when it emits each task's `**Tests:**` field.
 - **Depth** (`minimal | standard | thorough`) — how many case classes a suite must cover. Consumed when tests are actually authored.
 
 The spec's intent is that depth scale with the complexity and severity of the change, reusing the four-dimensional scoring `/adev:route` already performs rather than introducing a second scoring mechanism. This mirrors `graduated-rigor-tiers`, which scales review and validation breadth from the same routing signal via `resolveRigorMode` in `lib/governance/rigor-mode.mjs`.
@@ -33,7 +33,7 @@ Three constraints collide.
 
 **3. Representation.** `depth_rules` in revision 1 compared routing dimensions against a 1–5 scale. That scale exists only in the human-readable scoring table in `skills/route/SKILL.md`. The machine-readable sidecar contract (`skills/route/SKILL.md:156`) specifies each of the four dimensions as a `0..1` float. Rules written against 1–5 match every possible sidecar value.
 
-The relevant observation is that **the two axes are needed at different moments**. Granularity determines the *suite path* a task's `tests:` field points at, which `/adev:plan` must know while authoring. Depth determines *how many case classes* the RED phase authors inside that suite — information not needed until tests are actually written. Test authoring happens in `/adev:write-test`, which is dispatched by `/adev:implement` (`skills/implement/SKILL.md:362`), strictly after `/adev:route`. At that point the routing sidecar exists and is already read per-task through the shipped `adev implement read-routing --plan <path> --task-id <id>` verb.
+The relevant observation is that **the two axes are needed at different moments**. Granularity determines the *suite path* a task's `**Tests:**` field points at, which `/adev:plan` must know while authoring. Depth determines *how many case classes* the RED phase authors inside that suite — information not needed until tests are actually written. Test authoring happens in `/adev:write-test`, which is dispatched by `/adev:implement` (`skills/implement/SKILL.md:362`), strictly after `/adev:route`. At that point the routing sidecar exists and is already read per-task through the shipped `adev implement read-routing --plan <path> --task-id <id>` verb.
 
 ## Decision
 
