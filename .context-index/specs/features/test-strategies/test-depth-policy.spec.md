@@ -1,10 +1,10 @@
 ---
 charter: test-strategies
-status: review-blocked
+status: review-pending
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 5
+revision: 6
 charter-revision: 2
 created: 2026-08-10
 updated: 2026-08-11
@@ -33,7 +33,14 @@ affects:
      its charter anchor and its features/ path, because skills/hygiene/SKILL.md:518 scans only
      specs/features/ and relocating would drop it from revision and charter-drift auditing.
 
-     Revision 4 addressed the 6 blockers from the revision-3 review. Revision 5 addresses
+     Revision 6 DESCOPES end-to-end floor enforcement (filed as issue-559). The round-5
+     review found the enforcement machinery unimplementable: the Handoff Block hashes test
+     content only so a depth field there is self-attested, it is slug-keyed and overwritten
+     between tasks sharing a suite, and a diff check at suite acceptance runs before the
+     source edits exist. The floor now assigns and records depth; it does not verify suites.
+     See the Scope Boundary section.
+
+     Revision 4 addressed the 6 blockers from the revision-3 review. Revision 5 addressed
      the round-4 SECURITY findings (SEC-6 through SEC-12): the floor is now enforced
      end-to-end via conformance and evasion checks at suite acceptance, sensitive-path
      matching is pinned, and the Capability no longer overstates un-narrowability. The
@@ -46,9 +53,12 @@ affects:
 
 Declarative, risk-scaled control over how much test coverage a change warrants (`depth`) and
 how test suites map onto units of change (`granularity`), with routing complexity able to
-escalate depth upward but never reduce it, and a **sensitive-path floor** that cannot be
-narrowed. The floor's other two legs (`risk_level`, `boundaries.yaml`) remain project-mutable
-by design; only the sensitive-path leg is monotone.
+escalate depth upward but never reduce it, and a **sensitive-path floor** that raises the
+depth assigned to security-sensitive work.
+
+**The floor is advisory, not enforced.** It determines the depth a task is *assigned* and
+records that assignment; nothing in this capability verifies that the authored suite matches
+it. End-to-end enforcement is deliberately out of scope — see Scope Boundary.
 
 ## Behavioral Contract
 
@@ -110,12 +120,8 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
 
 3. **When** granularity permits reuse and a suite already covers the target behavior **then**
    `/adev:plan` emits a `tests:` field referencing that existing suite and the task
-   instruction reads "extend" rather than "create". **When** the task's resolved depth exceeds
-   the depth the existing suite was authored at **then** the instruction reads "extend **and
-   raise the whole suite to `<depth>`**" — a task may not add cases to a suite while leaving
-   the suite below its own assigned depth. This matters because `per-behavior` is the shipped
-   default, so suite reuse is the common path, not an edge case: without the raise, a
-   sensitive-path task floored to `thorough` would routinely extend a `minimal` suite.
+   instruction reads "extend" rather than "create". Depth is not reconciled across tasks
+   sharing a suite: see Scope Boundary.
 
 4. **When** `test_policy.escalation` is `true` **and** routing scores exist for the task
    **then** the escalation pass runs: each `escalation_rules` entry whose `when:` expression
@@ -147,8 +153,9 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
    `governance/sensitive-paths.yaml`. Configuration may only **extend** the set, never shrink
    it — the same monotonicity the escalation pass adopts. An absent or empty
    `sensitive-paths.yaml` therefore resolves to the built-in set rather than failing, so
-   upgrading a project that predates this capability never breaks. Narrowing coverage by
-   editing the file is structurally impossible.
+   upgrading a project that predates this capability never breaks. Configuration cannot narrow
+   the set *below the built-in default* — but deleting the file does drop every project
+   extension, so an overlay a project depends on is not itself protected.
 
 8. **When** `targetPaths` is empty or absent for a plan task, or `boundaryCrossing` is absent
    **then** resolution fails closed with `MISSING_FLOOR_INPUT`. There is no qualifier and no
@@ -166,9 +173,14 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
      path is itself sensitive, and excluding them would let a task escape the floor by
      declaring only its test target.
    - Paths are normalised to repo-relative POSIX before matching.
-   - A task whose `**Files:**` block is absent, empty, or yields zero paths after
-     normalisation raises `MISSING_FLOOR_INPUT` — the reader never returns an empty list
-     silently.
+   - Paths are unwrapped from surrounding backticks and tolerate leading/trailing prose in
+     the bullet (`- Test: extend \`tests/x.test.mjs\``); tokens that are not paths are dropped.
+     Unlabelled bullets are parsed as paths.
+   - A task whose `**Files:**` block is present but yields zero paths after normalisation
+     raises `MISSING_FLOOR_INPUT`. A task in a plan with **no `**Files:**` block at all** —
+     17 of 150 plans shipped in this repo predate the convention — resolves without a floor
+     path check and records `floor_inputs: "unavailable"`, so in-flight plans stay
+     implementable. Only the path leg degrades; `risk_level` and `boundaries.yaml` still apply.
 
 9. **When** any configured value is outside its closed enumeration — `granularity`,
    `test_depth` from any source, `escalation` (boolean), an `escalation_rules` dimension
@@ -204,23 +216,13 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
     required, the **most recent** event for that `plan` + `task_id` wins.
 
 14. **When** `/adev:implement` accepts a write-test subagent's suite for a task **then** it
-    calls `adev test-policy assert-assigned --plan <path> --task-id <id>`, which performs
-    three checks, each failing the write-test step for that task rather than passing silently:
+    calls `adev test-policy assert-assigned --plan <path> --task-id <id>`, which verifies that
+    an assignment event exists for the task; a missing event fails the write-test step with
+    `MISSING_DEPTH_ASSIGNMENT` rather than passing silently.
 
-    a. **Presence** — an assignment event exists for the task; otherwise
-       `MISSING_DEPTH_ASSIGNMENT`.
-    b. **Conformance** — the suite's Handoff Block (written by `write-handoff.sh`, already
-       hashed and immutable per `immutable-handoff-block.spec.md`) is extended to record
-       `assigned_depth` and the case classes actually covered. When the authored depth is
-       below the assigned depth, `DEPTH_CONFORMANCE_FAILED`. Without this leg the floor has no
-       effect on any suite: `resolve` would compute `thorough`, pass it to a subagent as a
-       prompt input, and nothing would check the result.
-    c. **Evasion** — the floor legs are re-evaluated against the files the task actually
-       touched (`git diff --name-only` for the task's changes), not only its declared paths.
-       When a sensitive path was touched under a non-floored assignment,
-       `FLOOR_EVASION_DETECTED`. This closes the gap that the declared `files:` list is
-       author-supplied and plan immutability is enforced only post-hoc, so deleting a path
-       before `resolve` runs would otherwise silently remove the floor.
+    **This is a presence check, not a conformance check.** It proves depth was resolved and
+    recorded for the task; it does **not** verify that the authored suite matches the assigned
+    depth. Verifying conformance is deliberately out of scope — see Scope Boundary below.
 
     **When** `MISSING_FLOOR_INPUT` is raised mid-implement **then** the task is marked blocked
     with the offending input named and `/adev:recover` is the resume path — the plan is not
@@ -270,28 +272,54 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
 - Gaming-blocker enforcement is identical at every depth.
 - `resolveRigorMode` and `graduated-rigor-tiers` are unchanged by this spec.
 
+### Scope Boundary — enforcement is out of scope
+
+This capability **assigns and records** a depth per task. It does not verify that the authored
+suite matches the assignment. That boundary is deliberate, and revision 5 established why:
+
+- The Handoff Block cannot carry trustworthy evidence. `write-handoff.mjs` hashes test file
+  *contents* only, so any depth field added to its frontmatter would be unattested and written
+  by the same subagent being checked. And "the case classes actually covered" has no
+  machine-decidable definition — `lib/test-strategies/gaming.mjs` is depth-invariant by design,
+  so nothing computes it.
+- The Handoff Block is keyed on a spec-derived slug and overwritten on each RED run
+  (`immutable-handoff-block.spec.md:37,41`), so under the shipped `per-behavior` default N
+  tasks share one packet and a later task destroys an earlier task's record.
+- A diff-based check cannot run at suite acceptance: that point is RED-complete, so the source
+  edits it would target have not happened yet, and `git diff --name-only` cannot see the
+  untracked files a `Create:` task produces.
+
+Making enforcement work therefore requires amending `immutable-handoff-block.spec.md`, giving
+conformance a per-task key, and relocating the check to task-commit time. That is a separate
+capability, filed as follow-on work rather than smuggled into this one.
+
+**What this means in practice:** a task floored to `thorough` receives `thorough` in its
+write-test prompt and an event recording it. If the subagent authors a shallower suite, nothing
+here catches that. The floor raises intent and creates an audit trail; it does not guarantee
+coverage.
+
 ### Known Limitations
 
+- **Depth is not reconciled across tasks sharing a suite.** Under the shipped `per-behavior`
+  default, several tasks extend one suite, and each records its own assignment. A task assigned
+  `thorough` may extend a suite authored at `minimal`; nothing raises the existing suite,
+  because doing so would mutate hash-locked test files.
 - **Standalone write-test ignores declared and floored depth.** Behavior 17 pins standalone
-  `/adev:write-test` to the built-in `standard`, so a spec carrying `test_depth: thorough`,
-  or one whose paths match the sensitive set, silently gets `standard` when its tests are
-  authored outside a plan. This is a two-regime system by design — standalone has no plan
-  task to key policy or an assignment event to. It is not a floor bypass in practice:
-  `/adev:implement` resolves and asserts for every plan task and there is no
-  implement→standalone route, so reaching it requires deliberately authoring outside the
-  lifecycle.
-- **Detection is at suite acceptance, not at write time.** Behavior 14's conformance and
-  evasion checks run when `/adev:implement` accepts a suite, so a task that touches a sensitive
-  path it did not declare is caught then rather than prevented earlier. The failure mode is a
-  blocked task requiring re-authoring, not silently shipped shallow coverage.
-- **Two of the three floor legs remain project-mutable.** Only the sensitive-path leg is
-  monotone. `risk_level` is author-set spec frontmatter and `boundaries.yaml` is
-  project-editable; editing `.context-index/governance/**` is itself floored, but the floor
-  demands tests, not approval, so a narrowing edit still lands once its tests are written.
-- **Assignment events carry no attempt discriminator.** The event keys on `plan` + `task_id`
-  only, so after a re-route or `/adev:recover` a prior run's event satisfies the presence check
-  even if `resolve` was not re-invoked for the current attempt. The conformance and evasion
-  legs still run against the current suite and diff, which bounds the consequence.
+  `/adev:write-test` to the built-in `standard`, so a spec carrying `test_depth: thorough`, or
+  one whose paths match the sensitive set, gets `standard` when authored outside a plan.
+  Standalone has no plan task to key policy or an assignment event to. Reaching it requires
+  deliberately authoring outside the lifecycle — `/adev:implement` resolves for every plan task
+  and there is no implement→standalone route.
+- **The floor reads declared paths, not written paths.** `targetPaths` comes from the task's
+  `**Files:**` block, which is agent-authored, and plan immutability is enforced only post-hoc.
+  Removing a path before `resolve` runs removes the floor for that task.
+- **Two of the three floor legs are project-mutable.** Only the sensitive-path leg is bounded
+  below by `DEFAULT_SENSITIVE_PATHS`. `risk_level` is author-set spec frontmatter,
+  `boundaries.yaml` is project-editable, and deleting `sensitive-paths.yaml` drops every
+  project extension while remaining legal.
+- **Assignment events carry no attempt discriminator.** The event keys on `plan` + `task_id`,
+  so after a re-route or `/adev:recover` a prior run's event satisfies the presence check even
+  if `resolve` was not re-invoked for the current attempt.
 
 ### Error Cases
 
@@ -311,8 +339,6 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
 | `set --module <slug>` names an absent module or fails the charset | Reject; config files byte-identical | `UNKNOWN_POLICY_MODULE` |
 | An emitted policy block contains an unsubstituted `{{ }}` placeholder | Init fails; names the offending field | `UNSUBSTITUTED_POLICY_PLACEHOLDER` |
 | `/adev:implement` finds no assignment event for an accepted suite | Fails the write-test step for that task | `MISSING_DEPTH_ASSIGNMENT` |
-| The suite's Handoff Block records an authored depth below the assigned depth | Fails the write-test step for that task | `DEPTH_CONFORMANCE_FAILED` |
-| A sensitive path was touched under a non-floored assignment (`git diff` re-evaluation) | Fails the write-test step for that task | `FLOOR_EVASION_DETECTED` |
 | `sensitive-paths.yaml` is present but unparseable, or an entry is not a string | **Fails closed**; names the offending file or entry | `INVALID_SENSITIVE_PATHS` |
 | `explain` targets a task with no assignment event | Report that the task predates the policy | `NO_RECORDED_ASSIGNMENT` (warning) |
 
@@ -449,7 +475,7 @@ a test file. Upgrading a project that predates this capability requires no new c
 | Interface | Type | Description |
 |-----------|------|-------------|
 | `adev test-policy resolve --plan <path> --task-id <id>` | CLI verb | Sole depth-resolution entry point and **sole writer** of `test_depth_assigned`. Chain → escalation → floor; JSON stdout; validated `--task-id`, project-root containment, workspace guard; typed non-zero exits. |
-| `adev test-policy assert-assigned --plan <path> --task-id <id>` | CLI verb | Verifies an assignment event exists for the task; exits non-zero with `MISSING_DEPTH_ASSIGNMENT`. Called by `/adev:implement` so the check is a verb, not skill prose. |
+| `adev test-policy assert-assigned --plan <path> --task-id <id>` | CLI verb | **Presence check only** — verifies an assignment event exists for the task and exits non-zero with `MISSING_DEPTH_ASSIGNMENT`. Does not verify the authored suite against the assigned depth (Scope Boundary). Called by `/adev:implement` so the check is a verb, not skill prose. |
 | `adev test-policy show \| set \| explain` | CLI verb | Operator surface. `set` performs validated, workspace-guarded, atomic writes. |
 | `resolveTestDepth({ spec, riskLevel, policies, moduleOverride, domainDefault, routingScore, escalationRules, escalationEnabled, boundaryCrossing, targetPaths, sensitivePaths })` | function | Pure. `boundaryCrossing` and `targetPaths` are required; empty `targetPaths` raises `MISSING_FLOOR_INPUT` unconditionally. `sensitivePaths` is the already-unioned effective set. |
 | `effectiveSensitivePaths(configured)` | function | Returns `DEFAULT_SENSITIVE_PATHS ∪ configured`. Never returns fewer entries than the built-in default. |
@@ -515,10 +541,8 @@ string-matching its content.
 | Depth resolution | `resolveTestDepth()`: chain, monotonic escalation pass, fail-closed floor | medium |
 | Event canon | `test_depth_assigned` in `CANONICAL_EVENTS` **and** `event-schemas.mjs`, projection, unknown-event handling. Canon additions carry a `[BOUNDARY: human-approved]` marker and review confirmation, per the `spec_amended` precedent (`lib/lifecycle-events.mjs:61-63`) | medium |
 | `adev test-policy` verb | `resolve` / `assert-assigned` / `show` / `set` / `explain`; guarded atomic writes; validated `--task-id` | medium |
-| Implement integration | Call `resolve` per task, pass depth into the write-test subagent, call `assert-assigned` before accepting a suite, block-and-recover on `MISSING_FLOOR_INPUT` | medium |
-| Handoff Block extension | Record `assigned_depth` and covered case classes in `write-handoff.sh` / `write-handoff.mjs`; conformance leg of `assert-assigned` | medium |
+| Implement integration | Call `resolve` per task, pass depth into the write-test subagent, call `assert-assigned` (presence only) before accepting a suite, block-and-recover on `MISSING_FLOOR_INPUT` | medium |
 | Plan-task file reader | Parse the `**Files:**` block per Behavior 8 — Create/Modify/Test labels, line-range stripping, repo-relative POSIX normalisation, fail-closed on empty. No such reader exists in `lib/` today | medium |
-| Floor evasion check | Re-evaluate floor legs against `git diff --name-only` at suite acceptance | medium |
 | Suite path resolution | `resolveSuitePath()`; detect existing coverage so tasks extend rather than create | medium |
 | Plan integration | Replace the per-task `tests:` mandate with granularity-driven emission | medium |
 | Write-test standalone | Pin standalone mode to the built-in `standard` depth; no policy reads, no event | small |
@@ -542,7 +566,6 @@ string-matching its content.
 - [ ] An absent or empty `sensitive-paths.yaml` resolves to the built-in set and does **not** raise; a project that predates this capability upgrades without adding any config file
 - [ ] A task modifying `.context-index/governance/**`, including `sensitive-paths.yaml` itself, is floored to `thorough`
 - [ ] Empty or absent `targetPaths` raises `MISSING_FLOOR_INPUT` unconditionally, with no "declares target files" qualifier anywhere in the spec or implementation
-- [ ] `resolve` derives `targetPaths` from the plan task's declared `files:` and fails closed when that field is absent or empty
 - [ ] The floor fires on a sensitive-path match with `risk_level: low` and `boundaries: []`
 - [ ] `floor_applied: true` is recorded whenever floor conditions held, including when escalation had already raised the depth to `thorough`
 - [ ] The floor is evaluated last — after chain and escalation — in every path, and only escalates
@@ -552,15 +575,14 @@ string-matching its content.
 - [ ] `/adev:implement` calls `adev test-policy assert-assigned` — the check is a verb, not skill-prose branching — and fails the step with `MISSING_DEPTH_ASSIGNMENT` when no event exists
 - [ ] A task may carry more than one assignment event; the most recent wins, and `explain` reports from it
 - [ ] `MISSING_FLOOR_INPUT` mid-implement blocks the task with the offending input named and resumes via `/adev:recover`; the plan is not rewritten
+- [ ] `assert-assigned` performs a presence check only and makes no claim about suite content
+- [ ] The Capability, Behavior 14, and the Scope Boundary agree that the floor is advisory; no behavior, postcondition, or AC asserts that an authored suite matches its assigned depth
+- [ ] A task in a plan with no `**Files:**` block resolves without a floor path check, records `floor_inputs: "unavailable"`, and remains implementable
+- [ ] Backticked paths and bullets with surrounding prose parse correctly; non-path tokens are dropped
 - [ ] `resolve` parses the `**Files:**` block per Behavior 8: line ranges stripped from `Modify:`, `Test:` paths included, repo-relative POSIX, fail-closed on an empty or absent block
 - [ ] A task declaring only a `Test:` path under a sensitive directory is still floored
-- [ ] ADR-0016 §2 and §4 match this spec on standalone behaviour, payload fields, accumulation, and sole writer
 - [ ] Standalone `/adev:write-test` in all three invocation forms, with or without `.context-index/`, authors at `standard`, reads no policy config, evaluates no floor, and emits no event
 - [ ] `test_depth_assigned` is registered in `CANONICAL_EVENTS` and `event-schemas.mjs`, carries `plan`, carries no `granularity`, and does not land in `unknownEvents[]`
-- [ ] A task whose resolved depth exceeds an existing suite's authored depth gets a "extend and raise" instruction, and a floored task never extends a shallower suite without raising it
-- [ ] The Handoff Block records `assigned_depth` and covered case classes; `assert-assigned` fails with `DEPTH_CONFORMANCE_FAILED` when authored depth is below assigned depth
-- [ ] `assert-assigned` re-evaluates the floor legs against `git diff --name-only` and raises `FLOOR_EVASION_DETECTED` when a sensitive path was touched under a non-floored assignment
-- [ ] Removing a path from a task's declared file list before `resolve` does not evade the floor — the diff re-evaluation still catches it
 - [ ] Sensitive-path matching is repo-relative POSIX via the existing `matchGlob`; `src/auth.ts` and `services/api/.env.production` both floor
 - [ ] A present-but-unparseable `sensitive-paths.yaml`, or a non-string entry, fails closed with `INVALID_SENSITIVE_PATHS`
 - [ ] adev's own `governance/sensitive-paths.yaml` extends the default with `lib/test-strategies/**`, `lib/governance/**`, and `lib/lifecycle-events.mjs`
