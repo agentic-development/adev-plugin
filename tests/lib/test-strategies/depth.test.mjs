@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolveTestDepth } from "../../../lib/test-strategies/depth.mjs";
 import { DEFAULT_SENSITIVE_PATHS } from "../../../lib/test-strategies/sensitive-paths.mjs";
+import { SHARED_PATTERNS, detectSharedGamingPatterns } from "../../../lib/test-strategies/gaming.mjs";
 
 const base = {
   spec: {}, riskLevel: "medium",
@@ -109,4 +110,9 @@ test("floor legs are evaluated last, after chain and escalation, and only escala
   const r = resolveTestDepth({ ...base, riskLevel: "low", policies: { low: { test_depth: "minimal" } }, targetPaths: [] });
   assert.equal(r.depth, "minimal"); // no leg held: risk low, no boundary, no sensitive path
   assert.equal(r.floor_applied, false);
+});
+
+test("detectSharedGamingPatterns() and SHARED_PATTERNS take no depth parameter — blocker set is depth-invariant by construction", () => {
+  assert.equal(detectSharedGamingPatterns.length <= 1, true); // arity: (suiteText) only, no depth arg
+  assert.ok(Array.isArray(SHARED_PATTERNS) && SHARED_PATTERNS.length > 0);
 });
