@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Charter edit with exact row content specified in the task text; small blast radius, mechanical follow of existing capability-map format."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "SKILL.md prose addition mirroring the existing Strategy Assignment section; descriptive-reference only, well precedented."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Mirrors the existing Domain-Aware Test Config sub-step verbatim in the same file/line range; strong precedent, clear spec."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Documentation-only Step 0 addition plus a locked-in-place arity assertion on unmodified gaming.mjs; low risk, strong precedent."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Replaces one status checklist item with an existing adev state current call; clear intent but exact output shape needs minor inference."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Touches init SKILL.md + 2 templates in one module; task text itself flags an unresolved design choice (where inferGranularity lives) — checkpoint recommended."
+    },
+    {
+      "task_id": "t15",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Trivial mirror of the existing test_strategy: frontmatter field; minimal risk."
+    },
+    {
+      "task_id": "t16",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "New hygiene audit pass mirroring Audit Pass 12's scan structure; depends on the state/event verbs landed in Tasks 7-8."
+    },
+    {
+      "task_id": "t17",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Verbatim YAML content given in the task; creates a self-hosting governance config file (itself matching the sensitive-path pattern it defines)."
+    },
+    {
+      "task_id": "t18",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Cross-feature spec amendment via the established adev specify amend protocol; requires composing accurate supersession prose spanning two specs — checkpoint recommended."
+    },
+    {
+      "task_id": "t19",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Final wrap-up across 6 doc files; requires verifying documented defaults against shipped code rather than transcribing the spec; writing-heavy, benefits from review."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Frozen-constant module mirroring lib/test-strategies/registry.mjs pattern; full test and implementation given; single-module, mechanical."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Chain-resolution parser mirroring assignment.mjs and manifest.mjs validation style; full test/code given; low blast radius."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Extends loadRigorPolicies read-only across lib+templates+governance config; edits risk-policies.yaml itself (self-referential governance change) — checkpoint recommended."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Densest spec behavior (task-region/context-family heading disambiguation); no existing parser precedent in codebase; checkpoint before GREEN phase advised."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Core chain+escalation+floor synthesis with monotonicity invariants; full 9-case test suite given but correctness-critical composition of three passes."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Mechanical mirror of spec_amended precedent, but the code itself carries an explicit [BOUNDARY: human-approved] marker per ADR-0009 for canonical event schema changes — checkpoint recommended despite high mechanical score."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "Most complex task: CLI dispatch + containment/workspace guards + atomic YAML edit via regex substitution (no serializer) + reinterpreted boundary-crossing semantics; cross-module (lib+cli)."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Small lookup-based branching function with complete implementation given; low complexity, single module."
+    }
+  ]
+}
