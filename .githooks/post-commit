@@ -47,31 +47,51 @@ fi
 OUTPUT_DIR=".context-index/sessions"
 TRACKING_FILE=".context-index/.session-tracking.jsonl"
 
+# SEC: none of the values below are interpolated into the inline JS source —
+# every git-derived value (commit hash/date/subject/body, Spec: trailers,
+# changed files) is untrusted (it can originate from a fetched, attacker-
+# authored commit) and is passed via environment variables instead, read
+# back inside the script through `process.env`. This closes a command-
+# injection hole where a crafted `Spec:` trailer or commit message could
+# break out of the JS string literal it was previously spliced into.
+export ADEV_PC_COMMIT_HASH="$COMMIT_HASH"
+export ADEV_PC_COMMIT_DATE="$COMMIT_DATE"
+export ADEV_PC_COMMIT_SUBJECT="$COMMIT_SUBJECT"
+export ADEV_PC_COMMIT_BODY="$COMMIT_BODY"
+export ADEV_PC_SPECS_TOUCHED="$SPECS_TOUCHED"
+export ADEV_PC_CHANGED_FILES="$CHANGED_FILES"
+export ADEV_PC_OUTPUT_DIR="$OUTPUT_DIR"
+export ADEV_PC_TRACKING_FILE="$TRACKING_FILE"
+
 # Call session-summary writer with enriched content
 node --input-type=module -e "
   import { writeSummary } from './lib/session-summary.mjs';
   import { readFileSync, writeFileSync } from 'fs';
 
+  const env = process.env;
+  const outputDir = env.ADEV_PC_OUTPUT_DIR;
+  const trackingFile = env.ADEV_PC_TRACKING_FILE;
+
   const metadata = {
-    date: '${COMMIT_DATE}'.slice(0, 10),
+    date: (env.ADEV_PC_COMMIT_DATE || '').slice(0, 10),
     type: 'commit',
     mode: 'auto',
     agent: 'git-hook',
-    specsTouched: '${SPECS_TOUCHED}'.split(',').filter(Boolean),
-    commits: ['${COMMIT_HASH}'],
+    specsTouched: (env.ADEV_PC_SPECS_TOUCHED || '').split(',').filter(Boolean),
+    commits: [env.ADEV_PC_COMMIT_HASH || ''],
   };
 
   // Intent = commit subject + body
-  const subject = $(printf '%s' "$COMMIT_SUBJECT" | node -e 'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>console.log(JSON.stringify(d.trim())))');
-  const body = $(printf '%s' "$COMMIT_BODY" | node -e 'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>console.log(JSON.stringify(d.trim())))');
+  const subject = (env.ADEV_PC_COMMIT_SUBJECT || '').trim();
+  const body = (env.ADEV_PC_COMMIT_BODY || '').trim();
 
   // Changed files
-  const changedFiles = $(printf '%s' "$CHANGED_FILES" | node -e 'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>console.log(JSON.stringify(d.trim())))');
+  const changedFiles = env.ADEV_PC_CHANGED_FILES || '';
 
   // Session activity from tracking JSONL
   let sessionLines = '';
   try {
-    sessionLines = readFileSync('${TRACKING_FILE}', 'utf8').trim();
+    sessionLines = readFileSync(trackingFile, 'utf8').trim();
   } catch {}
 
   const sections = ['## Intent', '', subject];
@@ -118,11 +138,11 @@ node --input-type=module -e "
   }
 
   const condensed = sections.join('\n');
-  await writeSummary(condensed, metadata, '${OUTPUT_DIR}');
+  await writeSummary(condensed, metadata, outputDir);
 
   // Clear tracking JSONL for next session
   if (sessionLines) {
-    try { writeFileSync('${TRACKING_FILE}', '', 'utf8'); } catch {}
+    try { writeFileSync(trackingFile, '', 'utf8'); } catch {}
   }
 " 2>/dev/null || true
 
