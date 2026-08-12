@@ -155,6 +155,32 @@ Near-verbatim prose duplicated across skills, all better served by one CLI verb 
 
 ---
 
+## Part 3b — The Missing Gate: Concurrent Ownership (found by using the framework, 2026-08-12)
+
+This finding came from executing Phase 0 rather than from the four investigations, and it is the one the corpus analysis could not have produced — the artifacts record what each run did, never what two runs did at once.
+
+**What happened.** While this study's Phase 0 was being filed and worked, a second workstream was active on the same shared board: `epic-102` ("Skill surface consolidation & provider-agnostic plumbing simplification", issues 568–581, PRs #210–#214) — pursuing substantially the same goal as this study. Neither side saw the other. Two agents independently fixed the same p0 command injection an hour apart (PR #214 and duplicate PR #215, both citing issue-582), and this study independently re-derived several conclusions epic-102 had already itemised (CLI verb consolidation, hoisting the Load Skill Extensions boilerplate, consolidating the three lifecycle-gate hooks, demoting deterministic skills to CLI verbs).
+
+**Root cause — an asymmetry between two state stores.** The issue board resolves storage via `git rev-parse --git-common-dir` (`lib/issues/resolve-root.mjs`) and is deliberately shared across worktrees. Execution state does not: `lib/execution-state.mjs` reads `<projectRoot>/.context-index/.execution-state.json`, which is worktree-local. Measured live: `/adev:work` Step 1 reported `status: idle` in one worktree while four `epic-102` issues were `in_progress` and five PRs were open. The state scan is blind by construction, not by accident.
+
+**Second, behavioural half.** The board *did* carry the signal — issue-582 was already `in_progress` — but nothing re-reads an issue at the moment work begins, so stale local knowledge beat the shared record.
+
+**The structural point for this study.** The framework has code-enforced gates for lifecycle *order* — `requireGate` blocks plan-before-review, implement-before-plan, validate-before-implement — and none for concurrent *ownership*. It rigorously prevents doing things in the wrong sequence and does nothing to prevent two agents doing the same thing simultaneously. Every gate in Part 3's inventory answers "is this step allowed yet?"; no gate answers "is someone already doing this?"
+
+This matters directly for the simplification thesis. Part 4's research endorses parallel agents for disjoint work, and the repo ships `adev parallel` with collision detection for exactly that. But collision detection operates on file overlap *within* one orchestrated run. Two independently launched sessions share a board and nothing else.
+
+**Remedy — `epic-107`,** five issues, all reusing existing machinery rather than adding concepts:
+
+1. **issue-606** — extend `/adev:work` Step 1 to scan open PRs, remote branches, and other-owner `in_progress` issues. Highest value, lowest cost, no new data model. Would have surfaced epic-102 before any work began.
+2. **issue-607** — resolve execution state through `resolveStorageRoot()` like the board already does (or merge sibling worktrees). Decide deliberately between *shared* and *merged*, since sharing changes semantics for legitimate `--parallel` worktree work.
+3. **issue-608** — `adev issues claim <id>`, an atomic check-and-set modelled on the `requireGate` precondition pattern, enforced in implement/debug preflight. **Blocked by issue-594**: claim semantics on a shared board are unverified while the JsonAdapter's concurrent-appender test is failing.
+4. **issue-609** — bind issues to `branch`/`pr` so ownership is answerable offline.
+5. **issue-610** — claim TTL and release path; without expiry the first crashed session locks an issue forever and the gate trains people to bypass it, which is worse than no gate.
+
+**A note on cost ordering.** The duplicate PR cost about an hour. The duplicated *analysis* cost considerably more. The cheap scan (issue-606) addresses the expensive failure; the durable claim/lease work addresses the cheap one. Sequence accordingly.
+
+**Loop closure worth recording:** the coordination fix depends on issue-594 (board concurrency), which surfaced only because Phase 0's test-discovery fix (issue-560) restored the ~50 unit suites that had never run. Fixing measurement first produced the prerequisite for a fix nobody had scoped.
+
 ## Part 4 — External Research Digest (condensed)
 
 Full source list with URLs at the end. Key claims and their implication here:
@@ -174,6 +200,10 @@ Full source list with URLs at the end. Key claims and their implication here:
 ---
 
 ## Recommended Roadmap
+
+### Phase 0a — Coordination (do first; cheapest, and it protects every phase after it)
+
+Extend `/adev:work`'s state scan to open PRs, remote branches, and other-owner `in_progress` issues (`issue-606`), and reconcile against `epic-102` before starting any simplification work. Running a simplification sweep while another workstream simplifies the same surface is the most expensive failure available here, and it already happened once. See Part 3b and `epic-107`.
 
 ### Phase 0 — Fix measurement (prerequisite for everything; small, independent PRs)
 
