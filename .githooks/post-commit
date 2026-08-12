@@ -47,7 +47,14 @@ fi
 OUTPUT_DIR=".context-index/sessions"
 TRACKING_FILE=".context-index/.session-tracking.jsonl"
 
-# Call session-summary writer with enriched content
+# Call session-summary writer with enriched content.
+#
+# ADEV_SPECS_TOUCHED crosses a trust boundary: it is derived from the commit
+# message's `Spec:` trailers, which any author of a fetched branch controls.
+# It is passed through the environment and read via process.env so it is never
+# interpolated into JS source. Do not shell-expand that variable inside the
+# node block below — see tests/hooks/post-commit-trailer-injection.test.mjs.
+ADEV_SPECS_TOUCHED="$SPECS_TOUCHED" \
 node --input-type=module -e "
   import { writeSummary } from './lib/session-summary.mjs';
   import { readFileSync, writeFileSync } from 'fs';
@@ -57,7 +64,12 @@ node --input-type=module -e "
     type: 'commit',
     mode: 'auto',
     agent: 'git-hook',
-    specsTouched: '${SPECS_TOUCHED}'.split(',').filter(Boolean),
+    specsTouched: (process.env.ADEV_SPECS_TOUCHED || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((s) => !s.startsWith('/') && !s.split('/').includes('..'))
+      .slice(0, 50),
     commits: ['${COMMIT_HASH}'],
   };
 
