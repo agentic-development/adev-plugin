@@ -8,10 +8,21 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, dirname, resolve as resolvePath } from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { run } from "../../lib/cli/test-policy.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
+
+// Real-subprocess invocation of the CLI, mirroring the pattern established in
+// tests/cli/verify.test.mjs — asserts against actual process stdout/exit code rather than the
+// in-process `run()` return value, since the dispatcher (cli/index.mjs) only inspects the return
+// value to pick a numeric exit code and never prints it itself (see cli/index.mjs's `dispatch()`,
+// ~line 1808): each verb module is responsible for printing its own JSON to stdout.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CLI = resolvePath(__dirname, "..", "..", "cli", "index.mjs");
 
 // Every subcommand except the two argument-validation-only cases resolves the owning spec via
 // the plan header's `> **Spec:** <path>` line (appendEvent/readEvents are per-spec logs, not
@@ -211,6 +222,88 @@ test("set writes via temp-file-plus-rename and round-trip-verifies before commit
     await run({ projectRoot: dir, argv: ["set", "--module", "lib", "--test_depth", "thorough"] });
     const result = await run({ projectRoot: dir, argv: ["show", "--module", "lib"] });
     assert.equal(result.test_depth.value, "thorough");
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+// ── real-CLI stdout contract (Interface Contract table; Behaviors 12 and 15) ──────────────
+
+test("[subprocess] adev test-policy resolve prints the assignment as JSON to real stdout", async () => {
+  const dir = await createTempDir();
+  try {
+    await seedPlanWithSpec(dir, {
+      planBody: "## Task Structure\n\n### Task 1: X [specialist: none]\n**Files:**\n- Create: `src/x.ts`\n",
+    });
+    const r = spawnSync(
+      "node",
+      [CLI, "test-policy", "resolve", "--plan", "plan.plan.md", "--task-id", "t1"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+    assert.notEqual(r.stdout.trim(), "", "resolve must print JSON to stdout, not just return it");
+    const parsed = JSON.parse(r.stdout);
+    assert.ok(["minimal", "standard", "thorough"].includes(parsed.depth));
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("[subprocess] adev test-policy show prints the effective policy as JSON to real stdout", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/manifest.yaml", "modules: []\n");
+    const r = spawnSync("node", [CLI, "test-policy", "show"], { encoding: "utf8", cwd: dir });
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+    assert.notEqual(r.stdout.trim(), "", "show must print JSON to stdout, not just return it");
+    const parsed = JSON.parse(r.stdout);
+    assert.ok(parsed.granularity);
+    assert.ok(parsed.granularity_source);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+// ── set: closed-enumeration validation (Behavior 9 — no silent fallback for malformed policy) ──
+
+test("set rejects an out-of-enumeration --test_depth with INVALID_TEST_DEPTH before any write", async () => {
+  const dir = await createTempDir();
+  try {
+    const manifestRel = ".context-index/manifest.yaml";
+    const manifestContent = "modules:\n  - slug: lib\n    paths:\n      - lib/\n";
+    await writeFixture(dir, manifestRel, manifestContent);
+    const manifestPath = join(dir, manifestRel);
+    const before = readFileSync(manifestPath, "utf8");
+
+    await assert.rejects(
+      run({ projectRoot: dir, argv: ["set", "--module", "lib", "--test_depth", "bogus"] }),
+      /INVALID_TEST_DEPTH/,
+    );
+
+    const after = readFileSync(manifestPath, "utf8");
+    assert.strictEqual(after, before, "manifest.yaml must be byte-identical after a rejected set");
+    assert.ok(!existsSync(`${manifestPath}.tmp-${process.pid}`), "no temp file should be left behind");
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("set rejects an out-of-enumeration --granularity with INVALID_TEST_GRANULARITY before any write", async () => {
+  const dir = await createTempDir();
+  try {
+    const manifestRel = ".context-index/manifest.yaml";
+    const manifestContent = "modules: []\n";
+    await writeFixture(dir, manifestRel, manifestContent);
+    const manifestPath = join(dir, manifestRel);
+    const before = readFileSync(manifestPath, "utf8");
+
+    await assert.rejects(
+      run({ projectRoot: dir, argv: ["set", "--granularity", "bogus"] }),
+      /INVALID_TEST_GRANULARITY/,
+    );
+
+    const after = readFileSync(manifestPath, "utf8");
+    assert.strictEqual(after, before, "manifest.yaml must be byte-identical after a rejected set");
   } finally {
     await cleanupTempDir(dir);
   }
