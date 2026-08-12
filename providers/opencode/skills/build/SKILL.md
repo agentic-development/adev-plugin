@@ -24,6 +24,7 @@ Chain review, plan, route, implement, and validate into a single end-to-end pipe
 - `--verbose`: disable silent execution for all subagents in this pipeline run. Subagent prompts include `VERBOSE: true`, causing skills to narrate each step. Useful for debugging pipeline failures.
 - `--auto`: run the entire pipeline without prompting the user for input. Stale builds are overwritten (not prompted). Subagent prompts include `AUTO: true`, instructing sub-skills to make autonomous decisions instead of asking the user (e.g., accept default choices, skip confirmations). The build stops on errors rather than asking for guidance. Useful for CI, scheduled builds, and batch operations.
 - `--require-human-final-pass`: hybrid-mode gate added by the `review-block-auto-retry` spec. When the BLOCK→revise loop converges on PASS at revision N+1, the build halts with verdict `PASS_PENDING_HUMAN` instead of proceeding. A `human_approval_required` lifecycle event is emitted. The operator runs `/adev:build --resume --spec <spec>` to acknowledge the final revision and continue to plan/implement. Use in risk-averse domains where auto-revised specs require human sign-off before downstream work.
+- `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). When provided, propagated to the `/adev:review-specs --tier <t>` dispatch in Step 1 and the `/adev:validate --tier <t>` dispatch in Step 5. When absent, each of those steps resolves its own rigor tier via the routing signal / risk policy / default `full` precedence described in `graduated-rigor-tiers.spec.md` — the build orchestrator does not resolve or default this value itself. Invalid values surface as `INVALID_TIER` from whichever step first attempts resolution. **Not the same as gate tiers.** This is the rigor tier (`full`/`quick`) that governs review/validate depth — do not confuse it with the *gate* tiers (`fast`/`integration`/`e2e`) that Check 1 of `/adev:validate` groups quality gates into (see the Dry Run Mode gate-tier summary below); the two are unrelated concepts that happen to share the word "tier".
 
 ## Prerequisites
 
@@ -319,7 +320,7 @@ On every invocation (whether fresh `--spec` or `--resume`), the orchestrator per
    Skip this section entirely for the `specify` step (cost ticker scopes to `{review, plan, route, implement, validate}` only).
 
 7. **Re-invoke or stop. (CRITICAL — do NOT skip this step.)**
-   - If `next` from step 5 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
+   - If `next` from step 5 is non-null AND no stop condition is met: print a one-line progress report (`"Step N (<name>) completed — <verdict>. Next: Step N+1 (<name>)."`) and **immediately** re-invoke `/adev:build --resume --spec <path>` via the Skill tool. If `--tier <t>` was set for this build, carry it forward on the re-invocation (`--resume --spec <path> --tier <t>`) — it is not persisted in build state, so omitting it on a resumed turn silently drops the rigor signal for any remaining review/validate dispatch. The re-invocation starts a fresh turn with a clean context — it has no memory of the current turn. **Ending your response without re-invoking is a build failure.**
    - If `next` is null or `buildStatus` is `"completed"` or `"failed"`: do NOT re-invoke. Print the final summary and exit without re-invocation.
 
 ### Why One Step Per Turn
@@ -397,6 +398,8 @@ Agent({
 > Warning: No `.review.md` found for `<spec>`. Run `/adev:review-specs --spec <path>` first, or use `--full` to include review in the build.
 
 Stop the build. Do not proceed to plan.
+
+**Rigor tier propagation:** If `--tier <t>` was passed to `/adev:build`, append `--tier <t>` to the dispatched args so `/adev:review-specs` receives the explicit override at its own Step 2.5 tier resolution. If `--tier` was not passed to `/adev:build`, dispatch without it — `/adev:review-specs` resolves its own rigor tier from the routing signal, risk policy, or default `full`.
 
 **Subagent dispatch:**
 
@@ -532,6 +535,8 @@ This is the longest-running step. The implement skill manages TDD loops, special
 
 **Skip condition:** None. Validation always runs as the final step.
 
+**Rigor tier propagation:** If `--tier <t>` was passed to `/adev:build`, append `--tier <t>` to the dispatched args so `/adev:validate` receives the explicit override at its own Execution Strategy tier resolution. If `--tier` was not passed to `/adev:build`, dispatch without it — `/adev:validate` resolves its own rigor tier from the routing signal, risk policy, or default `full`.
+
 **Subagent dispatch:**
 
 ```
@@ -542,7 +547,7 @@ Agent({
 })
 ```
 
-The validate skill runs its full 13-check suite within the subagent's isolated context.
+The validate skill runs its full 13-check suite within the subagent's isolated context (narrowed to the fail-fast + synthesized compliance check when the resolved rigor tier is `quick`).
 
 **After subagent returns:**
 - **PASS:** All checks passed. Record in build state.
