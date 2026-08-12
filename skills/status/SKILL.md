@@ -57,7 +57,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 6. If the spec belongs to a charter, read the charter and compare:
    - If spec's `charter-revision` is behind the charter's current `revision`, flag as **charter-revision stale**
 7. Check if a plan exists for this spec (look for plan files referencing the spec path)
-8. Run `adev state current --spec <path>` and read the returned `planTasks` and `testDepthAssignments` projections. For each entry in `planTasks`, determine whether a matching entry exists in `testDepthAssignments` keyed on that task's `plan` + `task_id` (the projection folds `plan_task` and `test_depth_assigned` lifecycle events; the most recent assignment per plan+task_id wins). Report `<N>/<total> tasks with a recorded assignment`. This counts lifecycle events rather than filesystem presence because under any granularity other than `per-task`, multiple tasks can share one suite path — a raw file-existence probe no longer maps 1:1 to per-task completion.
+8. Run `adev state current --spec <path>` and read the returned `planTasks` and `testDepthAssignments` projections. For each `planTasks` entry, check for a matching `testDepthAssignments` entry keyed on `plan` + `task_id`, where the projection folds `plan_task` and `test_depth_assigned` events and the most recent assignment per plan+task_id wins. Report `<N>/<total> tasks with a recorded assignment`. This counts lifecycle events rather than filesystem presence, since under any granularity other than `per-task`, multiple tasks can share one suite path and a raw file-existence probe no longer maps 1:1 to per-task completion.
 9. Display `tracker-ref` if present
 
 **Output format:**
