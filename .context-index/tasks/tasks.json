@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 163,
+  "seq": 167,
   "epics": [
     {
       "id": "epic-1",
@@ -787,6 +787,14 @@
       "status": "open",
       "created": "2026-08-12T21:14:48.010Z",
       "updated": "2026-08-12T21:14:48.010Z"
+    },
+    {
+      "id": "epic-103",
+      "title": "Test Depth Policy and Escalation-Only Coverage Scaling",
+      "status": "open",
+      "planRef": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
+      "created": "2026-08-12T21:20:38.562Z",
+      "updated": "2026-08-12T21:20:38.562Z"
     }
   ],
   "issues": [
@@ -4281,6 +4289,42 @@
       "next_action": null,
       "created": "2026-08-12T21:14:48.161Z",
       "updated": "2026-08-12T21:14:48.161Z"
+    },
+    {
+      "id": "issue-582",
+      "title": "SECURITY: post-commit hook interpolates Spec: trailer into `node -e` — command injection via crafted commit message",
+      "status": "open",
+      "priority": 0,
+      "type": "bug",
+      "dependencies": [],
+      "notes": "Found by security-reviewer during review of measurement-integrity.spec.md (blocker_id security-reviewer:command-injection:7c3a91d4). Verified at HEAD: .githooks/post-commit line 17 captures SPECS_TOUCHED from %(trailers:key=Spec,valueonly); line 60 embeds it as specsTouched: '${SPECS_TOUCHED}'.split(',') inside the node --input-type=module -e block opened at line 51. COMMIT_SUBJECT/COMMIT_BODY are JSON-escaped via round-trip; SPECS_TOUCHED is not. A crafted Spec: trailer executes attacker-controlled code when a developer merges or pulls a fetched branch. Value is also emitted into YAML frontmatter unquoted, so ] , or newline corrupts frontmatter parsed by hygiene/status. Fix: pass raw git output via stdin or process.env, never \"${VAR}\" inside node -e; emit specs-touched as double-quoted YAML scalars.",
+      "next_action": null,
+      "created": "2026-08-12T21:20:16.632Z",
+      "updated": "2026-08-12T21:20:16.632Z"
+    },
+    {
+      "id": "issue-583",
+      "title": "Correct harness-simplification-study: adev/frontmatter-present is an error-severity diagnostic reporting real violations, not overhead",
+      "status": "open",
+      "priority": 2,
+      "type": "task",
+      "dependencies": [],
+      "notes": "Found by consistency-analyzer (blocker_id consistency-analyzer:diagnostic-rename:59671228). The study listed the diagnostic as pure overhead based on 52% event volume. In fact lib/diagnostics/tier1/frontmatter-present.mjs returns {fired:false} for well-formed frontmatter and fires only on missing/malformed at severity error — the volume is 130 of 201 spec files genuinely violating the first-non-blank-line rule, already tracked by issue #3448 with a reconciliation spec as the designated fix. Study section \"Part 2 / pure overhead\" needs correcting; measurement-integrity Behavior 4 should be dropped or re-scoped.",
+      "next_action": null,
+      "created": "2026-08-12T21:20:16.651Z",
+      "updated": "2026-08-12T21:20:16.651Z"
+    },
+    {
+      "id": "issue-584",
+      "title": "Prose/CLI contract mismatch: review-specs SKILL.md emits --verdict BLOCK but `adev report --type step` accepts only PASS|PASS_WITH_NOTES|FAIL",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "dependencies": [],
+      "notes": "Hit live during /adev:review-specs on measurement-integrity.spec.md. SKILL.md Step 0/Step 8 instruct `adev report --type step --step review --status completed --verdict <consolidated-verdict>` where the consolidated verdict vocabulary is PASS|PASS_WITH_NOTES|BLOCK, but the CLI rejects BLOCK. Agent must map BLOCK -> FAIL. Either widen the CLI enum or fix the skill prose to name the mapping explicitly. Same bug class as the orchestration-drift findings in retro 2026-05-15.",
+      "next_action": null,
+      "created": "2026-08-12T21:20:16.670Z",
+      "updated": "2026-08-12T21:20:16.670Z"
     }
   ]
 }
