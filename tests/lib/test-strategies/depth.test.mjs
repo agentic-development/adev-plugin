@@ -93,6 +93,18 @@ test("risk_level high with no parseable path block records floor_applied true an
   assert.equal(r.floor_inputs, "unavailable");
 });
 
+test("an escalation rule with an invalid depth value throws INVALID_TEST_DEPTH instead of silently winning", () => {
+  assert.throws(
+    () =>
+      resolveTestDepth({
+        ...base,
+        escalationRules: [{ when: { blast_radius: "<=0.3" }, depth: "thorogh" }],
+        routingScore: { blast_radius: 0.1 },
+      }),
+    /INVALID_TEST_DEPTH: 'thorogh'/,
+  );
+});
+
 test("floor legs are evaluated last, after chain and escalation, and only escalate", () => {
   const r = resolveTestDepth({ ...base, riskLevel: "low", policies: { low: { test_depth: "minimal" } }, targetPaths: [] });
   assert.equal(r.depth, "minimal"); // no leg held: risk low, no boundary, no sensitive path
