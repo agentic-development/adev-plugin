@@ -5,7 +5,7 @@ kind: behavioral
 risk_level: medium
 milestone:
 revision: 7
-charter-revision: 2
+charter-revision: 3
 created: 2026-08-10
 updated: 2026-08-11
 charter-extension: true

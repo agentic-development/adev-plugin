@@ -28,6 +28,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 - Gate tier assignment (owned by tiered-test-gates / unified-gates)
 - Test execution and runner orchestration (owned by implement and validate)
 - Spec authoring format changes (owned by specify)
+- End-to-end verification that an authored suite matches its assigned depth (advisory floor only, no automated enforcement — issue-559)
 
 ### Dependencies
 
@@ -39,6 +40,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | design | internal module | Live Specs may declare optional `test_strategy` override in frontmatter |
 | tiered-test-gates | internal module | Strategies map to tiers for gate execution |
 | unified-gates | internal module | Strategy metadata may be included in gate config |
+| governance/risk-policies.yaml | internal config | Reads test_depth per risk level |
 
 ## Domain Model
 
@@ -50,6 +52,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | StrategyProfile | The full rule set for one strategy, authored as a Live Spec | `strategy_id`, `permitted_tools[]`, `red_exit_condition`, `green_exit_condition`, `gaming_blockers[]`, `assertion_rules`, `seed_data_rule`, `handoff_format` |
 | StrategyDeclaration | A project's manifest entry declaring available strategies | `strategy_id`, `command` (test runner), `tier` (fast/integration/e2e), `paths[]` (file globs that trigger this strategy) |
 | StrategyAssignment | A task-level binding of strategy to work item | `task_id`, `strategy_id`, `source` (detected/spec-declared/manifest), `confidence` (high/medium/low) |
+| TestDepthAssignment | A task-level binding of resolved depth to a plan task | task_id, plan, depth, source, escalated, floor_applied, floor_legs, floor_inputs |
 
 ### Relationships
 
@@ -82,6 +85,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | Confidence Reporting | Strategy assignments include confidence level (high/medium/low) so humans can review low-confidence assignments before proceeding | nice-to-have | | review-passed |
 | Cross-strategy Gaming Patterns | Shared gaming detection patterns that apply across all strategies (e.g., disabled tests, empty assertions) | nice-to-have | | review-passed |
 | Integration Strategy Profile | Define the integration strategy profile — 9th strategy type for behavioral tests against real external infrastructure with no mocking at the infrastructure boundary | nice-to-have | | validated |
+| Test Depth Policy | Risk-scaled control over how many case classes a suite must cover (depth), independent of which strategy applies | must-have | | in-planning |
 
 ## Deferred Capabilities
 
@@ -110,6 +114,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | `platform-context.yaml` | setup | Reads `language`, `test_runner`, `framework` for detection heuristics |
 | Task file paths | planning | Plan provides file paths per task for strategy detection |
 | Spec `test_strategy` field | design | Optional override declared in Live Spec frontmatter |
+| Spec test_depth field | design | Live Specs may declare optional test_depth override in frontmatter, alongside the existing test_strategy field |
 
 ## Quality Attributes
 
