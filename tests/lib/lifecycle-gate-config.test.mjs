@@ -38,10 +38,15 @@ describe("lifecycle-gate-config", () => {
     assert.equal(config.level, "warn");
   });
 
-  it("returns empty arrays when no domain config provided", () => {
+  it("returns empty exclusions and only structural passthrough when no domain config provided", () => {
     const config = resolveGateConfig({});
     assert.deepEqual(config.fileExclusions, []);
-    assert.deepEqual(config.bashPassthrough, []);
+    // Strictest mode still carries the structural passthrough set — the gate
+    // must never gate its own escape hatch.
+    assert.deepEqual(config.bashPassthrough, [
+      "adev execution-state write",
+      "adev skill-ext load",
+    ]);
   });
 
   it("matchesFileExclusion matches domain-provided patterns", () => {
@@ -102,5 +107,42 @@ describe("lifecycle-gate-config", () => {
     }, softwareDomainConfig);
     assert.equal(matchesBashPassthrough("git status", config), false);
     assert.equal(matchesBashPassthrough("custom-cmd --flag", config), true);
+  });
+
+  it("standalone escape hatch passes with no domain config (strictest mode)", () => {
+    const config = resolveGateConfig({ "lifecycle.gate": "block" });
+    assert.equal(
+      matchesBashPassthrough("adev execution-state write --status standalone", config),
+      true
+    );
+  });
+
+  it("escape hatch passes under a domain profile that does not list it", () => {
+    const config = resolveGateConfig({}, softwareDomainConfig);
+    assert.equal(
+      matchesBashPassthrough("adev execution-state write --status standalone", config),
+      true
+    );
+  });
+
+  it("escape hatch survives bash_passthrough.replace_defaults=true", () => {
+    const config = resolveGateConfig({
+      "lifecycle.gate.bash_passthrough": "custom-cmd",
+      "lifecycle.gate.bash_passthrough.replace_defaults": "true"
+    }, softwareDomainConfig);
+    assert.equal(
+      matchesBashPassthrough("adev execution-state write --status standalone", config),
+      true
+    );
+  });
+
+  it("skill-ext load passes structurally; other adev verbs stay gated", () => {
+    const config = resolveGateConfig({});
+    assert.equal(matchesBashPassthrough("adev skill-ext load --skill work", config), true);
+    // Prefix is exact — bare `adev`, other verbs, and non-write execution-state
+    // subcommands are not structurally allowed.
+    assert.equal(matchesBashPassthrough("adev implement --plan p.md", config), false);
+    assert.equal(matchesBashPassthrough("adev migrate", config), false);
+    assert.equal(matchesBashPassthrough("adev", config), false);
   });
 });
