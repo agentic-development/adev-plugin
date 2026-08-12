@@ -91,7 +91,7 @@ if [ "$PASSTHROUGH_CHECK" = "passthrough" ]; then
 fi
 
 # Command is gated — apply enforcement
-MESSAGE="No active plan. Run \`/adev:work\` to enter the lifecycle before running mutating commands."
+MESSAGE="No active plan. Run \`/adev:work\` to enter the lifecycle before running mutating commands, or \`/adev:standalone\` (\`adev execution-state write --status standalone\`) to disable gates for this session."
 
 case "$LEVEL" in
   warn)
