@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 167,
+  "seq": 175,
   "epics": [
     {
       "id": "epic-1",
@@ -795,6 +795,13 @@
       "planRef": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
       "created": "2026-08-12T21:20:38.562Z",
       "updated": "2026-08-12T21:20:38.562Z"
+    },
+    {
+      "id": "epic-104",
+      "title": "frontmatter-placement: make artifact producers emit frontmatter first",
+      "status": "open",
+      "created": "2026-08-12T21:34:31.356Z",
+      "updated": "2026-08-12T21:34:31.356Z"
     }
   ],
   "issues": [
@@ -4309,10 +4316,10 @@
       "priority": 2,
       "type": "task",
       "dependencies": [],
-      "notes": "Found by consistency-analyzer (blocker_id consistency-analyzer:diagnostic-rename:59671228). The study listed the diagnostic as pure overhead based on 52% event volume. In fact lib/diagnostics/tier1/frontmatter-present.mjs returns {fired:false} for well-formed frontmatter and fires only on missing/malformed at severity error — the volume is 130 of 201 spec files genuinely violating the first-non-blank-line rule, already tracked by issue #3448 with a reconciliation spec as the designated fix. Study section \"Part 2 / pure overhead\" needs correcting; measurement-integrity Behavior 4 should be dropped or re-scoped.",
+      "notes": "Found by consistency-analyzer (blocker_id consistency-analyzer:diagnostic-rename:59671228). The study listed the diagnostic as pure overhead based on 52% event volume. In fact lib/diagnostics/tier1/frontmatter-present.mjs returns {fired:false} for well-formed frontmatter and fires only on missing/malformed at severity error — the volume is 130 of 201 spec files genuinely violating the first-non-blank-line rule, already tracked by issue #3448 with a reconciliation spec as the designated fix. Study section \"Part 2 / pure overhead\" needs correcting; measurement-integrity Behavior 4 should be dropped or re-scoped.\n\nROOT CAUSE FOUND (2026-08-12): Root cause verified 2026-08-12. lib/diagnostics/tier1/frontmatter-present.mjs rejects any markdown body before the --- delimiter (\"a markdown body (e.g. a leading # heading) before --- is rejected\"). Natural experiment confirming causation: the 4 charter templates start with --- and 0 of 47 .charter.md files violate; the 6 spec templates start with an H1 and 128 of 235 .spec.md files violate. Full corpus scan by artifact kind (the 4 kinds the diagnostic covers): .charter.md 0/47, .spec.md 128/235, .review.md 153/203, .validate.md 122/123 — roughly 400 violating artifacts, which is what produces the ~52% event share. Reviews and validates have NO template; they are written by lib/cli/artifact.mjs and by skill prose that never specifies frontmatter position, so that half needs a writer fix rather than a template fix. Safety check: tests/templates/spec-template.behavioral.test.mjs only does substring includes() assertions (infra_requirements + security note) — nothing asserts ordering, so reordering the template does not break it. Remediation split into epic-104 (issue-585, issue-586, issue-587). Cross-ref: pre-existing issue #3448 framed this as a reconciliation-spec job; the template/writer framing is smaller and addresses the source rather than only the stock.",
       "next_action": null,
       "created": "2026-08-12T21:20:16.651Z",
-      "updated": "2026-08-12T21:20:16.651Z"
+      "updated": "2026-08-12T21:34:31.445Z"
     },
     {
       "id": "issue-584",
@@ -4325,6 +4332,61 @@
       "next_action": null,
       "created": "2026-08-12T21:20:16.670Z",
       "updated": "2026-08-12T21:20:16.670Z"
+    },
+    {
+      "id": "issue-585",
+      "title": "Reorder the 6 spec templates so YAML frontmatter precedes the H1 (stops manufacturing new violations)",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-104",
+      "dependencies": [],
+      "notes": "Affected: templates/spec-template.{behavioral,skill,action,artifact,integration,refactor}.md — each currently opens with \"# <Kind> Spec: {{ spec_title }}\" and a comment block before the --- delimiter, so every spec scaffolded from them fires adev/frontmatter-present at severity error. The 4 charter templates already do this correctly and yield 0 violations. Fix is mechanical: move the --- frontmatter block above the H1 and comment. Root cause verified 2026-08-12. lib/diagnostics/tier1/frontmatter-present.mjs rejects any markdown body before the --- delimiter (\"a markdown body (e.g. a leading # heading) before --- is rejected\"). Natural experiment confirming causation: the 4 charter templates start with --- and 0 of 47 .charter.md files violate; the 6 spec templates start with an H1 and 128 of 235 .spec.md files violate. Full corpus scan by artifact kind (the 4 kinds the diagnostic covers): .charter.md 0/47, .spec.md 128/235, .review.md 153/203, .validate.md 122/123 — roughly 400 violating artifacts, which is what produces the ~52% event share. Reviews and validates have NO template; they are written by lib/cli/artifact.mjs and by skill prose that never specifies frontmatter position, so that half needs a writer fix rather than a template fix. Safety check: tests/templates/spec-template.behavioral.test.mjs only does substring includes() assertions (infra_requirements + security note) — nothing asserts ordering, so reordering the template does not break it.",
+      "next_action": null,
+      "created": "2026-08-12T21:34:31.374Z",
+      "updated": "2026-08-12T21:34:31.374Z"
+    },
+    {
+      "id": "issue-586",
+      "title": "Fix the .review.md / .validate.md writer to emit frontmatter first (no template exists for these kinds)",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-104",
+      "dependencies": [],
+      "notes": "153 of 203 .review.md and 122 of 123 .validate.md files violate the first-non-blank-line --- rule — the larger half of the corpus problem. Unlike specs, these artifact kinds have no template: they are produced by lib/cli/artifact.mjs (closed type -> suffix map, .tmp+rename commit) and by skill prose in skills/review-specs and skills/validate that never states where frontmatter goes. Fix belongs in the writer (and/or a bundled report template), not in a spec template. Root cause verified 2026-08-12. lib/diagnostics/tier1/frontmatter-present.mjs rejects any markdown body before the --- delimiter (\"a markdown body (e.g. a leading # heading) before --- is rejected\"). Natural experiment confirming causation: the 4 charter templates start with --- and 0 of 47 .charter.md files violate; the 6 spec templates start with an H1 and 128 of 235 .spec.md files violate. Full corpus scan by artifact kind (the 4 kinds the diagnostic covers): .charter.md 0/47, .spec.md 128/235, .review.md 153/203, .validate.md 122/123 — roughly 400 violating artifacts, which is what produces the ~52% event share. Reviews and validates have NO template; they are written by lib/cli/artifact.mjs and by skill prose that never specifies frontmatter position, so that half needs a writer fix rather than a template fix. Safety check: tests/templates/spec-template.behavioral.test.mjs only does substring includes() assertions (infra_requirements + security note) — nothing asserts ordering, so reordering the template does not break it.",
+      "next_action": null,
+      "created": "2026-08-12T21:34:31.387Z",
+      "updated": "2026-08-12T21:34:31.387Z"
+    },
+    {
+      "id": "issue-587",
+      "title": "Backfill ~400 existing artifacts to frontmatter-first (specs, reviews, validates)",
+      "status": "open",
+      "priority": 2,
+      "type": "task",
+      "epicId": "epic-104",
+      "dependencies": [
+        "issue-585",
+        "issue-586"
+      ],
+      "notes": "Blocked by the template fix and the writer fix — backfill last so the sources stop regenerating violations. Scope: 128 .spec.md + 153 .review.md + 122 .validate.md. Mechanical transform (move a leading H1/comment block below the frontmatter), but it rewrites a wide slice of .context-index/ so it deserves its own review and a dry-run diff. Verify afterward that the adev/frontmatter-present event share drops toward zero legitimately. Root cause verified 2026-08-12. lib/diagnostics/tier1/frontmatter-present.mjs rejects any markdown body before the --- delimiter (\"a markdown body (e.g. a leading # heading) before --- is rejected\"). Natural experiment confirming causation: the 4 charter templates start with --- and 0 of 47 .charter.md files violate; the 6 spec templates start with an H1 and 128 of 235 .spec.md files violate. Full corpus scan by artifact kind (the 4 kinds the diagnostic covers): .charter.md 0/47, .spec.md 128/235, .review.md 153/203, .validate.md 122/123 — roughly 400 violating artifacts, which is what produces the ~52% event share. Reviews and validates have NO template; they are written by lib/cli/artifact.mjs and by skill prose that never specifies frontmatter position, so that half needs a writer fix rather than a template fix. Safety check: tests/templates/spec-template.behavioral.test.mjs only does substring includes() assertions (infra_requirements + security note) — nothing asserts ordering, so reordering the template does not break it.",
+      "next_action": null,
+      "created": "2026-08-12T21:34:31.400Z",
+      "updated": "2026-08-12T21:34:31.429Z"
+    },
+    {
+      "id": "issue-588",
+      "title": "session-capture installer corrupts .githooks/post-commit: sentinel wrapper breaks script syntax; config dispatch mutates repo code",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-102",
+      "dependencies": [],
+      "notes": "Reproduced 2026-08-12 on main @ 1d2f8e7f: with integrations.session_capture.capture=hook, dispatchInstallerByCaptureMode (lib/session-capture-installer.mjs:425) runs wrapLegacyPostCommitWithSentinels then removeSessionCapturePostCommitBlock. The wrapper (:252) detects the block start at the FIRST line matching /session-capture/i — in this repo that is the self-skip guard comment (post-commit-self-skip.spec.md block, .githooks/post-commit:26-29) — so the sentinel opens INSIDE the outer if [ -n \"$CHANGED_FILES\" ] structure; removal then deletes the inner fi/fi, leaving a dangling if and a bash syntax error (unexpected end of file at line 43). Two defects: (1) wrapper bound detection must anchor on the capture-writer block, not any line mentioning session-capture, and must validate post-removal syntax (bash -n) before writing; (2) a configuration-mode dispatch silently mutates tracked repo code (.githooks/post-commit) as a side effect of hook registration — the mutation should be a separate, explicitly confirmed step. Cross-ref: the removed block is also the remediation target of issue-582 (P0 Spec:-trailer command injection lives in that same legacy block) — fixing 582 should supersede/repair this removal path. Workaround applied: git checkout -- .githooks/post-commit; SessionEnd+PreCompact registration in the installed plugin hooks.json kept.",
+      "next_action": null,
+      "created": "2026-08-12T21:36:22.146Z",
+      "updated": "2026-08-12T21:36:22.146Z"
     }
   ]
 }
