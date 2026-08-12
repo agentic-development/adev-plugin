@@ -382,6 +382,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--dry-run`: show pipeline plan without executing
 - `--no-route`: skip the route step
 - `--full`: run the Full Pipeline (specify through validate)
+- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)), propagated to the `/adev:review-specs` and `/adev:validate` dispatches in the pipeline. When omitted, each of those steps resolves its own rigor tier via routing signal / risk policy / default `full`. Distinct from the gate tiers (`fast`/`integration`/`e2e`) used by validate's quality-gate check.
 
 **Example:**
 ```
