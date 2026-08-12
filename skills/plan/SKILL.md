@@ -516,6 +516,41 @@ Include the resolved strategy in each task's metadata. If any task uses a non-un
 
 Omit this section entirely when all tasks resolve to `unit` (backward compatible — no noise for projects not using test strategies).
 
+### Granularity Assignment
+
+Resolve granularity **once for the whole plan**, not per task, using `resolveGranularity()`:
+
+```javascript
+import { resolveGranularity } from '<ADEV_ROOT>/lib/test-strategies/policy.mjs';
+// resolveGranularity({ moduleOverride, manifestPolicy, domainDefault }) →
+//   { granularity: "per-task" | "per-behavior" | "per-spec", source }
+```
+
+It resolves from static configuration only — no routing input — in priority order: a
+`modules[].test_policy.granularity` override for the task's module (source: module), then
+`test_policy.granularity` in `manifest.yaml` (source: manifest), then the domain
+`test-config.yaml` default (source: domain), then the built-in fallback `per-behavior`
+(source: fallback).
+
+The resolved granularity governs how each task's `**Tests:**` field is emitted:
+
+- **`per-task`** — one new suite path per task (the previously shipped, unchanged behavior):
+  every task's `**Tests:**` field names its own new suite.
+- **`per-behavior`** (the fallback default) — one suite path per spec behavior statement, so
+  several tasks implementing the same behavior share a single suite. Use `resolveSuitePath()`
+  (`lib/test-strategies/suite-path.mjs`) per task to check whether the behavior it implements
+  is already covered: when it is, the `**Tests:**` field references the existing suite and the
+  task instruction reads "extend `<path>`" instead of "create"; when it is not yet covered,
+  the field proposes a new suite path and the instruction reads "create `<path>`".
+- **`per-spec`** — one suite path for the whole spec, shared by every task the spec produces.
+  `resolveSuitePath()` resolves the same way against the spec's canonical suite path: "create"
+  for the first task that produces it, "extend" for every task after.
+
+Granularity governs only the `**Tests:**` field. Independent of granularity, every task carries its own **Files:** block (the per-task format under Task
+Structure below, unconditionally emitted by `/adev:plan`) — this requirement does not vary by granularity, so
+newly authored plans always give depth resolution (owned by `/adev:implement` at
+test-authoring time) its path inputs.
+
 ### Infrastructure Requirements Section
 
 After the Strategy Summary (or in its place when no non-unit strategies exist), check whether the plan needs a `## Test Infrastructure Requirements` section.
