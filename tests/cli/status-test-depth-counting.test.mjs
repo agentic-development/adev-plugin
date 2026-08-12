@@ -9,6 +9,5 @@ test("status SKILL.md counts completion via adev state current, not file existen
 });
 
 test("status SKILL.md no longer instructs a raw test-file-existence check for completion", () => {
-  const item8Region = skill.slice(skill.indexOf("Check if test files exist"), skill.indexOf("Check if test files exist") + 300);
-  assert.equal(item8Region.startsWith("Check if test files exist"), false);
+  assert.equal(skill.includes("Check if test files exist"), false);
 });
