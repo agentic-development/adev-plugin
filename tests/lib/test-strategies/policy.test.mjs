@@ -45,6 +45,27 @@ test("parseTestPolicy rejects more than 32 escalation_rules", () => {
   );
 });
 
+test("parseTestPolicy rejects a non-array escalation_rules (object form)", () => {
+  assert.throws(
+    () => parseTestPolicy({ test_policy: { escalation_rules: { a: 1 } } }),
+    /INVALID_ESCALATION_RULE_EXPRESSION/,
+  );
+});
+
+test("parseTestPolicy rejects a null entry within escalation_rules", () => {
+  assert.throws(
+    () => parseTestPolicy({ test_policy: { escalation_rules: [null] } }),
+    /INVALID_ESCALATION_RULE_EXPRESSION/,
+  );
+});
+
+test("parseTestPolicy rejects a non-array escalation_rules (string form)", () => {
+  assert.throws(
+    () => parseTestPolicy({ test_policy: { escalation_rules: "abc" } }),
+    /INVALID_ESCALATION_RULE_EXPRESSION/,
+  );
+});
+
 test("resolveGranularity: module override beats manifest beats domain beats fallback", () => {
   assert.equal(resolveGranularity({ moduleOverride: "per-task" }).granularity, "per-task");
   assert.equal(resolveGranularity({ manifestPolicy: "per-spec" }).source, "manifest");
