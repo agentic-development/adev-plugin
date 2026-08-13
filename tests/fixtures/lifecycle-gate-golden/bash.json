@@ -1,0 +1,50 @@
+[
+  {
+    "level": "off",
+    "mode": "plugin",
+    "exitCode": 0,
+    "stdout": ""
+  },
+  {
+    "level": "off",
+    "mode": "stdin",
+    "exitCode": 0,
+    "stdout": ""
+  },
+  {
+    "level": "warn",
+    "mode": "plugin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"No active plan. Run `/adev:work` to enter the lifecycle before running mutating commands, or `/adev:standalone` (`adev execution-state write --status standalone`) to disable gates for this session.\"\n  }\n}\n"
+  },
+  {
+    "level": "warn",
+    "mode": "stdin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"No active plan. Run `/adev:work` to enter the lifecycle before running mutating commands, or `/adev:standalone` (`adev execution-state write --status standalone`) to disable gates for this session.\"\n  }\n}\n"
+  },
+  {
+    "level": "confirm",
+    "mode": "plugin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"STOP. No active plan detected. You MUST run `/adev:work` to classify this task and enter the lifecycle, or `/adev:standalone` to disable enforcement for this session. Only proceed for trivial non-tracked changes.\"\n  }\n}\n"
+  },
+  {
+    "level": "confirm",
+    "mode": "stdin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"STOP. No active plan detected. You MUST run `/adev:work` to classify this task and enter the lifecycle, or `/adev:standalone` to disable enforcement for this session. Only proceed for trivial non-tracked changes.\"\n  }\n}\n"
+  },
+  {
+    "level": "block",
+    "mode": "plugin",
+    "exitCode": 2,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"Blocked: No active plan. Run `/adev:work` to enter the lifecycle before running mutating commands, or `/adev:standalone` (`adev execution-state write --status standalone`) to disable gates for this session.\"\n  }\n}\n"
+  },
+  {
+    "level": "block",
+    "mode": "stdin",
+    "exitCode": 2,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"Blocked: No active plan. Run `/adev:work` to enter the lifecycle before running mutating commands, or `/adev:standalone` (`adev execution-state write --status standalone`) to disable gates for this session.\"\n  }\n}\n"
+  }
+]
