@@ -192,8 +192,9 @@ Controls how finished work is merged and which branches are protected.
 | `merge_policy` | string | `"pr"` | How to handle finished work: `pr` (always open a PR), `merge` (allow direct merge to non-protected branches), `ask` (prompt the user) |
 | `protected_branches` | array | `["main", "master"]` | Branches that must never be merged to directly |
 | `branch_naming` | string | `"<type>/<module>/<short-description>"` | Convention for feature branch names |
+| `allow_agent_pr_merge` | bool | `false` | Whether an agent may complete a PR with `gh pr merge`. Off by default: merging is where review is enforced. Opening the PR is never blocked — only completing it. |
 
-**When to override:** Change `merge_policy` to `merge` for solo projects where PR overhead is unnecessary. Add branches to `protected_branches` for release branches.
+**When to override:** Change `merge_policy` to `merge` for solo projects where PR overhead is unnecessary. Add branches to `protected_branches` for release branches. Set `allow_agent_pr_merge: true` when you want agents to land their own reviewed PRs — useful in a solo or heavily-automated repo, where the alternative is a human re-running the identical command.
 
 **Example:**
 ```yaml
