@@ -143,6 +143,135 @@ describe('docs/governance.md — Governance Guide', () => {
     assert.ok(!content.match(/sk-[a-zA-Z0-9]{32,}/), 'Contains real-looking API key');
     assert.ok(!content.match(/AKIA[A-Z0-9]{16}/), 'Contains real-looking AWS access key');
   });
+
+  // ── gates.yaml gate schema section ──────────────────────────────────────
+  //
+  // Assertions below are scoped to the new section's own text. `gateSchemaSection`
+  // slices the document from the section heading to the next heading of the same
+  // or higher level, so nothing here can pass off unrelated prose elsewhere in
+  // the guide (the file already discusses gates, tiers, and argv form).
+
+  /**
+   * Slice a markdown document from the first heading matching `headingRe` up to
+   * the next heading of the same or higher level. Returns null when absent.
+   */
+  function sliceSection(content, headingRe) {
+    const lines = content.split('\n');
+    const start = lines.findIndex((line) => /^#{1,6} /.test(line) && headingRe.test(line));
+    if (start === -1) return null;
+    const level = lines[start].match(/^#+/)[0].length;
+    for (let i = start + 1; i < lines.length; i++) {
+      const match = lines[i].match(/^(#{1,6}) /);
+      if (match && match[1].length <= level) return lines.slice(start, i).join('\n');
+    }
+    return lines.slice(start).join('\n');
+  }
+
+  function gateSchemaSection() {
+    const content = readFileSync(join(DOCS_DIR, 'governance.md'), 'utf-8');
+    const section = sliceSection(content, /gate schema/i);
+    assert.ok(
+      section !== null,
+      'Missing gates.yaml gate-schema section (expected a `## ` or `### ` heading naming the gate schema)'
+    );
+    assert.ok(
+      section.includes('gates.yaml'),
+      'Gate-schema section does not name gates.yaml'
+    );
+    return section;
+  }
+
+  it('should document the gates.yaml gate schema fields', () => {
+    const section = gateSchemaSection();
+    for (const field of ['id', 'name', 'kind', 'tier', 'command', 'scope', 'required', 'severity', 'triggers', 'group']) {
+      assert.ok(
+        section.includes(`\`${field}\``),
+        `Gate-schema section missing field: ${field}`
+      );
+    }
+  });
+
+  it('should document argv-only command and distinguish INVALID_GATE from QUALITY_GATE_COMMAND_SHELL', () => {
+    const section = gateSchemaSection();
+    assert.ok(section.includes('argv'), 'Gate-schema section missing argv-only rule');
+    assert.ok(
+      section.includes('INVALID_GATE'),
+      'Gate-schema section missing INVALID_GATE (the gates.yaml loader error code)'
+    );
+    assert.ok(
+      section.includes('QUALITY_GATE_COMMAND_SHELL'),
+      'Gate-schema section must name QUALITY_GATE_COMMAND_SHELL to contrast it'
+    );
+    assert.ok(
+      section.includes('merge-gates.mjs'),
+      'Gate-schema section should cite the gates.yaml loader (lib/domains/merge-gates.mjs)'
+    );
+    assert.ok(
+      section.includes('validate.yaml'),
+      'Gate-schema section must attribute QUALITY_GATE_COMMAND_SHELL to the validate.yaml quality-gate runner'
+    );
+    assert.ok(
+      /two loaders|different (error )?code|two codes|separate loader|not the same code/i.test(section),
+      'Gate-schema section must state the two codes come from two different loaders'
+    );
+  });
+
+  it('should document the three gate tiers and their severity defaults', () => {
+    const section = gateSchemaSection();
+    for (const tier of ['fast', 'integration', 'e2e']) {
+      assert.ok(section.includes(`\`${tier}\``), `Gate-schema section missing tier: ${tier}`);
+    }
+    assert.ok(
+      /fast\W+integration\W+e2e/.test(section.replace(/`/g, '')),
+      'Gate-schema section missing the fast → integration → e2e execution order'
+    );
+    assert.ok(/fail-fast|fail fast/i.test(section), 'Gate-schema section missing fail-fast semantics');
+    assert.ok(section.includes('`error`'), 'Gate-schema section missing error severity default');
+    assert.ok(section.includes('`warning`'), 'Gate-schema section missing warning severity default');
+    assert.ok(
+      section.includes('`required: false`'),
+      'Gate-schema section missing the `required: false` → warning rule'
+    );
+  });
+
+  it('should document the shipped default gates a new scaffold receives', () => {
+    const section = gateSchemaSection();
+    assert.ok(section.includes('`test`'), 'Gate-schema section missing the shipped `test` gate');
+    assert.ok(
+      section.includes('`integration-test`'),
+      'Gate-schema section missing the shipped `integration-test` gate'
+    );
+    assert.ok(
+      section.includes('command: ""'),
+      'Gate-schema section missing the unwired `command: ""` sentinel'
+    );
+    assert.ok(
+      section.includes('npm, run, --if-present, test:integration') ||
+        section.includes('npm run --if-present test:integration'),
+      'Gate-schema section missing the domain starter integration gate command'
+    );
+  });
+
+  it('should document the graduation path and NEW-scaffolds-only template semantics', () => {
+    const section = gateSchemaSection();
+    assert.ok(
+      section.includes('test:integration'),
+      'Gate-schema section missing the test:integration graduation path'
+    );
+    assert.ok(section.includes('cpSync'), 'Gate-schema section missing the cpSync template semantics');
+    assert.ok(
+      /new scaffolds only|NEW scaffolds/i.test(section),
+      'Gate-schema section must state templates reach new scaffolds only'
+    );
+    assert.ok(
+      section.includes('/adev:init'),
+      'Gate-schema section must tell existing projects to rerun /adev:init'
+    );
+    assert.ok(
+      /by hand|manually/i.test(section),
+      'Gate-schema section must offer the edit-by-hand alternative for existing projects'
+    );
+  });
 });
 
 describe('docs/test-strategies.md — Test Strategies Guide', () => {

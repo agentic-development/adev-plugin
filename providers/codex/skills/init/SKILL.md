@@ -208,7 +208,22 @@ If yes, walk the sub-steps in order. Sub-steps 7a-7e are independent — the use
 ### Step 7a: Foundation files
 
 - Create `.context-index/governance/` and `.context-index/governance/overrides/`
-- Generate `gates.yaml` from `templates/gates-template.yaml`, seeding gate commands from the quality-gate values collected in Step 2 (Constitution wizard)
+- Generate `gates.yaml` from `templates/gates-template.yaml`, seeding **both** of the template's
+  live tiers from the quality-gate values collected in Step 2 (Constitution wizard):
+  - the fast-tier `test` gate from the wizard's test command, in argv form —
+    `command: [npm, test]`, `command: [pytest]`, and so on;
+  - the integration-tier `integration-test` gate, also in argv form. When the detected stack has
+    a real integration entrypoint, seed it. When it does not, seed the no-op-if-absent idiom the
+    domain starters use — on npm stacks,
+    `command: [npm, run, --if-present, test:integration]` — so the tier is live and costs nothing
+    until a `test:integration` script exists.
+
+  Gate commands are **argv lists, never shell strings**: a string value is rejected at load by
+  `lib/domains/merge-gates.mjs` with `INVALID_GATE`. A tier the wizard cannot seed keeps the
+  template's `command: ""` sentinel, which is dropped at load with a named `INVALID_GATE` warning
+  — a declared-but-unwired tier, not a broken scaffold, and the warning is the actionable signal.
+  Never write a `{{ }}` placeholder into a `command` value (`gate-doctor/unsubstituted-placeholder`
+  is error-severity).
 - Copy `boundaries.yaml` from `templates/boundaries-template.yaml` (empty rules, commented examples)
 - Copy `risk-policies.yaml` from `templates/risk-policies-template.yaml` (sensible defaults). The
   copied file carries a literal `test_depth` value per risk level (`thorough` / `standard` /
