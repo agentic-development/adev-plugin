@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone:
-revision: 3
+revision: 4
 charter-revision: 2
 created: 2026-08-13
 updated: 2026-08-13
@@ -117,6 +117,15 @@ bindings:
 | **repo-anchored** | `import.meta.url`, `import.meta.dirname`, `__dirname`, or a `join`/`resolve` chain rooted in one of those (transitively, e.g. `const SW_DIR = join(DOMAINS_DIR, 'software')`) | Reference admitted; path = the literal segments joined |
 | **temp-anchored** | `createTempDir()`, `mkdtempSync(…)`, `tmpdir()`, or a chain rooted in one | Skipped entirely — this is the FP class |
 | **unresolvable** | function parameter, function return, template interpolation, or any binding not found in the same file | Skipped for `DEAD_TEST_REFERENCE`; admitted for `APPEND_CHAIN` and `PROSE_ASSERTION` using the literal segments only |
+
+**Template literals are fixture data, not code.** Before Class A extraction, the contents
+of backtick template literals MUST be masked (preserving line structure). A test that
+*builds* a source file as a string — `` const fixture = `import { x } from
+"../lib/foo.mjs"` `` — is not itself importing that module. Without masking, every test
+*about* import syntax reports a dead reference to a module that never existed. This was
+observed against this repo: the pass's own engine test tripped `DEAD_TEST_REFERENCE` on
+`lib/foo.mjs`. Real imports never appear inside a template literal, so nothing legitimate
+is lost.
 
 **Detector-specific consumption of the unresolvable class is deliberate.**
 `DEAD_TEST_REFERENCE` is the only detector that asserts a *negative* ("this file does not
@@ -316,6 +325,10 @@ sound. Expected precision, and what a false positive costs:
    Detection is in scope here; remediation is explicitly not. Confirm that split.
 
 <!-- revision-history
+rev 4 (2026-08-13) — template-literal masking. Observed during dogfood: the engine test
+         itself tripped DEAD_TEST_REFERENCE on lib/foo.mjs, a module named only inside a
+         backtick fixture string. Class A extraction now masks template literals.
+
 rev 3 (2026-08-13) — anchor-classification refinement (self-found, from a census of the
          real suite: 141 readFileSync(join(DOCS_DIR,…)) / 26 PLUGIN_ROOT / 12 SW_DIR /
          12 FIXTURE_DIR are repo-anchored, vs 52 root / 42 dir / 18 tmp temp-anchored).
