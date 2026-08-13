@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Behavior 6 plus six enumerated test cases and ordered normalisation rules; two files in one module; the tokenize round-trip quoting caveat is the only judgment call and the plan already resolves it."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Verbatim YAML block appended to three 6-line starter files; D2 fixes the gate id; mechanical, with the merge assertions spelled out (compare named fields, not deep-equality)."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Behaviors 1-3 with eight assertions and seven edit steps; two files. Novelty sits in the raw-text argv sweep that must exempt the `\"\"` sentinel — fiddly but fully specified."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Prose edit with the replacement paragraph given verbatim and D1/D3 pre-resolved; editing skill markdown is autonomous per the constitution. Contract-test precedent already exists in the named test file."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "One bullet in Step 7a behind an explicit scope fence, five assertions, argv examples supplied. Lowest-risk task in the plan."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Documentation section written from a supplied outline, anchored between two named line ranges. Blast held at 0.8 only because a sibling agent may be editing docs/governance.md concurrently."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "One new test file with a four-part blueprint, but the RED phase is awkward once deps 1/2/3/5 have merged, and its implement step licenses fixes in owning files if a defect surfaces."
+    }
+  ]
+}
