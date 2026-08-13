@@ -88,3 +88,17 @@ checks:
   # (now runs as a Stop-event post-validate hook —
   # hooks/post-validate-extract-heuristics.{sh,mjs} — with SEC-1 input
   # scoping that consumes only structured verdict metadata).
+
+  # Gate Doctor (unified-gates/gate-doctor.spec.md). Deterministic wrapper over
+  # `adev gate doctor --json`: verifies that the gates declared in
+  # governance/gates.yaml can actually execute and that declared test suites
+  # actually get collected. Severity is `warning` — a project may legitimately
+  # have a gate that is not wired into CI — but every error-severity FINDING it
+  # reports describes a gate the project believes protects it and which cannot run.
+  - id: validate.check-14-gate-executability
+    name: "Gate Executability and Test Collection"
+    kind: deterministic-check
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-14-gate-executability.md
+    description: "Verify declared gates can run and declared tests get collected."
+    after: [validate.check-1.5-source-manifest]

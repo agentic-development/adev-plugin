@@ -1,8 +1,8 @@
 ---
 kind: cross-cutting
 status: approved
-revision: 2
-updated: 2026-04-15
+revision: 3
+updated: 2026-08-13
 ---
 
 # Feature Charter: Unified Gates
@@ -24,12 +24,13 @@ Unify governance gates and manifest tiered gates into a single gate system in `g
 - Update `gates-template.yaml` and `/adev:init` scaffolding
 - Normalize skip behavior in validate: unconfigured checks report SKIP (not PASS), misconfigured checks report WARN
 - Backward compatibility: projects without `governance/gates.yaml` get a "no gates configured" advisory with setup guidance
+- **Verification that declared gates are actually executable and that declared test suites are actually collected** (revision 3). The charter has always asserted the invariant "every gate with a non-empty `command` and `kind: deterministic` is executable by skills" but shipped nothing that checks it. `adev gate doctor` checks it.
 
 ### Out of Scope
 
 - `boundaries.yaml` and `risk-policies.yaml` — unchanged, separate governance concerns
-- Test authoring or TDD enforcement — owned by `write-test` and `implementation` charters
-- CI/CD pipeline changes — owned by `cicd` charter
+- Test authoring or TDD enforcement — owned by `write-test` and `implementation` charters. Test *collection* verification (does the runner actually see the files that were authored?) IS in scope as of revision 3: it is the gap between those charters and this one, and belonged to neither.
+- CI/CD pipeline changes — owned by `cicd` charter. Revision 3 qualifies this: CI configuration files are *read as text* by `adev gate doctor` to verify that declared gates are invoked somewhere in CI. They are never written, generated, or modified by anything in this charter.
 - Probabilistic gate execution logic (LLM-as-Judge) — the schema declares `kind: probabilistic` but execution is handled by the eval skill, not this charter
 - Flaky test quarantining — a project-level concern, not a framework feature
 
@@ -84,6 +85,7 @@ Unify governance gates and manifest tiered gates into a single gate system in `g
 | Severity and Required Reconciliation | `required: false` forces `severity: warning`. Explicit `severity` on a gate overrides tier defaults. Default severity: `error` for fast/integration, `warning` for e2e | should-have | | validated |
 | E2E Sub-keys | Support `smoke`/`full` groupings within e2e-tier gates, with independent severity defaults (`error` for smoke, `warning` for full) | should-have | | validated |
 | Backward Compatibility Path | Projects with existing `manifest.yaml gates:` get a migration warning from `/adev:init` or `/adev:hygiene` suggesting they generate `governance/gates.yaml` | nice-to-have | | validated |
+| Gate Doctor | `adev gate doctor` verifies that declared gates can actually execute and that declared test suites are actually collected: sh-globstar under-expansion, runner collection diff, gate binary resolution, unsubstituted `{{ }}` placeholders, gitignored/missing referenced paths, and CI invocation of each gate. Static by default; `--execute` opts into subprocess runs with a reentrancy guard. Wired into `/adev:validate` (check-14) and `/adev:hygiene` Pass 8. | must-have | | validated |
 
 ## Interface Contracts
 
