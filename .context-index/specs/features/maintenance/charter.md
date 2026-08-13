@@ -33,7 +33,7 @@ lessons from completed work.
 | Capability | Status | Owning spec |
 |---|---|---|
 | Hygiene audit shell (pass registry, report format, `--check`/`--fix`/`--status`) | shipped | none — SKILL.md is the de facto contract (see Known Gaps) |
-| Test-debt audit pass (Pass 23) | specified | `maintenance/hygiene-test-debt.spec.md` |
+| Test-debt audit pass (Pass 23) | validated | `maintenance/hygiene-test-debt.spec.md` |
 | Kind-validity audit pass (Pass 18) | shipped | `lifecycle-artifacts/hygiene-kind-validity.spec.md` |
 | Code-health audit pass (Pass 13) | shipped | `codehealth/hygiene-integration.spec.md` |
 | Test-policy-drift audit pass (Pass 22) | shipped | `test-strategies/test-depth-policy.spec.md` |

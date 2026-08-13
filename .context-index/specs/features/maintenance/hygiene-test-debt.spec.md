@@ -1,10 +1,10 @@
 ---
 charter: maintenance
 kind: behavioral
-status: review-pending
+status: validated
 risk_level: medium
 milestone:
-revision: 4
+revision: 5
 charter-revision: 2
 created: 2026-08-13
 updated: 2026-08-13
@@ -116,7 +116,8 @@ bindings:
 |---|---|---|
 | **repo-anchored** | `import.meta.url`, `import.meta.dirname`, `__dirname`, or a `join`/`resolve` chain rooted in one of those (transitively, e.g. `const SW_DIR = join(DOMAINS_DIR, 'software')`) | Reference admitted; path = the literal segments joined |
 | **temp-anchored** | `createTempDir()`, `mkdtempSync(…)`, `tmpdir()`, or a chain rooted in one | Skipped entirely — this is the FP class |
-| **unresolvable** | function parameter, function return, template interpolation, or any binding not found in the same file | Skipped for `DEAD_TEST_REFERENCE`; admitted for `APPEND_CHAIN` and `PROSE_ASSERTION` using the literal segments only |
+| **unresolvable** | function parameter, function return, template interpolation, a non-literal segment *after* the anchor head (e.g. `join(SKILLS_DIR, slug, "SKILL.md")`), or any binding not found in the same file | Skipped for `DEAD_TEST_REFERENCE`; admitted for `APPEND_CHAIN` and `PROSE_ASSERTION` using the literal segments only |
+| **literal** | The whole path is a bare string literal with no anchor at all (`readFileSync("lib/x.mjs")`) | Fully determined, so treated as resolvable — admitted to every detector including `DEAD_TEST_REFERENCE` |
 
 **Template literals are fixture data, not code.** Before Class A extraction, the contents
 of backtick template literals MUST be masked (preserving line structure). A test that
@@ -209,10 +210,22 @@ is not a prose-assertion file.
 11. **When** the project declares `hygiene.test_debt.enabled: false` **then** the pass
     reports `SKIP` with the reason `disabled by manifest` and emits no findings.
 12. **When** `--root <dir>` is passed **then** it *narrows the scan subtree*; it does not
-    establish the project root. The project root is resolved independently and
-    unconditionally by the existing convention (nearest ancestor containing
-    `.context-index/`, falling back to git top-level). `--root` is resolved against that
-    project root and must be contained by it.
+    establish the project root. `--root` is resolved against the project root the CLI
+    driver supplies and must be contained by it; a path escaping it is refused before any
+    read.
+
+    **Scope note (narrowed in revision 5).** Revision 4 additionally required the verb to
+    resolve the project root "independently and unconditionally by the existing convention
+    (nearest ancestor containing `.context-index/`, falling back to git top-level)". That
+    requirement was wrong to place here: `cli/index.mjs` supplies `process.cwd()` to every
+    verb, and no verb in the repo does its own root resolution. Implementing it for this
+    verb alone would either fork the driver contract or change shared substrate for all 30+
+    verbs — a blast radius far beyond an advisory audit pass. Independent root resolution
+    is therefore **explicitly out of scope**, and the `PROJECT_ROOT_UNRESOLVED` error code
+    is withdrawn. Running the verb from a subdirectory scans that subdirectory and reports
+    `SKIP` when it holds no tests; that is the driver's behavior, not a defect in this pass.
+    Whether the shared driver should resolve roots by convention is a separate decision for
+    a human — recorded in § Open Questions.
 
 ### Postconditions
 
@@ -227,8 +240,8 @@ is not a prose-assertion file.
 | `.context-index/manifest.yaml` missing or unparseable | Scan proceeds with built-in defaults; a `headerNote` records the degrade | — (exit 0) |
 | `hygiene.source_roots` absent | `DEAD_TEST_REFERENCE` and `APPEND_CHAIN` module attribution are skipped; `headerNote` records it; other three detectors still run | — (exit 0) |
 | A test file is unreadable (permissions, binary) | File is skipped; a `headerNote` names it; scan continues | — (exit 0) |
-| `--root <dir>` resolves outside the independently-resolved project root (Behavior 12) | Refuse before any read | `PATH_OUTSIDE_ROOT` (exit 1) |
-| No `.context-index/` ancestor and not a git repo — project root unresolvable | Refuse; explain that the verb must run inside an adev project | `PROJECT_ROOT_UNRESOLVED` (exit 1) |
+| `--root <dir>` resolves outside the driver-supplied project root (Behavior 12) | Refuse before any read | `PATH_OUTSIDE_ROOT` (exit 1) |
+| `--root <dir>` is inside the project root but does not exist | Refuse; this is a bad argument, NOT a containment violation, and must not borrow `PATH_OUTSIDE_ROOT`'s code | `INVALID_ROOT` (exit 1) |
 | `--detector <code>` not in the closed enumeration | Refuse; list the five valid codes | `UNKNOWN_DETECTOR` (exit 1) |
 | `append_chain_threshold` non-integer or < 2, or `prose_ratio_threshold` not in `(0, 1]` | Refuse; name the offending manifest key and its received value | `INVALID_TEST_DEBT_CONFIG` (exit 1) |
 | `rev_numbered_prefixes` not an array of non-empty `[A-Za-z]+` strings | Refuse; name the offending entry | `INVALID_TEST_DEBT_CONFIG` (exit 1) |
@@ -323,8 +336,32 @@ sound. Expected precision, and what a false positive costs:
    manifest if the default proves too narrow.
 3. `PROSE_ASSERTION` findings in this repo overlap issue-557's remediation territory.
    Detection is in scope here; remediation is explicitly not. Confirm that split.
+4. **Should the shared CLI driver resolve the project root by convention?** Today
+   `cli/index.mjs` hands every verb `process.cwd()`, so running any `adev` verb from a
+   subdirectory operates on that subdirectory. Revision 4 of this spec assumed otherwise
+   (see Behavior 12's scope note). This affects all 30+ verbs, not just `test-debt`, and
+   is a driver-level decision.
 
 <!-- revision-history
+rev 5 (2026-08-13) — post-validation corrections. Quick-tier validation proved three
+         defects and raised two spec-letter deviations:
+  D1 → the CLI hands the pass `manifest: null`, never `undefined`, so the documented
+       missing-manifest degrade note was unreachable on every real CLI run. Fixed in lib
+       + covered by a CLI-level test.
+  D2 → Behavior 12's "resolve the project root independently by convention" clause was
+       withdrawn as out of scope: no verb in this repo does its own root resolution, and
+       changing the shared driver for one advisory pass is the wrong blast radius. The
+       PROJECT_ROOT_UNRESOLVED code is withdrawn; the open question is handed to a human.
+  D3 → maskTemplateLiterals desynced on a stray backtick in a comment or quoted string,
+       silently blinding Class A extraction for the rest of the file (a false NEGATIVE —
+       the pass looks clean while seeing nothing). The scanner now tracks comments and
+       quoted strings. 3 regression tests added.
+  D4 → the fourth anchor class `literal` (a bare string literal, fully determined) is now
+       documented in the anchor table rather than existing only in code.
+  D6 → `--root` naming a nonexistent path inside the root now raises INVALID_ROOT rather
+       than borrowing PATH_OUTSIDE_ROOT, which claimed a containment violation that did
+       not occur.
+
 rev 4 (2026-08-13) — template-literal masking. Observed during dogfood: the engine test
          itself tripped DEAD_TEST_REFERENCE on lib/foo.mjs, a module named only inside a
          backtick fixture string. Class A extraction now masks template literals.

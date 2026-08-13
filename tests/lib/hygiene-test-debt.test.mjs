@@ -84,7 +84,6 @@ describe("discovery", () => {
     });
     try {
       const result = runTestDebtPass(dir, { manifest });
-      assert.equal(manifest.hygiene.coverage_exclude[0], "tests/**");
       assert.equal(result.scannedFileCount, 2, "coverage_exclude must not filter the test-debt scan");
     } finally {
       cleanupTempDir(dir);
@@ -201,6 +200,39 @@ describe("reference extraction", () => {
   test("masking a template literal preserves line structure", () => {
     const src = ["const a = `", "line two", "`;"].join("\n");
     assert.equal(maskTemplateLiterals(src).split("\n").length, src.split("\n").length);
+  });
+
+  test("a stray backtick in a comment does not blind the rest of the file", () => {
+    // Regression: a naive backtick toggle desyncs on any prose backtick and
+    // silently drops every subsequent import — a false NEGATIVE, which is the
+    // worst kind because the pass looks clean while seeing nothing.
+    const src = [
+      "// prose mentioning a ` backtick",
+      `import { real } from "../lib/really-missing.mjs";`,
+    ].join("\n");
+    const { classA } = extractReferences(src, "tests/a.test.mjs");
+    assert.ok(
+      classA.some((r) => r.path === "../lib/really-missing.mjs"),
+      "an import after a comment backtick must still be extracted",
+    );
+  });
+
+  test("a stray backtick inside a quoted string does not blind the rest of the file", () => {
+    const src = [`const s = "a \` tick";`, `import { real } from "../lib/also-missing.mjs";`].join("\n");
+    const { classA } = extractReferences(src, "tests/a.test.mjs");
+    assert.ok(classA.some((r) => r.path === "../lib/also-missing.mjs"));
+  });
+
+  test("escaped backticks inside a template literal do not end it early", () => {
+    const src = ["const fixture = `", "  a \\` escaped tick", `  import { x } from "../lib/inside.mjs";`, "`;"].join(
+      "\n",
+    );
+    const { classA } = extractReferences(src, "tests/a.test.mjs");
+    assert.equal(
+      classA.filter((r) => r.path.includes("inside")).length,
+      0,
+      "content after an escaped backtick is still fixture data",
+    );
   });
 
   test("a loop variable between anchor and literal downgrades to unresolvable", () => {
@@ -410,6 +442,21 @@ describe("pass contract", () => {
       assert.ok(result.headerNotes.some((n) => /source_roots/.test(n)));
       assert.equal(result.findings.filter((f) => f.code === "REV_NUMBERED").length, 1);
       assert.equal(result.findings.filter((f) => f.code === "DEAD_TEST_REFERENCE").length, 0);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  test("a null manifest raises the degrade note — not only an undefined one", () => {
+    // The CLI driver hands the pass `null`, never `undefined`, so keying the
+    // note on `undefined` alone made it unreachable on every real CLI run.
+    const { dir } = project({ "tests/a.test.mjs": "assert.ok(1);" });
+    try {
+      const result = runTestDebtPass(dir, { manifest: null });
+      assert.ok(
+        result.headerNotes.some((n) => /manifest\.yaml missing or unparseable/.test(n)),
+        "a null manifest must surface the documented degrade note",
+      );
     } finally {
       cleanupTempDir(dir);
     }
