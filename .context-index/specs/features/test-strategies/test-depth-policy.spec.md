@@ -1,13 +1,13 @@
 ---
 charter: test-strategies
-status: review-passed
+status: implemented
 kind: behavioral
 risk_level: medium
 milestone:
 revision: 7
 charter-revision: 3
 created: 2026-08-10
-updated: 2026-08-11
+updated: 2026-08-13
 charter-extension: true
 affects:
   - planning
@@ -16,6 +16,77 @@ affects:
   - setup
   - maintenance
   - strategic-planning
+source-manifest:
+  sha: "f665551"
+  files:
+    - .context-index/governance/risk-policies.yaml
+    - .context-index/governance/sensitive-paths.yaml
+    - .context-index/specs/features/spec-lifecycle/plan-test-mapping-rev-2-test-depth-granularity.spec.md
+    - .context-index/specs/features/test-strategies/charter.md
+    - .context-index/specs/features/test-strategies/test-depth-policy.spec.md
+    - cli/index.mjs
+    - docs/README.md
+    - docs/cli-reference.md
+    - docs/configuration.md
+    - docs/getting-started.md
+    - docs/governance.md
+    - docs/test-strategies.md
+    - lib/cli/test-policy.mjs
+    - lib/diagnostics/event-schemas.mjs
+    - lib/governance/rigor-mode.mjs
+    - lib/lifecycle-events.mjs
+    - lib/lifecycle-state.mjs
+    - lib/test-strategies/depth.mjs
+    - lib/test-strategies/policy.mjs
+    - lib/test-strategies/sensitive-paths.mjs
+    - lib/test-strategies/suite-path.mjs
+    - lib/test-strategies/task-files.mjs
+    - providers/codex/skills/hygiene/SKILL.md
+    - providers/codex/skills/implement/SKILL.md
+    - providers/codex/skills/init/SKILL.md
+    - providers/codex/skills/plan/SKILL.md
+    - providers/codex/skills/specify/SKILL.md
+    - providers/codex/skills/status/SKILL.md
+    - providers/codex/skills/write-test/SKILL.md
+    - providers/opencode/skills/hygiene/SKILL.md
+    - providers/opencode/skills/implement/SKILL.md
+    - providers/opencode/skills/init/SKILL.md
+    - providers/opencode/skills/plan/SKILL.md
+    - providers/opencode/skills/specify/SKILL.md
+    - providers/opencode/skills/status/SKILL.md
+    - providers/opencode/skills/write-test/SKILL.md
+    - skills/hygiene/SKILL.md
+    - skills/implement/SKILL.md
+    - skills/init/SKILL.md
+    - skills/plan/SKILL.md
+    - skills/specify/SKILL.md
+    - skills/status/SKILL.md
+    - skills/write-test/SKILL.md
+    - templates/manifest-template.yaml
+    - templates/risk-policies-template.yaml
+    - tests/cli/status-test-depth-counting.test.mjs
+    - tests/cli/test-policy.test.mjs
+    - tests/diagnostics/event-schemas.test.mjs
+    - tests/docs/test-depth-policy-docs.test.mjs
+    - tests/governance/rigor-mode-test-depth.test.mjs
+    - tests/lib/governance/sensitive-paths-self-hosting.test.mjs
+    - tests/lib/lifecycle-events.test.mjs
+    - tests/lib/lifecycle-state.test.mjs
+    - tests/lib/test-strategies/depth.test.mjs
+    - tests/lib/test-strategies/policy.test.mjs
+    - tests/lib/test-strategies/sensitive-paths.test.mjs
+    - tests/lib/test-strategies/suite-path.test.mjs
+    - tests/lib/test-strategies/task-files.test.mjs
+    - tests/skills/hygiene-test-policy-drift-pass.test.mjs
+    - tests/skills/implement-test-depth-integration.test.mjs
+    - tests/skills/init-test-policy-emission.test.mjs
+    - tests/skills/plan-test-depth-integration.test.mjs
+    - tests/skills/specify-test-depth-frontmatter.test.mjs
+    - tests/skills/write-test-standalone-depth.test.mjs
+    - tests/specs/plan-test-mapping-amendment.test.mjs
+    - tests/specs/test-strategies-charter-revision-3.test.mjs
+  computed-at: "2026-08-13T01:22:53.638Z"
+drift_detected: true
 ---
 
 # Live Spec: Test Depth Policy and Escalation-Only Coverage Scaling
