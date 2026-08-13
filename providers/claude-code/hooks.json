@@ -25,7 +25,16 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate-edit.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate.sh\" pre-edit"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/plan-body-write-guard.sh\""
           }
         ]
       },
@@ -38,21 +47,12 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate-bash.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate.sh\" pre-bash"
           }
         ]
       }
     ],
     "PostToolUse": [
-      {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-read-tracker.sh\""
-          }
-        ]
-      },
       {
         "matcher": "Edit",
         "hooks": [
@@ -75,7 +75,18 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate-advisory.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate.sh\" advisory"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/post-validate-extract-heuristics.sh\""
           }
         ]
       }

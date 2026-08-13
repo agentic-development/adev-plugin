@@ -22,7 +22,7 @@
         "matcher": "Edit"
       },
       {
-        "command": "./hooks/lifecycle-gate-edit.sh",
+        "command": "./hooks/lifecycle-gate.sh pre-edit",
         "failClosed": true,
         "timeout": 30,
         "matcher": "Edit"
@@ -41,18 +41,19 @@
         "timeout": 30
       },
       {
-        "command": "./hooks/lifecycle-gate-bash.sh",
+        "command": "./hooks/lifecycle-gate.sh pre-bash",
         "failClosed": true,
         "timeout": 30
       }
     ],
-    "postToolUse": [
+    "afterFileEdit": [
       {
-        "command": "./hooks/context-read-tracker.sh",
+        "command": "./hooks/sync-trigger.sh",
         "failClosed": false,
-        "timeout": 60,
-        "matcher": "Read"
-      },
+        "timeout": 60
+      }
+    ],
+    "postToolUse": [
       {
         "command": "./hooks/session-capture.sh",
         "failClosed": false,
@@ -64,14 +65,7 @@
         "timeout": 60
       },
       {
-        "command": "./hooks/lifecycle-gate-advisory.sh",
-        "failClosed": false,
-        "timeout": 60
-      }
-    ],
-    "afterFileEdit": [
-      {
-        "command": "./hooks/sync-trigger.sh",
+        "command": "./hooks/lifecycle-gate.sh advisory",
         "failClosed": false,
         "timeout": 60
       }
