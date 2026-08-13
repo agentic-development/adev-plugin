@@ -4,8 +4,8 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone:
-revision: 1
-charter-revision: 1
+revision: 2
+charter-revision: 2
 created: 2026-08-13
 updated: 2026-08-13
 tracker-ref: issue-555
@@ -71,21 +71,23 @@ rewrites a test file, and it never blocks.
 | Code | Signal | Default threshold | Severity |
 |---|---|---|---|
 | `APPEND_CHAIN` | ≥ N distinct test files reference the same source module | `append_chain_threshold: 4` | `warn` |
-| `REV_NUMBERED` | Test basename matches `(^\|[._-])rev\d+([._-]\|$)` or `(^\|[._-])v\d+([._-]\|$)` | — | `warn` |
+| `REV_NUMBERED` | Test basename matches `(^\|[._-])<prefix>\d+([._-]\|$)` for any prefix in `rev_numbered_prefixes` | `rev_numbered_prefixes: ["rev"]` | `warn` |
 | `PLAN_TASK_STRUCTURED` | A test-title line contains `plan-task <N>` or `Task <N>` | ≥ 1 occurrence | `warn` |
 | `DEAD_TEST_REFERENCE` | A test references a source path under `hygiene.source_roots` that does not exist on disk | — | `error` |
-| `PROSE_ASSERTION` | Test references `.md` file paths AND the containment-assertion ratio meets the threshold | `prose_ratio_threshold: 0.5` | `info` |
+| `PROSE_ASSERTION` | Test holds ≥ 1 Class-B reference to a `.md` path AND its containment-assertion ratio ≥ threshold | `prose_ratio_threshold: 0.5` | `info` |
 
 **Severity is triage priority only.** Consistent with the Layer-1 posture established by
 Audit Pass 18 (Kind Validity), no code emitted by this pass gates the hygiene exit code,
 and `error` does not mean "blocking" — it means "look at this first".
 
-### Reference extraction (shared by `APPEND_CHAIN` and `DEAD_TEST_REFERENCE`)
+### Reference extraction (shared by `APPEND_CHAIN`, `DEAD_TEST_REFERENCE`, `PROSE_ASSERTION`)
 
-Both detectors consume one extraction pass. References are read **only from
+All three detectors consume one extraction pass. References are read **only from
 reference-bearing syntactic positions**, never from arbitrary quoted strings — this is
 the single most important precision decision in the spec, because test suites are full of
-string literals naming fixture paths that intentionally do not exist:
+string literals naming fixture paths that intentionally do not exist. Two classes:
+
+**Class A — module references** (the code under test is *loaded*):
 
 - ESM: `from "<path>"`, `import("<path>")`
 - CJS: `require("<path>")`
@@ -93,9 +95,44 @@ string literals naming fixture paths that intentionally do not exist:
 - Subprocess: a quoted argument ending in a known source extension inside a
   `spawn` / `execFile` / `execSync` / `subprocess.run` / `subprocess.check_output` call
 
+**Class B — artifact references** (the artifact under test is *read as a file*). Required
+because in this repo the majority of skill/template/doc coverage arrives this way, and
+without Class B the `skills/` and `templates/` source roots are invisible to the pass and
+`PROSE_ASSERTION` can never fire at all:
+
+- `new URL("<literal>", import.meta.url)` — including when nested inside a read call
+- `readFileSync("<literal>"…)`, `readFile("<literal>"…)`, `readFileSync(join(<literal-parts>)…)`
+- Python: `open("<literal>"…)`, `Path("<literal>").read_text()`
+
+**Binding restriction on Class B:** the path argument MUST be a string literal, a
+`new URL` over a string literal, or a `join(...)`/`resolve(...)` whose arguments are all
+string literals or `import.meta.url`/`__dirname`. A path assembled from any variable,
+template interpolation, or function return is NOT a reference and MUST be skipped. This
+is what keeps `DEAD_TEST_REFERENCE` from firing on the temp-fixture paths that tests
+construct at runtime.
+
 Relative paths resolve against the test file's directory, then normalise to
 project-root-relative. Python dotted modules resolve to `a/b.py` probed under
 `hygiene.source_roots`. A reference that resolves outside the project root is discarded.
+`APPEND_CHAIN` and `DEAD_TEST_REFERENCE` consume Class A ∪ Class B; `PROSE_ASSERTION`
+consumes Class B only, and only its `.md` members.
+
+### Assertion-line taxonomy (defines `PROSE_ASSERTION`'s ratio)
+
+Both sides of the ratio are closed enumerations, evaluated line by line.
+
+**Denominator — an *assertion line*** is any line matching at least one of:
+`assert.` · `assert(` · `expect(` · `should.` · `t.is(` · `t.deepEqual(` ·
+`self.assert` · `assertEqual` · `assertTrue` · `assertFalse` · `assertRaises` ·
+`pytest.raises`
+
+**Numerator — a *containment assertion*** is an assertion line (as above) that ALSO
+matches at least one of: `.includes(` · `.match(` · `.test(` · `toContain` · `assertIn` ·
+`\bin\s+\w*(content|text|body|src|md|skill)\w*\b`
+
+`ratio = numerator / denominator`. When `denominator === 0` the file yields no
+`PROSE_ASSERTION` finding regardless of its `.md` references — a file with no assertions
+is not a prose-assertion file.
 
 ### Behaviors
 
@@ -104,6 +141,14 @@ project-root-relative. Python dotted modules resolve to `a/b.py` probed under
    (default: `**/*.test.{mjs,js,ts,tsx}`, `**/*_test.{go,py}`, `**/test_*.py`,
    `**/*.spec.{js,ts}`), skipping anything matching `hygiene.test_debt.exclude` and any
    path under `node_modules/`, `.git/`, or `dist/`.
+1b. **When** discovery runs **then** it MUST NOT apply `hygiene.coverage_exclude`.
+   That key exists to keep test files out of *codehealth's* orphan/dead-export detection,
+   and its `tests/**` entry is the precise reason test debt is invisible today. A test-debt
+   pass that inherited it would `SKIP` permanently. Implementations MUST NOT reuse the
+   codehealth scope helper; `hygiene.test_debt.exclude` is this pass's only exclusion key.
+1c. **When** the directory walk encounters a symbolic link **then** the link is not
+   followed (`lstat`-based check); only real directories under the resolved scan root are
+   descended. This holds regardless of `--root`.
 2. **When** ≥ `append_chain_threshold` distinct test files reference the same
    project-root-relative source module **then** the pass emits one `APPEND_CHAIN` finding
    naming that module, the count, and the participating test files (capped at 10 listed
@@ -117,10 +162,10 @@ project-root-relative. Python dotted modules resolve to `a/b.py` probed under
 5. **When** a reference extracted from a test resolves under a configured source root but
    no file exists at that path **then** the pass emits a `DEAD_TEST_REFERENCE` finding
    naming the test file and the missing target.
-6. **When** a test file references at least one `.md` path AND its ratio of
-   containment-style assertions (`.includes(`, `.match(`, `toContain`, `assertIn`,
-   `assert … in `) to total assertion lines is ≥ `prose_ratio_threshold` **then** the pass
-   emits one `PROSE_ASSERTION` finding carrying the ratio and both counts.
+6. **When** a test file holds at least one Class-B reference to a `.md` path AND its
+   containment-assertion ratio (per § Assertion-line taxonomy) is ≥ `prose_ratio_threshold`
+   **then** the pass emits one `PROSE_ASSERTION` finding carrying the ratio, the numerator,
+   the denominator, and up to three of the referenced `.md` paths.
 7. **When** the pass completes **then** it returns
    `{ findings, summary, headerNotes, scannedFileCount }` and never throws, never mutates
    `process.exitCode`, and never writes to any file it scanned.
@@ -132,8 +177,18 @@ project-root-relative. Python dotted modules resolve to `a/b.py` probed under
 10. **When** `/adev:hygiene` runs a full audit **then** Audit Pass 23 appears in the
     summary table as `Test Debt` with `PASS` (zero findings), `WARN` (≥ 1 finding), or
     `SKIP` (no test files discovered).
+10b. **When** `/adev:hygiene --check <type>` is invoked **then** the slug for Pass 23 is
+    the literal `test-debt` — kebab-case, matching the sibling slugs `code-health`,
+    `code-drift`, `kind-validity`, `test-policy-drift`. `skills/hygiene/SKILL.md` MUST
+    list `test-debt` in its `--check <type>` enumeration, and the `--detector` codes
+    (`APPEND_CHAIN` etc.) remain SCREAMING_SNAKE, matching Pass 18's finding codes.
 11. **When** the project declares `hygiene.test_debt.enabled: false` **then** the pass
     reports `SKIP` with the reason `disabled by manifest` and emits no findings.
+12. **When** `--root <dir>` is passed **then** it *narrows the scan subtree*; it does not
+    establish the project root. The project root is resolved independently and
+    unconditionally by the existing convention (nearest ancestor containing
+    `.context-index/`, falling back to git top-level). `--root` is resolved against that
+    project root and must be contained by it.
 
 ### Postconditions
 
@@ -148,9 +203,11 @@ project-root-relative. Python dotted modules resolve to `a/b.py` probed under
 | `.context-index/manifest.yaml` missing or unparseable | Scan proceeds with built-in defaults; a `headerNote` records the degrade | — (exit 0) |
 | `hygiene.source_roots` absent | `DEAD_TEST_REFERENCE` and `APPEND_CHAIN` module attribution are skipped; `headerNote` records it; other three detectors still run | — (exit 0) |
 | A test file is unreadable (permissions, binary) | File is skipped; a `headerNote` names it; scan continues | — (exit 0) |
-| `--root` resolves outside the project root | Refuse before any read | `PATH_OUTSIDE_ROOT` (exit 1) |
+| `--root <dir>` resolves outside the independently-resolved project root (Behavior 12) | Refuse before any read | `PATH_OUTSIDE_ROOT` (exit 1) |
+| No `.context-index/` ancestor and not a git repo — project root unresolvable | Refuse; explain that the verb must run inside an adev project | `PROJECT_ROOT_UNRESOLVED` (exit 1) |
 | `--detector <code>` not in the closed enumeration | Refuse; list the five valid codes | `UNKNOWN_DETECTOR` (exit 1) |
-| `append_chain_threshold` / `prose_ratio_threshold` non-numeric or ≤ 0 | Refuse; name the offending manifest key | `INVALID_TEST_DEBT_CONFIG` (exit 1) |
+| `append_chain_threshold` non-integer or < 2, or `prose_ratio_threshold` not in `(0, 1]` | Refuse; name the offending manifest key and its received value | `INVALID_TEST_DEBT_CONFIG` (exit 1) |
+| `rev_numbered_prefixes` not an array of non-empty `[A-Za-z]+` strings | Refuse; name the offending entry | `INVALID_TEST_DEBT_CONFIG` (exit 1) |
 | No test files discovered | `SKIP` verdict with `scannedFileCount: 0` | — (exit 0) |
 
 ## Precision and False-Positive Posture
@@ -161,9 +218,9 @@ sound. Expected precision, and what a false positive costs:
 | Code | Expected precision | Dominant false-positive class | Cost of a false positive |
 |---|---|---|---|
 | `APPEND_CHAIN` | High (~0.9) — structural, derived from real import edges, not names | A genuinely large module with legitimately partitioned suites (e.g. adapter + contract + regression) | Reviewer reads a cluster and decides it is fine. Cheap. |
-| `REV_NUMBERED` | Low–medium (~0.5) — pure filename pattern | Files legitimately versioned against an external schema or wire protocol (`payload-v1`) | Reviewer dismisses one filename. Cheap, but noisy at scale, which is why `v\d+` is separable from `rev\d+` in config. |
+| `REV_NUMBERED` | Low–medium (~0.5) — pure filename pattern | Files legitimately versioned against an external schema or wire protocol (`payload-v1`) | Reviewer dismisses one filename. Cheap, but noisy at scale — which is why `rev_numbered_prefixes` defaults to `["rev"]` only. Adding `"v"` is opt-in, because `v\d+` collides with legitimate wire-version fixtures (this repo has `pre-compact-v1.json`, `session-end-v1.json`). |
 | `PLAN_TASK_STRUCTURED` | Medium (~0.7) — name pattern, but a very specific one | A test legitimately describing a domain object literally called "Task 3" | Reviewer dismisses. Cheap. |
-| `DEAD_TEST_REFERENCE` | Medium–high (~0.8) — restricted to reference-bearing positions | Dynamically constructed paths; a module intentionally created at test runtime | Reviewer chases a non-bug. Moderate — this is the costliest FP, which is why extraction refuses arbitrary string literals. |
+| `DEAD_TEST_REFERENCE` | Medium–high (~0.8) — restricted to reference-bearing positions with literal-only path arguments | A module intentionally created at test runtime under a path that happens to fall inside a source root | Reviewer chases a non-bug. Moderate — this is the costliest FP, which is why extraction refuses arbitrary string literals *and* refuses any Class-B path assembled from a variable. |
 | `PROSE_ASSERTION` | Medium (~0.6) — ratio heuristic on assertion shape | A test that legitimately asserts on generated markdown output (renderers, report writers) | Reviewer dismisses; risk of the *aggregate number* being over-read as a quality verdict. |
 
 **Non-overclaim clauses, binding on the implementation:**
@@ -195,13 +252,14 @@ sound. Expected precision, and what a false positive costs:
 
 | Task | Description | Estimated Complexity |
 |---|---|---|
-| 1 | `lib/hygiene/test-debt.mjs` — discovery, config load/validate, reference extraction | medium |
-| 2 | Five detectors + result assembly in the same module | medium |
+| 1 | `lib/hygiene/test-debt.mjs` — discovery (hand-rolled glob, symlink-safe walk), config load/validate, Class A + Class B reference extraction | medium |
+| 2 | Five detectors + assertion-line taxonomy + result assembly in the same module | medium |
 | 3 | `lib/cli/test-debt.mjs` + registry entry in `cli/index.mjs` (`scan` subverb, `--json`, `--detector`, `--root`) | small |
-| 4 | `skills/hygiene/SKILL.md` — Audit Pass 23 body, arg list, summary table row, description pass count 22 → 23 | small |
-| 5 | Reconcile `maintenance/charter.md` (false pass count, DRAFT banner, Capability Map, per-pass spec ownership rule) | small |
-| 6 | Tests: `tests/lib/hygiene-test-debt.test.mjs` (detector unit + fixture cases) and CLI contract coverage | medium |
-| 7 | Docs: one scoped row in `docs/cli-reference.md`, one in `docs/skill-reference.md` | small |
+| 4 | `skills/hygiene/SKILL.md` — Audit Pass 23 body, `test-debt` in the `--check <type>` enum, summary-table row, and **all four** pass-count prose sites (frontmatter `description`, opening paragraph, Arguments "full audit (all …)", Process step 2 "each of the …") 22 → 23 | small |
+| 5 | ~~Reconcile `maintenance/charter.md`~~ — **already landed in `3b09bd5f`** (charter rev 2). No plan work; verify only. | done |
+| 6 | Update `tests/skills/hygiene-test-policy-drift-pass.test.mjs`: heading count 22 → 23 (its `words` map already carries `23: "twenty-three"`) and extend the `--check` enum assertion to require `test-debt` | small |
+| 7 | New tests `tests/lib/hygiene-test-debt.test.mjs` + `tests/cli/test-debt.test.mjs`: per-detector fixture cases, the literal-only Class-B restriction, symlink non-descent, `coverage_exclude` non-application, config-validation error codes, and a `scannedFileCount` sanity assertion against this repo's real suite | medium |
+| 8 | Docs: `docs/configuration.md` rows for `hygiene.test_debt.*`, one scoped row in `docs/cli-reference.md`, one in `docs/skill-reference.md` | small |
 
 ## Acceptance Criteria
 
@@ -213,10 +271,21 @@ sound. Expected precision, and what a false positive costs:
       `APPEND_CHAIN`, `PLAN_TASK_STRUCTURED`, and `PROSE_ASSERTION`, and the observed
       numbers are recorded in the validation report (dogfood requirement — a zero result
       is evidence the detection is wrong, not evidence the repo is clean).
-- [ ] `skills/hygiene/SKILL.md` documents Audit Pass 23, updates its pass count to 23, and
+- [ ] `skills/hygiene/SKILL.md` documents Audit Pass 23, lists `test-debt` in its
+      `--check <type>` enumeration, updates all four pass-count prose sites to 23, and
       contains no inline Node (the `.githooks/pre-commit-no-inline-node` hook passes).
-- [ ] `maintenance/charter.md` no longer claims 11 audit passes and carries a Capability Map.
-- [ ] Manifest keys `hygiene.test_debt.*` are optional; absent config yields defaults.
+- [ ] `tests/skills/hygiene-test-policy-drift-pass.test.mjs` is updated in the same change
+      that adds Pass 23 — the heading-count assertion moves 22 → 23 and the `--check` enum
+      assertion requires `test-debt`. This is an expected, deliberate test edit, not a
+      regression.
+- [x] `maintenance/charter.md` no longer claims 11 audit passes and carries a Capability
+      Map — landed in `3b09bd5f` as part of this spec's authoring commit.
+- [ ] Discovery does NOT apply `hygiene.coverage_exclude`, and a test asserts that a
+      project whose `coverage_exclude` contains `tests/**` still yields a non-zero
+      `scannedFileCount`.
+- [ ] The directory walk does not descend symlinked directories.
+- [ ] Manifest keys `hygiene.test_debt.*` are optional; absent config yields defaults, and
+      each documented default is asserted by a test.
 - [ ] The report contains no composite score and no defect-asserting language.
 - [ ] All quality gates pass (`npm test`, full suite).
 - [ ] No constitutional violations introduced.
@@ -225,7 +294,26 @@ sound. Expected precision, and what a false positive costs:
 
 1. 20 of 22 shipped hygiene passes have no behavioral spec. Should that backfill be
    scheduled, or is the SKILL.md body accepted as the contract for legacy passes?
-2. Should `REV_NUMBERED`'s `v\d+` arm default to off? It is the lowest-precision arm and
-   collides with legitimate wire-version fixtures.
+2. ~~Should `REV_NUMBERED`'s `v\d+` arm default to off?~~ **Resolved in revision 2:**
+   yes — `rev_numbered_prefixes` defaults to `["rev"]`; `"v"` is opt-in. Reversible via
+   manifest if the default proves too narrow.
 3. `PROSE_ASSERTION` findings in this repo overlap issue-557's remediation territory.
    Detection is in scope here; remediation is explicitly not. Confirm that split.
+
+<!-- revision-history
+rev 2 (2026-08-13) — addresses quick-tier review blockers SA-1, SA-2, SA-3 and
+warnings CON-1, CON-2, SEC-1 plus suggestions SA-4, CON-3:
+  SA-1 → reference extraction split into Class A (module refs) and Class B (literal-only
+         artifact/file-read refs), so `.md` paths and the skills/ + templates/ source roots
+         become visible and PROSE_ASSERTION can fire.
+  SA-2 → new § Assertion-line taxonomy closes both sides of the ratio as enumerations.
+  SA-3 → Behavior 10b names the `test-debt` --check slug; Task 6 and a dedicated acceptance
+         criterion cover the hygiene-test-policy-drift-pass.test.mjs update; Task 4 names
+         all four pass-count prose sites.
+  CON-1 → `rev_numbered_prefixes` manifest key defined, defaulting to ["rev"].
+  CON-2 → Behavior 1b makes non-application of `hygiene.coverage_exclude` binding.
+  SEC-1 → Behavior 12 + Behavior 1c define the root anchor and symlink non-descent.
+  SA-4  → Task 8 adds docs/configuration.md.
+  CON-3 → Task 5 and its acceptance criterion marked done (landed in 3b09bd5f).
+-->
+

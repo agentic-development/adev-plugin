@@ -1,2 +1,5 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-13T14:04:03.507Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-13T14:04:39.674Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-13T14:06:51.488Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"3 blockers: extraction cannot yield .md paths; PROSE_ASSERTION denominator undefined; Pass-23 breaks the 22-heading test and never names its --check slug.","ts":"2026-08-13T14:12:27.679Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":[],"unresolved_blocker_ids":[],"ts":"2026-08-13T14:14:48.862Z"}
