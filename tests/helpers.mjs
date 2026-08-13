@@ -57,11 +57,12 @@ export function writeFixture(baseDir, relativePath, content) {
  * @param {Record<string, string>} [options.env] - Extra environment variables (merged with process.env).
  * @param {string} [options.cwd] - Working directory for the hook.
  * @param {string} [options.stdin] - Data to pipe into the hook's stdin.
+ * @param {string[]} [options.args] - Extra argv passed to the script (e.g. dispatch surface).
  * @returns {{ exitCode: number, stdout: string, stderr: string }}
  */
-export function runHook(hookName, { env = {}, cwd, stdin } = {}) {
+export function runHook(hookName, { env = {}, cwd, stdin, args = [] } = {}) {
   const hookPath = join(PLUGIN_ROOT, "hooks", hookName);
-  const result = spawnSync("bash", [hookPath], {
+  const result = spawnSync("bash", [hookPath, ...args], {
     env: { ...process.env, ...env },
     cwd: cwd || process.cwd(),
     input: stdin || "",
