@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 266,
+  "seq": 267,
   "epics": [
     {
       "id": "epic-1",
@@ -3913,15 +3913,15 @@
     {
       "id": "issue-550",
       "title": "Test Depth Policy and Dynamic Coverage Assessment",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "spec_ref": ".context-index/specs/features/test-strategies/test-depth-policy.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/features/test-strategies/test-depth-policy.spec.md. Created by /adev:specify on 2026-08-10.",
-      "next_action": "Run /adev:review-specs --module test-strategies",
+      "notes": "Bound 1:1 to spec at .context-index/specs/features/test-strategies/test-depth-policy.spec.md. Created by /adev:specify on 2026-08-10.; Closed: Bound spec test-depth-policy.spec.md validated (2026-08-13) and merged to main via PR #228; feature complete. Enforcement follow-on tracked separately in issue-559.",
+      "next_action": null,
       "created": "2026-08-10T22:08:04.940Z",
-      "updated": "2026-08-10T22:08:04.940Z"
+      "updated": "2026-08-13T03:42:22.720Z"
     },
     {
       "id": "issue-551",
