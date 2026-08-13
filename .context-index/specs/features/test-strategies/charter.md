@@ -1,6 +1,6 @@
 ---
 status: approved
-revision: 4
+revision: 5
 updated: 2026-08-13
 ---
 
@@ -87,6 +87,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | Integration Strategy Profile | Define the integration strategy profile — 9th strategy type for behavioral tests against real external infrastructure with no mocking at the infrastructure boundary | nice-to-have | | validated |
 | Test Depth Policy | Risk-scaled control over how many case classes a suite must cover (depth), independent of which strategy applies | must-have | | validated |
 | Gaming Detector Gate Enforcement | Wire the 8 gaming detectors in `lib/test-strategies/gaming.mjs` into a deterministic `PreToolUse` hook that blocks (before the write lands) newly introduced gaming violations in test files, replacing agent-prose-only enforcement | must-have | | validated |
+| Test Helper Inventory | Language-agnostic inventory of a project's shared test helpers, fixtures, setup modules, and curated golden TEST samples, injected into every write-test RED-phase and implement subagent prompt so fresh contextless subagents reuse shared setup instead of re-deriving it | should-have | | validated |
 
 ## Deferred Capabilities
 
@@ -106,6 +107,9 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | `getStrategy(id)` | function | Returns a strategy type definition from the registry (summary traits, not the full profile). Returns null if not found. |
 | `listStrategies()` | function | Returns all 9 strategy types in stable alphabetical order. |
 | `test_strategies` manifest schema | config | YAML schema for declaring strategies in manifest.yaml. Consumed by plan, write-test, implement. |
+| `buildInventory(projectRoot, opts)` | function | Returns the deterministic shared-test-helper/fixture/sample inventory for a project root. Backed by `collectHelperSources`, `collectTestSamples`, `extractSymbols`, `renderInventoryText`, `findDuplicateHelpers`. |
+| `adev test-helpers <inventory\|check>` | CLI verb | Emits the inventory (JSON or budget-capped text) for injection into subagent prompts, and reports advisory helper-duplication findings for a test file. |
+| `test_helpers` manifest schema | config | Top-level YAML block (`paths`/`exclude`/`detect`) declaring or suppressing shared-helper locations. Sibling of `test_policy`; NOT nested under the array-shaped `test_strategies`. |
 
 ### Consumed APIs
 

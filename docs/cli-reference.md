@@ -56,6 +56,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
 | `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
 | `test-policy` | Resolve/inspect/set the test depth policy for a plan task | `lib/cli/test-policy.mjs` |
+| `test-helpers` | Emit the shared test-helper/fixture/test-sample inventory; check a test file for helper duplication | `lib/cli/test-helpers.mjs` |
 
 ---
 
@@ -558,6 +559,44 @@ adev test-policy explain --plan .context-index/specs/features/auth/login.plan.md
 
 **Implementation:** `lib/cli/test-policy.mjs`. **Called by:** `/adev:implement` (`resolve`,
 `assert-assigned`), operators directly (`show`, `set`, `explain`).
+
+### `test-helpers`
+
+**Purpose:** Emits the project's shared test infrastructure — helper modules with their
+exported symbols, fixture and setup files, fixture-data directories, and curated golden TEST
+samples — as a deterministic block that `/adev:write-test` and `/adev:implement` inject into
+every subagent prompt. Fresh subagents start contextless, so without this the same setup gets
+re-derived per task. Detection is language-agnostic: `conftest.py` and pytest fixtures in
+Python, `spec_helper.rb` in Ruby, `tests/helpers.mjs` in Node, and so on. Projects whose
+helpers live somewhere the built-in registry does not name declare a top-level `test_helpers`
+block in `manifest.yaml` (`paths` / `exclude` / `detect`).
+
+**Signature:**
+- `test-helpers inventory [--format json|text] [--budget <n>]` — prints the inventory. `json`
+  (default) is the full structured result; `text` is the injectable block, capped at
+  `--budget` lines (default 60) with a `+N more` footer when truncated. Output is byte-stable
+  across runs on an unchanged tree — the walk is bounded by counts, never elapsed time, so an
+  injected block does not churn between runs.
+- `test-helpers check --file <path> [--file <path> …] [--format json|text]` — reports symbols
+  defined in each file whose (normalized) names already exist in a shared helper. `--file` is
+  repeatable and the inventory is built once per invocation.
+
+**Findings are advisory: `check` exits 0 whether or not it finds anything.** This verb
+introduces no gate. Exact-name matching is a false-positive magnet (`cleanup`, `setup`,
+`run`), and a duplicated helper is a maintenance cost rather than a correctness defect, so it
+is surfaced to the author rather than enforced against them. Exit 1 is reserved for argument
+errors, a `--file` outside the project root, and a missing file.
+
+**Example:**
+```
+adev test-helpers inventory --format text
+adev test-helpers check --file tests/auth/login.test.mjs --file tests/auth/session.test.mjs
+```
+
+**Implementation:** `lib/cli/test-helpers.mjs` (logic in
+`lib/test-strategies/helper-inventory.mjs`). **Called by:** `/adev:write-test` (RED-phase
+Step 3a inventory, post-RED duplication check), `/adev:implement` (context-packet assembly).
+
 ### `worktree`
 
 **Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).

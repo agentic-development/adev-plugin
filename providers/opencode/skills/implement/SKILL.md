@@ -300,6 +300,18 @@ Before routing or dispatching, assemble the task's context packet:
    - Append all successfully resolved content under a `## Cross-Repo Reference Context` heading in the context packet. This section provides the implementer subagent with behavioral contracts from sibling repos that the current task depends on.
    - If no cross-repo references exist in `depends-on`, or if workspace state is null, skip this step entirely.
 
+7. **Shared test helper injection:** Load the project's existing shared test infrastructure once for the whole plan:
+
+   ```bash
+   adev test-helpers inventory --format text
+   ```
+
+   Append the output to the context packet under a `## Shared Test Helper Inventory` heading, prefixed with the advisory preamble:
+
+   > These shared test helpers, fixtures, and golden test samples already exist in this project. Reuse them instead of writing your own setup, teardown, or fixture code.
+
+   Follow the same discipline as the Heuristics injection (item 5): all tasks in the same plan receive the same block, and if the output is `No shared test helpers, fixtures, or test samples detected.` — or the verb fails for any reason — omit the section entirely rather than emitting an empty placeholder. The block is language-agnostic: in a Python project it lists `conftest.py` and its pytest fixtures, in this repo it lists `tests/helpers.mjs` and its exports. Without it, a contextless implementer re-derives setup that already exists.
+
 **Routing tag check:** If the task has a routing tag from `/adev:route`:
 - `auto-agent`: proceed with standard dispatch
 - `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
@@ -356,6 +368,7 @@ Build the implementer subagent prompt with these sections in order:
 3. **Task description.** Full text of the task from the plan. Never make the subagent read the plan file.
 4. **Scene-setting context.** Where this task fits in the feature. What prior tasks produced. Dependencies and constraints. Relevant file paths or code snippets the subagent will need. Before implementing, read the actual source files you will modify. Do not assume file contents based on the task description or plan. If a file has changed since the plan was written, work with the current state. If workspace state is non-null and the spec has a `target-repo:` frontmatter field, include an informational advisory: "This task targets repo '<target-repo>' within workspace '<workspace-name>'. All file paths are relative to that repo's root."
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
+5b. **Shared Test Helper Inventory.** The `## Shared Test Helper Inventory` section assembled in step 2a item 7, verbatim, when it is non-empty. Omit the section entirely when the inventory is empty. This is what stops a contextless implementer from re-deriving fixtures the project already has.
 6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them. **Cross-repo isolation constraint (workspace mode):** When operating inside a workspace, do NOT modify files in sibling repos. Cross-repo reference context is read-only — it informs your implementation but all changes must be confined to the current repo. If a task requires changes in a sibling repo, report it as NEEDS_CONTEXT with a note identifying the sibling repo and required changes.
 7. **TDD mandate.** This section is non-negotiable. Include the full content of `tdd-mandate.md` from this skill directory.
 
