@@ -1,7 +1,7 @@
 ---
 charter: pr-review-brief
 kind: artifact
-status: review-pending
+status: review-passed
 risk_level: low
 milestone:
 revision: 1

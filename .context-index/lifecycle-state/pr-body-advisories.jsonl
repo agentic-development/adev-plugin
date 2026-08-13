@@ -1,2 +1,6 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-13T01:29:13.800Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-13T01:29:13.860Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"FAIL","notes":"4 blockers. Measured 138 plans: 34% reach no defined ladder rung and render a silent empty reading order. Also conflicting task-token rules, missing Task Summary in 35%, and a second incompatible grammar in lib/parallel/groups.mjs.","ts":"2026-08-13T01:59:17.566Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"FAIL","notes":"2 blockers: plan path from Spec: trailer with no containment, and its content is rendered; verbatim plan content has no escaping contract covering it.","ts":"2026-08-13T01:59:17.625Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"1 warning: stale 'three sections' renderer task in the sibling spec leaves outer marker-wrap ownership unnamed. Five-slot table, marker placement, amend claim, and pr: block shape all verified.","ts":"2026-08-13T01:59:17.689Z"}
+{"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-08-13T01:59:30.421Z"}

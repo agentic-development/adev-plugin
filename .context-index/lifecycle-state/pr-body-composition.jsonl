@@ -1,2 +1,6 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-13T01:11:50.596Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-13T01:11:50.730Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"FAIL","notes":"2 blockers: verification input has no contract and its producer forbids re-parsing; UNKNOWN invariant unimplementable (no task-to-file mapping in routing.json).","ts":"2026-08-13T01:59:17.353Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"FAIL","notes":"3 blockers: path traversal via Spec: trailer; escaping omits table pipe and covers only trailers not rationale; marker literals not neutralized.","ts":"2026-08-13T01:59:17.411Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Five-slot table verified identical across both specs. 2 warnings: validate report lacks the grammar+ladder its sibling gives a simpler input; Author-type/Operator consumed by charter but unused.","ts":"2026-08-13T01:59:17.497Z"}
+{"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-08-13T01:59:30.372Z"}
