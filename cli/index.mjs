@@ -1726,6 +1726,7 @@ const VERB_REGISTRY = new Map([
   ["skill-ext",       () => import("../lib/cli/skill-ext.mjs")],
   ["worktree",        () => import("../lib/cli/worktree.mjs")],
   ["parallel",        () => import("../lib/cli/parallel.mjs")],
+  ["pr",              () => import("../lib/cli/pr.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
