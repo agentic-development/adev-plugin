@@ -188,6 +188,26 @@ describe("architectural: execution-state migration", () => {
     );
   });
 
+  it("no module hand-builds the execution-state path (issue-607 shadow-file guard)", () => {
+    // The state file's storage root is resolved (shared across worktrees, like
+    // the issue board). Any module that joins the path itself reads a
+    // worktree-local shadow the writer never touches — silent stale bindings.
+    // lib/execution-state.mjs is the one legitimate builder.
+    const readers = [
+      join(REPO_ROOT, "lib", "session-capture.mjs"),
+      join(REPO_ROOT, "lib", "migrate-state-artifacts.mjs"),
+    ];
+    for (const path of readers) {
+      const content = read(path);
+      assert.ok(
+        !/join\([^)]*["']\.context-index["']\s*,\s*["']\.execution-state\.json["']/.test(
+          content,
+        ),
+        `${path} must read execution state via lib/execution-state.mjs, not by joining the path itself`,
+      );
+    }
+  });
+
   it("hooks/hooks.json does not register the helper as an entry point", () => {
     const hooksJsonPath = join(REPO_ROOT, "hooks", "hooks.json");
     const content = read(hooksJsonPath);
