@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 2
+revision: 3
 updated: 2026-08-12
 ---
 
@@ -37,9 +37,11 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | Dependency | Type | Description |
 |-----------|------|-------------|
 | `cli-driver-surface` | internal module | Provides the `adev <verb>` dispatch table and `lib/cli/<verb>.mjs` helper pattern this module's verb plugs into. |
-| Git commit trailers | shared library | `Spec:`, `Plan-task:`, `Author-type:`, `Operator:` per `manifest.yaml` provenance config. |
+| Git commit trailers | shared library | `Spec:` and `Plan-task:` per `manifest.yaml` provenance config. |
 | `/adev:route` | internal module | Produces `<spec>.routing.json`, the source of the attention map. |
-| `/adev:validate` | internal module | Produces the report backing the verification summary. |
+| `/adev:validate` | internal module | Writes the `validate` step of the lifecycle projection, which backs the verification summary. |
+| `/adev:plan` | internal module | Produces `<spec-stem>.plan.md`, whose `## Parallelization` section backs the reading order. |
+| `worktree-parallelization` | internal module | Owns `lib/parallel/groups.mjs`, the single parser for `## Parallelization`. This module consumes it rather than defining a second grammar. |
 
 `cicd` is deliberately **not** listed above. The dependency runs inbound — `cicd` consumes this module's stdout and delivers it to the forge — so it appears under Interface Contracts → Exposed APIs, not here. This module must remain buildable and testable with no CI workflow in place.
 
@@ -57,7 +59,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 
 ### Relationships
 
-- A **PR Brief** contains zero or more **Attention Entries**, zero or more **Traceability Rows**, and at most one **Verification Summary**.
+- A **PR Brief** contains zero or more **Attention Entries**, zero or more **Traceability Rows**, and at most one **Verification Summary per referenced spec**. Revision 2 said "at most one" outright; that was wrong, because a PR range routinely spans several specs and each carries its own validate outcome. The brief renders one row per referenced spec and no merged verdict — merging would have to pick a rule for PASS+FAIL, and any such rule loses the information a reviewer needs.
 - An **Attention Entry** derives from one `<spec>.routing.json` entry; a **Traceability Row** aggregates the commits sharing one `Spec:` trailer value.
 - A **Review Packet** is authored by a human and lives outside the marker; a **PR Brief** is generated and lives inside it. Neither ever contains the other.
 
@@ -87,6 +89,8 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | Forge adapter registry | No non-GitHub forge in use yet; the registry follows the proven `lib/issues/registry.mjs` pattern when one appears. Must not be named `provider` — that term already denotes agent harnesses in `lib/provider/registry.mjs`. | — | first non-GitHub forge adoption |
 | `Assisted-by:` trailer alignment | Changes the provenance contract enforced by hooks and CI; constitution places this under human approval. | — | human decision |
 | Stacked-PR tooling | Stated reading order is the low-cost approximation; adopting Graphite adds an external dependency warranting an ADR. | — | reading-order capability proving insufficient |
+| Authorship signal in the brief (`Author-type:` / `Operator:`) | Removed from Consumed APIs in revision 3 because nothing rendered them. Reinstating needs a capability row stating what a reviewer does differently on seeing it — otherwise it is a column that costs attention and returns nothing. | — | a stated reviewer action |
+| Widening `lib/parallel/groups.mjs` to a tolerant qualifier | Measured over the 138 plans carrying `## Parallelization`: the parser yields usable groups for 79 and `malformed: true` for 59. The sole cause in 10 of those is the qualifier being restricted to literally `(independent\|sequential)`, so `(foundation, sequential)` and `(independent of A)` fail — a tolerant qualifier moves roughly 22 plans into the parsed set. Deferred because that same widening moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel`, a behaviour change in another charter's module that needs evidence those groups are genuinely independent. | — | `worktree-parallelization` accepting the coverage change |
 
 ## Interface Contracts
 
@@ -102,9 +106,12 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | Interface | Source Module | Description |
 |-----------|-------------|-------------|
 | `adev <verb>` dispatch table | `cli-driver-surface` | Registration point for the `pr` verb. |
-| Git commit trailers | provenance config | `Spec:`, `Plan-task:`, `Author-type:`, `Operator:` values via `git log`. |
-| `<spec>.routing.json` | `/adev:route` | Per-task `selected_agent`, `scores`, and `rationale`. |
-| Validate report | `/adev:validate` | Verdict, gate results, and per-check outcomes. |
+| Git commit trailers | provenance config | `Spec:` and `Plan-task:` values via `git log`. |
+| `<spec>.routing.json` | `/adev:route` | Per-task `selected_agent`, `scores.blast_radius`, `scores.novelty`, and `rationale`. |
+| `state.steps.validate` | `/adev:validate` | Verdict, per-validator reports, and blockers, read from the lifecycle projection. |
+| `<spec-stem>.plan.md` `## Parallelization` | `/adev:plan` | Group and task ordering for the reading order, read through `lib/parallel/groups.mjs`. |
+
+`Author-type:` and `Operator:` were listed here in revision 2 but no spec consumes them and no rendered field carries them, so they are removed rather than left as a claim the implementation does not honour. Surfacing authorship in the brief is a real idea — it is the one signal a reviewer of an agent-authored PR most plausibly wants — but it needs its own capability row and a decision about what a reviewer should *do* differently on seeing it. Recorded in Deferred Capabilities.
 
 ## Quality Attributes
 
