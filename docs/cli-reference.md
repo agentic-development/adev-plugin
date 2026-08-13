@@ -49,6 +49,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
 | `issues` | Issue-board subcommands (e.g. backend migrate) | `lib/cli/issues.mjs` |
+| `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Extract/retrieve/write project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
@@ -419,6 +420,22 @@ adev prototype discover-charters
 ```
 
 **Implementation:** `lib/cli/prototype.mjs`. **Called by:** `/adev:prototype`.
+
+### `coordination`
+
+**Purpose:** Answer "is someone already doing this?" before work starts. Scans open PRs, remote branches, and `in_progress` issues held by another owner — the shared signals that local state cannot see.
+
+**Signature:** `coordination scan [--json] [--owner <name>] [--limit <n>] [--branch-age-days <n>]`
+
+Exits `0` whenever the scan completes, **including a fully degraded scan**; `1` only on a usage error. A finding is not a failure, and this runs at the top of every `/adev:work`. When `gh` is missing, unauthenticated, or the repo has no GitHub remote, that bucket reports `available: false` with a reason and renders as `? open PRs` — never `0`, because "could not look" and "nothing there" are different answers.
+
+**Example:**
+```
+adev coordination scan
+adev coordination scan --json --owner "$USER/local"
+```
+
+**Implementation:** `lib/cli/coordination.mjs`. **Called by:** `/adev:work` Step 1.
 
 ### `issues`
 
