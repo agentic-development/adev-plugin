@@ -9,12 +9,16 @@
 
 ## Check 1: Quality Gates — PASS
 
-- Tests: PASS — `npm test` — 5532 tests, 5530 pass, 0 fail, 2 todo (57.5s).
+- Tests: PASS — `npm test` — 5536 tests, 5534 pass, 0 fail, 2 todo.
 - Baseline before this change was 5476 tests with 1 failure
   (`tests/cli/verify.test.mjs` CON-5, a 100ms performance envelope that measured 562ms under
   concurrent machine load). That test passes in the post-change run. It is a load-sensitive
   timing assertion, unrelated to this spec, and is noted here only so the test-count delta
-  reconciles: +56 tests, all from this change.
+  reconciles: +60 tests, all from this change.
+- One intermediate run failed in `tests/provider/cursor-adapter.test.mjs` with `ENOENT` on
+  `.test-meta-tools-temp`, a scratch directory created in the repo root and shared between test
+  files that the runner executes concurrently. It passes on re-run and does not touch any code
+  this spec changed. Flagged as pre-existing flake, not investigated here.
 
 ## Check 1.5: Source Manifest Verification — SKIP
 
@@ -31,7 +35,8 @@ Every acceptance criterion has a named test in `tests/lib/gates/doctor.test.mjs`
 | gitignored `cd` target reported | "gate cd-ing into a gitignored directory is an error finding (the repo-C case)" |
 | `{{ }}` placeholder reported | "unsubstituted placeholder in a gate command is an error finding" |
 | unresolvable binary reported; `node_modules/.bin` entry not | "gate whose binary does not exist…" + "resolveBinary honours project-local node_modules/.bin" |
-| gate absent from CI reported; gate present in CI not | "a gate absent from CI warns ci-gate-not-invoked (the repo-B case)" + "a gate present in CI produces no ci-gate-not-invoked finding" |
+| gate absent from CI reported; gate present in CI not | "a gate absent from CI warns ci-gate-not-invoked" + "a gate present in CI produces no ci-gate-not-invoked finding" + "`npm ci` in a workflow does not count as invoking an `npm test` gate" + "`npm run test` in a workflow counts…" |
+| gitignored path severity depends on position | "a gitignored build output entered AFTER a build step is a warning, not an error" + "a path created by an earlier step is not reported missing" |
 | no CI directory reported | "a project with no CI at all warns ci-config-missing (the repo-C case)" |
 | unrecognised runner warns, does not pass silently | "an unrecognised runner warns rather than passing silently" + "node:test also warns runner-unknown" |
 | `--execute` under `ADEV_GATE_DOCTOR` spawns nothing | "--execute with ADEV_GATE_DOCTOR already set refuses to spawn" — asserts the side-effect marker file was never created |
@@ -60,7 +65,7 @@ added to the spec, not smuggled past it.
 | 3. Pure ESM | `.mjs`, `import`/`export` throughout. No `require`, no `module.exports`. |
 | 4. Hook protocol compliance | `gate doctor` exits 0 / 1 / 2 per the documented contract; `--json` writes a single object to stdout. |
 | 5. Version parity | No version bumped. Releases are automated by release-please per ADR-0008. |
-| No inline-Node in SKILL.md | Hygiene Pass 8 step 6 names the CLI verb; it contains no `node -e`, no `Run inline Node.js:` heading, and no fenced JavaScript. Verified against `hooks/pre-commit-no-inline-node.sh`. |
+| No inline-Node in SKILL.md | Hygiene Pass 8 step 6 names the CLI verb; it contains no `node -e`, no `Run inline Node.js:` heading, and no fenced JavaScript. Verified by extracting the added lines (`git diff HEAD~2 HEAD -- skills/hygiene/SKILL.md`) and scanning them for every pattern `hooks/pre-commit-no-inline-node.sh` rejects — zero matches. Note that `core.hooksPath` in this checkout points outside this worktree, so commit-time hook execution here is not itself evidence. |
 | CLI driver surface | `lib/cli/gate.mjs` does argument parsing, formatting, and exit-code mapping only; all diagnosis lives in `lib/gates/doctor.mjs`. The module's "does NOT export LIFECYCLE_STEP" note is preserved so `tests/cli-driver-pattern.test.mjs` does not assert requireGate-first against it. |
 | Commit trailers | Every commit carries `Spec:`; implementation commits carry `Plan-task:`. |
 
@@ -72,6 +77,17 @@ this worktree was touched.
 ## Check 9: Transition Gates — SKIP
 
 `transitions:` is empty in this project's `governance/gates.yaml`.
+
+## Check 14 (self-application): registry acceptance — PASS
+
+`adev diagnose --spec .context-index/specs/features/unified-gates/gate-doctor.spec.md` → "All
+checks passed." The registry loader accepts `validate.check-14-gate-executability` with an
+entirely empty error list (not merely an absent `DETERMINISTIC_PROJECT` error), which also
+proves its `plugin:` prompt URI resolves — a `PROMPT_NOT_FOUND` would drop the entry and the
+check would silently never run.
+
+`templates/domains/software/validate.yaml` is the only domain starter in the repo, so no other
+domain's `/adev:init` scaffold is left without the check.
 
 ## Dogfooding
 

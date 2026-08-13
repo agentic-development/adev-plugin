@@ -259,6 +259,38 @@ test("gate cd-ing into a gitignored directory is an error finding (the repo-C ca
   }
 });
 
+test("a gitignored build output entered AFTER a build step is a warning, not an error", async () => {
+  const dir = createTempDir();
+  try {
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    mkdirSync(join(dir, "dist"), { recursive: true });
+    writeFileSync(join(dir, "dist", ".keep"), "");
+    writeFixture(dir, ".gitignore", "dist/\n");
+    seedSingleGate(dir, "npm run build && cd dist && npm test");
+    const report = await runGateDoctor({ projectRoot: dir });
+    const f = report.findings.find((x) => x.id === "gate-doctor/path-gitignored");
+    assert.ok(f);
+    assert.equal(f.severity, "warning", "an earlier step in the same command may build dist/");
+    assert.equal(report.summary.errors, 0, "an ordinary build-then-test gate must not exit 2");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("a path created by an earlier step is not reported missing", async () => {
+  const dir = createTempDir();
+  try {
+    seedSingleGate(dir, "npm run build && cd dist && npm test");
+    const report = await runGateDoctor({ projectRoot: dir });
+    assert.ok(
+      !ids(report).includes("gate-doctor/path-missing"),
+      "dist/ does not exist at analysis time because the build has not run",
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
 test("isGitignored degrades to false outside a git repo rather than throwing", () => {
   const dir = createTempDir();
   try {
@@ -420,7 +452,7 @@ test("a project with no CI at all warns ci-config-missing (the repo-C case)", as
   }
 });
 
-test("a gate absent from CI warns ci-gate-not-invoked (the repo-B case)", async () => {
+test("a gate absent from CI warns ci-gate-not-invoked", async () => {
   const dir = createTempDir();
   try {
     writeFixture(dir, ".github/workflows/ci.yml", "jobs:\n  build:\n    steps:\n      - run: npm run lint\n");
@@ -429,6 +461,37 @@ test("a gate absent from CI warns ci-gate-not-invoked (the repo-B case)", async 
     const f = report.findings.find((x) => x.id === "gate-doctor/ci-gate-not-invoked");
     assert.ok(f);
     assert.equal(f.gate, "test");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("`npm ci` in a workflow does not count as invoking an `npm test` gate", async () => {
+  const dir = createTempDir();
+  try {
+    // The naive fallback — "does the CI text contain the executable token?" —
+    // matches `npm ci` here and makes this finding unfirable on every
+    // JavaScript project, the ecosystem it most needs to work in.
+    writeFixture(
+      dir,
+      ".github/workflows/ci.yml",
+      "jobs:\n  build:\n    steps:\n      - run: npm ci\n      - run: npm run lint\n",
+    );
+    seedSingleGate(dir, "npm test");
+    const report = await runGateDoctor({ projectRoot: dir });
+    assert.ok(ids(report).includes("gate-doctor/ci-gate-not-invoked"));
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("`npm run test` in a workflow counts as invoking an `npm test` gate", async () => {
+  const dir = createTempDir();
+  try {
+    writeFixture(dir, ".github/workflows/ci.yml", "steps:\n  - run: npm run test\n");
+    seedSingleGate(dir, "npm test");
+    const report = await runGateDoctor({ projectRoot: dir });
+    assert.ok(!ids(report).includes("gate-doctor/ci-gate-not-invoked"));
   } finally {
     cleanupTempDir(dir);
   }
@@ -733,8 +796,10 @@ test("check-14 is accepted as a deterministic-check by the validate registry loa
 `,
     );
     const cfg = loadValidateConfig(dir);
-    const rejected = cfg.errors.filter((e) => e.code === "DETERMINISTIC_PROJECT");
-    assert.equal(rejected.length, 0, JSON.stringify(cfg.errors));
+    // Assert the WHOLE error list is empty, not just that DETERMINISTIC_PROJECT
+    // is absent: a PROMPT_NOT_FOUND on the check's prompt URI would also drop
+    // the entry, and the check would silently never run in real validate.
+    assert.equal(cfg.errors.length, 0, JSON.stringify(cfg.errors));
     assert.ok(cfg.checks.some((c) => c.id === "validate.check-14-gate-executability"));
   } finally {
     cleanupTempDir(dir);

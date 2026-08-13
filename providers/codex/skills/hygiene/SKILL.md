@@ -385,8 +385,8 @@ Skipped — no governance/ directory configured. Run `/adev:init` to set up gove
 - [x] boundaries.yaml: valid YAML, 2 rules defined
 - [x] risk-policies.yaml: valid YAML, 3/3 levels defined
 - [ ] Gate "custom-build": gate-doctor/binary-not-found — "turbo" not on PATH or in node_modules/.bin
-- [ ] Gate "test": gate-doctor/glob-under-expansion — pattern 'tests/**/*.test.mjs' matches 416 files
-      with true '**' recursion but only 339 under 'sh'; 77 files are silently skipped
+- [ ] Gate "test": gate-doctor/glob-under-expansion — pattern 'tests/**/*.test.mjs' matches 451 files
+      with true '**' recursion but only 326 under 'sh'; 125 files are silently skipped
 - [ ] Boundary "no-direct-db": INVALID_REGEX — unclosed group
 - [ ] Override "payments.yaml": ORPHAN_OVERRIDE — no charter at specs/features/payments/
 - [x] Transition gate references: all valid
