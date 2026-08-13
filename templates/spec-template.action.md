@@ -1,12 +1,3 @@
-# Action Spec: {{ spec_title }}
-
-<!-- Action Spec within the {{ module_name }} charter.
-     An action spec describes a one-shot operational procedure (cleanup, backfill,
-     migration tool, smoke validation, deployment runbook). Use the Devin-style
-     postcondition-first framing: define DONE first, then steps that reach it.
-     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
-     Exemplar: .context-index/specs/features/lifecycle-artifacts/smoke-validation.spec.md -->
-
 ---
 charter: {{ module_name }}
 kind: action
@@ -18,6 +9,15 @@ charter-revision: {{ charter_revision }}
 created: {{ date }}
 updated: {{ date }}
 ---
+
+# Action Spec: {{ spec_title }}
+
+<!-- Action Spec within the {{ module_name }} charter.
+     An action spec describes a one-shot operational procedure (cleanup, backfill,
+     migration tool, smoke validation, deployment runbook). Use the Devin-style
+     postcondition-first framing: define DONE first, then steps that reach it.
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
+     Exemplar: .context-index/specs/features/lifecycle-artifacts/smoke-validation.spec.md -->
 
 <!-- # tracker-ref: -->
 

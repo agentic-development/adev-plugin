@@ -250,7 +250,7 @@ test("adev artifact commit rejects a zero-byte temp file", () => {
 test("adev artifact commit renames .validate.md.tmp into place atomically", () => {
   const dir = makeTempProject();
   try {
-    const body = "# Validation Report\n\nFull body here.\n";
+    const body = "---\nverdict: PASS\n---\n\n# Validation Report\n\nFull body here.\n";
     const { tmp, dst } = writeTmpArtifact(
       dir,
       ".context-index/specs/features/m/x.spec.md",
@@ -283,7 +283,7 @@ test("adev artifact commit renames .validate.md.tmp into place atomically", () =
 test("adev artifact commit works for kind=review as well", () => {
   const dir = makeTempProject();
   try {
-    const body = "# Review Report\n\nReviewer findings.\n";
+    const body = "---\nverdict: PASS\n---\n\n# Review Report\n\nReviewer findings.\n";
     const { tmp, dst } = writeTmpArtifact(
       dir,
       ".context-index/specs/features/m/x.spec.md",
@@ -320,7 +320,7 @@ test("adev artifact commit --from/--to commits an explicit src→dst pair", () =
     const dstRel = ".context-index/specs/features/m/x.validate.md";
     const tmpAbs = join(dir, tmpRel);
     mkdirSync(dirname(tmpAbs), { recursive: true });
-    const body = "content via --from/--to\n";
+    const body = "---\nverdict: PASS\n---\n\ncontent via --from/--to\n";
     writeFileSync(tmpAbs, body);
     const r = spawnSync(
       "node",
@@ -356,7 +356,7 @@ test("adev artifact commit overwrites an existing destination (renameSync semant
   // earlier validation; the new commit replaces it.
   const dir = makeTempProject();
   try {
-    const body = "new body\n";
+    const body = "---\nverdict: PASS\n---\n\nnew body\n";
     const { dst } = writeTmpArtifact(
       dir,
       ".context-index/specs/features/m/x.spec.md",

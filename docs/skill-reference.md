@@ -28,7 +28,6 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 | `/adev:eval` | Validation | Graduated evaluation harness scoring 0-100 | Implementation complete |
 | `/adev:recover` | Validation | Structured diagnosis when agents get stuck | Active implementation |
 | `/adev:deploy` | Operations | Run a structured deployment pipeline from deploy.yaml | deploy.yaml exists |
-| `/adev:standalone` | Operations | Disable lifecycle gate enforcement for the session | Context index exists |
 | `/adev:issues` | Maintenance | Manage project issues and epics | Task backend configured |
 | `/adev:status` | Maintenance | Query project status dashboard (read-only) | Context index exists |
 | `/adev:hygiene` | Maintenance | Audit context for staleness, drift, and coverage gaps | Context index exists |
@@ -116,24 +115,26 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:work`
 
-**Purpose:** Pre-lifecycle triage that classifies incoming work and routes to the correct `/adev:*` skill. Scans for in-progress plans, unreviewed specs, and recent sessions before making a recommendation.
+**Purpose:** The **single front door and conductor** for the framework. Classifies incoming work and routes it to the correct `/adev:*` skill, and — once you are inside the lifecycle — projects the next step and can drive the pipeline forward. When in doubt about which skill to run, start here. It scans for in-progress plans, unreviewed specs, and recent sessions before recommending or advancing.
 
 **Prerequisites:** `.context-index/` must be initialized.
 
 **Arguments:**
-- No arguments: interactive triage (scans state, asks what you are working on)
+- No arguments: triage — scans lifecycle state and either projects the next step (e.g., "your spec passed review; next is `/adev:plan`") or asks what you are working on.
 - Free-text description: classify and propose a route (e.g., `/adev:work fix the broken test in hooks`)
-- `--intake [<description>]`: intake mode -- classify and triage an incoming work request into an issue
-- `--intake --file <path>`: batch intake mode -- read a file containing multiple requests
+- `continue` / `resume`: advance the current work to its projected next lifecycle step (conductor mode).
+- `--intake [<description>]`: intake mode — classify and triage an incoming work request into an issue
+- `--intake --file <path>`: batch intake mode — read a file containing multiple requests
 
 **Example:**
 ```
 /adev:work
 /adev:work fix the broken test in hooks
+/adev:work continue
 /adev:work --intake "Add dark mode support"
 ```
 
-**Expected Output:** A classification of the work type (feature, bug, refactor, etc.) and a recommendation to invoke a specific skill (e.g., "This looks like a bug. Run `/adev:debug`").
+**Expected Output:** Either a classification of the work type (feature, bug, refactor, etc.) with a recommendation to invoke a specific skill, or — when work is already underway — the projected next lifecycle step, optionally advanced for you (conductor mode). Full-build intents hand off to `/adev:build`.
 
 **Related Guides:** [Getting Started Tutorial](getting-started.md)
 
@@ -210,12 +211,14 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - No arguments: review all unreviewed specs
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
+- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) dispatches the three parallel specialists; `quick` dispatches a single synthesized reviewer. `quick` never skips the gate — it still produces the `.review.md` and the review lifecycle event. Overrides any routing or risk-policy signal.
 
 **Example:**
 ```
 /adev:review-specs
 /adev:review-specs --spec .context-index/specs/features/auth/login.spec.md
 /adev:review-specs --charter auth
+/adev:review-specs --spec .context-index/specs/features/auth/login.spec.md --tier quick
 ```
 
 **Expected Output:** A review file at `<spec-path>.review.md` with PASS, PASS_WITH_NOTES, or BLOCK verdict from each specialist reviewer.
@@ -230,7 +233,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 > **Utility skill.** Can be invoked by `/adev:brainstorm` when a visual prototype would help clarify scope. Also available standalone for rapid UI sketching.
 
-**Purpose:** Rapidly sketch UI screens, user flows, and API surface from Feature Charters. Bridges the gap between chartering and implementation with tiered prototypes (wireframe, mockup, functional). Optionally uses a live browser preview for interactive design.
+**Purpose:** Generates tiered UI prototypes (wireframe, mockup, functional) from an adev Feature Charter stored at `.context-index/specs/features/<module>/charter.md`, serving them via a localhost browser preview for interactive review. Supports conversational iteration across rounds, then a choice to persist the result under `.adev/prototype/<module>/` or discard it.
 
 **Prerequisites:** A Feature Charter must exist for the target module.
 
@@ -316,6 +319,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `<plan-path>`: path to the plan file (required)
 - `--task <N>`: execute only task N
 - `--dry-run`: show routing decisions without executing
+- `--parallel`: run file-disjoint task groups concurrently in adev-managed worktrees (falls back to serial when the plan has no usable `## Parallelization` section). See [Build Phase → Parallel Execution](build-phase.md#parallel-execution---parallel).
+- `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree and continue instead of aborting with `RERUN_COLLISION`. No effect without `--parallel`.
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 - `--verbose`: enable step-by-step narration for debugging
 
@@ -324,6 +329,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 /adev:implement .context-index/specs/features/auth/login.plan.md
 /adev:implement .context-index/specs/features/auth/login.plan.md --task 3
 /adev:implement --dry-run .context-index/specs/features/auth/login.plan.md
+/adev:implement --parallel .context-index/specs/features/auth/login.plan.md
 ```
 
 **Expected Output:** Implemented code for each task, with tests written first (TDD), spec compliance verified, and code quality reviewed. Commits created per task with Spec and Plan-task trailers.
@@ -375,6 +381,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--dry-run`: show pipeline plan without executing
 - `--no-route`: skip the route step
 - `--full`: run the Full Pipeline (specify through validate)
+- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)), propagated to the `/adev:review-specs` and `/adev:validate` dispatches in the pipeline. When omitted, each of those steps resolves its own rigor tier via routing signal / risk policy / default `full`. Distinct from the gate tiers (`fast`/`integration`/`e2e`) used by validate's quality-gate check.
 
 **Example:**
 ```
@@ -401,6 +408,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--spec <path>`: validate against a specific Live Spec (required)
 - `--plan <path>`: cross-reference the implementation plan (optional)
 - `--fix`: attempt to auto-fix minor issues before reporting
+- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) runs the complete check suite; `quick` runs a narrowed set while still enforcing the fail-fast quality gate and emitting the validate lifecycle event. Overrides any routing or risk-policy signal.
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 
 **Example:**
@@ -534,25 +542,6 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 **Companion code:** All deploy logic lives in `lib/deploy.mjs` (config loading, validation, step execution, rollback, version resolution, output formatting).
 
 **Related Guides:** [Build Phase](build-phase.md)
-
----
-
-### `/adev:standalone`
-
-**Purpose:** Disable lifecycle gate enforcement for the current session. Use for exploratory coding without a plan, quick fixes to non-tracked code, or prototyping before committing to a spec.
-
-**Prerequisites:** `.context-index/` must be initialized.
-
-**Arguments:** None.
-
-**Example:**
-```
-/adev:standalone
-```
-
-**Behavior:** Writes `status: standalone` to `.context-index/.execution-state.json` (via `adev execution-state write --status standalone`). All lifecycle gates pass for the remainder of the session. The next session start resets to `idle` unless `ADEV_STANDALONE=1` is set in the environment.
-
-**Related Guides:** [Governance & Lifecycle Gates](governance.md), [Configuration Reference](configuration.md)
 
 ---
 

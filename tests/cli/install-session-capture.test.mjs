@@ -25,17 +25,26 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawnSync, execSync } from "node:child_process";
 import {
   mkdirSync,
   writeFileSync,
   readFileSync,
+  readdirSync,
   existsSync,
   copyFileSync,
+  symlinkSync,
 } from "node:fs";
 import { join } from "node:path";
 
-import { createTempDir, cleanupTempDir, PLUGIN_ROOT } from "../helpers.mjs";
+import {
+  createTempDir,
+  cleanupTempDir,
+  createTempGitRepo,
+  runGitHook,
+  writeFixture,
+  PLUGIN_ROOT,
+} from "../helpers.mjs";
 
 import {
   dispatchInstallerByCaptureMode,
@@ -355,6 +364,252 @@ test("user content outside markers preserved in .gitignore on re-runs", () => {
     assert.match(content, /node_modules\//);
     assert.match(content, /custom-pattern\//);
     assert.doesNotMatch(content, /adev:session-capture-gitignore/);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// issue-588 regression: the sentinel-wrap bound detection used to anchor on
+// the FIRST line merely mentioning "session-capture" — in the real
+// .githooks/post-commit that line is the self-skip guard's diagnostic echo,
+// which sits INSIDE the guard's own (from the wrapped block's point of
+// view, unclosed) `if` structure. Wrapping there opened a sentinel mid-way
+// through that structure; the later sentinel-bounded removal then deleted
+// the guard's closing `fi`s and left invalid bash (`bash -n` failure).
+// ─────────────────────────────────────────────────────────────────────────
+
+test("issue-588: wrap+remove on a self-skip-guard-shaped fixture leaves a bash -n clean script", () => {
+  const dir = createTempDir();
+  try {
+    // Shaped like the real .githooks/post-commit: a self-skip guard whose
+    // diagnostic echo mentions "session-capture" and lives inside nested
+    // `if` blocks, followed later by the actual capture-writer invocation.
+    const fixture = [
+      "#!/usr/bin/env bash",
+      "set -uo pipefail",
+      "",
+      'COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null) || exit 0',
+      'CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "$COMMIT_HASH" 2>/dev/null || echo "")',
+      "",
+      "# Self-skip guard: mentions session-capture in its diagnostic, BEFORE",
+      "# the writer block below.",
+      'if [ -n "$CHANGED_FILES" ]; then',
+      "  SESSIONS_ONLY=1",
+      "  while IFS= read -r CHANGED_PATH; do",
+      '    [ -z "$CHANGED_PATH" ] && continue',
+      '    case "$CHANGED_PATH" in',
+      "      .context-index/sessions/*) ;;",
+      "      *) SESSIONS_ONLY=0; break ;;",
+      "    esac",
+      '  done <<< "$CHANGED_FILES"',
+      "",
+      '  if [ "$SESSIONS_ONLY" = "1" ]; then',
+      '    echo "session-capture skipped: sessions-only commit" >&2',
+      "    exit 0",
+      "  fi",
+      "fi",
+      "",
+      'OUTPUT_DIR=".context-index/sessions"',
+      'TRACKING_FILE=".context-index/.session-tracking.jsonl"',
+      "",
+      "# Call session-summary writer with enriched content",
+      'node --input-type=module -e "',
+      "  import { writeSummary } from './lib/session-summary.mjs';",
+      "  await writeSummary('body', {}, process.env.ADEV_PC_OUTPUT_DIR);",
+      '" 2>/dev/null || true',
+      "",
+      "exit 0",
+      "",
+    ].join("\n");
+    writeFile(dir, ".githooks/post-commit", fixture);
+
+    const wrapOut = wrapLegacyPostCommitWithSentinels(dir);
+    assert.equal(wrapOut, "wrapped");
+
+    const afterWrap = readFileSync(join(dir, ".githooks", "post-commit"), "utf8");
+    const wrapCheck = spawnSync("bash", ["-n"], { input: afterWrap, encoding: "utf8" });
+    assert.equal(wrapCheck.status, 0, `wrapped script should be bash -n clean: ${wrapCheck.stderr}`);
+
+    const removeOut = removeSessionCapturePostCommitBlock(dir);
+    assert.equal(removeOut, "removed");
+
+    const afterRemove = readFileSync(join(dir, ".githooks", "post-commit"), "utf8");
+    const removeCheck = spawnSync("bash", ["-n"], { input: afterRemove, encoding: "utf8" });
+    assert.equal(
+      removeCheck.status,
+      0,
+      `post-removal script should be bash -n clean: ${removeCheck.stderr}`,
+    );
+
+    // The self-skip guard's if/fi structure must survive intact — both
+    // closing `fi`s remain, and the writer invocation is gone.
+    assert.match(afterRemove, /if \[ -n "\$CHANGED_FILES" \]; then/);
+    assert.match(afterRemove, /^fi$/m);
+    assert.doesNotMatch(afterRemove, /node --input-type=module/);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("issue-588: removal that would break bash syntax is refused via the syntax-guard, file left untouched", () => {
+  // A hand-authored (or otherwise mis-anchored) sentinel pair that opens
+  // INSIDE an `if` and closes AFTER its `fi` — the same corruption shape
+  // as the original bug: removing everything between the sentinels deletes
+  // the `fi` without its `if`, leaving invalid bash. The syntax-guard must
+  // catch this BEFORE writing.
+  const dir = createTempDir();
+  try {
+    const original = [
+      "#!/usr/bin/env bash",
+      'if [ -n "$X" ]; then',
+      "# >>> adev:session-capture >>>",
+      "  echo hi",
+      "fi",
+      "# <<< adev:session-capture <<<",
+      "exit 0",
+      "",
+    ].join("\n");
+    writeFile(dir, ".githooks/post-commit", original);
+
+    const origWrite = process.stderr.write.bind(process.stderr);
+    let captured = "";
+    process.stderr.write = (chunk) => {
+      captured += chunk.toString();
+      return true;
+    };
+    let outcome;
+    try {
+      outcome = removeSessionCapturePostCommitBlock(dir);
+    } finally {
+      process.stderr.write = origWrite;
+    }
+
+    assert.equal(outcome, "syntax-guard");
+    assert.match(captured, /\[adev:session-capture\] syntax-guard/);
+    // File must be byte-identical — the guard refuses to write.
+    assert.equal(
+      readFileSync(join(dir, ".githooks", "post-commit"), "utf8"),
+      original,
+      "post-commit must be left untouched when removal would break bash syntax",
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// issue-582 regression: a crafted `Spec:` trailer on a commit (e.g. fetched
+// from a remote, then checked out) used to be shell-interpolated directly
+// into the inline `node --input-type=module -e "..."` JS source, letting
+// attacker-controlled trailer text break out of the JS string literal it
+// was spliced into and execute arbitrary code on first post-commit. The fix
+// passes every git-derived value through environment variables instead
+// (read back via `process.env` inside the script) so the value is always
+// treated as inert data, never as source text.
+// ─────────────────────────────────────────────────────────────────────────
+
+test("issue-582 regression: post-commit's inline JS never shell-interpolates git-derived values", () => {
+  const hookPath = join(PLUGIN_ROOT, ".githooks", "post-commit");
+  const content = readFileSync(hookPath, "utf8");
+
+  const match = content.match(/node --input-type=module -e "\n([\s\S]*?)\n"/);
+  assert.ok(match, "post-commit should contain the node --input-type=module -e invocation");
+  const jsBody = match[1];
+
+  // None of the git-derived bash variables may be spliced into the JS
+  // source via ${...} interpolation.
+  for (const name of [
+    "COMMIT_HASH",
+    "COMMIT_DATE",
+    "COMMIT_SUBJECT",
+    "COMMIT_BODY",
+    "SPECS_TOUCHED",
+    "CHANGED_FILES",
+    "OUTPUT_DIR",
+    "TRACKING_FILE",
+  ]) {
+    assert.doesNotMatch(
+      jsBody,
+      new RegExp(`\\$\\{${name}\\}`),
+      `JS body must not interpolate bash variable \${${name}} into the JS source`,
+    );
+  }
+  // No residual ${VAR}-style bash interpolation or $(...) command
+  // substitution anywhere in the JS body.
+  assert.doesNotMatch(jsBody, /\$\{[A-Za-z_][A-Za-z0-9_]*\}/, "no ${VAR}-style bash interpolation in the JS body");
+  assert.doesNotMatch(jsBody, /\$\([^)]*\)/, "no $(...) command substitution in the JS body");
+  // Dynamic values are read via process.env instead.
+  assert.match(jsBody, /process\.env/, "dynamic values must be read via process.env");
+});
+
+test("issue-582 regression: a malicious Spec: trailer never reaches the JS as code (live git repo)", () => {
+  const dir = createTempGitRepo({ branch: "feat/test" });
+  try {
+    // Same fixture wiring as tests/hooks/post-commit-self-skip.test.mjs:
+    // the hook's node block resolves `./lib/session-summary.mjs` relative
+    // to cwd, so symlink the plugin's lib/ in and exclude it (+ the
+    // post-commit-mode manifest) from `git add -A`.
+    symlinkSync(join(PLUGIN_ROOT, "lib"), join(dir, "lib"), "dir");
+    writeFileSync(
+      join(dir, ".git", "info", "exclude"),
+      "lib\n.context-index/manifest.yaml\n",
+    );
+    writeFixture(
+      dir,
+      ".context-index/manifest.yaml",
+      [
+        "project:",
+        "  name: test",
+        "integrations:",
+        "  session_capture:",
+        "    capture: post-commit",
+        "    gitignored: false",
+        "",
+      ].join("\n"),
+    );
+
+    writeFixture(dir, "src/index.ts", "export const foo = 1;\n");
+    execSync("git add -A", { cwd: dir, stdio: "ignore" });
+
+    // A trailer value shaped like a JS-string-breakout + shell-metachar
+    // payload: closes a hypothetical enclosing quote, chains a statement
+    // that would create a marker file, then comments out the remainder —
+    // plus raw shell substitution syntax for good measure.
+    const shellMarker = join(dir, "PWNED_SHELL");
+    const jsMarker = join(dir, "PWNED_JS");
+    const payload =
+      `$(touch ${shellMarker})` +
+      "`touch " + shellMarker + "`" +
+      `'); (async()=>{ const fs = await import('node:fs'); fs.writeFileSync('${jsMarker}', 'x'); })(); ('` +
+      "${IFS}//";
+
+    const messageFile = join(dir, ".commit-msg");
+    writeFileSync(messageFile, `feat(x): trigger capture\n\nSpec: ${payload}\n`);
+    execSync(`git commit -F "${messageFile}"`, { cwd: dir, stdio: "ignore" });
+
+    const { exitCode } = runGitHook("post-commit", { cwd: dir });
+    assert.equal(exitCode, 0, "hook must always exit 0");
+
+    assert.ok(!existsSync(shellMarker), "shell command/backtick substitution in the trailer must not execute");
+    assert.ok(!existsSync(jsMarker), "JS string-breakout in the trailer must not execute");
+
+    // Capture still succeeds for this non-session commit — the payload
+    // flows through as inert data.
+    const sessionsDir = join(dir, ".context-index", "sessions");
+    const files = existsSync(sessionsDir)
+      ? readdirSync(sessionsDir).filter((f) => f.endsWith(".md"))
+      : [];
+    assert.equal(files.length, 1, "one capture file should be written");
+
+    const raw = readFileSync(join(sessionsDir, files[0]), "utf8");
+    assert.match(raw, /^specs-touched:/m, "frontmatter should still contain specs-touched");
+    // The malicious trailer value round-trips verbatim as inert quoted YAML
+    // data (none of its characters require escaping by yamlQuoteScalar).
+    assert.ok(
+      raw.includes(payload),
+      "payload should appear as literal data in the frontmatter, not have altered control flow",
+    );
   } finally {
     cleanupTempDir(dir);
   }

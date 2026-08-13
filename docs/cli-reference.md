@@ -25,7 +25,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `extension` | Install or list domain extension packs |
 | `init` | Scaffold/diagnose `.context-index/` (also a skill: `/adev:init`) |
 | `status` | Print a project status summary (also a skill: `/adev:status`) |
-| `migrate` | One-shot conversion of legacy state artifacts |
+| `migrate` | **Deprecated.** One-shot conversion of legacy state artifacts |
 | `help` | Print top-level usage |
 
 ### Lifecycle / internal
@@ -53,6 +53,8 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `heuristics` | Extract/retrieve/write project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
+| `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
+| `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
 | `test-policy` | Resolve/inspect/set the test depth policy for a plan task | `lib/cli/test-policy.mjs` |
 
 ---
@@ -143,9 +145,11 @@ adev status
 
 **Implementation:** `cli/index.mjs::cmdStatus`. See also the `state` verb for machine-readable lifecycle projections.
 
-### `migrate`
+### `migrate` (deprecated)
 
 **Purpose:** One-shot conversion of legacy state artifacts (e.g. pre-0.27 build/lifecycle state) to the current format.
+
+**Deprecated (issue-580):** this verb carried individual repos through the 2026-05 state-artifact migration. That migration is complete on the adev-plugin repo itself, but the verb and `lib/migrate-state-artifacts.mjs` remain shipped because other installations may still be on pre-migration artifact shapes and need an upgrade path. It is slated for removal once those installs age out — do not build new functionality on top of it, and prefer not to invoke it on a repo that has already migrated (running it is a no-op there, but it is no longer an actively maintained surface).
 
 **Signature:** `migrate`
 
@@ -276,7 +280,7 @@ adev state current --spec .context-index/specs/features/auth/login.spec.md
 adev execution-state write --status standalone
 ```
 
-**Implementation:** `lib/cli/execution-state.mjs`. **Called by:** `/adev:implement`, `/adev:standalone`.
+**Implementation:** `lib/cli/execution-state.mjs`. **Called by:** `/adev:implement`; also invoked directly (`adev execution-state write --status standalone`) as the lifecycle gate's documented escape route for exploratory work.
 
 ### `build-state`
 
@@ -455,6 +459,33 @@ adev cost summary --spec .context-index/specs/features/auth/login.spec.md --form
 
 **Implementation:** `lib/cli/cost.mjs`. **Called by:** `/adev:build`.
 
+### `worktree`
+
+**Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
+
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+
+**Example:**
+```
+adev worktree add --slug login-group-a
+adev worktree remove --slug login-group-a --force
+```
+
+**Implementation:** `lib/cli/worktree.mjs`. **Called by:** `/adev:implement --parallel`.
+
+### `parallel`
+
+**Purpose:** Decision helpers for the `/adev:implement --parallel` orchestration — group parsing and deterministic merge order, orchestrator-pollution assertion, per-group completeness verification, the concurrency cap, and re-run collision detection. The skill orchestrates; these verbs compute the checks.
+
+**Signature:** `parallel <groups|baseline|assert-clean|verify|max-parallel|collision> [flags]` — e.g. `parallel groups --plan <path>`, `parallel baseline`, `parallel assert-clean --base-head <sha>`, `parallel verify --branch <b> --base <sha> --tasks <ids> --done <ids>`, `parallel collision --slug <slug>`.
+
+**Example:**
+```
+adev parallel groups --plan .context-index/specs/features/auth/login.plan.md
+```
+
+**Implementation:** `lib/cli/parallel.mjs`. **Called by:** `/adev:implement --parallel`.
+
 ### `test-policy`
 
 **Purpose:** The Test Depth Policy CLI surface — resolves the effective test depth for a plan
@@ -498,6 +529,32 @@ adev test-policy explain --plan .context-index/specs/features/auth/login.plan.md
 
 **Implementation:** `lib/cli/test-policy.mjs`. **Called by:** `/adev:implement` (`resolve`,
 `assert-assigned`), operators directly (`show`, `set`, `explain`).
+### `worktree`
+
+**Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
+
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+
+**Example:**
+```
+adev worktree add --slug login-group-a
+adev worktree remove --slug login-group-a --force
+```
+
+**Implementation:** `lib/cli/worktree.mjs`. **Called by:** `/adev:implement --parallel`.
+
+### `parallel`
+
+**Purpose:** Decision helpers for the `/adev:implement --parallel` orchestration — group parsing and deterministic merge order, orchestrator-pollution assertion, per-group completeness verification, the concurrency cap, and re-run collision detection. The skill orchestrates; these verbs compute the checks.
+
+**Signature:** `parallel <groups|baseline|assert-clean|verify|max-parallel|collision> [flags]` — e.g. `parallel groups --plan <path>`, `parallel baseline`, `parallel assert-clean --base-head <sha>`, `parallel verify --branch <b> --base <sha> --tasks <ids> --done <ids>`, `parallel collision --slug <slug>`.
+
+**Example:**
+```
+adev parallel groups --plan .context-index/specs/features/auth/login.plan.md
+```
+
+**Implementation:** `lib/cli/parallel.mjs`. **Called by:** `/adev:implement --parallel`.
 
 ---
 
