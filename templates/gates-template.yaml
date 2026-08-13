@@ -7,7 +7,13 @@
 #   name:      Display name
 #   kind:      deterministic | probabilistic (default: deterministic)
 #   tier:      fast | integration | e2e (default: fast)
-#   command:   Shell command to execute (deterministic gates only)
+#   command:   (required for deterministic gates) An argv LIST, never a shell string.
+#              e.g., command: [npm, test]
+#              A string value is rejected at load by lib/domains/merge-gates.mjs with
+#              INVALID_GATE: Gate '<id>' command must be an argv list (array), not a
+#              string — skipped. Commands are executed without shell interpolation,
+#              so a chained shell string such as `npm test && npm run lint` is not a
+#              valid gate — declare two gates instead.
 #   scope:     project | charter (default: project)
 #   required:  true | false (default: true). When false, severity is forced to warning.
 #   severity:  error | warning. Defaults: error for fast/integration, warning for e2e.
@@ -18,26 +24,52 @@
 # Tier execution order: fast → integration → e2e
 # An error-severity gate failure stops remaining gates in the tier and all subsequent tiers.
 # A warning-severity gate failure is recorded but does not stop execution.
+#
+# The unwired sentinel — `command: ""`
+#
+# The `test` (fast) and `integration-test` (integration) gates below ship LIVE but
+# unwired: their command is the empty string. /adev:init Step 7a seeds a real argv
+# command from the stack it detects. Until it does, lib/domains/merge-gates.mjs drops
+# each of them at load with
+#   INVALID_GATE: Gate '<id>' missing required command field — skipped.
+# so both tiers are *declared* in every scaffold, and an unseeded init produces a
+# named, actionable warning rather than silence.
+#
+# Why "" and not []? An empty array is truthy AND is an array, so it passes both of
+# validateGate's guards and is returned as a valid gate carrying an empty argv list —
+# a gate that reaches the executor with nothing to run. The empty string fails the
+# falsy guard first, which is the diagnosis we actually want.
 
 # Gate definitions
 gates:
-  # - id: test
-  #   name: Test Suite
-  #   kind: deterministic
-  #   tier: fast
-  #   command: ""                 # e.g., "npm test", "pytest"
-  #   scope: project
-  #   required: true
-  #   severity: error             # default for fast tier
-  #   triggers:
-  #     - post-task
-  #     - post-implement
+  - id: test
+    name: Test Suite
+    kind: deterministic
+    tier: fast
+    command: ""                 # unwired sentinel — seed e.g. [npm, test] or [pytest]
+    scope: project
+    required: true
+    severity: error             # default for fast tier
+    triggers:
+      - post-task
+      - post-implement
+
+  - id: integration-test
+    name: Integration Tests
+    kind: deterministic
+    tier: integration
+    command: ""                 # unwired sentinel — seed e.g. [npm, run, --if-present, test:integration]
+    scope: project
+    required: true
+    severity: error             # default for integration tier
+    triggers:
+      - post-implement
 
   # - id: lint
   #   name: Linter
   #   kind: deterministic
   #   tier: fast
-  #   command: ""                 # e.g., "npm run lint", "ruff check ."
+  #   command: ""                 # e.g., [npm, run, lint] or [ruff, check, .]
   #   scope: project
   #   required: true
   #   severity: error
@@ -48,30 +80,19 @@ gates:
   #   name: Type Checker
   #   kind: deterministic
   #   tier: fast
-  #   command: ""                 # e.g., "npx tsc --noEmit", "mypy ."
+  #   command: ""                 # e.g., [npx, tsc, --noEmit] or [mypy, .]
   #   scope: project
   #   required: true
   #   severity: error
   #   triggers:
   #     - post-task
 
-  # - id: integration-test
-  #   name: Integration Tests
-  #   kind: deterministic
-  #   tier: integration
-  #   command: ""                 # e.g., "npm run test:integration"
-  #   scope: project
-  #   required: true
-  #   severity: error             # default for integration tier
-  #   triggers:
-  #     - post-implement
-
   # - id: e2e-smoke
   #   name: E2E Smoke Tests
   #   kind: deterministic
   #   tier: e2e
   #   group: smoke                # smoke runs before full
-  #   command: ""                 # e.g., "npm run test:e2e:smoke"
+  #   command: ""                 # e.g., [npm, run, test:e2e:smoke]
   #   scope: project
   #   required: true
   #   severity: error             # default for e2e smoke group
@@ -81,7 +102,7 @@ gates:
   #   kind: deterministic
   #   tier: e2e
   #   group: full                 # full runs after smoke passes
-  #   command: ""                 # e.g., "npm run test:e2e"
+  #   command: ""                 # e.g., [npm, run, test:e2e]
   #   scope: project
   #   required: false             # required: false forces severity: warning
   #   severity: warning           # default for e2e full group
@@ -97,6 +118,12 @@ gates:
   #     - pre-merge
 
 # Lifecycle transition requirements
+#
+# Left live and empty on purpose. The charter invariant requires every id listed in
+# transitions.*.required_gates to exist in `gates`, and /adev:hygiene Pass 8 enforces
+# it — binding implement-to-validate to `test` while its command is still the unwired
+# sentinel would make a fresh scaffold fail closed. Populate this only after the gates
+# it names carry real argv commands.
 transitions: {}
   # spec-to-plan:
   #   required_gates: []
