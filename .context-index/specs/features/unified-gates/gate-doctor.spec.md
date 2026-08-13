@@ -1,11 +1,11 @@
 ---
 charter: unified-gates
-status: draft
+status: validated
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 1
-charter-revision: 2
+revision: 2
+charter-revision: 3
 created: 2026-08-13
 updated: 2026-08-13
 charter-extension: true
@@ -123,6 +123,18 @@ collection queries and gate smoke-runs.
    that would have caught it: it is runner-agnostic, needs no execution, and depends on
    nothing but the pattern and the tree.
 
+7a. **Every command-level check runs over the resolved command chain, not just the literal gate
+   command.** When a gate command is a package-manager script invocation (`npm test`,
+   `npm run <script>`, `yarn <script>`, `pnpm run <script>`, `bun test`), the doctor reads
+   `package.json` and appends the script body to the chain, following up to three hops and
+   stopping on a cycle. Findings cite the link they came from (`gates.yaml` or
+   `package.json:scripts.<name>`).
+
+   This is not a convenience. The adev-plugin finding did **not** live in the gate command —
+   the gate command was `npm test`. It lived one hop away in `scripts.test`, where the `**`
+   glob was. A doctor that inspected only the literal gate command would have missed the very
+   bug that motivated it.
+
 8. **When** the doctor can identify the test runner behind a gate command **then** it records
    the runner and its collection-query command. Recognised runners and queries:
 
@@ -178,11 +190,24 @@ collection queries and gate smoke-runs.
     fired, 2 when one or more did, and 1 for argument errors — the hook protocol every other
     verb in this repo follows.
 
+15. **Every command the doctor spawns receives a corrected environment**: `node_modules/.bin`
+    prepended to `PATH`, and `PWD` set to `projectRoot`. Both matter for correctness, not
+    convenience. Without the former the doctor contradicts itself — `resolveBinary` counts a
+    project-local binary as resolved while execution reports exit 127. Without the latter,
+    `spawnSync` sets the child's working directory but inherits the *parent's* `PWD`, so a
+    runner that interpolates `$PWD` reports paths from the wrong tree and the collection diff
+    silently reports everything as uncollected.
+
 ### Postconditions
 
 - No file under `projectRoot` is created, modified, or deleted. The doctor is read-only.
 - Every finding carries `id`, `severity`, `message`, and — where one exists — `gate` and
-  `citation` (a `path:line` into `gates.yaml` or a CI file).
+  `citation` (the artifact the finding was derived from: `gates.yaml`, a
+  `package.json:scripts.<name>` link, or a CI file).
+- Gate stdout and stderr are discarded outright (`stdio: "ignore"`) during smoke-runs. The
+  doctor records exit status and never runner output, so a gate that prints a secret cannot
+  leak it into a report. Collection queries do capture stdout, but only file paths are parsed
+  out of it and nothing else is retained.
 
 ## Interface
 
