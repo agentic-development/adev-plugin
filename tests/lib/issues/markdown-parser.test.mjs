@@ -105,6 +105,30 @@ describe("parseTasksMd", () => {
       assert.equal(issues[0].planTask, 1);
     });
 
+    it("keeps created/updated at 12/13 on a 14-column row and leaves the claim fields undefined", () => {
+      // Regression for the canonical row widening to 18 columns (branch, pr,
+      // owner, claimed_at inserted before created/updated). The failure mode
+      // being guarded is a narrow row falling into the wide branch and reading
+      // its timestamps out of the wrong cells — which a test that only checked
+      // the new fields would not catch.
+      const md = mkBoard(
+        [],
+        [
+          "| issue-6 | Narrow | open | 2 | task | epic-1 | plans/p.md |  | specs/s.md | issue-9 | a note | next | 2026-01-01 | 2026-01-02 |",
+        ]
+      );
+      const { issues } = parseTasksMd(md);
+      assert.equal(issues.length, 1);
+      const i = issues[0];
+      assert.equal(i.created, "2026-01-01");
+      assert.equal(i.updated, "2026-01-02");
+      assert.equal(i.notes, "a note");
+      assert.equal(i.next_action, "next");
+      for (const field of ["branch", "pr", "owner", "claimed_at"]) {
+        assert.equal(i[field], undefined, `${field} should be undefined on a narrow row`);
+      }
+    });
+
     it("parses a legacy 12-column issue row (no spec_ref, no next_action)", () => {
       const md = mkBoard(
         [],
@@ -118,6 +142,11 @@ describe("parseTasksMd", () => {
       assert.equal(issues[0].next_action, null);
       assert.equal(issues[0].planTask, 1);
       assert.equal(issues[0].planRef, "plans/p.md");
+      assert.equal(issues[0].created, "2026-01-01");
+      assert.equal(issues[0].updated, "2026-01-02");
+      for (const field of ["branch", "pr", "owner", "claimed_at"]) {
+        assert.equal(issues[0][field], undefined);
+      }
     });
   });
 
