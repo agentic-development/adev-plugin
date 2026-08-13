@@ -128,6 +128,13 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
    packets. Directory entries are visited in name-sorted order, so visit order is itself
    deterministic and even a truncated result is stable. Symlinked entries are skipped.
 
+   **When** a matched file's basename identifies it as a test *case* (`*.test.*`, `*.spec.*`,
+   `*_test.*`, `*_spec.*`, `test_*.py`) **then** it is never an inventory entry: a test case
+   consumes helpers, it is not one. This guard is required rather than cosmetic, because
+   `matchGlob` compiles `**` to `.*`, which crosses path-segment boundaries — without it,
+   `**/tests/**/helpers.*` matches `tests/cli/test-helpers.test.mjs`, and this repo's own
+   inventory listed that file until the guard was added.
+
 2. **When** the built-in registry is consulted **then** each entry declares a `language`, a
    `kind`, a set of path globs, and a symbol-extraction rule set. Matching is by glob against
    the repo-relative POSIX path, using the existing `matchGlob()` from
