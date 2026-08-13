@@ -4647,71 +4647,71 @@
     {
       "id": "issue-606",
       "title": "Pre-flight scan: /adev:work Step 1 should read open PRs, remote branches, and other-owner in_progress issues",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "feature",
       "epicId": "epic-107",
       "dependencies": [],
-      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nHIGHEST VALUE, LOWEST COST — needs no new data model. Step 1 currently scans four purely local signals (execution state, plan tasks, lifecycle states, recent sessions). Add: gh pr list (degrade silently when gh is absent or unauthenticated), git branch -r, and issues whose status is in_progress under a different owner. This alone would have surfaced epic-102 and PR #210 before any work started — which is where the real waste was. The duplicate PR cost an hour; the duplicated ANALYSIS cost far more.",
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nHIGHEST VALUE, LOWEST COST — needs no new data model. Step 1 currently scans four purely local signals (execution state, plan tasks, lifecycle states, recent sessions). Add: gh pr list (degrade silently when gh is absent or unauthenticated), git branch -r, and issues whose status is in_progress under a different owner. This alone would have surfaced epic-102 and PR #210 before any work started — which is where the real waste was. The duplicate PR cost an hour; the duplicated ANALYSIS cost far more.\n\nRESOLVED 2026-08-13 (epic-107): Closed by 470aa3e0 — adev coordination scan + /adev:work Step 1 signal 5.",
       "next_action": null,
       "created": "2026-08-12T23:52:04.173Z",
-      "updated": "2026-08-12T23:52:04.173Z"
+      "updated": "2026-08-13T12:14:52.226Z"
     },
     {
       "id": "issue-607",
       "title": "Resolve execution state across worktrees like the issue board already does",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-107",
       "dependencies": [],
-      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nSmallest change with the largest effect: point lib/execution-state.mjs at resolveStorageRoot() from lib/issues/resolve-root.mjs (already written, already tested, already handles the --git-common-dir case), or scan sibling worktrees and merge. Today the state scan is blind by construction, not by accident. Decide deliberately whether execution state should be SHARED (one lease per repo) or MERGED (per-worktree records, aggregated for display) — sharing changes semantics for legitimate parallel worktree work, which /adev:implement --parallel depends on.",
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nSmallest change with the largest effect: point lib/execution-state.mjs at resolveStorageRoot() from lib/issues/resolve-root.mjs (already written, already tested, already handles the --git-common-dir case), or scan sibling worktrees and merge. Today the state scan is blind by construction, not by accident. Decide deliberately whether execution state should be SHARED (one lease per repo) or MERGED (per-worktree records, aggregated for display) — sharing changes semantics for legitimate parallel worktree work, which /adev:implement --parallel depends on.\n\nRESOLVED 2026-08-13 (epic-107): Closed by 36f84fd6 (resolver) + a3687935 (the two shadow-path sites it exposed: session-capture read local while the writer wrote shared; migrateExecutionState guarded local and wrote shared, so a worktree run overwrote main live state).",
       "next_action": null,
       "created": "2026-08-12T23:52:04.194Z",
-      "updated": "2026-08-12T23:52:04.194Z"
+      "updated": "2026-08-13T12:14:52.226Z"
     },
     {
       "id": "issue-608",
       "title": "adev issues claim <id>: atomic check-and-set ownership, enforced in implement/debug preflight",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "feature",
       "epicId": "epic-107",
       "dependencies": [
         "issue-594"
       ],
-      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nModel it on the existing requireGate() pattern — a code-enforced precondition that exits 2 and refuses to proceed — rather than inventing a new concept. Verb sets status=in_progress plus owner and claimed_at atomically, and refuses when already claimed by a live owner. /adev:implement and /adev:debug call it in preflight. This is the check that would have refused work on issue-582. BLOCKED BY the JsonAdapter concurrency bug: claim semantics on a shared board are unverified while \"survives N concurrent appenders without corrupting tasks.json\" is failing.",
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nModel it on the existing requireGate() pattern — a code-enforced precondition that exits 2 and refuses to proceed — rather than inventing a new concept. Verb sets status=in_progress plus owner and claimed_at atomically, and refuses when already claimed by a live owner. /adev:implement and /adev:debug call it in preflight. This is the check that would have refused work on issue-582. BLOCKED BY the JsonAdapter concurrency bug: claim semantics on a shared board are unverified while \"survives N concurrent appenders without corrupting tasks.json\" is failing.\n\nRESOLVED 2026-08-13 (epic-107): Closed by da45a279 (claim/release primitive, PR #229) + dca848ed (the behavioural half — implement Step 1 and debug Phase 1.6 preflight). The stated blocker was stale: json-adapter-cas-concurrency passes.",
       "next_action": null,
       "created": "2026-08-12T23:52:04.209Z",
-      "updated": "2026-08-12T23:52:04.250Z"
+      "updated": "2026-08-13T12:14:52.226Z"
     },
     {
       "id": "issue-609",
       "title": "Bind issues to branch and PR so \"is someone doing this?\" is answerable offline",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-107",
       "dependencies": [],
-      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nBoard items already carry spec_ref; add branch and pr, written when work starts and when a PR opens. Makes ownership answerable without the network and gives /adev:status and /adev:hygiene a real ownership view. Precedent that the repo can hold contributors to commit-level metadata: the commit-msg hook already blocks commits touching source-manifest-tracked files without a Spec: trailer (it fired twice during this session).",
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nBoard items already carry spec_ref; add branch and pr, written when work starts and when a PR opens. Makes ownership answerable without the network and gives /adev:status and /adev:hygiene a real ownership view. Precedent that the repo can hold contributors to commit-level metadata: the commit-msg hook already blocks commits touching source-manifest-tracked files without a Spec: trailer (it fired twice during this session).\n\nRESOLVED 2026-08-13 (epic-107): Closed by da45a279 (PR #229) — branch/pr fields threaded through all adapters.",
       "next_action": null,
       "created": "2026-08-12T23:52:04.222Z",
-      "updated": "2026-08-12T23:52:04.222Z"
+      "updated": "2026-08-13T12:14:52.226Z"
     },
     {
       "id": "issue-610",
       "title": "Claim leases need a TTL and a release path, or a dead session blocks an issue forever",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-107",
       "dependencies": [
         "issue-608"
       ],
-      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nWithout expiry, the first crashed or abandoned session permanently locks an issue and the claim gate becomes something people bypass — which is worse than no gate, because it trains bypassing. Needs: claimed_at timestamp, a configurable TTL, an explicit adev issues release <id>, and a stale-claim report surfaced by /adev:status.",
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nWithout expiry, the first crashed or abandoned session permanently locks an issue and the claim gate becomes something people bypass — which is worse than no gate, because it trains bypassing. Needs: claimed_at timestamp, a configurable TTL, an explicit adev issues release <id>, and a stale-claim report surfaced by /adev:status.\n\nRESOLVED 2026-08-13 (epic-107): Closed by ae9b67de — tasks.claim_ttl_minutes (default 240), fail-closed staleness, takeover reported not persisted, adev issues stale.",
       "next_action": null,
       "created": "2026-08-12T23:52:04.239Z",
-      "updated": "2026-08-12T23:52:04.261Z"
+      "updated": "2026-08-13T12:14:52.226Z"
     },
     {
       "id": "issue-611",
