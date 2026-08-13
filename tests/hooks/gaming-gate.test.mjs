@@ -83,9 +83,19 @@ describe("gaming-gate hook", () => {
     const target = `${tmp}/tests/foo.test.mjs`;
     const padding = "// x\n".repeat(150000); // > 500KB
     const content = padding + "\nit.skip('x', () => {});\n";
+    // Deliberately stdin-only (no CLAUDE_TOOL_INPUT_* env overrides): a
+    // >128KB single string in a spawned process's env block hits Linux's
+    // MAX_ARG_STRLEN at execve() regardless of what the hook script itself
+    // does (this is exactly the OS-level constraint gaming-gate.sh's own
+    // temp-file relay works around for ITS downstream node spawn) — it's
+    // not a real-mode invocation shape (stdin-JSON mode never sets these
+    // env vars at spawn time; _parse-stdin.sh derives them via in-process
+    // `eval`, not a fresh exec, so no length limit applies there). Passing
+    // the same oversized string via `env` here would fail on Linux CI
+    // runners even though macOS silently tolerates it, without exercising
+    // anything about the gate's own no-size-cap guarantee (spec SEC-1).
     const result = runHook("gaming-gate.sh", {
       cwd: tmp,
-      env: { CLAUDE_TOOL_INPUT_file_path: target, CLAUDE_TOOL_INPUT_content: content },
       stdin: JSON.stringify({ tool_name: "Write", tool_input: { file_path: target, content } }),
     });
     assert.equal(result.exitCode, 2);
