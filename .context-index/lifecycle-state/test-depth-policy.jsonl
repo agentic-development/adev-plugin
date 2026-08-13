@@ -126,3 +126,13 @@
 {"event":"code_drift_cleared","drift_at":"2026-08-13T01:24:45.380Z","ts":"2026-08-13T01:24:45.380Z"}
 {"event":"code_drift_detected","drift_source":".context-index/specs/features/test-strategies/charter.md","drift_at":"2026-08-13T01:24:57.048Z","ts":"2026-08-13T01:24:57.049Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-13T01:25:17.757Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-13T01:33:51.836Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-13T01:34:35.014Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS_WITH_NOTES","notes":"Source manifest drifted (sha f665551 -> ecb6c79); all files present and committed","ts":"2026-08-13T01:46:34.355Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS_WITH_NOTES","notes":"All acceptance criteria PASS; scope-expansion sub-finding WARN (process artifacts: ADR-0016, plan/review/routing artifacts, session logs)","ts":"2026-08-13T01:46:34.397Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"No boundary/principle/coding-standard violations found across sampled files","ts":"2026-08-13T01:46:34.434Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","notes":"boundaries.yaml exists but has zero rules configured","ts":"2026-08-13T01:46:34.473Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"No transitions configured in gates.yaml (transitions: {})","ts":"2026-08-13T01:46:34.511Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"No UI files in implementation diff - not applicable","ts":"2026-08-13T01:46:34.551Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1.6-code-drift","severity":"warning","verdict":"PASS_WITH_NOTES","notes":"drift_detected flag set; charter.md modified after manifest stamped","ts":"2026-08-13T01:46:34.589Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-13T01:47:22.617Z"}

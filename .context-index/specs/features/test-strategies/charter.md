@@ -85,7 +85,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | Confidence Reporting | Strategy assignments include confidence level (high/medium/low) so humans can review low-confidence assignments before proceeding | nice-to-have | | review-passed |
 | Cross-strategy Gaming Patterns | Shared gaming detection patterns that apply across all strategies (e.g., disabled tests, empty assertions) | nice-to-have | | review-passed |
 | Integration Strategy Profile | Define the integration strategy profile — 9th strategy type for behavioral tests against real external infrastructure with no mocking at the infrastructure boundary | nice-to-have | | validated |
-| Test Depth Policy | Risk-scaled control over how many case classes a suite must cover (depth), independent of which strategy applies | must-have | | implemented |
+| Test Depth Policy | Risk-scaled control over how many case classes a suite must cover (depth), independent of which strategy applies | must-have | | validated |
 
 ## Deferred Capabilities
 
