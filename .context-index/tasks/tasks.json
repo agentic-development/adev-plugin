@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 267,
+  "seq": 323,
   "epics": [
     {
       "id": "epic-1",
@@ -824,6 +824,29 @@
       "status": "open",
       "created": "2026-08-12T23:52:04.149Z",
       "updated": "2026-08-12T23:52:04.149Z"
+    },
+    {
+      "id": "epic-108",
+      "title": "Test Strategy Research Follow-ups (2026-08-10 three-repo audit)",
+      "status": "open",
+      "created": "2026-08-13T12:54:37.662Z",
+      "updated": "2026-08-13T12:58:01.732Z",
+      "notes": "Findings from the 2026-08-10 three-repo testing audit (adev-plugin, repo-B, repo-C accelerator) not already covered by another epic. All 7 audit findings now have filed issues. issue-553 (Wire gaming.mjs detectors into a real gate) is part of this same research but is CLOSED/shipped (PR #237) and can't carry an epicId per the closed-issue immutability guard — linked here for the record instead. Deliberately excludes issue-560/565/567, which trace to the same audit's finding #1 but already live under epic-101 (fix-measurement) per issue-605's reconciliation, which warned against exactly this kind of cross-epic reshuffling. The two findings previously noted here as unfiled are now issue-614 (soften the plan test-file mandate / task granularity — the POLICY half of file-explosion, where issue-555 covers only symptom detection) and issue-615 (cross-layer duplicate coverage; needs measurement before prescription and likely folds into issue-555's hygiene pass)."
+    },
+    {
+      "id": "epic-109",
+      "title": "PR Body Composition",
+      "status": "open",
+      "planRef": ".context-index/specs/features/pr-review-brief/pr-body-composition.plan.md",
+      "created": "2026-08-13T14:51:48.456Z",
+      "updated": "2026-08-13T14:51:48.456Z"
+    },
+    {
+      "id": "epic-110",
+      "title": "Review-gate effectiveness follow-ups (2026-08-13 research)",
+      "status": "open",
+      "created": "2026-08-13T14:55:31.754Z",
+      "updated": "2026-08-13T14:55:31.754Z"
     }
   ],
   "issues": [
@@ -2506,15 +2529,15 @@
     {
       "id": "issue-433",
       "title": "Make spec review skippable for pattern-following specs",
-      "status": "open",
+      "status": "closed",
       "priority": 3,
       "type": "feature",
       "epicId": "epic-70",
       "dependencies": [],
-      "notes": "Allow specs that follow a validated golden sample pattern to skip review-specs. 23 specs shipped without review and were fine — formulaic specs don't benefit from full 3-agent review. Research: .context-index/research/review-validation-restructuring.md",
+      "notes": "Allow specs that follow a validated golden sample pattern to skip review-specs. 23 specs shipped without review and were fine — formulaic specs don't benefit from full 3-agent review. Research: .context-index/research/review-validation-restructuring.md; Closed: Superseded by graduated rigor tiers. .context-index/governance/risk-policies.yaml sets require_review: true at all three risk levels and records why the skip was rejected: \"low-risk still reviews — but quickly (was: require_review false -> gate stall under strict mode)\". The intent (cheaper review for pattern-following specs) is served by --tier quick instead. Refinement of when quick applies is filed separately under epic-110 (tier by opening verdict). Verified 2026-08-13 during .context-index/research/review-specs-value-and-shift-left.md.",
       "next_action": "Define skip criteria and implement bypass",
       "created": "2026-05-11T11:24:13.000Z",
-      "updated": "2026-05-11T11:24:13.000Z"
+      "updated": "2026-08-13T14:55:31.853Z"
     },
     {
       "id": "issue-434",
@@ -3626,15 +3649,15 @@
     {
       "id": "issue-527",
       "title": "Auto-Retry Loop on Review BLOCK",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "feature",
       "spec_ref": ".context-index/specs/cross-cutting/review-block-auto-retry.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/review-block-auto-retry.spec.md. Created by /adev:specify --cross-cutting on 2026-05-19. HIGH PRIORITY — restores the auto-retry loop removed in commit 7e333fd. Cross-cutting spec. Affects: agent-reliable-state-artifacts, spec-lifecycle, strategic-planning.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/review-block-auto-retry.spec.md. Created by /adev:specify --cross-cutting on 2026-05-19. HIGH PRIORITY — restores the auto-retry loop removed in commit 7e333fd. Cross-cutting spec. Affects: agent-reliable-state-artifacts, spec-lifecycle, strategic-planning.; Closed: Shipped. review-block-auto-retry.spec.md is status: validated with plan, review, routing and validate artifacts on disk; lib/loop-convergence.mjs ships with tests and is wired at skills/build/SKILL.md:439. Scope was the /adev:build --full auto-retry loop only — the INTERACTIVE /adev:review-specs path remains ungoverned and is filed separately under epic-110. Verified 2026-08-13 during .context-index/research/review-specs-value-and-shift-left.md.",
       "next_action": "Run /adev:review-specs --module agent-reliable-state-artifacts (primary anchor) and /adev:review-specs --module spec-lifecycle / strategic-planning for sibling reviews",
       "created": "2026-05-20T02:18:11.461Z",
-      "updated": "2026-05-20T02:18:11.461Z"
+      "updated": "2026-08-13T14:55:31.843Z"
     },
     {
       "id": "issue-528",
@@ -3945,19 +3968,20 @@
       "notes": "HIGHEST-LEVERAGE finding of the 2026-08-10 three-repo audit (adev-plugin, repo-B, repo-C accelerator). All three repos wrote tests that never executed, and adev never noticed: adev-plugin’s npm test glob silently skipped 67 files / ~1,000 cases (sh has no globstar, so tests/**/*.test.mjs == tests/*/*.test.mjs); repo-B CI ran only 19% of test files and ZERO Python tests (70k LOC, ~3,000 test fns, never run in CI); repo-C had no CI at all, pytest was not even a dependency, and its declared gates cd into a gitignored repo so they cannot execute. Root cause: adev rigorously verifies test AUTHORSHIP (RED-state verification, immutable handoff hashes, tamper detection) but never verifies test COLLECTION or EXECUTION. Proposed verb: (a) discover test files on disk, ask each runner what it collects, diff the two; (b) execute each declared gate command and confirm it can run; (c) verify CI config exists and invokes the gates; (d) flag unsubstituted {{ }} placeholders; (e) flag gate commands pointing at gitignored or nonexistent paths. Wire into /adev:validate and /adev:hygiene. Nearest existing coverage is hygiene Audit Pass 8, which checks the gate binary is on PATH but explicitly says \"Do not run the command.\" Attach to the shipped validate check registry (.context-index/governance/validate.yaml) — no new infrastructure needed.",
       "next_action": null,
       "created": "2026-08-11T00:45:46.623Z",
-      "updated": "2026-08-11T00:45:46.623Z"
+      "updated": "2026-08-13T12:54:37.706Z",
+      "epicId": "epic-108"
     },
     {
       "id": "issue-553",
       "title": "Wire lib/test-strategies/gaming.mjs detectors into a real gate or hook",
-      "status": "in_progress",
+      "status": "closed",
       "priority": 1,
       "type": "feature",
       "dependencies": [],
-      "notes": "From the 2026-08-10 audit. lib/test-strategies/gaming.mjs ships 8 detectors (DISABLED_TESTS, EMPTY_ASSERTIONS, SWALLOWED_ASSERTIONS, CONDITIONAL_ASSERTIONS, BOUNDARY_MOCKING, CI_BYPASS, CREDENTIAL_ABSENT_PASS, AGENT_SKIP) and is imported ONLY by tests/. No CLI verb, no hook, no gate, no validate check invokes it. Enforcement today is agent prose: skills/write-test/SKILL.md tells the agent to check \"the 4 shared cross-strategy gaming patterns\" while the library ships 8 — prose/code drift. Evidence that prose does not bind: the no-silent-skip rule is recited verbatim in 11 repo-B test docstrings (\"FAILS the gate — never a silent skip — charter invariant\") and violated in ~10 sibling files, including one file whose docstring forbids pytest.skip 300 lines before calling it, and one test that converts a real downstream failure into a skip. By contrast repo-C’s single deterministic control (a fail-closed PostToolUse hook validating YAML params) works reliably on every edit. Lesson: any policy that matters must be a deterministic gate or hook, not skill prose.; DONE — awaiting human review, left open intentionally (not closed by the agent). Delivered: lib/test-strategies/gaming-gate.mjs + hooks/gaming-gate.sh + hooks/_gaming-gate-check.mjs — a PreToolUse hard-blocking hook (registered in hooks/hooks.json, mirrored to copilot/cursor configs) that blocks Write/Edit of test files introducing NEW gaming violations vs the pre-edit on-disk baseline (regression-only: 103/462 existing tests/** files already trip the unmodified detectors, so whole-file blocking was rejected as unworkable — see spec Scope Decision + Known Limitations). skills/write-test/SKILL.md corrected to list all 8 detectors (was missing the 4 integration-specific ones) and references the hook as the enforcement floor. Version bumped 0.27.8 -> 0.28.0 (3-way parity). npm test: 5343/5343 passing. Known accepted limitation: regression-only scoping does not reduce false-positive strength for brand-new test files (empty baseline) — documented in spec Known Limitations, worth a human read before merge.",
+      "notes": "From the 2026-08-10 audit. lib/test-strategies/gaming.mjs ships 8 detectors (DISABLED_TESTS, EMPTY_ASSERTIONS, SWALLOWED_ASSERTIONS, CONDITIONAL_ASSERTIONS, BOUNDARY_MOCKING, CI_BYPASS, CREDENTIAL_ABSENT_PASS, AGENT_SKIP) and is imported ONLY by tests/. No CLI verb, no hook, no gate, no validate check invokes it. Enforcement today is agent prose: skills/write-test/SKILL.md tells the agent to check \"the 4 shared cross-strategy gaming patterns\" while the library ships 8 — prose/code drift. Evidence that prose does not bind: the no-silent-skip rule is recited verbatim in 11 repo-B test docstrings (\"FAILS the gate — never a silent skip — charter invariant\") and violated in ~10 sibling files, including one file whose docstring forbids pytest.skip 300 lines before calling it, and one test that converts a real downstream failure into a skip. By contrast repo-C’s single deterministic control (a fail-closed PostToolUse hook validating YAML params) works reliably on every edit. Lesson: any policy that matters must be a deterministic gate or hook, not skill prose.; DONE — awaiting human review, left open intentionally (not closed by the agent). Delivered: lib/test-strategies/gaming-gate.mjs + hooks/gaming-gate.sh + hooks/_gaming-gate-check.mjs — a PreToolUse hard-blocking hook (registered in hooks/hooks.json, mirrored to copilot/cursor configs) that blocks Write/Edit of test files introducing NEW gaming violations vs the pre-edit on-disk baseline (regression-only: 103/462 existing tests/** files already trip the unmodified detectors, so whole-file blocking was rejected as unworkable — see spec Scope Decision + Known Limitations). skills/write-test/SKILL.md corrected to list all 8 detectors (was missing the 4 integration-specific ones) and references the hook as the enforcement floor. Version bumped 0.27.8 -> 0.28.0 (3-way parity). npm test: 5343/5343 passing. Known accepted limitation: regression-only scoping does not reduce false-positive strength for brand-new test files (empty baseline) — documented in spec Known Limitations, worth a human read before merge.; Closed: Merged via PR #237. Re-applying after a board write got clobbered by a concurrent git operation on the shared main worktree (second occurrence this session, same pattern as issue-550 earlier).",
       "next_action": "Human review of this PR: inspect the gaming-gate hook design and the regression-only scoping tradeoff before merge.",
       "created": "2026-08-11T00:45:46.643Z",
-      "updated": "2026-08-13T03:40:02.420Z",
+      "updated": "2026-08-13T12:50:20.526Z",
       "spec_ref": ".context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md"
     },
     {
@@ -3966,11 +3990,14 @@
       "status": "open",
       "priority": 2,
       "type": "task",
-      "dependencies": [],
+      "dependencies": [
+        "issue-552"
+      ],
       "notes": "From the 2026-08-10 audit. The tier engine is fully shipped — templates/gates-template.yaml documents tier: fast|integration|e2e, validate implements per-tier fail-fast, implement filters tier: integration — but EVERY gate entry in the template is commented out, including the integration-test example wired to post-implement. Consequence: every project lands with a single fast-tier gate. This repo runs the FULL suite after every task (gates.yaml triggers post-task + post-implement, 2m50s x every task); repo-B and repo-C ran nothing. Domain starters are worse: templates/domains/software/gates.yaml and both extension overlays each define a single fast-tier gate with no integration tier anywhere. Fix: pre-wire an active integration tier in the template and/or have init emit one. Also uncomment transitions: {}. Systemic pattern worth noting: adev repeatedly ships engines with defaults commented out and invocation left in agent prose.",
       "next_action": null,
       "created": "2026-08-11T00:45:46.655Z",
-      "updated": "2026-08-11T00:45:46.655Z"
+      "updated": "2026-08-13T13:09:32.296Z",
+      "epicId": "epic-108"
     },
     {
       "id": "issue-555",
@@ -3978,11 +4005,14 @@
       "status": "open",
       "priority": 2,
       "type": "feature",
-      "dependencies": [],
+      "dependencies": [
+        "issue-552"
+      ],
       "notes": "From the 2026-08-10 audit. None of hygiene’s 21 passes touches tests, and /adev:codehealth cannot surface test debt by construction — its detection-passes spec explicitly excludes test files matching coverage_exclude from orphan detection. Proposed detections, each observed in the audited repos: append chains (N test files per source module — adev-plugin has build.py-style fan-out with 11 test files for one module in repo-B); rev-numbered test filenames (repo-B ships test_validate_rev6_fulltable_e2e.py; 43 files reference a \"rev N\"); plan-task-structured tests (60% of repo-B Python test files contain a literal \"Task N\", 513 occurrences; adev-plugin has describes named \"(plan-task 2)\"..\"(plan-task 9)\"); dead test references (repo-C has a test that subprocess-invokes a module deleted three months earlier); prose-assertion density (~103-109 files in this repo assert on markdown instead of behavior). Note: the maintenance/ charter is stale — it says \"adev:hygiene — 11 audit passes\" while the skill ships 21, and hygiene passes have no behavioral spec at all.",
       "next_action": null,
       "created": "2026-08-11T00:45:46.671Z",
-      "updated": "2026-08-11T00:45:46.671Z"
+      "updated": "2026-08-13T13:09:32.324Z",
+      "epicId": "epic-108"
     },
     {
       "id": "issue-556",
@@ -3994,7 +4024,8 @@
       "notes": "From the 2026-08-10 audit. Fresh subagents start contextless, so shared fixtures never accumulate and every implementer reinvents setup. Evidence: adev-plugin hand-rolls makeTempProject 61 times, writes the same manifest fixture literal inline 158 times, redefines cleanup() 29 times, and only 39% of test files import tests/helpers.mjs; repo-B has 3 conftest.py files and 59 fixtures for 2,986 test functions, with the same 5-line sys.path block pasted into 48% of files and the same _require_profile() gate pasted into 11. Boilerplate is 16% of test LOC in adev-plugin and 20.6% in repo-B. skills/write-test/SKILL.md currently has zero references to conftest, test helpers, or golden test samples. /adev:sample and .context-index/samples/ exist but curate IMPLEMENTATION samples, not test samples. Fix: build a helper/conftest inventory, curate golden TEST samples, and inject both into every write-test/implement subagent prompt; make \"read the shared helpers first\" a required RED-phase step.",
       "next_action": null,
       "created": "2026-08-11T00:45:46.684Z",
-      "updated": "2026-08-11T00:45:46.684Z"
+      "updated": "2026-08-13T12:54:56.021Z",
+      "epicId": "epic-108"
     },
     {
       "id": "issue-557",
@@ -4002,11 +4033,15 @@
       "status": "open",
       "priority": 3,
       "type": "feature",
-      "dependencies": [],
-      "notes": "From the 2026-08-10 audit. ~27% of adev-plugin test cases are change-detectors: 103 files import NO production code and only readFileSync a .md and call .includes(). tests/skills/ is ~87% this pattern and tests/docs/ is 100% — together 83 files / ~10k lines / 824 cases with essentially zero production coverage. 340 assertions use the near-tautological includes(x) || includes(y) form. The substrate already ships: adev diagnose + the diagnostic registry (templates/diagnostics-template.yaml, project: runner prefix) with tier-1 producers for frontmatter presence, status enum, event schema, revision monotonicity. Tiers 2 and 3 are declared in the registry schema but NO tier-2/3 producers ship. Fix: add tier-2 producers for SKILL.md / spec / docs structure (required sections, frontmatter schema, the skill-extension block), and have write-test explicitly forbid string-matching prose as a test deliverable. Verify docs by comparing documented defaults against shipped values, never by asserting a heading exists. Related: issue-551 (the template emits preamble-before-frontmatter that the tier-1 diagnostic rejects, 121 errors).",
+      "dependencies": [
+        "issue-585",
+        "issue-586"
+      ],
+      "notes": "From the 2026-08-10 audit. ~27% of adev-plugin test cases are change-detectors: 103 files import NO production code and only readFileSync a .md and call .includes(). tests/skills/ is ~87% this pattern and tests/docs/ is 100% — together 83 files / ~10k lines / 824 cases with essentially zero production coverage. 340 assertions use the near-tautological includes(x) || includes(y) form. The substrate already ships: adev diagnose + the diagnostic registry (templates/diagnostics-template.yaml, project: runner prefix) with tier-1 producers for frontmatter presence, status enum, event schema, revision monotonicity. Tiers 2 and 3 are declared in the registry schema but NO tier-2/3 producers ship. Fix: add tier-2 producers for SKILL.md / spec / docs structure (required sections, frontmatter schema, the skill-extension block), and have write-test explicitly forbid string-matching prose as a test deliverable. Verify docs by comparing documented defaults against shipped values, never by asserting a heading exists. Related: issue-551 (the template emits preamble-before-frontmatter that the tier-1 diagnostic rejects, 121 errors). || CORRECTION 2026-08-13: the note above claims 'NO tier-2/3 producers ship'. That is now stale. lib/diagnostics/tier2/validated-without-report.mjs ships and is registered in .context-index/governance/diagnostics.yaml (id adev/validated-without-report, severity error, tier 2, scope spec) — it landed via issue-563 (epic-101). This HELPS this issue: there is now a working reference implementation of a tier-2 producer to copy, including the documented tier-1-vs-tier-2 cost rationale (its docstring explains it is tier 2 because it stats a sibling file rather than doing pure in-memory frontmatter inspection, so it belongs on the on-demand 'adev diagnose' surface rather than the write-time appendEvent path). Tier 3 still ships nothing. Also note: this issue builds the REPLACEMENT and forbids the pattern going forward; retiring the 83 existing prose-matching files is the separate backfill half, tracked as issue-623, which depends on this one.",
       "next_action": null,
       "created": "2026-08-11T00:45:46.697Z",
-      "updated": "2026-08-11T00:45:46.697Z"
+      "updated": "2026-08-13T16:45:38.673Z",
+      "epicId": "epic-108"
     },
     {
       "id": "issue-558",
@@ -4015,10 +4050,11 @@
       "priority": 3,
       "type": "feature",
       "dependencies": [],
-      "notes": "From the 2026-08-10 audit. The repo-C accelerator proves the demand: a data/SQL/YAML migration project with 32k LOC of Python and 0 SQL files, whose deliverable is YAML config landing in gitignored repos plus 19k LOC of agent prompts. Code TDD does not apply, so the team built a parallel verification universe adev has no vocabulary for: RED data snapshots with SHA-256 checksums, 2,557 LOC of row-count/schema/profile reconciliation scripts, a 13-branch drift classifier, a 391-file per-pipeline RED/GREEN/VERIFY status ledger, and an 11-gate LLM-driven /pr-review. Meanwhile the test_strategies block in templates/manifest-template.yaml sits ENTIRELY commented out, and the root .context-index/constitution.md was an unedited template still containing {{ test_command }}. The 9 shipped strategy profiles are all code-shaped; the closest are fixture (input/output comparison) and threshold (perf-only). There is no snapshot strategy, no reconciliation strategy, no data-tolerance strategy, no prompt/LLM-output strategy, and no status-ledger concept. Also: make verify steps distinguish \"deferred for credentials\" from done — 235 of 391 repo-C pipelines have verify_compare_counts: skipped (\"no data access\"), which should have been a loud signal. Fix: promote test_strategies from commented-out to a real lifecycle path, with the status ledger as the results store.",
-      "next_action": null,
+      "notes": "From the 2026-08-10 audit. The repo-C accelerator proves the demand: a data/SQL/YAML migration project with 32k LOC of Python and 0 SQL files, whose deliverable is YAML config landing in gitignored repos plus 19k LOC of agent prompts. Code TDD does not apply, so the team built a parallel verification universe adev has no vocabulary for: RED data snapshots with SHA-256 checksums, 2,557 LOC of row-count/schema/profile reconciliation scripts, a 13-branch drift classifier, a 391-file per-pipeline RED/GREEN/VERIFY status ledger, and an 11-gate LLM-driven /pr-review. Meanwhile the test_strategies block in templates/manifest-template.yaml sits ENTIRELY commented out, and the root .context-index/constitution.md was an unedited template still containing {{ test_command }}. The 9 shipped strategy profiles are all code-shaped; the closest are fixture (input/output comparison) and threshold (perf-only). There is no snapshot strategy, no reconciliation strategy, no data-tolerance strategy, no prompt/LLM-output strategy, and no status-ledger concept. Also: make verify steps distinguish \"deferred for credentials\" from done — 235 of 391 repo-C pipelines have verify_compare_counts: skipped (\"no data access\"), which should have been a loud signal. Fix: promote test_strategies from commented-out to a real lifecycle path, with the status ledger as the results store. || HUMAN DECISIONS 2026-08-13: (1) strategy_verification canonical event APPROVED — this was the blocker on ALL implementation of non-code test strategies (ADR-0009 taxonomy addition; the [BOUNDARY: human-approved] comment is still required in the implementing change, but the approval it waits on is given). (2) Deferral policy file CONFIRMED at .context-index/governance/deferrals.yaml with the Behavior 3 minimal schema { spec, task_id, reason (required), expires (optional ISO date) }; absent file = empty list = no operator_deferred accepted; expiry enforced. Both recorded in verification-ledger-and-deferred-state.spec.md (commit efc986c1) and reflected in PR #244. STILL OPEN: charter status remains evolving (not promoted to approved), and the four specs sit at revision 3 with a recorded review verdict of FAIL against revision 2 — so /adev:plan is still gated. One review pass over revision 3 clears it.",
+      "next_action": "Blockers cleared. Remaining before implementation: one review pass over revision 3 (currently unreviewed; rev 2 recorded FAIL, so the plan gate is shut), and a decision on promoting the charter evolving -> approved.",
       "created": "2026-08-11T00:45:46.707Z",
-      "updated": "2026-08-11T00:45:46.707Z"
+      "updated": "2026-08-13T14:56:49.352Z",
+      "epicId": "epic-108"
     },
     {
       "id": "issue-559",
@@ -4027,23 +4063,24 @@
       "priority": 2,
       "type": "feature",
       "dependencies": [],
-      "notes": "Descoped from test-depth-policy at revision 6 (see its Scope Boundary section). That spec assigns and records a depth per task; nothing verifies the authored suite matches it. Round-5 review established why enforcement could not be bolted on, all verified against code: (1) write-handoff.mjs:43-46 hashes test file CONTENTS only, so any depth field added to Handoff Block frontmatter is unattested and written by the same subagent being checked — structurally identical to the existing self-reported gaming_check: passed. (2) \"Case classes actually covered\" has no machine-decidable definition; lib/test-strategies/gaming.mjs is depth-invariant by design so nothing computes it. (3) Packets are keyed on a spec-derived slug and overwritten each RED run (immutable-handoff-block.spec.md:37,41), so under the shipped per-behavior default N tasks share one packet and a later task destroys an earlier record. (4) A git-diff check cannot run at suite acceptance: that point is RED-complete so the source edits happen later in GREEN, and git diff --name-only cannot see the untracked files a Create: task produces. Doing this properly requires: amending immutable-handoff-block.spec.md (per spec-amendment-artifacts.spec.md) for packet keying and content; giving conformance evidence a per-task key; relocating the check to task-commit time against a pinned base plus git ls-files -o; and deciding whether raising a shared suite is permitted given the hash lock. Also unresolved and belonging here: nothing enforces that assert-assigned is called at all (under /adev:implement --parallel, group subagents run the TDD loop from prose inside worktrees), and depth is not reconciled across tasks sharing a suite.",
-      "next_action": null,
+      "notes": "Descoped from test-depth-policy at revision 6 (see its Scope Boundary section). That spec assigns and records a depth per task; nothing verifies the authored suite matches it. Round-5 review established why enforcement could not be bolted on, all verified against code: (1) write-handoff.mjs:43-46 hashes test file CONTENTS only, so any depth field added to Handoff Block frontmatter is unattested and written by the same subagent being checked — structurally identical to the existing self-reported gaming_check: passed. (2) \"Case classes actually covered\" has no machine-decidable definition; lib/test-strategies/gaming.mjs is depth-invariant by design so nothing computes it. (3) Packets are keyed on a spec-derived slug and overwritten each RED run (immutable-handoff-block.spec.md:37,41), so under the shipped per-behavior default N tasks share one packet and a later task destroys an earlier record. (4) A git-diff check cannot run at suite acceptance: that point is RED-complete so the source edits happen later in GREEN, and git diff --name-only cannot see the untracked files a Create: task produces. Doing this properly requires: amending immutable-handoff-block.spec.md (per spec-amendment-artifacts.spec.md) for packet keying and content; giving conformance evidence a per-task key; relocating the check to task-commit time against a pinned base plus git ls-files -o; and deciding whether raising a shared suite is permitted given the hash lock. Also unresolved and belonging here: nothing enforces that assert-assigned is called at all (under /adev:implement --parallel, group subagents run the TDD loop from prose inside worktrees), and depth is not reconciled across tasks sharing a suite. || DESIGN DECISION (human, 2026-08-13): shared suites ARE permitted; packets get re-keyed per task. Amend immutable-handoff-block.spec.md so packet keys are task-scoped (not spec-slug-scoped) and conformance evidence is per-task, replacing the current one-packet-per-spec-slug scheme. This (a) unblocks issue-614's 'prefer extending an existing suite' guidance, which the content-hash lock otherwise makes unworkable, and (b) fixes the existing bug where N tasks sharing a spec slug overwrite one another's packet (immutable-handoff-block.spec.md:37,41). Rejected alternatives: keeping one-suite-per-task and making plan tasks coarser (leaves the packet-overwrite bug, fights natural per-module test grouping); and specing 559 as detection-only (sidesteps the hash question but leaves depth unenforced, contradicting the audit's core lesson that prose does not bind — only deterministic gates do). issue-559 and issue-614 should be designed and implemented as ONE effort.",
+      "next_action": "Design 559+614 together as one effort, starting from the recorded shared-suite/per-task-packet decision. First step: amend immutable-handoff-block.spec.md per spec-amendment-artifacts.spec.md.",
       "created": "2026-08-11T01:35:31.304Z",
-      "updated": "2026-08-11T01:35:31.304Z"
+      "updated": "2026-08-13T13:11:00.967Z",
+      "epicId": "epic-108"
     },
     {
       "id": "issue-560",
       "title": "Fix npm test glob: tests/**/*.test.mjs does not expand under sh — 77 of 415 test files never run (CI inherits)",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-101",
       "dependencies": [],
-      "notes": "",
+      "notes": "Closed: Fix landed on main in a6a41197 (2026-08-12): discovery moved into scripts/run-tests.mjs using Node built-ins, globs dropped from the npm script; 77 of 416 previously-unrun files now execute. Issue was left stale-open after the fix merged; verified closed during epic-108 wave-1 work (the gate-doctor spec independently re-confirmed the fix is present).",
       "next_action": null,
       "created": "2026-08-12T21:06:06.332Z",
-      "updated": "2026-08-12T21:06:06.332Z"
+      "updated": "2026-08-13T13:45:53.473Z"
     },
     {
       "id": "issue-561",
@@ -4131,10 +4168,10 @@
       "epicId": "epic-101",
       "spec_ref": ".context-index/specs/cross-cutting/measurement-integrity.spec.md",
       "dependencies": [],
-      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/measurement-integrity.spec.md. Created by /adev:specify on 2026-08-12. Cross-cutting spec. Affects: lifecycle-state, validation, review, hygiene, sessions, gate-cli, ci.",
+      "notes": "Bound 1:1 to spec at .context-index/specs/cross-cutting/measurement-integrity.spec.md. Created by /adev:specify on 2026-08-12. Cross-cutting spec. Affects: lifecycle-state, validation, review, hygiene, sessions, gate-cli, ci.\n\n--- RECONCILE FLAG 2026-08-13 ---\nThis issue is bound 1:1 to .context-index/specs/cross-cutting/measurement-integrity.spec.md, which DOES NOT EXIST on main. Both the spec's creation commit (5f271434) and its dissolve commit (f36d3614, \"dissolve measurement-integrity; promote its two hard behaviors\") are unreachable from main — verified with git merge-base --is-ancestor. The spec lives only on an unmerged branch. Either land the branch, re-author the spec on main, or close this issue and re-file the two promoted behaviors. Surfaced by .context-index/research/review-specs-value-and-shift-left.md (see section A).",
       "next_action": "Run /adev:review-specs --spec .context-index/specs/cross-cutting/measurement-integrity.spec.md",
       "created": "2026-08-12T21:11:01.499Z",
-      "updated": "2026-08-12T21:11:01.499Z"
+      "updated": "2026-08-13T14:55:31.864Z"
     },
     {
       "id": "issue-568",
@@ -4752,6 +4789,242 @@
       "next_action": null,
       "created": "2026-08-13T02:53:29.603Z",
       "updated": "2026-08-13T02:53:29.603Z"
+    },
+    {
+      "id": "issue-614",
+      "title": "Soften the plan test-file mandate and task granularity that drive test-file explosion",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-108",
+      "dependencies": [
+        "issue-559"
+      ],
+      "notes": "From the 2026-08-10 three-repo audit. The POLICY half of the file-explosion finding; issue-555 covers only detecting the symptom via a hygiene audit pass, not changing the rule that produces it. /adev:plan requires every task to reference or create a test file, combined with 2-5 minute task granularity and the anti-tamper ratchet (handoff hashes make an authored suite effectively append-only). Net effect observed across all three audited repos: one test file per plan task rather than per behavior, with no consolidation pressure — repo-B ships 11 test files for one module and a test_validate_rev6_fulltable_e2e.py-style rev-N chain (43 files reference a 'rev N'); 60% of its Python test files embed a literal 'Task N' (513 occurrences); adev-plugin has describes named '(plan-task 2)'..'(plan-task 9)'. Proposed fix: change the plan rule from 'every task must reference/create a test file' to 'prefer extending an existing suite; create a new file only when no suite covers this behavior', and make the RED phase explicitly permit raising an existing suite. Note the interaction with the handoff-hash lock (see issue-559's notes): allowing a task to extend a shared suite is exactly the case the current hash contract does not cleanly express, so these two should be designed together. || DESIGN DECISION (human, 2026-08-13): shared suites ARE permitted; packets get re-keyed per task. Amend immutable-handoff-block.spec.md so packet keys are task-scoped (not spec-slug-scoped) and conformance evidence is per-task, replacing the current one-packet-per-spec-slug scheme. This (a) unblocks issue-614's 'prefer extending an existing suite' guidance, which the content-hash lock otherwise makes unworkable, and (b) fixes the existing bug where N tasks sharing a spec slug overwrite one another's packet (immutable-handoff-block.spec.md:37,41). Rejected alternatives: keeping one-suite-per-task and making plan tasks coarser (leaves the packet-overwrite bug, fights natural per-module test grouping); and specing 559 as detection-only (sidesteps the hash question but leaves depth unenforced, contradicting the audit's core lesson that prose does not bind — only deterministic gates do). issue-559 and issue-614 should be designed and implemented as ONE effort.",
+      "next_action": "Design 559+614 together as one effort, starting from the recorded shared-suite/per-task-packet decision. First step: amend immutable-handoff-block.spec.md per spec-amendment-artifacts.spec.md.",
+      "created": "2026-08-13T12:57:50.288Z",
+      "updated": "2026-08-13T13:11:00.993Z"
+    },
+    {
+      "id": "issue-615",
+      "title": "Cross-layer duplicate test coverage: same invariant asserted at lib, CLI, hook, and e2e layers",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-108",
+      "dependencies": [
+        "issue-555"
+      ],
+      "notes": "From the 2026-08-10 three-repo audit. The one finding with no issue of any kind until now. Roughly 12-15% of test cases in both code repos (adev-plugin, repo-B) assert the same invariant at multiple layers — a rule implemented once in lib/ gets a lib unit test, a CLI-verb test, a hook test, and an e2e test, each re-asserting the identical behavior rather than testing that layer's own contract (wiring, argument parsing, exit codes). Consequence is runtime and maintenance cost with no added defect-detection: a change to the invariant breaks 4 tests that all encode the same fact, while a genuine wiring regression between layers may still slip through untested. Needs measurement before prescription: quantify the true duplication rate (the audit's 12-15% was a sampled estimate, not an exhaustive count), then decide whether the fix is guidance in write-test (assert behavior once at its owning layer; at other layers assert only the delegation) or a detector. Likely overlaps issue-555's hygiene test-debt pass — consider folding in as one more detection there rather than building separate machinery.",
+      "next_action": null,
+      "created": "2026-08-13T12:57:50.319Z",
+      "updated": "2026-08-13T13:09:32.345Z"
+    },
+    {
+      "id": "issue-616",
+      "title": "Allow /adev:sample to curate golden TEST samples (--test mode)",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-108",
+      "dependencies": [],
+      "notes": "Split out of issue-556 / PR #243 for scope reasons, not merit. issue-556 shipped the test-helper inventory, which surfaces golden TEST samples to write-test and implement subagents — but only ones it can DISCOVER (a sample whose 'Source:' path is test-shaped). There is no way to deliberately CURATE one, because /adev:sample cannot produce a test sample: Step 2b filters test files out of the candidate list, and its Red Flags section states 'Never … include generated code, migration files, or test files as golden samples' as an absolute. A working implementation existed on the 556 branch (a --test mode that promotes a shared helper/fixture/exemplary test file to a sample stamped 'Sample kind: test', plus that field in templates/sample-template.md, narrowing the Never rule to apply to IMPLEMENTATION samples only while preserving it absolutely in every other mode) and was reverted before merge — see test-helper-inventory.spec.md Behavior 14, retained as the record. Reason for reverting: amending /adev:sample's contract is a change to a different skill and deserves review under that skill's ownership rather than riding along on a test-helper PR. Nothing is broken today; discovery still works and collectTestSamples() already honours a hand-written 'Sample kind: test' marker, so the only gap is that nothing in adev emits one. Pick this up if curated test samples prove worth the ceremony; the prior implementation is recoverable from PR #243's branch history.",
+      "next_action": "Decide whether curated (vs discovered) test samples are worth amending /adev:sample. If yes, the reverted implementation on the 556 branch is a starting point.",
+      "created": "2026-08-13T14:16:22.266Z",
+      "updated": "2026-08-13T14:16:22.266Z"
+    },
+    {
+      "id": "issue-617",
+      "title": "Wire loop-convergence detector into the interactive /adev:review-specs path",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-110",
+      "dependencies": [],
+      "notes": "Option 1 of .context-index/research/review-specs-value-and-shift-left.md. lib/loop-convergence.mjs already implements the right guard (REGRESSED = |new| > |addressed|, NO_PROGRESS, BUDGET_EXHAUSTED, default budget 2), but it is invoked ONLY from skills/build/SKILL.md:439 inside /adev:build --full's auto-retry. skills/review-specs/SKILL.md never mentions convergence, round counting, or a budget. The 10-round test-depth-policy saga (blocker history 8-7-6-4-10-7-2-1-1-0, round 5 REGRESSED 4->10 by building machinery from round 4's own reviewer recommendations) ran interactively via /adev:review-specs + /adev:specify --revise, where nothing counts rounds. FIX: derive round number and partitionBlockers vs the prior round from the lifecycle log; report the convergence verdict in Step 8; on REGRESSED/NO_PROGRESS replace \"revise and re-review\" with an explicit fork (descope / accept-with-risk / spike). NOTE: issue-527 covered the BUILD loop only and has shipped (spec status: validated) — this is the interactive path, genuinely uncovered. Library, tests and semantics all exist, so this is wiring plus skill prose.",
+      "next_action": null,
+      "created": "2026-08-13T14:55:31.769Z",
+      "updated": "2026-08-13T14:55:31.769Z"
+    },
+    {
+      "id": "issue-618",
+      "title": "Falsifiable spec assumptions: pin empirical claims to runnable commands",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-110",
+      "dependencies": [],
+      "notes": "Option 4 of .context-index/research/review-specs-value-and-shift-left.md. The highest-value review findings are empirical claims about existing code (\"write-handoff.mjs:43-46 hashes contents only\", \"git diff --name-only omits untracked files\", \"N of 150 plans lack a **Files:** block\") — facts a command answers in seconds. They are currently argued in prose across rounds, and one was MEASURED WRONG: round 5 cited \"17 of 150 plans\", the correct per-task figure is 131 of 149, and discovering that consumed an entire extra round which then reversed a fail-closed parsing decision. FIX: specs gain an assumptions: block of { claim, command, expected }; add \"adev spec verify-assumptions\" that runs them and records results to the lifecycle log; instruct reviewers that an empirical counter-claim about existing code must be filed as an assumption with a command, not as a prose blocker; /adev:validate re-runs the block post-implementation so a claim that rots is caught. This is the direct fix for review-injected regression — it removes the class of round that exists only to correct a previous round's confident error.",
+      "next_action": null,
+      "created": "2026-08-13T14:55:31.779Z",
+      "updated": "2026-08-13T14:55:31.779Z"
+    },
+    {
+      "id": "issue-619",
+      "title": "Add a \"spike\" reviewer disposition — route feasibility blockers to a prototype, not a spec revision",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-110",
+      "dependencies": [],
+      "notes": "Option 5 of .context-index/research/review-specs-value-and-shift-left.md. When a reviewer's blocker is \"this machinery does not function\", the cheapest resolution is a throwaway spike, not a spec revision. Worst round in the corpus: test-depth-policy rev 5 \"built the SEC-6 enforcement machinery from round 4's own recommendations and implemented them faithfully. All three reviewers independently found the machinery does not function\" — blockers 4 -> 10. Neither reviewers nor author could test it because at spec stage there is nothing to run. FIX: fourth reviewer disposition \"spike\" (\"I cannot tell from the spec whether this works\"), non-blocking, emitting a throwaway prototype task (/adev:prototype already exists) whose result attaches to the spec as a verified assumption. Pairs with the assumptions issue.",
+      "next_action": null,
+      "created": "2026-08-13T14:55:31.789Z",
+      "updated": "2026-08-13T14:55:31.789Z"
+    },
+    {
+      "id": "issue-620",
+      "title": "Report spec size delta per review round as a review-health signal",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-110",
+      "dependencies": [],
+      "notes": "Option 6 of .context-index/research/review-specs-value-and-shift-left.md. Review pressure adds prose, and prose is what gets reviewed — a self-feeding loop. test-depth-policy grew 34 KB -> 57 KB (+65%) across an arc whose net effect was REMOVING three behaviors (raise-on-extend, the conformance leg, the evasion leg). Each round's fixes add clarifying clauses, scope-boundary sections and error-code rows, all of which become new surface for the next round to find findings in. Undetected across five rounds. FIX: /adev:review-specs reports spec byte-delta since last-reviewed-revision (both values already tracked); warn when a round whose stated intent was descope grew the spec. Optional soft cap suggesting a split above ~25 KB. Trivial cost — bytes diff against data already on hand.",
+      "next_action": null,
+      "created": "2026-08-13T14:55:31.800Z",
+      "updated": "2026-08-13T14:55:31.800Z"
+    },
+    {
+      "id": "issue-621",
+      "title": "Resolve rigor tier by opening review verdict, not risk level alone",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-110",
+      "dependencies": [],
+      "notes": "Option 7 of .context-index/research/review-specs-value-and-shift-left.md. Supersedes the naive \"default everything to quick tier\" reading of the tier A/B. The A/B measured full $16.42 vs quick $5.12 (-69%) at quality 90 vs 88 with verdict parity — but BOTH sampled specs returned PASS_WITH_NOTES in both tiers, so it NEVER exercised a spec that should BLOCK. BLOCK is 7.5% of real rounds on main and the one verdict that predicts further revision with 100% reliability (vs 15.5% for PASS_WITH_NOTES, 26.5% for PASS). FIX: first review runs full (opening verdict is the strongest signal in the dataset and is cheap relative to being wrong); rounds 2+ on a spec sitting at PASS_WITH_NOTES run quick; specs that opened BLOCK stay full throughout. Implementation is a resolution-precedence rule in lib/governance/rigor-mode.mjs — tier machinery already shipped. Keep the security reviewer unconditional in every tier: it is 33% of all real blockers and the most bimodal reviewer in the corpus.",
+      "next_action": null,
+      "created": "2026-08-13T14:55:31.810Z",
+      "updated": "2026-08-13T14:55:31.810Z"
+    },
+    {
+      "id": "issue-622",
+      "title": "Require a disposition on every review warning (fixed / accepted / deferred)",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-110",
+      "dependencies": [
+        "issue-561"
+      ],
+      "notes": "Option 8 of .context-index/research/review-specs-value-and-shift-left.md. PASS_WITH_NOTES is the modal outcome at 70.1% of material rounds on main, statistically unchanged from the 78% measured in the 2026-05 review-validation-restructuring research — that research recommended tracking warning action rate and it was never shipped. With no disposition field the rate cannot be read as either healthy advisory output or ignored noise. FIX: every warning carries a disposition (fixed / accepted / deferred:<issue-id>) recorded in the lifecycle log before the spec advances; separately track whether round N+1's verdict differs from round N. DEPENDS ON issue-561 (append-only review records) to be meaningful — without per-round history there is nothing to attach a disposition to.",
+      "next_action": null,
+      "created": "2026-08-13T14:55:31.820Z",
+      "updated": "2026-08-13T14:55:31.832Z"
+    },
+    {
+      "id": "issue-623",
+      "title": "Retire the 83 prose-matching test files once tier-2 diagnostics replace them",
+      "status": "open",
+      "priority": 2,
+      "type": "task",
+      "epicId": "epic-108",
+      "dependencies": [
+        "issue-557"
+      ],
+      "notes": "The missing BACKFILL half of issue-557. 557 builds the replacement (tier-2 diagnostic producers for SKILL.md/spec/docs structure) and forbids string-matching prose as a future test deliverable — but it does not touch the existing corpus. Nothing on the board currently migrates or retires it, so without this issue adev would ship the new mechanism while keeping ~10k lines of the old pattern in the suite indefinitely. Found 2026-08-13 when the gap was queried directly; the orchestrator had previously and incorrectly assumed 557 covered remediation. Scale (2026-08-10 audit): ~27% of this repo's test CASES are change-detectors; 103 files import NO production code and only readFileSync a .md and call .includes(). tests/skills/ is ~87% this pattern and tests/docs/ is 100% — together 83 files / ~10k lines / 824 cases with essentially zero production coverage. 340 assertions use the near-tautological includes(x) || includes(y) form. Precedent for the split: epic-104 separates producer fixes (issue-585 spec templates, issue-586 review/validate writer) from the backfill of ~400 existing artifacts (issue-587). epic-108 had the producer half (557) and was missing this one. HARD DEPENDENCY on issue-557: do not delete a prose test until the tier-2 producer that covers its invariant actually ships, or coverage is silently lost rather than migrated. Per-file the decision is three-way, not a blanket delete: (a) invariant now covered by a tier-2 diagnostic -> delete the test; (b) invariant real but NOT expressible as a diagnostic -> rewrite as a behavioral test that imports production code; (c) assertion was tautological (the includes(x) || includes(y) family) -> delete outright, it never tested anything. Requires a per-file audit; the count of files deleted vs rewritten vs dropped should be reported, since 'deleted 83 files' and 'migrated 83 invariants' are very different outcomes. Interacts with issue-555 (its hygiene test-debt pass detects prose-assertion density, so it can measure progress here) and issue-615 (cross-layer duplicate coverage — some prose tests may be duplicates rather than needing migration at all). || SCOPE ESTIMATE CONTESTED 2026-08-13 — RE-MEASURE BEFORE PLANNING. issue-555's shipped test-debt scanner (Audit Pass 23) dogfooded this repo and found PROSE_ASSERTION = 25 files, not the 83-103 this issue was filed with. The numbers measure different things and both are internally valid: 227 test files reference a .md path and 115 reference SKILL.md, but only 25 also clear the 0.5 containment-assertion ratio. The audit counted files that TOUCH markdown (specifically: import no production code and only readFileSync a .md and call .includes()); the scanner counts files whose ASSERTIONS are predominantly markdown containment. A file asserting via assert.match regex rather than .includes() lands in the audit's set but may miss the scanner's ratio. Neither is wrong; they answer different questions. Consequence for this issue: do NOT plan against either figure. Run 'adev test-debt scan' for the low-false-positive set (25), then separately enumerate the audit's criterion (no production import + markdown-only assertions) for the outer bound, and reconcile per-file — the three-way audit below is what actually decides each file, and it will resolve files the ratio heuristic misses. Also note issue-555's validate report says 'Remediation of those files is issue-557 territory' — that is the same error this issue was filed to correct; 557 builds the replacement, THIS issue retires the corpus.",
+      "next_action": "Blocked on issue-557 shipping tier-2 producers. Then run a per-file three-way audit (covered-by-diagnostic / rewrite-as-behavioral / tautological-delete) and report the split.",
+      "created": "2026-08-13T16:43:34.144Z",
+      "updated": "2026-08-13T17:05:03.160Z"
+    },
+    {
+      "id": "issue-624",
+      "title": "A review verdict that cannot reach its requester is indistinguishable from a review that never ran",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-108",
+      "dependencies": [
+        "issue-584"
+      ],
+      "notes": "Observed live 2026-08-13 during epic-108 wave 2, twice, in the same session. Class: a review outcome is lost and NEITHER side sees an error. (1) Stranded verdict. A dispatched synthesized reviewer completed a re-review of hygiene-test-debt.spec.md rev 2 and returned PASS_WITH_NOTES, having verified all three round-1 blockers RESOLVED empirically against the real suite. It could not deliver that verdict to the session that requested it (SendMessage: 'no agent named general-purpose is reachable') so it returned the report one level up to the orchestrator. The requesting session, receiving nothing, reasonably concluded the review had been cancelled, wrote 'a re-review was deliberately NOT run' into the .review.md Disposition, and proceeded to implementation. The work was better-verified than its own record claimed. Recovered by hand in commit 18ee9e4b only because the orchestrator happened to be holding the report. At least three other nested agents in the same session hit the identical addressing failure (a plan review that returned Approved, a Task-1 implementation report, a spec-compliance PASS). (2) Same class, different mechanism, already fixed in ed84a277: /adev:review-specs SKILL.md emits 'adev report --type step --verdict BLOCK', which the verb rejects (PASS|PASS_WITH_NOTES|FAIL only), so the review step emitted 'started' with no terminal event. Silent because the validate gate checks 'implement', not 'review' — any later /adev:plan or /adev:review-specs on that spec would have blocked PERMANENTLY. That specific contract mismatch is issue-584; this issue is the general failure mode. Why P1: adev's entire gate model assumes a recorded verdict is a faithful record of whether review happened. Both failures break that assumption silently and in the UNSAFE direction — one loses a PASS (work looks less verified than it is, wasting effort), the other loses a BLOCK terminal (spec wedged forever). Directions worth considering: make a dispatched-review request carry a correlation id the requester polls for rather than relying on push delivery; have the report verb reject unknown verdicts LOUDLY at the call site rather than failing silently; and add a diagnostic for a lifecycle step that emitted 'started' with no terminal event within a run, which is the on-disk signature of both failures.",
+      "next_action": "Decide the mechanism: correlation-id polling for dispatched reviews, loud rejection of unknown verdicts, and/or a tier-2 diagnostic for started-without-terminal lifecycle steps.",
+      "created": "2026-08-13T17:05:24.921Z",
+      "updated": "2026-08-13T17:05:24.954Z"
+    },
+    {
+      "id": "issue-625",
+      "title": "gate doctor verifies a different gate set than the one that actually executes",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-108",
+      "dependencies": [
+        "issue-552",
+        "issue-554"
+      ],
+      "notes": "Found 2026-08-13 while running /adev:validate on issue-554. adev gate doctor (issue-552) reads .context-index/governance/gates.yaml DIRECTLY with no domain merge, while every actual consumer (/adev:validate Check 1, /adev:implement Step 2-post) resolves gates through 'adev domain load-gates' -> mergeGates(), which merges the domain starter and drops entries failing validateGate. The two sources disagree in BOTH directions, so the doctor can report a clean bill of health on a gate set that never runs. VERIFIED ON THIS REPO, zero overlap between verified and executed: (a) 'adev gate doctor' reports on exactly one gate -- id 'test', command \"npm test\" -- and exits 0 with '0 error(s), 1 warning(s)'. (b) 'adev domain load-gates --module unified-gates' on the same repo returns a merged list of TWO ENTIRELY DIFFERENT gates -- 'quality-gate' [npm,test] fast and 'integration-test' [npm,run,--if-present,test:integration] integration, both from the software domain default -- plus the warning INVALID_GATE: Gate 'test' command must be an argv list (array), not a string -- skipped. So the doctor validates a gate the executor discards, and is blind to both gates the executor runs. FAILURE MODE, both directions unsafe: (1) FALSE CLEAN -- a string-form gate is analysed and passed by the doctor while merge-gates.mjs:34-37 silently skips it, so a project whose only gate is string-form runs NOTHING while the doctor says it is fine; here the consequence is masked only because the software domain default happens to also run npm test. (2) BLIND SPOT -- domain-starter and extension-overlay gates are never examined by the doctor at all, which after issue-554 ships is where the default integration tier LIVES; the doctor would never diagnose the very defaults that PR shipped. WHY P1: this is precisely the failure class issue-552 was built to eliminate (the audit's highest-leverage finding was 'tests/gates declared but never executed, and adev never noticed'). A verifier reading a different source than the executor reproduces that bug inside the tool meant to detect it. SCOPE NOTE: the string-form half is pre-existing (merge-gates.mjs already rejects strings on main) and issue-554/PR #253 fixes templates/gates-template.yaml going forward -- header and every commented example now teach argv form. What remains unaddressed: every ALREADY-SCAFFOLDED project still carries a string-form gates.yaml plus a header comment teaching the rejected form (this repo included -- .context-index/governance/gates.yaml:10 still reads 'command: Shell command to execute'), and there is no migration or detection path. FIX DIRECTIONS: have runGateDoctor resolve gates through the same mergeGates path its consumers use (the obvious fix -- doctor and executor must agree by construction); have it explicitly report gates dropped by validateGate as an ERROR-severity finding rather than leaving the loader warning to whoever happens to print it; and add a migration that rewrites string-form commands to argv in existing governance/gates.yaml files, or at minimum a diagnostic that flags them.",
+      "next_action": "Make runGateDoctor resolve gates through mergeGates so the doctor and the executor agree by construction; report merge-dropped gates as error-severity findings; decide on a migration for already-scaffolded string-form gates.yaml files.",
+      "created": "2026-08-13T18:18:33.574Z",
+      "updated": "2026-08-13T18:18:33.610Z"
+    },
+    {
+      "id": "issue-626",
+      "title": "BeadsAdapter passes the .beads DIRECTORY as --db; br 0.2.22 requires the .db FILE, so every beads operation fails",
+      "status": "closed",
+      "priority": 1,
+      "type": "bug",
+      "dependencies": [],
+      "notes": "Found 2026-08-13 attempting 'adev issues migrate --to beads --include-closed' on this repo (307 issues / 106 epics). The migration failed on the FIRST item and created nothing. REPRODUCTION: (1) br init -> creates a .beads/ DIRECTORY containing beads.db, beads.db-shm, and a .gitignore. (2) lib/issues/beads-adapter.mjs:29 sets this.dbPath = join(projectRoot, '.beads') -- the directory -- and line 54 passes it as ['--db', this.dbPath, ...args]. (3) Every br invocation then fails with: CONFIG_ERROR 'Refusing unsafe configured database leaf <database-authority sha256=...>: expected a regular file, not a symlink or special file'. VERIFIED the path is the whole cause, not the payload: 'br --db <root>/.beads create \"plain test title\" --type bug' fails identically to a title containing backticks and colons, while 'br --db <root>/.beads/beads.db create \"migration probe title\" --type bug --json' SUCCEEDS and returns a well-formed issue (id adev-plugin-ou0). MISLEADING SURFACE SYMPTOM worth noting for whoever picks this up: the migrate verb reports MIGRATE_PARTIAL_FAILURE naming the first issue it tried (here issue-582, whose title contains backticks and the word SECURITY), which reads exactly like a shell-quoting or injection bug in the title. It is not -- the adapter uses execFileSync with array args and never invokes a shell. Any title fails. Do not chase the quoting theory. LIKELY CAUSE: generational drift between bd (beads, Go) and br (beads_rust). A bd-to-br-migration skill exists in this environment for exactly this class of change, so the older bd probably accepted a directory for --db while br 0.2.22 requires a regular file. FIX: beads-adapter.mjs:29 should resolve the database FILE, e.g. join(projectRoot, '.beads', 'beads.db'), ideally probing for the actual db filename rather than hardcoding it, and should fail with a clear diagnostic when .beads exists but no db file is found. The path is currently hardcoded with no manifest override (tasks.db_path governs the storage ROOT via resolveStorageRoot, and does not reach this field). IMPACT: the beads backend is completely non-functional against br 0.2.22 -- not merely migration, but every create/update/close/list through BeadsAdapter. NO DATA WAS LOST in the failed attempt: 0 issues created, json board untouched at 307/106, manifest still tasks.backend: json, and the .beads dir was removed. A pre-migration board snapshot is committed at c3d4a875 on branch chore/board-migrate-to-beads.; Closed: ALREADY FIXED ON MAIN by commit 9dc95701 (\"make the beads backend work against br 0.2.x\"), which landed while this was being worked. Main resolves the *.db file inside .beads/ (preferring beads.db) and omits --db entirely when the workspace is uninitialized so br applies its own auto-discovery. Main also fixes two defects this issue never found: it canonicalizes the path via realpath because br refuses a symlinked parent and macOS /var -> /private/var breaks every call, and _runBr now surfaces stdout when stderr is empty (br reports structured failures as JSON on STDOUT, which is why the original error read as a bare \"Command failed\"). A local fix was written independently (branch fix/beads-adapter-db-path, commit 14f71cf8, 5 TDD tests) and is DISCARDED as redundant and strictly inferior; it survives in reflog only. Verified fixed: migration against main creates 310 issues + 106 epics with 0 errors.",
+      "next_action": "Fix beads-adapter.mjs:29 to point at the db file (probe for it rather than hardcoding), add a clear diagnostic when the db file is absent, and add a regression test that would fail against a directory path. Then re-run: br init && adev issues migrate --to beads --include-closed.",
+      "created": "2026-08-13T18:25:08.867Z",
+      "updated": "2026-08-13T18:47:55.360Z"
+    },
+    {
+      "id": "issue-627",
+      "title": "BeadsAdapter.createEpic delegates to the read-only FileAdapter, so epics can never exist on the beads backend",
+      "status": "closed",
+      "priority": 1,
+      "type": "bug",
+      "dependencies": [
+        "issue-626"
+      ],
+      "notes": "Found 2026-08-13 immediately after fixing issue-626 (the --db path bug) and retrying 'adev issues migrate --to beads --include-closed' on this repo. SECOND, INDEPENDENT blocker -- structural, not a config or path problem. beads-adapter.mjs:241 has createEpic() delegate unconditionally to this._fileAdapter.createEpic(), and file-adapter.mjs:133-135 is 'async createEpic(_epicData) { throw deprecatedWrite(); }' -- an unconditional throw, because the file (markdown) backend is read-only by design. So epic creation on the beads backend is impossible by construction. The adapter's own header comment states the intent: 'Epic operations are delegated to a FileAdapter instance since beads_rust has no epic concept (hybrid approach per SA-5)' -- but the adapter chosen to hold them cannot be written to, so the hybrid has no writable home for epics. OBSERVED RESULT of the retry: all 308 issues migrated successfully and .beads-map.json holds 308 entries (verified directly: 'br --db .beads/beads.db list --json' returns 308), then the run aborted at index 308 -- the FIRST epic, epic-1 -- with 'The file (markdown) backend is read-only.' So 0 of 106 epics and 0 of 41 dependency edges migrated. Epic MEMBERSHIP does survive: 242 of the 308 map entries carry epicId metadata, consistent with backend-adapters.spec.md:49 which says epicId/planRef filters read from .beads-map.json because beads does not track them natively. What is missing is the epic ENTITIES (title, status, milestone) and every dependency edge. SECOND DEFECT observed in the same run: the migrate verb reported created:{issues:0,epics:0} even though 308 issues were demonstrably created -- the counter is not incremented before the abort, so a partially-successful run reports as a total no-op and understates what actually landed. That is dangerous on its own: a re-run looks safe when it is not. (It is in fact idempotent via .beads-map.json, but the report gives no way to know that.) NOTE ON API GENERATION: createEpic emits 'createEpic is deprecated; use create() instead. See task-management charter rev 3' under ADEV_DEPRECATION_WARN=1, so the migrate verb drives a deprecated path. Any fix should decide how epics are represented under beads at all -- most plausibly as tiered issues via the unified create() rather than as a separate entity class -- which is a design decision, not a patch. CURRENT STATE, nothing is live: manifest still reads tasks.backend: json, the json board remains authoritative and complete at 308 issues / 106 epics, and the populated .beads store plus .beads-map.json are present but unwired. Pre-migration snapshot committed at c3d4a875 on branch chore/board-migrate-to-beads.; Closed: ALREADY FIXED ON MAIN. Commit 9dc95701 identified the same root cause (\"Epics were delegated to FileAdapter, which is read-only-deprecated, so createEpic threw BACKEND_READ_ONLY_DEPRECATED\"), and dcb4f591 (\"make beads the single source of truth — delete the sidecar\") went further than this issue proposed: it removed .beads-map.json entirely, storing adev ids in br external_ref, metadata in br agent_context, and epics as br issues with issue_type: epic. That is the same charter-derived conclusion this issue reached (an epic is a root-level WorkItem, not a separate entity) but implemented without a second store that can disagree. A local fix was written independently (commit 34a5c685, 8 TDD tests) and is DISCARDED as redundant; reflog only. Verified fixed: migration against main creates 106 epic-* external_refs with 0 errors. Also note the created-counter misreporting flagged here is still live on main -- a run that demonstrably created 106 epics reported created:{epics:0}, skipped:106. Rolled into issue-628.",
+      "next_action": "Decide how epics are represented on the beads backend (likely tiered issues via unified create(), not a separate entity), then fix createEpic and the created-counter reporting. Blocks any complete json->beads migration.",
+      "created": "2026-08-13T18:33:48.479Z",
+      "updated": "2026-08-13T18:47:55.383Z"
+    },
+    {
+      "id": "issue-628",
+      "title": "json -> beads migration RENUMBERS every issue and loses the source-id mapping, breaking dependencies and all cross-references",
+      "status": "open",
+      "priority": 0,
+      "type": "bug",
+      "dependencies": [
+        "issue-626",
+        "issue-627"
+      ],
+      "notes": "Found 2026-08-13 on the first migration run that got far enough to expose it -- only reachable after fixing issue-626 (--db path) and issue-627 (epic creation). BLOCKS any json->beads migration; do not flip tasks.backend until this is fixed. WHAT HAPPENS: BeadsAdapter.create() assigns a fresh sequential id -- nextId = 'issue-' + (count of issue- keys in .beads-map.json + 1) -- and keys the map by that NEW id. The source id is never recorded anywhere. The source board's ids are sparse (issue-1..issue-627 with gaps from deletions); the target map is contiguous (issue-1..issue-309). Every issue therefore silently changes identity. VERIFIED CONCRETELY: source issue-625 ('gate doctor verifies a different gate set...') sits at index 306 of the source list and lands as target issue-307. Map entry fields are only {beadsId, next_action, epicId, ...} -- no source_id/original_id. CONSEQUENCE 1, dependencies: the verb passes SOURCE ids to BeadsAdapter.addDependency, which resolves them against .beads-map.json keys that are now TARGET ids, so lookups miss. Observed dependencies_replayed: 5 of 41, with 'No beads mapping for issue: issue-615 / issue-557 / issue-622' warnings. The 5 that survived are coincidental matches where a source id happened to equal its own index. 36 of 41 edges silently dropped, including the epic-108 wave sequencing (554->552, 555->552, 615->555, 614->559, 557->585/586, 623->557, 625->552/554). CONSEQUENCE 2, far worse and NOT reported at all: every human-readable cross-reference breaks. Issue notes across this board reference other issues by id ('tracked as issue-623', 'see issue-557', 'this is issue-584 in the wild'), as do commit messages, PR descriptions, and spec files. After migration those ids resolve to DIFFERENT issues. Nothing warns; the board looks complete and internally consistent while silently meaning something else. ASYMMETRY WORTH NOTING: the reverse direction already solves this -- runLiveMigration stamps 'original_id: <sourceId>' into notes for beads->json specifically so a re-run can dedupe. json->beads has no equivalent. FIX DIRECTIONS: preserve the source id as the map key (target ids are an implementation detail of beads and need not be resequenced), or at minimum record source_id in each map entry and resolve addDependency through it; and have the verb FAIL LOUDLY rather than warn-and-continue when an edge cannot be resolved, since a silently partial dependency graph is indistinguishable from a complete one. Also fix the created-counter reporting noted in issue-627 (a run that created 308 issues reported created:{issues:0}). STATE: fully rolled back. .beads, .beads-map.json and .migrate-state.json removed; manifest still tasks.backend: json; json board authoritative and complete at 309 issues / 106 epics. Pre-migration snapshot committed at c3d4a875 on branch chore/board-migrate-to-beads. PROCESS NOTE for whoever retries: .migrate-state.json persists a resume cursor (lastSuccessfulIndex). Wiping .beads and .beads-map.json WITHOUT deleting it causes the next run to resume mid-stream and silently migrate almost nothing -- observed as created:{issues:1} against a 309-issue board. Arguably the verb should detect an empty target map against a non-zero resume cursor and refuse.",
+      "next_action": "Preserve source ids across json->beads (map key or source_id field), resolve addDependency through them, and fail loudly on unresolvable edges. Then retry: rm -rf .beads .context-index/tasks/.beads-map.json .context-index/tasks/.migrate-state.json && br init && adev issues migrate --to beads --include-closed.",
+      "created": "2026-08-13T18:42:17.043Z",
+      "updated": "2026-08-13T18:42:17.074Z"
+    },
+    {
+      "id": "issue-fw00cl",
+      "title": "Migration drops closed status on ISSUES (epics only get the post-create status update)",
+      "status": "open",
+      "priority": 0,
+      "type": "bug",
+      "dependencies": [
+        "issue-628"
+      ],
+      "notes": "Found 2026-08-13 flipping tasks.backend to beads after issue-628's id-preservation fix. BLOCKS the flip; reverted to json. beads-adapter.mjs carries the correct comment at line ~522 -- 'br create has no status flag; closed states must go through' a follow-up update -- but implements it ONLY inside createEpic (line ~525, guarded on epic.status === closed). create() has no equivalent, so every closed ISSUE lands open. MEASURED on this repo's 310-issue / 106-epic board: source is 183 closed + 123 open + 4 deferred issues and 79 closed + 27 open epics, so 262 items should be closed. beads held exactly 79 closed -- precisely the epic count -- and 337 open. All 183 closed issues arrived as open, and the 4 deferred ones are unaccounted for (br's status vocabulary may not include deferred; unverified). WHY P0 rather than cosmetic: the flipped board is not merely incomplete, it is actively misleading. '/adev:issues ready' and every 'what should I work on' path would surface 183 completed issues as actionable, and closing them again would be indistinguishable from real work. A board that under-reports is recoverable; one that misrepresents finished work as open corrupts planning. FIX: mirror createEpic's post-create status update inside create(), and decide the mapping for 'deferred' (br may need it expressed differently, or the migration must fail loudly rather than silently coerce). SCOPE OBSERVATION worth attention beyond this issue: this is the FIFTH distinct fidelity defect found in the json->beads path today, each hidden behind the last -- issue-626 (--db pointed at the directory), issue-627 (epics delegated to a read-only adapter), issue-628 (source ids discarded, 0 of 41 dependency edges replayed), then dependencies not reading back through get() after a successful replay (unfiled, needs its own investigation), and now status. Per the debug skill's own rule that repeated failures indicate an architectural problem rather than a series of bugs, the recommendation is a round-trip FIDELITY TEST -- migrate a fixture board, read it back through the adapter, and assert field-by-field equality on ids, status, dependencies, epic membership, milestone and notes -- before this path is trusted with a real board. Every defect so far was found by hand on a live migration, which is not a durable way to gain confidence. CURRENT STATE: tasks.backend reverted to json and verified reading correctly (123 open, matching source). The populated .beads store is left in place, unwired, and is safe to delete.",
+      "next_action": "Mirror createEpic post-create status update inside create(); decide the deferred mapping; then build a round-trip fidelity test before retrying the flip.",
+      "created": "2026-08-13T22:29:54.001Z",
+      "updated": "2026-08-13T22:29:54.023Z"
+    },
+    {
+      "id": "issue-bum897",
+      "title": "BeadsAdapter never reads dependencies back — _toIssue() omits the field entirely",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "dependencies": [],
+      "notes": "Found 2026-08-13 by a round-trip fidelity check after migrating this repo's 311-issue board. IMPORTANT: this is a READ gap, not data loss. The edges are correctly stored in beads -- 'br list -s all --json' shows 31 items with dependency_count > 0, and issue-628 correctly reports 2 (its edges to issue-626 and issue-627), matching what the migration reported (dependencies_replayed: 44). But every issue returned by BeadsAdapter.list() and .get() comes back with dependencies undefined/empty, because _toIssue() maps title/status/priority/type and the agent_context fields and never populates dependencies. MEASURED: source board has 44 dependency edges; 44 of 44 are absent on read-back through the adapter. CONSEQUENCE: anything that reasons about blocking relationships is silently wrong on the beads backend. '/adev:issues ready' is specified as 'open AND unblocked' and filters on dependencies -- with none visible, every blocked issue reports as ready. The wave sequencing recorded on epic-108 (554->552, 555->552, 615->555, 614->559, 557->585/586, 623->557, 625->552/554) would vanish from every query while remaining perfectly intact in the database. That is the dangerous shape: the data is right, the view is wrong, and nothing errors. FIX: populate dependencies in _toIssue(). br exposes dependency_count/dependent_count on the list record but not the edge endpoints, so the adapter likely needs a 'br dep' query (br dep supports add/import/remove; check for a list/show form) or to resolve edges from a separate pass, mapping br ids back to adev ids via external_ref. Cost note: a naive per-issue dep query is N round trips on a 300+ item board -- prefer a single bulk read if br offers one. VERIFIED CLEAN in the same fidelity run, for scope: ids (310/310 preserved), titles, priority, type, epicId, planRef, spec_ref, next_action, notes -- ZERO mismatches; epics 0 missing with 0 milestone and 0 status mismatches. Only two defects exist on this path now: this one and issue-fw00cl (issue status not migrated).",
+      "next_action": "Populate dependencies in _toIssue(), sourcing edges from br (bulk query preferred over per-issue). Add the assertion to a round-trip fidelity test.",
+      "created": "2026-08-13T22:33:51.898Z",
+      "updated": "2026-08-13T22:33:51.898Z"
     }
   ]
 }
