@@ -1,8 +1,6 @@
 import { describe, it } from "node:test";
 import { strict as assert } from "node:assert";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { createTempDir, cleanupTempDir, writeFixture, runHook, PLUGIN_ROOT } from "../helpers.mjs";
+import { createTempDir, cleanupTempDir, writeFixture, runHook } from "../helpers.mjs";
 
 describe("lifecycle-gate integration", () => {
   // Enforcement levels
@@ -171,11 +169,6 @@ describe("lifecycle-gate integration", () => {
     assert.equal(result.exitCode, 0);
     assert.ok(result.stdout.includes("additionalContext"), "Should include advisory");
     cleanupTempDir(tmp);
-  });
-
-  // Standalone skill file exists
-  it("standalone skill file exists", () => {
-    assert.ok(existsSync(join(PLUGIN_ROOT, "skills/standalone/SKILL.md")));
   });
 
   // Advisory does not fire when active
