@@ -90,3 +90,36 @@ assertion in that test cannot be written.
 **Action required:** revise the spec to revision 2 addressing SA-1, SA-2, SA-3, then
 re-review. Warnings CON-1, CON-2, SEC-1 and suggestions SA-4, CON-3 are folded into the
 same revision.
+
+---
+
+## Disposition (added 2026-08-13, after implementation)
+
+This report reflects **revision 1**. The `verdict`, `last-reviewed-revision`, and
+`file-sha` fields above are frozen at that revision and are deliberately not refreshed.
+
+All three blockers were addressed:
+
+- **SA-1** — revision 2 split reference extraction into Class A (module references) and
+  Class B (artifact/file-read references), making `.md` paths and the `skills/` +
+  `templates/` source roots visible. Revision 3 replaced the literal-only rule with anchor
+  classification after a census of the real suite showed it would drop 191 repo-anchored
+  reads along with the temp-dir ones.
+- **SA-2** — revision 2 added § Assertion-line taxonomy, closing both sides of the ratio.
+- **SA-3** — revision 2 named the `test-debt` `--check` slug (Behavior 10b) and added an
+  explicit task plus acceptance criterion for the
+  `hygiene-test-policy-drift-pass.test.mjs` update.
+
+Warnings CON-1, CON-2, SEC-1 and suggestions SA-4, CON-3 were also folded into revision 2.
+
+**A re-review of revision 2+ was deliberately NOT run.** A second synthesized reviewer was
+dispatched and cancelled mid-flight in favour of moving to implementation, on the judgement
+that a third prose reading would yield less than running the code. That judgement was
+borne out: `/adev:validate --tier quick` subsequently found three *proven* defects (a
+degrade note unreachable on every CLI run, a template-literal scanner that silently blinded
+extraction, and a mis-assigned error code) that no prose review had surfaced. Those are
+recorded in `hygiene-test-debt.validate.md` and fixed in revision 5.
+
+**A human should know:** revisions 2 through 5 of this spec were never independently
+reviewed. They were validated against working code, which is stronger evidence for the
+behaviours that code exercises — and no evidence at all for the parts it does not.
