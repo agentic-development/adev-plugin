@@ -7,7 +7,8 @@ describe("lifecycle-gate-bash hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=off");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "rm -rf dist" }
     });
@@ -18,7 +19,8 @@ describe("lifecycle-gate-bash hook", () => {
   it("exits 0 when no user-config (defaults to off)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "rm -rf dist" }
     });
@@ -30,7 +32,8 @@ describe("lifecycle-gate-bash hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.bash_passthrough=git status,git log,npm test,head,tail,ls,cat,grep");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "git status --short" }
     });
@@ -42,7 +45,8 @@ describe("lifecycle-gate-bash hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.bash_passthrough=git status,git log,npm test,head,tail,ls,cat,grep");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm test" }
     });
@@ -54,7 +58,8 @@ describe("lifecycle-gate-bash hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm run build" }
     });
@@ -66,7 +71,8 @@ describe("lifecycle-gate-bash hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.bash_passthrough=git status,git log,npm test,head,tail,ls,cat,grep");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "git log | head" }
     });
@@ -92,7 +98,8 @@ describe("lifecycle-gate-bash hook", () => {
       }) + "\n"
     );
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm run build" }
     });
@@ -118,7 +125,8 @@ describe("lifecycle-gate-bash hook", () => {
       }) + "\n"
     );
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm run build" }
     });
@@ -128,7 +136,8 @@ describe("lifecycle-gate-bash hook", () => {
 
   it("exits 0 when no .context-index exists", () => {
     const tmp = createTempDir();
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "rm -rf /" }
     });

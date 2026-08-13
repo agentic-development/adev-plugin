@@ -9,8 +9,8 @@
  *  10. Helper subprocess contract tests
  *
  * The helper is invoked via `child_process.spawnSync` with crafted env vars,
- * matching how `hooks/session-start.sh` and `hooks/lifecycle-gate-bash.sh`
- * will invoke it after the refactor.
+ * matching how `hooks/session-start.sh` and `hooks/lifecycle-gate.sh`
+ * invoke it.
  */
 
 import { describe, it } from "node:test";

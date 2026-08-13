@@ -1,194 +1,40 @@
 #!/usr/bin/env bash
 # adev PostToolUse hook: Session Capture
-# Appends a JSONL tracking line to .context-index/.session-tracking.jsonl
-# when the manifest provider is "native".
+# Delegates JSONL tracking-line capture to lib/session-capture.mjs's
+# `tool-use` path (spec Migration Path step 5b — the former ~180-line
+# inline-Node program now lives there, with unit-tested schema
+# byte-compatibility). Appends a line to
+# .context-index/.session-tracking.jsonl when the manifest provider is
+# "native".
+# Also touches .context-preflight-ok when the tool call read a
+# .context-index/ file (formerly hooks/context-read-tracker.sh, folded in
+# at Task 5 — session-capture's `.*` matcher is a superset of
+# context-read-tracker's `Read`-only matcher).
 # Fires on: any tool use (broad matcher)
 
 set -uo pipefail
 
-# Read stdin JSON (hook protocol — contains tool_name, tool_input, session_id)
-STDIN_JSON=$(cat)
+# Read stdin and populate CLAUDE_TOOL_INPUT_* env vars (bridges tool_input
+# fields — including file_path). Also drains stdin into $_HOOK_STDIN, reused
+# below instead of reading stdin a second time.
+source "$(dirname "$0")/_parse-stdin.sh"
 
-# Single node call: parse stdin, resolve provider, build JSONL line, append to file.
-# Exits with code 0 always (non-blocking). Outputs '{}' to stdout (hook protocol).
-printf '%s' "$STDIN_JSON" | node -e '
-  const fs = require("fs");
-  const path = require("path");
+# Context-read-tracker fold-in: touch the flag unconditionally — this must
+# run BEFORE (and independently of) the provider=="native" gate inside the
+# lib capture path, since the original context-read-tracker.sh had no such
+# gate.
+FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
+case "$FILE_PATH" in
+  *.context-index/*|*/.context-index/*)
+    mkdir -p .context-index
+    touch .context-index/.context-preflight-ok
+    ;;
+esac
 
-  let d = "";
-  process.stdin.on("data", c => d += c);
-  process.stdin.on("end", async () => {
-    let input = {};
-    try { input = JSON.parse(d); } catch {}
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
-    // Resolve provider: prefer stdin, fall back to manifest.yaml
-    let provider = input.provider || "";
-    if (!provider) {
-      try {
-        const manifest = fs.readFileSync(".context-index/manifest.yaml", "utf8");
-        const m = manifest.match(/provider:\s*(\S+)/);
-        if (m) provider = m[1];
-      } catch {}
-    }
-
-    if (provider !== "native") {
-      process.stdout.write("{}\n");
-      return;
-    }
-
-    // Extract fields from stdin JSON (PostToolUse protocol)
-    const toolName = input.tool_name || "";
-    if (!toolName) {
-      process.stdout.write("{}\n");
-      return;
-    }
-    const filePath = (input.tool_input && input.tool_input.file_path) || "";
-    const sessionId = input.session_id || "";
-
-    const entry = {
-      tool: toolName,
-      files: filePath ? [filePath] : [],
-      timestamp: new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
-    };
-    if (sessionId) entry.session_id = sessionId;
-
-    // Build operator identity: $USER/local or $USER/remote
-    const osUser = process.env.USER || process.env.USERNAME || "unknown";
-    const isRemote = process.env.CLAUDE_CODE_REMOTE === "true";
-    entry.operator = osUser + "/" + (isRemote ? "remote" : "local");
-
-    // Enrich with issue/epic from execution state (if active).
-    // Reads the JSON state directly (post-migration on-disk format).
-    try {
-      const statePath = path.join(".context-index", ".execution-state.json");
-      const stateRaw = fs.readFileSync(statePath, "utf8");
-      const state = JSON.parse(stateRaw);
-      if (state && state.status === "active") {
-        if (state.issueBinding) entry.issue = String(state.issueBinding);
-        {
-          // Extract epic from issue board if issue is bound
-          // Supports both file and beads backends
-          if (entry.issue) {
-            try {
-              let backend = "file";
-              try {
-                const manifest = fs.readFileSync(".context-index/manifest.yaml", "utf8");
-                const bm = manifest.match(/backend:\s*(\S+)/);
-                if (bm) backend = bm[1];
-              } catch {}
-
-              if (backend === "beads") {
-                // beads backend: epics stored in file adapter (hybrid)
-                // but issue→epic mapping is in .beads-map.json
-                try {
-                  const mapPath = path.join(".context-index", "tasks", ".beads-map.json");
-                  const map = JSON.parse(fs.readFileSync(mapPath, "utf8"));
-                  const issueEntry = map[entry.issue];
-                  if (issueEntry && issueEntry.epicId) entry.epic = issueEntry.epicId;
-                } catch {}
-                // Fallback: check file adapter board if map lacks entry
-                if (!entry.epic) {
-                  try {
-                    const boardPath = path.join(".context-index", "tasks", "tasks.md");
-                    const board = fs.readFileSync(boardPath, "utf8");
-                    const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
-                    if (issueBlock) {
-                      const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
-                      if (epicM && epicM[1]) entry.epic = epicM[1];
-                    }
-                  } catch {}
-                }
-              } else {
-                // file backend: read tasks.md directly
-                const boardPath = path.join(".context-index", "tasks", "tasks.md");
-                const board = fs.readFileSync(boardPath, "utf8");
-                const issueBlock = board.match(new RegExp("###\\s+" + entry.issue + "[\\s\\S]*?(?=###|$)"));
-                if (issueBlock) {
-                  const epicM = issueBlock[0].match(/epicId:\s*(\S+)/);
-                  if (epicM && epicM[1]) entry.epic = epicM[1];
-                }
-              }
-            } catch {}
-          }
-        }
-      }
-    } catch {}
-
-    // ── Token usage enrichment (graceful degradation) ──
-    try {
-      const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || "";
-      if (pluginRoot && sessionId) {
-        const [{ resolveSessionUsage }, { readCursor, writeCursor, resetCursor }, { computeCost }] = await Promise.all([
-          import(pluginRoot + "/lib/session-file-reader.mjs"),
-          import(pluginRoot + "/lib/token-cursor.mjs"),
-          import(pluginRoot + "/lib/token-pricing.mjs"),
-        ]);
-
-        const cwd = process.cwd();
-        const os = require("os");
-        const encoded = cwd.replace(/\//g, "-");
-        const sessionFile = path.join(os.homedir(), ".claude", "projects", encoded, sessionId + ".jsonl");
-
-        let fileSize = 0;
-        try { fileSize = fs.statSync(sessionFile).size; } catch {}
-
-        const cursor = readCursor(cwd);
-        const needsReset = !cursor
-          || cursor.session_id !== sessionId
-          || cursor.last_offset > fileSize;
-
-        if (needsReset) {
-          resetCursor(cwd, sessionId, fileSize);
-          // No usage for this entry — no prior baseline to compute delta from
-        } else {
-          const usage = resolveSessionUsage({
-            sessionId,
-            projectDir: cwd,
-            fromOffset: cursor.last_offset,
-          });
-
-          if (usage) {
-            const costUsd = computeCost(usage.model, {
-              inputTokens: usage.inputTokens,
-              outputTokens: usage.outputTokens,
-              cacheReadTokens: usage.cacheReadTokens,
-              cacheCreationTokens: usage.cacheCreationTokens,
-            });
-
-            entry.usage = {
-              input_tokens: usage.inputTokens,
-              output_tokens: usage.outputTokens,
-              cache_read_tokens: usage.cacheReadTokens,
-              cache_creation_tokens: usage.cacheCreationTokens,
-              cost_usd: costUsd,
-            };
-
-            const newCum = {
-              input_tokens: (cursor.cumulative?.input_tokens || 0) + usage.inputTokens,
-              output_tokens: (cursor.cumulative?.output_tokens || 0) + usage.outputTokens,
-              cache_read_tokens: (cursor.cumulative?.cache_read_tokens || 0) + usage.cacheReadTokens,
-              cache_creation_tokens: (cursor.cumulative?.cache_creation_tokens || 0) + usage.cacheCreationTokens,
-            };
-
-            writeCursor(cwd, {
-              session_id: sessionId,
-              last_offset: fileSize,
-              cumulative: newCum,
-              format_warning_emitted: cursor.format_warning_emitted || false,
-            });
-          }
-        }
-      }
-    } catch (e) {
-      // Graceful degradation — entry is written without usage
-    }
-
-    // Ensure directory and append
-    const dir = ".context-index";
-    const file = path.join(dir, ".session-tracking.jsonl");
-    fs.mkdirSync(dir, { recursive: true });
-    fs.appendFileSync(file, JSON.stringify(entry) + "\n");
-
-    process.stdout.write("{}\n");
-  });
-' 2>/dev/null || echo '{}'
+# Delegate to the lib tool-use capture path. Always exits 0 (non-blocking)
+# and always emits '{}' on stdout (hook protocol) — the `|| echo '{}'`
+# fallback matches the pre-refactor contract for the case node itself is
+# unavailable or crashes (spec error case: allow).
+printf '%s' "$_HOOK_STDIN" | node "${PLUGIN_ROOT}/lib/session-capture.mjs" --event tool-use 2>/dev/null || echo '{}'
