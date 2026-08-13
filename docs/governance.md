@@ -29,11 +29,62 @@ Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is help
 | `.context-index/governance/review.yaml` | [`/adev:review-specs`](skill-reference.md) | Project reviewer registry — add, disable, override, trigger. |
 | `.context-index/governance/validate.yaml` | [`/adev:validate`](skill-reference.md) | Project check registry — enable/disable, add custom checks, gate on topology. |
 | `.context-index/governance/boundaries.yaml` | [`/adev:plan`](skill-reference.md), [`/adev:validate`](skill-reference.md) | Architectural boundary rules — regex patterns that raise errors/warnings when violated. |
-| `.context-index/governance/risk-policies.yaml` | governance enforcement | Maps spec `risk_level` (high/medium/low) to gate-escalation policy. |
+| `.context-index/governance/risk-policies.yaml` | governance enforcement | Maps spec `risk_level` (high/medium/low) to gate-escalation policy and, since the test depth policy shipped, to `test_depth`. |
+| `.context-index/governance/sensitive-paths.yaml` | `adev test-policy resolve` | Optional, extend-only overlay that raises the test-depth floor for additional path patterns. |
 | `.context-index/governance/diagnostics.yaml` | `adev diagnose` (write-time) | Tier-1 diagnostic producer registry tagging lifecycle events. |
 | `.context-index/profiles.yaml` | cross-cutting | Execution profiles: tool permissions, env allowlist, model tier, redaction. Consumed by every reviewer and check. |
 
 All are optional. Absent files mean "use bundled defaults."
+
+## Test depth policy in `risk-policies.yaml`
+
+`graduated-rigor-tiers` scales *review and validation* breadth from `risk_level` and the
+routing "easy" signal (`review_mode`, `validate_mode`). Test *authoring* depth is the
+analogous question and is declared in the same file, per risk level:
+
+```yaml
+# governance/risk-policies.yaml
+policies:
+  high:    { review_mode: full,  validate_mode: full,  test_depth: thorough }
+  medium:  { review_mode: full,  validate_mode: full,  test_depth: standard }
+  low:     { review_mode: quick, validate_mode: quick, test_depth: minimal }
+```
+
+**Rigor mode and test depth are independent mechanisms.** `test_depth` makes no change to
+`resolveRigorMode`, its precedence, or its signature — a `quick` rigor tier paired with
+`thorough` test depth is legal and expected (e.g. a low-novelty, high-risk change: light
+review overhead, deep test coverage). `test_depth` feeds `adev test-policy resolve`, not the
+review/validate gate machinery documented above. See
+[Test Strategies — Test depth policy](test-strategies.md#test-depth-policy--a-second-independent-axis)
+for the full chain, and [Configuration Reference](configuration.md#test_policy-test-depth--granularity)
+for the `test_policy` manifest block that supplies the other axis (granularity).
+
+### `sensitive-paths.yaml` — extend-only overlay
+
+The test-depth floor raises a task's assigned depth to `thorough` when its target paths match
+a sensitive-path pattern. The built-in `DEFAULT_SENSITIVE_PATHS` set (auth, crypto, secrets,
+credentials, `.env*`, key/cert files, this project's own `governance/**` and
+`.github/workflows/**`) always applies. `governance/sensitive-paths.yaml` is optional and can
+only **extend** that set — the effective set is `DEFAULT_SENSITIVE_PATHS ∪ configured`, and
+configuration can never shrink it below the built-in default:
+
+```yaml
+# governance/sensitive-paths.yaml — optional, extend-only
+sensitive_paths:
+  - "src/billing/**"
+```
+
+An absent or empty file resolves to the built-in set. A present-but-unparseable file, or one
+containing a non-string entry, degrades to the built-in set alone and raises an
+`INVALID_SENSITIVE_PATHS` advisory rather than blocking the task — halting every task over one
+malformed byte would be disproportionate to an advisory control.
+
+**The floor is advisory, not enforced.** It assigns a task's depth and records that assignment
+(`floor_applied`, `floor_legs`, `floor_inputs` on the `test_depth_assigned` event, visible via
+`adev test-policy explain` — see [CLI Reference](cli-reference.md#test-policy)); it does not
+verify that the authored test suite actually covers what a `thorough` assignment implies. Form
+your belief about what this floor guarantees accordingly: it raises intent and creates an
+audit trail, it does not enforce coverage.
 
 ## Profiles — the foundation
 

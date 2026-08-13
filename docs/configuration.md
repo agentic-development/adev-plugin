@@ -124,6 +124,65 @@ gates:
   test: "npm test"
 ```
 
+### test_policy (test depth & granularity)
+
+Controls the test depth policy: how test suites map onto units of change (**granularity**,
+resolved by `/adev:plan`) and whether routing complexity is allowed to raise (never lower) the
+assigned test depth (**escalation**, resolved by `/adev:implement` via `adev test-policy
+resolve`). See [Test Strategies — Test depth policy](test-strategies.md#test-depth-policy--a-second-independent-axis)
+for the full chain and worked examples, and [Governance Reference](governance.md#test-depth-policy-in-risk-policiesyaml)
+for the companion `test_depth` field in `risk-policies.yaml`.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `granularity` | enum | `"per-behavior"` | How suites map onto units of change: `per-task` (one suite per task), `per-behavior` (one suite per spec behavior statement — tasks sharing a behavior extend it), `per-spec` (one suite for the whole spec) |
+| `escalation` | boolean | `true` | Whether routing complexity may raise resolved depth. Escalation is always upward-only regardless of this flag; setting it to `false` disables the pass entirely |
+| `escalation_rules` | array | `[]` | Post-chain rules; each matching rule raises depth to its `depth`. At most 32 entries |
+| `escalation_rules[].when` | object | — | Routing-dimension conditions, e.g. `{ blast_radius: "<=0.3" }`. Each value must match the pinned grammar `^(<=\|>=\|<\|>\|==)\s*(0(\.\d+)?\|1(\.0+)?)$` — a comparator against a float in `[0, 1]`. `eval`/`new Function` are never used; matching is regex-only |
+| `escalation_rules[].depth` | enum | — | `minimal` \| `standard` \| `thorough` — the depth this rule raises to when it matches |
+
+`test_policy` carries no `depth:` field of its own — the per-risk-level default lives in
+`governance/risk-policies.yaml`'s `test_depth` field (see
+[Governance Reference](governance.md#test-depth-policy-in-risk-policiesyaml)).
+
+**Escalation-threshold intent.** Shipped/example rules are meant to fire only in the bottom
+~30% of the blast-radius and novelty scales (these route scores run *lower* for higher actual
+blast radius/novelty), so a routine change does not escalate and the reduced-volume default
+holds. Loosening these thresholds is a ratchet — it silently increases test volume, which is
+the failure mode this policy exists to prevent.
+
+Two matching rules that name different depths resolve to the higher one, with a
+`CONFLICTING_ESCALATION_RULE` advisory naming both.
+
+**Per-module override forms** — `modules[]` entries key on `slug:` and may override
+`test_depth` and/or any part of `test_policy`; a partial `test_policy` override (e.g.
+`granularity` only) inherits the rest from the manifest-level block:
+
+```yaml
+modules:
+  - slug: payments
+    test_depth: thorough
+    test_policy:
+      granularity: per-task     # partial override; escalation settings inherit
+```
+
+**When to override:** Set `granularity: per-task` to restore one-suite-per-task behavior (the
+pre-capability default). Add `escalation_rules` if you want low-blast-radius or low-novelty
+routing signals to raise depth automatically. Set `escalation: false` to disable escalation
+entirely without removing the rules.
+
+**Example:**
+```yaml
+test_policy:
+  granularity: per-behavior
+  escalation: true
+  escalation_rules:
+    - when: { blast_radius: "<=0.3" }
+      depth: thorough
+    - when: { novelty: "<=0.3" }
+      depth: thorough
+```
+
 ### completion
 
 Controls how finished work is merged and which branches are protected.
