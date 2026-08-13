@@ -202,6 +202,45 @@ describe("beads backend — live br parity", () => {
     }
   });
 
+  it("refuses a claim that a human took directly through `br` (gate must not fail open)", async () => {
+    const dir = makeBeadsProject();
+    try {
+      const a = new BeadsAdapter(dir);
+      await a.init();
+      const issue = await a.create({ title: "taken outside adev", type: "task", priority: 2 });
+
+      // br is a user-facing CLI, so this is normal usage — not an exotic race.
+      // The sidecar knows nothing about it.
+      const beadsId = a._getBeadsId(issue.id);
+      execFileSync("br", ["--actor", "a-human", "update", beadsId, "--claim", "--json"], {
+        cwd: dir,
+        stdio: "pipe",
+      });
+
+      // The holder must be visible through the adapter, or requireClaimable
+      // sees "unclaimed", passes, and br refuses the write as a generic
+      // command failure — which the CLI maps to exit 1, which the
+      // implement/debug preflight treats as "warn and continue". The gate
+      // would open on precisely the case it exists to close.
+      const seen = await a.get(issue.id);
+      assert.equal(seen.owner, "a-human", "a br-side claim must surface as the owner");
+
+      await assert.rejects(
+        () => a.claim(issue.id, "adev-agent"),
+        (err) => {
+          assert.equal(
+            err.code,
+            "ISSUE_ALREADY_CLAIMED",
+            "must be the shared refusal code (CLI exit 2 / halt), not BEADS_COMMAND_FAILED (exit 1 / continue)",
+          );
+          return true;
+        },
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
   it("lets a different agent claim once the holder has released", async () => {
     const dir = makeBeadsProject();
     try {
