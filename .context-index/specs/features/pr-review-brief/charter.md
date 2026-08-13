@@ -1,7 +1,7 @@
 ---
-status: draft
+status: approved
 kind: feature
-revision: 1
+revision: 2
 updated: 2026-08-12
 ---
 
