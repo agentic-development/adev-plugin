@@ -6,8 +6,18 @@ sources:
   - internal
   - web
 status: complete
-revised: "2026-08-12 — one Part 2 claim retracted after architecture review; see the frontmatter-present row and issue-583"
+revised: "2026-08-13 — Phase 0a shipped; two board references corrected. See Status Since Publication."
 ---
+
+## Status Since Publication (2026-08-13)
+
+The study is kept as written — it is a research record, not a living plan — with two corrections and one delivery note.
+
+**Phase 0a (Coordination) is done.** `epic-107` shipped across PRs #245–#256: the `/adev:work` pre-flight scan (`adev coordination scan`, `issue-606`), worktree-shared execution state (`issue-607`), claim enforcement in the implement/debug preflight (`issue-608`), branch/PR binding (`issue-609`), and claim leases with a TTL (`issue-610`). `issue-613` (board-ID allocation) was resolved by making IDs merge-safe rather than by detection tooling. Issues 606–610 are closed on the board.
+
+**Two board references in this document point at entries that were never filed:** `epic-108` and `issue-620`, cited in the Summary, the Part 1 table row for `tests/evals/skill-compression/`, and Phase 1 item 1. The *defect* they describe is real and was verified by md5 across the variant matrix — the variant matrix is broken, and capturing outputs against it would bake in a false "compression is free" result. Only the tracking IDs are fictitious. Read those citations as "unfiled work", not as a board reference. This is itself an instance of the ID-allocation hazard the study documents: `epic-108` was referenced on `main` while a branch had already consumed 105–107.
+
+**Phase 1 (the regression harness) has not started.** It remains the prerequisite the Summary describes, and the skill-compression variant matrix must be repaired before any baseline is captured.
 
 ## Summary
 
@@ -17,7 +27,7 @@ Four parallel investigations (eval-infrastructure audit, empirical mining of `.c
 
 The good news is threefold:
 
-1. The exact harness needed (`tests/evals/skill-compression/` — baseline vs. compressed skill variants, deterministic regex elements + LLM-judged dimensions) already exists in the repo. ~~It is inert only because its `outputs/` tree was never captured.~~ **Corrected 2026-08-13:** the missing `outputs/` tree is real but is *not* the only defect. This audit checked whether the harness **ran**; it did not check whether its **inputs were valid**. They are not — see the corrected row in Part 1 and `epic-108`.
+1. The exact harness needed (`tests/evals/skill-compression/` — baseline vs. compressed skill variants, deterministic regex elements + LLM-judged dimensions) already exists in the repo. ~~It is inert only because its `outputs/` tree was never captured.~~ **Corrected 2026-08-13:** the missing `outputs/` tree is real but is *not* the only defect. This audit checked whether the harness **ran**; it did not check whether its **inputs were valid**. They are not — see the corrected row in Part 1 (tracked as unfiled work; the `epic-108` id was never allocated — see Status Since Publication).
 2. The empirical record is unambiguous about what is overhead: two live validation checks that structurally cannot fail, four declared-but-unconsumed governance config surfaces, 647 session files with no signal, and a 4.5:1 advisory-to-blocking review ratio. The load-bearing minority is equally clear.
 3. The consolidation targets for automated Plan-Review-Fix already have code: `lib/loop-convergence.mjs` (one caller, four prose reimplementations waiting to be absorbed), the routing sidecar, and the rigor-tier resolver. Conditional HITL is an extension of the existing tier axis, not a new mechanism.
 
@@ -32,7 +42,7 @@ External research (Anthropic 2024–2026, judge-bias literature, self-correction
 | Surface | What it measures | Type | State |
 |---|---|---|---|
 | `tests/skills/*` (~80 files) | Skill prose contains contract strings (routes, headings, `file:line` evidence clauses) | Deterministic string-presence | Live, dense |
-| `tests/evals/skill-compression/` | Baseline vs. conservative/summarized/aggressive skill variants; per-skill YAML rubrics (10 regex `required_elements` at 50% + 5 LLM-judged `quality_dimensions` at 50%) | Deterministic + LLM judge | **INERT — no `outputs/` tree; runner globs `outputs/<variant>/<skill>/output.md` and scores nothing.** **Corrected 2026-08-13 — the inputs are also broken.** Measured by md5 across the variant matrix: `summarized` is **byte-identical to `baseline`** for both brainstorm and specify; `summarized/plan.md` is **larger** than baseline (1002 vs 969 lines); `conservative/plan.md` and `aggressive/plan.md` **do not exist**. Of 12 matrix cells only **7** hold a genuinely distinct variant. Capturing outputs against this matrix would yield a summarized-vs-baseline comparison guaranteed to score identically — not because compression preserved quality, but because the files are the same bytes. That is worse than no data, because it reads as evidence that summarising is free. Repair tracked as `epic-108`. |
+| `tests/evals/skill-compression/` | Baseline vs. conservative/summarized/aggressive skill variants; per-skill YAML rubrics (10 regex `required_elements` at 50% + 5 LLM-judged `quality_dimensions` at 50%) | Deterministic + LLM judge | **INERT — no `outputs/` tree; runner globs `outputs/<variant>/<skill>/output.md` and scores nothing.** **Corrected 2026-08-13 — the inputs are also broken.** Measured by md5 across the variant matrix: `summarized` is **byte-identical to `baseline`** for both brainstorm and specify; `summarized/plan.md` is **larger** than baseline (1002 vs 969 lines); `conservative/plan.md` and `aggressive/plan.md` **do not exist**. Of 12 matrix cells only **7** hold a genuinely distinct variant. Capturing outputs against this matrix would yield a summarized-vs-baseline comparison guaranteed to score identically — not because compression preserved quality, but because the files are the same bytes. That is worse than no data, because it reads as evidence that summarising is free. Repair is unfiled — the `epic-108` id was never allocated. |
 | `tests/evals/comparison/` | Cross-agent LLM-judge results | LLM judge | **FROZEN** — judge results committed but all 5 source projects are empty dirs; non-reproducible |
 | `tests/evals/{configurable-governance, repomap, data-engineering, work-tracking, assess, test-strategies}` | Feature-specific fixtures | Mixed | Healthy; only repomap + skill-compression have npm scripts; **none in ci.yml** |
 | `tests/evals/{data-migration, data-pipeline, process-automation, web-api}` | — | — | Empty (`.gitkeep` only) |
@@ -222,7 +232,7 @@ Extend `/adev:work`'s state scan to open PRs, remote branches, and other-owner `
 
 ### Phase 1 — Build the regression harness (before touching any skill prose)
 
-1. Revive `tests/evals/skill-compression/` — but **repair the variant matrix first** (`epic-108` / issue-620). Two variants are byte-identical duplicates of baseline, one "summarized" variant is larger than the original, and two cells are missing entirely; capturing outputs before fixing that bakes a false "compression is free" result into the baseline. Then capture baseline `outputs/`, wire the deterministic layer into CI, and run the LLM-judge layer on demand with binary per-dimension verdicts.
+1. Revive `tests/evals/skill-compression/` — but **repair the variant matrix first** (unfiled; the `epic-108` / `issue-620` ids were never allocated). Two variants are byte-identical duplicates of baseline, one "summarized" variant is larger than the original, and two cells are missing entirely; capturing outputs before fixing that bakes a false "compression is free" result into the baseline. Then capture baseline `outputs/`, wire the deterministic layer into CI, and run the LLM-judge layer on demand with binary per-dimension verdicts.
    *Method note for the future: this study audited whether each harness **ran**. It did not audit whether each harness's **inputs were valid**. That is a distinct check, and it is where the skill-compression defect hid.*
 2. Assemble the 20–50 golden-task suite from the failure archaeology (Part 2) + reference solutions; outcome-graded; hold at ~100%.
 3. Materialize the `/adev:eval` default rubric as a file; restructure its Layer 3 from 0–5 scales to binary criteria; track judge–human agreement.
