@@ -85,7 +85,6 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 |-------|-------------|
 | `/adev:debug` | Systematic debugging — checks ADRs, specs, and architecture first |
 | `/adev:recover` | Diagnose and resume a stuck agent |
-| `/adev:standalone` | Disable lifecycle-gate enforcement for ad-hoc/exploratory work this session |
 
 ### Project Management
 
