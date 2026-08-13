@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Internal helper for `hooks/session-start.sh` and `hooks/lifecycle-gate-bash.sh`.
+ * Internal helper for `hooks/session-start.sh` and `hooks/lifecycle-gate.sh`.
  *
  * Parses `.context-index/.execution-state.json` and emits structured data on
  * stdout. The helper is a parsing subprocess only — it never owns the hook
@@ -12,7 +12,8 @@
  *
  * Modes:
  *   read         - Emits JSON.stringify(state) or "null". Used by
- *                  hooks/lifecycle-gate-bash.sh to check only .status.
+ *                  hooks/lifecycle-gate.sh (pre-edit/pre-bash/advisory) to
+ *                  check only .status.
  *   resume-block - Emits formatted resume-block markdown for active/blocked
  *                  status; empty stdout for idle/standalone/unknown/null.
  *                  Used by hooks/session-start.sh.

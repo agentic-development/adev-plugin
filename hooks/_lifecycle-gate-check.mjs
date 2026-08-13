@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Merged helper for lifecycle-gate-edit.sh and lifecycle-gate-bash.sh
- * (formerly two separate shims: _lifecycle-gate-check-edit.mjs and
- * _lifecycle-gate-check-bash.mjs — differed only in which lib function
- * they called).
+ * Merged helper for the pre-edit and pre-bash surfaces of
+ * hooks/lifecycle-gate.sh (formerly two separate shims:
+ * _lifecycle-gate-check-edit.mjs and _lifecycle-gate-check-bash.mjs —
+ * differed only in which lib function they called).
  *
  * Usage:
  *   node _lifecycle-gate-check.mjs --surface file

@@ -1,5 +1,5 @@
 /**
- * End-to-end status-gate tests for `hooks/lifecycle-gate-bash.sh`.
+ * End-to-end status-gate tests for `hooks/lifecycle-gate.sh` (pre-bash surface).
  *
  * Spec: .context-index/specs/features/agent-reliable-state-artifacts/execution-state-migration.spec.md
  *
@@ -31,7 +31,7 @@ function seedProject(projectRoot, state, userConfig = "lifecycle.gate=block") {
   );
 }
 
-describe("lifecycle-gate-bash.sh — status bypass per status", () => {
+describe("lifecycle-gate.sh pre-bash — status bypass per status", () => {
   it("active status: bypass, exit 0 even for mutating command", () => {
     const tmp = createTempDir();
     try {
@@ -45,7 +45,8 @@ describe("lifecycle-gate-bash.sh — status bypass per status", () => {
         progress: [],
         updated: "2026-05-11T00:00:00Z",
       });
-      const result = runHook("lifecycle-gate-bash.sh", {
+      const result = runHook("lifecycle-gate.sh", {
+        args: ["pre-bash"],
         cwd: tmp,
         env: { CLAUDE_TOOL_INPUT_command: "npm run build" },
       });
@@ -68,7 +69,8 @@ describe("lifecycle-gate-bash.sh — status bypass per status", () => {
         progress: [],
         updated: "2026-05-11T00:00:00Z",
       });
-      const result = runHook("lifecycle-gate-bash.sh", {
+      const result = runHook("lifecycle-gate.sh", {
+        args: ["pre-bash"],
         cwd: tmp,
         env: { CLAUDE_TOOL_INPUT_command: "rm -rf dist" },
       });
@@ -91,7 +93,8 @@ describe("lifecycle-gate-bash.sh — status bypass per status", () => {
         progress: [],
         updated: "2026-05-11T00:00:00Z",
       });
-      const result = runHook("lifecycle-gate-bash.sh", {
+      const result = runHook("lifecycle-gate.sh", {
+        args: ["pre-bash"],
         cwd: tmp,
         env: { CLAUDE_TOOL_INPUT_command: "npm run build" },
       });
@@ -114,7 +117,8 @@ describe("lifecycle-gate-bash.sh — status bypass per status", () => {
         progress: [],
         updated: "2026-05-11T00:00:00Z",
       });
-      const result = runHook("lifecycle-gate-bash.sh", {
+      const result = runHook("lifecycle-gate.sh", {
+        args: ["pre-bash"],
         cwd: tmp,
         env: { CLAUDE_TOOL_INPUT_command: "npm run build" },
       });
@@ -136,7 +140,8 @@ describe("lifecycle-gate-bash.sh — status bypass per status", () => {
         join(tmp, ".context-index", ".execution-state.json"),
         "{not valid json"
       );
-      const result = runHook("lifecycle-gate-bash.sh", {
+      const result = runHook("lifecycle-gate.sh", {
+        args: ["pre-bash"],
         cwd: tmp,
         env: { CLAUDE_TOOL_INPUT_command: "npm run build" },
       });
@@ -152,7 +157,8 @@ describe("lifecycle-gate-bash.sh — status bypass per status", () => {
       mkdirSync(join(tmp, ".context-index"), { recursive: true });
       writeFileSync(join(tmp, ".context-index", "manifest.yaml"), "project:\n  name: test\n");
       writeFileSync(join(tmp, ".context-index", "user-config"), "lifecycle.gate=block");
-      const result = runHook("lifecycle-gate-bash.sh", {
+      const result = runHook("lifecycle-gate.sh", {
+        args: ["pre-bash"],
         cwd: tmp,
         env: { CLAUDE_TOOL_INPUT_command: "npm run build" },
       });
