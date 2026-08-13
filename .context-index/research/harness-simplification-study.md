@@ -207,6 +207,12 @@ Extend `/adev:work`'s state scan to open PRs, remote branches, and other-owner `
 
 ### Phase 0 — Fix measurement (prerequisite for everything; small, independent PRs)
 
+> **Packaging correction, 2026-08-13.** Phase 0 was first written up as a single cross-cutting spec (`measurement-integrity.spec.md`). That spec was **dissolved** after two review rounds. It grouped seven fixes by shared *motivation* rather than shared *contract* — different files, different modules, different failure modes — and reviewers evaluate contracts, so it fragmented: round 1 blocked on report rotation, round 2 on the check-ID enum, and both were resolved by removing them rather than revising in place. Every remaining behavior touched files another spec's source manifest already claimed, so it added a competing ownership claim without adding traceability; of ten acceptance criteria one was met, and that one was implemented from its issue before the spec passed review.
+>
+> The two genuinely entangled behaviors were promoted to their own specs — `check-id-enum.spec.md` and `report-rotation.spec.md`, each blocked on a real architecture decision (ADR-0010 and ADR-0012 respectively). The remaining three proceed as direct fixes under the specs that already own their files.
+>
+> **The generalisable lesson, and a sharper version of this study's thesis:** the review gate earned its cost on entangled design — it caught an enum that would have deleted Check 1's outcome from the event log, and a retired-ID policy contradicted by 46 spellings in the live corpus. It was pure overhead on "fix a glob", "remove two map entries", "populate a field". The framework currently applies identical ceremony to both. That is the conditional-rigor argument in Part 3, demonstrated on live work rather than inferred from the corpus.
+
 1. Fix the `package.json` test glob (recovers ~50 silently-dropped unit tests; update ci.yml expectation).
 2. Append-only validate/review reports (`*.validate.<n>.md` or timestamped sections) — already a 2026-05-19 retro recommendation; unblocks rework measurement.
 3. Enum-enforce check IDs in `adev report`. (~~Drop the `adev/frontmatter-present` diagnostic~~ — retracted; see the corrected row in Part 2. The real work is fixing frontmatter placement in ~130 spec files under issue #3448.)
