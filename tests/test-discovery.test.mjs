@@ -130,4 +130,43 @@ describe("test discovery", () => {
     );
     assert.match(script, /run-tests\.mjs/, "npm test should delegate discovery to the runner");
   });
+
+  it("runs the bucket it announces (--evals and --all are not the default set)", () => {
+    // Same silent-shrink failure as the glob bug, one layer up: the runner
+    // computed `selected` from --evals/--all, printed "running 20 of 454", and
+    // then spawned `...files` — the DEFAULT bucket. `npm run test:evals`
+    // reported green having never executed a single eval harness, which is the
+    // opposite of what the issue-612 split exists to guarantee.
+    const src = readFileSync(join(REPO_ROOT, "scripts", "run-tests.mjs"), "utf8");
+    const spawnCall = src.slice(src.indexOf("spawn(process.execPath"));
+
+    assert.match(
+      spawnCall.slice(0, 200),
+      /\.\.\.selected/,
+      "the runner must spawn `selected`, not a fixed bucket",
+    );
+    assert.doesNotMatch(
+      spawnCall.slice(0, 200),
+      /\.\.\.files\b/,
+      "spawning `files` ignores --evals/--all and silently runs the default set",
+    );
+  });
+
+  it("actually selects a different, non-empty set for --evals", () => {
+    const { files, evals } = discoverTests();
+    assert.ok(evals.length > 0, "the evals bucket must not be empty");
+    // Non-vacuity: if the two buckets were equal, the assertion above would
+    // pass while --evals still ran the default set.
+    assert.notDeepEqual(
+      evals,
+      files,
+      "the evals bucket must be a distinct set from the default gate",
+    );
+    for (const f of evals) {
+      assert.ok(
+        f.startsWith("tests/evals/"),
+        `eval bucket must hold only tests/evals/ files, got ${f}`,
+      );
+    }
+  });
 });
