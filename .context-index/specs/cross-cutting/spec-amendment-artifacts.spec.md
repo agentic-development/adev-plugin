@@ -33,6 +33,7 @@ source-manifest:
     - tests/specify-amend.integration.test.mjs
     - tests/specify-amend.test.mjs
   computed-at: "2026-06-19T14:09:30.910Z"
+drift_detected: true
 ---
 
 # Cross-Cutting Live Spec: First-Class Spec Amendments
