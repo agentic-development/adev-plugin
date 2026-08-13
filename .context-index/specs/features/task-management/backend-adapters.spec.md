@@ -23,6 +23,17 @@ drift_detected: true
 
 ## Behavioral Contract
 
+### Flat ID allocation — all backends (issue-613)
+
+> Added 2026-08-13. `max(existing) + 1` is safe against concurrent writers of one file (the CAS lock) and across worktrees (`resolveStorageRoot`), but NOT across git branches: two sessions off the same baseline mint the same number, both are locally valid, and the collision only surfaces at merge. It did — two different `issue-589`s, and an `epic-108` referenced on main that existed on no board.
+
+- Flat ids are minted as `<prefix>-<6 base36 chars>` from `crypto.randomBytes` (`mintFlatId` in `lib/issues/id-utils.mjs`), re-rolled against the current board and bounded at 8 attempts (`ID_MINT_EXHAUSTED`).
+- Randomness — not a wider counter — is what removes the need for coordination: no shared state has to be consulted to know an id is unique, which is precisely what a branch cannot consult.
+- **Existing sequential ids are never rewritten.** They appear in merged commits, specs, and prose. `parseId` recognizes both shapes as `legacy: true`, so every caller — all of which branch on `.legacy`, never on the suffix — treats them identically.
+- On the beads backend the same scheme composes with br's uniqueness constraint on `external_ref`: a residual collision becomes a rejected write rather than a silent duplicate.
+- **Not covered:** tiered dotted ids (`e1.f2.t3`) still allocate via `nextChildId`'s max+1 and remain branch-unsafe. No board in this repo uses them (0 of 295 entries), so the fix was scoped to flat ids rather than speculatively redesigning the tiered model.
+- **Cost accepted:** board order is no longer implied by id. `render-markdown` groups by lexicographic id, which for random ids is arbitrary; chronological order comes from the `created` field.
+
 ### Preconditions
 
 - `.context-index/` exists with `manifest.yaml`
