@@ -1,6 +1,6 @@
 ---
 charter: unified-gates
-status: review-pending
+status: review-passed
 kind: behavioral
 risk_level: medium
 milestone:
