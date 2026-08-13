@@ -227,7 +227,12 @@ If no to Step 7 entirely: skip. Governance/ is optional.
 defaults (`granularity: per-behavior`, `escalation: true`) that `adev install` copies verbatim
 when it scaffolds `manifest.yaml`. `/adev:init` does not prompt for these values on greenfield —
 there is no per-project reason to differ from the domain default at first run — but does verify
-them.
+them: whenever this wizard writes or rewrites `manifest.yaml` (including the First Run path
+above, where an unconfigured manifest gets its placeholders "overwritten/filled in as the user
+answers each step"), it carries the `test_policy` block forward with its literal values rather
+than dropping it. Behavior 10 requires init to **write** this block on greenfield, not merely
+inherit it — so an absent `test_policy` block after any wizard write is itself a failure, not a
+silent fallback to `parseTestPolicy`'s per-behavior default.
 
 **Placeholder guard — `UNSUBSTITUTED_POLICY_PLACEHOLDER`.** This extends the unconfigured-state
 check at "Detecting First Run vs. Diagnostic Mode" above (`{{ project_name }}` etc.) with a
@@ -235,11 +240,14 @@ second, distinct check that runs as a post-write verification whenever `manifest
 `risk-policies.yaml` is written or confirmed during this step: unlike the unconfigured-state
 check, which treats a surviving placeholder as "run the wizard" (not an error), a surviving
 placeholder in the `test_policy` block or the `test_depth` fields is always a bug — the template
-values are already literal, so nothing should ever need substitution here. If the written
-`test_policy` block or any `policies.<level>.test_depth` field still contains an unsubstituted
-`{{ }}` placeholder, or the field is present only as a commented-out line (`# granularity: ...`,
-`# test_depth: ...`), fail init with `UNSUBSTITUTED_POLICY_PLACEHOLDER`, naming the offending
-field (e.g. `test_policy.granularity` or `policies.high.test_depth`) and its file.
+values are already literal, so nothing should ever need substitution here. Fail init with
+`UNSUBSTITUTED_POLICY_PLACEHOLDER`, naming the offending field (e.g. `test_policy.granularity`
+or `policies.high.test_depth`) and its file, when any of these hold after the write:
+- the `test_policy` block or any `policies.<level>.test_depth` field still contains an
+  unsubstituted `{{ }}` placeholder;
+- the field is present only as a commented-out line (`# granularity: ...`, `# test_depth: ...`);
+- the `test_policy` block is **absent** from `manifest.yaml` entirely after a wizard write (the
+  Behavior 10 write-not-inherit case above).
 
 ### Step 7b: External-skill discovery
 
@@ -832,13 +840,10 @@ Whichever value is accepted becomes the literal `test_policy.granularity` writte
 `manifest.yaml`, subject to the same `UNSUBSTITUTED_POLICY_PLACEHOLDER` guard as the greenfield
 path.
 
-> **Implementation note.** This step is currently agent-performed analysis (read the source
-> tree, count matches, reason about the convention) rather than a dedicated helper — the spec's
-> Interface Contract names a future `inferGranularity(projectRoot, sourceRoots)` function for
-> this, but no `adev test-policy` subverb wraps it yet. Per the cli-driver-surface charter, a
-> SKILL.md step with this shape of branching/lookup logic should eventually call a named CLI
-> verb rather than rely on agent judgment alone; wiring `inferGranularity` behind such a verb is
-> tracked as follow-up scope, not implemented in this task (see the plan's split-out note).
+> **Note.** This step is currently agent-performed analysis (read the source tree, count
+> matches, reason about the convention), not a dedicated helper. The spec's Interface Contract
+> names a future `inferGranularity(projectRoot, sourceRoots)` function for this; it will move
+> behind a named `adev test-policy` subverb once one exists, per the cli-driver-surface charter.
 
 **Final brownfield step:**
 ```
