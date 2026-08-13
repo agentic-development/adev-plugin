@@ -48,7 +48,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `implement` | Read a task's routing entry from the sidecar | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
-| `issues` | Issue-board subcommands (e.g. backend migrate) | `lib/cli/issues.mjs` |
+| `issues` | Issue-board subcommands (migrate, claim, release, stale) | `lib/cli/issues.mjs` |
 | `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Extract/retrieve/write project heuristics | `lib/cli/heuristics.mjs` |
@@ -439,16 +439,26 @@ adev coordination scan --json --owner "$USER/local"
 
 ### `issues`
 
-**Purpose:** Issue-board subcommands. Currently `migrate` (convert the board to a different backend). Most issue operations go through the `/adev:issues` skill.
+**Purpose:** Issue-board subcommands. Most issue operations go through the `/adev:issues` skill; these are the ones that need atomic writes or run inside another skill's preflight.
 
-**Signature:** `issues <subcommand> [args]` (e.g. `issues migrate`)
+**Signature:** `issues <subcommand> [args]`
+
+| Subcommand | Purpose |
+|---|---|
+| `migrate` | Convert the board to a different backend |
+| `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership via an atomic check-and-set. Exit `2` = refused (held by a live owner, or closed); exit `1` = usage error or `CLAIM_UNSUPPORTED_BACKEND` |
+| `release <id> --owner <name> [--force] [--json]` | Give up ownership. `branch`/`pr` are kept as the record of where the work went; `--force` releases another owner's claim |
+| `stale [--json]` | Report claims past their TTL, plus `unexpirable` rows (an owner with no `claimed_at`, which can never expire on their own). Read-only |
+
+Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
 **Example:**
 ```
-adev issues migrate --help
+adev issues claim issue-42 --owner "$USER/local" --branch "$(git branch --show-current)"
+adev issues stale --json
 ```
 
-**Implementation:** `lib/cli/issues.mjs` (+ `lib/cli/issues-migrate.mjs`). **Called by:** `/adev:issues`.
+**Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`). **Called by:** `/adev:issues`, and in preflight by `/adev:implement` and `/adev:debug`.
 
 ### `retro`
 

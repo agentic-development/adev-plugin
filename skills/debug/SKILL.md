@@ -161,8 +161,8 @@ This gate exists because it failed once: two agents independently diagnosed and 
 adev issues claim <issue-id> --owner "${USER}/local" --branch "$(git branch --show-current)"
 ```
 
-- **`0`** — yours. Proceed to Phase 2. Re-claiming as the same owner is idempotent, so resuming a debug session is free.
-- **`2`** — **refused.** Held by a different owner, or closed. **STOP before Phase 2.** Report the holding `owner`, `claimed_at`, and any recorded `branch`/`pr` so the user can go read that work instead of reproducing it. Do not investigate, do not propose a fix, and never take the claim over autonomously — that is the exact failure this phase prevents.
+- **`0`** — yours. Proceed to Phase 2. Re-claiming as the same owner is idempotent, so resuming a debug session is free. Exit `0` also covers an **inherited expired lease** — claims expire after `tasks.claim_ttl_minutes` (default 240) and a stale one is taken over automatically, with a `takeover` block naming the displaced owner. Surface it: a crashed session that is about to resume still thinks the bug is theirs.
+- **`2`** — **refused.** Held by a different owner whose lease is still **live**, or closed. **STOP before Phase 2.** Report the holding `owner`, `claimed_at`, and any recorded `branch`/`pr` so the user can go read that work instead of reproducing it. Do not investigate, do not propose a fix, and never force a live claim over autonomously — that is the exact failure this phase prevents.
 - **`1`** — usage error, unknown issue, or `CLAIM_UNSUPPORTED_BACKEND` (a backend with no atomic write). Warn and continue — a backend that cannot check-and-set cannot offer the guarantee, and blocking on it would train bypassing.
 
 If `tasks.backend` is not configured, skip this phase.
