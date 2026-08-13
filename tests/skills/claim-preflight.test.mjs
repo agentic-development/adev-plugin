@@ -72,8 +72,22 @@ for (const [label, path] of [
     );
     assert.match(
       section,
-      /never take (the claim )?over autonomously/i,
-      "must forbid autonomous takeover of a live claim",
+      /never force a live claim over autonomously/i,
+      "must forbid autonomously forcing a LIVE claim",
+    );
+    // Claims are leases (issue-610), so exit 0 can mean "you inherited an
+    // expired one". A skill that documents only the refusal reads as though
+    // exit 0 always means the issue was free, and the displaced owner —
+    // possibly a session about to resume — never gets surfaced.
+    assert.match(
+      section,
+      /expired lease/i,
+      "must distinguish an inherited expired lease from a fresh claim",
+    );
+    assert.match(
+      section,
+      /takeover/,
+      "must name the takeover payload that identifies the displaced owner",
     );
   });
 
