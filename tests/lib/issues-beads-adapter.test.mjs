@@ -72,7 +72,12 @@ describe("BeadsAdapter", () => {
     );
   });
 
-  it("mints the next id from the highest external_ref on the board", () => {
+  it("mints merge-safe ids that collide with nothing already on the board", () => {
+    // issue-613: ids are no longer `max(external_ref) + 1`. Sequential
+    // allocation is safe within one file and across worktrees but NOT across
+    // git branches — two sessions off one baseline mint the same number and
+    // only discover it at merge. Randomness needs no shared counter, which is
+    // the property a branch cannot otherwise obtain.
     const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
     const scan = [
       { id: "a", external_ref: "issue-1" },
@@ -80,9 +85,21 @@ describe("BeadsAdapter", () => {
       { id: "c", external_ref: "epic-2" },
       { id: "d" },
     ];
-    assert.equal(adapter._nextId("issue", scan), "issue-8");
-    assert.equal(adapter._nextId("epic", scan), "epic-3");
-    assert.equal(adapter._nextId("issue", []), "issue-1");
+
+    const minted = adapter._nextId("issue", scan);
+    assert.match(minted, /^issue-[a-z0-9]{6}$/, "prefix stays quotable");
+    assert.ok(
+      !["issue-1", "issue-7"].includes(minted),
+      "must not reuse an id already on the board",
+    );
+    assert.match(adapter._nextId("epic", scan), /^epic-[a-z0-9]{6}$/);
+    assert.match(adapter._nextId("issue", []), /^issue-[a-z0-9]{6}$/);
+
+    // The point of the change: independent mints do not agree.
+    const many = new Set(
+      Array.from({ length: 50 }, () => adapter._nextId("issue", scan)),
+    );
+    assert.equal(many.size, 50, "50 independent mints must all differ");
   });
 
   it("never throws on malformed or foreign agent_context", () => {

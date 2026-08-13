@@ -452,6 +452,16 @@ adev coordination scan --json --owner "$USER/local"
 
 Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
+#### Issue IDs are merge-safe
+
+New issues and epics get ids like `issue-7k3f9a` — a prefix plus six random base36 characters — on every backend.
+
+They used to be sequential (`issue-589`). That is safe within one file and across worktrees, but not across git **branches**: two sessions branching from the same board both compute the same next number, both look correct locally, and the duplicate only appears at merge. That happened, producing two different `issue-589`s. Randomness removes the need to consult a shared counter, which is the one thing a branch cannot do.
+
+Existing sequential ids are **never rewritten** — they are quoted in merged commits and specs. Both forms are valid and parse identically, forever.
+
+One trade-off worth knowing: ids no longer imply creation order. Sort by the `created` field, not by id.
+
 #### Backend capability matrix
 
 Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22.

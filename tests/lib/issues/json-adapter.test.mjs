@@ -333,11 +333,14 @@ describe("JsonAdapter — create()", () => {
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("creates an issue with auto-incremented legacy ID", async () => {
+  it("creates issues with distinct, merge-safe flat IDs", async () => {
     const a = await adapter.create({ title: "First", type: "task" });
     const b = await adapter.create({ title: "Second", type: "task" });
-    assert.equal(a.id, "issue-1");
-    assert.equal(b.id, "issue-2");
+    // issue-613: sequential max+1 collided across git branches. Ids are now
+    // random, so two branches cannot mint the same one without coordinating.
+    assert.match(a.id, /^issue-[a-z0-9]{6}$/);
+    assert.match(b.id, /^issue-[a-z0-9]{6}$/);
+    assert.notEqual(a.id, b.id);
   });
 
   it("persists the issue to tasks.json", async () => {
@@ -684,9 +687,9 @@ describe("JsonAdapter — createEpic / updateEpic", () => {
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("createEpic assigns an epic-N ID", async () => {
+  it("createEpic assigns a merge-safe epic ID", async () => {
     const e = await adapter.createEpic({ title: "Auth" });
-    assert.equal(e.id, "epic-1");
+    assert.match(e.id, /^epic-[a-z0-9]{6}$/);
     assert.equal(e.status, "open");
   });
 
