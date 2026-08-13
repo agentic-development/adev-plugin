@@ -38,6 +38,10 @@ function makeProject() {
 
 describe("parity — CRUD round-trip", () => {
   let dir, adapter;
+  // issue-613 made flat ids random rather than sequential, so these are
+  // captured at creation instead of assumed. The subject of these tests is the
+  // CRUD contract, not the id scheme.
+  let firstId, secondId;
   before(async () => {
     dir = makeProject();
     adapter = new JsonAdapter(dir);
@@ -45,15 +49,18 @@ describe("parity — CRUD round-trip", () => {
   });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("creates issues with auto-incremented IDs (legacy issue-N)", async () => {
+  it("creates issues with distinct, merge-safe flat IDs", async () => {
     const a = await adapter.create({ title: "First", type: "bug" });
     const b = await adapter.create({ title: "Second", type: "task", priority: 1 });
-    assert.equal(a.id, "issue-1");
-    assert.equal(b.id, "issue-2");
+    firstId = a.id;
+    secondId = b.id;
+    assert.match(a.id, /^issue-[a-z0-9]{6}$/);
+    assert.match(b.id, /^issue-[a-z0-9]{6}$/);
+    assert.notEqual(a.id, b.id);
   });
 
   it("retrieves by ID", async () => {
-    const got = await adapter.get("issue-1");
+    const got = await adapter.get(firstId);
     assert.equal(got.title, "First");
     assert.equal(got.type, "bug");
   });
@@ -80,13 +87,13 @@ describe("parity — CRUD round-trip", () => {
 
   it("sorts by priority then creation date", async () => {
     const all = await adapter.list({});
-    // issue-2 has priority 1, issue-1 has priority 2 (default).
-    assert.equal(all[0].id, "issue-2");
-    assert.equal(all[1].id, "issue-1");
+    // "Second" has priority 1, "First" has priority 2 (default).
+    assert.equal(all[0].id, secondId);
+    assert.equal(all[1].id, firstId);
   });
 
   it("updates fields and preserves untouched ones", async () => {
-    const updated = await adapter.update("issue-1", { priority: 0 });
+    const updated = await adapter.update(firstId, { priority: 0 });
     assert.equal(updated.priority, 0);
     assert.equal(updated.title, "First");
     assert.equal(updated.type, "bug");
@@ -94,20 +101,20 @@ describe("parity — CRUD round-trip", () => {
 
   it("rejects USE_CLOSE_METHOD when status: closed is passed to update", async () => {
     await assert.rejects(
-      adapter.update("issue-2", { status: "closed" }),
+      adapter.update(secondId, { status: "closed" }),
       (err) => err.code === "USE_CLOSE_METHOD"
     );
   });
 
   it("close() advances status to closed and appends to notes", async () => {
-    const closed = await adapter.close("issue-2", "done");
+    const closed = await adapter.close(secondId, "done");
     assert.equal(closed.status, "closed");
     assert.match(closed.notes, /Closed: done/);
   });
 
   it("rejects update on a closed issue (ISSUE_CLOSED)", async () => {
     await assert.rejects(
-      adapter.update("issue-2", { priority: 0 }),
+      adapter.update(secondId, { priority: 0 }),
       (err) => err.code === "ISSUE_CLOSED"
     );
   });
