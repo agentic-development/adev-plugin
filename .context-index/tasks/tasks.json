@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 187,
+  "seq": 266,
   "epics": [
     {
       "id": "epic-1",
@@ -802,6 +802,28 @@
       "status": "open",
       "created": "2026-08-12T21:34:31.356Z",
       "updated": "2026-08-12T21:34:31.356Z"
+    },
+    {
+      "id": "epic-105",
+      "title": "test-suite-triage: failures surfaced by restoring full test discovery",
+      "status": "open",
+      "created": "2026-08-12T21:59:02.267Z",
+      "updated": "2026-08-12T21:59:02.267Z"
+    },
+    {
+      "id": "epic-106",
+      "title": "PR Review Experience — surface lifecycle signals at PR time",
+      "status": "open",
+      "created": "2026-08-12T22:08:41.623Z",
+      "updated": "2026-08-13T00:34:09.925Z",
+      "notes": "undefined\n\n--- Cross-link: epic-107 (2026-08-12) ---\nepic-107 (\"coordination-gate: prevent two agents doing the same work at once\") shares the attach-metadata-to-PRs surface — see issue-609, \"Bind issues to branch and PR\". Different goal (coordination vs review), overlapping mechanism; align on the binding format rather than inventing two.\n\nRelevant history: issue-529 in this epic was a DUPLICATE filed in ignorance of existing board state — a third instance of the same failure epic-107 was created to fix (the first two being PR #214 / duplicate PR #215, both fixing issue-582)."
+    },
+    {
+      "id": "epic-107",
+      "title": "coordination-gate: prevent two agents doing the same work at once",
+      "status": "open",
+      "created": "2026-08-12T23:52:04.149Z",
+      "updated": "2026-08-12T23:52:04.149Z"
     }
   ],
   "issues": [
@@ -1480,6 +1502,19 @@
       "updated": "2026-04-27T00:00:00.000Z"
     },
     {
+      "id": "issue-184",
+      "title": "/adev:validate ghost validation — PASS fabricated when no implementation occurred",
+      "status": "closed",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-32",
+      "dependencies": [],
+      "notes": "Three failure modes: (1) Check 1.5 treats unchanged source manifest SHA as PASS — unchanged = not implemented; (2) /adev:plan writes pre-checked [x] ACs, Check 12 passes without implementation; (3) validate agent fabricates line-number citations by inferring from spec instead of reading files. Evidence: subagent-cost-routing.plan.md untracked/never committed, implementation files untouched, validation report cites skills/route/SKILL.md:158 and hooks/session-capture.sh:166 which do not exist. Fix: Check 1.5 must FAIL when SHA unchanged; /adev:plan must write [ ] not [x]; Check 2 must grep actual file content before citing lines.",
+      "next_action": null,
+      "created": "2026-04-27T00:00:00.000Z",
+      "updated": "2026-04-27T00:00:00.000Z"
+    },
+    {
       "id": "issue-185",
       "title": "Review updated adev:build spec (revision 4)",
       "status": "closed",
@@ -1508,19 +1543,6 @@
       ],
       "notes": "",
       "next_action": "Run /adev:build --spec .context-index/specs/features/strategic-planning/adev-build-skill.spec.md after review passes",
-      "created": "2026-04-27T00:00:00.000Z",
-      "updated": "2026-04-27T00:00:00.000Z"
-    },
-    {
-      "id": "issue-184",
-      "title": "/adev:validate ghost validation — PASS fabricated when no implementation occurred",
-      "status": "closed",
-      "priority": 1,
-      "type": "bug",
-      "epicId": "epic-32",
-      "dependencies": [],
-      "notes": "Three failure modes: (1) Check 1.5 treats unchanged source manifest SHA as PASS — unchanged = not implemented; (2) /adev:plan writes pre-checked [x] ACs, Check 12 passes without implementation; (3) validate agent fabricates line-number citations by inferring from spec instead of reading files. Evidence: subagent-cost-routing.plan.md untracked/never committed, implementation files untouched, validation report cites skills/route/SKILL.md:158 and hooks/session-capture.sh:166 which do not exist. Fix: Check 1.5 must FAIL when SHA unchanged; /adev:plan must write [ ] not [x]; Check 2 must grep actual file content before citing lines.",
-      "next_action": null,
       "created": "2026-04-27T00:00:00.000Z",
       "updated": "2026-04-27T00:00:00.000Z"
     },
@@ -2022,16 +2044,14 @@
       "updated": "2026-05-05T00:00:00.000Z"
     },
     {
-      "id": "issue-273",
-      "title": "Implement eval harness scaffolds (scenarios + rubrics) for 4 new eval projects",
+      "id": "issue-271",
+      "title": "Validate Check 2: detect spec-vs-code contradictions in edge case claims",
       "status": "open",
-      "priority": 3,
+      "priority": 2,
       "type": "feature",
-      "dependencies": [
-        "issue-272"
-      ],
-      "notes": "Deferred from eval-projects charter v2. Requires all 4 project repos to exist first. Create tests/evals/<domain>/ directories with scenario .md files and rubric .yaml files per skill, following the data-engineering harness pattern.",
-      "next_action": "Wait for v1 project capabilities to be complete, then /adev:specify",
+      "dependencies": [],
+      "notes": "Eval discovered that validate Check 2 walks acceptance criteria but does not cross-reference spec behavioral claims (e.g. \"columns are NULL\") against actual code patterns (e.g. ELSE 0 in CASE). Debug skill caught the ELSE 0 semantic ambiguity that validate missed. Add a sub-check that extracts claimed edge-case behavior from the spec's edge case table, locates the implementing code path, and flags contradictions (spec says NULL but code has ELSE 0/COALESCE/IFNULL). Pattern-match heuristic is sufficient — does not need full symbolic analysis.",
+      "next_action": "Spec this as a new capability in the validation charter, then /adev:plan",
       "created": "2026-05-06T00:00:00.000Z",
       "updated": "2026-05-06T00:00:00.000Z"
     },
@@ -2048,14 +2068,16 @@
       "updated": "2026-05-06T00:00:00.000Z"
     },
     {
-      "id": "issue-271",
-      "title": "Validate Check 2: detect spec-vs-code contradictions in edge case claims",
+      "id": "issue-273",
+      "title": "Implement eval harness scaffolds (scenarios + rubrics) for 4 new eval projects",
       "status": "open",
-      "priority": 2,
+      "priority": 3,
       "type": "feature",
-      "dependencies": [],
-      "notes": "Eval discovered that validate Check 2 walks acceptance criteria but does not cross-reference spec behavioral claims (e.g. \"columns are NULL\") against actual code patterns (e.g. ELSE 0 in CASE). Debug skill caught the ELSE 0 semantic ambiguity that validate missed. Add a sub-check that extracts claimed edge-case behavior from the spec's edge case table, locates the implementing code path, and flags contradictions (spec says NULL but code has ELSE 0/COALESCE/IFNULL). Pattern-match heuristic is sufficient — does not need full symbolic analysis.",
-      "next_action": "Spec this as a new capability in the validation charter, then /adev:plan",
+      "dependencies": [
+        "issue-272"
+      ],
+      "notes": "Deferred from eval-projects charter v2. Requires all 4 project repos to exist first. Create tests/evals/<domain>/ directories with scenario .md files and rubric .yaml files per skill, following the data-engineering harness pattern.",
+      "next_action": "Wait for v1 project capabilities to be complete, then /adev:specify",
       "created": "2026-05-06T00:00:00.000Z",
       "updated": "2026-05-06T00:00:00.000Z"
     },
@@ -3928,14 +3950,15 @@
     {
       "id": "issue-553",
       "title": "Wire lib/test-strategies/gaming.mjs detectors into a real gate or hook",
-      "status": "open",
+      "status": "in_progress",
       "priority": 1,
       "type": "feature",
       "dependencies": [],
-      "notes": "From the 2026-08-10 audit. lib/test-strategies/gaming.mjs ships 8 detectors (DISABLED_TESTS, EMPTY_ASSERTIONS, SWALLOWED_ASSERTIONS, CONDITIONAL_ASSERTIONS, BOUNDARY_MOCKING, CI_BYPASS, CREDENTIAL_ABSENT_PASS, AGENT_SKIP) and is imported ONLY by tests/. No CLI verb, no hook, no gate, no validate check invokes it. Enforcement today is agent prose: skills/write-test/SKILL.md tells the agent to check \"the 4 shared cross-strategy gaming patterns\" while the library ships 8 — prose/code drift. Evidence that prose does not bind: the no-silent-skip rule is recited verbatim in 11 alteryx test docstrings (\"FAILS the gate — never a silent skip — charter invariant\") and violated in ~10 sibling files, including one file whose docstring forbids pytest.skip 300 lines before calling it, and one test that converts a real downstream failure into a skip. By contrast ambev’s single deterministic control (a fail-closed PostToolUse hook validating YAML params) works reliably on every edit. Lesson: any policy that matters must be a deterministic gate or hook, not skill prose.",
-      "next_action": null,
+      "notes": "Working branch feat/test-strategies/gaming-gate-enforcement. Spec: gaming-detector-gate-enforcement.spec.md under test-strategies charter (rev 4). Design: regression-only PostToolUse hook (blocks only NEW gaming violations vs git HEAD baseline) after empirical scan found 103/462 existing tests/** files already trip the 8 detectors unmodified.",
+      "next_action": "Spec written (review-pending). Run /adev:review-specs, then /adev:plan.",
       "created": "2026-08-11T00:45:46.643Z",
-      "updated": "2026-08-11T00:45:46.643Z"
+      "updated": "2026-08-13T02:48:19.504Z",
+      "spec_ref": ".context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md"
     },
     {
       "id": "issue-554",
@@ -4387,6 +4410,348 @@
       "next_action": null,
       "created": "2026-08-12T21:36:22.146Z",
       "updated": "2026-08-13T02:41:11.122Z"
+    },
+    {
+      "id": "issue-589",
+      "title": "Author one regression rubric per skill epic-102 intends to change, BEFORE changing it",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-108",
+      "dependencies": [],
+      "notes": "MEASURED 2026-08-13. 32 rubric files exist across 7 eval directories, which overstates coverage badly. Only THREE are per-skill compression-regression rubrics — tests/evals/skill-compression/rubrics/{brainstorm,plan,specify}.yaml — covering 3 of 30 skills, and one of those three (plan) sits on the broken variant matrix in issue-620. The other 29 rubrics score different things: whole-workflow scenarios (work-tracking, configurable-governance), domain-level project comparisons (comparison/), infrastructure honesty (integration-sandbox), and a data-domain set (data-engineering). A rubric that scores a six-step lifecycle scenario tells you the pipeline ran; it cannot tell you that /adev:route's scoring degraded after its prose was compressed.\n\nTHIRTEEN skills have no rubric mention at all: codehealth, deploy, init, learn, prototype, reconcile, recover, repomap, research, retro, sample, sync, using-adev.\n\nTHE OVERLAP THAT MAKES THIS URGENT: the skills epic-102 queues for demotion, merging and deletion are almost exactly the skills with no coverage. issue-573 targets codehealth, repomap, document, deploy, sync; issue-574 targets learn and issues; issue-575 merges eval into validate --score, assess into init --brownfield, and reduces using-adev; issue-576 deletes skills/standalone; issue-571 rewrites prototype. Of those, codehealth / repomap / deploy / sync / learn / using-adev / prototype / standalone have NO rubric, and issues / eval / assess / document are touched only by scenario rubrics. That is not a coincidence — they are the peripheral skills, which is both why they look expendable and why nobody built evals for them. The consequence is that the simplification sweep would run exactly where the regression net is thinnest.\n\nSCOPE: not 30 rubrics. One rubric per skill epic-102 intends to touch — roughly 10 — each authored BEFORE that skill is modified, so the comparison is against a captured baseline rather than a memory of how it used to behave. Cheap to write: the existing scenarios (tests/evals/skill-compression/scenarios/*.md) are self-contained prompts carrying simulated user responses, so runs are reproducible without a human in the loop. Follow the existing rubric shape — regex-matched required_elements (deterministic, 50%) plus weighted quality_dimensions (50%) — with the judged half restructured into BINARY per-criterion verdicts rather than 1-5 scales, per the external research on judge reliability.\n\nSEQUENCING: this is the real gate on epic-102, not a nice-to-have. A rubric authored after a skill is compressed measures the compressed skill against itself. Priority order should follow epic-102's own: 573 and 575 first (they touch the most skills), then 574, 571, 576.\n\nNUANCE for issue-576 (delete skills/standalone): a deleted skill needs a different test, not a compression rubric — assert that the CLI path it wrapped still works and that no caller is stranded. Worth stating explicitly so nobody writes a rubric for a file that is about to vanish.\n\nReference target from the research digest: 20-50 tasks drawn from real failures, each with a reference solution, outcome-graded, held near 100% as a regression gate. Three compression rubrics is roughly a tenth of that floor.",
+      "next_action": null,
+      "created": "2026-08-13T02:46:28.089Z",
+      "updated": "2026-08-13T02:46:28.089Z"
+    },
+    {
+      "id": "issue-590",
+      "title": "Governance config drift: reviewer-overlay and check-count tests fail (expects 12 bundled checks)",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-105",
+      "dependencies": [],
+      "notes": "Surfaced by issue-560 (test discovery fix). Before: sh collapsed the ** glob so 339 of 416 files ran. After: 410 run (6 nested-project fixture suites excluded by rule). Measured 2026-08-12: full suite 5448 tests / 33 fail; the 71 newly-included files run alone give 1112 tests / 31 fail; the original 339-file set alone gives 1 fail (a concurrency flake). So ~31 failures are in code that has never executed in CI. Failing: \"loads 12 bundled checks + 2 project checks + 1 disabled default\" and \"project overlay disables consistency-analyzer and caps security-reviewer severity\", plus \"/adev:review-specs install + run\" and \"/adev:validate install + run\". The check-count expectation predates check-set-restructure.spec.md, which removed Checks 3, 5, 6, 7, 10, 12, 13 — so the live registry no longer has 12 bundled checks. Likely a stale expectation rather than a code regression, but the reviewer-overlay failure needs its own look. These are the highest-value finds: real drift in governance code that no CI run has exercised.\n\nRE-SCOPED 2026-08-12: these tests live in tests/evals/configurable-governance/, an eval harness — not the default gate. I previously called this \"the highest-value find\"; that was wrong, since it was never part of npm test and is now in the opt-in eval bucket. The 12-bundled-checks expectation still looks stale against check-set-restructure.spec.md (which removed Checks 3, 5, 6, 7, 10, 12, 13), and \"/adev:review-specs install + run\" and \"/adev:validate install + run\" still fail — worth investigating when the eval bucket is next run, at eval priority rather than gate priority.",
+      "next_action": null,
+      "created": "2026-08-12T21:59:02.297Z",
+      "updated": "2026-08-12T22:05:00.183Z"
+    },
+    {
+      "id": "issue-591",
+      "title": "Eval suites depend on local machine state (session JSONL, fixtures) and fail on a clean checkout",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-105",
+      "dependencies": [],
+      "notes": "Surfaced by issue-560 (test discovery fix). Before: sh collapsed the ** glob so 339 of 416 files ran. After: 410 run (6 nested-project fixture suites excluded by rule). Measured 2026-08-12: full suite 5448 tests / 33 fail; the 71 newly-included files run alone give 1112 tests / 31 fail; the original 339-file set alone gives 1 fail (a concurrency flake). So ~31 failures are in code that has never executed in CI. Failing: \"Real Token Analysis\" (asserts session JSONL files exist and contain token data — depends on local ~/.claude session logs), \"Work Tracking Eval: Fixture Setup\" (Scenarios B/C/F), and \"Integration gaming detection on fixture content\". Corroborates the earlier audit finding that tests/evals/token-optimization/results/last-run.json embeds an absolute /Users/dpavancini path. These suites cannot pass on CI or another developer's machine. Either gate them behind an explicit opt-in or make them generate their own fixtures.",
+      "next_action": null,
+      "created": "2026-08-12T21:59:02.307Z",
+      "updated": "2026-08-12T21:59:02.307Z"
+    },
+    {
+      "id": "issue-592",
+      "title": "SKILL.md prose drift: token-optimization Strategy 1 conditional-section assertions fail for plan and build",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-105",
+      "dependencies": [],
+      "notes": "Surfaced by issue-560 (test discovery fix). Before: sh collapsed the ** glob so 339 of 416 files ran. After: 410 run (6 nested-project fixture suites excluded by rule). Measured 2026-08-12: full suite 5448 tests / 33 fail; the 71 newly-included files run alone give 1112 tests / 31 fail; the original 339-file set alone gives 1 fail (a concurrency flake). So ~31 failures are in code that has never executed in CI. Failing: \"identifies conditional sections in plan SKILL.md\" and \"identifies conditional sections in build SKILL.md\" under Strategy 1: Conditional Section Loading. The skills have been restructured since the assertions were written. Same class as issue-584 — a test/prose contract that drifted while nothing was running it.",
+      "next_action": null,
+      "created": "2026-08-12T21:59:02.316Z",
+      "updated": "2026-08-12T21:59:02.316Z"
+    },
+    {
+      "id": "issue-593",
+      "title": "Test isolation: cli/diagnose.test.mjs passes alone (29/29) but fails under full-suite concurrency",
+      "status": "open",
+      "priority": 2,
+      "type": "bug",
+      "epicId": "epic-105",
+      "dependencies": [],
+      "notes": "Surfaced by issue-560 (test discovery fix). Before: sh collapsed the ** glob so 339 of 416 files ran. After: 410 run (6 nested-project fixture suites excluded by rule). Measured 2026-08-12: full suite 5448 tests / 33 fail; the 71 newly-included files run alone give 1112 tests / 31 fail; the original 339-file set alone gives 1 fail (a concurrency flake). So ~31 failures are in code that has never executed in CI. \"adev diagnose on clean tree exits 0 with All checks passed.\" is the single failure in the ORIGINAL 339-file set, and it reproduces only when many files run concurrently — the file passes 29/29 in isolation. It uses makeTempProject(), so it is not reading the repo working tree; the interference is likely shared state (temp dirs, cwd, or shared lifecycle/board storage) across concurrently-running files. Note this failure predates the discovery fix: npm test was already intermittently red. Also: unit suites JsonAdapter concurrent multi-update, domains/constants, and UNIT_PROFILE failed in the newly-included set and may share this cause — check isolation before assuming logic bugs.",
+      "next_action": null,
+      "created": "2026-08-12T21:59:02.326Z",
+      "updated": "2026-08-12T21:59:02.326Z"
+    },
+    {
+      "id": "issue-594",
+      "title": "Four genuine unit failures in previously-unrun code (overlay type count, UNIT_PROFILE permitted_tools, JsonAdapter concurrency)",
+      "status": "closed",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-105",
+      "dependencies": [],
+      "notes": "The accurate result of restoring test discovery (issue-560). After separating eval harnesses into their own bucket, the default gate runs 392 files / 5106 tests with exactly 4 failures — all in code that had never executed in CI, not 31 as first reported. (1) tests/lib/domains — \"exports all 7 overlay types\" fails 8 !== 7: an overlay type was added without updating the never-run test; \"exports structured overlay types set\" likely the same cause. (2) UNIT_PROFILE — \"permitted_tools is a non-empty array\" evaluates falsy, so a profile ships with empty or undefined permitted_tools. (3) JsonAdapter — \"survives N concurrent appenders without corrupting tasks.json\" fails with \"child failed\"; this one may be a real concurrency defect in the issue board rather than a stale expectation, and the board is shared across git worktrees, so it deserves the closest look. Items 1 and 2 are probably stale expectations; item 3 is the one that could be a live bug.; Closed: All four verified passing on main after rebase: domains/constants + json-adapter.atomic 11/11, UNIT_PROFILE suite 112/112, full default gate 5121 tests / 0 failures.",
+      "next_action": null,
+      "created": "2026-08-12T22:05:00.193Z",
+      "updated": "2026-08-13T00:39:22.385Z"
+    },
+    {
+      "id": "issue-595",
+      "title": "Add .github/pull_request_template.md with a review packet",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-106",
+      "dependencies": [],
+      "notes": "No PR template or CONTRIBUTING exists — .github/ holds only workflows/. Body quality today is good (see #209) but unenforced; it depends on which agent wrote it.\n\nCodify the What/Verification structure #209 demonstrates, plus three fields it lacks: risk areas and trust boundaries touched; which sections the human verified line-by-line; and what the author cannot explain (a blank answer there is the first thing to ask about in review).\n\nRationale: LinearB 2026 benchmark (8.1M PRs) reports 32.7% of AI-assisted PRs merging within 30 days vs 84.5% manual, with ~5x reviewer pickup time — attributed to trust/orientation cost, not code quality. Research: .context-index/research/pr-review-experience.md rec 1.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.644Z",
+      "updated": "2026-08-12T22:08:41.644Z"
+    },
+    {
+      "id": "issue-596",
+      "title": "Point validate/implement gh pr create at the PR template",
+      "status": "open",
+      "priority": 1,
+      "type": "task",
+      "epicId": "epic-106",
+      "dependencies": [
+        "issue-595"
+      ],
+      "notes": "skills/validate/SKILL.md:566 and skills/implement/SKILL.md:649 both emit a bare \"gh pr create --base <target-branch>\" with no body contract, so the agent improvises the PR body each time. Point both at the template from the sibling issue so the packet gets filled rather than reinvented. Research: .context-index/research/pr-review-experience.md rec 1.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.660Z",
+      "updated": "2026-08-12T22:08:41.765Z"
+    },
+    {
+      "id": "issue-597",
+      "title": "adev pr body: roll commit trailers up into a spec-scoped provenance table",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-106",
+      "dependencies": [
+        "issue-529",
+        "issue-588"
+      ],
+      "notes": "Every commit carries Spec:, Plan-task:, Issue:, Author-type:, Operator: trailers (manifest.yaml:168-178) and CI validates them per-commit — but nothing rolls them up, so a reviewer opening a 50-file PR gets no map of which hunks trace to which spec.\n\nAggregate over data that already exists: group commits by Spec:, show Plan-task: coverage, flag any commit lacking Spec:. Converts a large diff into a handful of spec-scoped reading units. Foundation for the routing-map and validate-verdict issues. Research: .context-index/research/pr-review-experience.md rec 2.\n\n--- Forge-neutrality constraint (2026-08-12) ---\nMUST emit markdown to stdout and know nothing about any forge. Its inputs (commit trailers, <spec>.routing.json, the validate report) are adev artifacts that exist in every adev project by construction, so the content layer is 100% provider-agnostic — it works on GitLab, Gitea, Bitbucket, Forgejo, a bare remote, or email-a-patch with zero changes. Whoever pipes stdout into a forge is a separate, project-specific concern.\n\nDo NOT build a forge adapter as part of this issue. When adev is first run against a non-GitHub forge, add a registry following lib/issues/registry.mjs (json/file/beads -> adapter, graceful fallback when the binary is missing), which itself follows lib/provider/registry.mjs. NAMING TRAP: do not call the knob `provider` — that word already means agent harness (claude-code / opencode / codex / cursor / copilot) in lib/provider/registry.mjs. Use `forge:` or `completion.forge:`.\n\nNote also that lib/milestones.mjs's `execGh` is NOT a portability seam despite appearances: it is named for gh and passes gh-shaped argv ([\"pr\",\"list\",\"--head\",...]), so it is a test injection point only. A real adapter needs semantic verbs (postReviewComment(id, body)), not argv passthrough.\n\n--- Depends on issue-588 (wired 2026-08-12) ---\n.githooks/post-commit is the hook that emits the Spec:/Plan-task:/Author-type:/Operator: trailers issue-597 aggregates. The session-capture installer currently corrupts it (sentinel wrapper leaves a dangling `if`, bash syntax error at line 43), so commits made through a corrupted hook may carry no trailers at all. Fix the emitter before building the aggregator on top of it.\n\n--- Constraint from issue-582 (NOT a blocking dep) ---\nissue-582 (Spec: trailer -> node -e command injection) is marked in_progress on the board but the fix ALREADY LANDED on main via PR #214: .githooks/post-commit:61 now exports ADEV_PC_SPECS_TOUCHED and lib/session-summary.mjs reads env.ADEV_PC_SPECS_TOUCHED — no JS interpolation. No blocking dep added because the work is done; the board status is stale.\n\nCONSTRAINT THAT SURVIVES: issue-582 also observed that the trailer value is emitted into YAML frontmatter UNQUOTED, so a Spec: value containing ] , or a newline corrupts downstream frontmatter parsing. issue-597 consumes the same trailers — it MUST reuse the sanitized path and quote on output, never re-parse raw git trailer text.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.673Z",
+      "updated": "2026-08-13T00:34:09.823Z"
+    },
+    {
+      "id": "issue-598",
+      "title": "adev pr body: surface /adev:route scores as a reviewer attention map",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-106",
+      "dependencies": [
+        "issue-597",
+        "issue-528"
+      ],
+      "notes": "<spec>.routing.json already holds per-task selected_agent plus scores for spec_completeness, pattern_coverage, blast_radius and novelty, with rationale — a reviewer attention map computed BEFORE the code was written, then discarded.\n\nEmit the human-only / assisted-agent / high-blast-radius tasks and their file sets at the top of the brief with an explicit \"read these hunks first\". This is the most differentiated thing the repo can do that generic review bots cannot. Research: .context-index/research/pr-review-experience.md rec 3.\n\n--- Depends on issue-528 (wired 2026-08-12) ---\n~20 legacy plans carry inline **Routing:** blocks with no <plan-stem>.routing.json sidecar. Until they are migrated, issue-598 has no sidecar to read for those plans and would silently emit an EMPTY attention map — the worst failure mode for a reviewer aid (looks like \"nothing risky here\" rather than \"no data\"). Either wait for issue-528, or explicitly parse the legacy inline form and label plans with no routing data as UNKNOWN rather than low-risk.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.689Z",
+      "updated": "2026-08-13T00:34:09.617Z"
+    },
+    {
+      "id": "issue-599",
+      "title": "adev pr body: attach the /adev:validate verdict to the PR",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-106",
+      "dependencies": [
+        "issue-597",
+        "issue-496"
+      ],
+      "notes": "/adev:validate produces a structured PASS/FAIL report — which checks ran, quality-gate output, test counts — pre-PR, and it is thrown away. Attaching it lets a reviewer safely NOT re-verify what was already verified: the cheapest available reduction in review load. Research: .context-index/research/pr-review-experience.md rec 4.\n\n--- Depends on issue-496 (wired 2026-08-12) ---\nThe /adev:validate report write is not atomic (no write-temp + rename). Reading it to attach a verdict to the PR can catch a torn file. issue-496 makes the write atomic.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.700Z",
+      "updated": "2026-08-13T00:34:09.706Z"
+    },
+    {
+      "id": "issue-600",
+      "title": "[GitHub-specific] Make the CI advisory comment sticky instead of delete-and-repost",
+      "status": "open",
+      "priority": 2,
+      "type": "task",
+      "epicId": "epic-106",
+      "dependencies": [
+        "issue-597"
+      ],
+      "notes": ".github/workflows/ci.yml finds the previous hygiene comment, DELETEs it via the API, then posts a fresh one. Every push therefore fires a new-comment notification and destroys any reply thread on the old comment.\n\nReplace with \"gh pr comment --edit-last --create-if-none\" (verified available in the installed gh) plus a stable leading marker such as <!-- adev:pr-brief --> since --edit-last targets the last comment by the current user. Merge with the pr-brief output so a PR carries exactly one advisory bot comment. Keep continue-on-error: true and the \"Advisory only — does not block merge\" footer. Research: .context-index/research/pr-review-experience.md rec 5.\n\n--- Scope (2026-08-12) ---\nGITHUB-SPECIFIC BY NATURE. `gh pr comment --edit-last` and the .github/workflows/ci.yml wiring have no portable equivalent: GitLab uses `glab mr note`, and Gerrit has no PR object at all. This issue is adev-plugin's own CI, NOT framework behavior — a downstream GitLab or Gerrit user must not read it as something adev ships. The portable half is issue-597 (content to stdout); only the delivery is GitHub-bound.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.714Z",
+      "updated": "2026-08-12T23:47:21.977Z"
+    },
+    {
+      "id": "issue-601",
+      "title": "Advisory PR size budget with stated exception classes",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-106",
+      "dependencies": [],
+      "notes": "Warn (never block) above ~400 additions or ~15 files, naming the legitimate exception classes — mechanical sweep, generated provider mirror, migration — and asking the author to state which applies.\n\nMust not block: 96% of this repo's changed lines live in large PRs and several are legitimately mechanical (#193 provider mirrors, #190 hygiene remediation). The real target is the omnibus class like #187 (\"Universal skill extensions sweep + branch backlog\", 5,135 additions / 179 files / 23 commits), which is a batching decision rather than a size necessity. Research: .context-index/research/pr-review-experience.md rec 6.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.723Z",
+      "updated": "2026-08-12T22:08:41.723Z"
+    },
+    {
+      "id": "issue-602",
+      "title": "State a reading order in the PR body for multi-commit PRs",
+      "status": "open",
+      "priority": 3,
+      "type": "task",
+      "epicId": "epic-106",
+      "dependencies": [],
+      "notes": "Large PRs here bundle 13-25 commits with no stated reading order. Plans already contain a ## Parallelization section grouping tasks — a natural source of review slices. Derive a suggested reading sequence from the plan task order.\n\nThis is the low-cost approximation of stacked diffs. Evaluate Graphite only if reading order alone proves insufficient; adopting it adds an external tooling dependency and would warrant an ADR. Research: .context-index/research/pr-review-experience.md rec 7.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.732Z",
+      "updated": "2026-08-12T22:08:41.732Z"
+    },
+    {
+      "id": "issue-603",
+      "title": "Add AGENTS.md sync target and .github/skills to steer Copilot code review",
+      "status": "open",
+      "priority": 3,
+      "type": "feature",
+      "epicId": "epic-106",
+      "dependencies": [],
+      "notes": "GitHub Copilot code review reads repository AGENTS.md automatically (changelog 2026-06-18), and agent skills at .github/skills/<name>/SKILL.md went GA (2026-07-29).\n\nGap: AGENTS.md does not exist here and is not declared as a sync target — manifest.yaml:18-21 lists exactly one target, CLAUDE.md (format: claude). So the automatic-context feature currently cannot fire on this repo.\n\nStep 1: add AGENTS.md as a sync target and run /adev:sync. Step 2: add .github/skills/<name>/SKILL.md encoding adev's own anti-patterns (no-inline-Node, ESM-only, version parity) so the built-in reviewer enforces those instead of generic advice. Verify Actions-minutes billing first per the 2026-04-27 changelog. Research: .context-index/research/pr-review-experience.md rec 8.\n\n--- Coordinate with issue-258 (epic-49) ---\nissue-258 extends /adev:sync to inject lifecycle advisory text into non-Claude-Code sync targets including copilot-instructions.md. issue-603 extends sync targets for AGENTS.md plus .github/skills. Same skill, same surface, two issues — whoever lands second will be editing the other's code. Coordinate the sync-target list change once rather than twice.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.743Z",
+      "updated": "2026-08-13T00:34:09.871Z"
+    },
+    {
+      "id": "issue-604",
+      "title": "[NEEDS HUMAN APPROVAL] Evaluate aligning trailers with the Assisted-by convention",
+      "status": "open",
+      "priority": 4,
+      "type": "task",
+      "epicId": "epic-106",
+      "dependencies": [],
+      "notes": "The Linux kernel merged Documentation/process/coding-assistants.rst with 7.0, prescribing \"Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]\" and forbidding agents from adding Signed-off-by. This repo's \"Author-type: agent/claude-code\" + \"Operator:\" pair is already MORE informative than that standard — it names both agent class and accountable human — but carries no model version, which would improve retro analysis.\n\nBLOCKED ON HUMAN DECISION: this changes the provenance trailer contract enforced by .githooks/commit-msg and .github/workflows/ci.yml. CLAUDE.md marks the hook protocol and provenance contract human-approval-only. Logged as an option, not a recommendation. Research: .context-index/research/pr-review-experience.md rec 9.",
+      "next_action": null,
+      "created": "2026-08-12T22:08:41.754Z",
+      "updated": "2026-08-12T22:08:41.754Z"
+    },
+    {
+      "id": "issue-605",
+      "title": "RECONCILE: fold harness-study Phase 4 into epic-102; resolve eval direction conflict (575 vs study Phase 1)",
+      "status": "open",
+      "priority": 1,
+      "type": "task",
+      "dependencies": [],
+      "notes": "RECONCILIATION 2026-08-12: a concurrent workstream (epic-102, \"Skill surface consolidation & provider-agnostic plumbing simplification\", issues 568-581, PRs #210-#214) was already active on this shared board and was not visible to the harness-simplification study, which queried only its own epics. Overlaps recorded below.\n\nDuplicated analysis: the harness-simplification study (PR #217) independently reached several conclusions epic-102 had already itemised — CLI verb consolidation (issue-578), hoisting Load Skill Extensions boilerplate (issue-577), consolidating the 3 lifecycle-gate hooks (issue-579), and demoting deterministic skills to CLI verbs (issues 573/574). The study adds evidence those issues lack (measured per-check no-op rates, reviewer yield, loop-convergence duplication, the 47 HITL stop-points inventory) but should not spawn a parallel workstream.\n\nActions: (1) fold study Phase 4 into epic-102 as evidence attached to the existing issues rather than new ones; (2) decide the eval direction — issue-575 merges eval into validate --score while the study Phase 1 wants eval built up as the regression harness; (3) keep epic-101 (measurement) and epic-104 (frontmatter producers) separate, since epic-102 does not cover them; (4) establish a check for open PRs and other epics before filing, which would have prevented duplicate PR #215.\n\nStructural remedy filed as epic-107 (issue-606, issue-607, issue-608, issue-609, issue-610).",
+      "next_action": null,
+      "created": "2026-08-12T23:35:41.671Z",
+      "updated": "2026-08-12T23:52:04.273Z"
+    },
+    {
+      "id": "issue-606",
+      "title": "Pre-flight scan: /adev:work Step 1 should read open PRs, remote branches, and other-owner in_progress issues",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-107",
+      "dependencies": [],
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nHIGHEST VALUE, LOWEST COST — needs no new data model. Step 1 currently scans four purely local signals (execution state, plan tasks, lifecycle states, recent sessions). Add: gh pr list (degrade silently when gh is absent or unauthenticated), git branch -r, and issues whose status is in_progress under a different owner. This alone would have surfaced epic-102 and PR #210 before any work started — which is where the real waste was. The duplicate PR cost an hour; the duplicated ANALYSIS cost far more.",
+      "next_action": null,
+      "created": "2026-08-12T23:52:04.173Z",
+      "updated": "2026-08-12T23:52:04.173Z"
+    },
+    {
+      "id": "issue-607",
+      "title": "Resolve execution state across worktrees like the issue board already does",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-107",
+      "dependencies": [],
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nSmallest change with the largest effect: point lib/execution-state.mjs at resolveStorageRoot() from lib/issues/resolve-root.mjs (already written, already tested, already handles the --git-common-dir case), or scan sibling worktrees and merge. Today the state scan is blind by construction, not by accident. Decide deliberately whether execution state should be SHARED (one lease per repo) or MERGED (per-worktree records, aggregated for display) — sharing changes semantics for legitimate parallel worktree work, which /adev:implement --parallel depends on.",
+      "next_action": null,
+      "created": "2026-08-12T23:52:04.194Z",
+      "updated": "2026-08-12T23:52:04.194Z"
+    },
+    {
+      "id": "issue-608",
+      "title": "adev issues claim <id>: atomic check-and-set ownership, enforced in implement/debug preflight",
+      "status": "open",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-107",
+      "dependencies": [
+        "issue-594"
+      ],
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nModel it on the existing requireGate() pattern — a code-enforced precondition that exits 2 and refuses to proceed — rather than inventing a new concept. Verb sets status=in_progress plus owner and claimed_at atomically, and refuses when already claimed by a live owner. /adev:implement and /adev:debug call it in preflight. This is the check that would have refused work on issue-582. BLOCKED BY the JsonAdapter concurrency bug: claim semantics on a shared board are unverified while \"survives N concurrent appenders without corrupting tasks.json\" is failing.",
+      "next_action": null,
+      "created": "2026-08-12T23:52:04.209Z",
+      "updated": "2026-08-12T23:52:04.250Z"
+    },
+    {
+      "id": "issue-609",
+      "title": "Bind issues to branch and PR so \"is someone doing this?\" is answerable offline",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-107",
+      "dependencies": [],
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nBoard items already carry spec_ref; add branch and pr, written when work starts and when a PR opens. Makes ownership answerable without the network and gives /adev:status and /adev:hygiene a real ownership view. Precedent that the repo can hold contributors to commit-level metadata: the commit-msg hook already blocks commits touching source-manifest-tracked files without a Spec: trailer (it fired twice during this session).",
+      "next_action": null,
+      "created": "2026-08-12T23:52:04.222Z",
+      "updated": "2026-08-12T23:52:04.222Z"
+    },
+    {
+      "id": "issue-610",
+      "title": "Claim leases need a TTL and a release path, or a dead session blocks an issue forever",
+      "status": "open",
+      "priority": 2,
+      "type": "feature",
+      "epicId": "epic-107",
+      "dependencies": [
+        "issue-608"
+      ],
+      "notes": "Root cause established 2026-08-12 after two agents independently fixed the same p0 vulnerability an hour apart (PR #214 and duplicate PR #215, both for issue-582), and after a whole concurrent epic (epic-102, issues 568-581, PRs #210-#214) stayed invisible to a study pursuing the same goal. The issue board resolves storage via `git rev-parse --git-common-dir` (lib/issues/resolve-root.mjs) and IS shared across worktrees. Execution state does NOT: lib/execution-state.mjs reads <projectRoot>/.context-index/.execution-state.json, which is worktree-local. Measured live: /adev:work Step 1 reported status \"idle\" in this worktree while four epic-102 issues were in_progress and five PRs were open. Second, behavioural half: the board DID carry the signal (issue-582 was already in_progress) and nothing re-reads an issue at the moment work begins, so stale local knowledge won over the shared record.\n\nWithout expiry, the first crashed or abandoned session permanently locks an issue and the claim gate becomes something people bypass — which is worse than no gate, because it trains bypassing. Needs: claimed_at timestamp, a configurable TTL, an explicit adev issues release <id>, and a stale-claim report surfaced by /adev:status.",
+      "next_action": null,
+      "created": "2026-08-12T23:52:04.239Z",
+      "updated": "2026-08-12T23:52:04.261Z"
+    },
+    {
+      "id": "issue-611",
+      "title": "Wire inferGranularity(projectRoot, sourceRoots) behind an adev test-policy subverb for brownfield init",
+      "status": "open",
+      "priority": 2,
+      "type": "task",
+      "epicId": "epic-103",
+      "spec_ref": ".context-index/specs/features/test-strategies/test-depth-policy.spec.md",
+      "dependencies": [],
+      "notes": "Follow-up from Plan-task 14 (Init integration - test_policy emission). skills/init/SKILL.md's brownfield Test Policy Inference step (Step 7, after Step 7 governance) is currently agent-performed analysis only (read the source tree, count test-file matches, reason about naming convention) — NOT backed by a real inferGranularity(projectRoot, sourceRoots) function. The spec's Interface Contract names this function but no `adev test-policy` subverb wraps it yet (existing subcommands: resolve, assert-assigned, explain, show, set — see lib/cli/test-policy.mjs). Per the cli-driver-surface charter, this branching/lookup logic belongs behind a named CLI verb rather than agent judgment alone. Scope: implement inferGranularity() in lib/, add an `adev test-policy infer-granularity` (or similar) subverb, and update skills/init/SKILL.md's brownfield step to call it instead of describing agent-performed analysis.",
+      "next_action": "Design inferGranularity(projectRoot, sourceRoots) signature and wire it behind a named adev test-policy subverb.",
+      "created": "2026-08-13T00:16:32.060Z",
+      "updated": "2026-08-13T00:18:26.478Z"
+    },
+    {
+      "id": "issue-612",
+      "title": "DECISION: infra-gated suites (Postgres/docker) fail hard, making npm test red without docker — pick a policy",
+      "status": "closed",
+      "priority": 1,
+      "type": "task",
+      "epicId": "epic-105",
+      "dependencies": [],
+      "notes": "Surfaced by issue-560 (test discovery fix). Before: sh collapsed the ** glob so 339 of 416 files ran. After: 410 run (6 nested-project fixture suites excluded by rule). Measured 2026-08-12: full suite 5448 tests / 33 fail; the 71 newly-included files run alone give 1112 tests / 31 fail; the original 339-file set alone gives 1 fail (a concurrency flake). So ~31 failures are in code that has never executed in CI. Affected suites: tests/evals/integration-sandbox/* (Phase 1 fixture setup, Phase 3 live-Postgres execution, reality-check fixture + end-to-end Check 12), which expect PostgreSQL on port 5433 with seeded data. They fail hard rather than skip — consistent with the project preference that integration tests must never silently self-skip. Consequence: the single quality gate (npm test) is red on any machine without docker-compose running. Options: (a) keep them in the default run and require docker for a green suite; (b) split into npm run test:integration with an explicit, documented tag and keep npm test unit-only; (c) keep them in-run but let the harness fail with a clear \"infra required\" message. This is a policy call, not a code fix — do not resolve it by silently excluding the suites.\n\nCORRECTED 2026-08-12 after review. My original framing was wrong: adev-plugin has NO Postgres dependency (root package.json has only tree-sitter deps). The Postgres/docker belongs to tests/evals/integration-sandbox/, a self-contained FIXTURE PROJECT with its own package.json, its own pg dependency, and its own docker-compose.yml, described as a \"minimal Node.js + PostgreSQL fixture for testing whether adev skills write honest integration tests against real external infrastructure\". Its driver even documents \"run `npm run db:up` first\" — it is a manually-run eval, never intended for automated npm test. Resolution: tests/evals/** is now a separate opt-in bucket (npm run test:evals), so the default gate no longer depends on machine state. DECISION TAKEN: evals are excluded from the default npm test and run via npm run test:evals. This is NOT the silent-skip pattern to avoid — the split is printed on every run, asserted by tests/test-discovery.test.mjs (buckets must partition every file on disk with no overlap), and reachable by an explicit script. Reversible via npm run test:all.; Closed: Resolved by the eval/default bucket split in scripts/run-tests.mjs; decision recorded on the issue.\n\n[Renumbered from issue-589 on 2026-08-13: that ID was independently minted on main for unrelated work (regression rubrics) while this entry sat on the unmerged chore/board-sync-epic-106 branch.]",
+      "next_action": null,
+      "created": "2026-08-12T21:59:02.287Z",
+      "updated": "2026-08-12T22:05:00.172Z"
+    },
+    {
+      "id": "issue-613",
+      "title": "Issue-board ID allocation is not safe across git branches — two sessions minted the same issue-589",
+      "status": "open",
+      "priority": 1,
+      "type": "bug",
+      "epicId": "epic-107",
+      "dependencies": [],
+      "notes": "Reproduced 2026-08-13. lib/issues/json-adapter.mjs derives new IDs via _nextIssueId(issues) — max(existing)+1 against the CURRENT FILE. _withCas protects concurrent writers of one file, and resolveStorageRoot() makes the board shared across worktrees, but nothing protects allocation across git BRANCHES: a session on chore/board-sync-epic-106 minted issue-589 (infra-gated suites decision, epic-105) while a session on main minted issue-589 (regression rubrics, epic-108) from the same 588 baseline. Both were valid locally; the collision only surfaced at merge time. Same hazard for epics (branch took 105-107 while main later referenced an epic-108 that exists on no board).\n\nRESOLVED THIS INSTANCE by renumbering the branch-side entry to issue-612 during the merge (see the board-merge PR), but the mechanism will re-collide the next time board writes live on an unmerged branch.\n\nOPTIONS: (a) make IDs merge-safe (monotonic clock/random suffix, or a per-session prefix) — breaks the human-friendly issue-N convention; (b) keep sequential IDs but add an `adev issues renumber --against <ref>` verb that detects and re-mints collisions at merge time, plus a CI check that fails a PR whose board adds IDs already present on the base branch; (c) policy: board writes only ever land on main via short-lived PRs, never accumulate on long-lived branches (the practice that failed here — this branch carried 26 entries).\n\nRecommend (b)+(c): tooling to make the collision detectable and a policy to keep the window small. (a) is the only true fix but costs the readable IDs the whole framework quotes in prose, commits, and specs.",
+      "next_action": null,
+      "created": "2026-08-13T02:53:29.603Z",
+      "updated": "2026-08-13T02:53:29.603Z"
     }
   ]
 }
