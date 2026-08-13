@@ -229,6 +229,109 @@ describe("merge-guard hook", () => {
     assert.equal(exitCode, 2);
   });
 
+  describe("read-only merge plumbing is not a merge", () => {
+    let gitDir;
+
+    beforeEach(() => {
+      // Standing ON a protected branch is the condition that made the guard
+      // fire; these commands must still be allowed there.
+      gitDir = createTempGitRepo({ branch: "main" });
+      writeFixture(gitDir, ".context-index/manifest.yaml", "merge_policy: pr\n");
+    });
+
+    afterEach(() => cleanupTempDir(gitDir));
+
+    // `git\s+merge\b` also matched `merge-base` and friends, because `-` is a
+    // word boundary. These write nothing — blocking a query is pure friction,
+    // and a guard that cries wolf is one people learn to bypass.
+    for (const cmd of [
+      "git merge-base --is-ancestor abc123 origin/main",
+      "git merge-tree abc123 def456",
+      "git merge-file a.txt b.txt c.txt",
+    ]) {
+      it(`allows \`${cmd.split(" ").slice(0, 2).join(" ")}\` on a protected branch`, () => {
+        const { exitCode } = runHook("merge-guard.sh", {
+          cwd: gitDir,
+          stdin: commandInput(cmd),
+        });
+        assert.equal(exitCode, 0, `${cmd} writes nothing and must not be blocked`);
+      });
+    }
+
+    it("still blocks the porcelain `git merge` on a protected branch", () => {
+      const { exitCode } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("git merge feature/x"),
+      });
+      assert.equal(exitCode, 2, "non-vacuity: the real merge is still caught");
+    });
+  });
+
+  describe("gh pr merge policy", () => {
+    let gitDir;
+
+    beforeEach(() => {
+      gitDir = createTempGitRepo({ branch: "feat/x" });
+    });
+
+    afterEach(() => cleanupTempDir(gitDir));
+
+    function withManifest(body) {
+      writeFixture(gitDir, ".context-index/manifest.yaml", body);
+    }
+
+    it("blocks by default, and says what the actual knob is", () => {
+      withManifest("merge_policy: pr\n");
+      const { exitCode, stderr } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("gh pr merge 42 --merge"),
+      });
+      assert.equal(exitCode, 2, "default stays blocked — merging is where review is enforced");
+      assert.match(
+        stderr,
+        /allow_agent_pr_merge/,
+        "must name the knob; the old message said 'open a pull request instead', which is not actionable when you ARE merging one",
+      );
+      assert.doesNotMatch(
+        stderr,
+        /open a pull request instead/,
+        "must not give advice the operator cannot act on",
+      );
+    });
+
+    it("reports the base the command names, not an arbitrary protected branch", () => {
+      // The clause used to sit inside a loop over protected branches and ignore
+      // the loop variable, so it attributed every refusal to whichever branch
+      // came first — naming `main` for a PR that never targeted it.
+      withManifest("merge_policy: pr\n");
+      const { stderr } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("gh pr merge 42 --base release/next --merge"),
+      });
+      assert.match(stderr, /release\/next/, "the named base must appear in the message");
+    });
+
+    it("allows the merge when the project opts in", () => {
+      withManifest("merge_policy: pr\nallow_agent_pr_merge: true\n");
+      const { exitCode } = runHook("merge-guard.sh", {
+        cwd: gitDir,
+        stdin: commandInput("gh pr merge 42 --merge --admin"),
+      });
+      assert.equal(exitCode, 0);
+    });
+
+    it("only the literal `true` opts in", () => {
+      for (const value of ["false", "yes", "1", '"true "']) {
+        withManifest(`merge_policy: pr\nallow_agent_pr_merge: ${value}\n`);
+        const { exitCode } = runHook("merge-guard.sh", {
+          cwd: gitDir,
+          stdin: commandInput("gh pr merge 42"),
+        });
+        assert.equal(exitCode, 2, `"${value}" must not be read as consent`);
+      }
+    });
+  });
+
   describe("git commit guard", () => {
     let gitDir;
 
