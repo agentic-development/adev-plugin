@@ -6,6 +6,7 @@ import {
   isIntegrationTestFile,
   runGamingDetectors,
   reconstructAfterContent,
+  diffNewViolations,
 } from "../../../lib/test-strategies/gaming-gate.mjs";
 
 describe("isTestFile", () => {
@@ -89,5 +90,27 @@ describe("reconstructAfterContent", () => {
   it("unknown tool: returns null (fail-open signal)", () => {
     const after = reconstructAfterContent({ tool: "NotebookEdit", before: "a" });
     assert.equal(after, null);
+  });
+});
+
+describe("diffNewViolations", () => {
+  it("reports a violation present in after but not before as new", () => {
+    const before = "test('x', () => { assert.ok(true); });";
+    const after = "test('x', () => { it.skip('y', () => {}); assert.ok(true); });";
+    const result = diffNewViolations(before, after, "tests/cli/context.test.mjs");
+    assert.ok(result.newViolations.some((v) => v.patternId === "DISABLED_TESTS"));
+  });
+
+  it("does not report a pre-existing violation left untouched as new", () => {
+    const content = "it.skip('y', () => {});";
+    const result = diffNewViolations(content, content, "tests/cli/context.test.mjs");
+    assert.equal(result.newViolations.length, 0);
+  });
+
+  it("is insensitive to line-number shift from an unrelated earlier edit", () => {
+    const before = "it.skip('y', () => {});";
+    const after = "// unrelated new comment\nit.skip('y', () => {});";
+    const result = diffNewViolations(before, after, "tests/cli/context.test.mjs");
+    assert.equal(result.newViolations.length, 0);
   });
 });
