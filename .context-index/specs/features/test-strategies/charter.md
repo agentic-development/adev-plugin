@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 2
-updated: 2026-04-20
+revision: 3
+updated: 2026-08-13
 ---
 
 # Feature Charter: Test Strategies

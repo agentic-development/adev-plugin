@@ -14,6 +14,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { run } from "../../lib/cli/test-policy.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
+import { writeRoutingSidecar } from "../../lib/plan-routing-sidecar.mjs";
 
 // Real-subprocess invocation of the CLI, mirroring the pattern established in
 // tests/cli/verify.test.mjs — asserts against actual process stdout/exit code rather than the
@@ -169,6 +170,35 @@ test("resolve degrades to no escalation when .routing.json is absent (ROUTING_SI
     const result = await run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t8"] });
     assert.equal(result.escalated, false);
     assert.equal(result.escalation_skipped, "no-routing-entry");
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("resolve records the routing dimensions/scores and explain surfaces them back (Interface Contract test_depth_assigned.dimensions)", async () => {
+  const dir = await createTempDir();
+  try {
+    await seedPlanWithSpec(dir, {
+      planBody: "## Task Structure\n\n### Task 13: N [specialist: none]\n**Files:**\n- Create: `src/n.ts`\n",
+    });
+    const planAbs = join(dir, "plan.plan.md");
+    writeRoutingSidecar(planAbs, [
+      {
+        task_id: "t13",
+        selected_agent: "auto-agent",
+        scores: { spec_completeness: 0.9, pattern_coverage: 0.8, blast_radius: 0.2, novelty: 0.3 },
+        rationale: "well-specified, low blast radius",
+      },
+    ]);
+
+    await run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t13"] });
+
+    const explained = await run({ projectRoot: dir, argv: ["explain", "--plan", "plan.plan.md", "--task-id", "t13"] });
+    assert.deepEqual(
+      explained.dimensions,
+      { spec_completeness: 0.9, pattern_coverage: 0.8, blast_radius: 0.2, novelty: 0.3 },
+      "explain must surface the same dimensions recorded by resolve",
+    );
   } finally {
     await cleanupTempDir(dir);
   }
