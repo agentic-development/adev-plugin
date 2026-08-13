@@ -28,3 +28,4 @@
 {"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T17:14:26.430Z"}
 {"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-6","status":"done","notes":"docs/governance.md gates.yaml gate-schema section + 5 doc assertions","ts":"2026-08-13T17:23:26.218Z"}
 {"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-7","status":"done","notes":"shipped-defaults parity sweep + doctor-clean fresh scaffold (both shapes)","ts":"2026-08-13T17:32:17.132Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-13T17:34:20.174Z"}
