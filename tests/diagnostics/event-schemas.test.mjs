@@ -125,6 +125,17 @@ test('getRequiredFields returns the array for known types, undefined for unknown
   assert.equal(getRequiredFields('not-a-real-event'), undefined);
 });
 
+test('test_depth_assigned requires plan, task_id, depth, floor_inputs, floor_legs', () => {
+  const fields = getRequiredFields('test_depth_assigned');
+  for (const f of ['plan', 'task_id', 'depth', 'floor_inputs', 'floor_legs']) {
+    assert.ok(fields.includes(f), `expected ${f} in required fields`);
+  }
+});
+
+test('test_depth_assigned is a known event type', () => {
+  assert.equal(isKnownEventType('test_depth_assigned'), true);
+});
+
 test('REQUIRED_FIELDS_BY_EVENT and its arrays are frozen (immutable)', () => {
   assert.ok(Object.isFrozen(REQUIRED_FIELDS_BY_EVENT), 'top-level map must be frozen');
   for (const type of KNOWN_EVENT_TYPES) {

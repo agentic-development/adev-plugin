@@ -1,0 +1,21 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const skill = readFileSync(new URL("../../skills/implement/SKILL.md", import.meta.url), "utf8");
+
+test("implement SKILL.md calls adev test-policy resolve before write-test dispatch", () => {
+  assert.match(skill, /adev test-policy resolve/);
+});
+
+test("implement SKILL.md calls adev test-policy assert-assigned after accepting a suite", () => {
+  assert.match(skill, /adev test-policy assert-assigned/);
+});
+
+test("implement SKILL.md fails the step with MISSING_DEPTH_ASSIGNMENT on a missing event", () => {
+  assert.match(skill, /MISSING_DEPTH_ASSIGNMENT/);
+});
+
+test("implement SKILL.md passes the resolved depth into the write-test subagent prompt", () => {
+  assert.match(skill, /resolved depth into the write-test/i);
+});

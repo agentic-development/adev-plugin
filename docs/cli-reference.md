@@ -2,7 +2,7 @@
 
 # CLI Reference
 
-> Last updated: 2026-06-02
+> Last updated: 2026-08-12
 
 Reference for the `adev` command-line verbs. There are two audiences:
 
@@ -55,6 +55,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
 | `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
 | `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
+| `test-policy` | Resolve/inspect/set the test depth policy for a plan task | `lib/cli/test-policy.mjs` |
 
 ---
 
@@ -458,6 +459,76 @@ adev cost summary --spec .context-index/specs/features/auth/login.spec.md --form
 
 **Implementation:** `lib/cli/cost.mjs`. **Called by:** `/adev:build`.
 
+### `worktree`
+
+**Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
+
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+
+**Example:**
+```
+adev worktree add --slug login-group-a
+adev worktree remove --slug login-group-a --force
+```
+
+**Implementation:** `lib/cli/worktree.mjs`. **Called by:** `/adev:implement --parallel`.
+
+### `parallel`
+
+**Purpose:** Decision helpers for the `/adev:implement --parallel` orchestration — group parsing and deterministic merge order, orchestrator-pollution assertion, per-group completeness verification, the concurrency cap, and re-run collision detection. The skill orchestrates; these verbs compute the checks.
+
+**Signature:** `parallel <groups|baseline|assert-clean|verify|max-parallel|collision> [flags]` — e.g. `parallel groups --plan <path>`, `parallel baseline`, `parallel assert-clean --base-head <sha>`, `parallel verify --branch <b> --base <sha> --tasks <ids> --done <ids>`, `parallel collision --slug <slug>`.
+
+**Example:**
+```
+adev parallel groups --plan .context-index/specs/features/auth/login.plan.md
+```
+
+**Implementation:** `lib/cli/parallel.mjs`. **Called by:** `/adev:implement --parallel`.
+
+### `test-policy`
+
+**Purpose:** The Test Depth Policy CLI surface — resolves the effective test depth for a plan
+task (chain → escalation → floor), records the assignment as a `test_depth_assigned`
+lifecycle event, and lets operators inspect or edit the manifest-level `test_policy` and
+`risk-policies.yaml` `test_depth` configuration. See
+[Test Strategies — Test depth policy](test-strategies.md#test-depth-policy--a-second-independent-axis)
+and [Configuration Reference](configuration.md#test_policy-test-depth--granularity).
+
+**Signature:**
+- `test-policy resolve --plan <path> --task-id <id>` — sole depth-resolution entry point and
+  the **sole writer** of `test_depth_assigned`. Prints the assignment as JSON.
+- `test-policy assert-assigned --plan <path> --task-id <id>` — presence check only: fails with
+  `MISSING_DEPTH_ASSIGNMENT` if no assignment event exists for the task. Does **not** verify
+  the authored suite against the assigned depth.
+- `test-policy show [--module <slug>]` — prints the effective policy with the layer that
+  supplied each field, and the effective sensitive-path set with built-in vs. configured
+  entries distinguished.
+- `test-policy set --module <slug> --test_depth <depth>` / `test-policy set --granularity
+  <granularity>` — validated, workspace-guarded, atomic write (temp-file + `rename()`,
+  re-parsed to confirm round-trip before commit).
+- `test-policy explain --plan <path> --task-id <id>` — reports, from the most recent
+  assignment event: the winning chain layer, whether escalation fired (or why it was
+  skipped), the contributing routing scores, and the floor as **two orthogonal facets
+  rendered together**: `floor_applied` (plus the holding `floor_legs`) — whether any evaluated
+  floor leg held — and `floor_inputs` (`"available"` / `"unavailable"`) — whether the
+  sensitive-path leg had a target-path input to evaluate at all. The two facets are not
+  exclusive: a `risk_level: high` task with no parseable `**Files:**` block is both *floored*
+  and *path-leg-not-evaluated*. Read the floor as advisory (see
+  [Test Strategies](test-strategies.md#test-depth-policy--a-second-independent-axis)) — the
+  shipped JSON itself (`{ depth, source, escalated, escalation_skipped, floor_applied,
+  floor_legs, floor_inputs }`) carries no separate "advisory" field or label string, only
+  those facets. `explain` never echoes `targetPaths` or any task file path — its output has no
+  such field.
+
+**Example:**
+```
+adev test-policy resolve --plan .context-index/specs/features/auth/login.plan.md --task-id t3
+adev test-policy explain --plan .context-index/specs/features/auth/login.plan.md --task-id t3
+```
+
+**Implementation:** `lib/cli/test-policy.mjs`. **Called by:** `/adev:implement` (`resolve`,
+`assert-assigned`), operators directly (`show`, `set`, `explain`).
 ### `worktree`
 
 **Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).

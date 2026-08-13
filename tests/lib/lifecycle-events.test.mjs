@@ -80,3 +80,8 @@ test('KNOWN_EVENT_TYPES contains both new variants', () => {
   assert.ok(KNOWN_EVENT_TYPES.includes('spec_revised'));
   assert.ok(KNOWN_EVENT_TYPES.includes('human_approval_required'));
 });
+
+test('CANONICAL_EVENTS includes test_depth_assigned', () => {
+  assert.ok(CANONICAL_EVENTS.has('test_depth_assigned'),
+    'test_depth_assigned must be registered as a canonical event discriminator');
+});

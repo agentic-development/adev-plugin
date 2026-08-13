@@ -119,6 +119,20 @@ specialists: []
   #     - "*.css"
 
 # ============================================================================
+# Test Policy
+# Controls test granularity and risk-based depth escalation, consumed by
+# /adev:plan, /adev:write-test, /adev:implement, and `adev test-policy`.
+# These are literal defaults, not placeholders — /adev:init verifies they
+# stay literal and fails with UNSUBSTITUTED_POLICY_PLACEHOLDER otherwise.
+# Per-module overrides: modules[].test_policy.granularity (see Modules above).
+# See .context-index/specs/features/test-strategies/test-depth-policy.spec.md
+# ============================================================================
+
+test_policy:
+  granularity: per-behavior   # per-task | per-behavior | per-spec
+  escalation: true            # allow risk-based depth escalation on top of granularity
+
+# ============================================================================
 # Test Strategies
 # Declare which test strategies apply to this project.
 # Strategies customize how /adev:write-test and /adev:plan handle TDD

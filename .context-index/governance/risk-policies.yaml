@@ -17,16 +17,19 @@ policies:
     require_hitl_approval: true
     review_mode: full
     validate_mode: full
+    test_depth: thorough
     additional_gates: []           # gate IDs from gates.yaml
   medium:
     require_review: true
     require_hitl_approval: false
     review_mode: full
     validate_mode: full
+    test_depth: standard
     additional_gates: []
   low:
     require_review: true           # low-risk still reviews — but quickly (was: require_review false → gate stall under strict mode)
     require_hitl_approval: false
     review_mode: quick
     validate_mode: quick
+    test_depth: minimal
     additional_gates: []

@@ -127,6 +127,109 @@ When [`/adev:plan`](skill-reference.md) assigns a strategy to a task, it follows
 
 Every assignment logs its source so you can audit why a task got a particular strategy.
 
+### Test depth policy — a second, independent axis
+
+Test *strategy* (above) answers "what kind of test." Test *depth policy* answers two
+different questions: how many suites a spec's tasks share (**granularity**), and how many
+case classes each suite must cover (**depth**). Both are configured under `test_policy` in
+`manifest.yaml` and `test_depth` in `governance/risk-policies.yaml` — see
+[Configuration Reference](configuration.md#test_policy-test-depth--granularity) for the full
+field list, and [`adev test-policy`](cli-reference.md#test-policy) for the CLI surface that
+resolves and inspects assignments.
+
+**Granularity** — how suites map onto units of change. Resolved by `/adev:plan` at plan
+time, from static configuration only:
+
+1. `modules[].test_policy.granularity` (`source: "module"`)
+2. `test_policy.granularity` in `manifest.yaml` (`source: "manifest"`)
+3. Domain `test-config.yaml` default (`source: "domain"`)
+4. **Built-in fallback — `per-behavior`** (`source: "fallback"`)
+
+| Granularity | `/adev:plan` emits... | Worked example |
+|---|---|---|
+| `per-task` | One `**Tests:**` suite path per task | Task 3 ("add email column") and Task 4 ("backfill emails") each get their own test file |
+| `per-behavior` (default) | One suite per spec behavior statement; later tasks implementing the same behavior extend it rather than create a new file | Tasks 3 and 4 both implement Behavior 2 ("email column is populated") and share `tests/user-email.test.mjs` |
+| `per-spec` | One suite for the whole spec; every task in the spec extends it | All of a spec's tasks share `tests/<spec-slug>.test.mjs` |
+
+**Depth** — how many case classes a suite must cover. Resolved by `/adev:implement` at
+test-authoring time via `adev test-policy resolve`, strictly first-match-wins:
+
+1. Spec-declared `test_depth:` frontmatter (`source: "spec-declared"`)
+2. `modules[].test_depth` override (`source: "module"`)
+3. `governance/risk-policies.yaml` `policies[<risk_level>].test_depth` (`source: "risk-policy"`)
+4. Domain `test-config.yaml` default (`source: "domain"`)
+5. **Built-in fallback — `standard`** (`source: "fallback"`)
+
+| Depth | Covers |
+|---|---|
+| `minimal` | Happy path plus the spec's declared acceptance criteria |
+| `standard` (default) | Adds declared error cases |
+| `thorough` | Adds boundary and edge conditions |
+
+**Two monotonic-upward passes run after the chain, always in this order, and neither can ever
+lower the chain's result:**
+
+1. **Escalation** (`test_policy.escalation`, default `true`) — if the task's routing scores
+   (`.routing.json`) match an `escalation_rules` entry (e.g. low blast-radius, low novelty),
+   depth is raised to that entry's level. Two matching rules resolve to the higher depth with
+   a `CONFLICTING_ESCALATION_RULE` advisory. Disabling escalation, missing routing data, or no
+   rule matching all leave the chain result untouched.
+2. **The sensitive-path floor** — always applied last, escalating only. If the spec declares
+   `risk_level: high`, a boundary rule is crossed, or any target path matches the effective
+   sensitive-path set, depth is floored at `thorough`.
+
+**Escalation is upward-only by design.** Routing scores come from LLM judgment, not a
+deterministic computation. Bounding their effect to "can only add coverage, never remove it"
+means non-determinism in routing can never silently produce a weaker test suite — worst case,
+a routine task gets more scrutiny than needed, never less. An operator-authored override (spec
+frontmatter, module config) is always consulted first and can never become unreachable because
+a derived signal outranked it.
+
+**The floor is advisory, not enforced.** It determines the depth a task is *assigned* and
+records that assignment (`floor_applied`, `floor_legs`, `floor_inputs` on the
+`test_depth_assigned` event) — nothing in this capability verifies that the authored suite
+actually matches the assigned depth. A task floored to `thorough` gets `thorough` in its
+write-test prompt and an auditable record; if the subagent authors a shallower suite anyway,
+nothing here catches it. Treat the floor as an intent-and-audit-trail mechanism, not a
+guarantee.
+
+**Standalone `/adev:write-test` behavior.** When `/adev:write-test` runs outside a plan task
+(`--red --spec`, `--red --file`, or `--red "<description>"`), it resolves no chain, runs no
+escalation, and evaluates no floor — it authors at the built-in `standard` depth
+unconditionally, even if the spec declares `test_depth: thorough` or its paths are sensitive.
+There is no plan task to key a `test_depth_assigned` event to.
+
+#### Worked examples
+
+- **`per-task` project, `medium` risk spec, no escalation match.** Chain resolves to
+  `standard` from `risk-policies.yaml`. No floor leg holds. Each task gets its own suite at
+  `standard` depth.
+- **`per-behavior` project (default), `high` risk spec.** Chain resolves to `thorough` from
+  `risk-policies.yaml` (`risk_level: high`), and the sensitive-path floor would floor it to
+  `thorough` anyway if it weren't already there — the assignment records `floor_applied: true`
+  with `floor_legs: ["risk-level"]` regardless, because the floor evaluates and records
+  whenever a leg holds, whether or not it changes the value. Tasks sharing the spec's
+  behavior-scoped suite each record their own assignment.
+- **`per-spec` project, task touches `src/auth/session.ts`.** Even with `risk_level: low`
+  (chain result `minimal`) and no escalation match, the path matches the built-in
+  sensitive-path pattern `**/auth/**`, so the floor raises depth to `thorough` and records
+  `floor_legs: ["sensitive-path"]`.
+
+### Upgrading from before this capability shipped
+
+Adopting this capability changes default behavior: with the shipped `per-behavior` default,
+your project will plan **fewer test files** than before, because several tasks that implement
+one spec behavior now share a single suite instead of each task getting its own. If you want
+the previous one-suite-per-task behavior back, set `test_policy.granularity: per-task` in
+`manifest.yaml` — that is the explicit, supported opt-out.
+
+Upgrading requires **no new config file**. `governance/sensitive-paths.yaml` is optional and
+extend-only; its absence resolves to the built-in `DEFAULT_SENSITIVE_PATHS` set, and a
+`test_policy` block absent from `manifest.yaml` resolves to the built-in fallback
+(`per-behavior` granularity, `standard` depth). Plan tasks written before this capability
+shipped — including ones whose `**Files:**` block predates the current convention — resolve in
+a degraded-but-visible mode (`floor_inputs: "unavailable"`) rather than failing.
+
 ## For new projects
 
 Run [`/adev:init`](skill-reference.md). The manifest template includes a commented `test_strategies` section. Uncomment the entries that match your stack.

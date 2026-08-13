@@ -3,3 +3,4 @@
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T02:46:31.729Z","ts":"2026-05-20T02:46:31.729Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/status/SKILL.md","drift_at":"2026-05-20T04:18:05.651Z","ts":"2026-05-20T04:18:05.651Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.069Z","ts":"2026-05-20T12:08:30.069Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"spec_amended","amendment_slug":"plan-test-mapping-rev-2-test-depth-granularity","amendment_path":".context-index/specs/features/spec-lifecycle/plan-test-mapping-rev-2-test-depth-granularity.spec.md","target_revision":2,"ts":"2026-08-13T00:48:11.288Z","diagnostic_warnings":["adev/frontmatter-present"]}
