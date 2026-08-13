@@ -158,7 +158,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   );
 
   const passthrough = argv.filter((a) => !['--list', '--evals', '--all'].includes(a));
-  const child = spawn(process.execPath, ['--test', ...passthrough, ...files], {
+  // `selected`, not `files` — `--evals` and `--all` announce their bucket in
+  // the banner above and then have to actually run it. Spawning `files` here
+  // made both flags silently re-run the default set: `npm run test:evals`
+  // printed "running 20 of 454" and then executed all 428 default files,
+  // reporting green without ever touching an eval harness.
+  const child = spawn(process.execPath, ['--test', ...passthrough, ...selected], {
     cwd: REPO_ROOT,
     stdio: 'inherit',
   });
