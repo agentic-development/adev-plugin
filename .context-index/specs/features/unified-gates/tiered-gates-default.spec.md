@@ -4,7 +4,7 @@ status: review-pending
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 1
+revision: 2
 charter-revision: 4
 created: 2026-08-13
 updated: 2026-08-13
@@ -61,12 +61,36 @@ returns exactly one gate (`quality-gate`, from the domain starter) plus an
 project that *does* uncomment a template gate and fill in a command gets it
 silently discarded before `/adev:validate` Check 1 ever sees it.
 
-`docs/governance.md` already states the correct rule ("**argv form only.**
-`command: "npm test"` (string) fails load with `QUALITY_GATE_COMMAND_SHELL`").
-The template, not the docs, is the artifact that drifted. Fixing the template
-is therefore an **alignment to the documented contract**, not a schema change,
-and it does not contradict `gate-doctor.spec.md`, which describes `command`
-behaviorally without pinning its YAML type.
+Argv-only is already the house rule, but the citation needs care (CON-1 from
+review). `docs/governance.md` states "**argv form only.** `command: "npm test"`
+(string) fails load with `QUALITY_GATE_COMMAND_SHELL`" — that sentence sits in
+the *`validate.yaml` quality-gate runner* section and names that runner's error
+code. The `gates.yaml` loader (`lib/domains/merge-gates.mjs`) enforces the same
+rule but reports `INVALID_GATE`. `docs/governance.md` Recipe 3 ("you had a
+shell-form gate command") already instructs operators to convert
+`command: "npm test"` to `command: [npm, test]`, so the intent is unambiguous —
+but the document carries **no gate schema section for `gates.yaml` at all**.
+Fixing the template is therefore an **alignment to a rule the codebase already
+enforces**, not a schema change; and the docs task below must add the missing
+`gates.yaml` schema section rather than merely cross-referencing the
+`validate.yaml` one.
+
+The change does not contradict `gate-doctor.spec.md`, which describes `command`
+behaviorally without pinning its YAML type (verified in review).
+
+**Defect D — `/adev:implement` Step 2-post reads raw `gates.yaml`, not the
+merged list.** Raised as SA-1/SA-2 in review and verified against
+`skills/implement/SKILL.md`. Step 2-post reads `governance/gates.yaml`
+directly and filters `tier: integration`; it never calls
+`adev domain load-gates`, so it cannot see `templates/domains/software/gates.yaml`
+or either extension overlay — the exact surfaces this spec makes carry a live
+integration gate. `/adev:validate` Check 1 already sources from the merged list
+(`mergedGates`, Step 0). Step 2-post also lacks the non-empty/argv-form guard
+that Step 2h (per-task gates) applies, so making the template's
+`integration-test` entry live would hand an unwired gate to an unguarded
+executor at post-implement. Both are in scope: without them the postcondition
+"the integration tier executes at post-implement" is unreachable through the
+mechanism this spec chooses.
 
 **Defect C — `adev gate doctor` cannot see argv-form gates.**
 `lib/gates/doctor.mjs` coerces a non-string `command` to `""`
@@ -210,10 +234,33 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
    uses the `--if-present`-style no-op idiom for the integration tier when the
    detected stack has no integration entrypoint yet.
 
+9. **When** `/adev:implement` Step 2-post resolves integration-tier gates
+   **then** it sources them from the **merged** gate list
+   (`adev domain load-gates --module <module>`, the same source
+   `/adev:validate` Check 1 uses via `mergedGates`), not from a direct read of
+   `governance/gates.yaml`. Without this, the live domain-starter and extension
+   integration gates added by behaviors 4 and 5 are invisible at
+   `post-implement` and reachable only from `/adev:validate` Check 1b.
+   (Addresses review blocker SA-1.)
+
+10. **When** `/adev:implement` Step 2-post encounters a gate whose `command` is
+    empty, absent, or not an argv list **then** it records the gate as
+    **skipped** with a named reason and executes nothing — mirroring the guard
+    Step 2h already applies to per-task gates ("for each gate with
+    `kind: deterministic` and non-empty `command`"). This is what makes the
+    live `command: ""` sentinel safe on an unseeded scaffold at the one
+    consumer where `mergeGates`' own drop behavior does not apply.
+    (Addresses review blocker SA-2.)
+
 ### Postconditions
 
 - Every newly scaffolded project declares at least two tiers, and its
-  integration tier executes (as a no-op or for real) at `post-implement`.
+  integration tier executes (as a no-op or for real) at `post-implement` —
+  reachable because behavior 9 routes Step 2-post through the merged gate list.
+- Both integration-gate consumers agree on their source: `/adev:validate`
+  Check 1b and `/adev:implement` Step 2-post read the same merged list.
+- An unwired (`command: ""`) gate is never executed by any consumer: dropped by
+  `mergeGates`, and skipped-with-reason by Step 2-post's own guard.
 - No template or starter surface teaches string-form `command`.
 - `adev gate doctor` diagnoses every gate the loader accepts.
 
@@ -223,7 +270,8 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
 |-----------|-------------------|------------|
 | Gate `command` is a string | Gate dropped, named warning | `INVALID_GATE` |
 | Gate `command` is `""` (unwired sentinel) | Gate dropped, named warning; nothing spawned | `INVALID_GATE` |
-| Gate `command` is `[]` | Not emitted by any template surface (see rationale) | — |
+| Gate `command` is `[]` | Not emitted by any template surface (see rationale); if authored by hand, Step 2-post's argv guard (behavior 10) records it as skipped rather than executing an empty argv list | — |
+| Integration gate reaches `/adev:implement` Step 2-post with an empty or non-argv `command` | Recorded as skipped with a named reason; nothing spawned; Step 3 proceeds | — |
 | `npm` absent on a non-Node project using the software domain starter | `gate-doctor/binary-not-found` (error) — pre-existing condition of the starter's `[npm, test]` gate, not introduced here | `gate-doctor/binary-not-found` |
 | `test:integration` script undefined | `npm run --if-present` exits 0; gate passes as a no-op | — |
 
@@ -252,7 +300,8 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
 | Gates template alignment | Activate `test` + `integration-test`; argv form throughout the schema header and all examples; document the unwired sentinel and the transitions decision | medium |
 | Domain + overlay integration tier | Add live integration gate to the software starter and both extension overlays | small |
 | Init seeding prose | `/adev:init` Step 7a seeds both tiers in argv form | small |
-| Docs | Scoped `docs/governance.md` section on the shipped default and how to graduate it | small |
+| Implement Step 2-post gate source | `skills/implement/SKILL.md` Step 2-post sources integration gates from the merged list (`adev domain load-gates`), matching validate Check 1, and adds the non-empty/argv guard mirroring Step 2h (blockers SA-1 + SA-2) | small |
+| Docs | Add the missing `gates.yaml` gate-schema section to `docs/governance.md` (argv-only, tiers, `INVALID_GATE` vs `QUALITY_GATE_COMMAND_SHELL`), the shipped default, and how to graduate it — one scoped section | small |
 | Tests | Template/starter parity assertions + doctor-clean-on-fresh-scaffold fixture | medium |
 
 ## Acceptance Criteria
@@ -270,6 +319,11 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
 - [ ] `adev gate doctor` on a fresh scaffold carrying the new defaults exits 0
       with zero error-severity findings.
 - [ ] `/adev:init` Step 7a documents seeding both tiers in argv form.
+- [ ] `/adev:implement` Step 2-post sources integration gates from the merged
+      list (`adev domain load-gates`), so the domain-starter integration gate
+      is reachable at `post-implement` and not only from `/adev:validate`.
+- [ ] `/adev:implement` Step 2-post skips any gate whose `command` is empty or
+      not an argv list, recording a named reason and executing nothing.
 - [ ] `docs/governance.md` documents the shipped default and the graduation
       path, in one scoped section.
 - [ ] This repo's own `.context-index/governance/gates.yaml` is **not**

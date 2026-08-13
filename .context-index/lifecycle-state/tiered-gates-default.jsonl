@@ -1,2 +1,6 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-13T14:12:14.703Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-13T14:12:14.828Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-13T14:13:42.440Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"BLOCK: 2 blockers, 4 warnings, 1 suggestion. SA-1/SA-2 share one root cause: /adev:implement Step 2-post reads raw gates.yaml, not the merged list.","ts":"2026-08-13T14:24:22.955Z"}
+{"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-08-13T14:24:23.085Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":["quick-synthesized-reviewer:unguarded-executor-path:1377c7ba","quick-synthesized-reviewer:unreachable-postcondition:38c90edf"],"unresolved_blocker_ids":[],"ts":"2026-08-13T14:26:36.643Z"}
