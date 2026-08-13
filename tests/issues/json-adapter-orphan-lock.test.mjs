@@ -358,7 +358,10 @@ describe('orphan-lock cleanup — end-to-end CAS mutation (Acceptance Criterion 
       }
       const stderr = stderrChunks.join('');
 
-      assert.equal(issue.id, 'issue-1');
+      // The subject here is orphan-lock recovery, not the id scheme: assert
+      // that a well-formed id was minted at all (issue-613 made flat ids
+      // random rather than sequential, so `issue-1` is no longer predictable).
+      assert.match(issue.id, /^issue-[a-z0-9]{6}$/);
       assert.match(stderr, /recovered orphaned tasks\.json\.lock/);
       assert.ok(!existsSync(lockPath), 'lock must be released after successful write');
     } finally { cleanupTempDir(root); }
