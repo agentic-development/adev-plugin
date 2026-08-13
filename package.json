@@ -25,7 +25,10 @@
   "scripts": {
     "build:copilot-hooks": "node scripts/build-copilot-hooks.mjs",
     "build:cursor-hooks": "node scripts/build-cursor-hooks.mjs",
-    "test": "node --test tests/*.test.mjs tests/**/*.test.mjs",
+    "test": "node scripts/run-tests.mjs",
+    "test:evals": "node scripts/run-tests.mjs --evals",
+    "test:all": "node scripts/run-tests.mjs --all",
+    "test:list": "node scripts/run-tests.mjs --list",
     "eval": "node tests/evals/repomap/run-eval.mjs",
     "eval:generate": "node tests/evals/repomap/run-eval.mjs --generate-only",
     "eval:skill-compression": "node tests/evals/skill-compression/run-eval.mjs"

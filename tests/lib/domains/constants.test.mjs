@@ -14,9 +14,9 @@ import {
 } from '../../../lib/domains/constants.mjs';
 
 describe('domains/constants', () => {
-  it('exports all 7 overlay types', () => {
-    assert.equal(DOMAIN_CONFIG_TYPES.size, 7);
-    for (const t of ['charter-template', 'spec-template', 'reviewers', 'gates', 'verification', 'gate-config', 'test-config']) {
+  it('exports all 8 overlay types', () => {
+    assert.equal(DOMAIN_CONFIG_TYPES.size, 8);
+    for (const t of ['charter-template', 'spec-template', 'reviewers', 'gates', 'verification', 'gate-config', 'test-config', 'validate']) {
       assert.ok(DOMAIN_CONFIG_TYPES.has(t), `missing overlay type: ${t}`);
     }
     assert.ok(!DOMAIN_CONFIG_TYPES.has('charter-overlay'), 'charter-overlay should not be in DOMAIN_CONFIG_TYPES');
@@ -31,6 +31,7 @@ describe('domains/constants', () => {
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('verification'), 'verification.yaml');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('gate-config'), 'gate-config.yaml');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('test-config'), 'test-config.yaml');
+    assert.equal(DOMAIN_CONFIG_FILENAMES.get('validate'), 'validate.yaml');
   });
 
   it('exports only software as bundled domain name', () => {
@@ -53,7 +54,8 @@ describe('domains/constants', () => {
 
   it('exports structured overlay types set', () => {
     assert.ok(STRUCTURED_CONFIG_TYPES instanceof Set);
-    assert.equal(STRUCTURED_CONFIG_TYPES.size, 5);
+    assert.equal(STRUCTURED_CONFIG_TYPES.size, 6);
+    assert.ok(STRUCTURED_CONFIG_TYPES.has('validate'));
     assert.ok(STRUCTURED_CONFIG_TYPES.has('reviewers'));
     assert.ok(STRUCTURED_CONFIG_TYPES.has('gates'));
     assert.ok(STRUCTURED_CONFIG_TYPES.has('verification'));
