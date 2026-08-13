@@ -100,7 +100,7 @@
       {
         "position": 3,
         "exitCode": 0,
-        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `/adev:standalone` to disable enforcement for this session.\"\n  }\n}\n"
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
       }
     ]
   },
@@ -121,7 +121,7 @@
       {
         "position": 3,
         "exitCode": 0,
-        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `/adev:standalone` to disable enforcement for this session.\"\n  }\n}\n"
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
       }
     ]
   },
@@ -142,7 +142,7 @@
       {
         "position": 3,
         "exitCode": 0,
-        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `/adev:standalone` to disable enforcement for this session.\"\n  }\n}\n"
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
       }
     ]
   },
@@ -163,7 +163,7 @@
       {
         "position": 3,
         "exitCode": 0,
-        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `/adev:standalone` to disable enforcement for this session.\"\n  }\n}\n"
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
       }
     ]
   }
