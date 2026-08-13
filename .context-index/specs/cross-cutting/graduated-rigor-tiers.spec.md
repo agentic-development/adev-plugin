@@ -19,6 +19,7 @@ revision: 2
 created: 2026-07-01
 updated: 2026-08-12
 tracker-ref: "PR #199 / single-front-door CON-1; issue-568"
+drift_detected: true
 ---
 
 # Skill Spec: Graduated Rigor Tiers
