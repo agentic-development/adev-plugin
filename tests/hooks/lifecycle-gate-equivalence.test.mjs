@@ -23,9 +23,9 @@ import { createTempDir, cleanupTempDir, PLUGIN_ROOT, runHook } from "../helpers.
  */
 
 const DISPATCH = {
-  edit: { script: "lifecycle-gate-edit.sh", args: [] },
-  bash: { script: "lifecycle-gate-bash.sh", args: [] },
-  advisory: { script: "lifecycle-gate-advisory.sh", args: [] },
+  edit: { script: "lifecycle-gate.sh", args: ["pre-edit"] },
+  bash: { script: "lifecycle-gate.sh", args: ["pre-bash"] },
+  advisory: { script: "lifecycle-gate.sh", args: ["advisory"] },
 };
 
 const ADVISORY_INTERVAL = 3;
