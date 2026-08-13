@@ -347,6 +347,19 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
     independently of the rest.** Behavior 6's second clause means the inventory works whether
     or not this amendment lands.
 
+    > **Deferred out of this spec (2026-08-13) — scope, not merit.** `skills/sample/SKILL.md`
+    > (and its `providers/*` mirrors) and `templates/sample-template.md` are reverted to their
+    > `main` state, so this behavior is **not implemented here**. Amending `/adev:sample`'s
+    > Red Flags rule is a change to a different skill's contract and should be reviewed on its
+    > own, under that skill's ownership, rather than as a rider on a test-helper-inventory
+    > change. Tracked separately as issue-616.
+    >
+    > Operative consequence: golden test samples are **discovered but not curated**. Behavior
+    > 6's second clause is the operative path — a sample counts as a test sample when its
+    > `Source:` path is test-shaped. `collectTestSamples()` still honours a hand-written
+    > `Sample kind: test` marker, so a project that stamps one is not punished; nothing in
+    > adev emits it today. Nothing else in this spec changes.
+
 ### Postconditions
 
 - No file is written by either subcommand. The inventory is a pure read.
