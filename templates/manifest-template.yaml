@@ -233,6 +233,15 @@ tasks:
   backend: json
   # Tool calls between issue reminders. 0 to disable. Default: 25.
   reminder_interval: 25
+  # claim_ttl_minutes: lease window for `adev issues claim`. Default: 240 (4h).
+  #   A claim is a lease, not a lock: once claimed_at is older than this, the
+  #   claim is STALE and the next claimant takes it over with a fresh
+  #   claimed_at, so a crashed session cannot hold an issue forever. A LIVE
+  #   claim by another owner is still refused (ISSUE_ALREADY_CLAIMED).
+  #   Set 0 to disable expiry (claims live until explicitly released).
+  #   Must be an integer >= 1, or 0; anything else is rejected at load.
+  #   List expired leases with `adev issues stale [--json]`.
+  # claim_ttl_minutes: 240
   # legacy_read: enabled | disabled
   #   When set to "enabled" (default) and tasks.json is absent, the json
   #   adapter falls back to reading tasks.md via the shared markdown parser.

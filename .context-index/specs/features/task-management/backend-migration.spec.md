@@ -4,10 +4,10 @@ kind: action
 status: validated
 risk_level: medium
 milestone:
-revision: 1
+revision: 2
 charter-revision: 6
 created: 2026-05-19
-updated: 2026-05-20
+updated: 2026-08-13
 tracker-ref: issue-528
 source-manifest:
   sha: "fc0c9a5"
@@ -100,6 +100,44 @@ drift_detected: true
 | Successful migration | JSON report + manifest-update prompt | 0 |
 | Successful dry-run | JSON report (`would_create` shape) | 0 |
 | Resumed migration completes | JSON report + state file removed | 0 |
+
+## Claim Lease Expiry (issue-610)
+
+<!-- Scope note: this spec's `source-manifest.files` claims `lib/cli/issues.mjs`
+     — the `adev issues <subcommand>` dispatcher — so the claim/release/stale
+     sub-verbs are recorded here, as the `claim` work already was (commit
+     da45a279). The spec's PROSE is otherwise about `adev issues migrate`; that
+     title/scope mismatch is a real hygiene finding, not something to fix by
+     silently moving ownership. Flag it for /adev:hygiene. -->
+
+A claim (`adev issues claim <id> --owner <name>`) is a **lease**, not a lock. Without expiry, the first crashed or abandoned session holds an issue forever and the claim gate becomes something people route around — worse than no gate, because it trains bypassing.
+
+**Configuration.** `manifest.tasks.claim_ttl_minutes` — default `240` (4 hours: longer than a long agent session, shorter than a working day). `0` disables expiry (claims live until released). Any other value must be an integer ≥ 1; anything else (float, word, boolean, negative) is rejected at adapter construction with `BOARD_INVALID_CLAIM_TTL_MINUTES` rather than silently defaulted, mirroring the `cas_lock_stale_seconds` rejection contract. Resolution order: explicit adapter option → manifest file → default; one resolution path, so the report and the gate cannot disagree.
+
+**Definition.** A claim is STALE when `owner` is set, expiry is enabled, `claimed_at` parses, and `now - claimed_at >= ttl`. Staleness is proven, never assumed: an owner with a missing or unparseable `claimed_at` is treated as LIVE (fail closed), so a malformed row never hands work to a second agent.
+
+### Behaviors
+
+20. **When** an issue is claimed by a different owner and the lease has NOT elapsed **then** `claim` refuses with `ISSUE_ALREADY_CLAIMED` (exit 2) — unchanged behavior.
+21. **When** an issue is claimed by a different owner and the lease HAS elapsed **then** `claim` succeeds: `owner` becomes the new claimant and `claimed_at` is stamped fresh. The staleness test runs inside `_withCas`, against the same snapshot the write is validated against, so concurrent takeovers still resolve to exactly one winner.
+22. **When** a takeover occurs **then** the displaced owner is reported back on the claim result as an ephemeral `takeover: { previous_owner, previous_claimed_at, ttl_minutes }` — printed on stderr by the CLI and emitted under `--json`. It is NOT persisted: adding a `previous_owner` column would thread a fifth field through the fixed whitelist documented above `REF_FIELD_CODES` (six sites; a field missing from the return literal is silently dropped) to store history rather than 1:1 board state.
+23. **When** the SAME owner re-claims a stale lease **then** `claimed_at` advances — an expired lease is a new claim even for its original holder, because nobody can prove the old holder is still alive. Re-claiming a LIVE lease remains idempotent and preserves the original `claimed_at`.
+24. **When** the issue is closed **then** `claim` refuses with `ISSUE_CLOSED` regardless of lease age: expiry frees a claim, it does not reopen work.
+25. **When** `claim_ttl_minutes` is `0` **then** no claim ever goes stale and `claim` behaves exactly as it did before this change.
+26. **When** `release` is called **then** lease age changes nothing: the holder may always release their own claim, stale or not, and a non-holder still needs `--force`. Recovering a dead session's issue is `claim`'s job; a second bypass shape on this gate would train the behavior the gate exists to prevent.
+27. **When** the user runs `adev issues stale [--json]` **then** the verb lists claims whose lease has expired plus, separately, claims that can never expire (`owner` with no parseable `claimed_at`), reports the live-claim count and the configured `ttl_minutes`, mutates nothing, and exits 0. Closed issues are excluded even when they still carry a claim (`close()` never clears `owner`), because such rows are not actionable — claiming them returns `ISSUE_CLOSED` — and a report that is mostly noise is one people stop reading. `--json` emits `{ ttl_minutes, expiry_enabled, generated_at, stale[], unexpirable[], live_count }` for `/adev:status`.
+
+### Error Cases (claim lease)
+
+| Condition | Expected Behavior | Exit |
+|-----------|------------------|------|
+| Live claim by another owner | `ISSUE_ALREADY_CLAIMED` | 2 |
+| Stale claim by another owner | Takeover succeeds; displaced owner reported on stderr | 0 |
+| Claimed issue with no parseable `claimed_at` | Treated as live → `ISSUE_ALREADY_CLAIMED`; listed under `unexpirable` by `adev issues stale` | 2 |
+| Invalid `tasks.claim_ttl_minutes` | `BOARD_INVALID_CLAIM_TTL_MINUTES` at adapter construction | non-zero |
+| `release` of a stale claim by its holder | Succeeds; `branch`/`pr` retained | 0 |
+| `release` of a stale claim by a non-holder without `--force` | `CLAIM_OWNER_MISMATCH` | 2 |
+| Backend with no atomic claim primitive | `CLAIM_UNSUPPORTED_BACKEND` (`adev issues stale` still works — it is read-only) | 1 |
 
 ## Procedure
 
@@ -263,4 +301,10 @@ The numbers above are illustrative. `would_create.epics` may be less than `in_sc
 - [ ] Dependency edges to out-of-scope items are surfaced as warnings (not silent drops).
 - [ ] `BeadsAdapter` and `JsonAdapter` interfaces are unchanged (no new public methods).
 - [ ] All existing task-management tests continue to pass.
+- [ ] `manifest.tasks.claim_ttl_minutes` is honored (default 240, `0` disables) and invalid values reject at construction with `BOARD_INVALID_CLAIM_TTL_MINUTES`.
+- [ ] A stale claim is taken over by the next claimant with a fresh `claimed_at`; a live claim by another owner is still refused with `ISSUE_ALREADY_CLAIMED`.
+- [ ] The staleness check runs inside `_withCas`, and exactly one of N concurrent claimants wins a stale issue.
+- [ ] The displaced owner appears on the claim result and in `--json` output, and appears nowhere on the persisted board.
+- [ ] `adev issues stale [--json]` lists expired and unexpirable claims, mutates nothing, and is referenced from `skills/status/SKILL.md`.
+- [ ] Releasing a stale claim is not an error, and non-holder release still requires `--force`.
 - [ ] Constitution gates pass: no new external dependencies, pure ESM, no inline-Node in SKILL.md (none added by this spec), board-granularity invariant preserved.

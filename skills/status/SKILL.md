@@ -208,6 +208,10 @@ If `tasks.backend` is configured in `manifest.yaml`, scan all epics for `milesto
 
 If no epics have milestones, skip this section entirely (unchanged behavior). If `tasks.backend` is not configured, skip this section silently.
 
+#### Stale Claims
+
+Run `adev issues stale --json` and report any expired claim leases (`stale[]`) plus any claims that can never expire (`unexpirable[]` — an owner with no `claimed_at`). Each entry names the issue, the holder, and how long ago it was claimed; a stale claim no longer blocks work, so surfacing it tells the user which issues an abandoned session left sitting. Skip this section when both lists are empty.
+
 #### Recent Sessions
 Read the 10 most recent session summaries from `.context-index/sessions/` and display date, type, and summary line.
 
@@ -230,6 +234,9 @@ Drifted specs: <N>
 
 Specs needing re-review: <N>
   - <spec-path>: revision <current> (last reviewed: <last-reviewed>)
+
+Stale claims: <N> (lease <ttl_minutes> min)
+  - <issue-id> held by <owner>, claimed <age> ago
 
 Milestone Progress:
   v1: 3 epics, 12 issues (4 open, 5 in_progress, 3 closed) — 25% complete
