@@ -1,6 +1,6 @@
 ---
 charter: test-strategies
-status: implemented
+status: validated
 kind: behavioral
 risk_level: high
 milestone:
