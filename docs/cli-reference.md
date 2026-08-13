@@ -25,7 +25,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `extension` | Install or list domain extension packs |
 | `init` | Scaffold/diagnose `.context-index/` (also a skill: `/adev:init`) |
 | `status` | Print a project status summary (also a skill: `/adev:status`) |
-| `migrate` | One-shot conversion of legacy state artifacts |
+| `migrate` | **Deprecated.** One-shot conversion of legacy state artifacts |
 | `help` | Print top-level usage |
 
 ### Lifecycle / internal
@@ -144,9 +144,11 @@ adev status
 
 **Implementation:** `cli/index.mjs::cmdStatus`. See also the `state` verb for machine-readable lifecycle projections.
 
-### `migrate`
+### `migrate` (deprecated)
 
 **Purpose:** One-shot conversion of legacy state artifacts (e.g. pre-0.27 build/lifecycle state) to the current format.
+
+**Deprecated (issue-580):** this verb carried individual repos through the 2026-05 state-artifact migration. That migration is complete on the adev-plugin repo itself, but the verb and `lib/migrate-state-artifacts.mjs` remain shipped because other installations may still be on pre-migration artifact shapes and need an upgrade path. It is slated for removal once those installs age out — do not build new functionality on top of it, and prefer not to invoke it on a repo that has already migrated (running it is a no-op there, but it is no longer an actively maintained surface).
 
 **Signature:** `migrate`
 
