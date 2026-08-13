@@ -135,6 +135,22 @@ If `exec.status === "active"`, resume from `exec.currentTask` instead of task 1.
 
 If `tasks.backend` is not configured, skip epic creation entirely (plan-task events are still emitted to the lifecycle log).
 
+**Claim the epic before dispatching any task.** The board is the only store shared across every worktree of a repo (`lib/issues/resolve-root.mjs` resolves it to the main checkout), so it is the only place a concurrent session's work is visible without a network round-trip. Claim through the CLI — never set `owner` or `claimed_at` by hand, because the check-and-set only holds inside the adapter's CAS loop:
+
+```bash
+adev issues claim <epic-id> --owner "${USER}/local" --branch "$(git branch --show-current)"
+```
+
+The exit code is the gate, on the same discipline as `requireGate`:
+
+- **`0`** — the claim is yours. Re-claiming as the same owner is idempotent and preserves the original `claimed_at`, so a resumed session is not penalized.
+- **`2`** — **refused.** The epic is held by a different owner, or is closed. **STOP. Do not dispatch a single task.** Report the holding `owner` and `claimed_at` to the user and let them choose: take over (`adev issues release <epic-id> --owner <holder> --force`, then re-claim) or work elsewhere. Never take over autonomously — a live claim is another agent's in-flight work, and this refusal is the whole point of the gate.
+- **`1`** — usage error, unknown issue, or `CLAIM_UNSUPPORTED_BACKEND` (a backend with no atomic write). Warn and continue: a non-atomic backend cannot offer the guarantee, and blocking on it would train operators to bypass the gate.
+
+Owner identity follows the provenance convention the commit hooks already use — `<os-user>/local`, or `<os-user>/remote` when `CLAUDE_CODE_REMOTE=true`. `ADEV_ISSUE_OWNER` overrides it when a runner sets it once per session.
+
+If `tasks.backend` is not configured, skip the claim.
+
 ### Task discovery and state
 
 The plan file is the source of truth for *what the tasks are*. The lifecycle log projection is the source of truth for *what state each task is in*.
@@ -647,6 +663,14 @@ adev execution-state clear
 ```
 
 This resets the state to `idle` so the next session starts fresh. If the CLI call exits non-zero, log a warning — implementation is still considered complete.
+
+**Release the epic claim** so the next session is not blocked by a lease this one no longer needs:
+
+```bash
+adev issues release <epic-id> --owner "${USER}/local"
+```
+
+`branch` and `pr` survive the release deliberately — they are the record of where the work went, and `/adev:status` reads them. If no epic was claimed (no `tasks.backend`), skip. A non-zero exit here is a warning, not a failure: an unreleased claim expires on its own rather than blocking forever.
 
 Read the `completion.merge_policy` from manifest.yaml (default: "pr").
 
