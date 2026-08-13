@@ -192,6 +192,11 @@ completion:
     - master
   # Branches that agents must NEVER merge to or push to directly,
   # regardless of merge_policy. Always open a PR for these.
+  allow_agent_pr_merge: false
+  # May an agent run `gh pr merge` to complete a PR? Default false — opening the
+  # PR is never gated, but completing it is, because merging is the point where
+  # review is enforced. Set true in solo/automated repos where the alternative
+  # is a human re-running the identical command.
   branch_naming: "<type>/<module>/<short-description>"
   # Convention for feature branch names. Not enforced, but referenced by skills.
   # <type>:  feat | fix | chore | spike | refactor | docs

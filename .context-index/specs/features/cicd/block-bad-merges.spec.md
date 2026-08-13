@@ -9,10 +9,10 @@ charter: cicd
 status: validated
 risk_level: medium
 milestone:
-revision: 1
+revision: 2
 charter-revision: 1
 created: 2026-03-24
-updated: 2026-05-04
+updated: 2026-08-13
 source-manifest:
   sha: "926422e"
   files:
@@ -37,6 +37,14 @@ drift_detected: true
 2. **When** a PR targets main branch **then** CI status checks must be successful
 3. **When** CI checks fail **then** GitHub blocks the merge UI
 4. **When** all CI checks pass **then** merge button becomes available
+
+**Local guard — `hooks/merge-guard.sh` (rev 2):**
+
+> Added 2026-08-13. Two defects, both found by the guard firing on commands it was never meant to catch.
+
+5. **When** the command is `git merge-base`, `git merge-tree`, or `git merge-file` **then** it is ALLOWED even on a protected branch. These write nothing. The prior pattern `git\s+merge\b` matched them because `-` is a word boundary, so read-only queries were refused; a guard that blocks queries teaches operators that it cries wolf.
+6. **When** the command is `gh pr merge` **then** it is blocked by default and allowed when `completion.allow_agent_pr_merge: true`. Only the exact literal `true` opts in.
+7. **When** a `gh pr merge` is refused **then** the message names the base the command actually targets (from `--base`, else the first protected branch) and points at `allow_agent_pr_merge`. Previously the clause sat inside a loop over protected branches and ignored the loop variable, so EVERY `gh pr merge` was refused — including one targeting a non-protected base, e.g. a stacked PR onto another feature branch — and the error named a branch the PR never targeted, while advising "open a pull request instead", which cannot be acted on when the command *is* a PR merge.
 
 ### Postconditions
 
