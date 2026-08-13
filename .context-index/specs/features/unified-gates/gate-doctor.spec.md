@@ -110,9 +110,20 @@ collection queries and gate smoke-runs.
    exist under `projectRoot` **then** the doctor emits `gate-doctor/path-missing` (error).
 
 6. **When** such a referenced path exists **and** `git check-ignore` reports it ignored
-   **then** the doctor emits `gate-doctor/path-gitignored` (error). This is the ambev finding
-   verbatim: a gate that `cd`s into a gitignored directory passes locally for whoever created
-   that directory and cannot execute for anyone else, including CI.
+   **then** the doctor emits `gate-doctor/path-gitignored`. Severity depends on **where in the
+   command the path appears**: `error` when it appears in the gate's *first* sub-command,
+   `warning` otherwise.
+
+   The distinction is load-bearing in both directions. `cd vendored-repo && pytest` as the first
+   thing a gate does requires that directory to already exist, and gitignored means it exists
+   only for whoever created it — that is the ambev finding, and it is an error. But
+   `npm run build && cd dist && npm test` is an entirely ordinary gate, and `dist/` is
+   gitignored in most projects: an earlier step in the same command builds it. Reporting that
+   as an error would exit 2 on a healthy project and teach operators to ignore the doctor.
+
+   For the same reason, behavior 5's `path-missing` fires only for paths referenced in the
+   first sub-command. A path a later step depends on may legitimately not exist until an
+   earlier step creates it.
 
 7. **When** a gate's `command` contains a glob whose pattern includes `**` **then** the doctor
    compares two expansions of that pattern rooted at `projectRoot`: the POSIX-`sh` expansion
@@ -177,12 +188,21 @@ collection queries and gate smoke-runs.
     `.circleci/config.yml`, `azure-pipelines.yml`, `Jenkinsfile`, and `.travis.yml`. The set is
     a constant, extensible without touching the diff logic.
 
-13. **When** CI configuration exists **and** no CI file contains a gate's command **then** the
-    doctor emits `gate-doctor/ci-gate-not-invoked` (warning) for that gate. Matching is a
-    substring test against the raw CI text, first on the full command and then on its
-    executable token — deliberately permissive, because a false *positive* here ("your gate
-    isn't in CI" when it is, via a make target) costs an operator thirty seconds while a false
-    negative reproduces the alteryx finding.
+13. **When** CI configuration exists **and** no CI file contains any of a gate's match
+    candidates **then** the doctor emits `gate-doctor/ci-gate-not-invoked` (warning) for that
+    gate. Match candidates are: the literal gate command, every resolved link in its command
+    chain, and — when the command is a package-manager script invocation — the `<pm> run
+    <script>` and `<pm> <script>` spellings.
+
+    The gate's bare executable token is a candidate **only** when it is distinctive: longer
+    than three characters and not a package manager or generic interpreter. Falling back to
+    the bare token unconditionally would make `npm test` match any CI file containing `npm ci`,
+    rendering this finding effectively unfirable on every JavaScript project — the ecosystem it
+    most needs to work in.
+
+    Matching remains textual and therefore permissive. A false *positive* ("your gate isn't in
+    CI" when it is, via a make target) costs an operator thirty seconds; a false negative
+    reproduces the alteryx finding, where CI ran 19% of the test files and nobody noticed.
 
 14. **When** `--json` is passed **then** stdout is a single JSON object carrying
     `schema_version`, `findings`, `runners`, and `summary`. Otherwise stdout is a
@@ -283,6 +303,15 @@ plus the individually-testable primitives the behaviors above describe: `expandS
 - **Path extraction from shell commands is heuristic.** The doctor does not implement a POSIX
   shell parser. It recognises `cd <dir>` and tokens containing a path separator. A gate that
   computes its own paths at runtime is not analysable statically.
+- **"Which sub-command created this path" is approximated by position, not by dataflow.** The
+  severity split in behavior 6 assumes that anything appearing after the first sub-command
+  might have been produced by it. A gate of the form `echo hi && cd vendored-repo && pytest`
+  therefore downgrades a genuine ambev-class finding to a warning. Position is the only signal
+  available without executing the command, and the failure direction is the safe one — an
+  under-reported warning rather than an error that fires on healthy projects.
+- **CI matching cannot see through a project's own indirections.** `ci-gate-not-invoked` is
+  textual. A gate invoked in CI via a `make` target, a composite action, or a shell script the
+  workflow calls will be reported as un-invoked.
 - **Collection diffing under `--execute` trusts the runner's own output format.** A runner
   that changes its `--collect-only` output shape will degrade to `runner-unknown`, not to a
   false pass.
