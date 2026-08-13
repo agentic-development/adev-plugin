@@ -2,16 +2,36 @@
 # adev PostToolUse hook: Session Capture
 # Appends a JSONL tracking line to .context-index/.session-tracking.jsonl
 # when the manifest provider is "native".
+# Also touches .context-preflight-ok when the tool call read a
+# .context-index/ file (formerly hooks/context-read-tracker.sh, folded in
+# here since both hooks were PostToolUse observers of overlapping matchers —
+# session-capture's `.*` matcher is a superset of context-read-tracker's
+# `Read`-only matcher).
 # Fires on: any tool use (broad matcher)
 
 set -uo pipefail
 
-# Read stdin JSON (hook protocol — contains tool_name, tool_input, session_id)
-STDIN_JSON=$(cat)
+# Read stdin and populate CLAUDE_TOOL_INPUT_* env vars (bridges tool_input
+# fields — including file_path — whether this hook runs in plugin mode with
+# env vars pre-set, or settings.json mode with only stdin JSON). Also drains
+# stdin into $_HOOK_STDIN, which the JSONL-capture step below reuses instead
+# of reading stdin a second time.
+source "$(dirname "$0")/_parse-stdin.sh"
+
+# Context-read-tracker fold-in: touch the flag unconditionally — this must
+# run BEFORE (and independently of) the provider=="native" gate below, since
+# the original context-read-tracker.sh had no such gate.
+FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
+case "$FILE_PATH" in
+  *.context-index/*|*/.context-index/*)
+    mkdir -p .context-index
+    touch .context-index/.context-preflight-ok
+    ;;
+esac
 
 # Single node call: parse stdin, resolve provider, build JSONL line, append to file.
 # Exits with code 0 always (non-blocking). Outputs '{}' to stdout (hook protocol).
-printf '%s' "$STDIN_JSON" | node -e '
+printf '%s' "$_HOOK_STDIN" | node -e '
   const fs = require("fs");
   const path = require("path");
 
