@@ -21,3 +21,14 @@ See lifecycle-gate-consolidation.blockers.md (2 entries: capture-delegation-targ
 Verified: shared skeleton + line counts; find_context_index ×5; read-tracker subset + safe ordering (consumer reads on a later PreToolUse, intra-batch order irrelevant); hook ordering within matcher groups is load-bearing and tested; protocol boundary correctly avoided.
 Refuted: lib/session-capture.mjs per-tool-call entry path (blocker 1).
 Partial/unverified: plugin-mode stdin field presence (blocker 2); byte-identical fixtures exist (to-be-built — sequencing note 2).
+
+---
+
+# Re-review (revision 2)
+
+- tier: quick (targeted re-review)
+- date: 2026-08-12
+- verdict: PASS
+- blocker 5b2c: resolved (lib build-first split, High risk on 5a, line citations corrected and verified)
+- blocker 9e41: resolved (argv surface dispatch; hooks.json command strings verified to carry arguments through build-copilot-hooks.mjs verbatim)
+- all four rev-1 advisory notes addressed; no new contradictions
