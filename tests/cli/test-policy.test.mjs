@@ -190,6 +190,82 @@ test("resolve consults risk-policies.yaml's test_depth per risk level via loadRi
   }
 });
 
+// ── governance/sensitive-paths.yaml self-hosting (Behavior 7 — NOT a manifest.yaml field) ──
+
+test("resolve reads .context-index/governance/sensitive-paths.yaml (not a manifest.yaml field) and floors on a custom entry", async () => {
+  const dir = await createTempDir();
+  try {
+    // "src/payments/**" matches no DEFAULT_SENSITIVE_PATHS glob (no auth/crypto/secret/
+    // credential/.env/.pem/.key/.p12/governance/workflows token anywhere in the path), so the
+    // floor can only fire here because this YAML file was actually read.
+    await writeFixture(
+      dir, ".context-index/governance/sensitive-paths.yaml",
+      'sensitive_paths:\n  - "src/payments/**"\n',
+    );
+    await seedPlanWithSpec(dir, {
+      specFrontmatter: "risk_level: medium\n",
+      planBody: "## Task Structure\n\n### Task 10: Q [specialist: none]\n**Files:**\n- Create: `src/payments/charge.ts`\n",
+    });
+    const result = await run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t10"] });
+    assert.equal(result.floor_applied, true, "a target path matching only the custom governance/sensitive-paths.yaml entry must floor the task");
+    assert.ok(result.floor_legs.includes("sensitive-path"));
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("resolve degrades to the built-in sensitive-path set (no crash, no floor) when sensitive-paths.yaml is absent", async () => {
+  const dir = await createTempDir();
+  try {
+    await seedPlanWithSpec(dir, {
+      specFrontmatter: "risk_level: medium\n",
+      planBody: "## Task Structure\n\n### Task 11: P [specialist: none]\n**Files:**\n- Create: `src/payments/charge.ts`\n",
+    });
+    const result = await run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t11"] });
+    assert.equal(result.floor_applied, false);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("resolve surfaces INVALID_SENSITIVE_PATHS in warnings when sensitive-paths.yaml has a non-string entry, and still degrades to the built-in set", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(
+      dir, ".context-index/governance/sensitive-paths.yaml",
+      "sensitive_paths:\n  - 42\n",
+    );
+    await seedPlanWithSpec(dir, {
+      specFrontmatter: "risk_level: medium\n",
+      planBody: "## Task Structure\n\n### Task 12: O [specialist: none]\n**Files:**\n- Create: `src/o.ts`\n",
+    });
+    const result = await run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t12"] });
+    assert.equal(result.floor_applied, false);
+    assert.ok(
+      result.warnings.some((w) => w.code === "INVALID_SENSITIVE_PATHS"),
+      "a malformed sensitive-paths.yaml entry must surface an INVALID_SENSITIVE_PATHS advisory",
+    );
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("show distinguishes built-in from configured sensitive paths, reading governance/sensitive-paths.yaml (not a manifest.yaml field)", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/manifest.yaml", "modules: []\n");
+    await writeFixture(
+      dir, ".context-index/governance/sensitive-paths.yaml",
+      'sensitive_paths:\n  - "src/payments/**"\n',
+    );
+    const result = await run({ projectRoot: dir, argv: ["show"] });
+    assert.ok(result.sensitive_paths.configured.includes("src/payments/**"));
+    assert.ok(!result.sensitive_paths.built_in.includes("src/payments/**"));
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
 test("show prints the effective policy with the layer that supplied each field", async () => {
   const dir = await createTempDir();
   try {
