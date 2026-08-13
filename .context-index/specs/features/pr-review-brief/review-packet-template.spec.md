@@ -1,13 +1,25 @@
 ---
 charter: pr-review-brief
 kind: artifact
-status: review-passed
+status: implemented
 risk_level: low
 milestone:
 revision: 2
 charter-revision: 2
 created: 2026-08-12
 updated: 2026-08-13
+source-manifest:
+  sha: "1c5e80b"
+  files:
+    - .github/pull_request_template.md
+    - providers/codex/skills/implement/SKILL.md
+    - providers/codex/skills/validate/SKILL.md
+    - providers/opencode/skills/implement/SKILL.md
+    - providers/opencode/skills/validate/SKILL.md
+    - skills/implement/SKILL.md
+    - skills/validate/SKILL.md
+    - tests/pr-review-packet.test.mjs
+  computed-at: "2026-08-13T12:12:16.951Z"
 ---
 
 # Artifact Spec: Review Packet Template
