@@ -23,7 +23,9 @@ test("init --brownfield proposes inferred granularity with evidence", () => {
 });
 
 test("manifest-template.yaml carries no unfilled test_policy placeholder", () => {
-  if (manifestTemplate.includes("test_policy")) {
-    assert.doesNotMatch(manifestTemplate.slice(manifestTemplate.indexOf("test_policy")), /\{\{\s*\}\}/);
-  }
+  assert.ok(
+    manifestTemplate.includes("test_policy"),
+    "manifest-template.yaml must contain a test_policy block — an absent block is a failure, not a pass"
+  );
+  assert.doesNotMatch(manifestTemplate.slice(manifestTemplate.indexOf("test_policy")), /\{\{\s*\}\}/);
 });
