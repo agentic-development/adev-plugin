@@ -459,16 +459,28 @@ Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22.
 | Capability | `json` (default) | `beads` | `file` |
 |---|---|---|---|
 | create / list / get / update / close | ✅ | ✅ | 🔍 read-only |
-| epics (create, list, update, walk) | ✅ | ✅ *stored in `tasks.json`, not in beads* | 🔍 read-only |
+| epics (create, list, update, walk) | ✅ | ✅ native `br` issues of type `epic` | 🔍 read-only |
 | dependencies | ✅ | ✅ | 🔍 read-only |
 | `claim` / `release` | ✅ atomic (CAS) | ✅ atomic, via `br update --claim` | ❌ `CLAIM_UNSUPPORTED_BACKEND` |
 | refusal codes + CLI exit codes | ✅ | ✅ identical — callers never branch on backend | ❌ |
 | lease TTL + `issues stale` | ✅ | ✅ | ❌ |
 | **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ❌ |
-| `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ⚠️ sidecar `.beads-map.json` | 🔍 |
+| `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ✅ br `agent_context` (JSON, under the `adev` key) | 🔍 |
+| adev ids (`issue-N` / `epic-N`) | ✅ native | ✅ br `external_ref` — br enforces uniqueness | 🔍 |
+| claim holder | ✅ native | ✅ br `assignee`, and nowhere else | ❌ |
+| dependency edges on `list()` | ✅ | ⚠️ always `[]` — `br list` returns counts, not edges | 🔍 |
+| id minting under concurrency | ✅ atomic (CAS) | ⚠️ not atomic, but **fails loudly** — see below | 🔍 |
 | shared across git worktrees | ✅ | ✅ | ✅ |
 
-**The one gap that can bite you:** on beads, taking over an *expired* lease is not atomic. br refuses to reassign a held issue, so the adapter must clear the assignee and then claim — two calls. Two agents that observe the same expired lease can both proceed. Contended *live* claims are still refused atomically by br, so this only affects abandoned work, and the window is bounded by TTL expiry rather than by contention. If you need an atomic takeover, use `tasks.backend: json`.
+**On beads, beads is the whole board.** There is no `.beads-map.json` sidecar and no local epic store: the adev id is br's `external_ref`, the claim holder is br's `assignee`, epics are `br` issues of type `epic`, and everything else adev tracks lives in br's `agent_context` under an `adev` key. `br list` shows you the real board, and a human running `br update --claim` is seen by adev immediately. A project still carrying the old sidecar is migrated into beads automatically on first use, and the retired files are renamed rather than deleted.
+
+`agent_context` is br's own field, so adev preserves any keys it did not write — but if you hand-edit it, you are editing adev's metadata store.
+
+**The one gap that can bite you:** on beads, taking over an *expired* lease is not atomic. `br update --claim` refuses ANY held issue and `--assignee` has no compare-and-set precondition, so the adapter must clear the assignee and then claim — two calls. Two agents that observe the same expired lease can both proceed. Contended *live* claims are still refused atomically by br, so this only affects abandoned work, and the window is bounded by TTL expiry rather than by contention. If you need an atomic takeover, use `tasks.backend: json`.
+
+The claim itself and its lease stamp *are* now atomic: `--claim` and `--agent-context` travel in one call, and br rolls the context write back when it refuses the claim.
+
+**Minting `issue-N` is also not atomic** — br has no sequence primitive, so the next number comes from scanning existing `external_ref` values. Two simultaneous creators compute the same number, but br enforces uniqueness on `external_ref` and rejects the loser with a hard error. You get a failed create, never two issues sharing an id.
 
 **Requirements:** beads needs `br >= 0.2.0` on PATH. Older releases take a workspace *directory* for `--db` and have no atomic `update --claim`; the adapter refuses them with `BEADS_VERSION_UNSUPPORTED` rather than failing obscurely at the first call. The `file` backend has been read-only since its deprecation — run `adev migrate` to move to `json`.
 
