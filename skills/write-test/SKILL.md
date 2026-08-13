@@ -163,13 +163,28 @@ Before writing any tests, resolve the test strategy for this task:
 
 **Profile fields are descriptive instructions consumed by this skill — no profile field is passed directly to a shell or exec API.**
 
-In addition to the strategy-specific `gaming_blockers`, always check the 4 shared cross-strategy gaming patterns from `lib/test-strategies/gaming.mjs`:
+In addition to the strategy-specific `gaming_blockers`, always check all 8 detectors from
+`lib/test-strategies/gaming.mjs` — 4 shared cross-strategy patterns plus 4 integration-specific
+patterns. **A `PreToolUse` hook (`hooks/gaming-gate.sh`) already re-runs these detectors on
+every `Write`/`Edit` of a test file and hard-blocks a newly introduced violation before it
+reaches disk — this list is a courtesy for the agent authoring tests, not the only
+enforcement.**
+
+Shared (apply to every test, any strategy):
 - `DISABLED_TESTS` — `.skip(`, `xit(`, `xdescribe(`, `.todo(`
 - `EMPTY_ASSERTIONS` — test bodies with no assertion calls
 - `SWALLOWED_ASSERTIONS` — `try { expect } catch {}` without rethrow
 - `CONDITIONAL_ASSERTIONS` — `if (cond) { expect }` without else
 
-Shared pattern violations use prefix `SHARED:`, strategy-specific violations use the strategy name as prefix (e.g., `SCHEMA:`). Both are reported independently.
+Integration-specific (apply when the resolved strategy is `integration`):
+- `BOUNDARY_MOCKING` — mocking the specific infrastructure SDK the module under test wraps
+- `CI_BYPASS` — `if (process.env.CI) { ... skip/return ... }`
+- `CREDENTIAL_ABSENT_PASS` — instantiating an infra SDK client with no credential guard
+- `AGENT_SKIP` — `.skipIf(`, `canConnect`, `skipUnless`, or infra-conditional `skip:` options
+
+Shared pattern violations use prefix `SHARED:`, integration-specific violations use prefix
+`INTEGRATION:`, strategy-specific `gaming_blockers` violations use the strategy name as prefix
+(e.g., `SCHEMA:`). All are reported independently.
 
 ### Integration Strategy: Mandatory Infrastructure Requirements Block
 

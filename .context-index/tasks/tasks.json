@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 266,
+  "seq": 267,
   "epics": [
     {
       "id": "epic-1",
@@ -3954,10 +3954,10 @@
       "priority": 1,
       "type": "feature",
       "dependencies": [],
-      "notes": "Working branch feat/test-strategies/gaming-gate-enforcement. Spec: gaming-detector-gate-enforcement.spec.md under test-strategies charter (rev 4). Design: regression-only PostToolUse hook (blocks only NEW gaming violations vs git HEAD baseline) after empirical scan found 103/462 existing tests/** files already trip the 8 detectors unmodified.",
-      "next_action": "Spec written (review-pending). Run /adev:review-specs, then /adev:plan.",
+      "notes": "From the 2026-08-10 audit. lib/test-strategies/gaming.mjs ships 8 detectors (DISABLED_TESTS, EMPTY_ASSERTIONS, SWALLOWED_ASSERTIONS, CONDITIONAL_ASSERTIONS, BOUNDARY_MOCKING, CI_BYPASS, CREDENTIAL_ABSENT_PASS, AGENT_SKIP) and is imported ONLY by tests/. No CLI verb, no hook, no gate, no validate check invokes it. Enforcement today is agent prose: skills/write-test/SKILL.md tells the agent to check \"the 4 shared cross-strategy gaming patterns\" while the library ships 8 — prose/code drift. Evidence that prose does not bind: the no-silent-skip rule is recited verbatim in 11 repo-B test docstrings (\"FAILS the gate — never a silent skip — charter invariant\") and violated in ~10 sibling files, including one file whose docstring forbids pytest.skip 300 lines before calling it, and one test that converts a real downstream failure into a skip. By contrast repo-C’s single deterministic control (a fail-closed PostToolUse hook validating YAML params) works reliably on every edit. Lesson: any policy that matters must be a deterministic gate or hook, not skill prose.; DONE — awaiting human review, left open intentionally (not closed by the agent). Delivered: lib/test-strategies/gaming-gate.mjs + hooks/gaming-gate.sh + hooks/_gaming-gate-check.mjs — a PreToolUse hard-blocking hook (registered in hooks/hooks.json, mirrored to copilot/cursor configs) that blocks Write/Edit of test files introducing NEW gaming violations vs the pre-edit on-disk baseline (regression-only: 103/462 existing tests/** files already trip the unmodified detectors, so whole-file blocking was rejected as unworkable — see spec Scope Decision + Known Limitations). skills/write-test/SKILL.md corrected to list all 8 detectors (was missing the 4 integration-specific ones) and references the hook as the enforcement floor. Version bumped 0.27.8 -> 0.28.0 (3-way parity). npm test: 5343/5343 passing. Known accepted limitation: regression-only scoping does not reduce false-positive strength for brand-new test files (empty baseline) — documented in spec Known Limitations, worth a human read before merge.",
+      "next_action": "Human review of this PR: inspect the gaming-gate hook design and the regression-only scoping tradeoff before merge.",
       "created": "2026-08-11T00:45:46.643Z",
-      "updated": "2026-08-13T02:48:19.504Z",
+      "updated": "2026-08-13T03:40:02.420Z",
       "spec_ref": ".context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md"
     },
     {
