@@ -189,5 +189,37 @@ describe("dogfood — the pass against this repository", () => {
       out.summary.PROSE_ASSERTION > 0,
       "this repo has known prose-assertion files; zero means Class B extraction is broken",
     );
+    assert.ok(
+      out.summary.PLAN_TASK_STRUCTURED > 0,
+      "this repo has describes named '(plan-task N)'; zero means title matching is broken",
+    );
+  });
+
+  test("a project with no manifest surfaces the degrade note through the CLI", () => {
+    const dir = createTempDir();
+    try {
+      writeFixture(dir, "tests/a.test.mjs", "assert.ok(1);");
+      const r = adev(["scan", "--json"], dir);
+      assert.equal(r.status, 0, r.stderr);
+      const out = JSON.parse(r.stdout);
+      assert.ok(
+        out.headerNotes.some((n) => /manifest\.yaml missing or unparseable/.test(n)),
+        "the CLI passes manifest=null; the degrade note must still reach the report",
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  test("--root pointing at a nonexistent path inside the root is not PATH_OUTSIDE_ROOT", () => {
+    const dir = scaffold({ "tests/a.test.mjs": "assert.ok(1);" });
+    try {
+      const r = adev(["scan", "--root", "no-such-dir"], dir);
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /INVALID_ROOT/);
+      assert.doesNotMatch(r.stderr, /PATH_OUTSIDE_ROOT/);
+    } finally {
+      cleanupTempDir(dir);
+    }
   });
 });
