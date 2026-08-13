@@ -123,3 +123,51 @@ recorded in `hygiene-test-debt.validate.md` and fixed in revision 5.
 **A human should know:** revisions 2 through 5 of this spec were never independently
 reviewed. They were validated against working code, which is stronger evidence for the
 behaviours that code exercises — and no evidence at all for the parts it does not.
+
+---
+
+## Correction: the revision-2 re-review DID complete (recorded by the orchestrator, 2026-08-13)
+
+The paragraph above is **wrong on a point of fact**, and the error is worth preserving
+rather than silently overwriting, because its cause is a real coordination defect.
+
+The second synthesized reviewer was **not** cancelled — it ran to completion and returned
+**PASS_WITH_NOTES on revision 2**. Its verdict never reached this session: the reviewer
+could not address its parent via `SendMessage` (`no agent named general-purpose is
+reachable`), so it returned its report to the orchestrator instead. The authoring session,
+receiving nothing, reasonably concluded it had been cancelled and proceeded. The verdict sat
+stranded one level up.
+
+What that reviewer actually found — and it verified empirically against the real suite
+rather than reading prose, which is why it is worth recovering:
+
+- **SA-1 RESOLVED.** Applied the revision-2 rules by hand to the 9 test files holding a
+  literal `new URL("….md", import.meta.url)`; all 9 clear `prose_ratio_threshold: 0.5`
+  (2/2, 4/4, 4/4, 4/5, 8/8, 5/6, 9/13, 5/7, 1/1). `hygiene-test-policy-drift-pass.test.mjs`
+  itself scores 9/13 — the round-one counterexample is now detected. Confirmed the
+  literal-only rule is strict enough for temp fixtures: `join(tmpDir, "spec.md")` and
+  friends are variable-rooted and correctly skipped, so `DEAD_TEST_REFERENCE` will not fire
+  on runtime fixtures.
+- **SA-2 RESOLVED.** Taxonomy closed on both sides, numerator a subset of the denominator,
+  so `ratio ≤ 1` by construction; `denominator === 0` handled explicitly.
+- **SA-3 RESOLVED**, and independently confirmed the count of four edit sites is correct
+  (`skills/hygiene/SKILL.md` L3, L8, L12, L42).
+
+It also verified the other two dogfood detectors rather than assuming them
+(`PLAN_TASK_STRUCTURED` 49 lines; `APPEND_CHAIN` — `json-adapter.mjs` at 23 distinct test
+files) and left two warnings and three suggestions, none blocking: Class B admits only
+literal-rooted reads, so 76 files reading `.md` through an uppercase module const are
+skipped (recall, not correctness); and the assertion taxonomy is JS/Python-only while
+default `test_globs` include Go, so every Go file yields `denominator === 0` and can never
+raise `PROSE_ASSERTION` — a coherent degrade that should be stated so a zero is not read as
+clean.
+
+**Net effect on confidence:** revision 2 *was* independently reviewed and passed. Revisions
+3–5 remain unreviewed prose, though revision 3's anchor-classification change was itself a
+direct response to that reviewer's SA-5 warning, and revisions 4–5 are validate-driven
+corrections against executing code.
+
+**The defect this exposes is not in the spec.** A reviewer whose verdict cannot reach its
+requester is indistinguishable from a reviewer that never ran, and the failure is silent on
+both sides. That is the same class as the `--verdict BLOCK` bug closed in commit `ed84a277`:
+a review outcome lost with no error surfaced. Worth its own issue.
