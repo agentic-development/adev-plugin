@@ -14,6 +14,7 @@ import {
   classifyAnchors,
   extractReferences,
   assertionRatio,
+  maskTemplateLiterals,
   globToRegExp,
   discoverTestFiles,
   DEFAULT_TEST_DEBT_CONFIG,
@@ -182,6 +183,24 @@ describe("reference extraction", () => {
     const hit = classB.find((r) => r.path.endsWith("SKILL.md"));
     assert.ok(hit, "the repo's dominant skill-coverage idiom must be visible");
     assert.equal(hit.anchor, "repo");
+  });
+
+  test("imports inside a template literal are fixture data, not references", () => {
+    // A test that BUILDS a source file as a string must not be read as
+    // importing the module that string names — otherwise every test about
+    // import syntax reports a dead reference to a module that never existed.
+    const src = ["const fixture = `", `import { x } from "../lib/never-existed.mjs";`, "`;"].join("\n");
+    const { classA } = extractReferences(src, "tests/a.test.mjs");
+    assert.equal(
+      classA.filter((r) => r.path.includes("never-existed")).length,
+      0,
+      "template-literal contents are data and must not be extracted as imports",
+    );
+  });
+
+  test("masking a template literal preserves line structure", () => {
+    const src = ["const a = `", "line two", "`;"].join("\n");
+    assert.equal(maskTemplateLiterals(src).split("\n").length, src.split("\n").length);
   });
 
   test("a loop variable between anchor and literal downgrades to unresolvable", () => {
