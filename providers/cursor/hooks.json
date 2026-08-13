@@ -32,6 +32,12 @@
         "failClosed": true,
         "timeout": 30,
         "matcher": "Write|Edit"
+      },
+      {
+        "command": "./hooks/gaming-gate.sh",
+        "failClosed": true,
+        "timeout": 30,
+        "matcher": "Write|Edit"
       }
     ],
     "beforeShellExecution": [
