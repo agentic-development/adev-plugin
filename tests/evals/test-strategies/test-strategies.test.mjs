@@ -848,15 +848,16 @@ test.skip('todo', () => {});
 describe('Integration gaming detection on fixture content', () => {
   const GAMING_FIXTURE = join(FIXTURES, 'integration-service', 'tests', 's3-client-gaming.fixture.mjs');
 
-  it('INTEGRATION_PATTERNS array has 3 patterns', () => {
-    assert.strictEqual(INTEGRATION_PATTERNS.length, 3);
+  it('INTEGRATION_PATTERNS array has 4 patterns', () => {
+    assert.strictEqual(INTEGRATION_PATTERNS.length, 4);
   });
 
-  it('INTEGRATION_PATTERNS contains BOUNDARY_MOCKING, CI_BYPASS, CREDENTIAL_ABSENT_PASS', () => {
+  it('INTEGRATION_PATTERNS contains BOUNDARY_MOCKING, CI_BYPASS, CREDENTIAL_ABSENT_PASS, AGENT_SKIP', () => {
     const ids = INTEGRATION_PATTERNS.map(p => p.id);
     assert.ok(ids.includes('BOUNDARY_MOCKING'), 'Missing BOUNDARY_MOCKING');
     assert.ok(ids.includes('CI_BYPASS'), 'Missing CI_BYPASS');
     assert.ok(ids.includes('CREDENTIAL_ABSENT_PASS'), 'Missing CREDENTIAL_ABSENT_PASS');
+    assert.ok(ids.includes('AGENT_SKIP'), 'Missing AGENT_SKIP');
   });
 
   it('gaming fixture file detects BOUNDARY_MOCKING from jest.mock on @aws-sdk', () => {

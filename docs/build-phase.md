@@ -100,6 +100,29 @@ The implement skill enforces a strict TDD cycle for every task:
 
 This cycle is non-negotiable. The agent will not skip writing tests first, and it will not loosen test assertions to make them pass. If a test fails, the code is fixed — not the test.
 
+### Parallel Execution (`--parallel`)
+
+By default, `/adev:implement` runs tasks strictly serially — parallel subagents would collide on the shared working tree. With `--parallel`, file-disjoint task groups instead run **concurrently in adev-managed git worktrees**, so independent work proceeds at the same time without conflicts.
+
+```
+/adev:implement --parallel .context-index/specs/features/auth/login.plan.md
+```
+
+**How it works:**
+
+- **Groups come from the plan.** The task groups are *consumed, not computed* — `/adev:plan` writes a `## Parallelization` section listing which tasks are independent, and `--parallel` runs those groups concurrently in waves (bounded by a concurrency cap). If the plan has no usable parallelization section, or only one group, implementation falls back to serial automatically.
+- **Each group gets its own worktree.** adev creates an isolated worktree under `.adev/worktrees/` (git-ignored) anchored to the main repo root, so worktrees never nest even when implement runs inside another worktree. Each group's subagent commits to its own branch.
+- **Merge-back is verified and deterministic.** After all groups finish, adev asserts the orchestrator branch wasn't polluted, verifies every group actually committed its tasks (a group that drops tasks is marked failed and not merged), then merges the verified groups back in a deterministic order. On a merge conflict it aborts cleanly rather than merging partial work.
+- **Behavioral equivalence is the contract.** A parallel run must produce the same result as a serial one — same tests passing, same public surface. This is enforced by a load-bearing equivalence eval, not just runtime checks.
+
+**Recovering from a failed run.** On a partial failure, the failed group's worktree is *retained* for inspection and its plan tasks stay open, while successful groups still merge. Re-running then aborts that group with `RERUN_COLLISION` so stale work is never silently reused. Clear the retained worktree with `adev worktree remove --slug <…> --force`, or pass `--fresh` to auto-remove retained worktrees and re-run:
+
+```
+/adev:implement --parallel --fresh .context-index/specs/features/auth/login.plan.md
+```
+
+The `adev worktree` and `adev parallel` CLI verbs that back this mode are documented in the [CLI Reference](cli-reference.md).
+
 ## Build
 
 **Skill:** `/adev:build`

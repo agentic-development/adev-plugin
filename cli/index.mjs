@@ -1485,6 +1485,15 @@ async function cmdStatus() {
  * `adev migrate` — one-shot conversion of legacy state artifacts to the
  * charter-era shapes. Wraps `lib/migrate-state-artifacts.mjs::migrateAll`.
  *
+ * DEPRECATED (issue-580): this verb existed to carry individual repos through
+ * the 2026-05 state-artifact migration (tasks.md→tasks.json,
+ * build-state/*.json→lifecycle-state/*.jsonl, .execution-state.md→.json,
+ * milestones.yaml→.json). That migration is complete on this repo, but other
+ * installations may still be on pre-migration artifact shapes, so the verb
+ * and `lib/migrate-state-artifacts.mjs` remain shipped as an upgrade path.
+ * Slated for removal once telemetry/support signal shows pre-migration
+ * installs have aged out. Do not build new functionality on top of it.
+ *
  * Flags:
  *   --dry-run                  Print plan without writing
  *   --artifact=<name>          Scope to a single artifact
@@ -1495,6 +1504,11 @@ async function cmdStatus() {
  */
 async function cmdMigrate(argv) {
   const cwd = process.cwd();
+  warn(
+    "adev migrate is DEPRECATED: it is a one-shot upgrade path for the 2026-05 " +
+    "state-artifact migration, slated for removal. If this repo has already " +
+    "migrated, you do not need to run it.",
+  );
   // Parse flags from argv[3..]
   const flags = argv.slice(3);
   let dryRun = false;

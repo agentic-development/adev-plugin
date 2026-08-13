@@ -3,7 +3,7 @@ kind: skill
 status: review-pending
 mode: cross-cutting
 risk_level: medium
-affects: [review-specs, validate, route, work, init]
+affects: [review-specs, validate, route, work, init, build]
 source-manifest:
   files:
     - lib/governance/rigor-mode.mjs
@@ -12,12 +12,13 @@ source-manifest:
     - skills/validate/SKILL.md
     - skills/route/SKILL.md
     - skills/work/SKILL.md
+    - skills/build/SKILL.md
     - templates/risk-policies-template.yaml
-  computed-at: "2026-07-01T00:00:00.000Z"
-revision: 1
+  computed-at: "2026-08-12T00:00:00.000Z"
+revision: 2
 created: 2026-07-01
-updated: 2026-07-01
-tracker-ref: "PR #199 / single-front-door CON-1"
+updated: 2026-08-12
+tracker-ref: "PR #199 / single-front-door CON-1; issue-568"
 ---
 
 # Skill Spec: Graduated Rigor Tiers
@@ -87,6 +88,7 @@ Run the fail-fast quality gates (Check 1: tests / lint / typecheck) plus a **sin
 | `review-specs` | High | `--tier` + mode resolution; quick → single synthesized reviewer; new bundled prompt. |
 | `validate` | High | `--tier` + mode resolution; quick → fail-fast + synthesized compliance check. |
 | `route`, `work` | Low | Classify "easy" work and propagate `--tier quick`. |
+| `build` | Low | Accept `--tier <full\|quick>`; propagate it into the Step 1 review-specs and Step 5 validate subagent dispatches; carry it forward on `--resume` re-invocation (not persisted in build state). Fixed by issue-568 — this argument was omitted from the original rollout even though `route`/`work` already instructed callers to pass `/adev:build --tier quick`. |
 | `single-front-door.spec.md` | Low | Express-lane wording: "quick review tier", not "skip" (resolves CON-1). |
 | `providers/{codex,opencode}` mirrors | Mechanical | Regenerate. |
 
@@ -115,6 +117,7 @@ Run the fail-fast quality gates (Check 1: tests / lint / typecheck) plus a **sin
 - [ ] `/adev:review-specs --tier quick` dispatches exactly one synthesized reviewer and still emits the `review` event + `.review.md`.
 - [ ] `/adev:validate --tier quick` runs quality gates + one synthesized compliance check, still emits the `validate` event + `.validation.md`.
 - [ ] `/adev:route` / `/adev:work` propagate `--tier quick` for easy/low-risk work.
+- [x] `/adev:build --tier <full|quick>` accepts the argument and propagates it into the review-specs and validate subagent dispatches (Step 1, Step 5), carrying it forward on `--resume` re-invocation (issue-568).
 - [ ] `quick` never bypasses a hard gate (strict review gate, non-main-branch stop, quality-gate fail-fast, constitution).
 - [ ] `single-front-door.spec.md` express-lane wording updated to reference the quick tier (CON-1 resolved).
 - [ ] Provider mirrors in sync; no inline Node; all edited skills retain their Load Skill Extensions block.

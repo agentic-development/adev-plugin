@@ -1,15 +1,15 @@
-# Refactoring Spec: {{ spec_title }}
-
-<!-- Refactoring spec within the {{ module_name }} charter.
-     Extends the Live Spec format with current-state/target-state analysis and migration path.
-     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md -->
-
 ---
 charter: {{ module_name }}
 status: draft  <!-- draft | review-pending | review-passed | review-blocked | implemented | validated -->
 mode: refactor
 created: {{ date }}
 ---
+
+# Refactoring Spec: {{ spec_title }}
+
+<!-- Refactoring spec within the {{ module_name }} charter.
+     Extends the Live Spec format with current-state/target-state analysis and migration path.
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md -->
 
 ## Current State
 

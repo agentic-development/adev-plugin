@@ -4,27 +4,26 @@
 mode: cross-cutting
 status: validated
 risk_level: medium
-revision: 2
+revision: 3
 created: 2026-05-05
-updated: 2026-05-05
+updated: 2026-08-12
 affects:
   - session-awareness
   - implementation
   - strategic-planning
   - maintenance
 source-manifest:
-  sha: "814d829"
+  sha: "bb71086"
   files:
-    - hooks/lifecycle-gate-edit.sh
-    - hooks/lifecycle-gate-bash.sh
-    - hooks/lifecycle-gate-advisory.sh
-    - hooks/_lifecycle-gate-check-edit.mjs
     - hooks/_lifecycle-gate-check-bash.mjs
+    - hooks/_lifecycle-gate-check-edit.mjs
+    - hooks/lifecycle-gate-advisory.sh
+    - hooks/lifecycle-gate-bash.sh
+    - hooks/lifecycle-gate-edit.sh
+    - lib/execution-state.mjs
     - lib/lifecycle-gate-config.mjs
     - lib/lifecycle-gate-helpers.mjs
-    - lib/execution-state.mjs
-    - skills/standalone/SKILL.md
-  computed-at: "2026-05-05T00:00:00.000Z"
+  computed-at: "2026-08-13T00:36:08.194Z"
 drift_detected: true
 ---
 
@@ -115,7 +114,7 @@ All three layers share the same bypass check, evaluated in order (first match ex
 
 ### Layer 3: Session Advisory
 
-13. **When** any tool call completes AND execution state is `idle` or absent AND `lifecycle.gate` is `confirm` or `block` **then** inject `additionalContext`: "You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `/adev:standalone` to disable enforcement for this session."
+13. **When** any tool call completes AND execution state is `idle` or absent AND `lifecycle.gate` is `confirm` or `block` **then** inject `additionalContext`: "You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session."
 
 14. **When** execution state is `active`, `standalone`, or `lifecycle.gate` is `off` or `warn` **then** the session advisory does not fire.
 
@@ -123,7 +122,7 @@ All three layers share the same bypass check, evaluated in order (first match ex
 
 15. **When** enforcement level is `warn` **then** exit 0 with `additionalContext` containing an advisory message naming the missing artifact and the command to create it.
 
-16. **When** enforcement level is `confirm` **then** exit 0 with `additionalContext` containing a strong directive: "STOP. You MUST run `/adev:plan` before proceeding. If this is a bug fix, invoke `/adev:debug`. If this is exploratory, run `/adev:standalone`. Only proceed for trivial non-tracked changes."
+16. **When** enforcement level is `confirm` **then** exit 0 with `additionalContext` containing a strong directive: "STOP. You MUST run `/adev:plan` before proceeding. If this is a bug fix, invoke `/adev:debug`. If this is exploratory, run `adev execution-state write --status standalone`. Only proceed for trivial non-tracked changes."
 
 17. **When** enforcement level is `block` **then** exit 2 with JSON body explaining what's missing. The tool call is rejected.
 
@@ -131,7 +130,7 @@ All three layers share the same bypass check, evaluated in order (first match ex
 
 18. **When** the session-start hook detects `ADEV_STANDALONE=1` in the process environment **then** it writes `.context-index/.execution-state.md` with `status: standalone` and `updated: <now>`. All lifecycle gates pass for the entire session.
 
-19. **When** `/adev:standalone` is invoked mid-session **then** it writes `status: standalone` to execution state. All lifecycle gates pass for the remainder of the session.
+19. **When** `adev execution-state write --status standalone` is invoked mid-session (the escape hatch named directly in gate messaging; no dedicated skill wraps this — the CLI call is structurally passthrough, see `STRUCTURAL_BASH_PASSTHROUGH` in `lib/lifecycle-gate-config.mjs`) **then** it writes `status: standalone` to execution state. All lifecycle gates pass for the remainder of the session.
 
 20. **When** a new session starts without `ADEV_STANDALONE=1` **then** session-start clears any previous `standalone` status (resets to `idle`). Standalone mode does not leak across sessions.
 
@@ -245,7 +244,7 @@ The lifecycle gate is configured during `/adev:init` onboarding (Step 7f: Lifecy
 
 - **Ordering in hooks.json:** Lifecycle gate hooks run AFTER context-preflight (if both are present). The lifecycle gate's fast-path exits (enforcement=off, execution state bypass) ensure it adds negligible latency when not enforcing.
 
-- **Execution state is the coordination mechanism.** Skills don't need to "set a bypass" — they write execution state as part of their normal protocol. `/adev:implement` writes `active`, `/adev:debug` writes `active` with `planRef: debug-session`, `/adev:standalone` writes `standalone`. The gate reads the same file all skills already write.
+- **Execution state is the coordination mechanism.** Skills don't need to "set a bypass" — they write execution state as part of their normal protocol. `/adev:implement` writes `active`, `/adev:debug` writes `active` with `planRef: debug-session`, and `adev execution-state write --status standalone` (invoked directly — no skill wraps it, see Behavior 19) writes `standalone`. The gate reads the same file all skills already write.
 
 ## Harness Scope
 
@@ -288,7 +287,7 @@ The lifecycle gate is configured during `/adev:init` onboarding (Step 7f: Lifecy
 | Ship default patterns config | Write default patterns to `<PLUGIN_ROOT>/user-config` or a dedicated defaults file | small |
 | Register in hooks.json | Add all three hooks to the appropriate matchers | small |
 | Update execution state vocabulary | Add `standalone` as a valid status in `lib/execution-state.mjs` | small |
-| Create `/adev:standalone` skill | Minimal skill: writes `status: standalone` to execution state | small |
+| Create `/adev:standalone` skill (historical — deleted in issue-576; the escape hatch is now the bare CLI verb, see Behavior 19) | Minimal skill: writes `status: standalone` to execution state | small |
 | Update session-start hook | Check `ADEV_STANDALONE=1` env, write standalone state; clear standalone on normal start | small |
 | Update `/adev:debug` | Write `status: active`, `planRef: debug-session` to execution state before edits | small |
 | Tests | Unit tests for all three layers: patterns, config, bypasses, subagent scenarios | large |
@@ -335,7 +334,7 @@ The lifecycle gate is configured during `/adev:init` onboarding (Step 7f: Lifecy
 
 ### Standalone Mode
 - [ ] `ADEV_STANDALONE=1 claude` → session-start writes `status: standalone` to execution state
-- [ ] `/adev:standalone` mid-session writes `status: standalone`
+- [ ] `adev execution-state write --status standalone` mid-session writes `status: standalone`
 - [ ] Next session start (without env var) clears standalone status back to `idle`
 - [ ] Standalone mode bypasses all three layers
 
