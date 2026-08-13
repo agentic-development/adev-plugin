@@ -604,11 +604,20 @@ test("issue-582 regression: a malicious Spec: trailer never reaches the JS as co
 
     const raw = readFileSync(join(sessionsDir, files[0]), "utf8");
     assert.match(raw, /^specs-touched:/m, "frontmatter should still contain specs-touched");
-    // The malicious trailer value round-trips verbatim as inert quoted YAML
-    // data (none of its characters require escaping by yamlQuoteScalar).
+    // The payload survives verbatim in the rendered commit body — proof it
+    // flowed through as inert data rather than altering control flow.
     assert.ok(
       raw.includes(payload),
-      "payload should appear as literal data in the frontmatter, not have altered control flow",
+      "payload should appear as literal data in the capture, not have altered control flow",
+    );
+    // issue-564: it must NOT reach `specs-touched`. That field is now an
+    // allow-list of repo-relative `.context-index/specs/**/*.spec.md` paths,
+    // so a trailer of any other shape is dropped rather than recorded for
+    // downstream consumers to resolve.
+    assert.match(
+      raw,
+      /^specs-touched: \[\]$/m,
+      "a non-spec-path trailer must be dropped from specs-touched",
     );
   } finally {
     cleanupTempDir(dir);
