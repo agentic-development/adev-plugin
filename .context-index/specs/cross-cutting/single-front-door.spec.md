@@ -28,6 +28,7 @@ revision: 1
 created: 2026-07-01
 updated: 2026-07-01
 tracker-ref: "PR #199"
+drift_detected: true
 ---
 
 # Skill Spec: Single Front Door
