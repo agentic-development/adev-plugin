@@ -1,16 +1,16 @@
 ---
 name: adev:hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs twenty audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
+description: "Audit all context for staleness, drift, and coverage gaps. Runs twenty-two audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and source code, generating actionable reports. Twenty audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, heuristic index health, kind-discriminator validity, validate config drift, and platform drift so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and source code, generating actionable reports. Twenty-two audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, heuristic index health, kind-discriminator validity, validate config drift, and platform drift so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all twenty passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift, kind-validity, validate-config-drift, platform-drift)
+- No arguments: full audit (all twenty-two passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift, kind-validity, validate-config-drift, platform-drift, test-policy-drift)
 - `--pass <type>`: alias for `--check <type>` (accepted for symmetry with related skills; identical behavior)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
@@ -39,7 +39,7 @@ Then exit (skip audit passes).
 **Otherwise (normal audit mode):**
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
-2. **Run audit passes:** Execute each of the eighteen passes below. If `--check` (or `--pass`) was provided, run only that pass.
+2. **Run audit passes:** Execute each of the twenty-two passes below. If `--check` (or `--pass`) was provided, run only that pass.
 3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
@@ -1118,6 +1118,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Kind Validity | WARN | 3 findings (non-blocking) |
 | Validate Config Drift | INFO | 0 divergent entries |
 | Platform Drift | PASS | All declared fields match |
+| Test-Policy Drift | WARN | 1 task with unavailable floor_inputs |
 
 ## Priority Actions
 
