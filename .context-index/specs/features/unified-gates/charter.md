@@ -85,7 +85,7 @@ Unify governance gates and manifest tiered gates into a single gate system in `g
 | Severity and Required Reconciliation | `required: false` forces `severity: warning`. Explicit `severity` on a gate overrides tier defaults. Default severity: `error` for fast/integration, `warning` for e2e | should-have | | validated |
 | E2E Sub-keys | Support `smoke`/`full` groupings within e2e-tier gates, with independent severity defaults (`error` for smoke, `warning` for full) | should-have | | validated |
 | Backward Compatibility Path | Projects with existing `manifest.yaml gates:` get a migration warning from `/adev:init` or `/adev:hygiene` suggesting they generate `governance/gates.yaml` | nice-to-have | | validated |
-| Gate Doctor | `adev gate doctor` verifies that declared gates can actually execute and that declared test suites are actually collected: sh-globstar under-expansion, runner collection diff, gate binary resolution, unsubstituted `{{ }}` placeholders, gitignored/missing referenced paths, and CI invocation of each gate. Static by default; `--execute` opts into subprocess runs with a reentrancy guard. Wired into `/adev:validate` (check-14) and `/adev:hygiene` Pass 8. | must-have | | draft |
+| Gate Doctor | `adev gate doctor` verifies that declared gates can actually execute and that declared test suites are actually collected: sh-globstar under-expansion, runner collection diff, gate binary resolution, unsubstituted `{{ }}` placeholders, gitignored/missing referenced paths, and CI invocation of each gate. Static by default; `--execute` opts into subprocess runs with a reentrancy guard. Wired into `/adev:validate` (check-14) and `/adev:hygiene` Pass 8. | must-have | | validated |
 
 ## Interface Contracts
 
