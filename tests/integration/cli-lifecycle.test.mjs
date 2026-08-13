@@ -568,7 +568,10 @@ describe("cli-lifecycle: end-to-end CLI verb composition", () => {
 
     // Stage 1: the skill writes the report body to <path>.validate.md.tmp.
     // The canonical .validate.md is NOT yet observable.
-    const reportBody = "# Validation Report: Sample\n\nFull body.\n";
+    // Frontmatter first — `adev artifact commit` rejects a body above the
+    // delimiter with ARTIFACT_FRONTMATTER_NOT_FIRST (issue-586).
+    const reportBody =
+      "---\nverdict: PASS\n---\n\n# Validation Report: Sample\n\nFull body.\n";
     writeFileSync(validateTmp, reportBody);
     assert.ok(
       !existsSync(validateMd),
@@ -607,7 +610,8 @@ describe("cli-lifecycle: end-to-end CLI verb composition", () => {
 
     // Re-run case: a second validation overwrites the canonical report
     // through the same write-tmp + commit pattern.
-    const reportBodyV2 = "# Validation Report: Sample\n\nSecond run.\n";
+    const reportBodyV2 =
+      "---\nverdict: PASS\n---\n\n# Validation Report: Sample\n\nSecond run.\n";
     writeFileSync(validateTmp, reportBodyV2);
     r = adev(projectDir, [
       "artifact", "commit",
