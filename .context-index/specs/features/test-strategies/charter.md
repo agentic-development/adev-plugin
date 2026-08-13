@@ -123,7 +123,7 @@ Two findings drive this revision:
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Strategy Type Registry | Define the 12 strategy types with summary traits (RED/GREEN semantics, domain, typical tools) | must-have | | implemented |
+| Strategy Type Registry | Define the strategy types with summary traits (RED/GREEN semantics, domain, typical tools). Count is not stated here — it is a function of the registry, currently 9; the three revision-5 rows below carry the extension to 12 | must-have | | implemented |
 | Manifest Schema Extension | `test_strategies` section in manifest.yaml for declaring available strategies, commands, tiers, and path globs | must-have | | review-passed |
 | Strategy Detection Heuristics | Auto-detect available strategies from project files (dbt_project.yml -> fixture, Terraform -> policy, etc.) and task file paths (migrations/ -> schema) | must-have | | review-passed |
 | Strategy Assignment Protocol | Rules for how plan assigns a strategy per task: spec-declared > manifest-declared > auto-detected > fallback to unit | must-have | | review-passed |

@@ -161,11 +161,31 @@ use to launder an obstacle into forward progress — the same shape as the
   Building an authentication guarantee on that substrate would be worse than
   having none, because it would read as verified.
 - Instead, the recording verb accepts `operator_deferred` **only** when the task
-  is named in a checked-in deferral policy file (a reviewable, human-authored
-  artifact under version control). The record cites the policy entry and the
-  commit that introduced it. There is no runtime path to `operator_deferred` at
-  all — an agent cannot produce one, because producing one requires a human to
-  have committed a file.
+  is named in a checked-in deferral policy file. The record cites the policy entry
+  and the commit that introduced it. There is no runtime path to
+  `operator_deferred` at all — producing one requires a human to have committed a
+  file.
+
+  > **This artifact does not exist yet; this spec introduces it.** Saying so
+  > explicitly is the point: the defect this bullet replaces was a fix that
+  > referenced machinery which was not there. The contract is deliberately
+  > minimal, and the location and exact schema are a **human decision** (see
+  > Acceptance Criteria):
+  >
+  > - **Proposed path:** `.context-index/governance/deferrals.yaml`, alongside the
+  >   existing `risk-policies.yaml` / `gates.yaml` / `review.yaml` governance
+  >   files, which is where reviewable human policy already lives in adev.
+  > - **Proposed minimal schema:** a list of entries, each
+  >   `{ spec: <project-root-relative .spec.md path>, task_id: <string>,
+  >   reason: <prose, required>, expires: <ISO date, optional> }`.
+  > - **Absent file:** treated as an empty list. No `operator_deferred` record is
+  >   accepted; every other reason code is unaffected. A project that never
+  >   creates the file simply cannot use `operator_deferred`, which is the safe
+  >   default.
+  > - **Parsing:** the existing zero-dependency governance YAML reader is reused;
+  >   no new parser and no new dependency.
+  > - **Expiry:** an entry past `expires` no longer authorises a deferral, so a
+  >   standing exemption cannot become permanent by inattention.
 - An `operator_deferred` record naming a task absent from the policy file is
   **rejected**, not downgraded, with `LEDGER_UNATTRIBUTED_OVERRIDE`. Rejection
   rather than downgrade is deliberate: a silent downgrade would let the agent
@@ -340,6 +360,7 @@ judgement, and never such that the summary reports a pass.
 | `lib/diagnostics/event-schemas.mjs` | Medium | Schema for the new event: closed enums, flat required-field array. `baseline_checksum` / `baseline_captured_at` stay **unconditionally optional** here; the strategy-conditional pairing check lives in the emitter, because `getRequiredFields(discriminator)` cannot express a conditional |
 | `lib/infra-preflight.mjs` | Medium | Expose which declared system/env var/tool failed, so `unmet_requirement` is machine-sourced |
 | `lib/test-strategies/` | Medium | Profiles reference the outcome vocabulary; resolve preflight failure → `deferred` |
+| `.context-index/governance/deferrals.yaml` | High | **New artifact introduced by this spec** — the only path to `operator_deferred`. Proposed location and minimal schema in Behavior 3; final location and format are a human decision. Absent file = empty list = no `operator_deferred` accepted. Reuses the existing governance YAML reader; no new dependency |
 | `skills/validate/SKILL.md`, `skills/write-test/SKILL.md`, `skills/hygiene/SKILL.md`, `skills/status/SKILL.md` | **Deferred — out of scope for this spec** | Gate, dispatch, and reporting prose. Contended surfaces; sequenced as required follow-up |
 
 ## Integration Points
@@ -394,7 +415,12 @@ named in the Module Impact Map.
 - [ ] `renderMarkdown()` reports `deferred` and `unverified` counts separately from passes
 - [ ] No gate treats `deferred`, `error`, or `unverified` as GREEN
 
+- [ ] An absent `deferrals.yaml` is treated as an empty list: no `operator_deferred` is accepted, and every other reason code is unaffected
+- [ ] A `deferrals.yaml` entry past its `expires` date no longer authorises a deferral
+
 **Gated on human approval (blocks everything above):**
+
+- [ ] The location and schema of the deferral policy file are confirmed (proposed: `.context-index/governance/deferrals.yaml`) — it is a new artifact this spec introduces, not existing machinery
 
 - [ ] The `strategy_verification` canonical event carries a `[BOUNDARY: human-approved]` comment and lands only after explicit approval
 - [ ] `lifecycle-event-log.spec.md`'s Canonical Event Variants table gains a `strategy_verification` row
