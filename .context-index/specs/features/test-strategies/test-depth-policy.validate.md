@@ -49,13 +49,13 @@ All 20 acceptance-criteria groups verified PASS by reading actual source and tes
 
 ### Scope Expansion Sub-Finding — WARN (does not fail Check 2)
 Files changed outside `source-manifest.files` (via `git diff <merge-base>..HEAD --stat`), all process/artifact byproducts rather than functional scope creep:
-- `.context-index/adrs/0016-test-depth-resolution-point.md` (new) — the governing ADR, cited throughout the spec/plan but not listed in the manifest.
+- `.context-index/adrs/0017-test-depth-resolution-point.md` (new) — the governing ADR, cited throughout the spec/plan but not listed in the manifest.
 - `.context-index/manifest.yaml` — `adev_version` bump only.
 - `.context-index/lifecycle-state/plan-test-mapping.jsonl`, `test-depth-policy.jsonl` — generated event logs.
 - `test-depth-policy.plan.md`, `.review.md`, `.routing.json` — this spec's own lifecycle artifacts.
 - `.context-index/sessions/*.md` (13 files) — auto-generated session logs.
 
-Recommended action: consider adding `.context-index/adrs/0016-test-depth-resolution-point.md` to a future manifest re-stamp since it is a substantive, hand-authored governance artifact; the remaining items are routine lifecycle byproducts and do not need manifest inclusion.
+Recommended action: consider adding `.context-index/adrs/0017-test-depth-resolution-point.md` to a future manifest re-stamp since it is a substantive, hand-authored governance artifact; the remaining items are routine lifecycle byproducts and do not need manifest inclusion.
 
 ## Cross-Repo Dependency Validation — N/A
 No workspace detected (`detectWorkspace()` returned `null`); no cross-repo `depends-on` references in the spec.
