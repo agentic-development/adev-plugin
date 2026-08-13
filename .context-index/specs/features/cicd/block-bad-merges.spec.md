@@ -46,6 +46,19 @@ drift_detected: true
 6. **When** the command is `gh pr merge` **then** it is blocked by default and allowed when `completion.allow_agent_pr_merge: true`. Only the exact literal `true` opts in.
 7. **When** a `gh pr merge` is refused **then** the message names the base the command actually targets (from `--base`, else the first protected branch) and points at `allow_agent_pr_merge`. Previously the clause sat inside a loop over protected branches and ignored the loop variable, so EVERY `gh pr merge` was refused — including one targeting a non-protected base, e.g. a stacked PR onto another feature branch — and the error named a branch the PR never targeted, while advising "open a pull request instead", which cannot be acted on when the command *is* a PR merge.
 
+### Known limitation — string matching, not command parsing
+
+The guard greps the raw command string, so it fires on any text containing a
+matched pattern, including a heredoc or a commit message that merely *mentions*
+one. This is not hypothetical: the commit implementing behaviors 5-7 was itself
+refused, because its message quotes the very command it fixes.
+
+Not addressed here — distinguishing a real invocation from a quoted mention
+needs shell parsing, which is a larger change than this contract should carry,
+and the false-positive class is narrow (prose about git commands). Workaround:
+pass long messages with `git commit -F <file>` so the text never enters the
+command string. Recorded so the next person hitting it does not re-diagnose it.
+
 ### Postconditions
 
 - Main branch has branch protection enabled
