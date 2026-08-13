@@ -32,7 +32,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 
 | Verb | Purpose | Implementation |
 |------|---------|----------------|
-| `gate` | Evaluate a lifecycle gate without doing the skill's work | `lib/cli/gate.mjs` |
+| `gate` | Evaluate a lifecycle gate; diagnose whether quality gates can run | `lib/cli/gate.mjs` |
 | `report` | Append a lifecycle event to the per-spec event log | `lib/cli/report.mjs` |
 | `diagnose` | Run registered write-time diagnostics over artifacts | `lib/cli/diagnose.mjs` |
 | `source-manifest` | Verify or compute a spec's source-file manifest | `lib/cli/source-manifest.mjs` |
@@ -188,6 +188,35 @@ adev gate require --skill implement --spec .context-index/specs/features/auth/lo
 ```
 
 **Implementation:** `lib/cli/gate.mjs`. **Called by:** `/adev:plan`, `/adev:specify`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`.
+
+#### `gate doctor`
+
+**Purpose:** Verify that the quality gates declared in `governance/gates.yaml` can actually execute, and that the tests the project has written actually get collected by a runner. Read-only — it never modifies a file. Exit 2 means at least one error-severity finding.
+
+adev has always verified test *authorship* rigorously (RED-state verification, immutable handoff hashes, gaming detection) and never verified test *collection*. A 2026-08-10 audit of three adev-built repos found all three had written tests that never ran.
+
+**Signature:** `gate doctor [--json] [--execute] [--timeout <seconds>] [--gates <path>]`
+
+Five diagnostic families:
+
+| Family | Catches |
+|---|---|
+| Test collection | `**` globs that `sh` under-expands (it has no globstar, so `**` matches exactly one path segment); runner collection gaps; unidentifiable runners |
+| Gate executability | Gate binaries that are neither shell builtins nor on `PATH` nor in `node_modules/.bin`; empty commands |
+| CI wiring | No CI config anywhere; declared gates that appear in no CI file |
+| Placeholders | Gate commands still carrying `{{ }}` template placeholders |
+| Path reachability | Gate commands referencing nonexistent or **gitignored** paths (which can only run for whoever created them locally) |
+
+Gate commands are followed one hop through `package.json` scripts, because a gate command of `npm test` usually hides the interesting part in `scripts.test`.
+
+**`--execute` is off by default and should stay off inside skills.** The doctor is reachable from `/adev:validate` and `/adev:hygiene`, both of which are reachable from a `npm test` gate, so executing gates by default would be reentrant. When `--execute` is passed, every spawned command receives `ADEV_GATE_DOCTOR=1`, and a doctor that sees that variable already set refuses to spawn.
+
+**Example:**
+```
+adev gate doctor --json
+```
+
+**Implementation:** `lib/cli/gate.mjs` → `lib/gates/doctor.mjs`. **Called by:** `/adev:validate` (check-14), `/adev:hygiene` (Audit Pass 8).
 
 ### `report`
 
