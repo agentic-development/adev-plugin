@@ -55,3 +55,34 @@
 
 **Total findings:** 8 (2 blockers, 4 warnings, 2 "no issues" notes)
 **Action required:** Revise to revision 2 addressing SEC-2 and CON-1 (and SA-4, jointly with the snapshot spec), then re-review. The spec's central decision — reuse the lifecycle event log as the status ledger rather than build a new store — was reviewed explicitly by the structural architect and **endorsed as sound with complete reasoning**. The blockers are about attribution integrity and an error-code collision, not about the architecture.
+
+
+---
+
+# Round 2 — quick-tier re-review of revision 2 (2026-08-13)
+
+> **Reviewer:** quick-synthesized-reviewer (all three lenses)
+> **Verdict:** BLOCK → revised to **revision 3**
+
+**Round-1 blocker partition, verified against shipped code:**
+
+| Round-1 blocker | Bucket |
+|---|---|
+| SA-1 unsatisfiable cascade order | **addressed** — appending after the trailing `integration` rule is implementable; `models/**/*.sql` → `fixture`, `k6/**` → `threshold`, `migrations/` → `schema` all verified true in `detection.mjs` |
+| SA-2 visual AC unachievable | **addressed** — the honest note now matches the code |
+| SA-3 seed_data_rule / permitted_tools | **addressed** — `REQUIRED_FIELDS` counts empty arrays as missing (`profiles.mjs:194`), so non-empty defaults do fix it; no contradiction with `UNIT_PROFILE`, which never passes through that validation |
+| SA-4 post-hoc-baseline substrate | **inadequately addressed** → SA-12 |
+| SEC-1 credentials in recorded commands | **addressed** |
+| SEC-2 unauthenticated operator_deferred | **persistent** → SEC-6 |
+| CON-1 error-code collision | **addressed** (CON-2 and CON-3 also fixed) |
+
+**Round-2 findings on this spec**
+
+- **SEC-6** · blocker · `behaviors-3` — **The mechanism revision 2 specified does not exist.** `Author-type` / `Operator` are git commit-message trailers written by `.githooks/prepare-commit-msg`, not a runtime channel a CLI verb can read. The derivation fails **open** (`hasSessionId ? agent : human`, plus an empty-string fallback) and its only input is a session-tracking file the attesting session itself writes. Revision 2 therefore asserted a *stronger* guarantee than revision 1 on a substrate providing none. **Fixed in revision 3:** the hook-provenance claim is withdrawn; `operator_deferred` is reachable only via a task named in a checked-in deferral policy file, so there is no runtime path at all.
+- **SA-12** · blocker · `behaviors-5` — Strategy-conditional required fields are not expressible in `lib/diagnostics/event-schemas.mjs`, which offers only a flat per-discriminator required-field array. **Fixed in revision 3:** both baseline fields are unconditionally optional in the schema module and the pairing check moves to the emitter. The spec now also states plainly what `baseline_captured_at` can and cannot prove, instead of implying tamper-proofing.
+- **CON-9** · blocker · `behaviors-4` — The retroactivity cutoff was defined twice in one paragraph, incompatibly (version anchor and data anchor). Under the data reading, a project that never records anything is permanently exempt — reproducing the 235-of-391 outcome. **Fixed in revision 3:** version anchor only; a project with zero recorded outcomes is maximally unverified, not exempt.
+- **SEC-7** · warning · `behaviors-2` — `missing_env_vars` / `missing_tools` are nullable, so a probe-only system that fails yields no name-shaped data. **Fixed in revision 3:** system-name granularity is stated as the floor.
+
+**Status of revision 3:** all four closed by construction; not independently re-reviewed.
+
+> Round 1's endorsement of the central architecture — reusing the lifecycle event log as the status ledger rather than building a new store — was reaffirmed in round 2 and stands.

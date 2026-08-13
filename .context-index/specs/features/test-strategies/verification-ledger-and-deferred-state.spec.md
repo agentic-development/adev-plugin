@@ -5,7 +5,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone:
-revision: 2
+revision: 3
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -128,6 +128,15 @@ that would write secrets into git history. A record whose `unmet_requirement`
 does not match a name present in the preflight result is rejected with
 `LEDGER_UNMET_REQUIREMENT_NOT_A_NAME`.
 
+**System-name granularity is the floor.** `missing_env_vars` and `missing_tools`
+are nullable — `runPreflight()` leaves the corresponding check `null` when a
+system declares no `env_vars` or `cli_tools`. A probe-only system that fails
+therefore yields no variable- or tool-level name at all, only `probe_error`,
+which this rule forbids. In that case `unmet_requirement` carries the **system
+name** (`sys.name`, always present). The contract is "the failing system, and the
+specific env var or CLI tool where preflight knows one" — not a promise of
+variable-level granularity in every case.
+
 **3. Agents may not choose `deferred` to make progress**
 
 An agent encountering an environmental obstacle records `infra_unavailable` /
@@ -142,21 +151,29 @@ code that asserts a *human decision*, which makes it the one code an agent could
 use to launder an obstacle into forward progress — the same shape as the
 235-of-391 `skipped` failure wearing a different label. Therefore:
 
-- The recording verb accepts `operator_deferred` **only** when the invocation
-  carries the hook-injected provenance the project already requires on commits
-  (`Author-type` / `Operator`, from the manifest `provenance` section) **and**
-  that provenance resolves to a human operator. The verb does **not** read a
-  `source` argument supplied by the caller; it reads the provenance the harness
-  injected. Self-attestation is structurally impossible rather than merely
-  prohibited.
-- An `operator_deferred` record produced under agent provenance is **rejected**,
-  not downgraded, with `LEDGER_UNATTRIBUTED_OVERRIDE`. Rejection rather than
-  downgrade is deliberate: a silent downgrade would let the agent continue
-  believing it had recorded a deferral.
-- A project may pre-authorise standing deferrals through explicit checked-in
-  configuration, in which case the record cites the configuration entry and the
-  commit that introduced it — a human-authored, reviewable artifact — rather than
-  a runtime assertion.
+- **The attestation must be an out-of-band, human-authored artifact — not a
+  runtime claim.** An earlier revision proposed reading the project's
+  `Author-type` / `Operator` provenance. That was wrong and is withdrawn: those
+  are **git commit-message trailers** written by `.githooks/prepare-commit-msg`
+  at commit time, not a runtime channel a CLI verb can read; the derivation fails
+  **open** (`hasSessionId ? agent : human`, plus an empty-string fallback); and
+  its only input is a session-tracking file the attesting session itself writes.
+  Building an authentication guarantee on that substrate would be worse than
+  having none, because it would read as verified.
+- Instead, the recording verb accepts `operator_deferred` **only** when the task
+  is named in a checked-in deferral policy file (a reviewable, human-authored
+  artifact under version control). The record cites the policy entry and the
+  commit that introduced it. There is no runtime path to `operator_deferred` at
+  all — an agent cannot produce one, because producing one requires a human to
+  have committed a file.
+- An `operator_deferred` record naming a task absent from the policy file is
+  **rejected**, not downgraded, with `LEDGER_UNATTRIBUTED_OVERRIDE`. Rejection
+  rather than downgrade is deliberate: a silent downgrade would let the agent
+  continue believing it had recorded a deferral.
+- The policy file is itself subject to review: adding a task to it is a diff a
+  human wrote and a reviewer can see, which is the whole point. Deferrals granted
+  this way still count as `deferred` in the board and still never satisfy a GREEN
+  gate — the policy authorises *recording* the deferral, never *passing*.
 
 **4. Recording is mandatory, and absence is itself a finding**
 
@@ -172,9 +189,17 @@ strategy assignment was recorded **on or after** the commit that lands the
 not blocking any gate. Without this rule, landing the ledger would instantly mark
 every existing non-`unit` task in every adev project as unverified, which would
 train operators to ignore the signal on day one — the precise outcome this spec
-exists to prevent. The cutoff is read from the first `strategy_verification`
-event in the project's lifecycle logs; projects with none are entirely
-pre-ledger.
+exists to prevent.
+
+**The cutoff is a version anchor, and only a version anchor.** It is the release
+in which `strategy_verification` lands, recorded as a constant in the codebase
+and compared against the `plan_task` event that created the assignment. An
+earlier revision also offered a data anchor ("read from the first
+`strategy_verification` event in the project's logs"); that reading is
+**withdrawn**, because it would let the recorder set its own exemption boundary
+and would make a project that never records anything permanently exempt —
+reproducing the 235-of-391 outcome exactly. A project that has recorded nothing
+is maximally unverified, not maximally exempt.
 
 **5. Event shape (proposed — requires human approval)**
 
@@ -194,14 +219,32 @@ and secrets out of the log.
 
 `baseline_checksum` and `baseline_captured_at` exist so that
 `snapshot-strategy-profile.spec.md`'s two defining gaming blockers have a durable
-substrate. Both are **strategy-conditional**: required when
-`strategy_id === "snapshot"` and the outcome records a baseline, absent
-otherwise. Without them, the post-hoc-baseline rule ("was the baseline captured
+substrate. Without them, the post-hoc-baseline rule ("was the baseline captured
 before implementation?") and the write-once rule ("has a baseline already been
 recorded for this task?") have nothing to check against — the write-test handoff
 block is not a durable, timestamped, queryable record. Both fields are bounded
 scalars (a hex digest and an ISO timestamp), so they do not reintroduce the
 payload-size or secret-leak concerns that `evidence_ref` avoids.
+
+**Where the pairing check lives.** Both fields are **unconditionally optional** in
+`lib/diagnostics/event-schemas.mjs`, whose `getRequiredFields(discriminator)`
+contract expresses only a flat per-discriminator required-field array and cannot
+express "required when `strategy_id === 'snapshot'`". The conditional rule is
+enforced in the **emitter** (`reportStrategyVerification()`), which rejects a
+`snapshot` outcome that records a baseline without both fields
+(`LEDGER_MISSING_BASELINE_FIELDS`). Putting the check in the emitter rather than
+bending the schema module keeps a validated contract intact — an earlier revision
+specified conditional-required in the schema module, which is not expressible
+there.
+
+**What `baseline_captured_at` can and cannot prove.** It is self-reported by the
+same capture step it polices, so on its own it cannot prove a baseline was not
+captured late. Its value is corroborative: it must be *consistent with* the
+independently-recorded event append time and precede the first implementation
+commit. A capture step that lies about its timestamp but appends the event late
+is caught by the append time; one that appends early but re-captures later is
+caught by the write-once checksum rule. Neither check is claimed to be
+tamper-proof, and the profile says so rather than implying a guarantee.
 
 > **[BOUNDARY: human-approved] required.** Adding `strategy_verification` to
 > `CANONICAL_EVENTS` in `lib/lifecycle-events.mjs` touches the lifecycle event
@@ -294,7 +337,7 @@ judgement, and never such that the summary reports a pass.
 | `lib/lifecycle-events.mjs` | High | Add `strategy_verification` to `CANONICAL_EVENTS` with a `[BOUNDARY: human-approved]` comment — **blocked on approval** |
 | `agent-reliable-state-artifacts/lifecycle-event-log.spec.md` | High | ADR-0009 §8 designates it the event-log authority; its Canonical Event Variants table gains a `strategy_verification` row (and is already stale for `spec_amended` / `test_depth_assigned` / `code_drift_*`) |
 | `lib/lifecycle-state.mjs` | High | `reportStrategyVerification()` emitter, projection rule, `renderMarkdown` verification section |
-| `lib/diagnostics/event-schemas.mjs` | Medium | Schema for the new event: closed enums, required-field pairing |
+| `lib/diagnostics/event-schemas.mjs` | Medium | Schema for the new event: closed enums, flat required-field array. `baseline_checksum` / `baseline_captured_at` stay **unconditionally optional** here; the strategy-conditional pairing check lives in the emitter, because `getRequiredFields(discriminator)` cannot express a conditional |
 | `lib/infra-preflight.mjs` | Medium | Expose which declared system/env var/tool failed, so `unmet_requirement` is machine-sourced |
 | `lib/test-strategies/` | Medium | Profiles reference the outcome vocabulary; resolve preflight failure → `deferred` |
 | `skills/validate/SKILL.md`, `skills/write-test/SKILL.md`, `skills/hygiene/SKILL.md`, `skills/status/SKILL.md` | **Deferred — out of scope for this spec** | Gate, dispatch, and reporting prose. Contended surfaces; sequenced as required follow-up |
@@ -334,7 +377,10 @@ named in the Module Impact Map.
 - [ ] A `deferred` record without a recognised `reason_code` is rejected
 - [ ] A `deferred` record with `infra_unavailable` and no `unmet_requirement` is rejected
 - [ ] `unmet_requirement` is populated only from `runPreflight()`'s `missing_env_vars` / `missing_tools` / failing-system names; a value sourced from `probe_error` is rejected with `LEDGER_UNMET_REQUIREMENT_NOT_A_NAME`
-- [ ] An agent cannot produce `operator_deferred`: the verb reads hook-injected `Author-type` / `Operator` provenance and ignores any caller-supplied `source`; agent provenance is **rejected** (not downgraded) with `LEDGER_UNATTRIBUTED_OVERRIDE`
+- [ ] An agent cannot produce `operator_deferred`: the only path is a task named in a checked-in deferral policy file; a record for a task absent from that file is **rejected** (not downgraded) with `LEDGER_UNATTRIBUTED_OVERRIDE`. No runtime provenance claim is read
+- [ ] `unmet_requirement` falls back to the system name when preflight has no env-var or tool-level name (probe-only systems)
+- [ ] The `strategy_verification` conditional baseline-field check lives in the emitter; `event-schemas.mjs` keeps its flat required-field array contract unchanged
+- [ ] The pre-ledger cutoff is a version anchor only; a project with zero recorded outcomes is maximally unverified, not exempt
 - [ ] `evidence_ref` escaping the project root is rejected
 - [ ] A `snapshot` outcome recording a baseline without `baseline_checksum` / `baseline_captured_at` is rejected
 - [ ] `LEDGER_SPEC_PATH_UNRESOLVED` is used for the non-fatal case; `INVALID_SPEC_PATH` keeps its existing hard-failure contract

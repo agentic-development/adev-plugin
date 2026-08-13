@@ -5,7 +5,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone:
-revision: 2
+revision: 3
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -116,10 +116,13 @@ checksum so an in-place edit is detectable.
 **6. Detection heuristics and pattern-level exclusions**
 
 `detectTaskStrategy` evaluates a **fixed linear rule list** and returns the first
-match. `tolerance` is **appended at the end** of that list, after `integration`,
-and requests no reordering or modification of any shipped rule. This is the only
-position that honours this spec's own requirement that `threshold` detection be
-left untouched.
+match. `tolerance` is appended after the shipped cascade, **second of the three
+new rules** — the canonical order `reconciliation` → `tolerance` → `snapshot` is
+set once in `snapshot-strategy-profile.spec.md`'s charter extension note. It
+requests no reordering or modification of any shipped rule, which is the only
+arrangement that honours this spec's own requirement that `threshold` detection
+be left untouched. Sitting ahead of `snapshot` is what makes
+`tolerances/x.baseline.json` resolve to `tolerance` rather than `snapshot`.
 
 | Pattern | Confidence |
 |---|---|

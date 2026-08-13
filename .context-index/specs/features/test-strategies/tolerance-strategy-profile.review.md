@@ -50,3 +50,29 @@
 
 **Total findings:** 9 (2 blockers, 4 warnings, 3 suggestions)
 **Action required:** Revise to revision 2 addressing SA-1 and SA-3 (and SEC-1), then re-review. The core design question — whether `tolerance` should exist separately from `threshold` — was reviewed explicitly and answered **yes**; the blockers are about how detection precedence and profile fields are expressed, not about the strategy's existence.
+
+
+---
+
+# Round 2 — quick-tier re-review of revision 2 (2026-08-13)
+
+> **Reviewer:** quick-synthesized-reviewer (all three lenses)
+> **Verdict:** BLOCK → revised to **revision 3**
+
+**Round-1 blocker partition, verified against shipped code:**
+
+| Round-1 blocker | Bucket |
+|---|---|
+| SA-1 unsatisfiable cascade order | **addressed** — appending after the trailing `integration` rule is implementable; `models/**/*.sql` → `fixture`, `k6/**` → `threshold`, `migrations/` → `schema` all verified true in `detection.mjs` |
+| SA-2 visual AC unachievable | **addressed** — the honest note now matches the code |
+| SA-3 seed_data_rule / permitted_tools | **addressed** — `REQUIRED_FIELDS` counts empty arrays as missing (`profiles.mjs:194`), so non-empty defaults do fix it; no contradiction with `UNIT_PROFILE`, which never passes through that validation |
+| SA-4 post-hoc-baseline substrate | **inadequately addressed** → SA-12 |
+| SEC-1 credentials in recorded commands | **addressed** |
+| SEC-2 unauthenticated operator_deferred | **persistent** → SEC-6 |
+| CON-1 error-code collision | **addressed** (CON-2 and CON-3 also fixed) |
+
+**Round-2 findings on this spec**
+
+- **SA-13** · blocker · `behaviors-6` — Cascade ambiguity among the three new rules. **Fixed in revision 3:** `tolerance` is second of the three, ahead of `snapshot`, which is what makes `tolerances/x.baseline.json` resolve here.
+
+**Status of revision 3:** finding closed by construction; not independently re-reviewed.
