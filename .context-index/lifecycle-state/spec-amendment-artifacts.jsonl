@@ -46,3 +46,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"no transitions configured","ts":"2026-06-19T14:22:15.991Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"no UI files in diff; SKIP","ts":"2026-06-19T14:22:16.040Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-06-19T14:22:57.779Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-08-13T00:20:15.400Z","ts":"2026-08-13T00:20:15.400Z","diagnostic_warnings":["adev/frontmatter-present"]}

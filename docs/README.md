@@ -35,7 +35,7 @@ Specialized guides for power users and complex setups.
 
 - [Workspaces](workspaces.md) — Multi-repo coordination and workspace configuration
 - [Governance](governance.md) — Customizing review and validation gates
-- [Test Strategies](test-strategies.md) — Domain-specific TDD configuration and patterns
+- [Test Strategies](test-strategies.md) — Domain-specific TDD configuration and patterns, including the test depth policy (granularity, depth, escalation, the advisory sensitive-path floor)
 - [Project Types](project-types.md) — Worked examples for different project architectures
 - [Troubleshooting & FAQ](troubleshooting.md) — Common issues and recovery steps
 
