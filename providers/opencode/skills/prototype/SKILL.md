@@ -1,6 +1,6 @@
 ---
 name: adev:prototype
-description: "Rapidly sketch UI screens, user flows, and API surface from Feature Charters. Bridges the gap between chartering and implementation. Optionally uses a live browser preview for interactive design. In OpenCode, invoke with skill({ name: 'adev:prototype' })"
+description: "Generates tiered UI prototypes (wireframe, mockup, functional) from an adev Feature Charter stored at .context-index/specs/features/<module>/charter.md, serving them via a localhost browser preview for interactive review. Use when the user wants to prototype a feature, sketch the screen, preview the UI, or bridge a Feature Charter into implementation before writing code. Supports conversational iteration across rounds, then a choice to persist the result under .adev/prototype/<module>/ or discard it. This is adev-specific: it requires an existing Feature Charter and drives the brainstorm-to-implementation lifecycle, distinct from generic standalone UI-mockup tools. In OpenCode, invoke with skill({ name: 'adev:prototype' })"
 allowed-tools: [Read, Glob, Grep, Write, Bash, Edit]
 ---
 
