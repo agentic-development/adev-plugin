@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "seq": 175,
+  "seq": 187,
   "epics": [
     {
       "id": "epic-1",
@@ -4116,54 +4116,54 @@
     {
       "id": "issue-568",
       "title": "/adev:build drops --tier: work and route pass --tier quick but build has no --tier argument",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "skills/work/SKILL.md:211 and skills/route/SKILL.md:118 instruct '/adev:build --tier quick', but skills/build/SKILL.md Arguments (:11-26) has no --tier flag (only gate tiers). The rigor signal is silently dropped on full-pipeline runs. Fix: accept --tier full|quick in build and propagate to review-specs/validate dispatches. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §A/§D1.",
+      "notes": "skills/work/SKILL.md:211 and skills/route/SKILL.md:118 instruct '/adev:build --tier quick', but skills/build/SKILL.md Arguments (:11-26) has no --tier flag (only gate tiers). The rigor signal is silently dropped on full-pipeline runs. Fix: accept --tier full|quick in build and propagate to review-specs/validate dispatches. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §A/§D1.; Closed: Fixed by PR #212 (build --tier propagation, merged)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.027Z",
-      "updated": "2026-08-12T21:14:48.027Z"
+      "updated": "2026-08-13T02:41:11.091Z"
     },
     {
       "id": "issue-569",
       "title": "Lifecycle gate bash passthrough parser misclassifies quoted pipes/semicolons",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "matchesBashPassthrough (lib/lifecycle-gate-config.mjs:82-86) splits on |, ;, && without quote-awareness, so an allowlisted command like: grep -n \"a\\|b\" file | head is split inside the quoted pattern and blocked under lifecycle.gate=block. Reproduced 2026-08-12. Fix: quote-aware tokenization before chain/pipe splitting. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §D2.",
+      "notes": "matchesBashPassthrough (lib/lifecycle-gate-config.mjs:82-86) splits on |, ;, && without quote-awareness, so an allowlisted command like: grep -n \"a\\|b\" file | head is split inside the quoted pattern and blocked under lifecycle.gate=block. Reproduced 2026-08-12. Fix: quote-aware tokenization before chain/pipe splitting. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §D2.; Closed: Fixed by PR #213 (quote-aware gate command splitting, merged)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.042Z",
-      "updated": "2026-08-12T21:14:48.042Z"
+      "updated": "2026-08-13T02:41:11.102Z"
     },
     {
       "id": "issue-570",
       "title": "Standalone escape hatch unreachable under lifecycle.gate=block",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "With lifecycle.gate=block and no active plan, 'adev execution-state write --status standalone' (the exact command skills/standalone/SKILL.md:32 prescribes) is itself gated — 'adev' is not in the bash passthrough set, so the documented escape cannot be executed. Only manual Write to .context-index/.execution-state.json works. Fix: allowlist the escape command in domain gate-config (all providers) and make the block message name a working escape. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §D3.",
+      "notes": "With lifecycle.gate=block and no active plan, 'adev execution-state write --status standalone' (the exact command skills/standalone/SKILL.md:32 prescribes) is itself gated — 'adev' is not in the bash passthrough set, so the documented escape cannot be executed. Only manual Write to .context-index/.execution-state.json works. Fix: allowlist the escape command in domain gate-config (all providers) and make the block message name a working escape. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §D3.; Closed: Fixed by PR #211 (structural passthrough for the escape hatch, merged)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.058Z",
-      "updated": "2026-08-12T21:14:48.058Z"
+      "updated": "2026-08-13T02:41:11.079Z"
     },
     {
       "id": "issue-571",
       "title": "Disambiguate /adev:prototype trigger description (byte-identical to external mockup skill)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "task",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "skills/prototype/SKILL.md:3 description matches a user-level ~/.claude/skills/mockup skill byte-for-byte, causing nondeterministic skill routing. Repo-side fix: rewrite prototype's description to name its distinct behavior (tiered prototypes, localhost preview, charter input). Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §D4.",
+      "notes": "skills/prototype/SKILL.md:3 description matches a user-level ~/.claude/skills/mockup skill byte-for-byte, causing nondeterministic skill routing. Repo-side fix: rewrite prototype's description to name its distinct behavior (tiered prototypes, localhost preview, charter input). Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §D4.; Closed: Fixed by PR #219 (prototype description disambiguated, merged)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.069Z",
-      "updated": "2026-08-12T21:14:48.069Z"
+      "updated": "2026-08-13T02:41:11.131Z"
     },
     {
       "id": "issue-572",
@@ -4220,17 +4220,17 @@
     {
       "id": "issue-576",
       "title": "Delete skills/standalone (35-line wrapper around one CLI call)",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "task",
       "epicId": "epic-102",
       "dependencies": [
         "issue-570"
       ],
-      "notes": "Payload is 'adev execution-state write --status standalone'; 20% of the file is skill-ext boilerplate. Blocked by the escape-hatch gate bug — the CLI path must work before the skill is removed. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §B.",
+      "notes": "Payload is 'adev execution-state write --status standalone'; 20% of the file is skill-ext boilerplate. Blocked by the escape-hatch gate bug — the CLI path must work before the skill is removed. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §B.; Closed: Fixed by PR #222 (standalone skill deleted, 31->30 skills, merged)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.118Z",
-      "updated": "2026-08-12T21:14:48.170Z"
+      "updated": "2026-08-13T02:41:11.158Z"
     },
     {
       "id": "issue-577",
@@ -4261,53 +4261,53 @@
     {
       "id": "issue-579",
       "title": "Consolidate the 3 lifecycle-gate hooks into 1 and dedupe hook helpers",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "lifecycle-gate-{edit,bash,advisory}.sh (396 lines + 2 checker shims) read the same execution state; advisory fires on every tool call. Dispatch on tool name in one hook. Hoist find_context_index() (duplicated verbatim in 5 hooks) into _parse-stdin.sh; fold context-read-tracker.sh into session-capture.sh; remove the inline-Node heredoc in session-capture.sh:15-40. Hook protocol (stdin JSON, exit 0/2) unchanged — provider-agnostic by construction. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §E.",
+      "notes": "lifecycle-gate-{edit,bash,advisory}.sh (396 lines + 2 checker shims) read the same execution state; advisory fires on every tool call. Dispatch on tool name in one hook. Hoist find_context_index() (duplicated verbatim in 5 hooks) into _parse-stdin.sh; fold context-read-tracker.sh into session-capture.sh; remove the inline-Node heredoc in session-capture.sh:15-40. Hook protocol (stdin JSON, exit 0/2) unchanged — provider-agnostic by construction. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §E.; Closed: Fixed by PR #230 (lifecycle-gate consolidation; 40 golden-fixture points byte-identical; merged f57dc18d)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.144Z",
-      "updated": "2026-08-12T21:14:48.144Z"
+      "updated": "2026-08-13T02:41:11.165Z"
     },
     {
       "id": "issue-580",
       "title": "Finish the 2026-05 state migration: remove orphaned twins, retire build-state/ and migrate verb",
-      "status": "open",
+      "status": "closed",
       "priority": 2,
       "type": "task",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "25 orphaned lifecycle-state/*.json twins (migration skip-on-completion never cleans them); build-state/ (12 files) coexists with its replacement despite the migration claiming retirement; lib/migrate-state-artifacts.mjs (1,656 lines) is single-use legacy. Delete twins, retire build-state/ writers (lib/build-state.mjs + lib/cli/build-state.mjs), retire 'adev migrate' after a deprecation window. Evidence: .context-index/research/skill-surface-simplification-audit-2026-08.md §F.",
+      "notes": "RESCOPED 2026-08-12 after investigation (PR #220, merged): the audit premise was WRONG. lifecycle-state/*.json files are LIVE build-orchestrator resume state (lib/build-state.mjs writes them beside the .jsonl logs by design; never tracked; gitignored) — NOT deletable twins. lib/build-state.mjs, lib/cli/build-state.mjs and adev build-state are live (skills/build/SKILL.md:247-263). Delivered instead: adev migrate deprecated (kept as upgrade path), audit artifact corrected, 12 stale untracked legacy build-state/ files removed locally.; Closed: Completed by PR #220 (migrate deprecated; twin premise corrected, merged)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.153Z",
-      "updated": "2026-08-12T21:14:48.153Z"
+      "updated": "2026-08-13T02:41:11.141Z"
     },
     {
       "id": "issue-581",
-      "title": "Provider capability map: demote harness-absorbed plumbing to adapters, keep portable defaults",
-      "status": "open",
+      "title": "Adopt ADR 0016 (portable state ownership); fold per-harness variance into provider adapter tables",
+      "status": "closed",
       "priority": 2,
       "type": "feature",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "Claude Code natively covers execution-state persistence, session capture (auto memory + SessionEnd), and worktree/parallel-agent orchestration — but adev is multi-provider and codex/copilot/cursor/opencode lack these primitives. Introduce a per-provider capability map; the Claude Code adapter delegates to native machinery (SessionEnd capture, isolation:worktree subagents, TaskCompleted gate hooks) while other providers keep the adev-owned implementation as the portable default. Do NOT globally delete plumbing. Evidence: .context-index/research/agentic-frameworks-market-update-2026-08.md recommendations; .context-index/research/skill-surface-simplification-audit-2026-08.md §F platform note.",
+      "notes": "RESCOPED 2026-08-12 per operator direction: capability-map subsystem REJECTED. Cross-harness state sharing is a roadmap goal, so .context-index/ stays the harness-neutral system of record; native features (task lists, memory, checkpoints, native worktrees) are triggers/transports/mirrors only, never stores. Native worktree orchestration stays adev-owned. Per-harness variance belongs in providers/* adapter translation tables. See .context-index/adrs/0016-portable-state-ownership.md (PR #223, merged).; Closed: Completed by PR #223 (ADR 0016 adopted, merged)",
       "next_action": null,
       "created": "2026-08-12T21:14:48.161Z",
-      "updated": "2026-08-12T21:14:48.161Z"
+      "updated": "2026-08-13T02:41:11.149Z"
     },
     {
       "id": "issue-582",
       "title": "SECURITY: post-commit hook interpolates Spec: trailer into `node -e` — command injection via crafted commit message",
-      "status": "open",
+      "status": "closed",
       "priority": 0,
       "type": "bug",
       "dependencies": [],
-      "notes": "Found by security-reviewer during review of measurement-integrity.spec.md (blocker_id security-reviewer:command-injection:7c3a91d4). Verified at HEAD: .githooks/post-commit line 17 captures SPECS_TOUCHED from %(trailers:key=Spec,valueonly); line 60 embeds it as specsTouched: '${SPECS_TOUCHED}'.split(',') inside the node --input-type=module -e block opened at line 51. COMMIT_SUBJECT/COMMIT_BODY are JSON-escaped via round-trip; SPECS_TOUCHED is not. A crafted Spec: trailer executes attacker-controlled code when a developer merges or pulls a fetched branch. Value is also emitted into YAML frontmatter unquoted, so ] , or newline corrupts frontmatter parsed by hygiene/status. Fix: pass raw git output via stdin or process.env, never \"${VAR}\" inside node -e; emit specs-touched as double-quoted YAML scalars.",
+      "notes": "Found by security-reviewer during review of measurement-integrity.spec.md (blocker_id security-reviewer:command-injection:7c3a91d4). Verified at HEAD: .githooks/post-commit line 17 captures SPECS_TOUCHED from %(trailers:key=Spec,valueonly); line 60 embeds it as specsTouched: '${SPECS_TOUCHED}'.split(',') inside the node --input-type=module -e block opened at line 51. COMMIT_SUBJECT/COMMIT_BODY are JSON-escaped via round-trip; SPECS_TOUCHED is not. A crafted Spec: trailer executes attacker-controlled code when a developer merges or pulls a fetched branch. Value is also emitted into YAML frontmatter unquoted, so ] , or newline corrupts frontmatter parsed by hygiene/status. Fix: pass raw git output via stdin or process.env, never \"${VAR}\" inside node -e; emit specs-touched as double-quoted YAML scalars.; Closed: Fixed by PR #214 (git values via env, never JS interpolation, merged)",
       "next_action": null,
       "created": "2026-08-12T21:20:16.632Z",
-      "updated": "2026-08-12T21:20:16.632Z"
+      "updated": "2026-08-13T02:41:11.113Z"
     },
     {
       "id": "issue-583",
@@ -4378,15 +4378,15 @@
     {
       "id": "issue-588",
       "title": "session-capture installer corrupts .githooks/post-commit: sentinel wrapper breaks script syntax; config dispatch mutates repo code",
-      "status": "open",
+      "status": "closed",
       "priority": 1,
       "type": "bug",
       "epicId": "epic-102",
       "dependencies": [],
-      "notes": "Reproduced 2026-08-12 on main @ 1d2f8e7f: with integrations.session_capture.capture=hook, dispatchInstallerByCaptureMode (lib/session-capture-installer.mjs:425) runs wrapLegacyPostCommitWithSentinels then removeSessionCapturePostCommitBlock. The wrapper (:252) detects the block start at the FIRST line matching /session-capture/i — in this repo that is the self-skip guard comment (post-commit-self-skip.spec.md block, .githooks/post-commit:26-29) — so the sentinel opens INSIDE the outer if [ -n \"$CHANGED_FILES\" ] structure; removal then deletes the inner fi/fi, leaving a dangling if and a bash syntax error (unexpected end of file at line 43). Two defects: (1) wrapper bound detection must anchor on the capture-writer block, not any line mentioning session-capture, and must validate post-removal syntax (bash -n) before writing; (2) a configuration-mode dispatch silently mutates tracked repo code (.githooks/post-commit) as a side effect of hook registration — the mutation should be a separate, explicitly confirmed step. Cross-ref: the removed block is also the remediation target of issue-582 (P0 Spec:-trailer command injection lives in that same legacy block) — fixing 582 should supersede/repair this removal path. Workaround applied: git checkout -- .githooks/post-commit; SessionEnd+PreCompact registration in the installed plugin hooks.json kept.",
+      "notes": "Reproduced 2026-08-12 on main @ 1d2f8e7f: with integrations.session_capture.capture=hook, dispatchInstallerByCaptureMode (lib/session-capture-installer.mjs:425) runs wrapLegacyPostCommitWithSentinels then removeSessionCapturePostCommitBlock. The wrapper (:252) detects the block start at the FIRST line matching /session-capture/i — in this repo that is the self-skip guard comment (post-commit-self-skip.spec.md block, .githooks/post-commit:26-29) — so the sentinel opens INSIDE the outer if [ -n \"$CHANGED_FILES\" ] structure; removal then deletes the inner fi/fi, leaving a dangling if and a bash syntax error (unexpected end of file at line 43). Two defects: (1) wrapper bound detection must anchor on the capture-writer block, not any line mentioning session-capture, and must validate post-removal syntax (bash -n) before writing; (2) a configuration-mode dispatch silently mutates tracked repo code (.githooks/post-commit) as a side effect of hook registration — the mutation should be a separate, explicitly confirmed step. Cross-ref: the removed block is also the remediation target of issue-582 (P0 Spec:-trailer command injection lives in that same legacy block) — fixing 582 should supersede/repair this removal path. Workaround applied: git checkout -- .githooks/post-commit; SessionEnd+PreCompact registration in the installed plugin hooks.json kept.; Closed: Fixed by PR #214 (writer-anchored sentinels + bash -n pre-write guard, merged)",
       "next_action": null,
       "created": "2026-08-12T21:36:22.146Z",
-      "updated": "2026-08-12T21:36:22.146Z"
+      "updated": "2026-08-13T02:41:11.122Z"
     }
   ]
 }
