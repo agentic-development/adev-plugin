@@ -4,3 +4,8 @@ gates:
     command: ["npm", "test"]
     severity: error
     tier: fast
+  - id: integration-test
+    description: "Run integration tests (no-op until a test:integration script exists)"
+    command: ["npm", "run", "--if-present", "test:integration"]
+    severity: error
+    tier: integration

@@ -26,6 +26,7 @@ import {
   extractReferencedPaths,
   resolveBinary,
   isGitignored,
+  tokenize,
 } from "../../../lib/gates/doctor.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../../helpers.mjs";
 
@@ -732,6 +733,232 @@ test("runner detection also follows the npm script body", async () => {
     const r = report.runners.find((x) => x.gate === "test");
     assert.equal(r.runner, "pytest");
     assert.match(r.source, /package\.json/);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ── argv-list gate commands ─────────────────────────────────────────────────
+//
+// lib/domains/merge-gates.mjs enforces argv-list `command` (SEC-2), so every
+// correctly-authored gate arrives here as `["npm", "test"]` rather than as a
+// string. Coercing that to "" made the doctor report `empty-command` and skip
+// every command-level check for exactly the gates the framework ships.
+
+test("an argv-list gate command is analysed rather than reported as empty", async () => {
+  const dir = createTempDir();
+  try {
+    writeFixture(dir, "package.json", JSON.stringify({ name: "x", scripts: { test: "pytest tests" } }));
+    writeFixture(dir, "tests/.keep", "");
+    seedGates(
+      dir,
+      `gates:
+  - id: test
+    kind: deterministic
+    tier: fast
+    command: [npm, test]
+`,
+    );
+    const report = await runGateDoctor({ projectRoot: dir });
+    assert.ok(
+      !ids(report).includes("gate-doctor/empty-command"),
+      "an argv list is a command, not the absence of one",
+    );
+    const r = report.runners.find((x) => x.gate === "test");
+    assert.equal(r.runner, "pytest", "the npm test -> scripts.test chain resolves as for a string");
+    assert.match(r.source, /package\.json/);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("command-level checks run on an argv gate (binary resolution)", async () => {
+  const dir = createTempDir();
+  try {
+    seedGates(
+      dir,
+      `gates:
+  - id: test
+    kind: deterministic
+    tier: fast
+    command: [definitely-not-a-real-binary-xyz]
+`,
+    );
+    const report = await runGateDoctor({ projectRoot: dir });
+    const f = report.findings.find((x) => x.id === "gate-doctor/binary-not-found");
+    assert.ok(f, "the checks now run against argv gates instead of being skipped");
+    assert.equal(f.severity, "error");
+    assert.equal(f.gate, "test");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("genuinely empty commands still warn: [], {}, a number, and a missing key", async () => {
+  const dir = createTempDir();
+  try {
+    seedGates(
+      dir,
+      `gates:
+  - id: empty-list
+    kind: deterministic
+    tier: fast
+    command: []
+  - id: flow-map
+    kind: deterministic
+    tier: fast
+    command: {}
+  - id: number
+    kind: deterministic
+    tier: fast
+    command: 42
+  - id: missing
+    kind: deterministic
+    tier: fast
+`,
+    );
+    const report = await runGateDoctor({ projectRoot: dir });
+    const empties = report.findings.filter((x) => x.id === "gate-doctor/empty-command");
+    assert.deepEqual(
+      empties.map((f) => f.gate).sort(),
+      ["empty-list", "flow-map", "missing", "number"],
+      "a gate with nothing to run is still diagnosed as such",
+    );
+    for (const f of empties) assert.equal(f.severity, "warning");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("normaliseCommand returns string commands unchanged", async () => {
+  const { normaliseCommand } = await import("../../../lib/gates/doctor.mjs");
+  assert.equal(normaliseCommand("npm test"), "npm test");
+  assert.equal(normaliseCommand("cd dist && npm test"), "cd dist && npm test");
+  assert.equal(normaliseCommand(""), "");
+});
+
+test("normaliseCommand yields '' for anything that is not a string or string list", async () => {
+  const { normaliseCommand } = await import("../../../lib/gates/doctor.mjs");
+  assert.equal(normaliseCommand([]), "");
+  assert.equal(normaliseCommand({}), "");
+  assert.equal(normaliseCommand(42), "");
+  assert.equal(normaliseCommand(undefined), "");
+  assert.equal(normaliseCommand(null), "");
+  assert.equal(normaliseCommand(["npm", 42]), "", "a non-string element is not coerced into a token");
+});
+
+test("normaliseCommand round-trips a token containing whitespace through tokenize", async () => {
+  const { normaliseCommand } = await import("../../../lib/gates/doctor.mjs");
+  assert.deepEqual(
+    tokenize(normaliseCommand(["sh", "-c", "exit 3"])),
+    ["sh", "-c", "exit 3"],
+    "three argv tokens must stay three tokens, not become four",
+  );
+});
+
+test("normaliseCommand does not manufacture a shell operator from an argv token", async () => {
+  const { normaliseCommand } = await import("../../../lib/gates/doctor.mjs");
+  assert.deepEqual(
+    tokenize(normaliseCommand(["echo", "&&"])),
+    ["echo", "&&"],
+    "the '&&' is a literal argument, so the join must quote it rather than emit an operator",
+  );
+  assert.equal(resolveBinary(normaliseCommand(["echo", "&&"]), process.cwd()).token, "echo");
+});
+
+test("an argv token spelling an operator stays inside the FIRST sub-command", async () => {
+  const dir = createTempDir();
+  try {
+    // `path-missing` is only reported for segmentIndex 0 — a path a later
+    // sub-command would create is legitimately absent at analysis time. So the
+    // finding firing here is proof that 'no-such-dir/x' did NOT land in a
+    // second sub-command: the quoted '&&' is an argument, not an operator.
+    seedGates(
+      dir,
+      `gates:
+  - id: test
+    kind: deterministic
+    tier: fast
+    command: [echo, "&&", no-such-dir/x]
+`,
+    );
+    const report = await runGateDoctor({ projectRoot: dir });
+    const f = report.findings.find((x) => x.id === "gate-doctor/path-missing");
+    assert.ok(f, "an argv gate is exactly one sub-command, so every token is analysed in it");
+    assert.equal(f.severity, "error");
+    assert.match(f.message, /no-such-dir\/x/);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("negative control: an UNQUOTED operator in a string command still splits it", async () => {
+  const dir = createTempDir();
+  try {
+    // The same shape as the test above, minus the quoting. The path now belongs
+    // to the second sub-command, so path-missing is correctly suppressed. If
+    // this starts failing, quote provenance has been over-applied and real
+    // `a && b` gates stopped splitting.
+    seedSingleGate(dir, "echo hi && no-such-dir/x");
+    const report = await runGateDoctor({ projectRoot: dir });
+    assert.ok(
+      !ids(report).includes("gate-doctor/path-missing"),
+      "an unquoted && still starts a new sub-command",
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ── SEC-2: the join must never hand `sh -c` an expansion ────────────────────
+
+test("normaliseCommand single-quotes a token containing a quote, never double-quotes it", async () => {
+  const { normaliseCommand } = await import("../../../lib/gates/doctor.mjs");
+  const out = normaliseCommand(["touch", "a'b $(touch marker)"]);
+  assert.equal(out, "touch 'a'\\''b $(touch marker)'");
+  assert.ok(!out.includes('"'), "a double-quoted token still interpolates $(), backticks and \\");
+  assert.match(out, /'[^']*\$\(touch marker\)'/, "the substitution sits inside single quotes");
+});
+
+test("an argv token carrying a command substitution is not executed under --execute", async () => {
+  const dir = createTempDir();
+  try {
+    seedGates(
+      dir,
+      `gates:
+  - id: test
+    kind: deterministic
+    tier: fast
+    command: [touch, "a'b $(touch marker)"]
+`,
+    );
+    await runGateDoctor({ projectRoot: dir, execute: true, env: {} });
+    const { existsSync } = await import("node:fs");
+    assert.equal(
+      existsSync(join(dir, "marker")),
+      false,
+      "SEC-2: an argv token is data, and the join must not turn it into code",
+    );
+    // ...and the gate really did run, so the assertion above is not vacuous.
+    assert.equal(existsSync(join(dir, "a'b $(touch marker)")), true);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("resolveCommandChain skips flag tokens after `npm run` (the --if-present idiom)", async () => {
+  const { resolveCommandChain } = await import("../../../lib/gates/doctor.mjs");
+  const dir = createTempDir();
+  try {
+    writeFixture(
+      dir,
+      "package.json",
+      JSON.stringify({ name: "x", scripts: { "test:integration": "pytest tests/integration" } }),
+    );
+    const chain = resolveCommandChain("npm run --if-present test:integration", dir);
+    assert.equal(chain.length, 2, "the script name is test:integration, not --if-present");
+    assert.equal(chain[1].source, "package.json:scripts.test:integration");
+    assert.equal(chain[1].command, "pytest tests/integration");
   } finally {
     cleanupTempDir(dir);
   }

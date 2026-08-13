@@ -1,0 +1,37 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-13T14:12:14.703Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-13T14:12:14.828Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-13T14:13:42.440Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"BLOCK: 2 blockers, 4 warnings, 1 suggestion. SA-1/SA-2 share one root cause: /adev:implement Step 2-post reads raw gates.yaml, not the merged list.","ts":"2026-08-13T14:24:22.955Z"}
+{"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-08-13T14:24:23.085Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":["quick-synthesized-reviewer:unguarded-executor-path:1377c7ba","quick-synthesized-reviewer:unreachable-postcondition:38c90edf"],"unresolved_blocker_ids":[],"ts":"2026-08-13T14:26:36.643Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-13T14:30:22.581Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"PASS_WITH_NOTES","notes":"Quick tier re-review of rev 2: both prior blockers (38c90edf, 1377c7ba) addressed. 4 warnings, 1 suggestion, 0 blockers.","ts":"2026-08-13T14:35:48.654Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-08-13T14:36:26.833Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-08-13T14:55:56.038Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-08-13T14:55:56.193Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-08-13T14:55:56.309Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-4","status":"pending","notes":null,"ts":"2026-08-13T14:55:56.423Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-5","status":"pending","notes":null,"ts":"2026-08-13T14:55:56.515Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-6","status":"pending","notes":null,"ts":"2026-08-13T14:55:56.629Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-7","status":"pending","notes":null,"ts":"2026-08-13T14:55:56.736Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-13T14:56:01.982Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T15:03:32.918Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-08-13T15:07:41.724Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-1","status":"done","notes":"Doctor argv normalisation; 64/64 doctor tests pass; committed 78c1402a","ts":"2026-08-13T16:31:48.105Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-08-13T16:35:08.331Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-2","status":"done","notes":"Live integration-test gate added to software starter + both extension overlays; 13/13 new domain tests pass","ts":"2026-08-13T16:54:28.307Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-08-13T16:56:24.481Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-3","status":"done","notes":"Template ships live test (fast) + integration-test (integration) with the \"\" unwired sentinel, argv-form examples throughout; template test now parses instead of substring-matching; npm test 5563/5565 pass, 0 fail","ts":"2026-08-13T16:58:11.930Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T17:02:22.468Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-4","status":"done","notes":"Step 2-post: merged gate source via adev domain load-gates, argv guard, per-gate severity (D1/D3)","ts":"2026-08-13T17:06:30.736Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-5","status":"done","notes":"Init Step 7a seeds fast + integration tiers in argv form with the --if-present no-op idiom","ts":"2026-08-13T17:08:45.490Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T17:14:26.430Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-6","status":"done","notes":"docs/governance.md gates.yaml gate-schema section + 5 doc assertions","ts":"2026-08-13T17:23:26.218Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-7","status":"done","notes":"shipped-defaults parity sweep + doctor-clean fresh scaffold (both shapes)","ts":"2026-08-13T17:32:17.132Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-13T17:34:20.174Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-13T18:10:59.714Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1-quality-gates","severity":"warning","verdict":"PASS","notes":"fast 5596/0 pass; integration tier exit 0 (no-op by design); e2e no gates","ts":"2026-08-13T18:14:33.322Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS_WITH_NOTES","notes":"13/13 acceptance criteria PASS, all cited from files read this run; 3 non-blocking findings recorded","ts":"2026-08-13T18:14:33.362Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"No new deps; version correctly unbumped at 0.27.8 per ADR-0008; no inline-Node in touched SKILL.md","ts":"2026-08-13T18:14:33.401Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP Case A - no UI files in diff","ts":"2026-08-13T18:14:33.438Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-13T18:14:44.557Z"}
