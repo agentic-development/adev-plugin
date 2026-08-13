@@ -13,6 +13,19 @@ set -uo pipefail
 # Read stdin and populate CLAUDE_TOOL_INPUT_* env vars
 source "$(dirname "$0")/_parse-stdin.sh"
 
+# _parse-stdin.sh's stdin-JSON branch EXPORTs these, so at this point they
+# are part of the current shell's environment. A test file's content has no
+# size cap (spec SEC-1), and Linux's execve() rejects any single argv/envp
+# string over 128KB (MAX_ARG_STRLEN) regardless of overall ARG_MAX -- every
+# external command this script spawns from here on (dirname, mktemp, rm,
+# node) would inherit that env and could be killed with "Argument list too
+# long" before it even runs, well before this script's own temp-file relay
+# (below) gets a chance to help. `export -n` drops the export attribute
+# without unsetting the value, so `${CLAUDE_TOOL_INPUT_content:-}` below
+# still reads it via normal shell variable expansion (no exec involved),
+# but child processes no longer inherit it via envp.
+export -n CLAUDE_TOOL_INPUT_content CLAUDE_TOOL_INPUT_old_string CLAUDE_TOOL_INPUT_new_string 2>/dev/null || true
+
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # This repo's hook protocol never exposes a tool-name env var (only
