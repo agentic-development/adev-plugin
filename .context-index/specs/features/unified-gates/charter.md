@@ -1,7 +1,7 @@
 ---
 kind: cross-cutting
 status: approved
-revision: 3
+revision: 4
 updated: 2026-08-13
 ---
 
@@ -25,6 +25,7 @@ Unify governance gates and manifest tiered gates into a single gate system in `g
 - Normalize skip behavior in validate: unconfigured checks report SKIP (not PASS), misconfigured checks report WARN
 - Backward compatibility: projects without `governance/gates.yaml` get a "no gates configured" advisory with setup guidance
 - **Verification that declared gates are actually executable and that declared test suites are actually collected** (revision 3). The charter has always asserted the invariant "every gate with a non-empty `command` and `kind: deterministic` is executable by skills" but shipped nothing that checks it. `adev gate doctor` checks it.
+- **The shipped default gate set** (revision 4). Which gates and which tiers a project receives from `gates-template.yaml`, `templates/domains/*/gates.yaml`, and extension overlays — and the requirement that those artifacts teach the argv-list `command` form the loader actually accepts. The tier engine being implemented is not the same as the tier engine being reachable; the defaults are part of this charter's contract, not an init-time detail.
 
 ### Out of Scope
 
@@ -85,6 +86,7 @@ Unify governance gates and manifest tiered gates into a single gate system in `g
 | Severity and Required Reconciliation | `required: false` forces `severity: warning`. Explicit `severity` on a gate overrides tier defaults. Default severity: `error` for fast/integration, `warning` for e2e | should-have | | validated |
 | E2E Sub-keys | Support `smoke`/`full` groupings within e2e-tier gates, with independent severity defaults (`error` for smoke, `warning` for full) | should-have | | validated |
 | Backward Compatibility Path | Projects with existing `manifest.yaml gates:` get a migration warning from `/adev:init` or `/adev:hygiene` suggesting they generate `governance/gates.yaml` | nice-to-have | | validated |
+| Tiered Gates by Default | Every scaffolded project receives a declared integration tier, not a fast-only tier map. `gates-template.yaml` ships live `test` (fast) and `integration-test` (integration) entries; the stack-committed domain starters and extension overlays ship a live error-severity integration gate whose command is a verified no-op until the project defines the script (`npm run --if-present test:integration`). All template and starter surfaces teach the argv-list `command` form that `merge-gates.mjs` accepts (SEC-2), and `adev gate doctor` diagnoses argv-form gates instead of reporting them as empty. | must-have | | validated |
 | Gate Doctor | `adev gate doctor` verifies that declared gates can actually execute and that declared test suites are actually collected: sh-globstar under-expansion, runner collection diff, gate binary resolution, unsubstituted `{{ }}` placeholders, gitignored/missing referenced paths, and CI invocation of each gate. Static by default; `--execute` opts into subprocess runs with a reentrancy guard. Wired into `/adev:validate` (check-14) and `/adev:hygiene` Pass 8. | must-have | | validated |
 
 ## Interface Contracts
