@@ -266,11 +266,13 @@ is caught by the append time; one that appends early but re-captures later is
 caught by the write-once checksum rule. Neither check is claimed to be
 tamper-proof, and the profile says so rather than implying a guarantee.
 
-> **[BOUNDARY: human-approved] required.** Adding `strategy_verification` to
-> `CANONICAL_EVENTS` in `lib/lifecycle-events.mjs` touches the lifecycle event
-> schema governed by ADR-0009, exactly as `spec_amended` and `test_depth_assigned`
-> did. **This spec proposes the event; it does not land it.** Implementation is
-> blocked until a human approves the taxonomy addition.
+> **[BOUNDARY: human-approved] — APPROVED (2026-08-13).** Adding
+> `strategy_verification` to `CANONICAL_EVENTS` in `lib/lifecycle-events.mjs`
+> touches the lifecycle event schema governed by ADR-0009, exactly as
+> `spec_amended` and `test_depth_assigned` did. A human approved the taxonomy
+> addition on 2026-08-13, so implementation is **no longer blocked on this**.
+> The event is still not landed by this spec — spec artifacts only — but the
+> implementing change may now add it.
 >
 > The approval must also cover
 > `.context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md`,
@@ -418,10 +420,10 @@ named in the Module Impact Map.
 - [ ] An absent `deferrals.yaml` is treated as an empty list: no `operator_deferred` is accepted, and every other reason code is unaffected
 - [ ] A `deferrals.yaml` entry past its `expires` date no longer authorises a deferral
 
-**Gated on human approval (blocks everything above):**
+**Gated on human approval — BOTH GATES CLEARED 2026-08-13:**
 
-- [ ] The location and schema of the deferral policy file are confirmed (proposed: `.context-index/governance/deferrals.yaml`) — it is a new artifact this spec introduces, not existing machinery
+- [x] The location and schema of the deferral policy file are confirmed (**CONFIRMED 2026-08-13**: `.context-index/governance/deferrals.yaml`, with the minimal schema proposed in Behavior 3 — a list of `{ spec, task_id, reason (required), expires (optional ISO date) }`; absent file = empty list; expiry enforced) — it is a new artifact this spec introduces, not existing machinery
 
-- [ ] The `strategy_verification` canonical event carries a `[BOUNDARY: human-approved]` comment and lands only after explicit approval
+- [x] The `strategy_verification` canonical event carries a `[BOUNDARY: human-approved]` comment and lands only after explicit approval (**APPROVED 2026-08-13** — the comment is still required in the implementing change; the approval it waits on has been given)
 - [ ] `lifecycle-event-log.spec.md`'s Canonical Event Variants table gains a `strategy_verification` row
 - [ ] All quality gates pass; no constitutional violations introduced
