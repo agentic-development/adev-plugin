@@ -1,11 +1,11 @@
 ---
 charter: pr-review-brief
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: medium
 milestone:
-revision: 4
-charter-revision: 4
+revision: 5
+charter-revision: 5
 created: 2026-08-12
 updated: 2026-08-13
 ---
@@ -52,20 +52,30 @@ This matters because revision 2 said a task "appears in the changed files", pres
 
 **The sidecar is plan-stem-keyed, not spec-stem-keyed.** `sidecarPathFor()` requires a path ending in `.plan.md` and throws `INVALID_PLAN_PATH` otherwise, and ADR-0012 § "Permitted peers" defines the sidecar as `<plan-stem>.routing.json`. This spec starts from a `Spec:` trailer, so the derivation is explicit: `<spec-path>` with the `.spec.md` suffix replaced by `.plan.md`, passed to `sidecarPathFor()`. The two stems coincide in this repo today, which is exactly why revision 3's `<spec-stem>.routing.json` shorthand would have shipped unnoticed.
 
-Consumed shape — the accessor returns the `{ version, entries[] }` envelope:
+**Consumed shape — `readRoutingSidecar()` returns a bare array of entries, not an envelope.** The `{ version, entries[] }` shape is what sits on disk; the accessor unwraps it. Revision 3 published a consumed-shape table with a `version` row, which was written from the module's docblock rather than from its return value and was wrong. Verified by calling it: `Array.isArray(readRoutingSidecar(plan)) === true`, and there is no `version` property to read.
 
-| Field | Contract |
+| Field (per element) | Contract |
 |---|---|
-| `version` | Must equal the module's `SIDECAR_SCHEMA_VERSION`. A mismatch raises `INVALID_SIDECAR_JSON`. |
-| `entries[].task_id` | Joins to the `(spec_path, task_id)` task universe above. |
-| `entries[].selected_agent` | `human-only` / `assisted-agent` / `auto-agent`. |
-| `entries[].scores.blast_radius` | Nested under `scores`, normalized `0..1`. Revision 2 wrote it as a top-level field, which does not exist on disk. |
-| `entries[].scores.novelty` | Nested under `scores`, normalized `0..1`. |
-| `entries[].rationale` | Free text. Attacker-influenceable; always passes through the encoder. |
+| `task_id` | Joins to the `(spec_path, task_id)` task universe above. |
+| `selected_agent` | `human-only` / `assisted-agent` / `auto-agent`. **The accessor does not validate this enum** — an unrecognized value reaches the caller intact, so the ranking contract must treat any value outside the three as `UNKNOWN` rather than assuming a tier. |
+| `scores.blast_radius` | Nested under `scores`, normalized `0..1`. Revision 2 wrote it as a top-level field, which does not exist on disk. |
+| `scores.novelty` | Nested under `scores`, normalized `0..1`. |
+| `rationale` | Free text. Attacker-influenceable; always passes through the encoder. |
 
-**Incoming sort is a tie-break, not decoration.** `readRoutingSidecar()` returns entries already sorted by `task_id` ascending. The ranking contract re-sorts by agent tier then descending `scores.blast_radius`, and the sort must be **stable**, so the accessor's `task_id` order breaks ties between entries with equal tier and equal blast radius. This is what makes the determinism criterion hold for such entries rather than depending on an unspecified sort.
+The schema version is checked, but **internally** — a mismatch surfaces to this module only as a thrown `INVALID_SIDECAR_JSON`, never as a field it reads. Unknown extra fields on an entry are tolerated and ignored by the accessor.
 
-**Degradation.** A `readRoutingSidecar()` throw — `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON` from a schema-version mismatch or a malformed envelope, or a read error — is treated identically to an absent sidecar: every task under that spec renders `UNKNOWN`, and the section is annotated with the offending path and the thrown code. Schema-version mismatch is named explicitly because it is the one failure that will appear after a future `/adev:route` change rather than from bad input.
+**Incoming sort is a tie-break, not decoration.** `readRoutingSidecar()` returns entries already sorted by `task_id` ascending — verified by writing `t2` before `t1` and reading `t1` back first. The ranking contract re-sorts by agent tier then descending `scores.blast_radius`, and the sort must be **stable**, so the accessor's `task_id` order breaks ties between entries with equal tier and equal blast radius. This is what makes the determinism criterion hold for such entries rather than depending on an unspecified sort.
+
+**Degradation.** Every `readRoutingSidecar()` throw is treated identically to an absent sidecar: every task under that spec renders `UNKNOWN`, and the section is annotated with the offending path and the thrown code. The complete throw set, enumerated by probing the module rather than reading its documentation:
+
+| Code | Raised when |
+|---|---|
+| `ROUTING_SIDECAR_MISSING` | No sidecar file at the derived path. The ordinary case, not an error. |
+| `INVALID_PLAN_PATH` | The derived path does not end in `.plan.md`. |
+| `INVALID_SIDECAR_JSON` | Unparseable JSON, top level not an object, `entries` not an array, or a schema-version mismatch. |
+| `INVALID_ROUTING_ENTRY` | An entry is missing `task_id`, is missing `scores`, or has a non-numeric score. |
+
+`INVALID_ROUTING_ENTRY` is listed because revision 3 omitted it, and an implementation that enumerated only the codes revision 3 named would let it escape — turning an exit-0 advisory path into a non-zero exit and contradicting the postcondition. Schema-version mismatch is called out separately because it is the one failure that will arrive from a future `/adev:route` change rather than from bad input.
 
 ### Verification
 
@@ -107,9 +117,10 @@ Rule order is part of the contract: **line collapse runs first**, because every 
 
    The precedent is already in this repo: `lib/plan-routing-sidecar.mjs::renderRoutingMarkdown` renders this exact field with `.replace(/\|/g, "\\|").replace(/\n+/g, " ")`. Revision 3's contract omitted the second half of that pair while citing the module that performs it.
 2. **Path containment.** Every path derived from a `Spec:` trailer is resolved with `path.resolve` and required to remain under the canonicalized `.context-index/specs/` root before any `fs.stat` or `fs.readFile`. A path that escapes is treated exactly as "does not exist on disk" — the error case already defined — and is never opened. Without this, `Spec: ../../.env` reaches the filesystem and the "offending path" diagnostic reports whether it exists. CWE-22.
-3. **Table-cell safety.** Every interpolated value has `|` escaped and any leading `#`, `-`, `>`, or `|` neutralized before entering a table cell. Every generated section renders as a table, so an unescaped pipe does not merely look wrong — it shifts subsequent cells, and a reviewer reads a risk score from the wrong column. This applies to `rationale`: revision 2 said "reproduced verbatim", which now means *reproduced without semantic interpretation*, not *reproduced without encoding*. CWE-116.
-4. **Marker neutralization.** Any occurrence of `<!--` or `-->` in an interpolated value is encoded so it cannot form a comment delimiter. The single-marker-pair invariant, and with it the authorship boundary this module exists to enforce, rests entirely on those two literals appearing nowhere but the real boundaries. A rationale containing the literal `<!-- /adev:pr-brief -->` would otherwise let `cicd`'s boundary-based replace treat attacker-controlled text as author-written.
-5. **Diagnostics.** All diagnostics go to **stderr**, never stdout, and render paths relative to the repository root. An absolute path leaks the CI runner's home directory and username into whatever consumes the output.
+3. **Link and image neutralization.** Every interpolated value has `[`, `]`, `(`, `)`, and a leading `!` neutralized so it cannot form markdown link or image syntax. This runs *before* table-cell safety, because an image reference is not a table-structure problem and the table rules would not catch it. Without it, a `rationale` of `![](https://attacker.example/p.gif)` renders a live image in a public PR body — a tracking pixel that fires for every reviewer who opens the page, disclosing who looked and when. A link form additionally lets attacker-chosen text masquerade as a repository link. CWE-116.
+4. **Table-cell safety.** Every interpolated value has `|` escaped and any leading `#`, `-`, `>`, or `|` neutralized before entering a table cell. Every generated section renders as a table, so an unescaped pipe does not merely look wrong — it shifts subsequent cells, and a reviewer reads a risk score from the wrong column. This applies to `rationale`: revision 2 said "reproduced verbatim", which now means *reproduced without semantic interpretation*, not *reproduced without encoding*. CWE-116.
+5. **Marker neutralization.** Any occurrence of `<!--` or `-->` in an interpolated value is encoded so it cannot form a comment delimiter. The single-marker-pair invariant, and with it the authorship boundary this module exists to enforce, rests entirely on those two literals appearing nowhere but the real boundaries. A rationale containing the literal `<!-- /adev:pr-brief -->` would otherwise let `cicd`'s boundary-based replace treat attacker-controlled text as author-written.
+6. **Diagnostics.** All diagnostics go to **stderr**, never stdout, and render paths relative to the repository root. An absolute path leaks the CI runner's home directory and username into whatever consumes the output.
 
 Encoding is applied once, at the interpolation boundary, by a single function. Two independently-worded escaping rules in two specs is how a gap reappears.
 
@@ -126,7 +137,7 @@ Encoding is applied once, at the interpolation boundary, by a single function. T
 |------|-------------|---------------------|
 | Trailer reader | Read `Spec:` and `Plan-task:` trailers for a commit range via `git log --format`, consuming values as data (never interpolated into a shell or `node -e` context). | medium |
 | Task universe builder | Build the `(spec_path, task_id)` set from `Plan-task:` trailers and each task's file set from `git diff-tree --name-only` over its commits, per Input Contracts. | medium |
-| Output encoder | The single interpolation-boundary function implementing the four rules in Output Encoding Contract: path containment, table-cell safety, marker neutralization, stderr diagnostics. | medium |
+| Output encoder | The single interpolation-boundary function implementing all six rules of the Output Encoding Contract, applied in the stated order: line collapse, path containment, link/image neutralization, table-cell safety, marker neutralization, stderr diagnostics. | medium |
 | Traceability grouping | Group commits by `Spec:` value; aggregate per-spec commit count and diff stat; collect commits carrying no `Spec:` trailer into an explicit untraced bucket. | medium |
 | Routing sidecar reader | Derive the plan path from each `Spec:` trailer, call `sidecarPathFor()` / `readRoutingSidecar()` from `lib/plan-routing-sidecar.mjs`, and map every throw to the `UNKNOWN` degradation. Author no parser. | small |
 | Spec frontmatter reader | Read `revision:` from each referenced spec under the containment rule; render `UNKNOWN` when undeterminable. | small |
@@ -159,7 +170,10 @@ The opening marker `<!-- adev:pr-brief -->` and closing marker `<!-- /adev:pr-br
 - [ ] With no `validate` step in the projection, the verb still exits 0 and the verification section renders its explicit gap line.
 - [ ] A `Spec:` trailer of `../../.env` is never opened; a test asserts no `fs` call receives a path outside `.context-index/specs/` and that the row renders as a missing path.
 - [ ] Routing entries are read via `lib/plan-routing-sidecar.mjs`; a test asserts this module defines no `routing.json` parser and no `entries[]` traversal of its own.
-- [ ] A sidecar whose `version` does not match `SIDECAR_SCHEMA_VERSION` renders every task under that spec as `UNKNOWN` and annotates the section with `INVALID_SIDECAR_JSON`; a test pins the schema-mismatch path.
+- [ ] The consumed shape is the accessor's return value, not the on-disk envelope; a test asserts `Array.isArray()` on what the reader hands the ranking contract, and that no code path reads a `version` property.
+- [ ] Each of the four throw codes — `ROUTING_SIDECAR_MISSING`, `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON`, `INVALID_ROUTING_ENTRY` — degrades to `UNKNOWN` with the code named in the annotation and exit 0; a test covers all four, with `INVALID_ROUTING_ENTRY` driven by an entry missing `scores`.
+- [ ] A routing entry with an unrecognized `selected_agent` renders `UNKNOWN` rather than being sorted into a tier; a test pins that the accessor passes the bad value through unvalidated.
+- [ ] A `rationale` of `![](https://example.invalid/p.gif)` renders with no live image and no link; a test asserts the output contains no `](` sequence originating from an interpolated value.
 - [ ] Two entries with equal `selected_agent` and equal `scores.blast_radius` render in ascending `task_id` order; a test asserts the sort is stable over the accessor's incoming order.
 - [ ] A referenced spec whose `revision:` cannot be determined — missing file, out-of-containment path, or unreadable frontmatter — renders its verification row as `UNKNOWN` naming which case applied; a test asserts no fallback to the highest revision in `byRevision`.
 - [ ] A `rationale` containing an embedded `\n` renders as a single table row; a test asserts stdout line count equals the expected row count and that no injected line begins with `## `.
@@ -185,7 +199,7 @@ The opening marker `<!-- adev:pr-brief -->` and closing marker `<!-- /adev:pr-br
 - **When** `adev pr body` is invoked with a resolvable `--base` ref **then** it writes a brief to stdout enclosed by `<!-- adev:pr-brief -->` and `<!-- /adev:pr-brief -->`, containing the attention map, traceability, and verification sections in that relative order within the marker's section list, and exits 0.
 - **When** commits in the range carry `Spec:` trailers **then** each spec becomes one traceability row aggregating its commit count, plan-task coverage, and diff stat.
 - **When** one or more commits in the range carry no `Spec:` trailer **then** they are collected into an explicitly labelled untraced bucket showing the count and short SHAs, and the section is annotated as a gap.
-- **When** a referenced spec has a `<spec-stem>.routing.json` sidecar **then** its entries populate the attention map, ordered `human-only` → `assisted-agent` → `auto-agent`, then by **descending** `scores.blast_radius`, with each entry's `rationale` passed through the output encoder.
+- **When** a referenced spec has a `<plan-stem>.routing.json` sidecar **then** the entries `readRoutingSidecar()` returns populate the attention map, ordered `human-only` → `assisted-agent` → `auto-agent`, then by **descending** `scores.blast_radius`, with each entry's `rationale` passed through the output encoder.
 - **When** a `(spec_path, task_id)` pair from the `Plan-task:` trailers has no corresponding routing entry **then** it renders with route `UNKNOWN` and sorts above all `auto-agent` rows.
 - **When** no routing sidecar exists for any referenced spec **then** the attention map renders its explicit gap line naming the missing sidecars, and the verb still exits 0.
 - **When** the lifecycle projection carries a `validate` step for a referenced spec at that spec's current revision **then** the verification section reports its verdict, per-validator reports, and blocker count for that spec.
@@ -209,7 +223,8 @@ The opening marker `<!-- adev:pr-brief -->` and closing marker `<!-- /adev:pr-br
 | Not inside a git repository | Print a diagnostic naming the working directory; emit no partial brief | `NOT_A_GIT_REPO` |
 | `--base` ref does not resolve | Print a diagnostic naming the unresolvable ref; emit no partial brief | `INVALID_BASE_REF` |
 | `--base` omitted and no default branch merge base can be determined | Print a diagnostic suggesting an explicit `--base`; emit no partial brief | `NO_MERGE_BASE` |
-| `readRoutingSidecar()` throws — absent, `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON` (malformed envelope or schema-version mismatch), or unreadable | Render affected tasks as `UNKNOWN`, annotate the section with the offending path and the thrown code, exit 0 | *(advisory — no code)* |
+| `readRoutingSidecar()` throws any of `ROUTING_SIDECAR_MISSING`, `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON`, `INVALID_ROUTING_ENTRY` | Render affected tasks as `UNKNOWN`, annotate the section with the offending path and the thrown code, exit 0 | *(advisory — no code)* |
+| A routing entry's `selected_agent` is outside the three known tiers | That task renders `UNKNOWN`; the accessor does not validate the enum, so the caller must not assume a tier | *(advisory — no code)* |
 | Referenced spec's `revision:` undeterminable (missing file, out of containment, unreadable frontmatter) | Verification row renders `UNKNOWN` naming which case applied; never falls back to another revision, exit 0 | *(advisory — no code)* |
 | Lifecycle projection unreadable or carries no `validate` step | Render the verification gap line stating validation has not run for that spec, exit 0 | *(advisory — no code)* |
 | Referenced spec path in a `Spec:` trailer does not exist on disk | Keep the traceability row, flag the path as missing, exit 0 | *(advisory — no code)* |

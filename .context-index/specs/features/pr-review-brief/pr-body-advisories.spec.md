@@ -1,11 +1,11 @@
 ---
 charter: pr-review-brief
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: medium
 milestone:
-revision: 2
-charter-revision: 4
+revision: 3
+charter-revision: 5
 created: 2026-08-12
 updated: 2026-08-13
 ---
@@ -64,6 +64,33 @@ pr:
 
 `mirror_globs` exists because `providers/*/skills/**` is a generated mirror of `skills/**` in this repo. Counting it toward a review budget inflates every provider-touching PR with lines no human should read.
 
+### Config is read from the base ref, never the working tree
+
+The `pr:` block is read via `git show <base>:.context-index/manifest.yaml`, not from the file on disk.
+
+`manifest.yaml` lives inside the very commit range the advisory measures, so reading the working-tree copy puts the threshold under the control of the author whose change is being sized. A PR adding `pr: { size_threshold_additions: 999999 }` would pass every shape validation this spec states — positive integer, list of strings — and simply never escalate. There would be nothing for a reader to notice, because the below-threshold form is a legitimate normal output. Revision 2's Postconditions called the block "read-only input that a human adds"; in a fork PR that human is the author under review.
+
+Reading from `base` puts the knob on the side of the range that already passed review. **This makes configuration a function of `base`,** so the determinism criterion holds over a fixed `(base, head)` pair as stated, but two runs at different bases may legitimately differ in threshold. That is intended and is not a determinism violation.
+
+When `.context-index/manifest.yaml` does not exist at `base` — a new repo, or the file added within the range — the defaults apply and the advisory says so, rather than falling back to the head-side file.
+
+### Resource bounds
+
+The 200-character cap in Output Encoding bounds one value. It does not bound how many values there are, and the harm it names — a brief too large to deliver — is reachable through count rather than length. `TASK_RE` is a global scrape of an unbounded tail, so a single crafted line `- Group A (independent):` followed by `Task 1` repeated 100,000 times yields 100,000 members, each far under the cap.
+
+Four bounds, each with a named degradation, because a silent trim is the failure mode this spec exists to avoid:
+
+| Bound | Limit | On overflow |
+|---|---|---|
+| Plan file size | 1 MiB, checked with `stat` before reading, and the path must be a regular file | Rung 3, annotated "oversized" or "not a regular file" |
+| Groups per plan | 50 | Render the first 50, annotate the count dropped |
+| Members per group | 100, applied **after** de-duplication | Render the first 100, annotate the count dropped |
+| Total rendered bytes across both sections | 64 KiB | Truncate at the boundary, annotate that the brief was truncated and at which section |
+
+The regular-file check matters independently of size: a committed symlink to a character device is not large, and `stat` on it does not report a size that a ceiling would catch.
+
+**The cap's unit is per rendered value** — one group id, one member, one path, one annotation — not per rendered list. Revision 2 left this undefined, which made the cap unfalsifiable.
+
 ## Reading Order: Parser Ownership and Fallback Ladder
 
 The reading order reads `<spec-stem>.plan.md` for each spec referenced by a `Spec:` trailer in the range, resolving that path under the containment rule in `pr-body-composition.spec.md` § Output Encoding Contract before any read.
@@ -82,31 +109,46 @@ The parser returns `{ groups: [{ id, members[], independent }], malformed }` and
 
 A group line whose task references are plural or ranged — `- Group F (sequential): Tasks 14, 15, 16, 17` or `Tasks 8-14` — matches the parser's group regex but yields `members: []`, with `malformed: false`. The parser reports success for a group containing no tasks.
 
-**A parsed group with zero members drops its plan to rung 3.** Without this rule, consuming the owned parser would inherit the exact silent-omission defect revision 1 was blocked for: a rung-1 outcome, annotation-free, with every task in the group dropped. Naming it here is the point — the defect is in a module this spec does not own, so the only thing this spec can do about it is refuse to present its output as complete.
+**A parsed group with zero members drops its plan to rung 2.** Without this rule, consuming the owned parser would inherit the exact silent-omission defect revision 1 was blocked for: a rung-1 outcome, annotation-free, with every task in the group dropped. Naming it here is the point — the defect is in a module this spec does not own, so the only thing this spec can do about it is refuse to present its output as complete.
 
 Conversely, `- Group G (sequential): Task 7 (refactor -- depends on Tasks 2, 3, 5, 6)` yields `members: ["7"]`. The parser's task pattern requires singular `Task` followed by whitespace, so the plural inside the parenthetical does not match and no spurious members are collected. Revision 1 had two rules that disagreed on this case; there is now one rule, it lives in the parser, and this is the outcome.
 
+### Duplicate members
+
+`TASK_RE` is a global scrape of the whole group tail, so a line that names the same task twice yields it twice: `plan-task-events.plan.md` group A parses as `members: ["1","2","3","1"]`. Measured over the corpus, **23 of the 80 usable plans (29%) contain at least one group with duplicate members.**
+
+Members are de-duplicated per group, keeping first occurrence, before rendering. A reading order that tells a reviewer to read task 1, then 2, then 3, then 1 again is wrong on its face, and the duplication is an artifact of the scrape rather than anything the plan author expressed. De-duplication is per group, not across groups: the same task legitimately appearing in two groups is the plan saying something, and that is preserved.
+
 ### Fallback ladder
 
-The rung reached is named in the output, per plan.
+Three rungs. The rung reached is named in the output, per plan.
 
 | Rung | Condition | Ordering used | Rendered annotation |
 |---|---|---|---|
-| 1 | Parser returns groups, all with at least one member | Group order, then member order within group | none — the normal case |
-| 2 | Parser returns groups, `## Task Summary` present, but any group has zero members | `## Task Summary` table row order | names the zero-member group ids and the plan path |
-| 3 | Parser returns groups with a zero-member group and no `## Task Summary`; **or** `malformed: true`; **or** section absent — in each case with `## Task Summary` present | `## Task Summary` table row order | states which of the three conditions applied, and the plan path |
-| 4 | Any rung-2 or rung-3 condition holds **and** `## Task Summary` is absent | `git log --reverse` commit order | carries the higher rung's annotation *and* states that ordering is chronological, not planned |
-| 5 | No plan file for a referenced spec, or the plan file is unreadable | `git log --reverse` commit order | names the path and whether it was absent or unreadable |
+| 1 | Parser returns groups and every group has at least one member | Group order, then de-duplicated member order within group | none — the normal case |
+| 2 | Any group has zero members, **or** `malformed: true`, **or** the section is absent | `git log --reverse` commit order | names which of the three applied, plus the plan path, and states that ordering is chronological rather than planned |
+| 3 | No plan file for a referenced spec, or the plan is unreadable, or the plan exceeds the byte ceiling below | `git log --reverse` commit order | names the path and which of the three applied |
 
-Rung 4 exists because `## Task Summary` is not universal: of the 138 plans carrying `## Parallelization`, 90 have a `## Task Summary` and 48 do not — including every plan that currently reaches a degraded rung. Revision 1 sent rungs 2 and 3 to a table that a third of the corpus lacks, and did not say what happens then. Rung 4 preserves the higher rung's annotation rather than replacing it, so a reader learns both what failed to parse and that the ordering they are looking at is chronological.
+**`## Task Summary` is deliberately not in this ladder.** Revision 2 routed three of its five rungs through that section's table row order. It has no parser anywhere in `lib/` (verified: `grep -rn "Task Summary" lib/` returns nothing), no declared owner, and no entry in the charter's Consumed APIs — it is free prose emitted by `skills/plan/SKILL.md:471`. Depending on it would have required growing a second prose parser inside `lib/cli/pr.mjs`, which is precisely the duplication this spec's central claim forbids and precisely what revision 1 was blocked for. Revision 2 removed one undeclared grammar and silently acquired another.
+
+The cost is real and worth stating plainly: the degraded path now orders by commit chronology rather than by plan task order, which is a worse ordering. It is the ordering available without owning a parser this charter has no business owning. Collapsing five rungs to three is a second gain — every contradiction in revision 2's ladder was a rung-boundary disagreement about `## Task Summary`, and three of its seven blockers were that one defect stated three ways.
 
 Groups keep the parser's `id` order. The parser's `independent` flag is rendered as a per-group label; this spec does not use it to reorder anything, because "independent" describes execution safety, not reading sequence.
 
 ### Measured coverage
 
-Against the 138 plan files carrying `## Parallelization`, `parseParallelizationSection` yields usable groups for **79** and `malformed: true` for **59**. Rung 1 therefore covers roughly 57% of plans today and the rest degrade loudly.
+Against the **139** plan files carrying `## Parallelization`, `parseParallelizationSection` yields usable groups for **80** and `malformed: true` for **59**. Rung 1 therefore covers roughly **58%** of plans today and the rest degrade loudly.
 
-That is a stated coverage figure, not an aspiration, and it is lower than revision 1 claimed for its own grammar. The gap is almost entirely one cause: the parser's qualifier is restricted to literally `(independent|sequential)`, so `(foundation, sequential)` and `(independent of A)` fail. Widening it would move roughly 22 plans into rung 1 — but the same widening moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel`, which is a behaviour change in another charter's module and needs evidence those groups are genuinely independent. Deferred rather than taken unilaterally; see Deferred Capabilities.
+That is a stated coverage figure, not an aspiration, and it is lower than revision 1 claimed for its own grammar. **The gap is not one cause.** Revision 2 asserted it was "almost entirely" the parser's restrictive qualifier and that widening would recover ~22 plans; both claims were wrong, and the second was refuted at review. The measured breakdown of the 59:
+
+| Cause | Plans |
+|---|---|
+| No `- Group` line at all (free prose) | 28 |
+| Bold-wrapped `- **Group A (sequential):**` — fails `^\s*[-*]\s*Group` before the qualifier is read | 19 |
+| Qualifier not literally `(independent\|sequential)` | 10 |
+| No parenthetical | 2 |
+
+So widening the qualifier recovers **10** plans, not 22 — 17% of the gap, taking coverage from 80/139 to 90/139. Four-fifths of the gap is structural and no qualifier change reaches it. The wrong figure originated in `charter.md`, which stated "sole cause in 10" and "roughly 22" in one sentence; this spec inherited the wrong half. The charter is corrected at revision 5.
 
 ## Size Advisory: Computation and Exception Classes
 
@@ -133,7 +175,7 @@ The dependency is worth naming explicitly because revision 1 described plan-deri
 ## Preconditions
 
 - Everything `pr-body-composition.spec.md` requires; this spec adds no new precondition on git state.
-- `manifest.yaml` may or may not carry a `pr:` block. Absence means `size_threshold_additions: 400` and an empty `mirror_globs`.
+- `manifest.yaml` at `base` may or may not carry a `pr:` block, and may not exist at `base` at all. Either absence means `size_threshold_additions: 400` and an empty `mirror_globs`, stated in the output.
 - `lib/parallel/groups.mjs` exports `parseParallelizationSection`. This is a hard dependency on a module owned by the `worktree-parallelization` charter, declared in this charter's Dependencies table.
 - Plan artifacts may or may not exist. Roughly 20 legacy plans in this repo predate routing sidecars (`issue-528`); plans missing entirely is a normal input state, not an error.
 
@@ -141,7 +183,8 @@ The dependency is worth naming explicitly because revision 1 described plan-deri
 
 | Capability | Reason | Depends On |
 |---|---|---|
-| Tolerant qualifier in `lib/parallel/groups.mjs` | Would lift rung-1 coverage from 79/138 to roughly 101/138 by accepting `(foundation, sequential)` and `(independent of A)` alongside the current literal `(independent\|sequential)`. Not taken here: the same change moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel`, a behaviour change in another charter's module that needs evidence those groups are genuinely independent. | `worktree-parallelization` accepting the coverage change |
+| Tolerant qualifier in `lib/parallel/groups.mjs` | Would lift rung-1 coverage from 80/139 to **90/139** by accepting `(foundation, sequential)` and `(independent of A)` alongside the current literal `(independent\|sequential)` — 10 plans, not the 22 revision 2 claimed. Not taken here: the same change moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel`, a behaviour change in another charter's module that needs evidence those groups are genuinely independent. | `worktree-parallelization` accepting the coverage change |
+| Tolerating the bold group form `- **Group A (sequential):**` | 19 of the 59 malformed plans — the single largest recoverable cause, nearly double the qualifier's 10. Same owner and the same concurrent-execution consequence as the row above, so it belongs in the same negotiation rather than being taken piecemeal. | `worktree-parallelization` accepting the coverage change |
 | A schema for `## Parallelization` owned by `/adev:plan` | The real fix. The section is emitted as prose by a skill and parsed by consumers, so coverage is bounded by how uniformly authors happen to write it. An owned emitter format would make the parser total instead of tolerant. Larger than either consuming charter. | a decision to make `/adev:plan` emit a structured sidecar |
 
 ## Behaviors
@@ -152,9 +195,10 @@ The dependency is worth naming explicitly because revision 1 described plan-deri
 - **When** changed paths match a `mirror_globs` entry **then** the net figure excludes them and the advisory names how many paths were excluded and by which glob.
 - **When** `manifest.yaml` carries no `pr:` block **then** the defaults apply and the advisory renders identically to an explicit default configuration.
 - **When** `parseParallelizationSection` returns groups that all have at least one member **then** the reading order lists groups in the parser's `id` order, members in the parser's order, each group labelled with its `independent` flag.
-- **When** the parser returns a group with zero members **then** that plan drops to rung 2 or 4 for all of its tasks and the output names the zero-member group ids and the plan path; no group from that plan renders as a normal-case reading order.
-- **When** the parser returns `malformed: true` **then** that plan drops to rung 3 or 4 and the output states the section was present but carried no recognizable group line.
-- **When** a plan reaches a degraded rung and the plan has no `## Task Summary` **then** ordering is `git log --reverse` and the output carries both the original rung's annotation and a statement that ordering is chronological, not planned.
+- **When** the parser returns a group with duplicate members **then** they are de-duplicated per group keeping first occurrence, and the same task appearing in two different groups is preserved in both.
+- **When** the parser returns a group with zero members, **or** `malformed: true`, **or** the section is absent **then** that plan reaches rung 2 for all of its tasks, ordering is `git log --reverse`, and the output names which of the three applied plus the plan path.
+- **When** a plan exceeds 1 MiB, is not a regular file, is unreadable, or does not exist **then** that plan reaches rung 3, ordering is `git log --reverse`, and the output names the path and which of the four applied.
+- **When** a plan yields more than 50 groups, or a group more than 100 de-duplicated members, or the two sections together exceed 64 KiB **then** the excess is dropped and the output names what was dropped and how much.
 - **When** a referenced spec has no plan file, or the plan file is unreadable **then** its commits are ordered by `git log --reverse` and the output names the path and which of the two applied.
 - **When** any plan-derived value exceeds 200 characters **then** it renders truncated with a visible `…(truncated)` suffix.
 - **When** the range references several specs with plans at different fallback rungs **then** each spec's block is annotated with its own rung; one degraded plan never suppresses another's parsed ordering.
@@ -163,7 +207,7 @@ The dependency is worth naming explicitly because revision 1 described plan-deri
 ## Postconditions
 
 - Both sections render inside the same single marker pair; no second marker is introduced.
-- No file is created, modified, or deleted, including `manifest.yaml`; the `pr:` block is read-only input that a human adds.
+- No file is created, modified, or deleted, including `manifest.yaml`. The `pr:` block is read-only input, and it is read from `base` rather than the working tree precisely because a human on the head side of the range is not a trustworthy source for it.
 - Exit code is unchanged from `pr-body-composition`: 0 whenever `HEAD` and the base ref resolve, whatever state the plans and manifest are in.
 
 ## Error Cases
@@ -172,13 +216,15 @@ The dependency is worth naming explicitly because revision 1 described plan-deri
 |-----------|-------------------|------------|
 | `pr:` block present but `size_threshold_additions` is not a positive integer | Fall back to 400, annotate the size advisory with the rejected value | *(advisory — no code)* |
 | `mirror_globs` present but not a list of strings | Treat as empty, annotate that net equals raw and why | *(advisory — no code)* |
-| Plan file present but unreadable (permissions, truncation) | Rung 5; name the path and state it was unreadable rather than absent | *(advisory — no code)* |
-| `## Parallelization` present but empty | Parser returns `malformed: true` → rung 3, or rung 4 if `## Task Summary` is absent | *(advisory — no code)* |
-| Plan path derived from a `Spec:` trailer resolves outside `.context-index/specs/` | The path is never opened; rung 5, naming the trailer value as out of bounds | *(advisory — no code)* |
-| A member reference in a group has no matching row in `## Task Summary` | Keep it in the reading order, mark it unmatched; never drop it | *(advisory — no code)* |
+| Plan file present but unreadable (permissions, truncation) | Rung 3; name the path and state it was unreadable rather than absent | *(advisory — no code)* |
+| Plan file exceeds 1 MiB, or is not a regular file | Rung 3; name the path and which of the two applied; the file is not read | *(advisory — no code)* |
+| `## Parallelization` present but empty | Parser returns `malformed: true` → rung 2 | *(advisory — no code)* |
+| Plan path derived from a `Spec:` trailer resolves outside `.context-index/specs/` | The path is never opened; rung 3, naming the trailer value as out of bounds | *(advisory — no code)* |
+| `pr:` block absent at `base`, or `manifest.yaml` absent at `base` | Defaults apply; the advisory states it used defaults and why | *(advisory — no code)* |
+| Group, member, or total-byte bound exceeded | Render up to the bound, annotate what was dropped and how much | *(advisory — no code)* |
 | Range is empty | Both sections render their own empty-range line as part of the full five-slot brief `pr-body-composition` defines | *(advisory — no code)* |
 
-Rung 5 now covers both "no plan file" and "plan unreadable", which resolves revision 1's contradiction between this table and the ladder — the two disagreed about which rung an unreadable-but-present plan reached, and rung 5's annotation named a missing path for a path that exists.
+Rung 3 covers absent, unreadable, oversized, and non-regular-file alike, which resolves the contradiction revision 2 carried between this table and the ladder — they disagreed about which rung an unreadable-but-present plan reached, and the rung's annotation named a missing path for a path that exists.
 
 ## Actionable Task Map
 
@@ -188,7 +234,9 @@ Rung 5 now covers both "no plan file" and "plan unreadable", which resolves revi
 | Size computation | Sum `git diff --numstat`; partition raw vs net by `mirror_globs`; count excluded paths per glob. | small |
 | Size advisory renderer | Below-threshold statement, at-or-above escalation with the three exception classes and the packet pointer. | small |
 | Parallelization consumption | Call `parseParallelizationSection` from `lib/parallel/groups.mjs`; classify its three return states; apply the zero-member rule. No grammar is authored here. | small |
-| Fallback ladder | Five rungs with per-plan rung tracking, the `## Task Summary`-absent transition to rung 4, and a rendered annotation for each rung above 1. | medium |
+| Fallback ladder | Three rungs with per-plan rung tracking and a rendered annotation for each rung above 1. Consumes no section other than `## Parallelization`. | small |
+| Resource bounds | `stat` + regular-file check before reading a plan; per-group member de-duplication; the group, member, and total-byte caps, each rendering a named degradation. | medium |
+| Base-ref config reader | Read the `pr:` block via `git show <base>:.context-index/manifest.yaml`; never read the working-tree copy; defaults when absent at `base`. | small |
 | Reading order renderer | Groups in parser `id` order, members in parser order, per-spec blocks each carrying their own rung annotation, all values through the shared encoder with the 200-character cap. | medium |
 | Section placement wiring | Supply the two slot bodies at positions 1 and 3 to the marker assembly owned by `pr-body-composition`; emit no marker. | small |
 | Tests | `node:test` coverage for each ladder rung, threshold boundary, mirror exclusion, malformed manifest fields, per-spec rung independence, and byte-identical determinism. | medium |
@@ -200,20 +248,24 @@ Rung 5 now covers both "no plan file" and "plan unreadable", which resolves revi
 - [ ] A PR with mirrored paths reports raw and net separately and names the excluded count and glob; a test asserts net < raw.
 - [ ] With no `pr:` block, output is byte-identical to output with an explicit `size_threshold_additions: 400` and empty `mirror_globs`.
 - [ ] The reading order calls `parseParallelizationSection` from `lib/parallel/groups.mjs`; a test asserts this module defines no `## Parallelization` regex of its own.
-- [ ] Each of the five fallback rungs has a test asserting both the ordering used and the presence of its annotation in the output.
-- [ ] A plan whose parser output contains a zero-member group drops to rung 2 (or 4) for all of its tasks; a test uses a fixture with `Tasks 14, 15, 16, 17` and asserts no group from that plan renders in normal-case form.
+- [ ] Each of the three fallback rungs has a test asserting both the ordering used and the presence of its annotation in the output.
+- [ ] No output path reads `## Task Summary`; a test asserts the module contains no reference to that heading.
+- [ ] A plan whose parser output contains a zero-member group reaches rung 2 for all of its tasks; a test uses a fixture with `Tasks 14, 15, 16, 17` and asserts no group from that plan renders in normal-case form.
 - [ ] A fixture with `Task 7 (refactor -- depends on Tasks 2, 3, 5, 6)` yields exactly one member; a test pins that the plural inside the parenthetical contributes nothing.
-- [ ] A plan at a degraded rung with no `## Task Summary` reaches rung 4 and its output carries **both** annotations; a test asserts the original rung's annotation is preserved, not replaced.
+- [ ] A group parsing as `["1","2","3","1"]` renders as `1, 2, 3`; a test pins per-group de-duplication and asserts a task present in two groups still appears in both.
 - [ ] Two specs at different rungs in one range each carry their own annotation; a test asserts the parsed one is unaffected.
-- [ ] A member with no `## Task Summary` row appears in the output marked unmatched; a test asserts it is not dropped.
+- [ ] The `pr:` block is read from `base`, not the working tree; a test with a head-side `size_threshold_additions: 999999` asserts the base-side threshold is used and escalation still fires.
+- [ ] A plan over 1 MiB is never read; a test asserts `stat` precedes any read and the plan reaches rung 3 annotated oversized.
+- [ ] A plan that is a symlink to a non-regular file reaches rung 3 without being opened.
+- [ ] A group line yielding 100,000 members renders at most 100 with a named drop annotation; a test asserts the rendered section stays under the 64 KiB total.
 - [ ] No exception class is ever asserted by the verb; a test asserts the words "mechanical sweep" and "migration" appear only in the class list, never as a claim about the current PR.
 - [ ] The review-packet pointer never renders at the start of a line; a test asserts no output line begins with `## ` followed by a packet heading.
 - [ ] Every plan-derived value passes through the shared encoder and is capped at 200 characters; a test with a 5,000-character group qualifier asserts truncation with the visible suffix.
-- [ ] A plan path resolving outside `.context-index/specs/` is never opened; a test asserts no `fs` call receives it and the plan reaches rung 5.
+- [ ] A plan path resolving outside `.context-index/specs/` is never opened; a test asserts no `fs` call receives it and the plan reaches rung 3.
 - [ ] Running the verb twice on an unchanged range produces byte-identical output for both sections.
 - [ ] `pr-body-composition.spec.md` section list matches the table in Section Placement; no contradiction remains between the two specs.
 - [ ] No Markdown parsing library is added; a test asserts `package.json` dependencies are unchanged.
-- [ ] The measured coverage figures in this spec are reproducible; a test or a checked-in script recomputes usable-vs-malformed counts over the plan corpus, so the stated 79/59 cannot silently rot.
+- [ ] The measured coverage figures in this spec are reproducible; a test or a checked-in script recomputes usable-vs-malformed counts over the plan corpus, so the stated 80/59 over 139 plans cannot silently rot.
 - [ ] All quality gates pass (`npm test`).
 - [ ] No constitutional violations.
 
