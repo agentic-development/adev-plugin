@@ -69,3 +69,12 @@ checks:
     context_pack: base
     severity: warning
     prompt: plugin:validate/checks/validate.check-11-visual-verification.md
+
+  # Gate Doctor (unified-gates/gate-doctor.spec.md).
+  - id: validate.check-14-gate-executability
+    name: "Gate Executability and Test Collection"
+    kind: deterministic-check
+    severity: warning
+    prompt: plugin:validate/checks/validate.check-14-gate-executability.md
+    description: "Verify declared gates can run and declared tests get collected."
+    after: [validate.check-1.5-source-manifest]
