@@ -78,9 +78,9 @@ if [[ "$NORM_FILE" == "$NORM_ROOT"/* ]]; then
   RELATIVE_PATH="${NORM_FILE#$NORM_ROOT/}"
 fi
 
-# Delegate file exclusion check and module resolution to node helper
+# Delegate file exclusion check and module resolution to the merged node helper
 RESULT=$(ADEV_CONTEXT_ROOT="$CONTEXT_ROOT" ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_FILE_PATH="$RELATIVE_PATH" \
-  node "${PLUGIN_ROOT}/hooks/_lifecycle-gate-check-edit.mjs" 2>/dev/null || echo "pass")
+  node "${PLUGIN_ROOT}/hooks/_lifecycle-gate-check.mjs" --surface file 2>/dev/null || echo "pass")
 
 if [[ "$RESULT" == "pass" ]]; then
   exit 0
