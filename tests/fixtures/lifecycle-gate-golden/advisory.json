@@ -1,0 +1,170 @@
+[
+  {
+    "level": "off",
+    "mode": "plugin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": ""
+      }
+    ]
+  },
+  {
+    "level": "off",
+    "mode": "stdin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": ""
+      }
+    ]
+  },
+  {
+    "level": "warn",
+    "mode": "plugin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": ""
+      }
+    ]
+  },
+  {
+    "level": "warn",
+    "mode": "stdin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": ""
+      }
+    ]
+  },
+  {
+    "level": "confirm",
+    "mode": "plugin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
+      }
+    ]
+  },
+  {
+    "level": "confirm",
+    "mode": "stdin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
+      }
+    ]
+  },
+  {
+    "level": "block",
+    "mode": "plugin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
+      }
+    ]
+  },
+  {
+    "level": "block",
+    "mode": "stdin",
+    "sequence": [
+      {
+        "position": 1,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 2,
+        "exitCode": 0,
+        "stdout": ""
+      },
+      {
+        "position": 3,
+        "exitCode": 0,
+        "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"You are operating without an active plan. Run `/adev:work` to classify this task and enter the lifecycle, or `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
+      }
+    ]
+  }
+]

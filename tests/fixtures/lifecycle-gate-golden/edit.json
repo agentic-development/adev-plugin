@@ -1,0 +1,50 @@
+[
+  {
+    "level": "off",
+    "mode": "plugin",
+    "exitCode": 0,
+    "stdout": ""
+  },
+  {
+    "level": "off",
+    "mode": "stdin",
+    "exitCode": 0,
+    "stdout": ""
+  },
+  {
+    "level": "warn",
+    "mode": "plugin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"No active lifecycle session. Run `/adev:work` to classify this task, or `/adev:debug` for a bug fix, before editing source files.\"\n  }\n}\n"
+  },
+  {
+    "level": "warn",
+    "mode": "stdin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"No active lifecycle session. Run `/adev:work` to classify this task, or `/adev:debug` for a bug fix, before editing source files.\"\n  }\n}\n"
+  },
+  {
+    "level": "confirm",
+    "mode": "plugin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"STOP. No active lifecycle session. You MUST run `/adev:work` to classify this task before editing source files. If this is a bug fix, invoke `/adev:debug`. If this is exploratory, run `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
+  },
+  {
+    "level": "confirm",
+    "mode": "stdin",
+    "exitCode": 0,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"STOP. No active lifecycle session. You MUST run `/adev:work` to classify this task before editing source files. If this is a bug fix, invoke `/adev:debug`. If this is exploratory, run `adev execution-state write --status standalone` to disable enforcement for this session.\"\n  }\n}\n"
+  },
+  {
+    "level": "block",
+    "mode": "plugin",
+    "exitCode": 2,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"Blocked: No active lifecycle session. Run `/adev:work` to enter the lifecycle before editing source files.\"\n  }\n}\n"
+  },
+  {
+    "level": "block",
+    "mode": "stdin",
+    "exitCode": 2,
+    "stdout": "{\n  \"hookSpecificOutput\": {\n    \"additionalContext\": \"Blocked: No active lifecycle session. Run `/adev:work` to enter the lifecycle before editing source files.\"\n  }\n}\n"
+  }
+]
