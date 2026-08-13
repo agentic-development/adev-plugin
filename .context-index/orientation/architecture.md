@@ -11,7 +11,7 @@ adev-plugin is a Claude Code plugin distributed as an npm package (`adev-cli`). 
 ```
 adev-plugin/
 ├── cli/index.mjs              # Single-file CLI — install, scaffold, conflict detection
-├── skills/                     # 31 skill directories, each with a SKILL.md
+├── skills/                     # 30 skill directories, each with a SKILL.md
 │   ├── using-adev/             # Gateway skill — injected at session start
 │   ├── adev:init/              # This wizard
 │   ├── adev:brainstorm/        # Idea exploration → Feature Charter
@@ -41,8 +41,7 @@ adev-plugin/
 │   ├── adev:reconcile/         # Interactive repair for lifecycle mismatches
 │   ├── adev:codehealth/        # Dead code and orphan file detection
 │   ├── adev:deploy/            # Run a deployment pipeline from .context-index/deploy.yaml
-│   ├── adev:prototype/         # Sketch UI screens, flows, and API surface from charters
-│   └── adev:standalone/        # Toggle lifecycle-gate enforcement off for ad-hoc work
+│   └── adev:prototype/         # Sketch UI screens, flows, and API surface from charters
 ├── hooks/                      # 22 hook files (17 .sh + 5 .mjs) + hooks.json config
 │   ├── hooks.json              # Hook registration (which events trigger which scripts)
 │   ├── session-start.sh        # SessionStart — injects using-adev skill
@@ -173,7 +172,7 @@ adev-plugin/
 
 ## Skill Lifecycle Order
 
-Skills follow a strict pipeline: init → brainstorm → specify → review-specs → plan → route → implement → validate → eval. The `build` skill orchestrates that pipeline end-to-end, and `work` triages incoming requests onto it. Supporting skills (assess, debug, recover, sample, status, write-test, retro, hygiene, repomap, codehealth, document, reconcile, sync, research, issues, learn, deploy, prototype, standalone) can run at any point.
+Skills follow a strict pipeline: init → brainstorm → specify → review-specs → plan → route → implement → validate → eval. The `build` skill orchestrates that pipeline end-to-end, and `work` triages incoming requests onto it. Supporting skills (assess, debug, recover, sample, status, write-test, retro, hygiene, repomap, codehealth, document, reconcile, sync, research, issues, learn, deploy, prototype) can run at any point.
 
 ## Key Design Decisions
 
