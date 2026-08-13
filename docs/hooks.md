@@ -24,15 +24,14 @@ All hooks follow the same protocol:
 | `session-start` | SessionStart | `startup\|resume\|clear\|compact` | Advisory | Inject project context at session start |
 | `context-preflight` | PreToolUse | Edit | Blocks | Validate context exists before edits |
 | `constitution-linter` | PreToolUse | Edit | Blocks | Block edits that violate the constitution |
-| `lifecycle-gate-edit` | PreToolUse | Edit | Blocks | Block edits that bypass lifecycle gates |
+| `lifecycle-gate.sh pre-edit` | PreToolUse | Edit | Blocks | Block edits that bypass lifecycle gates |
 | `merge-guard` | PreToolUse | Bash | Blocks | Block merges to protected branches |
-| `lifecycle-gate-bash` | PreToolUse | Bash | Blocks | Block bash commands that bypass lifecycle gates |
+| `lifecycle-gate.sh pre-bash` | PreToolUse | Bash | Blocks | Block bash commands that bypass lifecycle gates |
 | `plan-body-write-guard` | PreToolUse | `Write\|Edit` | Blocks | Block direct writes to immutable plan-task bodies |
-| `context-read-tracker` | PostToolUse | Read | Advisory | Track which context files have been read |
 | `sync-trigger` | PostToolUse | Edit | Advisory | Trigger sync after constitution edits |
-| `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives (legacy post-commit mode) |
+| `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives; also tracks which `.context-index/` files have been read (folded-in former `context-read-tracker`) |
 | `issue-reminder` | PostToolUse | `.*` (all) | Advisory | Remind about relevant open issues |
-| `lifecycle-gate-advisory` | PostToolUse | `.*` (all) | Advisory | Emit advisory warnings about lifecycle state |
+| `lifecycle-gate.sh advisory` | PostToolUse | `.*` (all) | Advisory | Emit advisory warnings about lifecycle state |
 | `post-validate-extract-heuristics` | Stop | `.*` | Advisory | Extract reusable heuristics from the session after `/adev:validate` completes |
 | `session-end` | SessionEnd | `.*` | Advisory | Write a session summary to `.context-index/sessions/` when Claude Code ends a session (registered dynamically when `integrations.session_capture.capture: hook`) |
 | `pre-compact` | PreCompact | `.*` | Advisory | Write a session summary before Claude Code compacts the transcript, skipping if SessionEnd already wrote one for this session (registered dynamically when `integrations.session_capture.capture: hook`) |
@@ -102,9 +101,9 @@ These hooks fire before a tool executes. Blocking hooks (exit 2) prevent the too
 
 ---
 
-### lifecycle-gate-edit
+### lifecycle-gate.sh pre-edit
 
-**Script:** `hooks/lifecycle-gate-edit.sh`
+**Script:** `hooks/lifecycle-gate.sh pre-edit` (consolidated dispatcher — see [lifecycle-gate.sh](#lifecycle-gatesh-dispatcher) below)
 **Matcher:** Edit
 **Behavior:** Blocks
 
@@ -146,9 +145,9 @@ These hooks fire before a tool executes. Blocking hooks (exit 2) prevent the too
 
 ---
 
-### lifecycle-gate-bash
+### lifecycle-gate.sh pre-bash
 
-**Script:** `hooks/lifecycle-gate-bash.sh`
+**Script:** `hooks/lifecycle-gate.sh pre-bash` (consolidated dispatcher — see [lifecycle-gate.sh](#lifecycle-gatesh-dispatcher) below)
 **Matcher:** Bash
 **Behavior:** Blocks
 
@@ -168,23 +167,19 @@ These hooks fire before a tool executes. Blocking hooks (exit 2) prevent the too
 
 ---
 
+### lifecycle-gate.sh dispatcher
+
+**Script:** `hooks/lifecycle-gate.sh`
+
+The three lifecycle-gate rows above (`pre-edit`, `pre-bash`, and `advisory`, below) all resolve to this single script, registered three times in `hooks/hooks.json` with a trailing argv surface argument — e.g. `bash "${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate.sh" pre-edit`. Dispatch is read from `$1` only; the script never infers its surface from stdin fields. An unknown or missing surface argument exits 0 with a stderr diagnostic (fail-open — a mis-registration must be loudly visible but never a block).
+
+This consolidates what were formerly three separate scripts (`lifecycle-gate-edit.sh`, `lifecycle-gate-bash.sh`, `lifecycle-gate-advisory.sh`) sharing an almost-identical skeleton (level resolution, execution-state read, enforcement-message rendering). File-exclusion and bash-passthrough checks are delegated to `hooks/_lifecycle-gate-check.mjs --surface file|bash`.
+
+---
+
 ## PostToolUse Hooks
 
 These hooks fire after a tool executes. They are always advisory (exit 0) and do not block operations.
-
-### context-read-tracker
-
-**Script:** `hooks/context-read-tracker.sh`
-**Matcher:** Read
-**Behavior:** Advisory
-
-**Purpose:** Tracks which context files have been read during the session. Maintains a read log so other hooks (like `context-preflight`) can verify that agents have read necessary context before editing.
-
-**What it does:**
-- Records the file path and timestamp when a context file is read
-- Updates the session read log
-
----
 
 ### sync-trigger
 
@@ -206,12 +201,13 @@ These hooks fire after a tool executes. They are always advisory (exit 0) and do
 **Matcher:** `.*` (all tools)
 **Behavior:** Advisory
 
-**Purpose:** Captures session activity for retrospective analysis. Records tool invocations, file changes, and timing data that `/adev:retro` uses to compute delivery metrics.
+**Purpose:** Captures session activity for retrospective analysis. Records tool invocations, file changes, and timing data that `/adev:retro` uses to compute delivery metrics. Also touches `.context-index/.context-preflight-ok` whenever the tool call read a `.context-index/` file — this folds in the former standalone `context-read-tracker` hook, since session-capture's `.*` matcher is a superset of context-read-tracker's `Read`-only matcher. The touch runs unconditionally, independent of the capture-provider gate below.
 
 **What it does:**
-- Logs tool invocations with timestamps
+- Touches `.context-index/.context-preflight-ok` when the read file path is under `.context-index/` (so `context-preflight` can verify the agent read context before editing)
+- Logs tool invocations with timestamps (only when the manifest provider is `native`)
 - Records file paths and operation types
-- Writes session data to the configured capture provider
+- Delegates the JSONL-append logic to `lib/session-capture.mjs`'s `tool-use` capture path
 
 > **Note:** This is the legacy PostToolUse capture surface, kept around for projects on `integrations.session_capture.capture: post-commit`. New projects default to the SessionEnd / PreCompact hooks below, which capture once per session instead of once per tool call.
 
@@ -231,9 +227,9 @@ These hooks fire after a tool executes. They are always advisory (exit 0) and do
 
 ---
 
-### lifecycle-gate-advisory
+### lifecycle-gate.sh advisory
 
-**Script:** `hooks/lifecycle-gate-advisory.sh`
+**Script:** `hooks/lifecycle-gate.sh advisory` (consolidated dispatcher — see [lifecycle-gate.sh dispatcher](#lifecycle-gatesh-dispatcher) above)
 **Matcher:** `.*` (all tools)
 **Behavior:** Advisory
 

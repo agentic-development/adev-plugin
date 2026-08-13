@@ -2,7 +2,8 @@
 # adev PreToolUse hook: Context Preflight
 # Fires on: Edit
 # Warns when source code is edited without prior context reading.
-# Uses a flag file (.context-index/.context-preflight-ok) set by context-read-tracker.sh.
+# Uses a flag file (.context-index/.context-preflight-ok) set by session-capture.sh
+# (Read branch — formerly the standalone context-read-tracker.sh, folded in).
 # Exit code 0 = allow (always). Advisory warning via additionalContext when no context read.
 
 set -uo pipefail
