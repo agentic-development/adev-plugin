@@ -173,6 +173,8 @@ created: <today's date YYYY-MM-DD>
 # target-repo: <slug>            # workspace mode only — which repo owns the implementation
 # charter-extension: true       # if capability not in charter
 # constitutional-exception: "." # if user chose explicit exception
+# test_strategy: <strategy-id>  # optional — pins the test strategy (schema, contract, unit, ...) at spec level
+# test_depth: minimal | standard | thorough  # optional — overrides the depth chain's stage 1 (spec-declared) — see test-depth-policy.spec.md
 ```
 
 **Milestone inheritance (standard mode):** Inherit from the capability's Milestone in the parent charter. Tell the user and allow override:
