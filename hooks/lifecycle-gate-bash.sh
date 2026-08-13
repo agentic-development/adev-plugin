@@ -65,9 +65,9 @@ if [ "$STATE_STATUS" = "standalone" ] || [ "$STATE_STATUS" = "active" ]; then
   exit 0
 fi
 
-# Check command against passthrough patterns
+# Check command against passthrough patterns via the merged node helper
 PASSTHROUGH_CHECK=$(ADEV_CONTEXT_ROOT="$CONTEXT_ROOT" ADEV_PLUGIN_ROOT="$PLUGIN_ROOT" ADEV_COMMAND="$COMMAND" \
-  node "${PLUGIN_ROOT}/hooks/_lifecycle-gate-check-bash.mjs" 2>/dev/null || echo "passthrough")
+  node "${PLUGIN_ROOT}/hooks/_lifecycle-gate-check.mjs" --surface bash 2>/dev/null || echo "passthrough")
 
 if [ "$PASSTHROUGH_CHECK" = "passthrough" ]; then
   exit 0
