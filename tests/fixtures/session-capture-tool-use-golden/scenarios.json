@@ -85,14 +85,13 @@
       "epic": "epic-7"
     }
   },
-  "issueWithEpicBeadsMap": {
+  "issueBeadsEpicUnresolved": {
     "keyOrder": [
       "tool",
       "files",
       "timestamp",
       "operator",
-      "issue",
-      "epic"
+      "issue"
     ],
     "value": {
       "tool": "Edit",
@@ -101,8 +100,7 @@
       ],
       "timestamp": "<TIMESTAMP>",
       "operator": "<OPERATOR>",
-      "issue": "issue-9",
-      "epic": "epic-3"
+      "issue": "issue-9"
     }
   },
   "issueWithEpicBeadsFallback": {

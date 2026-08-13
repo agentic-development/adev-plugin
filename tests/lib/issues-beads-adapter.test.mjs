@@ -40,14 +40,81 @@ describe("BeadsAdapter", () => {
     assert.equal(adapter._resolveDbPath(), null, "no workspace → no db file");
   });
 
-  it("delegates createEpic to the local epic adapter without eager validation", async () => {
-    // beads has no epic adev can create (`br epic` is status/close-eligible
-    // only), so epics live in a local JsonAdapter. It must be constructed
-    // lazily: BeadsAdapter is legitimately built against paths that do not
-    // exist (the availability probe in lib/cli/issues-migrate.mjs).
+  it("keeps no sidecar path and no local epic delegate", () => {
+    // The board lives entirely in beads. `.beads-map.json` held the adev id
+    // map plus branch/pr/claimed_at, and a local JsonAdapter held the epics —
+    // two stores that could disagree with beads. The sidecar's disagreement
+    // was not hypothetical: it let the claim gate report "unclaimed" for an
+    // issue br had already assigned, and the gate failed OPEN.
+    const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    assert.equal(adapter.mapPath, undefined, "no sidecar path may survive");
+    assert.equal(adapter._epicAdapter, undefined, "no local epic store may survive");
+    assert.equal(typeof adapter._readMap, "undefined");
+    assert.equal(typeof adapter._writeMap, "undefined");
+    assert.equal(typeof adapter._getBeadsId, "undefined");
+  });
+
+  it("resolves adev ids from br's external_ref, never from a persisted map", () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    const scan = [
+      { id: "tst-aaa", external_ref: "issue-1", title: "one" },
+      { id: "tst-bbb", external_ref: "issue-2", title: "two" },
+      { id: "tst-ccc", title: "created straight through br" },
+    ];
+
+    assert.equal(adapter._resolve("issue-2", scan).id, "tst-bbb");
+    // An issue created directly in br stays operable under its own id, so the
+    // board is never blind to work a human filed.
+    assert.equal(adapter._resolve("tst-ccc", scan).id, "tst-ccc");
+    assert.throws(
+      () => adapter._resolve("issue-9", scan),
+      (err) => err.code === "NOT_FOUND",
+    );
+  });
+
+  it("mints the next id from the highest external_ref on the board", () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    const scan = [
+      { id: "a", external_ref: "issue-1" },
+      { id: "b", external_ref: "issue-7" }, // may well be closed — `-s all` sees it
+      { id: "c", external_ref: "epic-2" },
+      { id: "d" },
+    ];
+    assert.equal(adapter._nextId("issue", scan), "issue-8");
+    assert.equal(adapter._nextId("epic", scan), "epic-3");
+    assert.equal(adapter._nextId("issue", []), "issue-1");
+  });
+
+  it("never throws on malformed or foreign agent_context", () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    // `agent_context` is br's field, writable by humans and other tools. A
+    // board must not become unreadable because one issue holds odd JSON.
+    for (const agent_context of ["not json at all", "[1,2,3]", '"a string"', "", null, "{}"]) {
+      const issue = adapter._toIssue({ id: "x", external_ref: "issue-1", agent_context });
+      assert.equal(issue.id, "issue-1");
+      assert.equal(issue.branch, undefined);
+      assert.equal(issue.next_action, null);
+    }
+
+    const populated = adapter._toIssue({
+      id: "x",
+      external_ref: "issue-1",
+      assignee: "alice",
+      agent_context: JSON.stringify({
+        house_rules: "not adev's",
+        adev: { branch: "feat/x", epicId: "epic-2", claimed_at: "2026-01-01T00:00:00Z" },
+      }),
+    });
+    assert.equal(populated.branch, "feat/x");
+    assert.equal(populated.epicId, "epic-2");
+    assert.equal(populated.owner, "alice", "the holder is br's assignee, and only that");
+  });
+
+  it("exposes epic operations without constructing any local store", () => {
     const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
     assert.equal(typeof adapter.createEpic, "function");
     assert.equal(typeof adapter.updateEpic, "function");
+    assert.equal(typeof adapter.listEpics, "function");
   });
 
   it("exposes all IssueManagerInterface methods", () => {

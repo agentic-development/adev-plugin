@@ -4,7 +4,7 @@
 charter: task-management
 status: validated
 milestone:
-revision: 2
+revision: 3
 charter-revision: 3
 created: 2026-03-31
 updated: 2026-08-13
@@ -52,24 +52,40 @@ drift_detected: true
 14. **When** the resolved database path contains a symlinked parent component **then** it is canonicalized with `realpathSync.native` first, because br refuses such a route outright (`Refusing configured database route with a symlinked parent`). On macOS `/var` → `/private/var` alone triggers this.
 15. **When** `.beads/` holds no database **then** `--db` is omitted so br applies its own auto-discovery and reports its own error.
 16. **When** a `br` invocation fails **then** the raised `BEADS_COMMAND_FAILED` message carries whichever stream spoke — br writes structured JSON errors to **stdout** and leaves stderr empty, so a stderr-only message degrades to a bare `Command failed: <argv>`.
-17. **When** `claim(id, owner)` is called **then** exclusivity is delegated to `br update --claim`, which sets assignee=actor + status=in_progress and refuses an already-held issue inside br's own transaction. adev's `owner` maps onto br's `assignee` because assignee is the field `--claim` guards; `claimed_at` has no br column and lives in the sidecar map, driving lease expiry only.
+17. **When** `claim(id, owner)` is called **then** exclusivity is delegated to `br update --claim`, which sets assignee=actor + status=in_progress and refuses an already-held issue inside br's own transaction. adev's `owner` maps onto br's `assignee`, which is its ONLY home — assignee is the field `--claim` guards. The claim and its `claimed_at` lease stamp are written in ONE `br update --claim --agent-context …` call; br rolls the context write back when it refuses the claim, so the holder and the stamp cannot disagree.
 18. **When** `claim`/`release` evaluate preconditions **then** they call the SAME `requireClaimable` / `requireReleasable` helpers as the json backend, so refusal codes (`ISSUE_ALREADY_CLAIMED`, `ISSUE_CLOSED`, `CLAIM_OWNER_MISMATCH`) and CLI exit codes are identical across backends and callers never branch on backend.
-19. **When** epics are created, listed, updated, or walked **then** they are delegated to a lazily-constructed local `JsonAdapter`, because `br epic` exposes only `status` and `close-eligible` — there is no br epic adev can create. The delegate is constructed lazily because `BeadsAdapter` is legitimately built against non-existent paths (the availability probe in `lib/cli/issues-migrate.mjs`), while `JsonAdapter` validates its root eagerly.
+19. **When** epics are created, listed, or updated **then** they are native beads issues created with `br create -t epic --external-ref epic-N`. `br epic` exposes only `status` and `close-eligible`, but that is a reporting surface — an epic is an ordinary br issue with `issue_type: epic`, so no local store is needed. Legacy `epic-N` items are the `listEpics()` collection and are excluded from `list()`, mirroring the json backend's separate `epics` array.
+
+**Beads Backend — single source of truth (rev 3):**
+
+> Added 2026-08-13. Rev 2 kept a `.context-index/tasks/.beads-map.json` sidecar plus a local epic store. That dual state caused a real fail-open: `requireClaimable` read the sidecar while exclusivity lived in br's `assignee`, so a human running `br update --claim` directly left the gate seeing "unclaimed". Both stores are gone.
+
+20. **When** the adapter needs any adev state **then** it reads it from beads. The complete mapping is: adev id (`issue-N` / `epic-N`) → br `external_ref`; claim holder (`owner`) → br `assignee`; `status` / `title` / `priority` / `type` / `notes` → br's own columns; epics → br issues of type `epic`; parent/child → `br create --parent`; and `epicId`, `parent_id`, `planRef`, `planTask`, `spec_ref`, `next_action`, `branch`, `pr`, `claimed_at`, `milestone` → br `agent_context`, namespaced under a top-level `adev` key.
+21. **When** an adev id is resolved to a br id **then** it scans `br list -s all --json` for a matching `external_ref`. br cannot address an issue by external_ref (`br update issue-42` → ISSUE_NOT_FOUND) and `br list` has no external-ref filter, so the scan is the only route. The resulting index is DERIVED: rebuilt per call, shared only within a single method, and never written to disk. A cache that outlives a call is the sidecar again.
+22. **When** any internal scan runs **then** it passes `-s all`. `br list` hides closed issues by default, and a closed-blind scan would both re-mint an `issue-N` a closed issue already owns and make `get()` return null for closed items that the json backend returns.
+23. **When** `agent_context` is written **then** it is read-modify-write over the whole object. br REPLACES the field wholesale, so a partial write silently erases every other field — including a live lease stamp. Top-level keys adev did not write are preserved: `agent_context` is br's own "governing-instructions" field, which a human or another tool may legitimately share.
+24. **When** `agent_context` is read **then** malformed, non-object, or absent content degrades to `{}` and never throws. The field is user-writable; one hand-edited value must not make a board unreadable.
+25. **When** a new adev id is minted **then** the next number is derived from the highest existing `external_ref` in a `-s all` scan. This is NOT atomic across concurrent creators — br exposes no sequence primitive — but it fails LOUDLY rather than silently: br enforces uniqueness on `external_ref` and rejects the loser with `CONFIG_ERROR` at exit 7, surfaced as `BEADS_COMMAND_FAILED`. The outcome is a failed create, never two issues sharing an id.
+26. **When** a legacy `.beads-map.json` or a legacy `tasks.json` epic store is present **then** it is folded into beads on first adapter use: sidecar entries are replayed onto the br issues they name as `external_ref` + `agent_context` (and `assignee`, when the sidecar recorded an owner br does not have), and legacy epics are re-created as native br epics. Every step is keyed on `external_ref`, so a re-run is a no-op and a half-finished run resumes. Migrated files are RENAMED (`.migrated-<timestamp>`), never deleted; `tasks.json` is retired only when it held no issues of its own.
+27. **When** a legacy sidecar cannot be honoured — unreadable, or naming br issues that do not exist — **then** the adapter throws `BEADS_LEGACY_MIGRATION_FAILED` naming the entries and leaves the file in place. Ignoring it is indistinguishable from an empty board, which is the outcome this exists to prevent.
+28. **When** a read-only consumer constructs the adapter with `{ autoMigrate: false }` **then** no migration write occurs. This is what the `PostToolUse` hook path in `lib/session-capture.mjs` uses, so a hook can never write to the board.
 
 ### Known non-parity (beads)
 
 | Capability | Behavior |
 |---|---|
-| **Stale-lease takeover** | **Not atomic.** br refuses to reassign a held issue, so expiring a lease takes two calls (clear assignee, then `--claim`). Two agents observing the same expired lease can both proceed. The window is bounded by TTL expiry rather than contention — far narrower than no gate at all — but `tasks.backend: json` is the backend with an atomic takeover. |
-| `claimed_at`, `branch`, `pr`, `epicId`, `planRef`, `planTask`, `spec_ref` | No br column; stored in `.context-index/tasks/.beads-map.json`. The sidecar write is not atomic with the br call, so a crash between them can leave the lease stamp and the assignee disagreeing. Exclusivity is unaffected — that is br's `--claim`, not the sidecar. |
-| Epics | Not stored in beads at all (behavior 19). A beads project's epics live in `tasks.json`; `br list` will not show them. |
-| Issue IDs | br 0.2.x mints hash-like ids (`tst-i6s`). adev keeps its own sequential `issue-N` namespace in the sidecar and maps between them. |
-8. **When** an issue is created via the beads adapter **then** it runs `br create` with title, type, and priority as discrete arguments via `execFileSync('br', ['create', title, '--type', type, '--priority', String(priority), '--json'])` and stores the returned beads ID in `.context-index/tasks/.beads-map.json`. All `br` CLI invocations MUST use `execFileSync` with arguments as an array — never string interpolation or `execSync` with a command string — to prevent shell injection.
-9. **When** an issue is updated via the beads adapter **then** it runs `execFileSync('br', ['update', beadsId, '--status', status, '--json'])`.
+| **Stale-lease takeover** | **Not atomic**, and not fixable with br's current surface: `--claim` refuses ANY held issue, and `--assignee` has no compare-and-set precondition. Expiring a lease therefore takes two calls (clear assignee, then `--claim`), and the interleaving `A.clear → A.claim → B.clear → B.claim` silently displaces A. The two-call form is kept over a blind single `--assignee` write because `--claim` still refuses the commoner `A.clear → B.clear → A.claim` ordering. Bounded by TTL expiry rather than contention — far narrower than no gate at all — but `tasks.backend: json` is the backend with an atomic takeover. |
+| **ID minting** | **Not atomic** (behavior 25). br has no sequence primitive. Fails loudly via br's `external_ref` uniqueness rather than duplicating an id. |
+| Dependency edges on `list()` | Always `[]`. `br list --json` projects `dependency_count`, not the edges; reading them needs a per-issue `br dep list`. Pre-existing; `addDependency` itself works. |
+| Tiered child ids | `create()` mints flat `issue-N` even when `parent_id` is given (the native `--parent` link is still made). adev's tiered `e1.f2.t3` namespace is not minted on this backend; `walkTree` prefix-matches adev ids, matching json's semantics for ids that do exist. |
+| `agent_context` is shared | It is br's field, not adev's — inherited by descendants when `inherited_context.enabled` is set. adev confines itself to the `adev` key and preserves foreign keys, but a human editing that field is editing adev's metadata store. |
+| `createEpic({ status })` | `br create` has no status flag, so a non-open status on creation is not persisted (migration handles it separately via `br close`). |
+8. **When** an issue is created via the beads adapter **then** it runs `br create` with title, type, and priority as discrete arguments via `execFileSync('br', ['create', title, '--type', type, '--priority', String(priority), '--external-ref', adevId, '--agent-context', json, '--json'])`. All `br` CLI invocations MUST use `execFileSync` with arguments as an array — never string interpolation or `execSync` with a command string — to prevent shell injection.
+9. **When** an issue is updated via the beads adapter **then** it runs a SINGLE `execFileSync('br', ['update', beadsId, …flags, '--json'])` carrying both the column changes (`--status`, `--title`, `--priority`, `--type`, `--description`, `--assignee`) and the merged `--agent-context`, so column state and metadata cannot end up disagreeing.
 10. **When** an issue is closed via the beads adapter **then** it runs `execFileSync('br', ['close', beadsId, '--reason', reason])`.
-11. **When** `list()` is called on the beads adapter **then** it runs `br list --json`, maps beads IDs back to issue IDs using the beads-map, and applies filters (status, type, epicId, planRef) in-process on the returned results. The `epicId` and `planRef` filters use metadata from `.beads-map.json` since beads does not track these fields natively.
+11. **When** `list()` is called on the beads adapter **then** it runs `br list -s all --json`, reads each item's adev id from `external_ref` and its metadata from `agent_context`, excludes the legacy `epic-N` collection, and applies filters (status, type, epicId, planRef) in-process. Closed issues are included, matching the json backend.
 12. **When** `addDependency()` is called on the beads adapter **then** it runs `execFileSync('br', ['dep', 'add', beadsId1, beadsId2])`.
-13. **When** `createEpic()` or `updateEpic()` is called on the beads adapter **then** epic operations are delegated to the file adapter (hybrid approach). The beads_rust CLI has no epic concept, so epics are always stored in `.context-index/tasks/tasks.md` regardless of backend. The beads adapter composes with a FileAdapter instance internally for epic operations only.
+13b. **When** `createEpic()` or `updateEpic()` is called on the beads adapter **then** it creates or updates a native `br` issue of type `epic` carrying `external_ref: epic-N`. No local store is involved (superseded rev-1 text: epics were once delegated to a file/json adapter).
 
 **Registry:**
 
@@ -82,7 +98,7 @@ drift_detected: true
 ### Postconditions
 
 - File backend: `tasks.md` is always a valid, parseable markdown file after any operation
-- Beads backend: `.beads-map.json` stays in sync with beads state
+- Beads backend: beads is the only store. No adapter operation creates a file under `.context-index/tasks/`; there is nothing that can fall out of sync with beads state.
 - Registry: always returns a working adapter — never throws on backend selection
 
 ### Error Cases
@@ -92,7 +108,10 @@ drift_detected: true
 | File backend: `tasks.md` is corrupted/unparseable | Log warning, attempt recovery by re-reading; if unrecoverable, throw `PARSE_ERROR` | PARSE_ERROR |
 | Beads backend: `br` command fails | Throw `BEADS_COMMAND_FAILED` with stderr output | COMMAND_FAILED |
 | Beads backend: `br` not on PATH | Registry falls back to file adapter with warning | N/A (handled) |
-| Beads backend: `.beads-map.json` missing | Rebuild by running `br list --json` and matching by title | N/A (auto-recovery) |
+| Beads backend: adev id not found on the board | Throw `NOT_FOUND` naming the id | NOT_FOUND |
+| Beads backend: legacy `.beads-map.json` present | Migrate its entries into beads, then rename the file aside | N/A (auto-migration) |
+| Beads backend: legacy sidecar unmigratable | Throw, naming the entries, and leave the file in place | BEADS_LEGACY_MIGRATION_FAILED |
+| Beads backend: malformed `agent_context` | Degrade that item's metadata to empty; never throw | N/A (tolerated) |
 | File backend: concurrent writes | Last write wins (acceptable for single-agent use) | N/A |
 
 ## System Constitution Reference
@@ -107,7 +126,7 @@ drift_detected: true
 |------|-------------|---------------------|
 | File adapter | Implement `lib/issues/file-adapter.mjs` with markdown table parse/serialize | large |
 | Beads adapter | Implement `lib/issues/beads-adapter.mjs` wrapping `br` CLI | medium |
-| ID mapping | Implement `.beads-map.json` read/write/rebuild for beads adapter | small |
+| ID mapping | Resolve adev ids from br `external_ref` via a `-s all` scan; never persist the index | small |
 | Registry | Implement `lib/issues/registry.mjs` with config routing and fallback | small |
 | Manifest config | Add `tasks:` section to `templates/manifest-template.yaml` | small |
 | File adapter tests | CRUD round-trips, parse/serialize, edge cases | medium |
@@ -122,10 +141,10 @@ drift_detected: true
 - [ ] File adapter produces valid, human-readable markdown in `tasks.md`
 - [ ] File adapter parse/serialize round-trips are lossless (create → read → verify identical)
 - [ ] Beads adapter constructs correct `br` CLI commands for each operation
-- [ ] Beads adapter maintains `.beads-map.json` mapping between issue IDs and beads IDs
+- [x] Beads adapter stores adev ids in br `external_ref` and keeps NO sidecar file
 - [ ] Registry falls back to file backend when `br` is not available, with a logged warning
 - [ ] Registry defaults to file backend when `tasks.backend` is not configured
 - [ ] `templates/manifest-template.yaml` includes a `tasks:` section with backend config
-- [ ] `.beads-map.json` is gitignored
+- [x] A legacy `.beads-map.json` is migrated into beads and retired, never silently ignored
 - [ ] All quality gates pass (tests, lint, typecheck)
 - [ ] No constitutional violations introduced
