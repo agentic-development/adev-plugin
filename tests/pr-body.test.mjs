@@ -57,6 +57,8 @@ import {
   containSpecPath,
   checkInputBounds,
   readSpecArtifact,
+  parseCommitTrailers,
+  buildTaskUniverse,
 } from "../lib/cli/pr.mjs";
 
 // ---------------------------------------------------------------------------
@@ -1073,6 +1075,355 @@ test("T8: non-regular file (fifo/device) is refused before reading", () => {
     // A directory inside the root is likewise not a readable input.
     const dirResult = readSpecArtifact(dir, ".context-index/specs/features/demo");
     assert.equal(dirResult.ok, false, "a directory is not a regular file");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Task 3 — trailers, the task universe, and the Traceability slot
+//
+// The partition invariant is the spine of this block: every commit in the
+// range appears in exactly one traceability row or in the untraced bucket.
+// It is asserted as ARITHMETIC, and the right-hand side of that arithmetic is
+// `git rev-list --count` — an independent source. Comparing against
+// `context.commits.length` would be circular: a phantom record injected into
+// `git log` output inflates both sides and the test still passes.
+// ---------------------------------------------------------------------------
+
+const SPEC_A = ".context-index/specs/features/demo/alpha.spec.md";
+const SPEC_B = ".context-index/specs/features/demo/beta.spec.md";
+const SPEC_C = ".context-index/specs/features/demo/carol.spec.md";
+
+const TRACE_HEADER = ["Spec", "Tasks", "Commits", "Additions", "Deletions"];
+const UNTRACED_LABEL = "untraced — no Spec: trailer";
+
+/**
+ * A repo whose BASE (`main`) already carries the spec artifacts, so the range
+ * `main..HEAD` contains exactly the commits seeded afterwards and each row's
+ * diff stat is exactly the source lines those commits added.
+ */
+function specRepo(specRelPaths) {
+  const dir = createTempGitRepo();
+  for (const rel of specRelPaths) writeFixture(dir, rel, `# ${rel}\n`);
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-m", "chore: seed specs"]);
+  git(dir, ["checkout", "-b", "feat/trace"]);
+  return dir;
+}
+
+/** One commit adding `lines` lines to `file`, carrying `trailers` verbatim. */
+function commitWith(dir, file, lines, trailers, subject) {
+  writeFixture(dir, file, "x\n".repeat(lines));
+  git(dir, ["add", "-A"]);
+  const head = subject || `feat: ${file}`;
+  const message = trailers.length > 0 ? `${head}\n\n${trailers.join("\n")}\n` : `${head}\n`;
+  git(dir, ["commit", "-m", message]);
+}
+
+/**
+ * Three specs, five commits: A twice, B once, C once, and one commit with no
+ * trailers at all. Row counts 2 + 1 + 1 and an untraced bucket of 1 sum to 5.
+ */
+function traceabilityRepo() {
+  const dir = specRepo([SPEC_A, SPEC_B, SPEC_C]);
+  commitWith(dir, "src/one.mjs", 1, [`Spec: ${SPEC_A}`, "Plan-task: 1"]);
+  commitWith(dir, "src/two.mjs", 2, [`Spec: ${SPEC_A}`, "Plan-task: 2"]);
+  commitWith(dir, "src/three.mjs", 3, [`Spec: ${SPEC_B}`, "Plan-task: 1"]);
+  commitWith(dir, "src/four.mjs", 4, []);
+  commitWith(dir, "src/five.mjs", 5, [`Spec: ${SPEC_C}`, "Plan-task: 7"]);
+  return dir;
+}
+
+/** The number of commits in `main..HEAD`, from a source other than `git log`. */
+function rangeCommitCount(dir) {
+  return Number(git(dir, ["rev-list", "--count", "main..HEAD"]).trim());
+}
+
+/** The section body for `title`, from the opening heading to the next one. */
+function sectionOf(brief, title) {
+  const start = brief.indexOf(`### ${title}`);
+  assert.notEqual(start, -1, `section missing: ${title}`);
+  const rest = brief.slice(start + 1);
+  const nextRel = rest.indexOf("\n### ");
+  if (nextRel !== -1) return brief.slice(start, start + 1 + nextRel);
+  const close = brief.indexOf(CLOSE_MARKER, start);
+  return brief.slice(start, close === -1 ? brief.length : close);
+}
+
+/** Every markdown table row in a section as trimmed cells; the rule is dropped. */
+function tableRowsOf(section) {
+  return section
+    .split("\n")
+    .filter((l) => l.startsWith("|") && !/^\|[\s-]+\|/.test(l))
+    .map((l) => l.split("|").slice(1, -1).map((c) => c.trim()));
+}
+
+/** The traceability table of a full brief, header row included. */
+async function traceabilityRows(dir) {
+  const { code, stdout } = await invoke(dir, ["body", "--base", "main"]);
+  assert.equal(code, 0, "a populated traceability section does not change the exit code");
+  return { stdout, section: sectionOf(stdout, "Traceability"), rows: tableRowsOf(sectionOf(stdout, "Traceability")) };
+}
+
+test("one traceability row per Spec: trailer, aggregating count, task coverage, diff stat", async () => {
+  const dir = traceabilityRepo();
+  try {
+    const { rows } = await traceabilityRows(dir);
+    assert.deepEqual(rows[0], TRACE_HEADER, "the traceability column set is fixed");
+    assert.deepEqual(
+      rows.slice(1),
+      [
+        [encodeValue(SPEC_A), "1, 2", "2", "3", "0"],
+        [encodeValue(SPEC_B), "1", "1", "3", "0"],
+        [encodeValue(SPEC_C), "7", "1", "5", "0"],
+        [UNTRACED_LABEL, "—", "1", "4", "0"],
+      ],
+      "one row per referenced spec, aggregating commit count, task coverage and diff stat",
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("commits with no Spec: trailer collect into a labelled untraced bucket", async () => {
+  const dir = traceabilityRepo();
+  try {
+    const { rows } = await traceabilityRows(dir);
+    const untraced = rows.filter((r) => r[0] === UNTRACED_LABEL);
+    assert.equal(untraced.length, 1, "exactly one untraced bucket, explicitly labelled");
+    assert.deepEqual(untraced[0], [UNTRACED_LABEL, "—", "1", "4", "0"]);
+    assert.equal(
+      rows[rows.length - 1][0],
+      UNTRACED_LABEL,
+      "the untraced bucket sorts last, after every spec row",
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("the section is annotated as a gap when the untraced bucket is non-empty", async () => {
+  const dir = traceabilityRepo();
+  const clean = specRepo([SPEC_A]);
+  try {
+    const { section } = await traceabilityRows(dir);
+    assert.ok(section.includes("_GAP —"), `the section is annotated as a gap: ${section}`);
+    assert.ok(
+      section.includes("1 of 5 commits"),
+      `the annotation names how many commits are untraced: ${section}`,
+    );
+    assert.ok(section.includes("no Spec: trailer"), "the annotation names what was missing");
+
+    // The counterpart: nothing untraced, no gap annotation.
+    commitWith(clean, "src/only.mjs", 1, [`Spec: ${SPEC_A}`, "Plan-task: 1"]);
+    const fully = await traceabilityRows(clean);
+    assert.ok(
+      !fully.section.includes("_GAP —"),
+      `a fully traced range is not annotated as a gap: ${fully.section}`,
+    );
+    assert.deepEqual(
+      fully.rows.slice(1),
+      [[encodeValue(SPEC_A), "1", "1", "1", "0"], [UNTRACED_LABEL, "—", "0", "0", "0"]],
+      "the untraced bucket is still rendered explicitly, at zero",
+    );
+  } finally {
+    cleanupTempDir(dir);
+    cleanupTempDir(clean);
+  }
+});
+
+test("row commit counts plus the untraced bucket sum to the range commit count", async () => {
+  const dir = traceabilityRepo();
+  try {
+    const { rows } = await traceabilityRows(dir);
+    const data = rows.slice(1);
+    assert.ok(data.length >= 2, "the fixture must produce spec rows and an untraced bucket");
+
+    const summed = data.reduce((n, r) => n + Number(r[2]), 0);
+    // The right-hand side comes from `rev-list`, NOT from `context.commits`:
+    // an injected phantom record would inflate both sides of a circular check.
+    assert.equal(rangeCommitCount(dir), 5, "the fixture seeds exactly five commits");
+    assert.equal(
+      summed,
+      rangeCommitCount(dir),
+      `every commit must appear in exactly one row or the untraced bucket: ${JSON.stringify(data)}`,
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("a commit carrying two Spec: trailers still appears exactly once in total", async () => {
+  const dir = specRepo([SPEC_A, SPEC_B]);
+  try {
+    commitWith(dir, "src/one.mjs", 1, [`Spec: ${SPEC_A}`, `Spec: ${SPEC_B}`, "Plan-task: 1"]);
+    commitWith(dir, "src/two.mjs", 2, [`Spec: ${SPEC_A}`, "Plan-task: 2"]);
+
+    const { rows } = await traceabilityRows(dir);
+    const data = rows.slice(1);
+
+    // Both trailers still produce a row — the reference is not lost...
+    const specs = data.map((r) => r[0]);
+    assert.ok(specs.includes(encodeValue(SPEC_A)), "the first Spec: trailer has a row");
+    assert.ok(specs.includes(encodeValue(SPEC_B)), "the second Spec: trailer has a row");
+
+    // ...but the commit is COUNTED once, so the partition still holds.
+    assert.equal(rangeCommitCount(dir), 2);
+    assert.equal(
+      data.reduce((n, r) => n + Number(r[2]), 0),
+      2,
+      `a dual-trailer commit was double-counted: ${JSON.stringify(data)}`,
+    );
+    assert.deepEqual(
+      data,
+      [
+        [encodeValue(SPEC_A), "1, 2", "2", "3", "0"],
+        [encodeValue(SPEC_B), "1", "0", "0", "0"],
+        [UNTRACED_LABEL, "—", "0", "0", "0"],
+      ],
+      "the commit is attributed to exactly one row; the secondary row keeps its task coverage",
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("task universe pairs (spec_path, task_id) from the SAME commit", () => {
+  const dir = specRepo([SPEC_A, SPEC_B]);
+  try {
+    commitWith(dir, "src/one.mjs", 1, [`Spec: ${SPEC_A}`, "Plan-task: 1"]);
+    commitWith(dir, "src/two.mjs", 2, [`Spec: ${SPEC_A}`, "Plan-task: 1"]);
+    commitWith(dir, "src/three.mjs", 3, [`Spec: ${SPEC_B}`, "Plan-task: 2"]);
+
+    const resolved = resolvePrContext({ projectRoot: dir, base: "main", head: "HEAD" });
+    assert.equal(resolved.ok, true, `context resolution failed: ${resolved.message}`);
+
+    const universe = buildTaskUniverse(resolved.context);
+    assert.deepEqual(
+      universe.tasks.map((t) => [t.specPath, t.taskId]),
+      [[SPEC_A, "1"], [SPEC_B, "2"]],
+      "a task is the (spec, task) pair drawn from ONE commit — never a cross-commit pairing",
+    );
+    const pairs = universe.tasks.map((t) => `${t.specPath}#${t.taskId}`);
+    assert.ok(!pairs.includes(`${SPEC_A}#2`), "task 2 never appeared on a commit naming spec A");
+    assert.ok(!pairs.includes(`${SPEC_B}#1`), "task 1 never appeared on a commit naming spec B");
+
+    // The trailer parser itself, on the same contract.
+    assert.deepEqual(
+      parseCommitTrailers(`feat: x\n\nSpec: ${SPEC_A}\nPlan-task: 4\n`),
+      { specPaths: [SPEC_A], taskIds: ["4"] },
+    );
+    assert.deepEqual(
+      parseCommitTrailers("feat: x\n\nno trailers here\n"),
+      { specPaths: [], taskIds: [] },
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("a task's file set is the union of paths its commits touch", () => {
+  const dir = specRepo([SPEC_A, SPEC_B]);
+  try {
+    commitWith(dir, "src/one.mjs", 1, [`Spec: ${SPEC_A}`, "Plan-task: 1"]);
+    commitWith(dir, "src/two.mjs", 2, [`Spec: ${SPEC_A}`, "Plan-task: 1"]);
+    commitWith(dir, "src/three.mjs", 3, [`Spec: ${SPEC_B}`, "Plan-task: 2"]);
+
+    const resolved = resolvePrContext({ projectRoot: dir, base: "main", head: "HEAD" });
+    assert.equal(resolved.ok, true);
+
+    const universe = buildTaskUniverse(resolved.context);
+    const byKey = new Map(universe.tasks.map((t) => [`${t.specPath}#${t.taskId}`, t]));
+
+    assert.deepEqual(
+      byKey.get(`${SPEC_A}#1`).files,
+      ["src/one.mjs", "src/two.mjs"],
+      "one task spanning two commits owns the union of their paths",
+    );
+    assert.deepEqual(byKey.get(`${SPEC_B}#2`).files, ["src/three.mjs"]);
+    assert.equal(byKey.get(`${SPEC_A}#1`).shas.length, 2, "both commits are recorded on the task");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("a spec path containing a pipe cannot break the traceability table", async () => {
+  const pipeSpec = ".context-index/specs/features/demo/we|rd.spec.md";
+  const dir = specRepo([pipeSpec]);
+  try {
+    commitWith(dir, "src/one.mjs", 1, [`Spec: ${pipeSpec}`, "Plan-task: 1"]);
+
+    const { section, rows } = await traceabilityRows(dir);
+    // Keyed on the entity, which only the pipe-bearing row can contain.
+    const row = rows.slice(1).find((r) => r[0].includes("&#124;"));
+    assert.ok(row, `the pipe-bearing spec still has a row: ${section}`);
+    assert.equal(row.length, 5, "the row still occupies exactly five columns");
+    assert.equal(row[0], encodeValue(pipeSpec), "the value reaches the cell through the encoder");
+    assert.ok(row[0].includes("&#124;"), "the pipe survives as a visible entity");
+
+    const line = section.split("\n").find((l) => l.includes("&#124;"));
+    assert.equal(line.split("|").length - 1, 6, `a five-cell row has exactly six pipes: ${line}`);
+    assert.ok(!section.includes("we|rd"), "no raw pipe survives into the table");
+    assertEncodedIsInert(row[0], "pipe-bearing spec path");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("a commit message containing raw record/field separators injects no phantom commit", async () => {
+  // `git log` machine output must use a delimiter the payload cannot contain.
+  // A message carrying \x1e/\x1f plus a well-formed forty-hex sha is exactly
+  // the shape that forges a record boundary — and a forged record makes the
+  // partition arithmetic lie.
+  const dir = specRepo([SPEC_A, SPEC_B]);
+  try {
+    const forged = `\x1e${"0".repeat(40)}\x1fphantom subject\x1fphantom body\n\nSpec: ${SPEC_B}\nPlan-task: 9`;
+    commitWith(dir, "src/one.mjs", 1, [`Spec: ${SPEC_A}`, "Plan-task: 1"], `feat: sneaky${forged}`);
+
+    const resolved = resolvePrContext({ projectRoot: dir, base: "main", head: "HEAD" });
+    assert.equal(resolved.ok, true);
+
+    const expectedShas = git(dir, ["rev-list", "main..HEAD"]).trim().split("\n");
+    assert.equal(expectedShas.length, 1, "the fixture seeds exactly one commit");
+    assert.deepEqual(
+      resolved.context.commits.map((c) => c.sha),
+      expectedShas,
+      "the parsed commit list must be exactly the range's commits — no phantom record",
+    );
+    assert.ok(
+      resolved.context.commits[0].body.includes("phantom body"),
+      "the injected separators are payload, so the body survives them intact",
+    );
+
+    const { rows } = await traceabilityRows(dir);
+    const data = rows.slice(1);
+    assert.equal(
+      data.reduce((n, r) => n + Number(r[2]), 0),
+      rangeCommitCount(dir),
+      `the forged record broke the partition arithmetic: ${JSON.stringify(data)}`,
+    );
+    assert.equal(rangeCommitCount(dir), 1);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("traceability rows are totally ordered: commit count desc, then spec path", async () => {
+  // Invariant 7. The primary key can tie (B and C both have one commit), so a
+  // further key breaks it — the spec path, which is unique per row and
+  // therefore cannot tie.
+  const dir = traceabilityRepo();
+  try {
+    const first = await traceabilityRows(dir);
+    assert.deepEqual(
+      first.rows.slice(1).map((r) => r[0]),
+      [encodeValue(SPEC_A), encodeValue(SPEC_B), encodeValue(SPEC_C), UNTRACED_LABEL],
+      "two commits sort before one; the one-commit rows tie-break on spec path ascending",
+    );
+
+    const second = await traceabilityRows(dir);
+    assert.equal(second.section, first.section, "the same inputs render byte-identical output");
   } finally {
     cleanupTempDir(dir);
   }
