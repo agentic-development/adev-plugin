@@ -21,7 +21,18 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  fstatSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 import {
@@ -39,6 +50,13 @@ import {
   OPEN_MARKER,
   CLOSE_MARKER,
   MAX_BRIEF_BYTES,
+  MAX_INPUT_BYTES,
+  encodeValue,
+  tableRow,
+  slot,
+  containSpecPath,
+  checkInputBounds,
+  readSpecArtifact,
 } from "../lib/cli/pr.mjs";
 
 // ---------------------------------------------------------------------------
@@ -426,18 +444,18 @@ test("every slot renderer returns { body, bytes } and emits no marker", () => {
     assert.equal(SLOT_REGISTRY.length, 5, "the registry declares all five slots");
     assert.deepEqual(SLOT_REGISTRY.map((s) => s.title), SLOT_TITLES);
 
-    for (const slot of SLOT_REGISTRY) {
-      const out = slot.render(resolved.context);
-      assert.equal(typeof out.body, "string", `${slot.title}: body must be a string`);
-      assert.ok(Number.isInteger(out.bytes), `${slot.title}: bytes must be an integer`);
+    for (const entry of SLOT_REGISTRY) {
+      const out = entry.render(resolved.context);
+      assert.equal(typeof out.body, "string", `${entry.title}: body must be a string`);
+      assert.ok(Number.isInteger(out.bytes), `${entry.title}: bytes must be an integer`);
       assert.equal(
         out.bytes,
         Buffer.byteLength(out.body, "utf8"),
-        `${slot.title}: bytes must be the body's own utf8 size`,
+        `${entry.title}: bytes must be the body's own utf8 size`,
       );
-      assert.ok(!out.body.includes(OPEN_MARKER), `${slot.title}: a renderer emits no opening marker`);
-      assert.ok(!out.body.includes(CLOSE_MARKER), `${slot.title}: a renderer emits no closing marker`);
-      assert.ok(out.body.includes(`### ${slot.title}`), `${slot.title}: the renderer owns its heading`);
+      assert.ok(!out.body.includes(OPEN_MARKER), `${entry.title}: a renderer emits no opening marker`);
+      assert.ok(!out.body.includes(CLOSE_MARKER), `${entry.title}: a renderer emits no closing marker`);
+      assert.ok(out.body.includes(`### ${entry.title}`), `${entry.title}: the renderer owns its heading`);
     }
   } finally {
     cleanupTempDir(dir);
@@ -522,6 +540,539 @@ test("assembly emits no truncation notice for a section it did not shorten", () 
     assert.ok(brief.includes("### Small"), "the untouched section survives intact");
     assert.equal(countOccurrences(brief, OPEN_MARKER), 1);
     assert.equal(countOccurrences(brief, CLOSE_MARKER), 1);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Task 2 — safety substrate: encoder (T4), containment (T5), input bounds (T8)
+// ---------------------------------------------------------------------------
+
+/**
+ * Every character that must not survive encoding. `&`, `#`, `;` and the digits
+ * are part of the entities the encoder emits, so the check below removes those
+ * entities first and then requires that NOTHING in this list remains — which
+ * is strictly stronger than checking the raw output, because it also forbids a
+ * bare `&` or a stray `;` that no entity accounts for.
+ */
+const RAW_DANGEROUS = [
+  "&",
+  "|", "<", ">", "[", "]", "(", ")", "!", "'", '"', "`", "$", "\\", ";",
+  "*", "_", "{", "}", "~", "#", "?", "\n", "\r", "\t", "\x7f", "\u2028", "\u2029",
+];
+
+function assertEncodedIsInert(encoded, label) {
+  const stripped = encoded.replace(/&(?:amp|lt|gt|quot|#\d+);/g, "");
+  for (const ch of RAW_DANGEROUS) {
+    assert.ok(
+      !stripped.includes(ch),
+      `${label}: ${JSON.stringify(ch)} survived encoding — ${JSON.stringify(encoded)}`,
+    );
+  }
+}
+
+/**
+ * An `fs` façade that records the path of every call, delegating to the real
+ * `node:fs`. `overrides(base)` may replace individual members; the replacement
+ * still goes through `base` when it wants the real behavior (and so is still
+ * recorded).
+ */
+function recordingFs(overrides = () => ({})) {
+  const calls = [];
+  const base = {
+    realpathSync: (p) => {
+      calls.push({ name: "realpathSync", path: p });
+      return realpathSync(p);
+    },
+    statSync: (p) => {
+      calls.push({ name: "statSync", path: p });
+      return statSync(p);
+    },
+    openSync: (p, flags) => {
+      calls.push({ name: "openSync", path: p });
+      return openSync(p, flags);
+    },
+    fstatSync: (fd) => {
+      calls.push({ name: "fstatSync", path: null });
+      return fstatSync(fd);
+    },
+    readFileSync: (target, enc) => {
+      calls.push({ name: "readFileSync", path: typeof target === "string" ? target : null });
+      return readFileSync(target, enc);
+    },
+    closeSync: (fd) => {
+      calls.push({ name: "closeSync", path: null });
+      return closeSync(fd);
+    },
+  };
+  const fs = { ...base, ...overrides(base) };
+  return {
+    fs,
+    calls,
+    /** Every path that reached any recorded filesystem call. */
+    paths: () => calls.filter((c) => c.path !== null).map((c) => c.path),
+    /** Every path that reached a call that inspects or touches file contents. */
+    accessPaths: () =>
+      calls
+        .filter((c) => c.path !== null && ["openSync", "readFileSync", "statSync"].includes(c.name))
+        .map((c) => c.path),
+    names: () => calls.map((c) => c.name),
+  };
+}
+
+// --- T4: the encoder's exact character set and transformation order ---
+
+test("T4: pipe cannot break table structure", () => {
+  // A pipe encoded in isolation proves nothing about tables; the guarantee is
+  // that a cell carrying a pipe still occupies exactly one column.
+  const row = tableRow(["a|b|c", "safe"]);
+  assert.equal(row.split("|").length - 1, 3, `a two-cell row must have exactly 3 pipes: ${row}`);
+  assert.ok(row.includes("&#124;"), "the injected pipe survives as a visible entity");
+  assert.ok(!row.includes("a|b"), "the raw pipe is gone");
+  assertEncodedIsInert(encodeValue("a|b|c"), "pipe");
+});
+
+test("T4: newline and CR cannot inject a line break", () => {
+  for (const injected of ["a\nb", "a\r\nb", "a\rb", "a\u2028b", "a\u2029b"]) {
+    const encoded = encodeValue(injected);
+    assert.equal(encoded.split("\n").length, 1, `${JSON.stringify(injected)} produced a newline`);
+    assert.equal(encoded.split("\r").length, 1, `${JSON.stringify(injected)} produced a CR`);
+    assert.ok(encoded.startsWith("a") && encoded.endsWith("b"), "the surrounding text survives");
+  }
+  // A row whose cell carries a newline still occupies one line.
+  const row = tableRow(["### forged\nheading", "x"]);
+  assert.equal(row.split("\n").length, 1, `a table cell must not span lines: ${JSON.stringify(row)}`);
+});
+
+test("T4: bracket-paren cannot form a markdown link", () => {
+  const encoded = encodeValue("[click me](https://evil.example/steal)");
+  assert.ok(!encoded.includes("["), "no opening bracket survives");
+  assert.ok(!encoded.includes("]("), "no link syntax survives");
+  assert.ok(encoded.includes("click me"), "the text stays visible to a reviewer");
+  assertEncodedIsInert(encoded, "link");
+});
+
+test("T4: bang-bracket cannot form an image", () => {
+  const encoded = encodeValue("![alt](https://evil.example/tracker.png)");
+  assert.ok(!encoded.includes("!["), "no image syntax survives");
+  assert.ok(!encoded.includes("!"), "the bang itself is encoded");
+  assert.ok(encoded.includes("alt"), "the text stays visible to a reviewer");
+  assertEncodedIsInert(encoded, "image");
+});
+
+test("T4: '<!--' and '-->' cannot form an HTML comment delimiter", () => {
+  for (const injected of ["<!--", "-->", "<!-- hidden -->", OPEN_MARKER, CLOSE_MARKER]) {
+    const encoded = encodeValue(injected);
+    assert.ok(!encoded.includes("<!--"), `${injected}: an opening comment delimiter survived`);
+    assert.ok(!encoded.includes("-->"), `${injected}: a closing comment delimiter survived`);
+    assert.ok(!encoded.includes("<"), `${injected}: a raw '<' survived`);
+    assert.ok(!encoded.includes(">"), `${injected}: a raw '>' survived`);
+  }
+  // Escaping must not rejoin the halves it split apart.
+  assert.ok(!encodeValue(`<!-- adev:${OPEN_MARKER}pr-brief -->`).includes(OPEN_MARKER));
+});
+
+test("T4: shell metacharacters are never interpreted", () => {
+  // Part 1 — the encoder leaves no shell metacharacter raw.
+  const metas = "`$(id)` ; rm -rf / & echo $HOME | tee ~/x > /dev/null && ${IFS}\\'\"";
+  assertEncodedIsInert(encodeValue(metas), "shell metacharacters");
+
+  // Part 2 — structurally, a value never reaches a shell at all: refs go to git
+  // as argv. A metacharacter payload must not execute even end to end.
+  const dir = seededRepo();
+  try {
+    const payload = "$(touch pwned); touch pwned2; `touch pwned3`";
+    const resolved = resolvePrContext({ projectRoot: dir, base: "main", head: payload });
+    assert.equal(resolved.ok, true, "an unresolvable head degrades, it does not fail");
+    for (const artifact of ["pwned", "pwned2", "pwned3"]) {
+      assert.equal(existsSync(join(dir, artifact)), false, `${artifact} was created — a shell ran`);
+    }
+    // Part 3 — the payload reaches the brief through the degradation cause,
+    // and reaches it inert. (The whole line cannot go through
+    // assertEncodedIsInert: the `_UNKNOWN —` scaffolding around the value is
+    // trusted template text, not an encoded value.)
+    const brief = composeBrief(resolved.context);
+    const rendered = brief.split("\n").filter((l) => l.includes("touch")).join("\n");
+    assert.ok(rendered.includes("touch pwned"), "the payload is shown to the reviewer, not censored");
+    const strippedLine = rendered.replace(/&(?:amp|lt|gt|quot|#\d+);/g, "");
+    for (const meta of ["$", "(", ")", "`", ";"]) {
+      assert.ok(!strippedLine.includes(meta), `a raw ${JSON.stringify(meta)} survived into the brief`);
+    }
+    assertEncodedIsInert(encodeValue(payload), "shell payload");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("T4: the encoder's exact character table", () => {
+  // The positive direction of T4. `assertEncodedIsInert` says only that
+  // nothing dangerous survives; it strips the entity alphabet before looking,
+  // so it cannot say WHICH entity was emitted. This test pins "the exact
+  // character set the encoder applies": this character produces this exact
+  // replacement, and nothing else is touched.
+  //
+  // It is also what discriminates a single-pass map from a sequential chain of
+  // replacements. A chain rewrites the `;` and `#` inside an entity an earlier
+  // rule just inserted: with `&` replaced first, `|` comes out as
+  // `&&#35;124&&#35;59;` instead of `&#124;`. (Concatenation-stability does
+  // NOT discriminate them — see the composition test below.)
+  const EXPECTED = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+    "`": "&#96;",
+    "|": "&#124;",
+    "[": "&#91;",
+    "]": "&#93;",
+    "(": "&#40;",
+    ")": "&#41;",
+    "!": "&#33;",
+    "$": "&#36;",
+    "\\": "&#92;",
+    ";": "&#59;",
+    "*": "&#42;",
+    "_": "&#95;",
+    "{": "&#123;",
+    "}": "&#125;",
+    "~": "&#126;",
+    "#": "&#35;",
+    "?": "&#63;",
+  };
+  assert.equal(Object.keys(EXPECTED).length, 22, "the table has exactly 22 entries");
+
+  for (const [ch, entity] of Object.entries(EXPECTED)) {
+    assert.equal(encodeValue(ch), entity, `${JSON.stringify(ch)} must encode to exactly ${entity}`);
+    assert.equal(
+      encodeValue(`a${ch}b`),
+      `a${entity}b`,
+      `${JSON.stringify(ch)} must encode to ${entity} in context too`,
+    );
+  }
+
+  // Control characters, DEL and the two Unicode line separators collapse to a
+  // SINGLE SPACE — not to nothing, and not to an entity. Dropping them instead
+  // would silently weld two lines of text into one token, which is a different
+  // transformation from the documented one.
+  const collapsed = [];
+  for (let i = 0; i <= 0x1f; i++) collapsed.push(String.fromCharCode(i));
+  for (const code of [0x7f, 0x2028, 0x2029]) collapsed.push(String.fromCharCode(code));
+  for (const ch of collapsed) {
+    assert.equal(
+      encodeValue(ch),
+      " ",
+      `U+${ch.codePointAt(0).toString(16).padStart(4, "0")} must collapse to a single space`,
+    );
+    assert.equal(encodeValue(`a${ch}b`), "a b", "the collapsed character leaves exactly one space behind");
+  }
+
+  // Exact in the other direction too: nothing outside the table is touched, so
+  // adding a character to the encoder has to come through this test first.
+  for (let i = 0x20; i <= 0x7e; i++) {
+    const ch = String.fromCharCode(i);
+    if (Object.prototype.hasOwnProperty.call(EXPECTED, ch)) continue;
+    assert.equal(encodeValue(ch), ch, `printable ${JSON.stringify(ch)} must pass through unchanged`);
+  }
+  assert.equal(encodeValue("a-b.c/d:e+f=g,h"), "a-b.c/d:e+f=g,h", "ordinary path and prose punctuation survives");
+  assert.equal(encodeValue("héllo — 😀"), "héllo — 😀", "non-ASCII, including astral, passes through intact");
+});
+
+test("T4: transformation order is stable under composed inputs", () => {
+  // A regression guard on concatenation behaviour, NOT a proof of
+  // order-freedom: a chained implementation is a homomorphism too (each pass
+  // is a single-character global replace, and single-character replacements
+  // cannot match across a concatenation boundary), so this loop alone cannot
+  // tell a map from a chain. What discriminates them is the exact character
+  // table asserted above. This is kept because an encoder that ever grew a
+  // multi-character rule — real lookahead — would break here and nowhere else.
+  const parts = ["&", "&amp;", "<!--", "-->", "|", "[x](y)", "!", "`$(id)`", "\n", "\\", "'\"", "#*_~{}?;"];
+  for (const a of parts) {
+    for (const b of parts) {
+      assert.equal(
+        encodeValue(a + b),
+        encodeValue(a) + encodeValue(b),
+        `encoding is not stable under composition: ${JSON.stringify(a)} + ${JSON.stringify(b)}`,
+      );
+    }
+  }
+  const composed = parts.join("");
+  assert.equal(encodeValue(composed), parts.map(encodeValue).join(""));
+  assertEncodedIsInert(encodeValue(composed), "composed adversarial input");
+});
+
+test("a rationale containing '<!-- /adev:pr-brief -->' still yields one marker pair", () => {
+  // Invariant 1 holds whatever any input contains. `rationale` is the value the
+  // spec singles out as subject to Invariant 5 without exception.
+  const dir = seededRepo();
+  try {
+    const resolved = resolvePrContext({ projectRoot: dir, base: "main", head: "HEAD" });
+    assert.equal(resolved.ok, true);
+
+    for (const rationale of [CLOSE_MARKER, OPEN_MARKER, `${CLOSE_MARKER}${OPEN_MARKER}`]) {
+      const rowBody = `### Traceability\n\n${tableRow(["task", rationale])}\n`;
+      const registry = [
+        { id: "attention-map", title: "Attention map", render: () => slot("Attention map", rationale) },
+        {
+          id: "traceability",
+          title: "Traceability",
+          render: () => ({ body: rowBody, bytes: Buffer.byteLength(rowBody, "utf8") }),
+        },
+      ];
+      const brief = composeBrief(resolved.context, registry);
+      assert.equal(countOccurrences(brief, OPEN_MARKER), 1, `rationale ${rationale}: forged an opening marker`);
+      assert.equal(countOccurrences(brief, CLOSE_MARKER), 1, `rationale ${rationale}: forged a closing marker`);
+      assert.ok(brief.indexOf(OPEN_MARKER) < brief.indexOf(CLOSE_MARKER), "the surviving pair is ordered");
+    }
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// --- T5: containment, asserted by INSTRUMENTING THE CALL, not by output ---
+
+test("T5: a trailer-derived path outside .context-index/specs/ never reaches a filesystem call", () => {
+  const dir = seededRepo();
+  try {
+    const escapes = [
+      "/etc/passwd",
+      ".context-index/specs/../../../../../../../../etc/passwd",
+      "../outside.spec.md",
+      ".context-index/lifecycle-state/events.jsonl",
+      "src/alpha.mjs",
+      "spec\u0000.md",
+      "",
+    ];
+    for (const escape of escapes) {
+      const rec = recordingFs();
+      const result = readSpecArtifact(dir, escape, { fs: rec.fs });
+      assert.equal(result.ok, false, `${JSON.stringify(escape)} was accepted`);
+      assert.ok(result.reason && result.reason.length > 0, "the refusal names a cause");
+      assert.deepEqual(
+        rec.paths(),
+        [],
+        `${JSON.stringify(escape)} reached a filesystem call: ${JSON.stringify(rec.calls)}`,
+      );
+    }
+
+    // The same rejection through the guard alone, with no read attempted.
+    const rec = recordingFs();
+    const guarded = containSpecPath(dir, "/etc/passwd", { fs: rec.fs });
+    assert.equal(guarded.ok, false);
+    assert.deepEqual(rec.paths(), [], "the guard refuses lexically, before any call");
+
+    // Lexically inside the root but absent from disk — the branch a `Spec:`
+    // trailer pointing at a since-deleted spec lands on. It is an Invariant 4
+    // degradation with its own named cause, not a throw and not an escape.
+    const gone = recordingFs();
+    const missing = readSpecArtifact(dir, ".context-index/specs/features/demo/gone.spec.md", { fs: gone.fs });
+    assert.equal(missing.ok, false);
+    assert.match(missing.reason, /does not exist/);
+    assert.ok(!gone.names().includes("openSync"), "a missing spec is never opened");
+    assert.ok(!gone.names().includes("readFileSync"), "a missing spec is never read");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("T5: a COMMITTED SYMLINK pointing outside the root is refused", () => {
+  const dir = seededRepo();
+  const outsideDir = createTempDir();
+  try {
+    const secretPath = join(outsideDir, "secret.spec.md");
+    writeFileSync(secretPath, "# secret\n");
+    const linkRel = ".context-index/specs/features/demo/escape.spec.md";
+    symlinkSync(secretPath, join(dir, linkRel));
+    git(dir, ["add", "-A"]);
+    git(dir, ["commit", "-m", "chore: commit an escaping symlink"]);
+    assert.equal(
+      execFileSync("git", ["ls-files", "-s", linkRel], { cwd: dir, encoding: "utf8" }).startsWith("120000"),
+      true,
+      "the fixture must be a committed symlink",
+    );
+
+    const rec = recordingFs();
+    const result = readSpecArtifact(dir, linkRel, { fs: rec.fs });
+    assert.equal(result.ok, false, "a symlink escaping the root must be refused");
+    assert.ok(/outside|escape/i.test(result.reason), `the refusal names the escape: ${result.reason}`);
+
+    const realSecret = realpathSync(secretPath);
+    for (const p of rec.accessPaths()) {
+      assert.notEqual(p, realSecret, "the symlink target reached a filesystem access");
+      assert.notEqual(p, secretPath, "the symlink target reached a filesystem access");
+    }
+    assert.ok(!rec.names().includes("openSync"), "nothing was opened");
+    assert.ok(!rec.names().includes("readFileSync"), "nothing was read");
+  } finally {
+    cleanupTempDir(dir);
+    cleanupTempDir(outsideDir);
+  }
+});
+
+test("T5: containment is re-asserted at open time", () => {
+  const dir = seededRepo();
+  try {
+    // Sanity: the same path reads cleanly when nothing swaps underneath it.
+    const clean = recordingFs();
+    const ok = readSpecArtifact(dir, SPEC_REL, { fs: clean.fs });
+    assert.equal(ok.ok, true, `a contained spec must read: ${ok.reason}`);
+    assert.ok(ok.content.includes("demo spec"), "the seeded content is returned verbatim");
+    assert.ok(clean.names().includes("readFileSync"), "the clean case actually reads");
+
+    // Now make the path stop resolving inside the root *after* the pre-open
+    // check has passed. Only a re-assertion at open time can catch this.
+    let hits = 0;
+    const rec = recordingFs((base) => ({
+      realpathSync: (p) => {
+        const real = base.realpathSync(p);
+        if (String(p).endsWith("demo.spec.md")) {
+          hits += 1;
+          if (hits >= 2) return "/etc/passwd";
+        }
+        return real;
+      },
+    }));
+    const result = readSpecArtifact(dir, SPEC_REL, { fs: rec.fs });
+    assert.ok(hits >= 2, "containment must be resolved again after the file is opened");
+    assert.equal(result.ok, false, "a path that stops being contained at open time must be refused");
+    assert.ok(result.reason && result.reason.length > 0, "the refusal names a cause");
+    assert.ok(rec.names().includes("openSync"), "the re-assertion happens at open time, not instead of it");
+    assert.ok(!rec.names().includes("readFileSync"), "no content was read after the re-assertion failed");
+    assert.ok(rec.names().includes("closeSync"), "the descriptor is closed on refusal");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("T5: the descriptor is bound to the contained name, not just re-resolved by name", () => {
+  // The swap -> open -> swap-back race. Re-resolving the NAME after the open
+  // proves nothing about what the DESCRIPTOR points at: the name can resolve
+  // inside the root the whole time while the fd refers to a file outside it.
+  // Asserting that realpathSync was called twice cannot distinguish the two,
+  // which is why this case is asserted on the returned content instead.
+  const dir = seededRepo();
+  const outsideDir = createTempDir();
+  try {
+    const secretPath = join(outsideDir, "secret.txt");
+    writeFileSync(secretPath, "SECRET CONTENT\n");
+
+    const rec = recordingFs((base) => ({
+      // The name keeps resolving inside the root; only the descriptor is swapped.
+      openSync: (p, flags) => {
+        if (String(p).endsWith("demo.spec.md")) {
+          return base.openSync(secretPath, flags);
+        }
+        return base.openSync(p, flags);
+      },
+    }));
+
+    const result = readSpecArtifact(dir, SPEC_REL, { fs: rec.fs });
+
+    assert.equal(result.ok, false, "a descriptor pointing outside the root must be refused");
+    assert.ok(/replaced|outside/i.test(result.reason), `the refusal names the cause: ${result.reason}`);
+    assert.ok(
+      !JSON.stringify(result).includes("SECRET"),
+      `the out-of-root file's content escaped: ${JSON.stringify(result)}`,
+    );
+    assert.ok(rec.names().includes("closeSync"), "the substituted descriptor is still closed");
+  } finally {
+    cleanupTempDir(dir);
+    cleanupTempDir(outsideDir);
+  }
+});
+
+test("T5: a refused path degrades to UNKNOWN with a named cause, exit 0", async () => {
+  const dir = seededRepo();
+  try {
+    const resolved = resolvePrContext({ projectRoot: dir, base: "main", head: "HEAD" });
+    assert.equal(resolved.ok, true);
+
+    let refusal;
+    const registry = [
+      {
+        id: "traceability",
+        title: "Traceability",
+        render: (context) => {
+          refusal = readSpecArtifact(context.repoRoot, "../../../../etc/passwd");
+          return slot("Traceability", refusal.reason);
+        },
+      },
+    ];
+    const brief = composeBrief(resolved.context, registry);
+
+    assert.equal(refusal.ok, false, "the refusal is a return value, not a throw");
+    assert.ok(brief.includes("### Traceability"), "the section still renders");
+    assert.ok(brief.includes("_UNKNOWN — traceability unavailable:"), "the row degrades to UNKNOWN");
+    assert.ok(brief.includes("etc"), "the named cause identifies the refused path");
+    assert.equal(countOccurrences(brief, OPEN_MARKER), 1);
+    assert.equal(countOccurrences(brief, CLOSE_MARKER), 1);
+
+    const { code } = await invoke(dir, ["body", "--base", "main"]);
+    assert.equal(code, 0, "a containment refusal leaves the exit code unchanged");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// --- T8: the numeric input bounds, and that exceeding each degrades ---
+
+test("T8: file size ceiling — exceeding it degrades, does not throw", () => {
+  const dir = seededRepo();
+  try {
+    assert.ok(Number.isInteger(MAX_INPUT_BYTES) && MAX_INPUT_BYTES > 0, "the ceiling is a named constant");
+
+    // Injected small ceiling — the mechanism, with a cheap fixture.
+    const rec = recordingFs();
+    let result;
+    assert.doesNotThrow(() => {
+      result = readSpecArtifact(dir, SPEC_REL, { fs: rec.fs, maxBytes: 4 });
+    }, "exceeding the ceiling degrades rather than throwing");
+    assert.equal(result.ok, false);
+    assert.ok(/ceiling|bytes/i.test(result.reason), `the refusal names the bound: ${result.reason}`);
+    assert.ok(!rec.names().includes("readFileSync"), "an oversized file is never read");
+
+    // At the boundary: exactly maxBytes is accepted, one byte more is not.
+    const exactRel = ".context-index/specs/features/demo/exact.spec.md";
+    writeFixture(dir, exactRel, "abcdefgh");
+    assert.equal(readSpecArtifact(dir, exactRel, { maxBytes: 8 }).ok, true, "exactly the ceiling is accepted");
+    assert.equal(readSpecArtifact(dir, exactRel, { maxBytes: 7 }).ok, false, "one byte over is refused");
+
+    // The real constant, with a real oversized fixture.
+    const bigRel = ".context-index/specs/features/demo/big.spec.md";
+    writeFixture(dir, bigRel, "x".repeat(MAX_INPUT_BYTES + 1));
+    const big = readSpecArtifact(dir, bigRel);
+    assert.equal(big.ok, false, `${MAX_INPUT_BYTES + 1} bytes must exceed MAX_INPUT_BYTES`);
+
+    // The bounds predicate on its own, with no filesystem involved.
+    assert.equal(checkInputBounds({ isFile: () => true, size: 10 }, { maxBytes: 10 }).ok, true);
+    assert.equal(checkInputBounds({ isFile: () => true, size: 11 }, { maxBytes: 10 }).ok, false);
+    assert.equal(checkInputBounds({ isFile: () => false, size: 0 }, { maxBytes: 10 }).ok, false);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("T8: non-regular file (fifo/device) is refused before reading", () => {
+  const dir = seededRepo();
+  try {
+    // A fifo is the sharp case: opening one for read BLOCKS until a writer
+    // appears, so the regular-file check must precede the open, not follow it.
+    const fifoRel = ".context-index/specs/features/demo/pipe.spec.md";
+    execFileSync("mkfifo", [join(dir, fifoRel)]);
+    assert.equal(statSync(join(dir, fifoRel)).isFIFO(), true, "the fixture must be a fifo");
+
+    const rec = recordingFs();
+    const result = readSpecArtifact(dir, fifoRel, { fs: rec.fs });
+    assert.equal(result.ok, false, "a non-regular file must be refused");
+    assert.ok(/regular file/i.test(result.reason), `the refusal names the cause: ${result.reason}`);
+    assert.ok(rec.names().includes("statSync"), "the refusal came from an inspection, as expected");
+    assert.ok(!rec.names().includes("openSync"), "the fifo was never opened");
+    assert.ok(!rec.names().includes("readFileSync"), "the fifo was never read");
+
+    // A directory inside the root is likewise not a readable input.
+    const dirResult = readSpecArtifact(dir, ".context-index/specs/features/demo");
+    assert.equal(dirResult.ok, false, "a directory is not a regular file");
   } finally {
     cleanupTempDir(dir);
   }
