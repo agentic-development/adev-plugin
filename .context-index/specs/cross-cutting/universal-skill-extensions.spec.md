@@ -5,11 +5,11 @@ mode: cross-cutting
 kind: behavioral
 status: validated
 risk_level: low
-revision: 1
+revision: 2
 created: 2026-05-30
-updated: 2026-05-30
+updated: 2026-08-12
 source-manifest:
-  sha: "51c8c31"
+  sha: "feae968"
   files:
     - CLAUDE.md
     - docs/extensions.md
@@ -36,7 +36,6 @@ source-manifest:
     - skills/route/SKILL.md
     - skills/sample/SKILL.md
     - skills/specify/SKILL.md
-    - skills/standalone/SKILL.md
     - skills/status/SKILL.md
     - skills/sync/SKILL.md
     - skills/using-adev/SKILL.md
@@ -44,7 +43,7 @@ source-manifest:
     - skills/work/SKILL.md
     - skills/write-test/SKILL.md
     - tests/skills-extension-coverage.test.mjs
-  computed-at: "2026-05-30T17:18:24.892Z"
+  computed-at: "2026-08-13T00:37:45.306Z"
 affects:
   - cli
   - extensions
@@ -71,7 +70,6 @@ affects:
   - retro
   - route
   - deploy
-  - standalone
   - session-awareness
   - setup
   - eval-projects
@@ -94,7 +92,7 @@ This spec defines the universal wiring: every adev skill must call `adev skill-e
 
 The contract has three parts:
 
-1. **Universal coverage.** All 31 skills under `skills/<name>/SKILL.md` must contain a `Load Skill Extensions` block that invokes the verb with the skill's bare slug (`specify`, `plan`, `implement`, etc. — never namespaced as `adev-specify`).
+1. **Universal coverage.** All skills under `skills/<name>/SKILL.md` (30 as of this revision) must contain a `Load Skill Extensions` block that invokes the verb with the skill's bare slug (`specify`, `plan`, `implement`, etc. — never namespaced as `adev-specify`).
 
 2. **Uniform framing.** Every skill uses the same prose template when extension content is present: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."*
 
@@ -192,7 +190,7 @@ Replace `<bare-slug>` with the skill's directory name under `skills/` (e.g., `sp
 
 ## Acceptance Criteria
 
-- [ ] All 31 skills under `skills/*/SKILL.md` contain a Load Skill Extensions block.
+- [ ] All skills under `skills/*/SKILL.md` (30 as of this revision) contain a Load Skill Extensions block.
 - [ ] Each block's `--skill <slug>` argument exactly matches its parent directory name (`skills/<dir>/SKILL.md` → `--skill <dir>`).
 - [ ] Each block uses the uniform framing prose verbatim ("The following skill extension instructions apply to this invocation...").
 - [ ] The existing `/adev:implement` block at `skills/implement/SKILL.md:57-63` is unchanged byte-for-byte.

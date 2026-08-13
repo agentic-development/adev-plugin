@@ -122,7 +122,7 @@ This project uses the Agentic Development Framework (adev).
 - Constitution: `.context-index/constitution.md`
 - Manifest: `.context-index/manifest.yaml`
 - Platform: JavaScript (ESM), Node.js, npm, node:test
-- Available skills (31): /adev:init, /adev:sync, /adev:using-adev, /adev:work, /adev:brainstorm, /adev:specify, /adev:review-specs, /adev:prototype, /adev:plan, /adev:route, /adev:implement, /adev:write-test, /adev:build, /adev:validate, /adev:debug, /adev:eval, /adev:recover, /adev:deploy, /adev:standalone, /adev:issues, /adev:status, /adev:hygiene, /adev:retro, /adev:codehealth, /adev:repomap, /adev:reconcile, /adev:sample, /adev:document, /adev:research, /adev:learn, /adev:assess (see `docs/skill-reference.md`)
+- Available skills (30): /adev:init, /adev:sync, /adev:using-adev, /adev:work, /adev:brainstorm, /adev:specify, /adev:review-specs, /adev:prototype, /adev:plan, /adev:route, /adev:implement, /adev:write-test, /adev:build, /adev:validate, /adev:debug, /adev:eval, /adev:recover, /adev:deploy, /adev:issues, /adev:status, /adev:hygiene, /adev:retro, /adev:codehealth, /adev:repomap, /adev:reconcile, /adev:sample, /adev:document, /adev:research, /adev:learn, /adev:assess (see `docs/skill-reference.md`)
 
 <!-- BEGIN TASK MANAGEMENT -->
 ## Task Management

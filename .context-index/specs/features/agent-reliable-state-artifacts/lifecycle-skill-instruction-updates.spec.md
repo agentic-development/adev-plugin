@@ -9,12 +9,12 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 2
+revision: 3
 charter-revision: 4
 created: 2026-05-12
-updated: 2026-05-12
+updated: 2026-08-12
 source-manifest:
-  sha: "553870d"
+  sha: "711532d"
   files:
     - lib/issues/render-markdown.mjs
     - lib/manifest.mjs
@@ -31,7 +31,6 @@ source-manifest:
     - skills/research/SKILL.md
     - skills/review-specs/SKILL.md
     - skills/specify/SKILL.md
-    - skills/standalone/SKILL.md
     - skills/status/SKILL.md
     - skills/sync/SKILL.md
     - skills/validate/SKILL.md
@@ -39,7 +38,7 @@ source-manifest:
     - tests/lib/manifest.test.mjs
     - tests/skills/api-reference-appendix.test.mjs
     - tests/skills/no-stale-format-refs.test.mjs
-  computed-at: "2026-05-12T18:38:32.899Z"
+  computed-at: "2026-08-13T00:39:02.229Z"
 drift_detected: true
 ---
 

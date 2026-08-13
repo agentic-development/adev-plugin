@@ -96,7 +96,7 @@ if [ $((COUNTER % ADVISORY_INTERVAL)) -ne 0 ]; then
 fi
 
 # Inject advisory
-ADVISORY="You are operating without an active plan. Run \`/adev:work\` to classify this task and enter the lifecycle, or \`/adev:standalone\` to disable enforcement for this session."
+ADVISORY="You are operating without an active plan. Run \`/adev:work\` to classify this task and enter the lifecycle, or \`adev execution-state write --status standalone\` to disable enforcement for this session."
 MSG_JSON=$(printf '%s' "$ADVISORY" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || printf '"%s"' "$ADVISORY")
 MSG_JSON="${MSG_JSON:1:${#MSG_JSON}-2}"
 
