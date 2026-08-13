@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 5
+revision: 6
 updated: 2026-08-12
 ---
 
@@ -79,7 +79,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | Attention map from routing scores | Rank tasks by `selected_agent` and `blast_radius`; emit "read these first" with rationale. | must-have | | specified |
 | Verification summary | Report `/adev:validate` verdict, gates, and check results. | must-have | | specified |
 | Review packet field set | Author-written contract including the "what I cannot explain" field. | must-have | | validated |
-| Reading order for multi-commit PRs | Derive a suggested reading sequence from plan task order and `## Parallelization` groups. | should-have | | specified |
+| Reading order for multi-commit PRs | Derive a suggested reading sequence from `## Parallelization` groups where the owned parser yields them, and from commit order otherwise. Plan task order is **not** promised: no declared input carries it, and the only section that did (`## Task Summary`) has no parser or owner. | should-have | | specified |
 | Size advisory with exception classes | Warn above a size threshold, naming legitimate exceptions (mechanical sweep, generated mirror, migration). | should-have | | specified |
 
 ## Deferred Capabilities
@@ -90,7 +90,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | `Assisted-by:` trailer alignment | Changes the provenance contract enforced by hooks and CI; constitution places this under human approval. | — | human decision |
 | Stacked-PR tooling | Stated reading order is the low-cost approximation; adopting Graphite adds an external dependency warranting an ADR. | — | reading-order capability proving insufficient |
 | Authorship signal in the brief (`Author-type:` / `Operator:`) | Removed from Consumed APIs in revision 3 because nothing rendered them. Reinstating needs a capability row stating what a reviewer does differently on seeing it — otherwise it is a column that costs attention and returns nothing. | — | a stated reviewer action |
-| Widening `lib/parallel/groups.mjs` to a tolerant qualifier | Measured over the 139 plans carrying `## Parallelization`: the parser yields usable groups for 80 and `malformed: true` for 59. Widening the qualifier from the literal `(independent\|sequential)` recovers **10** of those 59, not the "roughly 22" this row asserted in revision 4 — that figure was wrong and is corrected here. The 59 break down as: 28 carry no `- Group` line at all, 19 use the bold form `- **Group A (sequential):**`, 10 fail on the qualifier, 2 have no parenthetical. So the qualifier is 17% of the gap, not most of it, and widening alone takes coverage from 80/139 to 90/139. Deferred regardless, because that same widening moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel` — a behaviour change in another charter's module that needs evidence those groups are genuinely independent. | — | `worktree-parallelization` accepting the coverage change |
+| Widening `lib/parallel/groups.mjs` to a tolerant qualifier | Recovers part of the parser's coverage gap, but moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel` — a behaviour change in another charter's module needing evidence the groups are genuinely independent. Deferred on that ground, which holds at any magnitude. Current coverage and the cause breakdown are measured by the test obligations in `pr-body-advisories.spec.md` (T1/T2) rather than restated here; revision 4 of this charter carried a figure that measurement later refuted. | — | `worktree-parallelization` accepting the coverage change |
 
 ## Interface Contracts
 

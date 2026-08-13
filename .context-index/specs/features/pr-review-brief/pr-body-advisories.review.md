@@ -3,14 +3,14 @@ spec: .context-index/specs/features/pr-review-brief/pr-body-advisories.spec.md
 charter: .context-index/specs/features/pr-review-brief/charter.md
 verdict: BLOCK
 tier: full
-last-reviewed-revision: 3
-file-sha: 59a1fae25f1f071d667777fed47e3bbfb74561d82425138c6178c9d8d5b23542
+last-reviewed-revision: 4
+file-sha: 09a877fd90cf3ccdb03bc5e200f2f7a3cbe37953527e4ffd687d303d399815dc
 ---
 
 # Architecture Review: pr-body-advisories
 
 > **Date:** 2026-08-13
-> **Spec:** `.context-index/specs/features/pr-review-brief/pr-body-advisories.spec.md` (revision 3)
+> **Spec:** `.context-index/specs/features/pr-review-brief/pr-body-advisories.spec.md` (revision 4)
 > **Charter:** `.context-index/specs/features/pr-review-brief/charter.md` (revision 5)
 > **Rigor tier:** `full` (risk_level `medium` → `review_mode: full`; no `--tier` override)
 > **Verdict:** BLOCK
@@ -23,34 +23,32 @@ file-sha: 59a1fae25f1f071d667777fed47e3bbfb74561d82425138c6178c9d8d5b23542
 | security-reviewer | Security Reviewer | subagent | reviewer-capable | `plugin:review-specs/security-reviewer-prompt.md` |
 | consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | `plugin:review-specs/consistency-analyzer-prompt.md` |
 
-Domain: `software` (resolved at `default` level). Registry: three bundled reviewers, `severity_cap: blocker`, `context_pack: base`. `.context-index/governance/review.yaml` declares `reviewers: []`, so no overlay applied. No skill extensions (`__NONE__`). Three module heuristics injected.
+Domain: `software` (resolved at `default` level). Registry: three bundled reviewers, `severity_cap: blocker`, `context_pack: base`. `.context-index/governance/review.yaml` declares `reviewers: []`, so no overlay applied. No skill extensions (`__NONE__`). Three module heuristics injected. `depends-on` carries no cross-repo refs.
 
 ---
 
-## Aggregator: empirical re-verification of revision 3's stated claims
+## Aggregator: parser-state enumeration supplied to all reviewers
 
-The caller asked for each measured claim in revision 3 to be re-measured rather than accepted. Reviewer profiles are read-only, so the aggregator measured every claim directly and supplied the results to all three reviewers as established fact.
+Revision 4 removed every value from prose, so the way to review it on the merits is to enumerate the consumed parser's real return states and check the ladder against them. The aggregator probed `parseParallelizationSection` from `lib/parallel/groups.mjs` directly at HEAD and supplied the results to all three reviewers as established fact.
 
-**Method.** Every `*.plan.md` on disk was walked and parsed with `parseParallelizationSection` imported from `lib/parallel/groups.mjs`, at HEAD of `feat/pr-review-brief/charter`. Two corpora were measured, because the spec never names one.
+`malformed === (groups.length === 0)` — the two fields are not independent.
 
-| Claim | Spec states | Measured (`.context-index/specs/**`) | Result |
-|---|---|---|---|
-| Plans carrying `## Parallelization` | 139 | **139** | VERIFIED |
-| → usable (`groups.length > 0`) | 80 | **80** | VERIFIED |
-| → `malformed: true` | 59 | **59** | VERIFIED |
-| Usable plans with ≥1 duplicate-member group | 23 (29%) | **23 (29%)** | VERIFIED |
-| `plan-task-events.plan.md` group A members | `["1","2","3","1"]` | `{id:"A", members:["1","2","3","1"], independent:false}` | VERIFIED |
-| Cause breakdown of the 59 | 28 / 19 / 10 / 2 | **29 / 18 / 10 / 2** (see note) | VERIFIED |
-| Qualifier widening recovers N plans | 10 (not 22) | **10**, coverage 80/139 → 90/139 | VERIFIED |
-| `grep -rn "Task Summary" lib/` | returns nothing | no output, exit 1 | VERIFIED |
+| Input | Return | Ladder rung per § Fallback ladder |
+|---|---|---|
+| `""` (zero-byte plan; the read **succeeds**) | `{groups: [], malformed: false}` | 2 ("no such section") |
+| no `## Parallelization` heading | `{groups: [], malformed: false}` | 2 |
+| heading present, no recognizable group line | `{groups: [], malformed: true}` | 2 ("nothing recognizable") |
+| every group has ≥1 member | `{groups:[…], malformed: false}` | 1 |
+| every group has 0 members | `{groups:[…], malformed: false}` | 2 ("no members") |
+| **some groups have members, at least one has none** | `{groups:[…], malformed: false}` | **none — see SA-1** |
+| `- Group A (independent): Tasks 1-3` (ranged) | `{groups:[{A, members: []}]}` | 2 |
+| `- Group A (independent): Tasks 2, 3, 5` (plural) | `{groups:[{A, members: []}]}` | 2 |
 
-**Note on the breakdown.** Independent re-classification produced 29 / 18 / 10 / 2 against the spec's 28 / 19 / 10 / 2 — same total (59), same qualifier figure (10), same no-parenthetical figure (2). The single-plan difference is `cross-cutting/incremental-artifact-writes.plan.md`, whose line is `- **Independent group B (pure helpers):** Tasks 2, 3, 5 …`: bold-wrapped, but with lowercase "group" and not in the `Group <id>` form, so it is defensibly classified as either "bold-wrapped" or "no `- Group` line at all". Reproducible under a reasonable rule; recorded as VERIFIED, not as a discrepancy. **The operative claim — that widening the qualifier alone recovers exactly 10 plans, not the 22 revision 2 asserted — is exactly right.**
+**The mixed state is not hypothetical.** `.context-index/specs/features/domain-profiles/domain-aware-skill-integration.plan.md` parses to eleven groups, of which `H` has `members: []` and the other ten are populated, with `malformed: false`. It is one plan in the corpus today, and it matches neither rung 1 (which requires *every* group to have a member) nor rung 2 as its condition column is written.
 
-**Corpus sensitivity — this is a finding, not a footnote.** The stated 139 / 80 / 59 reproduces *only* under the undeclared restriction `.context-index/specs/**`. Over the whole repository (including `tests/fixtures/` and `tests/evals/integration-sandbox/`) the same measurement yields **146 / 85 / 61** across 172 plan files. The spec names no corpus, and its Acceptance Criteria requires a script that "recomputes usable-vs-malformed counts **over the plan corpus**". Both readings are defensible and they differ by 7 plans, so a test written against the other reading red-fails on day one. Escalated by two reviewers independently (SA-4, CON-7).
+**Corpus figures, for the record only.** Revision 4 correctly removed these from prose; they are recorded here so the review is checkable, not so the spec can cite them. Under `.context-index/specs/**`: 139 plans carry the section, 80 usable, 59 malformed, 23 with duplicate members. Whole repository (including `tests/fixtures/` and eval sandboxes): 146 / 85 / 61 / 26. The two readings still differ, which is why T1's "explicitly defined corpus root" has to be defined somewhere.
 
-**Drift precedent.** Revision 2's figures (138 / 79) rotted by +1 within a single day from one newly committed plan file. The same mechanism applies to 139 / 80 / 59.
-
-**Additional measured fact supplied to reviewers** (not a claim the spec makes): `parseParallelizationSection("")` returns `{groups: [], malformed: false}` via the `planContent.length === 0` early return at `lib/parallel/groups.mjs:22-25` — the identical state the spec's three-state table labels "section absent entirely". The `stat` gate in § Resource bounds covers the size ceiling and the regular-file check, not zero length.
+**Charter revision 5 is unchanged since the previous review.** Its § Capability Map still promises "plan task order", its § Consumed APIs still declares no input carrying it, and its § Deferred Capabilities still hardcodes 139 / 80 / 59, the 28 / 19 / 10 / 2 breakdown, and 80→90/139.
 
 ---
 
@@ -58,276 +56,207 @@ The caller asked for each measured claim in revision 3 to be re-measured rather 
 
 **Verdict:** BLOCK
 
-### SA-1 — `blocker` — NEW — § Fallback ladder (rung 3) / § Behaviors / § Error Cases / § Resource bounds
+### SA-1 — `blocker` — NEW — § Fallback ladder / § Test Obligations T4 / § Acceptance Criteria
 
-- **blocker_id:** `structural-architect:inconsistent-enumeration:5f5d440b`
+- **blocker_id:** `structural-architect:non-total-ladder:3fa1d731`
 - **section_anchor:** `fallback-ladder`
 
-**Finding.** The rung-3 cause enumeration is stated with four different cardinalities across five surfaces. Ladder line 130 requires the annotation to name "which of the **three** applied"; Behaviors line 200 says "which of the **four** applied"; Behaviors line 202 restates the same rung as "which of the **two** applied" and never names a rung at all — a stale duplicate left behind by the five-to-three collapse; Error Cases line 220 says "which of the **two** applied"; Error Cases line 222 routes an out-of-containment path to rung 3, a fifth cause absent from the ladder's condition column; § Resource bounds line 85 makes "not a regular file" a rung-3 cause also absent from that column; and the closing prose at line 227 says rung 3 covers four things. A renderer and its test cannot both be written against this. This is the same defect class as three of the seven prior blockers — one fact stated inconsistently across surfaces — re-manifested on a different fact after the ladder restructure.
+**Finding.** The ladder is not total. Rung 1 requires "every group has at least one member"; rung 2 requires "the parser yields nothing usable — *no members*, nothing recognizable, or no such section". A parse in which some groups carry members and at least one does not satisfies neither condition. Under the strict reading of "no members" (= no members anywhere) the state falls through the ladder entirely; under the loose reading (= some group empty) it matches rung 2 and ten usable groups are discarded, and the disjointness claim becomes unverifiable either way. The state occurs in the corpus today (`domain-aware-skill-integration.plan.md`, group `H`).
 
-**Recommendation.** Make the ladder's rung-3 condition column the single normative enumeration of rung-3 causes, delete the duplicate Behaviors bullet at line 202, and restate Behaviors, Error Cases and Resource bounds against that one list.
+The same defect surfaces as a **unit ambiguity**: the ladder classifies per plan ("The rung reached is named in the output, per plan"; Task Map: "per-spec blocks each carrying their rung annotation"), while T4 requires a ranged or plural group to "reach rung 2" — a per-group rung. Mixed-member plans are exactly where the two units disagree, and § Acceptance Criteria demands "a test enumerates parser outcomes and asserts each maps to exactly one rung", which cannot be written against the current text.
 
-### SA-2 — `blocker` — NEW (escalated from prior SEC-5 suggestion) — § Fallback ladder rungs 2–3 / § Behaviors
+Note this is the *class* the rewrite set out to make unreachable, re-manifested on a new fact: revision 3 carried an explicit "zero-member group → rung 2" rule on four surfaces, and the collapse to properties dropped the disposition along with the restatements.
 
-- **blocker_id:** `structural-architect:incomplete-contract:a8df42b9`
-- **section_anchor:** `fallback-ladder`
+**Recommendation.** Decide the classified entity (plan or group), then state rung 1 and rung 2 as a partition over the parser's return with the mixed case named explicitly, and align T4 to that entity.
 
-**Finding.** `git log --reverse` is named as the ordering for rungs 2 and 3, but no commit range is ever specified, so the degraded ordering contract is undefined. This is internal inconsistency, not merely a security residual: line 155 names its range explicitly (`git diff --numstat base..head`) while lines 129, 130, 199, 200 and 202 do not, in the same document. An unranged walk enumerates all repository history, so commits outside the PR enter the reading order. Revision 3 escalated this from revision 2's assessment: the degraded path now covers 59 of 139 plans — 42% — rather than being a last resort.
+### SA-2 — `warning` — § Fallback ladder rungs 2–3 / § Actionable Task Map
 
-**Recommendation.** State the range on every `git log --reverse` occurrence, consistent with the range the size advisory already names.
+Rungs 2 and 3 order by "commit order over the range" — the whole resolved range — while the ladder classifies per plan and the renderer emits per-spec blocks. N referenced specs therefore render N identical commit lists. Writable and testable as stated, so not a blocker, but almost certainly not intended, and it multiplies against the assembly byte ceiling.
 
-### SA-3 — `blocker` — NEW — § Resource bounds (bound 4) / § Actionable Task Map / § Acceptance Criteria
+**Recommendation.** Scope the degraded block to the commits carrying that spec's trailer, or state the duplication as intended.
 
-- **blocker_id:** `structural-architect:ambiguous-ownership:ff6fc09c`
-- **section_anchor:** `resource-bounds`
+### SA-3 — `warning` — § Fallback ladder vs `pr-body-composition.spec.md` Invariant 7 *(Q4)*
 
-**Finding.** The 64 KiB "total rendered bytes across both sections" bound spans slots 1 and 3, which are non-adjacent and assembled by `pr-body-composition`. No spec names who accumulates rendered bytes across slots. `pr-body-composition.spec.md:35` states that marker assembly requests each slot from its owner and that "a slot renderer returns section body text" — so neither renderer can observe the other's size. The bound is filed in this spec's Task Map beside per-plan caps it *can* enforce locally, which hides the fact that it needs a cross-slot accumulator this spec does not own. The drift is already visible: Acceptance Criteria line 260 has slipped to the singular ("the rendered **section** stays under the 64 KiB total"). This is the same ownership shape the sibling spec was corrected for on marker emission.
+Invariant 7 has two clauses. The determinism clause is satisfied. The second — "every ordering the brief applies is total: where a sort key ties, a further key breaks it, down to one that cannot tie" — is asserted here ("Ordering within a rung is total") with no tie-break named for the commit ordering, and § Test Obligations has no counterpart to the sibling's T3. This is the one place the "inherits every invariant and adds no exception" claim is not fully carried.
 
-**Recommendation.** Name the owner of the cross-slot byte budget in exactly one spec — either scope the bound per-section here, or state it as an assembly-level bound in `pr-body-composition` — and align line 260 with whichever is chosen.
+*Aggregator qualification:* `git log --reverse` over a fixed range in a fixed repository emits a deterministic sequence, so this is not a determinism violation and byte-identical output still holds. The residual is that the spec asserts totality without naming what makes it total — a stated-property gap, not a behavioural one. Held at warning on that basis.
 
-### SA-4 — `blocker` — NEW — § Measured coverage / § Acceptance Criteria
+**Recommendation.** Either name the tie-break, or state that the ordering is the parser's / git's sequence and is total by being a sequence rather than a sort.
 
-- **blocker_id:** `structural-architect:ambiguous-acceptance-criterion:371dcad2`
-- **section_anchor:** `acceptance-criteria`
+### SA-4 — `warning` — § Test Obligations T5 / § Resource Bounds / § Deferred Capabilities *(Q2)*
 
-**Finding.** The plan corpus is undefined. 139 / 80 / 59 reproduce only under `.context-index/specs/**`; the whole-repo reading yields 146 / 85 / 61, a 7-plan difference. Both readings of "over the plan corpus" are defensible, so a test written against the other one fails immediately. Second and independent: the criterion as worded pins exact counts, and those counts move with any unrelated commit that adds a plan file — revision 2's figures rotted +1 within a day. As written the criterion mandates a test that red-fails on unrelated changes.
+The "each has exactly one home" thesis is falsified twice. (i) T5 pins "the numeric value of each of the four resource bounds", one of which is the cross-slot total this spec explicitly disclaims owning; `pr-body-composition.spec.md` pins that bound's *enforcement location* and has no § Test Obligations row for its *value*, so the value has two homes across two specs. (ii) Charter revision 5 still hardcodes the corpus figures and the cause breakdown, none of them restated here and none pinned by any test. The drift risk was relocated to the parent, not eliminated. *(Escalated to blocker by the consistency analyzer — see CON-A.)*
 
-**Recommendation.** Name the corpus glob in the spec body where 139 / 80 / 59 are stated, and restate what the criterion pins — that the recomputation is reproducible — rather than pinning literals that drift.
+### SA-5 — `warning` — PERSISTENT (prior SA-7 / CON-10) — § Configuration / § Behaviors / § Acceptance Criteria
 
-### SA-5 — `warning` — § Fallback ladder rung 3 annotation / § System Constitution Reference
+§ Configuration states universally that "the brief names the base it resolved and the configuration source it used", but the only Behaviors bullet carrying that requirement is conditioned on configuration being **absent** at `base`, and no acceptance criterion pins it (T6 pins base-side resolution, not disclosure). The merge-base drift case — `--base` omitted, base moving as the default branch advances — is the one a user hits without expecting it, and it is uncovered in every enforceable surface.
 
-Rung 2's annotation must state "that ordering is chronological rather than planned"; rung 3's must name only the path and cause, despite using the identical `git log --reverse` ordering. Line 48 elevates loud degradation to a behavioral requirement precisely because "a reading order derived from commit order looks identical to one derived from a plan unless the brief says which it is". Rung 3 exempts itself from the spec's own stated invariant.
+*Aggregator note:* the consistency analyzer recorded this prior finding as RESOLVED. That disposition is **refuted** — the Behaviors bullet is conditional. The structural architect's reading is correct and the finding is carried as PERSISTENT.
 
-**Recommendation.** Require the chronological-rather-than-planned statement on every rung above 1.
+### SA-6 — `warning` — PERSISTENT (prior SA-9) — § Configuration vs `charter.md` § Consumed APIs
 
-### SA-6 — `warning` — `charter.md` § Capability Map vs § Consumed APIs *(Q1)*
+The `pr:` manifest block read from `base` is a consumed input with no row in the charter's Consumed APIs, and `pr-body-composition.spec.md` § Inputs declares "Four sources" for the same verb, none of them the manifest. An undeclared inbound dependency on a file the sibling's Preconditions treat as optional. Charter side must carry the row.
 
-The charter is internally inconsistent, independent of this spec: the capability row at line 82 promises a sequence derived from "**plan task order** and `## Parallelization` groups", while Consumed APIs at line 112 lists only `## Parallelization` read through `lib/parallel/groups.mjs`. There is no declared input for plan task order — that was `## Task Summary`, which revision 3 correctly dropped. The charter side must change (revision 6), not the spec.
+### SA-7 — `warning` — § Deferred Capabilities row 2 vs ADR-0012 § Permitted peers
 
-**Recommendation.** Reword the capability row to the single declared input, or add "degrading to commit chronology where groups are unusable".
+"A structured emitter for `## Parallelization` owned by `/adev:plan`" implies a new plan-adjacent artifact; ADR-0012 closes that set, requiring an ADR amendment or a follow-on ADR to add a peer. The row's Depends On names only "a decision to make `/adev:plan` emit a structured sidecar". Implicit supersession — name the ADR amendment as a dependency.
 
-### SA-7 — `warning` — § Configuration ("Config is read from the base ref") / § Behaviors *(Q2)*
+**Otherwise ADR compliance is clean:** this spec introduces no new peer (it reads `<spec-stem>.plan.md` through the owned parser), and `kind: behavioral` carries the Preconditions / Behaviors / Postconditions / Error Cases shape ADR-0009 § 1 requires.
 
-The base-ref decision is sound and the determinism argument holds. The gap is the output contract: no Behaviors bullet requires the rendered advisory to name the resolved `base` or where the threshold came from. With `--base` omitted, `pr-body-composition.spec.md` § Preconditions resolves it to a merge base that moves as the default branch advances, so a threshold can change between two runs of the same command with nothing in the output to explain it — silent, in a spec that elevates loud degradation. Separately, `mirror_globs` read from `base` means a PR that legitimately adds a new mirrored path cannot exclude it; the spec names every other cost of this decision but not that one.
+### SA-8 — `warning` — PERSISTENT (prior SEC-5 residual) — § Resource Bounds
 
-**Recommendation.** Require the advisory to name the resolved base and the config source; state the newly-added-mirror-path consequence explicitly as intended.
+"Every quantity this spec renders is bounded" is falsified in its own paragraph: the number of referenced specs — and therefore plan stats, reads, parses and rendered blocks — is independently unbounded and is not among the four dimensions. Assembly's ceiling truncates the *output* but not the *work*, and no named degradation exists for "additional specs not analyzed".
 
-### SA-8 — `warning` — PERSISTENT (prior SEC-3 / CON-4) — § Error Cases vs § three-state return table
+### SA-9 — `suggestion` — § Fallback ladder rung 3 vs § Error Cases
 
-A zero-byte plan file reads successfully; `parseParallelizationSection("")` returns `{groups: [], malformed: false}`, which the return table maps to "section absent entirely" → rung 2. Error Cases still routes "unreadable (permissions, **truncation**)" to rung 3, and the `stat` check covers the size ceiling and regular-file, not zero length. Rated warning here rather than blocker on the reasoning that "unreadable" naturally denotes an `fs`-level throw and the conflict comes only from the parenthetical "truncation" naming a case that is not a throw. *(The consistency analyzer rated the same defect a blocker — see CON-6.)*
+Rung 3's condition is "absent, unreadable, or refused by a resource bound"; § Error Cases says "absent, unreadable, not a regular file, or over the size bound". The two reconcile only by reading the regular-file check as a "resource bound", which § Resource Bounds itself sets apart ("additionally refused"). One word in the ladder closes the last instance of the recurring class.
 
-**Recommendation.** Drop "truncation" from the row, or define the discriminator between an `fs` throw and a successful zero-byte read.
+### SA-10 — `suggestion` — § Deferred Capabilities row 1 vs `charter.md` § Deferred Capabilities
 
-### SA-9 — `suggestion` — § Preconditions / § Configuration; `charter.md` § Consumed APIs
-
-The `pr:` manifest block is a new consumed input with no row in the charter's Consumed APIs, and `pr-body-composition.spec.md` § Preconditions states the manifest "is read only if present and **only to confirm** [the trailer names]" — a claim about the same verb that this spec now falsifies. Declare the block in the charter and reconcile the sibling sentence.
-
-**Explicitly not reported.** ADR compliance is clean: the spec introduces no new sidecar peer (ADR-0012 § "Permitted peers" untouched — it reads `<spec-stem>.plan.md` only, through the owned parser), and `kind: behavioral` carries the Preconditions / Behaviors / Postconditions / Error Cases shape ADR-0009 § 1 requires. The five-slot section list matches `pr-body-composition.spec.md` exactly. Markdown escaping is correctly delegated to the sibling's single encoder rather than restated.
+Near-identical capability names, different scopes, opposite magnitude language: the spec defers "recognize more group-line forms" and calls the lift "material"; the charter defers "widening to a tolerant qualifier" and calls it "17% of the gap, not most of it". One capability, two homes, two characterizations.
 
 ---
 
 ## Security Reviewer (security-reviewer)
 
-**Verdict:** BLOCK
+**Verdict:** PASS_WITH_NOTES — no blockers this pass.
 
-### SEC-6 — `blocker` — input-validation / path-traversal — NEW — § Resource bounds
+### SEC-11 — `warning` — input-validation — PERSISTENT (prior SEC-9 / CON-12), softened — § Configuration
 
-- **blocker_id:** `security-reviewer:path-traversal:6fed7ac6`
-- **section_anchor:** `resource-bounds`
+Revision 4 still states no rule that the git invocations this spec introduces (`git show <base>:.context-index/manifest.yaml`, the ranged `git log --reverse`, the ranged diff stat) consume `base` and `head` only as already-resolved SHAs passed as discrete argv elements. Mitigating: this spec's Preconditions inherit the sibling's "`--base` resolves via `git rev-parse`" precondition wholesale, which makes ref-as-flag injection structurally unreachable *if* the resolution happens once and only the resolved value threads downstream. Neither spec says so, so the property is implied rather than pinned.
 
-**Finding.** The plan path is containment-checked by the sibling's encoding rule 2, which resolves with `path.resolve` and compares against the *canonicalized root* — it never canonicalizes the *candidate*. This spec then adds a `stat` + regular-file check and a read. `path.resolve` does not follow symlinks and `stat` does, so a fork PR that commits `.context-index/specs/x/x.plan.md` as a symlink to a runner file (e.g. `/home/runner/work/_temp/_github_workflow/event.json`) passes containment, passes the regular-file and 1 MiB checks, and is opened. This spec is the surface that introduces symlink handling — § Resource bounds argues explicitly about "a committed symlink to a character device", and Acceptance Criteria line 259 pins only *symlink to a non-regular file* — so the canonicalize-then-recheck rule belongs here, not in the sibling.
+**Recommendation.** One sentence: every git invocation in this module consumes `base`/`head` only as the SHA `pr-body-composition` already resolved, passed as a discrete argv element with a `--` separator. CWE-88.
 
-**Failure scenario.** Content exfiltration is gated on the target containing `- Group A (independent): Task 1` lines, but the *annotations* are not gated: rung 3 renders "oversized" vs "not a regular file" vs "unreadable" vs "absent" into the public PR body, giving an attacker a per-path existence / file-type / size oracle over the CI runner's filesystem, one symlink per commit. These annotations are stdout (the brief), so the sibling's "diagnostics go to stderr, repo-relative" rule does not cover them. Compounding: the state the ladder's three-way enumeration drops is precisely non-regular-file (see SA-1).
+### SEC-12 — `suggestion` — rate-limiting — PERSISTENT (prior SEC-10) — § Configuration
 
-**Recommendation.** Require `fs.realpath` (or `lstat` plus refusal to follow) on the candidate path and re-assert containment under `.context-index/specs/` *after* canonicalization, before `stat` and before any read. A plan whose realpath escapes the root is treated as out-of-bounds, never opened, and renders the same annotation as any other out-of-bounds trailer — with no distinction between "exists", "wrong type", and "oversized". Add an acceptance criterion: a symlink inside the specs root pointing outside it is never opened and its annotation is byte-identical to the absent-path annotation. CWE-59, CWE-22.
+`mirror_globs` still carries no count or length cap and no syntax rejection (`..`, leading `/`), and is not among § Resource Bounds' four dimensions, then is matched against every changed path (N×M). Mitigated by being read from `base` — the already-reviewed side — which is the same trust argument the spec makes for the threshold. Add it as a fifth bound, or state why it is excluded.
 
-### SEC-7 — `blocker` — data-exposure — NEW — § Output Encoding / § Error Cases
+### SEC-13 — `suggestion` — path-traversal — NEW — § Fallback ladder rung 3
 
-- **blocker_id:** `security-reviewer:data-exposure:f6ab8286`
-- **section_anchor:** `output-encoding`
+Rung 3's cause vocabulary is a closed three-word set. A plan path refused by the inherited containment check (sibling Invariant 6) is not cleanly a member of any of them: it is not a resource bound, and calling it "absent" or "unreadable" is a stretch. No vulnerability results — containment fires before any `stat`, so no new filesystem-oracle state is created — but an implementer has no named home for the case. Fold containment refusal into one of the three by name, or add a fourth.
 
-**Finding.** § Output Encoding states a **closed** enumeration of values routed to the shared encoder: "group ids, the parser's `independent` labels, task references, plan paths, zero-member group ids, rung annotations, and glob strings from `manifest.yaml`". Two values this spec renders fall outside it. (1) § Error Cases line 222: a plan path resolving outside `.context-index/specs/` renders "naming **the trailer value** as out of bounds" — a raw commit trailer, top of the threat model, fully attacker-controlled. It is not a "plan path" (it never resolved to one), and the sibling never contemplated rendering it: `pr-body-composition.spec.md` treats out-of-containment as "does not exist" and renders the row *as a missing path*. This spec creates a new sink for the raw attacker string. (2) § Error Cases line 217 renders "the rejected value" of `size_threshold_additions`, also outside the list.
-
-**Failure scenario.** A fork commit with `Spec: ../../x](https://attacker.example/p.gif)<!-- /adev:pr-brief -->` produces an out-of-bounds rung-3 annotation containing the raw value; an implementer coding against this spec's closed list does not encode it, and the PR body gets a tracking pixel plus a forged closing marker that lets `cicd`'s boundary-based replace treat attacker text as author-written.
-
-**Recommendation.** Replace the enumeration with the sibling's universal form — "every value interpolated into either section, whatever its source, passes through the encoder" — and name these two explicitly. Better still, do not render the raw trailer at all: render the encoded, repo-relative *derived path* plus a fixed "out of bounds" label. Add an acceptance criterion pinning a trailer containing `](`, `|`, and `<!-- /adev:pr-brief -->` to a single-cell, marker-free row. CWE-116, CWE-79.
-
-### SEC-8 — `warning` — input-validation — § Output Encoding length cap / § Resource bounds
-
-The 200-character cap and the 64 KiB total cap are new operations on rendered values and neither is sequenced against the sibling's contractually-ordered six rules. Truncate-after-encode can cut between `\` and `|` (or mid-`&lt;!--`), emitting a bare pipe at a cell boundary — exactly the cell-shift harm rule 4 exists to prevent. Truncate-before-encode means the 200 budget is measured pre-expansion, so 200 pipes render as 400+ characters and the delivery-size justification fails. The same ambiguity applies to the 64 KiB cap ("truncate at the boundary" — which boundary?).
-
-**Recommendation.** State that the 200-character cap applies to the *input* value before encoding, and that the 64 KiB cap truncates only at a whole-value boundary, never mid-value and never mid-escape-sequence. Add an acceptance criterion with a 5,000-character all-`|` qualifier asserting the rendered row has the expected column count *and* stays under the cap.
-
-### SEC-9 — `warning` — input-validation — § Configuration / § Actionable Task Map
-
-This spec adds three git invocations over refs — `git show <base>:.context-index/manifest.yaml`, `git diff --numstat base..head`, `git log --reverse` — and states no argument-handling rule for any of them. The charter's Security attribute covers *trailer values* only; the sibling carries the rule only on its own trailer-reader task row. The spec-level defect is **argument** injection as much as shell: `<base>` is string-concatenated into `<base>:path` even under `execFile`, and a `base` beginning with `-` is parsed as an option.
-
-**Recommendation.** Resolve `base` and `head` once via `git rev-parse --verify <ref>^{commit}`, reject anything that does not resolve to a 40-hex SHA, pass only those SHAs as argv array elements with `--` separators, and add the rule to the "Base-ref config reader" and "Size computation" task rows. CWE-88, CWE-78.
-
-### SEC-3 — `warning` — input-validation — PERSISTENT — § Error Cases vs § three-state return table
-
-§ Error Cases still promises rung 3 with the annotation "**unreadable rather than absent**" for a truncated file, but `parseParallelizationSection("")` returns `{groups: [], malformed: false}`, which the three-state table maps to "section absent entirely" → rung 2. The `stat` gate checks the size ceiling and file type, not zero length. The harm is not the fs mechanics: the brief asserts to a reviewer, as fact, a distinction the verb cannot make, and an attacker committing an empty plan file chooses which false statement appears.
-
-**Recommendation.** Define the distinguisher explicitly — only an `fs` throw yields "unreadable"; a successful read of a zero-length or whitespace-only file is its own state annotated "present but empty", distinct from both "absent" and "unreadable" — and add an acceptance criterion with a zero-byte fixture.
-
-### SEC-5 — `warning` — rate-limiting — PERSISTENT, escalated from suggestion — § Fallback ladder / § Behaviors
-
-Unchanged across a full revision, and revision 3 now routes *both* degraded rungs through it. The ladder and both rung-2/rung-3 Behaviors say `git log --reverse` and never name the range; § Size Advisory names `base..head` but the ladder does not inherit it. An unranged walk covers all history, so the reading order can list commits outside the PR and the walk cost is repo-lifetime rather than range-sized. The phrasing also implies one invocation per degraded plan, and the number of referenced specs is unbounded (one `Spec:` trailer per commit), giving N × full-history walks. *(Escalated to blocker by the structural architect — see SA-2.)*
-
-**Recommendation.** State `git log --reverse --no-merges <base-sha>..<head-sha>` explicitly in the ladder and both Behaviors, computed **once** per invocation and reused for every degraded plan. Add a fifth resource bound capping distinct referenced specs (plan files stat-ed/read) per run, with a named "additional specs not analyzed" degradation.
-
-### SEC-10 — `suggestion` — secrets/configuration — § Configuration
-
-`mirror_globs` is read from `base` with no cap on entry count or length and no glob-syntax validation, then matched against every changed path (N×M). Bound it (e.g. 50 entries, 200 characters each), reject entries containing `..` or a leading `/`, and render the count applied. Reading globs from base means a PR adding a legitimately-mirrored path cannot exclude it — that is the safe direction (net over-counts, erring toward more review) and should be stated as intentional rather than left as an implicit wart.
-
-**Explicitly not reported.** Authentication and authorization have no surface here — a local CLI reading git objects and on-disk files as the invoking CI identity, writing to stdout; no principal, no resource-ownership model. Markdown escaping is delegated to the sibling's encoder and its gaps are tracked against `pr-body-composition.spec.md`, not re-reported. Prior SEC-1 (working-tree config) and SEC-2 (unbounded rendering) are resolved.
+**Explicitly not reported.** Authentication and authorization have no surface: a local CLI reading git objects and on-disk files as the invoking CI identity, writing to stdout. Encoding is delegated wholly to the sibling's universal Invariant 5 and is not re-reported here.
 
 ---
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** BLOCK
+**Verdict:** PASS_WITH_NOTES
 
-### CON-5 — `blocker` — domain-model — NEW — § Fallback ladder rung 3
+### CON-A — `warning` — contract — NEW — § Behavioral Contract / § Test Obligations / § Deferred Capabilities
 
-- **blocker_id:** `consistency-analyzer:domain-model:5ae12fbf`
-- **section_anchor:** `fallback-ladder`
+*Filed by this reviewer as a blocker (`consistency-analyzer:contract:c3355134`); **demoted to warning by the aggregator** and split by owner — see the disposition note at the end of this finding.*
 
-**This spec (§ Fallback ladder, rung 3):** condition is "No plan file … or the plan is unreadable, or the plan exceeds the byte ceiling", annotation "names the path and **which of the three** applied."
+**This spec:** "Counts and thresholds now live in § Test Obligations, where each has exactly one home and a test that recomputes it."
 
-**Conflicts with (the same file, five other places):** § Behaviors line 200 — "exceeds 1 MiB, **is not a regular file**, is unreadable, or does not exist … which of the **four** applied"; § Behaviors line 202 — a second, overlapping bullet ("no plan file, or … unreadable … which of the **two**") that never names a rung; § Error Cases line 220 — "which of the **two** applied"; § Error Cases line 222 — out-of-containment path → rung 3, a fifth condition absent from the ladder; § Resource bounds line 85 — non-regular-file → rung 3, also absent from the ladder; closing prose line 227 — "Rung 3 covers absent, unreadable, oversized, and non-regular-file" (four, excluding containment).
+**Conflicts with:** `charter.md` § Deferred Capabilities (revision 5, unchanged since the prior review), which states as fact "the 139 plans carrying `## Parallelization` … usable groups for 80 and `malformed: true` for 59", the breakdown "28 … 19 … 10 … 2", and "widening alone takes coverage from 80/139 to 90/139" — none of it cross-referenced to T1 or T2, none of it recomputed, and the 28/19/10/2 line already measured as 29/18/10/2 under an equally defensible classification in the previous review.
 
-**Failure.** The rendered annotation is a contract with five candidate causes and four different stated cardinalities (2 / 3 / 4 / 5). Acceptance Criteria line 251 ("each rung has a test asserting … the presence of its annotation") cannot be written against it.
+**Failure.** The recurring defect — one fact written in two places, one copy going stale — was relocated one file up rather than eliminated, and § Deferred Capabilities leans on T2 for a breakdown that also exists, unpinned and already divergent, in the parent.
 
-**Recommendation.** The spec changes. Make § Fallback ladder rung 3 the single normative list (absent, unreadable, oversized, non-regular-file, out-of-containment — five), delete the duplicate Behaviors bullet at line 202, and restate every other surface as "which of the five applied". This is prior SA-4 re-manifested on a different fact, not prior CON-2 (whose `## Task Summary` cause is gone), hence a new id.
+**Aggregator disposition — demoted to warning, and split by owner.** Two things were bundled here.
 
-### CON-6 — `blocker` — domain-model — PERSISTENT (prior CON-4 / SEC-3, escalated) — § Error Cases
+*The charter half is charter-side and is not a blocker on this spec.* Read in context, the spec's sentence is scoped to itself — the surrounding prose is explicitly about "revisions 1 through 3 … restated across five sections" — and all three reviewers confirm no literal survives anywhere in this spec's prose. The claim is true of what it is about. Blocking `pr-body-advisories.spec.md` over it would buy a reworded thesis sentence in revision 5 while charter revision 5 keeps the stale literals, leaving the drift being objected to untouched. It joins SA-6 and prior SA-6/CON-8 as charter-revision-6 work, at the same severity the previous review used for every charter-side inconsistency.
 
-- **blocker_id:** `consistency-analyzer:domain-model:ee9fb6f2`
-- **section_anchor:** `error-cases`
+*The circularity half is genuinely spec-side and is what this warning now carries.* § Deferred Capabilities row 1 argues the widening "would lift coverage materially — the measured cause breakdown in T2 says how much and in what order". That cites a test for the magnitude that justifies the deferral, and the deferral is what the test exists to support. It is also the one characterization the removed data contradicted: the charter's own row concludes the qualifier is "17% of the gap, not most of it".
 
-**This spec (§ Error Cases line 219):** "Plan file present but unreadable (permissions, **truncation**) → **Rung 3**; … state it was **unreadable rather than absent**."
+**Recommendation.** Strike the magnitude clause from § Deferred Capabilities row 1 — the deferral rests on the cross-charter coupling with `worktree-parallelization`, which holds at any magnitude and needs no figure. Optionally scope the "one home" sentence to this spec's own prose. Charter revision 6 should point its Deferred row at the checked-in script instead of restating literals.
 
-**Conflicts with (the same file, § Reading Order three-state table line 106 + ladder line 129):** `groups: [], malformed: false` = "**section absent entirely**" → **rung 2**. Per `lib/parallel/groups.mjs:22-25`, a zero-byte or whitespace-only file is read *successfully* and returns exactly that state. The spec defines no rule anywhere distinguishing an `fs`-level throw from a successful empty read; § Resource bounds line 85 checks the size ceiling and regular-file, not zero length.
+### CON-B — `warning` — domain-model — § Fallback ladder rung 3 / § Resource Bounds / § Actionable Task Map
 
-**Failure.** A truncated-to-zero plan is simultaneously rung 3 ("unreadable") and rung 2 ("absent"). Same one-fact-two-ways class as prior CON-1 and CON-2. Escalated from warning because it survived a full revision that was specifically tasked with eliminating this defect class.
+Rung 3's condition says "refused by a resource bound", but § Resource Bounds and the Task Map describe two different failure shapes among the four: the plan-size ceiling (and the regular-file check) is a **pre-read refusal**, while the group cap, member cap and total-bytes bound are **post-parse truncations with a named degradation** that leave the plan in rung 1. As written, a group-count overflow could be routed to rung 3 rather than rendered as an annotated rung-1 truncation.
 
-**Recommendation.** The spec changes: state that rung 3 is entered only on an `fs` throw or a failed pre-read check, and that a successful read of any content (including empty) enters the parser and is classified by the three-state table.
+**Recommendation.** Rung 3 should name the pre-read bounds specifically, not "a resource bound" generically.
 
-### CON-7 — `blocker` — contract — NEW — § Measured coverage / § Acceptance Criteria
+### CON-C — `warning` — pattern — § Fallback ladder rung 2
 
-- **blocker_id:** `consistency-analyzer:contract:146bdbe4`
-- **section_anchor:** `acceptance-criteria`
+Rung 2's condition column ("no members, nothing recognizable, or no such section") does not literally cover the corpus-observed mixed zero-member state; totality holds only if the reader infers rung 2 as the complement of rung 1 rather than reading its stated condition. *(Filed by this reviewer as a suggestion; raised to warning by the aggregator because it is the same defect as SA-1 and the ladder's own totality claim is what it undercuts.)*
 
-**This spec (§ Measured coverage line 140 / AC line 268):** "the **139** plan files carrying `## Parallelization` … usable for **80** … `malformed: true` for **59**"; the criterion requires a script that "recomputes usable-vs-malformed counts **over the plan corpus**."
-
-**Conflicts with:** the measured corpus. 139 / 80 / 59 holds only under the undeclared restriction `.context-index/specs/**`; the whole-repo reading (including `tests/` fixtures and eval sandboxes) yields 146 / 85 / 61. Neither the spec, nor the charter's Deferred row (which repeats 139 / 80 / 59 / 10 / 90), nor any cross-cutting spec defines "the plan corpus".
-
-**Failure.** A test author taking the other defensible reading gets 146 / 85 / 61 and the criterion fails on day one. Revision 2's 138 / 79 also rotted +1 within a day, so the restriction must live in the spec, not in a test author's head.
-
-**Recommendation.** The spec changes: name the corpus in § Measured coverage (`.context-index/specs/**/*.plan.md`, excluding `tests/` and eval sandboxes), have the criterion cite that glob verbatim, and mirror it into the charter's § Deferred Capabilities row. Also tighten the denominator in the same paragraph: "Rung 1 covers roughly 58% of plans" is 80/139 (plans *carrying the section*), not 80/151 (plan files).
-
-### CON-8 — `warning` — contract — *(Q1 verdict)* — `charter.md` § Capability Map vs this spec § Fallback ladder
-
-**Charter line 82:** "Reading order for multi-commit PRs | Derive a suggested reading sequence from **plan task order** and `## Parallelization` groups."
-**This spec (lines 132–134):** `## Task Summary` — the only source of plan task order — is deliberately dropped; 59 of 139 plans now order by commit chronology.
-
-**Verdict.** Yes, the charter row outruns its only implementing spec. **The charter side must change** (drop "plan task order and", or add "degrading to commit chronology where groups are unusable"). The spec's trade is stated correctly and does **not** overclaim: line 134 names commit chronology as "a worse ordering" and line 140 states the coverage figure. Warning, not blocker — the deviation is documented in the spec; the stale text is in the charter.
-
-### CON-9 — `warning` — contract — PERSISTENT (prior SEC-5), escalated — § Fallback ladder / § Behaviors
-
-Rungs 2 and 3 and Behaviors lines 199 / 200 / 202 all say "`git log --reverse` commit order" and never name the range. Conflicts with `charter.md` § Invariants: "Every commit in the `base..head` range appears in exactly one Traceability Row." An unranged walk enumerates all history. Revision 3 escalated this: chronology is now the ordering for every rung-2 and rung-3 plan, not a last resort. Fix: `git log --reverse base..head` at every occurrence. *(Carried as a blocker by SA-2.)*
-
-### CON-10 — `warning` — contract — *(Q2 residual)* — § Configuration
-
-Line 73 acknowledges only that "two runs at **different bases** may legitimately differ in threshold". `pr-body-composition.spec.md` § Preconditions line 192: with `--base` omitted the base **defaults to the merge base with the default branch**, which moves as that branch advances — so the identical command at two times silently resolves different thresholds and different `mirror_globs`. Not a violation of the charter invariant (stated over a fixed `(base_ref, head_ref)` pair), but the acknowledgment does not cover the drift case. Fix: require the advisory to render the resolved base ref it read config from. Related: `mirror_globs` read from `base` means a PR adding a new mirrored path cannot exclude it — state this consequence.
-
-### CON-11 — `warning` — pattern — § Output Encoding
-
-Line 169 says "This spec states no escaping rules of its own", then line 173 adds a 200-character truncation. `pr-body-composition.spec.md` § Output Encoding Contract defines six rules, no truncation, and asserts "Encoding is applied once, at the interpolation boundary, by a single function." Order is undefined: truncating after rule 4 can sever `\|` to a trailing `\`, or cut a rule-5 marker-neutralized sequence mid-escape. Fix: state truncate-then-encode, and place the cap in the sibling's contract. *(Same underlying gap as SEC-8.)*
-
-### CON-12 — `warning` — pattern — § Configuration / § Actionable Task Map
-
-Line 69 and line 239 give `git show <base>:.context-index/manifest.yaml` with no argv statement. `<base>` is user-supplied via `--base`; the sibling spec carries the argv rule explicitly on its trailer-reader row and `charter.md` § Quality Attributes → Security forbids shell interpolation of externally-supplied values. Add the argv clause. *(Same underlying gap as SEC-9.)*
-
-**Verified clean.** § Section Placement's five-slot table matches `pr-body-composition.spec.md` exactly. The "block is not at the top of the PR body" rationale is consistent with `review-packet-template.spec.md`. The zero-member rule, the de-duplication rule, and the 10 / 80→90 / 139 figures are stated identically on every surface that carries them.
-
-**§ Actionable Task Map — swept, one finding.** The caller named this surface explicitly. Its rung reference is correct: row 237 says "Three rungs with per-plan rung tracking", consistent with the ladder, and no row contradicts a rung number or a bound value. The 400 / 200 / 1 MiB / 50 / 100 / 64 KiB literals appear consistently wherever they recur. Two defects touch this table and are filed elsewhere: the "Resource bounds" row carries the 64 KiB cross-slot bound the spec does not own (SA-3), and the "Base-ref config reader" and "Size computation" rows introduce git invocation sites without the argv-not-shell rule the sibling carries (SEC-9 / CON-12).
-
-**Aggregator override — one consistency finding withdrawn.** The reviewer raised a `suggestion` (CON-13) that § Preconditions line 179's reference to "this charter's **Dependencies** table" is wrong because the charter has no such table. The aggregator verified this directly: `charter.md` lines 35–46 contain a `### Dependencies` table under § Scope and Boundaries, and it carries the `worktree-parallelization` row the spec cites. The finding is **refuted** and is not carried into the totals.
+**Verified clean.** No surface anywhere in the spec states a literal cardinality for any rung's cause set — the prior 2/3/4/5-way mismatch is gone by removal of the count claim, not by reconciliation. The five-slot section list matches `pr-body-composition.spec.md` exactly. The de-duplication rule, the zero-member disposition and the marker-ownership disclaimer are each stated once. `kind: behavioral` and the `.spec.md` suffix conform to `spec-file-suffixes.spec.md`.
 
 ---
 
-## Prior-blocker disposition (revision 2 → revision 3)
+## Prior-blocker disposition (revision 3 → revision 4)
 
 | Prior id | blocker_id | Status | Evidence |
 |---|---|---|---|
-| SA-1 | `structural-architect:unverified-claim:9b705ec7` | **RESOLVED** | Measured 23/80 (29%) stated at line 118; explicit per-group keep-first de-duplication rule at line 120; cap applied after de-duplication (line 87); Behaviors line 198 and AC line 255 pin it. All three reviewers concur. |
-| SA-2 | `structural-architect:undeclared-dependency:74f607a0` | **RESOLVED** | `## Task Summary` removed from the ladder entirely with rationale at line 132; AC line 252 asserts the module contains no reference to the heading. Aggregator re-verified `grep -rn "Task Summary" lib/` returns nothing. |
-| SEC-1 | `security-reviewer:input-validation:15f974c2` | **RESOLVED** (residual → CON-10 / SA-7) | Config read via `git show <base>:.context-index/manifest.yaml`; Postconditions line 210 and AC line 257 pin it with a head-side `999999` fixture. |
-| SEC-2 | `security-reviewer:rate-limiting:2d1c84aa` | **RESOLVED** (new residuals → SA-3, SEC-5) | Four named bounds with named degradations; group count, member count, plan byte ceiling and total rendered bytes all bounded, not only value length. |
-| CON-1 | `consistency-analyzer:domain-model:fff0c66a` | **RESOLVED** | Zero-member → rung 2 stated identically at lines 112, 129, 199 and 253. |
-| CON-2 | `consistency-analyzer:domain-model:ffa1a7ca` | **RESOLVED as stated** | The `## Task Summary` self-contradiction is gone. The rung-3 condition is inconsistent again on a *different* fact — filed as SA-1 / CON-5 (NEW), not a reuse of this id. |
-| CON-3 | `consistency-analyzer:domain-model:2ad4f1f1` | **RESOLVED** | 10 plans, 80/139 → 90/139, breakdown 28/19/10/2 — all confirmed against direct measurement; charter corrected at revision 5 and consistent with the spec. |
+| SA-1 / CON-5 | `structural-architect:inconsistent-enumeration:5f5d440b`, `consistency-analyzer:domain-model:5ae12fbf` | **RESOLVED as stated** | No cardinality claim survives on any surface; the duplicate Behaviors bullet is gone. All three reviewers concur. The *class* re-manifests on a different fact as this review's SA-1 — new id, not a reuse. |
+| SA-2 | `structural-architect:incomplete-contract:a8df42b9` | **RESOLVED** | "Commit order over the range" in both degraded rungs; "`git log --reverse` over the resolved range" stated once. Residual scoping filed as SA-2 (warning). |
+| SA-3 | `structural-architect:ambiguous-ownership:ff6fc09c` | **RESOLVED** | The cross-slot total is assigned to marker assembly here and **accepted by the sibling**: `pr-body-composition.spec.md` § Section ownership states assembly owns the total rendered size and names this spec as relying on it, with a matching acceptance criterion. Cross-spec obligation confirmed in both directions. Residual on the bound's *value* filed as SA-4. |
+| SA-4 / CON-7 | `structural-architect:ambiguous-acceptance-criterion:371dcad2`, `consistency-analyzer:contract:146bdbe4` | **RESOLVED as a blocker** | No literal remains in prose to red-fail. Residual: T1 promises "an explicitly defined corpus root" without saying where it is defined, while the two defensible readings still differ (139/80/59 vs 146/85/61). Carried in SA-4 / CON-A. |
+| SEC-6 | `security-reviewer:path-traversal:6fed7ac6` | **RESOLVED** | Sibling Invariant 6 now canonicalizes **both** the candidate path and the root before any filesystem call, which binds this spec's `stat` and read by inheritance. The annotation-oracle half is narrowed by the ladder's closed three-word vocabulary; residual filed as SEC-13 (suggestion). |
+| SEC-7 | `security-reviewer:data-exposure:f6ab8286` | **RESOLVED** | § Output Encoding deleted; encoding delegates to the sibling's Invariant 5, stated universally ("from any source, including ones added later"), which structurally cannot omit a value. |
+| CON-6 | `consistency-analyzer:domain-model:ee9fb6f2` | **RESOLVED** | Rung 3 is now "the plan cannot be read at all". A zero-byte plan reads successfully, so it cannot reach rung 3 by construction and lands in rung 2. Verified against the parser. |
 
-Non-blocking prior findings: **SA-4 PERSISTENT** (re-manifested as SA-1 / CON-5, escalated to blocker). **SEC-3 / CON-4 PERSISTENT** (zero-byte plan; escalated to blocker by the consistency analyzer as CON-6, held at warning by the other two as SA-8 / SEC-3). **SEC-5 PERSISTENT** (unranged `git log`; escalated to blocker by the structural architect as SA-2). **SA-3 and SA-5 RESOLVED.**
+Non-blocking prior findings: **SA-7 / CON-10 PERSISTENT** (base disclosure pinned only in the config-absent branch — see SA-5). **SA-9 PERSISTENT** (`pr:` block undeclared in the charter — SA-6). **SEC-5 residual PERSISTENT** (referenced-spec count unbounded — SA-8). **SEC-9 / CON-12 PERSISTENT, softened** (SEC-11). **SEC-10 PERSISTENT** (SEC-12). **SEC-3 / CON-4, SEC-8 / CON-11 RESOLVED** — the first by the read/parse split, the second moot: no bound truncates characters any more, so there is no encode-order hazard left to sequence.
 
 ## Adversarial questions — consolidated answers
 
-**Q1 — Does dropping `## Task Summary` quietly lose something the charter promised?**
+**(a) Is the three-rung ladder genuinely total and disjoint?**
 
-The decision is correct and the trade is correctly reasoned. Removing the section is right on ownership grounds (no parser in `lib/`, no owner, no Consumed-APIs entry — all three re-verified), and the spec does **not** overclaim: line 134 states plainly that commit chronology "is a worse ordering", and every rung-2/rung-3 annotation is required to disclose that the ordering is chronological rather than planned, so no reader can mistake a degraded ordering for a planned one.
+**No — one state falls through, and it exists in the corpus today.** Every other parser outcome maps cleanly: `{[], false}` and `{[], true}` both to rung 2, all-groups-populated to rung 1, all-groups-empty to rung 2 ("no members"), and read failure to rung 3. The gap is the **mixed** case — some groups populated, at least one empty — which satisfies neither rung 1's "every group has at least one member" nor rung 2's "yields nothing usable". `domain-aware-skill-integration.plan.md` is that case: eleven groups, `H` empty, `malformed: false`.
 
-It does, however, quietly leave the **charter** promising something the spec no longer delivers. `charter.md` line 82 still reads "Derive a suggested reading sequence from **plan task order** and `## Parallelization` groups", and the charter's own Consumed APIs table (line 112) declares no input that carries plan task order. Two reviewers flagged this independently (SA-6, CON-8), both at `warning`: the charter must move to revision 6, not the spec. One residual the spec should close on its own: SA-5 notes rung 3 is exempted from the chronological-disclosure requirement that rung 2 carries, which is the one place the loud-degradation invariant is not applied uniformly.
+The structure is right and is a genuine improvement: the read/parse split makes rungs 2 and 3 disjoint by construction (a successful read cannot reach rung 3, which is what retires CON-6), and no cause enumeration remains to go inconsistent. But "total by construction" is asserted, not achieved, and the missing case is the one revision 3 handled explicitly with a rule the rewrite dropped. Compounding it, T4 assigns a rung to a *group* while the ladder assigns rungs to a *plan* — the two units diverge precisely on mixed plans. Filed as SA-1 (blocker), CON-C (warning), SA-9 and CON-B on the rung-3 edge of the same question.
 
-**Q2 — Is the base-ref config compatible with the determinism criterion?**
+**(b) Removing the measured numbers: legitimate delegation or hollowed-out claims?**
 
-Yes, as stated. The charter invariant is "Output is deterministic for a fixed `(base_ref, head_ref)` pair"; `base` is an element of that fixed pair, so configuration derived from it is a function of the declared inputs. All three reviewers concur that this is not a determinism violation, and the change closes SEC-1's core.
+**Legitimate as a technique; the specific claim built on top of it is overstated, and the § Deferred Capabilities argument survives for a reason other than the one the spec gives.**
 
-The claim survives; its *rendering* does not. Three edges the spec does not cover:
-1. **Merge-base drift.** With `--base` omitted, `pr-body-composition.spec.md` line 192 resolves the base to a merge base that moves as the default branch advances. The spec's acknowledgment — "two runs at different bases may legitimately differ in threshold" — is literally true of this case, but it reads as covering an explicitly-changed `--base`. The drift case is the one a user hits without expecting it, and nothing in § Behaviors requires the resolved base or the config source to appear in the output, so the change is silent in a spec whose central quality attribute is loud degradation (SA-7, CON-10).
-2. **Attacker choice of branch point.** The justification "the side of the range that already passed review" conflates *reviewed* with *current policy*: branching from a commit predating a threshold tightening or a `mirror_globs` narrowing silently restores the old knob. Reading the `pr:` block from the PR's target-branch tip rather than the merge base would close this.
-3. **`mirror_globs` from base.** A PR that legitimately adds a new mirrored path cannot exclude it. This errs toward over-counting and therefore toward more review, which is the safe direction — but the spec names every other cost of this decision and not this one, so it should be stated as intentional.
+Delegation is the right call. Every figure that rotted across three revisions was a fact about a corpus and a parser this charter does not own, and a table of test obligations that must recompute is a stronger guarantee than prose that must be re-verified by hand.
 
-None of these three is rated a blocker. Q2's answer is: the reasoning is correct, the statement is correct, and the output contract behind it is incomplete.
+Two things do not survive. First, "each has exactly one home" is true of this spec and false of the charter: revision 5 still carries the corpus figures and the cause breakdown as static prose, unlinked to T1/T2 and already divergent under re-classification (28/19/10/2 vs 29/18/10/2). The risk moved one file up. Filed as CON-A and SA-4, both warnings — the fix is charter revision 6, and holding the spec at BLOCK for it would rewrite a sentence here while leaving the stale literals exactly where they are.
+
+Second, and directly to the question asked: § Deferred Capabilities says widening the parser "would lift coverage materially — the measured cause breakdown in T2 says how much and in what order". As an argument that is now circular — it cites a test for the magnitude that justifies the deferral, and the deferral is what the test exists to support. It is also the one characterization the removed data contradicted: the charter's own row concludes the qualifier is "17% of the gap, not most of it". **But the deferral does not actually rest on magnitude.** Its load-bearing premise is the cross-charter coupling — the same widening moves plans from serial fallback into concurrent execution in `/adev:implement --parallel`, another charter's module — which is unconditional and holds at any magnitude. The argument is supportable as *reasoning* and unsupportable as *written*: strike the magnitude clause and it stands on its own; leave it and it leans on a figure the spec deliberately does not state and the charter states differently.
+
+**(c) Does anything real get lost by refusing `## Task Summary`, and is the "correspondingly narrowed" claim honest?**
+
+**Something real is lost, the spec is honest about it, and the charter overpromises — persistently.**
+
+What is lost is genuine and the spec says so plainly: 59 of 139 plans fall to commit chronology, which is a worse ordering, and every rung above 1 must disclose that the ordering is chronological rather than planned. Refusing the section is nonetheless right on ownership grounds — no parser in `lib/`, no owner, no Consumed-APIs entry — and it is the same reasoning that blocked revision 1 for authoring a second grammar. The security reviewer adds that not writing a second free-form prose parser is a net reduction in attack surface.
+
+**The narrowing is not honest as a statement about the charter, because the charter did not narrow.** Revision 5 § Capability Map still reads "Derive a suggested reading sequence from **plan task order** and `## Parallelization` groups", and § Consumed APIs declares no input carrying plan task order. A spec cannot narrow a charter promise by asserting that it has been narrowed; the charter text is what a reader checks. Worse than the previous review recorded: plan task order is delivered on **no** rung, not merely lost on the degraded ones — rung 1 orders by parser group order and within-line scrape order, which coincides with plan task order only where the author happened to write it that way. The charter must move to revision 6. Filed as SA-6 / CON-A context and carried PERSISTENT from prior SA-6 / CON-8; the spec's own sentence should say the charter *requires* narrowing rather than that it *is* narrowed.
+
+**(d) Does the spec inherit every invariant of `pr-body-composition.spec.md` with no exception?**
+
+**Verified for eight of nine, and for the determinism clause of the ninth. One exception, and it is not the one the question anticipated.**
+
+Determinism is fine. `base` is an element of the fixed resolved `(base, head)` pair over which Invariant 7 is scoped, so making configuration a function of `base` is a function of the declared inputs, not a violation. All three reviewers concur, as they did in the previous round. Invariants 1, 2, 3, 4, 5, 6, 8 and 9 are inherited cleanly — notably 5 (encoding, now delegated wholly rather than re-enumerated) and 6 (containment, whose strengthening to canonicalize the candidate is what retires SEC-6).
+
+The exception is Invariant 7's **second** clause: "every ordering the brief applies is total: where a sort key ties, a further key breaks it, down to one that cannot tie." The spec asserts "Ordering within a rung is total" and names no tie-break, and § Test Obligations has no counterpart to the sibling's T3, which exists for exactly this. In practice `git log --reverse` over a fixed range in a fixed repository emits a deterministic sequence, so no output differs run to run — which is why this is held at warning (SA-3) rather than escalated. It is a stated-property gap, not a behavioural one, but it is the one place "adds no exception to any of them" is not literally true.
+
+**Cross-spec obligation confirmed.** The total-rendered-size bound is assigned here to the sibling's marker assembly, and `pr-body-composition.spec.md` revision 6 states the same obligation from its side — § Section ownership ("Assembly also owns the total rendered size of the brief … `pr-body-advisories.spec.md` § Resource Bounds relies on this") plus a matching acceptance criterion requiring the ceiling to be enforced in assembly and not in a slot renderer. The two specs agree; no orphaned obligation.
 
 ---
 
 ## Summary
 
-**Total findings:** 24 (9 blockers, 13 warnings, 2 suggestions)
+**Total findings:** 16 (1 blocker, 11 warnings, 4 suggestions)
 
 | Reviewer | Verdict | Blockers | Warnings | Suggestions |
 |---|---|---|---|---|
-| structural-architect | BLOCK | 4 | 4 | 1 |
-| security-reviewer | BLOCK | 2 | 4 | 1 |
-| consistency-analyzer | BLOCK | 3 | 5 | 0 |
+| structural-architect | BLOCK | 1 | 7 | 2 |
+| security-reviewer | PASS_WITH_NOTES | 0 | 1 | 2 |
+| consistency-analyzer | PASS_WITH_NOTES | 0 | 3 | 0 |
 
 **Blockers:**
 
 | id | blocker_id | NEW / PERSISTENT | One-line |
 |---|---|---|---|
-| SA-1 | `structural-architect:inconsistent-enumeration:5f5d440b` | NEW | Rung-3 cause enumeration stated as 2 / 3 / 4 / 5 across six places; the annotation contract is unwritable. |
-| SA-2 | `structural-architect:incomplete-contract:a8df42b9` | NEW (prior SEC-5 escalated) | `git log --reverse` never names a range, on the path that now covers 42% of plans. |
-| SA-3 | `structural-architect:ambiguous-ownership:ff6fc09c` | NEW | The 64 KiB cross-slot byte bound has no owner; neither slot renderer can observe the other's size. |
-| SA-4 | `structural-architect:ambiguous-acceptance-criterion:371dcad2` | NEW | The plan corpus is undefined; 139/80/59 vs 146/85/61, and the criterion pins drifting literals. |
-| SEC-6 | `security-reviewer:path-traversal:6fed7ac6` | NEW | Containment canonicalizes the root but not the candidate; a committed symlink escapes and the rung-3 annotations become a filesystem oracle in a public PR body. |
-| SEC-7 | `security-reviewer:data-exposure:f6ab8286` | NEW | The encoder enumeration is closed and omits the raw `Spec:` trailer value and the rejected threshold value, both rendered by § Error Cases. |
-| CON-5 | `consistency-analyzer:domain-model:5ae12fbf` | NEW | Same defect as SA-1, reached independently from the consistency sweep. |
-| CON-6 | `consistency-analyzer:domain-model:ee9fb6f2` | PERSISTENT (prior CON-4 / SEC-3) | A zero-byte plan is simultaneously rung 3 ("unreadable") and rung 2 ("absent"); no discriminator is defined. |
-| CON-7 | `consistency-analyzer:contract:146bdbe4` | NEW | Same defect as SA-4, reached independently. |
+| SA-1 | `structural-architect:non-total-ladder:3fa1d731` | NEW id, PERSISTENT class | A plan with some populated and some empty groups matches neither rung 1 nor rung 2; the state exists in the corpus, and T4 assigns rungs per group while the ladder assigns them per plan. |
 
-SA-1/CON-5 and SA-4/CON-7 are each one defect found by two reviewers under distinct ids; addressing either member of a pair addresses both. Seven distinct defects underlie the nine blocker entries.
+One blocker carries the verdict. CON-A was filed as a second blocker by the consistency analyzer and demoted to warning by the aggregator: its charter half is charter-side work at the severity the previous review used for every charter-side inconsistency, and its spec-side half (the circular magnitude clause in § Deferred Capabilities) does not make the spec unplannable.
 
-**Action required:** revision 3 resolved all seven of revision 2's blockers and every empirical claim it makes is reproducible. The remaining blockers are of two kinds: four are the *same class* as the prior seven — one fact restated inconsistently across § the ladder, § Behaviors, § Error Cases, § Resource bounds and § Acceptance Criteria, surviving the five-to-three ladder collapse (SA-1/CON-5, CON-6, SA-4/CON-7). Three are new surfaces the revision opened: the cross-slot byte budget's ownership (SA-3), symlink canonicalization introduced alongside the regular-file check (SEC-6), and the closed encoder enumeration versus two newly-rendered attacker-controlled values (SEC-7).
+**Action required.** Revision 4's method is right and it retired seven of the previous nine blockers — every one that the earlier ladder, the earlier encoder enumeration, and the earlier corpus literals produced. The single remaining blocker is the recurring class in the one hiding place a collapse creates: not a fact restated inconsistently, but a fact **dropped** while the restatements were being removed. Revision 3 disposed of zero-member groups explicitly on four surfaces; revision 4 removed all four and did not carry the rule into the two-rung partition that replaced them. It does not require re-litigating a design decision and is closable inside `pr-body-advisories.spec.md`.
 
 Run `/adev:specify --revise` against `pr-body-advisories.blockers.md`, then re-review.
 
-**Scope note for the revise pass.** Two files that some recommendations point at are outside this spec and will not be edited by `--revise`:
+**Scope note for the revise pass.**
 
-- `charter.md` must move to revision 6 to close SA-6 / CON-8 (the Capability Map row promising "plan task order"). SA-9 also asks for a `pr:` row in its Consumed APIs.
-- `pr-body-composition.spec.md` is named as an *option* by three findings. Each has an in-scope alternative that must be taken instead: **SEC-7** — restate this spec's encoder enumeration as open-ended ("every value interpolated into either section, whatever its source") within this spec, rather than editing the sibling's contract; **CON-11 / SEC-8** — state the truncate-then-encode ordering here; **SA-3** — scope the 64 KiB bound per-section here rather than moving it to the sibling's assembly step.
+- **SA-1 (blocker)** — name the classified entity (plan or group) and state rungs 1 and 2 as a partition over the parser's return with the mixed case explicit. No sibling edit needed.
+- **CON-A (warning), spec-side half** — strike the "would lift coverage materially — the measured cause breakdown in T2 says how much and in what order" clause from § Deferred Capabilities row 1; the deferral rests on the cross-charter coupling, which needs no figure. Worth taking in the same pass.
 
-Neither file is required for the blockers to be resolved inside `pr-body-advisories.spec.md`, but both leave a residual inconsistency until they are updated separately.
+Two files carry residual inconsistencies that `--revise` will not touch and that must be handled separately:
+
+- `charter.md` → revision 6, for three things: the § Capability Map row still promising "plan task order" (PERSISTENT since the prior review), the missing `pr:` manifest row in § Consumed APIs (SA-6), and the § Deferred Capabilities row that restates corpus literals (CON-A charter half, SA-4, SA-10).
+- `pr-body-composition.spec.md` is **not** required to change. Its § Section ownership already carries the cross-slot size obligation this spec delegates to it, and its Invariants 5 and 6 already carry the universal forms that retire SEC-7 and SEC-6. SA-3's tie-break gap and SEC-11's argv rule are both statable inside this spec.
 
 **Governance footer:** `.context-index/governance/gates.yaml` declares `transitions: {}` — no `spec-to-plan` approver role is configured.

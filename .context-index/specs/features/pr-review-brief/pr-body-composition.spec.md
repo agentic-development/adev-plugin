@@ -4,8 +4,8 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone:
-revision: 6
-charter-revision: 5
+revision: 7
+charter-revision: 6
 created: 2026-08-12
 updated: 2026-08-13
 ---
@@ -18,7 +18,9 @@ updated: 2026-08-13
 
 The verb reads only. It never contacts a forge, never mutates lifecycle state, and never blocks: absent or malformed inputs degrade to explicit gaps in the output rather than to silence or to a non-zero exit.
 
-**This spec states properties. Values live in tests.** Revisions 3 through 5 each enumerated another module's error codes, field shapes, and sort semantics in prose, and each enumeration was refuted by probing that module — three times, in the same place. Prose cannot stay correct about another module's internals across changes to that module, and an enumeration is a weaker guarantee than the property it was reaching for. Everything a test can pin now lives in § Test Obligations, and the contract below is written so that no sentence in it can be falsified by reading `lib/`.
+**Properties for what other modules own; concrete statements for what this spec owns.** Revisions 3 through 5 each transcribed another module's error codes, return shape, and sort comparator into prose, and each transcription was refuted by probing that module — three times, in the same place. Those facts now live in § Test Obligations, where a test pins them against the running code.
+
+Revision 6 applied that technique too widely and deleted things this spec owns — the attention map's rank order, the rendered field set, the commit-partition invariant. That was a different error with the same shape: in a rewrite, "fixed it" and "deleted it" look alike in the diff. The discriminator is **ownership, not abstraction level**. A fact belonging to `lib/` is delegated to a test; a decision this spec makes is stated here, concretely, because no test can pin a requirement the spec never made.
 
 ### Section ownership
 
@@ -55,6 +57,24 @@ Three of these carry a decision rather than a mechanism, and the decision is the
 
 **The routing sidecar is keyed to the plan stem, not the spec stem** (ADR-0012 § Permitted peers). The derivation from a `Spec:` trailer is therefore explicit rather than incidental, and the two stems coinciding in this repo today is not something the implementation may rely on.
 
+## Rendered Content
+
+What each section this spec owns must contain. These are decisions this spec makes, so they are stated rather than delegated.
+
+**Attention map.** One row per task in the universe. Columns: task id, the spec it belongs to, route, blast radius, and **rationale**. Rationale is a charter In-Scope promise — it is the only reviewer-facing explanation of *why* a task was routed as it was, and it is also the only attacker-influenceable value the section renders, so it is subject to Invariant 5 without exception.
+
+Rank order, primary key first:
+
+1. `selected_agent`, in the order **`UNKNOWN` → `human-only` → `assisted-agent` → `auto-agent`**. `UNKNOWN` leads because absence of data is never absence of risk (Invariant 3).
+2. Descending blast radius, so the widest-reaching task in a tier is read first.
+3. A tie-break that makes the order total (Invariant 7, pinned by T3).
+
+**Traceability.** One row per spec referenced by a `Spec:` trailer, carrying commit count, plan-task coverage, and diff stat, plus an explicit untraced bucket for commits with no `Spec:` trailer. **Every commit in the range appears in exactly one row or in the untraced bucket** — the charter's partition invariant, restated here because it is this spec's to enforce and a rendering that drops a commit is indistinguishable from one that never saw it.
+
+**Verification.** One row per referenced spec — never a merged verdict across specs, since any merge rule for PASS+FAIL discards what a reviewer needs. Each row carries the verdict, the per-validator outcomes, and the blocker count when non-zero. When no verdict exists at the referenced spec's current revision, the row says so and names both revisions; it **never** falls back to a verdict recorded at another revision, because that is a verdict about different text.
+
+The marker literals are `<!-- adev:pr-brief -->` and `<!-- /adev:pr-brief -->`. They appear in output only as the pair Invariant 1 describes.
+
 ## Invariants
 
 These hold for every input state. They are what a reviewer can check without running anything, and what the tests exist to enforce.
@@ -63,8 +83,12 @@ These hold for every input state. They are what a reviewer can check without run
 2. **No silent absence.** Every section renders. A section with no data renders an explicit gap line naming what was missing. Absence of data is never presented as absence of risk.
 3. **`UNKNOWN` outranks certainty.** A task the routing data does not cover, or covers with a value outside the known agent tiers, renders `UNKNOWN` and sorts above every task known to be low-risk.
 4. **Total degradation.** *Any* failure to obtain an input — for any reason, including failure modes this spec does not anticipate and errors the underlying module does not wrap — renders the affected rows `UNKNOWN`, names the cause in the output, and leaves the exit code unchanged. Stated universally and deliberately: three prior revisions tried to enumerate the failure set and were wrong each time, and an enumeration that misses a case converts an advisory path into a non-zero exit.
+
+   To make the universal *achievable* rather than merely broad, every input is bounded before it is consumed: a file is refused unless it is a regular file within a size ceiling, and the refusal is itself a degradation under this invariant. Without an input-side gate, a universal covering "any failure" is unsatisfiable against an unbounded read — a promise no implementation could keep is weaker than one that is merely wrong.
 5. **No value can escape its cell.** No interpolated value — from any source, including ones added later — may alter table structure, introduce a line break, form a markdown link or image, form an HTML comment delimiter, or be interpreted by a shell. The encoder is a single function at the interpolation boundary; every rendered value passes through it.
-6. **No path escapes the artifact root.** No filesystem call is made with a path derived from a trailer until that path is confirmed, after canonicalizing both the path and the root, to lie within `.context-index/specs/`. Containment is a precondition of access, not a property of rendering.
+6. **No path escapes the artifact root.** No filesystem call is made with a path derived from a trailer until that path is confirmed to lie within `.context-index/specs/`. Both the candidate and the root are resolved through the filesystem's own link resolution — not string normalization — before comparison, so a committed symlink pointing outside the root is caught rather than passed; and the check is re-asserted at open time, not only before it. Containment is a precondition of access, not a property of rendering, and it lives outside the encoder because it gates a call rather than transforming a value.
+
+   This invariant governs trailer-derived paths only. Paths a consumed accessor resolves internally — `currentState()` reading under `.context-index/lifecycle-state/`, for instance — are that module's concern and are not narrowed by this root.
 7. **Deterministic output.** A fixed resolved `(base, head)` pair with unchanged inputs produces byte-identical output. Every ordering the brief applies is total: where a sort key ties, a further key breaks it, down to one that cannot tie.
 8. **Read-only.** No file created, modified, or deleted; no lifecycle event emitted; no network connection; no forge CLI.
 9. **Diagnostics off the contract channel.** Diagnostics go to stderr with repo-relative paths. stdout carries the brief and nothing else.
@@ -79,7 +103,8 @@ The details that revisions 3–5 kept getting wrong in prose. Each is pinned by 
 | T2 | The accessor's actual return shape, asserted against a real call rather than its documentation | A revision transcribed the docblock instead of the return value and was wrong |
 | T3 | The accessor's actual entry ordering, and the tie-break that makes the brief's ordering total on top of it | "Ascending" was refuted; the real comparator is the module's choice and may change |
 | T4 | The exact character set and transformation order the encoder applies to satisfy Invariant 5, with a case per prohibited outcome | Rule ordering drifted every revision; the property is stable, the mechanism is not |
-| T5 | That a path outside the artifact root never reaches a filesystem call, asserted by instrumenting the call | Output inspection cannot prove a call did not happen |
+| T5 | That a path outside the artifact root never reaches a filesystem call, asserted by instrumenting the call, with a committed symlink among the cases | Output inspection cannot prove a call did not happen |
+| T8 | The numeric input bounds Invariant 4 relies on, and that exceeding each degrades rather than throwing | The values are tuning; the requirement that a bound exist is not |
 | T6 | The projection field path carrying a validate verdict at a given revision, and the behaviour when none exists at the current revision | Projection shape belongs to `lib/lifecycle-state.mjs` |
 | T7 | That no output line begins with a review-packet H2 heading, per `review-packet-template.spec.md` AC-6 | The interlock is defined by the sibling artifact, not by this prose |
 
@@ -158,6 +183,12 @@ Only conditions that change the exit code are enumerated. Everything else is Inv
 - [ ] Invariant 6 is tested by instrumenting the filesystem call, not by inspecting output.
 - [ ] Invariant 7 is tested by running twice on an unchanged pair and diffing bytes, and by a case where the primary sort keys tie.
 - [ ] The total-size ceiling is enforced in marker assembly, not in a slot renderer; a test asserts a renderer over-contributing is truncated by assembly with the section named.
+- [ ] The attention map renders the columns § Rendered Content names, including `rationale`; a test asserts a rationale value reaches the output, encoded.
+- [ ] Rank order is UNKNOWN → human-only → assisted-agent → auto-agent, then descending blast radius; a test asserts the full ordering across all four tiers.
+- [ ] Every commit in the range appears in exactly one traceability row or the untraced bucket; a test asserts the counts sum to the range's commit count.
+- [ ] Verification renders per-validator outcomes and the blocker count, one row per referenced spec with no merged verdict; a test asserts a two-spec range produces two rows.
+- [ ] A spec with no verdict at its current revision never renders one from another revision; a test asserts the fallback does not occur.
+- [ ] Both marker literals appear exactly once each; a test asserts it against a rationale containing the closing literal.
 - [ ] No routing parser is written; a test asserts the module contains no `routing.json` traversal of its own.
 - [ ] No `.validate.md` file is opened; a test asserts it.
 - [ ] No `gh`, `glab`, or network call on any path; a test asserts no HTTP client is imported.

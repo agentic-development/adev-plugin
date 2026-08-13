@@ -4,8 +4,8 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone:
-revision: 4
-charter-revision: 5
+revision: 5
+charter-revision: 6
 created: 2026-08-12
 updated: 2026-08-13
 ---
@@ -38,13 +38,19 @@ The size advisory leads *within the generated block* because it is the section a
 
 Three rungs. The rung reached is named in the output, per plan.
 
+Rungs are assigned **per plan**, never per group. A plan reaches exactly one rung.
+
 | Rung | Condition | Ordering | Annotation |
 |---|---|---|---|
-| 1 | The parser yields groups and every group has at least one member | Group order, then de-duplicated member order | none — the normal case |
-| 2 | The parser yields nothing usable — no members, nothing recognizable, or no such section | Commit order over the range | names which case applied, the plan path, and that ordering is chronological rather than planned |
-| 3 | The plan cannot be read at all — absent, unreadable, or refused by a resource bound | Commit order over the range | names the path and which case applied |
+| 1 | The plan was read, and the parser yielded at least one group, and **every** group it yielded has at least one member | Group order, then de-duplicated member order | none — the normal case |
+| 2 | The plan was read, but the parser yielded no groups **or any** group it yielded has no members | Commit order over the range | names which case applied, the plan path, and that ordering is chronological rather than planned |
+| 3 | The plan could not be read — absent, unreadable, not a regular file, or refused by a resource bound | Commit order over the range | names the path and which case applied |
 
-The ladder is total by construction: rung 1 is the success case, rung 2 covers every way parsing can fail to produce usable output, rung 3 covers every way the file can fail to be read. There is no fourth possibility, and no condition belongs to two rungs. Revision 2's five-rung ladder was not total and had two rungs claiming the same case — collapsing it is what makes that class of defect unreachable rather than merely fixed.
+The ladder is total and disjoint, and the two predicates that make it so are stated as a mutually exclusive pair rather than left to be inferred: rung 1 requires **every** group populated, rung 2 fires on **any** group empty. Revision 3 lost this. Its rung 1 read "every group has at least one member" and its rung 2 read "yields nothing usable", which together left the mixed case — some groups populated, at least one empty — matching neither. That state exists in the corpus today, so the gap was reachable rather than theoretical.
+
+The read/parse split is what makes rungs 2 and 3 disjoint by construction: rung 3 is the only rung reachable without a successful read, so a plan that reads successfully but yields nothing — including a zero-byte file — is unambiguously rung 2.
+
+A mixed plan degrades whole. Rendering its populated groups at rung 1 while dropping the empty one is precisely the silent omission this ladder exists to prevent, and partial credit would make the annotation a lie about the plan as a whole.
 
 Ordering within a rung is total: groups keep the parser's order, members keep theirs after de-duplication, and commit order is `git log --reverse` over the resolved range. The `independent` flag renders as a per-group label and reorders nothing, because it describes execution safety rather than reading sequence.
 
@@ -96,7 +102,7 @@ Every number this spec used to carry in prose. Each lives in one place and is re
 | T1 | Current parser coverage over the plan corpus — how many plans yield usable groups versus nothing usable — recomputed by a checked-in script over an explicitly defined corpus root | Revision 1 asserted a coverage figure measured against two files; revision 3's figures drifted by one plan within a day of being written |
 | T2 | The measured causes of parse failure and their relative sizes, so the deferral argument in § Deferred Capabilities rests on current data | Revision 2 claimed one cause dominated; measurement refuted it, and the wrong figure had already propagated from the charter |
 | T3 | That the parser yields duplicate members on real corpus input, and that de-duplication removes them without collapsing a task legitimately present in two groups | The duplicate rate is a property of corpus content and of the parser's scrape, neither owned here |
-| T4 | The parser's behaviour on plural and ranged task references, and that such a group reaches rung 2 rather than rendering as complete | This is the silent-omission defect revision 1 was blocked for; it must be executable, not described |
+| T4 | The parser's behaviour on plural and ranged task references, and that a **plan** containing such a group reaches rung 2 whole — including the mixed case where its other groups are populated, for which a corpus witness exists | This is the silent-omission defect revision 1 was blocked for, and the mixed case is where revision 3's ladder lost totality; it must be executable, not described |
 | T5 | The numeric value of each of the four resource bounds, and that exceeding each renders its named degradation | Bounds restated across five sections is exactly how revisions 2 and 3 went inconsistent |
 | T6 | The threshold default, and that configuration resolves from `base` even when the head-side manifest differs | The head-side bypass is the security property; only an executable test proves the read side |
 | T7 | That no output line begins with a review-packet H2 heading, and that the packet pointer renders inline | The interlock is defined by `review-packet-template.spec.md`, not by this prose |
@@ -105,7 +111,7 @@ Every number this spec used to carry in prose. Each lives in one place and is re
 
 | Capability | Reason | Depends On |
 |---|---|---|
-| Widening the owned parser to recognize more group-line forms | Would lift coverage materially — the measured cause breakdown in T2 says how much and in what order — but the same widening moves plans from serial fallback into concurrent execution in `/adev:implement --parallel`, a behaviour change in another charter's module that needs evidence those groups are genuinely independent. Not taken unilaterally. | `worktree-parallelization` accepting the coverage change |
+| Widening the owned parser to recognize more group-line forms | Deferred on a ground that holds at any magnitude: the same widening moves plans from serial fallback into concurrent execution in `/adev:implement --parallel`, a behaviour change in another charter's module that needs evidence those groups are genuinely independent. The coverage gain is real and T2 measures it, but the argument deliberately does not rest on that figure — revision 2 deferred on a magnitude claim that measurement later refuted. | `worktree-parallelization` accepting the coverage change |
 | A structured emitter for `## Parallelization` owned by `/adev:plan` | The real fix. The section is prose emitted by a skill and parsed by consumers, so coverage is bounded by how uniformly authors happen to write it. An owned format would make the parser total instead of tolerant. Larger than either consuming charter. | a decision to make `/adev:plan` emit a structured sidecar |
 
 ## System Constitution Reference
@@ -164,7 +170,8 @@ This spec introduces no condition that changes the exit code. Every failure belo
 ## Acceptance Criteria
 
 - [ ] Each of the three rungs has a test asserting both the ordering used and its annotation.
-- [ ] The ladder is exhaustive and disjoint: a test enumerates parser outcomes and asserts each maps to exactly one rung.
+- [ ] The ladder is exhaustive and disjoint: a test enumerates parser outcomes — including the mixed case of populated and empty groups in one plan — and asserts each maps to exactly one rung.
+- [ ] A mixed plan degrades whole; a test asserts none of its populated groups renders in normal-case form.
 - [ ] Every row of § Test Obligations has a test pinning it, and T1/T2 recompute from the corpus rather than asserting a literal.
 - [ ] No `## Task Summary` is read on any path; a test asserts the module contains no reference to that heading.
 - [ ] No `## Parallelization` grammar is authored; a test asserts the module defines no such pattern of its own.
