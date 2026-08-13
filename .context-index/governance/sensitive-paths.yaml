@@ -1,0 +1,10 @@
+# .context-index/governance/sensitive-paths.yaml — OPTIONAL and EXTEND-ONLY.
+# The effective set is DEFAULT_SENSITIVE_PATHS ∪ these entries.
+#
+# adev's own repository extends the shipped default with the policy
+# implementation itself — the highest-leverage change class in THIS repo,
+# not in a consumer repo (where these paths would be wrong defaults).
+sensitive_paths:
+  - "lib/test-strategies/**"
+  - "lib/governance/**"
+  - "lib/lifecycle-events.mjs"
