@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone:
-revision: 2
+revision: 3
 charter-revision: 2
 created: 2026-08-13
 updated: 2026-08-13
@@ -104,18 +104,33 @@ without Class B the `skills/` and `templates/` source roots are invisible to the
 - `readFileSync("<literal>"…)`, `readFile("<literal>"…)`, `readFileSync(join(<literal-parts>)…)`
 - Python: `open("<literal>"…)`, `Path("<literal>").read_text()`
 
-**Binding restriction on Class B:** the path argument MUST be a string literal, a
-`new URL` over a string literal, or a `join(...)`/`resolve(...)` whose arguments are all
-string literals or `import.meta.url`/`__dirname`. A path assembled from any variable,
-template interpolation, or function return is NOT a reference and MUST be skipped. This
-is what keeps `DEAD_TEST_REFERENCE` from firing on the temp-fixture paths that tests
-construct at runtime.
+**Binding restriction on Class B.** A purely literal-only rule was measured against this
+repo's suite and rejected: of the `readFileSync(join(...))` sites, 141 are anchored on
+`DOCS_DIR`, 26 on `PLUGIN_ROOT`, 12 on `SW_DIR`, 12 on `FIXTURE_DIR` — all
+repo-anchored constants — while 52 (`root`), 42 (`dir`), 18 (`tmp`) are temp-dir
+variables. A literal-only rule drops the first group with the second. The rule is
+therefore **anchor classification**, resolved by a single same-file scan of `const X = …`
+bindings:
+
+| Anchor class | Recognised from | Treatment |
+|---|---|---|
+| **repo-anchored** | `import.meta.url`, `import.meta.dirname`, `__dirname`, or a `join`/`resolve` chain rooted in one of those (transitively, e.g. `const SW_DIR = join(DOMAINS_DIR, 'software')`) | Reference admitted; path = the literal segments joined |
+| **temp-anchored** | `createTempDir()`, `mkdtempSync(…)`, `tmpdir()`, or a chain rooted in one | Skipped entirely — this is the FP class |
+| **unresolvable** | function parameter, function return, template interpolation, or any binding not found in the same file | Skipped for `DEAD_TEST_REFERENCE`; admitted for `APPEND_CHAIN` and `PROSE_ASSERTION` using the literal segments only |
+
+**Detector-specific consumption of the unresolvable class is deliberate.**
+`DEAD_TEST_REFERENCE` is the only detector that asserts a *negative* ("this file does not
+exist"), so it consumes only fully-resolvable references — an unresolvable anchor could
+name a path that legitimately exists somewhere the pass cannot see. `APPEND_CHAIN` and
+`PROSE_ASSERTION` only *cluster*, so a mis-anchored reference costs a slightly wrong
+grouping, never a false absence claim.
 
 Relative paths resolve against the test file's directory, then normalise to
 project-root-relative. Python dotted modules resolve to `a/b.py` probed under
 `hygiene.source_roots`. A reference that resolves outside the project root is discarded.
-`APPEND_CHAIN` and `DEAD_TEST_REFERENCE` consume Class A ∪ Class B; `PROSE_ASSERTION`
-consumes Class B only, and only its `.md` members.
+`APPEND_CHAIN` consumes Class A ∪ Class B (repo-anchored + unresolvable);
+`DEAD_TEST_REFERENCE` consumes Class A ∪ Class B **repo-anchored only**;
+`PROSE_ASSERTION` consumes Class B only, and only its `.md` members.
 
 ### Assertion-line taxonomy (defines `PROSE_ASSERTION`'s ratio)
 
@@ -301,6 +316,13 @@ sound. Expected precision, and what a false positive costs:
    Detection is in scope here; remediation is explicitly not. Confirm that split.
 
 <!-- revision-history
+rev 3 (2026-08-13) — anchor-classification refinement (self-found, from a census of the
+         real suite: 141 readFileSync(join(DOCS_DIR,…)) / 26 PLUGIN_ROOT / 12 SW_DIR /
+         12 FIXTURE_DIR are repo-anchored, vs 52 root / 42 dir / 18 tmp temp-anchored).
+         Rev 2 unqualified literal-only rule would have dropped all repo-anchored reads.
+         Class B now classifies anchors; DEAD_TEST_REFERENCE (the only negative-asserting
+         detector) consumes repo-anchored only.
+
 rev 2 (2026-08-13) — addresses quick-tier review blockers SA-1, SA-2, SA-3 and
 warnings CON-1, CON-2, SEC-1 plus suggestions SA-4, CON-3:
   SA-1 → reference extraction split into Class A (module refs) and Class B (literal-only
