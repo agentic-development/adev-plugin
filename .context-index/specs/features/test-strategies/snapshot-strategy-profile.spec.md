@@ -2,7 +2,7 @@
 charter: test-strategies
 charter-extension: true
 kind: behavioral
-status: review-pending
+status: review-blocked
 risk_level: medium
 milestone:
 revision: 1
