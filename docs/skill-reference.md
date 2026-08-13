@@ -234,7 +234,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 > **Utility skill.** Can be invoked by `/adev:brainstorm` when a visual prototype would help clarify scope. Also available standalone for rapid UI sketching.
 
-**Purpose:** Rapidly sketch UI screens, user flows, and API surface from Feature Charters. Bridges the gap between chartering and implementation with tiered prototypes (wireframe, mockup, functional). Optionally uses a live browser preview for interactive design.
+**Purpose:** Generates tiered UI prototypes (wireframe, mockup, functional) from an adev Feature Charter stored at `.context-index/specs/features/<module>/charter.md`, serving them via a localhost browser preview for interactive review. Supports conversational iteration across rounds, then a choice to persist the result under `.adev/prototype/<module>/` or discard it.
 
 **Prerequisites:** A Feature Charter must exist for the target module.
 
