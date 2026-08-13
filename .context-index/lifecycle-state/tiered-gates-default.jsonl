@@ -29,3 +29,9 @@
 {"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-6","status":"done","notes":"docs/governance.md gates.yaml gate-schema section + 5 doc assertions","ts":"2026-08-13T17:23:26.218Z"}
 {"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-7","status":"done","notes":"shipped-defaults parity sweep + doctor-clean fresh scaffold (both shapes)","ts":"2026-08-13T17:32:17.132Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-13T17:34:20.174Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-13T18:10:59.714Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1-quality-gates","severity":"warning","verdict":"PASS","notes":"fast 5596/0 pass; integration tier exit 0 (no-op by design); e2e no gates","ts":"2026-08-13T18:14:33.322Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS_WITH_NOTES","notes":"13/13 acceptance criteria PASS, all cited from files read this run; 3 non-blocking findings recorded","ts":"2026-08-13T18:14:33.362Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"No new deps; version correctly unbumped at 0.27.8 per ADR-0008; no inline-Node in touched SKILL.md","ts":"2026-08-13T18:14:33.401Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP Case A - no UI files in diff","ts":"2026-08-13T18:14:33.438Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-13T18:14:44.557Z"}

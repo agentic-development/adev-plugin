@@ -1,6 +1,6 @@
 ---
 charter: unified-gates
-status: implemented
+status: validated
 kind: behavioral
 risk_level: medium
 milestone:
