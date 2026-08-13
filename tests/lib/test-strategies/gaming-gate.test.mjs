@@ -4,6 +4,7 @@ import {
   isTestFile,
   isDetectorFixtureFile,
   isIntegrationTestFile,
+  runGamingDetectors,
 } from "../../../lib/test-strategies/gaming-gate.mjs";
 
 describe("isTestFile", () => {
@@ -42,5 +43,27 @@ describe("isIntegrationTestFile", () => {
   });
   it("does not match an ordinary unit test path", () => {
     assert.equal(isIntegrationTestFile("tests/cli/context.test.mjs"), false);
+  });
+});
+
+describe("runGamingDetectors", () => {
+  it("runs only the 4 shared detectors for a non-integration test file", () => {
+    const content = "test('x', () => { it.skip('y', () => {}); });";
+    const result = runGamingDetectors(content, "tests/cli/context.test.mjs");
+    assert.ok(result.violations.some((v) => v.patternId === "DISABLED_TESTS"));
+    assert.ok(!result.violations.some((v) => v.patternId === "CI_BYPASS"));
+  });
+
+  it("also runs the 4 integration detectors for an integration test file", () => {
+    const content = "if (process.env.CI) { return; }";
+    const result = runGamingDetectors(content, "tests/integration/adapter.test.mjs");
+    assert.ok(result.violations.some((v) => v.patternId === "CI_BYPASS"));
+  });
+
+  it("has no file-size exemption — a violation in a 600KB file still detects", () => {
+    const padding = "// x\n".repeat(150000); // > 500KB
+    const content = padding + "\nit.skip('y', () => {});\n";
+    const result = runGamingDetectors(content, "tests/cli/context.test.mjs");
+    assert.ok(result.violations.some((v) => v.patternId === "DISABLED_TESTS"));
   });
 });
