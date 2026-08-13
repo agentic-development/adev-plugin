@@ -13,8 +13,16 @@ command -v node >/dev/null 2>&1 || exit 0
 COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null) || exit 0
 COMMIT_DATE=$(git log -1 --format='%aI' "$COMMIT_HASH" 2>/dev/null) || exit 0
 
-# Extract Spec: trailers from the commit message
-SPECS_TOUCHED=$(git log -1 --format='%(trailers:key=Spec,valueonly)' "$COMMIT_HASH" 2>/dev/null | tr '\n' ',' | sed 's/,$//' || echo "")
+# Extract Spec: trailers from the commit message.
+#
+# `separator=%x1F` (ASCII Unit Separator) + `unfold` guarantee exactly one
+# field per trailer. The previous `tr '\n' ','` join split on a character that
+# is perfectly legal *inside* a trailer value, so a single trailer reading
+# `Spec: a,b` silently fabricated TWO `specs-touched` entries — a measurement
+# integrity bug (issue-564). US is not producible by git's own trailer parser
+# and any candidate containing a control character is rejected downstream by
+# `deriveSpecsTouched`, so the delimiter cannot be smuggled through a value.
+SPECS_TOUCHED=$(git log -1 --format='%(trailers:key=Spec,valueonly,unfold,separator=%x1F)' "$COMMIT_HASH" 2>/dev/null || echo "")
 
 # Get commit subject and body
 COMMIT_SUBJECT=$(git log -1 --format='%s' "$COMMIT_HASH" 2>/dev/null || echo "")
@@ -65,21 +73,12 @@ export ADEV_PC_TRACKING_FILE="$TRACKING_FILE"
 
 # Call session-summary writer with enriched content
 node --input-type=module -e "
-  import { writeSummary } from './lib/session-summary.mjs';
+  import { writeSummary, deriveSpecsTouched } from './lib/session-summary.mjs';
   import { readFileSync, writeFileSync } from 'fs';
 
   const env = process.env;
   const outputDir = env.ADEV_PC_OUTPUT_DIR;
   const trackingFile = env.ADEV_PC_TRACKING_FILE;
-
-  const metadata = {
-    date: (env.ADEV_PC_COMMIT_DATE || '').slice(0, 10),
-    type: 'commit',
-    mode: 'auto',
-    agent: 'git-hook',
-    specsTouched: (env.ADEV_PC_SPECS_TOUCHED || '').split(',').filter(Boolean),
-    commits: [env.ADEV_PC_COMMIT_HASH || ''],
-  };
 
   // Intent = commit subject + body
   const subject = (env.ADEV_PC_COMMIT_SUBJECT || '').trim();
@@ -87,6 +86,22 @@ node --input-type=module -e "
 
   // Changed files
   const changedFiles = env.ADEV_PC_CHANGED_FILES || '';
+
+  // specs-touched is the UNION of the commit's changed *.spec.md paths and its
+  // Spec: trailers (issue-564). Both inputs are untrusted; deriveSpecsTouched
+  // allow-lists, de-duplicates, and caps them, and silently drops the rest.
+  const metadata = {
+    date: (env.ADEV_PC_COMMIT_DATE || '').slice(0, 10),
+    type: 'commit',
+    mode: 'auto',
+    agent: 'git-hook',
+    specsTouched: deriveSpecsTouched({
+      changedFiles: changedFiles.split('\n'),
+      trailers: (env.ADEV_PC_SPECS_TOUCHED || '').split('\x1f'),
+      projectRoot: process.cwd(),
+    }),
+    commits: [env.ADEV_PC_COMMIT_HASH || ''],
+  };
 
   // Session activity from tracking JSONL
   let sessionLines = '';
