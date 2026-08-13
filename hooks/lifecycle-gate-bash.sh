@@ -17,24 +17,7 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# Walk up from cwd to find the nearest directory containing .context-index/
-find_context_index() {
-  local dir
-  dir=$(pwd)
-  while true; do
-    if [ -d "$dir/.context-index" ]; then
-      echo "$dir"
-      return 0
-    fi
-    local parent
-    parent=$(dirname "$dir")
-    if [ "$parent" = "$dir" ]; then
-      return 1
-    fi
-    dir="$parent"
-  done
-}
-
+# find_context_index() is sourced from _parse-stdin.sh above.
 CONTEXT_ROOT=$(find_context_index 2>/dev/null || true)
 
 # Bypass 4: No .context-index → exit 0

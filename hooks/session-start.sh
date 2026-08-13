@@ -6,26 +6,13 @@
 
 set -euo pipefail
 
+# Read stdin (drained here so downstream reads don't block) and, as a side
+# effect, source the shared find_context_index() helper. SessionStart payloads
+# have no tool_input, so no CLAUDE_TOOL_INPUT_* vars are exported — harmless.
+source "$(dirname "$0")/_parse-stdin.sh"
+
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 SKILL_FILE="${PLUGIN_ROOT}/skills/using-adev/SKILL.md"
-
-# Walk up from cwd to find the nearest directory containing .context-index/
-find_context_index() {
-  local dir
-  dir=$(pwd)
-  while true; do
-    if [ -d "$dir/.context-index" ]; then
-      echo "$dir"
-      return 0
-    fi
-    local parent
-    parent=$(dirname "$dir")
-    if [ "$parent" = "$dir" ]; then
-      return 1
-    fi
-    dir="$parent"
-  done
-}
 
 CONTEXT_ROOT=$(find_context_index 2>/dev/null || true)
 
