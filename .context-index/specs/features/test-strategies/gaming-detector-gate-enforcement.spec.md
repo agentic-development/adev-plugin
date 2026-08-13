@@ -1,6 +1,6 @@
 ---
 charter: test-strategies
-status: review-passed
+status: implemented
 kind: behavioral
 risk_level: high
 milestone:
@@ -9,13 +9,23 @@ charter-revision: 4
 created: 2026-08-12
 updated: 2026-08-13
 source-manifest:
-  sha: "00bfa90"
+  sha: "34b5815"
   files:
-    - .context-index/specs/features/test-strategies/charter.md
+    - .claude-plugin/plugin.json
+    - .cursor-plugin/plugin.json
+    - hooks/_gaming-gate-check.mjs
+    - hooks/gaming-gate.sh
     - hooks/hooks.json
-    - lib/test-strategies/gaming.mjs
+    - lib/test-strategies/gaming-gate.mjs
+    - package.json
+    - providers/codex/skills/write-test/SKILL.md
+    - providers/copilot/hooks.json
+    - providers/cursor/hooks.json
+    - providers/opencode/skills/write-test/SKILL.md
     - skills/write-test/SKILL.md
-  computed-at: "2026-08-13T02:44:53.163Z"
+    - tests/hooks/gaming-gate.test.mjs
+    - tests/lib/test-strategies/gaming-gate.test.mjs
+  computed-at: "2026-08-13T03:25:45.606Z"
 ---
 
 # Live Spec: Gaming Detector Gate Enforcement
