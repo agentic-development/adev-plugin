@@ -1,7 +1,7 @@
 ---
 charter: pr-review-brief
 kind: behavioral
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone:
 revision: 5
