@@ -369,6 +369,22 @@ Build the implementer subagent prompt with these sections in order:
 
    Stdout is a single JSON object `{ domain, config, warnings }` where `config` contains `permitted_tools`, `skip_patterns`, and `max_test_file_size`. Pass `config.permitted_tools` to the write-test subagent for test framework detection. Pass `config.skip_patterns` for domain-specific skipped test detection.
 
+   **Test Depth Resolution:** Before dispatching the write-test subagent, resolve the task's assigned test depth via the CLI:
+
+   ```bash
+   adev test-policy resolve --plan <plan-path> --task-id <task-id>
+   ```
+
+   Stdout is a single JSON object carrying a `depth` field (`minimal | standard | thorough`). Pass the resolved depth into the write-test subagent's prompt alongside `config.permitted_tools`/`config.skip_patterns` — it tells the subagent how many case classes the suite must cover.
+
+   After the write-test subagent hands back a suite and it is accepted, verify an assignment was recorded:
+
+   ```bash
+   adev test-policy assert-assigned --plan <plan-path> --task-id <task-id>
+   ```
+
+   A non-zero exit fails the write-test step for that task with `MISSING_DEPTH_ASSIGNMENT` rather than passing silently — do not proceed to GREEN phase or accept the suite.
+
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
 9. **Escalation rules.** The subagent must report one of four status codes. It must never silently produce work it is unsure about. It is always acceptable to stop and escalate.
