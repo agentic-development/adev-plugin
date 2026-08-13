@@ -27,16 +27,25 @@ describe("BeadsAdapter", () => {
     assert.equal(adapter.name, "beads");
   });
 
-  it("sets dbPath to .beads under projectRoot", () => {
+  it("separates the .beads workspace directory from the --db file path", () => {
     const adapter = new BeadsAdapter("/tmp/test-root", { checkBr: false });
-    assert.equal(adapter.dbPath, "/tmp/test-root/.beads");
+    // `br --db` takes the database FILE; `.beads/` is the workspace directory
+    // that contains it. Passing the directory is what produced
+    // "Database error: I/O error: Is a directory (os error 21)".
+    assert.equal(adapter.workspaceDir, "/tmp/test-root/.beads");
+    // Resolved lazily from the workspace contents — null until `br init` has
+    // run and a *.db exists, at which point `--db` is omitted and br applies
+    // its own auto-discovery.
+    assert.equal(adapter.dbPath, null);
+    assert.equal(adapter._resolveDbPath(), null, "no workspace → no db file");
   });
 
-  it("delegates createEpic to file adapter", async () => {
-    // BeadsAdapter delegates epic ops to FileAdapter
+  it("delegates createEpic to the local epic adapter without eager validation", async () => {
+    // beads has no epic adev can create (`br epic` is status/close-eligible
+    // only), so epics live in a local JsonAdapter. It must be constructed
+    // lazily: BeadsAdapter is legitimately built against paths that do not
+    // exist (the availability probe in lib/cli/issues-migrate.mjs).
     const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
-    // This will fail since /tmp/nonexistent doesn't have context-index,
-    // but it proves the delegation path exists
     assert.equal(typeof adapter.createEpic, "function");
     assert.equal(typeof adapter.updateEpic, "function");
   });

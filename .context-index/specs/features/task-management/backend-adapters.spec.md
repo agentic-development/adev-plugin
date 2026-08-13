@@ -4,10 +4,10 @@
 charter: task-management
 status: validated
 milestone:
-revision: 1
+revision: 2
 charter-revision: 3
 created: 2026-03-31
-updated: 2026-04-01
+updated: 2026-08-13
 source-manifest:
   sha: "059da9e"
   files:
@@ -27,7 +27,7 @@ drift_detected: true
 
 - `.context-index/` exists with `manifest.yaml`
 - For file backend: `.context-index/tasks/` directory is writable
-- For beads backend: `br` CLI is on PATH and `.beads/` is initialized
+- For beads backend: `br` CLI is on PATH at **>= 0.2.0** and `.beads/` is initialized
 
 ### Behaviors
 
@@ -42,7 +42,28 @@ drift_detected: true
 
 **Beads Backend:**
 
-7. **When** the beads adapter initializes **then** it checks `which br` and throws `BEADS_NOT_AVAILABLE` if not found.
+7. **When** the beads adapter initializes **then** it runs `br --version` and throws `BEADS_NOT_AVAILABLE` if not found, or `BEADS_VERSION_UNSUPPORTED` when the version is below `MIN_BR_VERSION` (0.2.0).
+
+**Beads Backend — br 0.2.x contract (rev 2):**
+
+> Added 2026-08-13. Everything below was found by driving a real `br` binary rather than a mock; the adapter had been written against br 0.1.x and was **completely non-functional** against 0.2.x.
+
+13. **When** the adapter builds a `br` invocation **then** `--db` receives the database FILE resolved from inside `.beads/` (preferring `beads.db`), never the workspace DIRECTORY. Passing the directory yields `Database error: I/O error: Is a directory (os error 21)` on every call.
+14. **When** the resolved database path contains a symlinked parent component **then** it is canonicalized with `realpathSync.native` first, because br refuses such a route outright (`Refusing configured database route with a symlinked parent`). On macOS `/var` → `/private/var` alone triggers this.
+15. **When** `.beads/` holds no database **then** `--db` is omitted so br applies its own auto-discovery and reports its own error.
+16. **When** a `br` invocation fails **then** the raised `BEADS_COMMAND_FAILED` message carries whichever stream spoke — br writes structured JSON errors to **stdout** and leaves stderr empty, so a stderr-only message degrades to a bare `Command failed: <argv>`.
+17. **When** `claim(id, owner)` is called **then** exclusivity is delegated to `br update --claim`, which sets assignee=actor + status=in_progress and refuses an already-held issue inside br's own transaction. adev's `owner` maps onto br's `assignee` because assignee is the field `--claim` guards; `claimed_at` has no br column and lives in the sidecar map, driving lease expiry only.
+18. **When** `claim`/`release` evaluate preconditions **then** they call the SAME `requireClaimable` / `requireReleasable` helpers as the json backend, so refusal codes (`ISSUE_ALREADY_CLAIMED`, `ISSUE_CLOSED`, `CLAIM_OWNER_MISMATCH`) and CLI exit codes are identical across backends and callers never branch on backend.
+19. **When** epics are created, listed, updated, or walked **then** they are delegated to a lazily-constructed local `JsonAdapter`, because `br epic` exposes only `status` and `close-eligible` — there is no br epic adev can create. The delegate is constructed lazily because `BeadsAdapter` is legitimately built against non-existent paths (the availability probe in `lib/cli/issues-migrate.mjs`), while `JsonAdapter` validates its root eagerly.
+
+### Known non-parity (beads)
+
+| Capability | Behavior |
+|---|---|
+| **Stale-lease takeover** | **Not atomic.** br refuses to reassign a held issue, so expiring a lease takes two calls (clear assignee, then `--claim`). Two agents observing the same expired lease can both proceed. The window is bounded by TTL expiry rather than contention — far narrower than no gate at all — but `tasks.backend: json` is the backend with an atomic takeover. |
+| `claimed_at`, `branch`, `pr`, `epicId`, `planRef`, `planTask`, `spec_ref` | No br column; stored in `.context-index/tasks/.beads-map.json`. The sidecar write is not atomic with the br call, so a crash between them can leave the lease stamp and the assignee disagreeing. Exclusivity is unaffected — that is br's `--claim`, not the sidecar. |
+| Epics | Not stored in beads at all (behavior 19). A beads project's epics live in `tasks.json`; `br list` will not show them. |
+| Issue IDs | br 0.2.x mints hash-like ids (`tst-i6s`). adev keeps its own sequential `issue-N` namespace in the sidecar and maps between them. |
 8. **When** an issue is created via the beads adapter **then** it runs `br create` with title, type, and priority as discrete arguments via `execFileSync('br', ['create', title, '--type', type, '--priority', String(priority), '--json'])` and stores the returned beads ID in `.context-index/tasks/.beads-map.json`. All `br` CLI invocations MUST use `execFileSync` with arguments as an array — never string interpolation or `execSync` with a command string — to prevent shell injection.
 9. **When** an issue is updated via the beads adapter **then** it runs `execFileSync('br', ['update', beadsId, '--status', status, '--json'])`.
 10. **When** an issue is closed via the beads adapter **then** it runs `execFileSync('br', ['close', beadsId, '--reason', reason])`.

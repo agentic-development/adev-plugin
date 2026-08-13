@@ -452,6 +452,28 @@ adev coordination scan --json --owner "$USER/local"
 
 Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
+#### Backend capability matrix
+
+Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22.
+
+| Capability | `json` (default) | `beads` | `file` |
+|---|---|---|---|
+| create / list / get / update / close | ✅ | ✅ | 🔍 read-only |
+| epics (create, list, update, walk) | ✅ | ✅ *stored in `tasks.json`, not in beads* | 🔍 read-only |
+| dependencies | ✅ | ✅ | 🔍 read-only |
+| `claim` / `release` | ✅ atomic (CAS) | ✅ atomic, via `br update --claim` | ❌ `CLAIM_UNSUPPORTED_BACKEND` |
+| refusal codes + CLI exit codes | ✅ | ✅ identical — callers never branch on backend | ❌ |
+| lease TTL + `issues stale` | ✅ | ✅ | ❌ |
+| **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ❌ |
+| `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ⚠️ sidecar `.beads-map.json` | 🔍 |
+| shared across git worktrees | ✅ | ✅ | ✅ |
+
+**The one gap that can bite you:** on beads, taking over an *expired* lease is not atomic. br refuses to reassign a held issue, so the adapter must clear the assignee and then claim — two calls. Two agents that observe the same expired lease can both proceed. Contended *live* claims are still refused atomically by br, so this only affects abandoned work, and the window is bounded by TTL expiry rather than by contention. If you need an atomic takeover, use `tasks.backend: json`.
+
+**Requirements:** beads needs `br >= 0.2.0` on PATH. Older releases take a workspace *directory* for `--db` and have no atomic `update --claim`; the adapter refuses them with `BEADS_VERSION_UNSUPPORTED` rather than failing obscurely at the first call. The `file` backend has been read-only since its deprecation — run `adev migrate` to move to `json`.
+
+Live coverage for the beads path is `tests/evals/beads-live/`, an opt-in bucket (`npm run test:evals`) because it drives a real `br` binary. It fails loudly when `br` is missing rather than skipping, so a green default run never implies a verified beads backend.
+
 **Example:**
 ```
 adev issues claim issue-42 --owner "$USER/local" --branch "$(git branch --show-current)"
