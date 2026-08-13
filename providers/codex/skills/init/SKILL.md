@@ -840,10 +840,13 @@ Whichever value is accepted becomes the literal `test_policy.granularity` writte
 `manifest.yaml`, subject to the same `UNSUBSTITUTED_POLICY_PLACEHOLDER` guard as the greenfield
 path.
 
-> **Note.** This step is currently agent-performed analysis (read the source tree, count
-> matches, reason about the convention), not a dedicated helper. The spec's Interface Contract
-> names a future `inferGranularity(projectRoot, sourceRoots)` function for this; it will move
-> behind a named `adev test-policy` subverb once one exists, per the cli-driver-surface charter.
+> **Implementation note.** This step is currently agent-performed analysis (read the source
+> tree, count matches, reason about the convention) rather than a dedicated helper — the spec's
+> Interface Contract names a future `inferGranularity(projectRoot, sourceRoots)` function for
+> this, but no `adev test-policy` subverb wraps it yet. Per the cli-driver-surface charter, a
+> SKILL.md step with this shape of branching/lookup logic should eventually call a named CLI
+> verb rather than rely on agent judgment alone; wiring `inferGranularity` behind such a verb is
+> tracked as follow-up scope, not implemented in this task (see issue-611).
 
 **Final brownfield step:**
 ```
