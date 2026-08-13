@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Spec pins Invariants 1/2/8/9, all three error codes and the empty-range behavior; the plan names every test and the exact VERB_REGISTRY line. 28 sibling lib/cli verbs and general-test-helpers.md cover the shapes, but no sample is curated for CLI verbs. 3 files, boundaries.yaml empty. Novelty is the new five-slot registry seam."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "ACs enumerate Invariant 5 once per prohibited outcome and Invariant 6 down to realpath and re-assert-at-open; T4/T5/T8 name 13 tests. realpathSync and path containment appear in 10+ lib modules as uncurated precedent. Two files, one module, no boundary crossings. Encoder and stat-gate are prescribed patterns."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "The partition invariant, both Spec-trailer behaviors and the Traceability Row field set are stated concretely; the plan names 8 tests. git log/diff-tree trailer reading has in-repo precedent (plan-immutability, reality-check, git-timestamp) but no curated sample. Two files, one module; aggregation over a prescribed key pair is mechanical."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Rank order, column set and Invariants 3/4/7 are stated concretely and the plan names 15 tests. readRoutingSidecar is a direct owned-accessor call, but T1/T2/T3 must provoke a live module's real failure set, return shape and comparator because its docblock is known-wrong. Two files, one module; probe-then-pin is real investigation."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Verification columns, one-row-per-spec, no-fallback-across-revisions, Invariant 7 and every negative criterion are stated; T6/T7 plus the sweep are 13 named tests. currentState consumption and source-scanning tests have in-repo precedent (cli-driver-pattern, architectural-*) without a sample. Two files, one module."
+    }
+  ]
+}
