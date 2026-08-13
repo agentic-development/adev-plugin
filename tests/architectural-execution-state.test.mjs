@@ -189,23 +189,45 @@ describe("architectural: execution-state migration", () => {
   });
 
   it("no module hand-builds the execution-state path (issue-607 shadow-file guard)", () => {
-    // The state file's storage root is resolved (shared across worktrees, like
+    // The state file's storage root is RESOLVED (shared across worktrees, like
     // the issue board). Any module that joins the path itself reads a
-    // worktree-local shadow the writer never touches — silent stale bindings.
+    // worktree-local shadow the writer never touches — a silent stale binding,
+    // which is exactly how session-capture and migrate-state-artifacts broke
+    // when the resolver landed.
+    //
+    // Swept over the whole surface rather than a hardcoded pair: a two-file
+    // allowlist only catches the two regressions already known about.
     // lib/execution-state.mjs is the one legitimate builder.
-    const readers = [
-      join(REPO_ROOT, "lib", "session-capture.mjs"),
-      join(REPO_ROOT, "lib", "migrate-state-artifacts.mjs"),
-    ];
-    for (const path of readers) {
-      const content = read(path);
-      assert.ok(
-        !/join\([^)]*["']\.context-index["']\s*,\s*["']\.execution-state\.json["']/.test(
-          content,
-        ),
-        `${path} must read execution state via lib/execution-state.mjs, not by joining the path itself`,
-      );
+    const OFFENDER =
+      /join\([^)]*["']\.context-index["']\s*,\s*["']\.execution-state\.json["']/;
+    const roots = ["lib", "hooks", "cli", "scripts"];
+    const offenders = [];
+
+    for (const root of roots) {
+      const dir = join(REPO_ROOT, root);
+      if (!existsSync(dir)) continue;
+      const files = readdirSync(dir, { recursive: true, encoding: "utf8" })
+        .filter((f) => f.endsWith(".mjs"))
+        .map((f) => join(dir, f))
+        .filter((f) => f !== join(REPO_ROOT, "lib", "execution-state.mjs"));
+
+      for (const file of files) {
+        let content;
+        try {
+          content = read(file);
+        } catch {
+          continue; // directory entry, unreadable, etc.
+        }
+        if (OFFENDER.test(content)) offenders.push(file);
+      }
     }
+
+    assert.deepEqual(
+      offenders,
+      [],
+      "these modules must read execution state via lib/execution-state.mjs, " +
+        "not by joining <projectRoot>/.context-index/.execution-state.json themselves",
+    );
   });
 
   it("hooks/hooks.json does not register the helper as an entry point", () => {
