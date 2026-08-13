@@ -1,11 +1,11 @@
 ---
 charter: test-strategies
-status: draft
+status: review-passed
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 1
-charter-revision: 4
+revision: 2
+charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
 ---
@@ -26,7 +26,29 @@ updated: 2026-08-13
      controls live here rather than in the per-skill `write-test` charter, because they bind
      more than one skill. The `write-test` charter remains the owner of RED/GREEN mechanics
      (handoff blocks, stash protocol, tamper verification); this spec adds no behavior there
-     beyond one context-injection step. -->
+     beyond one context-injection step.
+
+     Revision history:
+     - Rev 1 BLOCKED at review (3 blockers). (a) Behavior 4 nested `helpers:` under
+       `test_strategies`, which `parseTestStrategies()` requires to be an *array* — an
+       object-shaped section returns `strategies: []` with a warning, so any project adopting
+       the declaration would silently lose every strategy assignment and fall back to `unit`.
+       (b) The charter had no capability row, no In-Scope bullet, and no Interface Contract
+       entry. (c) Behavior 7's byte-identical-output guarantee contradicted Behavior 1's
+       wall-clock walk deadline, which is nondeterministic near the boundary.
+     - Rev 2 (this revision) moves the declaration to a top-level `test_helpers` block
+       (sibling of `test_policy`), adds the charter capability row + interface contracts
+       (charter revision 4 → 5), and scopes the determinism guarantee to the entry cap only —
+       the wall-clock deadline is gone. Rev 2 also folds in the review's concerns: directory-
+       shaped probes are now one explicit registry row written without `/**` so they match
+       directory paths (`matchGlob` compiles `dir/**` to `^dir/.*$`, which never matches the
+       directory itself); language rows are extension-constrained; `**/testing/**` is dropped
+       as a false-positive magnet; Behavior 6's test-path shapes are `**/`-prefixed so they
+       match at any depth; `check` accepts repeated `--file` so N files cost one scan; the
+       injected heading is `## Shared Test Helper Inventory` to avoid colliding with
+       `skills/write-test/SKILL.md`'s existing `## Companion Helpers`; and the sample-template
+       and `/adev:sample` amendments that make the `Sample kind: test` marker real are now
+       explicit deliverables (Behavior 14) rather than assumed. -->
 
 ## Capability
 
@@ -97,9 +119,14 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
    language registry (Behavior 2) or from the manifest declaration (Behavior 4), excluding
    vendored and build directories (`node_modules`, `.git`, `dist`, `build`, `target`, `out`,
    `vendor`, `.next`, `__pycache__`, `venv`, `.venv`, `.tox`, `coverage`, `.pytest_cache`).
-   The walk is bounded by a 2000 ms deadline and a 20 000-entry cap, mirroring
-   `lib/test-strategies/detection.mjs`; on either bound it returns what it has with
-   `truncated: true` set on the result. Symlinked entries are skipped.
+   The walk is bounded by a 20 000-visited-entry cap and a 200-result cap; on either bound it
+   returns what it has with `truncated: true`. **The bound is deliberately a count, not a
+   wall-clock deadline** (unlike `lib/test-strategies/detection.mjs`'s 2000 ms budget): a
+   time-based cutoff makes the result nondeterministic near the boundary, which would break
+   Behavior 7 — and Behavior 7 is load-bearing here in a way it is not for
+   `detectStrategies()`, because this output is injected into prompts and written into
+   packets. Directory entries are visited in name-sorted order, so visit order is itself
+   deterministic and even a truncated result is stable. Symlinked entries are skipped.
 
 2. **When** the built-in registry is consulted **then** each entry declares a `language`, a
    `kind`, a set of path globs, and a symbol-extraction rule set. Matching is by glob against
@@ -111,31 +138,45 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
    |---|---|---|
    | javascript | helper | `**/tests/helpers.*`, `**/test/helpers.*`, `**/tests/**/helpers.*`, `**/test-utils.*`, `**/testUtils.*`, `**/tests/support/**` |
    | javascript | setup | `**/*.setup.js`, `**/*.setup.ts`, `**/*.setup.mjs`, `**/jest.setup.*`, `**/vitest.setup.*` |
-   | javascript | fixture | `**/tests/fixtures/**`, `**/test/fixtures/**`, `**/__mocks__/**` |
    | python | fixture | `**/conftest.py` |
-   | python | helper | `**/tests/helpers.py`, `**/tests/utils.py`, `**/tests/support/**`, `**/testing/**` |
-   | python | fixture | `**/tests/fixtures/**` |
+   | python | helper | `**/tests/helpers.py`, `**/tests/utils.py`, `**/tests/support/**` |
    | ruby | setup | `spec/spec_helper.rb`, `spec/rails_helper.rb`, `test/test_helper.rb` |
    | ruby | helper | `spec/support/**`, `test/support/**` |
    | go | helper | `**/testutil/**`, `**/testutils/**`, `**/testhelpers/**`, `**/*_test_helper.go` |
-   | go | fixture | `**/testdata/**` |
    | rust | helper | `tests/common/**` |
    | java | helper | `**/*TestBase.java`, `**/*TestUtils.java`, `**/Abstract*Test.java`, `**/*TestBase.kt`, `**/*TestUtils.kt` |
-   | java | fixture | `src/test/resources/**` |
    | elixir | setup | `test/test_helper.exs` |
    | elixir | helper | `test/support/**` |
    | php | setup | `tests/bootstrap.php` |
    | php | helper | `tests/TestCase.php`, `tests/Traits/**` |
    | csharp | helper | `**/*TestBase.cs`, `**/*TestFixture.cs`, `**/TestUtilities/**` |
+   | *(any)* | fixture | *(directory-shaped, Behavior 3)* `**/tests/fixtures`, `**/test/fixtures`, `**/__mocks__`, `**/testdata`, `src/test/resources` |
+
+   A language row additionally constrains matches by file extension (`.py` for python, `.rb`
+   for ruby, `.mjs`/`.js`/`.ts`/… for javascript, and so on), so a shared glob such as
+   `**/tests/support/**` classifies `factory.py` as python and `factory.mjs` as javascript
+   rather than letting registry order decide. The directory-shaped row carries no language,
+   because fixture *data* directories have none. `**/testing/**` was considered for the python
+   helper row and rejected: it matches production paths such as `lib/testing/`, and the
+   charter's Detection-accuracy attribute requires zero false positives on standard layouts.
+   Projects that keep helpers there declare `test_helpers.paths` (Behavior 4).
 
    **When** a path matches probes from more than one entry **then** the first matching entry in
    registry order wins, and the path appears exactly once in the result.
 
-3. **When** a matched path is a directory-shaped probe (`**/tests/fixtures/**`,
-   `**/testdata/**`, `src/test/resources/**`) **then** the entry is reported as the containing
-   directory with a `fileCount`, not as one entry per file. Fixture *data* is useful to a
-   subagent as "this directory exists and has 40 files in it"; enumerating each file would
-   consume the whole injection budget with no added signal.
+3. **When** a registry row is marked directory-shaped (exactly one row: the `*(any)* / fixture`
+   row) **then** its globs are matched against *directory* paths during the walk, the entry is
+   reported as that directory with a `fileCount`, and the walk does not descend into it — so
+   no file beneath it is ever reported separately. Fixture *data* is useful to a subagent as
+   "this directory exists and holds 40 files"; enumerating each file would consume the whole
+   injection budget with no added signal.
+
+   Directory-shaped globs are written **without** a trailing `/**` (`**/tests/fixtures`, not
+   `**/tests/fixtures/**`) because `matchGlob('dir/**', p)` compiles to `^dir/.*$`, which
+   matches files *under* the directory and never the directory itself. Because the walk stops
+   at the first matching directory, roll-up depth is unambiguous: `tests/fixtures/a/b/c.json`
+   is covered by the single `tests/fixtures` entry, and a nested `tests/fixtures/a/fixtures`
+   is never emitted as a second entry.
 
 4. **When** `.context-index/manifest.yaml` declares a top-level `test_helpers` block **then**
    it is merged with the built-in registry result:
@@ -190,8 +231,10 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
 6. **When** golden TEST samples are collected **then** every `.context-index/samples/*.md` file
    is read and classified as a test sample if **either** its metadata blockquote contains
    `> **Sample kind:** test` **or** its `> **Source:**` path matches any registry path probe or
-   a test-file path shape (`**/tests/**`, `**/test/**`, `**/spec/**`, `*.test.*`, `*.spec.*`,
-   `*_test.*`, `test_*.py`). The second clause exists so the mechanism reuses the sample
+   a test-file path shape. Every shape is `**/`-prefixed — `**/tests/**`, `**/test/**`,
+   `**/spec/**`, `**/*.test.*`, `**/*.spec.*`, `**/*_test.*`, `**/test_*.py` — because a bare
+   `*.test.*` compiles to `^[^/]*\.test\.[^/]*$` and would only ever match a root-level
+   basename. The second clause exists so the mechanism reuses the sample
    library that already exists rather than requiring re-curation — `.context-index/samples/
    general-test-helpers.md` (`Source: tests/helpers.mjs`) classifies as a test sample today,
    with no edit. Each collected sample reports `{ path, title, source, kind }`. **When**
@@ -201,7 +244,9 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
    content-independent of filesystem enumeration order: entries sort by `kind` (fixed order:
    `helper`, `fixture`, `setup`), then by repo-relative POSIX path (byte-wise ascending);
    symbols within an entry sort by line number then name; samples sort by path. Running the
-   verb twice on an unchanged tree produces byte-identical output. This is load-bearing: the
+   verb twice on an unchanged tree produces byte-identical output — unconditionally, because
+   the only bounds on the walk are counts (Behavior 1), not elapsed time. This is
+   load-bearing: the
    rendered block is injected into every subagent prompt, and unstable ordering would churn
    prompt content (and any packet written to `.context-index/packets/`) on every run.
 
@@ -220,34 +265,43 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
    errors and for a project root that does not exist. A project with no detectable helpers is
    exit 0 with an empty result, not an error.
 
-10. **When** `adev test-helpers check --file <path> [--format json|text]` runs **then** it
-    extracts symbols defined in `<path>` using the Behavior 5 rules for that file's language
-    *without* the export/public filter (a locally-defined `function makeTempProject` counts
-    even though it is not exported), and reports each local symbol whose **normalized name**
-    (lowercased, non-alphanumerics stripped) equals the normalized name of a symbol in some
-    *other* inventoried helper entry. `<path>` itself is excluded from the comparison set so
-    checking a helper module against itself reports nothing. Output is
-    `{ file, findings: [{ name, line, helper: { path, symbol } }], checked: <n> }`. **The verb
-    always exits 0 when it ran successfully, findings or not** — these are advisory (see Scope
-    Decision). Exit 1 covers only argument errors and an unreadable/absent `--file`. Path
-    arguments are containment-checked against the project root and rejected with exit 1 if they
-    escape it, matching `lib/cli/context.mjs` and `lib/cli/test-policy.mjs`.
+10. **When** `adev test-helpers check --file <path> [--file <path> …] [--format json|text]`
+    runs **then** it extracts symbols defined in each `<path>` using the Behavior 5 rules for
+    that file's language *without* the export/public filter (a locally-defined
+    `function makeTempProject` counts even though it is not exported), and reports each local
+    symbol whose **normalized name** (lowercased, non-alphanumerics stripped) equals the
+    normalized name of a symbol in some *other* inventoried helper entry. Each `<path>` is
+    excluded from its own comparison set, so checking a helper module against itself reports
+    nothing. Output is
+    `{ results: [{ file, findings: [{ name, line, helper: { path, symbol } }], checked }] }`.
+    **`--file` is repeatable and the inventory is built exactly once per invocation**, so
+    checking N new test files costs one tree walk rather than N — the RED phase (Behavior 11)
+    always has several files. **The verb always exits 0 when it ran successfully, findings or
+    not** — these are advisory (see Scope Decision). Exit 1 covers only argument errors and an
+    unreadable/absent `--file`. Path arguments are containment-checked against the project root
+    and rejected with exit 1 if they escape it, matching `lib/cli/context.mjs` and
+    `lib/cli/test-policy.mjs`.
 
 11. **When** `skills/write-test/SKILL.md` runs a `--red` mode **then** a required step,
     positioned after framework detection and before test authoring, invokes
     `adev test-helpers inventory --format text` and passes the output **verbatim** into the
-    `capable`-tier authoring subagent's prompt under a `## Shared Test Helpers` heading with an
-    advisory preamble ("reuse these before defining your own setup, teardown, or fixture
-    helpers"). The step is listed in Step 4's dispatch bullet list, so it reaches the subagent
-    rather than stopping at the orchestrator. **When** the render is the empty-result line
-    (Behavior 8) **then** the section is omitted entirely — no empty placeholder. **When** the
-    verb fails for any reason **then** the skill logs a one-line advisory and proceeds; a
-    missing inventory never blocks RED authoring. After tests are written and before the
-    Handoff Block is produced, the skill runs `adev test-helpers check --file <each new test
-    file>` and reports findings as advisory output; findings never block the Handoff Block.
+    `capable`-tier authoring subagent's prompt under a `## Shared Test Helper Inventory`
+    heading with an advisory preamble ("reuse these before defining your own setup, teardown,
+    or fixture helpers"). The heading is deliberately *not* `## Shared Test Helpers`:
+    `skills/write-test/SKILL.md` already ends with a `## Companion Helpers` section meaning
+    the skill's own bundled scripts, and two adjacent "Helpers" headings with different
+    referents is exactly the ambiguity a subagent resolves wrongly. The step is listed in
+    Step 4's dispatch bullet list, so it reaches the subagent rather than stopping at the
+    orchestrator. **When** the render is the empty-result line (Behavior 8) **then** the
+    section is omitted entirely — no empty placeholder. **When** the verb fails for any reason
+    **then** the skill logs a one-line advisory and proceeds; a missing inventory never blocks
+    RED authoring. After tests are written and before the Handoff Block is produced, the skill
+    runs `adev test-helpers check` once with a repeated `--file` for each new test file and
+    reports findings as advisory output; findings never block the Handoff Block.
 
 12. **When** `skills/implement/SKILL.md` assembles a task's context packet **then** it appends
-    a `## Shared Test Helpers` section built from `adev test-helpers inventory --format text`,
+    a `## Shared Test Helper Inventory` section built from
+    `adev test-helpers inventory --format text`,
     following the existing Heuristics-injection idiom (Step 2a item 5): advisory preamble,
     same section for every task in the plan, section omitted entirely when empty. The section
     is added to Step 2c's ordered prompt-section list so it is part of the implementer prompt
@@ -258,9 +312,25 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
     manifest declaration is simply absent. This preserves `write-test`'s documented standalone,
     `.context-index/`-free mode.
 
+14. **When** golden TEST samples are to be *curated* (as opposed to merely discovered) **then**
+    `/adev:sample` must be able to produce one. Today it cannot: Step 2b filters test files out
+    of the candidate list and the Red Flags section says "Never … include generated code,
+    migration files, or test files as golden samples." This spec amends both to carve out an
+    explicit `--test` mode that promotes a *shared test helper, fixture module, or exemplary
+    test file* to a sample stamped `> **Sample kind:** test`, and adds that field to
+    `templates/sample-template.md`. The general "test files are not implementation samples"
+    rule is preserved for every other mode — only `--test` may select them, and only into the
+    test-sample kind. **This is the one behavior in this spec that edits a rule a human wrote
+    as an absolute ("Never"), and it is called out here so a reviewer can veto it
+    independently of the rest.** Behavior 6's second clause means the inventory works whether
+    or not this amendment lands.
+
 ### Postconditions
 
 - No file is written by either subcommand. The inventory is a pure read.
+- `lib/cli/test-helpers.mjs` exports both `run` and `help` and is registered in
+  `cli/index.mjs`'s `VERB_REGISTRY` lazy-import table, per the driver-substrate contract
+  enforced by `tests/cli-driver-pattern.test.mjs`.
 - No lifecycle event is emitted and no gate is required — this is an observational helper
   inside a lifecycle step, not a step boundary, so `lib/cli/test-helpers.mjs` does **not**
   export `LIFECYCLE_STEP` (same posture as `lib/cli/context.mjs`; see
@@ -303,6 +373,11 @@ Anyone reading this spec should not believe a helper-reuse policy is enforced. I
       the section in Step 2c. Neither file gains an inline-Node block or a `javascript` fence.
 - [ ] `docs/cli-reference.md` documents `test-helpers` in both the summary table and its own
       section.
+- [ ] `lib/cli/test-helpers.mjs` exports `run` and `help`, exports no `LIFECYCLE_STEP`, and
+      `adev test-helpers inventory` dispatches end-to-end through `cli/index.mjs` as a real
+      subprocess.
+- [ ] `templates/sample-template.md` carries a `Sample kind` field and `skills/sample/SKILL.md`
+      documents a `--test` mode whose Red Flags carve-out is explicit.
 - [ ] Full `npm test` passes.
 
 ## Known Limitations
