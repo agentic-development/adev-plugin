@@ -274,12 +274,54 @@ Remove `.context-index/.write-test.lock` after stash pop completes (or after `GI
 
 ---
 
+## Step 3a: Shared Test Helper Inventory (required, `--red` only)
+
+**Do this before authoring a single test.** A fresh authoring subagent starts contextless,
+so unless the project's existing test infrastructure is put in front of it, it will invent
+its own setup, teardown, and fixtures. That is measurable: this repo hand-rolled
+`makeTempProject` 61 times and redefined `cleanup()` 29 times while only 39% of test files
+imported the shared helper module.
+
+Load the inventory:
+
+```bash
+adev test-helpers inventory --format text
+```
+
+Stdout is a budget-capped text block listing the project's shared helper modules (with their
+exported symbols), fixture/setup files, fixture-data directories, and any curated golden TEST
+samples. It is language-agnostic — `conftest.py` and pytest fixtures in a Python project,
+`spec_helper.rb` in Ruby, `tests/helpers.mjs` here.
+
+Handling:
+
+- **If the output is `No shared test helpers, fixtures, or test samples detected.`** — omit the
+  section from the Step 4 prompt entirely. Do not emit an empty placeholder.
+- **If the verb fails for any reason** — log a one-line advisory and continue. A missing
+  inventory never blocks RED authoring.
+- **Otherwise** — pass the block verbatim into the Step 4 authoring subagent's prompt under the
+  heading `## Shared Test Helper Inventory`, prefixed with:
+
+  > These shared test helpers, fixtures, and golden test samples already exist in this project.
+  > Read the relevant ones before writing setup, teardown, or fixture code. Reuse them where
+  > they fit; define new local helpers only when nothing listed here does the job.
+
+  (The heading is `## Shared Test Helper Inventory`, not `## Shared Test Helpers` — this file
+  already has a `## Companion Helpers` section meaning this skill's own bundled scripts, and
+  the two must not read as siblings.)
+
+Injecting the block is what this step actually accomplishes. Nothing verifies that the
+authoring subagent reused anything — see the advisory duplication check at the end of Step 4.
+
+---
+
 ## Step 4: Test Authoring (RED Phase)
 
 Dispatch a `capable`-tier subagent with:
 
 - The resolved spec, file interface, or free-form description
 - The detected framework, test command, and file naming pattern
+- The `## Shared Test Helper Inventory` block from Step 3a, verbatim, when it is non-empty
 - All enforcement rules below (pass this section verbatim)
 
 ### Deriving Test Contracts
@@ -365,6 +407,26 @@ Tests must fail because the required behavior is not yet implemented — **not**
 - Tests pass immediately → block: "Tests pass before implementation exists — either the behavior is already implemented or the test does not assert the right thing." — `RED_STATE_FAILED`
 - Tests fail for wrong reason (syntax/import error) → fix the test setup. Rerun. Maximum 2 fix attempts. If still failing for wrong reason after 2 attempts → block and report. — `SETUP_ERROR`
 - Tests fail for behavioral reasons (missing feature, unimplemented function) → RED state confirmed. Proceed to Step 5.
+
+### Shared Helper Duplication Check (advisory)
+
+After RED state is confirmed and **before** producing the Handoff Block, run one batched check
+over every test file just authored:
+
+```bash
+adev test-helpers check --file <new-test-file-1> --file <new-test-file-2> --format text
+```
+
+`--file` is repeatable and the inventory is built once per invocation, so N files cost one
+scan. Each finding names a symbol defined locally whose name already exists in a shared helper
+module.
+
+**This is advisory and always exits 0.** Report the findings inline so the author can see them,
+then continue. Do **not** block the Handoff Block, do not treat a finding as a Gaming Violation,
+and do not rewrite tests solely to silence it — exact-name matching produces false positives
+(`cleanup`, `setup`, `run`), and a same-named local symbol is often a legitimately different
+thing. If a finding is real, replacing the local definition with an import from the shared
+module is the fix.
 
 ---
 
