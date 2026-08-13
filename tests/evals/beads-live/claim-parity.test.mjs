@@ -406,7 +406,7 @@ describe("beads backend — live br parity", () => {
       await a.init();
 
       const epic = await a.createEpic({ title: "native epic", milestone: "m1" });
-      assert.match(epic.id, /^epic-\d+$/);
+      assert.match(epic.id, /^epic-[a-z0-9]{6}$/);
 
       // The point of the change: `br list` shows the epic. Under the old
       // hybrid it lived in a local tasks.json and beads knew nothing of it.
@@ -537,10 +537,16 @@ describe("beads backend — live br parity", () => {
       const b = new BeadsAdapter(dir);
       assert.deepEqual((await b.list()).map((i) => i.id), ["issue-1"]);
       assert.deepEqual((await b.listEpics()).map((e) => e.id), ["epic-1"]);
-      assert.equal(
-        (await b.create({ title: "after migration", type: "task", priority: 2 })).id,
-        "issue-2",
-        "minting continues from the migrated ids",
+      // issue-613: minting no longer continues a sequence. What must hold is
+      // that a post-migration mint is well-formed and does not land on an id
+      // the migration just claimed.
+      const minted = (await b.create({ title: "after migration", type: "task", priority: 2 })).id;
+      assert.match(minted, /^issue-[a-z0-9]{6}$/, "post-migration mint is well-formed");
+      assert.notEqual(minted, "issue-1", "must not collide with a migrated id");
+      assert.deepEqual(
+        (await b.list()).map((i) => i.id).sort(),
+        ["issue-1", minted].sort(),
+        "the migrated issue and the new one coexist",
       );
     } finally {
       cleanupTempDir(dir);

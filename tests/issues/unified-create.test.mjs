@@ -66,9 +66,11 @@ describe("JsonAdapter.create() — root-level (no parent_id)", () => {
 
   after(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("creates a legacy flat ID (issue-N) when no parent_id or tier_prefix given", async () => {
+  it("creates a flat, merge-safe ID when no parent_id or tier_prefix given", async () => {
     const item = await adapter.create({ title: "Legacy issue", type: "task" });
-    assert.match(item.id, /^issue-\d+$/);
+    // issue-613: flat ids carry a random suffix instead of max+1, so two
+    // branches cannot mint the same one. Existing `issue-N` ids still parse.
+    assert.match(item.id, /^issue-[a-z0-9]{6}$/);
   });
 
   it("creates a tiered root item (e1) when tier_prefix='e' explicitly given", async () => {
@@ -389,9 +391,9 @@ describe("JsonAdapter — createEpic / updateEpic wrappers", () => {
 
   after(() => rmSync(dir, { recursive: true, force: true }));
 
-  it("createEpic() creates an epic with legacy epic-N ID", async () => {
+  it("createEpic() creates an epic with a flat, merge-safe ID", async () => {
     const epic = await adapter.createEpic({ title: "My Legacy Epic" });
-    assert.match(epic.id, /^epic-\d+$/);
+    assert.match(epic.id, /^epic-[a-z0-9]{6}$/);
     assert.equal(epic.title, "My Legacy Epic");
   });
 
