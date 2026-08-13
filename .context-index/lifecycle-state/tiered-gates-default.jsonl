@@ -25,3 +25,5 @@
 {"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T17:02:22.468Z"}
 {"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-4","status":"done","notes":"Step 2-post: merged gate source via adev domain load-gates, argv guard, per-gate severity (D1/D3)","ts":"2026-08-13T17:06:30.736Z"}
 {"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-5","status":"done","notes":"Init Step 7a seeds fast + integration tiers in argv form with the --if-present no-op idiom","ts":"2026-08-13T17:08:45.490Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T17:14:26.430Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-6","status":"done","notes":"docs/governance.md gates.yaml gate-schema section + 5 doc assertions","ts":"2026-08-13T17:23:26.218Z"}
