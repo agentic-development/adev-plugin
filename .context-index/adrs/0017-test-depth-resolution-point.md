@@ -1,4 +1,4 @@
-# ADR 0016: Test Depth Resolution Point and Persistence
+# ADR 0017: Test Depth Resolution Point and Persistence
 
 ## Status
 

@@ -15,9 +15,9 @@ by a new `adev test-policy` CLI verb and consumed by `/adev:implement` at test-a
 
 **Architecture:** Mirrors the shipped strategy-assignment pattern in `lib/test-strategies/
 assignment.mjs` (spec-declared → module override → risk-policy/manifest → domain → fallback,
-first-match-wins) but adds two monotonic-only passes after the chain. Per ADR-0016, granularity
+first-match-wins) but adds two monotonic-only passes after the chain. Per ADR-0017, granularity
 resolves at plan time from static config only (no routing dependency — avoids the circularity of
-ADR-0016 revision 1); depth resolves at test-authoring time inside `/adev:implement`, which
+ADR-0017 revision 1); depth resolves at test-authoring time inside `/adev:implement`, which
 already reads the routing sidecar (`lib/plan-routing-sidecar.mjs`) and dispatches write-test
 (`skills/implement/SKILL.md:362`). `adev test-policy resolve` is the sole writer of the new
 `test_depth_assigned` lifecycle event (registered in `CANONICAL_EVENTS` per the `spec_amended`
@@ -90,7 +90,7 @@ task board) is intentionally **not** a task in this plan.
 - `lib/workspace.mjs:9` — `detectWorkspace()`, `currentRepoSlug === null` idiom for `WORKSPACE_ROOT_REFUSED`
 - `lib/cli/issues.mjs:23,32,49` — subcommand-dispatch pattern (`run({projectRoot,argv,manifest})` + `help()`) for the new `test-policy` verb
 - `lib/lifecycle-state.mjs:909,961,1401` — `reportStep`, `reportPlanTask`, `currentState`
-- `.context-index/adrs/0016-test-depth-resolution-point.md` — governing decision for the two-axis split and escalation-only coupling
+- `.context-index/adrs/0017-test-depth-resolution-point.md` — governing decision for the two-axis split and escalation-only coupling
 - `.context-index/adrs/0005-workspace-isolation-invariant.md` — governing decision for `WORKSPACE_ROOT_REFUSED`
 - `.context-index/specs/cross-cutting/spec-amendment-artifacts.spec.md` — protocol for amending `plan-test-mapping.spec.md`
 - `.context-index/specs/features/spec-lifecycle/plan-test-mapping.spec.md:36` — Behavior 3 (the counting rule Task 18 supersedes)
@@ -104,7 +104,7 @@ task board) is intentionally **not** a task in this plan.
 ### Task 1 Context
 - Spec: test-depth-policy.spec.md (header note; "Charter revision 3" row in Actionable Task Map)
 - Charter: `.context-index/specs/features/test-strategies/charter.md` (all sections: Capability Map L69, Out of Scope L24, Dependencies L32, Domain Model L45, Consumed APIs L105)
-- ADR: `.context-index/adrs/0016-test-depth-resolution-point.md` (decision + rationale)
+- ADR: `.context-index/adrs/0017-test-depth-resolution-point.md` (decision + rationale)
 
 ### Task 2 Context
 - Spec: Behavior 7, Configuration Schema "Matching semantics" section, `DEFAULT_SENSITIVE_PATHS` code block
@@ -129,7 +129,7 @@ task board) is intentionally **not** a task in this plan.
 ### Task 6 Context
 - Spec: Behaviors 4, 5, 6 (full), Resolution section (both chains + two monotonic passes), Interface Contract `resolveTestDepth()` row
 - Source: `lib/test-strategies/assignment.mjs:23-95` (chain pattern), Task 2/3/5 outputs (`effectiveSensitivePaths`, `parseTestPolicy`, `readTaskFiles`)
-- ADR: `.context-index/adrs/0016-test-depth-resolution-point.md` (escalation-only coupling rationale)
+- ADR: `.context-index/adrs/0017-test-depth-resolution-point.md` (escalation-only coupling rationale)
 
 ### Task 7 Context
 - Spec: Behaviors 12, 13, Interface Contract `test_depth_assigned` row
@@ -262,7 +262,7 @@ task is `unit`.
 
 **Context to load:**
 - `.context-index/specs/features/test-strategies/charter.md` (Capability Map L69, Out of Scope L24, Dependencies L32, Domain Model L45, Consumed APIs L105)
-- `.context-index/adrs/0016-test-depth-resolution-point.md`
+- `.context-index/adrs/0017-test-depth-resolution-point.md`
 
 - [ ] **Write failing test**
 

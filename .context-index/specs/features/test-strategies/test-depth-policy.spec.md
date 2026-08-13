@@ -113,7 +113,7 @@ drift_detected: true
        .context-index/tasks/tasks.json). See Scope Boundary.
      - Rev 7 unifies the missing-floor-input policy to degrade-with-record (MISSING_FLOOR_INPUT
        is removed), keys the **Files:** parse per task including the inline label form, and
-       persists `floor_inputs` in the assignment payload and ADR-0016 §4.
+       persists `floor_inputs` in the assignment payload and ADR-0017 §4.
      - Revs 1-5 statements superseded by the descope (e.g. "enforced end-to-end", the shared
        rigor floor, fail-closed floor inputs) are historical; where a prior claim was wrong,
        the correction is recorded inline in the section that replaced it. -->
@@ -132,7 +132,7 @@ it. End-to-end enforcement is deliberately out of scope — see Scope Boundary.
 ## Behavioral Contract
 
 Two independent axes, resolved at different lifecycle points because they are consumed at
-different points (ADR-0016):
+different points (ADR-0017):
 
 - **Granularity** — how suites map onto units of change: `per-task`, `per-behavior`,
   `per-spec`. Consumed by `/adev:plan` when emitting each task's `**Tests:**` field, so it
