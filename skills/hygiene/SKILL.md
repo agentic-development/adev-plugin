@@ -1,16 +1,16 @@
 ---
 name: adev:hygiene
-description: "Audit all context for staleness, drift, and coverage gaps. Runs twenty-two audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
+description: "Audit all context for staleness, drift, and coverage gaps. Runs twenty-three audit passes across the .context-index/ directory and source code, generating actionable reports with checklists. Use when the user wants to check context health, find stale specs, detect drift between specs and code, identify missing coverage, scan for dead code, or clean up the context index."
 ---
 
 # Context Hygiene Audit
 
-Audit the health of `.context-index/` and source code, generating actionable reports. Twenty-two audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, heuristic index health, kind-discriminator validity, validate config drift, and platform drift so the team can fix them before they become obstacles.
+Audit the health of `.context-index/` and source code, generating actionable reports. Twenty-three audit passes detect staleness, drift, coverage gaps, milestone readiness, lifecycle consistency, operational patterns, code health issues, heuristic index health, kind-discriminator validity, validate config drift, platform drift, and test-suite debt so the team can fix them before they become obstacles.
 
 ## Arguments
 
-- No arguments: full audit (all twenty-two passes)
-- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift, kind-validity, validate-config-drift, platform-drift, test-policy-drift)
+- No arguments: full audit (all twenty-three passes)
+- `--check <type>`: run a single pass (constitution, charters, adrs, samples, drift, sessions, references, governance, recoveries, blockers, milestones, lifecycle, code-health, provenance, issue-board, heuristics, code-drift, kind-validity, validate-config-drift, platform-drift, test-policy-drift, test-debt)
 - `--pass <type>`: alias for `--check <type>` (accepted for symmetry with related skills; identical behavior)
 - `--fix`: auto-fix issues where possible (runs /adev:sync for constitution drift, etc.)
 - `--status <spec-path> <new-status>`: manually update a spec's status field in frontmatter. Useful for correcting status when automation gets out of sync. Example: `--status .context-index/specs/features/auth/login.spec.md validated`
@@ -39,7 +39,7 @@ Then exit (skip audit passes).
 **Otherwise (normal audit mode):**
 
 1. **Load manifest:** Read `.context-index/manifest.yaml` for configuration, sync targets, and integration settings.
-2. **Run audit passes:** Execute each of the twenty-two passes below. If `--check` (or `--pass`) was provided, run only that pass.
+2. **Run audit passes:** Execute each of the twenty-three passes below. If `--check` (or `--pass`) was provided, run only that pass.
 3. **Generate report:** Write findings to `.context-index/hygiene/drift-report.md`.
 4. **Print summary:** Display pass/warn/fail counts and the top-priority actions.
 5. **Offer fixes:** For automatically fixable issues, offer to run the appropriate skill or command.
@@ -1102,6 +1102,62 @@ Record per field: PASS (matches), WARN (mismatch), INFO (could not verify), or S
 | Test-Policy Drift | WARN | 1 task with unavailable floor_inputs |
 ```
 
+## Audit Pass 23: Test Debt
+
+**Goal:** Surface accreted debt in the *test suite itself*. No other pass looks at tests, and `/adev:codehealth` cannot: its detection passes subtract `hygiene.coverage_exclude`, whose `tests/**` entry makes test debt invisible by construction. This pass deliberately does NOT apply `coverage_exclude` — `hygiene.test_debt.exclude` is its only exclusion key.
+
+**Layer 1 posture (non-blocking):** every finding is a *candidate for human review*, never a defect. Severity (`error` / `warn` / `info`) conveys triage priority only; the pass never gates the hygiene exit code. These are heuristics with known false-positive classes — see the precision table in the spec before acting on a finding in bulk.
+
+**Steps:**
+
+1. Run the pass:
+
+```bash
+adev test-debt scan --json
+```
+
+2. Optionally narrow the scan with `--root <dir>` (a subtree of the project root; it does not establish the root) or restrict to a single detector with `--detector <CODE>`.
+3. Read `scannedFileCount`, `verdict`, `summary`, `headerNotes`, and `findings` from the returned JSON. Surface `headerNotes` in the report header (missing manifest, absent `hygiene.source_roots`, unreadable files).
+4. Render findings grouped by detector code in the standard hygiene table.
+
+**Detector codes:**
+
+| Severity | Code | Trigger | Resolution Hint |
+|---|---|---|---|
+| `warn` | `APPEND_CHAIN` | ≥ `append_chain_threshold` (default 4) distinct test files reference the same source module | Review whether the suites are intentionally partitioned or were appended one task at a time |
+| `warn` | `REV_NUMBERED` | Test basename carries a revision marker (`rev\d+` by default; prefixes configurable) | Consolidate the revisions into one suite |
+| `warn` | `PLAN_TASK_STRUCTURED` | A test declaration's title contains a literal `plan-task <N>` or `Task <N>` | Rename the test after the behavior it verifies, not the plan task that produced it |
+| `error` | `DEAD_TEST_REFERENCE` | A test references a resolvable source path under `hygiene.source_roots` that does not exist | Check whether the target moved or was removed; the test may be exercising nothing |
+| `info` | `PROSE_ASSERTION` | Test reads a `.md` artifact and ≥ `prose_ratio_threshold` (default 0.5) of its assertions are containment checks | Consider whether the behavior can be asserted directly instead of through prose |
+
+**Configuration** (`manifest.yaml`, all keys optional): `hygiene.test_debt.{enabled, test_globs, exclude, append_chain_threshold, prose_ratio_threshold, rev_numbered_prefixes}`.
+
+**Output format:**
+```
+## Test Debt
+
+- PASS: No test-debt candidates found (or)
+- SKIP: no test files discovered / disabled by manifest (or)
+- FINDINGS: N candidates across M detectors (advisory)
+
+| Code | Severity | Path | Detail |
+|---|---|---|---|
+| APPEND_CHAIN | warn | lib/issues/json-adapter.mjs | 23 test files reference this module |
+| PLAN_TASK_STRUCTURED | warn | tests/cli/status-pipeline.test.mjs | 1 title structured around a plan task |
+| PROSE_ASSERTION | info | tests/docs/workflow-guides.test.mjs | ratio 0.86 (19/22) |
+```
+
+**Actions:**
+- [ ] Review the largest `APPEND_CHAIN` clusters — they are the highest-signal finding in this pass
+- [ ] Rename `PLAN_TASK_STRUCTURED` tests after behavior rather than plan task
+- [ ] Investigate every `DEAD_TEST_REFERENCE` — a test invoking a deleted module verifies nothing
+- [ ] Treat `PROSE_ASSERTION` as a reading list, not a work queue; do not bulk-rewrite on this signal alone
+
+**Integration with summary table:**
+```
+| Test Debt | WARN | 30 append chains, 18 plan-task tests, 25 prose-assertion files |
+```
+
 ## Report Format
 
 **Persona adaptation:** The report written to disk always uses the full format below. The chat summary presented to the user should follow the active persona's output rules.
@@ -1139,6 +1195,7 @@ The full report is written to `.context-index/hygiene/drift-report.md` with this
 | Validate Config Drift | INFO | 0 divergent entries |
 | Platform Drift | PASS | All declared fields match |
 | Test-Policy Drift | WARN | 1 task with unavailable floor_inputs |
+| Test Debt | WARN | 30 append chains, 18 plan-task tests, 25 prose-assertion files |
 
 ## Priority Actions
 
