@@ -512,7 +512,7 @@ describe("issues migrate dry-run path (plan-task 5)", () => {
     };
   }
 
-  it("json → beads dry-run emits the documented JSON shape with no .beads-map.json (Behavior 15)", () => {
+  it("json → beads dry-run emits the documented JSON shape and creates no sidecar (Behavior 15)", () => {
     const proj = seedRichJsonBoard({
       issues: [makeIssue("issue-1"), makeIssue("issue-2"), makeIssue("issue-3")],
       epics: [makeEpic("epic-1")],
@@ -557,11 +557,21 @@ describe("issues migrate dry-run path (plan-task 5)", () => {
       assert.equal(report.source, "json");
       assert.equal(report.target, "beads");
       assert.deepEqual(report.in_scope, { issues: 3, epics: 1 });
+      // Nothing is at the destination yet. Epics are now native beads issues
+      // (`br create -t epic`), so a json → beads move has to copy them like
+      // anything else.
+      //
+      // This previously reported 1 already-migrated epic and 0 to create,
+      // because epics were delegated to a local JsonAdapter — i.e. to this
+      // very tasks.json, the file being migrated FROM. An epic counted as
+      // "already at its destination" only because the destination was the
+      // source. That was the dual-state problem stated as an assertion.
       assert.equal(report.already_migrated, 0);
       assert.deepEqual(report.would_create, { issues: 3, epics: 1 });
       assert.equal(report.dependencies_to_replay, 0);
 
-      // Postcondition 7: dry-run writes neither target state nor .beads-map.json.
+      // Postcondition 7: dry-run writes no target state. The sidecar is gone
+      // for good, so its absence is now a permanent invariant, not a dry-run one.
       const tasksJsonAfter = readFileSync(
         join(proj, ".context-index", "tasks", "tasks.json"),
         "utf8",
@@ -576,41 +586,45 @@ describe("issues migrate dry-run path (plan-task 5)", () => {
     }
   });
 
-  it("json → beads dry-run reads .beads-map.json to compute already_migrated (Behavior 15)", () => {
-    const proj = seedRichJsonBoard({
-      issues: [makeIssue("issue-1"), makeIssue("issue-2"), makeIssue("issue-3")],
-      epics: [makeEpic("epic-1")],
+  it("json → beads already_migrated comes from the beads board itself (Behavior 15)", async () => {
+    // This used to read `.context-index/tasks/.beads-map.json`, a second store
+    // of what the board contained. It is now derived from the target board:
+    // the beads adapter reports each item under its `external_ref`, so an adev
+    // id present on the target is, by definition, already migrated. No local
+    // file can disagree with beads about it, because there is no local file.
+    //
+    // Driven directly against the exported function rather than the CLI, so it
+    // needs no `br` binary and cannot degrade into a silent skip.
+    const mod = await import("../../lib/cli/issues-migrate.mjs");
+
+    const result = mod.computeAlreadyMigrated({
+      projectRoot: "/tmp/irrelevant",
+      source: "json",
+      target: "beads",
+      sourceIssues: [makeIssue("issue-1"), makeIssue("issue-2"), makeIssue("issue-3")],
+      sourceEpics: [makeEpic("epic-1")],
+      // What BeadsAdapter.list()/listEpics() return for a board that already
+      // holds issue-1 and issue-2 (ids read back from br's external_ref).
+      targetIssues: [{ id: "issue-1", title: "issue-1 title" }, { id: "issue-2", title: "issue-2 title" }],
+      targetEpics: [],
     });
-    try {
-      // Pre-seed a .beads-map.json covering issue-1 and issue-2.
-      writeFileSync(
-        join(proj, ".context-index", "tasks", ".beads-map.json"),
-        JSON.stringify(
-          {
-            "issue-1": { beadsId: "br-1" },
-            "issue-2": { beadsId: "br-2" },
-          },
-          null,
-          2,
-        ),
-      );
 
-      const brCheck = spawnSync("which", ["br"], { encoding: "utf8" });
-      if ((brCheck.status ?? 1) !== 0) return;
+    assert.equal(result.issues, 2);
+    assert.deepEqual([...result.sourceIssueIds].sort(), ["issue-1", "issue-2"]);
+    assert.equal(result.epics, 0, "the epic is not on the beads board yet");
 
-      const { exitCode, stdout } = runCli(
-        ["issues", "migrate", "--to", "beads", "--dry-run"],
-        { cwd: proj },
-      );
-      assert.equal(exitCode, 0);
-      const jsonLine = stdout.split("\n").find((l) => l.trim().startsWith("{"));
-      const report = JSON.parse(jsonLine);
-      assert.equal(report.already_migrated, 2);
-      // would_create.issues = in_scope.issues - already_migrated = 3 - 2 = 1
-      assert.equal(report.would_create.issues, 1);
-    } finally {
-      cleanup(proj);
-    }
+    // A fresh beads board has migrated nothing, whatever any leftover local
+    // file might once have claimed.
+    const fresh = mod.computeAlreadyMigrated({
+      projectRoot: "/tmp/irrelevant",
+      source: "json",
+      target: "beads",
+      sourceIssues: [makeIssue("issue-1")],
+      sourceEpics: [],
+      targetIssues: [],
+      targetEpics: [],
+    });
+    assert.equal(fresh.issues, 0);
   });
 
   it("dry-run counts in-scope dependency edges (Behavior 15)", () => {
@@ -1023,20 +1037,6 @@ describe("issues migrate dependency replay (plan-task 7)", () => {
   it("replayDependencies calls addDependency for each in-scope edge (json → beads)", async () => {
     const proj = makeTempProject({ backend: "json" });
     try {
-      // Pre-populate .beads-map.json so source ids map to target (beads) ids.
-      writeFileSync(
-        join(proj, ".context-index", "tasks", ".beads-map.json"),
-        JSON.stringify(
-          {
-            "issue-1": { beadsId: "br-1" },
-            "issue-2": { beadsId: "br-2" },
-            "issue-3": { beadsId: "br-3" },
-          },
-          null,
-          2,
-        ),
-      );
-
       const sourceIssues = [
         makeIssue("issue-1"),
         makeIssue("issue-2", { dependencies: ["issue-1"] }),
@@ -1061,8 +1061,8 @@ describe("issues migrate dependency replay (plan-task 7)", () => {
       assert.equal(result.replayed, 3);
       assert.equal(result.skippedEdges.length, 0);
       assert.equal(addDepCalls.length, 3);
-      // For json → beads, addDependency is called with source ids; the
-      // adapter internally maps via .beads-map.json. The verb passes the
+      // For json → beads, addDependency is called with source ids; the beads
+      // adapter resolves them against br's `external_ref`. The verb passes the
       // source ids directly (the adapter handles translation).
       assert.deepEqual(addDepCalls[0], { itemId: "issue-2", depId: "issue-1" });
     } finally {

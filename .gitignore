@@ -19,8 +19,12 @@ skills/*/evals/
 # Context-preflight session flag (ephemeral, cleared each session)
 .context-index/.context-preflight-ok
 
-# Beads adapter ID mapping (local state, auto-recoverable)
+# Retired beads sidecar. adev no longer writes it — the adev id lives in br's
+# `external_ref` — but a pre-existing one is migrated into beads and renamed
+# aside on first use, so both forms stay out of git.
 .beads-map.json
+.beads-map.json.migrated-*
+.context-index/tasks/tasks.json.migrated-*
 
 # Build orchestrator resume state (ephemeral — survives across sessions but never committed)
 # Per-spec event logs (*.jsonl) ARE committed; only the *.json build-state files are ignored.
