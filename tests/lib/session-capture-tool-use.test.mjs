@@ -92,6 +92,13 @@ describe("runToolUseCapture — deterministic entry-schema byte-compatibility", 
   it("active state, file backend, issue bound but no epic in board", async () => {
     const tmp = createTempDir();
     mkdirSync(join(tmp, ".context-index"), { recursive: true });
+    // Execution state is read through lib/execution-state.mjs, which requires
+    // a manifest before it will resolve a storage root — same precondition
+    // session-capture's own validateCwd enforces in production.
+    writeFileSync(
+      join(tmp, ".context-index", "manifest.yaml"),
+      "project:\n  name: test\ntasks:\n  backend: file\n",
+    );
     writeFileSync(
       join(tmp, ".context-index", ".execution-state.json"),
       JSON.stringify({
@@ -116,6 +123,10 @@ describe("runToolUseCapture — deterministic entry-schema byte-compatibility", 
   it("active state, file backend, issue + epic present in tasks.md", async () => {
     const tmp = createTempDir();
     mkdirSync(join(tmp, ".context-index", "tasks"), { recursive: true });
+    writeFileSync(
+      join(tmp, ".context-index", "manifest.yaml"),
+      "project:\n  name: test\ntasks:\n  backend: file\n",
+    );
     writeFileSync(
       join(tmp, ".context-index", ".execution-state.json"),
       JSON.stringify({
