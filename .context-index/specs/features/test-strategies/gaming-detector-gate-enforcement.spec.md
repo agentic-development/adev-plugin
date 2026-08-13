@@ -9,10 +9,11 @@ charter-revision: 4
 created: 2026-08-12
 updated: 2026-08-13
 source-manifest:
-  sha: "34b5815"
+  sha: "5c2b45a"
   files:
     - .claude-plugin/plugin.json
     - .cursor-plugin/plugin.json
+    - docs/hooks.md
     - hooks/_gaming-gate-check.mjs
     - hooks/gaming-gate.sh
     - hooks/hooks.json
@@ -25,7 +26,7 @@ source-manifest:
     - skills/write-test/SKILL.md
     - tests/hooks/gaming-gate.test.mjs
     - tests/lib/test-strategies/gaming-gate.test.mjs
-  computed-at: "2026-08-13T03:25:45.606Z"
+  computed-at: "2026-08-13T03:38:13.765Z"
 ---
 
 # Live Spec: Gaming Detector Gate Enforcement
@@ -147,7 +148,14 @@ reaches disk** (Behavior 3-4). No advisory-only mode, no config flag to soften i
    the detector logic itself; scanning them for the patterns they exist to demonstrate is a
    category error, and would be a permanent, unfixable false positive independent of the
    regression-only design (adding a new fixture string is itself, correctly, a "new
-   violation" from the diff's point of view).
+   violation" from the diff's point of view). **The exemption is deliberately glob-shaped, not
+   a fixed 3-file list**: `tests/lib/test-strategies/gaming-gate.test.mjs` (this capability's
+   own test file, added by this spec) matches `gaming*.mjs` and is exempt for the identical
+   reason — it embeds the same kind of fixture strings to test `runGamingDetectors` and
+   `diffNewViolations`. Any future file added under `tests/lib/test-strategies/` whose name
+   starts with `gaming` or `integration-gaming` is exempt on the same basis; a file in that
+   directory without that name prefix is not. This boundary is pinned by a dedicated test
+   (`isDetectorFixtureFile`'s "exemption is glob-shaped" case) rather than left implicit.
 
 3. **When** the hook runs on an in-scope test file **then** it computes two full-file content
    strings without ever writing anything:
@@ -304,6 +312,27 @@ reaches disk** (Behavior 3-4). No advisory-only mode, no config flag to soften i
   occasionally be asked to address a violation that is text-identical to nothing in `before`
   even though it looks similar to something already there. This is accepted as correct, not a
   bug: the file's content changed, and the new content is new.
+- **Regression-only scoping does not protect brand-new test files at reduced strength — it
+  applies at full strength there, which is a real, not-fully-mitigated cost.** The Scope
+  Decision section's 22% false-positive rate on this repo's existing `tests/**` (whole-file
+  scanning, not test-body-scoped `CONDITIONAL_ASSERTIONS`/`EMPTY_ASSERTIONS`/
+  `SWALLOWED_ASSERTIONS`) is exactly what regression-only scoping was built to absorb for
+  *edits to already-committed files* — the baseline already contains the debt, so only a
+  genuinely new pattern blocks. For a **brand-new** file (`Write` to a path that does not yet
+  exist), `before` is the empty string by definition (Behavior 3): every detector hit in the
+  new content is "new" relative to that empty baseline, so the full false-positive rate
+  applies at 100% strength with no absorption. A legitimate helper function containing an
+  unrelated `if (...) { assert... }` a few lines from a genuine test assertion — the exact
+  shape responsible for most of the 22% — can block the creation of an entirely correct new
+  test file. Because this is a `PreToolUse` hook, there is no `--no-verify`-equivalent escape
+  hatch; the only ways around it are editing `hooks/hooks.json` or writing the file via a tool
+  this hook does not match (`Bash` heredoc — see the limitation above), both of which are
+  themselves visible, deliberate acts rather than a quiet bypass. This is accepted as the
+  conservative choice for this spec (a hard-blocking gate that occasionally requires a human
+  to adjust newly authored helper-function shape is preferred over a softer gate that can be
+  silently routed around), but it is not free, and it is the main reason a future revision
+  might add either an AST-aware, test-body-scoped rewrite of the 3 whole-file detectors or an
+  explicit line-level exemption pragma — neither is in this spec's scope.
 - **`gaming-gate.sh` and `skills/write-test/detect-gaming.sh` remain two separate,
   unreconciled scanners.** `detect-gaming.sh` is an older, framework-specific (Jest/Vitest
   matcher-shaped) 9-pattern scanner invoked by agent prose in `skills/write-test/SKILL.md`

@@ -33,6 +33,16 @@ describe("isDetectorFixtureFile", () => {
   it("does not match an unrelated test file", () => {
     assert.equal(isDetectorFixtureFile("tests/cli/context.test.mjs"), false);
   });
+  it("exemption is glob-shaped, not a fixed 3-file list — pins the intended breadth", () => {
+    // Deliberate: this repo's own gaming-gate.test.mjs and any future
+    // detector-test file matching the same pattern must be exempt too —
+    // they embed gaming-pattern fixture strings just like the 3 originally
+    // named files (spec Behavior 2). A file that merely shares the
+    // directory but not the "gaming" filename prefix must NOT be exempt.
+    assert.equal(isDetectorFixtureFile("tests/lib/test-strategies/gaming-gate.test.mjs"), true);
+    assert.equal(isDetectorFixtureFile("tests/lib/test-strategies/gaming-something-new.test.mjs"), true);
+    assert.equal(isDetectorFixtureFile("tests/lib/test-strategies/depth.test.mjs"), false);
+  });
 });
 
 describe("isIntegrationTestFile", () => {
