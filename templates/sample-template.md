@@ -1,6 +1,11 @@
 # Golden Sample: {{ sample_name }}
 
+<!-- Sample kind: `implementation` (default) or `test`. A `test` sample is a shared test
+     helper, fixture module, or exemplary test file; `adev test-helpers inventory` collects
+     those and injects them into write-test/implement subagent prompts. -->
+
 > **Pattern:** {{ pattern_name }}
+> **Sample kind:** {{ sample_kind }}
 > **Source:** {{ source_file_path }}
 > **Quality Score:** {{ score }}/100
 > **Extracted:** {{ date }}

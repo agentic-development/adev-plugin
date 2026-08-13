@@ -13,6 +13,7 @@ Scan the codebase for exemplary implementations, score candidates against the co
 - `--from <file>`: promote a specific file directly to golden sample (skips discovery, goes to scoring)
 - `--score`: re-score all existing samples against the current constitution and patterns
 - `--refresh`: re-score, flag stale samples, and update or remove invalid ones
+- `--test`: curate a golden **test** sample — a shared test helper, fixture module, or exemplary test file (see [`--test` Mode](#--test-mode))
 
 ## Prerequisites
 
@@ -66,7 +67,7 @@ Remove candidates that are unlikely to be golden samples:
 
 - Files shorter than 20 lines (too trivial to be instructive)
 - Generated files (check for `@generated`, `auto-generated`, or common codegen markers)
-- Test files (they are checked separately in Step 3 for coverage, but are not samples themselves)
+- Test files (they are checked separately in Step 3 for coverage, but are not implementation samples). **Unless `--test` was provided** — that mode inverts this filter; see [`--test` Mode](#--test-mode).
 - Files in `node_modules/`, `.next/`, `dist/`, `build/`, or other build output directories
 - Migration files (timestamped SQL, Prisma migrations)
 
@@ -238,11 +239,43 @@ When `--refresh` is provided:
 Proceed with recommended actions? (y/n)
 ```
 
+## `--test` Mode
+
+Every other mode curates **implementation** samples, and Step 2b deliberately filters test
+files out of the candidate list. `--test` is the one exception: it curates **test** samples —
+shared test helpers, fixture modules, `conftest.py` files, and exemplary test files — so that
+`adev test-helpers inventory` can surface them to write-test and implement subagents.
+
+The distinction matters because a contextless test-authoring subagent needs to see how this
+project writes tests, and no implementation sample shows that.
+
+When `--test` is provided:
+
+1. **Discovery (Step 2)** inverts its filter: only test files and shared test infrastructure
+   are candidates. Start from `adev test-helpers inventory --format json`, whose `entries`
+   already list the project's shared helper, fixture, and setup modules, then add exemplary
+   test files the user names.
+2. **Scoring (Step 3)** applies unchanged except Dimension 1 (Test Coverage), which is
+   meaningless for a test file — redistribute its 20 points across the other four dimensions
+   (25 each, still out of 100).
+3. **Extraction (Step 4)** uses the same template, with two required fields:
+   - `> **Sample kind:** test`
+   - `> **Pattern:** test-<slug>` (e.g. `test-fixture`, `test-helper`, `test-integration`)
+4. **Naming (Step 4c)** uses `test-<descriptive-slug>.md`.
+
+`--test` may be combined with `--from <file>` to promote a specific helper directly.
+
+Without `--test`, test files remain excluded everywhere — a test file is never an
+implementation sample.
+
 ## Red Flags
 
 **Never:**
 - Extract a sample with a score below 50 without explicit user confirmation
-- Include generated code, migration files, or test files as golden samples
+- Include generated code or migration files as golden samples
+- Include test files as **implementation** samples. Test files are eligible only under
+  `--test`, and only as `Sample kind: test` — see [`--test` Mode](#--test-mode). In every
+  other mode the exclusion is absolute.
 - Modify the original source file (samples are read-only extractions)
 - Skip the annotation step (unannotated code is not a golden sample)
 - Create samples without reading the constitution first (the constitution defines "good")
