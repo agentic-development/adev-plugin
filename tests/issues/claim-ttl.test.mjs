@@ -334,12 +334,17 @@ describe("JsonAdapter.claim — stale-claim takeover", () => {
 
   it("hands a stale claim to the next claimant with a fresh claimed_at", async () => {
     const issue = await adapter.create({ title: "Abandoned by a dead session" });
-    const first = await adapter.claim(issue.id, "agent-a");
-    await ageClaim(adapter, issue.id, 120);
+    await adapter.claim(issue.id, "agent-a");
+    const aged = await ageClaim(adapter, issue.id, 120);
 
     const taken = await adapter.claim(issue.id, "agent-b");
     assert.equal(taken.owner, "agent-b");
-    assert.notEqual(taken.claimed_at, first.claimed_at);
+    // Compare against the AGED stamp, not the original claim: the claim and
+    // the takeover can land in the same millisecond on a fast machine, which
+    // made this flake in CI. What must hold is that the takeover does not
+    // inherit the EXPIRED lease — and that stamp is 120 minutes old, so the
+    // comparison is deterministic.
+    assert.notEqual(taken.claimed_at, aged.claimed_at);
     assert.ok(
       Date.now() - Date.parse(taken.claimed_at) < 5 * MINUTE,
       "a takeover starts a new lease, so claimed_at must be current",
