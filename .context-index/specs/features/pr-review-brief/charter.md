@@ -77,8 +77,8 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | Attention map from routing scores | Rank tasks by `selected_agent` and `blast_radius`; emit "read these first" with rationale. | must-have | | specified |
 | Verification summary | Report `/adev:validate` verdict, gates, and check results. | must-have | | specified |
 | Review packet field set | Author-written contract including the "what I cannot explain" field. | must-have | | specified |
-| Reading order for multi-commit PRs | Derive a suggested reading sequence from plan task order and `## Parallelization` groups. | should-have | | — |
-| Size advisory with exception classes | Warn above a size threshold, naming legitimate exceptions (mechanical sweep, generated mirror, migration). | should-have | | — |
+| Reading order for multi-commit PRs | Derive a suggested reading sequence from plan task order and `## Parallelization` groups. | should-have | | specified |
+| Size advisory with exception classes | Warn above a size threshold, naming legitimate exceptions (mechanical sweep, generated mirror, migration). | should-have | | specified |
 
 ## Deferred Capabilities
 

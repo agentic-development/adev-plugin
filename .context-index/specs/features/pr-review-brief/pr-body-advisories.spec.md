@@ -2,7 +2,7 @@
 charter: pr-review-brief
 kind: behavioral
 status: review-pending
-risk_level: low
+risk_level: medium
 milestone:
 revision: 1
 charter-revision: 2
