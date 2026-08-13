@@ -140,7 +140,19 @@ test("neither injected skill gained a whole-file inline-Node directive", () => {
 });
 
 // ---------------------------------------------------------------------------
-// docs, template, and /adev:sample (Behavior 14)
+// docs
+//
+// Behavior 14 (a `/adev:sample --test` curation mode, plus a `Sample kind`
+// field in the sample template) was deferred out of this spec for scope
+// reasons and is tracked as issue-616 — amending /adev:sample's Red Flags
+// contract belongs in a PR owned by that skill. Its assertions are removed
+// rather than skipped: they described deliverables this branch no longer
+// ships, and a skipped test asserting a reverted behavior is exactly the
+// silent-skip pattern this epic exists to eliminate.
+//
+// The inventory does NOT depend on that mode. Test samples are discovered
+// via test-shaped `Source:` paths (Behavior 6's second clause), which
+// tests/lib/test-strategies/helper-inventory.test.mjs covers directly.
 // ---------------------------------------------------------------------------
 
 test("docs/cli-reference.md documents test-helpers in the summary table and its own section", () => {
@@ -151,17 +163,4 @@ test("docs/cli-reference.md documents test-helpers in the summary table and its 
   assert.match(sec, /test-helpers inventory/);
   assert.match(sec, /test-helpers check/);
   assert.match(sec, /exits 0/);
-});
-
-test("the sample template carries a Sample kind field", () => {
-  assert.match(read("templates/sample-template.md"), /\*\*Sample kind:\*\*/);
-});
-
-test("/adev:sample documents a --test mode with an explicit Red Flags carve-out", () => {
-  const skill = read("skills/sample/SKILL.md");
-  assert.match(skill, /^## `--test` Mode$/m);
-  assert.match(skill, /> \*\*Sample kind:\*\* test/);
-  const redFlags = section(skill, "## Red Flags");
-  assert.match(redFlags, /--test/, "the Never list must name the carve-out rather than contradict it");
-  assert.match(redFlags, /implementation.. samples/i);
 });
