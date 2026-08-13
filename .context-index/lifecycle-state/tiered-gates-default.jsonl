@@ -17,3 +17,6 @@
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-13T14:56:01.982Z"}
 {"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T15:03:32.918Z"}
 {"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-08-13T15:07:41.724Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-1","status":"done","notes":"Doctor argv normalisation; 64/64 doctor tests pass; committed 78c1402a","ts":"2026-08-13T16:31:48.105Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-08-13T16:35:08.331Z"}
+{"event":"plan_task","plan":".context-index/specs/features/unified-gates/tiered-gates-default.plan.md","task_id":"task-2","status":"done","notes":"Live integration-test gate added to software starter + both extension overlays; 13/13 new domain tests pass","ts":"2026-08-13T16:54:28.307Z"}
