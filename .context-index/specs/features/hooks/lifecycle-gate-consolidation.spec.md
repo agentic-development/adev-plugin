@@ -2,7 +2,7 @@
 charter: hooks
 kind: refactor
 mode: refactor
-status: review-pending
+status: review-passed
 milestone: —
 revision: 2
 charter-revision: 1
@@ -67,14 +67,14 @@ tracker-ref: "issue-579 / epic-102"
 - Problem 1 → one skeleton, one enforcement-message site, one state-read implementation.
 - Problem 2 → per-Read hook invocations drop 3 → 2 (capture + gate); no behavior change.
 - Problem 3 → single `find_context_index()` in the sourced shared helper.
-- Problem 4 → hooks contain no inline Node beyond the existing `_parse-stdin.sh` bridge; capture logic lives in the library it already had.
+- Problem 4 → hooks contain no inline Node beyond the existing `_parse-stdin.sh` bridge; capture logic moves into `lib/session-capture.mjs`'s new `tool-use` path (built in step 5a).
 - Problem 5 → one checker subprocess, `--surface` flag.
 
 ## Changes Catalog
 
 | Change | Type | Files |
 |---|---|---|
-| Export event/tool from stdin JSON; hoist `find_context_index()` | modify | `hooks/_parse-stdin.sh` + 5 consumers |
+| Hoist `find_context_index()`; allowlist `tool_input` keys before `eval` | modify | `hooks/_parse-stdin.sh` + 5 consumers |
 | Merge checker shims | replace | `_lifecycle-gate-check-{edit,bash}.mjs` → `_lifecycle-gate-check.mjs` |
 | Consolidate gate hooks | replace | 3 gate scripts → `lifecycle-gate.sh`; `hooks.json` |
 | Fold read-tracker into capture | merge+delete | `context-read-tracker.sh` → `session-capture.sh`; `hooks.json` |
