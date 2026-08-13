@@ -149,7 +149,7 @@ describe("runToolUseCapture — deterministic entry-schema byte-compatibility", 
     assert.deepEqual(normalize(entry), FIXTURES.issueWithEpicFileBackend);
   });
 
-  it("active state, beads backend, epic resolved via .beads-map.json", async () => {
+  it("active state, beads backend, no board to answer: issue stamped, epic omitted", async () => {
     const tmp = createTempDir();
     mkdirSync(join(tmp, ".context-index", "tasks"), { recursive: true });
     writeFileSync(join(tmp, ".context-index", "manifest.yaml"), "project:\n  name: test\ntasks:\n  backend: beads\n");
@@ -166,19 +166,19 @@ describe("runToolUseCapture — deterministic entry-schema byte-compatibility", 
         updated: "2026-05-11T00:00:00Z",
       })
     );
-    writeFileSync(
-      join(tmp, ".context-index", "tasks", ".beads-map.json"),
-      JSON.stringify({ "issue-9": { epicId: "epic-3" } })
-    );
+    // The issue→epic link lives in beads now; this project has no beads
+    // workspace, so nothing can answer. The hook must still emit the entry it
+    // does know about instead of throwing — the same degradation the removed
+    // `.beads-map.json` read had when the file was absent.
     const { entry } = await runToolUseCapture({
       payload: { provider: "native", tool_name: "Edit", tool_input: { file_path: "a.ts" } },
       projectRoot: tmp,
     });
     cleanupTempDir(tmp);
-    assert.deepEqual(normalize(entry), FIXTURES.issueWithEpicBeadsMap);
+    assert.deepEqual(normalize(entry), FIXTURES.issueBeadsEpicUnresolved);
   });
 
-  it("active state, beads backend, map lacks entry, tasks.md fallback resolves epic", async () => {
+  it("active state, beads backend, beads has no answer, tasks.md fallback resolves epic", async () => {
     const tmp = createTempDir();
     mkdirSync(join(tmp, ".context-index", "tasks"), { recursive: true });
     writeFileSync(join(tmp, ".context-index", "manifest.yaml"), "project:\n  name: test\ntasks:\n  backend: beads\n");
@@ -195,7 +195,6 @@ describe("runToolUseCapture — deterministic entry-schema byte-compatibility", 
         updated: "2026-05-11T00:00:00Z",
       })
     );
-    writeFileSync(join(tmp, ".context-index", "tasks", ".beads-map.json"), JSON.stringify({}));
     writeFileSync(
       join(tmp, ".context-index", "tasks", "tasks.md"),
       "### issue-11\nepicId: epic-fallback\nstatus: open\n"
