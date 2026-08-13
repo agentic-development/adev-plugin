@@ -36,3 +36,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","ts":"2026-07-19T12:09:00.209Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","ts":"2026-07-19T12:09:00.274Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-07-19T12:09:00.360Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-08-13T00:34:33.568Z","ts":"2026-08-13T00:34:33.568Z"}

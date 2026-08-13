@@ -27,6 +27,7 @@ source-manifest:
     - tests/lib/parallel/verify.test.mjs
     - tests/skills/implement-parallel.test.mjs
   computed-at: "2026-07-08T02:16:32.325Z"
+drift_detected: true
 ---
 
 # Live Spec: Parallel Implement
