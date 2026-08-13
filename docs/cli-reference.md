@@ -279,7 +279,7 @@ adev state current --spec .context-index/specs/features/auth/login.spec.md
 adev execution-state write --status standalone
 ```
 
-**Implementation:** `lib/cli/execution-state.mjs`. **Called by:** `/adev:implement`, `/adev:standalone`.
+**Implementation:** `lib/cli/execution-state.mjs`. **Called by:** `/adev:implement`; also invoked directly (`adev execution-state write --status standalone`) as the lifecycle gate's documented escape route for exploratory work.
 
 ### `build-state`
 
