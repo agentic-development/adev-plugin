@@ -84,9 +84,13 @@ const PLUGIN_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CANONICAL_PATH = join(PLUGIN_ROOT, "hooks", "hooks.json");
 const OUTPUT_PATH = join(PLUGIN_ROOT, "providers", "cursor", "hooks.json");
 
-// Canonical command shape: bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.sh"
-// Captures the script basename for both translation and on-disk existence check.
-const CANONICAL_COMMAND_RE = /^bash "\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/([^"/]+\.sh)"$/;
+// Canonical command shape: bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.sh" [argv]
+// Captures the script basename for both translation and on-disk existence
+// check, plus an optional single trailing argv token (e.g. the consolidated
+// lifecycle-gate.sh dispatcher's `pre-edit`/`pre-bash`/`advisory` surface
+// argument) — carried through verbatim to the Cursor command so dispatch
+// still resolves correctly.
+const CANONICAL_COMMAND_RE = /^bash "\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/([^"/]+\.sh)"(?: (\S+))?$/;
 
 function lookupTranslation(claudeEvent, claudeMatcher) {
   // First check whether the event is known at all (any matcher).
@@ -130,13 +134,14 @@ export function buildCursorHooks(canonical, hookScriptExists) {
           );
         }
         const scriptName = match[1];
+        const argv = match[2];
         if (!hookScriptExists(scriptName)) {
           throw new Error(
             `Hook script not found: hooks/${scriptName} referenced from ${claudeEvent}/${claudeMatcher}`,
           );
         }
         const cursorEntry = {
-          command: `./hooks/${scriptName}`,
+          command: argv ? `./hooks/${scriptName} ${argv}` : `./hooks/${scriptName}`,
           failClosed: row.intent === "fail-closed",
           timeout: row.intent === "fail-closed" ? FAIL_CLOSED_TIMEOUT : ADVISORY_TIMEOUT,
         };

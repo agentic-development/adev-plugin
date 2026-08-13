@@ -316,3 +316,74 @@ describe("session-capture hook", () => {
     assert.equal(entry.usage, undefined, "usage should be absent without CLAUDE_PLUGIN_ROOT");
   });
 });
+
+// Migrated verbatim from the deleted tests/hooks/context-read-tracker.test.mjs
+// (spec Migration Path step 4 — context-read-tracker.sh folded into
+// session-capture.sh's Read branch). Only the hook name under test changed;
+// assertions and fixtures are unchanged, including the absence of
+// `provider: native` — the .context-preflight-ok touch must fire
+// unconditionally, independent of the JSONL-capture provider gate.
+describe("session-capture hook — context-read-tracker fold-in (.context-preflight-ok)", () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  it("sets flag when reading a .context-index/ file", () => {
+    const { exitCode } = runHook("session-capture.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: ".context-index/constitution.md" },
+      cwd: tempDir,
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(existsSync(join(tempDir, ".context-index/.context-preflight-ok")));
+  });
+
+  it("sets flag for nested .context-index/ paths", () => {
+    const { exitCode } = runHook("session-capture.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: ".context-index/specs/features/auth/charter.md" },
+      cwd: tempDir,
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(existsSync(join(tempDir, ".context-index/.context-preflight-ok")));
+  });
+
+  it("sets flag for absolute paths containing .context-index/", () => {
+    const { exitCode } = runHook("session-capture.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: "/home/user/project/.context-index/manifest.yaml" },
+      cwd: tempDir,
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(existsSync(join(tempDir, ".context-index/.context-preflight-ok")));
+  });
+
+  it("does not set flag for non-context files", () => {
+    const { exitCode } = runHook("session-capture.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: "src/index.mjs" },
+      cwd: tempDir,
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(!existsSync(join(tempDir, ".context-index/.context-preflight-ok")));
+  });
+
+  it("does not set flag when no file path provided", () => {
+    const { exitCode } = runHook("session-capture.sh", {
+      env: {},
+      cwd: tempDir,
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(!existsSync(join(tempDir, ".context-index/.context-preflight-ok")));
+  });
+
+  it("outputs empty JSON", () => {
+    const { stdout } = runHook("session-capture.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: ".context-index/constitution.md" },
+      cwd: tempDir,
+    });
+    assert.ok(stdout.includes("{}"));
+  });
+});

@@ -175,6 +175,55 @@ test("buildCursorHooks throws when canonical-shaped command references missing s
   );
 });
 
+// ─── argv-bearing canonical commands (lifecycle-gate.sh <surface>) ─────────
+// hooks/hooks.json registers the consolidated dispatcher three times with a
+// trailing argv surface argument (pre-edit|pre-bash|advisory). The generator
+// must translate the argv through to the Cursor command, not treat it as a
+// non-canonical shape.
+
+const canonicalWithArgv = {
+  hooks: {
+    PreToolUse: [
+      {
+        matcher: "Edit",
+        hooks: [
+          {
+            type: "command",
+            command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate.sh" pre-edit',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+test("buildCursorHooks preserves a trailing argv token on the canonical command", () => {
+  const out = buildCursorHooks(canonicalWithArgv, allScriptsExist);
+  assert.equal(out.hooks.preToolUse[0].command, "./hooks/lifecycle-gate.sh pre-edit");
+});
+
+test("buildCursorHooks still strips bash wrapper cleanly with no trailing argv (regression)", () => {
+  const out = buildCursorHooks(sampleCanonical, allScriptsExist);
+  assert.equal(out.hooks.sessionStart[0].command, "./hooks/session-start.sh");
+});
+
+test("buildCursorHooks still throws on a non-canonical command shape with the argv regex in place", () => {
+  const bad = {
+    hooks: {
+      SessionStart: [
+        {
+          matcher: "startup|resume|clear|compact",
+          hooks: [{ type: "command", command: "python my-hook.py --flag value" }],
+        },
+      ],
+    },
+  };
+  assert.throws(
+    () => buildCursorHooks(bad, allScriptsExist),
+    /Non-canonical hook command at SessionStart\/startup\|resume\|clear\|compact: python my-hook\.py --flag value\. Translation only supports the canonical bash-script form/,
+  );
+});
+
 // ─── Task 3: package.json wiring ──────────────────────────────────────────
 
 import { readFileSync as readFileSync_ } from "node:fs";

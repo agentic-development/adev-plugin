@@ -7,7 +7,7 @@ describe("lifecycle-gate-advisory hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=off");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const result = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(result.exitCode, 0);
     assert.ok(!result.stdout.includes("additionalContext"));
     cleanupTempDir(tmp);
@@ -17,7 +17,7 @@ describe("lifecycle-gate-advisory hook", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=warn");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const result = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(result.exitCode, 0);
     assert.ok(!result.stdout.includes("additionalContext"));
     cleanupTempDir(tmp);
@@ -26,7 +26,7 @@ describe("lifecycle-gate-advisory hook", () => {
   it("exits 0 silently when no user-config (defaults to off)", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const result = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(result.exitCode, 0);
     assert.ok(!result.stdout.includes("additionalContext"));
     cleanupTempDir(tmp);
@@ -37,7 +37,7 @@ describe("lifecycle-gate-advisory hook", () => {
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=confirm\nlifecycle.gate.advisory_interval=1");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "idle", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
-    const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const result = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(result.exitCode, 0);
     assert.ok(result.stdout.includes("additionalContext"), "Should include additionalContext");
     assert.ok(result.stdout.includes("/adev:work"), "Should mention /adev:work");
@@ -49,7 +49,7 @@ describe("lifecycle-gate-advisory hook", () => {
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=confirm\nlifecycle.gate.advisory_interval=1");
     writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "active", planRef: "p.md", currentTask: 1, issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const result = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(result.exitCode, 0);
     assert.ok(!result.stdout.includes("additionalContext"));
     cleanupTempDir(tmp);
@@ -60,7 +60,7 @@ describe("lifecycle-gate-advisory hook", () => {
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block\nlifecycle.gate.advisory_interval=1");
     writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "standalone", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const result = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(result.exitCode, 0);
     assert.ok(!result.stdout.includes("additionalContext"));
     cleanupTempDir(tmp);
@@ -73,16 +73,16 @@ describe("lifecycle-gate-advisory hook", () => {
     writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "idle", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-05-11T00:00:00Z" }) + "\n");
 
     // Calls 1 and 2 should be silent (counter not at interval)
-    const r1 = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const r1 = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(r1.exitCode, 0);
     assert.ok(!r1.stdout.includes("additionalContext"), "Call 1 should be silent");
 
-    const r2 = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const r2 = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(r2.exitCode, 0);
     assert.ok(!r2.stdout.includes("additionalContext"), "Call 2 should be silent");
 
     // Call 3 should emit advisory (3 % 3 == 0)
-    const r3 = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const r3 = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(r3.exitCode, 0);
     assert.ok(r3.stdout.includes("additionalContext"), "Call 3 should emit advisory");
 
