@@ -17,7 +17,7 @@ Four parallel investigations (eval-infrastructure audit, empirical mining of `.c
 
 The good news is threefold:
 
-1. The exact harness needed (`tests/evals/skill-compression/` — baseline vs. compressed skill variants, deterministic regex elements + LLM-judged dimensions) already exists in the repo. It is inert only because its `outputs/` tree was never captured.
+1. The exact harness needed (`tests/evals/skill-compression/` — baseline vs. compressed skill variants, deterministic regex elements + LLM-judged dimensions) already exists in the repo. ~~It is inert only because its `outputs/` tree was never captured.~~ **Corrected 2026-08-13:** the missing `outputs/` tree is real but is *not* the only defect. This audit checked whether the harness **ran**; it did not check whether its **inputs were valid**. They are not — see the corrected row in Part 1 and `epic-108`.
 2. The empirical record is unambiguous about what is overhead: two live validation checks that structurally cannot fail, four declared-but-unconsumed governance config surfaces, 647 session files with no signal, and a 4.5:1 advisory-to-blocking review ratio. The load-bearing minority is equally clear.
 3. The consolidation targets for automated Plan-Review-Fix already have code: `lib/loop-convergence.mjs` (one caller, four prose reimplementations waiting to be absorbed), the routing sidecar, and the rigor-tier resolver. Conditional HITL is an extension of the existing tier axis, not a new mechanism.
 
@@ -32,7 +32,7 @@ External research (Anthropic 2024–2026, judge-bias literature, self-correction
 | Surface | What it measures | Type | State |
 |---|---|---|---|
 | `tests/skills/*` (~80 files) | Skill prose contains contract strings (routes, headings, `file:line` evidence clauses) | Deterministic string-presence | Live, dense |
-| `tests/evals/skill-compression/` | Baseline vs. conservative/summarized/aggressive skill variants; per-skill YAML rubrics (10 regex `required_elements` at 50% + 5 LLM-judged `quality_dimensions` at 50%) | Deterministic + LLM judge | **INERT — no `outputs/` tree; runner globs `outputs/<variant>/<skill>/output.md` and scores nothing** |
+| `tests/evals/skill-compression/` | Baseline vs. conservative/summarized/aggressive skill variants; per-skill YAML rubrics (10 regex `required_elements` at 50% + 5 LLM-judged `quality_dimensions` at 50%) | Deterministic + LLM judge | **INERT — no `outputs/` tree; runner globs `outputs/<variant>/<skill>/output.md` and scores nothing.** **Corrected 2026-08-13 — the inputs are also broken.** Measured by md5 across the variant matrix: `summarized` is **byte-identical to `baseline`** for both brainstorm and specify; `summarized/plan.md` is **larger** than baseline (1002 vs 969 lines); `conservative/plan.md` and `aggressive/plan.md` **do not exist**. Of 12 matrix cells only **7** hold a genuinely distinct variant. Capturing outputs against this matrix would yield a summarized-vs-baseline comparison guaranteed to score identically — not because compression preserved quality, but because the files are the same bytes. That is worse than no data, because it reads as evidence that summarising is free. Repair tracked as `epic-108`. |
 | `tests/evals/comparison/` | Cross-agent LLM-judge results | LLM judge | **FROZEN** — judge results committed but all 5 source projects are empty dirs; non-reproducible |
 | `tests/evals/{configurable-governance, repomap, data-engineering, work-tracking, assess, test-strategies}` | Feature-specific fixtures | Mixed | Healthy; only repomap + skill-compression have npm scripts; **none in ci.yml** |
 | `tests/evals/{data-migration, data-pipeline, process-automation, web-api}` | — | — | Empty (`.gitkeep` only) |
@@ -222,7 +222,8 @@ Extend `/adev:work`'s state scan to open PRs, remote branches, and other-owner `
 
 ### Phase 1 — Build the regression harness (before touching any skill prose)
 
-1. Revive `tests/evals/skill-compression/`: capture baseline `outputs/` for the current skills; wire the deterministic layer into CI; run the LLM-judge layer on demand with binary per-dimension verdicts.
+1. Revive `tests/evals/skill-compression/` — but **repair the variant matrix first** (`epic-108` / issue-620). Two variants are byte-identical duplicates of baseline, one "summarized" variant is larger than the original, and two cells are missing entirely; capturing outputs before fixing that bakes a false "compression is free" result into the baseline. Then capture baseline `outputs/`, wire the deterministic layer into CI, and run the LLM-judge layer on demand with binary per-dimension verdicts.
+   *Method note for the future: this study audited whether each harness **ran**. It did not audit whether each harness's **inputs were valid**. That is a distinct check, and it is where the skill-compression defect hid.*
 2. Assemble the 20–50 golden-task suite from the failure archaeology (Part 2) + reference solutions; outcome-graded; hold at ~100%.
 3. Materialize the `/adev:eval` default rubric as a file; restructure its Layer 3 from 0–5 scales to binary criteria; track judge–human agreement.
 4. Add tests for constitution principles #1–#3 and for lifecycle-graph edge resolution.
