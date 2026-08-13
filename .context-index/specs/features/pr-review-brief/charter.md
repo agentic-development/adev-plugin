@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 3
+revision: 4
 updated: 2026-08-12
 ---
 
@@ -18,7 +18,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 ### In Scope
 
 - **Provenance rollup** — group the commits in a PR range by their `Spec:` trailer, showing plan-task coverage and per-spec diff size; explicitly surface commits carrying no `Spec:` trailer.
-- **Attention map** — derive a reviewer attention budget from `<spec>.routing.json`, ordering tasks by `selected_agent` (`human-only` first) and `blast_radius`, with each task's `rationale` carried through verbatim.
+- **Attention map** — derive a reviewer attention budget from `<plan-stem>.routing.json`, ordering tasks by `selected_agent` (`human-only` first) and `blast_radius`, with each task's `rationale` carried through verbatim.
 - **Verification summary** — report which `/adev:validate` checks ran and their verdict, so a reviewer can safely decline to re-verify what was already verified.
 - **Review packet field set** — the author-written contract: problem statement, risk areas and trust boundaries touched, sections verified line-by-line, and an explicit statement of what the author cannot explain.
 - **Authorship boundary** — the `<!-- adev:pr-brief -->` marker delimiting generated content from author-written content, and the rule that the two are never interleaved.
@@ -38,7 +38,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 |-----------|------|-------------|
 | `cli-driver-surface` | internal module | Provides the `adev <verb>` dispatch table and `lib/cli/<verb>.mjs` helper pattern this module's verb plugs into. |
 | Git commit trailers | shared library | `Spec:` and `Plan-task:` per `manifest.yaml` provenance config. |
-| `/adev:route` | internal module | Produces `<spec>.routing.json`, the source of the attention map. |
+| `/adev:route` | internal module | Produces `<plan-stem>.routing.json`, the source of the attention map. |
 | `/adev:validate` | internal module | Writes the `validate` step of the lifecycle projection, which backs the verification summary. |
 | `/adev:plan` | internal module | Produces `<spec-stem>.plan.md`, whose `## Parallelization` section backs the reading order. |
 | `worktree-parallelization` | internal module | Owns `lib/parallel/groups.mjs`, the single parser for `## Parallelization`. This module consumes it rather than defining a second grammar. |
@@ -60,7 +60,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 ### Relationships
 
 - A **PR Brief** contains zero or more **Attention Entries**, zero or more **Traceability Rows**, and at most one **Verification Summary per referenced spec**. Revision 2 said "at most one" outright; that was wrong, because a PR range routinely spans several specs and each carries its own validate outcome. The brief renders one row per referenced spec and no merged verdict — merging would have to pick a rule for PASS+FAIL, and any such rule loses the information a reviewer needs.
-- An **Attention Entry** derives from one `<spec>.routing.json` entry; a **Traceability Row** aggregates the commits sharing one `Spec:` trailer value.
+- An **Attention Entry** derives from one `<plan-stem>.routing.json` entry; a **Traceability Row** aggregates the commits sharing one `Spec:` trailer value.
 - A **Review Packet** is authored by a human and lives outside the marker; a **PR Brief** is generated and lives inside it. Neither ever contains the other.
 
 ### Invariants
@@ -78,7 +78,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | Provenance rollup by spec | Group PR commits by `Spec:` trailer with plan-task coverage and per-spec diff size; flag untraced commits. | must-have | | specified |
 | Attention map from routing scores | Rank tasks by `selected_agent` and `blast_radius`; emit "read these first" with rationale. | must-have | | specified |
 | Verification summary | Report `/adev:validate` verdict, gates, and check results. | must-have | | specified |
-| Review packet field set | Author-written contract including the "what I cannot explain" field. | must-have | | review-passed |
+| Review packet field set | Author-written contract including the "what I cannot explain" field. | must-have | | implemented |
 | Reading order for multi-commit PRs | Derive a suggested reading sequence from plan task order and `## Parallelization` groups. | should-have | | specified |
 | Size advisory with exception classes | Warn above a size threshold, naming legitimate exceptions (mechanical sweep, generated mirror, migration). | should-have | | specified |
 
@@ -107,7 +107,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 |-----------|-------------|-------------|
 | `adev <verb>` dispatch table | `cli-driver-surface` | Registration point for the `pr` verb. |
 | Git commit trailers | provenance config | `Spec:` and `Plan-task:` values via `git log`. |
-| `<spec>.routing.json` | `/adev:route` | Per-task `selected_agent`, `scores.blast_radius`, `scores.novelty`, and `rationale`. |
+| `<plan-stem>.routing.json` | `/adev:route` | Per-task `selected_agent`, `scores.blast_radius`, `scores.novelty`, and `rationale`, read through `lib/plan-routing-sidecar.mjs`. The sidecar is keyed to the plan stem, not the spec stem, per ADR-0012. |
 | `state.steps.validate` | `/adev:validate` | Verdict, per-validator reports, and blockers, read from the lifecycle projection. |
 | `<spec-stem>.plan.md` `## Parallelization` | `/adev:plan` | Group and task ordering for the reading order, read through `lib/parallel/groups.mjs`. |
 

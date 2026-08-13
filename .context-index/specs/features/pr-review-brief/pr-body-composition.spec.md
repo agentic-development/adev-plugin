@@ -1,11 +1,11 @@
 ---
 charter: pr-review-brief
 kind: behavioral
-status: review-pending
+status: review-blocked
 risk_level: medium
 milestone:
-revision: 3
-charter-revision: 3
+revision: 4
+charter-revision: 4
 created: 2026-08-12
 updated: 2026-08-13
 ---
@@ -14,7 +14,7 @@ updated: 2026-08-13
 
 ## Behavioral Contract
 
-`adev pr body` composes the generated half of a pull request's reviewer-facing content. Given a commit range, it reads the lifecycle artifacts those commits already reference — `Spec:` / `Plan-task:` trailers, the `<spec>.routing.json` sidecars produced by `/adev:route`, and the `validate` step of the lifecycle projection — and writes a marker-delimited markdown brief to stdout.
+`adev pr body` composes the generated half of a pull request's reviewer-facing content. Given a commit range, it reads the lifecycle artifacts those commits already reference — `Spec:` / `Plan-task:` trailers, the `<plan-stem>.routing.json` sidecars produced by `/adev:route` and read through `lib/plan-routing-sidecar.mjs`, and the `validate` step of the lifecycle projection — and writes a marker-delimited markdown brief to stdout.
 
 The verb reads only. It never contacts a forge, never mutates lifecycle state, and never blocks: absent or malformed inputs degrade to explicit gaps in the output rather than to silence or to a non-zero exit.
 
@@ -36,7 +36,7 @@ Revision 1 of this spec fixed the section set at the three it owns, before the s
 
 ## Input Contracts
 
-Three inputs, each with a named source, a typed shape, and a degradation path. Revision 2 named all three only in prose, which left the two most important ones underdetermined.
+Four inputs, each with a named source, a typed shape, and a degradation path. Revision 2 named three of them only in prose; revision 3 gave those three contracts but silently relied on a fourth — the referenced spec's own frontmatter — without declaring it.
 
 ### Task universe and file sets
 
@@ -48,7 +48,24 @@ This matters because revision 2 said a task "appears in the changed files", pres
 
 ### Routing entries
 
-Read `<spec-stem>.routing.json` for each referenced spec. Per entry: `task_id`, `selected_agent`, `scores.blast_radius`, `scores.novelty`, `rationale`. `blast_radius` is nested under `scores` and normalized `0..1` — revision 2 wrote it as a top-level field, which does not exist on disk.
+**Read through the owned accessor, not by hand.** `lib/plan-routing-sidecar.mjs` exports `sidecarPathFor()`, `readRoutingSidecar()`, and `lookupRoutingEntry()`. Revision 3 specified parsing `entries[]` directly, which is the same defect the sibling spec was blocked for and which this spec argues against two sections later when it cites ADR-0012 to justify reading validation through the projection. One on-disk format, one reader.
+
+**The sidecar is plan-stem-keyed, not spec-stem-keyed.** `sidecarPathFor()` requires a path ending in `.plan.md` and throws `INVALID_PLAN_PATH` otherwise, and ADR-0012 § "Permitted peers" defines the sidecar as `<plan-stem>.routing.json`. This spec starts from a `Spec:` trailer, so the derivation is explicit: `<spec-path>` with the `.spec.md` suffix replaced by `.plan.md`, passed to `sidecarPathFor()`. The two stems coincide in this repo today, which is exactly why revision 3's `<spec-stem>.routing.json` shorthand would have shipped unnoticed.
+
+Consumed shape — the accessor returns the `{ version, entries[] }` envelope:
+
+| Field | Contract |
+|---|---|
+| `version` | Must equal the module's `SIDECAR_SCHEMA_VERSION`. A mismatch raises `INVALID_SIDECAR_JSON`. |
+| `entries[].task_id` | Joins to the `(spec_path, task_id)` task universe above. |
+| `entries[].selected_agent` | `human-only` / `assisted-agent` / `auto-agent`. |
+| `entries[].scores.blast_radius` | Nested under `scores`, normalized `0..1`. Revision 2 wrote it as a top-level field, which does not exist on disk. |
+| `entries[].scores.novelty` | Nested under `scores`, normalized `0..1`. |
+| `entries[].rationale` | Free text. Attacker-influenceable; always passes through the encoder. |
+
+**Incoming sort is a tie-break, not decoration.** `readRoutingSidecar()` returns entries already sorted by `task_id` ascending. The ranking contract re-sorts by agent tier then descending `scores.blast_radius`, and the sort must be **stable**, so the accessor's `task_id` order breaks ties between entries with equal tier and equal blast radius. This is what makes the determinism criterion hold for such entries rather than depending on an unspecified sort.
+
+**Degradation.** A `readRoutingSidecar()` throw — `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON` from a schema-version mismatch or a malformed envelope, or a read error — is treated identically to an absent sidecar: every task under that spec renders `UNKNOWN`, and the section is annotated with the offending path and the thrown code. Schema-version mismatch is named explicitly because it is the one failure that will appear after a future `/adev:route` change rather than from bad input.
 
 ### Verification
 
@@ -65,16 +82,34 @@ Consumed shape, per referenced spec:
 
 Reading `byRevision` at the spec's *current* revision is deliberate: a verdict recorded against an older revision is a verdict about different text. When the projection has no entry at the current revision but does at an earlier one, the section says so and names both revisions rather than presenting the stale verdict as current — the same rule as `UNKNOWN`, applied to time instead of absence.
 
+### Referenced spec frontmatter
+
+The fourth input, and the one revision 3 used without declaring. `N` in `byRevision[N]` above is the referenced spec's own `revision:`, which the projection does not carry — in `lib/lifecycle-state.mjs`, `revision` is supplied by each emitting caller and folded into `byRevision`; `currentState()` never exposes the spec's current revision.
+
+| Aspect | Contract |
+|---|---|
+| Source | The YAML frontmatter of the file at the `Spec:` trailer path. |
+| Field consumed | `revision:` only. |
+| Containment | Read subject to the same path-containment rule as every other trailer-derived path; a path outside `.context-index/specs/` is never opened. |
+| Shape | Integer ≥ 1. |
+
+**Degradation — the revision is undeterminable.** Three states reach this, and this spec already declares all three exit-0: the spec path does not exist, the path resolves outside containment, or the frontmatter is unreadable or carries no integer `revision:`. In each, the verification row for that spec renders `UNKNOWN` and names which of the three applied. It never falls back to the highest revision present in `byRevision`, because that would present a verdict about unknown text as a verdict about this text — the failure mode the stale-revision rule exists to prevent.
+
 ## Output Encoding Contract
 
 One encoding routine applies to **every** value interpolated into generated output, whatever its source — trailer, rationale, spec path, validator id, diagnostic text, or any value a slot renderer owned by another spec passes in. Revision 2 scoped escaping to `Spec:` trailers and enumerated `]`, `,`, newline, and backtick, which covered neither the delimiter that actually breaks the output nor the values most likely to carry it.
 
 The threat is concrete: any commit author controls trailer values, `/adev:route` rationale is free text, and the result is posted by `cicd` into a public PR body that a human reads to decide how carefully to review.
 
-1. **Path containment.** Every path derived from a `Spec:` trailer is resolved with `path.resolve` and required to remain under the canonicalized `.context-index/specs/` root before any `fs.stat` or `fs.readFile`. A path that escapes is treated exactly as "does not exist on disk" — the error case already defined — and is never opened. Without this, `Spec: ../../.env` reaches the filesystem and the "offending path" diagnostic reports whether it exists. CWE-22.
-2. **Table-cell safety.** Every interpolated value has `|` escaped and any leading `#`, `-`, `>`, or `|` neutralized before entering a table cell. Every generated section renders as a table, so an unescaped pipe does not merely look wrong — it shifts subsequent cells, and a reviewer reads a risk score from the wrong column. This applies to `rationale`: revision 2 said "reproduced verbatim", which now means *reproduced without semantic interpretation*, not *reproduced without encoding*. CWE-116.
-3. **Marker neutralization.** Any occurrence of `<!--` or `-->` in an interpolated value is encoded so it cannot form a comment delimiter. The single-marker-pair invariant, and with it the authorship boundary this module exists to enforce, rests entirely on those two literals appearing nowhere but the real boundaries. A rationale containing the literal `<!-- /adev:pr-brief -->` would otherwise let `cicd`'s boundary-based replace treat attacker-controlled text as author-written.
-4. **Diagnostics.** All diagnostics go to **stderr**, never stdout, and render paths relative to the repository root. An absolute path leaks the CI runner's home directory and username into whatever consumes the output.
+Rule order is part of the contract: **line collapse runs first**, because every rule after it reasons about "the start of the value" and only holds if the value is a single line.
+
+1. **Line collapse.** Every interpolated value has each `\n`, `\r`, and `\r\n` replaced with a single space before any other rule runs. `rationale` is free text parsed from JSON, where `\n` decodes to a real line break; without this, `benign text\n## What\n| forged | row |` emits real line breaks that split the table row and inject an arbitrary line — including a fabricated H2 heading — inside the marker. Rule 3 below inspects the start of *the value*, not the start of each line produced after an unescaped break, so it does not catch this on its own. CWE-93.
+
+   The precedent is already in this repo: `lib/plan-routing-sidecar.mjs::renderRoutingMarkdown` renders this exact field with `.replace(/\|/g, "\\|").replace(/\n+/g, " ")`. Revision 3's contract omitted the second half of that pair while citing the module that performs it.
+2. **Path containment.** Every path derived from a `Spec:` trailer is resolved with `path.resolve` and required to remain under the canonicalized `.context-index/specs/` root before any `fs.stat` or `fs.readFile`. A path that escapes is treated exactly as "does not exist on disk" — the error case already defined — and is never opened. Without this, `Spec: ../../.env` reaches the filesystem and the "offending path" diagnostic reports whether it exists. CWE-22.
+3. **Table-cell safety.** Every interpolated value has `|` escaped and any leading `#`, `-`, `>`, or `|` neutralized before entering a table cell. Every generated section renders as a table, so an unescaped pipe does not merely look wrong — it shifts subsequent cells, and a reviewer reads a risk score from the wrong column. This applies to `rationale`: revision 2 said "reproduced verbatim", which now means *reproduced without semantic interpretation*, not *reproduced without encoding*. CWE-116.
+4. **Marker neutralization.** Any occurrence of `<!--` or `-->` in an interpolated value is encoded so it cannot form a comment delimiter. The single-marker-pair invariant, and with it the authorship boundary this module exists to enforce, rests entirely on those two literals appearing nowhere but the real boundaries. A rationale containing the literal `<!-- /adev:pr-brief -->` would otherwise let `cicd`'s boundary-based replace treat attacker-controlled text as author-written.
+5. **Diagnostics.** All diagnostics go to **stderr**, never stdout, and render paths relative to the repository root. An absolute path leaks the CI runner's home directory and username into whatever consumes the output.
 
 Encoding is applied once, at the interpolation boundary, by a single function. Two independently-worded escaping rules in two specs is how a gap reappears.
 
@@ -93,7 +128,8 @@ Encoding is applied once, at the interpolation boundary, by a single function. T
 | Task universe builder | Build the `(spec_path, task_id)` set from `Plan-task:` trailers and each task's file set from `git diff-tree --name-only` over its commits, per Input Contracts. | medium |
 | Output encoder | The single interpolation-boundary function implementing the four rules in Output Encoding Contract: path containment, table-cell safety, marker neutralization, stderr diagnostics. | medium |
 | Traceability grouping | Group commits by `Spec:` value; aggregate per-spec commit count and diff stat; collect commits carrying no `Spec:` trailer into an explicit untraced bucket. | medium |
-| Routing sidecar reader | Locate `<spec-stem>.routing.json` for each referenced spec; read `entries[]` per Input Contracts; tolerate absence. | small |
+| Routing sidecar reader | Derive the plan path from each `Spec:` trailer, call `sidecarPathFor()` / `readRoutingSidecar()` from `lib/plan-routing-sidecar.mjs`, and map every throw to the `UNKNOWN` degradation. Author no parser. | small |
+| Spec frontmatter reader | Read `revision:` from each referenced spec under the containment rule; render `UNKNOWN` when undeterminable. | small |
 | Attention map ranking | Order entries by `selected_agent` (`human-only`, then `assisted-agent`, then `auto-agent`), then by **descending** `scores.blast_radius`; carry `rationale` through the output encoder. | medium |
 | Verification summary reader | Read `state.steps.validate` from the lifecycle projection for each referenced spec at that spec's current revision; extract verdict, per-validator reports, and blockers. Never parse `.validate.md`. | small |
 | Marker assembly | Emit the opening marker, request the five slots in fixed order from their owning modules, emit the closing marker. Slot renderers return body text and never emit a marker. | medium |
@@ -122,6 +158,11 @@ The opening marker `<!-- adev:pr-brief -->` and closing marker `<!-- /adev:pr-br
 - [ ] With no `routing.json` present anywhere, the verb still exits 0 and the attention map renders its explicit gap line.
 - [ ] With no `validate` step in the projection, the verb still exits 0 and the verification section renders its explicit gap line.
 - [ ] A `Spec:` trailer of `../../.env` is never opened; a test asserts no `fs` call receives a path outside `.context-index/specs/` and that the row renders as a missing path.
+- [ ] Routing entries are read via `lib/plan-routing-sidecar.mjs`; a test asserts this module defines no `routing.json` parser and no `entries[]` traversal of its own.
+- [ ] A sidecar whose `version` does not match `SIDECAR_SCHEMA_VERSION` renders every task under that spec as `UNKNOWN` and annotates the section with `INVALID_SIDECAR_JSON`; a test pins the schema-mismatch path.
+- [ ] Two entries with equal `selected_agent` and equal `scores.blast_radius` render in ascending `task_id` order; a test asserts the sort is stable over the accessor's incoming order.
+- [ ] A referenced spec whose `revision:` cannot be determined — missing file, out-of-containment path, or unreadable frontmatter — renders its verification row as `UNKNOWN` naming which case applied; a test asserts no fallback to the highest revision in `byRevision`.
+- [ ] A `rationale` containing an embedded `\n` renders as a single table row; a test asserts stdout line count equals the expected row count and that no injected line begins with `## `.
 - [ ] A `rationale` or trailer containing `|` renders with the pipe escaped and does not shift any table cell; a test asserts the rendered row has the expected column count.
 - [ ] A `rationale` or trailer containing the literal `<!-- /adev:pr-brief -->` renders neutralized; a test asserts stdout contains exactly one occurrence of each marker literal.
 - [ ] Diagnostics are written to stderr with repo-relative paths; a test asserts stdout contains no diagnostic text and no absolute path.
@@ -168,7 +209,8 @@ The opening marker `<!-- adev:pr-brief -->` and closing marker `<!-- /adev:pr-br
 | Not inside a git repository | Print a diagnostic naming the working directory; emit no partial brief | `NOT_A_GIT_REPO` |
 | `--base` ref does not resolve | Print a diagnostic naming the unresolvable ref; emit no partial brief | `INVALID_BASE_REF` |
 | `--base` omitted and no default branch merge base can be determined | Print a diagnostic suggesting an explicit `--base`; emit no partial brief | `NO_MERGE_BASE` |
-| `routing.json` present but unparseable | Render affected tasks as `UNKNOWN`, annotate the section with the offending path, exit 0 | *(advisory — no code)* |
+| `readRoutingSidecar()` throws — absent, `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON` (malformed envelope or schema-version mismatch), or unreadable | Render affected tasks as `UNKNOWN`, annotate the section with the offending path and the thrown code, exit 0 | *(advisory — no code)* |
+| Referenced spec's `revision:` undeterminable (missing file, out of containment, unreadable frontmatter) | Verification row renders `UNKNOWN` naming which case applied; never falls back to another revision, exit 0 | *(advisory — no code)* |
 | Lifecycle projection unreadable or carries no `validate` step | Render the verification gap line stating validation has not run for that spec, exit 0 | *(advisory — no code)* |
 | Referenced spec path in a `Spec:` trailer does not exist on disk | Keep the traceability row, flag the path as missing, exit 0 | *(advisory — no code)* |
 | `Spec:` trailer resolves outside `.context-index/specs/` | Treated identically to "does not exist on disk"; the path is never opened | *(advisory — no code)* |

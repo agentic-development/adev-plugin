@@ -1,2 +1,3 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-07-01T23:16:27.912Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-07-01T23:16:28.000Z"}
+{"event":"code_drift_detected","drift_source":"skills/validate/SKILL.md","drift_at":"2026-08-13T12:01:04.347Z","ts":"2026-08-13T12:01:04.347Z"}
