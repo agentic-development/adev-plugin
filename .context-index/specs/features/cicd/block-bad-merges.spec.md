@@ -9,10 +9,10 @@ charter: cicd
 status: validated
 risk_level: medium
 milestone:
-revision: 1
+revision: 2
 charter-revision: 1
 created: 2026-03-24
-updated: 2026-05-04
+updated: 2026-08-13
 source-manifest:
   sha: "926422e"
   files:
@@ -37,6 +37,27 @@ drift_detected: true
 2. **When** a PR targets main branch **then** CI status checks must be successful
 3. **When** CI checks fail **then** GitHub blocks the merge UI
 4. **When** all CI checks pass **then** merge button becomes available
+
+**Local guard — `hooks/merge-guard.sh` (rev 2):**
+
+> Added 2026-08-13. Two defects, both found by the guard firing on commands it was never meant to catch.
+
+5. **When** the command is `git merge-base`, `git merge-tree`, or `git merge-file` **then** it is ALLOWED even on a protected branch. These write nothing. The prior pattern `git\s+merge\b` matched them because `-` is a word boundary, so read-only queries were refused; a guard that blocks queries teaches operators that it cries wolf.
+6. **When** the command is `gh pr merge` **then** it is blocked by default and allowed when `completion.allow_agent_pr_merge: true`. Only the exact literal `true` opts in.
+7. **When** a `gh pr merge` is refused **then** the message names the base the command actually targets (from `--base`, else the first protected branch) and points at `allow_agent_pr_merge`. Previously the clause sat inside a loop over protected branches and ignored the loop variable, so EVERY `gh pr merge` was refused — including one targeting a non-protected base, e.g. a stacked PR onto another feature branch — and the error named a branch the PR never targeted, while advising "open a pull request instead", which cannot be acted on when the command *is* a PR merge.
+
+### Known limitation — string matching, not command parsing
+
+The guard greps the raw command string, so it fires on any text containing a
+matched pattern, including a heredoc or a commit message that merely *mentions*
+one. This is not hypothetical: the commit implementing behaviors 5-7 was itself
+refused, because its message quotes the very command it fixes.
+
+Not addressed here — distinguishing a real invocation from a quoted mention
+needs shell parsing, which is a larger change than this contract should carry,
+and the false-positive class is narrow (prose about git commands). Workaround:
+pass long messages with `git commit -F <file>` so the text never enters the
+command string. Recorded so the next person hitting it does not re-diagnose it.
 
 ### Postconditions
 

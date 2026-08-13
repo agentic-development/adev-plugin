@@ -61,6 +61,9 @@ MANIFEST=$(find_manifest) || MANIFEST=""
 # Default values
 MERGE_POLICY="pr"
 PROTECTED_BRANCHES=("main" "master")
+# Whether an agent may complete a PR via `gh pr merge`. Default false preserves
+# the long-standing behaviour: merging is where review is enforced.
+ALLOW_AGENT_PR_MERGE="false"
 
 if [ -n "$MANIFEST" ]; then
   # Extract merge_policy (simple grep, no yq dependency)
@@ -69,6 +72,16 @@ if [ -n "$MANIFEST" ]; then
     EXTRACTED=$(echo "$POLICY_LINE" | sed 's/.*merge_policy:[[:space:]]*//' | sed 's/[[:space:]]*#.*//' | tr -d '"' | tr -d "'")
     if [ -n "$EXTRACTED" ]; then
       MERGE_POLICY="$EXTRACTED"
+    fi
+  fi
+
+  # Extract allow_agent_pr_merge (same grep-not-yq discipline as merge_policy).
+  # Only the exact literal `true` opts in; anything else stays blocked.
+  ALLOW_LINE=$(grep -E '^\s*allow_agent_pr_merge:' "$MANIFEST" 2>/dev/null || true)
+  if [ -n "$ALLOW_LINE" ]; then
+    ALLOW_EXTRACTED=$(echo "$ALLOW_LINE" | sed 's/.*allow_agent_pr_merge:[[:space:]]*//' | sed 's/[[:space:]]*#.*//' | tr -d '"' | tr -d "'" | tr '[:upper:]' '[:lower:]')
+    if [ "$ALLOW_EXTRACTED" = "true" ]; then
+      ALLOW_AGENT_PR_MERGE="true"
     fi
   fi
 
@@ -138,7 +151,13 @@ targets_protected_branch() {
   # writes to a protected branch). Merging FROM a protected ref INTO a feature
   # branch (e.g. `git merge origin/main` from `feat/x`) is the routine
   # "keep-current" workflow and must be allowed.
-  if echo "$cmd" | grep -qE "git\s+merge\b"; then
+  #
+  # `\b` after "merge" is NOT sufficient: `-` is a word boundary, so it also
+  # matched `git merge-base`, `git merge-tree`, and `git merge-file` — all
+  # read-only plumbing that writes nothing. Blocking a query is pure friction
+  # and teaches operators that the guard cries wolf. Require a space or
+  # end-of-string so only the porcelain `git merge` is caught.
+  if echo "$cmd" | grep -qE "git\s+merge([[:space:]]|$)"; then
     local on_protected_merge
     on_protected_merge=$(is_on_protected_branch) || true
     if [ -n "$on_protected_merge" ]; then
@@ -158,12 +177,37 @@ targets_protected_branch() {
       echo "$branch"
       return 0
     fi
-    # gh pr merge (merging a PR via CLI)
-    if echo "$cmd" | grep -qE "gh\s+pr\s+merge"; then
-      echo "$branch"
-      return 0
-    fi
   done
+
+  # gh pr merge — completing the PR workflow the policy mandates.
+  #
+  # This clause used to live inside the loop above and ignored `$branch`
+  # entirely, so ANY `gh pr merge` was blocked and attributed to whichever
+  # protected branch happened to be first. Two consequences, both observed:
+  # a PR targeting a NON-protected base (a stacked PR onto another feature
+  # branch) was refused, and the error named a branch the PR did not target.
+  # The advice it printed — "open a pull request instead" — is also incoherent
+  # when the thing being run IS a pull-request merge.
+  #
+  # Default stays BLOCK, because merging is the step where review is enforced
+  # and an agent should not land work unattended. But it is now a named,
+  # opt-in-able policy rather than an accident of loop placement:
+  # `completion.allow_agent_pr_merge: true` in manifest.yaml permits it.
+  if echo "$cmd" | grep -qE "gh\s+pr\s+merge([[:space:]]|$)"; then
+    if [ "$ALLOW_AGENT_PR_MERGE" = "true" ]; then
+      return 1
+    fi
+    # Report the base the command actually names, when it names one.
+    local explicit_base
+    explicit_base=$(echo "$cmd" | grep -oE "\-\-base[= ]+[A-Za-z0-9._/-]+" | head -1 | sed 's/.*[= ]//') || true
+    if [ -n "$explicit_base" ]; then
+      echo "$explicit_base"
+    else
+      echo "${PROTECTED_BRANCHES[0]}"
+    fi
+    return 0
+  fi
+
   return 1
 }
 
@@ -176,8 +220,22 @@ fi
 
 # --- Enforce policy ---
 
+# `gh pr merge` needs its own message: telling someone to "open a pull request
+# instead" when they are merging a pull request is advice they cannot act on,
+# and it hides the actual knob.
+IS_PR_MERGE=false
+if echo "$COMMAND" | grep -qE "gh\s+pr\s+merge([[:space:]]|$)"; then
+  IS_PR_MERGE=true
+fi
+
 case "$MERGE_POLICY" in
   pr)
+    if $IS_PR_MERGE; then
+      echo "Blocked: agent-initiated PR merges are off by default (merge_policy: 'pr'). Target: ${TARGET}. The PR itself is fine — completing it is the gated step, because merging is where review is enforced." >&2
+      echo "  • A human can run the same command." >&2
+      echo "  • To let agents merge in this project, set completion.allow_agent_pr_merge: true in .context-index/manifest.yaml." >&2
+      exit 2
+    fi
     echo "Blocked: merge_policy is 'pr'. Create a feature branch and open a pull request instead of committing/merging directly to ${TARGET}." >&2
     exit 2
     ;;
