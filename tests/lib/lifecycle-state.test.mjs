@@ -655,6 +655,84 @@ test('currentState collects plan_task events under planTasks keyed by task_id', 
   }
 });
 
+test('currentState projects test_depth_assigned events under testDepthAssignments, not unknownEvents', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, {
+      event: 'test_depth_assigned',
+      plan: 'p.plan.md',
+      task_id: 't1',
+      depth: 'standard',
+      source: 'chain',
+      escalated: false,
+      floor_applied: false,
+      floor_legs: [],
+      floor_inputs: 'available',
+    });
+    const s = currentState(root, specPath);
+    assert.equal(s.unknownEvents.length, 0, 'test_depth_assigned must not land in unknownEvents[]');
+    assert.ok(s.testDepthAssignments, 'testDepthAssignments field should exist');
+    const key = 'p.plan.md::t1';
+    assert.ok(s.testDepthAssignments[key], 'testDepthAssignments should be keyed by plan::task_id');
+    assert.equal(s.testDepthAssignments[key].depth, 'standard');
+    assert.equal(s.testDepthAssignments[key].plan, 'p.plan.md');
+    assert.equal(s.testDepthAssignments[key].task_id, 't1');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState folds test_depth_assigned events for the same plan+task_id — last in append order wins', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, {
+      event: 'test_depth_assigned',
+      plan: 'p.plan.md',
+      task_id: 't1',
+      depth: 'standard',
+      source: 'chain',
+      escalated: false,
+      floor_applied: false,
+      floor_legs: [],
+      floor_inputs: 'available',
+    });
+    appendEvent(root, specPath, {
+      event: 'test_depth_assigned',
+      plan: 'p.plan.md',
+      task_id: 't1',
+      depth: 'thorough',
+      source: 'escalation',
+      escalated: true,
+      floor_applied: true,
+      floor_legs: ['sensitive-path'],
+      floor_inputs: 'available',
+    });
+    // A different task_id under the same plan must not collide.
+    appendEvent(root, specPath, {
+      event: 'test_depth_assigned',
+      plan: 'p.plan.md',
+      task_id: 't2',
+      depth: 'minimal',
+      source: 'chain',
+      escalated: false,
+      floor_applied: false,
+      floor_legs: [],
+      floor_inputs: 'unavailable',
+    });
+    const s = currentState(root, specPath);
+    const t1Key = 'p.plan.md::t1';
+    const t2Key = 'p.plan.md::t2';
+    assert.equal(s.unknownEvents.length, 0);
+    assert.equal(Object.keys(s.testDepthAssignments).length, 2);
+    assert.equal(s.testDepthAssignments[t1Key].depth, 'thorough', 'most recent event (append order) wins');
+    assert.equal(s.testDepthAssignments[t1Key].source, 'escalation');
+    assert.deepEqual(s.testDepthAssignments[t1Key].floor_legs, ['sensitive-path']);
+    assert.equal(s.testDepthAssignments[t2Key].depth, 'minimal');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
 // ── Task 9: aggregation algorithm (severity x verdict) ─────────────────────
 
 // Helper: write a `reviewer_report` directly with explicit severity/verdict

@@ -55,6 +55,19 @@ The interactive wizard walks you through 10 layers of project context:
 
 And six additional layers for specialists, governance, sync targets, heuristics, samples, and orientation.
 
+**Test depth policy.** As part of the Governance step, init writes a `test_policy` block into
+`manifest.yaml` (**granularity**: how many test suites a spec's tasks share — default
+`per-behavior`, plus **escalation**: whether routing complexity may raise, never lower, an
+assigned test depth) and a `test_depth` value per risk level (`thorough` / `standard` /
+`minimal` for `high` / `medium` / `low`) into `governance/risk-policies.yaml`. On a
+**greenfield** project these are literal defaults, not prompted — there's no per-project
+signal yet to differ from them. On `--brownfield`, if the repo already has a test suite, init
+scans it for a granularity signal (e.g. "31/34 source files have a matching `*.test.*` file")
+and proposes an **inferred** granularity instead of the domain default, naming the evidence;
+you can accept it, fall back to the domain default, or choose manually. See
+[Test Strategies — Test depth policy](test-strategies.md#test-depth-policy--a-second-independent-axis)
+for what `granularity` and `test_depth` change in practice.
+
 For existing codebases, use `--brownfield` to auto-detect your tech stack:
 
 ```
