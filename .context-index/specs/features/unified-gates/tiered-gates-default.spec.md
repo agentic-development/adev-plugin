@@ -1,6 +1,6 @@
 ---
 charter: unified-gates
-status: review-passed
+status: implemented
 kind: behavioral
 risk_level: medium
 milestone:
@@ -13,6 +13,25 @@ affects:
   - setup
   - validation
   - implementation
+source-manifest:
+  sha: "c6d7dbd"
+  files:
+    - docs/governance.md
+    - extensions/data-engineering/domain/gates.yaml
+    - extensions/process-automation/domain/gates.yaml
+    - lib/gates/doctor.mjs
+    - skills/implement/SKILL.md
+    - skills/init/SKILL.md
+    - templates/domains/software/gates.yaml
+    - templates/gates-template.yaml
+    - tests/docs/advanced-guides.test.mjs
+    - tests/domains/starter-integration-tier.test.mjs
+    - tests/gates/shipped-defaults.test.mjs
+    - tests/lib/gates/doctor.test.mjs
+    - tests/skills/implement-integration-gate.test.mjs
+    - tests/skills/init-governance-scaffolding.test.mjs
+    - tests/templates/gates-template.test.mjs
+  computed-at: "2026-08-13T17:32:39.284Z"
 ---
 
 # Live Spec: Tiered Gates by Default — Active Integration Tier in the Gates Template
