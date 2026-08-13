@@ -1,224 +1,168 @@
+---
+last-reviewed-revision: 2
+file-sha: ca28ca210b23e1c7fa0bfbea811a1ef720e3577c1ac97091af0cc120934b6612
+---
+
 # Architecture Review: tiered-gates-default
 
 > **Date:** 2026-08-13
-> **Spec:** `.context-index/specs/features/unified-gates/tiered-gates-default.spec.md`
+> **Spec:** `.context-index/specs/features/unified-gates/tiered-gates-default.spec.md` (revision 2)
 > **Charter:** `.context-index/specs/features/unified-gates/charter.md` (revision 4)
 > **Rigor tier:** `quick` (explicit `--tier quick`; overrides `risk-policies.yaml` `medium.review_mode: full`)
-> **Verdict:** BLOCK
+> **Verdict:** PASS_WITH_NOTES
 
-last-reviewed-revision: 1
-file-sha: c20edf8ca917ed08ce6efd2c03a2197488380a511693bafa3a8f3033c383a347
+This is a **re-review**. Revision 1 was BLOCKed with two blockers; revision 2 was
+produced by `/adev:specify --revise`. The review was scoped primarily to whether
+revision 2 closes those blockers.
 
 ## Reviewers Dispatched
 
 | ID | Name | Mode | Profile | Prompt/Skill |
 |----|------|------|---------|--------------|
-| quick-synthesized-reviewer | Quick Synthesized Review | subagent | `general-purpose` harness agent with read-only constraints stated in-prompt (NOT a `resolveProfile`-enforced `reviewer-capable` profile — recorded honestly; no profile-level tool restriction was applied) | `plugin:review-specs/quick-synthesized-reviewer-prompt.md` — verified byte-identical between the worktree copy (`<ADEV_ROOT>=/Users/dpavancini/Development/adev-wave2-554/skills/review-specs/`) and the skill-loaded plugin-cache copy, so the dispatched prompt text is the worktree's |
+| quick-synthesized-reviewer | Quick Synthesized Review | subagent | `general-purpose` harness agent with read-only constraints stated in-prompt (NOT a `resolveProfile`-enforced `reviewer-capable` profile — recorded honestly; no profile-level tool restriction was applied) | `plugin:review-specs/quick-synthesized-reviewer-prompt.md`, resolved against `<ADEV_ROOT>=/Users/dpavancini/Development/adev-wave2-554/skills/review-specs/` (the worktree copy, not the plugin cache) |
 
 Quick tier: the three bundled specialists (structural-architect, security-reviewer,
 consistency-analyzer) were **not** dispatched. One synthesized reviewer covered all
 three lenses in a single pass, per `graduated-rigor-tiers.spec.md`. The gate was not
-skipped.
+skipped. `adev domain load-reviewers --module unified-gates` resolved domain
+`software` (source level `default`) with zero warnings; `.context-index/governance/review.yaml`
+declares `reviewers: []`, so no overlay applied.
 
 Module heuristics were retrieved (`adev heuristics retrieve --module unified-gates`)
-and included in the reviewer's context pack.
+and included in the reviewer's context pack. `adev skill-ext load --skill review-specs`
+returned `__NONE__`.
 
 ## Quick Synthesized Review (quick-synthesized-reviewer)
 
-**Verdict:** BLOCK
+**Verdict:** PASS_WITH_NOTES
 
-### SA-1 — blocker
+### Prior blocker disposition — both ADDRESSED
 
-- **blocker_id:** `quick-synthesized-reviewer:unreachable-postcondition:38c90edf`
-- **section_anchor:** `### Postconditions`
-- **Location:** `### Postconditions`, behaviors 4 and 5, `## Actionable Task Map`
+| blocker_id | Status | Evidence |
+|---|---|---|
+| `quick-synthesized-reviewer:unreachable-postcondition:38c90edf` | **ADDRESSED** | Behavior 9 routes `/adev:implement` Step 2-post through `adev domain load-gates --module <slug>` — verified a real verb (`lib/cli/domain.mjs:221`, `docs/cli-reference.md:465`), and the same source `skills/validate/SKILL.md:99` already uses. A task-map row for `skills/implement/SKILL.md`, an acceptance criterion, the new "Defect D" root-cause entry, and a rewritten Postconditions block all now exist. |
+| `quick-synthesized-reviewer:unguarded-executor-path:1377c7ba` | **ADDRESSED** | Behavior 10 mandates a non-empty/argv guard at Step 2-post, mirroring a guard that genuinely exists at `skills/implement/SKILL.md:556` — *"For each gate with `kind: deterministic` and non-empty `command`: run it"* / `:557` *"…or no `command` → log 'Skipped'"*. A matching Error-Cases row and acceptance criterion were added. |
 
-**Finding.** The postcondition "Every newly scaffolded project declares at least two
-tiers, and its integration tier executes (as a no-op or for real) at `post-implement`"
-is not reachable through the mechanism this spec chooses.
+**Mechanical feasibility of behavior 9** (the open question flagged for planning in
+revision 1's `mergeGates` drop-fields note): `mergeGates` returns
+`{id, command, description?, severity?, tier?}` — it drops `triggers`, but it
+**preserves `tier`** (`lib/domains/merge-gates.mjs:41-46`), and Step 2-post's filter is
+tier-based, not trigger-based (`skills/implement/SKILL.md:594`: "Filter gates where
+`tier: integration`"). Behavior 9 is therefore implementable as written; the dropped
+`triggers` field does not break it.
 
-`/adev:implement` Step 2-post (`skills/implement/SKILL.md` line 594) reads
-`governance/gates.yaml` **directly** and filters `tier: integration`. It never calls
-`adev domain load-gates` / `mergeGates`, so it never sees
-`templates/domains/software/gates.yaml` or either extension overlay. The live
-`[npm, run, --if-present, test:integration]` starter gate added by behaviors 4 and 5
-is therefore visible only to `/adev:validate` Check 1b, which *does* use the merged
-list (`skills/validate/SKILL.md` lines 99–108, 199). At `post-implement` the only
-integration gate Step 2-post can see is the template's `integration-test` entry, whose
-command is the `""` unwired sentinel.
+### SA-5 — warning (new in revision 2)
 
-Neither the Actionable Task Map nor the Acceptance Criteria contains a row touching
-`/adev:implement`, so nothing in the planned work closes this gap.
+- **Location:** behavior 9; behaviors 4 and 5; interaction with `skills/implement/SKILL.md:599`
 
-**Recommendation.** Either add a behavior + task-map row routing Step 2-post through
-`adev domain load-gates` (the merged list, as validate Check 1 already does), or narrow
-the postcondition to state explicitly that `post-implement` execution depends on
-`/adev:init` seeding the template entry, and that the domain-starter integration gate is
-reachable only from `/adev:validate`.
+**Finding.** Step 2-post's existing prose states: *"All commands within the integration
+tier share the tier's severity (default: `error`). Individual commands do not have their
+own severity."* Behavior 9 now feeds Step 2-post a merged list in which every gate carries
+its own `severity` (preserved by `validateGate`), and behaviors 4/5 mandate
+`severity: error` on each starter/overlay integration gate. The spec does not say which
+model wins after the rewire — tier-uniform severity, or per-gate severity from the merged
+list. The implementer editing Step 2-post is left to decide.
 
-### SA-2 — blocker
+**Recommendation.** State in behavior 9 (or a new behavior) whether Step 2-post honors
+per-gate `severity` from the merged list or retains the tier-uniform model, so the
+fail-fast / WARN semantics of Step 2-post are unambiguous.
 
-- **blocker_id:** `quick-synthesized-reviewer:unguarded-executor-path:1377c7ba`
-- **section_anchor:** `### Behaviors`
-- **Location:** `### Behaviors` (behavior 3), `### Error Cases`, `## Actionable Task Map`
+### SA-3 — warning (restated from revision 1; unaddressed)
 
-**Finding.** Behavior 3 asserts that when a gate declares `command: ""`, "no gate with
-an empty argv list reaches any executor." That guarantee is established only for the
-`mergeGates` code path. It does not hold for `/adev:implement` Step 2-post.
+- **Location:** behavior 7; Acceptance Criteria
 
-Concretely: this spec makes the template's `integration-test` entry **live YAML** with
-`command: ""`. Step 2-post reads raw `governance/gates.yaml`, filters
-`tier: integration`, and then says only "Execute commands sequentially" — with no
-non-empty-command check and no argv-form check. Compare Step 2h (per-task gates), which
-explicitly guards: *"For each gate with `kind: deterministic` and non-empty `command`:
-run it"* and logs "Skipped" when there is no command.
+Confirmed still open: `lib/gates/doctor.mjs:1011 loadGates` reads
+`.context-index/governance/gates.yaml` only and never calls `mergeGates`, so the
+fresh-scaffold doctor criterion never analyses the new starter integration gate.
+Behavior 7's enumerated expected fresh-scaffold warnings still omit `empty-command`,
+the direct consequence of the `""` sentinel this spec introduces.
 
-Today every template entry is commented out, so Step 2-post finds zero integration gates
-and skips silently. After this spec, every scaffold whose `/adev:init` run did not seed a
-command — a state this spec explicitly designs for; it is the entire reason the sentinel
-and its named `INVALID_GATE` warning exist — hands a live, unwired gate to an unguarded
-executor path at `post-implement`.
+**Recommendation** (unchanged): restate the criterion against a scaffold seeded per
+behavior 8 (or against the merged gate set), and add `empty-command` to the enumerated
+expected warnings for the unseeded case.
 
-The sentinel-vs-`[]` analysis in "The default this spec chooses, and why" is **correct**
-for `mergeGates` (verified by direct execution: `command: ""` is dropped with
-`INVALID_GATE`; `command: []` survives with an empty argv list). The defect is that Step
-2-post is the one consumer where that analysis needed to hold, and the spec does not
-check it there.
+### SA-4 — warning (restated from revision 1; unaddressed)
 
-**Recommendation.** Add a behavior mirroring Step 2h's guard (Step 2-post MUST skip any
-gate whose `command` is empty or not an argv list, recording it as skipped), a task-map
-row for `/adev:implement`, and an acceptance criterion asserting it.
+- **Location:** behavior 6; Postconditions
 
-### SA-3 — warning
+Confirmed still open: `doctor.mjs:562-567 scriptNameOf` returns the token immediately
+after `run` with no `-`-prefix skip, so `npm run --if-present test:integration` yields
+`"--if-present"` and `resolveCommandChain` never follows into
+`scripts["test:integration"]`. The one-hop chain analysis — gate-doctor's original
+motivating case — is defeated by the exact idiom this spec makes the default.
 
-- **Location:** `### Behaviors` (behavior 7), `## Acceptance Criteria`
+**Recommendation** (unchanged): add a task teaching `scriptNameOf` to skip `-`-prefixed
+tokens after `run`, or downgrade the postcondition and record the blind spot as a Known
+Limitation.
 
-**Finding.** "`adev gate doctor` on a fresh scaffold carrying the new defaults exits 0
-with zero error-severity findings" is vacuously satisfiable. `lib/gates/doctor.mjs`'s
-`loadGates` reads `.context-index/governance/gates.yaml` only — it never calls
-`mergeGates` — so on a fresh scaffold it sees the `""` sentinels (yielding
-`gate-doctor/empty-command`, severity *warning*) and never analyses the new starter
-integration gate at all. The criterion passes without exercising the default it is meant
-to verify. Behavior 7's enumeration of expected fresh-scaffold warnings
-(`ci-config-missing`, `runner-unknown`) also omits `empty-command`, which is the direct
-consequence of the sentinel this spec introduces.
+### CON-2 — warning (restated from revision 1; unaddressed)
 
-**Recommendation.** Restate the criterion against a scaffold whose `gates.yaml` has been
-seeded per behavior 8 (or against the merged gate set), and add `empty-command` to the
-enumerated expected warnings for the unseeded case.
+- **Location:** "The default this spec chooses, and why"
 
-### SA-4 — warning
+An error-severity gate that exits 0 because `test:integration` is undefined reports
+**PASS**, in tension with the charter's Transparency attribute (*"No silent passes for
+unchecked items"*). Behavior 10 now gives skipped-with-reason rendering for *unwired*
+gates, but nothing distinguishes a `--if-present` no-op from a genuine pass.
 
-- **Location:** `### Behaviors` (behavior 6), `### Postconditions`
+### CON-1 — addressed in revision 2
 
-**Finding.** "`adev gate doctor` diagnoses every gate the loader accepts" overstates what
-argv normalisation delivers. `doctor.mjs::scriptNameOf` maps `npm run <X>` to the token
-immediately after `run`; for `npm run --if-present test:integration` it returns
-`"--if-present"`, so `resolveCommandChain` finds no matching `package.json` script and
-never follows the one-hop indirection into `scripts["test:integration"]`. The chain
-analysis of gate-doctor behavior 7a — the doctor's original motivating case, where the
-`**` glob lived in the script body rather than the gate command — is silently defeated by
-the exact idiom this spec makes the default. (`test:integration` also escapes
-`referencedPathsDetailed`, which only treats tokens containing `/` as paths; that part is
-benign and produces no false error.)
+Revision 2 corrects the citation: it attributes `QUALITY_GATE_COMMAND_SHELL` to the
+`validate.yaml` quality-gate runner, cites Recipe 3 (confirmed at `docs/governance.md:377`,
+"argv only"), records that `docs/governance.md` carries no `gates.yaml` schema section at
+all, and scopes the Docs task-map row to *adding* that section rather than
+cross-referencing the existing one.
 
-**Recommendation.** Either add a task teaching `scriptNameOf` to skip `-`-prefixed tokens
-after `run`, or downgrade the postcondition and record the blind spot in Known Limitations.
+### SA-6 — suggestion
 
-### CON-1 — warning
+Behavior 1 requires the template's `integration-test` entry to declare
+`triggers: [post-implement]`, but no consumer on the path this spec chooses observes it —
+`mergeGates` drops `triggers`, and Step 2-post filters on `tier`. Harmless (the field was
+already declarative before this spec), but worth a one-line note so planning does not
+treat it as enforced.
 
-- **Location:** `### Root Cause`, Defect B
+### Wording nit (not a finding)
 
-**Finding.** The spec cites `docs/governance.md` as already stating the correct rule,
-quoting *"argv form only. `command: "npm test"` (string) fails load with
-`QUALITY_GATE_COMMAND_SHELL`"*. That line (governance.md:285) sits in the
-**`governance/validate.yaml` quality-gate hardening** section, and
-`QUALITY_GATE_COMMAND_SHELL` is emitted by `lib/governance/validate-config.mjs`, not by
-`merge-gates.mjs` (which emits `INVALID_GATE`). Recipe 3 (governance.md:377) does state
-argv-only for gate commands generically, so the spec's *conclusion* survives, but
-`docs/governance.md` has **no** section documenting the `governance/gates.yaml` gate
-schema at all. The premise "the docs are right, only the template drifted" is inaccurate
-for this loader.
-
-**Recommendation.** Correct the citation to Recipe 3, and scope the Docs task-map row to
-*adding* the missing `gates.yaml` schema section (including `INVALID_GATE`), not merely a
-"shipped default" note.
-
-### CON-2 — warning
-
-- **Location:** `### The default this spec chooses, and why`; charter `## Quality Attributes`
-
-**Finding.** An error-severity gate that exits 0 because the script is undefined reports
-**PASS**. That is in tension with the charter's Transparency attribute: *"Every validation
-report explicitly shows what ran, what was skipped, and why. No silent passes for
-unchecked items."* A project can carry a permanently green integration tier that has never
-executed anything.
-
-**Recommendation.** Require the gate `description` and/or the GateResult rendering to
-distinguish "no-op — `test:integration` undefined" from a genuine pass.
-
-### SEC-1 — suggestion
-
-- **Location:** `### Preconditions`
-
-**Finding.** No new trust boundary is crossed. SEC-2 (argv-only) is preserved rather than
-relaxed, the sentinel choice (`""` over `[]`) is the safe one given the loader's actual
-semantics, and no `{{ }}` interpolation is introduced. Worth stating explicitly in
-Preconditions that starter/overlay gates are repo-authored rather than user input, which
-is why they are trusted to ship live commands.
+Behavior 10's rationale says it covers "the one consumer where `mergeGates`' own drop
+behavior does not apply" — no longer strictly true once behavior 9 routes Step 2-post
+through the merged list. The guard remains load-bearing for `command: []` (truthy, an
+array, so it survives `validateGate` carrying an empty argv list — reconfirmed), which is
+exactly what the Error-Cases row claims.
 
 ---
 
-## Verification Performed
+## Scope Notes
 
-These claims of the spec were checked against worktree source rather than taken on trust:
-
-| Claim | Result |
-|---|---|
-| `merge-gates.mjs::validateGate` rejects string-form `command` (SEC-2) | CONFIRMED (`INVALID_GATE`, "must be an argv list (array), not a string — skipped") |
-| `command: ""` is dropped with a named warning | CONFIRMED by direct execution ("missing required command field — skipped") |
-| `command: []` is truthy and survives `validateGate` with an empty argv list | CONFIRMED by direct execution — the spec's rationale for rejecting `[]` as sentinel is correct |
-| `[npm, run, --if-present, test:integration]` parses correctly under `lib/profiles/yaml.mjs` | CONFIRMED (4-element array; no colon mis-parse in flow sequence) |
-| `npm run --if-present <undefined script>` exits 0 | CONFIRMED empirically (npm 11.6.2) |
-| `transitions: {}` is already live YAML in the template | CONFIRMED — the issue text is stale, as the spec states |
-| Template is fully commented out; starters hardcode `["npm","test"]` fast-tier only | CONFIRMED (Defects A and B reproduce) |
-| `gate-doctor.spec.md` does not normatively pin `command` to a YAML string | CONFIRMED — it describes `command` behaviorally; several acceptance fixtures use string form, which argv normalisation keeps working. No contradiction. |
-| No contradiction with `charter.md` revision 4 | CONFIRMED — the charter already carries a "Tiered Gates by Default" capability (status `specified`) whose text matches this spec |
-| `docs/governance.md` "already documents argv-only" | PARTIALLY CONFIRMED — see CON-1 |
-| `mergeGates` preserves gate metadata | NOT AS ASSUMED — it returns only `{id, command, description?, severity?, tier?}`, dropping `name`, `kind`, `scope`, `required`, `triggers`. Behaviors 4/5 assert only `tier` and `severity`, so they still hold; noted for planning. |
+Per the invocation's scope guardrails, the following were **not** raised as findings:
+the `software` domain starter's pre-existing hardcoded npm (spec Open Question 2) and
+this repo's own string-form `gates.yaml` `test` gate (Open Question 1). Both are
+pre-existing repo conditions that the spec documents as accepted and routes to a human
+via Open Questions — the correct disposition for a defaults-and-templates change.
 
 ---
 
 ## Summary
 
-**Total findings:** 7 (2 blockers, 4 warnings, 1 suggestion)
+**Total findings:** 5 (0 blockers, 4 warnings, 1 suggestion)
 
-**Action required:** Run `/adev:specify --revise` on
-`.context-index/specs/features/unified-gates/tiered-gates-default.spec.md` to address SA-1
-and SA-2, then re-review.
+**Action required:** None blocking. The spec is ready for planning. Run
+`/adev:plan --spec .context-index/specs/features/unified-gates/tiered-gates-default.spec.md`
+to proceed. SA-5 is the most useful of the warnings to resolve during planning — it is a
+one-sentence disambiguation that the implementer will otherwise have to guess at. SA-3,
+SA-4, and CON-2 are carried forward from revision 1 as accepted notes; each is a scoping
+or follow-up question rather than a defect in the chosen default.
 
-**SA-1 and SA-2 share one root cause** — `/adev:implement` Step 2-post consumes raw
-`governance/gates.yaml` instead of the merged gate list, so it neither sees the domain
-starter's integration gate nor guards against the unwired sentinel. A single revision that
-adds one behavior plus one `/adev:implement` task-map row closes both; they do not need two
-passes.
-
-The spec's core design (argv alignment, `""` over `[]` as the sentinel,
-`npm run --if-present` as a verified no-op, activity where the stack is known) is sound and
-every schema-level claim it makes was verified true. The blockers are about consumer
-coverage, not about the chosen default.
+**Blocker convergence:** both revision-1 blockers
+(`quick-synthesized-reviewer:unreachable-postcondition:38c90edf`,
+`quick-synthesized-reviewer:unguarded-executor-path:1377c7ba`) are **addressed**. Zero
+persistent blockers, zero new blockers. No `.blockers.md` sidecar was written (sidecars
+are BLOCK-only).
 
 **Transition note:** `.context-index/governance/gates.yaml` defines no `spec-to-plan`
 transition, so no `approver_role` applies to this review.
 
-**Lifecycle-log mapping note.** The lifecycle event enum (`lib/cli/report.mjs`
-`VALID_VERDICTS`, `lib/lifecycle-state.mjs`) has no `BLOCK` member — it is
-`PASS | PASS_WITH_NOTES | FAIL`. The consolidated `BLOCK` verdict of this report is
-therefore recorded as `FAIL` in both the `reviewer_report` and the `step_completed`
-events. The artifact and the log do not disagree. Enforcement was verified:
-`adev gate require --skill plan --spec <this spec>` exits `2`.
-
-The `UNKNOWN_REVIEWER_DEFAULTED` advisory emitted while writing the reviewer event is
-expected — `quick-synthesized-reviewer` is not declared in the `software` domain's
-`reviewers.yaml`, so its event severity defaulted to `warning`. Event severity does not
-feed the consolidated verdict and does not soften this BLOCK.
+**Lifecycle-log mapping note.** The lifecycle event enum has no `BLOCK` member
+(`PASS | PASS_WITH_NOTES | FAIL`); this review's `PASS_WITH_NOTES` maps directly and
+needs no translation. An `UNKNOWN_REVIEWER_DEFAULTED` advisory on the `reviewer_report`
+event is expected — `quick-synthesized-reviewer` is not declared in the `software`
+domain's `reviewers.yaml`, so its event severity defaults to `warning`. Event severity
+does not feed the consolidated verdict.
