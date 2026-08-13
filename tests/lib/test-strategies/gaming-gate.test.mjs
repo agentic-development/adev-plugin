@@ -5,6 +5,7 @@ import {
   isDetectorFixtureFile,
   isIntegrationTestFile,
   runGamingDetectors,
+  reconstructAfterContent,
 } from "../../../lib/test-strategies/gaming-gate.mjs";
 
 describe("isTestFile", () => {
@@ -65,5 +66,28 @@ describe("runGamingDetectors", () => {
     const content = padding + "\nit.skip('y', () => {});\n";
     const result = runGamingDetectors(content, "tests/cli/context.test.mjs");
     assert.ok(result.violations.some((v) => v.patternId === "DISABLED_TESTS"));
+  });
+});
+
+describe("reconstructAfterContent", () => {
+  it("Write: returns the tool's content field directly", () => {
+    const after = reconstructAfterContent({ tool: "Write", before: "old", content: "new full content" });
+    assert.equal(after, "new full content");
+  });
+
+  it("Edit: replaces the first occurrence of old_string with new_string", () => {
+    const before = "a\nb\na\n";
+    const after = reconstructAfterContent({ tool: "Edit", before, oldString: "a", newString: "X" });
+    assert.equal(after, "X\nb\na\n");
+  });
+
+  it("Edit: returns null when old_string is not found (fail-open signal)", () => {
+    const after = reconstructAfterContent({ tool: "Edit", before: "a\nb\n", oldString: "zzz", newString: "X" });
+    assert.equal(after, null);
+  });
+
+  it("unknown tool: returns null (fail-open signal)", () => {
+    const after = reconstructAfterContent({ tool: "NotebookEdit", before: "a" });
+    assert.equal(after, null);
   });
 });
