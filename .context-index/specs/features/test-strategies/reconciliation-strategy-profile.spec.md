@@ -2,10 +2,10 @@
 charter: test-strategies
 charter-extension: true
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: high
 milestone:
-revision: 1
+revision: 2
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -23,11 +23,14 @@ accepted category.
 
 > **Charter extension note:** The test-strategies charter (revision 4) defined 9
 > strategies. `reconciliation` is an 11th, justified by the charter Quality
-> Attribute on extensibility. Sibling specs to update when this lands:
-> - `strategy-type-registry` — "exactly 9 strategy types" → 12; add a registry table row
-> - `strategy-profile-contract` — registered-slug set grows; validation stays dynamic via `getStrategy()`
-> - `cross-strategy-gaming-patterns` — "any of the 8 types" → "any registered strategy type"
-> - `strategy-detection-heuristics` — add the cascade entry defined in Behavior 6
+> Attribute on extensibility. The authoritative **shared 9 → 12 update surface**
+> — every registry, test, doc, and sibling-spec site that must change in the same
+> commit — is the table in `snapshot-strategy-profile.spec.md`'s charter extension
+> note. It is maintained in one place rather than triplicated. Earlier drafts of
+> all three profile specs undercounted it (three count-assertion sites, not two;
+> ID *arrays* and describe titles as well as `assert.equal` lines) and wrongly
+> listed `cross-strategy-gaming-patterns.spec.md`, which already reads "any
+> registered strategy type".
 
 ## Problem and Motivation
 
@@ -126,21 +129,36 @@ change rather than a silent widening.
 - **Post-hoc filter narrowing:** adding `WHERE` clauses or scope exclusions
   between RED and GREEN so that diverging records leave the compared population.
 
-**6. Detection heuristics and cascade position**
+**6. Detection heuristics and pattern-level exclusions**
+
+`detectTaskStrategy` evaluates a **fixed linear rule list** and returns the first
+match. `reconciliation` is **appended at the end** of that list, after
+`integration`, and requests no reordering or modification of any shipped rule.
 
 | Pattern | Confidence |
 |---|---|
 | `reconciliation/**`, `recon/**` | high |
 | `parity/**`, `*.reconciliation.{sql,py,yaml,yml,json}` | high |
-| `migration/**` combined with `compare`/`parity` in the filename | medium |
+| `migration/**` combined with `compare` or `parity` in the filename | medium |
 
-Cascade precedence, stated explicitly:
+Because `reconciliation` is last, every earlier rule wins by construction:
 
-- `schema` is checked **before** `reconciliation`: a file under `migrations/` is
-  a migration task, even if it mentions parity.
-- `reconciliation` is checked **before** `fixture`, so
-  `models/reconciliation/*.sql` reconciles rather than fixture-compares.
-- `reconciliation` never claims bare `models/**/*.sql`, which stays `fixture`.
+- **`schema` wins** for anything under `migrations/` — a migration file is a
+  migration task even when it mentions parity. This is the intended outcome.
+- **`fixture` wins for `models/**/*.sql`**, including
+  `models/reconciliation/x.sql`. Reconciliation work inside a dbt `models/` tree
+  must be declared via the manifest `test_strategies` block or spec frontmatter
+  rather than auto-detected. This is a deliberate accepted limitation, replacing
+  an earlier draft's unimplementable claim that `reconciliation` is "checked
+  before `fixture`".
+
+**6a. Multi-path resolution**
+
+`detectTaskStrategy` iterates a task's **file paths in the outer loop** and rules
+in the inner loop, so the first *path* that matches any rule decides — precedence
+applies within a single path, never globally. For
+`["models/x.sql", "reconciliation/y.sql"]` the first path wins and the task
+resolves to `fixture`. Mixed-path tasks must declare their strategy explicitly.
 
 **7. Assertion rules**
 
@@ -158,10 +176,13 @@ Cascade precedence, stated explicitly:
 **8. Partial access is `deferred`, never `pass`**
 
 When `runPreflight()` finds credentials for one system but not the other, the
-verification records `deferred` with `reason_code: infra_partial` naming the
-unreachable system and the unmet `infra_requirements` entry. A reconciliation
-that can read only one side has no verdict to give — recording anything other
-than `deferred` is the exact failure mode this profile exists to prevent.
+verification records `deferred` with `reason_code: infra_partial`, naming the
+unreachable system and the unmet `infra_requirements` entry. When **neither**
+system is reachable it records `deferred` with `reason_code: infra_unavailable`
+— stated explicitly here for symmetry, since both cases are `deferred` and only
+the reason code distinguishes them. A reconciliation that can read only one side
+has no verdict to give; recording anything other than `deferred` is the exact
+failure mode this profile exists to prevent.
 
 **9. Handoff format**
 
@@ -169,6 +190,37 @@ The handoff block carries: source system identifier and read command, target
 system identifier and read command, declared grain, leg definitions, the closed
 classification set, the declared minimum population size, watermark/point-in-time
 rule, the report artifact path, and the pass rule.
+
+**9a. Credential rule for recorded commands**
+
+Read commands are recorded literally, but a command embedding a **credential
+value** literally is rejected. Credentials are referenced **only** by named
+environment variable (`$VAR` / `${VAR}`), matching the constraint the
+`infra_requirements` `probe` field already imposes and the spec template's "env
+var names only — MUST NOT contain actual credential values" rule. Reconciliation
+is the highest-exposure case in this strategy family because it records
+credentials for **two** live systems in a committed artifact, so this rule is not
+optional. `psql "postgresql://u:pw@h/db" -c …` is rejected with
+`RECONCILIATION_CREDENTIAL_IN_COMMAND`; `psql "$RECONCILIATION_SOURCE_URL" -c …` is
+accepted. Connection-string variables embed passwords and are treated as secrets,
+as `integration-strategy-profile.spec.md` already states.
+
+**9b. Remaining required profile fields**
+
+`getStrategyProfile('reconciliation')` must return all 8 contract fields without
+falling back to `unit`. Two do not follow from the behaviors above:
+
+- **`seed_data_rule`:** *"Neither side is seeded. The rule is a read rule: both
+  populations must be read at the declared watermark or point-in-time, through
+  independent paths, covering the full declared grain, with the compared
+  population size recorded per side and asserted against the declared minimum."*
+- **`permitted_tools`:** the effective list is resolved from the **project's
+  declared read commands** — the manifest `test_strategies` entry for
+  `reconciliation` merged with the domain profile via
+  `lib/domains/merge-test-config.mjs`. The profile file carries a **non-empty**
+  default list (`psql`, `mysql`, `sqlite3`, `bq`, `snowsql`, `duckdb`, `jq`,
+  `csvdiff`) because `loadProfile()` treats an empty array as a missing field and
+  falls back to `unit`.
 
 ### Postconditions
 
@@ -180,15 +232,16 @@ rule, the report artifact path, and the pass rule.
 
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| Grain not declared | Block before running | `RECON_GRAIN_UNDECLARED` |
-| Fewer than the three mandatory legs run | Block | `RECON_INCOMPLETE_LEGS` |
-| Either population is empty or below the declared minimum | Block | `RECON_EMPTY_POPULATION` |
-| A divergence is unclassified or classified `unexplained` | Fail (a real finding) | `RECON_UNEXPLAINED_DRIFT` |
-| Classification set not declared, or a catch-all class used without a cause | Block | `RECON_CLASSIFIER_UNDECLARED` |
-| Target read reuses the writer's query or view | Block | `RECON_ONE_SIDED_READ` |
-| Only one system reachable | Record `deferred` | `RECON_DEFERRED_PARTIAL_ACCESS` |
-| Neither system reachable | Record `deferred` | `RECON_DEFERRED_INFRA` |
-| Sampled comparison reported as full-population | Block | `RECON_SAMPLING_UNDISCLOSED` |
+| Grain not declared | Block before running | `RECONCILIATION_GRAIN_UNDECLARED` |
+| Recorded read command embeds a literal credential value | Block | `RECONCILIATION_CREDENTIAL_IN_COMMAND` |
+| Fewer than the three mandatory legs run | Block | `RECONCILIATION_INCOMPLETE_LEGS` |
+| Either population is empty or below the declared minimum | Block | `RECONCILIATION_EMPTY_POPULATION` |
+| A divergence is unclassified or classified `unexplained` | Fail (a real finding) | `RECONCILIATION_UNEXPLAINED_DRIFT` |
+| Classification set not declared, or a catch-all class used without a cause | Block | `RECONCILIATION_CLASSIFIER_UNDECLARED` |
+| Target read reuses the writer's query or view | Block | `RECONCILIATION_ONE_SIDED_READ` |
+| Only one system reachable | Record `deferred` | `RECONCILIATION_DEFERRED_PARTIAL_ACCESS` |
+| Neither system reachable | Record `deferred` | `RECONCILIATION_DEFERRED_INFRA` |
+| Sampled comparison reported as full-population | Block | `RECONCILIATION_SAMPLING_UNDISCLOSED` |
 
 ## System Constitution Reference
 
@@ -204,9 +257,9 @@ rule, the report artifact path, and the pass rule.
 
 | Module | Impact | Changes Required |
 |--------|--------|-----------------|
-| `lib/test-strategies/registry.mjs` | High | Add the `reconciliation` entry; update both count assertions in the same change |
-| `lib/test-strategies/profiles/reconciliation.md` | High | New profile with all 8 required contract fields |
-| `lib/test-strategies/detection.mjs` | Medium | Cascade entry per Behavior 6, after `schema`, before `fixture` |
+| `lib/test-strategies/registry.mjs` | High | Add the `reconciliation` entry; **every site in the shared 9 → 12 table** (see `snapshot-strategy-profile.spec.md`) updates in the same change — including ID *arrays* and describe titles, not only `assert.equal(…, 9)` lines |
+| `lib/test-strategies/profiles/reconciliation.md` | High | New profile with all 8 required contract fields, including the `seed_data_rule` and non-empty `permitted_tools` defined in Behavior 9b |
+| `lib/test-strategies/detection.mjs` | Medium | **Append** the cascade rule per Behavior 6 at the end of the rule list. No shipped rule is reordered or modified |
 | `lib/test-strategies/gaming.mjs` | Medium | Detectors for count-only legs, empty population, catch-all classification |
 | `lib/infra-preflight.mjs` | Medium | Surface *which* declared system failed preflight so `infra_partial` can name it |
 | `templates/manifest-template.yaml` | Low | `reconciliation` example in the activated block |
@@ -227,12 +280,15 @@ rule, the report artifact path, and the pass rule.
 
 ## Acceptance Criteria
 
-- [ ] `getStrategyProfile('reconciliation')` loads without falling back to `unit`
-- [ ] Profile contains all 8 required contract fields
-- [ ] A reconciliation with only a count leg blocks with `RECON_INCOMPLETE_LEGS`
-- [ ] A reconciliation over an empty population blocks with `RECON_EMPTY_POPULATION`
+- [ ] `getStrategyProfile('reconciliation')` loads without falling back to `unit`, with a non-empty `permitted_tools` default and the `seed_data_rule` from Behavior 9b
+- [ ] Profile contains all 8 required contract fields and passes the profile-contract sweep at `tests/evals/test-strategies/test-strategies.test.mjs:740`
+- [ ] A read command containing a literal credential blocks with `RECONCILIATION_CREDENTIAL_IN_COMMAND`; the `$VAR` form is accepted
+- [ ] Error codes use the full `RECONCILIATION_` strategy-id prefix, matching `SNAPSHOT_`/`TOLERANCE_`/`THRESHOLD_` convention
+- [ ] A reconciliation with only a count leg blocks with `RECONCILIATION_INCOMPLETE_LEGS`
+- [ ] A reconciliation over an empty population blocks with `RECONCILIATION_EMPTY_POPULATION`
 - [ ] An unclassified divergence fails; a `catch-all` class without a cause blocks
 - [ ] Comparing global aggregates when a grain was declared blocks
 - [ ] One-system-reachable records `deferred` with the unreachable system named — never `green`
-- [ ] Detection returns `schema` for `migrations/parity_check.sql` and `reconciliation` for `models/reconciliation/x.sql`
+- [ ] The `reconciliation` rule is **appended** at the end of the cascade; a regression test asserts no shipped rule changed its result
+- [ ] Detection returns `schema` for `migrations/parity_check.sql`, `fixture` for `models/reconciliation/x.sql` (the documented accepted limitation), and `reconciliation` for `recon/compare_counts.py`
 - [ ] All quality gates pass; no constitutional violations introduced

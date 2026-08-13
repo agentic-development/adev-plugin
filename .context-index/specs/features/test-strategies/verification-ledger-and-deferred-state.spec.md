@@ -2,10 +2,10 @@
 charter: test-strategies
 charter-extension: true
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: high
 milestone:
-revision: 1
+revision: 2
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -112,18 +112,51 @@ specific unmet requirement:
 | `awaiting_dependency` | A prerequisite task has not produced its output yet |
 | `operator_deferred` | A human explicitly deferred it, with an attributed record |
 
-`unmet_requirement` names the specific `infra_requirements` system/env var/tool
-that failed preflight, sourced from `runPreflight()` output — not free prose.
-A `deferred` outcome with a missing or unrecognised `reason_code` is itself an
-error (`LEDGER_DEFERRED_UNEXPLAINED`).
+`unmet_requirement` names the specific `infra_requirements` system, env var, or
+CLI tool that failed preflight, sourced from `runPreflight()` output — not free
+prose. A `deferred` outcome with a missing or unrecognised `reason_code` is
+itself an error (`LEDGER_DEFERRED_UNEXPLAINED`).
+
+**`unmet_requirement` is a name, never a message.** It is populated **only** from
+`runPreflight()`'s `missing_env_vars`, `missing_tools`, and failing-system
+identifiers. Populating it from `probe_error` is explicitly forbidden:
+`probe_error` carries up to 200 characters of `sanitizeStderr()`-cleaned stderr,
+and that sanitiser strips ANSI and control characters but **not**
+credential-shaped substrings — a failing probe's stderr routinely echoes the
+connection string it was handed. Because the lifecycle log is committed JSONL,
+that would write secrets into git history. A record whose `unmet_requirement`
+does not match a name present in the preflight result is rejected with
+`LEDGER_UNMET_REQUIREMENT_NOT_A_NAME`.
 
 **3. Agents may not choose `deferred` to make progress**
 
-`operator_deferred` requires an explicit human instruction or a project
-configuration entry, recorded with its source. An agent encountering an
-environmental obstacle records `infra_unavailable` / `infra_partial` and
-**stops**; it does not deem the work done. This mirrors the integration profile's
-existing prohibition on agent-initiated skips, and extends it to every strategy.
+An agent encountering an environmental obstacle records `infra_unavailable` /
+`infra_partial` and **stops**; it does not deem the work done. This mirrors the
+integration profile's existing prohibition on agent-initiated skips and extends
+it to every strategy.
+
+**`operator_deferred` requires verified human attribution, not a self-declared
+source.** The other four reason codes are machine-derived from preflight or
+population data and cannot be forged by prose. `operator_deferred` is the single
+code that asserts a *human decision*, which makes it the one code an agent could
+use to launder an obstacle into forward progress — the same shape as the
+235-of-391 `skipped` failure wearing a different label. Therefore:
+
+- The recording verb accepts `operator_deferred` **only** when the invocation
+  carries the hook-injected provenance the project already requires on commits
+  (`Author-type` / `Operator`, from the manifest `provenance` section) **and**
+  that provenance resolves to a human operator. The verb does **not** read a
+  `source` argument supplied by the caller; it reads the provenance the harness
+  injected. Self-attestation is structurally impossible rather than merely
+  prohibited.
+- An `operator_deferred` record produced under agent provenance is **rejected**,
+  not downgraded, with `LEDGER_UNATTRIBUTED_OVERRIDE`. Rejection rather than
+  downgrade is deliberate: a silent downgrade would let the agent continue
+  believing it had recorded a deferral.
+- A project may pre-authorise standing deferrals through explicit checked-in
+  configuration, in which case the record cites the configuration entry and the
+  commit that introduced it — a human-authored, reviewable artifact — rather than
+  a runtime assertion.
 
 **4. Recording is mandatory, and absence is itself a finding**
 
@@ -132,6 +165,17 @@ recorded outcome by the time validation runs. A task with an assignment and no
 outcome is reported as `unverified` — the state the audited project's absent
 records should have produced. Absence never reads as success.
 
+**Effective date, not retroactive.** This obligation applies only to tasks whose
+strategy assignment was recorded **on or after** the commit that lands the
+`strategy_verification` event. Tasks assigned before that point are reported as
+`unverified (pre-ledger)` — visible in the board but not counted as findings and
+not blocking any gate. Without this rule, landing the ledger would instantly mark
+every existing non-`unit` task in every adev project as unverified, which would
+train operators to ignore the signal on day one — the precise outcome this spec
+exists to prevent. The cutoff is read from the first `strategy_verification`
+event in the project's lifecycle logs; projects with none are entirely
+pre-ledger.
+
 **5. Event shape (proposed — requires human approval)**
 
 Outcomes are recorded as a `strategy_verification` event appended to the owning
@@ -139,7 +183,8 @@ spec's log:
 
 ```
 { event: "strategy_verification", task_id, strategy_id,
-  outcome, reason_code?, unmet_requirement?, evidence_ref?, ts }
+  outcome, reason_code?, unmet_requirement?, evidence_ref?,
+  baseline_checksum?, baseline_captured_at?, ts }
 ```
 
 `evidence_ref` is a project-root-relative path to the report or artifact that
@@ -147,11 +192,30 @@ justifies the outcome (reconciliation report, snapshot provenance record,
 tolerance measurement report) — not the payload itself, keeping event size bounded
 and secrets out of the log.
 
+`baseline_checksum` and `baseline_captured_at` exist so that
+`snapshot-strategy-profile.spec.md`'s two defining gaming blockers have a durable
+substrate. Both are **strategy-conditional**: required when
+`strategy_id === "snapshot"` and the outcome records a baseline, absent
+otherwise. Without them, the post-hoc-baseline rule ("was the baseline captured
+before implementation?") and the write-once rule ("has a baseline already been
+recorded for this task?") have nothing to check against — the write-test handoff
+block is not a durable, timestamped, queryable record. Both fields are bounded
+scalars (a hex digest and an ISO timestamp), so they do not reintroduce the
+payload-size or secret-leak concerns that `evidence_ref` avoids.
+
 > **[BOUNDARY: human-approved] required.** Adding `strategy_verification` to
 > `CANONICAL_EVENTS` in `lib/lifecycle-events.mjs` touches the lifecycle event
 > schema governed by ADR-0009, exactly as `spec_amended` and `test_depth_assigned`
 > did. **This spec proposes the event; it does not land it.** Implementation is
 > blocked until a human approves the taxonomy addition.
+>
+> The approval must also cover
+> `.context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md`,
+> which ADR-0009 §8 designates as the event-log authority and whose Canonical
+> Event Variants table must gain a `strategy_verification` row. That table is
+> already stale (missing `spec_amended`, `test_depth_assigned`, and
+> `code_drift_*`); this change adopts the fix for its own row and flags the
+> backlog rather than silently extending the drift.
 >
 > The fallback if it is not approved is instructive and argues for approval:
 > non-canonical events still persist on append but surface under
@@ -190,6 +254,16 @@ judgement, and never such that the summary reports a pass.
 
 ### Error Cases
 
+> **Note on `LEDGER_SPEC_PATH_UNRESOLVED`.** An earlier revision reused
+> `INVALID_SPEC_PATH` here. That code already carries an established, different
+> contract — `assertWithin()` path-traversal rejection in `lib/cli/specify.mjs`,
+> a hard CLI failure with exit 1. This spec's case is explicitly non-fatal
+> (report and continue). Reusing one code for two incompatible severities across
+> modules is what ADR-0009 §5's throw-site-prefixing rule exists to prevent, so a
+> distinct `LEDGER_`-prefixed code is used. `INVALID_SPEC_PATH` retains its
+> existing meaning and is still raised, unchanged, for genuine containment
+> violations.
+
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | Outcome value outside the closed enum | Reject the record | `LEDGER_INVALID_OUTCOME` |
@@ -197,7 +271,9 @@ judgement, and never such that the summary reports a pass.
 | `deferred` with `reason_code: infra_unavailable` but no `unmet_requirement` | Reject the record | `LEDGER_DEFERRAL_UNATTRIBUTED` |
 | `operator_deferred` with no attributed human source | Reject the record | `LEDGER_UNATTRIBUTED_OVERRIDE` |
 | Task has a non-`unit` assignment and no outcome at validate time | Report `unverified`; non-passing | `LEDGER_UNVERIFIED_TASK` |
-| Spec path does not resolve to a lifecycle log | Report; do not silently drop the outcome | `INVALID_SPEC_PATH` |
+| Spec path does not resolve to a lifecycle log | Report; do not silently drop the outcome | `LEDGER_SPEC_PATH_UNRESOLVED` |
+| `unmet_requirement` is not a name present in the preflight result (e.g. sourced from `probe_error`) | Reject the record | `LEDGER_UNMET_REQUIREMENT_NOT_A_NAME` |
+| `strategy_id` is `snapshot` and a baseline is recorded without `baseline_checksum` / `baseline_captured_at` | Reject the record | `LEDGER_MISSING_BASELINE_FIELDS` |
 | `evidence_ref` escapes the project root | Reject the record | `LEDGER_EVIDENCE_OUT_OF_ROOT` |
 
 ## System Constitution Reference
@@ -216,6 +292,7 @@ judgement, and never such that the summary reports a pass.
 | Module | Impact | Changes Required |
 |--------|--------|-----------------|
 | `lib/lifecycle-events.mjs` | High | Add `strategy_verification` to `CANONICAL_EVENTS` with a `[BOUNDARY: human-approved]` comment — **blocked on approval** |
+| `agent-reliable-state-artifacts/lifecycle-event-log.spec.md` | High | ADR-0009 §8 designates it the event-log authority; its Canonical Event Variants table gains a `strategy_verification` row (and is already stale for `spec_amended` / `test_depth_assigned` / `code_drift_*`) |
 | `lib/lifecycle-state.mjs` | High | `reportStrategyVerification()` emitter, projection rule, `renderMarkdown` verification section |
 | `lib/diagnostics/event-schemas.mjs` | Medium | Schema for the new event: closed enums, required-field pairing |
 | `lib/infra-preflight.mjs` | Medium | Expose which declared system/env var/tool failed, so `unmet_requirement` is machine-sourced |
@@ -247,14 +324,32 @@ judgement, and never such that the summary reports a pass.
 
 ## Acceptance Criteria
 
+Acceptance criteria are split by where they are enforceable, so a reader can tell
+which are testable in `lib/` now and which depend on the deferred SKILL.md wiring
+named in the Module Impact Map.
+
+**Enforceable in `lib/` (this spec's implementable scope):**
+
 - [ ] The outcome enum is closed at four values and contains no `skipped`
 - [ ] A `deferred` record without a recognised `reason_code` is rejected
 - [ ] A `deferred` record with `infra_unavailable` and no `unmet_requirement` is rejected
-- [ ] `unmet_requirement` is populated from `runPreflight()` output, not free prose
-- [ ] An agent cannot produce `operator_deferred` without an attributed human source
+- [ ] `unmet_requirement` is populated only from `runPreflight()`'s `missing_env_vars` / `missing_tools` / failing-system names; a value sourced from `probe_error` is rejected with `LEDGER_UNMET_REQUIREMENT_NOT_A_NAME`
+- [ ] An agent cannot produce `operator_deferred`: the verb reads hook-injected `Author-type` / `Operator` provenance and ignores any caller-supplied `source`; agent provenance is **rejected** (not downgraded) with `LEDGER_UNATTRIBUTED_OVERRIDE`
+- [ ] `evidence_ref` escaping the project root is rejected
+- [ ] A `snapshot` outcome recording a baseline without `baseline_checksum` / `baseline_captured_at` is rejected
+- [ ] `LEDGER_SPEC_PATH_UNRESOLVED` is used for the non-fatal case; `INVALID_SPEC_PATH` keeps its existing hard-failure contract
+- [ ] Most-recent-wins projection per `(task_id, strategy_id)`, with earlier events retained and readable
+- [ ] No new results store, board file, or file format is introduced
+
+**Depends on the deferred SKILL.md wiring (tracked as required follow-up, not satisfiable by this spec alone):**
+
 - [ ] A non-`unit` task with no recorded outcome reports `unverified` and does not pass
+- [ ] Tasks assigned before the ledger's effective date report `unverified (pre-ledger)`, are not counted as findings, and block nothing
 - [ ] `renderMarkdown()` reports `deferred` and `unverified` counts separately from passes
 - [ ] No gate treats `deferred`, `error`, or `unverified` as GREEN
-- [ ] No new results store, board file, or file format is introduced
-- [ ] The `strategy_verification` canonical event carries a `[BOUNDARY: human-approved]` comment and landed only after explicit approval
+
+**Gated on human approval (blocks everything above):**
+
+- [ ] The `strategy_verification` canonical event carries a `[BOUNDARY: human-approved]` comment and lands only after explicit approval
+- [ ] `lifecycle-event-log.spec.md`'s Canonical Event Variants table gains a `strategy_verification` row
 - [ ] All quality gates pass; no constitutional violations introduced
