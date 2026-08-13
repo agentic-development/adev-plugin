@@ -32,42 +32,44 @@ without mutating the immutable, `validated` base spec.
 
 ## Behavioral Delta
 
-**Behavior 3 of the base spec is superseded, conditionally:**
+**Behavior 3 of the base spec is superseded outright, for all granularities:**
 
-- **For projects/specs using `per-task` granularity** (the default, and the
-  only granularity the base spec's Behavior 3 was originally written
-  against), Behavior 3 is **unaffected and remains valid as written**. Under
-  `per-task` granularity, each plan task maps to exactly one dedicated test
-  suite, so "does the referenced test file exist" is still a sound proxy for
-  task completion.
+- The shipped implementation (`skills/status/SKILL.md`, Mode `--spec`, step
+  8) does **not** branch on resolved test-depth granularity. It
+  unconditionally runs `adev state current --spec <path>` and counts task
+  completion from the `planTasks` / `testDepthAssignments` projections —
+  i.e. from **plan-task lifecycle events** (`plan_task` and
+  `test_depth_assigned`, folded with "most recent assignment per
+  plan+task_id wins"), per Behavior 18 of `test-depth-policy.spec.md`. The
+  skill's own rationale, quoted verbatim: *"This counts lifecycle events
+  rather than filesystem presence, since under any granularity other than
+  `per-task`, multiple tasks can share one suite path and a raw
+  file-existence probe no longer maps 1:1 to per-task completion."*
 
-- **For any project/spec using a granularity other than `per-task`**
-  (`per-behavior`, `per-file`, `per-spec`, or any future non-per-task value
-  defined by `test-depth-policy.spec.md`), Behavior 3's file-existence
-  counting rule is **superseded**. Because multiple tasks share one suite
-  path, file existence cannot distinguish "task N is done" from "task N is
-  merely sharing a suite that some other task in the group already
-  completed." `/adev:status` MUST instead count task completion from
-  **plan-task lifecycle events** (the `test_depth_assigned` /
-  per-task-completion event trail emitted during `/adev:implement`), per
-  Behavior 18 of `test-depth-policy.spec.md`. Event-based counting attributes
-  completion to the specific task whose lifecycle recorded it, independent of
-  how many sibling tasks share the same physical suite file.
+- This means Behavior 3's file-existence counting rule is **fully
+  superseded**, not conditionally retained for `per-task`. Event-based
+  counting is a strict superset capability: under `per-task` granularity
+  each task still maps to exactly one suite, so counting from the
+  `plan_task`/`test_depth_assigned` event trail remains behaviorally
+  correct there too (it degenerates to the same 1:1 result Behavior 3's
+  file-existence check would have produced). There is no scenario where the
+  shipped event-based rule is wrong where the old file-existence rule was
+  right, so no branch is needed and none was implemented.
 
 - Behaviors 1, 2, 4, 5, and 6 of the base spec, and its Postconditions and
-  Error Cases, are **unaffected** by this amendment. Behavior 4
-  ("unverifiable" when a task has no `tests:` field) and Behavior 5 ("test
-  missing" when the referenced file does not exist) continue to apply as
-  written under `per-task` granularity; under non-`per-task` granularity they
-  are likewise superseded by event-based counting for the same reason as
-  Behavior 3, since they are file-existence checks on the same referenced
-  suite path.
+  Error Cases, are **unaffected** by this amendment except where they too
+  are file-existence checks on the same referenced suite path. Behavior 4
+  ("unverifiable" when a task has no `tests:` field) is unaffected — it does
+  not depend on file existence. Behavior 5 ("test missing" when the
+  referenced file does not exist) is, like Behavior 3, superseded outright
+  by the same unconditional event-based counting rule, for the same reason.
 
-**Effective rule going forward:** `/adev:status` selects its task-completion
-counting strategy based on the resolved test-depth granularity for the spec
-under query — file-existence counting (base Behavior 3) when granularity is
-`per-task`; plan-task lifecycle-event counting (`test-depth-policy.spec.md`
-Behavior 18) otherwise.
+**Effective rule going forward:** `/adev:status` counts task completion
+uniformly from plan-task lifecycle events (`plan_task` /
+`test_depth_assigned`, folded via `adev state current --spec <path>`'s
+`testDepthAssignments` projection) regardless of the spec's resolved
+test-depth granularity. There is no file-existence branch for `per-task`;
+base Behavior 3's file-existence rule is superseded for all granularities.
 
 ## Acceptance Criteria
 
@@ -79,7 +81,10 @@ Behavior 18) otherwise.
       `test-depth-policy.spec.md` Behavior 18.
 - [x] The base spec `plan-test-mapping.spec.md` is not mutated by this
       amendment.
-- [ ] `/adev:status`'s implementation branches on resolved granularity to
-      select file-existence vs. event-based counting (tracked as
-      implementation work under `test-depth-policy.spec.md`, not this
-      amendment artifact).
+- [x] `/adev:status`'s implementation counts task completion uniformly from
+      plan-task lifecycle events (`plan_task` / `test_depth_assigned` via
+      the `testDepthAssignments` projection) regardless of resolved
+      granularity — no file-existence branch — per
+      `skills/status/SKILL.md` Mode `--spec` step 8 (implementation work
+      shipped under `test-depth-policy.spec.md`, not this amendment
+      artifact).
