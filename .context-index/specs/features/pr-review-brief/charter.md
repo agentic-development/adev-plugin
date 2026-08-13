@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 4
+revision: 5
 updated: 2026-08-12
 ---
 
@@ -90,7 +90,7 @@ The adev lifecycle already computes everything a human needs to triage a large d
 | `Assisted-by:` trailer alignment | Changes the provenance contract enforced by hooks and CI; constitution places this under human approval. | — | human decision |
 | Stacked-PR tooling | Stated reading order is the low-cost approximation; adopting Graphite adds an external dependency warranting an ADR. | — | reading-order capability proving insufficient |
 | Authorship signal in the brief (`Author-type:` / `Operator:`) | Removed from Consumed APIs in revision 3 because nothing rendered them. Reinstating needs a capability row stating what a reviewer does differently on seeing it — otherwise it is a column that costs attention and returns nothing. | — | a stated reviewer action |
-| Widening `lib/parallel/groups.mjs` to a tolerant qualifier | Measured over the 138 plans carrying `## Parallelization`: the parser yields usable groups for 79 and `malformed: true` for 59. The sole cause in 10 of those is the qualifier being restricted to literally `(independent\|sequential)`, so `(foundation, sequential)` and `(independent of A)` fail — a tolerant qualifier moves roughly 22 plans into the parsed set. Deferred because that same widening moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel`, a behaviour change in another charter's module that needs evidence those groups are genuinely independent. | — | `worktree-parallelization` accepting the coverage change |
+| Widening `lib/parallel/groups.mjs` to a tolerant qualifier | Measured over the 139 plans carrying `## Parallelization`: the parser yields usable groups for 80 and `malformed: true` for 59. Widening the qualifier from the literal `(independent\|sequential)` recovers **10** of those 59, not the "roughly 22" this row asserted in revision 4 — that figure was wrong and is corrected here. The 59 break down as: 28 carry no `- Group` line at all, 19 use the bold form `- **Group A (sequential):**`, 10 fail on the qualifier, 2 have no parenthetical. So the qualifier is 17% of the gap, not most of it, and widening alone takes coverage from 80/139 to 90/139. Deferred regardless, because that same widening moves those plans from serial fallback into concurrent execution in `/adev:implement --parallel` — a behaviour change in another charter's module that needs evidence those groups are genuinely independent. | — | `worktree-parallelization` accepting the coverage change |
 
 ## Interface Contracts
 

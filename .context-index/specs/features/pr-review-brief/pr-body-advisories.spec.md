@@ -1,11 +1,11 @@
 ---
 charter: pr-review-brief
 kind: behavioral
-status: review-pending
+status: review-blocked
 risk_level: medium
 milestone:
 revision: 2
-charter-revision: 3
+charter-revision: 4
 created: 2026-08-12
 updated: 2026-08-13
 ---
