@@ -67,7 +67,8 @@ test("create() retries on stale snapshot and lands on retry", async () => {
     };
 
     const issue = await adapter.create({ title: "Test", type: "task" });
-    assert.equal(issue.id, "issue-1");
+    // Subject is the CAS retry, not the id scheme (issue-613 made flat ids random).
+    assert.match(issue.id, /^issue-[a-z0-9]{6}$/);
 
     const after = JSON.parse(readFileSync(join(root, ".context-index/tasks/tasks.json"), "utf8"));
     assert.equal(after.issues.length, 1);
