@@ -1,12 +1,3 @@
-# Skill Spec: {{ spec_title }}
-
-<!-- Skill Spec within the {{ module_name }} charter.
-     A skill spec defines a change to a /adev:* CLI surface — invocation modes,
-     arguments, the output contract (files produced, frontmatter written, lifecycle
-     events emitted), and failure modes.
-     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
-     Exemplar: .context-index/specs/features/lifecycle-artifacts/specify-kind-routing.spec.md -->
-
 ---
 charter: {{ module_name }}
 kind: skill
@@ -18,6 +9,15 @@ charter-revision: {{ charter_revision }}
 created: {{ date }}
 updated: {{ date }}
 ---
+
+# Skill Spec: {{ spec_title }}
+
+<!-- Skill Spec within the {{ module_name }} charter.
+     A skill spec defines a change to a /adev:* CLI surface — invocation modes,
+     arguments, the output contract (files produced, frontmatter written, lifecycle
+     events emitted), and failure modes.
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
+     Exemplar: .context-index/specs/features/lifecycle-artifacts/specify-kind-routing.spec.md -->
 
 <!-- # tracker-ref: -->
 

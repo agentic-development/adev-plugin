@@ -1,14 +1,3 @@
-# Artifact Spec: {{ spec_title }}
-
-<!-- Artifact Spec within the {{ module_name }} charter.
-     An artifact spec describes a static deliverable — a template package, a fixture
-     set, a schema, a content bundle, a configuration matrix. Artifact specs
-     intentionally OMIT Preconditions / Behaviors / Postconditions: static
-     deliverables don't *do* anything, they *are* something. The contract is the
-     structural shape, the files that must exist, and the consumers that read them.
-     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
-     Exemplar: .context-index/specs/features/lifecycle-artifacts/spec-templates.spec.md -->
-
 ---
 charter: {{ module_name }}
 kind: artifact
@@ -20,6 +9,17 @@ charter-revision: {{ charter_revision }}
 created: {{ date }}
 updated: {{ date }}
 ---
+
+# Artifact Spec: {{ spec_title }}
+
+<!-- Artifact Spec within the {{ module_name }} charter.
+     An artifact spec describes a static deliverable — a template package, a fixture
+     set, a schema, a content bundle, a configuration matrix. Artifact specs
+     intentionally OMIT Preconditions / Behaviors / Postconditions: static
+     deliverables don't *do* anything, they *are* something. The contract is the
+     structural shape, the files that must exist, and the consumers that read them.
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
+     Exemplar: .context-index/specs/features/lifecycle-artifacts/spec-templates.spec.md -->
 
 <!-- # tracker-ref: -->
 
