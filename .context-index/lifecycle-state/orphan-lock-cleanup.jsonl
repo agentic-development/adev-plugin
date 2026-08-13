@@ -36,3 +36,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-1-quality-gates","severity":"warning","verdict":"PASS","notes":"npm test: 3420 pass / 0 fail / 2 todo","ts":"2026-05-19T12:17:27.533Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"drift_detected: false","ts":"2026-05-19T12:17:28.804Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-19T12:18:40.677Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/issues/json-adapter.mjs","drift_at":"2026-08-13T03:07:58.684Z","ts":"2026-08-13T03:07:58.685Z"}

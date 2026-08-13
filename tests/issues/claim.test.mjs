@@ -8,8 +8,10 @@
  *      existing CAS discipline.
  *   3. `lib/cli/issues.mjs` dispatch → `lib/cli/issues-claim.mjs` exit codes.
  *
- * Lease expiry / TTL is deliberately NOT covered: claims do not expire, and
- * a stale claim must still block. That is separate work.
+ * Lease expiry / TTL (issue-610) lives in `claim-ttl.test.mjs`. Everything
+ * here asserts LIVE-claim behaviour, so every fixture timestamp is generated
+ * fresh rather than hard-coded — a literal date would age past the default
+ * lease and silently turn these into takeover tests.
  */
 
 import { describe, it, before, after, beforeEach } from "node:test";
@@ -54,6 +56,9 @@ async function capture(fn) {
 // Pure preconditions
 // ---------------------------------------------------------------------------
 
+/** A claim made just now — live under any configured lease. */
+const freshClaimedAt = () => new Date().toISOString();
+
 describe("requireClaimable — precondition", () => {
   it("permits claiming an unowned issue", () => {
     requireClaimable({ id: "issue-1", status: "open" }, "agent-a");
@@ -61,22 +66,23 @@ describe("requireClaimable — precondition", () => {
 
   it("permits an idempotent re-claim by the same owner", () => {
     requireClaimable(
-      { id: "issue-1", status: "in_progress", owner: "agent-a", claimed_at: "2026-08-12T00:00:00.000Z" },
+      { id: "issue-1", status: "in_progress", owner: "agent-a", claimed_at: freshClaimedAt() },
       "agent-a",
     );
   });
 
   it("refuses a claim held by a different owner, and reports the holder", () => {
+    const claimedAt = freshClaimedAt();
     assert.throws(
       () =>
         requireClaimable(
-          { id: "issue-1", status: "open", owner: "agent-a", claimed_at: "2026-08-12T00:00:00.000Z" },
+          { id: "issue-1", status: "open", owner: "agent-a", claimed_at: claimedAt },
           "agent-b",
         ),
       (err) => {
         assert.equal(err.code, "ISSUE_ALREADY_CLAIMED");
         assert.equal(err.owner, "agent-a");
-        assert.equal(err.claimed_at, "2026-08-12T00:00:00.000Z");
+        assert.equal(err.claimed_at, claimedAt);
         assert.match(err.message, /already claimed by "agent-a"/);
         return true;
       },
