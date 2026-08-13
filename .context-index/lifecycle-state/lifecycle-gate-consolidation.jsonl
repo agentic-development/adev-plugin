@@ -1,2 +1,13 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-13T01:07:07.302Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-13T01:07:07.391Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-13T01:13:26.196Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":[],"unresolved_blocker_ids":[],"ts":"2026-08-13T01:23:31.673Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-08-13T01:23:58.734Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-13T01:26:34.674Z"}
+{"event":"step_completed","step":"review","verdict":"PASS","ts":"2026-08-13T01:29:04.735Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-13T01:29:17.708Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-13T01:31:14.784Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-13T01:31:32.138Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-13T02:12:10.830Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-13T02:12:10.910Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-08-13T02:12:10.975Z"}
