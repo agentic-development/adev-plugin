@@ -16,6 +16,7 @@ source-manifest:
     - lib/issues/json-adapter.mjs
     - tests/issues/json-adapter-orphan-lock.test.mjs
   computed-at: "2026-05-19T12:09:25.442Z"
+drift_detected: true
 ---
 
 <!-- partial_schema: spec@1 -->

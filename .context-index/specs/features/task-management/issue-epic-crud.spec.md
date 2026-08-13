@@ -14,6 +14,7 @@ source-manifest:
     - lib/issues/interface.mjs
     - tests/lib/issues-interface.test.mjs
   computed-at: "2026-04-01T13:43:22.543Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
