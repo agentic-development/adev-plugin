@@ -87,7 +87,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | Integration Strategy Profile | Define the integration strategy profile — 9th strategy type for behavioral tests against real external infrastructure with no mocking at the infrastructure boundary | nice-to-have | | validated |
 | Test Depth Policy | Risk-scaled control over how many case classes a suite must cover (depth), independent of which strategy applies | must-have | | validated |
 | Gaming Detector Gate Enforcement | Wire the 8 gaming detectors in `lib/test-strategies/gaming.mjs` into a deterministic `PreToolUse` hook that blocks (before the write lands) newly introduced gaming violations in test files, replacing agent-prose-only enforcement | must-have | | validated |
-| Test Helper Inventory | Language-agnostic inventory of a project's shared test helpers, fixtures, setup modules, and curated golden TEST samples, injected into every write-test RED-phase and implement subagent prompt so fresh contextless subagents reuse shared setup instead of re-deriving it | should-have | | draft |
+| Test Helper Inventory | Language-agnostic inventory of a project's shared test helpers, fixtures, setup modules, and curated golden TEST samples, injected into every write-test RED-phase and implement subagent prompt so fresh contextless subagents reuse shared setup instead of re-deriving it | should-have | | validated |
 
 ## Deferred Capabilities
 

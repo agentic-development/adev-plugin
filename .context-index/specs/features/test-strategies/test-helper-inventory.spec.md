@@ -1,6 +1,6 @@
 ---
 charter: test-strategies
-status: review-passed
+status: validated
 kind: behavioral
 risk_level: medium
 milestone:
@@ -8,6 +8,21 @@ revision: 2
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
+source-manifest:
+  sha: "92c3c60"
+  files:
+    - cli/index.mjs
+    - docs/cli-reference.md
+    - lib/cli/test-helpers.mjs
+    - lib/test-strategies/helper-inventory.mjs
+    - skills/implement/SKILL.md
+    - skills/sample/SKILL.md
+    - skills/write-test/SKILL.md
+    - templates/sample-template.md
+    - tests/cli/test-helpers.test.mjs
+    - tests/lib/test-strategies/helper-inventory.test.mjs
+    - tests/skills/test-helper-inventory-injection.test.mjs
+  computed-at: "2026-08-13T13:37:59.684Z"
 ---
 
 # Live Spec: Test Helper Inventory
