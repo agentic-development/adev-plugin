@@ -1,13 +1,3 @@
-# Integration Spec: {{ spec_title }}
-
-<!-- Integration Spec within the {{ module_name }} charter.
-     An integration spec wires two or more existing modules/skills together. It defines
-     the participants and their roles, the interaction contract (who calls what, in
-     what order), the observable state machine, and how failures propagate across the
-     boundary.
-     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
-     Exemplar: .context-index/specs/features/lifecycle-artifacts/read-time-defaulting.spec.md -->
-
 ---
 charter: {{ module_name }}
 kind: integration
@@ -19,6 +9,16 @@ charter-revision: {{ charter_revision }}
 created: {{ date }}
 updated: {{ date }}
 ---
+
+# Integration Spec: {{ spec_title }}
+
+<!-- Integration Spec within the {{ module_name }} charter.
+     An integration spec wires two or more existing modules/skills together. It defines
+     the participants and their roles, the interaction contract (who calls what, in
+     what order), the observable state machine, and how failures propagate across the
+     boundary.
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md
+     Exemplar: .context-index/specs/features/lifecycle-artifacts/read-time-defaulting.spec.md -->
 
 <!-- # tracker-ref: -->
 

@@ -1,9 +1,3 @@
-# Live Spec: {{ spec_title }}
-
-<!-- Live Spec within the {{ module_name }} charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md -->
-
 ---
 charter: {{ module_name }}
 status: draft  <!-- draft | review-pending | review-passed | review-blocked | implemented | validated -->
@@ -38,6 +32,12 @@ updated: {{ date }}
 #   ci_tag: "integration"
 # Security: env var names only — MUST NOT contain actual credential values.
 ---
+
+# Live Spec: {{ spec_title }}
+
+<!-- Live Spec within the {{ module_name }} charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/{{ module_name }}/charter.md -->
 
 <!-- # tracker-ref: -->
 
