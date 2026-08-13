@@ -646,7 +646,7 @@ Next step: run /adev:validate for full post-implementation validation.
 If merge_policy is "pr" (or target is a protected branch), append:
 
 ```
-When validation passes, open a PR: gh pr create --base <target-branch>
+When validation passes, open a PR: gh pr create --base <target-branch> --body-file .github/pull_request_template.md
 Do NOT merge directly to <target-branch>.
 ```
 

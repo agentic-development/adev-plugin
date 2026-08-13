@@ -64,3 +64,28 @@ test("every H2 heading is followed by an HTML-comment prompt", () => {
     );
   }
 });
+
+const SKILL_CONSUMERS = ["skills/validate/SKILL.md", "skills/implement/SKILL.md"];
+
+for (const rel of SKILL_CONSUMERS) {
+  test(`${rel} names the PR template in its gh pr create prose`, () => {
+    const body = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+    const prLines = body.split("\n").filter((l) => l.includes("gh pr create"));
+    assert.ok(prLines.length > 0, "expected at least one gh pr create suggestion");
+    for (const line of prLines) {
+      assert.match(
+        line,
+        /--body-file \.github\/pull_request_template\.md/,
+        `gh pr create prose in ${rel} must name the template, else agent-opened PRs carry no packet`,
+      );
+    }
+  });
+
+  test(`${rel} adds no step directive or inline Node alongside the edit`, () => {
+    const body = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+    for (const line of body.split("\n").filter((l) => l.includes("pull_request_template.md"))) {
+      assert.ok(!/node\s+(--input-type=module\s+)?-e/.test(line), "no inline Node on the edited line");
+      assert.ok(!/^Run inline Node/.test(line.trim()), "no step directive on the edited line");
+    }
+  });
+}

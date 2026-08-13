@@ -4,10 +4,10 @@ kind: artifact
 status: review-passed
 risk_level: low
 milestone:
-revision: 1
+revision: 2
 charter-revision: 2
 created: 2026-08-12
-updated: 2026-08-12
+updated: 2026-08-13
 ---
 
 # Artifact Spec: Review Packet Template
@@ -81,7 +81,7 @@ This spec owns the file's *content and shape*. It does not own how the generated
 - **GitHub (web and `gh`)** — reads `.github/pull_request_template.md` by exact path and pre-fills the body of every new pull request with it. This is the whole delivery mechanism for the author-written half; no adev code participates.
 - **`adev pr body`** (`pr-body-composition.spec.md`) — writes the content that fills the marker slot. The interlock runs in one direction only: the generator must never emit any of the four packet H2 headings, and this template must never contain generated content. Neither reads the other at runtime.
 - **`cicd` delivery** — rewrites the region between the marker pair on each push. Depends on the pair existing exactly once and on the closing marker being the last non-blank line, so a naive "replace to end of block" implementation cannot swallow author text.
-- **`skills/validate/SKILL.md:566`** and **`skills/implement/SKILL.md:649`** — both end with `gh pr create --base <target-branch>` prose. `gh pr create` populates the body from the template only when neither `--body` nor `--fill` is passed, so the prose must name the template explicitly for agent-opened PRs to carry the packet at all. Editing skill markdown is inside the constitution's Autonomous boundary.
+- **`skills/validate/SKILL.md:566`** and **`skills/implement/SKILL.md:649`** — both end with `gh pr create --base <target-branch>` prose. Agent-opened PRs pass `--body-file .github/pull_request_template.md` because `gh pr create`'s interactive pre-fill from the repo template is unavailable when the command runs non-interactively. Editing skill markdown is inside the constitution's Autonomous boundary.
 - **The human PR author** — the only writer of the four sections. Nothing generates them, and no agent may fill them on the author's behalf; a machine-written "what I cannot explain" is an empty claim.
 
 ## System Constitution Reference

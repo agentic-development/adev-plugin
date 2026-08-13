@@ -563,7 +563,7 @@ Validation passed. All dispatched checks green.
 The implementation satisfies the spec, stays within charter scope,
 respects the constitution, and passes all quality gates.
 
-Ready for PR. Run: gh pr create --base <target-branch>
+Ready for PR. Run: gh pr create --base <target-branch> --body-file .github/pull_request_template.md
 Do NOT merge directly to protected branches.
 ```
 
