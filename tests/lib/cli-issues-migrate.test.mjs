@@ -557,8 +557,18 @@ describe("issues migrate dry-run path (plan-task 5)", () => {
       assert.equal(report.source, "json");
       assert.equal(report.target, "beads");
       assert.deepEqual(report.in_scope, { issues: 3, epics: 1 });
-      assert.equal(report.already_migrated, 0);
-      assert.deepEqual(report.would_create, { issues: 3, epics: 1 });
+      // The lone epic already counts as migrated. beads has no epic adev can
+      // create (`br epic` is status/close-eligible only), so the adapter keeps
+      // epics in a local JsonAdapter — i.e. in this very tasks.json. For a
+      // json → beads move the epics are therefore already at their
+      // destination and need no copying.
+      //
+      // Before that delegation was repointed, epics went to the FileAdapter,
+      // which is read-only-deprecated — so a real (non-dry) run of this
+      // migration threw BACKEND_READ_ONLY_DEPRECATED. Reporting 0 here was
+      // never reachable behavior.
+      assert.equal(report.already_migrated, 1);
+      assert.deepEqual(report.would_create, { issues: 3, epics: 0 });
       assert.equal(report.dependencies_to_replay, 0);
 
       // Postcondition 7: dry-run writes neither target state nor .beads-map.json.
@@ -605,9 +615,12 @@ describe("issues migrate dry-run path (plan-task 5)", () => {
       assert.equal(exitCode, 0);
       const jsonLine = stdout.split("\n").find((l) => l.trim().startsWith("{"));
       const report = JSON.parse(jsonLine);
-      assert.equal(report.already_migrated, 2);
-      // would_create.issues = in_scope.issues - already_migrated = 3 - 2 = 1
+      // 2 mapped issues + the epic, which lives in tasks.json on both sides
+      // (beads has no creatable epic — see the sibling test).
+      assert.equal(report.already_migrated, 3);
+      // would_create.issues = in_scope.issues - already-mapped issues = 3 - 2 = 1
       assert.equal(report.would_create.issues, 1);
+      assert.equal(report.would_create.epics, 0);
     } finally {
       cleanup(proj);
     }
