@@ -605,13 +605,13 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:hygiene`
 
-**Purpose:** Audit all context for staleness, drift, and coverage gaps. Runs sixteen audit passes across `.context-index/` and source code, generating actionable reports with checklists.
+**Purpose:** Audit all context for staleness, drift, and coverage gaps. Runs a suite of audit passes across `.context-index/`, source code, and the test suite, generating actionable reports with checklists. `skills/hygiene/SKILL.md` is the authority on which passes ship — this page deliberately does not restate a count, because the hardcoded number here drifted silently (it read "sixteen" while the skill shipped 22).
 
 **Prerequisites:** `.context-index/` must be initialized.
 
 **Arguments:**
 - No arguments: full audit (all passes)
-- `--check <type>`: run a single pass (e.g., `constitution`, `drift`, `lifecycle`, `code-health`, `heuristics`, `code-drift`)
+- `--check <type>`: run a single pass (e.g., `constitution`, `drift`, `lifecycle`, `code-health`, `heuristics`, `code-drift`, `test-debt`)
 - `--fix`: auto-fix issues where possible
 - `--status <spec-path> <new-status>`: manually update a spec's status
 

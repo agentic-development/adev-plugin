@@ -58,6 +58,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
 | `test-policy` | Resolve/inspect/set the test depth policy for a plan task | `lib/cli/test-policy.mjs` |
 | `test-helpers` | Emit the shared test-helper/fixture/test-sample inventory; check a test file for helper duplication | `lib/cli/test-helpers.mjs` |
+| `test-debt` | Scan the test suite for accreted debt (hygiene Audit Pass 23) | `lib/cli/test-debt.mjs` |
 
 ---
 
@@ -631,6 +632,7 @@ adev test-policy explain --plan .context-index/specs/features/auth/login.plan.md
 **Implementation:** `lib/cli/test-policy.mjs`. **Called by:** `/adev:implement` (`resolve`,
 `assert-assigned`), operators directly (`show`, `set`, `explain`).
 
+<<<<<<< HEAD
 ### `test-helpers`
 
 **Purpose:** Emits the project's shared test infrastructure — helper modules with their
@@ -667,6 +669,42 @@ adev test-helpers check --file tests/auth/login.test.mjs --file tests/auth/sessi
 **Implementation:** `lib/cli/test-helpers.mjs` (logic in
 `lib/test-strategies/helper-inventory.mjs`). **Called by:** `/adev:write-test` (RED-phase
 Step 3a inventory, post-RED duplication check), `/adev:implement` (context-packet assembly).
+=======
+### `test-debt`
+
+**Purpose:** Audit Pass 23 of `/adev:hygiene`. Scans the test suite for five categories of
+accreted debt: `APPEND_CHAIN`, `REV_NUMBERED`, `PLAN_TASK_STRUCTURED`,
+`DEAD_TEST_REFERENCE`, `PROSE_ASSERTION`. Detection and reporting only — it never edits,
+deletes, or rewrites a test file, and exits 0 for any successful scan regardless of
+finding count.
+
+**Signature:** `test-debt scan [--root <dir>] [--detector <CODE>] [--json]`
+
+- `--root <dir>` narrows the scan subtree; it does **not** establish the project root
+  (paths outside it are refused with `PATH_OUTSIDE_ROOT`).
+- `--detector <CODE>` restricts to one detector; an unknown code exits 1 with
+  `UNKNOWN_DETECTOR`.
+- `--json` prints the result object (`verdict`, `findings`, `summary`, `headerNotes`,
+  `scannedFileCount`) as a single document.
+
+**Findings are heuristic candidates for human review, not defects.** Precision varies by
+detector; see the precision table in
+`.context-index/specs/features/maintenance/hygiene-test-debt.spec.md` before acting on
+results in bulk.
+
+**Configuration:** `manifest.yaml` `hygiene.test_debt.*` (all keys optional — see
+[Configuration](configuration.md#hygiene)). `hygiene.coverage_exclude` is deliberately not
+applied.
+
+**Example:**
+```bash
+adev test-debt scan --json
+adev test-debt scan --detector APPEND_CHAIN
+```
+
+**Implementation:** `lib/cli/test-debt.mjs` (engine: `lib/hygiene/test-debt.mjs`).
+**Called by:** `/adev:hygiene` Audit Pass 23.
+>>>>>>> e59ef658 (feat(maintenance): wire Audit Pass 23 (Test Debt) into /adev:hygiene)
 
 ### `worktree`
 
