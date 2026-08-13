@@ -10,7 +10,8 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: app\n    paths:\n      - src/\n");
     writeFixture(tmp, ".context-index/specs/features/app/feature.spec.md", "# spec");
     writeFixture(tmp, "src/main.mjs", "");
-    const result = runHook("lifecycle-gate-edit.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -25,7 +26,8 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: app\n    paths:\n      - src/\n");
     writeFixture(tmp, ".context-index/specs/features/app/feature.spec.md", "# spec");
     writeFixture(tmp, "src/main.mjs", "");
-    const result = runHook("lifecycle-gate-edit.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -40,7 +42,8 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: app\n    paths:\n      - src/\n");
     writeFixture(tmp, ".context-index/specs/features/app/feature.spec.md", "# spec");
     writeFixture(tmp, "src/main.mjs", "");
-    const result = runHook("lifecycle-gate-edit.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -56,7 +59,8 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\nmodules:\n  - slug: app\n    paths:\n      - src/\n");
     writeFixture(tmp, ".context-index/specs/features/app/feature.spec.md", "# spec");
     writeFixture(tmp, "src/main.mjs", "");
-    const result = runHook("lifecycle-gate-edit.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -70,7 +74,8 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
     writeFixture(tmp, ".context-index/.execution-state.json", JSON.stringify({ status: "standalone", planRef: "", currentTask: "", issueBinding: "", blockers: "", nextAction: "", progress: [], updated: "2026-01-01T00:00:00Z" }) + "\n");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm run build" }
     });
@@ -86,7 +91,8 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/specs/features/app/feature.spec.md", "# spec");
     writeFixture(tmp, ".context-index/specs/features/app/feature.plan.md", "# plan");
     writeFixture(tmp, "src/main.mjs", "");
-    const result = runHook("lifecycle-gate-edit.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -97,7 +103,8 @@ describe("lifecycle-gate integration", () => {
   // Missing .context-index → pass
   it("no .context-index directory: exit 0 silently (edit)", () => {
     const tmp = createTempDir();
-    const result = runHook("lifecycle-gate-edit.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -107,7 +114,8 @@ describe("lifecycle-gate integration", () => {
 
   it("no .context-index directory: exit 0 silently (bash)", () => {
     const tmp = createTempDir();
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "rm -rf everything" }
     });
@@ -120,7 +128,8 @@ describe("lifecycle-gate integration", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "not valid config {{{}}}");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-edit.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -134,7 +143,8 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=off");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
     const start = Date.now();
-    runHook("lifecycle-gate-edit.sh", {
+    runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
@@ -148,7 +158,8 @@ describe("lifecycle-gate integration", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=block");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm run build" }
     });
@@ -162,7 +173,8 @@ describe("lifecycle-gate integration", () => {
     const tmp = createTempDir();
     writeFixture(tmp, ".context-index/user-config", "lifecycle.gate=warn");
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
-    const result = runHook("lifecycle-gate-bash.sh", {
+    const result = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm run build" }
     });
@@ -179,21 +191,23 @@ describe("lifecycle-gate integration", () => {
     writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: test\n");
 
     // All three layers should be silent
-    const editResult = runHook("lifecycle-gate-edit.sh", {
+    const editResult = runHook("lifecycle-gate.sh", {
+      args: ["pre-edit"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_file_path: `${tmp}/src/main.mjs` }
     });
     assert.equal(editResult.exitCode, 0);
     assert.ok(!editResult.stdout.includes("additionalContext"));
 
-    const bashResult = runHook("lifecycle-gate-bash.sh", {
+    const bashResult = runHook("lifecycle-gate.sh", {
+      args: ["pre-bash"],
       cwd: tmp,
       env: { CLAUDE_TOOL_INPUT_command: "npm run build" }
     });
     assert.equal(bashResult.exitCode, 0);
     assert.ok(!bashResult.stdout.includes("additionalContext"));
 
-    const advisoryResult = runHook("lifecycle-gate-advisory.sh", { cwd: tmp });
+    const advisoryResult = runHook("lifecycle-gate.sh", { args: ["advisory"], cwd: tmp });
     assert.equal(advisoryResult.exitCode, 0);
     assert.ok(!advisoryResult.stdout.includes("additionalContext"));
 
