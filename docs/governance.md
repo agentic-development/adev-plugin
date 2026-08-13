@@ -36,6 +36,98 @@ Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is help
 
 All are optional. Absent files mean "use bundled defaults."
 
+## The gate schema in `gates.yaml`
+
+### Fields
+
+A gate entry carries nine fields, plus `group` on the e2e tier only:
+
+| Field | Values | Default |
+|---|---|---|
+| `id` | unique string | required |
+| `name` | display name | — |
+| `kind` | `deterministic` \| `probabilistic` | `deterministic` |
+| `tier` | `fast` \| `integration` \| `e2e` | `fast` |
+| `command` | argv **list** — required for `deterministic` gates | required |
+| `scope` | `project` \| `charter` | `project` |
+| `required` | `true` \| `false` | `true` |
+| `severity` | `error` \| `warning` | tier default (see below) |
+| `triggers` | lifecycle events (`post-task`, `post-implement`, `pre-merge`) | — |
+| `group` | e2e tier only: `smoke` \| `full` — smoke runs first | — |
+
+```yaml
+gates:
+  - id: test
+    name: Test Suite
+    kind: deterministic
+    tier: fast
+    command: [npm, test]
+    scope: project
+    required: true
+    severity: error
+    triggers:
+      - post-task
+      - post-implement
+```
+
+`lib/domains/merge-gates.mjs` narrows each merged entry to `id`, `command`, `description`, `severity`, and `tier`. The remaining fields are read from the raw `gates.yaml` entry by the consumer — [`/adev:validate`](skill-reference.md) Check 1 — so `required` and `triggers` govern only where the raw entry is visible. Domain starter gates use `description` rather than `name`.
+
+### `command` is argv-only
+
+`command: [npm, test]`. A shell string is not a gate. A non-array `command` is dropped at load by `lib/domains/merge-gates.mjs` with:
+
+```
+INVALID_GATE: Gate '<id>' command must be an argv list (array), not a string — skipped.
+```
+
+This is a **different error code from the `validate.yaml` quality-gate runner's `QUALITY_GATE_COMMAND_SHELL`** (documented under [Quality-gate hardening](#quality-gate-hardening)). Same rule, two loaders, two codes: `INVALID_GATE` comes from the `gates.yaml` merge, `QUALITY_GATE_COMMAND_SHELL` from the `validate.yaml` check registry. To convert an existing shell-form command, see "Recipe 3 — you had a shell-form gate command" under [Migrating an existing project](#migrating-an-existing-project).
+
+### Tiers and severity
+
+Tiers execute in order: fast → integration → e2e. Within a tier, an `error`-severity failure stops the remaining gates in that tier and every subsequent tier (fail-fast). A `warning`-severity failure is recorded and execution continues.
+
+Severity resolves in three steps, most specific first:
+
+1. `required: false` forces `warning`, whatever else is set.
+2. An explicit per-gate `severity` wins over the tier default.
+3. Otherwise the tier default applies: `error` for `fast` and `integration`, `warning` for `e2e`. Within `e2e`, `group: smoke` defaults to `error` and `group: full` to `warning`.
+
+This is the model both [`/adev:validate`](skill-reference.md) Check 1 and [`/adev:implement`](skill-reference.md) Step 2-post use, so the two integration-gate consumers agree on the severity of every gate.
+
+### What a new scaffold ships
+
+`templates/gates-template.yaml` declares `test` (fast) and `integration-test` (integration) with `command: ""` — an **unwired sentinel**, not a working command. Both tiers are therefore *declared* in every scaffold, and both are dropped at load with a named, actionable warning rather than silence:
+
+```
+INVALID_GATE: Gate '<id>' missing required command field — skipped.
+```
+
+(The empty string is deliberate. An empty array is truthy *and* an array, so it would pass both guards and reach the executor with nothing to run.)
+
+What actually enforces on a fresh scaffold comes from the `software` domain starter (`templates/domains/software/gates.yaml`), which resolves by default when no `domain` is set:
+
+- `quality-gate` — fast tier, `[npm, test]`, `severity: error`.
+- `integration-test` — integration tier, `[npm, run, --if-present, test:integration]`, `severity: error`.
+
+The integration gate is LIVE and error-severity, but `--if-present` makes it a verified no-op until the project defines a `test:integration` script. Note that the governance `integration-test` entry never overrides the domain one: it is dropped for the empty command before the override check runs, so no `GATE_OVERRIDE` warning is emitted.
+
+### Graduating it
+
+Add a `test:integration` script to `package.json` and the integration gate starts enforcing — no configuration change, no new gate. To wire the template's own `test` and `integration-test` entries, rerun [`/adev:init`](skill-reference.md), which seeds a real argv command from the detected stack, or set the commands by hand.
+
+Templates are consumed verbatim by `cpSync()`, so these defaults reach NEW scaffolds only. Existing projects are untouched by a plugin upgrade; they must rerun `/adev:init` or edit `governance/gates.yaml` by hand.
+
+### Verifying it
+
+Run `adev gate doctor`. It reads the raw `gates.yaml` directly — it does not merge the domain starter — so on a fresh scaffold it sees the two unwired entries and reports:
+
+```
+gate-doctor/empty-command  warning  Gate 'test' declares no command.
+gate-doctor/empty-command  warning  Gate 'integration-test' declares no command.
+```
+
+Expect exit 0 with zero error-severity findings; the doctor exits non-zero (2) only on an error-severity finding. `gate-doctor/ci-config-missing` (no CI configuration on disk) and `gate-doctor/runner-unknown` (no recognized test runner, so collection cannot be verified) are also warning-severity and are normal for a new project — not regressions.
+
 ## Test depth policy in `risk-policies.yaml`
 
 `graduated-rigor-tiers` scales *review and validation* breadth from `risk_level` and the
