@@ -5,7 +5,7 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone:
-revision: 2
+revision: 3
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -38,8 +38,7 @@ and diffing it against the baseline under an explicit acceptance rule.
 > | `tests/evals/test-strategies/test-strategies.test.mjs:436` | "all 9 profiles load without fallback" title **and** its 9-element `ids` array |
 > | `tests/evals/test-strategies/test-strategies.test.mjs:740` | "across all 9 strategies" title **and** its `ids` array; this is a profile-contract sweep the new profiles must pass |
 > | `tests/docs/advanced-guides.test.mjs:161` | hardcoded 9-slug array |
-> | `docs/test-strategies.md` | "The 9 strategies" heading and body |
-> | `docs/concepts.md:104` | strategy count |
+> | `docs/test-strategies.md:36` | "The 9 strategies" heading and body |
 > | `strategy-type-registry.spec.md` | "exactly 9 strategy types" → 12; three registry table rows |
 > | `strategy-profile-contract.spec.md` | AC "any of the 9 strategy IDs" → any registered ID; validation stays dynamic via `getStrategy()` |
 > | `strategy-detection-heuristics.spec.md` | Behavior 16 and its ACs; append the three new cascade rules |
@@ -49,6 +48,26 @@ and diffing it against the baseline under an explicit acceptance rule.
 > **Not** in the list: `cross-strategy-gaming-patterns.spec.md` already reads "any
 > registered strategy type" (migrated when `integration` landed). Earlier drafts
 > copied that instruction from the integration profile's note in error.
+> `docs/concepts.md` was also listed in error — it contains no strategy count.
+>
+> ### Canonical order of the three new detection rules
+>
+> All three new rules are appended after the shipped cascade, so their order
+> **relative to each other** must be stated once, here, rather than each spec
+> claiming to be "last". Appended in this order:
+>
+> 1. `reconciliation`
+> 2. `tolerance`
+> 3. `snapshot`
+>
+> Rationale: directory-anchored rules resolve before extension-anchored ones, and
+> `snapshot`'s patterns are the broadest, so it goes last. This settles the two
+> real collisions among the new rules: `tolerances/x.baseline.json` resolves to
+> `tolerance` (not `snapshot`, whose `*.baseline.json` pattern also matches), and
+> `reconciliation/__snapshots__/x.snap` resolves to `reconciliation` (not
+> `snapshot`). Each profile spec's "every earlier rule wins by construction"
+> statement is scoped to the **shipped** rules above all three; among the three,
+> this ordering governs.
 
 ## Problem and Motivation
 
@@ -185,8 +204,12 @@ match. Adding a strategy therefore means appending a rule whose patterns are
 disjoint from every rule above it — **not** claiming a position "before" an
 earlier rule. This spec requests no reordering or modification of any shipped rule.
 
-`snapshot` is appended at the **end** of the cascade, after `integration`, and
-claims only:
+`snapshot` is appended after the shipped cascade and **after the other two new
+rules** — the canonical order is `reconciliation` → `tolerance` → `snapshot`, set
+once in the charter extension note above. `snapshot` is therefore last overall,
+which is why `tolerances/x.baseline.json` resolves to `tolerance` and
+`reconciliation/__snapshots__/x.snap` resolves to `reconciliation`. It claims
+only:
 
 | Pattern | Confidence |
 |---|---|

@@ -54,3 +54,30 @@
 
 **Total findings:** 11 (5 blockers, 4 warnings, 3 suggestions — SA-3 shared across the profile set)
 **Action required:** Revise to revision 2 addressing the five blockers, then re-review. The cascade-ordering blockers (SA-1, SA-2) require restating precedence as pattern-level exclusions rather than positional claims about the shipped rule list.
+
+
+---
+
+# Round 2 — quick-tier re-review of revision 2 (2026-08-13)
+
+> **Reviewer:** quick-synthesized-reviewer (all three lenses)
+> **Verdict:** BLOCK → revised to **revision 3**
+
+**Round-1 blocker partition, verified against shipped code:**
+
+| Round-1 blocker | Bucket |
+|---|---|
+| SA-1 unsatisfiable cascade order | **addressed** — appending after the trailing `integration` rule is implementable; `models/**/*.sql` → `fixture`, `k6/**` → `threshold`, `migrations/` → `schema` all verified true in `detection.mjs` |
+| SA-2 visual AC unachievable | **addressed** — the honest note now matches the code |
+| SA-3 seed_data_rule / permitted_tools | **addressed** — `REQUIRED_FIELDS` counts empty arrays as missing (`profiles.mjs:194`), so non-empty defaults do fix it; no contradiction with `UNIT_PROFILE`, which never passes through that validation |
+| SA-4 post-hoc-baseline substrate | **inadequately addressed** → SA-12 |
+| SEC-1 credentials in recorded commands | **addressed** |
+| SEC-2 unauthenticated operator_deferred | **persistent** → SEC-6 |
+| CON-1 error-code collision | **addressed** (CON-2 and CON-3 also fixed) |
+
+**Round-2 findings on this spec**
+
+- **SA-13** · blocker · `behaviors-7` — All three profile specs independently claimed to be "last" in the cascade. Only one can be. Real collisions: `tolerances/x.baseline.json` (tolerance's `tolerances/**` vs snapshot's `*.baseline.json`, both high confidence) and `reconciliation/__snapshots__/x.snap`. **Fixed in revision 3:** a canonical order `reconciliation` → `tolerance` → `snapshot` is set once in this spec's charter extension note and referenced by the other two.
+- **CON-10** · warning · `charter-extension-note` — The shared 9 → 12 table verifies exactly against every cited site *except* `docs/concepts.md:104`, which contains no strategy count (an error inherited from round 1's own finding). **Fixed in revision 3:** row removed.
+
+**Status of revision 3:** both findings closed by construction; not independently re-reviewed.

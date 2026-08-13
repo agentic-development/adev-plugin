@@ -5,7 +5,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone:
-revision: 2
+revision: 3
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -132,8 +132,12 @@ change rather than a silent widening.
 **6. Detection heuristics and pattern-level exclusions**
 
 `detectTaskStrategy` evaluates a **fixed linear rule list** and returns the first
-match. `reconciliation` is **appended at the end** of that list, after
-`integration`, and requests no reordering or modification of any shipped rule.
+match. `reconciliation` is appended after the shipped cascade and is the **first
+of the three new rules** — the canonical order `reconciliation` → `tolerance` →
+`snapshot` is set once in `snapshot-strategy-profile.spec.md`'s charter extension
+note. It requests no reordering or modification of any shipped rule. Being first
+among the new rules is what makes `reconciliation/__snapshots__/x.snap` resolve
+to `reconciliation` rather than `snapshot`.
 
 | Pattern | Confidence |
 |---|---|
