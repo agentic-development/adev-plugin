@@ -275,8 +275,16 @@ Configuration for the `/adev:hygiene` context audit.
 | `staleness_threshold_days` | number | `30` | Days after which a spec or ADR is flagged as stale |
 | `source_roots` | array | — | Directories containing source code to audit |
 | `coverage_exclude` | array | `[]` | Glob patterns to exclude from coverage analysis |
+| `test_debt.enabled` | boolean | `true` | Enable Audit Pass 23 (Test Debt) |
+| `test_debt.test_globs` | array | `**/*.test.{mjs,js,ts,tsx}`, `**/*.spec.{js,ts}`, `**/*_test.{go,py}`, `**/test_*.py` | Globs identifying test files |
+| `test_debt.exclude` | array | `[]` | Globs excluded from the test-debt scan |
+| `test_debt.append_chain_threshold` | integer ≥ 2 | `4` | Test files referencing one module before an append chain is reported |
+| `test_debt.prose_ratio_threshold` | number in (0, 1] | `0.5` | Containment-assertion ratio above which a test is flagged as prose-asserting |
+| `test_debt.rev_numbered_prefixes` | array | `["rev"]` | Filename revision markers to detect. Add `"v"` to also flag `payload-v1`-style names (noisier). |
 
 **When to override:** Increase `staleness_threshold_days` for slower-moving projects. Adjust `source_roots` to match your project's directory structure.
+
+**Note:** `coverage_exclude` applies to `/adev:codehealth` orphan and dead-export detection. It is deliberately NOT applied by the test-debt pass — its usual `tests/**` entry is precisely why test debt is otherwise invisible. Use `test_debt.exclude` to narrow the test-debt scan.
 
 **Example:**
 ```yaml
