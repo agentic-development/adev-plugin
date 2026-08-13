@@ -126,7 +126,7 @@ JSONEOF
       exit 0
       ;;
     confirm)
-      STOP_MSG="STOP. No active lifecycle session. You MUST run \`/adev:work\` to classify this task before editing source files. If this is a bug fix, invoke \`/adev:debug\`. If this is exploratory, run \`/adev:standalone\` to disable enforcement for this session."
+      STOP_MSG="STOP. No active lifecycle session. You MUST run \`/adev:work\` to classify this task before editing source files. If this is a bug fix, invoke \`/adev:debug\`. If this is exploratory, run \`adev execution-state write --status standalone\` to disable enforcement for this session."
       MSG_JSON=$(printf '%s' "$STOP_MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || printf '"%s"' "$STOP_MSG")
       MSG_JSON="${MSG_JSON:1:${#MSG_JSON}-2}"
       cat <<JSONEOF
@@ -207,7 +207,7 @@ if [ "$SURFACE" = "pre-bash" ]; then
   fi
 
   # Command is gated — apply enforcement
-  MESSAGE="No active plan. Run \`/adev:work\` to enter the lifecycle before running mutating commands, or \`/adev:standalone\` (\`adev execution-state write --status standalone\`) to disable gates for this session."
+  MESSAGE="No active plan. Run \`/adev:work\` to enter the lifecycle before running mutating commands, or \`adev execution-state write --status standalone\` to disable gates for this session."
 
   case "$LEVEL" in
     warn)
@@ -223,7 +223,7 @@ JSONEOF
       exit 0
       ;;
     confirm)
-      STOP_MSG="STOP. No active plan detected. You MUST run \`/adev:work\` to classify this task and enter the lifecycle, or \`/adev:standalone\` to disable enforcement for this session. Only proceed for trivial non-tracked changes."
+      STOP_MSG="STOP. No active plan detected. You MUST run \`/adev:work\` to classify this task and enter the lifecycle, or \`adev execution-state write --status standalone\` to disable enforcement for this session. Only proceed for trivial non-tracked changes."
       MSG_JSON=$(printf '%s' "$STOP_MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || printf '"%s"' "$STOP_MSG")
       MSG_JSON="${MSG_JSON:1:${#MSG_JSON}-2}"
       cat <<JSONEOF
@@ -308,7 +308,7 @@ if [ "$SURFACE" = "advisory" ]; then
   fi
 
   # Inject advisory
-  ADVISORY="You are operating without an active plan. Run \`/adev:work\` to classify this task and enter the lifecycle, or \`/adev:standalone\` to disable enforcement for this session."
+  ADVISORY="You are operating without an active plan. Run \`/adev:work\` to classify this task and enter the lifecycle, or \`adev execution-state write --status standalone\` to disable enforcement for this session."
   MSG_JSON=$(printf '%s' "$ADVISORY" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || printf '"%s"' "$ADVISORY")
   MSG_JSON="${MSG_JSON:1:${#MSG_JSON}-2}"
 
