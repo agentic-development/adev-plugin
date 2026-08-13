@@ -41,3 +41,11 @@ diagnostics:
     severity: error
     tier: 1
     scope: event-impact
+
+  # Tier 2 — on-demand (`adev diagnose`), not run on the write-time
+  # appendEvent path (which filters scope: event-impact).
+  - id: adev/validated-without-report
+    runner: plugin:tier2/validated-without-report.mjs
+    severity: error
+    tier: 2
+    scope: spec
