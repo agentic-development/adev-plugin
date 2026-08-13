@@ -27,9 +27,13 @@ test("--check enum includes the test-policy-drift slug", () => {
   assert.match(skill, /--check <type>`: run a single pass \([^)]*test-policy-drift[^)]*\)/);
 });
 
+test("--check enum includes the test-debt slug", () => {
+  assert.match(skill, /--check <type>`: run a single pass \([^)]*\btest-debt\b[^)]*\)/);
+});
+
 test("pass-count prose matches the actual number of Audit Pass headings", () => {
   const passHeadings = skill.match(/^## Audit Pass \d+:/gm) ?? [];
-  assert.equal(passHeadings.length, 22);
+  assert.equal(passHeadings.length, 23);
   const words = { 20: "twenty", 21: "twenty-one", 22: "twenty-two", 23: "twenty-three" };
   const word = words[passHeadings.length];
   assert.ok(word, `no word mapping for ${passHeadings.length} passes — extend the map`);
