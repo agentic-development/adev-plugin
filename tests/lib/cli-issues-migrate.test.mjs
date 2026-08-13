@@ -1529,8 +1529,8 @@ describe("issues migrate coverage sweep (plan-task 9)", () => {
 
       const passed = calls[0];
       // Documented field set per Behaviors 9-10: title, type, priority, notes,
-      // epicId, parent_id, planRef, spec_ref, next_action. ID, dependencies,
-      // created, updated are NOT passed through (handled separately).
+      // epicId, parent_id, planRef, spec_ref, next_action — plus `id`, which is
+      // now PRESERVED. dependencies/created/updated are still stripped.
       assert.equal(passed.title, "rich issue");
       assert.equal(passed.type, "feature");
       assert.equal(passed.priority, 1);
@@ -1540,7 +1540,21 @@ describe("issues migrate coverage sweep (plan-task 9)", () => {
       assert.equal(passed.planRef, "/path/to/plan.md");
       assert.equal(passed.spec_ref, "/path/to/spec.md");
       assert.equal(passed.next_action, "/adev:test");
-      assert.equal(passed.id, undefined, "source id must NOT be passed (adapter assigns)");
+
+      // REQUIREMENT CHANGED (issue-628), not merely the produced value.
+      //
+      // This previously asserted `passed.id === undefined` with the rationale
+      // "source id must NOT be passed (adapter assigns)". That codified the
+      // defect: letting the adapter assign meant a migration handed every item
+      // a NEW identity. Measured on a real 310-issue board, source issue-625
+      // arrived as issue-fenorl, 0 of 41 dependency edges replayed (the verb
+      // resolves endpoints by source id), and every cross-reference by id in
+      // notes, commits, PR bodies and specs silently pointed elsewhere.
+      //
+      // Carrying identity across IS the migration's job. The adapters still
+      // mint for genuinely new work, where merge-safe ids matter (issue-613);
+      // they now mint only when no id is supplied.
+      assert.equal(passed.id, "issue-1", "source id MUST be passed so identity survives");
       assert.equal(passed.dependencies, undefined, "dependencies replayed separately");
       assert.equal(passed.created, undefined, "created stripped");
       assert.equal(passed.updated, undefined, "updated stripped");
