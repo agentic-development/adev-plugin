@@ -75,12 +75,12 @@ The adev lifecycle already computes everything a human needs to triage a large d
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Provenance rollup by spec | Group PR commits by `Spec:` trailer with plan-task coverage and per-spec diff size; flag untraced commits. | must-have | | specified |
-| Attention map from routing scores | Rank tasks by `selected_agent` and `blast_radius`; emit "read these first" with rationale. | must-have | | specified |
-| Verification summary | Report `/adev:validate` verdict, gates, and check results. | must-have | | specified |
+| Provenance rollup by spec | Group PR commits by `Spec:` trailer with plan-task coverage and per-spec diff size; flag untraced commits. | must-have | | planned |
+| Attention map from routing scores | Rank tasks by `selected_agent` and `blast_radius`; emit "read these first" with rationale. | must-have | | planned |
+| Verification summary | Report `/adev:validate` verdict, gates, and check results. | must-have | | planned |
 | Review packet field set | Author-written contract including the "what I cannot explain" field. | must-have | | validated |
-| Reading order for multi-commit PRs | Derive a suggested reading sequence from `## Parallelization` groups where the owned parser yields them, and from commit order otherwise. Plan task order is **not** promised: no declared input carries it, and the only section that did (`## Task Summary`) has no parser or owner. | should-have | | specified |
-| Size advisory with exception classes | Warn above a size threshold, naming legitimate exceptions (mechanical sweep, generated mirror, migration). | should-have | | specified |
+| Reading order for multi-commit PRs | Derive a suggested reading sequence from `## Parallelization` groups where the owned parser yields them, and from commit order otherwise. Plan task order is **not** promised: no declared input carries it, and the only section that did (`## Task Summary`) has no parser or owner. | should-have | | planned |
+| Size advisory with exception classes | Warn above a size threshold, naming legitimate exceptions (mechanical sweep, generated mirror, migration). | should-have | | planned |
 
 ## Deferred Capabilities
 
