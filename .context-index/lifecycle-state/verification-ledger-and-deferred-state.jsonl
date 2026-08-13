@@ -5,3 +5,4 @@
 {"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"FAIL","notes":"operator_deferred source not bound to hook-verified provenance; probe_error leak path into unmet_requirement","ts":"2026-08-13T13:35:28.827Z"}
 {"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"INVALID_SPEC_PATH error-code collision with the specify assertWithin hard-failure contract","ts":"2026-08-13T13:35:28.883Z"}
 {"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-08-13T13:35:28.941Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":["consistency-analyzer:contract:739ecb0c","security-reviewer:authentication:db661687","structural-architect:contract:71e64317"],"unresolved_blocker_ids":[],"ts":"2026-08-13T13:36:46.558Z"}

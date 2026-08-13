@@ -2,10 +2,10 @@
 charter: test-strategies
 charter-extension: true
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: high
 milestone:
-revision: 1
+revision: 2
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -21,12 +21,12 @@ itself having been declared and justified before the measurement.
 
 > **Charter extension note:** The test-strategies charter (revision 4) defined 9
 > strategies. `tolerance` is a 12th, justified by the charter Quality Attribute on
-> extensibility. Sibling specs to update when this lands:
-> - `strategy-type-registry` — "exactly 9 strategy types" → 12; add a registry table row
-> - `strategy-profile-contract` — registered-slug set grows; validation stays dynamic
-> - `cross-strategy-gaming-patterns` — "any of the 8 types" → "any registered strategy type"
-> - `strategy-detection-heuristics` — add the cascade entry defined in Behavior 6
-> - `threshold-strategy-profile` — add a scope note: `threshold` remains **performance-only**; data-quality bands are `tolerance`
+> extensibility. The authoritative **shared 9 → 12 update surface** — every
+> registry, test, doc, and sibling-spec site that must change in the same commit —
+> is the table in `snapshot-strategy-profile.spec.md`'s charter extension note; it
+> is maintained in one place rather than triplicated. One site is specific to this
+> spec:
+> - `threshold-strategy-profile.spec.md` — add a scope note: `threshold` remains **performance-only**; data-quality bands are `tolerance`
 
 ## Problem and Motivation
 
@@ -113,22 +113,41 @@ checksum so an in-place edit is detectable.
 - **Expiry evasion:** a band declared as temporary (with `expiry`) that is
   silently carried past its expiry date instead of being re-justified.
 
-**6. Detection heuristics and cascade position**
+**6. Detection heuristics and pattern-level exclusions**
+
+`detectTaskStrategy` evaluates a **fixed linear rule list** and returns the first
+match. `tolerance` is **appended at the end** of that list, after `integration`,
+and requests no reordering or modification of any shipped rule. This is the only
+position that honours this spec's own requirement that `threshold` detection be
+left untouched.
 
 | Pattern | Confidence |
 |---|---|
 | `tolerances/**`, `*.tolerance.{yaml,yml,json}` | high |
-| `data_quality/**`, `dq/**`, `expectations/**` | medium |
+| `*.band.{yaml,yml,json}` | high |
 
-Cascade precedence, stated explicitly:
+Because `tolerance` is last, every earlier rule wins by construction:
 
-- `tolerance` **never** claims `k6/**`, `locust/**`, `artillery/**`, or
-  `*.bench.*` — those remain `threshold`. Performance bands are `threshold`;
-  data bands are `tolerance`. The two never overlap on a path pattern.
-- `threshold` is checked **before** `tolerance` in the cascade, so any ambiguity
-  resolves to the shipped strategy and existing detection behaviour is unchanged.
-- `tolerance` is checked **before** `fixture` only for the patterns above;
-  `models/**/*.sql` remains `fixture`.
+- **`threshold` keeps `k6/**`, `locust/**`, `artillery/**`, `*.bench.*`.**
+  `tolerance` never claims them. Performance bands are `threshold`; data bands
+  are `tolerance`; the two never overlap on a path pattern.
+- **`fixture` keeps `models/**/*.sql`.**
+- **`data_quality/**`, `dq/**`, and `expectations/**` are deliberately NOT
+  claimed.** An earlier draft listed them at medium confidence, but those are the
+  directory conventions of Great Expectations and Soda Core — both registered as
+  **`fixture`** typical tools in `registry.mjs` and `strategy-type-registry.spec.md`.
+  Claiming them would either collide with `fixture`'s established domain or
+  silently reclassify existing data-quality suites. Projects using those layouts
+  declare `tolerance` through the manifest `test_strategies` block or spec
+  frontmatter, which is exactly what the assignment protocol's
+  manifest-over-detection precedence exists for.
+
+**6a. Multi-path resolution**
+
+`detectTaskStrategy` iterates a task's **file paths in the outer loop** and rules
+in the inner loop, so the first *path* that matches any rule decides — precedence
+applies within a single path, never globally. Mixed-path tasks must declare their
+strategy explicitly.
 
 **7. Assertion rules**
 
@@ -149,6 +168,50 @@ The handoff block carries: the band declaration file path and its SHA-256, each
 `{metric, grain, comparison, band, direction, justification, expiry?}` tuple, the
 exact-metrics list, the declared minimum population size, the measurement command,
 and the report path.
+
+**8a. Credential rule for recorded commands**
+
+The measurement command is recorded literally, but a command embedding a
+**credential value** literally is rejected. Credentials are referenced **only** by
+named environment variable (`$VAR` / `${VAR}`), matching the constraint the
+`infra_requirements` `probe` field already imposes and the spec template's "env
+var names only — MUST NOT contain actual credential values" rule. A command such
+as `duckdb "md:?token=abc123" -c …` is rejected with
+`TOLERANCE_CREDENTIAL_IN_COMMAND`; the `$VAR` form is accepted.
+
+**8b. Path containment**
+
+The band declaration file path is subject to the same project-root containment
+check applied to `evidence_ref` in
+`verification-ledger-and-deferred-state.spec.md`. A path escaping the project
+root is rejected with `TOLERANCE_BAND_FILE_OUT_OF_ROOT`.
+
+**8c. Remaining required profile fields**
+
+`getStrategyProfile('tolerance')` must return all 8 contract fields without
+falling back to `unit`. Two do not follow from the behaviors above:
+
+- **`seed_data_rule`:** *"Measurement data is observed, not seeded. The rule is a
+  population rule: the measured population must meet its declared minimum size,
+  be read at the declared grain, and be recorded in the report alongside the
+  measured value, so that a band judged against an unrepresentative population is
+  visible rather than silent."*
+- **`permitted_tools`:** the effective list is resolved from the **project's
+  declared measurement commands** — the manifest `test_strategies` entry for
+  `tolerance` merged with the domain profile via
+  `lib/domains/merge-test-config.mjs`. The profile file carries a **non-empty**
+  default list (`duckdb`, `psql`, `sqlite3`, `jq`, `awk`, `python3`) because
+  `loadProfile()` treats an empty array as a missing field and falls back to
+  `unit`.
+
+**8d. Relationship to `reconciliation`**
+
+`reconciliation-strategy-profile.spec.md` Behavior 5 prohibits **tolerance
+smuggling**: introducing a numeric band into a reconciliation leg without
+declaring it under this spec's rules. The reciprocal obligation is stated here so
+the reference is bidirectional: a reconciliation leg that needs a band adopts
+this profile's declaration contract (Behavior 2), its immutability rule
+(Behavior 4), and its exact-metrics list — it does not invent a local tolerance.
 
 **9. Verification outcome recording**
 
@@ -171,6 +234,8 @@ mode this profile guards against.
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | A metric is asserted with no declared band | Block | `TOLERANCE_BAND_UNDECLARED` |
+| Recorded measurement command embeds a literal credential value | Block | `TOLERANCE_CREDENTIAL_IN_COMMAND` |
+| Band declaration file path escapes the project root | Block | `TOLERANCE_BAND_FILE_OUT_OF_ROOT` |
 | Band declared without a justification | Block | `TOLERANCE_UNJUSTIFIED` |
 | Band edited after a run measured against it | Block | `TOLERANCE_BAND_MUTATED` |
 | Band exceeds the project ceiling / is absorbing | Block, require human approval | `TOLERANCE_BAND_TOO_WIDE` |
@@ -194,9 +259,9 @@ mode this profile guards against.
 
 | Module | Impact | Changes Required |
 |--------|--------|-----------------|
-| `lib/test-strategies/registry.mjs` | High | Add the `tolerance` entry; update both count assertions in the same change |
-| `lib/test-strategies/profiles/tolerance.md` | High | New profile with all 8 required contract fields |
-| `lib/test-strategies/detection.mjs` | Medium | Cascade entry per Behavior 6, strictly after `threshold` |
+| `lib/test-strategies/registry.mjs` | High | Add the `tolerance` entry; **every site in the shared 9 → 12 table** (see `snapshot-strategy-profile.spec.md`) updates in the same change — including ID *arrays* and describe titles |
+| `lib/test-strategies/profiles/tolerance.md` | High | New profile with all 8 required contract fields, including the `seed_data_rule` and non-empty `permitted_tools` defined in Behavior 8c |
+| `lib/test-strategies/detection.mjs` | Medium | **Append** the cascade rule per Behavior 6 at the end of the rule list. No shipped rule is reordered or modified; `data_quality/**`, `dq/**`, `expectations/**` are deliberately not claimed |
 | `lib/test-strategies/gaming.mjs` | Medium | Detectors for post-hoc widening, unjustified band, absorbing band |
 | `threshold-strategy-profile.spec.md` | Low | Scope note: `threshold` stays performance-only |
 | `templates/manifest-template.yaml` | Low | `tolerance` example in the activated block |
@@ -216,9 +281,13 @@ mode this profile guards against.
 
 ## Acceptance Criteria
 
-- [ ] `getStrategyProfile('tolerance')` loads without falling back to `unit`
-- [ ] Profile contains all 8 required contract fields
+- [ ] `getStrategyProfile('tolerance')` loads without falling back to `unit`, with a non-empty `permitted_tools` default and the `seed_data_rule` from Behavior 8c
+- [ ] Profile contains all 8 required contract fields and passes the profile-contract sweep at `tests/evals/test-strategies/test-strategies.test.mjs:740`
+- [ ] The `tolerance` rule is **appended** at the end of the cascade; a regression test asserts no shipped rule changed its result
 - [ ] `threshold` detection is unchanged: `k6/**`, `locust/**`, `artillery/**`, `*.bench.*` still return `threshold`
+- [ ] `expectations/great_expectations.yml` does **not** resolve to `tolerance` (Great Expectations / Soda Core layouts stay with `fixture`'s domain; `tolerance` is declared, not detected, in those projects)
+- [ ] A measurement command containing a literal credential blocks with `TOLERANCE_CREDENTIAL_IN_COMMAND`
+- [ ] A band declaration file outside the project root blocks with `TOLERANCE_BAND_FILE_OUT_OF_ROOT`
 - [ ] `threshold-strategy-profile.spec.md` carries a scope note stating it is performance-only
 - [ ] A metric asserted with no declared band blocks with `TOLERANCE_BAND_UNDECLARED`
 - [ ] A band edited after a measuring run blocks with `TOLERANCE_BAND_MUTATED`

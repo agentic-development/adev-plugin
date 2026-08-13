@@ -2,10 +2,10 @@
 charter: test-strategies
 charter-extension: true
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: medium
 milestone:
-revision: 1
+revision: 2
 charter-revision: 5
 created: 2026-08-13
 updated: 2026-08-13
@@ -24,11 +24,31 @@ and diffing it against the baseline under an explicit acceptance rule.
 > strategies. `snapshot` is a 10th, justified by the Quality Attribute
 > "Adding a strategy requires only a new profile Live Spec, a registry entry, a
 > profile markdown file, and a detection heuristic entry — no changes to the core
-> abstraction." The following sibling specs must be updated when this lands:
-> - `strategy-type-registry` — "exactly 9 strategy types" → 12; add a registry table row
-> - `strategy-profile-contract` — the registered-slug set grows; validation stays dynamic via `getStrategy()`
-> - `cross-strategy-gaming-patterns` — precondition "any of the 8 types" → "any registered strategy type"
-> - `strategy-detection-heuristics` — add the cascade entry defined in Behavior 7
+> abstraction."
+>
+> **Shared 9 → 12 update surface.** The following list is common to all three new
+> profile specs and is the authoritative one; earlier drafts undercounted it.
+> Every item must land in the same change as the registry entries:
+>
+> | Site | What changes |
+> |---|---|
+> | `lib/test-strategies/registry.mjs` | three new entries, alphabetical order preserved |
+> | `tests/lib/test-strategies/registry.test.mjs:31` | `assert.equal(listStrategies().length, 9)` → 12 |
+> | `tests/evals/test-strategies/test-strategies.test.mjs:924` | count assertion → 12, and the `expectedStrategies` **array** |
+> | `tests/evals/test-strategies/test-strategies.test.mjs:436` | "all 9 profiles load without fallback" title **and** its 9-element `ids` array |
+> | `tests/evals/test-strategies/test-strategies.test.mjs:740` | "across all 9 strategies" title **and** its `ids` array; this is a profile-contract sweep the new profiles must pass |
+> | `tests/docs/advanced-guides.test.mjs:161` | hardcoded 9-slug array |
+> | `docs/test-strategies.md` | "The 9 strategies" heading and body |
+> | `docs/concepts.md:104` | strategy count |
+> | `strategy-type-registry.spec.md` | "exactly 9 strategy types" → 12; three registry table rows |
+> | `strategy-profile-contract.spec.md` | AC "any of the 9 strategy IDs" → any registered ID; validation stays dynamic via `getStrategy()` |
+> | `strategy-detection-heuristics.spec.md` | Behavior 16 and its ACs; append the three new cascade rules |
+> | `manifest-schema-extension.spec.md` | Behavior 1 still hardcodes "one of the 8 types" — stale since `integration` landed; this spec set adopts the fix |
+> | `charter.md` Capability Map | the "Strategy Type Registry" row still reads "Define the 9 strategy types" |
+>
+> **Not** in the list: `cross-strategy-gaming-patterns.spec.md` already reads "any
+> registered strategy type" (migrated when `integration` landed). Earlier drafts
+> copied that instruction from the integration profile's note in error.
 
 ## Problem and Motivation
 
@@ -103,12 +123,23 @@ diff that a human merely reviewed and approved is not GREEN.
 The following are prohibited and cause `/adev:validate` to block:
 
 - **Post-hoc baseline:** capturing or re-capturing the baseline after the
-  implementation change. Detected by comparing the baseline capture event
-  timestamp against the first implementation commit.
+  implementation change. Detection requires a durable record of when the baseline
+  was captured, which the write-test handoff block alone does not provide. The
+  recording surface is the `strategy_verification` event defined in
+  `verification-ledger-and-deferred-state.spec.md` Behavior 5, whose payload
+  carries `baseline_checksum` and `baseline_captured_at` for exactly this purpose.
+  The check compares `baseline_captured_at` against the first commit touching the
+  task's implementation files. **This gaming blocker is therefore enforceable only
+  once that event is approved and landed** (a `[BOUNDARY: human-approved]`
+  change); until then it is an advisory rule stated in the profile, and the
+  profile says so explicitly rather than implying automated enforcement.
 - **Baseline overwrite on failure:** re-running capture to "refresh" a baseline
   that no longer matches, instead of explaining the delta. Baselines are
   write-once per task; a legitimate re-baseline requires a new task with its own
-  declared delta and an explicit human record.
+  declared delta and an explicit human record. Write-once is enforced by comparing
+  the `baseline_checksum` on the task's most recent `strategy_verification` event
+  against the checksum being recorded — the same substrate dependency as the
+  post-hoc-baseline rule above, and likewise advisory until that event lands.
 - **Checksum-only comparison of an empty capture:** a snapshot over zero rows,
   zero files, or an empty document trivially matches itself.
 - **Unpinned nondeterminism:** including timestamps, run IDs, or unsorted
@@ -139,33 +170,106 @@ The following are prohibited and cause `/adev:validate` to block:
 - Secrets present in captured state (connection strings, tokens, PII columns)
   must be excluded or masked by the capture procedure itself, before checksum,
   and the mask list is part of the provenance record.
+- The mask list is **checked against the source schema** before a baseline is
+  accepted, rather than trusted on the capture procedure's self-report: every
+  column or key in the captured scope whose name matches the project's declared
+  sensitive-field patterns must appear in the mask list or in an explicit
+  reviewed exclusion. A baseline whose mask list omits a matching field is
+  rejected with `SNAPSHOT_MASK_INCOMPLETE`. This matters because adev ships no
+  capture tooling, so masking is entirely project-authored code.
 
-**7. Detection heuristics and cascade position**
+**7. Detection heuristics and pattern-level exclusions**
 
-`detectTaskStrategy` returns exactly one strategy, so `snapshot` claims only
-patterns no shipped strategy owns:
+`detectTaskStrategy` evaluates a **fixed linear rule list** and returns the first
+match. Adding a strategy therefore means appending a rule whose patterns are
+disjoint from every rule above it — **not** claiming a position "before" an
+earlier rule. This spec requests no reordering or modification of any shipped rule.
+
+`snapshot` is appended at the **end** of the cascade, after `integration`, and
+claims only:
 
 | Pattern | Confidence |
 |---|---|
-| `__snapshots__/**`, `*.snap` | high |
-| `snapshots/**`, `baselines/**` containing non-image artifacts | medium |
-| `*.snapshot.json`, `*.baseline.json`, `*.baseline.yaml` | high |
+| `__snapshots__/**` **and** `*.snap` | high |
+| `*.snapshot.json`, `*.baseline.json`, `*.baseline.yaml`, `*.baseline.yml` | high |
+| `snapshots/**`, `baselines/**` where the extension is not an image type | medium |
 
-Cascade precedence, stated explicitly:
+Because `snapshot` is last, every earlier rule wins by construction. The
+consequences are stated so they are chosen rather than discovered:
 
-- `visual` is checked **before** `snapshot`. An image baseline under a components
-  directory stays `visual`; `snapshot` never claims `.png`/`.jpg`/`.webp`.
-- `schema` and `policy` are checked **before** `snapshot`. A snapshot file inside
-  `migrations/` or beside `*.tf` stays with its owning strategy.
-- `snapshot` is checked **before** `fixture`, because a `__snapshots__/` directory
-  under a dbt `models/` tree is a snapshot artifact, not an input fixture.
+- **`fixture` wins for `models/**/*.sql`.** A `.sql` file under a dbt `models/`
+  tree resolves to `fixture` even inside a `__snapshots__/` directory. Snapshot
+  work in a dbt project must be declared through the manifest `test_strategies`
+  block or spec frontmatter rather than auto-detected. This is a deliberate
+  accepted limitation.
+- **`schema`, `policy`, `contract`, `visual`, `threshold`, and `integration`** all
+  win over `snapshot` for any path they already claim.
+- **`snapshot` never claims image extensions** (`.png`, `.jpg`, `.jpeg`, `.webp`,
+  `.gif`) — image baselines are `visual`'s domain. Note that a bare
+  `src/components/__snapshots__/Button.png` matches no shipped rule today and
+  resolves to `unit`. **This spec does not change that**, because doing so would
+  require editing the validated `visual` rule, which is out of scope here.
+
+**7a. Multi-path resolution**
+
+`detectTaskStrategy` iterates a task's **file paths in the outer loop** and rules
+in the inner loop, so the first *path* that matches any rule decides — rule
+precedence applies only within a single path, never globally across a task's
+paths. Where a task mixes snapshot artifacts with other file kinds, the strategy
+must be declared explicitly rather than detected.
+
+**7b. Semantic discriminator from `visual`**
+
+The extension carve-out above is a mechanical rule; the semantic one is that
+`snapshot` requires a machine-checkable **declared delta** (Behavior 4) and
+`visual` has no such concept — a visual baseline is approved by a human eye, a
+snapshot baseline is compared against a pre-stated expectation. A project that
+snapshots rendered PNGs is doing `visual` work unless it can declare the delta.
 
 **8. Handoff format**
 
 The write-test → implement handoff block carries: baseline artifact path or
-storage locator, baseline SHA-256, capture command (verbatim), capture timestamp,
-source identifier, item/row count, ordering key, mask list, the declared delta,
-the comparison command, and the acceptance rule.
+storage locator, baseline SHA-256, capture command, capture timestamp, source
+identifier, item/row count, ordering key, mask list, the declared delta, the
+comparison command, and the acceptance rule.
+
+**8a. Credential rule for recorded commands**
+
+Commands are recorded literally, but a command embedding a **credential value**
+literally is rejected. Credentials are referenced **only** by named environment
+variable (`$VAR` / `${VAR}`), matching the constraint the `infra_requirements`
+`probe` field already imposes and the spec template's "env var names only — MUST
+NOT contain actual credential values" rule. `pg_dump "postgresql://u:pw@h/db"` is
+rejected with `SNAPSHOT_CREDENTIAL_IN_COMMAND`; `pg_dump "$SNAPSHOT_SOURCE_URL"`
+is accepted. Connection-string variables embed passwords and are treated as
+secrets, as `integration-strategy-profile.spec.md` already states.
+
+**8b. Path containment**
+
+The baseline artifact path and storage locator, where they resolve to local
+paths, are subject to the same project-root containment check applied to
+`evidence_ref` in `verification-ledger-and-deferred-state.spec.md`. A locator
+escaping the project root is rejected with `SNAPSHOT_LOCATOR_OUT_OF_ROOT`.
+
+**8c. Remaining required profile fields**
+
+`getStrategyProfile('snapshot')` must return all 8 contract fields without
+falling back to `unit`. Two do not follow from the behaviors above and are
+defined here:
+
+- **`seed_data_rule`:** *"Snapshot data is captured, not authored. The rule is a
+  capture rule: the captured population must be the full declared scope at a
+  declared point in time, produced by the recorded capture command under the
+  recorded ordering key and mask list, with no manual editing of the captured
+  artifact between capture and checksum."*
+- **`permitted_tools`:** adev ships no capture tooling, so the effective list is
+  resolved from the **project's declared commands** — the manifest
+  `test_strategies` entry for `snapshot` merged with the domain profile via
+  `lib/domains/merge-test-config.mjs`, the same resolution the `unit` profile
+  uses. The profile file nonetheless carries a **non-empty** default list
+  (`pg_dump`, `mysqldump`, `sqlite3`, `jq`, `sha256sum`, `git diff`,
+  `node:crypto`) because `loadProfile()` treats an empty array as a missing field
+  and falls back to `unit`.
 
 **9. Verification outcome recording**
 
@@ -188,6 +292,9 @@ nothing.
 | No baseline recorded before implementation begins | Block; RED is not established | `SNAPSHOT_NO_BASELINE` |
 | Two capture runs against an unchanged system disagree | Block; capture is inadmissible | `SNAPSHOT_NONDETERMINISTIC` |
 | Baseline artifact or locator unresolvable at compare time | Block | `SNAPSHOT_BASELINE_MISSING` |
+| Recorded command embeds a literal credential value | Block | `SNAPSHOT_CREDENTIAL_IN_COMMAND` |
+| Baseline locator escapes the project root | Block | `SNAPSHOT_LOCATOR_OUT_OF_ROOT` |
+| Mask list omits a field matching a declared sensitive-field pattern | Block | `SNAPSHOT_MASK_INCOMPLETE` |
 | Declared delta absent, empty, or wildcard | Block | `SNAPSHOT_DELTA_UNDECLARED` |
 | Observed delta exceeds declared delta | Fail (this is a real finding, not an error) | `SNAPSHOT_UNDECLARED_DRIFT` |
 | Baseline rewritten for an existing task | Block | `SNAPSHOT_BASELINE_OVERWRITE` |
@@ -209,9 +316,9 @@ nothing.
 
 | Module | Impact | Changes Required |
 |--------|--------|-----------------|
-| `lib/test-strategies/registry.mjs` | High | Add the `snapshot` entry; registry count assertions in `tests/lib/test-strategies/registry.test.mjs` and `tests/evals/test-strategies/test-strategies.test.mjs` update in the same change |
-| `lib/test-strategies/profiles/snapshot.md` | High | New profile file with all 8 required contract fields |
-| `lib/test-strategies/detection.mjs` | Medium | Cascade entry per Behavior 7, positioned after `visual`/`schema`/`policy` and before `fixture` |
+| `lib/test-strategies/registry.mjs` | High | Add the `snapshot` entry; **every site in the shared 9 → 12 table above** updates in the same change — including the ID *arrays* and describe titles, not only the two `assert.equal(…, 9)` lines |
+| `lib/test-strategies/profiles/snapshot.md` | High | New profile file with all 8 required contract fields, including the `seed_data_rule` and non-empty `permitted_tools` defined in Behavior 8c |
+| `lib/test-strategies/detection.mjs` | Medium | **Append** the cascade rule per Behavior 7 at the end of the rule list. No shipped rule is reordered or modified |
 | `lib/test-strategies/gaming.mjs` | Medium | Strategy-specific detectors for post-hoc baseline, empty capture, wildcard delta |
 | `templates/manifest-template.yaml` | Low | `snapshot` example in the activated `test_strategies` block |
 | `skills/write-test/SKILL.md` | **Deferred — out of scope for this spec** | Dispatch prose for the snapshot profile. Contended surface; sequenced as required follow-up |
@@ -229,12 +336,16 @@ nothing.
 
 ## Acceptance Criteria
 
-- [ ] `getStrategyProfile('snapshot')` loads without falling back to `unit`
-- [ ] Profile contains all 8 required contract fields
+- [ ] `getStrategyProfile('snapshot')` loads without falling back to `unit`, with a non-empty `permitted_tools` default and the `seed_data_rule` from Behavior 8c
+- [ ] Profile contains all 8 required contract fields and passes the profile-contract sweep at `tests/evals/test-strategies/test-strategies.test.mjs:740`
 - [ ] `gaming_blockers` includes post-hoc baseline, baseline overwrite, empty capture, unpinned nondeterminism, scope shrinking, and wildcard delta
-- [ ] `listStrategies()` returns 12 entries in alphabetical order; both count assertions updated in the same change
-- [ ] Detection returns `visual` (not `snapshot`) for an image baseline under a components directory, and `snapshot` (not `fixture`) for `models/__snapshots__/*.snap`
+- [ ] `listStrategies()` returns 12 entries in alphabetical order, and **every site in the shared 9 → 12 table** is updated in the same change
+- [ ] The `snapshot` detection rule is **appended** at the end of the cascade; a regression test asserts no shipped rule changed its result (`models/x.sql` → `fixture`, `k6/load.js` → `threshold`, `migrations/1.sql` → `schema`)
+- [ ] `models/__snapshots__/x.sql` resolves to `fixture` — the documented, accepted consequence of appending last
+- [ ] `config/__snapshots__/a.snap` resolves to `snapshot`; `snapshots/baseline.png` does not
 - [ ] A snapshot task with no declared delta blocks with `SNAPSHOT_DELTA_UNDECLARED`
+- [ ] A capture command containing a literal credential blocks with `SNAPSHOT_CREDENTIAL_IN_COMMAND`; the `$VAR` form is accepted
+- [ ] A baseline locator escaping the project root blocks with `SNAPSHOT_LOCATOR_OUT_OF_ROOT`
 - [ ] A capture blocked by missing credentials records `deferred`, never `green`
-- [ ] Baselines are write-once per task; a re-baseline attempt blocks
+- [ ] The post-hoc-baseline and write-once rules are documented as **advisory until** the `strategy_verification` event carrying `baseline_checksum` / `baseline_captured_at` is human-approved and landed
 - [ ] All quality gates pass; no constitutional violations introduced
