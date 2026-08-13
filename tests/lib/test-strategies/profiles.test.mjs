@@ -40,9 +40,11 @@ describe('UNIT_PROFILE', () => {
     assert.ok(UNIT_PROFILE.gaming_blockers.length > 0);
   });
 
-  test('permitted_tools is a non-empty array', () => {
+  test('permitted_tools is an empty array (tools now come from the domain profile)', () => {
+    // Bundled permitted_tools were removed in favor of domain-provided values —
+    // see lib/test-strategies/profiles.mjs and lib/domains/merge-test-config.mjs.
     assert.ok(Array.isArray(UNIT_PROFILE.permitted_tools));
-    assert.ok(UNIT_PROFILE.permitted_tools.length > 0);
+    assert.equal(UNIT_PROFILE.permitted_tools.length, 0);
   });
 
   test('strategy_id is "unit"', () => {

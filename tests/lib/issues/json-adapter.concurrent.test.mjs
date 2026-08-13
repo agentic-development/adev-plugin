@@ -1,18 +1,26 @@
 /**
  * Concurrent multi-update test for `JsonAdapter`.
  *
- * Verifies the spec's last-writer-wins semantics: N concurrent appenders
- * each spawn an independent process that creates a single issue with a
- * unique title. Because temp-then-rename is atomic at the OS level, every
- * appended write produces a complete file — but races may overwrite each
- * other (last-writer-wins).
+ * Verifies the CAS (compare-and-swap) semantics from the
+ * concurrent-write-protection spec: N concurrent appenders each spawn an
+ * independent process that creates a single issue with a unique title.
+ * Every mutation runs through `_withCas`, which re-reads a fresh snapshot
+ * on seq conflict and retries up to `casMaxRetries` times before throwing
+ * `STALE_BOARD_WRITE`.
  *
- * The assertion isn't that all N writes survive (they can't under
- * last-writer-wins) — the assertion is that:
+ * Under contention the guarantees are therefore:
  *
  *   1. The final `tasks.json` is always a complete, parseable document.
- *   2. At least one of the N writes survived (no full data loss).
- *   3. The file's `version` and shape remain valid.
+ *   2. Every ACKNOWLEDGED write (child exited 0) is present in the final
+ *      board — CAS never silently drops a write it confirmed.
+ *   3. A child may legitimately fail, but only with `STALE_BOARD_WRITE`
+ *      (retry budget exhausted) — never any other error class.
+ *   4. At least one child succeeds (the winner of the first CAS race).
+ *
+ * (This file originally asserted pre-CAS last-writer-wins semantics —
+ * "all children exit 0, at least one write survives" — which is exactly
+ * backwards under CAS: exit codes may be non-zero under contention, but
+ * acknowledged writes can never be lost.)
  *
  * Strategy is integration (Task 21): we spawn N child processes via
  * `node:child_process` so each gets its own fs state, then wait on all and
@@ -31,6 +39,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ADAPTER_PATH = resolve(__dirname, "../../../lib/issues/json-adapter.mjs");
 
+// Distinct exit code a child uses to report a CAS retry-budget exhaustion
+// (STALE_BOARD_WRITE) as opposed to an unexpected crash (exit 1).
+const EXIT_STALE = 42;
+
 function makeProject() {
   const dir = mkdtempSync(join(tmpdir(), "json-adapter-concurrent-test-"));
   mkdirSync(join(dir, ".context-index"), { recursive: true });
@@ -45,7 +57,12 @@ function spawnAppender(projectRoot, title) {
       const { JsonAdapter } = await import(${JSON.stringify(ADAPTER_PATH)});
       const adapter = new JsonAdapter(${JSON.stringify(projectRoot)});
       await adapter.init();
-      await adapter.create({ title: ${JSON.stringify(title)}, type: "task" });
+      try {
+        await adapter.create({ title: ${JSON.stringify(title)}, type: "task" });
+      } catch (err) {
+        if (err && err.code === "STALE_BOARD_WRITE") process.exit(${EXIT_STALE});
+        throw err;
+      }
     `;
     const child = spawn(process.execPath, ["--input-type=module", "-e", script], {
       stdio: ["ignore", "ignore", "pipe"],
@@ -69,9 +86,13 @@ describe("JsonAdapter — concurrent multi-update (integration)", () => {
       const titles = Array.from({ length: N }, (_, i) => `concurrent-${i + 1}`);
       const results = await Promise.all(titles.map((t) => spawnAppender(dir, t)));
 
-      // All children should exit cleanly.
+      // Children may only exit 0 (write acknowledged) or EXIT_STALE
+      // (CAS retry budget exhausted) — anything else is a crash.
       for (const r of results) {
-        assert.equal(r.code, 0, `child failed:\n${r.stderr}`);
+        assert.ok(
+          r.code === 0 || r.code === EXIT_STALE,
+          `child crashed (code ${r.code}, expected 0 or ${EXIT_STALE}):\n${r.stderr}`
+        );
       }
 
       // Final file must be parseable.
@@ -81,11 +102,15 @@ describe("JsonAdapter — concurrent multi-update (integration)", () => {
       assert.ok(Array.isArray(board.epics));
       assert.ok(Array.isArray(board.issues));
 
-      // At least one of the N appends must have survived. Last-writer-wins
-      // means we won't necessarily see all N, but at least one is required.
+      // The CAS guarantee: every ACKNOWLEDGED write is present. No silent loss.
       const titlesFound = new Set(board.issues.map((i) => i.title));
-      const hits = titles.filter((t) => titlesFound.has(t));
-      assert.ok(hits.length >= 1, `no concurrent writes survived; final board had: ${[...titlesFound].join(", ")}`);
+      const acknowledged = titles.filter((_, i) => results[i].code === 0);
+      for (const t of acknowledged) {
+        assert.ok(titlesFound.has(t), `acknowledged write lost: ${t}`);
+      }
+
+      // At least one child must win the race outright.
+      assert.ok(acknowledged.length >= 1, "no concurrent writes succeeded at all");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
