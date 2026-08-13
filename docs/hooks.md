@@ -28,6 +28,7 @@ All hooks follow the same protocol:
 | `merge-guard` | PreToolUse | Bash | Blocks | Block merges to protected branches |
 | `lifecycle-gate.sh pre-bash` | PreToolUse | Bash | Blocks | Block bash commands that bypass lifecycle gates |
 | `plan-body-write-guard` | PreToolUse | `Write\|Edit` | Blocks | Block direct writes to immutable plan-task bodies |
+| `gaming-gate` | PreToolUse | `Write\|Edit` | Blocks | Block a test-file Write/Edit that introduces a new gaming-detector violation |
 | `sync-trigger` | PostToolUse | Edit | Advisory | Trigger sync after constitution edits |
 | `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives; also tracks which `.context-index/` files have been read (folded-in former `context-read-tracker`) |
 | `issue-reminder` | PostToolUse | `.*` (all) | Advisory | Remind about relevant open issues |
@@ -174,6 +175,33 @@ These hooks fire before a tool executes. Blocking hooks (exit 2) prevent the too
 The three lifecycle-gate rows above (`pre-edit`, `pre-bash`, and `advisory`, below) all resolve to this single script, registered three times in `hooks/hooks.json` with a trailing argv surface argument — e.g. `bash "${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle-gate.sh" pre-edit`. Dispatch is read from `$1` only; the script never infers its surface from stdin fields. An unknown or missing surface argument exits 0 with a stderr diagnostic (fail-open — a mis-registration must be loudly visible but never a block).
 
 This consolidates what were formerly three separate scripts (`lifecycle-gate-edit.sh`, `lifecycle-gate-bash.sh`, `lifecycle-gate-advisory.sh`) sharing an almost-identical skeleton (level resolution, execution-state read, enforcement-message rendering). File-exclusion and bash-passthrough checks are delegated to `hooks/_lifecycle-gate-check.mjs --surface file|bash`.
+
+---
+
+### gaming-gate
+
+**Script:** `hooks/gaming-gate.sh` (helper: `hooks/_gaming-gate-check.mjs`)
+**Matcher:** `Write|Edit`
+**Behavior:** Blocks
+
+**Purpose:** Wires the 8 test-gaming detectors in `lib/test-strategies/gaming.mjs` (4 shared cross-strategy patterns plus 4 integration-specific patterns) into a deterministic enforcement point. Fires on every `Write`/`Edit` of a test file, reconstructs the file content the pending call would produce (without performing the write), and blocks the call before it lands if that content introduces a gaming violation not already present in the file's current on-disk content.
+
+**Regression-only, not whole-file:** the gate compares violations in the reconstructed post-edit content against the pre-edit on-disk content and blocks only on violations that are *new*. This is why writing a brand-new test file is held to the full standard (the pre-edit baseline is empty, so any matched pattern in the new content blocks), while editing an existing file only blocks on newly introduced violations — pre-existing debt in an untouched region of the file does not retroactively block an unrelated edit.
+
+**What triggers a block:**
+- The pending `Write`/`Edit` content contains a `DISABLED_TESTS`, `EMPTY_ASSERTIONS`, `SWALLOWED_ASSERTIONS`, or `CONDITIONAL_ASSERTIONS` pattern not present in the file today (any test file)
+- For test files whose path or filename contains an `integration` token: also `BOUNDARY_MOCKING`, `CI_BYPASS`, `CREDENTIAL_ABSENT_PASS`, or `AGENT_SKIP`
+
+**Exemptions:** non-test files (per `isTestFile()`), and the gaming detectors' own fixture test files (`tests/lib/test-strategies/gaming*.mjs`, `tests/lib/test-strategies/integration-gaming*.mjs`, `tests/test-strategies/gaming-agent-skip.test.mjs`) — these intentionally embed gaming-pattern strings as fixtures and are never scanned.
+
+**What the user sees:**
+- A stderr message naming each new violation's pattern id, line number, and description, followed by exit 2 (the write/edit is refused; the file on disk is unchanged)
+
+**Resolution:**
+1. Remove or fix the flagged pattern in the content you were about to write
+2. If the flag is a false positive on a detector fixture file that doesn't match the exemption list, extend `isDetectorFixtureFile()` in `lib/test-strategies/gaming-gate.mjs`
+
+See: `.context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md`
 
 ---
 

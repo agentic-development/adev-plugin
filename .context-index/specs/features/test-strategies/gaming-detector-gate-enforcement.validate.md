@@ -1,9 +1,50 @@
+---
+spec: .context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md
+status: validated
+verdict: PASS
+date: 2026-08-13
+---
+
 # Validation Report: Gaming Detector Gate Enforcement
 
 > **Date:** 2026-08-13
 > **Spec:** .context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md
 > **Plan:** .context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.plan.md
 > **Overall Status:** PASS
+
+**Post-validation addendum (same day, before PR):** a second-opinion review pass identified
+four in-scope follow-ups, all applied:
+1. This file and the `.review.md` sidecar were missing YAML frontmatter, which the
+   `adev/frontmatter-present` tier-1 diagnostic requires for `.review.md`/`.validate.md`
+   artifacts (`adev artifact commit` correctly rejected the original write). Fixed — both now
+   carry minimal `spec`/`status`/`verdict`/`date` frontmatter and pass the diagnostic
+   (verified via `node --test tests/diagnostics/tier1/frontmatter-present.test.mjs`).
+2. `docs/hooks.md` (the canonical hooks reference per CLAUDE.md's Context Routing table) had
+   no entry for the new `gaming-gate` hook. Added a summary-table row and a full `###
+   gaming-gate` section mirroring the existing `lifecycle-gate-edit` section's shape.
+3. The spec's Known Limitations section under-stated the false-positive cost for **brand-new**
+   test files: regression-only scoping absorbs pre-existing debt on *edits* to committed
+   files, but a `Write` to a new path has an empty baseline, so the same ~22%-of-files
+   false-positive shape measured on this repo's existing `tests/**` applies at full strength
+   with no absorption there. Added an explicit bullet; this is a documented, accepted cost of
+   the hard-blocking conservative choice, not a defect.
+4. `isDetectorFixtureFile`'s glob-shaped exemption (`gaming*.mjs` under
+   `tests/lib/test-strategies/`) was correct but untested at its actual boundary — the shipped
+   unit tests only pinned the 3 originally named files. Added a test asserting the intended
+   breadth (this capability's own `gaming-gate.test.mjs` is exempt on the same basis; an
+   unrelated file in the same directory is not) and clarified the rationale in spec Behavior 2.
+
+Source manifest re-stamped (sha `5c2b45a`, includes `docs/hooks.md`). `npm test`: 5343/5343
+passing after the addendum changes. Two items were checked and found to already be correct
+by existing precedent, requiring no code change: (a) merging `gaming-gate.sh` into the
+existing `plan-body-write-guard.sh` `PreToolUse` `Write|Edit` matcher group is safe — this
+repo's `PreToolUse` `Edit` matcher group already runs three stdin-reading hooks
+(`context-preflight.sh`, `constitution-linter.sh`, `lifecycle-gate-edit.sh`, all sourcing
+`_parse-stdin.sh`) from one shipped, working matcher array, proving each hook invocation gets
+independent stdin; (b) the manual version bump (`f361bed1`) follows the same established
+pattern as `f63f12ef` (`chore(release): bump version 0.26.0 -> 0.27.0 for verbosity-axis
+feature`), a prior manual feature-branch bump that coexisted with release-please automation
+without incident.
 
 ---
 

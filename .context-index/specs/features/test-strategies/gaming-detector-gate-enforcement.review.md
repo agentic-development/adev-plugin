@@ -1,3 +1,11 @@
+---
+spec: .context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md
+status: review-passed
+verdict: PASS_WITH_NOTES
+reviewed-revision: 2
+date: 2026-08-13
+---
+
 # Architecture Review: gaming-detector-gate-enforcement
 
 > **Date:** 2026-08-13
