@@ -1,10 +1,10 @@
 ---
 charter: pr-review-brief
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: medium
 milestone:
-revision: 5
+revision: 6
 charter-revision: 5
 created: 2026-08-12
 updated: 2026-08-13
@@ -14,13 +14,15 @@ updated: 2026-08-13
 
 ## Behavioral Contract
 
-`adev pr body` composes the generated half of a pull request's reviewer-facing content. Given a commit range, it reads the lifecycle artifacts those commits already reference — `Spec:` / `Plan-task:` trailers, the `<plan-stem>.routing.json` sidecars produced by `/adev:route` and read through `lib/plan-routing-sidecar.mjs`, and the `validate` step of the lifecycle projection — and writes a marker-delimited markdown brief to stdout.
+`adev pr body` composes the generated half of a pull request's reviewer-facing content. Given a commit range, it reads lifecycle artifacts the commits already reference and writes a marker-delimited markdown brief to stdout.
 
 The verb reads only. It never contacts a forge, never mutates lifecycle state, and never blocks: absent or malformed inputs degrade to explicit gaps in the output rather than to silence or to a non-zero exit.
 
+**This spec states properties. Values live in tests.** Revisions 3 through 5 each enumerated another module's error codes, field shapes, and sort semantics in prose, and each enumeration was refuted by probing that module — three times, in the same place. Prose cannot stay correct about another module's internals across changes to that module, and an enumeration is a weaker guarantee than the property it was reaching for. Everything a test can pin now lives in § Test Obligations, and the contract below is written so that no sentence in it can be falsified by reading `lib/`.
+
 ### Section ownership
 
-The marker encloses one ordered section list, shared across the specs in this charter. This spec owns three of its five slots:
+The marker encloses one ordered section list, shared across this charter's specs. This spec owns three of the five slots:
 
 | # | Section | Owning spec |
 |---|---------|-------------|
@@ -30,206 +32,134 @@ The marker encloses one ordered section list, shared across the specs in this ch
 | 4 | Traceability — commits grouped by spec | this spec |
 | 5 | Verification — what the lifecycle already checked | this spec |
 
-Revision 1 of this spec fixed the section set at the three it owns, before the should-have capabilities were specified. Revision 2 replaced that with the list above so the two specs cannot contradict each other on the marker's contents. The sections this spec owns keep their relative order, and every invariant below — single marker pair, no interleaving, determinism, loud degradation — applies to all five slots regardless of owner.
+**Marker assembly is owned here.** `lib/cli/pr.mjs` emits the opening marker, requests each slot in order from its owning module, and emits the closing marker. A slot renderer returns body text and never emits a marker.
 
-**Marker assembly is owned here.** `lib/cli/pr.mjs` emits the opening marker, requests each of the five slots in order from whichever module owns it, and emits the closing marker. A slot renderer returns section body text and never emits a marker itself. This is stated because revision 2 split slot ownership across two specs without saying who wraps the result, leaving both renderers plausibly responsible for a pair that must appear exactly once.
+Assembly also owns the **total rendered size of the brief**, because it is the only component that sees every slot — no slot renderer can observe another's contribution. Renderers report their size; assembly enforces the ceiling and renders the overflow as a named degradation naming which section was truncated. `pr-body-advisories.spec.md` § Resource Bounds relies on this and bounds only its own per-value and per-collection quantities.
 
-## Input Contracts
+## Inputs
 
-Four inputs, each with a named source, a typed shape, and a degradation path. Revision 2 named three of them only in prose; revision 3 gave those three contracts but silently relied on a fourth — the referenced spec's own frontmatter — without declaring it.
+Four sources. Each is named with its owner and its access path; none has its shape transcribed here.
 
-### Task universe and file sets
-
-The authoritative enumeration of tasks in a PR range is the set of distinct `Plan-task:` trailer values on commits in `base..head`, paired with the `Spec:` trailer on the same commit. A task is identified by the pair `(spec_path, task_id)`; the same `task_id` under two specs is two tasks.
-
-A task's file set is the union of paths touched by the commits carrying that `(spec_path, task_id)` pair, from `git diff-tree --no-commit-id --name-only -r <sha>`.
-
-This matters because revision 2 said a task "appears in the changed files", presupposing a task→file mapping that no input provides — `routing.json` entries carry no `files[]`. Deriving the mapping from trailers rather than from the sidecar is what makes the `UNKNOWN` invariant implementable: the task universe comes from git, the routing entries come from the sidecar, and `UNKNOWN` is the set difference. A commit with a `Spec:` trailer and no `Plan-task:` trailer contributes to traceability but adds no task.
-
-### Routing entries
-
-**Read through the owned accessor, not by hand.** `lib/plan-routing-sidecar.mjs` exports `sidecarPathFor()`, `readRoutingSidecar()`, and `lookupRoutingEntry()`. Revision 3 specified parsing `entries[]` directly, which is the same defect the sibling spec was blocked for and which this spec argues against two sections later when it cites ADR-0012 to justify reading validation through the projection. One on-disk format, one reader.
-
-**The sidecar is plan-stem-keyed, not spec-stem-keyed.** `sidecarPathFor()` requires a path ending in `.plan.md` and throws `INVALID_PLAN_PATH` otherwise, and ADR-0012 § "Permitted peers" defines the sidecar as `<plan-stem>.routing.json`. This spec starts from a `Spec:` trailer, so the derivation is explicit: `<spec-path>` with the `.spec.md` suffix replaced by `.plan.md`, passed to `sidecarPathFor()`. The two stems coincide in this repo today, which is exactly why revision 3's `<spec-stem>.routing.json` shorthand would have shipped unnoticed.
-
-**Consumed shape — `readRoutingSidecar()` returns a bare array of entries, not an envelope.** The `{ version, entries[] }` shape is what sits on disk; the accessor unwraps it. Revision 3 published a consumed-shape table with a `version` row, which was written from the module's docblock rather than from its return value and was wrong. Verified by calling it: `Array.isArray(readRoutingSidecar(plan)) === true`, and there is no `version` property to read.
-
-| Field (per element) | Contract |
-|---|---|
-| `task_id` | Joins to the `(spec_path, task_id)` task universe above. |
-| `selected_agent` | `human-only` / `assisted-agent` / `auto-agent`. **The accessor does not validate this enum** — an unrecognized value reaches the caller intact, so the ranking contract must treat any value outside the three as `UNKNOWN` rather than assuming a tier. |
-| `scores.blast_radius` | Nested under `scores`, normalized `0..1`. Revision 2 wrote it as a top-level field, which does not exist on disk. |
-| `scores.novelty` | Nested under `scores`, normalized `0..1`. |
-| `rationale` | Free text. Attacker-influenceable; always passes through the encoder. |
-
-The schema version is checked, but **internally** — a mismatch surfaces to this module only as a thrown `INVALID_SIDECAR_JSON`, never as a field it reads. Unknown extra fields on an entry are tolerated and ignored by the accessor.
-
-**Incoming sort is a tie-break, not decoration.** `readRoutingSidecar()` returns entries already sorted by `task_id` ascending — verified by writing `t2` before `t1` and reading `t1` back first. The ranking contract re-sorts by agent tier then descending `scores.blast_radius`, and the sort must be **stable**, so the accessor's `task_id` order breaks ties between entries with equal tier and equal blast radius. This is what makes the determinism criterion hold for such entries rather than depending on an unspecified sort.
-
-**Degradation.** Every `readRoutingSidecar()` throw is treated identically to an absent sidecar: every task under that spec renders `UNKNOWN`, and the section is annotated with the offending path and the thrown code. The complete throw set, enumerated by probing the module rather than reading its documentation:
-
-| Code | Raised when |
-|---|---|
-| `ROUTING_SIDECAR_MISSING` | No sidecar file at the derived path. The ordinary case, not an error. |
-| `INVALID_PLAN_PATH` | The derived path does not end in `.plan.md`. |
-| `INVALID_SIDECAR_JSON` | Unparseable JSON, top level not an object, `entries` not an array, or a schema-version mismatch. |
-| `INVALID_ROUTING_ENTRY` | An entry is missing `task_id`, is missing `scores`, or has a non-numeric score. |
-
-`INVALID_ROUTING_ENTRY` is listed because revision 3 omitted it, and an implementation that enumerated only the codes revision 3 named would let it escape — turning an exit-0 advisory path into a non-zero exit and contradicting the postcondition. Schema-version mismatch is called out separately because it is the one failure that will arrive from a future `/adev:route` change rather than from bad input.
-
-### Verification
-
-**Not the `.validate.md` report.** Read `state.steps.validate` from `currentState(projectRoot, specPath)` in `lib/lifecycle-state.mjs`. Revision 2 specified parsing the markdown report; `skills/validate/SKILL.md:405` states *"Do NOT re-read or re-parse any prior `<spec-slug>.validate.md` file"*, and ADR-0012 makes `.md` a human-primary narrative sidecar while machine-primary state is read through an accessor. The projection is the typed source the producer designates.
-
-Consumed shape, per referenced spec:
-
-| Field | Source | Rendered as |
+| Input | Source | Accessed via |
 |---|---|---|
-| `steps.validate.status` | projection | whether validation ran at all |
-| `steps.validate.byRevision[N].verdict` | projection, `N` = the spec's current `revision:` | `PASS` / `PASS_WITH_NOTES` / `FAIL` |
-| `steps.validate.byRevision[N].reports[]` | projection | one row per validator: id and verdict |
-| `steps.validate.byRevision[N].blockers[]` | projection | count, listed when non-empty |
+| Task universe | `Spec:` and `Plan-task:` trailers on commits in `base..head` | `git log`, `git diff-tree` |
+| Routing entries | `/adev:route` | `lib/plan-routing-sidecar.mjs` — the owned accessor, never a hand-written parser |
+| Verification outcome | `/adev:validate` | `currentState()` from `lib/lifecycle-state.mjs` — never the `.validate.md` report |
+| Referenced spec revision | the spec file named by a `Spec:` trailer | its YAML frontmatter |
 
-Reading `byRevision` at the spec's *current* revision is deliberate: a verdict recorded against an older revision is a verdict about different text. When the projection has no entry at the current revision but does at an earlier one, the section says so and names both revisions rather than presenting the stale verdict as current — the same rule as `UNKNOWN`, applied to time instead of absence.
+Three of these carry a decision rather than a mechanism, and the decision is the contract:
 
-### Referenced spec frontmatter
+**The task universe comes from trailers, not from the routing sidecar.** A task is the pair `(spec_path, task_id)` drawn from `Plan-task:` and `Spec:` on the same commit; its file set is the union of paths those commits touch. The sidecar carries no file list, so deriving the universe from it is impossible — and it is the set difference between this universe and the sidecar's entries that makes `UNKNOWN` computable at all.
 
-The fourth input, and the one revision 3 used without declaring. `N` in `byRevision[N]` above is the referenced spec's own `revision:`, which the projection does not carry — in `lib/lifecycle-state.mjs`, `revision` is supplied by each emitting caller and folded into `byRevision`; `currentState()` never exposes the spec's current revision.
+**Verification comes from the lifecycle projection, not the markdown report.** `skills/validate/SKILL.md` explicitly forbids re-parsing `.validate.md`, and ADR-0012 makes `.md` a human-primary narrative while machine-primary state is read through an accessor. The verdict consumed is the one recorded against the referenced spec's *current* revision; a verdict recorded against an earlier revision is a verdict about different text and renders as explicitly stale, never as current.
 
-| Aspect | Contract |
-|---|---|
-| Source | The YAML frontmatter of the file at the `Spec:` trailer path. |
-| Field consumed | `revision:` only. |
-| Containment | Read subject to the same path-containment rule as every other trailer-derived path; a path outside `.context-index/specs/` is never opened. |
-| Shape | Integer ≥ 1. |
+**The routing sidecar is keyed to the plan stem, not the spec stem** (ADR-0012 § Permitted peers). The derivation from a `Spec:` trailer is therefore explicit rather than incidental, and the two stems coinciding in this repo today is not something the implementation may rely on.
 
-**Degradation — the revision is undeterminable.** Three states reach this, and this spec already declares all three exit-0: the spec path does not exist, the path resolves outside containment, or the frontmatter is unreadable or carries no integer `revision:`. In each, the verification row for that spec renders `UNKNOWN` and names which of the three applied. It never falls back to the highest revision present in `byRevision`, because that would present a verdict about unknown text as a verdict about this text — the failure mode the stale-revision rule exists to prevent.
+## Invariants
 
-## Output Encoding Contract
+These hold for every input state. They are what a reviewer can check without running anything, and what the tests exist to enforce.
 
-One encoding routine applies to **every** value interpolated into generated output, whatever its source — trailer, rationale, spec path, validator id, diagnostic text, or any value a slot renderer owned by another spec passes in. Revision 2 scoped escaping to `Spec:` trailers and enumerated `]`, `,`, newline, and backtick, which covered neither the delimiter that actually breaks the output nor the values most likely to carry it.
+1. **Exactly one marker pair.** One opening and one closing marker in stdout, in that order, whatever any input contains.
+2. **No silent absence.** Every section renders. A section with no data renders an explicit gap line naming what was missing. Absence of data is never presented as absence of risk.
+3. **`UNKNOWN` outranks certainty.** A task the routing data does not cover, or covers with a value outside the known agent tiers, renders `UNKNOWN` and sorts above every task known to be low-risk.
+4. **Total degradation.** *Any* failure to obtain an input — for any reason, including failure modes this spec does not anticipate and errors the underlying module does not wrap — renders the affected rows `UNKNOWN`, names the cause in the output, and leaves the exit code unchanged. Stated universally and deliberately: three prior revisions tried to enumerate the failure set and were wrong each time, and an enumeration that misses a case converts an advisory path into a non-zero exit.
+5. **No value can escape its cell.** No interpolated value — from any source, including ones added later — may alter table structure, introduce a line break, form a markdown link or image, form an HTML comment delimiter, or be interpreted by a shell. The encoder is a single function at the interpolation boundary; every rendered value passes through it.
+6. **No path escapes the artifact root.** No filesystem call is made with a path derived from a trailer until that path is confirmed, after canonicalizing both the path and the root, to lie within `.context-index/specs/`. Containment is a precondition of access, not a property of rendering.
+7. **Deterministic output.** A fixed resolved `(base, head)` pair with unchanged inputs produces byte-identical output. Every ordering the brief applies is total: where a sort key ties, a further key breaks it, down to one that cannot tie.
+8. **Read-only.** No file created, modified, or deleted; no lifecycle event emitted; no network connection; no forge CLI.
+9. **Diagnostics off the contract channel.** Diagnostics go to stderr with repo-relative paths. stdout carries the brief and nothing else.
 
-The threat is concrete: any commit author controls trailer values, `/adev:route` rationale is free text, and the result is posted by `cicd` into a public PR body that a human reads to decide how carefully to review.
+## Test Obligations
 
-Rule order is part of the contract: **line collapse runs first**, because every rule after it reasons about "the start of the value" and only holds if the value is a single line.
+The details that revisions 3–5 kept getting wrong in prose. Each is pinned by a test written against the real module, so it is verified rather than asserted, and it lives in exactly one place.
 
-1. **Line collapse.** Every interpolated value has each `\n`, `\r`, and `\r\n` replaced with a single space before any other rule runs. `rationale` is free text parsed from JSON, where `\n` decodes to a real line break; without this, `benign text\n## What\n| forged | row |` emits real line breaks that split the table row and inject an arbitrary line — including a fabricated H2 heading — inside the marker. Rule 3 below inspects the start of *the value*, not the start of each line produced after an unescaped break, so it does not catch this on its own. CWE-93.
+| # | What the test pins | Why it cannot live in prose |
+|---|---|---|
+| T1 | Every failure mode `lib/plan-routing-sidecar.mjs` can raise, including raw filesystem errors it does not wrap, each degrading per Invariant 4 | Enumerated wrongly in three consecutive revisions; the set belongs to that module |
+| T2 | The accessor's actual return shape, asserted against a real call rather than its documentation | A revision transcribed the docblock instead of the return value and was wrong |
+| T3 | The accessor's actual entry ordering, and the tie-break that makes the brief's ordering total on top of it | "Ascending" was refuted; the real comparator is the module's choice and may change |
+| T4 | The exact character set and transformation order the encoder applies to satisfy Invariant 5, with a case per prohibited outcome | Rule ordering drifted every revision; the property is stable, the mechanism is not |
+| T5 | That a path outside the artifact root never reaches a filesystem call, asserted by instrumenting the call | Output inspection cannot prove a call did not happen |
+| T6 | The projection field path carrying a validate verdict at a given revision, and the behaviour when none exists at the current revision | Projection shape belongs to `lib/lifecycle-state.mjs` |
+| T7 | That no output line begins with a review-packet H2 heading, per `review-packet-template.spec.md` AC-6 | The interlock is defined by the sibling artifact, not by this prose |
 
-   The precedent is already in this repo: `lib/plan-routing-sidecar.mjs::renderRoutingMarkdown` renders this exact field with `.replace(/\|/g, "\\|").replace(/\n+/g, " ")`. Revision 3's contract omitted the second half of that pair while citing the module that performs it.
-2. **Path containment.** Every path derived from a `Spec:` trailer is resolved with `path.resolve` and required to remain under the canonicalized `.context-index/specs/` root before any `fs.stat` or `fs.readFile`. A path that escapes is treated exactly as "does not exist on disk" — the error case already defined — and is never opened. Without this, `Spec: ../../.env` reaches the filesystem and the "offending path" diagnostic reports whether it exists. CWE-22.
-3. **Link and image neutralization.** Every interpolated value has `[`, `]`, `(`, `)`, and a leading `!` neutralized so it cannot form markdown link or image syntax. This runs *before* table-cell safety, because an image reference is not a table-structure problem and the table rules would not catch it. Without it, a `rationale` of `![](https://attacker.example/p.gif)` renders a live image in a public PR body — a tracking pixel that fires for every reviewer who opens the page, disclosing who looked and when. A link form additionally lets attacker-chosen text masquerade as a repository link. CWE-116.
-4. **Table-cell safety.** Every interpolated value has `|` escaped and any leading `#`, `-`, `>`, or `|` neutralized before entering a table cell. Every generated section renders as a table, so an unescaped pipe does not merely look wrong — it shifts subsequent cells, and a reviewer reads a risk score from the wrong column. This applies to `rationale`: revision 2 said "reproduced verbatim", which now means *reproduced without semantic interpretation*, not *reproduced without encoding*. CWE-116.
-5. **Marker neutralization.** Any occurrence of `<!--` or `-->` in an interpolated value is encoded so it cannot form a comment delimiter. The single-marker-pair invariant, and with it the authorship boundary this module exists to enforce, rests entirely on those two literals appearing nowhere but the real boundaries. A rationale containing the literal `<!-- /adev:pr-brief -->` would otherwise let `cicd`'s boundary-based replace treat attacker-controlled text as author-written.
-6. **Diagnostics.** All diagnostics go to **stderr**, never stdout, and render paths relative to the repository root. An absolute path leaks the CI runner's home directory and username into whatever consumes the output.
-
-Encoding is applied once, at the interpolation boundary, by a single function. Two independently-worded escaping rules in two specs is how a gap reappears.
+A test obligation is not a lesser requirement. Everything listed here must be pinned before this spec is validated, and a change in a consumed module that breaks one of these surfaces as a failing test rather than as prose that quietly went stale.
 
 ## System Constitution Reference
 
-- **Principle:** "Minimize external dependencies — prefer Node.js built-ins (`fs`, `path`, `child_process`, `crypto`, `node:test`)." — Applies because composition needs only `git log` output and files already on disk. No git library, no markdown library, no forge SDK.
-- **Principle:** "Pure ESM — all `.mjs` files, `"type": "module"`. No CommonJS." — Applies to the new `lib/cli/pr.mjs` helper module.
-- **Anti-pattern:** "No `Run inline Node.js:` step directives, `node -e` invocations inside `skills/*/SKILL.md`. Skills name a CLI subcommand (`adev <verb> …`)." — Applies because all composition logic lands in `lib/cli/pr.mjs`; any skill prose that references this capability names `adev pr body` and nothing more.
-- **Boundary (Autonomous):** "Adding tests; refactoring within a module's boundaries." — Applies because this spec adds a verb inside the existing `cli-driver-surface` substrate and changes no hook protocol, no plugin registration, and no provenance trailer contract.
+- **Principle 1: minimize external dependencies** — composition needs `git` output and files already on disk. No git library, no markdown library, no forge SDK.
+- **Pure ESM** — applies to the new `lib/cli/pr.mjs`.
+- **Anti-pattern: no inline Node in SKILL.md** — all logic lands in `lib/cli/pr.mjs`; skill prose names `adev pr body` and nothing more.
+- **Boundary (Autonomous): refactoring within a module's boundaries** — this adds a verb to the existing `cli-driver-surface` substrate and changes no hook protocol, plugin registration, or trailer contract.
 
 ## Actionable Task Map
 
-| Task | Description | Estimated Complexity |
-|------|-------------|---------------------|
-| Trailer reader | Read `Spec:` and `Plan-task:` trailers for a commit range via `git log --format`, consuming values as data (never interpolated into a shell or `node -e` context). | medium |
-| Task universe builder | Build the `(spec_path, task_id)` set from `Plan-task:` trailers and each task's file set from `git diff-tree --name-only` over its commits, per Input Contracts. | medium |
-| Output encoder | The single interpolation-boundary function implementing all six rules of the Output Encoding Contract, applied in the stated order: line collapse, path containment, link/image neutralization, table-cell safety, marker neutralization, stderr diagnostics. | medium |
-| Traceability grouping | Group commits by `Spec:` value; aggregate per-spec commit count and diff stat; collect commits carrying no `Spec:` trailer into an explicit untraced bucket. | medium |
-| Routing sidecar reader | Derive the plan path from each `Spec:` trailer, call `sidecarPathFor()` / `readRoutingSidecar()` from `lib/plan-routing-sidecar.mjs`, and map every throw to the `UNKNOWN` degradation. Author no parser. | small |
-| Spec frontmatter reader | Read `revision:` from each referenced spec under the containment rule; render `UNKNOWN` when undeterminable. | small |
-| Attention map ranking | Order entries by `selected_agent` (`human-only`, then `assisted-agent`, then `auto-agent`), then by **descending** `scores.blast_radius`; carry `rationale` through the output encoder. | medium |
-| Verification summary reader | Read `state.steps.validate` from the lifecycle projection for each referenced spec at that spec's current revision; extract verdict, per-validator reports, and blockers. Never parse `.validate.md`. | small |
-| Marker assembly | Emit the opening marker, request the five slots in fixed order from their owning modules, emit the closing marker. Slot renderers return body text and never emit a marker. | medium |
-| Markdown renderer | Render this spec's three owned slots — attention map, traceability, verification — deterministically, each as a heading plus a table. | medium |
-| CLI verb registration | Register `pr` with the `body` subverb in the `cli/index.mjs` dispatch table per the `cli-driver-surface` pattern. | small |
-| Tests | `node:test` coverage for grouping, ranking order and direction, `UNKNOWN` rendering, stale-revision verification, each encoding rule, determinism, and each error case. | medium |
+| Task | Description | Complexity |
+|------|-------------|-----------|
+| Trailer reader | Read `Spec:` and `Plan-task:` for a range; values consumed as data, never reaching a shell. | medium |
+| Path containment | The guard satisfying Invariant 6, applied before any filesystem access. | small |
+| Task universe builder | The `(spec_path, task_id)` set and each task's file set. | medium |
+| Output encoder | The single interpolation-boundary function satisfying Invariant 5. Value transformation only — containment (Invariant 6) and diagnostics (Invariant 9) are separate concerns and do not belong in it. | medium |
+| Routing reader | Consume the owned accessor; map every failure to the Invariant 4 degradation. | small |
+| Verification reader | Read the projection at the referenced spec's current revision; render staleness explicitly. | small |
+| Ranking | Order by agent tier, then descending blast radius, then a tie-break that makes the order total. | medium |
+| Marker assembly | Emit the pair, request the five slots in order, and enforce the total-size ceiling across all slots per § Section ownership. | medium |
+| Slot renderers | This spec's three sections, each a heading plus a table with its gap line. | medium |
+| CLI registration | Register `pr body` per the `cli-driver-surface` pattern. | small |
+| Tests | Every invariant, plus every row of § Test Obligations. | large |
 
 ## Visual Expectations
 
-Not a UI feature; the rendered markdown is the user-visible surface, so its shape is contractual.
-
-Section order inside the marker is fixed and given in Section ownership above; the three slots this spec owns render in the relative order attention map → traceability → verification, because the attention map is what a reviewer needs before reading any diff. Each section renders as a heading plus a table. When a section has no data, it renders with an explicit gap line (for example, `_No routing data — see the UNKNOWN rows above._`) rather than being omitted, so a reviewer can distinguish "nothing to report" from "this section did not run."
-
-The opening marker `<!-- adev:pr-brief -->` and closing marker `<!-- /adev:pr-brief -->` enclose all generated output and appear nowhere else.
-
-## Acceptance Criteria
-
-- [ ] `adev pr body --base <ref>` writes a marker-enclosed brief to stdout and exits 0.
-- [ ] Every commit in `base..head` appears in exactly one traceability row or in the untraced bucket; a test asserts the counts sum to the total commit count.
-- [ ] The task universe is built from `Plan-task:` trailers and file sets from `git diff-tree`; a test asserts a task with no routing entry renders `UNKNOWN`, and that two specs sharing a `task_id` produce two distinct tasks.
-- [ ] `UNKNOWN` rows sort above all `auto-agent` rows.
-- [ ] Attention rows sort by `selected_agent` then by **descending** `scores.blast_radius`; a test asserts the highest blast radius appears first within an agent tier.
-- [ ] Verification reads `state.steps.validate` from the lifecycle projection; a test asserts no code path opens a `.validate.md` file.
-- [ ] A spec whose projection carries a verdict only at an earlier revision renders the stale-verdict line naming both revisions, never the stale verdict as current.
-- [ ] Running the verb twice on an unchanged `(base, head)` pair produces byte-identical output.
-- [ ] With no `routing.json` present anywhere, the verb still exits 0 and the attention map renders its explicit gap line.
-- [ ] With no `validate` step in the projection, the verb still exits 0 and the verification section renders its explicit gap line.
-- [ ] A `Spec:` trailer of `../../.env` is never opened; a test asserts no `fs` call receives a path outside `.context-index/specs/` and that the row renders as a missing path.
-- [ ] Routing entries are read via `lib/plan-routing-sidecar.mjs`; a test asserts this module defines no `routing.json` parser and no `entries[]` traversal of its own.
-- [ ] The consumed shape is the accessor's return value, not the on-disk envelope; a test asserts `Array.isArray()` on what the reader hands the ranking contract, and that no code path reads a `version` property.
-- [ ] Each of the four throw codes — `ROUTING_SIDECAR_MISSING`, `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON`, `INVALID_ROUTING_ENTRY` — degrades to `UNKNOWN` with the code named in the annotation and exit 0; a test covers all four, with `INVALID_ROUTING_ENTRY` driven by an entry missing `scores`.
-- [ ] A routing entry with an unrecognized `selected_agent` renders `UNKNOWN` rather than being sorted into a tier; a test pins that the accessor passes the bad value through unvalidated.
-- [ ] A `rationale` of `![](https://example.invalid/p.gif)` renders with no live image and no link; a test asserts the output contains no `](` sequence originating from an interpolated value.
-- [ ] Two entries with equal `selected_agent` and equal `scores.blast_radius` render in ascending `task_id` order; a test asserts the sort is stable over the accessor's incoming order.
-- [ ] A referenced spec whose `revision:` cannot be determined — missing file, out-of-containment path, or unreadable frontmatter — renders its verification row as `UNKNOWN` naming which case applied; a test asserts no fallback to the highest revision in `byRevision`.
-- [ ] A `rationale` containing an embedded `\n` renders as a single table row; a test asserts stdout line count equals the expected row count and that no injected line begins with `## `.
-- [ ] A `rationale` or trailer containing `|` renders with the pipe escaped and does not shift any table cell; a test asserts the rendered row has the expected column count.
-- [ ] A `rationale` or trailer containing the literal `<!-- /adev:pr-brief -->` renders neutralized; a test asserts stdout contains exactly one occurrence of each marker literal.
-- [ ] Diagnostics are written to stderr with repo-relative paths; a test asserts stdout contains no diagnostic text and no absolute path.
-- [ ] No slot renderer emits a marker; a test asserts marker emission occurs in exactly one place.
-- [ ] No output path emits any of the four review-packet H2 headings as a heading line, mirroring `review-packet-template.spec.md` AC-6 from the side that can violate it.
-- [ ] No output path invokes `gh`, `glab`, or any network call; a test asserts the module imports no HTTP client.
-- [ ] All quality gates pass (`npm test`).
-- [ ] No constitutional violations.
+The rendered markdown is the user-visible surface, so its shape is contractual. Section order inside the marker is fixed by § Section ownership. Each section is a heading plus a table. A section with no data renders its gap line rather than vanishing, so a reviewer can distinguish "nothing to report" from "this did not run".
 
 ## Preconditions
 
 - The working directory is inside a git repository with a resolvable `HEAD`.
-- The `--base` ref, when supplied, resolves via `git rev-parse`. When omitted, it defaults to the merge base of `HEAD` with the repository's default branch, determined from `git symbolic-ref refs/remotes/origin/HEAD` and falling back to `git config init.defaultBranch`. When neither resolves, `NO_MERGE_BASE`.
-- `--head` defaults to `HEAD` and may be supplied explicitly. Determinism is specified over the resolved `(base, head)` pair, so the pair must be nameable; revision 2 promised determinism over a pair whose second element had no argument.
-- `.context-index/` and `manifest.yaml` are **optional**. Trailer names are the fixed set `Spec:` and `Plan-task:`; the manifest is read only if present and only to confirm them. An adev-less checkout produces a brief whose sections are all gap lines and still exits 0, which is consistent with the exit-code postcondition rather than contradicting it as revision 2 did.
-- Routing sidecars and the `validate` step of the projection may or may not exist; their absence is a normal input state, not an error.
+- `--base` resolves via `git rev-parse`; omitted, it defaults to the merge base with the default branch. `--head` defaults to `HEAD`. Determinism is specified over the resolved pair, so both must be nameable.
+- `.context-index/` and `manifest.yaml` are optional. Their absence yields a brief of gap lines and exit 0.
+- Routing sidecars and validate outcomes may or may not exist. Absence is a normal input state.
 
 ## Behaviors
 
-- **When** `adev pr body` is invoked with a resolvable `--base` ref **then** it writes a brief to stdout enclosed by `<!-- adev:pr-brief -->` and `<!-- /adev:pr-brief -->`, containing the attention map, traceability, and verification sections in that relative order within the marker's section list, and exits 0.
-- **When** commits in the range carry `Spec:` trailers **then** each spec becomes one traceability row aggregating its commit count, plan-task coverage, and diff stat.
-- **When** one or more commits in the range carry no `Spec:` trailer **then** they are collected into an explicitly labelled untraced bucket showing the count and short SHAs, and the section is annotated as a gap.
-- **When** a referenced spec has a `<plan-stem>.routing.json` sidecar **then** the entries `readRoutingSidecar()` returns populate the attention map, ordered `human-only` → `assisted-agent` → `auto-agent`, then by **descending** `scores.blast_radius`, with each entry's `rationale` passed through the output encoder.
-- **When** a `(spec_path, task_id)` pair from the `Plan-task:` trailers has no corresponding routing entry **then** it renders with route `UNKNOWN` and sorts above all `auto-agent` rows.
-- **When** no routing sidecar exists for any referenced spec **then** the attention map renders its explicit gap line naming the missing sidecars, and the verb still exits 0.
-- **When** the lifecycle projection carries a `validate` step for a referenced spec at that spec's current revision **then** the verification section reports its verdict, per-validator reports, and blocker count for that spec.
-- **When** the projection carries a `validate` verdict only at an earlier revision **then** the section names both the verdict's revision and the spec's current revision and marks it stale, rather than presenting it as current.
-- **When** the range references several specs **then** the verification section renders one row per spec and no merged verdict.
-- **When** any interpolated value contains `|`, a leading block character, `<!--`, `-->`, or shell metacharacters **then** it is encoded per the Output Encoding Contract, is never passed to a shell or evaluated, and cannot alter table structure or marker boundaries.
-- **When** a `Spec:` trailer resolves outside `.context-index/specs/` **then** no filesystem call is made with that path and the traceability row flags it as missing.
-- **When** the verb is invoked twice with the same resolved `(base, head)` pair and unchanged inputs **then** both invocations produce byte-identical output.
+Each behavior is an instance of an invariant, not a restatement of one. Where a behavior and an invariant appear to disagree, the invariant governs.
+
+- **When** invoked with a resolvable range **then** a brief is written to stdout enclosed by exactly one marker pair, containing this spec's three sections in their fixed relative order, exit 0.
+- **When** commits carry `Spec:` trailers **then** each spec becomes one traceability row aggregating commit count, plan-task coverage, and diff stat.
+- **When** commits carry no `Spec:` trailer **then** they collect into an explicitly labelled untraced bucket and the section is annotated as a gap.
+- **When** routing data covers a task **then** it populates the attention map, ordered by agent tier and descending blast radius.
+- **When** routing data does not cover a task, or covers it with an unrecognized tier **then** that task renders `UNKNOWN` above all known-low-risk rows.
+- **When** the projection carries a verdict at the referenced spec's current revision **then** the verification section reports it, one row per referenced spec, with no merged verdict across specs.
+- **When** a verdict exists only at an earlier revision **then** it renders as stale, naming both revisions.
+- **When** the range is empty **then** all five slots render, each with its empty-range line, exit 0.
 
 ## Postconditions
 
-- Standard output contains exactly one opening and one closing marker.
-- No file under `.context-index/` is created, modified, or deleted; no lifecycle event is emitted.
-- No network connection is opened and no forge CLI is executed.
+- stdout contains exactly one opening and one closing marker.
+- No file under `.context-index/` is created, modified, or deleted; no lifecycle event emitted.
+- No network connection opened; no forge CLI executed.
 - Exit code is 0 whenever `HEAD` and the base ref resolve, regardless of which optional inputs were missing.
 
 ## Error Cases
 
+Only conditions that change the exit code are enumerated. Everything else is Invariant 4, which covers the rest by construction rather than by list — that is the point of stating it universally.
+
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
-| Not inside a git repository | Print a diagnostic naming the working directory; emit no partial brief | `NOT_A_GIT_REPO` |
-| `--base` ref does not resolve | Print a diagnostic naming the unresolvable ref; emit no partial brief | `INVALID_BASE_REF` |
-| `--base` omitted and no default branch merge base can be determined | Print a diagnostic suggesting an explicit `--base`; emit no partial brief | `NO_MERGE_BASE` |
-| `readRoutingSidecar()` throws any of `ROUTING_SIDECAR_MISSING`, `INVALID_PLAN_PATH`, `INVALID_SIDECAR_JSON`, `INVALID_ROUTING_ENTRY` | Render affected tasks as `UNKNOWN`, annotate the section with the offending path and the thrown code, exit 0 | *(advisory — no code)* |
-| A routing entry's `selected_agent` is outside the three known tiers | That task renders `UNKNOWN`; the accessor does not validate the enum, so the caller must not assume a tier | *(advisory — no code)* |
-| Referenced spec's `revision:` undeterminable (missing file, out of containment, unreadable frontmatter) | Verification row renders `UNKNOWN` naming which case applied; never falls back to another revision, exit 0 | *(advisory — no code)* |
-| Lifecycle projection unreadable or carries no `validate` step | Render the verification gap line stating validation has not run for that spec, exit 0 | *(advisory — no code)* |
-| Referenced spec path in a `Spec:` trailer does not exist on disk | Keep the traceability row, flag the path as missing, exit 0 | *(advisory — no code)* |
-| `Spec:` trailer resolves outside `.context-index/specs/` | Treated identically to "does not exist on disk"; the path is never opened | *(advisory — no code)* |
-| `.context-index/` or `manifest.yaml` absent | Every section renders its gap line; exit 0 | *(advisory — no code)* |
-| Commit range is empty (`base` equals `head`) | Emit a marker-enclosed brief containing **all five slots**, each rendering its own empty-range line, exit 0 | *(advisory — no code)* |
+| Not inside a git repository | Diagnostic to stderr naming the working directory; no partial brief | `NOT_A_GIT_REPO` |
+| `--base` does not resolve | Diagnostic naming the unresolvable ref; no partial brief | `INVALID_BASE_REF` |
+| `--base` omitted and no merge base determinable | Diagnostic suggesting an explicit `--base`; no partial brief | `NO_MERGE_BASE` |
 
-The empty-range row is stated as all five slots because revision 2's "a brief stating the range is empty" read as replacing the section list, while the sibling spec assumed the sections still render. Keeping the shape constant also keeps the determinism criterion meaningful across an empty range.
+## Acceptance Criteria
+
+- [ ] Each of the nine invariants has at least one test asserting it, named so the mapping is legible.
+- [ ] Each row of § Test Obligations has a test pinning it against the real module.
+- [ ] Invariant 4 is tested by injecting a failure this spec does not name — including a raw filesystem error the accessor does not wrap — asserting `UNKNOWN`, a named cause, and an unchanged exit code.
+- [ ] Invariant 5 is tested once per prohibited outcome: broken table structure, injected line break, rendered link, rendered image, forged marker, shell interpretation.
+- [ ] Invariant 6 is tested by instrumenting the filesystem call, not by inspecting output.
+- [ ] Invariant 7 is tested by running twice on an unchanged pair and diffing bytes, and by a case where the primary sort keys tie.
+- [ ] The total-size ceiling is enforced in marker assembly, not in a slot renderer; a test asserts a renderer over-contributing is truncated by assembly with the section named.
+- [ ] No routing parser is written; a test asserts the module contains no `routing.json` traversal of its own.
+- [ ] No `.validate.md` file is opened; a test asserts it.
+- [ ] No `gh`, `glab`, or network call on any path; a test asserts no HTTP client is imported.
+- [ ] All quality gates pass (`npm test`).
+- [ ] No constitutional violations.
