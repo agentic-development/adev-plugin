@@ -288,5 +288,12 @@ hygiene:
       # main→branch merge. Advisory metadata, not content drift.
       - "62caa688a2d94a84697cc1f7c55bfa099264a2da"
       - "1a6af4f953f789eba11c825329eb4d1b3f697f78"
+      # test-strategies/test-depth-policy: ADR 0016→0017 renumber (collision
+      # with an independently-landed main ADR-0016) touched
+      # test-depth-policy.plan.md's ADR cross-references. Revert restored
+      # the plan byte-identical to its first-pending state. Reference-only
+      # update + its own revert, not content drift.
+      - "452f1de4dc0a005d68988e83a9d4a01d1934bd61"
+      - "87a47b3ee0fd6904cbc453db188879752c161064"
 
 domain: software
