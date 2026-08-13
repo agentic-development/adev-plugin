@@ -1,0 +1,136 @@
+{
+  "minimal": {
+    "keyOrder": [
+      "tool",
+      "files",
+      "timestamp",
+      "operator"
+    ],
+    "value": {
+      "tool": "Bash",
+      "files": [],
+      "timestamp": "<TIMESTAMP>",
+      "operator": "<OPERATOR>"
+    }
+  },
+  "withFilePath": {
+    "keyOrder": [
+      "tool",
+      "files",
+      "timestamp",
+      "operator"
+    ],
+    "value": {
+      "tool": "Edit",
+      "files": [
+        "src/index.ts"
+      ],
+      "timestamp": "<TIMESTAMP>",
+      "operator": "<OPERATOR>"
+    }
+  },
+  "withSessionId": {
+    "keyOrder": [
+      "tool",
+      "files",
+      "timestamp",
+      "session_id",
+      "operator"
+    ],
+    "value": {
+      "tool": "Read",
+      "files": [
+        "b.ts"
+      ],
+      "timestamp": "<TIMESTAMP>",
+      "session_id": "sess-123",
+      "operator": "<OPERATOR>"
+    }
+  },
+  "issueNoEpic": {
+    "keyOrder": [
+      "tool",
+      "files",
+      "timestamp",
+      "operator",
+      "issue"
+    ],
+    "value": {
+      "tool": "Edit",
+      "files": [
+        "a.ts"
+      ],
+      "timestamp": "<TIMESTAMP>",
+      "operator": "<OPERATOR>",
+      "issue": "issue-42"
+    }
+  },
+  "issueWithEpicFileBackend": {
+    "keyOrder": [
+      "tool",
+      "files",
+      "timestamp",
+      "operator",
+      "issue",
+      "epic"
+    ],
+    "value": {
+      "tool": "Edit",
+      "files": [
+        "a.ts"
+      ],
+      "timestamp": "<TIMESTAMP>",
+      "operator": "<OPERATOR>",
+      "issue": "issue-42",
+      "epic": "epic-7"
+    }
+  },
+  "issueWithEpicBeadsMap": {
+    "keyOrder": [
+      "tool",
+      "files",
+      "timestamp",
+      "operator",
+      "issue",
+      "epic"
+    ],
+    "value": {
+      "tool": "Edit",
+      "files": [
+        "a.ts"
+      ],
+      "timestamp": "<TIMESTAMP>",
+      "operator": "<OPERATOR>",
+      "issue": "issue-9",
+      "epic": "epic-3"
+    }
+  },
+  "issueWithEpicBeadsFallback": {
+    "keyOrder": [
+      "tool",
+      "files",
+      "timestamp",
+      "operator",
+      "issue",
+      "epic"
+    ],
+    "value": {
+      "tool": "Edit",
+      "files": [
+        "a.ts"
+      ],
+      "timestamp": "<TIMESTAMP>",
+      "operator": "<OPERATOR>",
+      "issue": "issue-11",
+      "epic": "epic-fallback"
+    }
+  },
+  "providerNotNative": {
+    "keyOrder": [],
+    "value": {
+      "entry": null,
+      "stdout": "{}",
+      "exitCode": 0
+    }
+  }
+}
