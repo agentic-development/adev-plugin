@@ -1298,3 +1298,230 @@ test('currentState reports spec_revised events as part of the projection (folds 
     cleanupTempDir(root);
   }
 });
+
+// ── Drift + amendment projection (jsonl-drift-events.spec.md Behaviors 3/5,
+//    spec-amendment-artifacts.spec.md Behavior 4) ───────────────────────────
+
+/**
+ * Write raw JSONL lines straight to a spec's log, bypassing `appendEvent`.
+ * Used by the canonical-coverage test so write-time schema diagnostics cannot
+ * confound what is purely a *reducer* assertion.
+ */
+function writeRawLog(root, specPath, events) {
+  const slug = slugFromSpec(specPath);
+  const dir = join(root, '.context-index', 'lifecycle-state');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, `${slug}.jsonl`),
+    events.map((e) => JSON.stringify(e)).join('\n') + '\n',
+  );
+}
+
+test('currentState projects code_drift_detected under state.drift (not unknownEvents)', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, {
+      event: 'code_drift_detected',
+      drift_source: 'skills/work/SKILL.md',
+      drift_at: '2026-08-13T03:10:54.621Z',
+      ts: '2026-08-13T03:10:54.622Z',
+    });
+    const state = currentState(root, specPath);
+    assert.equal(state.unknownEvents.length, 0, 'code_drift_detected must not fall through to unknownEvents');
+    assert.ok(state.drift, 'state.drift must be populated');
+    assert.equal(state.drift.source, 'skills/work/SKILL.md');
+    assert.equal(state.drift.at, '2026-08-13T03:10:54.621Z');
+    assert.equal(state.drift.ts, '2026-08-13T03:10:54.622Z');
+    // CON-2 / AC "no snake_case keys on the projection".
+    for (const k of Object.keys(state.drift)) {
+      assert.ok(!k.includes('_'), `projection key ${k} must be camelCase`);
+    }
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState leaves state.drift null when no drift event was ever recorded', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    const state = currentState(root, specPath);
+    assert.equal(state.drift, null);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState: a later code_drift_cleared cancels a prior code_drift_detected', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, {
+      event: 'code_drift_detected',
+      drift_source: 'lib/lifecycle-state.mjs',
+      drift_at: '2026-08-13T03:10:54.621Z',
+    });
+    assert.ok(currentState(root, specPath).drift, 'precondition: drift is detected');
+
+    appendEvent(root, specPath, {
+      event: 'code_drift_cleared',
+      drift_at: '2026-08-13T04:00:00.000Z',
+    });
+    const state = currentState(root, specPath);
+    assert.equal(state.drift, null, 'code_drift_cleared must supersede the prior detection');
+    assert.equal(state.unknownEvents.length, 0, 'code_drift_cleared must not fall through to unknownEvents');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState: a re-armed detection after a clear wins (latest unresolved event)', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'code_drift_detected', drift_source: 'first.mjs', drift_at: '2026-08-13T01:00:00.000Z' });
+    appendEvent(root, specPath, { event: 'code_drift_cleared', drift_at: '2026-08-13T02:00:00.000Z' });
+    appendEvent(root, specPath, { event: 'code_drift_detected', drift_source: 'second.mjs', drift_at: '2026-08-13T03:00:00.000Z' });
+    const state = currentState(root, specPath);
+    assert.ok(state.drift);
+    assert.equal(state.drift.source, 'second.mjs', 'latest unresolved detection wins');
+    assert.equal(state.drift.at, '2026-08-13T03:00:00.000Z');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState: code_drift_cleared with no prior detection is a no-op, not a crash', () => {
+  // Legacy pre-migration specs can carry a bare clear event.
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'code_drift_cleared', drift_at: '2026-08-13T02:00:00.000Z' });
+    const state = currentState(root, specPath);
+    assert.equal(state.drift, null);
+    assert.equal(state.unknownEvents.length, 0);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState: a malformed drift payload projects null fields rather than raw values', () => {
+  const { root, specPath } = makeProject();
+  try {
+    writeRawLog(root, specPath, [
+      { event: 'code_drift_detected', drift_source: 42, drift_at: null, ts: '2026-08-13T03:10:54.622Z' },
+    ]);
+    const state = currentState(root, specPath);
+    assert.ok(state.drift, 'a malformed payload still registers a detection');
+    assert.equal(state.drift.source, null, 'non-string drift_source is normalised to null (mirrors lib/cli/verify.mjs)');
+    assert.equal(state.drift.at, null);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState: drift is advisory — it does not move status or currentStep', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    appendEvent(root, specPath, { event: 'step_completed', step: 'specify', verdict: 'PASS' });
+    const before = currentState(root, specPath);
+
+    appendEvent(root, specPath, {
+      event: 'code_drift_detected',
+      drift_source: 'skills/work/SKILL.md',
+      drift_at: '2026-08-13T03:10:54.621Z',
+    });
+    const after = currentState(root, specPath);
+
+    assert.equal(after.status, before.status, 'drift must not change the aggregate status');
+    assert.equal(after.currentStep, before.currentStep, 'drift must not change currentStep');
+    assert.deepEqual(after.steps.specify.verdict, before.steps.specify.verdict);
+    assert.deepEqual(after.steps.specify.status, before.steps.specify.status);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('requireGate behaves identically with and without a drift event in the log', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+    appendEvent(root, specPath, { event: 'step_completed', step: 'specify', verdict: 'PASS' });
+    // Gate on "review" — its predecessor "specify" passed, so it must not throw.
+    assert.doesNotThrow(() => requireGate(currentState(root, specPath), 'review', { mode: 'strict' }));
+
+    appendEvent(root, specPath, {
+      event: 'code_drift_detected',
+      drift_source: 'lib/lifecycle-state.mjs',
+      drift_at: '2026-08-13T03:10:54.621Z',
+    });
+    const drifted = currentState(root, specPath);
+    assert.ok(drifted.drift, 'precondition: the projection sees the drift');
+    assert.doesNotThrow(
+      () => requireGate(drifted, 'review', { mode: 'strict' }),
+      'drift must never block a gate',
+    );
+    // And a gate that was already blocked stays blocked for the same reason.
+    assert.throws(() => requireGate(drifted, 'implement', { mode: 'strict' }), /Lifecycle gate blocked/);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState projects spec_amended under specAmendments[] (not unknownEvents)', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, {
+      event: 'spec_amended',
+      amendment_slug: 'sample.extra-guard',
+      amendment_path: '.context-index/specs/features/test/sample.extra-guard.spec.md',
+      target_revision: 3,
+    });
+    const state = currentState(root, specPath);
+    assert.equal(state.unknownEvents.length, 0, 'spec_amended must be recognized by the reducer');
+    assert.ok(Array.isArray(state.specAmendments), 'specAmendments[] must be created lazily on first event');
+    assert.equal(state.specAmendments.length, 1);
+    assert.equal(state.specAmendments[0].amendment_slug, 'sample.extra-guard');
+    assert.equal(state.specAmendments[0].target_revision, 3);
+    // Amendment is a relationship overlay, not a lifecycle position.
+    assert.equal(state.currentStep, null);
+    assert.equal(state.status, 'pending');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('currentState accumulates multiple spec_amended events in append order', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, { event: 'spec_amended', amendment_slug: 'a', target_revision: 2 });
+    appendEvent(root, specPath, { event: 'spec_amended', amendment_slug: 'b', target_revision: 3 });
+    const state = currentState(root, specPath);
+    assert.deepEqual(state.specAmendments.map((e) => e.amendment_slug), ['a', 'b']);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('every CANONICAL_EVENTS discriminator has a reducer case (none land in unknownEvents)', () => {
+  // The CANONICAL_EVENTS gate in `currentState` precedes the switch, so any
+  // canonical discriminator reaching `unknownEvents` can only have come from
+  // the switch's `default:` branch — i.e. a missing reducer case. This is the
+  // regression guard for the writer/reducer contract split that let
+  // code_drift_detected, code_drift_cleared, and spec_amended be accepted on
+  // write and silently discarded on read.
+  const { root, specPath } = makeProject();
+  try {
+    writeRawLog(
+      root,
+      specPath,
+      [...CANONICAL_EVENTS].map((event) => ({ event, ts: '2026-08-13T03:10:54.622Z' })),
+    );
+    const state = currentState(root, specPath);
+    assert.deepEqual(
+      state.unknownEvents.map((e) => e.event),
+      [],
+      'every canonical event must be handled by an explicit reducer case',
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
