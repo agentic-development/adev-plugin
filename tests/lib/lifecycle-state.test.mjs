@@ -812,6 +812,81 @@ test('aggregation: all PASS -> PASS/completed', () => {
   } finally { cleanupTempDir(root); }
 });
 
+// ── issue-584: BLOCK is first-class lifecycle vocabulary ───────────────────
+//
+// A reviewer_report carrying the consolidated BLOCK verdict used to match no
+// branch in aggregateReports and fell through to `{verdict: PASS}` — a blocked
+// review projected as a pass whenever the explicit step_completed event was
+// missing (e.g. the run died between emitting reviewer reports and the step
+// exit). These tests pin BLOCK as a non-passing synthesized verdict.
+
+test('aggregation: BLOCK report -> step BLOCK/completed (never PASS)', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'blocker', 'BLOCK');
+    rawReviewer(root, specPath, 'review', 'b', 'error', 'PASS');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'BLOCK');
+    assert.equal(s.steps.review.status, 'completed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: BLOCK outranks PASS_WITH_NOTES and warning-severity FAIL', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'warning', 'FAIL');
+    rawReviewer(root, specPath, 'review', 'b', 'warning', 'PASS_WITH_NOTES');
+    rawReviewer(root, specPath, 'review', 'c', 'blocker', 'BLOCK');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'BLOCK');
+    assert.equal(s.steps.review.status, 'completed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('aggregation: blocker/error FAIL still outranks BLOCK', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'error', 'FAIL');
+    rawReviewer(root, specPath, 'review', 'b', 'blocker', 'BLOCK');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'FAIL');
+    assert.equal(s.steps.review.status, 'failed');
+  } finally { cleanupTempDir(root); }
+});
+
+test('requireGate blocks downstream steps on a synthesized BLOCK review verdict', () => {
+  const { root, specPath } = makeProject();
+  try {
+    rawReviewer(root, specPath, 'review', 'a', 'blocker', 'BLOCK');
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'BLOCK');
+    assert.throws(
+      () => requireGate(s, 'plan', { mode: 'strict' }),
+      (err) => err.code === 'GATE_BLOCKED',
+      'BLOCK must not read as a passing verdict',
+    );
+  } finally { cleanupTempDir(root); }
+});
+
+test('requireGate blocks downstream steps on an explicit step_completed BLOCK verdict', () => {
+  const { root, specPath } = makeProject();
+  try {
+    appendEvent(root, specPath, {
+      event: 'step_completed',
+      step: 'review',
+      verdict: 'BLOCK',
+    });
+    const s = currentState(root, specPath);
+    assert.equal(s.steps.review.verdict, 'BLOCK');
+    assert.equal(s.steps.review.status, 'completed');
+    assert.throws(
+      () => requireGate(s, 'plan', { mode: 'strict' }),
+      (err) => err.code === 'GATE_BLOCKED',
+      'BLOCK must not read as a passing verdict',
+    );
+  } finally { cleanupTempDir(root); }
+});
+
 test('aggregation: explicit step_completed overrides synthesized verdict but records aggregated_from discrepancy', () => {
   const { root, specPath } = makeProject();
   try {
