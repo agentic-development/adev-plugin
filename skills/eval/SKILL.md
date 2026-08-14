@@ -5,7 +5,9 @@ description: "Run a graduated evaluation harness (0-100) scoring implementation 
 
 # Graduated Evaluation Harness
 
-Score implementation quality across four evaluation layers, producing a graduated quality score (0-100) rather than binary pass/fail. Complements `/adev:validate` with nuanced quality assessment.
+Score implementation quality across four evaluation layers, producing a graduated quality score (0-100) rather than a single binary pass/fail. Complements `/adev:validate` with nuanced quality assessment.
+
+Layer 3 is the exception to "graduated": its judged output is a table of per-criterion binary verdicts, aggregated into points only so the total stays comparable across runs. See Layer 3 for why.
 
 **Announce at start:** "I'm using the adev:eval skill to run the evaluation harness."
 
@@ -14,7 +16,7 @@ Score implementation quality across four evaluation layers, producing a graduate
 - `--spec <path>`: evaluate the implementation of a specific spec (required)
 - `--layer <N>`: run only a specific layer (1-4)
 - `--configure`: interactive setup of eval configuration
-- `--rubric <path>`: use a custom rubric for Layer 3
+- `--rubric <path>`: use a custom rubric for Layer 3, overriding the default. The file must carry the same top-level keys as the default rubric (see Layer 3).
 - `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
 
 ## Prerequisites
@@ -93,30 +95,66 @@ Compare the implementation against golden samples and constitutional patterns:
 - Overall Layer 2 score = sum of sub-scores (0-25)
 - If no golden samples exist, pattern consistency defaults to 5/10 (neutral).
 
-## Layer 3: LLM-as-a-Judge (AI-Assessed)
+## Layer 3: Reference-Anchored Judgement (AI-Assessed)
 
-Dispatch a reviewer subagent with a rubric to score code quality on subjective dimensions that cannot be machine-checked:
+Layer 3 produces **binary verdicts per criterion**, not scores. Every criterion resolves to exactly one of `MET`, `NOT_MET`, or `UNKNOWN`, each backed by one sentence of evidence citing `file:line`.
 
-1. **Readability (0-5):** Can a new developer understand this code without additional context? Are variable names descriptive? Is the control flow clear?
+**Why binary and not a 0-5 scale.** Asking a judge model for a number is the documented anti-pattern: position, verbosity and self-enhancement biases dominate numeric scales (Zheng 2023 MT-Bench; Ye 2024; Shi 2024), and judge panels amplify shared bias rather than cancelling it (Chen 2025). Anthropic's Agent SDK guidance likewise ranks verification rules-based > visual > LLM-judge, calling LLM-judge "generally not a very robust method." The consequences for this layer:
 
-2. **Maintainability (0-5):** Is the code easy to modify? Are concerns separated? Are dependencies explicit? Would a change in one area cascade?
+- One criterion per judge dispatch. Never bundle criteria into a single prompt.
+- Every criterion is a reference-anchored yes/no question, not an open-ended rating.
+- `UNKNOWN` is a first-class verdict. A judge that cannot tell must say so rather than guess. **Absence of evidence is `UNKNOWN`, never `NOT_MET`.**
+- Anything machine-checkable belongs in the rubric's `required_elements` and is decided by reading the diff, with no judge involved at all.
+- The numeric aggregate at the end of this section exists for trend tracking only. It is never reported without its verdict table.
 
-3. **Spec fidelity (0-5):** Does the implementation capture the spirit of the spec, not just the letter? Are edge cases handled gracefully?
+### Rubric resolution
 
-4. **Idiomatic usage (0-5):** Does the code use the framework and language idiomatically? Does it follow community conventions for the declared platform?
+Resolve the rubric once, in this order:
 
-5. **Error handling (0-5):** Are errors handled at the right level? Are error messages useful? Does the happy path degrade gracefully?
+1. `--rubric <path>` if passed.
+2. Otherwise `rubric:` in `.context-index/evals/config.yaml`. The literal value `default` resolves to the shipped rubric.
+3. Otherwise the shipped rubric.
 
-Dispatch the reviewer subagent (`reasoning` tier — read from `model_tiers` in `.context-index/platform-context.yaml`; fall back to the hardcoded default in `.context-index/specs/cross-cutting/model-routing.md` if unset, and log a one-time advisory). Prepend `ultrathink` as the first word of the subagent prompt to activate extended thinking. Provide:
+The shipped default rubric is `<ADEV_ROOT>/skills/eval/default-rubric.yaml`. It carries these top-level keys, which any custom rubric must also provide: `rubric_id`, `version`, `layer`, `verdict_values`, `required_elements`, `quality_dimensions`, `layer3_max_points`, `required_element_points`, `judged_criterion_points`, `unknown_policy`, `not_applicable_policy`, `insufficient_evidence_threshold_percent`.
+
+If the resolved rubric file is missing or lacks any required top-level key, block with: "Layer 3 rubric could not be resolved: <reason>. Pass a valid `--rubric <path>` or restore the default rubric."
+
+### Step 1 — Deterministic elements (no judge)
+
+Work through the rubric's `required_elements` by reading the diff directly. Each entry names its `source` (the artifact the check reads) and its `met_when` (the mechanical condition). Record `MET`, `NOT_MET`, or `NOT_APPLICABLE` per its `not_applicable_when` note. These elements never resolve to `UNKNOWN` — a deterministic check either applies and answers, or does not apply. Do not dispatch a subagent for these — if a check needs judgement to decide, it does not belong here.
+
+### Step 2 — Judged criteria (one judge per criterion)
+
+For each entry in the rubric's `quality_dimensions`, dispatch a **separate** reviewer subagent (`reasoning` tier — read from `model_tiers` in `.context-index/platform-context.yaml`; fall back to the hardcoded default in `.context-index/specs/cross-cutting/model-routing.md` if unset, and log a one-time advisory). Dispatch them in parallel. Prepend `ultrathink` as the first word of each subagent prompt to activate extended thinking.
+
+Give each judge only:
 - The implementation diff (all files changed)
 - The Live Spec
-- The rubric (default or custom from `--rubric`)
-- Relevant golden samples for comparison
-- Instructions to score each dimension 0-5 with a one-sentence justification
-- A self-check instruction: "Before finalizing, verify every score has a justification grounded in the actual code, and no score is based on absence of information."
-- A return size constraint: "Keep your response under 1,500 tokens. Score each dimension concisely."
+- **Exactly one criterion** — its `criterion`, `reference`, `met_when`, `not_met_when`, and `unknown_when` fields
+- The reference artifact that criterion names (the matched golden sample, or the constitution section)
+- This verdict instruction: "Return `VERDICT: MET`, `VERDICT: NOT_MET`, or `VERDICT: UNKNOWN`, followed by one sentence of evidence citing `file:line`. Return `UNKNOWN` when the diff or the reference does not contain enough evidence to decide. Absence of information is never `NOT_MET`."
+- This self-check: "Before finalizing, verify your evidence sentence quotes or cites actual code, and that your verdict is not based on the absence of information."
+- A return size constraint: "Keep your response under 200 tokens."
 
-- Overall Layer 3 score = sum of sub-scores (0-25)
+Never tell a judge the verdicts of other criteria or the running total — a judge that sees prior verdicts anchors on them.
+
+### Step 3 — Aggregate for trend tracking
+
+The layer's judged output is the verdict table. Compute the number only so `/adev:retro` and `/adev:hygiene` can plot a series across runs, using the point budgets in the rubric:
+
+```text
+answered elements  = required_elements with verdict MET or NOT_MET
+                     (NOT_APPLICABLE is excluded from the denominator)
+answered criteria  = quality_dimensions with verdict MET or NOT_MET
+                     (UNKNOWN is excluded from the denominator)
+
+element points = (elements MET / answered elements) * required_element_points
+judged points  = (criteria MET / answered criteria) * judged_criterion_points
+
+Layer 3 score  = round(element points + judged points), capped at layer3_max_points
+```
+
+**Insufficient-evidence guard.** If the share of `UNKNOWN` among `quality_dimensions` exceeds `insufficient_evidence_threshold_percent` (default 40 — that is, 3 or more of the 5 criteria must be answered), do not report a ratio. Two answered criteria out of five must not produce a confident 15/15. Instead report Layer 3 as `INSUFFICIENT_EVIDENCE`, contribute 0 points, and note in the report that the attainable total is reduced by `layer3_max_points` — the same convention Layer 4 uses when skipped. If `answered elements` or `answered criteria` is zero, the corresponding term contributes 0 and the report says so.
 
 ## Layer 4: Human-in-the-Loop Checkpoints (Manual)
 
@@ -135,6 +173,8 @@ Present the checklist to the user. User marks each item as: PASS (5 points), ACC
 ## Scoring
 
 **Total quality score = Layer 1 + Layer 2 + Layer 3 + Layer 4 (0-100)**
+
+When a layer cannot contribute — Layer 3 reporting `INSUFFICIENT_EVIDENCE`, or Layer 4 skipped — that layer contributes 0 and the report states the reduced attainable maximum alongside the total (for example, `52/75 attainable`). Grade against the attainable maximum: normalise the total to a percent of attainable points, then read the table below as percentages. A raw `70/75` is 93%, an A — not the C its raw points would suggest.
 
 | Score | Grade | Interpretation |
 |-------|-------|---------------|
@@ -168,12 +208,15 @@ Write to `.context-index/evals/<spec-slug>-eval.md`:
 - Complexity metrics: N/5
 - Test quality: N/5
 
-## Layer 3: LLM-as-a-Judge — N/25
-- Readability: N/5 — <justification>
-- Maintainability: N/5 — <justification>
-- Spec fidelity: N/5 — <justification>
-- Idiomatic usage: N/5 — <justification>
-- Error handling: N/5 — <justification>
+## Layer 3: Reference-Anchored Judgement — N/25 (or INSUFFICIENT_EVIDENCE)
+> Rubric: <rubric_id> v<version> — <resolved path>
+> Verdicts: N met, N not met, N unknown, N not applicable
+
+### Deterministic elements — N/10
+- <element id>: MET/NOT_MET/NOT_APPLICABLE — <evidence, file:line>
+
+### Judged criteria — N/15
+- <criterion id>: MET/NOT_MET/UNKNOWN — <evidence, file:line>
 
 ## Layer 4: HITL Checkpoints — N/25
 - Business logic: PASS/ACCEPTABLE/NEEDS_WORK
@@ -194,14 +237,15 @@ Interactive setup that creates `.context-index/evals/config.yaml`:
 layers:
   deterministic: true       # Layer 1 always on
   architectural: true       # Layer 2
-  llm_judge: true           # Layer 3
+  llm_judge: true           # Layer 3 (binary verdicts, aggregated for trend only)
   hitl: false               # Layer 4 (opt-in)
 
 thresholds:
   minimum_score: 60         # Below this triggers a warning
   exemplary_score: 90       # Above this flags as golden sample candidate
 
-rubric: default             # Or path to custom rubric file
+rubric: default             # `default` resolves to <ADEV_ROOT>/skills/eval/default-rubric.yaml
+                            # Or a path to a custom rubric with the same top-level keys
 ```
 
 ## Integration

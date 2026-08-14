@@ -43,6 +43,111 @@ function getAllSkillSizes() {
 
 // ─── Strategy 1: Conditional Section Loading ──────────────────────────────────
 
+/**
+ * Strategy 1 was *implemented* in 2c288fbf ("feat(skills): split plan and build
+ * into core + mode companions", 2026-05-03) — 11 hours after this eval was first
+ * written in 86fce701. Before that commit, the non-default mode instructions sat
+ * inline in SKILL.md and the eval measured them as dead weight ("what fraction of
+ * the file could be externalized?"). After it, that content lives in companion
+ * `<mode>-mode.md` files and each SKILL.md section is a pointer stub:
+ *
+ *   ## Feature Mode
+ *
+ *   > **Conditional loading:** Read `skills/plan/feature-mode.md` for ...
+ *
+ * So the marker for a conditional section is no longer "a big inline mode block";
+ * it is the `Conditional loading:` pointer plus a real companion file on disk.
+ * These assertions verify the realized structure rather than the (now-consumed)
+ * opportunity. They fail if anyone inlines mode content back into SKILL.md,
+ * drops a pointer, or deletes a companion file.
+ */
+
+/** Bytes a companion file must exceed to count as real externalized content. */
+const COMPANION_MIN_BYTES = 500;
+/** Bytes an in-SKILL.md pointer stub must stay under (heading + pointer + rule). */
+const STUB_MAX_BYTES = 400;
+
+/** Slice a `## ` section body out of a SKILL.md, anchored at line start. */
+function sectionSlice(content, headingPrefix) {
+  const lines = content.split("\n");
+  const startLine = lines.findIndex(l => l.startsWith(headingPrefix));
+  if (startLine === -1) return null;
+  let endLine = lines.length;
+  for (let i = startLine + 1; i < lines.length; i++) {
+    if (lines[i].startsWith("## ")) { endLine = i; break; }
+  }
+  return lines.slice(startLine, endLine).join("\n");
+}
+
+function companionBytes(relPath) {
+  const abs = join(SKILLS_DIR, relPath.replace(/^skills\//, ""));
+  return existsSync(abs) ? statSync(abs).size : 0;
+}
+
+/**
+ * Shared body for the plan/build conditional-section assertions.
+ * `modes` is a list of { heading, companion } pairs that MUST be externalized.
+ */
+function assertExternalizedModes(skillName, modes) {
+  const content = readSkill(skillName);
+  assert.ok(content, `${skillName} SKILL.md must exist`);
+
+  const totalBytes = Buffer.byteLength(content);
+  const rows = [];
+
+  for (const { heading, companion } of modes) {
+    const section = sectionSlice(content, heading);
+    assert.ok(
+      section !== null,
+      `${skillName} SKILL.md must still declare the conditional section "${heading}"`,
+    );
+
+    const stubBytes = Buffer.byteLength(section);
+    assert.match(
+      section,
+      new RegExp(`\\*\\*Conditional loading:\\*\\*[^\\n]*\`${companion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\``),
+      `"${heading}" must carry a "Conditional loading:" pointer to \`${companion}\` ` +
+        `(Strategy 1: mode instructions live in a companion file, not inline)`,
+    );
+
+    const cBytes = companionBytes(companion);
+    assert.ok(
+      cBytes > COMPANION_MIN_BYTES,
+      `Companion ${companion} must exist and hold real instructions ` +
+        `(>${COMPANION_MIN_BYTES} bytes), got ${cBytes}`,
+    );
+
+    assert.ok(
+      stubBytes < STUB_MAX_BYTES,
+      `"${heading}" in ${skillName} SKILL.md must remain a pointer stub ` +
+        `(<${STUB_MAX_BYTES} bytes), got ${stubBytes} — mode content appears to have ` +
+        `been inlined back, which undoes Strategy 1`,
+    );
+
+    rows.push({ heading, companion, stubBytes, companionBytes: cBytes });
+  }
+
+  // Deduplicate companions before summing — several headings may share one file.
+  const uniqueCompanions = [...new Set(rows.map(r => r.companion))];
+  const externalizedBytes = uniqueCompanions.reduce((s, c) => s + companionBytes(c), 0);
+  const stubBytes = rows.reduce((s, r) => s + r.stubBytes, 0);
+  const corpusBytes = totalBytes + externalizedBytes;
+  const savingsPercent = Math.round((externalizedBytes / corpusBytes) * 100);
+
+  console.log(`\n  ${skillName} SKILL.md conditional-section analysis:`);
+  console.log(`    Core SKILL.md bytes:  ${totalBytes.toLocaleString()} (~${estimateTokens(totalBytes).toLocaleString()} tokens)`);
+  for (const r of rows) {
+    console.log(
+      `    ${r.heading.replace(/^## /, "").padEnd(28)} stub ${String(r.stubBytes).padStart(4)} B  →  ` +
+      `${r.companion} (${r.companionBytes.toLocaleString()} B)`,
+    );
+  }
+  console.log(`    Pointer stubs total:  ${stubBytes.toLocaleString()} bytes`);
+  console.log(`    Externalized total:   ${externalizedBytes.toLocaleString()} bytes (~${estimateTokens(externalizedBytes).toLocaleString()} tokens)`);
+  console.log(`    Full corpus:          ${corpusBytes.toLocaleString()} bytes`);
+  console.log(`    Deferred per default-mode invocation: ${savingsPercent}%`);
+}
+
 describe("Strategy 1: Conditional Section Loading", () => {
   const TOP_SKILLS = ["plan", "validate", "build", "hygiene", "implement", "specify"];
 
@@ -63,39 +168,15 @@ describe("Strategy 1: Conditional Section Loading", () => {
   });
 
   it("identifies conditional sections in plan SKILL.md", () => {
-    const content = readSkill("plan");
-    assert.ok(content, "plan SKILL.md must exist");
-
-    const sections = content.match(/^## .+$/gm) || [];
-    const modeKeywords = ["Feature Mode", "Release Mode", "Milestone Mode", "Epic Mode", "Milestone Planning", "Workspace"];
-    const conditionalSections = sections.filter(s => modeKeywords.some(k => s.includes(k)));
-    const coreSections = sections.filter(s => !modeKeywords.some(k => s.includes(k)));
-
-    // Estimate conditional content by finding byte ranges
-    let conditionalBytes = 0;
-    for (const kw of ["## Feature Mode", "## Release Mode", "## Milestone Mode", "## Epic Mode", "## Milestone Planning Mode"]) {
-      const idx = content.indexOf(kw);
-      if (idx === -1) continue;
-      // Find next ## at same level or end
-      const nextSection = content.indexOf("\n## ", idx + kw.length);
-      const end = nextSection === -1 ? content.length : nextSection;
-      conditionalBytes += (end - idx);
-    }
-
-    const totalBytes = Buffer.byteLength(content);
-    const coreBytes = totalBytes - conditionalBytes;
-    const savingsPercent = Math.round((conditionalBytes / totalBytes) * 100);
-
-    console.log("\n  Plan SKILL.md section analysis:");
-    console.log(`    Total sections:       ${sections.length}`);
-    console.log(`    Core sections:        ${coreSections.length}`);
-    console.log(`    Conditional sections: ${conditionalSections.length}`);
-    console.log(`    Total bytes:          ${totalBytes.toLocaleString()}`);
-    console.log(`    Core bytes:           ${coreBytes.toLocaleString()} (~${estimateTokens(coreBytes).toLocaleString()} tokens)`);
-    console.log(`    Conditional bytes:    ${conditionalBytes.toLocaleString()} (~${estimateTokens(conditionalBytes).toLocaleString()} tokens)`);
-    console.log(`    Savings (--spec):     ${savingsPercent}%`);
-
-    assert.ok(savingsPercent > 20, `Expected >20% conditional content, got ${savingsPercent}%`);
+    // Non-default plan modes. Spec Mode (`--spec`) is the default and stays
+    // inline by design — it is not listed here.
+    assertExternalizedModes("plan", [
+      { heading: "## Milestone Planning Mode", companion: "skills/plan/milestone-mode.md" },
+      { heading: "## Feature Mode", companion: "skills/plan/feature-mode.md" },
+      { heading: "## Release Mode", companion: "skills/plan/release-mode.md" },
+      { heading: "## Milestone Mode", companion: "skills/plan/milestone-mode.md" },
+      { heading: "## Epic Mode", companion: "skills/plan/epic-mode.md" },
+    ]);
   });
 
   it("identifies conditional sections in validate SKILL.md", () => {
@@ -133,28 +214,16 @@ describe("Strategy 1: Conditional Section Loading", () => {
   });
 
   it("identifies conditional sections in build SKILL.md", () => {
-    const content = readSkill("build");
-    assert.ok(content, "build SKILL.md must exist");
-
-    const totalBytes = Buffer.byteLength(content);
-
-    let conditionalBytes = 0;
-    for (const kw of ["## Resume Mode", "## Milestone Mode", "## Workspace-Mode Build", "## Dry Run Mode", "## Single Spec Mode"]) {
-      const idx = content.indexOf(kw);
-      if (idx === -1) continue;
-      const nextSection = content.indexOf("\n## ", idx + kw.length);
-      const end = nextSection === -1 ? content.length : nextSection;
-      conditionalBytes += (end - idx);
-    }
-
-    const savingsPercent = Math.round((conditionalBytes / totalBytes) * 100);
-
-    console.log("\n  Build SKILL.md section analysis:");
-    console.log(`    Total bytes:          ${totalBytes.toLocaleString()}`);
-    console.log(`    Conditional bytes:    ${conditionalBytes.toLocaleString()}`);
-    console.log(`    Savings (--full):     ${savingsPercent}%`);
-
-    assert.ok(savingsPercent > 15, `Expected >15% conditional content, got ${savingsPercent}%`);
+    // Non-default build modes. `## Single Spec Mode` is the default pipeline and
+    // `## Dry Run Mode` is a read-only variant of it — both stay inline by design
+    // and are deliberately excluded. `## Charter Mode` was externalized later, in
+    // 8d1b3d28.
+    assertExternalizedModes("build", [
+      { heading: "## Resume Mode", companion: "skills/build/resume-mode.md" },
+      { heading: "## Charter Mode", companion: "skills/build/charter-mode.md" },
+      { heading: "## Milestone Mode", companion: "skills/build/milestone-mode.md" },
+      { heading: "## Workspace-Mode Build", companion: "skills/build/workspace-mode.md" },
+    ]);
   });
 });
 
