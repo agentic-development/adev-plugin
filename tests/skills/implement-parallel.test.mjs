@@ -12,7 +12,24 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const skill = readFileSync(join(ROOT, "skills", "implement", "SKILL.md"), "utf8");
+const skillBody = readFileSync(join(ROOT, "skills", "implement", "SKILL.md"), "utf8");
+
+// The Step 2.5 body was extracted to a conditional-loading companion when
+// implement/SKILL.md crossed the 65,536-byte cap the Copilot provider enforces
+// (lib/providers/copilot/skill-validator.mjs). The skill's EFFECTIVE instruction
+// set is the body plus whatever its pointers resolve to, so the doc-contract
+// assertions below run against both — extracting content must not be able to
+// make a contract test pass vacuously.
+//
+// The companion path is resolved FROM the pointer, never hardcoded: a rename or
+// a dropped pointer fails loudly here rather than silently shrinking the corpus
+// these assertions scan.
+const parallelPointer = skillBody.match(
+  /### Step 2\.5: Parallel Group Execution[^\n]*\n\s*\n> \*\*Conditional loading:\*\* Read `([^`]+)`/,
+);
+const skill = parallelPointer
+  ? skillBody + "\n" + readFileSync(join(ROOT, parallelPointer[1]), "utf8")
+  : skillBody;
 
 describe("implement --parallel documentation contract", () => {
   it("documents the --parallel mode", () => {
@@ -54,9 +71,19 @@ describe("implement --parallel documentation contract", () => {
 
   it("contains no inline-Node execution directive in the parallel prose", () => {
     // Guard the constitution rule: the --parallel section names verbs, not node -e.
-    const parIdx = skill.indexOf("Parallel Group Execution");
-    assert.ok(parIdx > 0, "parallel section present");
-    const section = skill.slice(parIdx, parIdx + 4000);
+    //
+    // The body was extracted to a conditional-loading companion when
+    // implement/SKILL.md crossed the 65,536-byte cap the Copilot provider
+    // enforces. Resolve the companion FROM the pointer rather than hardcoding
+    // it, so a rename or a dropped pointer fails here instead of silently
+    // scanning nothing — the previous `slice(idx, idx + 4000)` would have
+    // passed vacuously against a stub.
+    assert.ok(
+      parallelPointer,
+      "Step 2.5 must carry a `Conditional loading:` pointer to its companion",
+    );
+    const section = readFileSync(join(ROOT, parallelPointer[1]), "utf8");
+    assert.ok(section.length > 500, "companion must hold real instructions");
     assert.doesNotMatch(section, /node\s+-e|node --input-type=module -e|Run inline Node/);
   });
 });

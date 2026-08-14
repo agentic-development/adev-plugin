@@ -65,6 +65,70 @@ test("/adev:route has a Red Flag section that forbids inline Routing blocks", ()
   );
 });
 
+test("/adev:route never claims its output is written to the plan file", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  // Guards the prose that survived the Step 4 rewrite: the arguments list,
+  // the Step 5 report template, and the dry-run section all used to describe
+  // the non-dry-run path as "writing annotations to the plan file". A reader
+  // (human or agent) following that sentence reintroduces the CON-8 violation.
+  // `<plan-stem>.routing.json` is the correct destination and must not trip
+  // these guards, so each pattern pins the *plan file/body* as the target.
+  assert.doesNotMatch(
+    md,
+    /(annotations?|scores?|routing)[^.\n]{0,60}(written|added)\s+to\s+(the\s+)?<?plan(\s+file|\s+body|>)/i,
+    "Skill prose must not describe routing output as written to the plan file",
+  );
+  assert.doesNotMatch(
+    md,
+    /without\s+writing\s+annotations?\s+to\s+the\s+plan/i,
+    "The --dry-run description must contrast against the sidecar, not the plan file",
+  );
+});
+
+test("/adev:route Step 4 documents the 1-5 to 0..1 score normalization", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  // Steps 2-3 score each dimension as an integer 1-5, but the sidecar schema
+  // (plan-routing-sidecar.spec.md Behavior 2) requires 0..1 and
+  // `adev route emit-sidecar` rejects out-of-range values with
+  // INVALID_ROUTING_ENTRY. Without an explicit conversion rule an agent
+  // emits `5` and the write fails.
+  assert.match(
+    md,
+    /divide\s+each\s+dimension\s+score\s+by\s+5|score\s*÷\s*5|\/\s*5\b/i,
+    "Step 4 must state how the 1-5 dimension scores map onto the 0..1 sidecar schema",
+  );
+  // Every numeric score in the emit-sidecar example must be within [0,1].
+  const example = md.match(/adev route emit-sidecar[\s\S]*?ENTRIES\n```/);
+  assert.ok(example, "Step 4 must carry an emit-sidecar example");
+  for (const [, raw] of example[0].matchAll(
+    /"(?:spec_completeness|pattern_coverage|blast_radius|novelty)":\s*([\d.]+)/g,
+  )) {
+    const value = Number(raw);
+    assert.ok(
+      value >= 0 && value <= 1,
+      `example score ${raw} is outside the 0..1 range the sidecar schema enforces`,
+    );
+  }
+});
+
+test("/adev:route Step 4 tells --task mode to merge before emitting", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  // `adev route emit-sidecar` calls writeRoutingSidecar, which is a full
+  // replace (lib/cli/route.mjs). In `--task <N>` mode only one task is
+  // scored, so emitting that single entry would wipe every other task's
+  // routing decision. Step 4 must spell out the read-merge-emit sequence.
+  assert.match(
+    md,
+    /--task[^.\n]{0,40}merge|merge[^.\n]{0,60}--task/i,
+    "Step 4 must state that --task mode merges into the existing sidecar",
+  );
+  assert.match(
+    md,
+    /complete\s+merged\s+array|merged\s+array/i,
+    "Step 4 must require passing the full merged entry array to emit-sidecar",
+  );
+});
+
 test("/adev:route notes that /adev:implement reads routing from the sidecar", () => {
   const md = readFileSync(SKILL_PATH, "utf8");
   // The integration note must point /adev:implement at adev implement read-routing
