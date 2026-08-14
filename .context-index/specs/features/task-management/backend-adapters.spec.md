@@ -38,7 +38,7 @@ drift_detected: true
 
 - `.context-index/` exists with `manifest.yaml`
 - For file backend: `.context-index/tasks/` directory is writable
-- For beads backend: `br` CLI is on PATH at **>= 0.2.0** and `.beads/` is initialized
+- For beads backend: `br` CLI is on PATH at **>= 0.2.19** and `.beads/` is initialized
 
 ### Behaviors
 
@@ -53,7 +53,15 @@ drift_detected: true
 
 **Beads Backend:**
 
-7. **When** the beads adapter initializes **then** it runs `br --version` and throws `BEADS_NOT_AVAILABLE` if not found, or `BEADS_VERSION_UNSUPPORTED` when the version is below `MIN_BR_VERSION` (0.2.0).
+7. **When** the beads adapter initializes **then** it runs `br --version` and throws `BEADS_NOT_AVAILABLE` if not found, or `BEADS_VERSION_UNSUPPORTED` when the version is below `MIN_BR_VERSION` (0.2.19).
+
+   The floor answers to two boundaries, and only the first is about compatibility:
+   0.2.0 moved `--db` from the workspace directory to the database file and added
+   atomic `update --claim` (so 0.1.x cannot work at all), while **0.2.19 shipped the
+   engine fix for deterministic database corruption caused by merge operations**.
+   0.2.0–0.2.18 are API-compatible and therefore pass every functional check while
+   silently exposed, which is why the floor is a safety boundary rather than a
+   compatibility one and must not be lowered back to 0.2.0.
 
 **Beads Backend — br 0.2.x contract (rev 2):**
 
