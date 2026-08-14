@@ -9,6 +9,30 @@ sources:
 status: complete
 ---
 
+## Status Since Investigation (2026-08-14)
+
+The three gaps this study identified have been filed, each linked to its epic with a `parent-child`
+edge — the first parent-linked issues on the board:
+
+- `adev-plugin-8ekd.1` (P1) — gate Checks 8/9 on non-empty config → epic `8ekd` Validation & Gates Unification
+- `adev-plugin-4il.1` (P1) — close the heuristics learning loop → epic `4il` Heuristics Lifecycle Integration, reopened for it
+- `adev-plugin-zsmh.1` (P2) — `br` ignores adev's shared-worktree issue storage → epic `zsmh` Install, Providers & Portability
+
+Two changes to the findings below follow from work done during and after the investigation:
+
+1. **F1's "never filed" rows are now filed** (the two above). The finding stands as the record of
+   how they came to be missing; the reconciliation gap it describes is unaddressed.
+2. **`adev-plugin-9z5i` was verified implemented and closed** during this investigation — shipped
+   2026-05-16 by `check-set-restructure.spec.md`, open for three months. Its close reason records a
+   partial-close carve-out: constitution (`check-4`) and boundary (`check-8`) compliance were never
+   moved to review-specs, contrary to that issue's text.
+3. **The heuristics scope in F1/recommendations was drawn too narrowly.** Retrieval had already been
+   widened to eight skills — brainstorm, debug, implement, plan, prototype, review-specs, specify,
+   validate — covered by `tests/skills/heuristic-injection-widening.test.mjs`. The live defect is
+   not *which* skills retrieve but *when*: retrieval is skill-entry only and never fires on error,
+   while automatic capture fires only on first-run PASS. `adev-plugin-4il.1` carries the corrected
+   framing.
+
 ## Summary
 
 Three findings, in descending order of how cheaply they can be acted on.
@@ -407,6 +431,9 @@ Ordered by cost-to-value, cheapest first.
 - `templates/review-specs/defaults.yaml` — `blocker_threshold: 1`
 
 ### Board Issues
+- `adev-plugin-8ekd.1` — gate Checks 8/9 on non-empty config (filed from recommendation 2)
+- `adev-plugin-4il.1` — close the heuristics learning loop (filed; capture-on-failure, retrieval-on-error, batch breaker)
+- `adev-plugin-zsmh.1` — `br` ignores shared-worktree issue storage (filed; found while verifying this study)
 - `adev-plugin-paky` — enum-enforce check IDs (open; subsumed by recommendation 3)
 - `adev-plugin-j5qw` — `validated` requires `.validate.md` (open; **already implemented**)
 - `adev-plugin-9z5i` — review-specs/validate dedup (closed during this investigation; shipped 2026-05-16)
