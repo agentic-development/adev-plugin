@@ -35,3 +35,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"No new deps; version correctly unbumped at 0.27.8 per ADR-0008; no inline-Node in touched SKILL.md","ts":"2026-08-13T18:14:33.401Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP Case A - no UI files in diff","ts":"2026-08-13T18:14:33.438Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-13T18:14:44.557Z"}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-08-14T16:24:05.810Z","ts":"2026-08-14T16:24:05.811Z"}
