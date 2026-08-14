@@ -165,10 +165,12 @@ rewrites tracked files in `.githooks/`.
    `git rev-parse --show-toplevel`, which can answer for a different repository
    under a linked worktree or an unexpected `--git-dir`.
 
-   The path is computed at install time relative to the **same** directory the
-   wrapper resolves from (the repo root containing `.githooks/`), not
-   `process.cwd()` — they differ whenever `adev install` is run from a
-   subdirectory. (SA-3.)
+   The install-time computation and the runtime resolution MUST share a base.
+   They do by construction: `githooksDir = join(cwd, ".githooks")` and the path
+   is computed as `relative(cwd, originalHookPath)`, while the wrapper resolves
+   `REPO_ROOT` as its own directory's parent. State the invariant, not a
+   prohibition on `process.cwd()` — an earlier draft of this AC forbade it,
+   which would have failed correct code. (SA-3, corrected per SA-11.)
 
 12. **When** `core.hooksPath` contains anything outside `[A-Za-z0-9._/-]`, or
     resolves outside the repository root, **then** the installer REFUSES to
@@ -205,16 +207,26 @@ rewrites tracked files in `.githooks/`.
     because a future caller may reach `buildChainedHook` by a path that skips
     the validation. (SEC-1.)
 
-14. **When** the resolved original hook lies outside the repository root,
-    **then** chaining is refused. "Relative" is not "contained":
+14. **When** the original hook path lies outside the repository root
+    **lexically**, **then** chaining is refused. "Relative" is not "contained":
     `relative()` happily yields `../../husky/pre-commit`, which resolves to a
     directory the installer does not own on a teammate's machine or a CI runner,
     and the wrapper would execute whatever is there. AC-7's fail-closed rule
     makes this *more* reachable, not less — a missing path now hard-fails, but
     an existing attacker-writable one still runs. CWE-22. (SEC-2.)
 
-15. **When** the installer writes a settings file, **then** it refuses to write
-    through a symlink, naming the path and its target, and exits rather than
+    **Known gap — containment is lexical, not physical (SEC-11).** The check
+    uses `resolve()`/`relative()`, which are pure string operations. A tracked
+    in-repo **symlink** (`.husky → ../shared-hooks`) is carried by `git clone`,
+    passes this check, and the wrapper executes code outside the repository —
+    demonstrated by execution during re-review. Closing it requires
+    `realpathSync` on both the candidate and the repo root (the latter for the
+    macOS `/var` vs `/private/var` case) plus a re-check once the concrete
+    `originalHookPath` is known. Tracked separately; this AC states what is
+    enforced today, not what is intended.
+
+15. **When** the settings file **itself** is a symlink, **then** the installer
+    refuses to write, naming the path and its target, and exits rather than
     following it.
 
     `.claude/settings.json` is routinely tracked in git, and git tracks
@@ -229,6 +241,15 @@ rewrites tracked files in `.githooks/`.
     Note that `sameFile()`'s `realpathSync` does **not** cover this — it is an
     identity check for the two-scopes-one-file case, not a safety check, and
     does nothing about a link pointing at a third location.
+
+    **Known gap — leaf only (SEC-10).** `lstatSync` inspects the final path
+    component, so a symlinked **parent** (`.claude → ~/.ssh`, or
+    `.claude → ~/.claude`) is still followed; re-review demonstrated both, the
+    second silently leaking a project-scope enable into the user file and
+    defeating AC-2. Closing it requires resolving the parent chain and
+    requiring the settings path to land under the intended root — the pattern
+    already exists at `lib/issues/resolve-root.mjs`. Tracked separately; the
+    CWE-59 claim above is therefore partial.
 
 ### Destructive rewrites are announced
 

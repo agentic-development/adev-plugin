@@ -1013,6 +1013,44 @@ async function cmdStatusCopilot() {
 }
 
 
+/**
+ * Repair `governance/gates.yaml` entries whose `command` is a shell string.
+ *
+ * merge-gates.mjs rejects string commands (SEC-2, shipped in v0.25.0) and
+ * drops the gate at load. Because scaffolding skips files that already exist,
+ * upgrade never fixed the very files that needed it — a project silently ran
+ * zero gates. This runs on upgrade so the repair reaches existing installs.
+ *
+ * Non-fatal by construction: a project with no gates.yaml, or one already in
+ * argv form, is a no-op. Commands that need a shell are reported, never
+ * rewritten — splitting them on whitespace would change what they run.
+ */
+async function migrateLegacyGateCommands() {
+  const gatesPath = join(process.cwd(), ".context-index", "governance", "gates.yaml");
+  if (!existsSync(gatesPath)) return;
+
+  const { migrateGateCommands } = await import("../lib/migrate-gate-commands.mjs");
+  const source = readFileSync(gatesPath, "utf8");
+  const { content, migrated, skipped } = migrateGateCommands(source);
+
+  if (migrated.length === 0 && skipped.length === 0) return;
+
+  heading("Quality Gates");
+
+  if (migrated.length > 0) {
+    writeFileSync(gatesPath, content);
+    for (const { from, to } of migrated) {
+      success(`Migrated gate command: "${from}" → [${to.join(", ")}]`);
+    }
+    log("These gates were being dropped at load and never ran.");
+  }
+
+  for (const { command, reason } of skipped) {
+    warn(`Gate command needs a shell and was left as-is: "${command}" (${reason})`);
+    log("  Rewrite it as an argv list, or split it into separate gates.");
+  }
+}
+
 async function cmdInstall() {
   // --target <name> branch: per-target adapter invocation (Copilot uses this).
   // Skips the interactive provider selection + scaffolding flow used by the
