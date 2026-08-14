@@ -225,7 +225,7 @@ integrations:
     # gitignored: true|false — when true, installer maintains a paired-marker block in .gitignore
     #                         covering .context-index/sessions/ (default true for new projects)
     provider: native
-    capture: hook
+    capture: post-commit
 
 hygiene:
   staleness_threshold_days: 30
