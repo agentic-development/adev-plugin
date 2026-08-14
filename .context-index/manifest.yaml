@@ -134,12 +134,38 @@ completion:
     - master
   branch_naming: "<type>/<module>/<short-description>"
 
+  # May an agent run `gh pr merge` to complete a PR? Opening the PR is never
+  # gated; completing it is, because merge is where review is enforced.
+  # Read by hooks/merge-guard.sh. Left at the default so behaviour is unchanged
+  # — set true only if you want agents merging their own PRs here.
+  allow_agent_pr_merge: false
+
 # ============================================================================
 # Task Management
 # ============================================================================
 
 tasks:
   backend: beads
+
+  # Lease window for `adev issues claim`. A claim is a lease, not a lock: once
+  # claimed_at is older than this, the claim is STALE and the next claimant
+  # takes it over with a fresh claimed_at, so a crashed session cannot hold an
+  # issue forever. A LIVE claim by another owner is still refused
+  # (ISSUE_ALREADY_CLAIMED). Set 0 to disable expiry.
+  # List expired leases with `adev issues stale [--json]`.
+  claim_ttl_minutes: 240
+
+# ============================================================================
+# Test Policy
+# Controls test granularity and risk-based depth escalation, consumed by
+# /adev:plan, /adev:write-test, /adev:implement, and `adev test-policy`.
+# Per-module overrides: modules[].test_policy.granularity.
+# See .context-index/specs/features/test-strategies/test-depth-policy.spec.md
+# ============================================================================
+
+test_policy:
+  granularity: per-behavior   # per-task | per-behavior | per-spec
+  escalation: true            # allow risk-based depth escalation on top of granularity
 
 # ============================================================================
 # Lifecycle State
@@ -225,7 +251,7 @@ integrations:
     # gitignored: true|false — when true, installer maintains a paired-marker block in .gitignore
     #                         covering .context-index/sessions/ (default true for new projects)
     provider: native
-    capture: hook
+    capture: post-commit
 
 hygiene:
   staleness_threshold_days: 30

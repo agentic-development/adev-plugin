@@ -213,15 +213,27 @@ Configures the task management backend used by `/adev:issues` and the issue boar
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `backend` | string | — | Backend type: `file` (markdown-based) or `beads_rust` (beads database) |
+| `backend` | string | `"json"` | Backend type: `json`, `file`, or `beads`. Any other value is rejected with `Unknown task backend`. |
 | `db_path` | string | — | Override path for the task database (default: auto-resolved from repo root) |
 
-**When to override:** Set `backend` to enable issue tracking. Use `db_path` when sharing task storage across git worktrees.
+**Backends:**
+
+| Value | When it applies |
+|-------|-----------------|
+| `json` | The default. Zero-setup JSON board at `.context-index/tasks/tasks.json`, rendered to a human-readable board on demand. Used when `backend` is unset. |
+| `file` | Legacy markdown board at `.context-index/tasks/tasks.md`. Read-only-deprecated: writes throw `BACKEND_READ_ONLY_DEPRECATED` and selecting it emits a one-time deprecation warning. Only for reading an old board before migrating. |
+| `beads` | The beads_rust `br` CLI, when installed. Choose it when concurrent branches/worktrees share one board. Falls back to `json` (with a warning) if `br` is not on `PATH`. |
+
+**Minimum `br` version:** the `beads` backend requires `br` >= 0.2.19 and refuses to start below it. 0.2.19 shipped the engine fix for deterministic database corruption caused by merge operations — the exact failure mode this backend exists to survive — so the floor is a safety boundary, not just a compatibility one.
+
+Note the two failure modes differ: a *missing* `br` degrades gracefully to the `json` backend with a warning, but a `br` **below 0.2.19** is a hard error (`BEADS_VERSION_UNSUPPORTED`) with no fallback. Upgrade with `br upgrade`, or switch `backend` to `json`.
+
+**When to override:** Leave `backend` unset (or `json`) unless you need cross-worktree concurrency, then use `beads`. Use `db_path` when sharing task storage across git worktrees.
 
 **Example:**
 ```yaml
 tasks:
-  backend: file
+  backend: json
 ```
 
 ### provenance

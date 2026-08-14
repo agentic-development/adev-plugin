@@ -11,6 +11,40 @@ Turn a feature idea into a structured Feature Charter through collaborative dial
 Do NOT invoke any implementation skill, write any code, create any Live Spec, or take any implementation action until you have written the charter, passed the review loop, and the user has approved the final document. This applies to EVERY feature regardless of perceived simplicity.
 </HARD-GATE>
 
+## Output Directive: Artifact-to-Disk Summarization
+
+**CRITICAL:** When producing the charter document, follow this two-step pattern:
+
+1. **Write** the full charter to disk using the Write tool (same as today — full content at the charter file path)
+2. **Present** ONLY a structured summary to the user. Do NOT echo the full charter content in your response.
+
+**Summary format (max ~500 tokens):**
+
+```
+Charter saved to <path>.
+
+<module> — <business intent in one line>.
+<N> capabilities (<M> must-have), <K> exposed interfaces.
+
+| Capability | Priority | Phase |
+|---|---|---|
+| <name> | must-have | v1 |
+| ... | ... | ... |
+
+In scope: <short list>.  Out of scope: <short list>.
+Review: <Approved | Issues Found, N fixed over M iterations>
+Next: /adev:specify --charter <module>
+```
+
+**What NOT to include in the chat response:**
+- Full section bodies (Domain Model tables, Interface Contracts, Quality Attributes)
+- The full reviewer prompt or the reviewer's raw output (just report the verdict)
+- The template's boilerplate
+
+These are all written to disk and available via `Read <charter-path>`. The user or next skill reads from disk, not from conversation history.
+
+This directive governs the **final** write-up only. Steps 2-4 below are still interactive and still present their content in chat — you cannot get section-by-section approval from a file the user has not read yet.
+
 ## Arguments
 
 - No arguments: freeform brainstorm (user describes the idea conversationally)
@@ -44,47 +78,33 @@ Complete these steps in order. Do not skip steps.
 
 Read these files using Glob/Grep/Read. Do not ask the user for information that exists in these files.
 
-**Required reads:**
-- `.context-index/constitution.md` — project principles, boundaries, quality gates
-- `.context-index/platform-context.yaml` — tech stack, framework versions, deployment targets
-- `.context-index/manifest.yaml` — specialist registry, context loading strategy
+**Required:** `.context-index/constitution.md` (principles, boundaries, quality gates), `.context-index/platform-context.yaml` (tech stack, versions, deployment targets), `.context-index/manifest.yaml` (specialist registry, context loading strategy).
 
-**Conditional reads:**
-- `.context-index/specs/product.md` — if it exists, read the product charter for vision and module map
-- `.context-index/specs/features/*/charter.md` — read all existing feature charters (use Glob to find them). Note their module names, scopes, dependencies, and interfaces. You need this to detect conflicts and overlaps later.
-- `.context-index/adrs/*.md` — read all ADRs. Note decisions that constrain the design space.
-- `.context-index/orientation/architecture.md` — if it exists, read for module boundaries and codebase structure
-- `.context-index/specs/cross-cutting/*.md` — read any cross-cutting specs for shared constraints
-- `.context-index/references/**/*.md` — if the references directory exists, read external reference charters and contracts. Note external interfaces this module must comply with.
+**Conditional (read if they exist):**
+- `.context-index/specs/product.md` — product vision and module map
+- `.context-index/specs/features/*/charter.md` — all existing charters (Glob for them). Note module names, scopes, dependencies, interfaces — you need this to detect conflicts later.
+- `.context-index/adrs/*.md` — decisions that constrain the design space
+- `.context-index/orientation/architecture.md` — module boundaries and codebase structure
+- `.context-index/specs/cross-cutting/*.md` — shared constraints
+- `.context-index/references/**/*.md` — external reference charters and contracts this module must comply with
 
-**If `--module <name>` was provided:**
-- Read `.context-index/specs/features/<name>/charter.md` if it exists. You are extending or revising this charter, not replacing it from scratch.
-- Read any Live Specs under `.context-index/specs/features/<name>/` to understand existing implementation scope.
+**If `--module <name>`:** Read that module's `charter.md` and any Live Specs under its directory. You are extending or revising the charter, not replacing it.
 
-**If `--from-blueprint <path>` was provided:**
-- Read the blueprint file at the given path.
-- Extract the module definition, business intent, and capability list from the blueprint.
-- These seed the brainstorm and reduce the number of clarifying questions needed.
+**If `--from-blueprint <path>`:** Read the blueprint; extract module definition, business intent, and capability list to seed the brainstorm and cut down the clarifying questions.
 
-After reading, summarize what you found in 3-5 bullet points:
-- What the project builds (from product charter or constitution)
-- What modules already exist and their boundaries
-- What architectural decisions constrain the design (from ADRs)
-- What the tech stack enables and limits (from platform context)
-- Any relevant cross-cutting concerns
+After reading, summarize findings in 3-5 bullets: what the project builds, existing modules and boundaries, architectural constraints from ADRs, what the tech stack enables and limits, and relevant cross-cutting concerns.
 
 ## Step 2: Clarify
 
-Ask questions one at a time. Prefer multiple-choice questions when possible. Open-ended is fine for exploratory questions. Do not ask more than one question per message.
+Ask questions one at a time. Prefer multiple-choice when possible; open-ended is fine for exploratory questions. Never more than one question per message.
 
-**Assessment before questions:**
-Before asking detailed questions, assess scope. If the idea describes multiple independent subsystems, flag this immediately:
+**Assessment before questions:** If the idea spans multiple independent subsystems, flag it immediately:
 
 > This sounds like it spans multiple modules. Before diving into details, let me suggest how to decompose it. Each module gets its own charter, and we brainstorm them one at a time.
 
 Help the user identify independent modules, then proceed with the first one.
 
-**Questions to answer (adapt to the idea, do not ask all of these mechanically):**
+**Questions to answer (adapt to the idea, do not ask mechanically):**
 - What user or business problem does this solve? (Business Intent)
 - What is in scope and what is explicitly out of scope? (Scope and Boundaries)
 - What are the key entities and their relationships? (Domain Model)
@@ -92,114 +112,59 @@ Help the user identify independent modules, then proceed with the first one.
 - How do other modules interact with this one? (Interface Contracts)
 - What quality attributes matter most? (Quality Attributes)
 
-**Constitution check during clarification:**
-As the user describes the feature, check each answer against:
-- **Non-Negotiable Principles** in the constitution. If the idea conflicts, raise it immediately: "This conflicts with principle N in the constitution: [quote]. Should we adjust the approach or update the principle?"
-- **Architecture Boundaries** in the constitution. If the idea crosses a boundary (e.g., creates a new database table when the constitution says not to without approval), raise it: "The constitution says [boundary]. This feature would require [violation]. Do you want to proceed with an exception, or adjust the design?"
+**Constitution check during clarification.** Check each answer against:
+- **Non-Negotiable Principles.** On conflict, raise immediately: "This conflicts with principle N in the constitution: [quote]. Should we adjust the approach or update the principle?"
+- **Architecture Boundaries.** On a crossing, raise: "The constitution says [boundary]. This feature would require [violation]. Do you want to proceed with an exception, or adjust the design?"
 
-**Cross-charter conflict check:**
-Compare the emerging feature scope against existing charters:
-- Capability overlap: does this module provide something another module already owns?
-- Entity duplication: does this module define entities that belong to another module?
-- Interface conflicts: does this module expose or consume APIs in ways that contradict existing contracts?
+**Cross-charter conflict check.** Compare the emerging scope against existing charters for capability overlap (does another module already own this?), entity duplication (do these entities belong to another module?), and interface conflicts (do these APIs contradict existing contracts?). Present any conflicts clearly and ask the user how to resolve them.
 
-If conflicts are found, present them clearly and ask the user how to resolve them.
-
-**If `--from-blueprint` was provided:**
-Skip questions whose answers are already in the blueprint. Confirm the blueprint-provided answers with the user: "The blueprint says [X]. Does that still hold, or do you want to adjust?"
+**If `--from-blueprint`:** Skip questions the blueprint already answers, but confirm them: "The blueprint says [X]. Does that still hold?"
 
 ## Step 3: Propose 2-3 Approaches
 
-Once you understand the feature well enough, propose 2-3 design approaches. For each approach:
+Once you understand the feature well enough, propose 2-3 design approaches. For each:
 
 1. **Name and summary** (1-2 sentences)
-2. **How it works** (3-5 sentences describing the approach)
+2. **How it works** (3-5 sentences)
 3. **Trade-offs** (pros and cons as a bulleted list)
-4. **Constitution compliance** — note whether each approach aligns with, stretches, or violates constitutional principles. Quote the specific principle.
-5. **Platform fit** — note how each approach fits the tech stack from `platform-context.yaml`. Flag if an approach requires adding new dependencies or technologies.
+4. **Constitution compliance** — aligns, stretches, or violates? Quote the specific principle.
+5. **Platform fit** — how it fits the stack in `platform-context.yaml`. Flag any new dependencies or technologies.
 
-Lead with your recommended approach and explain why you recommend it.
-
-Wait for the user to choose an approach or request modifications before proceeding.
+Lead with your recommended approach and say why. Wait for the user to choose or request modifications before proceeding.
 
 ## Step 4: Present Design Sections
 
-Walk through the charter structure one section at a time. Present each section, then ask: "Does this look right?" before moving to the next.
+Walk through the charter structure one section at a time. Present each, then ask "Does this look right?" before moving on. Scale each section to its complexity — straightforward sections get 2-3 sentences, nuanced ones get detailed tables.
 
-Scale each section to its complexity. A straightforward section gets 2-3 sentences. A nuanced section gets detailed tables and explanations.
-
-**Section order:**
-
-### 4a. Business Intent
-Present 2-3 sentences describing why this module exists and what problem it solves. This is the "elevator pitch" for the module.
-
-### 4b. Scope and Boundaries
-Present three lists:
-- **In Scope:** capabilities this module owns
-- **Out of Scope:** capabilities explicitly excluded (prevents scope creep)
-- **Dependencies:** other modules or services this module depends on, with dependency direction
-
-### 4c. Domain Model
-Present:
-- **Entities** table: entity name, description, key attributes
-- **Relationships:** how entities relate to each other
-- **Invariants:** business rules that must always hold true
-
-### 4d. Capability Map
-Present a table of capabilities with:
-- Capability name
-- Description
-- Priority (must-have / should-have / nice-to-have)
-- Phase (e.g., v1, v2, mvp, post-launch, or blank if unassigned)
-
-For each capability, assign a phase or leave blank. Phase indicates WHEN this capability ships, not its importance (that is Priority). Phases are free-form strings agreed upon with the user.
-
-Each capability is a candidate for a future Live Spec. Order by priority.
-
-### 4e. Interface Contracts
-Present:
-- **Exposed APIs:** what this module offers to other modules (endpoints, functions, events, messages)
-- **Consumed APIs:** what this module needs from other modules
-
-For each interface, include: name, type (REST endpoint / function / event / message), and a brief description.
-
-### 4f. Quality Attributes
-Present a table of non-functional requirements specific to this module:
-- Performance
-- Availability
-- Security
-- Observability
-
-Only include attributes that have meaningful requirements. Do not pad with generic statements.
+- **4a. Business Intent** — 2-3 sentences on why this module exists and what problem it solves. The module's elevator pitch.
+- **4b. Scope and Boundaries** — three lists: **In Scope** (capabilities this module owns), **Out of Scope** (explicitly excluded, prevents scope creep), **Dependencies** (other modules or services, with dependency direction).
+- **4c. Domain Model** — **Entities** table (name, description, key attributes), **Relationships** between them, and **Invariants** (business rules that must always hold).
+- **4d. Capability Map** — table of capability name, description, priority (must-have / should-have / nice-to-have), and phase (v1, v2, mvp, post-launch, or blank). Phase is WHEN it ships, priority is how important it is; phases are free-form strings agreed with the user. Each capability is a candidate for a future Live Spec. Order by priority.
+- **4e. Interface Contracts** — **Exposed APIs** (what this module offers others) and **Consumed APIs** (what it needs from others). Each with name, type (REST endpoint / function / event / message), and a brief description.
+- **4f. Quality Attributes** — table of non-functional requirements: performance, availability, security, observability. Include only attributes with meaningful requirements; do not pad with generic statements.
 
 After the user approves all sections, proceed to writing.
 
 ## Step 5: Write Charter
 
-Generate the charter file using the template at `${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md`.
+Generate the charter from the template at `${CLAUDE_PLUGIN_ROOT}/templates/charter-template.md`.
 
-**File path:** `.context-index/specs/features/<module>/charter.md`
+**File path:** `.context-index/specs/features/<module>/charter.md`, where `<module>` is a lowercase hyphenated slug (e.g. `task-boards`, `user-management`).
 
-Where `<module>` is the module slug (lowercase, hyphenated, e.g., `task-boards`, `user-management`).
+**Before writing:** create `.context-index/specs/features/<module>/` if missing. If a charter already exists there (the `--module` case), read it first and merge rather than overwrite — preserve sections the user did not modify.
 
-**Before writing:**
-1. Create the directory if it does not exist: `.context-index/specs/features/<module>/`
-2. If a charter already exists at that path (when using `--module`), read it first and merge changes rather than overwriting. Preserve any sections the user did not modify.
-
-**Writing the charter:**
-- Fill in all sections from the approved design in Step 4
-- Replace all `...` placeholders in the template with actual content
-- Remove HTML comments from the template (they are authoring instructions, not charter content)
-- Do not include placeholder text, TODOs, or TBDs
+**Writing:** fill every section from the approved Step 4 design, replace all `...` placeholders with real content, strip the template's HTML comments (they are authoring instructions), and leave no TODOs or TBDs.
 
 **After writing:**
-- If `.context-index/specs/product.md` exists and has a module map, check whether this module is listed. If not, tell the user: "This is a new module not listed in the product charter. After we finalize the charter, consider updating the product charter module map."
-- Commit the charter file to git with message: `feat: add <module> feature charter`
+- If `.context-index/specs/product.md` has a module map that omits this module, say: "This is a new module not listed in the product charter. After we finalize the charter, consider updating the product charter module map."
+- Commit with message: `feat: add <module> feature charter`
 - Suggest the implementation branch name: `feat/<module>/<short-description>` (e.g. `feat/auth/login-flow`)
+
+Then present the disk-summary described in the Output Directive above — not the charter body.
 
 ## Step 6: Charter Review Loop
 
-Dispatch a charter-reviewer subagent to validate the written charter. The reviewer checks structure, constitution compliance, and cross-charter consistency.
+Dispatch a charter-reviewer subagent to validate the written charter against structure, constitution compliance, and cross-charter consistency.
 
 **Subagent dispatch:**
 
@@ -210,10 +175,10 @@ Task tool (general-purpose):
     You are a Feature Charter reviewer for the Agentic Development Framework.
 
     **Charter to review:** [CHARTER_FILE_PATH]
-    **Constitution:** [Read and paste the full content of .context-index/constitution.md]
-    **Platform context:** [Read and paste the full content of .context-index/platform-context.yaml]
-    **Existing charters:** [For each existing charter, paste its file path and Business Intent + Scope sections. If there are no other charters, state "No other charters exist."]
-    **ADRs:** [For each ADR, paste its file path and decision summary. If there are no ADRs, state "No ADRs exist."]
+    **Constitution:** [full content of .context-index/constitution.md]
+    **Platform context:** [full content of .context-index/platform-context.yaml]
+    **Existing charters:** [each charter's path + Business Intent and Scope sections, or "No other charters exist."]
+    **ADRs:** [each ADR's path + decision summary, or "No ADRs exist."]
 
     ## What to Check
 
@@ -251,11 +216,13 @@ Task tool (general-purpose):
     - [suggestions for improvement]
 ```
 
-**Handling review results:**
+**Handling results:**
 
-- **Approved:** Proceed to Step 7.
-- **Issues Found:** Fix each issue in the charter file. Then re-dispatch the reviewer with the updated charter. Do not ask the user about issues you can fix yourself (missing details that were discussed, structural fixes). Only escalate to the user if fixing the issue requires a design decision not yet made.
-- **After 3 iterations without approval:** Stop the loop and present the remaining issues to the user. Ask them to decide: fix the issues together, accept the charter as-is, or abandon.
+- **Approved:** proceed to Step 7.
+- **Issues Found:** fix each issue in the charter file, then re-dispatch the reviewer with the updated charter. Do not ask the user about issues you can fix yourself (missing details already discussed, structural fixes). Escalate only when the fix requires a design decision not yet made.
+- **After 3 iterations without approval:** stop, present the remaining issues, and ask the user to decide — fix them together, accept as-is, or abandon.
+
+Report only the verdict and the count of fixed issues in chat, per the Output Directive.
 
 ## Step 7: User Reviews
 
@@ -263,16 +230,11 @@ After the review loop passes, ask the user to review the written charter:
 
 > Charter written and committed to `.context-index/specs/features/<module>/charter.md`. Please review it and let me know if you want any changes before we move to specification.
 
-Wait for the user's response. If they request changes:
-1. Make the changes
-2. Re-run the charter review loop (Step 6)
-3. Ask for approval again
-
-Only proceed once the user explicitly approves.
+Wait for their response. If they request changes: make them, re-run the Step 6 review loop, and ask for approval again. Only proceed once the user explicitly approves.
 
 ## Step 8: Transition to Specification
 
-Once the user approves the charter, transition to Live Spec authoring:
+Once approved, transition to Live Spec authoring:
 
 > The charter for **<module>** is complete. The next step is to create Live Specs for specific capabilities.
 >
@@ -293,6 +255,7 @@ Once the user approves the charter, transition to Live Spec authoring:
 - **Multiple choice preferred.** Easier to answer than open-ended when the options are known.
 - **Constitution is law.** Every design decision is checked against constitutional principles. Conflicts are raised immediately, not buried in the charter.
 - **YAGNI ruthlessly.** Remove capabilities the user did not ask for. A charter can always be extended later.
-- **Charter, not code.** The charter defines WHAT, not HOW. Do not include implementation details, technology choices (beyond what platform-context.yaml establishes), or code examples.
+- **Charter, not code.** The charter defines WHAT, not HOW. No implementation details, technology choices beyond platform-context.yaml, or code examples.
 - **Incremental validation.** Present each section, get approval, then move on. Do not dump the entire charter at once.
 - **Existing work matters.** Always check existing charters, ADRs, and cross-cutting specs for conflicts before finalizing.
+- **The artifact lives on disk.** The final charter is read from the file, not re-read from the conversation.

@@ -10,15 +10,15 @@ import { initFilters } from './filters.mjs';
 import { initTimeline } from './timeline.mjs';
 
 // Cytoscape and plugins loaded via script tags (UMD globals)
-const cy = window.cytoscape;
+const cytoscapeLib = window.cytoscape;
 
 // Register layout extensions (UMD plugins auto-register if cytoscape is global,
 // but call use() explicitly for safety)
-if (typeof cytoscapeFcose !== 'undefined') cy.use(cytoscapeFcose);
-if (typeof cytoscapeDagre !== 'undefined') cy.use(cytoscapeDagre);
+if (typeof cytoscapeFcose !== 'undefined') cytoscapeLib.use(cytoscapeFcose);
+if (typeof cytoscapeDagre !== 'undefined') cytoscapeLib.use(cytoscapeDagre);
 
 // Pass cytoscape to renderer
-setCytoscape(cy);
+setCytoscape(cytoscapeLib);
 
 // ---------------------------------------------------------------------------
 // Load data

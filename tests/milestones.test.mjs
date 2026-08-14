@@ -53,6 +53,36 @@ function readMilestonesRaw(dir) {
   return readFileSync(join(dir, ".context-index", "milestones.json"), "utf8");
 }
 
+/** Write `.context-index/governance/gates.yaml` into a temp project. */
+function writeGates(dir, yaml) {
+  mkdirSync(join(dir, ".context-index", "governance"), { recursive: true });
+  writeFileSync(join(dir, ".context-index", "governance", "gates.yaml"), yaml);
+}
+
+/**
+ * Mirror of this repo's own gates.yaml shape (verified 2026-08-14):
+ * a required fast `test` gate (severity error) and a non-required
+ * integration gate (required: false → severity warning).
+ */
+const GATES_FIXTURE = [
+  "gates:",
+  "  - id: test",
+  "    name: Test Suite",
+  "    kind: deterministic",
+  "    tier: fast",
+  "    command: [npm, test]",
+  "    required: true",
+  "    severity: error",
+  "  - id: integration-test",
+  "    name: Integration Tests",
+  "    kind: deterministic",
+  "    tier: integration",
+  "    command: [npm, run, test:evals]",
+  "    required: false",
+  "    severity: warning",
+  "",
+].join("\n");
+
 // ---------------------------------------------------------------------------
 // Task 1: schema lock — JSON document shape + byte format
 // ---------------------------------------------------------------------------
@@ -715,18 +745,343 @@ describe("evaluateShipCriteria", () => {
     await assert.rejects(() => evaluateShipCriteria(milestone, mockManager, {}), { code: "BROKEN_EPIC" });
   });
 
-  it("returns failed for gates_pass when no test command configured", async () => {
+  it("returns failed for gates_pass when no projectRoot is supplied", async () => {
     const milestone = { name: "v1", epic_id: "epic-1", ship_criteria: [{ check: "gates_pass" }] };
     const mockManager = { listEpics: async () => [{ id: "epic-1" }] };
     const results = await evaluateShipCriteria(milestone, mockManager, {});
     assert.equal(results[0].passed, false);
-    assert.ok(results[0].detail.includes("No test command"));
+    assert.ok(results[0].detail.includes("projectRoot"), results[0].detail);
+    assert.ok(results[0].detail.includes("gates.yaml"), results[0].detail);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// gates_pass — governance gates.yaml resolution (issue-525)
+//
+// Gate definitions moved out of `manifest.gates.*` into
+// `.context-index/governance/gates.yaml`, merged by
+// lib/domains/merge-gates.mjs, with argv-list commands.
+// ---------------------------------------------------------------------------
+
+describe("evaluateShipCriteria — gates_pass via governance gates.yaml (issue-525)", () => {
+  const mockManager = { listEpics: async () => [{ id: "epic-1" }] };
+  const milestone = { name: "v1", epic_id: "epic-1", ship_criteria: [{ check: "gates_pass" }] };
+
+  /** Injectable runner: `outcomes` maps gate id → pass/fail. Records argv. */
+  function recordingRunner(outcomes, seen) {
+    return (gate) => {
+      seen.push({ id: gate.id, command: gate.command });
+      const ok = outcomes[gate.id] !== false;
+      return { passed: ok, output: ok ? "" : `${gate.id} exploded` };
+    };
+  }
+
+  it("resolves gates from gates.yaml and passes the argv command through unsplit", async () => {
+    const dir = makeProject("gates-resolve-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      const seen = [];
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, {
+        projectRoot: dir,
+        runGate: recordingRunner({}, seen),
+      });
+      assert.equal(results[0].passed, true);
+      // Both declared gates ran, in tier order (fast before integration),
+      // each with its argv list intact — never a split shell string.
+      assert.deepStrictEqual(seen, [
+        { id: "test", command: ["npm", "test"] },
+        { id: "integration-test", command: ["npm", "run", "test:evals"] },
+      ]);
+      assert.deepStrictEqual(
+        results[0].gates.map((g) => [g.id, g.severity, g.passed]),
+        [["test", "error", true], ["integration-test", "warning", true]],
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("fails the criterion when an error-severity gate fails", async () => {
+    const dir = makeProject("gates-error-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      const seen = [];
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, {
+        projectRoot: dir,
+        runGate: recordingRunner({ test: false }, seen),
+      });
+      assert.equal(results[0].passed, false);
+      assert.ok(results[0].detail.includes("'test'"), results[0].detail);
+      assert.ok(results[0].detail.includes("error"), results[0].detail);
+      assert.ok(results[0].detail.includes("test exploded"), results[0].detail);
+      // An error-severity failure stops the remaining gates.
+      assert.deepStrictEqual(seen.map((s) => s.id), ["test"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not fail the criterion when a warning-severity gate fails", async () => {
+    const dir = makeProject("gates-warning-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      const seen = [];
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, {
+        projectRoot: dir,
+        runGate: recordingRunner({ "integration-test": false }, seen),
+      });
+      assert.equal(results[0].passed, true);
+      assert.equal(results[0].detail, undefined);
+      assert.ok(
+        results[0].warnings.some((w) => w.includes("integration-test") && w.includes("warning")),
+        JSON.stringify(results[0].warnings),
+      );
+      // Warning failures do not stop the run.
+      assert.deepStrictEqual(seen.map((s) => s.id), ["test", "integration-test"]);
+      assert.deepStrictEqual(
+        results[0].gates.map((g) => [g.id, g.passed]),
+        [["test", true], ["integration-test", false]],
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("treats `required: false` as warning even when severity says error", async () => {
+    const dir = makeProject("gates-required-false-");
+    try {
+      writeGates(dir, [
+        "gates:",
+        "  - id: flaky",
+        "    tier: fast",
+        "    command: [npm, run, flaky]",
+        "    required: false",
+        "    severity: error",
+        "",
+      ].join("\n"));
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, {
+        projectRoot: dir,
+        runGate: () => ({ passed: false, output: "nope" }),
+      });
+      assert.equal(results[0].passed, true);
+      assert.equal(results[0].gates[0].severity, "warning");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("narrows to a single gate when the criterion names one", async () => {
+    const dir = makeProject("gates-narrow-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      const seen = [];
+      const narrowed = {
+        name: "v1",
+        epic_id: "epic-1",
+        ship_criteria: [{ check: "gates_pass", gate: "test" }],
+      };
+      const results = await evaluateShipCriteria(narrowed, mockManager, {}, {
+        projectRoot: dir,
+        runGate: recordingRunner({}, seen),
+      });
+      assert.equal(results[0].passed, true);
+      assert.deepStrictEqual(seen.map((s) => s.id), ["test"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("fails with a named detail when the criterion references an unknown gate", async () => {
+    const dir = makeProject("gates-unknown-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      const bogus = {
+        name: "v1",
+        epic_id: "epic-1",
+        ship_criteria: [{ check: "gates_pass", gate: "typecheck" }],
+      };
+      const results = await evaluateShipCriteria(bogus, mockManager, {}, {
+        projectRoot: dir,
+        runGate: () => ({ passed: true, output: "" }),
+      });
+      assert.equal(results[0].passed, false);
+      assert.ok(results[0].detail.includes("'typecheck'"), results[0].detail);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("surfaces INVALID_GATE when gates.yaml declares a shell-string command", async () => {
+    const dir = makeProject("gates-string-cmd-");
+    try {
+      writeGates(dir, [
+        "gates:",
+        "  - id: test",
+        "    tier: fast",
+        '    command: "npm test && npm run lint"',
+        "",
+      ].join("\n"));
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, {
+        projectRoot: dir,
+        runGate: () => assert.fail("no gate should run"),
+      });
+      assert.equal(results[0].passed, false);
+      assert.ok(results[0].detail.includes("INVALID_GATE"), results[0].detail);
+      assert.ok(results[0].detail.includes("argv list"), results[0].detail);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("fails with a gates.yaml-specific detail when the file is absent", async () => {
+    const dir = makeProject("gates-absent-");
+    try {
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, { projectRoot: dir });
+      assert.equal(results[0].passed, false);
+      assert.ok(results[0].detail.includes("gates.yaml"), results[0].detail);
+      assert.ok(results[0].detail.includes("not found"), results[0].detail);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("executes the argv command without a shell (real subprocess)", async () => {
+    const dir = makeProject("gates-exec-");
+    try {
+      // `>` and `&&` are shell metacharacters: under a shell this would
+      // redirect/chain. Executed as argv it is one literal node argument,
+      // so the gate exits 0.
+      writeGates(dir, [
+        "gates:",
+        "  - id: test",
+        "    tier: fast",
+        '    command: [node, -e, "console.log(\'a > b && c\')"]',
+        "    required: true",
+        "    severity: error",
+        "",
+      ].join("\n"));
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, { projectRoot: dir });
+      assert.equal(results[0].passed, true, JSON.stringify(results[0]));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports stdout from a real failing gate in the detail", async () => {
+    const dir = makeProject("gates-exec-fail-");
+    try {
+      writeGates(dir, [
+        "gates:",
+        "  - id: test",
+        "    tier: fast",
+        '    command: [node, -e, "console.log(\'boom-on-stdout\'); process.exitCode = 3"]',
+        "    required: true",
+        "    severity: error",
+        "",
+      ].join("\n"));
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, { projectRoot: dir });
+      assert.equal(results[0].passed, false);
+      assert.ok(results[0].detail.includes("boom-on-stdout"), results[0].detail);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
 // ---------------------------------------------------------------------------
 // milestoneShip (Task 7)
 // ---------------------------------------------------------------------------
+
+describe("milestoneShip — gates_pass blocking semantics (issue-525)", () => {
+  const shipManager = () => ({
+    listEpics: async () => [{ id: "epic-1" }],
+    list: async () => [],
+    close: async () => {},
+  });
+
+  const plannedMilestone = {
+    name: "v1.0.0",
+    status: "planned",
+    epic_id: "epic-1",
+    target_date: null,
+    release: { strategy: "manual" },
+    ship_criteria: [{ check: "gates_pass" }],
+  };
+
+  it("ships when every gate declared in gates.yaml passes", async () => {
+    const dir = makeProject("ship-gates-pass-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      saveMilestones(dir, [{ ...plannedMilestone }]);
+      const ran = [];
+      const result = await milestoneShip(dir, "v1.0.0", {
+        issueManager: shipManager(),
+        manifest: {},
+        runGate: (gate) => { ran.push(gate.id); return { passed: true, output: "" }; },
+      });
+      assert.equal(result.shipped, true);
+      assert.deepStrictEqual(ran, ["test", "integration-test"]);
+      assert.equal(findMilestone(dir, "v1.0.0").status, "shipped");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks the ship when an error-severity gate fails", async () => {
+    const dir = makeProject("ship-gates-error-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      saveMilestones(dir, [{ ...plannedMilestone }]);
+      const result = await milestoneShip(dir, "v1.0.0", {
+        issueManager: shipManager(),
+        manifest: {},
+        runGate: (gate) => ({ passed: gate.id !== "test", output: "suite red" }),
+      });
+      assert.equal(result.shipped, false);
+      assert.equal(result.results[0].passed, false);
+      assert.equal(findMilestone(dir, "v1.0.0").status, "planned");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("still ships when only a warning-severity gate fails", async () => {
+    const dir = makeProject("ship-gates-warning-");
+    try {
+      writeGates(dir, GATES_FIXTURE);
+      saveMilestones(dir, [{ ...plannedMilestone }]);
+      const result = await milestoneShip(dir, "v1.0.0", {
+        issueManager: shipManager(),
+        manifest: {},
+        runGate: (gate) => ({ passed: gate.id !== "integration-test", output: "evals red" }),
+      });
+      assert.equal(result.shipped, true);
+      assert.ok(
+        result.results[0].warnings.some((w) => w.includes("integration-test")),
+        JSON.stringify(result.results[0]),
+      );
+      assert.equal(findMilestone(dir, "v1.0.0").status, "shipped");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks the ship when gates.yaml is missing rather than passing vacuously", async () => {
+    const dir = makeProject("ship-gates-missing-");
+    try {
+      saveMilestones(dir, [{ ...plannedMilestone }]);
+      const result = await milestoneShip(dir, "v1.0.0", {
+        issueManager: shipManager(),
+        manifest: {},
+      });
+      assert.equal(result.shipped, false);
+      assert.ok(result.results[0].detail.includes("gates.yaml"), result.results[0].detail);
+      assert.equal(findMilestone(dir, "v1.0.0").status, "planned");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("milestoneShip (Task 7)", () => {
   let dir;
