@@ -36,6 +36,30 @@ In Step 8, emit the matching exit event with the consolidated review verdict:
 adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict> --from-summary
 ```
 
+### Step 0-fail: Failure-path exit event
+
+A BLOCK verdict is **not** a failure — it is a completed review whose consolidated verdict happens to block downstream steps, and it exits through the `--status completed --verdict BLOCK` line above. This section covers the *other* case: the review aborts before it can produce any verdict at all.
+
+Whenever the skill stops after the `--status started` event above without reaching the Step 8 exit event, emit the terminal event before surfacing the error to the operator:
+
+```bash
+adev report --type step --spec <spec-path> --step review --status failed --verdict FAIL
+```
+
+`--verdict FAIL` is required, not decorative. The projection's aggregation pass in `lib/lifecycle-state.mjs` only treats a step terminal as explicit when it carries a string verdict; a `step_failed` emitted without one is overwritten by the verdict synthesized from whatever `reviewer_report` events already landed, so a partial review whose first reviewer passed would project as `{verdict: PASS, status: completed}` and open the `plan` gate. This is the same class of bug fixed for BLOCK in `aggregateReports`.
+
+Abort paths in this skill that MUST emit it:
+
+| Step | Abort |
+|---|---|
+| Step 2 | The parent charter or the constitution is missing and the operator chooses **abort** rather than proceeding with reduced context. |
+| Step 3 | `loadReviewConfig` returns errors — the reviewer registry could not be loaded, so no reviewer can be dispatched. |
+| Step 4 | Rigor tier `quick` and the bundled `plugin:review-specs/quick-synthesized-reviewer-prompt.md` is missing (the documented fail-loud path — do not silently fall back to a weaker review). |
+
+Argument-level rejections (`INVALID_TIER`) and the "no specs need review" no-op exit in Step 1 happen *before* the `--status started` event and therefore strand nothing — do not emit for those.
+
+**Known gap (not this skill's to fix):** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot be carried on the event even though the `step_failed` schema has an `error` field. Name the code in operator-facing output; widening the CLI surface is a follow-up.
+
 ## Step 1: Identify Target Specs
 
 Determine which specs need review:
@@ -241,11 +265,20 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 
 ## <Reviewer Name> (<id>)
 
-**Verdict:** PASS | PASS_WITH_NOTES | BLOCK
+**Verdict:** PASS | PASS_WITH_NOTES | FAIL
 
 <findings list, or "No findings.">
 
 (repeat for each dispatched reviewer)
+
+> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated*
+> verdict in the header above, computed from post-cap findings across all
+> reviewers — PASS (zero warnings/blockers), PASS_WITH_NOTES (>=1 warning,
+> zero blockers), BLOCK (>= `verdict_rules.blocker_threshold` blockers,
+> default 1). See `configurable-reviewers.spec.md` behaviors 37-38. An
+> individual reviewer signals a blocker by emitting FAIL with a
+> blocker-severity finding, which is what the `reportReviewer` snippet in
+> Step 6a records.
 
 ---
 

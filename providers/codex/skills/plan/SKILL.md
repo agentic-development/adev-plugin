@@ -178,6 +178,25 @@ Before planning, verify the spec has passed architecture review by reading the l
    adev report --type step --spec <spec-path> --step plan --status completed --verdict <verdict> --from-summary
    ```
 
+6. **Failure-path exit event:** whenever the skill stops after the `--status started` event above without reaching the Step 7 exit event, emit the terminal event before surfacing the error to the operator:
+
+   ```bash
+   adev report --type step --spec <spec-path> --step plan --status failed --verdict FAIL
+   ```
+
+   `--verdict FAIL` is required, not decorative. The projection's aggregation pass in `lib/lifecycle-state.mjs` only treats a step terminal as explicit when it carries a string verdict; a `step_failed` emitted without one is overwritten by the verdict synthesized from the actor reports already on the log, leaving a dead plan run indistinguishable from a clean one.
+
+   Abort paths in this skill that MUST emit it:
+
+   | Step | Abort |
+   |---|---|
+   | Step 1, Spec Mode target-repo detection | `validateModuleName()` rejects the spec's `target-repo` — `INVALID_TARGET_REPO`. |
+   | Step 6, plan review loop | The reviewer still returns "Issues Found" after the 3-iteration cap, so the remaining issues are handed to the user for guidance. Report this as `LOOP_BUDGET_EXHAUSTED`, matching `/adev:build`'s BLOCK→revise vocabulary and `/adev:implement`'s Stage-2 cap, and state plainly that the plan has NOT been approved: Step 7 does not run, no charter Capability Map update, no `plan_task` `pending` events, no epic creation. |
+
+   Everything in Step 0 and Step 1 substeps 1-4 — the `.partial` lock STOP, `adev gate require` exiting `2`, and the `CODE_DRIFT` / `CODE_DRIFT_VERIFY_ERROR` / `CODE_DRIFT_READ_ERROR` blocks — runs *before* the `--status started` event and therefore strands nothing. Do not emit for those.
+
+   **Known gap (not this skill's to fix):** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot be carried on the event even though the `step_failed` schema has an `error` field. Name the code in operator-facing output; widening the CLI surface is a follow-up.
+
 ### Spec Mode — Workspace-Aware Target-Repo Detection
 
 After the Review Gate passes (Step 1) and before loading context (Step 2), check whether the spec declares a `target-repo:` field in its YAML frontmatter:

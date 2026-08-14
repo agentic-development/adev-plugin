@@ -36,6 +36,31 @@ In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode
 
 Emit a matching exit event in the new "Step Z: Emit lifecycle completion" section after the validation report is written. The exit event carries the aggregate verdict (PASS / PASS_WITH_NOTES / FAIL) computed from the consolidated check results.
 
+### Step 0a-fail: Failure-path exit event
+
+An aggregate `FAIL` verdict is **not** this section's business — a validation run that completed and concluded FAIL exits through the Step Z `--status completed --verdict FAIL` line. This section covers the case where validation aborts before it can compute any aggregate at all.
+
+Whenever the skill stops after the `--status started` event above without reaching Step Z, emit the terminal event before surfacing the error to the operator:
+
+```bash
+adev report --type step --spec <spec-path> --step validate --status failed --verdict FAIL
+```
+
+`--verdict FAIL` is required, not decorative. The projection's aggregation pass in `lib/lifecycle-state.mjs` only treats a step terminal as explicit when it carries a string verdict; a `step_failed` emitted without one is overwritten by the verdict synthesized from whatever `validator_report` events already landed, so a run that aborted after two passing checks would project as `{verdict: PASS, status: completed}` — a dead run indistinguishable from a clean one.
+
+Abort paths in this skill that MUST emit it:
+
+| Step | Abort |
+|---|---|
+| Preflight | `adev preflight run` reports `report.passed === false` — execution is blocked pending operator direction. The agent must never set `--no-infra` or `ADEV_NO_INFRA` autonomously to get past it. |
+| Preflight | `lib/infra-preflight.mjs` fails to import. |
+| Step 0 | `loadValidateConfig` throws `MISSING_VALIDATE_CONFIG` — no checks dispatch and no report is written. |
+| Step 0 | Any other `loadValidateConfig` loader error (`INVALID_CHECK_ID`, `DETERMINISTIC_PROJECT`, unresolvable prompt URI, profile resolution failure, `after` cycle) — "abort on any loader error". |
+
+The Prerequisites block (missing `.context-index/`, missing spec, missing implementation files) runs *before* the `--status started` event and therefore strands nothing — do not emit for those.
+
+**Known gap (not this skill's to fix):** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot be carried on the event even though the `step_failed` schema has an `error` field. Name the code in operator-facing output; widening the CLI surface is a follow-up.
+
 ## Workspace-Aware Validation Mode
 
 Before running the 12 checks, call `detectWorkspace(cwd)` from `lib/workspace.mjs`.
