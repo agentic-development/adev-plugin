@@ -69,6 +69,61 @@ test("/adev:implement states no silent fallback to inline parsing on ROUTING_SID
   );
 });
 
+// --- Stage 2 (code quality) review loop must be bounded ---------------------
+//
+// The Stage 2 loop used to read "Repeat until approved" — an unbounded
+// fix/review cycle with no convergence check and no escalation (MAST "step
+// repetition without progress"). Every sibling loop in this skill caps at 3.
+
+test("/adev:implement Stage 2 code-quality loop is not unbounded", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  assert.doesNotMatch(
+    md,
+    /repeat\s+until\s+approved/i,
+    "Stage 2 review loop must not be an unbounded 'repeat until approved'",
+  );
+});
+
+test("/adev:implement Stage 2 code-quality loop declares a 3-cycle cap", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  assert.match(
+    md,
+    /Maximum 3 code-quality review cycles per task/i,
+    "Stage 2 must cap review cycles the way Stage 1 and the visual loop do",
+  );
+});
+
+test("/adev:implement Stage 2 loop routes through the convergence primitive", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  assert.match(md, /lib\/loop-convergence\.mjs/);
+  for (const verdict of [
+    "NO_PROGRESS",
+    "REGRESSED",
+    "BUDGET_EXHAUSTED",
+    "CONTINUE",
+  ]) {
+    assert.match(
+      md,
+      new RegExp(verdict),
+      `Stage 2 loop must name the ${verdict} verdict`,
+    );
+  }
+});
+
+test("/adev:implement Stage 2 cap-trip escalates instead of proceeding", () => {
+  const md = readFileSync(SKILL_PATH, "utf8");
+  assert.match(
+    md,
+    /LOOP_BUDGET_EXHAUSTED/,
+    "cap-trip must have a named terminal outcome (shared LOOP_* vocabulary with /adev:build)",
+  );
+  assert.match(
+    md,
+    /Stage 2 has NOT passed/,
+    "a terminal non-PASS verdict must not fall through to 2h",
+  );
+});
+
 test("/adev:implement frontmatter must NOT declare context: fork", () => {
   const md = readFileSync(SKILL_PATH, "utf8");
   const frontmatterEnd = md.indexOf("---", 3);

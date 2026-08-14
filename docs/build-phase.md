@@ -44,7 +44,7 @@ See the [Skill Reference](skill-reference.md) for full details on modes and task
 /adev:route --plan .context-index/specs/features/auth/login.plan.md
 ```
 
-**Output:** Routing annotations added to the plan file with scores and recommendations per task.
+**Output:** A sibling `<plan-stem>.routing.json` sidecar holding scores and a recommendation per task. The plan file is read-only after `/adev:plan` authored it and is never modified by routing. Render the sidecar as a markdown table with `adev route render-sidecar --plan <path>`.
 
 See the [Skill Reference](skill-reference.md) for full details on the scoring matrix and routing modes.
 
