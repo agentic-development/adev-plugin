@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, readdirSync, rmSync, realpathSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, readdirSync, rmSync, realpathSync, lstatSync, readlinkSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -24,7 +24,36 @@ function readJson(path) {
   }
 }
 
+/**
+ * Write JSON, refusing to follow a symlink.
+ *
+ * `.claude/settings.json` is routinely tracked in git, and git tracks symlinks.
+ * The canonical flow is "clone a repo, then run `npx @adev-org/adev-cli
+ * install`" — the clone is attacker-controlled and the write happens before the
+ * operator has made any trust decision. A plain `writeFileSync` follows the
+ * link and overwrites whatever it points at, anywhere the user can write.
+ *
+ * `lstatSync` does not follow the final component, so this sees the link
+ * itself. Refusing is correct rather than replacing it: a symlinked settings
+ * file may well be a deliberate dotfile-manager setup, and silently clobbering
+ * that would be its own defect. Name it and let the operator decide.
+ */
 function writeJson(path, data) {
+  let st = null;
+  try {
+    st = lstatSync(path);
+  } catch {
+    // Does not exist yet — nothing to follow.
+  }
+  if (st?.isSymbolicLink()) {
+    const err = new Error(
+      `Refusing to write through a symlink: ${path} → ${readlinkSync(path)}\n` +
+        "  adev will not follow a link when writing settings. Replace it with a " +
+        "regular file, or point it somewhere you intend adev to write.",
+    );
+    err.code = "SETTINGS_PATH_IS_SYMLINK";
+    throw err;
+  }
   writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
 }
 

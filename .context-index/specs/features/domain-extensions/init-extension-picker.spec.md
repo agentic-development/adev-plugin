@@ -4,7 +4,7 @@ kind: behavioral
 status: validated
 risk_level: low
 milestone:
-revision: 2
+revision: 3
 charter-revision: 4
 created: 2026-05-20
 updated: 2026-05-20
@@ -55,9 +55,22 @@ drift_detected: true
 
 3. **When** the user selects `software` or `skip`, **then** `init` writes `domain: software` into `manifest.yaml` and does not invoke `installExtension()`. The two choices are semantically equivalent at this layer; the picker offers both so the UX expresses user intent.
 
-4. **When** the user runs `adev upgrade` and the project's `manifest.yaml` contains no `installed_extensions` entry of kind `domain-profile`, **then** `upgrade` presents the same picker as `init` (same catalog, same options).
+4. **REVISED at rev 3 (2026-08-14) — see adev-plugin-5j6n.** ~~When the user runs `adev upgrade` and the project's `manifest.yaml` contains no `installed_extensions` entry of kind `domain-profile`, then `upgrade` presents the same picker as `init`.~~
 
-5. **When** the user runs `adev init` or `adev upgrade` on a project that already has a `domain-profile` extension installed (a matching `installed_extensions` stamp in `manifest.yaml`), **then** the picker step is skipped, the existing top-level `domain:` value in `manifest.yaml` is preserved unchanged (no write), and the install-summary line prints `Domain: <installed-name>` to confirm the existing state.
+   The struck text is retained as the record of what rev 2 decided. It no longer
+   describes the shipped behavior: **`adev upgrade` does not present the picker.**
+   The picker writes `domain:` into `manifest.yaml`, which the CLI charter
+   reserves for the `/adev:init` skill (*"All context-layer configuration
+   … remains in the `/adev:init` skill, not the CLI"*). Running it at upgrade
+   time asked the operator to choose a domain from inside the installer, which
+   is the boundary violation `installer-consent-boundary.spec.md` AC-4 states.
+
+   **When** the user runs `adev upgrade` on a project with no `domain-profile`
+   extension, **then** `upgrade` performs no picker step and prints nothing
+   about domains; the choice is offered by `/adev:init` via
+   `adev domain-picker run`.
+
+5. **When** the `/adev:init` wizard runs on a project that already has a `domain-profile` extension installed (a matching `installed_extensions` stamp in `manifest.yaml`), **then** the picker step is skipped, the existing top-level `domain:` value in `manifest.yaml` is preserved unchanged (no write), and the install-summary line prints `Domain: <installed-name>` to confirm the existing state.
 
 6. **When** the picker step completes (whether the extension was installed in this run, skipped, or already-installed), **then** the `/adev:init` wizard reports exactly `Domain: <name>` (single canonical format, no variant), and `skills/init/SKILL.md` documents that wording. `cli/index.mjs` must NOT print it — the installer no longer runs the picker (see adev-plugin-5j6n).
 

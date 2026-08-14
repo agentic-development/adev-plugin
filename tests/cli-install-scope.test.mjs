@@ -16,7 +16,7 @@
 
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { createTempDir, cleanupTempDir } from "./helpers.mjs";
 
@@ -215,5 +215,64 @@ test("enable('project') when HOME equals cwd still leaves the plugin enabled", a
     j?.enabledPlugins?.[KEY],
     true,
     "the revoke must not delete the entry it just wrote when both scopes are one file",
+  );
+});
+
+// ── SEC-3: settings must never be written through a symlink ────────────────
+//
+// `.claude/settings.json` is routinely tracked in git, and git tracks symlinks.
+// The canonical flow is "clone a repo, then run `npx @adev-org/adev-cli
+// install`" — the attacker controls the clone, and the write happens before any
+// trust decision. writeFileSync follows a symlink and overwrites its target.
+//
+// sameFile()'s realpathSync catches only the self-collision case (both scopes
+// naming one file). It is an identity check, not a safety check: it does
+// nothing about a link pointing at a third location.
+
+test("enable() refuses to write project settings through a symlink", async () => {
+  const outside = join(projectDir, "outside-target.json");
+  writeFileSync(outside, JSON.stringify({ untouched: true }, null, 2));
+
+  const claudeDir = join(projectDir, ".claude");
+  mkdirSync(claudeDir, { recursive: true });
+  symlinkSync(outside, join(claudeDir, "settings.json"));
+
+  const a = await adapter();
+  let threw = null;
+  try {
+    a.enable("project");
+  } catch (err) {
+    threw = err;
+  }
+
+  const target = readJsonOrNull(outside);
+  assert.deepEqual(
+    target,
+    { untouched: true },
+    "the symlink target was overwritten — writeFileSync followed the link",
+  );
+  assert.ok(threw, "writing through a symlink must be refused, not silently skipped");
+  assert.match(String(threw.message), /symlink/i, "the error must name the reason");
+});
+
+test("enable() refuses to write user settings through a symlink", async () => {
+  const outside = join(tmpHome, "outside-user-target.json");
+  writeFileSync(outside, JSON.stringify({ untouched: true }, null, 2));
+
+  const claudeDir = join(tmpHome, ".claude");
+  mkdirSync(claudeDir, { recursive: true });
+  symlinkSync(outside, join(claudeDir, "settings.json"));
+
+  const a = await adapter();
+  try {
+    a.enable("user");
+  } catch {
+    /* expected */
+  }
+
+  assert.deepEqual(
+    readJsonOrNull(outside),
+    { untouched: true },
+    "the symlink target was overwritten",
   );
 });
