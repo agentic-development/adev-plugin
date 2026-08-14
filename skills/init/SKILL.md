@@ -949,9 +949,22 @@ your constitution whenever you edit it.
 
 ## Domain Extension Picker
 
-After the providers and context-index scaffold steps, `adev install` (and
-`adev upgrade` on projects with no installed domain profile) presents a
-single picker prompt to surface installed first-party domain extensions.
+Run the picker as part of this wizard, once the context index exists and
+before the closing summary:
+
+```bash
+adev domain-picker run
+```
+
+It prompts interactively and prints the picker result as JSON on stdout. If
+the project already has a domain extension stamped in `manifest.yaml`, the
+verb short-circuits and installs nothing.
+
+This step belongs to `/adev:init`, not to `adev install`. The picker writes
+`domain: <name>` into `manifest.yaml`, which is context-layer configuration —
+the CLI charter reserves that for this skill. It previously ran inside
+`adev install`/`adev upgrade`, which meant the user was asked to choose a
+domain before any project configuration existed to choose one for.
 
 The picker presents:
 
@@ -970,14 +983,17 @@ Consequences per choice:
   the existing `installExtension()` pipeline and writes
   `domain: <name>` into `manifest.yaml`.
 
-After the picker completes, the install-completion summary prints exactly:
+After the picker completes, report the outcome to the user using exactly this
+wording:
 
 ```
 Domain: <name>
 ```
 
-(canonical wording, no variant). The same banner string is used by `adev
-install`, `adev upgrade`, and this SKILL doc — they stay in lockstep.
+Use this exact label. Reworded variants are prohibited so the string stays
+greppable across the CLI, this doc, and the tests. This banner is now emitted
+by the init wizard rather than by the installer's completion summary, since
+the picker moved here.
 
 If you skip at picker time, you can install a domain extension later with:
 
@@ -990,3 +1006,46 @@ where `<source>` is a local path, npm package, or git URL.
 The picker is skipped silently when invoked at a workspace root (no
 current repo slug from `detectWorkspace()`). Workspace isolation rules
 (ADR-0005) prevent the picker from writing to a sibling repo's manifest.
+
+## Sync Targets (multi-provider projects)
+
+When the project uses more than one AI assistant, `manifest.yaml` decides which
+agent files `/adev:sync` generates. `adev install` scaffolds a sensible default
+for a fresh project and then stops — choosing *between* targets on an existing
+manifest is context-layer configuration and belongs here.
+
+If the project has multiple providers configured, offer:
+
+1. Sync to both `CLAUDE.md` and `AGENTS.md` (default)
+2. Sync to `CLAUDE.md` only
+3. Sync to `AGENTS.md` only
+
+Write the choice to `sync.targets` in `.context-index/manifest.yaml`, then run
+`/adev:sync` so the agent files match. Skip this step entirely for
+single-provider projects — there is nothing to choose.
+
+## Provenance Enforcement (optional)
+
+Provenance adds `Author-type` and `Operator` trailers to every commit, and the
+CI gate rejects commits missing them on PRs. It is off unless `manifest.yaml`
+carries a `provenance:` block.
+
+`adev upgrade` reports when a version makes this available, but no longer
+writes the block — it is project policy, not an install step. Offer it here:
+
+> Enable provenance enforcement? It stamps every commit with Author-type and
+> Operator trailers, and CI will reject commits that lack them.
+
+On yes, add to `.context-index/manifest.yaml`:
+
+```yaml
+provenance:
+  require_hooks: true
+  required_trailers:
+    - Author-type
+    - Operator
+```
+
+On no, say that it can be added later under `provenance:` in the manifest.
+Enabling it in a repo whose history predates the hooks only affects new
+commits — it does not retroactively invalidate anything.
