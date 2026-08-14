@@ -241,11 +241,20 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 
 ## <Reviewer Name> (<id>)
 
-**Verdict:** PASS | PASS_WITH_NOTES | BLOCK
+**Verdict:** PASS | PASS_WITH_NOTES | FAIL
 
 <findings list, or "No findings.">
 
 (repeat for each dispatched reviewer)
+
+> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated*
+> verdict in the header above, computed from post-cap findings across all
+> reviewers — PASS (zero warnings/blockers), PASS_WITH_NOTES (>=1 warning,
+> zero blockers), BLOCK (>= `verdict_rules.blocker_threshold` blockers,
+> default 1). See `configurable-reviewers.spec.md` behaviors 37-38. An
+> individual reviewer signals a blocker by emitting FAIL with a
+> blocker-severity finding, which is what the `reportReviewer` snippet in
+> Step 6a records.
 
 ---
 
