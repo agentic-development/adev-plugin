@@ -288,14 +288,14 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 > **Utility skill.** Primarily invoked by `/adev:build` as part of the end-to-end pipeline. You can also use it standalone to preview routing decisions before implementation.
 
-**Purpose:** Score each task in an implementation plan on four dimensions (spec completeness, pattern coverage, blast radius, novelty) and recommend a routing mode: auto-agent, assisted-agent, or human-only. Routing annotations integrate with `/adev:implement` to adjust execution per task.
+**Purpose:** Score each task in an implementation plan on four dimensions (spec completeness, pattern coverage, blast radius, novelty) and recommend a routing mode: auto-agent, assisted-agent, or human-only. Decisions are written to the sibling `<plan-stem>.routing.json` sidecar (the plan file itself is read-only after `/adev:plan`), and `/adev:implement` reads them from there to adjust execution per task.
 
 **Prerequisites:** A plan file must exist (produced by `/adev:plan`).
 
 **Arguments:**
 - `--plan <path>`: route all tasks in a plan file (required unless `--task` is used)
 - `--task <N>`: route a specific task number
-- `--dry-run`: show scores without writing annotations
+- `--dry-run`: show scores without writing the routing sidecar
 
 **Example:**
 ```
@@ -303,7 +303,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 /adev:route --plan .context-index/specs/features/auth/login.plan.md --task 3
 ```
 
-**Expected Output:** A routing table showing each task's scores and recommended execution mode, with annotations written to the plan file.
+**Expected Output:** A routing table showing each task's scores and recommended execution mode, with the decisions written to the sibling `<plan-stem>.routing.json` sidecar. The plan file is not modified. Inspect the sidecar as a markdown table with `adev route render-sidecar --plan <path>`.
 
 **Related Guides:** [Build Phase](build-phase.md)
 
