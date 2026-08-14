@@ -9,7 +9,7 @@
  * Usage: node viz/build.mjs [--root <path>]
  */
 
-import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync, statSync } from 'node:fs';
 import { join, basename, dirname, relative, extname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { getIssueManager } from '../lib/issues/registry.mjs';
@@ -866,7 +866,9 @@ function writeGraphData(projectName, analytics) {
     analytics,
   };
 
-  const outPath = join(root, 'viz', 'dist', 'graph-data.json');
+  const outDir = join(root, 'viz', 'dist');
+  mkdirSync(outDir, { recursive: true });
+  const outPath = join(outDir, 'graph-data.json');
   writeFileSync(outPath, JSON.stringify(data, null, 2));
   console.log(`Wrote ${outPath} (${nodes.length} nodes, ${edges.length} edges)`);
 }
