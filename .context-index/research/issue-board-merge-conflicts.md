@@ -19,6 +19,46 @@ status: complete
 
 # Avoiding Conflicts on the File-Based Issue Board
 
+## Status Since Publication (2026-08-14) — the storage-shape question is CLOSED
+
+**Axis 1 was decided against this document's recommendation, deliberately. Do not re-propose it.**
+
+The board migrated to the **beads backend** (`535c4a9a`, "switch the board to the beads
+backend"). `manifest.yaml::tasks.backend` is now `beads`, and the git artifact is
+`.beads/issues.jsonl` — **record-per-line JSONL**, not the file-per-issue shape the
+"Revised recommendation" below argues for.
+
+That means the tradeoff this document identifies was accepted with open eyes: under
+JSONL + last-writer-wins, two branches editing the *same* issue can silently discard one
+edit, where file-per-issue would have surfaced it as a git conflict. Beads was chosen
+anyway, and it brings machinery this document itself praised as "more developed than
+anything adev has" — the `br sync --flush-only` / `--import-only` / `--merge` (three-way,
+with `.beads/beads.base.jsonl` as ancestor) / `--reconcile` / `--witness` surface. The
+three-way merge in particular is a materially different answer to same-issue concurrency
+than the plain LWW this document modelled.
+
+**Also resolved since publication:**
+
+- **br version currency** — the local install is now **0.2.22** (was 0.1.45), so the
+  v0.2.19 merge-driven database-corruption fix is in. `MIN_BR_VERSION` and a
+  `br --version` preflight now exist in `lib/issues/beads-adapter.mjs`.
+- **Axis 2 (ID allocation)** — resolved by making IDs merge-safe (`mintFlatId`,
+  `beads-adapter.mjs:360-369`), composed with br's uniqueness constraint on
+  `external_ref`. issue-613 closed. This is option (a), which the document ranked below
+  (b)+(c); file-per-issue's "keeps readable IDs" argument no longer applies.
+- **epic-107 Phase 0a** — shipped across PRs #245–#256; the epic is closed.
+
+**Still live, now tracked** (do not re-derive these from this document):
+
+- `MIN_BR_VERSION` is `0.2.0`, but the corruption fix landed in **0.2.19** — the floor
+  admits exposed versions. *Untracked as of this note.*
+- `docs/configuration.md:216` still documents `backend: beads_rust`, which the code
+  rejects, while the real default `json` is undocumented — **issue-0qtm6x**.
+
+Everything below is preserved as written; it is a research record, not a living plan.
+Read the "Revised recommendation" and "Options, by axis" sections as the reasoning that
+*informed* the beads decision, not as outstanding work.
+
 ## Summary
 
 The board's **in-process** conflict problem is solved and shipped. Its **cross-branch**
