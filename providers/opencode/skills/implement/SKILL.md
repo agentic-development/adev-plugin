@@ -583,12 +583,37 @@ Dispatch a fresh code quality reviewer subagent with:
 - The Coding Standards section from the constitution
 - Any concerns from the implementer (if DONE_WITH_CONCERNS)
 - Secondary specialist matches from step 2a (so the reviewer checks those domains)
+- Instructions to tag every Critical or Important finding with a stable short id (for example `cq-1`, `cq-2`) and to reuse the same id across cycles for the same underlying finding. The ids are what make the convergence check below meaningful — without them, "the same three issues came back" is indistinguishable from "three different issues".
 
 The code quality reviewer checks the items in `code-quality-checklist.md` from this skill directory.
 
-**Critical or Important issues:** The implementer fixes them. The reviewer reviews again. Repeat until approved.
-
 **Minor issues:** Noted but do not block progress.
+
+**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum 3 code-quality review cycles per task**, matching the Stage 1 cap (2f) and the visual fix cap (2e). This is a hardcoded convention because no manifest knob exists for it yet; a config-backed budget mirroring `build.max_review_retries` (see `lib/manifest.mjs` and `skills/build/SKILL.md` Step 1) is a follow-up.
+
+Each cycle, compare the reviewer's Critical/Important finding ids against the previous cycle's set the way `/adev:build`'s BLOCK→revise loop does, using the convergence primitive `lib/loop-convergence.mjs` (`partitionBlockers` splits the two id sets into addressed / persistent / new; `evaluateStopCondition` turns that partition plus the cycles remaining into one verdict). Act on the verdict:
+
+| Verdict | Action |
+|---------|--------|
+| `PASS` | No Critical or Important findings remain. Stage 2 passes; proceed to 2h. |
+| `CONTINUE` | Findings were addressed (or this is the first cycle) and cycles remain. Decrement the remaining cycles and dispatch the implementer for another fix pass. |
+| `NO_PROGRESS` | The reviewer returned the identical Critical/Important id set — the fix pass changed nothing the reviewer can see. Stop with `LOOP_NO_PROGRESS`. |
+| `REGRESSED` | The fix pass introduced more new Critical/Important findings than it resolved. Stop with `LOOP_REGRESSED`. Preserve the work as-is (no rollback); the operator decides whether to revert. |
+| `BUDGET_EXHAUSTED` | The third cycle ended with Critical or Important findings still open. Stop with `LOOP_BUDGET_EXHAUSTED`. |
+
+**On any terminal non-PASS verdict, Stage 2 has NOT passed.** Do not fall through to 2h — the task is not marked complete, no `plan_task` `done` event is emitted, no governance gates run, and the next task is not started. Escalate through the existing blocker path from Step 2d: emit the `plan_task` `blocked` event and write execution state with `status: "blocked"`, `blockers` set to the outstanding Critical/Important findings, and `nextAction` set to the recommended fix.
+
+What the operator sees is a halt naming the outcome, not a silent pass:
+
+```text
+Task <N> (<task-title>): code-quality review did not converge — LOOP_BUDGET_EXHAUSTED
+after 3 cycles. Outstanding: cq-2 (Critical), cq-5 (Important).
+The task is NOT marked complete and implementation has stopped here.
+Fix the findings and re-run `/adev:implement --task <N>`, or run `/adev:recover`
+if the fix loop is stuck.
+```
+
+Use the same message shape for `LOOP_NO_PROGRESS` and `LOOP_REGRESSED`, substituting the verdict and (for `LOOP_REGRESSED`) noting which findings are newly introduced.
 
 #### 2h. Mark Task Complete
 
