@@ -26,7 +26,7 @@
 //               --spec <p>
 //               --step <name>
 //               --validator <id>
-//               --verdict <PASS|PASS_WITH_NOTES|FAIL>
+//               --verdict <PASS|PASS_WITH_NOTES|FAIL|BLOCK>
 //               [--error <text>] [--score <number>] [--duration-ms <number>]
 //               [--notes <text>] [--domain <name>]
 //   adev report --help
@@ -732,7 +732,7 @@ test("adev report --type step accepts PASS_WITH_NOTES verdict on completed", () 
 test("adev report --type step accepts FAIL verdict on completed", () => {
   // The lifecycle library accepts any verdict string on step_completed
   // (verdict is metadata, not enum-validated at the lib layer). The CLI
-  // however constrains verdict to the standard tri-state set used by
+  // however constrains verdict to the canonical verdict set used by
   // validator reports — this keeps the surface narrow and consistent.
   const dir = makeTempProject();
   try {
@@ -762,6 +762,45 @@ test("adev report --type step accepts FAIL verdict on completed", () => {
     const events = readLog(dir, "foo");
     const ev = events[events.length - 1];
     assert.strictEqual(ev.verdict, "FAIL");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step accepts BLOCK verdict on completed (issue-584)", () => {
+  // BLOCK is the consolidated verdict emitted by /adev:review-specs
+  // (SKILL.md § Verdict Logic: "at least one `blocker` finding" → BLOCK).
+  // The CLI rejected it before issue-584, so a blocked review either never
+  // reached the lifecycle log or was downgraded to FAIL.
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/foo.spec.md";
+    writeSpec(dir, specRel, "---\ncharter: m\n---\n# x\n");
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "review",
+        "--status",
+        "completed",
+        "--verdict",
+        "BLOCK",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+
+    const events = readLog(dir, "foo");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.event, "step_completed");
+    assert.strictEqual(ev.verdict, "BLOCK");
   } finally {
     cleanup(dir);
   }
@@ -1106,6 +1145,32 @@ test("--type reviewer appends reviewer_report event", () => {
     assert.strictEqual(reviewerEvents[0].reviewer, "structural-review");
     assert.strictEqual(reviewerEvents[0].verdict, "PASS_WITH_NOTES");
     assert.strictEqual(reviewerEvents[0].notes, "minor");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("--type reviewer accepts BLOCK verdict (issue-584)", () => {
+  const dir = makeTempProject();
+  const specRel = ".context-index/specs/features/m/x.spec.md";
+  writeSpec(dir, specRel, "---\ncharter: m\n---\n\n# X\n");
+  try {
+    const r = spawnSync(
+      "node",
+      [
+        CLI, "report", "--type", "reviewer",
+        "--spec", specRel,
+        "--step", "review",
+        "--reviewer", "structural-review",
+        "--verdict", "BLOCK",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+    const log = readSlugLog(dir, "x");
+    const reviewerEvents = log.filter((e) => e.event === "reviewer_report");
+    assert.strictEqual(reviewerEvents.length, 1);
+    assert.strictEqual(reviewerEvents[0].verdict, "BLOCK");
   } finally {
     cleanup(dir);
   }
