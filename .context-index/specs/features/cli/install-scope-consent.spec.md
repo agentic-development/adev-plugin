@@ -5,7 +5,7 @@ charter: cli
 kind: behavioral
 status: draft
 risk_level: high
-revision: 1
+revision: 2
 charter-revision: 4
 created: 2026-08-14
 updated: 2026-08-14
@@ -51,7 +51,7 @@ The `cursor` branch (`cli/index.mjs:680`) hardcodes `scope: "user"` with no prom
 
 5. **When** either answer is given, **then** `~/.claude/plugins/installed_plugins.json` records the scope the user actually chose. `updateRegistry()` currently hardcodes `scope: existing?.scope || "user"` (`adapter.mjs:99-117`) and must instead receive and persist the chosen scope.
 
-6. **When** a user who previously installed at `user` scope re-runs `adev install` and answers `project`, **then** the pre-existing user-scope entry is either removed or the user is told explicitly that it remains. Silently leaving it is the defect this spec exists to close; which of the two is chosen is an implementation decision that MUST be documented in the fix.
+6. **When** a user who previously installed at `user` scope re-runs `adev install` and answers `project`, **then** the pre-existing user-scope entry is **removed**. (Operator decision, 2026-08-14. "Warn and leave it" was the other candidate and was rejected: it leaves the machine in exactly the state the operator declined.) Removal is surgical — only adev's own key is deleted, and other plugins' entries are untouched.
 
 7. **When** `adev install --target cursor` runs, **then** the hardcoded `scope: "user"` is either replaced by the same prompt or documented in the charter as intentional. This spec does not mandate which; it mandates that the choice stops being implicit.
 
@@ -61,9 +61,9 @@ The `cursor` branch (`cli/index.mjs:680`) hardcodes `scope: "user"` with no prom
 
 - **`extraKnownMarketplaces`** (`adapter.mjs:138-172`) also writes user-level state. Whether a `project`-scoped install may still write it is a real question, but a marketplace registration is not a per-project enablement and conflating the two would widen this spec past the consent defect. Decide it separately; if the fix touches that code path, say so explicitly in the PR.
 
-- **The domain-extension picker** (`runDomainPicker()` at `cli/index.mjs:975` and `:1128`) is the second defect filed under `adev-plugin-5j6n`. It is a *lifecycle placement* problem — the picker runs at install time but belongs at init time, and fixing it requires adding a picker step to `/adev:init` plus rewriting a ~40-line section of `skills/init/SKILL.md`. That is a different change with a different blast radius. Track it separately rather than folding it in here.
+- ~~**The domain-extension picker**~~ — **RESOLVED, no longer out of scope.** This was deferred when the spec was written, on the reasoning that lifecycle placement is a different blast radius. A prompt audit of the whole install path then found two more prompts writing context-layer configuration (the sync-target chooser and provenance enforcement), which made the three a single boundary problem rather than one stray call. All three moved to `/adev:init` together. The general rule now lives in `installer-consent-boundary.spec.md` AC-4/AC-5; this spec keeps only the scope-consent behavior.
 
-- **Git-hook chaining** (`adev-plugin-sewt`) shares the "installer acts without consent" theme but touches `setupGitHooks()` and the generated wrapper, with no overlap in the files above.
+- **Git-hook chaining** (`adev-plugin-sewt`) shares the "installer acts without consent" theme but touches `setupGitHooks()` and the generated wrapper, with no overlap in the files above. Both are now governed by the shared contract in `installer-consent-boundary.spec.md`, which states the rule this spec is one instance of.
 
 ## Verification
 
