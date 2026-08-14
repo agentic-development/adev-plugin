@@ -45,3 +45,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP - no UI files in implementation diff (case A)","ts":"2026-05-22T13:18:02.370Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-22T13:19:19.415Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-24T15:04:31.479Z","ts":"2026-05-24T15:04:31.479Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"debug_intervention","kind":"debug","note":"Chained hook wrapper failed open: [-x] conflated absent/non-executable/runnable into silent exit 0. Now fails closed; original path made repo-relative; .adev gitignored.","ts":"2026-08-14T19:54:29.442Z"}
