@@ -18,8 +18,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { writeFileSync, chmodSync, mkdirSync, rmSync } from "node:fs";
+import { writeFileSync, chmodSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { buildChainedHook } from "../cli/index.mjs";
 import { createTempDir, cleanupTempDir } from "./helpers.mjs";
 
@@ -220,4 +221,92 @@ test("hook arguments are forwarded to both hooks", () => {
   } finally {
     cleanupTempDir(dir);
   }
+});
+
+// ── Injection and containment (adev-plugin-hookspath-command-injection) ─────
+//
+// `core.hooksPath` is read with `git config --get` and flows into the emitted
+// bash. `$(...)` expands INSIDE double quotes, so a crafted value becomes code
+// in a file that is chmod 755, tracked, and run by git on every commit. The
+// payload executes while the shell computes the variable — before any -e/-x
+// check — so the fail-closed guard does not contain it.
+//
+// Precondition is prior config-write access (an npm postinstall, a bootstrap
+// script), NOT a hostile clone: .git/config is never tracked and never
+// transferred by clone. That was verified before these tests were written.
+
+import { execFileSync as execFile } from "node:child_process";
+
+/** Emit a wrapper for a hostile path and run it; return whether the payload fired. */
+function payloadFires(hostilePath, sentinel) {
+  const dir = createTempDir();
+  try {
+    rmSync(sentinel, { force: true });
+    const hookDir = join(dir, ".githooks");
+    mkdirSync(hookDir, { recursive: true });
+    writeFileSync(join(hookDir, "pre-commit.adev"), "#!/usr/bin/env bash\nexit 0\n");
+    chmodSync(join(hookDir, "pre-commit.adev"), 0o755);
+
+    const wrapper = buildChainedHook("pre-commit.adev", hostilePath, "pre-commit");
+    const wrapperPath = join(hookDir, "pre-commit");
+    writeFileSync(wrapperPath, wrapper);
+    chmodSync(wrapperPath, 0o755);
+
+    try {
+      execFile("bash", [wrapperPath], { stdio: ["pipe", "pipe", "pipe"] });
+    } catch {
+      /* non-zero exit is expected — we only care whether the payload ran */
+    }
+    return existsSync(sentinel);
+  } finally {
+    rmSync(sentinel, { force: true });
+    cleanupTempDir(dir);
+  }
+}
+
+test("a $(...) payload in the chained path does not execute", () => {
+  const sentinel = join(tmpdir(), "adev-injection-probe-cmdsub");
+  assert.equal(
+    payloadFires(`$(touch ${sentinel})/h/pre-commit`, sentinel),
+    false,
+    "command substitution in core.hooksPath reached the generated shell",
+  );
+});
+
+test("a backtick payload in the chained path does not execute", () => {
+  const sentinel = join(tmpdir(), "adev-injection-probe-backtick");
+  assert.equal(
+    payloadFires("`touch " + sentinel + "`/h/pre-commit", sentinel),
+    false,
+    "backtick substitution in core.hooksPath reached the generated shell",
+  );
+});
+
+test("the emitted wrapper never contains an unquoted expansion of the chained path", () => {
+  // Belt and braces alongside the execution tests: the path must be emitted as
+  // a single-quoted bash literal, where $ and ` are inert.
+  const wrapper = buildChainedHook("pre-commit.adev", "$(id)/h/pre-commit", "pre-commit");
+  const line = wrapper.split("\n").find((l) => l.trimStart().startsWith("ORIGINAL="));
+  assert.ok(line, "wrapper must assign ORIGINAL");
+  // $REPO_ROOT is ours and must expand, so it stays double-quoted. The
+  // untrusted path must sit in a single-quoted literal where $ and ` are inert.
+  assert.match(line, /'\$\(id\)\/h\/pre-commit'/, "the untrusted path must be a single-quoted literal");
+
+  // Strip the one legitimate double-quoted span ("$REPO_ROOT") and assert no
+  // double-quoted region remains that could expand the payload.
+  const withoutOurExpansion = line.replace(/"\$REPO_ROOT"/, "");
+  assert.doesNotMatch(
+    withoutOurExpansion,
+    /"/,
+    "no other double-quoted span may carry the untrusted path — $() expands inside one",
+  );
+});
+
+test("a single quote in the chained path cannot break out of the literal", () => {
+  const sentinel = join(tmpdir(), "adev-injection-probe-quote");
+  assert.equal(
+    payloadFires(`'$(touch ${sentinel})'/h/pre-commit`, sentinel),
+    false,
+    "an embedded single quote escaped the literal",
+  );
 });

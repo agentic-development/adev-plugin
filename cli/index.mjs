@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, realpathSync } from "fs";
-import { join, resolve, dirname, relative } from "path";
+import { join, resolve, dirname, relative, isAbsolute } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 import { createInterface } from "readline";
@@ -327,6 +327,50 @@ function scaffoldContextKit() {
  * Detect the current git core.hooksPath setting.
  * @returns {string|null} The configured hooks path, or null if unset / not a git repo.
  */
+/**
+ * Quote a string as a bash single-quoted literal.
+ *
+ * Inside single quotes bash expands nothing — no `$(…)`, no backticks, no `$`.
+ * The only character that cannot appear is `'` itself, which is emitted by
+ * closing the literal, adding an escaped quote, and reopening: `'\''`.
+ *
+ * Used for every externally-sourced value written into a generated hook.
+ */
+function shellSingleQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * Reject a `core.hooksPath` that cannot be safely used.
+ *
+ * Two independent problems, both reachable from a value written by anything
+ * with config-write access (an npm postinstall, a bootstrap script — NOT a
+ * clone, which never carries .git/config):
+ *
+ *   1. Shell metacharacters become code in the generated wrapper. Quoting
+ *      (shellSingleQuote) is the containment; this allowlist is the control.
+ *   2. A path outside the repository is "relative" but not "contained" —
+ *      `../../husky/pre-commit` resolves to a directory the installer does not
+ *      own on a teammate's machine or a CI runner, and the wrapper executes
+ *      whatever is there.
+ *
+ * @returns {{ ok: true } | { ok: false, reason: string }}
+ */
+function validateHooksPath(rawPath, repoRoot) {
+  if (!/^[A-Za-z0-9._\/-]+$/.test(rawPath)) {
+    return {
+      ok: false,
+      reason: "contains characters that are unsafe in a generated shell script (allowed: letters, digits, . _ - /)",
+    };
+  }
+  const resolved = resolve(repoRoot, rawPath);
+  const rel = relative(repoRoot, resolved);
+  if (rel.startsWith("..") || isAbsolute(rel)) {
+    return { ok: false, reason: `resolves outside the repository (${resolved})` };
+  }
+  return { ok: true };
+}
+
 function getExistingHooksPath() {
   try {
     const raw = execSync("git config --get core.hooksPath", {
@@ -421,7 +465,11 @@ if adev_require_hook "$ADEV_HOOK" "adev hook"; then
 fi
 
 # Run original hook — repo-relative, resolved here at run time.
-ORIGINAL="$REPO_ROOT/${originalHookPath}"
+# The path is a SINGLE-QUOTED literal on purpose: $(…) and backticks expand
+# inside double quotes, so a crafted core.hooksPath would otherwise become code
+# in this file — which is chmod 755, tracked, and run by git on every commit.
+# $REPO_ROOT is concatenated outside the literal so it still expands.
+ORIGINAL="$REPO_ROOT"/${shellSingleQuote(originalHookPath)}
 if adev_require_hook "$ORIGINAL" "chained original hook"; then
   "$ORIGINAL" "$@"
   exit $?
@@ -449,6 +497,30 @@ async function setupGitHooks() {
   let chainFromPath = null;
 
   if (isConflict) {
+    // Validate BEFORE offering to chain. This value is written by whatever set
+    // core.hooksPath — an npm postinstall or a bootstrap script can put shell
+    // metacharacters or an out-of-repo path there, and chaining would bake it
+    // into a tracked, executable wrapper that git runs on every commit.
+    const verdict = validateHooksPath(existingHooksPath, cwd);
+    if (!verdict.ok) {
+      warn(`Refusing to chain: core.hooksPath ${verdict.reason}`);
+      console.log();
+      console.log(`  Value: ${existingHooksPath}`);
+      console.log("  adev will not generate a hook wrapper from this path.");
+      console.log("  Fix core.hooksPath (git config core.hooksPath <path>), then re-run.\n");
+      console.log("    [1] Replace — switch to .githooks/ and discard the old hooks path");
+      console.log("    [2] Skip — don't install git hooks (default)\n");
+
+      const unsafeChoice = await ask("Enter choice (1-2) [2]: ");
+      if (unsafeChoice !== "1") {
+        log("Skipped git hooks. Claude Code merge-guard hook is still active.");
+        return created;
+      }
+      // Fall through with chainFromPath left null — behaves as "replace".
+      ensureDir(githooksDir);
+      warn("Replacing hooks path; the previous hooks are no longer invoked.");
+    } else {
+
     warn(`Existing core.hooksPath detected: ${existingHooksPath}`);
     console.log();
     console.log("  adev uses .githooks/ for git hooks (commit guards, spec trailers).");
@@ -484,6 +556,7 @@ async function setupGitHooks() {
         log("  The .adev files are generated and gitignored — do not commit them.");
       }
     }
+    } // end of the validated-path branch
   }
 
   ensureDir(githooksDir);
