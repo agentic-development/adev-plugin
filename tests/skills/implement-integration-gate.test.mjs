@@ -8,7 +8,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("implement SKILL.md — unified integration gate", () => {
   const skillPath = join(__dirname, "..", "..", "skills", "implement", "SKILL.md");
-  const content = readFileSync(skillPath, "utf8");
+  const skill = readFileSync(skillPath, "utf8");
+
+  // The Step 2-post body was extracted to a conditional-loading companion when
+  // implement/SKILL.md crossed the 65,536-byte cap the Copilot provider enforces.
+  // Resolve the companion FROM the pointer rather than hardcoding its path, so a
+  // rename or a dropped pointer fails here instead of silently reading nothing.
+  const pointer = skill.match(
+    /### Step 2-post: Integration Gate\s*\n\s*\n> \*\*Conditional loading:\*\* Read `([^`]+)`/,
+  );
+  assert.ok(
+    pointer,
+    "Step 2-post must carry a `Conditional loading:` pointer to its companion",
+  );
+  const companionPath = join(__dirname, "..", "..", pointer[1]);
+  const content = readFileSync(companionPath, "utf8");
 
   it("should read integration gates from governance/gates.yaml", () => {
     const step2post = content.substring(content.indexOf("Step 2-post"));
@@ -49,17 +63,41 @@ describe("implement SKILL.md — unified integration gate", () => {
 
 describe("implement SKILL.md — Step 2-post merged gate source and severity", () => {
   const skillPath = join(__dirname, "..", "..", "skills", "implement", "SKILL.md");
-  const content = readFileSync(skillPath, "utf8");
+  const skill = readFileSync(skillPath, "utf8");
 
-  // Bound the assertions to Step 2-post: Step 2h legitimately reads
-  // governance/gates.yaml directly and must not be caught by them.
-  const start = content.indexOf("### Step 2-post: Integration Gate");
-  const end = content.indexOf("### Step 3: Final Review", start);
-  const section = content.substring(start, end);
+  // Same extraction as the block above: Step 2-post's body now lives in a
+  // conditional-loading companion. Resolved from the pointer, not hardcoded.
+  const pointer = skill.match(
+    /### Step 2-post: Integration Gate\s*\n\s*\n> \*\*Conditional loading:\*\* Read `([^`]+)`/,
+  );
+  assert.ok(
+    pointer,
+    "Step 2-post must carry a `Conditional loading:` pointer to its companion",
+  );
+  const content = readFileSync(join(__dirname, "..", "..", pointer[1]), "utf8");
+
+  // Bounding used to be necessary because Step 2h sits in the same file and
+  // legitimately reads governance/gates.yaml directly, so unbounded assertions
+  // would have caught it. Extraction makes the companion the bound: it contains
+  // Step 2-post and nothing else, so `section` is the whole file.
+  const start = content.indexOf("# Step 2-post: Integration Gate");
+  const section = content;
 
   it("locates a bounded Step 2-post section", () => {
-    assert.ok(start > -1, "Step 2-post heading must exist");
-    assert.ok(end > start, "Step 3 heading must follow Step 2-post");
+    assert.ok(start > -1, "Step 2-post heading must exist in the companion");
+    // The bound is now the file boundary. Assert the companion did not absorb a
+    // neighbouring step during extraction — that would silently widen every
+    // assertion below and reintroduce the Step 2h false-positive this guards.
+    // Checked on HEADINGS, not prose: the body legitimately cross-references
+    // Step 2h and Step 3 in sentences, and forbidding the words would fail on
+    // correct content.
+    const headings = content.split("\n").filter((l) => /^#{1,3} /.test(l));
+    assert.equal(
+      headings.length,
+      1,
+      `companion must contain exactly one section heading, got: ${headings.join(" | ")}`,
+    );
+    assert.match(headings[0], /Step 2-post: Integration Gate/);
   });
 
   it("sources integration gates from the merged gate list via adev domain load-gates", () => {
