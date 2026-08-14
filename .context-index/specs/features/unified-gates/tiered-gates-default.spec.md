@@ -32,6 +32,7 @@ source-manifest:
     - tests/skills/init-governance-scaffolding.test.mjs
     - tests/templates/gates-template.test.mjs
   computed-at: "2026-08-13T17:32:39.284Z"
+drift_detected: true
 ---
 
 # Live Spec: Tiered Gates by Default — Active Integration Tier in the Gates Template
