@@ -1,23 +1,24 @@
 ---
 spec: .context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md
-verdict: BLOCK
 date: 2026-08-15
+verdict: BLOCK
 rigor-tier: full
-tier-source: explicit --tier full
-last-reviewed-revision: 2
-file-sha: cdeac7e4d3f21e39e497130ded90460d02176ee419a23b40bb237a610ccb3b28
+last-reviewed-revision: 3
+file-sha: 66d5a991d032738e684fa170d30dcb1c228bc49bd278bc486c75ffe70f6b1c9a
 reviewers-dispatched: 3
-blockers: 11
+findings-total: 16
+blockers: 6
 warnings: 7
-suggestions: 1
+suggestions: 3
 ---
 
 # Architecture Review: extension-governance-merge-hardening
 
 > **Date:** 2026-08-15
-> **Spec:** `.context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md` (revision 2)
-> **Charter:** none (cross-cutting spec; affects `domain-extensions`, `validation`, `unified-gates`)
-> **Rigor tier:** full (explicit `--tier full`; `risk_level: high` → `review_mode: full` would resolve the same)
+> **Spec:** `.context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md` (revision 3)
+> **Charter:** none (cross-cutting spec; `affects: [domain-extensions, validation, unified-gates]`)
+> **Rigor tier:** full (explicit `--tier full`)
+> **Risk level:** high
 > **Verdict:** BLOCK
 
 ## Reviewers Dispatched
@@ -28,223 +29,165 @@ suggestions: 1
 | security-reviewer | Security Reviewer | subagent | reviewer-capable | `plugin:review-specs/security-reviewer-prompt.md` |
 | consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | `plugin:review-specs/consistency-analyzer-prompt.md` |
 
-Registry: `templates/domains/software/reviewers.yaml` (resolved domain `software`, source level `default`); `.context-index/governance/review.yaml` holds `reviewers: []`, so no project overlay applied. No load warnings.
+Registry resolution: domain `software` (source level `default`), `.context-index/governance/review.yaml` carries `reviewers: []`, so the three bundled defaults dispatched unmodified. `severity_cap: blocker` on all three — no finding was demoted. Skill extensions: `__NONE__`.
 
-Heuristics injected: 3 (module `domain-extensions`).
+## What rev 3 got right
 
-## Revision-2 closure verification
+Recorded first because it bounds the remaining work. All three reviewers independently verified the following citations against source and found them accurate:
 
-Rev 1 drew 12 blockers, all of one class: behavior specified against mechanisms that do not exist. The closures were checked against the mechanism, not the claim.
-
-| Rev-1 blocker | Claimed closure | Verified? |
-|---|---|---|
-| `bc1f397a` / `f1a38fe5` — co-claimed Changes Catalog items | Parent pruned; `source:` declared here | **Yes.** `explicit-governance-registries.spec.md` no longer names `inferRootKey`, `serializeGovernanceYaml`, the test fixup, or the uninstall verb. Parent line 105 defers `source:` declaration to this spec. Dependency is one-way. |
-| `4613f443` / `520c0f2c` — uninstall reversal | Dropped entirely | **Partially.** Behavior 9, Step 4, the table row and AC 9 are gone, and no `uninstallExtension` exists in `lib/`. But the Module Impact Map still says "uninstall gains governance reversal" (CON-3 / SA-8). |
-| `d010f2a7` — append-injection "closed by construction" | `command` absent from every allowlist | **For `command`, yes.** But the accompanying Invariant 6 ("an extension can never contribute an executable field") is false: `runner` is on the `diagnostics.yaml` allowlist and is `import()`-ed and invoked (SA-1 / SEC-2). |
-| `268105f2` — escaping with no algorithm | Switched to rejection, `GOVERNANCE_SCALAR_UNSAFE` | **Direction correct, coverage incomplete.** The rejection set omits the flow indicators `{`/`[` and the scalar-type coercions, so Invariant 2 is false against the repo's own parser (SEC-1 / SA-2). |
-| `d2eb2a69` / `4a60dc78` — comment preservation | In-place line splice | **Not established.** The splice is specified only tightly enough to work on `validate.yaml`; it is underspecified or wrong for `boundaries.yaml`, `review.yaml` and `gates.yaml` (SA-4 / SEC-4). |
-| `e36744fa` — registry table never enumerated | Five-row writable table | **Yes.** All five root keys match the files on disk; `validators` → `checks` is corrected; seven files exist and exactly two are excluded. |
-| `7a4914e2` — allowlist contents undefined | Per-registry allowlists enumerated | **Enumerated, but three rows are wrong** (SA-3, SA-5, CON-4, CON-5, CON-6). |
-| `c1a46dad` — unenumerated writable set | Same table | **Yes.** |
-| `62c5590b` — `catch { start fresh }` | `GOVERNANCE_PARSE_REFUSED` | **Yes.** Correctly replaces the destructive fallback at `content-install.mjs:187-189`. |
-
-Net: 5 of 9 closure classes hold. Four were closed by assertion rather than mechanism, which is the same defect class rev 1 was blocked for — now relocated into the newly-added normative tables.
+- `lib/domains/merge-gates.mjs:29-33` — `command` is a required field; a gate lacking it is discarded with `INVALID_GATE`. The rev-3 conclusion that `gates.yaml` has no safe writable subset follows, and rev 2's "omit `command` from the gate allowlist" fix would indeed have broken the feature rather than secured it.
+- `lib/gates/doctor.mjs:965` — `spawnSync("sh", ["-c", command])`, the execution sink.
+- `lib/profiles/yaml.mjs` — integer coercion (`:179`), flow-map parsing, and `unquote`'s no-unescape behavior (`:244-252`). Invariant 2 and Behavior 7's flow-indicator set are correctly grounded, and Behavior 8's non-string-`id` refusal is real.
+- `lib/diagnostics/index.mjs` — a containment guard of the shape Invariant 6 describes exists (raw `..` rejection → prefix-scoped roots → realpath → per-root containment).
+- The writable-registry → root-key table: `checks` / `reviewers` / `diagnostics` / `boundaries` all match their loaders and their on-disk files. Seven registries on disk, confirmed.
+- The `diagnostics.yaml` allowlist row matches `validateEntryShape` verbatim.
+- The three splice forms are all genuinely present on disk (`boundaries: []`, `reviewers: []`, indented comment scaffolds).
+- Dropping `MERGE_WOULD_TRUNCATE` is self-consistent with the in-place splice.
+- The one-way dependency framing against `explicit-governance-registries.spec.md` agrees on both sides.
 
 ## Structural Architect (structural-architect)
 
 **Verdict:** BLOCK
 
-### SA-1 — `blocker` — internal-contradiction
+### SA-1 — blocker
 
-- **blocker_id:** `structural-architect:internal-contradiction:bc5f4de7`
-- **section_anchor:** `invariants-6`
-- **Location:** Invariant 6 / Improvements ("The write is inert") / Changes Catalog per-registry allowlist
+- **blocker_id:** `structural-architect:allowlist-schema-mismatch:621ebb0e`
+- **section_anchor:** `changes-catalog`
+- **Location:** Changes Catalog → per-registry field allowlist, `validate.yaml` row; Target State → "The write is inert"; Behavior 9; Acceptance Criteria (reference-extension row)
 
-Invariant 6 states "an extension can never contribute an executable field," and Improvements claims it "cannot contribute an executable field at all." The `diagnostics.yaml` allowlist includes `runner`, and Behavior 8 refuses `runner` only *outside* `diagnostics.yaml`. `runner` is a module path that `lib/diagnostics/index.mjs` resolves and imports for execution (`:78-136`, dispatch at `:230`), including `project:` paths under `.context-index/diagnostics/`. The spec even routes extensions there ("an extension needing to run something ships a `diagnostics.yaml` runner"). The invariant is asserted, not delivered.
+The `validate.yaml` row is not derived from its consumer. `lib/governance/validate-config.mjs` reads `fail_fast` (`:246`) — absent from the row — and `validateQualityGate` (`:431-435`) makes `command` **required** for `kind: quality-gate`, rejecting entries without it as `QUALITY_GATE_COMMAND_MISSING`. `kind` is allowlisted with no value constraint, so an extension may declare `quality-gate` but can never satisfy it. This is precisely the rev-2 failure the spec says it corrected for `gates.yaml`, relocated to a registry that *is* writable. The sole consumer proves it: `extensions/example-validation-check/adev-extension.yaml` declares `target: validate.yaml`, `kind: quality-gate`, `command: [bash, …/check.sh]` — refused outright under this allowlist and unfixable by dropping `command`. The acceptance criterion "or is updated in the same change if it does not" cannot be met; there is no valid rewrite. The converse horn: `validate.yaml` carries an executable `command` field, so "an extension cannot contribute an executable field at all" and Behavior 9's "no install path introduces a shell string" are both false as scoped. (`deterministic-check` is likewise dead for extensions, restricted to `BUNDLED_DETERMINISTIC_IDS` at `:214`.)
 
-**Recommendation:** State the actual property — extensions cannot contribute a *shell* body; module execution via `runner` is permitted and bounded by the diagnostics containment guard — and reword Invariant 6 and the Improvements bullet to match Behavior 8.
+**Recommendation:** Decide `validate.yaml`'s executable surface explicitly, as was done for `gates.yaml`: either constrain `kind` to a value subset needing no `command` (`subagent-review`, `observational`) and state that consequence for the reference extension, or admit `command` with its argv-list-only, no-interpolation, no-`shell`, no-`cwd` constraints (`:437-476`) restated as spec obligations. Add `fail_fast` either way, and reconcile the "inert" claim and Behavior 9 with whichever is chosen.
 
-### SA-2 — `blocker` — ambiguous-behavior
+### SA-2 — blocker
 
-- **blocker_id:** `structural-architect:ambiguous-behavior:fb8572c9`
-- **section_anchor:** `behaviors-7`
-- **Location:** Behavior 7 / "Scalar rejection, not escaping" / Invariant 2
+- **blocker_id:** `structural-architect:nested-shape-unspecified:6b6a9cf0`
+- **section_anchor:** `changes-catalog`
+- **Location:** Changes Catalog → per-registry field allowlist, `review.yaml` row; Behavior 7; Migration Path Step 2
 
-The rejection set (newline, CR, `"`, `'`, `#`, leading `-`/`?`/`:`) is presented as exhaustive and Invariant 2 rests on it, but `lib/profiles/yaml.mjs::parseInlineValue` (`:181-182`) converts any value that starts with `[` or `{` into a flow sequence or flow map. A `{`-leading value yields a mapping whose **keys are extension-supplied** (`parseFlowMap`, `:185-199`) — precisely "extension input becomes YAML structure." `&`, `*`, `!`, `|`, `>` and bare `true`/`false`/integer coercion (`:177-179`) are likewise unaddressed.
+`patterns`, `keywords`, `min_score` are listed as top-level `review.yaml` fields. `review-config.mjs` never reads them there — they live at `dispatch.triggered.{patterns,keywords,min_score}` (`:97-103`, `:180+`). More structurally: the allowlist is a flat name list with no depth semantics, yet `review.yaml`'s schema is nested and mandatory — `validateReviewer` requires exactly one of `prompt` (string) or `package` (**object**, with required `package.skill` and `package.adapter`, `:349-411`), and `dispatch` in `triggered` form is an object. Three contracts are undefined for nested values: (a) whether allowlisting `package`/`dispatch` admits arbitrary sub-keys unchecked, defeating the exhaustiveness claim; (b) Behavior 7 says "any supplied scalar" without specifying traversal into nested maps; (c) Step 2's splice never says how an object-valued field is emitted — today's `serializeGovernanceYaml` handles only scalars and string arrays, and `validateGovernanceEntry` (`:95-96`) rejects nested objects outright, so `review.yaml` is currently unwritable in its own required shape.
 
-**Recommendation:** Derive the rejection set from the parser's own scalar/non-scalar boundary rather than enumerating characters, and add an acceptance criterion for a `{`/`[`-leading value.
+**Recommendation:** Replace the three phantom fields with `dispatch` in its documented forms, and state the allowlist's depth contract: which fields may be objects, the permitted key set at each level, that scalar rejection applies recursively to every leaf, and that the splice emits nested maps. Then re-derive whether `package` — which resolves and invokes an external skill plus adapter (ADR-0003 §Decision) — belongs in the writable set at all, using the same reasoning applied to `gates.yaml`.
 
-### SA-3 — `blocker` — missing-mechanism
+### SA-3 — warning
 
-- **blocker_id:** `structural-architect:missing-mechanism:b8779d75`
-- **section_anchor:** `changes-catalog-added`
-- **Location:** Changes Catalog → per-registry field allowlist, `gates.yaml` row
+**Location:** Behaviors 2 and 9, Acceptance Criteria, Improvements.
 
-The row is justified by "an extension can declare a gate's metadata but never its executable body." No such entity exists. `lib/domains/merge-gates.mjs::validateGate` (`:29-32`) treats `command` as **required** and skips any gate lacking it with `INVALID_GATE`; `:34-40` further requires argv-list form. Every extension-contributed gate is therefore silently discarded by the only consumer. The allowlist also omits `kind` and `group`, both in `gates.yaml`'s own documented schema (`:8`, `:15`), while adding `description`, which is not. This is the rev-1 class recurring: a permitted write against a mechanism that does not exist.
+"not one of the **five** known registry files" contradicts the four-row table and Invariant 5 ("one of the four writable registries"). `install.mjs` constraining `target` to a "known registry set" inherits the ambiguity. Normalize every occurrence to four.
 
-**Recommendation:** Either move `gates.yaml` into the non-writable set alongside `risk-policies.yaml`/`sensitive-paths.yaml`, or specify what a command-less gate means to `merge-gates` and `doctor` before allowlisting the file.
+### SA-4 — warning
 
-### SA-4 — `blocker` — underspecified-mechanism
+**Location:** Changes Catalog → `gates.yaml` exclusion rationale.
 
-- **blocker_id:** `structural-architect:underspecified-mechanism:1c91d3a7`
-- **section_anchor:** `migration-path-step-2`
-- **Location:** Migration Step 2 ("locates the target key's block by line range, replaces exactly those lines")
+Routing all extension execution to `diagnostics.yaml` reads against ADR-0010's role table, which names diagnostics **NOT for** "Shell-command quality gates (use `gates.yaml`)" and scopes it to artifact-level verifiability; decision-flow step 2 sends deterministic commands to `gates.yaml`. The substitution is defensible for *third-party* contributions but is a narrowing ADR-0010 does not make. State it as a third-party-specific exception rather than as what "ADR-0010 assigns that surface."
 
-Two of the five writable registries hold inline empty flow collections followed by indented commented examples: `boundaries.yaml:6` (`boundaries: []`, comments at `:7-21` indented under it) and `review.yaml:27` (`reviewers: []`). Under an indentation-scoped block, "replaces exactly those lines" destroys those comment blocks, contradicting Behavior 3 and the AC. Under a key-line-only block, the spec never says how `[]` becomes block form, and the result (`boundaries: []` followed by `  - id:`) does not parse as intended. Separately, `gates.yaml`'s block ends adjacent to a blank line plus the col-0 `# Lifecycle transition requirements` header (`:68-69`) immediately before `transitions: {}` — insertion point unspecified. Note also that the AC's "20 comment lines in `validate.yaml`" counts 19 header comments **plus the interior comment at `:73`**, so "replaces" cannot mean re-emitting the block; only pure insertion satisfies it. The single AC chosen (`validate.yaml`) is the one file where the naive reading happens to work.
+### SA-5 — warning
 
-**Recommendation:** Specify block start, block end, insertion point, and the empty-flow-collection → block-form transition explicitly, and add acceptance criteria against `boundaries.yaml` and `gates.yaml`, not only `validate.yaml`.
+**Location:** Invariants 4 and 6, Behavior 6.
 
-### SA-5 — `warning`
+(a) `review.yaml`'s actual provenance field is `__source` (`review-config.mjs:390`), which Invariant 4 never names — a forged `__source` falls through to `GOVERNANCE_FIELD_NOT_ALLOWED`, contradicting Behavior 6's stated precedence for installer-owned fields. Name `__source` explicitly. (b) Invariant 6 correctly declares the `lib/diagnostics/index.mjs` guard a dependency, but nothing pins it: no acceptance criterion asserts it, and the spec does not modify that module. Add a criterion that an extension-contributed `runner` containing `..` or resolving outside the allowlist roots is refused end-to-end through install, so a regression there fails this spec's suite rather than silently voiding the invariant.
 
-Changes Catalog → allowlist, `review.yaml` row. `patterns`, `keywords`, `min_score` are granted as top-level fields, but `review-config.mjs::shouldDispatch` (`:164-171`) reads them only under `dispatch.triggered`, and `validateReviewer` (`:384-391`) drops top-level ones from the validated reviewer. Since `dispatch` must then be a nested object — which the flat scalar model cannot express — an extension reviewer can only ever be `dispatch: always`. The row also omits `package`, though the loader requires `prompt` XOR `package` (`:348-363`, ADR-0003 §Scope). Restate what an extension reviewer can actually be.
+### SA-6 — suggestion
 
-### SA-6 — `warning`
+**Location:** Acceptance Criteria.
 
-Behaviors 5 and 6 / Error Cases. `source` appears in no allowlist, so a supplied `source` satisfies both `GOVERNANCE_FIELD_NOT_ALLOWED` and `GOVERNANCE_SOURCE_FORGED` with no precedence stated. Two codes, one input.
-
-### SA-7 — `warning`
-
-Behavior 10 / Error Cases (`MERGE_WOULD_TRUNCATE`). Under in-place splice no code path can drop a root key, so the triggering condition cannot arise; there is no acceptance criterion for it either. Either name the residual path that can truncate or remove the behavior and the code.
-
-### SA-8 — `warning`
-
-Module Impact Map, `domain-extensions` row: "uninstall gains governance reversal" contradicts Out of Scope, which drops uninstall reversal at revision 2. The same table and MODIFIED say "five functions" where Target State lists four. Revision residue in normative tables.
-
-### SA-9 — `warning`
-
-ADR compliance. `content-install.mjs:150-153` documents the fill-gap loop as "merge-by-id semantics per ADR-0003," and ADR-0003 §Consequences still asserts field-by-field overlay merge for `review.yaml`. Removing the loop implicitly narrows that. Add one sentence stating that ADR-0003's overlay governs bundled-default composition, not third-party install, so the REMOVED item does not read as superseding an accepted ADR.
-
-### Clean
-
-The writable-registry → root-key table matches all five files on disk (`checks`, `reviewers`, `gates`, `diagnostics`, `boundaries`), correcting the `validators` defect. The `validate.yaml` allowlist covers every field present in the live registry. The `diagnostics.yaml` allowlist matches `validateEntry`'s required set exactly (`lib/diagnostics/index.mjs:258-269`). The parent-spec split is clean and the dependency is one-way as claimed.
+The "round-trip a maximal valid entry per registry through that registry's loader" criterion is the right test and would have caught SA-1 and SA-2. Keep it, and make the maximal entries explicit per registry so the assertion cannot be satisfied by a minimal one.
 
 ## Security Reviewer (security-reviewer)
 
 **Verdict:** BLOCK
 
-Rev 2 genuinely closes the path-traversal, fill-gap, root-key, destructive-serialization and parse-fallback defects. Two of its own invariants are false.
+### SEC-1 — blocker
 
-### SEC-1 — `blocker` — input-validation
+- **blocker_id:** `security-reviewer:input-validation:1dc5f548`
+- **section_anchor:** `changes-catalog`
+- **Category:** input-validation
 
-- **blocker_id:** `security-reviewer:input-validation:3bc49689`
-- **section_anchor:** `invariants-2`
+The `validate.yaml` allowlist omits `command` while admitting `kind`; `validate-config.mjs:250,430-460` requires an argv `command` for `kind: quality-gate`, which the only shipped governance extension declares. So the spec both (a) reproduces the exact rev-2 failure mode it rejected for gates — an entry that installs and is then discarded by its own consumer, breaking the reference extension — and (b) leaves the arbitrary-execution closure incomplete in principle: `validate.yaml` is a second command-bearing registry, and "each row is derived from the schema its consumer enforces" is falsified for it. Excluding `gates.yaml` while admitting `kind: quality-gate` in a writable registry is inconsistent: **the sink moved, it did not close.**
 
-Invariant 2 ("No extension input ever becomes YAML structure. Supplied values are data, never keys.") is **false**. The rejection set (newline, CR, `"`, `'`, `#`, leading `-`/`?`/`:`) omits the flow indicators. `parseInlineValue` (`lib/profiles/yaml.mjs:180-181`) turns any value that *starts and ends* with `{}`/`[]` into a map or sequence — before `unquote` is ever reached. Empirically confirmed against the repo's parser: a `description` of `{command: rm -rf ~, x: y}` written unquoted reparses as an object with a key literally named **`command`** inside a `gates.yaml` entry — one nesting level from the field the entire allowlist exists to exclude. The same call coerces `123` → number, `true`/`false` → boolean, `null`/`~` → null, and an empty/whitespace-only scalar → `{}` (via the `rest === undefined` branch at `:108-111`). None of these are in the rejection set. Type coercion on `id` also defeats the Behavior-4 collision check (`byId.has()` compares string `"123"` against parsed number `123`), so an entry can be appended twice.
+**Recommendation:** Decide explicitly and state it: either restrict the `validate.yaml` allowlist's `kind` to non-executing kinds and refuse `quality-gate` with a named code, or admit `command` under the argv-only constraints `validate-config` already enforces plus a per-token scalar check — then drop the Improvements claim "an extension cannot contribute an executable field at all," which is untrue either way. Update the acceptance criterion so the reference extension's outcome is asserted, not left as "or is updated."
 
-**Recommendation:** Extend the rejection set to refuse any scalar whose trimmed form (a) is empty, (b) starts with `{` or `[`, or (c) equals `true`/`false`/`null`/`~` or matches `/^-?\d+$/`. Then stop relying on an enumerated denylist: after the splice, re-read the written file with `parseYaml` and assert the target key's array deep-equals the intended entry objects; on any mismatch, restore the original bytes and refuse with `GOVERNANCE_SCALAR_UNSAFE`. That read-back is the only mechanism that keeps Invariant 2 true if `lib/profiles/yaml.mjs` ever changes. Add an acceptance criterion for the `{...}` case specifically.
+### SEC-2 — blocker
 
-### SEC-2 — `blocker` — code-execution
+- **blocker_id:** `security-reviewer:input-validation:926c7e60`
+- **section_anchor:** `behaviors-7`
+- **Category:** input-validation
 
-- **blocker_id:** `security-reviewer:code-execution:95678ca2`
-- **section_anchor:** `invariants-6`
+Behavior 7 constrains scalars but never array elements; every allowlist admits array fields (`after`, `patterns`, `keywords`, `exclude`), and array serialization is unspecified. The one place today's writer emits quotes is arrays (`content-install.mjs:266`, `` [${value.map(v => `"${v}"`).join(', ')}] ``), with no escaping. An element such as `a", x: {command: rm -rf /}, y: "b` re-parses through `parseFlowSeq`/`splitFlow`/`parseFlowMap` into attacker-chosen structure — the precise breach Invariant 2 claims to prevent, reached without any rejected character appearing in a top-level scalar. Nested arrays/objects inside a supplied array are also unaddressed.
 
-Invariant 6 ("An extension can never contribute an executable field") is **false as written**: `runner` is on the `diagnostics.yaml` allowlist, and `runner` *is* an executable field — `lib/diagnostics/index.mjs:514` does `await import(pathToFileURL(entry.runner_path))` and calls `run()`. The spec's justification — it "executes as a module rather than a shell string" — is not a security property; an imported ESM module has the same privileges as `sh -c`, arguably broader. What actually contains it is elsewhere and unstated: `resolveRunnerContained` (`:88-139`) rejects raw `..`, requires a `plugin:`/`project:` prefix, and realpath-confines to `<pluginRoot>/lib/diagnostics/` or `<projectRoot>/.context-index/diagnostics/` — and no `provides.*` handler writes into either root (governance→`governance/`, samples→`samples/`, skill_extensions→`skill-extensions/_<ext>/`, domain-profile→`domains/<name>/`, skills/hooks→`<pluginRoot>/skills|hooks/`). So it is not exploitable today, but the invariant asserts a property the spec's own changes do not deliver, depends on a module the spec does not touch, and would silently become RCE the day any handler can place a file under `.context-index/diagnostics/`.
+**Recommendation:** State that scalar rejection applies recursively to every string an entry contributes, array elements included, and that a non-string array element or any nested array/object is refused with `GOVERNANCE_SCALAR_UNSAFE` / `GOVERNANCE_FIELD_NOT_ALLOWED`. Pin the array emission form in Step 2 (flow sequence of unquoted, already-rejection-checked tokens) and add an acceptance criterion asserting an element of `a", x: {command: y}, z: "b` is refused.
 
-**Recommendation:** Restate Invariant 6 as the checkable property: *"`command` is outside every allowlist; `runner` is confined to `diagnostics.yaml` and is executable only via `lib/diagnostics`' prefix+realpath containment, which no `provides.*` handler can write into."* Add an acceptance criterion pinning that dependency — assert no install handler resolves a write under `<projectRoot>/.context-index/diagnostics/` — so a future handler breaks a test rather than the invariant quietly. This is the same failure mode as rev 1's "closed by construction": a claim whose mechanism lives outside the change.
+### SEC-3 — warning · authorization
 
-### SEC-3 — `warning` — input-validation
+**The diagnostics redirect is not available.** No install path writes into `.context-index/diagnostics/` — `content-install.mjs` writes only to `domains/`, `governance/`, `samples/`, `skill-extensions/` (`:64,:169,:286,:406`), and the plugin runner root is `<plugin>/lib/diagnostics` (`lib/diagnostics/index.mjs:343-348`), which no extension can write. An extension-contributed `runner:` can therefore only name a plugin-shipped module or a nonexistent path that fails `realpathSync` containment. "Extensions that need to execute something contribute a `diagnostics.yaml` runner instead" specifies behavior against a mechanism that does not exist — the defect class this spec's own Out of Scope section invokes to defer uninstall. Security-wise the posture is *stronger* than claimed, but a later implementer closing the gap by adding a runner-install path would reopen third-party code execution under a guard that bounds only *where* the file is, never *whose* code it is.
 
-*Error-code non-determinism, and `source` is unallowlistable.* A supplied `source` violates Behavior 5 (not in any allowlist row) *and* Behavior 6 (`GOVERNANCE_SOURCE_FORGED`); `command: "a\nb"` in `gates.yaml` violates Behaviors 5, 7 and 8. No precedence is given, so a test asserting "`command` is refused" can pass on the scalar rule while the allowlist is broken. Worse, `source` appears in **no** allowlist row, yet the installer stamps it — if the allowlist runs post-stamp, every install fails.
+**Recommendation:** Restate the exclusion as "extensions have no governance execution surface today," note the redirect requires a runner-install path that does not exist, and record it as a tracked follow-up with an explicit precondition: an extension-installed runner is untrusted code, so containment alone is not the control.
 
-**Recommendation:** State the fixed order (installer-owned-field → allowlist → scalar → path/target), specify that validation runs on the *pre-stamp* entry with `source` reserved rather than allowed, and make the acceptance criteria assert exact codes.
+### SEC-4 — warning · input-validation
 
-### SEC-4 — `warning` — input-validation
+"Refuses and writes nothing" (Behaviors 1, 5, 6, 7, 10) is not achievable as written. `install.mjs:89-98` loops over every `provides.governance` block calling `mergeGovernanceEntries` per target, and domain-profile/sample writes (`:75-105`) already completed. A manifest with a valid first target and a malicious second leaves the first registry mutated with no rollback.
 
-*Splice target location is unspecified.* "Locates the target key's block by line range" does not say the match must be anchored at column 0, outside comments, and unique. The precedent in this subsystem does it wrong: `rewriteManifestWithStamps` uses `raw.indexOf('installed_extensions:')`, which matches inside a comment or a value. Behavior is undefined when the key is absent, duplicated, or the file does not exist (today `mergeGovernanceEntries` auto-creates).
+**Recommendation:** Specify validation of *all* governance blocks and all their entries before the first write, and scope the guarantee precisely: "no governance registry is modified when any entry in any block is refused."
 
-**Recommendation:** Specify `/^<rootKey>:[ \t]*$/m` at indent 0, refuse `MERGE_WOULD_TRUNCATE` on zero or multiple matches, and state explicitly whether a missing registry is created or refused with `UNKNOWN_GOVERNANCE_TARGET`.
+### SEC-5 — warning · input-validation
 
-### SEC-5 — `warning` — input-validation
+The splice table covers three on-disk forms but not three reachable ones: target key absent from an otherwise valid file; registry file absent entirely (today auto-created, `:170-172`); key appearing more than once or nested under another key. Related: existing entries come from `parsed[rootKey]` being an array (`:184`) — when it is a scalar or map, `existingEntries` stays `[]` and collision detection silently degrades to append-everything.
 
-*Stamp and array elements outside the stated rule.* Behavior 7 says "any supplied scalar"; the stamped `source: extension:<name>` is not supplied, and array elements (`triggers`, `patterns`, `keywords`, `exclude`) are elements, not scalars. `<name>` is safe *today* only because `manifest-schema.mjs` enforces kebab-case upstream — but `mergeGovernanceEntries` is exported and its signature carries no name, so a direct caller stamps unvalidated text.
+**Recommendation:** Add rows for key-absent, file-absent, duplicate/nested key, and root-key-present-but-not-an-array (refuse — never treat as empty, same reasoning as defect 7).
 
-**Recommendation:** Apply the scalar rules to every string reachable in an entry including array elements, and re-validate `<name>` against `NAME_PATTERN` at the merge boundary rather than trusting the caller.
+### SEC-6 — suggestion · input-validation
 
-### SEC-6 — `suggestion` — code-execution
+Three load-bearing citations are inaccurate. (a) Invariant 6 cites `lib/diagnostics/index.mjs:13-14, :61-68` — those are a doc comment and `PLUGIN_ROOT`; the actual guard is `containsDotDot` `:73-75` plus `resolveRunnerContained` `:88-147`, including the cross-root confused-deputy check `:130-137`. (b) `merge-gates.mjs` requires `command` (`:29-31`) *and* rejects shell-form strings, requiring an argv list (`:34-38`), so "no valid extension-contributed gate that does not carry a shell string" is wrong in form though right in consequence — the argv is joined back into a string that `doctor.mjs:965` runs under `sh -c`. (c) The rationale text says "`command` is deliberately absent from the `gates.yaml` row" of a table that, at rev 3, has no `gates.yaml` row.
 
-"The write is inert" is true for governance but reads as an install-wide claim. `provides.hooks` copies an arbitrary extension file into `<pluginRoot>/hooks/` and registers it (`register.mjs:181-191`); `provides.skills` copies a `SKILL.md` into `<pluginRoot>/skills/`. An extension already has execution on the install path via sibling keys. Scope the sentence to the governance contribution and note the sibling surfaces as out-of-scope-but-known.
+### SEC-7 — suggestion · input-validation
 
-### Not flagged (correctly handled)
+Type-coercion coverage is narrower than the parser. Behavior 8 cites only integer coercion, but `parseInlineValue` also maps `null`/`~`→null and `true`/`false`→boolean (`:176-178`). An empty-string field serializes to a bare `key:` line, which `parseMap:108-111` turns into `{}` — a nested object the current validator forbids on input. Nothing caps field length (only `id`, at 128) or entry count.
 
-Path containment, the `command` exclusion from `gates.yaml`, `risk-policies.yaml`/`sensitive-paths.yaml` being non-writable, collision-skip replacing fill-gap, `GOVERNANCE_PARSE_REFUSED`, and the rejection-over-escaping decision — that direction is right; only its coverage set is incomplete (SEC-1).
+**Recommendation:** Generalize Behavior 8 to "any supplied scalar that does not re-parse as the same string is refused," refuse empty scalars, and add a per-field length cap and per-target entry cap.
 
 ## Consistency Analyzer (consistency-analyzer)
 
 **Verdict:** BLOCK
 
-The parent-split is clean. Grepping `explicit-governance-registries.spec.md` for `inferRootKey` / `serializeGovernanceYaml` / the test-fixup / `uninstall` returns nothing — the four double-claimed items are gone. The dependency is genuinely one-way: the parent's `source:` value-extension and `materialized_at` reservation are both explicitly anticipated by this spec's Invariant 4 ("any marker owned by the composition model" is installer-immutable). That composition holds. New blockers appeared elsewhere.
+### CON-1 — blocker · contract
 
-### CON-1 — `blocker` — contract
+- **blocker_id:** `consistency-analyzer:contract:54079edf`
+- **section_anchor:** `changes-catalog-added-per-registry-field-allowlist`
 
-- **blocker_id:** `consistency-analyzer:contract:6c4af44c`
-- **section_anchor:** `behavioral-contract`
-- **This Spec:** Behavior 5 says a field outside the registry's allowlist → `GOVERNANCE_FIELD_NOT_ALLOWED`. Behavior 6 says an installer-owned field (`source`, `materialized_at`) → `GOVERNANCE_SOURCE_FORGED`.
-- **Conflicts With:** Itself — `source` is simultaneously "outside every allowlist" (no allowlist table lists `source`) and "installer-owned." Both behaviors fire on the identical input with no stated precedence, so the contract is untestable as written.
-- **Recommendation:** State that installer-owned-field detection runs before, and takes precedence over, the generic allowlist check (or exclude installer-owned fields from the allowlist check entirely).
+**This spec:** the `validate.yaml` allowlist row, plus "Each row is derived from the schema its consumer enforces, not from convention."
+**Conflicts with:** `lib/governance/validate-config.mjs::validateQualityGate` (`:415-478`) makes `command` (argv-list) required for `kind: quality-gate`; `validateCheck` (`:246`) also reads `fail_fast`. Neither is in the allowlist. The only shipped consumer of the whole path, `extensions/example-validation-check/adev-extension.yaml`, declares exactly `kind: quality-gate` with `command: [bash, …/check.sh]` — refused with `GOVERNANCE_FIELD_NOT_ALLOWED`, and no `quality-gate` entry can ever pass.
+**Recommendation:** Add `command` (and `fail_fast`), or explicitly state `quality-gate` is not an extension-contributable kind for `validate.yaml` (mirroring the `gates.yaml` reasoning) and update the reference extension and acceptance criteria to reflect a deliberate exclusion rather than a silent gap.
 
-### CON-2 — `blocker` — contract
+### CON-2 — blocker · contract
 
-- **blocker_id:** `consistency-analyzer:contract:dfca01fb`
-- **section_anchor:** `error-cases`
-- **This Spec:** `MERGE_WOULD_TRUNCATE` is declared in the Changes Catalog, Behavior 10, and the Error Cases table, but has no Migration Path step and no Acceptance Criteria bullet.
-- **Conflicts With:** Migration Step 2's own splice design ("locates the target key's block by line range, replaces exactly those lines, and writes every other byte back unchanged") — by construction this mechanism cannot touch a sibling root key, so no legitimate input reaches this code. Same defect class rev 1 was rejected for.
-- **Recommendation:** Either give this code a concrete reachable trigger (e.g. splice-boundary-detection failure on a malformed but parseable file) and add the missing AC, or drop the code as belt-and-suspenders defensive code rather than a specified behavior.
+- **blocker_id:** `consistency-analyzer:contract:19536469`
+- **section_anchor:** `changes-catalog-added-per-registry-field-allowlist`
 
-### CON-3 — `blocker` — contract
+**This spec:** the `review.yaml` allowlist includes `dispatch`, `package`, `patterns`, `keywords`, `min_score`, citing `package` as "the two-stage reviewer form documented by ADR-0003," derived from `review-config.mjs`.
+**Conflicts with:** (a) `content-install.mjs::isValidGovernanceValue` (`:139-147`, unchanged by this spec's ADDED/MODIFIED/REMOVED sections) rejects any nested-object value, yet `dispatch` (`{triggered:{…}}`) and `package` (`{skill, adapter, args}`) per `validateReviewer` (`:334-421`) require object values to function at all. (b) `patterns`/`keywords`/`min_score` are never top-level entry fields — they live under `dispatch.triggered` (`shouldDispatch`, `:163-189`). The acceptance criterion "Each allowlist accepts every field its consumer's schema reads, asserted by round-tripping a maximal valid entry" cannot pass for `review.yaml` as specified.
+**Recommendation:** Either state that the nested-object restriction is relaxed for `dispatch`/`package` and specify how the splice/serializer handles composite values (the three-form table does not cover it), or drop the object forms from extension-contributable scope and correct the table to show `patterns`/`keywords`/`min_score` as nested under `dispatch`.
 
-- **blocker_id:** `consistency-analyzer:contract:77ee6ba0`
-- **section_anchor:** `module-impact-map`
-- **This Spec:** Out of Scope explicitly drops uninstall reversal ("dropped from this spec at revision 2 on review advice… Tracked separately on the board").
-- **Conflicts With:** Module Impact Map, same document: `| domain-extensions | High | All five functions; uninstall gains governance reversal |`.
-- **Recommendation:** Strip "uninstall gains governance reversal" from the Module Impact Map row — leftover from the pre-split scope.
+### CON-3 — warning · contract (cross-cutting/ADR)
 
-### CON-4 — `blocker` — contract
-
-- **blocker_id:** `consistency-analyzer:contract:e2721703`
-- **section_anchor:** `changes-catalog-per-registry-field-allowlist`
-- **This Spec:** `review.yaml` allowlist = `id, name, dispatch, profile, context_pack, severity_cap, prompt, patterns, keywords, min_score`, declared exhaustive.
-- **Conflicts With:** `.context-index/adrs/0003-configurable-review-registry.md` ("either `prompt` (subagent mode) or `package` (external-skill wrap mode…)"). `package` is an ADR-0003-documented reviewer field with no substitute in this allowlist.
-- **Recommendation:** Add `package` to the `review.yaml` allowlist, or state explicitly that package-mode reviewers are out of scope for extension contribution.
-
-### CON-5 — `blocker` — contract
-
-- **blocker_id:** `consistency-analyzer:contract:f549846c`
-- **section_anchor:** `changes-catalog-per-registry-field-allowlist`
-- **This Spec:** All five per-registry allowlists declared exhaustive.
-- **Conflicts With:** `explicit-governance-registries.spec.md` ADDED — `enabled` + `disabled_reason` fields on entries in `review.yaml`, `diagnostics.yaml`, `gates.yaml`, `validate.yaml`. Unlike `source`/`materialized_at`, these are ordinary author-set fields (not installer-stamped), so they do not fall under Invariant 4's "installer-owned" carve-out — yet no allowlist includes them.
-- **Recommendation:** Either add `enabled`/`disabled_reason` to the four affected allowlists now, or add explicit forward-compatibility language (as already done for `source`) stating these are reserved pending the parent spec and will need an allowlist revision when it lands.
-
-### CON-6 — `warning` — domain-model
-
-- **This Spec:** `gates.yaml` allowlist = `id, name, description, tier, scope, severity, required, triggers`.
-- **Conflicts With:** `gates.yaml`'s own on-disk schema header, which documents `kind` (deterministic|probabilistic) and `group` (e2e tier, smoke|full) as entry fields but not `description`.
-- **Recommendation:** Either allow `kind`/`group` (or state why extensions are barred from them) and justify `description`'s inclusion despite its absence from the schema header.
-
-No naming or terminology drift found; error-code style (`SCREAMING_SNAKE_CASE`) and ID conventions match `check-id-enum.spec.md` and sibling specs.
+**This spec** retains `validate.yaml` as extension-writable, and its worked example throughout is a `kind: quality-gate` contribution to it.
+**Conflicts with** ADR-0010 §"Role assignments", which states `validate.yaml` is explicitly **NOT** for "new project-defined checks (those go to diagnostics or boundaries) — the skill is the surface that *runs* the checks; it is not a registry for additional ones."
+**Recommendation:** Either note this as a deliberate, ADR-documented deviation (as the spec does for its other exclusions), or redirect the reference extension's example toward the surface ADR-0010 assigns.
 
 ---
 
 ## Summary
 
-**Total findings:** 19 (11 blockers, 7 warnings, 1 suggestion)
+**Total findings:** 16 (6 blockers, 7 warnings, 3 suggestions)
 
-**Convergence across reviewers** — five findings were reached independently by two or three reviewers, which is the strongest signal in this review:
+Rev 3's method — deriving the tables from the consumer code — worked where it was applied. The `gates.yaml` exclusion, the root-key table, the splice forms, the `diagnostics.yaml` allowlist, and the parser-grounded scalar and `id` rules all verified clean against source, independently, by three reviewers. That is real progress over rev 2.
 
-| Issue | Reviewers |
-|---|---|
-| Invariant 6 false — `runner` is an executable field on the `diagnostics.yaml` allowlist | SA-1, SEC-2 |
-| Invariant 2 false — rejection set omits flow indicators and type coercions | SA-2, SEC-1 |
-| `gates.yaml` allowlist omits `kind`/`group`, adds `description`, and produces gates `merge-gates` discards | SA-3 (blocker), CON-6 (warning) |
-| Splice mechanism underspecified beyond `validate.yaml` | SA-4 (blocker), SEC-4 (warning) |
-| Behavior 5 / Behavior 6 error-code precedence undefined for `source` | CON-1 (blocker), SA-6, SEC-3 |
-| `MERGE_WOULD_TRUNCATE` unreachable under the splice, no AC | CON-2 (blocker), SA-7 |
-| Module Impact Map retains uninstall reversal | CON-3 (blocker), SA-8 |
-| `review.yaml` allowlist omits `package` (ADR-0003) | CON-4 (blocker), SA-5 |
+It was not applied uniformly. All three reviewers converged, without coordination, on the same two rows:
 
-**What rev 2 got right:** the parent-spec split is clean and the dependency is genuinely one-way; the root-key table is correct against all five files on disk; the parse-refusal replaces a genuinely destructive fallback; the `command` exclusion closes the shell-injection path for both collision and append; uninstall reversal was correctly dropped rather than specified against a non-existent verb; and rejection-over-escaping is the right call given `lib/profiles/yaml.mjs::unquote` performs no unescape.
+1. **`validate.yaml`** — the row omits `command` and `fail_fast`, both read by `validate-config.mjs`, while allowlisting `kind` without constraining its value. The consequence is the rev-2 failure mode verbatim, relocated: an extension declaring `kind: quality-gate` installs and is then discarded by its own loader. The only shipped extension does exactly this, and the acceptance criterion's escape hatch ("or is updated in the same change") has no satisfying rewrite. It also means the executable-field closure is scoped to `gates.yaml` when a second command-bearing registry remains writable.
+2. **`review.yaml`** — three of its listed fields are read nowhere at that position, and the two fields the schema actually requires (`dispatch` in triggered form, `package`) are objects, which the entry model still forbids and the splice does not specify emitting.
 
-**What blocks it:** rev 2 closed twelve blockers and introduced eleven, and the new ones are the same class the old ones were. Two invariants (2 and 6) are asserted rather than delivered by the Changes Catalog; the two enumerated tables — the new normative surface — contain three rows that do not match the schemas their consumers enforce; and the splice, which is the mechanism the comment-preservation guarantee rests on, is specified only tightly enough to work on the single file the acceptance criterion names.
+Two further items are worth the revision's attention beyond the blockers: the `diagnostics.yaml` redirect offered in exchange for `gates.yaml` writability has no delivery mechanism today (SEC-3), which weakens the trade the exclusion is presented as; and the "writes nothing" guarantee is per-target, not per-install (SEC-4).
 
-**Action required:** Revise the spec (`/adev:specify --revise`), then re-review. Blockers are keyed by canonical `blocker_id` in `extension-governance-merge-hardening.blockers.md`.
+**Action required:** Run `/adev:specify --revise` against `extension-governance-merge-hardening.blockers.md` to produce revision 4, then re-review. Do not proceed to `/adev:plan`.
 
-**Transition gate note:** `.context-index/governance/gates.yaml` declares `transitions: {}` — no `spec-to-plan` `approver_role` is configured. Informational only.
+**Governance footer:** `.context-index/governance/gates.yaml` defines `transitions: {}` — no `spec-to-plan` `approver_role` is configured, so no additional human approver is named for this transition. The spec's own System Constitution Reference notes that this change alters what a third party may write into governance config and is therefore a "Requires Human Approval" boundary under the constitution.

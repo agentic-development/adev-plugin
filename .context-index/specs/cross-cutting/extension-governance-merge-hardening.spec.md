@@ -4,7 +4,7 @@ affects: [domain-extensions, validation, unified-gates]
 kind: refactor
 status: review-pending
 risk_level: high
-revision: 3
+revision: 4
 created: 2026-08-15
 updated: 2026-08-15
 tracker-ref: adev-plugin-xg1f.1
@@ -131,32 +131,78 @@ which is why it survived.
   |---|---|
   | `validate.yaml` | `checks` |
   | `review.yaml` | `reviewers` |
+  | `gates.yaml` | `gates` |
   | `diagnostics.yaml` | `diagnostics` |
   | `boundaries.yaml` | `boundaries` |
 
-  Seven registry files exist on disk; exactly **four** are extension-writable. The three excluded, and
-  why:
+  Seven registry files exist on disk; exactly **five** are extension-writable. The two excluded:
 
-  - **`gates.yaml` — excluded by design, decided at revision 3.** `lib/domains/merge-gates.mjs:29-33`
-    makes `command` a *required* field: a gate lacking it is discarded with `INVALID_GATE`. And
-    `command` is executed as `spawnSync("sh", ["-c", …])` (`lib/gates/doctor.mjs:965`). So there is no
-    valid extension-contributed gate that does not carry a shell string, and no safe subset of a shell
-    string. Revision 2 tried to resolve this by omitting `command` from the gate allowlist; that would
-    have silently discarded every extension gate — closing the injection path by breaking the feature.
-    Extensions that need to execute something contribute a `diagnostics.yaml` runner instead, which is
-    what ADR-0010 assigns that surface and which resolves through a real containment guard (below).
   - **`risk-policies.yaml`** (`policies`) and **`sensitive-paths.yaml`** (`sensitive_paths`) — the
     project's own guard boundary, deciding which paths are sensitive and which risk levels demand
     review. Never writable by a third party.
+
+### Executable contributions — permitted, and bounded three ways
+
+Two registries accept an entry that executes: `gates.yaml` (`command`, *required* by
+`lib/domains/merge-gates.mjs:29-33`) and `validate.yaml` (`kind: quality-gate` + `command`). The
+shipped reference extension uses the second. Revision 3 tried to close this by excluding `gates.yaml`
+from the writable set; that was wrong twice over — it left `validate.yaml`'s identical sink open, and
+the diagnostics-runner alternative it offered in exchange does not exist (nothing under
+`lib/extensions/` writes into `.context-index/diagnostics/`).
+
+Revision 4 keeps the capability and bounds it. **All three bounds apply to every executable
+contribution, in whichever registry it appears** — there is one rule, not a per-registry exception:
+
+1. **Containment to the extension's own directory.** Every argv element that names a path must
+   resolve inside the extension's installed directory — `resolvedPath`, the first argument to
+   `installExtension` — verified with `resolve()` + `startsWith(resolvedPath + sep)` + `realpathSync`,
+   the pattern `installSamples` already uses at `content-install.mjs:307-318`. `argv[0]` may instead
+   name an interpreter from a fixed allowlist (`bash`, `sh`, `node`, `python3`); every other element
+   is either a contained path or a non-path literal. The reference extension's
+   `[bash, extensions/example-validation-check/bin/check.sh]` satisfies this unchanged.
+2. **argv array only, never a shell string.** `merge-gates.mjs:34-38` already enforces this for
+   gates; it becomes uniform. No contributed command is ever passed to `sh -c`, so shell
+   metacharacters in a contributed value are inert.
+3. **Explicit install-time consent.** When a manifest declares any executable contribution, the
+   install refuses unless consent is granted for that install. Interactive installs prompt, listing
+   each command verbatim and the extension it came from; non-interactive installs require
+   `--allow-exec`. Consent is per-install, never remembered across installs, and the grant is
+   recorded on the entry as `exec_consented_at` so an audit can distinguish a consented executable
+   entry from one that predates the rule. The prompt has a home already: `lib/cli/domain-extension-picker.mjs`
+   prompts during extension install today and threads an `options` object into `installExtension`.
+
+Containment answers "what can it run", argv-only answers "how is it invoked", consent answers "did a
+human agree". No one of the three is sufficient alone: containment without consent still runs code the
+operator never saw, and consent without containment grants a blanket permission over any path.
 - **Per-registry field allowlist** in `validateGovernanceEntry`. Exhaustive per target; anything else
   is refused:
 
   | Target | Allowed fields |
   |---|---|
-  | `validate.yaml` | `id`, `name`, `kind`, `severity`, `profile`, `context_pack`, `prompt`, `after`, `description`, `enabled`, `disabled_reason` |
-  | `review.yaml` | `id`, `name`, `dispatch`, `profile`, `context_pack`, `severity_cap`, `prompt`, `package`, `patterns`, `keywords`, `min_score`, `enabled`, `disabled_reason` |
+  | `validate.yaml` | `id`, `name`, `kind`, `severity`, `profile`, `context_pack`, `prompt`, `after`, `description`, `command`, `fail_fast`, `enabled`, `disabled_reason` |
+  | `review.yaml` | `id`, `name`, `dispatch`, `profile`, `context_pack`, `severity_cap`, `prompt`, `package`, `enabled`, `disabled_reason` |
+  | `gates.yaml` | `id`, `command`, `description`, `severity`, `tier`, `enabled`, `disabled_reason` |
   | `diagnostics.yaml` | `id`, `runner`, `severity`, `tier`, `scope`, `enabled`, `disabled_reason` |
   | `boundaries.yaml` | `id`, `severity`, `pattern`, `exclude`, `description`, `enabled`, `disabled_reason` |
+
+  **`kind` is constrained, not free.** In `validate.yaml` it must be one of the four values
+  `validate-config.mjs` accepts (`quality-gate`, `subagent-review`, `deterministic-check`,
+  `observational`), and `kind: quality-gate` additionally *requires* `command`, which triggers the
+  executable-contribution rules above.
+
+  **The `gates.yaml` row is exactly what `merge-gates.mjs` projects** (`:42-46`): `id`, `command`,
+  `description`, `severity`, `tier`. Fields outside that set are silently dropped by the merge today,
+  so allowlisting them would let an extension author believe it had configured something that never
+  takes effect. `command` is required there, per `:29-33`.
+
+  **`review.yaml`'s `dispatch` and `package` are object-valued**, and `isValidGovernanceValue`
+  (`content-install.mjs:139-147`) currently accepts only strings, numbers, booleans and string arrays
+  — so both are rejected today. This spec extends that validator to accept a **one-level** object
+  whose own values are strings, numbers or booleans, and no deeper. `package` is validated against its
+  ADR-0003 shape (`skill`, `adapter`, `args`), and its `skill`/`adapter` paths are subject to the same
+  containment rule as `command`. Nested-object emission is the splice's responsibility (below).
+  Fields no consumer reads at the entry position — `patterns`, `keywords`, `min_score` — are omitted
+  rather than allowlisted.
 
   Each row is derived from the schema its consumer enforces, not from convention: `validate.yaml`
   from `lib/governance/validate-config.mjs`, `review.yaml` from `lib/governance/review-config.mjs`
@@ -224,6 +270,10 @@ block-sequence layout alone would destroy or fail on the others actually present
 | Empty inline list | `boundaries: []` in `boundaries.yaml`, `reviewers: []` in `review.yaml` | Rewrite the single `key: []` line as `key:` followed by the new items |
 | Key with only indented comments beneath | commented rule scaffolds in `boundaries.yaml` | Insert after the key line, above the comment block, leaving the comments byte-identical |
 
+**Nested emission.** `review.yaml`'s `dispatch` and `package` are one-level objects, so the splice
+emits them as an indented block map beneath their key, with every leaf value subject to the same
+rejection rules as a top-level scalar. Depth is capped at one level, matching the extended validator.
+
 **Comment preservation is achieved by not reserializing, not by a comment-aware writer.** The repo
 has `lib/profiles/yaml.mjs::parseYaml` and no serializer; that parser consumes `#` comments and never
 retains them, so any round trip through it loses them. Adding a YAML library would need an ADR under
@@ -264,16 +314,16 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
 3. **An existing entry is never mutated by an install.** Additive or skipped, never merged.
 4. Installer-owned fields (`source`, and any marker owned by the composition model) are stamped by
    the installer and rejected when supplied.
-5. Writes land inside `.context-index/governance/`, in one of the four writable registries, or do not
+5. Writes land inside `.context-index/governance/`, in one of the five writable registries, or do not
    happen.
-6. **An extension's only executable contribution is a `diagnostics.yaml` runner.** `gates.yaml` is
-   not extension-writable at all, so no shell string can be contributed. A `runner` *is* executable —
-   it is `import()`-ed and invoked — so this invariant does not claim otherwise. What bounds it is the
-   containment guard already shipped in `lib/diagnostics/index.mjs` (`:13-14`, `:61-68`): `..`
-   rejection on the raw string before any resolution, prefix-scoped allowlist roots (`plugin:` under
-   the plugin root, `project:` under `.context-index/diagnostics/`), then a realpath check. **That
-   guard is a dependency of this invariant**, not an assumption — if it regresses, this invariant
-   fails with it.
+6. **Every executable contribution is contained, argv-invoked, and consented.** Extensions may
+   contribute executables; this invariant does not claim otherwise. What bounds them is the
+   conjunction of the three rules — containment to the extension's own installed directory,
+   argv-array invocation with no `sh -c`, and per-install human consent. A `diagnostics.yaml`
+   `runner` is additionally bounded by the guard already shipped in `lib/diagnostics/index.mjs`
+   (`..` rejection before resolution, prefix-scoped allowlist roots, realpath check). **That guard is
+   a dependency of this invariant**, not an assumption — if it regresses, this invariant weakens with
+   it, and an acceptance criterion pins it.
 7. Unsafe input is refused, never sanitized. There is no escaping layer whose correctness the
    security properties depend on.
 
@@ -287,10 +337,12 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
 4. **When** an extension's entry id collides with an existing entry **then** the colliding entry is recorded as skipped and the existing entry is left byte-identical — no key is introduced onto it, absent or otherwise.
 5. **When** an extension entry carries a field outside its registry's allowlist **then** the install refuses with `GOVERNANCE_FIELD_NOT_ALLOWED`, naming the field and registry.
 6. **When** an extension entry supplies an installer-owned field (`source`, or a marker owned by the composition model) **then** the install refuses with `GOVERNANCE_SOURCE_FORGED`. **Precedence:** installer-owned fields are checked before the allowlist, so a supplied `source` always reports `GOVERNANCE_SOURCE_FORGED` and never `GOVERNANCE_FIELD_NOT_ALLOWED`. Exactly one code is emitted per rejected entry.
-7. **When** any supplied scalar contains a newline, carriage return, `"`, `'`, `#`, `{`, `}`, `[`, `]`, `,`, or a leading `-`/`?`/`:`/`&`/`*`/`!`/`|`/`>`/`%`/`@`/backtick **then** the install is refused with `GOVERNANCE_SCALAR_UNSAFE`, naming the field. The flow indicators are load-bearing, not decorative: `lib/profiles/yaml.mjs` parses `{ … }` as a flow map, so omitting `{` lets a scalar reparse into a map with attacker-chosen keys. Unsafe scalars are rejected, never escaped — `unquote` (`:244-252`) performs no unescape, so no escape scheme round-trips through the repo's own parser.
+7. **When** any supplied value contains a newline, carriage return, `"`, `'`, `#`, `{`, `}`, `[`, `]`, `,`, or a leading `-`/`?`/`:`/`&`/`*`/`!`/`|`/`>`/`%`/`@`/backtick **then** the install is refused with `GOVERNANCE_SCALAR_UNSAFE`, naming the field. The flow indicators are load-bearing, not decorative: `lib/profiles/yaml.mjs` parses `{ … }` as a flow map, so omitting `{` lets a value reparse into a map with attacker-chosen keys. **This applies to every emitted value, not only top-level scalars** — array elements and one-level object values are checked identically, because `parseFlowSeq`/`parseFlowMap` reparse them the same way. Unsafe values are rejected, never escaped — `unquote` (`:244-252`) performs no unescape, so no escape scheme round-trips through the repo's own parser.
 8. **When** a supplied `id` is not a string after parse **then** the install is refused. `parseYaml` coerces bare integers to Number (`:179`), and a non-string id would bypass the string-keyed collision check in Behavior 4.
-9. **When** an extension targets `gates.yaml`, or declares `runner` outside `diagnostics.yaml` **then** the install is refused. `gates.yaml` is not in the writable table, so it reports `UNKNOWN_GOVERNANCE_TARGET`; a misplaced `runner` reports `GOVERNANCE_FIELD_NOT_ALLOWED`. This holds for appended entries as well as colliding ones, so no install path introduces a shell string.
-10. **When** the target registry cannot be parsed **then** the install refuses with `GOVERNANCE_PARSE_REFUSED` and writes nothing. It never treats an unparseable file as empty.
+9. **When** an extension entry declares `command` (in `gates.yaml`, or in `validate.yaml` with `kind: quality-gate`) **then** every argv element naming a path must resolve inside the extension's own installed directory, `argv[0]` may instead be an allowlisted interpreter, and the value must be an array — a string `command` is refused with `GOVERNANCE_COMMAND_NOT_ARGV`, and an escaping path with `GOVERNANCE_COMMAND_ESCAPES_EXTENSION`.
+10. **When** a manifest declares any executable contribution **then** the install refuses without explicit consent for that install — an interactive prompt listing each command verbatim, or `--allow-exec` non-interactively — and records `exec_consented_at` on each executable entry. Consent is per-install and never remembered.
+11. **When** an extension declares `runner` outside `diagnostics.yaml` **then** the install is refused with `GOVERNANCE_FIELD_NOT_ALLOWED`.
+12. **When** the target registry cannot be parsed **then** the install refuses with `GOVERNANCE_PARSE_REFUSED` and writes nothing. It never treats an unparseable file as empty.
 
 
 ### Error Cases
@@ -302,7 +354,11 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
 | Field outside registry allowlist | Refuse; name field and registry | `GOVERNANCE_FIELD_NOT_ALLOWED` |
 | Installer-owned field supplied | Refuse | `GOVERNANCE_SOURCE_FORGED` |
 | Supplied scalar contains a newline, quote, `#`, or leading indicator | Refuse; name the field | `GOVERNANCE_SCALAR_UNSAFE` |
-| Entry declares `command`, or `runner` outside `diagnostics.yaml` | Refuse; name the field | `GOVERNANCE_FIELD_NOT_ALLOWED` |
+| `command` is a string rather than an argv array | Refuse; name the entry | `GOVERNANCE_COMMAND_NOT_ARGV` |
+| An argv path resolves outside the extension's own directory | Refuse; name the element and the resolved path | `GOVERNANCE_COMMAND_ESCAPES_EXTENSION` |
+| Executable contribution without install-time consent | Refuse; list what would execute | `GOVERNANCE_EXEC_NOT_CONSENTED` |
+| `runner` declared outside `diagnostics.yaml` | Refuse; name the field | `GOVERNANCE_FIELD_NOT_ALLOWED` |
+| `kind` outside the four values `validate-config.mjs` accepts | Refuse; name the value | `GOVERNANCE_FIELD_NOT_ALLOWED` |
 | Target registry does not parse | Refuse; write nothing; leave the file untouched | `GOVERNANCE_PARSE_REFUSED` |
 
 ## Module Impact Map
@@ -340,8 +396,15 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
 - [ ] A colliding entry is reported skipped and the existing entry is byte-identical afterwards.
 - [ ] A supplied scalar containing `\n`, `"` or `#` is refused with `GOVERNANCE_SCALAR_UNSAFE` and nothing is written.
 - [ ] An extension supplying an installer-owned field is refused.
-- [ ] An extension declaring a `gates.yaml` target is refused outright, so no `command` can reach `spawnSync` by any path.
-- [ ] A `target` of `gates.yaml`, `risk-policies.yaml` or `sensitive-paths.yaml` is refused; the writable set is exactly the four tabled registries.
+- [ ] A `target` of `risk-policies.yaml` or `sensitive-paths.yaml` is refused; the writable set is exactly the five tabled registries.
+- [ ] The shipped reference extension installs successfully unchanged, including its `command`, once consent is granted — the capability is preserved, not merely described.
+- [ ] A `command` whose path resolves outside the extension's own directory is refused with `GOVERNANCE_COMMAND_ESCAPES_EXTENSION`, asserted for both `gates.yaml` and `validate.yaml`.
+- [ ] A string-valued `command` is refused with `GOVERNANCE_COMMAND_NOT_ARGV`.
+- [ ] An executable contribution without consent is refused; with `--allow-exec` it installs and each executable entry carries `exec_consented_at`.
+- [ ] `kind` outside the four values `validate-config.mjs` accepts is refused.
+- [ ] A `review.yaml` entry with object-valued `dispatch` and `package` round-trips through install and `loadReviewConfig`; a two-level nested object is refused.
+- [ ] An unsafe value inside an array element or a nested object value is refused, not only a top-level scalar.
+- [ ] The `lib/diagnostics/index.mjs` containment guard is asserted by a test owned here, so Invariant 6's dependency cannot regress silently.
 - [ ] A scalar of `{command: x}` is refused with `GOVERNANCE_SCALAR_UNSAFE` — the flow-map reparse path, asserted directly.
 - [ ] A numeric `id` is refused rather than silently bypassing the collision check.
 - [ ] A supplied `source` reports `GOVERNANCE_SOURCE_FORGED`, never `GOVERNANCE_FIELD_NOT_ALLOWED`.
