@@ -305,10 +305,12 @@ domain: software
 build:
   # Cycles of the /adev:build BLOCK -> /adev:specify --revise -> re-review loop
   # before the convergence detector returns BUDGET_EXHAUSTED. Library default is 2.
-  # Raised to 5 on 2026-08-15: the explicit-governance-registries review converged
-  # cleanly (blockers 5 -> 5 -> 2, persistent: 0 at every step — no ID ever recurred)
-  # and still hit the budget mid-descent. A budget that stops a converging loop is
-  # tuned too low for cross-cutting specs of this size. The detector still halts
-  # early on NO_PROGRESS or REGRESSED, so raising this trades wall-clock for
-  # completion without weakening the stall guards.
-  max_review_retries: 5
+  #
+  # Reverted to 2 on 2026-08-15. It was raised to 5 earlier the same day on the
+  # reading that blockers 5 -> 5 -> 2 with persistent: 0 meant the loop was
+  # converging. That reading was wrong twice over: persistent: 0 is structural
+  # against an LLM reviser (adev-plugin-j7pq.1), and adev-plugin-lvcp had already
+  # validated the lower cap at -22% cost with "3rd iteration added no value".
+  # Raising it bought one additional regression and no convergence. Fix the stall
+  # guards before touching the budget again.
+  max_review_retries: 2
