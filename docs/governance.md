@@ -386,6 +386,33 @@ Checks run in topological order by the `after:` field. Lex-by-id tie-break for i
 
 ---
 
+## Extension-contributed entries
+
+An installed extension may append entries to five of the files above — `validate.yaml`, `review.yaml`, `gates.yaml`, `diagnostics.yaml` and `boundaries.yaml`. `risk-policies.yaml` and `sensitive-paths.yaml` are never extension-writable: they are the project's own guard boundary. The author-side contract (writable set, per-registry field allowlists, executable payloads) is in [Extensions](extensions.md#the-governance-contribution-contract); this section covers what you will see in your own files afterwards.
+
+### Provenance stamps
+
+Every appended entry carries `source: extension:<name>`. An entry that is also executable — a `command` on a gate or a `kind: quality-gate` check, or a reviewer `package.skill` / `package.adapter` — additionally carries `exec_consented_at`, an ISO timestamp of the install at which you granted execution consent.
+
+```yaml
+gates:
+  - id: my-extension.schema-lint
+    command: ["/home/me/proj/.context-index/extensions/my-extension/bin/lint.sh"]
+    tier: fast
+    source: extension:my-extension
+    exec_consented_at: 2026-08-15T12:00:00.000Z
+```
+
+Both fields are installer-owned. An extension that supplies either one is refused at install with `GOVERNANCE_SOURCE_FORGED`, so a stamp you read in your file was written by adev, not by the extension.
+
+**Provenance is file-level and invisible to gate consumers.** `lib/domains/merge-gates.mjs` projects exactly five fields onto each merged gate — `id`, `command`, `description`, `severity`, `tier` — and drops everything else, so nothing downstream of the merge ever observes `source` or `exec_consented_at`. That is intended rather than an oversight: the stamps exist for uninstall and audit, and both of those read the file directly.
+
+### What an install will not do to your entries
+
+- **A colliding `id` is skipped, never merged.** If an extension contributes an entry whose `id` already exists in your registry, the extension's entry is dropped and yours is left byte-identical — no field is overwritten, and no key is introduced onto it, absent or otherwise. The install report lists the id under skipped. An extension therefore cannot inject a `command` into a commandless gate you scaffolded.
+- **An unparseable registry is refused, not replaced.** If the target file does not parse, the merge fails with `GOVERNANCE_PARSE_REFUSED` and writes nothing. It is never treated as an empty registry — doing so would overwrite your entries and bypass collision detection at the same time. The same refusal covers a duplicated root key, a root key that is not a sequence, and mixed or lone-CR line endings. Fix the file (or its line endings) and re-run the install.
+- **Comments and sibling keys survive.** The merge splices the target key's block by line range rather than reserializing the file, so every byte outside the inserted lines — comments, formatting, other top-level keys — is written back unchanged.
+
 ## Migrating an existing project
 
 Zero-config projects migrate with nothing to do — the bundled defaults reproduce the pre-0.18.0 behavior bit-for-bit.

@@ -112,13 +112,22 @@ npx @adev-org/adev-cli uninstall
 
 **Purpose:** Install or list domain extension packs (see [Extensions](extensions.md)).
 
-**Signature:** `extension install <source>` · `extension list`
+**Signature:** `extension install <source> [--allow-exec]` · `extension list`
 
 **Example:**
 ```
 npx @adev-org/adev-cli extension install github:org/adev-data-engineering
+npx @adev-org/adev-cli extension install ./my-extension --allow-exec
 npx @adev-org/adev-cli extension list
 ```
+
+**`--allow-exec`** grants consent for the extension's executable contributions — any `command` on a gate or `kind: quality-gate` check, and any reviewer `package.skill` / `package.adapter`. Three properties:
+
+- **Per-install, never remembered.** Nothing is persisted to `manifest.yaml` or anywhere else, and there is no "remember this choice" cache. Consent is re-asked on every install, because the payload can change between versions.
+- **Interactive installs prompt.** On a TTY, install pauses and lists every executable contribution verbatim — the exact argv it would run — before asking. Only `y` / `yes` grants; empty input, EOF, and an interrupted prompt are all refusals.
+- **Non-interactive installs fail closed.** Without a TTY and without `--allow-exec`, the install exits non-zero with `GOVERNANCE_EXEC_NOT_CONSENTED` and **writes nothing** — no files copied, no governance entries spliced. An extension with no executable contributions installs unattended without the flag.
+
+Consented payloads are copied into `.context-index/extensions/<name>/` and the contributed paths are rewritten to point there; see [Extensions](extensions.md#the-governance-contribution-contract).
 
 **Implementation:** `cli/index.mjs::cmdExtension`.
 

@@ -179,6 +179,104 @@ describe("docs/extensions.md — required content references", () => {
   });
 });
 
+describe("docs/extensions.md — governance contribution contract", () => {
+  const GOV_PATH = join(PLUGIN_ROOT, "docs", "governance.md");
+  const CLI_PATH = join(PLUGIN_ROOT, "docs", "cli-reference.md");
+
+  it("documents the payload directory, consent flag, interpreter allowlist and never-writable registries", () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    for (const needle of [
+      ".context-index/extensions/",
+      "--allow-exec",
+      "interpreter allowlist",
+      "risk-policies.yaml",
+      "sensitive-paths.yaml",
+    ]) {
+      assert.ok(body.includes(needle), `docs/extensions.md must document ${needle}`);
+    }
+  });
+
+  it("names the five writable registries with their root keys", () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    const pairs = [
+      ["validate.yaml", "checks"],
+      ["review.yaml", "reviewers"],
+      ["gates.yaml", "gates"],
+      ["diagnostics.yaml", "diagnostics"],
+      ["boundaries.yaml", "boundaries"],
+    ];
+    for (const [file, rootKey] of pairs) {
+      const row = new RegExp(
+        `\`${file.replace(".", "\\.")}\`[^\\n]*\`${rootKey}\``,
+      );
+      assert.match(body, row, `must map ${file} to root key ${rootKey}`);
+    }
+  });
+
+  it("states that the payload set is derived, not declared", () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    assert.match(body, /derived/i, "must say the payload set is derived");
+    assert.ok(body.includes("package.skill"), "must name package.skill");
+    assert.ok(body.includes("package.adapter"), "must name package.adapter");
+    assert.ok(body.includes("INTERPRETER_ALLOWLIST"), "must cite INTERPRETER_ALLOWLIST");
+    assert.ok(body.includes("FIELD_ALLOWLIST"), "must cite FIELD_ALLOWLIST");
+  });
+
+  it("documents both emission forms and why they differ", () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    assert.ok(body.includes("ABS_PATH_REJECTED"), "must cite ABS_PATH_REJECTED");
+    assert.match(body, /absolute/i, "must describe the absolute command form");
+    assert.match(
+      body,
+      /`\.context-index\/`-relative/,
+      "must describe the .context-index/-relative package form",
+    );
+  });
+
+  it("documents the non-contributable dispatch and package.args fields", () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    assert.ok(body.includes("dispatch: triggered"), "must name dispatch: triggered");
+    assert.ok(body.includes("package.args"), "must name package.args");
+  });
+
+  it("documents the project-path install limitation", () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    assert.match(
+      body,
+      /project whose absolute path contains/i,
+      "must document the refusal for unsafe project paths",
+    );
+    assert.ok(body.includes("assertSafeScalar"), "must cite assertSafeScalar as the cause");
+  });
+
+  it("no longer cites the removed validateGovernanceEntry / GOVERNANCE_SCHEMA surface", () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    assert.equal(
+      body.includes("validateGovernanceEntry"),
+      false,
+      "validateGovernanceEntry was removed in 7f841825",
+    );
+    assert.equal(body.includes("GOVERNANCE_SCHEMA"), false, "GOVERNANCE_SCHEMA no longer exists");
+    assert.ok(body.includes("validateEntryFields"), "must cite validateEntryFields instead");
+  });
+
+  it("docs/cli-reference.md documents the --allow-exec install flag", () => {
+    const cli = readFileSync(CLI_PATH, "utf8");
+    assert.match(cli, /extension install[^\n]*--allow-exec/);
+    assert.match(cli, /per-install/i, "consent is per-install and never remembered");
+    assert.match(cli, /non-interactive/i, "must describe the non-interactive refusal");
+  });
+
+  it("docs/governance.md documents extension provenance and merge refusals", () => {
+    const gov = readFileSync(GOV_PATH, "utf8");
+    assert.ok(gov.includes("source: extension:"), "must document the source stamp");
+    assert.ok(gov.includes("exec_consented_at"), "must document the consent stamp");
+    assert.ok(gov.includes("lib/domains/merge-gates.mjs"), "must cite the gate projection");
+    assert.ok(gov.includes("GOVERNANCE_PARSE_REFUSED"), "must document the parse refusal");
+    assert.match(gov, /byte-identical/, "must state a colliding entry is left byte-identical");
+  });
+});
+
 describe("docs/extensions.md — adev CLI verbs referenced exist", () => {
   it("'adev report --type validator' is registered in cli/index.mjs", () => {
     const cliPath = join(PLUGIN_ROOT, "cli", "index.mjs");

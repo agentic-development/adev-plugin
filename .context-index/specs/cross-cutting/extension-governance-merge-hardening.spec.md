@@ -61,8 +61,9 @@ parent spec.
 
 3. **Fill-gap merging injects executable fields.** The collision path fills absent keys rather than
    rejecting (`:206-210`): `if (!(key in projectEntry)) projectEntry[key] = value`. `gates.yaml`
-   entries carry `command:`, which reaches `spawnSync` (`lib/gates/doctor.mjs:965`, the same set
-   Check 1 executes). An extension colliding on a gate id whose project entry has no `command` —
+   entries carry `command:`, which reaches `spawnSync` (`spawnGate` at `lib/gates/doctor.mjs:755-768`,
+   invoked from `:1004` — the same set Check 1 executes). An extension colliding on a gate id whose
+   project entry has no `command` —
    the commented `lint`/`typecheck` scaffolds, or any gate seeded without one — injects a shell
    command into a **project-owned** entry. A per-registry field allowlist does not help: `command`
    is a legitimate `gates.yaml` field.
@@ -165,8 +166,9 @@ executable field the three bounds do *not* govern; see Invariant 6 and the `runn
    argument to `installExtension` — is **not** a durable base: for npm and git sources it is an OS
    temp dir (`resolve-source.mjs:127`, `:171`) that `installExtension` deletes in its own `finally`
    (`install.mjs:178-183`), and both executors resolve a relative argv element against the **project
-   root**, not the extension (`doctor.mjs:965` spawns with `cwd: projectRoot`;
-   `quality-gate.mjs:45-51` calls `execFile(executable, args, { cwd: ctx.cwd, shell: false })`).
+   root**, not the extension (`spawnGate` at `doctor.mjs:755-768` spawns with `cwd: projectRoot` at
+   `:757`, invoked from `:1004`; `quality-gate.mjs:45-51` calls
+   `execFile(executable, args, { cwd: ctx.cwd, shell: false })`).
    A rule checked against one base and resolved against another is not a containment property.
 
    Therefore the installer **copies** the declared executable payload into a project-owned directory
@@ -176,8 +178,8 @@ executable field the three bounds do *not* govern; see Invariant 6 and the `runn
 
    - **`command` argv elements are rewritten to an absolute path** under that directory. That is what
      makes the executor's `cwd` irrelevant and the install-time check the run-time guarantee, since
-     `doctor.mjs:965` spawns with `cwd: projectRoot` and `quality-gate.mjs:45-51` uses a
-     caller-supplied `cwd`.
+     `spawnGate` at `doctor.mjs:755-768` spawns with `cwd: projectRoot` (`:757`, invoked from
+     `:1004`) and `quality-gate.mjs:45-51` uses a caller-supplied `cwd`.
    - **`package.skill` / `package.adapter` are rewritten to the `.context-index/`-relative form**
      `extensions/<extension-name>/<path-inside-extension>` — *not* absolute. `resolveReviewerPath`
      rejects an absolute path outright (`review-config.mjs:459-465`, `ABS_PATH_REJECTED`) and resolves
@@ -387,14 +389,23 @@ stamping and collision handling alike.
 Replace stem inference with the explicit table. Replace whole-file reserialization with an in-place
 splice of the target key's array.
 
-**The splice handles three on-disk forms, not one.** Specifying it against `validate.yaml`'s
-block-sequence layout alone would destroy or fail on the others actually present:
+**The splice handles seven on-disk forms, not one.** Specifying it against `validate.yaml`'s
+block-sequence layout alone would destroy or fail on the others actually present. Five forms splice;
+two refuse. The authoritative behavior is `lib/extensions/governance-splice.mjs`:
 
-| Form | Example on disk | Splice behavior |
-|---|---|---|
-| Block sequence under a key | `checks:` then `  - id: …` | Append new items after the last item of the block, before the next top-level key |
-| Empty inline list | `boundaries: []` in `boundaries.yaml`, `reviewers: []` in `review.yaml` | Rewrite the single `key: []` line as `key:` followed by the new items |
-| Key with only indented comments beneath | commented rule scaffolds in `boundaries.yaml` | Insert after the key line, above the comment block, leaving the comments byte-identical |
+| # | Form | Example on disk | Splice behavior |
+|---|---|---|---|
+| 1 | Block sequence under a key | `checks:` then `  - id: …` | Append new items after the last **content** line of the block, so a trailing comment/blank run stays where it is; the block ends at the next unindented non-comment line |
+| 2 | Empty inline list | `boundaries: []` in `boundaries.yaml`, `reviewers: []` in `review.yaml` | Rewrite the single `key: []` line as `key:` followed by the new items, carrying any trailing `#` comment over with its original spacing |
+| 3 | Key with only indented comments beneath | commented rule scaffolds in `boundaries.yaml` | Insert directly after the key line, above the comment block, leaving the comments byte-identical |
+| 4 | Key absent | a `gates.yaml` with no `boundaries:` key | Append `key:` plus the items at the end of the file, before any trailing blank run |
+| 5 | File absent (`rawText === null`) | no `.context-index/governance/review.yaml` at all | Generate a two-line provenance header naming the root key and the extension, then proceed as form 4. Signalled by exactly `null`; an existing-but-blank file takes form 4 so it never gains a fabricated "created by adev" header |
+| 6 | Root key duplicated at top level | `checks:` appearing twice | **Refuse** with `GOVERNANCE_PARSE_REFUSED`. An ambiguous splice target cannot be resolved safely, and guessing which block owns the entries would silently orphan the other |
+| 7 | Root key present but not a sequence | `checks:` over a block map or scalar; also a sequence written at column 0 | **Refuse** with `GOVERNANCE_PARSE_REFUSED`. A non-array root key yields zero existing entries and degrades collision detection to append-everything; a zero-indent sequence is simultaneously a block boundary, so splicing beside it would drop both those items and every following sibling key |
+
+Mixed CRLF/LF and lone-CR line endings are also refused with `GOVERNANCE_PARSE_REFUSED` rather than
+normalised — normalising would rewrite bytes outside the splice, which is exactly what this module
+exists to avoid. A uniform CRLF file stays CRLF.
 
 **Nested emission.** `review.yaml`'s `package` is a one-level object (`{skill, adapter}`), so the
 splice emits it as an indented block map beneath its key, with every leaf value subject to the same
@@ -466,6 +477,17 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
      shell-quoting that keeps the surviving `sh -c` path safe behind the argv-direct branch.
 7. Unsafe input is refused, never sanitized. There is no escaping layer whose correctness the
    security properties depend on.
+8. **An executable payload cannot be installed into a project whose own absolute path is unsafe as a
+   governance scalar.** This is a consequence of invariants 6 and 7 rather than a separate rule, and
+   it is user-visible, so it is recorded here rather than discovered as a bug report. A `command`
+   argv element is emitted **absolute** (invariant 6), which embeds `projectRoot` in the value; every
+   emitted path is re-checked with `assertSafeScalar` at plan time (invariant 7). A `projectRoot`
+   containing `"`, `'`, `#`, `,`, `{`, `}`, `[`, `]`, a newline, or a colon followed by whitespace
+   therefore refuses with `GOVERNANCE_SCALAR_UNSAFE` before a byte is written. Spaces and ordinary
+   punctuation are unaffected. Sanitizing is not the remedy — an unquoted `#` truncates the emitted
+   value in `lib/profiles/yaml.mjs` and a stray quote or brace reparses the line as different
+   structure, and that parser has no unescape to reverse either. The remedy is to relocate the
+   checkout. Non-executable slots are unaffected, because no project path is emitted for them.
 
 ## Behavioral Contract
 
