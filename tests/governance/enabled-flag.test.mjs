@@ -37,17 +37,20 @@
 
 import { test, describe, afterEach } from "node:test";
 import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { checkBoundaries } from "../../lib/governance/boundaries.mjs";
 import { loadReviewConfig, shouldDispatch } from "../../lib/governance/review-config.mjs";
 import { loadValidateConfig } from "../../lib/governance/validate-config.mjs";
 import { stampMarker } from "../../lib/governance/registry-marker.mjs";
 import { loadRegistry, runDiagnostics } from "../../lib/diagnostics/index.mjs";
+import { loadCheck1Gates } from "../../lib/gates/gate-sets.mjs";
 import {
   FIELD_ALLOWLIST,
   validateEntryFields,
 } from "../../lib/extensions/governance-registry.mjs";
-import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
+import { PLUGIN_ROOT, createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 const MARKED_AT = "2026-08-15T00:00:00Z";
 
@@ -110,6 +113,23 @@ function seedDiagnostics(dir, entries) {
   writeFixture(
     dir,
     ".context-index/governance/diagnostics.yaml",
+    stampMarker(lines.join("\n") + "\n", MARKED_AT),
+  );
+}
+
+/** `gates.yaml` — MARKED, so every fixture carries `materialized_at`. */
+function seedGates(dir, gates) {
+  const lines = ["gates:"];
+  for (const g of gates) {
+    lines.push(`  - id: ${g.id}`);
+    lines.push(`    command: ${JSON.stringify(g.command ?? ["npm", "test"])}`);
+    lines.push(`    tier: ${g.tier ?? "fast"}`);
+    if (g.enabled !== undefined) lines.push(`    enabled: ${g.enabled}`);
+    if (g.disabled_reason !== undefined) lines.push(`    disabled_reason: '${g.disabled_reason}'`);
+  }
+  writeFixture(
+    dir,
+    ".context-index/governance/gates.yaml",
     stampMarker(lines.join("\n") + "\n", MARKED_AT),
   );
 }
@@ -354,6 +374,30 @@ describe("enabled/disabled_reason — diagnostics.yaml", () => {
     assert.equal(off.disabled_reason, null);
   });
 
+  test("registry schema warnings reach the CALLER of runDiagnostics", async () => {
+    // `loadRegistry` raises DISABLED_WITHOUT_REASON on `warnings`, but
+    // `runDiagnostics` used to forward only `registry.errors` — so the Error
+    // Case was implemented into a return value nothing read. Warnings ride the
+    // same channel the registry's other self-diagnostics already use, which is
+    // the one `adev diagnose` prints and puts in its `--json` envelope.
+    const dir = tmp();
+    seedDiagnostics(dir, [{ id: "adev/off", enabled: false }]);
+    const run = await runDiagnostics({ projectRoot: dir, tier: 1, scope: "workspace" });
+    assert.ok(
+      run.errors.some(
+        (e) => e.severity === "warning" && /DISABLED_WITHOUT_REASON/.test(e.message),
+      ),
+      `expected DISABLED_WITHOUT_REASON on the run envelope; got ${JSON.stringify(run.errors)}`,
+    );
+  });
+
+  test("a clean registry forwards no schema warnings", async () => {
+    const dir = tmp();
+    seedDiagnostics(dir, [{ id: "adev/on" }]);
+    const run = await runDiagnostics({ projectRoot: dir, tier: 1, scope: "workspace" });
+    assert.deepEqual(run.errors, [], JSON.stringify(run.errors));
+  });
+
   test("a disabled diagnostic's runner is never containment-resolved", async () => {
     // Same reasoning as the reviewer case: disabling is how you turn off a row
     // whose runner no longer exists.
@@ -438,6 +482,104 @@ describe("enabled/disabled_reason — boundaries.yaml", () => {
 
 // ── `flags` — evaluator and contribution boundary agree (item 5) ────────────
 
+// ── the report surfaces that consume the loaders ────────────────────────────
+
+describe("disabled entries reach a REPORT, not only a loaded config", () => {
+  test("review-specs' consolidated report has a row for disabled reviewers", () => {
+    // The loader retains a disabled reviewer with its reason, but the skill
+    // emitted one section per DISPATCHED reviewer — so the disabled one
+    // vanished from the report entirely, which is the half of Behavior 5 that
+    // says "the REPORT records it as deliberately disabled".
+    const md = readFileSync(join(PLUGIN_ROOT, "skills/review-specs/SKILL.md"), "utf8");
+    assert.match(md, /Disabled Reviewers/i);
+    assert.match(md, /disabled_reason/);
+    assert.match(md, /no reason given/i);
+  });
+
+  test("docs/governance.md's disable examples state a reason", () => {
+    // Copied verbatim, a bare `enabled: false` now emits
+    // DISABLED_WITHOUT_REASON. Shipped docs must not teach the pattern the
+    // warning flags.
+    const md = readFileSync(join(PLUGIN_ROOT, "docs/governance.md"), "utf8");
+    for (const block of md.split("```").filter((b) => /enabled:\s*false/.test(b))) {
+      assert.match(
+        block,
+        /disabled_reason:/,
+        `a docs/governance.md example sets enabled: false with no disabled_reason:\n${block}`,
+      );
+    }
+    assert.match(md, /DISABLED_WITHOUT_REASON/);
+  });
+
+  test("docs/extensions.md scopes the `flags` constraint to the contribution boundary", () => {
+    const md = readFileSync(join(PLUGIN_ROOT, "docs/extensions.md"), "utf8");
+    assert.match(md, /extension-contributed boundary rule/);
+  });
+});
+
+// ── gates.yaml ──────────────────────────────────────────────────────────────
+
+describe("enabled/disabled_reason — gates.yaml", () => {
+  test("a disabled gate is not in the executable set but stays visible with its reason", () => {
+    const dir = tmp();
+    seedGates(dir, [
+      { id: "lint", enabled: false, disabled_reason: "linter not configured yet" },
+      { id: "test" },
+    ]);
+
+    const { gates, disabled } = loadCheck1Gates(dir);
+    assert.equal(
+      gates.some((g) => g.id === "lint"),
+      false,
+      "a disabled gate must not be resolved into the set consumers execute",
+    );
+    assert.ok(gates.some((g) => g.id === "test"), "the enabled sibling still resolves");
+
+    const off = disabled.find((g) => g.id === "lint");
+    assert.ok(off, "a disabled gate must remain visible on the resolved set");
+    assert.equal(off.enabled, false);
+    assert.equal(off.disabled_reason, "linter not configured yet");
+    assert.match(off.disabledNote, /linter not configured yet/);
+    // The declared row survives intact, so `adev governance materialize` can
+    // write it back rather than dropping it.
+    assert.deepEqual(off.command, ["npm", "test"]);
+  });
+
+  test("a gate absent from gates.yaml is not in `disabled` either", () => {
+    const dir = tmp();
+    seedGates(dir, [{ id: "test" }]);
+    const { gates, disabled } = loadCheck1Gates(dir);
+    assert.deepEqual(disabled, []);
+    assert.equal(gates.find((g) => g.id === "lint"), undefined);
+  });
+
+  test("enabled: false without a reason warns but stays disabled", () => {
+    const dir = tmp();
+    seedGates(dir, [{ id: "lint", enabled: false }, { id: "test" }]);
+    const { gates, disabled, warnings } = loadCheck1Gates(dir);
+    assert.ok(
+      hasCode(warnings, "DISABLED_WITHOUT_REASON"),
+      `expected DISABLED_WITHOUT_REASON; got ${JSON.stringify(warnings)}`,
+    );
+    assert.equal(gates.some((g) => g.id === "lint"), false);
+    const off = disabled.find((g) => g.id === "lint");
+    assert.equal(off.enabled, false);
+    assert.equal(off.disabled_reason, null);
+  });
+
+  test("a non-boolean enabled warns and the gate stays in the executable set", () => {
+    const dir = tmp();
+    seedGates(dir, [{ id: "test", enabled: "'false'" }]);
+    const { gates, disabled, warnings } = loadCheck1Gates(dir);
+    assert.ok(
+      hasCode(warnings, "INVALID_ENABLED_VALUE"),
+      `expected INVALID_ENABLED_VALUE; got ${JSON.stringify(warnings)}`,
+    );
+    assert.ok(gates.some((g) => g.id === "test"), "a quoting slip must not disable a gate");
+    assert.deepEqual(disabled, []);
+  });
+});
+
 describe("boundaries `flags` — evaluator and allowlist agree", () => {
   test("the evaluator honours a case-insensitive rule", async () => {
     const dir = tmp();
@@ -489,6 +631,32 @@ describe("boundaries `flags` — evaluator and allowlist agree", () => {
         (e) => e.code === "GOVERNANCE_FIELD_VALUE_INVALID",
         `flags: ${JSON.stringify(flags)}`,
       );
+    }
+  });
+
+  test("the EVALUATOR refuses the stateful flags too, not only the contribution boundary", async () => {
+    // The contribution allowlist refuses `g`/`y`; the evaluator used to accept
+    // any string `new RegExp` accepts, so a PROJECT-authored rule bypassed the
+    // constraint entirely. `g` is inert today only because the worker compiles
+    // a fresh RegExp per task — an accident of the current implementation, not
+    // a guarantee. One allowlist, both boundaries.
+    for (const flags of ["g", "y", "gi", "d", "v"]) {
+      const dir = tmp();
+      seedRules(dir, [{ id: "stateful", pattern: "X", flags }]);
+      await assert.rejects(
+        () => checkBoundaries(dir, { changed: ["src/a.mjs"] }),
+        (e) => e.code === "INVALID_BOUNDARY_PATTERN",
+        `flags: ${flags}`,
+      );
+    }
+  });
+
+  test("the evaluator still accepts every matching-semantics flag", async () => {
+    for (const flags of ["i", "m", "s", "u", "ims"]) {
+      const dir = tmp();
+      seedRules(dir, [{ id: "ok", pattern: "X", flags }]);
+      const r = await checkBoundaries(dir, { changed: [] });
+      assert.equal(r.verdict, "SKIP", `flags: ${flags}`);
     }
   });
 

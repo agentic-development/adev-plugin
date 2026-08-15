@@ -244,7 +244,14 @@ Full template with commented examples: [`templates/governance/review.example.yam
 reviewers:
   - id: consistency-analyzer
     enabled: false
+    disabled_reason: too noisy on the legacy billing module
 ```
+
+The reviewer stays in the registry and in the loaded config, so the review report
+records it as deliberately disabled rather than letting it vanish. Omitting
+`disabled_reason` is a schema warning (`DISABLED_WITHOUT_REASON`) — the reviewer
+stays disabled either way, but the report can then only say that it does not run,
+never why.
 
 **Cap severity.** Keeps the reviewer active but degrades its findings.
 
@@ -333,7 +340,12 @@ Full template with commented examples: [`templates/governance/validate.example.y
 checks:
   - id: validate.check-10-platform-drift
     enabled: false
+    disabled_reason: platform pinned by the deploy image; drift is expected here
 ```
+
+As with reviewers, the check stays visible and `/adev:validate` records it as
+`SKIPPED-DISABLED` with the stated reason. Omitting `disabled_reason` warns
+(`DISABLED_WITHOUT_REASON`) without re-enabling the check.
 
 **Add an argv-form quality-gate.**
 

@@ -224,6 +224,8 @@ Determine the overall verdict for each spec:
 
 Produce one section per dispatched reviewer, in registry order. For each reviewer record the dispatch mode (`subagent` or `package`), the resolved profile, and the prompt source (`plugin:` URI or repo-relative). For package-mode reviewers also record the skill path and the adapter path.
 
+**Disabled reviewers get a report row, not silence.** `loadReviewConfig` keeps a reviewer declared with `enabled: false` in `reviewers` and also returns it on `disabled`, each entry carrying `disabled_reason`. Emit one `## Disabled Reviewers` table row per entry on that list, naming the reviewer id and its `disabled_reason` — or the literal text `no reason given` when the registry stated none (the loader also raises a `DISABLED_WITHOUT_REASON` warning in that case, which belongs in the report header with the other warnings). Omit the whole section when nothing is disabled. A reviewer that was deliberately switched off must read differently from one the project never declared; dropping it from the report collapses the two.
+
 ```markdown
 # Architecture Review: <spec-slug>
 
@@ -238,6 +240,12 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 |----|------|------|---------|--------------|
 | <reviewer-id> | <reviewer-name> | subagent | <profile-name> | <plugin: URI or repo-relative path> |
 | <package-id>  | <package-name>  | package  | <profile-name> | <skill path> (adapter: <adapter path>) |
+
+## Disabled Reviewers
+
+| ID | Reason |
+|----|--------|
+| <reviewer-id> | <disabled_reason, or "no reason given"> |
 
 ## <Reviewer Name> (<id>)
 

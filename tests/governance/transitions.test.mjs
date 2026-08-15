@@ -498,6 +498,58 @@ describe("a transition naming an unknown gate", () => {
   });
 });
 
+// ── A transition naming a gate the registry DISABLED ────────────────────────
+
+describe("a transition naming a disabled gate", () => {
+  it("FAILs naming the gate as disabled, distinct from unknown and from no-outcome", () => {
+    // A DISABLED required gate cannot be attested: nothing runs it, so no
+    // outcome can exist for it. Counting it as passing would let `enabled:
+    // false` silently satisfy a transition — a merge gate that fails open.
+    // The reason is its own vocabulary entry because the remedies differ:
+    // `unknown-gate` means fix the transition, `no-recorded-outcome` means run
+    // the gates, `disabled-gate` means re-enable it or stop requiring it.
+    const dir = seedProject({
+      gatesYaml:
+        "gates:\n" +
+        "  - id: test\n    tier: fast\n    command: [\"npm\", \"run\", \"test\"]\n" +
+        "    enabled: false\n    disabled_reason: suite quarantined\n" +
+        "transitions:\n  implement-to-validate:\n    required_gates:\n      - test\n",
+    });
+    try {
+      const r = evaluate(dir);
+      assert.equal(r.verdict, "FAIL");
+      assert.match(r.reason, /\btest\b/);
+      assert.equal(r.gates.test.verdict, "skip");
+      assert.equal(r.gates.test.reason, "disabled-gate");
+      assert.equal(r.gates.test.disabled_reason, "suite quarantined");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("does not let a recorded outcome resurrect a disabled gate", () => {
+    const dir = seedProject({
+      gatesYaml:
+        "gates:\n" +
+        "  - id: test\n    tier: fast\n    command: [\"npm\", \"run\", \"test\"]\n" +
+        "    enabled: false\n    disabled_reason: suite quarantined\n" +
+        "transitions:\n  implement-to-validate:\n    required_gates:\n      - test\n",
+    });
+    try {
+      seedOutcome(dir, {
+        ts: AFTER,
+        manifestSha: SPEC_SHA,
+        outcomes: [{ id: "test", verdict: "pass", tier: "fast" }],
+      });
+      const r = evaluate(dir);
+      assert.equal(r.verdict, "FAIL");
+      assert.equal(r.gates.test.reason, "disabled-gate");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
 // ── Duplicate ids in one gate_outcomes array ────────────────────────────────
 
 describe("duplicate gate ids with conflicting verdicts", () => {

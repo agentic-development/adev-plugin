@@ -227,6 +227,58 @@ describe("adev boundaries check", () => {
     }),
   );
 
+  test(
+    "the HUMAN report names disabled rules and their reasons in a mixed registry",
+    withDir((dir) => {
+      // `--json` already carried `disabled`; `printReport` did not, so in a
+      // registry where some rules are on and some off the operator saw no trace
+      // of the disabled ones. Behavior 5 requires the REPORT to record a
+      // disabled entry with its reason, not just the loaded config.
+      seed(
+        dir,
+        "boundaries:\n" +
+          "  - id: live\n    severity: error\n    pattern: 'BAD'\n" +
+          "  - id: parked\n    severity: error\n    pattern: 'ALSOBAD'\n" +
+          "    enabled: false\n    disabled_reason: legacy module exempt\n",
+      );
+      writeFixture(dir, "src/a.mjs", "clean\n");
+      const r = runVerb(["check", "--changed", "src/a.mjs"], dir);
+      assert.strictEqual(r.status, 0, r.stderr);
+      assert.match(r.stdout, /Disabled rules/i);
+      assert.match(r.stdout, /parked/);
+      assert.match(r.stdout, /legacy module exempt/);
+      assert.doesNotMatch(r.stdout, /\blive\b/);
+    }),
+  );
+
+  test(
+    "the HUMAN report surfaces DISABLED_WITHOUT_REASON",
+    withDir((dir) => {
+      seed(
+        dir,
+        "boundaries:\n" +
+          "  - id: live\n    severity: error\n    pattern: 'BAD'\n" +
+          "  - id: parked\n    severity: error\n    pattern: 'ALSOBAD'\n    enabled: false\n",
+      );
+      writeFixture(dir, "src/a.mjs", "clean\n");
+      const r = runVerb(["check", "--changed", "src/a.mjs"], dir);
+      assert.strictEqual(r.status, 0, r.stderr);
+      assert.match(r.stdout, /DISABLED_WITHOUT_REASON/);
+    }),
+  );
+
+  test(
+    "a report with no disabled rules and no schema warnings says nothing about either",
+    withDir((dir) => {
+      seed(dir, "boundaries:\n  - id: live\n    severity: error\n    pattern: 'BAD'\n");
+      writeFixture(dir, "src/a.mjs", "clean\n");
+      const r = runVerb(["check", "--changed", "src/a.mjs"], dir);
+      assert.strictEqual(r.status, 0, r.stderr);
+      assert.doesNotMatch(r.stdout, /Disabled rules/i);
+      assert.doesNotMatch(r.stdout, /Registry warnings/i);
+    }),
+  );
+
   test("--help documents the sub-verb, flags and exit codes", () => {
     const r = spawnSync("node", [CLI, "boundaries", "check", "--help"], {
       encoding: "utf8",

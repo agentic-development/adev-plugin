@@ -331,23 +331,31 @@ describe("checkBoundaries — lazy content loading", () => {
 
 describe("checkBoundaries — pattern flags", () => {
   test(
-    "a g-flag pattern matches every file, with no lastIndex carried between tasks",
+    "a g-flag rule is REFUSED at load, so lastIndex state can never reach the worker",
     withDir(async (dir) => {
-      // A `g` RegExp carries `lastIndex` across `exec` calls. The worker builds a
-      // fresh RegExp per task and execs once, so the state cannot persist — this
-      // locks that in, because sharing one compiled RegExp would silently make
-      // every file after the first come back clean.
+      // INVERTED, deliberately. This test used to assert that a `g` rule loads
+      // and matches every file, on the reasoning that the worker builds a fresh
+      // RegExp per task so `lastIndex` cannot persist. That reasoning is sound
+      // about TODAY's worker and is exactly the problem: `g` was inert by
+      // accident of the implementation, not by contract, and the day the worker
+      // reuses a compiled pattern every file after the first comes back clean —
+      // a boundary rule that stops firing is a merge gate that fails OPEN.
+      //
+      // The extension-contribution allowlist already refused `g` and `y`
+      // (`assertRegexFlags`); the evaluator did not, so project-authored rules
+      // bypassed the constraint entirely. Both boundaries now share one
+      // allowlist, which makes the statefulness unreachable rather than
+      // harmless. The isolation property the old test named is no longer
+      // something a rule can even express.
       seedRules(dir, [{ id: "global", severity: "error", pattern: "MARK", flags: "g" }]);
-      const changed = [];
-      for (let i = 0; i < 4; i++) {
-        writeFixture(dir, `src/g${i}.mjs`, "MARK\nMARK\n");
-        changed.push(`src/g${i}.mjs`);
-      }
-      const r = await checkBoundaries(dir, { changed });
-      assert.strictEqual(r.verdict, "FAIL");
-      assert.deepEqual(
-        r.findings.map((f) => `${f.file}:${f.line}`),
-        ["src/g0.mjs:1", "src/g1.mjs:1", "src/g2.mjs:1", "src/g3.mjs:1"],
+      writeFixture(dir, "src/g0.mjs", "MARK\nMARK\n");
+      await assert.rejects(
+        () => checkBoundaries(dir, { changed: ["src/g0.mjs"] }),
+        (err) => {
+          assert.strictEqual(err.code, "INVALID_BOUNDARY_PATTERN");
+          assert.match(err.message, /flags/);
+          return true;
+        },
       );
     }),
   );
