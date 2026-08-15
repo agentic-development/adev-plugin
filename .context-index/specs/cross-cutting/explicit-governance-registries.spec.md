@@ -1,6 +1,6 @@
 ---
 mode: cross-cutting
-affects: [validation, unified-gates, review, cli-driver-surface]
+affects: [validation, unified-gates, review, cli-driver-surface, domain-extensions]
 kind: refactor
 status: review-pending
 risk_level: medium
@@ -67,6 +67,48 @@ tracker-ref: adev-plugin-8ekd.1
 - **The doctor's defect dissolves.** With gates explicit and unmerged, `loadGates` reading the raw file is correct by construction. `adev-plugin-3sw` is resolved by removing the divergence rather than by teaching the doctor to reproduce it.
 - **Checks get cheaper as they get more numerous.** Checks 8 and 9 stop being subagent dispatches. Populating `boundaries.yaml` then costs approximately nothing per rule, so the constitution's mechanical rules can be enforced at plan, implement *and* validate time rather than only at pre-commit.
 
+### Extension contribution
+
+Extensions already conform to the target model in principle: `provides.governance: [{target, entries}]`
+is merged into the project's own governance file **at install time** by
+`lib/extensions/content-install.mjs::mergeGovernanceEntries`, project-wins on id collision. There is
+no run-time extension overlay, so single-source does not break the extension path — it is the model
+extensions already use, and bundled/domain defaults are being brought into line with *them*.
+
+The implementation, however, is destructive, and this spec cannot land without fixing it — Step 3
+populates `transitions:` in `gates.yaml`, which the current merge would delete.
+
+**Verified 2026-08-14** by running the reference extension's own entry against a real `validate.yaml`
+(7 checks, 20 lines of comments). Result: the file was replaced with three lines under `validators:`.
+All seven checks destroyed. Two compounding defects:
+
+1. **Root-key mismatch.** `inferRootKey('validate.yaml')` returns `'validators'`
+   (`content-install.mjs:235`), but the schema key is `checks:` — what `validate-config.mjs:110`
+   reads, and what the project file and `templates/domains/software/validate.yaml` both use. The
+   merge reads `parsed['validators']`, finds nothing, and starts from an empty set.
+2. **Serialization drops siblings and comments.** `serializeGovernanceYaml` emits one root key and
+   its entries only. Even with the key corrected, an extension targeting `gates.yaml` would erase
+   `transitions:`.
+
+`tests/lib/extensions/example-validation-check-install.test.mjs:206` encodes defect 1 as intent
+(`const entries = validate.validators || validate.checks || []`), which is why it has survived.
+
+Blast radius today is narrow — neither shipped extension uses `provides.governance`; both go through
+`installDomainProfile`. The only consumer is the reference example that documents the mechanism.
+
+Three further gaps this spec closes:
+
+- **No provenance.** Merged entries carry no marker, so an extension-contributed entry is
+  indistinguishable from a project-authored one. That breaks uninstall, and would make the widened
+  hygiene drift pass (Step 5) report extension entries as project drift.
+  `review-config.mjs` already tracks provenance via `__source` on the run-time overlay path — the
+  install-time path needs the same field, which is also what makes the two paths consistent.
+- **No uninstall.** Nothing under `lib/extensions/` reverses a governance merge; entries are
+  permanent once installed.
+- **`boundaries.yaml` and `diagnostics.yaml` work only by accident.** `inferRootKey` falls through
+  to the filename stem, which happens to be correct for both. The mapping should be an explicit
+  table so a future registry does not inherit `validate.yaml`'s failure.
+
 ## Changes Catalog
 
 ### ADDED
@@ -77,6 +119,8 @@ tracker-ref: adev-plugin-8ekd.1
 - `adev governance materialize --registry <name>` — one-shot verb writing the currently-effective merged set into the project's yaml, so existing projects can adopt single-source without hand-transcribing defaults.
 - Boundary rules in `boundaries.yaml` derived from the constitution's mechanical anti-patterns.
 - `transitions` entries in `gates.yaml` naming gates that carry real argv commands.
+- `source:` provenance field on every governance entry (`project` | `bundled` | `domain:<slug>` | `extension:<name>`), written by materialize and by extension install.
+- `adev extension uninstall --name <n>` governance reversal: removes entries whose `source` matches, leaving project-authored entries untouched.
 
 ### MODIFIED
 
@@ -86,7 +130,10 @@ tracker-ref: adev-plugin-8ekd.1
 - `skills/validate/checks/validate.check-8-boundaries.md` — body becomes a call to `adev boundaries check --json`, following the `check-14-gate-executability` pattern.
 - `skills/validate/checks/validate.check-9-transition-gates.md` — same, calling `adev gate transitions check --json`.
 - `.context-index/governance/validate.yaml` — Checks 8 and 9 change `kind: subagent-review` → `deterministic-check`.
-- `skills/hygiene/SKILL.md` Audit Pass 19 — remit extended from `validate.yaml` to all four registries.
+- `skills/hygiene/SKILL.md` Audit Pass 19 — remit extended from `validate.yaml` to all four registries; entries with a non-`project` `source` are excluded from drift findings.
+- `lib/extensions/content-install.mjs::inferRootKey` — replace stem-inference with an explicit registry→root-key table; `validate.yaml` maps to `checks`, not `validators`.
+- `lib/extensions/content-install.mjs::serializeGovernanceYaml` — preserve sibling root keys and comments; write only the targeted key's array.
+- `tests/lib/extensions/example-validation-check-install.test.mjs:206` — assert the `checks` contract instead of accommodating `validators || checks`.
 
 ### REMOVED
 
@@ -101,7 +148,7 @@ None. Check identifiers are untouched — the ID-namespace work is `check-id-enu
 
 ### Step 1: Fix the doctor's blocking defect
 
-Resolve `adev-plugin-3sw` by making the divergence impossible: once Step 4 lands, `loadGates` reading the raw file is correct. Until then, add a doctor finding when the raw and merged sets differ, so the divergence is reported rather than silently wrong.
+Resolve `adev-plugin-3sw` by making the divergence impossible: once Step 5 lands, `loadGates` reading the raw file is correct. Until then, add a doctor finding when the raw and merged sets differ, so the divergence is reported rather than silently wrong.
 
 - **Risk:** Low — additive finding only.
 - **Verify:** `adev gate doctor --json` reports a divergence finding on a project with a domain-contributed gate.
@@ -113,21 +160,33 @@ Add `lib/governance/boundaries.mjs` + `adev boundaries check`, and the transitio
 - **Risk:** Low — both checks currently evaluate empty rulesets, so behaviour is observably unchanged (40 and 39 historical PASSes, zero FAILs).
 - **Verify:** Both checks return SKIP with a reason on empty rulesets; a seeded violating file produces FAIL; no subagent dispatch is recorded for either check.
 
-### Step 3: Populate the rulesets
+### Step 3: Fix the extension merge before anything writes to a governance file
+
+Correct `inferRootKey` to an explicit table, make `serializeGovernanceYaml` non-destructive, add the
+`source:` provenance field, and add governance reversal to uninstall. This must precede Step 4
+because Step 4 populates `transitions:`, which the current merge deletes.
+
+- **Risk:** Low in blast radius (no shipped extension uses `provides.governance`), high in
+  consequence if skipped.
+- **Verify:** Installing the reference extension against a `validate.yaml` holding 7 checks yields 8
+  checks under `checks:`, with comments intact and `transitions:` untouched in `gates.yaml`. This is
+  a regression test, not an inspection — the current test encodes the defect as expected behavior.
+
+### Step 4: Populate the rulesets
 
 Translate the constitution's mechanical anti-patterns into `boundaries.yaml` rules. Populate `transitions` for gates carrying real argv commands.
 
 - **Risk:** Medium — the first step that can fail a build. Land rules at `severity: warning` first, promote to `error` after one clean cycle.
 - **Verify:** Each rule fires on a deliberately-violating fixture and stays silent on the current tree.
 
-### Step 4: Materialize the three implicit registries
+### Step 5: Materialize the three implicit registries
 
 Ship `adev governance materialize`, run it for `review`, `diagnostics` and `gates`, then remove run-time merging.
 
 - **Risk:** Medium — highest blast radius. A project whose materialized file omits a bundled entry silently loses that check.
 - **Verify:** For each registry, the effective set before and after materialization is byte-identical when serialized in canonical order. This is the invariant that makes the step safe, and it must be a test, not an inspection.
 
-### Step 5: Extend the drift pass
+### Step 6: Extend the drift pass
 
 Widen hygiene Audit Pass 19 to all four registries so upgrades surface as findings.
 
@@ -137,7 +196,7 @@ Widen hygiene Audit Pass 19 to all four registries so upgrades surface as findin
 ## Invariants
 
 1. All existing tests pass at every step.
-2. **The effective check set never changes silently.** At every step, the set of checks that run — with their severities — is either identical to the previous step or differs only where this spec explicitly says so. Step 4 makes this a mechanical equality test.
+2. **The effective check set never changes silently.** At every step, the set of checks that run — with their severities — is either identical to the previous step or differs only where this spec explicitly says so. Step 5 makes this a mechanical equality test.
 3. No check moves between surfaces. Surface assignment is ADR-0010's concern; this spec changes composition and execution mechanism only.
 4. Check identifiers are unchanged. `check-id-enum.spec.md` owns that vocabulary.
 5. A disabled check is always distinguishable from an absent one.
@@ -154,6 +213,9 @@ Widen hygiene Audit Pass 19 to all four registries so upgrades surface as findin
 5. **When** `adev governance materialize --registry <name>` runs **then** it writes the currently-effective merged set into the project's yaml and makes no other change; running it twice produces byte-identical output.
 6. **When** a registry has been materialized and the plugin later adds a bundled entry **then** `/adev:hygiene` Audit Pass 19 reports a drift finding naming the registry and the entry, and the project's behaviour is unchanged until it adopts.
 7. **When** `adev gate doctor` inspects gates **then** it inspects exactly the set its consumers execute.
+8. **When** an extension declaring `provides.governance` is installed **then** its entries are appended to the target registry under that registry's own root key, every other key and comment in the file is preserved byte-identically, and each appended entry carries `source: extension:<name>`.
+9. **When** an extension whose id collides with an existing entry is installed **then** the project entry wins and retains `source: project` — current behavior, now observable.
+10. **When** an extension is uninstalled **then** entries carrying its `source` are removed and no other entry is touched.
 
 ### Error Cases
 
@@ -164,6 +226,8 @@ Widen hygiene Audit Pass 19 to all four registries so upgrades surface as findin
 | `adev governance materialize` would drop an entry present in the effective set | Refuses to write; reports the entry | `MATERIALIZE_WOULD_DROP` |
 | Registry file missing after materialization | Hard error, as `validate.yaml` already does | `MISSING_REGISTRY_CONFIG` |
 | `enabled: false` without `disabled_reason` | Schema warning; check still disabled | `DISABLED_WITHOUT_REASON` |
+| Extension targets a registry with no root-key mapping | Install refuses; names the registry | `UNKNOWN_GOVERNANCE_TARGET` |
+| Extension merge would drop an existing root key | Install refuses; names the key | `MERGE_WOULD_TRUNCATE` |
 
 ## Module Impact Map
 
@@ -173,6 +237,7 @@ Widen hygiene Audit Pass 19 to all four registries so upgrades surface as findin
 | unified-gates | High | Gates become explicit; `transitions` populated; doctor defect resolved |
 | review | Medium | Bundled reviewers materialized into `review.yaml`; loader drops overlay |
 | cli-driver-surface | Medium | Three new CLI verbs; check bodies become verb calls (the established `check-14` pattern) |
+| domain-extensions | High | Extension governance merge becomes non-destructive and provenance-tracked; uninstall gains governance reversal |
 
 ## Integration Points
 
@@ -200,6 +265,10 @@ Widen hygiene Audit Pass 19 to all four registries so upgrades surface as findin
 - [ ] `enabled: false` entries appear in the validate report as deliberately disabled with their reason.
 - [ ] `adev gate doctor` and `/adev:validate` Check 1 operate on the same gate set, asserted by a test.
 - [ ] Hygiene Audit Pass 19 reports drift for all four registries.
+- [ ] Installing the reference extension against a 7-check `validate.yaml` yields 8 entries under `checks:`, comments intact.
+- [ ] Installing any extension targeting `gates.yaml` leaves `transitions:` byte-identical.
+- [ ] Every governance entry carries a `source:` value; hygiene drift findings exclude non-`project` sources.
+- [ ] Uninstalling an extension removes exactly its entries.
 - [ ] No check identifier changed; no check moved between surfaces.
 - [ ] All quality gates pass; no constitutional violations.
 
