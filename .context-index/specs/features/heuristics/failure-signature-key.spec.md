@@ -1,10 +1,10 @@
 ---
 charter: heuristics
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: high
 milestone: 3
-revision: 3
+revision: 4
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
