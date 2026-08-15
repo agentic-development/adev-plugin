@@ -30,8 +30,8 @@
  * so validate's verdict is unaffected.
  */
 
-import { resolve, basename } from 'node:path';
-import { createHash } from 'node:crypto';
+import { resolve, relative, isAbsolute, basename, sep } from 'node:path';
+import { realpathSync, statSync } from 'node:fs';
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -75,6 +75,22 @@ async function run(rawInput) {
   const specPath = typeof verdict.spec_path === 'string' ? verdict.spec_path : '';
   if (!specPath) return;
 
+  // Resolve the project root BEFORE anything else that could write. `id`
+  // derivation needs a repo-relative spec path, so an unresolvable root means
+  // there is no key to derive — and this hook must never guess one, because a
+  // guessed key writes a duplicate entry that `writeHeuristic` can no longer
+  // reconcile. Capture is non-blocking, so skipping is safe; guessing is not.
+  //
+  // Convention matches lib/execution-state.mjs and /adev:recover Step 7:
+  // prefer the env var, fall back to cwd (always absolute).
+  const projectRoot = resolveProjectRoot();
+  if (!projectRoot) return; // resolveProjectRoot already warned
+
+  // Containment: the spec must live inside the project root, or the relative
+  // path would escape with `..` and the derived id would be meaningless.
+  const repoRelSpecPath = toRepoRelative(projectRoot, specPath);
+  if (!repoRelSpecPath) return; // toRepoRelative already warned
+
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
   if (!pluginRoot) {
     console.warn('[post-validate-hook] CLAUDE_PLUGIN_ROOT unset — skipping extraction');
@@ -85,16 +101,15 @@ async function run(rawInput) {
   // (e.g., the plugin tree is missing), skip silently — the spec's
   // "helper unavailable" SKIP semantics.
   let writeHeuristic;
+  let deriveHeuristicId;
   try {
-    ({ writeHeuristic } = await import(resolve(pluginRoot, 'lib/heuristics.mjs')));
+    ({ writeHeuristic, deriveHeuristicId } = await import(
+      resolve(pluginRoot, 'lib/heuristics.mjs')
+    ));
   } catch (err) {
     console.warn(`[post-validate-hook] lib/heuristics.mjs import failed (non-blocking): ${err.message}`);
     return;
   }
-
-  // Resolve project root — same convention as lib/execution-state.mjs and
-  // /adev:recover Step 7: prefer the env var, fall back to cwd.
-  const projectRoot = process.env.CLAUDE_PROJECT_ROOT || process.cwd();
 
   // Build the heuristic entry from the verdict-metadata-only fields.
   const scope = typeof verdict.charter === 'string' && verdict.charter
@@ -120,11 +135,9 @@ async function run(rawInput) {
     : `${specPath.replace(/\.spec\.md$/, '')}.validate.md`;
 
   const today = new Date().toISOString().slice(0, 10);
-  const hashInput = `${normalizePath(specPath)}|${pattern}`;
-  const hash = createHash('sha256').update(hashInput).digest('hex').slice(0, 8);
 
   const entry = {
-    id: `${specSlug}-${hash}`,
+    id: deriveHeuristicId(specSlug, repoRelSpecPath, pattern),
     scope,
     title,
     pattern,
@@ -157,6 +170,84 @@ function cap(s, n) {
   return s.slice(0, n - 3) + '...';
 }
 
-function normalizePath(p) {
-  return String(p || '').replace(/\\/g, '/').toLowerCase();
+/**
+ * Resolve the project root, failing closed rather than guessing.
+ *
+ * Returns the absolute root, or `null` after warning to stderr when
+ * `CLAUDE_PROJECT_ROOT` is set to something that is not an absolute path to an
+ * existing directory. An unset env var falls back to `process.cwd()`, which is
+ * always absolute and always exists.
+ *
+ * @returns {string|null}
+ */
+function resolveProjectRoot() {
+  const fromEnv = process.env.CLAUDE_PROJECT_ROOT;
+  if (!fromEnv) return process.cwd();
+
+  if (!isAbsolute(fromEnv)) {
+    console.warn(
+      `[post-validate-hook] project root '${fromEnv}' is not an absolute path — skipping extraction`,
+    );
+    return null;
+  }
+
+  try {
+    if (!statSync(fromEnv).isDirectory()) {
+      console.warn(
+        `[post-validate-hook] project root '${fromEnv}' is not a directory — skipping extraction`,
+      );
+      return null;
+    }
+  } catch {
+    console.warn(
+      `[post-validate-hook] project root '${fromEnv}' does not exist — skipping extraction`,
+    );
+    return null;
+  }
+
+  // Normalize before returning: the containment check downstream compares
+  // string prefixes, so a trailing slash, a `..` segment, or a symlinked
+  // parent would otherwise fail containment and be reported as an escaping
+  // spec path — fail-closed, but with a warning that misdescribes the cause.
+  // `process.cwd()` is already realpath'd by Node, so realpath'ing the env
+  // var keeps the two branches symmetric.
+  try {
+    return realpathSync(fromEnv);
+  } catch {
+    return resolve(fromEnv);
+  }
+}
+
+/**
+ * Convert a spec path (relative or absolute) to a repo-relative path, or
+ * `null` after warning when it escapes the project root.
+ *
+ * The repo-relative form is what makes the derived `id` identical across
+ * worktrees; an escaping path has no such form, so extraction is skipped
+ * rather than keyed on a path that means nothing outside this checkout.
+ *
+ * @param {string} projectRoot - Absolute project root.
+ * @param {string} specPath - Spec path as supplied in the verdict metadata.
+ * @returns {string|null}
+ */
+function toRepoRelative(projectRoot, specPath) {
+  let abs = isAbsolute(specPath) ? specPath : resolve(projectRoot, specPath);
+  // Match resolveProjectRoot's realpath treatment so a symlinked checkout
+  // does not read as an escape. A spec that does not exist yet keeps its
+  // resolved (non-realpath'd) form.
+  try {
+    abs = realpathSync(abs);
+  } catch {
+    abs = resolve(abs);
+  }
+  if (abs !== projectRoot && !abs.startsWith(projectRoot + sep)) {
+    console.warn(
+      `[post-validate-hook] spec path '${specPath}' escapes the project root — skipping extraction`,
+    );
+    return null;
+  }
+  // Normalize separators at the boundary so the value handed to
+  // deriveHeuristicId is already POSIX-shaped. `normalizeIdInput` folds `\`
+  // too, so this is defence in depth rather than the sole guarantee.
+  return relative(projectRoot, abs).split(sep).join('/');
 }
