@@ -98,6 +98,50 @@ test('manifest_sha round-trips independently of gate_outcomes', () => {
   }
 });
 
+test('a non-string manifest_sha is refused, never coerced', () => {
+  // Task 7's freshness rule equality-checks `manifest_sha` against the spec's
+  // real source-manifest sha. A coerced value (`null` -> "null", 0 -> "0",
+  // {} -> "[object Object]") can never match, so it would degrade to a
+  // permanent, undiagnosable stale-gate-record SKIP. Refuse at write time.
+  //
+  // `null` is REJECTED rather than treated as absent: unlike reportReviewer's
+  // `revision` (which tolerates `null` for legacy events written before the
+  // field existed), `manifest_sha` has no legacy caller — a `null` here is
+  // always a failed sha lookup at the call site, and silently recording
+  // "pre-upgrade record" would reproduce the same silent fail-soft.
+  const { dir, spec } = seedSpec();
+  try {
+    for (const bad of [null, 42, 0, false, {}, []]) {
+      assert.throws(
+        () => reportValidator(dir, spec, {
+          step: 'validate', validator: VALIDATOR, verdict: 'PASS',
+          manifest_sha: bad, pluginRoot: PLUGIN_ROOT,
+        }),
+        isSchemaInvalid,
+        `manifest_sha=${String(bad)} must be refused`,
+      );
+    }
+    assert.deepEqual(readEvents(dir, spec), [], 'no rejected event reached disk');
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test('an empty-string manifest_sha throws (it would be misread as absent)', () => {
+  const { dir, spec } = seedSpec();
+  try {
+    assert.throws(
+      () => reportValidator(dir, spec, {
+        step: 'validate', validator: VALIDATOR, verdict: 'PASS',
+        manifest_sha: '', pluginRoot: PLUGIN_ROOT,
+      }),
+      isSchemaInvalid,
+    );
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
 test('an outcome without command_sha is accepted (pre-upgrade records)', () => {
   const { dir, spec } = seedSpec();
   try {
