@@ -9,10 +9,16 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert";
-import { spawnSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { join } from "node:path";
 
-import { cleanupTempDir, createTempDir, writeFixture, PLUGIN_ROOT } from "../helpers.mjs";
+import {
+  cleanupTempDir,
+  createTempDir,
+  createTempGitRepo,
+  writeFixture,
+  PLUGIN_ROOT,
+} from "../helpers.mjs";
 
 const CLI = join(PLUGIN_ROOT, "cli", "index.mjs");
 const BOUNDARIES_PATH = ".context-index/governance/boundaries.yaml";
@@ -132,6 +138,64 @@ describe("adev boundaries check", () => {
       );
     }),
   );
+
+  test("--all evaluates every tracked file, including ones the diff does not name", () => {
+    const dir = createTempGitRepo();
+    try {
+      // `B[A]D` matches "BAD" but not the registry line that spells it, so the
+      // tracked boundaries.yaml does not trip its own rule under --all.
+      seed(dir, "boundaries:\n  - id: no-bad\n    severity: error\n    pattern: 'B[A]D'\n");
+      writeFixture(dir, "src/committed.mjs", "BAD in a committed file\n");
+      execSync("git add -A && git commit -m seed", { cwd: dir, stdio: "ignore" });
+      // Not tracked, so `--all` must not see it; the default set would.
+      writeFixture(dir, "src/untracked.mjs", "BAD in an untracked file\n");
+
+      const r = runVerb(["check", "--all", "--json"], dir);
+      assert.strictEqual(r.status, 2, r.stderr);
+      const doc = JSON.parse(r.stdout);
+      assert.strictEqual(doc.verdict, "FAIL");
+      assert.deepEqual(
+        doc.findings.map((f) => f.file),
+        ["src/committed.mjs"],
+      );
+      assert.strictEqual(doc.summary.errors, 1);
+      // README.md, boundaries.yaml, manifest.yaml and src/committed.mjs.
+      assert.strictEqual(doc.summary.files_checked, 4);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  test("--all on a clean tracked tree exits 0", () => {
+    const dir = createTempGitRepo();
+    try {
+      seed(dir, "boundaries:\n  - id: never\n    severity: error\n    pattern: 'NEVER[_]PRESENT'\n");
+      writeFixture(dir, "src/clean.mjs", "fine\n");
+      execSync("git add -A && git commit -m seed", { cwd: dir, stdio: "ignore" });
+      const r = runVerb(["check", "--all", "--json"], dir);
+      assert.strictEqual(r.status, 0, r.stderr);
+      assert.strictEqual(JSON.parse(r.stdout).verdict, "PASS");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  test("rules declared with nothing changed is SKIP at exit 0, never PASS", () => {
+    const dir = createTempGitRepo();
+    try {
+      seed(dir, "boundaries:\n  - id: live\n    severity: error\n    pattern: 'B[A]D'\n");
+      writeFixture(dir, "src/a.mjs", "BAD\n");
+      execSync("git add -A && git commit -m seed", { cwd: dir, stdio: "ignore" });
+      // Nothing changed since HEAD and nothing untracked: the default set is empty.
+      const r = runVerb(["check", "--json"], dir);
+      assert.strictEqual(r.status, 0, r.stderr);
+      const doc = JSON.parse(r.stdout);
+      assert.strictEqual(doc.verdict, "SKIP");
+      assert.match(doc.reason, /changed-file set is empty/);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
 
   test(
     "--changed refuses a path escaping the project root",

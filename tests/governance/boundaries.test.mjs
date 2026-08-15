@@ -9,7 +9,8 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +20,7 @@ import {
   MAX_INPUT_BYTES,
   PER_FILE_BUDGET_MS,
   checkBoundaries,
+  evaluateTasks,
 } from "../../lib/governance/boundaries.mjs";
 
 const BOUNDARIES_PATH = ".context-index/governance/boundaries.yaml";
@@ -41,6 +43,7 @@ function seedRules(dir, rules) {
     lines.push(`  - id: ${r.id}`);
     lines.push(`    severity: ${r.severity}`);
     lines.push(`    pattern: '${r.pattern}'`);
+    if (r.flags) lines.push(`    flags: '${r.flags}'`);
     if (r.description) lines.push(`    description: '${r.description}'`);
     if (r.enabled === false) lines.push("    enabled: false");
     if (r.exclude) {
@@ -93,6 +96,20 @@ describe("checkBoundaries — rule loading", () => {
       const r = await checkBoundaries(dir, { changed: ["src/a.mjs"] });
       // Would have raised REGISTRY_NOT_MATERIALIZED had a marker guard been added.
       assert.strictEqual(r.verdict, "PASS");
+    }),
+  );
+
+  test(
+    "rules declared against an empty changed set is SKIP, not PASS",
+    withDir(async (dir) => {
+      seedRules(dir, [{ id: "live", severity: "error", pattern: "BAD" }]);
+      writeFixture(dir, "src/a.mjs", "BAD\n");
+      const r = await checkBoundaries(dir, { changed: [] });
+      // A PASS here would assert that boundaries held; nothing was checked.
+      assert.strictEqual(r.verdict, "SKIP");
+      assert.match(r.reason, /changed-file set is empty/);
+      assert.match(r.reason, /1 boundary rule\(s\) declared/);
+      assert.deepEqual(r.findings, []);
     }),
   );
 
@@ -235,6 +252,106 @@ describe("checkBoundaries — matching", () => {
       assert.strictEqual(r.verdict, "PASS");
       assert.deepEqual(r.findings, []);
       assert.ok(Date.now() - t0 < 30_000, `400 files took ${Date.now() - t0}ms`);
+    }),
+  );
+});
+
+describe("checkBoundaries — lazy content loading", () => {
+  test(
+    "a many-file tree spanning every outcome yields exactly the eager path's result",
+    withDir(async (dir) => {
+      // 80 files × 2 rules = 160 tasks, so evaluation crosses several chunks and
+      // content is read chunk-at-a-time rather than all at once. The findings
+      // must be byte-identical to what reading everything up front produced.
+      seedRules(dir, [
+        { id: "alpha", severity: "error", pattern: "ALPHA" },
+        { id: "beta", severity: "warning", pattern: "BETA" },
+      ]);
+      const changed = [];
+      for (let i = 0; i < 80; i++) {
+        const file = `src/f${i}.mjs`;
+        const marks = [];
+        if (i === 7 || i === 71) marks.push("ALPHA");
+        if (i === 12 || i === 71) marks.push("BETA");
+        writeFixture(dir, file, `const i = ${i};\n${marks.join("\n")}\n`);
+        changed.push(file);
+      }
+      writeFixture(dir, "src/big.mjs", "");
+      writeFileSync(join(dir, "src/big.mjs"), "x".repeat(MAX_INPUT_BYTES + 1));
+      changed.push("src/big.mjs");
+      writeFileSync(
+        join(dir, "src/blob.dat"),
+        Buffer.concat([Buffer.from("ALPHA"), Buffer.from([0x00])]),
+      );
+      changed.push("src/blob.dat");
+
+      const r = await checkBoundaries(dir, { changed });
+      assert.strictEqual(r.verdict, "FAIL");
+      assert.deepEqual(
+        r.findings.map((f) => `${f.file}|${f.ruleId}|${f.line}|${f.code}`),
+        [
+          "src/f7.mjs|alpha|2|BOUNDARY_RULE_MATCH",
+          "src/f12.mjs|beta|2|BOUNDARY_RULE_MATCH",
+          "src/f71.mjs|alpha|2|BOUNDARY_RULE_MATCH",
+          "src/f71.mjs|beta|3|BOUNDARY_RULE_MATCH",
+          "src/big.mjs|alpha|null|BOUNDARY_INPUT_TOO_LARGE",
+          "src/big.mjs|beta|null|BOUNDARY_INPUT_TOO_LARGE",
+          "src/blob.dat|null|null|BOUNDARY_BINARY_SKIPPED",
+        ],
+        "file-major, rule-minor ordering and every finding kind survive lazy loading",
+      );
+      // Stable across repeated runs, as the contract promises.
+      const again = await checkBoundaries(dir, { changed });
+      assert.deepEqual(again.findings, r.findings);
+    }),
+  );
+
+  test(
+    "a file deleted between collection and evaluation is dropped, not charged",
+    withDir(async (dir) => {
+      seedRules(dir, [{ id: "r", severity: "error", pattern: "BAD" }]);
+      writeFixture(dir, "src/a.mjs", "BAD\n");
+      writeFixture(dir, "src/b.mjs", "BAD\n");
+      const r = await checkBoundaries(dir, { changed: ["src/a.mjs", "src/b.mjs"] });
+      assert.deepEqual(
+        r.findings.map((f) => f.file),
+        ["src/a.mjs", "src/b.mjs"],
+      );
+    }),
+  );
+});
+
+describe("checkBoundaries — pattern flags", () => {
+  test(
+    "a g-flag pattern matches every file, with no lastIndex carried between tasks",
+    withDir(async (dir) => {
+      // A `g` RegExp carries `lastIndex` across `exec` calls. The worker builds a
+      // fresh RegExp per task and execs once, so the state cannot persist — this
+      // locks that in, because sharing one compiled RegExp would silently make
+      // every file after the first come back clean.
+      seedRules(dir, [{ id: "global", severity: "error", pattern: "MARK", flags: "g" }]);
+      const changed = [];
+      for (let i = 0; i < 4; i++) {
+        writeFixture(dir, `src/g${i}.mjs`, "MARK\nMARK\n");
+        changed.push(`src/g${i}.mjs`);
+      }
+      const r = await checkBoundaries(dir, { changed });
+      assert.strictEqual(r.verdict, "FAIL");
+      assert.deepEqual(
+        r.findings.map((f) => `${f.file}:${f.line}`),
+        ["src/g0.mjs:1", "src/g1.mjs:1", "src/g2.mjs:1", "src/g3.mjs:1"],
+      );
+    }),
+  );
+
+  test(
+    "an i-flag pattern is case-insensitive",
+    withDir(async (dir) => {
+      seedRules(dir, [{ id: "ci", severity: "warning", pattern: "todo", flags: "i" }]);
+      writeFixture(dir, "src/a.mjs", "// TODO\n");
+      const r = await checkBoundaries(dir, { changed: ["src/a.mjs"] });
+      assert.strictEqual(r.verdict, "WARN");
+      assert.strictEqual(r.findings[0].ruleId, "ci");
     }),
   );
 });
@@ -413,6 +530,181 @@ describe("checkBoundaries — input caps", () => {
     assert.strictEqual(PER_FILE_BUDGET_MS, 250);
     assert.strictEqual(BINARY_SNIFF_BYTES, 8192);
   });
+});
+
+describe("checkBoundaries — symlink containment", () => {
+  test(
+    "a symlink inside the project pointing outside it is refused, not read",
+    withDir(async (dir) => {
+      const outside = mkdtempSync(join(tmpdir(), "boundaries-outside-"));
+      try {
+        writeFileSync(join(outside, "secrets.txt"), "ROOTPASS=hunter2\n");
+        seedRules(dir, [{ id: "leak", severity: "error", pattern: "ROOTPASS" }]);
+        mkdirSync(join(dir, "src"), { recursive: true });
+        symlinkSync(join(outside, "secrets.txt"), join(dir, "src/link.txt"));
+
+        await assert.rejects(
+          () => checkBoundaries(dir, { changed: ["src/link.txt"] }),
+          (err) => {
+            assert.strictEqual(err.code, "BOUNDARY_PATH_ESCAPE");
+            assert.match(err.message, /src\/link\.txt/);
+            // The refusal must not carry the out-of-tree content it refused.
+            assert.ok(!/hunter2/.test(err.message), "no out-of-tree content leaked");
+            return true;
+          },
+        );
+      } finally {
+        rmSync(outside, { recursive: true, force: true });
+      }
+    }),
+  );
+
+  test(
+    "a symlink to a file inside the project is still evaluated",
+    withDir(async (dir) => {
+      seedRules(dir, [{ id: "inside", severity: "error", pattern: "BAD" }]);
+      writeFixture(dir, "src/real.mjs", "BAD\n");
+      symlinkSync(join(dir, "src/real.mjs"), join(dir, "src/alias.mjs"));
+      const r = await checkBoundaries(dir, { changed: ["src/alias.mjs"] });
+      assert.strictEqual(r.verdict, "FAIL");
+      assert.strictEqual(r.findings[0].file, "src/alias.mjs");
+    }),
+  );
+
+  test(
+    "a dangling symlink is ignored like any other missing path",
+    withDir(async (dir) => {
+      seedRules(dir, [{ id: "any", severity: "error", pattern: "x" }]);
+      mkdirSync(join(dir, "src"), { recursive: true });
+      symlinkSync(join(dir, "src/gone.mjs"), join(dir, "src/dangling.mjs"));
+      const r = await checkBoundaries(dir, { changed: ["src/dangling.mjs"] });
+      assert.strictEqual(r.verdict, "PASS");
+      assert.deepEqual(r.findings, []);
+    }),
+  );
+});
+
+describe("chunk-boundary interruption accounting", () => {
+  // These drive `evaluateTasks` through its `runner` seam. A real worker cannot
+  // be made to lose the `done`-vs-timer race on demand — in production the gap
+  // between the last `result` and `done` is microseconds — but a 250 ms
+  // scheduler stall or GC pause on a loaded CI box reaches it, and the outcome
+  // the parent then observes is exactly what these runners return:
+  // `interrupted: true` with every task already reported.
+  const RULE = { id: "r", severity: "error", pattern: "NEVER_PRESENT", flags: "", exclude: [] };
+  const FILE_COUNT = 70; // > MAX_CHUNK_TASKS (64), so chunk 2 exists.
+
+  function seedTasks(dir) {
+    const tasks = [];
+    for (let i = 0; i < FILE_COUNT; i++) {
+      const file = `src/f${i}.mjs`;
+      writeFixture(dir, file, `export const n = ${i};\n`);
+      const abs = join(dir, file);
+      const content = readFileSync(abs, "utf8");
+      tasks.push({
+        fileIdx: i,
+        ruleIdx: 0,
+        file,
+        abs,
+        rule: RULE,
+        content,
+        size: Buffer.byteLength(content),
+      });
+    }
+    return tasks;
+  }
+
+  /**
+   * @param {string[]} seen mutated: every file a chunk was handed, in order.
+   * @param {string|null} bomb the file whose task the worker dies on, or null
+   *   for the late-`done` case (all tasks report, `interrupted` still true).
+   */
+  function fakeRunner(seen, bomb, error = null) {
+    return async (chunk) => {
+      for (const t of chunk) seen.push(t.file);
+      const at = bomb === null ? -1 : chunk.findIndex((t) => t.file === bomb);
+      if (at === -1) {
+        // Every task reported. `interrupted` is true only in the late-`done`
+        // case; otherwise the worker said `done` and nothing is in flight.
+        const all = chunk.map((_, i) => ({ i, index: null }));
+        return { completed: all.length, results: all, interrupted: bomb === null, error: null };
+      }
+      const done = chunk.slice(0, at).map((_, i) => ({ i, index: null }));
+      return { completed: done.length, results: done, interrupted: true, error };
+    };
+  }
+
+  test(
+    "a chunk that reports every task then loses the done race drops no file and charges no timeout",
+    withDir(async (dir) => {
+      const tasks = seedTasks(dir);
+      const seen = [];
+      const findings = await evaluateTasks(tasks, fakeRunner(seen, null));
+
+      assert.deepEqual(
+        [...new Set(seen)].sort(),
+        tasks.map((t) => t.file).sort(),
+        "every input file was handed to a worker — none silently dropped",
+      );
+      assert.strictEqual(seen.length, FILE_COUNT, "and none was evaluated twice");
+      assert.deepEqual(
+        findings.filter((f) => f.code === "BOUNDARY_PATTERN_TIMEOUT"),
+        [],
+        "no task was in flight, so nothing may be charged a timeout",
+      );
+      assert.deepEqual(findings, []);
+    }),
+  );
+
+  // The positions the reviewer verified are already correct. They stay correct.
+  for (const idx of [0, 63, 64, 69]) {
+    test(
+      `a genuine interruption at task ${idx} is charged to that task and evaluation resumes`,
+      withDir(async (dir) => {
+        const tasks = seedTasks(dir);
+        const bomb = tasks[idx].file;
+        const seen = [];
+        const findings = await evaluateTasks(tasks, fakeRunner(seen, bomb));
+
+        const timeouts = findings.filter((f) => f.code === "BOUNDARY_PATTERN_TIMEOUT");
+        assert.strictEqual(timeouts.length, 1);
+        assert.strictEqual(timeouts[0].file, bomb);
+        assert.strictEqual(timeouts[0].severity, "error");
+        assert.strictEqual(timeouts[0].ruleId, "r");
+
+        // Every other file was still evaluated, and the bomb is never retried.
+        const evaluated = seen.filter((f) => f !== bomb);
+        assert.deepEqual(
+          [...new Set(evaluated)].sort(),
+          tasks.map((t) => t.file).filter((f) => f !== bomb).sort(),
+          "the rules after the interrupted one were still evaluated",
+        );
+      }),
+    );
+  }
+
+  test(
+    "a worker error is a BOUNDARY_WORKER_ERROR finding at error severity",
+    withDir(async (dir) => {
+      const tasks = seedTasks(dir);
+      const seen = [];
+      const findings = await evaluateTasks(
+        tasks,
+        fakeRunner(seen, tasks[3].file, "the boundary worker exited before finishing"),
+      );
+      const err = findings.filter((f) => f.code === "BOUNDARY_WORKER_ERROR");
+      assert.strictEqual(err.length, 1);
+      assert.strictEqual(err[0].file, tasks[3].file);
+      assert.strictEqual(err[0].severity, "error");
+      assert.match(err[0].message, /exited before finishing/);
+      assert.match(err[0].message, /fails closed/);
+      assert.deepEqual(
+        findings.filter((f) => f.code === "BOUNDARY_PATTERN_TIMEOUT"),
+        [],
+        "an error is not a timeout",
+      );
+    }),
+  );
 });
 
 describe("worker safety (SEC-5)", () => {
