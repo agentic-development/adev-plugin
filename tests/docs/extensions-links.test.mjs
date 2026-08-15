@@ -213,6 +213,40 @@ describe("docs/extensions.md — governance contribution contract", () => {
     }
   });
 
+  it("field-allowlist tables match FIELD_ALLOWLIST field-for-field", async () => {
+    const body = readFileSync(DOCS_PATH, "utf8");
+    const { FIELD_ALLOWLIST } = await import("../../lib/extensions/governance-registry.mjs");
+
+    for (const [target, fields] of FIELD_ALLOWLIST) {
+      // The allowlist row is the table row whose first cell is the registry file.
+      const row = body
+        .split("\n")
+        .find((l) => l.startsWith(`| \`${target}\` |`) && l.includes("`id`"));
+      assert.ok(row, `docs/extensions.md has no field-allowlist row for ${target}`);
+
+      const documented = new Set([...row.matchAll(/`([a-z_]+)`/g)].map((m) => m[1]));
+      documented.delete(target.replace(".yaml", ""));
+
+      for (const field of fields) {
+        assert.ok(
+          documented.has(field),
+          `${target} allowlist row omits '${field}' (FIELD_ALLOWLIST has it)`,
+        );
+      }
+      for (const field of documented) {
+        assert.ok(
+          fields.has(field),
+          `${target} allowlist row documents '${field}', which FIELD_ALLOWLIST does not allow`,
+        );
+      }
+      assert.equal(
+        documented.size,
+        fields.size,
+        `${target} allowlist row lists ${documented.size} fields, FIELD_ALLOWLIST has ${fields.size}`,
+      );
+    }
+  });
+
   it("states that the payload set is derived, not declared", () => {
     const body = readFileSync(DOCS_PATH, "utf8");
     assert.match(body, /derived/i, "must say the payload set is derived");

@@ -130,7 +130,8 @@ defect 5 as expected behavior (`const entries = validate.validators || validate.
 ### ADDED
 
 - Path containment assert in `mergeGovernanceEntries`, matching the `resolve()` +
-  `startsWith(resolvedDir + '/')` pattern already used at `content-install.mjs:307-318` and `:383-384`.
+  `startsWith(resolvedDir + '/')` pattern already used by `installSamples` and
+  `installSkillExtensions` in `content-install.mjs`.
 - **Explicit writable-registry → root-key table**, replacing stem inference. Exhaustive, and it is
   the writable set — a `target` outside it is refused:
 
@@ -165,7 +166,8 @@ executable field the three bounds do *not* govern; see Invariant 6 and the `runn
 1. **Containment to an installer-owned payload directory** (Decision A). `resolvedPath` — the first
    argument to `installExtension` — is **not** a durable base: for npm and git sources it is an OS
    temp dir (`resolve-source.mjs:127`, `:171`) that `installExtension` deletes in its own `finally`
-   (`install.mjs:178-183`), and both executors resolve a relative argv element against the **project
+   (`lib/extensions/install.mjs`, `rmSync(options._tmpDir, …)`), and both executors resolve a
+   relative argv element against the **project
    root**, not the extension (`spawnGate` at `doctor.mjs:755-768` spawns with `cwd: projectRoot` at
    `:757`, invoked from `:1004`; `quality-gate.mjs:45-51` calls
    `execFile(executable, args, { cwd: ctx.cwd, shell: false })`).
@@ -191,7 +193,7 @@ executable field the three bounds do *not* govern; see Invariant 6 and the `runn
    - Containment is asserted against the *extension source* at plan time and against the *payload
      directory* at apply time, with `realpathSync` applied to **both the base and the candidate**
      (on macOS `/var` → `/private/var` defeats a raw `startsWith`). Note that the `installSamples`
-     pattern at `content-install.mjs:307-318` is `resolve()` + `startsWith` with **no**
+     pattern in `content-install.mjs` is `resolve()` + `startsWith` with **no**
      `realpathSync`, so this spec adds the step rather than inheriting it.
    - A `realpathSync` failure — ENOENT, broken symlink, permission — is a **refusal**, never a
      fallback: `GOVERNANCE_COMMAND_ESCAPES_EXTENSION` for an argv candidate,
@@ -214,7 +216,8 @@ executable field the three bounds do *not* govern; see Invariant 6 and the `runn
 
 2. **argv array only, never a shell string** — made true, not merely restated. `merge-gates.mjs:34-40`
    enforces argv form, but `lib/gates/doctor.mjs` never goes through `mergeGates`: `loadGates`
-   (`:1109-1133`) reads `gates.yaml` directly and `:965` runs `spawnSync("sh", ["-c", command])`.
+   (`:1147`) reads `gates.yaml` directly and `spawnGate` (`:755-768`) runs
+   `spawnSync("sh", ["-c", command])` at `:767`.
    So `doctor.mjs` gains an **argv-direct branch**: an array-valued `command` is executed as
    `spawnSync(argv[0], argv.slice(1), { shell: false, cwd: projectRoot })` and never passes through
    `normaliseCommand`. String commands — the shipped `gates.yaml` `command: "npm test"` — keep the
@@ -257,9 +260,9 @@ operator never saw, and consent without containment grants a blanket permission 
   executable-contribution rules above.
 
   **The allowlist is the *contribution* boundary, not any one loader's schema.** `gates.yaml` has two
-  consumers with divergent contracts: `merge-gates.mjs:41-47` projects exactly `id`, `command`,
-  `description`, `severity`, `tier` and drops the rest, while `doctor.mjs:805` reads `gate?.kind` off
-  the raw file. `command` is *required* by `merge-gates.mjs:29-32` — a gates entry without one is
+  consumers with divergent contracts: `merge-gates.mjs:41-47` projects `id`, `command`,
+  `description`, `severity`, `tier` (the last three conditionally) and drops the rest, while
+  `doctor.mjs` reads `gate?.kind` off the raw file (`:844`). `command` is *required* by `merge-gates.mjs:29-32` — a gates entry without one is
   discarded — so a row omitting it would describe an entry its own consumer throws away.
 
   **Installer-owned fields are supply-forbidden for every registry.** `source`, `__source` and
@@ -584,7 +587,7 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
 - [ ] A scalar of `{command: x}` is refused with `GOVERNANCE_SCALAR_UNSAFE` — the flow-map reparse path, asserted directly.
 - [ ] A numeric `id` is refused rather than silently bypassing the collision check.
 - [ ] A supplied `source` reports `GOVERNANCE_SOURCE_FORGED`, never `GOVERNANCE_FIELD_NOT_ALLOWED`.
-- [ ] Each allowlist accepts every field an extension **may contribute** to that registry — not every field the loader reads — asserted by round-tripping a maximal contributable entry per registry through install and then through that registry's loader. (`gates.yaml` has two consumers with divergent contracts: `merge-gates.mjs:41-47` projects five fields, `doctor.mjs:805` reads `gate?.kind` off the raw file, so "the loader" is not well defined for it.)
+- [ ] Each allowlist accepts every field an extension **may contribute** to that registry — not every field the loader reads — asserted by round-tripping a maximal contributable entry per registry through install and then through that registry's loader. (`gates.yaml` has two consumers with divergent contracts: `merge-gates.mjs:41-47` projects at most five fields, `doctor.mjs:844` reads `gate?.kind` off the raw file, so "the loader" is not well defined for it.)
 - [ ] Behavior 3 asserted directly: an installed entry is appended under the registry's own root key, carries `source: extension:<name>`, and every other byte of the file is unchanged.
 - [ ] Behavior 5's value half asserted: an allowlisted field with a value outside its constrained set is refused with `GOVERNANCE_FIELD_VALUE_INVALID`, and a disallowed field *name* still reports `GOVERNANCE_FIELD_NOT_ALLOWED`.
 - [ ] Behavior 11 asserted for both halves: `runner` outside `diagnostics.yaml` is refused with `GOVERNANCE_FIELD_NOT_ALLOWED`; a `project:`-prefixed `runner` inside it is refused with `GOVERNANCE_FIELD_VALUE_INVALID`.

@@ -405,7 +405,7 @@ gates:
 
 Both fields are installer-owned. An extension that supplies either one is refused at install with `GOVERNANCE_SOURCE_FORGED`, so a stamp you read in your file was written by adev, not by the extension.
 
-**Provenance is file-level and invisible to gate consumers.** `lib/domains/merge-gates.mjs` projects exactly five fields onto each merged gate — `id`, `command`, `description`, `severity`, `tier` — and drops everything else, so nothing downstream of the merge ever observes `source` or `exec_consented_at`. That is intended rather than an oversight: the stamps exist for uninstall and audit, and both of those read the file directly.
+**Provenance is file-level and invisible to gate consumers.** `lib/domains/merge-gates.mjs` projects at most five fields onto each merged gate — `id`, `command`, and `description` / `severity` / `tier` when the entry sets them — and drops everything else, so nothing downstream of the merge ever observes `source` or `exec_consented_at`. That is intended rather than an oversight: the stamps exist for uninstall and audit, and both of those read the file directly.
 
 ### What an install will not do to your entries
 

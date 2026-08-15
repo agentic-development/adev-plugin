@@ -11,6 +11,7 @@ If you have never installed an extension, the worked example below (`extensions/
 - Merge semantics ADR: [`.context-index/adrs/0003-configurable-review-registry.md`](../.context-index/adrs/0003-configurable-review-registry.md)
 - Install implementation: [`lib/extensions/install.mjs`](../lib/extensions/install.mjs)
 - Validate-time event surface: [`lib/cli/report.mjs`](../lib/cli/report.mjs)
+- Governance contribution rules (writable registries, field allowlists, executable payloads): [The governance contribution contract](#the-governance-contribution-contract)
 
 ## Manifest schema
 
