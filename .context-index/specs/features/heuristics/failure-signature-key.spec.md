@@ -1,13 +1,31 @@
 ---
 charter: heuristics
 kind: behavioral
-status: review-pending
+status: implemented
 risk_level: high
 milestone: 3
 revision: 8
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
+source-manifest:
+  sha: "44d0e40"
+  files:
+    - .context-index/memory/heuristics/_format.md
+    - hooks/post-validate-extract-heuristics.mjs
+    - lib/cli/heuristics.mjs
+    - lib/heuristics.mjs
+    - tests/cli/heuristics-migrate-keys.test.mjs
+    - tests/cli/heuristics-signature.test.mjs
+    - tests/hooks/post-validate-heuristic-id.test.mjs
+    - tests/lib/heuristics-digest.test.mjs
+    - tests/lib/heuristics-format-doc.test.mjs
+    - tests/lib/heuristics-signature-field.test.mjs
+    - tests/skills/recover-extract-heuristic-harness.mjs
+    - tests/skills/recover-extract-heuristic.test.mjs
+    - tests/skills/validate-success-heuristic-harness.mjs
+    - tests/skills/validate-success-heuristic.test.mjs
+  computed-at: "2026-08-15T13:21:44.564Z"
 ---
 
 # Live Spec: Failure Signature Key — one content-addressed identity for recurring failures
