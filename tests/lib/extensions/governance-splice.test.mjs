@@ -284,22 +284,32 @@ test('a zero-indent MAPPING continuation is a genuine sibling and is spliced, no
 
 // ── Real repo fixtures ───────────────────────────────────────────────────
 
-test('real boundaries.yaml — form 2 and form 3 at once, comment block byte-identical', () => {
+// Until Task 14 of explicit-governance-registries this file was the empty
+// `boundaries: []` placeholder, so this test covered forms 2 and 3 at once.
+// Task 14 populated it from the constitution's mechanical anti-patterns, making
+// it a form-1 block sequence — and forms 2 and 3 already have their own
+// synthetic fixtures above, so nothing is lost. What only the LIVE file can
+// prove is that the splice survives contact with the real thing: a rule
+// carrying `flags`, an `exclude` list, trailing comments on list items, and a
+// commented-out worked example sitting at the foot of the block. The entry
+// count is derived rather than hard-coded, exactly as the review.yaml and
+// gates.yaml tests below do, so this stays a splice assertion rather than a pin
+// on the registry's current membership.
+test('real boundaries.yaml — the populated block takes the new entry last', () => {
   const src = governanceFixture('boundaries.yaml');
-  assert.ok(src.includes('boundaries: []'), 'fixture precondition: inline empty list');
   const before = commentLines(src);
-  assert.equal(before.length, 18, 'fixture precondition: 18 comment lines');
+  const originalCount = parseYaml(src).boundaries.length;
+  assert.ok(originalCount >= 4, 'fixture precondition: the registry declares its rules');
 
   const { text } = spliceRegistryEntries(src, 'boundaries', [
     { id: 'no-cross-layer', severity: 'error', pattern: 'lib/.*' },
   ]);
 
-  assert.equal(text.includes('boundaries: []'), false, 'the inline empty list is rewritten');
   assert.deepEqual(commentLines(text), before, 'every comment line stays byte-identical');
-  assert.ok(text.indexOf('- id: no-cross-layer') < text.indexOf('# - id: no-direct-db-outside-db-layer'));
-  assert.deepEqual(parseYaml(text).boundaries, [
-    { id: 'no-cross-layer', severity: 'error', pattern: 'lib/.*' },
-  ]);
+  const after = parseYaml(text).boundaries;
+  assert.equal(after.length, originalCount + 1);
+  assert.deepEqual(after.at(-1), { id: 'no-cross-layer', severity: 'error', pattern: 'lib/.*' });
+  assert.deepEqual(after.slice(0, originalCount), parseYaml(src).boundaries);
 });
 
 test('real validate.yaml — all 36 comment lines survive and one entry is added', () => {

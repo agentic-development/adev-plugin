@@ -241,11 +241,23 @@ describe("adev boundaries check", () => {
     assert.match(r.stdout, /Exit codes/);
   });
 
-  test("this repository's own boundaries.yaml yields SKIP and exit 0", () => {
-    const r = runVerb(["check", "--json"], PLUGIN_ROOT);
+  // Until Task 14 this asserted SKIP on an EMPTY registry — the state this
+  // project shipped while `boundaries.yaml` was a placeholder. Task 14 populated
+  // it from the constitution's mechanically-decidable anti-patterns, so the
+  // honest end-to-end assertion is now the opposite one: the shipped rules load,
+  // run over every tracked file, and find nothing. A finding here means a rule
+  // is mis-scoped — the fix belongs in `boundaries.yaml`, not in the file it
+  // flagged. `tests/governance/boundary-rules-corpus.test.mjs` proves each rule
+  // still fires on its own violating fixture, so this silence is not vacuous.
+  test("this repository's own boundaries.yaml runs clean over the whole tree", () => {
+    const r = runVerb(["check", "--all", "--json"], PLUGIN_ROOT);
     assert.strictEqual(r.status, 0, r.stderr);
     const doc = JSON.parse(r.stdout);
-    assert.strictEqual(doc.verdict, "SKIP");
-    assert.match(doc.reason, /no boundary rules declared/);
+    assert.deepStrictEqual(doc.findings, []);
+    assert.strictEqual(doc.verdict, "PASS");
+    assert.ok(doc.summary.files_checked > 100, `only ${doc.summary.files_checked} file(s) checked`);
+    // The one rule this project declares and deliberately switched off stays
+    // visible with its reason rather than vanishing (Invariant 5).
+    assert.ok(doc.disabled.some((d) => d.id === "no-manual-version-bump" && d.disabled_reason));
   });
 });

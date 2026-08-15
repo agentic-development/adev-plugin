@@ -1,0 +1,6 @@
+// Corpus fixture — MUST NOT match boundaries.yaml rule `no-hardcoded-claude-home`.
+// Resolves the plugin root the way cli/index.mjs does.
+
+import { resolvePluginRoot } from "../../../cli/index.mjs";
+
+export const PLUGIN_CACHE = resolvePluginRoot();

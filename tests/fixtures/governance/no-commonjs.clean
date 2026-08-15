@@ -1,0 +1,8 @@
+// Corpus fixture — MUST NOT match boundaries.yaml rule `no-commonjs`.
+// The same module written the way the constitution requires: pure ESM.
+
+import { readFileSync } from "node:fs";
+
+export function read(path) {
+  return readFileSync(path, "utf8");
+}
