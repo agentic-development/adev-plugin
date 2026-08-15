@@ -91,6 +91,15 @@ function stubPluginRootDir() {
     join(dir, "package.json"),
     JSON.stringify({ name: "adev-stub", version: "0.27.0" }),
   );
+  // A faithful plugin root also carries the bundled profile vocabulary: the
+  // install-time namespace resolver reads `<pluginRoot>/templates/governance/
+  // profiles.yaml` to prove a contributed entry's `profile` names something
+  // the loader can resolve (an unknown name would make it push UNKNOWN_PROFILE).
+  mkdirSync(join(dir, "templates", "governance"), { recursive: true });
+  copyFileSync(
+    join(PLUGIN_ROOT, "templates", "governance", "profiles.yaml"),
+    join(dir, "templates", "governance", "profiles.yaml"),
+  );
   return dir;
 }
 
@@ -135,45 +144,47 @@ describe("example-validation-check: runtime quality-gate execution (Behavior 3)"
   });
 
   it("installed check executes via runQualityGate and returns PASS", async () => {
+    // The extension ships an executable governance entry, so consent is
+    // mandatory: a non-interactive install without --allow-exec refuses.
     await installExtension(EXAMPLE_DIR, projectRoot, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
 
-    // Read the merged entry from validate.yaml under whichever root key the
-    // installer chose.
+    // Read the merged entry. The root key is `checks` — the one
+    // lib/governance/validate-config.mjs actually reads.
     const validatePath = join(projectRoot, ".context-index/governance/validate.yaml");
     const validate = parseYaml(readFileSync(validatePath, "utf8"));
-    const entries = validate.validators || validate.checks || [];
-    const entry = entries.find((e) => e && e.id === "example-validation-check.passing");
+    assert.equal(validate.validators, undefined, "root key must be checks, never validators");
+    const entry = validate.checks.find((e) => e && e.id === "example-validation-check.passing");
     assert.ok(entry, "merged entry must exist in validate.yaml");
     assert.ok(Array.isArray(entry.command), "command must be argv form");
 
-    // Resolve the relative argv path against the project root (the runner's
-    // cwd is the project root per configurable-checks Behavior 6c).
-    // The example's manifest writes `[bash, extensions/example-validation-check/bin/check.sh]`;
-    // since extensions install to the plugin tree but the entry references
-    // the source path, fall back to absolute resolution from EXAMPLE_DIR
-    // for this runtime check.
-    const argvCommand = [
-      entry.command[0],
-      // Resolve against EXAMPLE_DIR so we exercise the actual installed binary
-      ...entry.command.slice(1).map((arg) =>
-        arg.startsWith("extensions/example-validation-check/")
-          ? join(PLUGIN_ROOT, arg)
-          : arg,
-      ),
-    ];
-
-    const result = await runQualityGate(
-      { ...entry, command: argvCommand },
-      {
-        cwd: projectRoot,
-        env: {},
-        parentEnv: process.env,
-        timeoutMs: 5000,
-      },
+    // No path fixups are needed. The manifest declares an extension-source-
+    // relative `bin/check.sh`; install copies that payload into the project at
+    // .context-index/extensions/<name>/ and rewrites the argv element to the
+    // absolute installed path. The entry is directly runnable as written, with
+    // the runner's cwd locked to the project root (configurable-checks
+    // Behavior 6c).
+    const payloadPath = join(
+      projectRoot,
+      ".context-index/extensions/example-validation-check/bin/check.sh",
     );
+    assert.deepEqual(
+      entry.command,
+      ["bash", payloadPath],
+      "installed argv must name the relocated payload, not the extension source path",
+    );
+    assert.ok(existsSync(payloadPath), `relocated payload must exist at ${payloadPath}`);
+
+    const result = await runQualityGate(entry, {
+      cwd: projectRoot,
+      env: {},
+      parentEnv: process.env,
+      timeoutMs: 5000,
+    });
 
     assert.equal(result.status, "PASS", `expected PASS, got: ${JSON.stringify(result)}`);
     assert.equal(result.exitCode, 0);
@@ -194,6 +205,8 @@ describe("example-validation-check: runtime quality-gate execution (Behavior 3)"
     await installExtension(EXAMPLE_DIR, projectRoot, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
 
     const SPEC_REL = ".context-index/specs/features/m/sample.spec.md";
@@ -506,6 +519,8 @@ describe("templates/adev-extension.example.yaml: installability", () => {
     const result = await installExtension(extDir, projectRoot, {
       pluginRoot: stubPluginRoot,
       sourceUri: extDir,
+      allowExec: true,
+      interactive: false,
     });
     assert.equal(result.name, "template-derived-extension");
 
@@ -513,11 +528,15 @@ describe("templates/adev-extension.example.yaml: installability", () => {
     const validatePath = join(projectRoot, ".context-index/governance/validate.yaml");
     assert.ok(existsSync(validatePath));
     const validate = parseYaml(readFileSync(validatePath, "utf8"));
-    const entries = validate.validators || validate.checks || [];
-    assert.ok(
-      entries.some((e) => e && e.id === "template-derived.passing"),
-      "validate.yaml must contain the template-derived check id",
-    );
+    assert.equal(validate.validators, undefined, "root key must be checks, never validators");
+    const installed = validate.checks.find((e) => e && e.id === "template-derived.passing");
+    assert.ok(installed, "validate.yaml must contain the template-derived check id");
+    // The template's declared `[bash, bin/check.sh]` is rewritten to the
+    // relocated payload, proving the documented form is the installable one.
+    assert.deepEqual(installed.command, [
+      "bash",
+      join(projectRoot, ".context-index/extensions/template-derived-extension/bin/check.sh"),
+    ]);
 
     cleanupTempDir(extDir);
   });

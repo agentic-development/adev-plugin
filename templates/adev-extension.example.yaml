@@ -41,13 +41,27 @@ provides:
   #     scopes the adapter's tool surface but does NOT sandbox the
   #     subprocess. The child runs with the user's full filesystem and
   #     network privileges. Author your binary defensively.
+  #   - Path elements in `command` are resolved against the EXTENSION SOURCE
+  #     ROOT (this file's directory), NOT the consuming project's root. So
+  #     write `bin/check.sh`, never `extensions/my-extension/bin/check.sh` —
+  #     the latter only resolves inside a repo that happens to vendor your
+  #     extension at that path, and the installer refuses it elsewhere with
+  #     GOVERNANCE_PAYLOAD_MISSING.
+  #   - At install time the payload is COPIED into the project at
+  #     .context-index/extensions/<name>/ (mode 0555) and the argv element is
+  #     REWRITTEN to that absolute path. The installed entry therefore does
+  #     not preserve the path you write here verbatim.
+  #   - Because this entry ships an executable, install requires explicit
+  #     operator consent: interactively the installer prompts; non-interactively
+  #     it refuses with GOVERNANCE_EXEC_NOT_CONSENTED unless `--allow-exec`
+  #     is passed. Consent is never remembered across installs.
   governance:
     - target: validate.yaml
       entries:
         - id: my-extension.my-check
           kind: quality-gate
           profile: read-only
-          command: [bash, extensions/my-extension/bin/check.sh]
+          command: [bash, bin/check.sh]
           severity: warning
           after: [validate.check-1-quality-gates]
 
