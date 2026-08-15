@@ -463,19 +463,22 @@ describe("validate harness — outcome-derived title prefix", () => {
 
   it("exactly the expected prefix-derivation sites exist", () => {
     const sites = findPrefixDerivationSites();
-    assert.ok(
-      sites.includes("hooks/post-validate-extract-heuristics.mjs"),
-      `hook must be a derivation site (got: ${sites.join(", ")})`,
+    // Task 7 deleted the third copy (lib/cli/heuristics.mjs's dead `extract`
+    // verb), so the spec's acceptance criterion now holds exactly: two
+    // derivation copies remain — the hook's and the harness's — and they
+    // agree (pairwise agreement is asserted by the test above).
+    assert.deepEqual(
+      sites,
+      [
+        "hooks/post-validate-extract-heuristics.mjs",
+        "tests/skills/validate-success-heuristic-harness.mjs",
+      ],
+      `expected exactly the hook and the harness, got: ${sites.join(", ")}`,
     );
-    assert.ok(
-      sites.includes("tests/skills/validate-success-heuristic-harness.mjs"),
-      `harness must be a derivation site (got: ${sites.join(", ")})`,
-    );
-    // Provisional bound: the third site is lib/cli/heuristics.mjs's dead
-    // `extract` verb. Task 7 deletes it and tightens this to `=== 2`.
-    assert.ok(
-      sites.length <= 3,
-      `expected at most 3 prefix-derivation sites, got ${sites.length}: ${sites.join(", ")}`,
+    assert.equal(
+      sites.length,
+      2,
+      `expected exactly 2 prefix-derivation sites, got ${sites.length}: ${sites.join(", ")}`,
     );
   });
 });
