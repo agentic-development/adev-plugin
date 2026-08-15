@@ -1,7 +1,7 @@
 ---
 charter: heuristics
 kind: behavioral
-status: review-pending
+status: review-blocked
 risk_level: high
 milestone: 3
 revision: 3
@@ -107,15 +107,23 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
    b. `writeHeuristic` carries `signature` into `finalEntry` on **both** paths. `finalEntry` is
       constructed as an explicit object literal — the update path at `lib/heuristics.mjs:733` and the
       new-entry path at `:767` — so any field not named there is silently discarded before
-      serialization. `signature` follows the same incoming-wins-then-preserve-existing rule already
-      used for `antiPattern` and `tags`.
+      serialization. **`signature` uses existing-wins semantics, deliberately unlike `antiPattern` and
+      `tags`**, which are refinements and take the incoming value. A signature is an identity: the
+      charter states unconditionally that it is never rewritten once assigned. First assignment sticks.
 
    c. `signature` is present in `FIELD_ORDER` (`lib/heuristics.mjs:185-199`) so `serializeHeuristic`
       emits it in a deterministic position.
 
-5a. **When** an existing entry carrying a `signature` is updated with an incoming entry that omits one
-   **then** the stored `signature` is preserved, not cleared. A signature is an identity, and an update
-   that happens not to carry it is not an assertion that the entry has none.
+5a. **When** an existing entry carrying a `signature` is updated **then** the stored `signature` is
+   preserved in every case — whether the incoming entry omits one, carries the same one, or carries a
+   *different* one. The last of these is reachable: `id` and `signature` key on different inputs, so
+   one `id` can legitimately be reached by two different failure texts. The charter invariant resolves
+   it — the first signature stands.
+
+5b. **When** an incoming entry carries a `signature` that differs from the stored one **then** the
+   write succeeds, the stored value is kept, and the divergence is logged at warning level. It is not
+   an error: a second failure text mapping to an existing `id` is informative, not invalid. Silently
+   discarding it would hide a real signal about id/signature granularity mismatch.
 
 6. **When** a heuristic without a `signature` field is read **then** it parses successfully and
    `signature` is `undefined`. Entries written before this spec remain readable and are never
@@ -139,10 +147,13 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 
    - **In scope:** an entry with at least one `evidence[]` element whose `source` is `validation`. Its
      `id` came from the absolute-path hash and is therefore machine-dependent.
-   - **Out of scope, never rekeyed:** entries whose evidence sources are all `recovery`, `debug`,
-     `retro`, or `manual`. `/adev:recover`'s ids are already content-only and must stay byte-identical
-     — this is the property `failure-capture.spec.md` Behavior 6 depends on, and rekeying them would
-     break it. Manual entries have no derivable input at all.
+   - **Out of scope, never rekeyed:** every entry that is not in scope — that is, any entry with no
+     `validation`-sourced evidence element, whatever its other sources are or may become. The rule is
+     the complement of the in-scope test, not an enumeration, so a future `EvidenceRef.source` value
+     is excluded by default rather than silently rekeyed. Concretely this covers today's `recovery`,
+     `debug`, `retro`, and `manual` sources. `/adev:recover`'s ids are already content-only and must
+     stay byte-identical — the property `failure-capture.spec.md` Behavior 6 depends on. Manual
+     entries have no derivable input at all.
    - **Recomputation inputs:** the repo-relative spec path recovered from the in-scope evidence
      element's `path`, and the entry's stored `pattern` — the same two inputs Behavior 7 defines, so a
      migrated entry lands on the id a fresh extraction would produce.
@@ -154,9 +165,14 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
    rekeyed, skipped-out-of-scope, skipped-unrecoverable, and merged on collision.
 
 9. **When** the migration would produce an `id` that already exists in the same scope file **then**
-   the two entries are merged: evidence arrays are unioned, the higher confidence is kept, and
-   `contradicted-by` arrays are unioned. The merge is reported, not silent — a collision is the
-   duplicate-entry bug this spec exists to fix, and the operator should see how many it had.
+   the two entries are merged: evidence arrays are unioned, `contradicted-by` arrays are unioned, and
+   the higher confidence is kept — **then the charter's contradiction invariant is re-applied to the
+   merged result**. Unioning two `contradicted-by` arrays can push the merged entry to two or more
+   contradictions, and the charter states that such an entry cannot remain at `high`. Taking the
+   higher confidence without re-checking would mint an entry the invariant forbids. Where the union
+   reaches two contradictions, the merged entry is archived per the same invariant. The merge is
+   reported, not silent — a collision is the duplicate-entry bug this spec exists to fix, and the
+   operator should see how many it had.
 
 10. **When** the migration runs a second time **then** it is a no-op: every id is already in
     corrected form, zero entries are rekeyed, and the store is byte-identical afterward.
@@ -169,7 +185,11 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
   spec's own validation point.)
 - Signature derivation and id derivation each have exactly one implementation, with distinct
   normalizers, both reusing the shared digest function.
-- Every entry in the store has a location-independent `id`.
+- Every entry that was in migration scope has a location-independent `id`. Entries the migration
+  deliberately skipped — out-of-scope sources, and in-scope entries whose evidence path could not be
+  resolved — retain their prior `id` and are reported in the skip counts. The postcondition is
+  scoped this way on purpose: asserting it over *every* entry would contradict Behavior 8, which
+  requires the migration to skip rather than guess.
 - `signature` round-trips through serialization for entries that carry it.
 - No entry has lost evidence, confidence, or contradiction history.
 
@@ -238,8 +258,11 @@ This spec only stops depending on them.
       asserts two distinct spec paths do not collide under `normalizeIdInput`
 - [ ] A heuristic written with a `signature` reads back with that `signature` intact — asserted on the
       **new-entry** path and again on the **update** path, since `finalEntry` is built separately in each
-- [ ] Updating an entry that has a `signature` with an incoming entry that omits one preserves the
-      stored `signature` rather than clearing it
+- [ ] Updating an entry that has a `signature` preserves the stored value in all three cases: the
+      incoming entry omits one, carries the same one, or carries a different one. The differing case
+      succeeds and logs a warning rather than erroring or overwriting
+- [ ] An induced collision whose merged `contradicted-by` union reaches two entries does not remain at
+      `high` confidence — the contradiction invariant is re-applied after the merge
 - [ ] `validateEntry` rejects a malformed `signature` and accepts an entry with none
 - [ ] A heuristic written without a `signature` reads back successfully with `signature` undefined
 - [ ] A test extracts the same spec and pattern from two temp directories with different absolute

@@ -5,18 +5,18 @@ charter: .context-index/specs/features/heuristics/charter.md
 verdict: BLOCK
 rigor-tier: full
 reviewed: 2026-08-15
-last-reviewed-revision: 2
-file-sha: a27274f744bd1d31a3dbec2bd5c5b55c50d07396d79e8f6046fcbe595bba63fa
+last-reviewed-revision: 3
+file-sha: 1a5c5575e77aceaa6c05f6d82120327165a08b833cddaaf3b535a73907e87b6a
 ---
 
 # Architecture Review: failure-signature-key
 
 > **Date:** 2026-08-15
-> **Spec:** `.context-index/specs/features/heuristics/failure-signature-key.spec.md` (revision 2)
+> **Spec:** `.context-index/specs/features/heuristics/failure-signature-key.spec.md` (revision 3)
 > **Charter:** `.context-index/specs/features/heuristics/charter.md` (revision 6, Phase 3)
 > **Rigor tier:** full (explicit `--tier full`; `risk_level: high` → `review_mode: full` resolves the same)
 > **Verdict:** BLOCK
-> **Prior verdict:** BLOCK at revision 1 (6 blockers)
+> **Prior verdicts:** BLOCK at revision 1 (6 blockers), BLOCK at revision 2 (2 blockers)
 
 ## Reviewers Dispatched
 
@@ -32,149 +32,135 @@ Heuristics injected: 3 module-scoped entries at `summary` tier (`adev heuristics
 
 Cross-repo `depends-on` validation: skipped — the spec declares no `depends-on` frontmatter and no workspace was detected.
 
-## Revision-1 blocker disposition
+## Revision-2 blocker disposition
 
-All six revision-1 blockers were independently re-checked against the revision-2 body. **All six are resolved.** The `revise --auto` run made no body edits, but the hand-authored fixes committed as `ddea5eb9` do close them:
+Both revision-2 blockers were independently re-checked against the revision-3 body by the reviewer that raised them. **Both are resolved.**
 
-| Prior blocker_id | Status | Evidence in revision 2 |
+| Prior blocker_id | Status | Evidence in revision 3 |
 |---|---|---|
-| `structural-architect:api-shape-conflict:25796bde` | RESOLVED | The "Two keys, two rules, one digest function" table plus Behaviors 3 and 7a separate origin (signature prefix) from caller-supplied `id` prefix; recover keeps `<category-slug>-<digest>` |
-| `structural-architect:ambiguous-behavior:6c240478` | RESOLVED | Behaviors 2 and 7 define `normalizeFailureText` and `normalizeIdInput` as distinct normalizers; "exactly one implementation" is now asserted per-rule |
-| `structural-architect:missing-precondition:bee2251f` | RESOLVED | Precondition 4 and the Error Cases row now agree: unresolvable root fails closed and the caller skips extraction |
-| `structural-architect:circular-ownership:39f99256` | RESOLVED | Postcondition 1 is scoped to "every caller that this spec touches"; the repo-wide no-copy assertion is explicitly delegated to `failure-capture.spec.md` |
-| `consistency-analyzer:contract:ee7e74a8` | RESOLVED | Behavior 3a derives the `review-specs` signature from `--blocker-id` via `parseBlockerId`, never re-hashing finding text |
-| `consistency-analyzer:domain-model:8c5333d5` | RESOLVED | Behaviors 3a/3b give the charter's BLOCK-origin invariant an owning behavior, with `CONFLICTING_SIGNATURE_INPUT` guarding both directions |
+| `structural-architect:incomplete-persistence-contract:d46375fd` | RESOLVED | Behavior 5 now names all three write-path gates — `validateEntry` accepts and validates the field, both `finalEntry` literals (`:733` update, `:767` new) carry it, `FIELD_ORDER` emits it. Behavior 5a owns preserve-on-omit. The Task Map row matches, and the Acceptance Criteria assert round-trip separately on the new-entry and update paths |
+| `structural-architect:missing-input-contract:ff941c2c` | RESOLVED | Behavior 8 now states a positive in-scope discriminator (`evidence[].source === "validation"`), an explicit never-rekey set tied to `failure-capture.spec.md` Behavior 6, the two recomputation inputs (evidence `path` + stored `pattern`, matching Behavior 7), and skip-rather-than-guess with a distinct skipped-unrecoverable count |
 
-The two new blockers below are **not** re-raises. They are newly surfaced concerns in territory the revision-1 review did not reach, with freshly computed `blocker_id`s.
+The single new blocker below is **not** a re-raise. It concerns the *conflicting-value* case on the update path, which Behavior 5a does not reach, and carries a freshly computed `blocker_id`.
+
+**Convergence:** the revision-3 blocker set is disjoint from the revision-2 set (`{d46375fd, ff941c2c}` ∩ `{5c58f7d8}` = ∅), and also disjoint from the revision-1 set. Blocker count is falling monotonically: 6 → 2 → 1.
 
 ## Structural Architect (structural-architect)
 
 **Verdict:** BLOCK
 
-**Claim verification performed by the reviewer:** `parseBlockerId` confirmed at `lib/blocker-id.mjs:110`, returning an 8-hex `locationHash`. Cited line numbers confirmed accurate: `hooks/post-validate-extract-heuristics.mjs:123-124`, `lib/heuristics.mjs:185-199`. `writeHeuristic`'s whitelist construction confirmed at `lib/heuristics.mjs:687-780`.
+**Claim verification performed by the reviewer and re-confirmed by the aggregator:** all of revision 3's line-number and code-shape claims check out. `validateEntry` at `lib/heuristics.mjs:101` with no `signature` handling; the two `finalEntry` object literals at `:733` (update) and `:767` (new entry), both fixed whitelists naming `id`, `scope`, `title`, `pattern`, `confidence`, `evidence`, `contradictedBy`, `created`, `updated` plus conditional `antiPattern`/`tags`; `FIELD_ORDER` at `:185-199` with `signature` absent. `parseBlockerId` at `lib/blocker-id.mjs:110` returns an 8-lowercase-hex `locationHash`. The hook's `hashInput` at `hooks/post-validate-extract-heuristics.mjs:123-124` is `${normalizePath(specPath)}|${pattern}` over the absolute path and writes `evidence[].source === 'validation'` at `:132`; 24 live entries under `.context-index/memory/heuristics/` carry that value, so Behavior 8's discriminator is grounded in the real corpus.
 
 ### SA-1 — blocker
 
-- **Location:** Behaviors 5 and 6; Postconditions ("`signature` round-trips through serialization"); Task Map row "Add `signature` to `FIELD_ORDER`"
-- **blocker_id:** `structural-architect:incomplete-persistence-contract:d46375fd`
+- **Location:** Behavior 5b (and 5a)
+- **blocker_id:** `structural-architect:charter-invariant-conflict:5c58f7d8`
 - **section_anchor:** `behaviors-5`
-- **Finding:** Behavior 5 asserts that adding `signature` to `FIELD_ORDER` is what makes the field survive a round trip. That is not sufficient against the live write contract. `writeHeuristic` (`lib/heuristics.mjs:687-780`) constructs `finalEntry` from a fixed field whitelist on **both** the new-entry and update paths, so a caller-supplied `signature` never reaches `serializeHeuristic` at all. Independently confirmed by the aggregator: the update-path `finalEntry` literal enumerates `id`, `scope`, `title`, `pattern`, `confidence`, `evidence`, `contradictedBy`, `created`, `updated`, then conditionally `antiPattern` and `tags` — `signature` appears nowhere, and `validateEntry` (`lib/heuristics.mjs:101`) has no knowledge of the field. The spec therefore leaves the write-path contract unowned in three respects: (a) `writeHeuristic` accepting the field, (b) preserving it unchanged on the update path — the charter invariant "a `signature` is never rewritten once assigned" has no owning behavior anywhere in this spec, and (c) `validateEntry` treating it as legal. Both sibling specs declare this as a precondition *on this spec*: `failure-capture.spec.md:44` ("`writeHeuristic` accepts a `signature` field") and `signature-retrieval.spec.md:39`.
-- **Recommendation:** Add a behavior covering the write-path contract for `signature`: accepted on write, persisted, preserved unchanged when an existing entry is updated, and absent-safe. Restate Behavior 5's mechanism claim so it does not assert that `FIELD_ORDER` alone is sufficient.
+- **Finding:** Behavior 5b specifies that `signature` "follows the same incoming-wins-then-preserve-existing rule already used for `antiPattern` and `tags`." Incoming-wins means an incoming entry carrying a *different* `signature` overwrites the stored one. The charter's Domain Model → Invariants states unconditionally: "A `signature` is never rewritten once assigned." Behavior 5a covers only the omit case, so the conflicting-value case is specified in direct contradiction to the invariant. This is reachable, not theoretical: `id` is keyed on `<spec-path>|<pattern>` while `signature` is keyed on failure text, so two failures that yield the same derived `pattern` but different failure text land on the same `id` with different signatures — and the identity the downstream batch breaker counts on silently changes under an ordinary update.
+- **Recommendation:** State the write-path rule for `signature` explicitly and differently from `antiPattern`/`tags` — existing-wins: once an entry has a `signature`, an update never replaces it (an incoming differing value is ignored, optionally surfaced as a warning); a `signature` is written only when the stored entry has none. Add a matching acceptance criterion.
 
-### SA-2 — blocker
+### SA-2 — warning
 
-- **Location:** Behavior 8 (`migrate-keys`), interacting with Behavior 7a
-- **blocker_id:** `structural-architect:missing-input-contract:ff941c2c`
-- **section_anchor:** `behaviors-8`
-- **Finding:** `migrate-keys` has no defined input contract. It recomputes `id` "for every stored entry whose evidence permits recomputation" but never states (a) the discriminator that selects an entry as in-scope, or (b) where the recomputation reads its hash inputs from. The live store mixes three id families: hand-authored ids with no digest (`.context-index/memory/heuristics/_global.md` — `eval-with-session-jsonl`, `cache-reads-dominate-cost`), validate-derived `<spec-slug>-<8hex>` ids, and recover-derived `<category-slug>-<8hex>` ids. Only the second family is recomputable under Behavior 7's rule, and Behavior 7a makes recover ids' byte-identity a load-bearing property that `failure-capture.spec.md` Behavior 6 depends on — so misclassification here silently breaks a sibling spec's contract. Separately, Behavior 7's hash input needs the repo-relative **spec path**, which stored entries do not carry (evidence rows hold a `.validate.md` report path); the spec does not say that the spec path is reconstructed from evidence, or that entries lacking one are left untouched.
-- **Recommendation:** Specify the in-scope discriminator explicitly (which id families are rekeyed, which are left untouched and counted as such), and specify what the recomputation reads for each in-scope entry. State that recover-derived and hand-authored ids are out of scope for rekeying.
+- **Location:** Behavior 8, "Out of scope, never rekeyed"
+- **Finding:** The evidence-`source` vocabulary is drifted and unowned, and the enumeration is not exhaustive over the live corpus. `_global.md` contains 4 entries with `source: learn`; `_format.md` (an Exposed API in the charter) describes `source` as an open field with examples `recover` / `validate` — singular, unlike the `validation` the hook writes and the `recovery` the charter's EvidenceRef entity lists. A `learn`-sourced entry is neither in-scope nor in the enumerated out-of-scope set, so it falls outside all four reported counts, and a future `_format.md`-conforming writer using `validate` would carry a path-dependent `id` past the migration with no operator signal.
+- **Recommendation:** Make the out-of-scope clause the complement ("every entry with no `validation`-sourced evidence element") rather than an enumeration, so the partition is total, and have the summary count it. Reconciling the three `source` spellings is charter/`_format.md` work, not this spec's, but the spec should not depend on an enumeration the live store already violates.
 
 ### SA-3 — warning
 
-- **Location:** Behaviors 8 and 9; Acceptance Criteria ("preserves evidence, confidence, and contradiction history")
-- **Finding:** Behavior 8 says migration preserves `confidence` unchanged and Behavior 9 says a merge keeps "the higher confidence". Both conflict with the charter's absolute-threshold promotion invariant and with `autoPromote` (`lib/heuristics.mjs:647`), which raises confidence whenever merged evidence reaches 2 or 3 distinct `path` values. A Behavior 9 merge unions evidence arrays and will routinely cross that threshold, leaving the stated migration outcome and the charter invariant in disagreement. Behavior 8 also omits `updated` from its preservation list without saying whether it is refreshed — while Behavior 10 demands byte-identity on a second run.
-- **Recommendation:** State explicitly whether post-merge confidence is subject to the promotion rule or frozen at the higher of the two, and settle the `updated` field's treatment.
+- **Location:** Postconditions, bullet 3
+- **Finding:** "Every entry in the store has a location-independent `id`" is stated unconditionally, but Behavior 8 explicitly permits entries to retain their original `id` (skipped-unrecoverable, and manual entries with no derivable input). A validation step reading the postconditions literally would fail a store that Behavior 8 says is correct.
+- **Recommendation:** Scope it to in-scope entries: "every entry the migration rekeys has a location-independent `id`; skipped entries are reported by count and reason."
 
 ### SA-4 — warning
 
-- **Location:** Error Cases table, rows 2 and 3
-- **Finding:** Error precedence is undefined for `--origin review-specs` with neither `--text` nor `--blocker-id`. Row 2 (`--text` missing → `EMPTY_SIGNATURE_TEXT`) and row 3 (`review-specs` without `--blocker-id` → `CONFLICTING_SIGNATURE_INPUT`) both match, and an acceptance criterion asserts the latter. Callers keyed on the error code cannot rely on either.
-- **Recommendation:** Define the validation order (origin legality → origin-specific input requirement → emptiness) so exactly one code is reachable per input shape.
+- **Location:** Behavior 9
+- **Finding:** The merge keeps the higher confidence and unions `contradicted-by[]`, with no reconciliation against the charter invariant "A Heuristic with two or more `contradicted-by` entries cannot remain at `high` confidence." A merge can therefore produce an entry that violates it. Risk is currently theoretical (no live entry has contradictions), which is why this is not a blocker.
+- **Recommendation:** State that the merged entry is re-evaluated against the confidence invariants after the union, or that a merge whose result would violate them is reported and left for `/adev:retro`.
 
-### SA-5 — warning
+### SA-5 — suggestion
 
-- **Location:** Actionable Task Map / System Constitution Reference
-- **Finding:** The spec introduces two new public CLI verbs (`heuristics signature`, `heuristics migrate-keys`) but has no task or acceptance criterion covering `docs/cli-reference.md`, which the constitution names as the reference for all CLI verbs by audience. The sibling `failure-capture.spec.md:77` explicitly handles the *removal*-side doc update for `extract`, so the omission here is asymmetric rather than delegated.
-- **Recommendation:** Add the reference-doc update to this spec's task map, or state explicitly which spec owns documenting the new verbs.
+- **Location:** Behavior 8, "In scope"
+- **Finding:** "At least one `validation` evidence element" would rekey a recover-origin entry that later accumulated validation evidence — the exact byte-identity `failure-capture.spec.md` Behavior 6 protects. Prefix disjointness (`<category-slug>-` vs `<spec-slug>-`) makes this very unlikely, so it does not need a behavior, but a one-line note that the never-rekey rule wins on a mixed-source entry would close the reading.
 
-### SA-6 — suggestion
+**ADR compliance:** no conflicts. ADR-0016 (adev-owned state is canonical, harness-neutral) and ADR-0005 (workspace isolation) both point the same direction as the location-independent `id`; ADR-0014's stderr policy governs `adev issues migrate` only and imposes nothing on `migrate-keys` reporting.
 
-- **Location:** Behavior 1 vs Behavior 3a
-- **Finding:** Behavior 1 is written unconditionally ("with a legal origin … where `<digest>` is the SHA-256 of the text after `normalizeFailureText`"), which Behavior 3a then contradicts for `review-specs`. The `review-specs` digest also inherits `blocker_id`'s hash input (`<section-anchor>:<truncated-finding-text>`), which is not `normalizeFailureText` output.
-- **Recommendation:** Scope Behavior 1 to the text-derived origins and cross-reference 3a as the exception.
+Carried forward, unresolved from revision 2 and not re-escalated: SA-3/rev2 (post-merge confidence versus `autoPromote`; the `updated` field's treatment against Behavior 10's byte-identity demand), SA-4/rev2 (error precedence for `--origin review-specs` with neither `--text` nor `--blocker-id`), SA-5/rev2 (`docs/cli-reference.md` coverage for the two new verbs), SA-6/rev2 (Behavior 1 written unconditionally against Behavior 3a's exception).
 
 ## Security Reviewer (security-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-**Threat model applied:** local dev CLI plus a git-tracked, team-shared markdown store in a single repository. No auth/authz boundary — all operators already have full repo write access. No network surface.
+**Threat model applied (unchanged):** local dev CLI plus a git-tracked, team-shared markdown store in a single repository. No auth/authz boundary — all operators already have full repo write access. No network surface.
 
-Revision 2's new `--blocker-id` path is well-formed from a security standpoint: `parseBlockerId` already enforces `[a-z0-9-]+` on components and `^[0-9a-f]{8}$` on the hash segment, both inputs fail closed (`INVALID_BLOCKER_ID`, `CONFLICTING_SIGNATURE_INPUT`), and no error message echoes uncontrolled data. No new security issues introduced by the revision.
+Revision 3's changed territory (Behaviors 5/5a write path, Behavior 8's discriminator) was reviewed for security implications specifically. `migrate-keys` reads only stored `evidence[].path` and the entry's own `pattern` — no new external input surface, and the "unrecoverable input" branch fails closed rather than guessing, so no path-traversal surface is introduced. Behavior 9's merge is a data-integrity concern (already covered by SA-4), not a security one. No new security findings.
 
-### SEC-1 — suggestion (input-validation)
+### SEC-1 — closed (input-validation)
 
-- **Finding:** Carried forward from revision 1 and **downgraded from warning**. `signature` still has no format check in `validateEntry()`; only `id` gets a `SAFE_SLUG_PATTERN` backstop (`lib/heuristics.mjs:124`). Every sanctioned write path (Behaviors 1 and 3a) produces values matching `^(recover|validate|review-specs|implement)-[0-9a-f]{8}$` by construction, and under this threat model a schema check would not close a privilege-escalation path — a hand-edit could inject equally through `pattern`/`title`.
-- **Recommendation:** For consistency with the existing `id` treatment, and to catch corrupted or hand-authored entries before they enter the exact-match auto-inject path of `signature-retrieval.spec.md` Behavior 2, add the same format assertion to `validateEntry()`. Treat it as a data-integrity guard, not a trust-boundary control.
+- **Finding:** **Resolved in revision 3.** Behavior 5(a) now states that `validateEntry` accepts `signature` as an optional field and rejects a malformed one — a string matching `[a-z0-9][a-z0-9-]*`, max 64 characters. Verified against the live `SAFE_SLUG_PATTERN` (`lib/heuristics.mjs:54`, `/^[_a-z0-9][_a-z0-9-]{0,63}$/`) and `FIELD_LENGTH_CAPS` (`:69-73`): the proposed rule is consistent with the existing `id`/`scope` validation convention. This closes the data-integrity gap ahead of the exact-match auto-inject path in `signature-retrieval.spec.md` Behavior 2.
 
 ### SEC-2 — suggestion (secrets)
 
-- **Finding:** Unaddressed from revision 1. `--origin <slug> --text <text>` (Behavior 1) still takes failure text — which the caller sources from captured stderr per the charter — as a bare argv value for the `recover`, `validate`, and `implement` origins. On a shared local machine this is visible via `ps aux` and persists in shell history.
-- **Recommendation:** Accept `--text -` (or auto-detect non-TTY stdin) as an alternative to the argv form, and have the callers in `failure-capture.spec.md` pipe captured text. The `review-specs` origin is now exempt via 3a, which reduces but does not eliminate the exposure.
+- **Finding:** Unaddressed, unchanged from revision 2. Behavior 1's `--origin <slug> --text <text>` still passes failure text as a bare argv value for the `recover`, `validate`, and `implement` origins, visible via `ps aux` and persisted in shell history. The `review-specs` origin is exempt via 3a, which reduces but does not eliminate the exposure.
+- **Recommendation:** Accept `--text -` (or auto-detect non-TTY stdin) as an alternative to the argv form, and have the callers in `failure-capture.spec.md` pipe captured text. Worth closing before the sibling specs wire up their callers.
 
 ### SEC-3 — suggestion (input-validation)
 
-- **Finding:** Unaddressed from revision 1. Behavior 3 still says the rejected `--origin` value is "truncated before it is echoed" with no pinned length, so the `INVALID_SIGNATURE_ORIGIN` error contract is untestable and can regress silently.
-- **Recommendation:** Pin a concrete constant (e.g. reuse the 200-char pattern established by `BLOCKER_FINDING_TEXT_TRUNCATE` in `lib/blocker-id.mjs`, or a smaller value appropriate to a single CLI flag such as 80) and state it in Behavior 3.
+- **Finding:** Unaddressed, unchanged from revision 2. Behavior 3 still says the rejected `--origin` value is "truncated before it is echoed" with no pinned length, so the `INVALID_SIGNATURE_ORIGIN` error contract is untestable and can regress silently.
+- **Recommendation:** Pin a concrete constant — reuse the 200-char `BLOCKER_FINDING_TEXT_TRUNCATE` precedent at `lib/blocker-id.mjs:26`, or a smaller value appropriate to a single CLI flag such as 80 — and state it in Behavior 3.
 
-**Explicitly not flagged:** origin allowlist enforcement and ANSI/control-char stripping (correctly specified); atomic temp-then-rename writes, migration rollback-on-read-failure, and idempotent re-runs; no shell execution and no path-traversal surface; raw `--text` is never persisted — only its 8-hex digest survives into `signature`.
+**Explicitly not flagged:** origin allowlist enforcement and ANSI/control-char stripping (correctly specified); atomic temp-then-rename writes, migration rollback-on-read-failure, idempotent re-runs; no shell execution and no path-traversal surface; raw `--text` is never persisted — only its 8-hex digest survives into `signature`.
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** PASS_WITH_NOTES
+**Verdict:** PASS
 
-Revision 2 closes both prior blockers. Cross-cutting compliance verified: `review-block-auto-retry.spec.md` Behavior 3 and the `lib/blocker-id.mjs` format (`<reviewer>:<type>:<8-hex>`) are respected — `INVALID_BLOCKER_ID` error code, 8-lowercase-hex digest length, and determinism all match. No conflict with `check-id-enum.spec.md`.
+No new blockers, warnings, or naming/pattern violations detected in revision 3. Both prior structural blockers were independently confirmed resolved from the consistency side.
 
-### CON-1 — warning (contract)
+Verified alignments:
 
-- **This spec:** Behavior 3a says the verb "parses it via `parseBlockerId` … and reuses its existing hash component". Verified against `lib/blocker-id.mjs`: `parseBlockerId` returns `{ reviewer, type, locationHash }`.
-- **Conflicts with:** `charter.md` § Interface Contracts § Consumed APIs, which lists the consumed interface as `buildBlockerId({ reviewer, type, sectionAnchor, findingText })` — the constructor, not the parser this spec actually depends on.
-- **Recommendation:** Charter-side fix. Change the Consumed APIs row to `parseBlockerId(blockerId)` (or list both), since `buildBlockerId` is invoked upstream by reviewer subagents per `review-block-auto-retry.spec.md` Behavior 3, not by this spec.
+- Behavior 5a (preserve-on-omit) is consistent with the charter invariant "A `signature` is never rewritten once assigned" *for the omit case*. (The conflicting-value case is SA-1's blocker above; the consistency reviewer did not reach it.)
+- Behavior 8's preservation list includes `signature`, maintaining both that invariant and the sibling precondition that the round trip survives (`signature-retrieval.spec.md:39-40`).
+- The origin enum (`recover`, `validate`, `review-specs`, `implement`) matches the charter's Exposed API row exactly.
+- Behavior 3a's use of `parseBlockerId` respects the `blocker_id` format defined by `review-block-auto-retry.spec.md` Behavior 3 (`<reviewer>:<type>:<8-hex>`, deterministic).
+- No new error codes collide with existing ones; all are scoped to the signature primitive.
+- Constitution compliance: Node built-ins only (`node:crypto`), no inline-Node in skill prose, logic lives in the CLI verb.
 
-### CON-2 — warning (contract)
+### CON-1 / CON-2 / CON-3 — suggestions (carried forward, charter-side)
 
-- **This spec:** Adds `--blocker-id` and the mutual-exclusivity rule with `--text` (Behaviors 3a/3b).
-- **Conflicts with:** `charter.md` § Interface Contracts § Exposed APIs, row `adev heuristics signature --origin <slug> --text <text>`, which documents only the `--text` path.
-- **Recommendation:** Charter-side fix. Update the row to reflect the two-input verb signature. Documentation-completeness gap, not a runtime mismatch — the charter's Phase 3 In Scope prose already anticipates the `blocker_id` path.
-
-### CON-3 — suggestion (domain-model)
-
-- **This spec:** Behavior 3a's `review-specs` digest is the reused `locationHash` from `blocker_id` (hashed over `<sectionAnchor>:<truncatedFindingText>`), not a hash of `normalizeFailureText` output.
-- **Conflicts with:** `charter.md` § Domain Model § Entities, where `FailureSignature.digest` is stated unconditionally as "SHA-256 prefix over the normalized failure text", without the `review-specs` carve-out the charter's own Phase 3 prose describes.
-- **Recommendation:** Charter-side. Note the exception inline on the entity row.
+Unchanged from revision 2 and still open, but they are charter documentation lag rather than spec defects and are explicitly not re-escalated: the Consumed APIs row names `buildBlockerId(...)` where this spec depends on `parseBlockerId`; the Exposed APIs row documents only the `--text` path, not the two-input signature; and `FailureSignature.digest` is stated unconditionally without the `review-specs` carve-out that the charter's own Phase 3 prose describes. All three should be folded into a charter revision 7 independently of this revise loop.
 
 ### CON-4 — suggestion (terminology)
 
-- **This spec:** Behavior 2 traces `normalizeFailureText` to `skills/recover/SKILL.md:393` rather than giving the normalizer's own canonical definition location. Carried from revision 1, informational only; not re-escalated.
+Behavior 2 still traces `normalizeFailureText` to `skills/recover/SKILL.md:393` rather than giving the normalizer's own canonical definition location. Informational; not re-escalated.
 
 ---
 
 ## Advisories
 
-- No `LEGACY_REVIEWER_OUTPUT` advisories: both `blocker` findings carried a well-formed `blocker_id`.
-- No `INVALID_BLOCKER_ID` advisories: both ids parse cleanly via `lib/blocker-id.mjs::parseBlockerId` (verified by the aggregator, not asserted).
-- No `MISSING_SECTION_ANCHOR` advisories: both blockers carried a lowercase-kebab `section_anchor` (`behaviors-5`, `behaviors-8`).
-- No `BLOCKER_ID_COLLISION` advisories: the two ids are distinct.
-- No `SECTION_ANCHOR_NORMALIZED` advisories this round (unlike revision 1).
+- No `LEGACY_REVIEWER_OUTPUT` advisories: the single `blocker` finding carried a well-formed `blocker_id`.
+- No `INVALID_BLOCKER_ID` advisories: `structural-architect:charter-invariant-conflict:5c58f7d8` parses cleanly via `lib/blocker-id.mjs::parseBlockerId` (verified by the aggregator, not asserted) → `{ reviewer: "structural-architect", type: "charter-invariant-conflict", locationHash: "5c58f7d8" }`.
+- No `MISSING_SECTION_ANCHOR` advisories: the blocker carried a lowercase-kebab `section_anchor` (`behaviors-5`).
+- No `BLOCKER_ID_COLLISION` advisories: a single blocker entry.
+- No `SECTION_ANCHOR_NORMALIZED` advisories this round.
 - Severity cap (`blocker` for all three reviewers) demoted nothing.
-- **Convergence note:** the revision-2 blocker set is disjoint from the revision-1 set. Zero of the six prior blocker_ids recur; both current blocker_ids are new. This is forward progress, not a stall.
+- **Convergence note:** the revision-3 blocker set `{structural-architect:charter-invariant-conflict:5c58f7d8}` is disjoint from both prior sets. Zero prior blocker_ids recur. Blocker count falls 6 → 2 → 1. This is forward progress, not a stall — but the auto-retry budget is exhausted, so resolution is now a human-driven step.
 
 ## Governance Footer
 
-`.context-index/governance/gates.yaml` defines no `approver_role` on a `spec-to-plan` transition, so no human approver is named for this transition. Note that `risk-policies.yaml` sets `require_hitl_approval: true` for `risk_level: high` — this spec is `high`, so human sign-off is expected before implementation regardless of the review verdict.
+`.context-index/governance/gates.yaml` defines no `approver_role` on a `spec-to-plan` transition (the block is commented out), so no human approver is named for this transition. Note that `risk-policies.yaml` sets `require_hitl_approval: true` for `risk_level: high` — this spec is `high`, so human sign-off is expected before implementation regardless of the review verdict.
 
 ---
 
 ## Summary
 
-**Total findings:** 13 (2 blockers, 5 warnings, 6 suggestions)
+**Total findings:** 11 (1 blocker, 3 warnings, 7 suggestions)
 
 **Blockers:**
 
 | ID | blocker_id | Section | Theme |
 |----|-----------|---------|-------|
-| SA-1 | `structural-architect:incomplete-persistence-contract:d46375fd` | `behaviors-5` | `signature` write-path contract is unowned — `writeHeuristic`'s field whitelist drops it before serialization, and both siblings declare that acceptance as a precondition on this spec |
-| SA-2 | `structural-architect:missing-input-contract:ff941c2c` | `behaviors-8` | `migrate-keys` has no in-scope discriminator and no stated source for its recomputation inputs; misclassifying recover-derived ids would break `failure-capture.spec.md` Behavior 6 |
+| SA-1 | `structural-architect:charter-invariant-conflict:5c58f7d8` | `behaviors-5` | Behavior 5b's incoming-wins rule for `signature` contradicts the charter invariant "a `signature` is never rewritten once assigned"; Behavior 5a covers only the omit case, leaving the conflicting-value case specified against the invariant |
 
-**Action required:** BLOCK. Run `/adev:specify --revise --spec .context-index/specs/features/heuristics/failure-signature-key.spec.md` to address the two blockers listed in `failure-signature-key.blockers.md`, then re-run `/adev:review-specs` on revision 3. Planning cannot begin until the verdict is PASS or PASS_WITH_NOTES.
+**Action required:** BLOCK. The fix is narrow and local to Behavior 5b: replace incoming-wins with existing-wins for `signature` (an update never replaces an assigned signature; it is written only when the stored entry has none), plus a matching acceptance criterion. The three warnings (SA-2 out-of-scope enumeration is not total over the live corpus; SA-3 unconditional postcondition versus permitted skips; SA-4 post-merge confidence invariant) are worth folding into the same edit but do not block on their own.
 
-Both sibling Phase-3 specs (`failure-capture.spec.md`, `signature-retrieval.spec.md`) declare a precondition that this spec ships first, so they remain transitively blocked. CON-1, CON-2, and CON-3 are charter-side edits, not spec-side — they can be folded into a charter revision 7 independently of the revise loop.
+Both sibling Phase-3 specs (`failure-capture.spec.md`, `signature-retrieval.spec.md`) declare a precondition that this spec ships first, so they remain transitively blocked. CON-1, CON-2, and CON-3 are charter-side edits that can land independently as charter revision 7.
