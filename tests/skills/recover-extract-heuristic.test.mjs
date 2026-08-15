@@ -445,16 +445,35 @@ describe("Task 6 — skills/recover/SKILL.md names the verb, not the rule", () =
     assert.doesNotMatch(source, /collapse consecutive whitespace/i);
   });
 
-  it("names the signature verb for both the signature and the digest", () => {
-    const source = src();
-    assert.match(source, /adev heuristics signature --origin recover --text/);
-    assert.match(source, /--digest-only/);
+  it("names the signature verb twice: once bare, once with --digest-only", () => {
+    const lines = src().split("\n");
+    const invocations = lines.filter((line) =>
+      line.includes("adev heuristics signature --origin recover --text"),
+    );
+    // The two invocations must be distinct lines: the bare form yields the
+    // `recover-<digest>` signature, the --digest-only form yields the digest
+    // the id is composed from. One line naming both would not prove that.
+    const bare = invocations.filter((line) => !line.includes("--digest-only"));
+    const digestOnly = invocations.filter((line) => line.includes("--digest-only"));
+    assert.ok(
+      bare.length >= 1,
+      "the skill must name a bare `adev heuristics signature --origin recover --text` invocation",
+    );
+    assert.ok(
+      digestOnly.length >= 1,
+      "the skill must name an `adev heuristics signature ... --digest-only` invocation",
+    );
+    assert.ok(
+      bare.length + digestOnly.length === invocations.length && invocations.length >= 2,
+      "the bare and --digest-only invocations must appear on separate lines",
+    );
   });
 
   it("names the write verb with --signature", () => {
     const source = src();
     assert.match(source, /adev heuristics write/);
-    assert.match(source, /--signature recover-<?[a-z0-9-]*>?/);
+    // `+`, not `*`: a bare `--signature recover-` with no digest must not pass.
+    assert.match(source, /--signature recover-<?[a-z0-9-]+>?/);
   });
 
   it("states the fail-closed rule when the verb is unavailable", () => {
@@ -482,7 +501,10 @@ describe("Task 6 — skills/recover/SKILL.md names the verb, not the rule", () =
     }
   });
 
-  it("contains no inline-Node invocation", () => {
+  it("contains no executable inline-Node directive", () => {
+    // Pins the three patterns the constitution and .githooks/pre-commit-no-inline-node
+    // forbid. It does NOT assert the absence of the pre-existing
+    // `#### Inline Node Invocation` prose section, which is out of Task 6's scope.
     const source = src();
     assert.doesNotMatch(source, /node -e/);
     assert.doesNotMatch(source, /node --input-type=module -e/);
