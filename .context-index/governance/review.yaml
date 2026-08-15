@@ -24,9 +24,37 @@
 # entries with a path relative to `.context-index/` (i.e., `prompts/...`,
 # not `.context-index/prompts/...`).
 
-reviewers: []
+reviewers:
+  - id: structural-architect
+    name: Structural Architect
+    dispatch: always
+    profile: reviewer-reasoning
+    context_pack: base
+    severity_cap: blocker
+    prompt: plugin:review-specs/structural-architect-prompt.md
+    source: domain:software
+  - id: security-reviewer
+    name: Security Reviewer
+    dispatch: always
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    source: domain:software
+  - id: consistency-analyzer
+    name: Consistency Analyzer
+    dispatch: always
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
+    prompt: plugin:review-specs/consistency-analyzer-prompt.md
+    source: domain:software
 
 # Context packs — additional files loaded for all reviewers
 # context_packs:
 #   base:
 #     include: []
+
+# Stamped by 'adev governance materialize' — write-once. The entries above are
+# the complete effective set; nothing is contributed from anywhere else.
+materialized_at: 2026-08-15T19:35:30.978Z

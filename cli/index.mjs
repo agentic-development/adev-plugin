@@ -1761,6 +1761,7 @@ const VERB_REGISTRY = new Map([
   ["help",      () => ({ run: () => cmdHelp(),                   help: () => cmdHelp() })],
   ["gate",            () => import("../lib/cli/gate.mjs")],
   ["boundaries",      () => import("../lib/cli/boundaries.mjs")],
+  ["governance",      () => import("../lib/cli/governance.mjs")],
   ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
   ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
   ["report",          () => import("../lib/cli/report.mjs")],

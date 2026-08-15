@@ -325,24 +325,33 @@ test('real validate.yaml — all 36 comment lines survive and one entry is added
   });
 });
 
-test('real review.yaml — inline empty list under a long comment header', () => {
+// The two tests below read the LIVE governance files. Their entry counts are
+// derived from the source rather than hard-coded, the way the validate.yaml
+// test above derives `originalCount`: Task 9 of explicit-governance-registries
+// materialized both files, so a literal count would pin this splice test to a
+// registry's current membership rather than to what it is actually asserting —
+// that every comment survives and the new entry lands last.
+test('real review.yaml — the reviewers block takes the new entry last', () => {
   const src = governanceFixture('review.yaml');
   const before = commentLines(src);
+  const originalCount = parseYaml(src).reviewers.length;
   const { text } = spliceRegistryEntries(src, 'reviewers', [{ id: 'domain-reviewer' }]);
   assert.deepEqual(commentLines(text), before);
-  assert.deepEqual(parseYaml(text).reviewers, [{ id: 'domain-reviewer' }]);
+  assert.equal(parseYaml(text).reviewers.length, originalCount + 1);
+  assert.deepEqual(parseYaml(text).reviewers.at(-1), { id: 'domain-reviewer' });
 });
 
 test('real gates.yaml — the transitions sibling key survives untouched', () => {
   const src = governanceFixture('gates.yaml');
   const before = commentLines(src);
+  const originalCount = parseYaml(src).gates.length;
   const { text } = spliceRegistryEntries(src, 'gates', [
     { id: 'ext-lint', name: 'Ext Lint', command: ['npm', 'run', 'lint'] },
   ]);
   assert.deepEqual(commentLines(text), before);
   const parsed = parseYaml(text);
   assert.deepEqual(parsed.transitions, {});
-  assert.equal(parsed.gates.length, 2);
+  assert.equal(parsed.gates.length, originalCount + 1);
   assert.deepEqual(parsed.gates.at(-1), {
     id: 'ext-lint', name: 'Ext Lint', command: ['npm', 'run', 'lint'],
   });

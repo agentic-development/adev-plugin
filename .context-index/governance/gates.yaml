@@ -32,6 +32,18 @@ gates:
     triggers:
       - post-task
       - post-implement
+  - id: quality-gate
+    command: ["npm", "test"]
+    description: Run project test suite
+    severity: error
+    tier: fast
+    source: domain:software
+  - id: integration-test
+    command: ["npm", "run", "--if-present", "test:integration"]
+    description: Run integration tests (no-op until a test:integration script exists)
+    severity: error
+    tier: integration
+    source: domain:software
 
   # - id: lint
   #   name: Linter
@@ -83,3 +95,7 @@ transitions: {}
   #   required_gates:
   #     - test
   #   approver_role: ""
+
+# Stamped by 'adev governance materialize' — write-once. The entries above are
+# the complete effective set; nothing is contributed from anywhere else.
+materialized_at: 2026-08-15T19:35:31.097Z
