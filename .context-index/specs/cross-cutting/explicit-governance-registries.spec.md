@@ -303,6 +303,7 @@ carrying `command`, `runner`, `prompt` or `pattern`, so an appended extension ga
 | `boundaries.yaml` rule has an invalid regex | Verb exits non-zero naming the rule id; no partial evaluation | `INVALID_BOUNDARY_PATTERN` |
 | `transitions` names a gate id absent from `gates` | Hygiene Pass 8 finding (existing behavior, preserved) | — |
 | `adev governance materialize` would drop an entry present in the effective set | Refuses to write; reports the entry | `MATERIALIZE_WOULD_DROP` |
+| A row the project file declares failed to LOAD (loader error, or the id is absent from the effective set) | Refuses to write and refuses to stamp, naming the rows and the loader errors; `--dry-run` reports the identical refusal. A WARNING-severity loader diagnostic does not block — it is surfaced on the result envelope | `MATERIALIZE_LOAD_INCOMPLETE` |
 | Registry file missing after materialization | Hard error, as `validate.yaml` already does | `MISSING_REGISTRY_CONFIG` |
 | `enabled: false` without `disabled_reason` | Schema warning; check still disabled | `DISABLED_WITHOUT_REASON` |
 | Boundary rule exceeds its evaluation time budget | Check fails closed naming the rule | `BOUNDARY_PATTERN_TIMEOUT` |

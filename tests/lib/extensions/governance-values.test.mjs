@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assertSafeScalar, assertSafeArgvToken, isArgvPathElement, assertValidValue, assertStringId }
+import { assertSafeScalar, assertSafeArgvToken, assertSafeFlowElement, isArgvPathElement, assertValidValue, assertStringId }
   from '../../../lib/extensions/governance-values.mjs';
 import { assertWithinCaps, CAPS } from '../../../lib/extensions/governance-values.mjs';
 
@@ -155,4 +155,46 @@ test('one level means scalar leaves only', () => {
   throwsCode(() => assertValidValue([1], 'after'), 'GOVERNANCE_FIELD_VALUE_INVALID');
   throwsCode(() => assertValidValue({ k: null }, 'package'), 'GOVERNANCE_FIELD_VALUE_INVALID');
   throwsCode(() => assertValidValue(null, 'f'), 'GOVERNANCE_FIELD_VALUE_INVALID');
+});
+
+// ── assertSafeFlowElement — the flow-sequence admission rule ──────────────
+//
+// Moved here from `governance-splice.mjs` (Review Stage 1, Minor: the validator
+// belongs in the sanctioned module beside the threat model it encodes). The
+// admitted set below is the one an exhaustive U+0000–U+20FF sweep proved: the
+// scalar rule, plus argv tokens that begin with `-` or that would type-flip.
+
+test('assertSafeFlowElement admits the argv tokens the scalar rule alone refuses', () => {
+  // Leading `-` — the whole reason a gate `command` could not be written back.
+  for (const ok of ['--', '--silent', '-q', '-rf', '-', '--config=a/b'])
+    assert.doesNotThrow(() => assertSafeFlowElement(ok, 'command[0]'));
+  // Type-flip strings: legal argv, refused by the scalar rule.
+  for (const ok of ['42', '-42', 'true', 'false', 'null'])
+    assert.doesNotThrow(() => assertSafeFlowElement(ok, 'command[0]'));
+  // And the tokens the argv rule alone refuses, which the scalar rule admits.
+  for (const ok of ['test:integration', 'plugin:tier1/x.mjs', 'npm', 'a b'])
+    assert.doesNotThrow(() => assertSafeFlowElement(ok, 'command[0]'));
+});
+
+test('assertSafeFlowElement still refuses everything that changes flow structure', () => {
+  for (const bad of ['"', 'a"b', 'a,b', '[', ']', '#', 'a#b', '\n', '\r', 'a\nb', "a'b", '{', '}'])
+    throwsCode(() => assertSafeFlowElement(bad, 'command[0]'), 'GOVERNANCE_SCALAR_UNSAFE');
+  // The empty string type-flips to {} on reparse and is not a legal argv token.
+  throwsCode(() => assertSafeFlowElement('', 'command[0]'), 'GOVERNANCE_SCALAR_UNSAFE');
+  // Both caps still apply — the argv branch calls assertWithinCaps itself.
+  assert.doesNotThrow(() => assertSafeFlowElement('a'.repeat(CAPS.scalarChars), 'c[0]'));
+  throwsCode(
+    () => assertSafeFlowElement('a'.repeat(CAPS.scalarChars + 1), 'c[0]'),
+    'GOVERNANCE_LIMIT_EXCEEDED',
+  );
+  // A non-string is a type error, not a content refusal.
+  for (const bad of [42, null, undefined, true, {}, []])
+    throwsCode(() => assertSafeFlowElement(bad, 'c[0]'), 'GOVERNANCE_FIELD_VALUE_INVALID');
+});
+
+test('assertSafeFlowElement reports the SCALAR rule verdict, naming the field', () => {
+  assert.throws(
+    () => assertSafeFlowElement('a#b', 'command[2]'),
+    e => e.code === 'GOVERNANCE_SCALAR_UNSAFE' && /command\[2\]/.test(e.message),
+  );
 });

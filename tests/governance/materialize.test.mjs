@@ -22,6 +22,7 @@ import {
   readMarker,
   stampMarker,
 } from "../../lib/governance/registry-marker.mjs";
+import { deriveSource, effectiveSet } from "../../lib/governance/materialize.mjs";
 
 const GATES = ".context-index/governance/gates.yaml";
 const REVIEW = ".context-index/governance/review.yaml";
@@ -329,6 +330,189 @@ describe("adev governance materialize", () => {
       const after = readFileSync(join(dir, DIAGNOSTICS), "utf8");
       assert.ok(after.startsWith(before), "no entry may be inserted");
       assert.match(String(readMarker(join(dir, DIAGNOSTICS))), /^\d{4}-\d{2}-\d{2}T/);
+    }),
+  );
+});
+
+// ── The marker may not vouch for rows that never loaded ──────────────────────
+//
+// Review Stage 1, Important #1. A loader that DROPS a row still returns an
+// entries array, and materializing off that array stamps "the entries above are
+// the complete effective set" over rows nothing ever read. That is the exact
+// failure the marker exists to prevent, so the load has to be complete before
+// the stamp is earned.
+
+/** A diagnostics registry whose two runners cannot be resolved (containment). */
+const UNLOADABLE_DIAGNOSTICS = `# diagnostics.yaml — fixture
+diagnostics:
+  - id: adev/ghost-one
+    runner: plugin:tier1/does-not-exist.mjs
+    severity: error
+    tier: 1
+    scope: event-impact
+  - id: adev/ghost-two
+    runner: plugin:tier1/also-missing.mjs
+    severity: error
+    tier: 1
+    scope: event-impact
+`;
+
+describe("materialize refuses to stamp an incomplete load", () => {
+  test(
+    "a diagnostics registry whose runners fail containment is refused, not stamped",
+    withDir(async (dir) => {
+      seedProject(dir, { diagnostics: UNLOADABLE_DIAGNOSTICS });
+      const before = readFileSync(join(dir, DIAGNOSTICS), "utf8");
+
+      const r = runCli(dir, ["governance", "materialize", "--registry", "diagnostics"]);
+      assert.equal(r.exitCode, 1, r.stdout);
+      assert.match(r.stderr, /MATERIALIZE_LOAD_INCOMPLETE/);
+      assert.match(r.stderr, /adev\/ghost-one/);
+      assert.match(r.stderr, /adev\/ghost-two/);
+
+      assert.equal(readFileSync(join(dir, DIAGNOSTICS), "utf8"), before, "nothing may be written");
+      assert.equal(readMarker(join(dir, DIAGNOSTICS)), null, "the marker may not be stamped");
+    }),
+  );
+
+  test(
+    "--dry-run reports the same refusal",
+    withDir(async (dir) => {
+      seedProject(dir, { diagnostics: UNLOADABLE_DIAGNOSTICS });
+      const r = runCli(dir, [
+        "governance", "materialize", "--registry", "diagnostics", "--dry-run",
+      ]);
+      assert.equal(r.exitCode, 1, r.stdout);
+      assert.match(r.stderr, /MATERIALIZE_LOAD_INCOMPLETE/);
+      assert.match(r.stderr, /adev\/ghost-one/);
+      assert.equal(readMarker(join(dir, DIAGNOSTICS)), null);
+    }),
+  );
+
+  test(
+    "a project-only gate the merge dropped is refused, not blessed",
+    withDir(async (dir) => {
+      // `mergeGates` drops a shell-form command with an INVALID_GATE warning.
+      // The id collides with nothing in the domain overlay, so the pre-existing
+      // MATERIALIZE_WOULD_DROP check cannot see it: the id is simply absent from
+      // the effective set. Without the load-completeness check the row would be
+      // stamped as part of "the complete effective set" while running nowhere.
+      seedProject(dir, {
+        gates: 'gates:\n  - id: project-only\n    command: "npm run lint"\n',
+      });
+      const r = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
+      assert.equal(r.exitCode, 1, r.stdout);
+      assert.match(r.stderr, /MATERIALIZE_LOAD_INCOMPLETE/);
+      assert.match(r.stderr, /project-only/);
+      assert.equal(readMarker(join(dir, GATES)), null);
+    }),
+  );
+
+  test(
+    "a WARNING-severity loader diagnostic is surfaced but does NOT block",
+    withDir(async (dir) => {
+      // A governance gate that overrides a domain gate emits GATE_OVERRIDE. No
+      // row was lost, so the marker's claim stays true and the run proceeds —
+      // the warning is reported on the envelope instead.
+      seedProject(dir, {
+        gates: 'gates:\n  - id: quality-gate\n    command: ["npm", "test"]\n',
+      });
+      const r = runCli(dir, ["governance", "materialize", "--registry", "gates", "--json"]);
+      assert.equal(r.exitCode, 0, r.stderr);
+      const env = JSON.parse(r.stdout);
+      assert.ok(Array.isArray(env.warnings), "the envelope must carry the loader warnings");
+      assert.deepEqual(env.warnings.map((w) => w.code), ["GATE_OVERRIDE"]);
+      assert.match(String(readMarker(join(dir, GATES))), /^\d{4}-\d{2}-\d{2}T/);
+    }),
+  );
+});
+
+// ── DDR-4: the on-disk `source` vocabulary ───────────────────────────────────
+
+describe("deriveSource implements the DDR-4 mapping", () => {
+  test("every runtime provenance value the spec maps is mapped", () => {
+    assert.equal(deriveSource({ id: "a", __source: "bundled" }, "review", "software"), "bundled");
+    assert.equal(deriveSource({ id: "a", __source: "project" }, "review", "software"), "project");
+    assert.equal(deriveSource({ id: "a", __source: "governance" }, "review", "software"), "project");
+    assert.equal(
+      deriveSource({ id: "a", __source: "project-override" }, "review", "software"),
+      "project",
+    );
+    assert.equal(
+      deriveSource({ id: "a", __source: "manifest-specialist" }, "review", "software"),
+      "project",
+    );
+    assert.equal(deriveSource({ id: "a", __source: "domain" }, "review", "acme"), "domain:acme");
+  });
+
+  test("a genuinely unknown provenance value still throws", () => {
+    assert.throws(
+      () => deriveSource({ id: "a", __source: "from-mars" }, "gates", "software"),
+      (err) => err.code === "MATERIALIZE_SOURCE_UNMAPPED" && /from-mars/.test(err.message),
+    );
+  });
+
+  test("diagnostics provenance comes from the runner prefix", () => {
+    assert.equal(deriveSource({ id: "a", runner: "plugin:x.mjs" }, "diagnostics", null), "bundled");
+    assert.equal(deriveSource({ id: "a", runner: "project:x.mjs" }, "diagnostics", null), "project");
+  });
+});
+
+// ── `source` is origin-at-materialization, not current contributor ───────────
+
+describe("the `source` field records provenance AT MATERIALIZATION TIME", () => {
+  test(
+    "a materialized row keeps its original domain slug after the domain changes",
+    withDir(async (dir) => {
+      seedProject(dir);
+      // A custom domain (bundled `software` may not be overridden) contributing
+      // one gate of its own.
+      writeFixture(
+        dir,
+        ".context-index/domains/acme/gates.yaml",
+        [
+          "gates:",
+          "  - id: acme-gate",
+          '    description: "Acme house rule"',
+          '    command: ["npm", "run", "acme"]',
+          "    severity: error",
+          "    tier: fast",
+          "",
+        ].join("\n"),
+      );
+      writeFixture(
+        dir,
+        ".context-index/manifest.yaml",
+        "project:\n  name: fixture\n  domain: acme\n",
+      );
+
+      const first = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
+      assert.equal(first.exitCode, 0, first.stderr);
+      assert.match(readFileSync(join(dir, GATES), "utf8"), /source: domain:acme/);
+
+      // The project moves to another domain. Rule 3 never rewrites an on-disk
+      // row, so `acme-gate`'s `source` cannot follow: it now reads as a domain
+      // that no longer contributes anything. This is the CONTRACT, not a bug —
+      // hygiene Pass 19 (Task 17) is the channel that surfaces the divergence.
+      writeFixture(
+        dir,
+        ".context-index/manifest.yaml",
+        "project:\n  name: fixture\n  domain: software\n",
+      );
+      const second = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
+      assert.equal(second.exitCode, 0, second.stderr);
+
+      const text = readFileSync(join(dir, GATES), "utf8");
+      assert.match(text, /source: domain:acme/, "the stale slug is preserved verbatim");
+      assert.match(text, /- id: quality-gate/, "the new domain's gates are appended beside it");
+
+      // And the live resolution agrees: `acme-gate` now physically lives in the
+      // project's own file, so the merge labels it `governance` — yet `source`
+      // still reads the domain it came from when it was materialized.
+      const effective = await effectiveSet(dir, "gates");
+      const acme = effective.find((g) => g.id === "acme-gate");
+      assert.equal(acme.__source, "governance", "the CURRENT contributor is the project file");
+      assert.equal(acme.source, "domain:acme", "`source` is origin-at-materialization");
     }),
   );
 });

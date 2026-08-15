@@ -153,3 +153,18 @@ test('normaliseCommand returns a string command unchanged', () => {
   assert.equal(normaliseCommand('already a string'), 'already a string');
   assert.equal(normaliseCommand('npm test && echo $(id)'), 'npm test && echo $(id)');
 });
+
+test('an ABSENT allowlist root contains nothing — it does not contain everything', () => {
+  // `loadRegistry` passes '' for a root whose directory does not exist (a
+  // project with no `.context-index/diagnostics/`). An empty root string must
+  // not read as "/" — that made `isUnder` true for every absolute path, so the
+  // cross-root "contained in BOTH roots" refusal fired on every bundled
+  // `plugin:` runner and the whole registry loaded as zero entries.
+  const roots = diagnosticsRoots();
+  const noProjectRoot = { realPluginDiagRoot: roots.realPluginDiagRoot, realProjectDiagRoot: '' };
+  assert.ok(resolveRunnerContained('plugin:tier1/known-runner.mjs', noProjectRoot));
+  // Containment is still enforced against the root that IS present.
+  assert.throws(() => resolveRunnerContained('plugin:../escape.mjs', noProjectRoot));
+  // And a `project:` runner has no root to resolve against, so it is refused.
+  assert.throws(() => resolveRunnerContained('project:x.mjs', noProjectRoot));
+});

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { PLUGIN_ROOT } from '../../helpers.mjs';
 import { parseYaml } from '../../../lib/profiles/yaml.mjs';
 import { spliceRegistryEntries, emitEntry } from '../../../lib/extensions/governance-splice.mjs';
+import { CAPS } from '../../../lib/extensions/governance-values.mjs';
 
 const throwsCode = (fn, code) => assert.throws(fn, e => e.code === code);
 
@@ -339,6 +340,11 @@ test('real review.yaml — the reviewers block takes the new entry last', () => 
   assert.deepEqual(commentLines(text), before);
   assert.equal(parseYaml(text).reviewers.length, originalCount + 1);
   assert.deepEqual(parseYaml(text).reviewers.at(-1), { id: 'domain-reviewer' });
+  assert.deepEqual(
+    parseYaml(text).reviewers.slice(0, originalCount),
+    parseYaml(src).reviewers,
+    'the pre-existing rows must survive content-for-content',
+  );
 });
 
 test('real gates.yaml — the transitions sibling key survives untouched', () => {
@@ -434,4 +440,61 @@ test('insertedAt is reported for form 2 and form 4 as well', () => {
 
   const form4 = spliceRegistryEntries('a: 1\nb: 2\n', 'gates', [{ id: 'g' }]);
   assert.equal(form4.text.split('\n')[form4.insertedAt], '  - id: g');
+});
+
+// ── The flow-sequence admission set, round-tripped ───────────────────────
+//
+// Review Stage 1 rated the widened element rule SAFE-BUT-UNDER-TESTED. These
+// pin the admitted set and the refusals through the real writer and the repo's
+// own parser, so "the union did not become anything-goes" is a test.
+
+/** Splice `command: [...]` into an empty registry and read it back. */
+function roundTripCommand(elements) {
+  const { text } = spliceRegistryEntries('gates: []\n', 'gates', [
+    { id: 'g', command: elements },
+  ]);
+  return parseYaml(text).gates[0].command;
+}
+
+test('a gate command with argv flags round-trips element-for-element', () => {
+  assert.deepEqual(roundTripCommand(['npm', 'test', '--', '--silent']),
+    ['npm', 'test', '--', '--silent']);
+  // The motivating case: `:` and a leading `-` in the SAME list. Neither the
+  // scalar rule nor the argv rule alone could write it.
+  assert.deepEqual(roundTripCommand(['npm', 'run', '--if-present', 'test:integration']),
+    ['npm', 'run', '--if-present', 'test:integration']);
+  assert.deepEqual(roundTripCommand(['-']), ['-']);
+  assert.deepEqual(roundTripCommand(['rm', '-rf', '--config=a/b']), ['rm', '-rf', '--config=a/b']);
+});
+
+test('type-flipping elements round-trip as STRINGS, not coerced values', () => {
+  for (const element of ['42', '-42', 'true', 'false', 'null']) {
+    const back = roundTripCommand([element]);
+    assert.equal(typeof back[0], 'string', `${element} must stay a string`);
+    assert.deepEqual(back, [element]);
+  }
+});
+
+test('an element that would change the flow sequence structure is refused', () => {
+  for (const bad of ['"', 'a"b', 'a,b', '[', ']', '#', 'a#b', '\n', 'a\nb', '\r', 'a\rb']) {
+    assert.throws(
+      () => roundTripCommand(['npm', bad]),
+      e => e.code === 'GOVERNANCE_SCALAR_UNSAFE',
+      `element ${JSON.stringify(bad)} must be refused`,
+    );
+  }
+  assert.throws(
+    () => roundTripCommand(['npm', 'a'.repeat(CAPS.scalarChars + 1)]),
+    e => e.code === 'GOVERNANCE_LIMIT_EXCEEDED',
+  );
+  assert.deepEqual(roundTripCommand(['a'.repeat(CAPS.scalarChars)]),
+    ['a'.repeat(CAPS.scalarChars)]);
+});
+
+test('whitespace and backslash elements are ADMITTED and round-trip verbatim', () => {
+  // Documented, not aspirational: none of these is a flow-sequence indicator,
+  // the scalar rule has always admitted them, and each reparses identically.
+  // Refusing them here would refuse values every other string field accepts.
+  for (const element of ['a b', ' x', 'x ', '\tx', 'a\\b', '\\'])
+    assert.deepEqual(roundTripCommand([element]), [element]);
 });
