@@ -102,12 +102,11 @@ one-way.
 - `adev governance materialize --registry <name>` — one-shot verb writing the currently-effective merged set into the project's yaml, so existing projects can adopt single-source without hand-transcribing defaults.
 - Boundary rules in `boundaries.yaml` derived from the constitution's mechanical anti-patterns.
 - `transitions` entries in `gates.yaml` naming gates that carry real argv commands.
-- `source:` provenance field on every governance entry (`project` | `bundled` | `domain:<slug>` | `extension:<name>`), written by materialize and by extension install.
+- `source:` **vocabulary extension only.** The field itself is declared and installer-stamped by `extension-governance-merge-hardening.spec.md` (value `extension:<name>`). This spec adds the `project` | `bundled` | `domain:<slug>` values, written by `adev governance materialize`, and consumes the field in Step 6's drift pass. Declaring it there rather than here is what keeps the dependency one-way — that spec is implementable against the registries as they stand today.
 - `materialized_at` — **top-level root key** in each governance yaml (a sibling of `checks:` / `reviewers:` / `gates:` / `diagnostics:` / `boundaries:`, never an entry field), holding an ISO-8601 UTC timestamp. It is the sole discriminator of the un-materialized state, so its writers and immutability are contract, not incidental:
   - **Writers, exhaustively:** `adev governance materialize` stamps it when absent, and `/adev:init` scaffolding stamps it when creating a registry from a domain starter. Nothing else writes it.
   - **Write-once.** Once present it is never refreshed. Re-materialization preserves the original value, which is what keeps Behavior 6's byte-identical guarantee true on the second and subsequent runs.
   - **Installer-immutable.** Extension install never writes, refreshes or removes it, and an extension-supplied `materialized_at` in entry data is rejected exactly as a supplied `source` is.
-- `adev extension uninstall --name <n>` governance reversal: removes entries whose `source` matches, leaving project-authored entries untouched.
 
 ### MODIFIED
 
@@ -119,9 +118,6 @@ one-way.
 - `.context-index/governance/validate.yaml` — Checks 8 and 9 change `kind: subagent-review` → `deterministic-check`.
 - `skills/hygiene/SKILL.md` Audit Pass 19 — remit extended from `validate.yaml` to all four registries; entries with a non-`project` `source` are excluded from drift findings.
 - `skills/validate/checks/validate.check-1-quality-gates.md` + the `validator_report` payload — Check 1 additionally records a per-gate outcome array (`[{id, verdict, tier}]`) alongside its existing aggregate verdict. This is a payload extension to an existing `CANONICAL_EVENTS` variant, **not** a new variant, so it does not cross the ADR-0009 `[BOUNDARY: human-approved]` line that adding a gate-outcome event would.
-- `lib/extensions/content-install.mjs::inferRootKey` — replace stem-inference with an explicit registry→root-key table; `validate.yaml` maps to `checks`, not `validators`.
-- `lib/extensions/content-install.mjs::serializeGovernanceYaml` — preserve sibling root keys and comments; write only the targeted key's array.
-- `tests/lib/extensions/example-validation-check-install.test.mjs:206` — assert the `checks` contract instead of accommodating `validators || checks`.
 
 ### REMOVED
 
