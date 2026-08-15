@@ -51,7 +51,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `issues` | Issue-board subcommands (migrate, claim, release, stale) | `lib/cli/issues.mjs` |
 | `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
-| `heuristics` | Extract/retrieve/write project heuristics | `lib/cli/heuristics.mjs` |
+| `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
 | `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
@@ -520,9 +520,9 @@ adev retro session-activity --since 2026-05-01 --until 2026-05-31
 
 ### `heuristics`
 
-**Purpose:** Extract (Check 13 success-heuristic capture), retrieve (module-scoped injection), or write project heuristics in the memory store.
+**Purpose:** Read and write project heuristics in the memory store. `retrieve` pulls module-scoped heuristics for context-packet injection; `signature` derives the cross-scope failure-recurrence key; `write` records a heuristic directly; `migrate-keys` performs the one-time, idempotent rekey of the store.
 
-**Signature:** `heuristics extract --spec <p> --report <p> […]` · `heuristics retrieve --module <slug> […]` · `heuristics write --id <id> --scope <s> --title <t> --pattern <p> […]`
+**Signature:** `heuristics retrieve --module <slug> […]` · `heuristics signature --origin <o> (--text <t> | --blocker-id <id>) [--digest-only]` · `heuristics write --id <id> --scope <s> --title <t> --pattern <p> [--signature <sig>] […]` · `heuristics migrate-keys [--dry-run]`
 
 **Example:**
 ```

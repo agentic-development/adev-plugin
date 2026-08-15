@@ -39,6 +39,7 @@ import {
   mkdirSync,
   writeFileSync,
   readFileSync,
+  readdirSync,
   rmSync,
   existsSync,
   realpathSync,
@@ -742,4 +743,132 @@ test("--check-first-run is rejected as an unknown option by every surviving subc
     );
     assert.match(r.stderr, /check-first-run/);
   }
+});
+
+// ── Task 8: dangling-reference sweep ────────────────────────────────────────
+//
+// Scope is deliberately EXACTLY `docs/` and `lib/`. `.context-index/` still
+// contains the strings `heuristics extract` and `--check-first-run` on
+// purpose — the failure-capture charter, this spec, the superseded
+// cli-driver-surface acceptance criterion, research artifacts and session
+// logs all record the retired verb as history. Scanning `.context-index/`
+// would fail forever and would pressure a future author to erase that record.
+
+const SCAN_DIRS = ["docs", "lib"];
+const SCAN_EXTS = new Set([".md", ".mjs", ".js"]);
+
+/** Walk SCAN_DIRS and return every `file:line` whose text matches `pattern`. */
+function grepRepo(pattern, dirs = SCAN_DIRS) {
+  const hits = [];
+  const walk = (abs, rel) => {
+    for (const entry of readdirSync(abs, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      const childAbs = join(abs, entry.name);
+      const childRel = `${rel}/${entry.name}`;
+      if (entry.isDirectory()) {
+        walk(childAbs, childRel);
+        continue;
+      }
+      const dot = entry.name.lastIndexOf(".");
+      if (dot < 0 || !SCAN_EXTS.has(entry.name.slice(dot))) continue;
+      const lines = readFileSync(childAbs, "utf8").split("\n");
+      lines.forEach((line, i) => {
+        if (pattern.test(line)) hits.push(`${childRel}:${i + 1}`);
+      });
+    }
+  };
+  for (const dir of dirs) walk(resolve(PROJECT_ROOT, dir), dir);
+  return hits;
+}
+
+test("no reference to the removed verb remains in docs/ or lib/", () => {
+  const hits = grepRepo(/heuristics extract|--check-first-run/);
+  assert.deepEqual(hits, [], `dangling references: ${hits.join(", ")}`);
+});
+
+test("docs/cli-reference.md documents all four surviving heuristics subcommands", () => {
+  const doc = readFileSync(resolve(PROJECT_ROOT, "docs", "cli-reference.md"), "utf8");
+  const section = doc.slice(doc.indexOf("### `heuristics`"));
+  const entry = section.slice(0, section.indexOf("### `domain`"));
+
+  for (const sub of ["retrieve", "signature", "write", "migrate-keys"]) {
+    assert.ok(
+      entry.includes(`heuristics ${sub}`),
+      `docs/cli-reference.md heuristics entry omits the '${sub}' subcommand`,
+    );
+  }
+  for (const flag of ["--digest-only", "--signature"]) {
+    assert.ok(entry.includes(flag), `heuristics entry omits the ${flag} flag`);
+  }
+  assert.ok(
+    !/\bExtract\b/.test(entry),
+    "heuristics **Purpose:** still advertises the retired Extract capability",
+  );
+});
+
+test("validated-without-report.mjs names exactly two .validate.md call sites", () => {
+  const src = readFileSync(
+    resolve(PROJECT_ROOT, "lib", "diagnostics", "tier2", "validated-without-report.mjs"),
+    "utf8",
+  );
+  assert.ok(
+    /Two call sites derive/.test(src),
+    "the SA-13 ownership note must say 'Two call sites derive', not 'Three'",
+  );
+  assert.ok(!/Three call sites/.test(src), "stale 'Three call sites' prose remains");
+  assert.ok(
+    !/lib\/cli\/heuristics\.mjs/.test(src),
+    "stale lib/cli/heuristics.mjs call site remains",
+  );
+  const numbered = src.match(/^ \* {3}\d\. /gm) ?? [];
+  assert.equal(
+    numbered.length,
+    2,
+    `expected 2 numbered call sites in the ownership note, found ${numbered.length}`,
+  );
+  assert.ok(
+    /^ \* {3}1\. /m.test(src) && /^ \* {3}2\. /m.test(src),
+    "the surviving call sites are not renumbered 1, 2",
+  );
+  assert.ok(
+    !/one of\s*\n \* the three\b/.test(src),
+    "prose still says 'one of the three'",
+  );
+});
+
+test("the superseded cli-driver-surface criterion is annotated, not deleted", () => {
+  const sweepPath = resolve(
+    PROJECT_ROOT,
+    ".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md",
+  );
+  const lines = readFileSync(sweepPath, "utf8").split("\n");
+
+  // The criterion must still EXIST as a bullet — it is another charter's
+  // record and must stay readable, only marked as falsified.
+  const criterion = lines.find((l) =>
+    l.startsWith("- [ ] PR 1 extracts Check 13 heuristic extraction"),
+  );
+  assert.ok(criterion, "the PR 1 acceptance criterion was deleted rather than annotated");
+  assert.ok(
+    criterion.includes("`adev heuristics extract` works"),
+    "the original claim text must remain visible (struck through), not erased",
+  );
+  assert.ok(
+    criterion.includes("failure-capture.spec.md"),
+    "the superseding spec is not named on the criterion",
+  );
+  assert.ok(criterion.includes("~~"), "the falsified claim is not marked struck through");
+
+  // Exactly one line changed in place: the file's line count is unchanged (±1).
+  assert.ok(
+    Math.abs(lines.length - 105) <= 1,
+    `sweep spec line count drifted to ${lines.length}; expected 104-105 (one line edited in place)`,
+  );
+
+  // The Task Map row naming lib/cli/heuristics.mjs records what PR 1 shipped
+  // ("paired test") and remains true — it is not this task's to edit.
+  assert.ok(
+    lines.some((l) => l.startsWith("| PR 1 — Extract Check 13")),
+    "the PR 1 Task Map row was modified or removed",
+  );
 });
