@@ -5,3 +5,17 @@
 {"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"FAIL","notes":null,"ts":"2026-08-15T00:25:51.204Z"}
 {"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"FAIL","notes":null,"ts":"2026-08-15T00:25:51.262Z"}
 {"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":null,"ts":"2026-08-15T00:25:51.319Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":[],"unresolved_blocker_ids":[],"ts":"2026-08-15T00:28:01.215Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-15T00:33:07.444Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-15T00:33:50.418Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"BLOCK","notes":"Rev 2 resolves SA-2/3/4/6; fail-closed rule still misses partially-populated registries and depends on run-time defaults the same step removes.","ts":"2026-08-15T00:39:13.802Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"BLOCK","notes":"Closes SEC-2/SEC-4 and most of SEC-1, but gate command injection survives the fill-gap allowlist, regex budget unimplementable as specified, un-materialized guard defeated by one entry.","ts":"2026-08-15T00:39:13.858Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"CON-1 fixed; all spot-checked file/line claims verify; two drift items in new text (source enum vocabulary, three-token CLI verb), neither integration-blocking.","ts":"2026-08-15T00:39:13.915Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T00:41:23.875Z"}
+{"event":"spec_revised","from_revision":2,"to_revision":3,"addressed_blocker_ids":["security-reviewer:authorization:35f96c52","security-reviewer:authorization:646c1b8e","security-reviewer:input-validation:23f20212","structural-architect:incomplete-precondition:0063478e","structural-architect:internal-contradiction:c5b04b09"],"unresolved_blocker_ids":[],"ts":"2026-08-15T00:42:16.379Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-15T00:44:28.240Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"FAIL","notes":"1 blocker: materialized_at has no declared writer; Behavior 6 idempotency contradicts stamping it. 4 warnings, 1 suggestion.","ts":"2026-08-15T00:52:54.092Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"All 3 rev-2 security blockers genuinely closed. 4 warnings (Step 3 stale key-list wording, materialized_at ownership, 1MB fail-open cap, Pass 19 blind spot), 3 suggestions.","ts":"2026-08-15T00:52:54.149Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"1 blocker: Behavior 4 reads per-gate outcomes the lifecycle event log never records; fix crosses undeclared ADR-0009 boundary. 3 warnings, 3 suggestions.","ts":"2026-08-15T00:52:54.209Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T00:54:04.453Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T00:54:50.491Z"}
