@@ -243,6 +243,102 @@ test('the payload-files cap refuses more than 32 distinct files', () => {
   cleanupTempDir(ext); cleanupTempDir(proj);
 });
 
+test('a directory payload is refused at plan time, with a governance code', () => {
+  const { ext, proj } = fixture();
+  mkdirSync(join(ext, 'subdir'), { recursive: true });
+  writeFileSync(join(ext, 'subdir', 'inner.sh'), 'x\n');
+  // Refused while planning — not deferred to a raw EISDIR out of copyFileSync.
+  assert.throws(() => planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{ entryId: 'c1', field: 'command', value: ['bash', './subdir'] }],
+  }), e => e.code === 'GOVERNANCE_PAYLOAD_MISSING');
+  // And nothing was written by the refused plan.
+  assert.equal(existsSync(payloadDir(proj, 'demo')), false);
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
+test('a package field naming a directory is refused too', () => {
+  const { ext, proj } = fixture();
+  mkdirSync(join(ext, 'skills'), { recursive: true });
+  assert.throws(() => planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{ entryId: 'r1', field: 'package.skill', value: 'skills' }],
+  }), e => e.code === 'GOVERNANCE_PAYLOAD_MISSING');
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
+test('applying a plan under a different projectRoot is refused, not silently desynced', () => {
+  const { ext, proj } = fixture();
+  const other = createTempDir();
+  const plan = planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{ entryId: 'c1', field: 'command', value: ['bash', 'bin/check.sh'] }],
+  });
+  assert.throws(() => applyExecPayload(plan, other, 'demo'),
+    e => e.code === 'GOVERNANCE_PAYLOAD_MISSING');
+  // Neither root was populated by the refused apply.
+  assert.equal(existsSync(payloadDir(other, 'demo')), false);
+  assert.equal(existsSync(payloadDir(proj, 'demo')), false);
+  cleanupTempDir(ext); cleanupTempDir(proj); cleanupTempDir(other);
+});
+
+test('applying a plan under a different extensionName is refused', () => {
+  const { ext, proj } = fixture();
+  const plan = planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{ entryId: 'c1', field: 'command', value: ['bash', 'bin/check.sh'] }],
+  });
+  assert.throws(() => applyExecPayload(plan, proj, 'other-demo'),
+    e => e.code === 'GOVERNANCE_PAYLOAD_MISSING');
+  assert.equal(existsSync(payloadDir(proj, 'other-demo')), false);
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
+test('an unsupported payload field is refused as not-allowed', () => {
+  const { ext, proj } = fixture();
+  assert.throws(() => planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{ entryId: 'c1', field: 'package.binary', value: 'bin/check.sh' }],
+  }), e => e.code === 'GOVERNANCE_FIELD_NOT_ALLOWED');
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
+// These two pin the live wiring to lib/extensions/governance-values.mjs. They
+// fail if the shared rules are ever swapped for a local reimplementation:
+// only `isArgvPathElement` classifies `<flag>=<value-with-slash>` as a path,
+// and only `assertSafeArgvToken` (not the stricter scalar rule) permits a
+// leading `-`.
+
+test('a flag-assigned escaping path is classified as a path by the shared rule and refused', () => {
+  const { ext, proj } = fixture();
+  assert.throws(() => planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{
+      entryId: 'c1', field: 'command',
+      value: ['bash', 'bin/check.sh', '--config=../../etc/shadow'],
+    }],
+  }), e => e.code === 'GOVERNANCE_COMMAND_ESCAPES_EXTENSION');
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
+test('flag tokens with a leading dash survive the argv rule', () => {
+  const { ext, proj } = fixture();
+  const plan = planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{
+      entryId: 'c1', field: 'command',
+      value: ['node', 'bin/check.sh', '--', '--silent', '-e'],
+    }],
+  });
+  const argv = applyExecPayload(plan, proj, 'demo');
+  assert.deepEqual(argv[0].value, [
+    'node',
+    join(payloadDir(proj, 'demo'), 'bin/check.sh'),
+    '--', '--silent', '-e',
+  ]);
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
 test('the same file contributed twice is copied once', () => {
   const { ext, proj } = fixture();
   const plan = planExecPayload({
