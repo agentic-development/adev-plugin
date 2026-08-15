@@ -5,7 +5,7 @@ charter: cli
 kind: behavioral
 status: draft
 risk_level: high
-revision: 2
+revision: 3
 charter-revision: 4
 created: 2026-08-14
 updated: 2026-08-14
@@ -43,7 +43,9 @@ The `cursor` branch (`cli/index.mjs:680`) hardcodes `scope: "user"` with no prom
 
 1. **When** the user runs `adev install` and selects the `claude-code` provider, **then** the scope prompt is presented **before** any call to `provider.install()`, and the collected answer is passed as `provider.install({ scope })`.
 
-2. **When** the user answers `project`, **then** `~/.claude/settings.json` gains no `enabledPlugins` entry for `adev@agentic-development` — verified by asserting the file is byte-identical to its pre-install content (or still absent).
+2. **REVISED at rev 3 (2026-08-14) — SA-2.** **When** the user answers `project`, **then** `~/.claude/settings.json` carries no `enabledPlugins["adev@agentic-development"]` key.
+
+   ~~verified by asserting the file is byte-identical to its pre-install content (or still absent)~~ — struck as unsatisfiable. `enable()` writes `extraKnownMarketplaces` into that same file (and creates it on a fresh machine), so byte-identity can never hold. The assertion is on the single key this criterion governs; the machine-wide writes a project-scoped install *is* permitted to make are enumerated in `installer-consent-boundary.spec.md` AC-2.
 
 3. **When** the user answers `project`, **then** `<cwd>/.claude/settings.json` contains the `enabledPlugins` entry.
 

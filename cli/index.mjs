@@ -9,7 +9,6 @@ import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
 import { resolveExtensionSource } from "../lib/extensions/resolve-source.mjs";
 import { installExtension, readManifestStamps } from "../lib/extensions/install.mjs";
 import { loadManifest } from "../lib/manifest.mjs";
-import { runPicker } from "../lib/cli/domain-extension-picker.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -690,13 +689,13 @@ async function handleDualSyncTargets(providerNames) {
     writeFileSync(manifestPath, dualContent);
     success("Added both CLAUDE.md and AGENTS.md sync targets");
   } else {
-    console.log("\n  Dual-setup detected.");
-    console.log("  [1] Sync to both CLAUDE.md and AGENTS.md (default)");
-    console.log("  [2] Sync to CLAUDE.md only");
-    console.log("  [3] Sync to AGENTS.md only\n");
-
-    const choice = await ask("Enter choice (1-3) [1]: ");
-    updateManifestSyncTargets(manifestPath, choice);
+    // An existing manifest already has sync targets, and changing them is
+    // context-layer configuration — the CLI charter names "sync targets"
+    // explicitly as /adev:init's territory. Report the situation and let the
+    // user decide there, rather than rewriting their manifest mid-upgrade.
+    console.log("\n  Dual-setup detected (multiple providers, existing manifest).");
+    log("  Sync targets are already configured in .context-index/manifest.yaml.");
+    log("  To change which agent files are generated, run /adev:init.");
   }
 }
 
@@ -751,16 +750,26 @@ async function installProviders(providerNames, { ask: askFn = ask } = {}) {
     heading(`Installing for ${provider.name}`);
 
     if (providerName === "claude-code") {
-      const { installed, path: pluginPath } = await provider.install();
+      // Ask BEFORE installing. provider.install() enables the plugin as part of
+      // its work, so calling it first defaulted the scope to "user" and wrote
+      // ~/.claude/settings.json before the user had answered — making the
+      // prompt cosmetic for anyone who chose "project". The codex branch below
+      // has always had this ordering; this matches it.
+      const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
+      const targetScope = scope === "project" ? "project" : "user";
+
+      const { installed, path: pluginPath } = await provider.install({ scope: targetScope });
       if (installed) {
         success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
       } else {
         success(`Plugin v${PLUGIN_VERSION} already installed`);
       }
 
-      const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
-      const settingsPath = provider.enable(scope === "project" ? "project" : "user");
+      const settingsPath = provider.enable(targetScope);
       success(`Plugin enabled in ${settingsPath}`);
+      if (targetScope === "project") {
+        log("Scoped to this project. Any machine-wide enablement of adev was removed.");
+      }
 
       const conflicts = provider.detectConflicts();
       if (conflicts.length === 0) {
@@ -1003,17 +1012,7 @@ async function cmdStatusCopilot() {
   }
 }
 
-/**
- * Run the init-time domain-extension picker.
- *
- * Wraps lib/cli/domain-extension-picker.mjs::runPicker with the CLI's ask
- * helper and the install-pipeline functions, plus user-facing output for the
- * "Domain Extension" step heading and any install errors.
- *
- * Returns the picker result (used by the caller's completion banner), or
- * `null` if the picker step could not run (no manifest.yaml found — e.g.
- * scaffold was skipped). The caller treats `null` as "no banner line".
- */
+
 /**
  * Repair `governance/gates.yaml` entries whose `command` is a shell string.
  *
@@ -1049,56 +1048,6 @@ async function migrateLegacyGateCommands() {
   for (const { command, reason } of skipped) {
     warn(`Gate command needs a shell and was left as-is: "${command}" (${reason})`);
     log("  Rewrite it as an argv list, or split it into separate gates.");
-  }
-}
-
-async function runDomainPicker() {
-  const projectRoot = process.cwd();
-  const manifestPath = join(projectRoot, ".context-index", "manifest.yaml");
-  if (!existsSync(manifestPath)) {
-    return null;
-  }
-  heading("Domain Extension");
-  try {
-    const result = await runPicker({
-      projectRoot,
-      pluginRoot: PLUGIN_ROOT,
-      ask,
-      installFn: installExtension,
-      readStamps: readManifestStamps,
-      print: log,
-    });
-    if (result.action === "skipped-workspace-root") {
-      log("Picker skipped (workspace root). Run inside a registered repo to pick a domain extension.");
-    } else if (result.action === "install") {
-      success(`Installed domain extension: ${result.domainName}`);
-    } else if (result.action === "install-failed") {
-      error(`Install failed for selected extension (${result.installError?.code || "ERROR"}): ${result.installError?.message || "unknown"}`);
-      log("Domain left unset — re-run with `adev extension install <source>` to retry.");
-    } else if (result.action === "already-installed") {
-      log(`Existing domain extension detected: ${result.domainName} (no change).`);
-    } else if (result.action === "software") {
-      log("Domain set to software (bundled default).");
-    } else if (result.action === "skip") {
-      log("Domain extension skipped. Re-run with `adev extension install <source>` to pick one later.");
-    }
-    if (Array.isArray(result.advisories) && result.advisories.length > 0) {
-      for (const adv of result.advisories) {
-        warn(`Catalog entry "${adv.name}" dropped: ${adv.reason}`);
-      }
-    }
-    return result;
-  } catch (err) {
-    if (err && err.code === "PICKER_USER_ABORTED") {
-      log("Picker aborted by user. Domain left unset.");
-      return null;
-    }
-    if (err && err.code === "PICKER_CATALOG_PARSE_FAILED") {
-      warn(`Domain catalog unavailable (${err.message}). Falling through to software default.`);
-      return null;
-    }
-    error(`Picker failed: ${err.message}`);
-    return null;
   }
 }
 
@@ -1157,8 +1106,11 @@ async function cmdInstall() {
   // --- Stamp adev_version in manifest ---
   stampVersion();
 
-  // --- Domain Extension picker ---
-  const installPickerResult = await runDomainPicker();
+  // The domain-extension picker used to run here. It writes `domain:` into
+  // manifest.yaml, which is context-layer configuration — owned by /adev:init
+  // per the CLI charter ("All context-layer configuration … remains in the
+  // /adev:init skill, not the CLI"). At install time the project has only
+  // pristine templates, so there is nothing yet to pick a domain *for*.
 
   // --- Git hooks ---
   heading("Git Hooks");
@@ -1187,9 +1139,6 @@ async function cmdInstall() {
 
   // --- Summary ---
   heading(`Done! Plugin installed — adev v${PLUGIN_VERSION}.`);
-  if (installPickerResult && installPickerResult.action !== 'skipped-workspace-root') {
-    log(`Domain: ${installPickerResult.domainName}`);
-  }
 
   log("Next steps:");
   console.log();
@@ -1272,41 +1221,18 @@ async function cmdUpgrade() {
   // --- Stamp adev_version ---
   stampVersion();
 
-  // --- Provenance config ---
+  // Provenance enforcement used to be prompted for here. It writes a
+  // `provenance:` block into manifest.yaml — context-layer configuration owned
+  // by /adev:init, not the CLI. `adev upgrade` still needs the delta below for
+  // its own reporting, but it no longer asks the question or writes the block.
   const manifestPath = join(process.cwd(), ".context-index", "manifest.yaml");
   const delta = computeUpgradeDelta(state.version);
   if (delta.provenance && existsSync(manifestPath)) {
-    let manifest = readFileSync(manifestPath, "utf8");
+    const manifest = readFileSync(manifestPath, "utf8");
     if (!manifest.includes("provenance:")) {
       heading("Provenance Tracking");
-      log("Adds Author-type + Operator trailers to every commit.");
-      log("CI gate rejects commits missing trailers on PRs.");
-      console.log();
-      const enableProv = await ask("Enable provenance enforcement? (yes/no) [yes]");
-      if (enableProv !== "no" && enableProv !== "n") {
-        const provenanceBlock = [
-          "",
-          "# ============================================================================",
-          "# Provenance Tracking",
-          "# ============================================================================",
-          "",
-          "provenance:",
-          "  require_hooks: true",
-          "  required_trailers:",
-          "    - Author-type",
-          "    - Operator",
-          "",
-        ].join("\n");
-        if (manifest.includes("tasks:")) {
-          manifest = manifest.replace(/\ntasks:/, provenanceBlock + "tasks:");
-        } else {
-          manifest += provenanceBlock;
-        }
-        writeFileSync(manifestPath, manifest);
-        success("Added provenance config to manifest.yaml");
-      } else {
-        log("Skipped. Add manually later under provenance: in manifest.yaml");
-      }
+      log("This version can enforce Author-type + Operator commit trailers.");
+      log("Run /adev:init to enable it — it is project configuration, not an install step.");
     }
   }
 
@@ -1317,8 +1243,8 @@ async function cmdUpgrade() {
   // (SEC-2). Such a project runs zero gates and looks like it passed them.
   await migrateLegacyGateCommands();
 
-  // --- Domain Extension picker ---
-  const upgradePickerResult = await runDomainPicker();
+  // The domain-extension picker used to run here too — same reason as
+  // cmdInstall: it writes `domain:` into manifest.yaml. /adev:init owns it.
 
   // --- Git hooks ---
   heading("Git Hooks");
@@ -1354,9 +1280,6 @@ async function cmdUpgrade() {
     heading(`Done! Upgraded from v${fromLabel} to v${PLUGIN_VERSION}.`);
   } else {
     heading(`Done! adev v${PLUGIN_VERSION} is up to date.`);
-  }
-  if (upgradePickerResult && upgradePickerResult.action !== 'skipped-workspace-root') {
-    log(`Domain: ${upgradePickerResult.domainName}`);
   }
 
   log("Next steps:");
@@ -1916,6 +1839,11 @@ const VERB_REGISTRY = new Map([
   ["report",          () => import("../lib/cli/report.mjs")],
   ["source-manifest", () => import("../lib/cli/source-manifest.mjs")],
   ["domain",          () => import("../lib/cli/domain.mjs")],
+  // Registered so /adev:init can run the picker. The module always exported a
+  // run()/help() pair, but had no registry entry, so its only caller was
+  // cmdInstall/cmdUpgrade calling runPicker() directly — which is what put a
+  // manifest-writing prompt inside the installer.
+  ["domain-picker",   () => import("../lib/cli/domain-extension-picker.mjs")],
   ["context",         () => import("../lib/cli/context.mjs")],
   ["verify",          () => import("../lib/cli/verify.mjs")],
   ["state",           () => import("../lib/cli/state.mjs")],

@@ -261,12 +261,19 @@ describe('init-extension-picker integration', () => {
     assert.ok(!/^domain:/m.test(manifest), 'no manifest write at workspace root');
   });
 
-  it('banner canonical wording: cli/index.mjs prints exactly Domain: <name>, no variants', () => {
+  it('banner canonical wording: the init skill states exactly Domain: <name>, no variants', () => {
+    // The picker moved out of cli/index.mjs and into /adev:init (it writes
+    // `domain:` into manifest.yaml, which the CLI charter reserves for the
+    // init skill), so the canonical banner now lives in the skill doc.
+    const skill = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    assert.match(skill, /Domain: <name>/);
+    assert.doesNotMatch(skill, /Domain extension: </, 'must not use "Domain extension:" variant');
+    assert.doesNotMatch(skill, /Selected domain:/, 'must not use "Selected domain:" variant');
+
+    // And the installer must no longer print it — that is the regression this
+    // whole change exists to prevent recurring.
     const cli = readFileSync(join(PLUGIN_ROOT, 'cli', 'index.mjs'), 'utf8');
-    // Canonical wording present
-    assert.match(cli, /`Domain: \$\{[^}]+\}`/);
-    // No prohibited variants
-    assert.doesNotMatch(cli, /Domain extension:/, 'must not use "Domain extension:" variant');
-    assert.doesNotMatch(cli, /Selected domain:/, 'must not use "Selected domain:" variant');
+    assert.doesNotMatch(cli, /`Domain: \$\{[^}]+\}`/,
+      'adev install must not run the domain picker or print its banner');
   });
 });

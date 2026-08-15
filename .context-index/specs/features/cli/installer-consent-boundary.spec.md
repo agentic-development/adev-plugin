@@ -57,27 +57,70 @@ rewrites tracked files in `.githooks/`.
    by it. Asking after the fact is a defect even when the answer is later
    honored, because the earlier write is not undone.
 
-2. **When** a scope-bearing prompt is answered `project`, **then** no
-   machine-wide state records the plugin as enabled: the pre-existing
-   user-scope entry is **removed**, not left in place with a warning.
-   (Operator decision, 2026-08-14. The alternative — warn and leave — was
-   rejected because it leaves the machine in the state the operator declined.)
+2. **When** a scope-bearing prompt is answered `project`, **then**
+   `~/.claude/settings.json` carries no
+   `enabledPlugins["adev@agentic-development"]` key: a pre-existing entry is
+   **removed**, not left in place with a warning. (Operator decision,
+   2026-08-14. The alternative — warn and leave — was rejected because it
+   leaves the machine in the state the operator declined.)
+
+   **Scoped to that one key, deliberately (SA-2.)** Rev 1 said "no machine-wide
+   state records the plugin as enabled", which its own carve-outs contradicted
+   three paragraphs later and which no test could implement. A project-scoped
+   install legitimately writes two other machine-wide things:
+
+   | Written | Why it is not an enablement |
+   |---|---|
+   | `~/.claude/plugins/installed_plugins.json` | Records *that* and *where* the plugin is installed, plus the scope chosen (AC-3). Removing it would break uninstall. |
+   | `extraKnownMarketplaces` in `~/.claude/settings.json` | How Claude Code *resolves* the plugin at all. Resolution is not enablement. |
+
+   Stating these affirmatively is the point: the consent claim is exactly
+   "adev is not enabled for your other projects", and nothing broader.
 
 3. **When** any scope is chosen, **then** `installed_plugins.json` records the
    scope actually chosen rather than a hardcoded default.
 
 ### The CLI / init boundary
 
-4. **When** an interactive prompt would write context-layer configuration —
-   the constitution, governance, persona, sync targets, `domain:`, or
-   `provenance:` — **then** it does not belong in `adev install` or
-   `adev upgrade`. The CLI charter states: *"All context-layer configuration
-   (constitution, governance, persona, sync targets) remains in the
-   `/adev:init` skill, not the CLI."*
+4. **When** any `adev install` / `adev upgrade` code path would **write**
+   context-layer configuration — the constitution, governance, persona, sync
+   targets, `domain:`, or `provenance:` — **then** it does not belong in the
+   CLI. The charter states: *"All context-layer configuration (constitution,
+   governance, persona, sync targets) remains in the `/adev:init` skill, not
+   the CLI."*
 
-   Three prompts violated this and were moved to `/adev:init`: the
-   domain-extension picker (install **and** upgrade), the sync-target chooser
-   (upgrade), and provenance enforcement (upgrade).
+   **This is a write rule, not a prompt rule.** Rev 1 keyed it on the presence
+   of an interactive prompt, which left silent writes of the same configuration
+   fully permitted — and the shipped code exercised that gap twice. A rule that
+   cannot adjudicate the code it governs is not a rule. (SA-1.)
+
+   Three prompts violated this and were moved to `/adev:init` (the **skill**,
+   not the `adev init` CLI alias — see the note below): the domain-extension
+   picker (install **and** upgrade), the sync-target chooser (upgrade), and
+   provenance enforcement (upgrade).
+
+   **Sanctioned exceptions**, both narrow and both write without asking because
+   asking would be worse:
+
+   - **First-scaffold defaults.** `handleDualSyncTargets()` writes sync targets
+     when *no* `manifest.yaml` exists yet. Scaffolding a default is not
+     choosing between existing values; there is nothing to overwrite and no
+     decision to take from the operator. Once a manifest exists, the CLI
+     reports and defers (AC-5).
+   - **Repair of a value the loader rejects.** `migrateLegacyGateCommands()`
+     rewrites a shell-string `command:` in `governance/gates.yaml`. This is
+     permitted because the value is not a preference the project chose — it is
+     one `merge-gates.mjs` discards at load, so the gate never runs and the
+     project reports zero gates while looking like it passed. Specified in
+     `unified-gates/tiered-gates-default.spec.md` behavior 11, which records
+     the reversal of that spec's own template-purity non-goal.
+
+   Any future exception must be written into this list with its reasoning. An
+   unlisted write is a violation regardless of whether it prompts.
+
+   **Terminology (CON-4):** `/adev:init` in this spec always means the **skill**.
+   `adev init` is a live backward-compat CLI verb that routes to install or
+   upgrade; routing a prompt "to `adev init`" would satisfy nothing.
 
 5. **When** an upgrade makes a new project-configuration capability available,
    **then** the CLI **reports** it and names the skill that configures it. It
@@ -122,10 +165,12 @@ rewrites tracked files in `.githooks/`.
    `git rev-parse --show-toplevel`, which can answer for a different repository
    under a linked worktree or an unexpected `--git-dir`.
 
-   The path is computed at install time relative to the **same** directory the
-   wrapper resolves from (the repo root containing `.githooks/`), not
-   `process.cwd()` — they differ whenever `adev install` is run from a
-   subdirectory. (SA-3.)
+   The install-time computation and the runtime resolution MUST share a base.
+   They do by construction: `githooksDir = join(cwd, ".githooks")` and the path
+   is computed as `relative(cwd, originalHookPath)`, while the wrapper resolves
+   `REPO_ROOT` as its own directory's parent. State the invariant, not a
+   prohibition on `process.cwd()` — an earlier draft of this AC forbade it,
+   which would have failed correct code. (SA-3, corrected per SA-11.)
 
 12. **When** `core.hooksPath` contains anything outside `[A-Za-z0-9._/-]`, or
     resolves outside the repository root, **then** the installer REFUSES to
@@ -162,13 +207,49 @@ rewrites tracked files in `.githooks/`.
     because a future caller may reach `buildChainedHook` by a path that skips
     the validation. (SEC-1.)
 
-14. **When** the resolved original hook lies outside the repository root,
-    **then** chaining is refused. "Relative" is not "contained":
+14. **When** the original hook path lies outside the repository root
+    **lexically**, **then** chaining is refused. "Relative" is not "contained":
     `relative()` happily yields `../../husky/pre-commit`, which resolves to a
     directory the installer does not own on a teammate's machine or a CI runner,
     and the wrapper would execute whatever is there. AC-7's fail-closed rule
     makes this *more* reachable, not less — a missing path now hard-fails, but
     an existing attacker-writable one still runs. CWE-22. (SEC-2.)
+
+    **Known gap — containment is lexical, not physical (SEC-11).** The check
+    uses `resolve()`/`relative()`, which are pure string operations. A tracked
+    in-repo **symlink** (`.husky → ../shared-hooks`) is carried by `git clone`,
+    passes this check, and the wrapper executes code outside the repository —
+    demonstrated by execution during re-review. Closing it requires
+    `realpathSync` on both the candidate and the repo root (the latter for the
+    macOS `/var` vs `/private/var` case) plus a re-check once the concrete
+    `originalHookPath` is known. Tracked separately; this AC states what is
+    enforced today, not what is intended.
+
+15. **When** the settings file **itself** is a symlink, **then** the installer
+    refuses to write, naming the path and its target, and exits rather than
+    following it.
+
+    `.claude/settings.json` is routinely tracked in git, and git tracks
+    symlinks. The canonical flow is "clone a repo, then run
+    `npx @adev-org/adev-cli install`" — the clone is attacker-controlled and the
+    write happens before the operator has made any trust decision, so a plain
+    `writeFileSync` overwrites whatever the link points at, anywhere the user
+    can write. CWE-59. (SEC-3.)
+
+    Refusing beats replacing: a symlinked settings file may be a deliberate
+    dotfile-manager setup, and silently clobbering it would be its own defect.
+    Note that `sameFile()`'s `realpathSync` does **not** cover this — it is an
+    identity check for the two-scopes-one-file case, not a safety check, and
+    does nothing about a link pointing at a third location.
+
+    **Known gap — leaf only (SEC-10).** `lstatSync` inspects the final path
+    component, so a symlinked **parent** (`.claude → ~/.ssh`, or
+    `.claude → ~/.claude`) is still followed; re-review demonstrated both, the
+    second silently leaking a project-scope enable into the user file and
+    defeating AC-2. Closing it requires resolving the parent chain and
+    requiring the settings path to land under the intended root — the pattern
+    already exists at `lib/issues/resolve-root.mjs`. Tracked separately; the
+    CWE-59 claim above is therefore partial.
 
 ### Destructive rewrites are announced
 
