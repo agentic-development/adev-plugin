@@ -79,21 +79,28 @@ gates:
   #     - post-implement
 
 # Lifecycle transition requirements
-transitions: {}
+#
+# Each entry names the gates that must have a FRESH, ATTESTED, PASSING outcome
+# recorded by validate's Check 1 before the transition is allowed. Nothing here
+# executes a gate — `adev gate transitions` reads recorded history only.
+#
+# Only gates carrying a real argv `command` may be named. `lint` and `typecheck`
+# below are commented-out templates with no command, so requiring them would
+# produce a required_gates id no gate declares — the MISSING_GATE_REF finding
+# /adev:hygiene Pass 8 raises. Uncomment the gate first, then add it here.
+transitions:
+  implement-to-validate:
+    required_gates:
+      - test
+    approver_role: ""
+
+  validate-to-merge:
+    required_gates:
+      - test
+    approver_role: ""
+
   # spec-to-plan:
   #   required_gates: []
-  #   approver_role: ""
-
-  # implement-to-validate:
-  #   required_gates:
-  #     - test
-  #     - lint
-  #     - typecheck
-  #   approver_role: ""
-
-  # validate-to-merge:
-  #   required_gates:
-  #     - test
   #   approver_role: ""
 
 # Stamped by 'adev governance materialize' — write-once. The entries above are

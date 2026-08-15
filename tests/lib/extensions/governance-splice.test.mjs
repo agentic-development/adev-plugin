@@ -360,13 +360,21 @@ test('real review.yaml — the reviewers block takes the new entry last', () => 
 test('real gates.yaml — the transitions sibling key survives untouched', () => {
   const src = governanceFixture('gates.yaml');
   const before = commentLines(src);
-  const originalCount = parseYaml(src).gates.length;
+  const originalDoc = parseYaml(src);
+  const originalCount = originalDoc.gates.length;
   const { text } = spliceRegistryEntries(src, 'gates', [
     { id: 'ext-lint', name: 'Ext Lint', command: ['npm', 'run', 'lint'] },
   ]);
   assert.deepEqual(commentLines(text), before);
   const parsed = parseYaml(text);
-  assert.deepEqual(parsed.transitions, {});
+  // Compared against what the file ACTUALLY declares rather than a literal.
+  // Task 15 populated `transitions`, and an empty map was a weak witness for
+  // "survives untouched" — a splice that dropped the key entirely would have
+  // satisfied `deepEqual({}, {})` in spirit for any reader skimming it. The
+  // populated map makes the assertion bite, and pinning the parsed original
+  // keeps it biting whatever the project requires next.
+  assert.ok(Object.keys(originalDoc.transitions).length > 0, 'fixture must declare transitions');
+  assert.deepEqual(parsed.transitions, originalDoc.transitions);
   assert.equal(parsed.gates.length, originalCount + 1);
   assert.deepEqual(parsed.gates.at(-1), {
     id: 'ext-lint', name: 'Ext Lint', command: ['npm', 'run', 'lint'],
