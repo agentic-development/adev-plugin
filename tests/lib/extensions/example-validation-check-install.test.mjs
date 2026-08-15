@@ -9,17 +9,28 @@
  *   - Install positive path against a temp project.
  *   - Install rejects string-form command at validate-load time (negative fixture).
  *   - Install report surfaces colliding ids in a dedicated section.
- *   - After install, the merged validate.yaml entry's command argv resolves to a
- *     repo-relative path the runner can resolve (SEC2-11 spirit — argv form preserved,
+ *   - After install, the merged validate.yaml entry's command argv is rewritten to
+ *     the absolute relocated-payload path (SEC2-11 spirit — argv form preserved,
  *     no shell interpolation).
+ *   - End-to-end: install into a foreign temp project (NOT this repo), covering the
+ *     exec-consent gate, payload relocation + 0555 hardening, comment preservation,
+ *     the real loader round-trip, and actually running the check.
  *   - Line-count budgets: manifest ≤25, bin/check.sh ≤15, README ≤60.
  *
  * Spec: .context-index/specs/features/extensions/extension-authoring-docs.spec.md
  */
 
-import { describe, it, before, beforeEach, afterEach } from "node:test";
+import { describe, it, beforeEach, afterEach } from "node:test";
 import { strict as assert } from "node:assert";
-import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+  mkdirSync,
+  realpathSync,
+  copyFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -28,6 +39,7 @@ import { parseExtensionManifest } from "../../../lib/extensions/manifest-schema.
 import { installExtension, readManifestStamps } from "../../../lib/extensions/install.mjs";
 import { mergeGovernanceEntries } from "../../../lib/extensions/content-install.mjs";
 import { loadValidateConfig } from "../../../lib/governance/validate-config.mjs";
+import { runQualityGate } from "../../../lib/governance/quality-gate.mjs";
 import { createTempDir, cleanupTempDir, PLUGIN_ROOT } from "../../helpers.mjs";
 
 const EXAMPLE_DIR = join(PLUGIN_ROOT, "extensions", "example-validation-check");
@@ -179,6 +191,15 @@ describe("example-validation-check: install positive path", () => {
       JSON.stringify({ name: "stub", version: "0.27.0" }),
     );
     mkdirSync(join(stubPluginRoot, "skills"), { recursive: true });
+    // A faithful plugin root also carries the bundled profile vocabulary: the
+    // install-time namespace resolver reads `<pluginRoot>/templates/governance/
+    // profiles.yaml` to prove the entry's `profile` is not a name that would
+    // make the loader push UNKNOWN_PROFILE.
+    mkdirSync(join(stubPluginRoot, "templates", "governance"), { recursive: true });
+    copyFileSync(
+      join(PLUGIN_ROOT, "templates", "governance", "profiles.yaml"),
+      join(stubPluginRoot, "templates", "governance", "profiles.yaml"),
+    );
   });
 
   afterEach(() => {
@@ -190,6 +211,8 @@ describe("example-validation-check: install positive path", () => {
     const report = await installExtension(EXAMPLE_DIR, projectRoot, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
     assert.equal(report.name, "example-validation-check");
     assert.equal(report.version, "0.1.0");
@@ -203,9 +226,11 @@ describe("example-validation-check: install positive path", () => {
     const validatePath = join(projectRoot, ".context-index/governance/validate.yaml");
     assert.ok(existsSync(validatePath), "validate.yaml must be created");
     const validate = parseYaml(readFileSync(validatePath, "utf8"));
-    // mergeGovernanceEntries infers root key 'validators' for validate.yaml.
-    // Find the entry under either root key for resilience.
-    const entries = validate.validators || validate.checks || [];
+    // The root key is `checks` — the one `lib/governance/validate-config.mjs`
+    // actually reads. An `||` fallback here would paper over a root-key
+    // mismatch that leaves the entry invisible to the loader (spec defect 5).
+    assert.equal(validate.validators, undefined, "root key must be checks, never validators");
+    const entries = validate.checks;
     assert.ok(
       entries.some((e) => e && e.id === "example-validation-check.passing"),
       `validate.yaml must contain example-validation-check.passing, got keys ${Object.keys(validate)}`,
@@ -216,10 +241,12 @@ describe("example-validation-check: install positive path", () => {
     await installExtension(EXAMPLE_DIR, projectRoot, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
     const validatePath = join(projectRoot, ".context-index/governance/validate.yaml");
     const raw = readFileSync(validatePath, "utf8");
-    // The serialized YAML emits the array as `[ "bash", "extensions/..." ]`.
+    // The serialized YAML emits the array as `[ "bash", "/abs/path/check.sh" ]`.
     // SEC2-11: command must remain an argv list, not collapsed to a shell string.
     assert.match(raw, /command:\s*\[/m, "command must be serialized as argv list");
     assert.doesNotMatch(raw, /command:\s*"[^"]*\s[^"]*"/, "command must not be a shell-form string");
@@ -375,5 +402,182 @@ describe("example-validation-check: install collision reporting", () => {
     assert.equal(result.checks[0].command, undefined);
     assert.equal(result.checks[1].command, undefined);
     assert.deepEqual(result.checks[2].command, cmd);
+  });
+});
+
+// ── End-to-end: install into a foreign temp project, then RUN the check ──
+//
+// Deliberately NOT this repo. The reference extension's `command` used to name
+// `extensions/example-validation-check/bin/check.sh` — a project-root-relative
+// path that only resolves inside adev-plugin itself. Installing into this repo
+// made that broken path look correct (review blocker SEC-3). Installing into a
+// temp project is what catches it: the payload is relocated under the project's
+// own `.context-index/extensions/<name>/` and the argv element is rewritten to
+// that absolute path, so the check is runnable by any consumer.
+
+describe("example-validation-check: end-to-end install into a foreign project", () => {
+  let projectRoot;
+  let stubPluginRoot;
+  let seededSource;
+
+  // 4 header comments + 7 in-block comments + 9 trailer comments = 20.
+  const SEEDED_HEADER = [
+    "# ─────────────────────────────────────────────────────────────",
+    "# Project-authored governance registry.",
+    "# Comments here must survive an extension install byte-for-byte.",
+    "# ─────────────────────────────────────────────────────────────",
+  ];
+  const SEEDED_TRAILER = [
+    "# ── Notes ────────────────────────────────────────────────────",
+    "# 1. Extension-contributed entries are appended, never merged in.",
+    "# 2. A colliding id is skipped outright.",
+    "# 3. Executable payloads require explicit operator consent.",
+    "# 4. Payloads are relocated under .context-index/extensions/.",
+    "# 5. Relocated payloads are chmod 0555 (read + execute, no write).",
+    "# 6. argv form is preserved; a shell string is refused.",
+    "# 7. The root key is `checks`, never `validators`.",
+    "# ─────────────────────────────────────────────────────────────",
+  ];
+
+  beforeEach(() => {
+    projectRoot = realpathSync(createTempDir());
+    mkdirSync(join(projectRoot, ".context-index/governance"), { recursive: true });
+    writeFileSync(
+      join(projectRoot, ".context-index/manifest.yaml"),
+      "project:\n  name: foreign-consumer\n",
+    );
+
+    const body = [];
+    for (let i = 1; i <= 7; i += 1) {
+      body.push(`  # seeded check ${i} — authored by the project, not by any extension`);
+      body.push(`  - id: seeded.check-${i}`);
+      body.push("    kind: quality-gate");
+      body.push("    profile: read-only");
+      body.push(`    command: [echo, seeded-${i}]`);
+    }
+    seededSource = [...SEEDED_HEADER, "checks:", ...body, ...SEEDED_TRAILER, ""].join("\n");
+    writeFileSync(join(projectRoot, ".context-index/governance/validate.yaml"), seededSource);
+
+    stubPluginRoot = createTempDir();
+    writeFileSync(
+      join(stubPluginRoot, "package.json"),
+      JSON.stringify({ name: "stub", version: "0.27.0" }),
+    );
+    mkdirSync(join(stubPluginRoot, "skills"), { recursive: true });
+    // A faithful plugin root also carries the bundled profile vocabulary: the
+    // install-time namespace resolver reads `<pluginRoot>/templates/governance/
+    // profiles.yaml` to prove the entry's `profile` is not a name that would
+    // make the loader push UNKNOWN_PROFILE.
+    mkdirSync(join(stubPluginRoot, "templates", "governance"), { recursive: true });
+    copyFileSync(
+      join(PLUGIN_ROOT, "templates", "governance", "profiles.yaml"),
+      join(stubPluginRoot, "templates", "governance", "profiles.yaml"),
+    );
+  });
+
+  afterEach(() => {
+    cleanupTempDir(projectRoot);
+    cleanupTempDir(stubPluginRoot);
+  });
+
+  it("e2e-foreign-project: consent gate, payload relocation, loader round-trip, real execution", async () => {
+    // Sanity on the fixture itself: 20 comment lines, 7 checks, before install.
+    const seededComments = seededSource.split("\n").filter((l) => l.trimStart().startsWith("#"));
+    assert.equal(seededComments.length, 20, "fixture must seed exactly 20 comment lines");
+    assert.equal(parseYaml(seededSource).checks.length, 7, "fixture must seed exactly 7 checks");
+
+    // 1. Without consent the install refuses — the extension ships an executable
+    //    contribution, and a non-interactive install must fail closed.
+    await assert.rejects(
+      () =>
+        installExtension(EXAMPLE_DIR, projectRoot, {
+          pluginRoot: stubPluginRoot,
+          sourceUri: EXAMPLE_DIR,
+          allowExec: false,
+          interactive: false,
+        }),
+      (err) => {
+        assert.equal(err.code, "GOVERNANCE_EXEC_NOT_CONSENTED");
+        return true;
+      },
+    );
+    // The refusal wrote nothing: the seeded file is still byte-identical.
+    const validatePath = join(projectRoot, ".context-index/governance/validate.yaml");
+    assert.equal(readFileSync(validatePath, "utf8"), seededSource, "a refused install must write nothing");
+
+    // 2. With consent the install succeeds.
+    const report = await installExtension(EXAMPLE_DIR, projectRoot, {
+      pluginRoot: stubPluginRoot,
+      sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
+    });
+    assert.equal(report.name, "example-validation-check");
+    assert.deepEqual(report.mergesApplied, ["appended: example-validation-check.passing"]);
+
+    // 3. The registry gained exactly one entry, under `checks`, and every
+    //    comment line survived byte-for-byte.
+    const raw = readFileSync(validatePath, "utf8");
+    const parsed = parseYaml(raw);
+    assert.equal(parsed.validators, undefined, "root key must be checks, never validators");
+    assert.equal(parsed.checks.length, 8, "7 seeded + 1 contributed");
+    assert.deepEqual(
+      parsed.checks.map((c) => c.id),
+      [
+        "seeded.check-1",
+        "seeded.check-2",
+        "seeded.check-3",
+        "seeded.check-4",
+        "seeded.check-5",
+        "seeded.check-6",
+        "seeded.check-7",
+        "example-validation-check.passing",
+      ],
+    );
+    assert.deepEqual(
+      raw.split("\n").filter((l) => l.trimStart().startsWith("#")),
+      seededComments,
+      "all 20 comment lines must be preserved byte-for-byte",
+    );
+
+    // 4. The payload was relocated into the project and hardened to 0555.
+    const payloadPath = join(
+      projectRoot,
+      ".context-index/extensions/example-validation-check/bin/check.sh",
+    );
+    assert.ok(existsSync(payloadPath), `payload must be relocated to ${payloadPath}`);
+    assert.equal(statSync(payloadPath).mode & 0o777, 0o555, "relocated payload must be mode 0555");
+    assert.equal(
+      readFileSync(payloadPath, "utf8"),
+      readFileSync(BIN_PATH, "utf8"),
+      "relocated payload must be a byte-identical copy of the source script",
+    );
+
+    // 5. The installed entry's argv names that absolute path — not the
+    //    extension-source-relative path the manifest declares.
+    const installed = parsed.checks.find((c) => c.id === "example-validation-check.passing");
+    assert.deepEqual(installed.command, ["bash", payloadPath]);
+    assert.equal(installed.source, "extension:example-validation-check");
+
+    // 6. The REAL loader accepts it — not a hand-parsed object.
+    const config = loadValidateConfig(projectRoot, { pluginRoot: PLUGIN_ROOT });
+    assert.deepEqual(config.errors, [], "loader must report no errors");
+    const loaded = config.checks.find((c) => c.id === "example-validation-check.passing");
+    assert.ok(loaded, `loader must return the installed check, got ${config.checks.map((c) => c.id).join(", ")}`);
+    assert.equal(loaded.kind, "quality-gate");
+    assert.equal(loaded.profile, "read-only");
+    assert.deepEqual(loaded.command, ["bash", payloadPath]);
+
+    // 7. And it actually runs. Skipped ONLY on Windows, where the bash payload
+    //    has no interpreter contract; it must never skip on POSIX.
+    if (process.platform === "win32") return;
+    const result = await runQualityGate(loaded, {
+      cwd: projectRoot,
+      env: config.profiles[loaded.profile]?.env ?? {},
+      redactor: { redact: (s) => s },
+    });
+    assert.equal(result.exitCode, 0, `expected exit 0, got ${result.exitCode}: ${result.redactedStderr}`);
+    assert.equal(result.status, "PASS");
+    assert.match(result.redactedStdout, /^PASS: example-validation-check$/m);
   });
 });

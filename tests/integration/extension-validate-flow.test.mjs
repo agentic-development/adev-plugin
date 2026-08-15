@@ -23,7 +23,14 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import { strict as assert } from "node:assert";
 import { spawnSync, execSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync, readFileSync, realpathSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  realpathSync,
+  copyFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 import { installExtension } from "../../lib/extensions/install.mjs";
@@ -96,6 +103,14 @@ function setupStubPluginRoot() {
     JSON.stringify({ name: "stub", version: "0.27.0" }),
   );
   mkdirSync(join(dir, "skills"), { recursive: true });
+  // The install-time namespace resolver reads the bundled profile vocabulary
+  // from `<pluginRoot>/templates/governance/profiles.yaml` to prove the
+  // contributed entry's `profile` is a name the loader can resolve.
+  mkdirSync(join(dir, "templates", "governance"), { recursive: true });
+  copyFileSync(
+    join(PLUGIN_ROOT, "templates", "governance", "profiles.yaml"),
+    join(dir, "templates", "governance", "profiles.yaml"),
+  );
   return dir;
 }
 
@@ -141,6 +156,8 @@ describe("extension-validate-flow: end-to-end install + validator_report event",
     const installReport = await installExtension(EXAMPLE_DIR, projectDir, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
     assert.equal(installReport.name, "example-validation-check");
 
@@ -205,6 +222,8 @@ describe("extension-validate-flow: end-to-end install + validator_report event",
     await installExtension(EXAMPLE_DIR, projectDir, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
 
     // Behavior 3: --validator MUST be a single token. The CLI parseArgs
