@@ -22,7 +22,8 @@ nobody ran, and the attestation rule will refuse it.
    verb a second time. It carries `domain`, `gates`, and `warnings`. Each element of `gates` has
    `id`, `command` (an argv list), `tier`, `severity`, and **`command_sha`** — the SHA-256 of that
    gate's resolved argv, computed by the loader. The loader is where that hash is computed
-   precisely so this check never has to compute one.
+   precisely so this check never has to compute one, and it is also where the `tier` default is
+   applied, so every gate in the envelope already carries a tier.
 
 2. Execute the gates by tier (fast → integration → e2e) with the semantics described in
    `skills/validate/SKILL.md` § Check 1: intra-tier fail-fast on an error-severity failure, and
@@ -36,7 +37,7 @@ nobody ran, and the attestation rule will refuse it.
    |---|---|
    | `id` | the gate's `id`, verbatim from the resolved set |
    | `verdict` | `pass`, `fail`, or `skip` — lowercase, this closed set only |
-   | `tier` | the gate's `tier` (`fast`, `integration`, `e2e`) |
+   | `tier` | the gate's `tier`, verbatim from the resolved set (`fast`, `integration`, `e2e`) — the loader already defaults a gate that declares none to `fast`, so take the value as given and never leave it empty |
    | `command_sha` | the gate's `command_sha`, verbatim from the resolved set |
 
    No other key is accepted. `reportValidator` refuses an unknown key rather than dropping it.

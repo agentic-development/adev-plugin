@@ -17,7 +17,19 @@ checks:
   # exists so the check has a declared severity. Without it, every
   # `validator_report` carrying this id resolved to UNKNOWN_VALIDATOR_DEFAULTED
   # and was stamped `warning` — a failing build aggregating to PASS_WITH_NOTES.
-  # `error` + `fail_fast` because a failed quality gate stops validation.
+  # `error` because a failed quality gate must not aggregate to
+  # PASS_WITH_NOTES.
+  #
+  # `fail_fast: true` is DECLARATIVE ONLY on this row. The dispatcher's
+  # `shouldSkipDueToFailFast` skips a check only when that check names a FAILED
+  # fail-fast check in its own `after:` list, and nothing declares
+  # `after: [validate.check-1-quality-gates]`. Adding one edge would not
+  # reproduce the real semantics either: a check skipped that way records SKIP,
+  # not FAIL, so the stop does not propagate down the chain. What actually stops
+  # validation after a failed gate is `/adev:validate` § Check 1's own prose
+  # ("skip Checks 1b, 1c, and 2-10"), which the skill orchestrates itself.
+  # The field stays so the row states the check's intended semantics.
+  #
   # It is also the SOLE sanctioned writer of `gate_outcomes` on a
   # `validator_report`; see the prompt body.
   - id: validate.check-1-quality-gates

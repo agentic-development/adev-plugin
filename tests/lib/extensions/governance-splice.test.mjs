@@ -301,14 +301,15 @@ test('real boundaries.yaml — form 2 and form 3 at once, comment block byte-ide
   ]);
 });
 
-test('real validate.yaml — all 26 comment lines survive and one entry is added', () => {
+test('real validate.yaml — all 36 comment lines survive and one entry is added', () => {
   const src = governanceFixture('validate.yaml');
   const before = commentLines(src);
   // The count tracks the live file (Task 6 of explicit-governance-registries
-  // added the Check 1 row and its rationale comment). It is a precondition, not
-  // the assertion: what matters is that every one of them survives byte-
-  // identical through the splice.
-  assert.equal(before.length, 26, 'fixture precondition: 26 comment lines');
+  // added the Check 1 row and its rationale comment; its review round expanded
+  // that comment to record that `fail_fast` is declarative). It is a
+  // precondition, not the assertion: what matters is that every one of them
+  // survives byte-identical through the splice.
+  assert.equal(before.length, 36, 'fixture precondition: 36 comment lines');
   const originalCount = parseYaml(src).checks.length;
 
   const { text } = spliceRegistryEntries(src, 'checks', [

@@ -19,6 +19,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -34,6 +35,9 @@ function repoPath(rel) {
 function readRepoFile(rel) {
   return readFileSync(repoPath(rel), "utf8");
 }
+
+/** The CLI entrypoint, for the subprocess cases below. */
+const CLI = repoPath("cli/index.mjs");
 
 /**
  * Both registries that must carry every check row. The starter is what
@@ -75,6 +79,14 @@ describe("deterministic check bodies", () => {
 
     it(`${id} emits an outcome carrying a command_sha`, () => {
       assert.match(readRepoFile(body), /command_sha/);
+    });
+
+    it(`${id} takes tier from the resolved gate set rather than deriving it`, () => {
+      // The loader defaults an undeclared tier to `fast`; the body must send
+      // the agent to the resolved set for the value, not leave it to guess
+      // (an undefined tier makes `reportValidator` reject the whole event).
+      const text = readRepoFile(body);
+      assert.match(text, /\|\s*`tier`\s*\|[^|\n]*resolved/);
     });
 
     it(`${id} documents the @<path> form of --gate-outcomes`, () => {
@@ -196,4 +208,147 @@ describe("the resolved gate set carries its own command_sha", () => {
       cleanupTempDir(dir);
     }
   });
+
+  it("defaults a tier-less gate to `fast` so the emission is not rejected", () => {
+    // `reportValidator` throws EVENT_SCHEMA_INVALID on a non-string tier
+    // (lib/lifecycle-state.mjs), and `mergeGates` copies `tier` only when the
+    // entry declares one. Without a default here, ONE tier-less gate in a
+    // project's gates.yaml kills Check 1's whole `--gate-outcomes` emission —
+    // the exact failure this check exists to prevent. The default belongs on
+    // the resolved set, not in skill prose, because the body is told to take
+    // the field verbatim.
+    const dir = createTempDir();
+    try {
+      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: software\n");
+      writeFixture(
+        dir,
+        ".context-index/governance/gates.yaml",
+        'gates:\n  - id: untiered\n    command: ["npm", "run", "lint"]\n',
+      );
+
+      const { gates } = loadCheck1Gates(dir, { moduleSlug: "m" });
+      const untiered = gates.find((g) => g.id === "untiered");
+      assert.ok(untiered, "the fixture gate must reach the merged set");
+      assert.equal(untiered.tier, "fast");
+      for (const gate of gates) {
+        assert.equal(
+          typeof gate.tier,
+          "string",
+          `gate '${gate.id}' must carry a string tier; got ${JSON.stringify(gate.tier)}`,
+        );
+      }
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+describe("a malformed argv element never aborts the gate loader", () => {
+  // `lib/profiles/yaml.mjs` coerces numerics, so `command: ["node", 8080]`
+  // reaches the merge as `["node", 8080]`. Before this guard the loader threw
+  // INVALID_ARGV out of the stamping loop, which took down BOTH
+  // `adev domain load-gates` and `adev gate doctor` — a tool whose entire job
+  // is diagnosing malformed gates. A bad element must drop the gate, never the
+  // run.
+  const BAD_GATES = 'gates:\n  - id: bad\n    command: ["node", 8080]\n  - id: unit\n'
+    + '    command: ["npm", "test"]\n    tier: fast\n';
+
+  function seedProject() {
+    const dir = createTempDir();
+    writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: software\n");
+    writeFixture(dir, ".context-index/governance/gates.yaml", BAD_GATES);
+    return dir;
+  }
+
+  it("drops the gate with an INVALID_GATE warning instead of throwing", () => {
+    const dir = seedProject();
+    try {
+      const { gates, warnings } = loadCheck1Gates(dir, { moduleSlug: "m" });
+      assert.equal(
+        gates.some((g) => g.id === "bad"),
+        false,
+        "a gate with a non-string argv element must be dropped, like a shell-form command",
+      );
+      assert.ok(
+        warnings.some((w) => w.code === "INVALID_GATE" && /bad/.test(w.message)),
+        `expected an INVALID_GATE warning naming the gate; got ${JSON.stringify(warnings)}`,
+      );
+      assert.ok(
+        gates.some((g) => g.id === "unit"),
+        "the healthy gates in the same file must still resolve",
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("`adev domain load-gates` still exits cleanly", () => {
+    const dir = seedProject();
+    try {
+      const r = spawnSync(
+        process.execPath,
+        [CLI, "domain", "load-gates", "--module", "m"],
+        { cwd: dir, encoding: "utf8" },
+      );
+      assert.equal(r.status, 0, `expected exit 0; stderr:\n${r.stderr}`);
+      assert.doesNotMatch(r.stderr, /INVALID_ARGV|command_sha requires/);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("`adev gate doctor --json` still runs its diagnosis", () => {
+    const dir = seedProject();
+    try {
+      const r = spawnSync(process.execPath, [CLI, "gate", "doctor", "--json"], {
+        cwd: dir,
+        encoding: "utf8",
+        env: { ...process.env, ADEV_GATE_DOCTOR: "" },
+      });
+      // 0 (clean) or 2 (error-severity finding) are both diagnoses. 1 is the
+      // loader crashing, which is what this guards.
+      assert.notEqual(r.status, 1, `doctor crashed; stderr:\n${r.stderr}`);
+      assert.doesNotMatch(r.stderr, /INVALID_ARGV|command_sha requires/);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+describe("the computeCommandSha recompute contract", () => {
+  it("names loadCheck1Gates, not a raw gates.yaml read, as the recompute source", () => {
+    // Two of this repo's three gates (`quality-gate`, `integration-test`) come
+    // only from the software domain overlay and have NO row in gates.yaml. A
+    // Task 7 implementation that follows a "recompute from governance/
+    // gates.yaml" instruction literally finds nothing to hash for them and
+    // degrades every outcome to `unattested-gate-record`.
+    const src = readRepoFile("lib/gates/gate-sets.mjs");
+    const jsdoc = src.slice(0, src.indexOf("export function computeCommandSha"));
+    assert.ok(
+      /recomputes this value (from|via|through) \{?@?link? ?`?loadCheck1Gates/.test(jsdoc)
+        || /recomputes this value from `loadCheck1Gates/.test(jsdoc),
+      "the computeCommandSha JSDoc must name loadCheck1Gates as the recompute source",
+    );
+    assert.ok(
+      !/recomputes this value from `governance\/gates\.yaml`/.test(jsdoc),
+      "the raw gates.yaml is the wrong recompute source — the domain overlay contributes gates",
+    );
+  });
+});
+
+describe("the fail_fast declaration in both registries", () => {
+  for (const registry of REGISTRY_FILES) {
+    it(`${registry} says what fail_fast on Check 1 actually does`, () => {
+      // `shouldSkipDueToFailFast` fires only through an `after` edge and
+      // nothing declares `after: [validate.check-1-quality-gates]`, so the
+      // field is declarative. The registry must not advertise dispatcher
+      // behaviour it does not have.
+      const text = readRepoFile(registry);
+      assert.ok(
+        /declarative/i.test(text),
+        `${registry} must state that fail_fast on Check 1 is declarative and that the `
+          + "skill's own prose enforces the ordering",
+      );
+    });
+  }
 });
