@@ -1,8 +1,8 @@
 ---
 kind: feature
-status: evolving
+status: approved
 revision: 6
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # Feature Charter: Heuristics
