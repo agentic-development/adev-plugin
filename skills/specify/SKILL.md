@@ -365,6 +365,10 @@ A behavior ID is `BEH-<n>`, `<n>` a positive integer unique within *this* spec. 
 
 **Tombstones.** The `<!-- retired-behavior-ids: … -->` comment sits immediately under the Behaviors heading and records every withdrawn ID. It is the allocator's memory: without it, deleting `BEH-5` and later inserting a behavior would resurrect `BEH-5` under new text.
 
+**Revising behaviors.** Inserting a behavior at any position gives it the next unused ID and **no other behavior's ID changes** — never renumber to close a gap. Rewriting a behavior's wording *without changing which condition it governs* keeps its existing ID, so a finding already filed against that ID still resolves. If a rewrite changes *which* condition the behavior governs (different trigger, different subject), retire the old ID and mint a new one, so a citation against the old ID resolves to a tombstone rather than to unrelated text. A deleted behavior's ID is appended to `retired-behavior-ids` and is never reassigned.
+
+Specs authored before this convention landed keep their ordinal behaviors and are **not retro-migrated**. Read a legacy spec as-is; do not mint IDs into it as a side effect of an unrelated revision.
+
 Aim for 3-8 directly testable behavior statements.
 
 **Preconditions and Postconditions:**

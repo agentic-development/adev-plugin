@@ -62,3 +62,33 @@ describe("specify SKILL.md — behavior-ID convention (standard mode)", () => {
     assert.ok(step4.includes("retired-behavior-ids"));
   });
 });
+
+describe("specify SKILL.md — behavior-ID revision obligations", () => {
+  const step4 = section(SKILL, "### Step 4: Interactive Spec Authoring");
+
+  it("insertion does not renumber existing behaviors (BEH-2)", () => {
+    assert.match(step4, /no other behavior'?s? ID changes|never renumber/i);
+  });
+
+  it("an in-place rewrite keeps the existing ID (BEH-3)", () => {
+    assert.match(step4, /keeps? (its )?existing ID|keep the ID/i);
+  });
+
+  it("a deleted ID is tombstoned and never reassigned (BEH-4)", () => {
+    assert.match(step4, /never reassigned|never reused/i);
+    assert.ok(step4.includes("retired-behavior-ids"));
+    // The two matchers above are satisfied by the allocation guidance alone, so
+    // on their own they do not bind the deletion rule. This third assertion is
+    // what ties BEH-4 to the revision obligation: a *deleted* behavior's ID is
+    // appended to the tombstone list.
+    assert.match(step4, /deleted behavior'?s? ID is appended to/i);
+  });
+
+  it("redefinition retires the old ID and mints a new one (BEH-5)", () => {
+    assert.match(step4, /retire[sd]? the old ID|retire .* and mint/i);
+  });
+
+  it("legacy specs are not retro-migrated (BEH-7)", () => {
+    assert.match(step4, /not retro-?migrat|legacy spec/i);
+  });
+});
