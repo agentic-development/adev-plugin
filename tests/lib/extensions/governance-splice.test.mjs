@@ -117,6 +117,13 @@ test('form 5 — an absent file with no named extension omits the Extension line
   assert.deepEqual(parseYaml(text), { reviewers: [{ id: 'r' }] });
 });
 
+test('undefined is NOT accepted as "file absent" — it fails loudly instead', () => {
+  // An accidental undefined must not quietly fabricate a "created by adev" claim.
+  throwsCode(() => spliceRegistryEntries(undefined, 'checks', [{ id: 'n' }]),
+    'GOVERNANCE_FIELD_VALUE_INVALID');
+  assert.throws(() => spliceRegistryEntries(undefined, 'checks', [{ id: 'n' }]), /null/);
+});
+
 test('an existing but empty file is appended to WITHOUT a fabricated provenance header', () => {
   const { text } = spliceRegistryEntries('', 'checks', [{ id: 'n' }], { extensionName: 'acme' });
   assert.equal(text, 'checks:\n  - id: n\n');
@@ -225,6 +232,53 @@ test('an inline empty list with real content indented beneath it refuses', () =>
     () => spliceRegistryEntries('boundaries: []\n  key: v\n', 'boundaries', [{ id: 'b' }]),
     (e) => e.code === 'GOVERNANCE_PARSE_REFUSED' && /ambiguous/.test(e.message)
   );
+});
+
+// ── Zero-indent block sequences under the key ────────────────────────────
+//
+// `- id: a` at column 0 is legal YAML and common in hand-written files, but it is
+// also a block boundary. Splicing at indent 2 next to it yields mixed indentation
+// that `parseYaml` reads as a single-entry list — the zero-indent items AND every
+// following sibling key silently vanish. That is form-7 class: the root key does
+// not read as an array this splice can extend, so it belongs on the refusal path.
+
+test('a zero-indent block sequence under the key refuses and leaves the file untouched', () => {
+  const src = 'checks:\n- id: a\n- id: b\nother: v\n';
+  throwsCode(() => spliceRegistryEntries(src, 'checks', [{ id: 'c' }]), 'GOVERNANCE_PARSE_REFUSED');
+  assert.throws(
+    () => spliceRegistryEntries(src, 'checks', [{ id: 'c' }]),
+    (e) => /zero-indent|column 0/.test(e.message),
+    'the refusal must name the zero-indent sequence, not fail for an unrelated reason'
+  );
+  assert.equal(src, 'checks:\n- id: a\n- id: b\nother: v\n', 'the input text is never mutated');
+});
+
+test('a zero-indent item following an indented one also refuses', () => {
+  const src = 'checks:\n  - id: a\n- id: b\n';
+  throwsCode(() => spliceRegistryEntries(src, 'checks', [{ id: 'c' }]), 'GOVERNANCE_PARSE_REFUSED');
+  assert.equal(src, 'checks:\n  - id: a\n- id: b\n', 'the input text is never mutated');
+});
+
+test('a zero-indent sequence beneath an inline empty list refuses', () => {
+  const src = 'boundaries: []\n- id: a\n';
+  throwsCode(() => spliceRegistryEntries(src, 'boundaries', [{ id: 'b' }]), 'GOVERNANCE_PARSE_REFUSED');
+  assert.equal(src, 'boundaries: []\n- id: a\n', 'the input text is never mutated');
+});
+
+test('a bare dash is a sequence marker, but a dash-led word is an ordinary boundary', () => {
+  throwsCode(() => spliceRegistryEntries('checks:\n-\n  id: a\n', 'checks', [{ id: 'c' }]),
+    'GOVERNANCE_PARSE_REFUSED');
+  const { text } = spliceRegistryEntries('checks:\n-dash-led: v\n', 'checks', [{ id: 'c' }]);
+  assert.equal(text, 'checks:\n  - id: c\n-dash-led: v\n');
+});
+
+test('a zero-indent MAPPING continuation is a genuine sibling and is spliced, not refused', () => {
+  // parseYaml reads the input as {checks:{}, id:'a', other:'v'} — those keys were
+  // never members of `checks`, so nothing is lost and refusing would be wrong.
+  const src = 'checks:\nid: a\nother: v\n';
+  const { text } = spliceRegistryEntries(src, 'checks', [{ id: 'c' }]);
+  assert.deepEqual(parseYaml(text), { checks: [{ id: 'c' }], id: 'a', other: 'v' });
+  assert.ok(text.endsWith('id: a\nother: v\n'), 'the sibling keys survive byte-identical');
 });
 
 // ── Real repo fixtures ───────────────────────────────────────────────────
