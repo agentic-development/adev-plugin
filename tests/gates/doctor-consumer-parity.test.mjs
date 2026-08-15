@@ -121,6 +121,29 @@ describe("gate-set divergence between the raw file and the merged consumer view"
     }
   });
 
+  it("does not diagnose a malformed-manifest project against the default domain", async () => {
+    const dir = createTempDir();
+    try {
+      // The manifest exists, declares a NON-default domain, and does not parse.
+      // Treating that as "no manifest" resolves DEFAULT_DOMAIN (software) and
+      // produces a confidently wrong divergence naming the software starter's
+      // gates — gates this project never runs. "Uncomputable" is the only
+      // honest answer.
+      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: research\n   bad: 1\n");
+      writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: ["npm", "test"]\n');
+
+      const report = await runDoctor(dir);
+
+      assert.equal(
+        ids(report).includes("gate-doctor/gate-set-divergence"),
+        false,
+        `a domain that could not be resolved must not be guessed; got ${JSON.stringify(ids(report))}`,
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
   it("stays silent when both views agree", async () => {
     const dir = createTempDir();
     try {
@@ -133,6 +156,69 @@ describe("gate-set divergence between the raw file and the merged consumer view"
         ids(report).includes("gate-doctor/gate-set-divergence"),
         false,
         `identical gate sets must not be reported as divergent; got ${JSON.stringify(ids(report))}`,
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+describe("an uncomputable merged view", () => {
+  it("reports the coded misconfiguration instead of saying nothing", async () => {
+    const dir = createTempDir();
+    try {
+      // `software` is a bundled domain; a project directory of the same name
+      // makes `loadDomainConfig` throw BUNDLED_OVERRIDE_BLOCKED. Every consumer
+      // of `adev domain load-gates` hard-fails on this project, so a doctor that
+      // returns a clean bill of health is diagnosing a project nobody can run.
+      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: software\n");
+      writeFixture(
+        dir,
+        ".context-index/domains/software/gates.yaml",
+        'gates:\n  - id: shadow\n    command: ["npm", "run", "x"]\n',
+      );
+      writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: ["npm", "test"]\n');
+
+      const report = await runDoctor(dir);
+      const f = report.findings.find((x) => x.id === "gate-doctor/merged-view-unavailable");
+
+      assert.ok(f, `the failure must be reported; got ${JSON.stringify(ids(report))}`);
+      assert.equal(f.severity, "warning");
+      assert.match(
+        f.message,
+        /BUNDLED_OVERRIDE_BLOCKED/,
+        "the caught error code is the actionable part and must be named",
+      );
+      assert.equal(
+        ids(report).includes("gate-doctor/gate-set-divergence"),
+        false,
+        "a view that could not be computed cannot also be reported as divergent",
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("rethrows an error carrying no code rather than hiding a real bug", async () => {
+    const dir = createTempDir();
+    try {
+      // A custom domain with no gates.yaml of its own sends `loadDomainConfig`
+      // into `resolveExtends`, whose `parseYaml` throws a bare YamlParseError —
+      // no `code` property. Anything uncoded is, by contract, a defect rather
+      // than a diagnosable project state, and a swallowed defect would disable
+      // `gate-set-divergence` permanently with the whole suite still green.
+      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: fixture-domain\n");
+      writeFixture(
+        dir,
+        ".context-index/domains/fixture-domain/domain.yaml",
+        "extends: software\n   bad: 1\n",
+      );
+      writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: ["npm", "test"]\n');
+
+      await assert.rejects(
+        () => runDoctor(dir),
+        (err) => err.code === undefined && err instanceof Error,
+        "an uncoded error must reach the caller, not be traded for a silent null",
       );
     } finally {
       cleanupTempDir(dir);
