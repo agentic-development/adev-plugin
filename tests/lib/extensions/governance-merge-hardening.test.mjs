@@ -532,6 +532,67 @@ test('a package.skill rewrite emits the .context-index-relative path', (t) => {
   assert.equal(out.includes(absolute), false);
 });
 
+test('a command rewrite targeting an entry with no command refuses and writes nothing', (t) => {
+  const src = 'gates: []\n';
+  const root = project({ 'gates.yaml': src });
+  t.after(() => cleanupTempDir(root));
+
+  assert.throws(
+    () => mergeGovernanceEntries(
+      root,
+      'gates.yaml',
+      [{ id: 'g1', description: 'no command here' }],
+      {
+        ...opts,
+        payloadRewrites: [{
+          entryId: 'g1',
+          field: 'command',
+          index: 1,
+          form: 'absolute',
+          prefix: '',
+          absolute: join(root, '.context-index', 'extensions', 'demo', 'tools', 'x.mjs'),
+          contextRelative: 'extensions/demo/tools/x.mjs',
+        }],
+      }
+    ),
+    (e) => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID' && /command/.test(e.message)
+  );
+  assert.equal(readFileSync(govPath(root, 'gates.yaml'), 'utf8'), src);
+});
+
+test('a package rewrite targeting an entry with no package refuses and writes nothing', (t) => {
+  const src = 'reviewers: []\n';
+  const root = project({ 'review.yaml': src });
+  t.after(() => cleanupTempDir(root));
+
+  // Creating the `package` here would emit an entry that is executable —
+  // resolveReviewerPath resolves package.skill and the reviewer then runs it —
+  // yet carries no exec_consented_at, because the entry was not executable when
+  // the consent set was collected. Refuse rather than manufacture that shape.
+  assert.throws(
+    () => mergeGovernanceEntries(
+      root,
+      'review.yaml',
+      [{ id: 'r1', dispatch: 'always' }],
+      {
+        ...opts,
+        execConsent: { granted: true, at: '2026-08-15T10:20:30.000Z' },
+        payloadRewrites: [{
+          entryId: 'r1',
+          field: 'package.skill',
+          index: null,
+          form: 'contextRelative',
+          prefix: '',
+          absolute: join(root, '.context-index', 'extensions', 'demo', 'prompts', 'r.md'),
+          contextRelative: 'extensions/demo/prompts/r.md',
+        }],
+      }
+    ),
+    (e) => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID' && /package\.skill/.test(e.message)
+  );
+  assert.equal(readFileSync(govPath(root, 'review.yaml'), 'utf8'), src);
+});
+
 // ── Splice form 5: absent vs. existing-but-empty ───────────────────────
 
 test('an absent governance file is created with a provenance header', (t) => {
