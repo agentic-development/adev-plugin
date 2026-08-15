@@ -111,6 +111,12 @@ describe('extensions/install', () => {
  * Directories are recorded too (as `'<dir>'`), so a merge that creates an empty
  * directory and writes nothing into it is still a difference. Nothing is excluded.
  *
+ * Two deliberate limitations: contents are read as utf8, so a byte-level change
+ * inside a binary file that decodes identically is invisible; and file mode is
+ * not captured, so a chmod-only mutation does not register. The install path
+ * writes text and asserts modes separately (see the 0o555 payload test), so
+ * neither gap is load-bearing for the atomicity assertions here.
+ *
  * @param {string} root - Directory to snapshot.
  * @returns {Record<string, string>} Relative path → file contents (or `'<dir>'`).
  */
@@ -383,6 +389,16 @@ describe('installExtension — two-phase install', () => {
     assert.equal(reviewers.reviewers[0].id, 'shared');
     assert.equal(reviewers.reviewers[0].command, undefined);
     assert.equal(reviewers.reviewers[0].name, 'Shared Reviewer');
+  });
+
+  it('a field refusal names the extension and the entry, and keeps its code', async () => {
+    const { extDir, projectRoot } = fixtureWithTwoTargetsSecondInvalid();
+    await assert.rejects(
+      installExtension(extDir, projectRoot, { allowExec: true }),
+      e => e.code === 'GOVERNANCE_FIELD_NOT_ALLOWED'
+        && /Extension 'two-target-ext' entry 'second-reviewer': /.test(e.message)
+        && /Field 'args' is not contributable to review\.yaml/.test(e.message)
+    );
   });
 
   it('a malformed entry reports its schema verdict, not a payload verdict, and never prompts', async () => {
