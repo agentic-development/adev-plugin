@@ -301,15 +301,16 @@ describe("adev boundaries check", () => {
   // is mis-scoped — the fix belongs in `boundaries.yaml`, not in the file it
   // flagged. `tests/governance/boundary-rules-corpus.test.mjs` proves each rule
   // still fires on its own violating fixture, so this silence is not vacuous.
-  test("this repository's own boundaries.yaml runs clean over the whole tree", () => {
-    const r = runVerb(["check", "--all", "--json"], PLUGIN_ROOT);
+  // The tree-wide `--all` run itself lives in ONE place —
+  // `tests/governance/boundary-rules-corpus.test.mjs` ("no rule fires on the
+  // current tree"). Running it here too cost ~1.9s to re-prove the identical
+  // fact; what is left is the part only this suite can assert, which is that
+  // the CLI SURFACES the shipped registry (its disabled row in particular)
+  // rather than that the registry is clean.
+  test("the verb reports this repository's deliberately-disabled rule (Invariant 5)", () => {
+    const r = runVerb(["check", "--json"], PLUGIN_ROOT);
     assert.strictEqual(r.status, 0, r.stderr);
     const doc = JSON.parse(r.stdout);
-    assert.deepStrictEqual(doc.findings, []);
-    assert.strictEqual(doc.verdict, "PASS");
-    assert.ok(doc.summary.files_checked > 100, `only ${doc.summary.files_checked} file(s) checked`);
-    // The one rule this project declares and deliberately switched off stays
-    // visible with its reason rather than vanishing (Invariant 5).
     assert.ok(doc.disabled.some((d) => d.id === "no-manual-version-bump" && d.disabled_reason));
   });
 });

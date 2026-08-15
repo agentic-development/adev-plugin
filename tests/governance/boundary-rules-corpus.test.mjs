@@ -66,9 +66,35 @@ function declaredRules(raw) {
   return Array.isArray(doc?.boundaries) ? doc.boundaries : [];
 }
 
-/** Where a fixture is copied to inside the probe project. */
+/**
+ * The TERRITORY each rule is scoped to, and the probe path inside it.
+ *
+ * This file used to probe every rule at a neutral `probe/<id>.<kind>`. That was
+ * a hole, because `checkBoundaries` has no `include` field: a rule expresses its
+ * scope purely through `exclude`, and a neutral path is inside no rule's scope
+ * in particular. `globToRegExp('skills/**').test('probe/no-inline-node-in-skills.violating')`
+ * is `false`, so adding `skills/**` to that rule's excludes — which kills the
+ * rule outright, since its exclude set is what emulates an include of
+ * `skills/**` — left the whole corpus green.
+ *
+ * Each rule is now probed at a path in the territory it actually polices, so
+ * "no enabled rule excludes the probe directory" below becomes the real guard:
+ * excluding a rule's own territory now fails that test by construction.
+ *
+ * `territory` is asserted against the probe paths so this map cannot drift into
+ * naming a path the rule does not police.
+ */
+const PROBE_TERRITORY = new Map([
+  ["no-commonjs", { territory: "lib/**", dir: "lib/probe", ext: ".mjs" }],
+  ["no-inline-node-in-skills", { territory: "skills/**", dir: "skills/probe", ext: "/SKILL.md" }],
+  ["no-hardcoded-claude-home", { territory: "lib/**", dir: "lib/probe", ext: ".mjs" }],
+]);
+
+/** Where a fixture is copied to inside the probe project — inside its rule's territory. */
 function probePath(id, kind) {
-  return "probe/" + id + "." + kind;
+  const scope = PROBE_TERRITORY.get(id);
+  assert.ok(scope, "no probe territory declared for rule " + id);
+  return scope.dir + "/" + id + "." + kind + scope.ext;
 }
 
 function fixtureText(id, kind) {
@@ -91,6 +117,24 @@ function buildProbeProject() {
     }
   }
   return root;
+}
+
+/**
+ * The probe project, built ONCE for this file.
+ *
+ * It used to be rebuilt per assertion — a fresh temp dir, a registry write and
+ * six fixture writes for each of ~8 tests. The project is READ-ONLY to every
+ * assertion (`checkBoundaries` never writes), so one build serves them all;
+ * rebuilding it was a measurable slice of the suite's wall time for no isolation
+ * anyone was relying on.
+ */
+let _probeRoot = null;
+function probeProject() {
+  if (_probeRoot === null) {
+    _probeRoot = buildProbeProject();
+    process.on("exit", () => cleanupTempDir(_probeRoot));
+  }
+  return _probeRoot;
 }
 
 // ── the registry itself ─────────────────────────────────────────────────────
@@ -168,6 +212,25 @@ test("every declared pattern compiles through the repo's own parser", () => {
   }
 });
 
+test("every rule is probed INSIDE the territory it polices", () => {
+  // The assertion that closes the neutral-path hole. A probe that sits outside
+  // the rule's scope cannot detect a scope-killing exclude, because the exclude
+  // never covers the probe. Pinning the probe to the territory glob is what
+  // makes the exclude-swallow test below a real guard rather than a tautology.
+  for (const rule of ENABLED) {
+    const scope = PROBE_TERRITORY.get(rule.id);
+    assert.ok(scope, "rule " + rule.id + " declares no probe territory");
+    for (const kind of ["violating", "clean"]) {
+      assert.equal(
+        globToRegExp(scope.territory).test(probePath(rule.id, kind)),
+        true,
+        "rule " + rule.id + " is probed at " + probePath(rule.id, kind) +
+          ", which its territory " + scope.territory + " does not cover",
+      );
+    }
+  }
+});
+
 test("no enabled rule excludes the probe directory", () => {
   // Guards the fixture strategy itself. If a rule's exclude set grew to cover
   // `probe/**`, every per-rule assertion below would silently pass on a rule
@@ -210,28 +273,22 @@ for (const rule of ENABLED) {
   });
 
   test(rule.id + " fires on its violating fixture", async () => {
-    const root = buildProbeProject();
-    try {
-      const result = await checkBoundaries(root, { changed: [probePath(rule.id, "violating")] });
-      assert.ok(
-        result.findings.some((f) => f.ruleId === rule.id),
-        rule.id + " did not fire on its own violating fixture: " +
-          JSON.stringify(result.findings, null, 2),
-      );
-    } finally {
-      cleanupTempDir(root);
-    }
+    const result = await checkBoundaries(probeProject(), {
+      changed: [probePath(rule.id, "violating")],
+    });
+    assert.ok(
+      result.findings.some((f) => f.ruleId === rule.id),
+      rule.id + " did not fire on its own violating fixture: " +
+        JSON.stringify(result.findings, null, 2),
+    );
   });
 
   test(rule.id + " is silent on its clean fixture", async () => {
-    const root = buildProbeProject();
-    try {
-      const result = await checkBoundaries(root, { changed: [probePath(rule.id, "clean")] });
-      assert.deepEqual(result.findings, []);
-      assert.equal(result.verdict, "PASS");
-    } finally {
-      cleanupTempDir(root);
-    }
+    const result = await checkBoundaries(probeProject(), {
+      changed: [probePath(rule.id, "clean")],
+    });
+    assert.deepEqual(result.findings, []);
+    assert.equal(result.verdict, "PASS");
   });
 }
 
@@ -239,22 +296,17 @@ test("each violating fixture is matched by ITS OWN rule and by no other", async 
   // Cross-contamination check. A rule whose pattern is broad enough to fire on
   // a neighbour's fixture reports the wrong anti-pattern to the operator, and
   // keeps reporting it after the neighbour's rule is fixed.
-  const root = buildProbeProject();
-  try {
-    const changed = ENABLED.map((rule) => probePath(rule.id, "violating"));
-    const result = await checkBoundaries(root, { changed });
-    for (const rule of ENABLED) {
-      const fired = result.findings
-        .filter((f) => f.file === probePath(rule.id, "violating"))
-        .map((f) => f.ruleId);
-      assert.deepEqual(
-        fired,
-        [rule.id],
-        probePath(rule.id, "violating") + " should be matched by exactly one rule",
-      );
-    }
-  } finally {
-    cleanupTempDir(root);
+  const changed = ENABLED.map((rule) => probePath(rule.id, "violating"));
+  const result = await checkBoundaries(probeProject(), { changed });
+  for (const rule of ENABLED) {
+    const fired = result.findings
+      .filter((f) => f.file === probePath(rule.id, "violating"))
+      .map((f) => f.ruleId);
+    assert.deepEqual(
+      fired,
+      [rule.id],
+      probePath(rule.id, "violating") + " should be matched by exactly one rule",
+    );
   }
 });
 
@@ -263,24 +315,21 @@ test("the disabled rule stays visible with a stated reason (Invariant 5)", async
   // evaluator is content-based and a version FIELD is not a version BUMP, so
   // enabling it would fire on package.json forever. Declared-and-disabled keeps
   // the decision on the record instead of leaving the anti-pattern unrepresented.
-  const root = buildProbeProject();
-  try {
-    const result = await checkBoundaries(root, { changed: [probePath("no-commonjs", "clean")] });
-    const off = result.disabled.find((d) => d.id === "no-manual-version-bump");
-    assert.ok(
-      off,
-      "expected no-manual-version-bump on the disabled list: " + JSON.stringify(result.disabled),
-    );
-    assert.equal(off.enabled, false);
-    assert.equal(typeof off.disabled_reason, "string");
-    assert.ok(off.disabled_reason.trim() !== "", "a disabled rule must say why");
-    assert.deepEqual(
-      result.warnings.filter((w) => w.code === "DISABLED_WITHOUT_REASON"),
-      [],
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
+  const result = await checkBoundaries(probeProject(), {
+    changed: [probePath("no-commonjs", "clean")],
+  });
+  const off = result.disabled.find((d) => d.id === "no-manual-version-bump");
+  assert.ok(
+    off,
+    "expected no-manual-version-bump on the disabled list: " + JSON.stringify(result.disabled),
+  );
+  assert.equal(off.enabled, false);
+  assert.equal(typeof off.disabled_reason, "string");
+  assert.ok(off.disabled_reason.trim() !== "", "a disabled rule must say why");
+  assert.deepEqual(
+    result.warnings.filter((w) => w.code === "DISABLED_WITHOUT_REASON"),
+    [],
+  );
 });
 
 // ── the tree ────────────────────────────────────────────────────────────────
