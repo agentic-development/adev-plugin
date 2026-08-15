@@ -383,3 +383,21 @@ Bypass with `git commit --no-verify` only when justified. Provider mirrors under
 | Why not auto-batch in the post-commit hook? | Auto-batching would create amend-loops, fight with `rebase`/`squash`, and surprise users with extra commits they didn't author. The convention is intentionally manual. |
 
 **Distinction from `.session-tracking.jsonl`:** The `.context-index/.session-tracking.jsonl` file (written by the **Claude Code** `session-capture` PostToolUse hook, documented above) is a separate, **gitignored** telemetry stream — one line per tool call. The post-commit `.md` files are a separate, **tracked** per-commit summary stream. Names are similar; sources, contents, and tracking conventions differ.
+
+### Chained hooks (when the project already uses husky, lefthook, …)
+
+If `core.hooksPath` already points somewhere other than `.githooks/` when you run `adev install` or `adev upgrade`, the installer offers three choices. **Chaining is the default** — pressing Enter selects it.
+
+Chaining rewrites your hooks. For each hook name, the real body is copied to `.githooks/<name>.adev` and the tracked `.githooks/<name>` is **replaced** by a ~40-line wrapper that runs the adev hook first, then yours. The installer warns before doing this and lists the files it will rewrite, because in a repo with substantial hooks the resulting diff is large (639 deleted lines across four hooks, in one observed case) and is easy to mistake for corruption.
+
+| Question | Answer |
+|---|---|
+| Is `.githooks/<name>` (the wrapper) tracked? | **Yes.** It is the hook git executes. It must be committed for chaining to work for anyone else on the team. |
+| Are `.githooks/*.adev` (the bodies) tracked? | **No — gitignored.** They are regenerated from the plugin's own `hooks/` on every install and upgrade, so a committed copy would silently diverge from the installed plugin version. The pattern ships in the `adev:gitignore` managed block (canonical list at `lib/gitignore-paths.mjs`). |
+| What happens if a `.adev` body is missing on a fresh clone? | The wrapper **fails closed**: it exits non-zero with a diagnostic naming the path, and tells you to run `adev upgrade`. It does not silently skip. Run `adev install` or `adev upgrade` after cloning to regenerate them. |
+| What if a hook loses its executable bit? | Same — non-zero exit, with the `chmod +x` command in the message. The exec bit does not survive archive/restore, zip, some CI checkouts, or Windows/WSL, so this is a state hooks reach in practice. |
+| Can I make it skip instead of failing? | Set `ADEV_HOOK_CHAIN_ALLOW_MISSING=1`. The skip is then announced on stderr rather than silent. Use it deliberately — a guard that is skipped without saying so is indistinguishable from a guard that approved the commit. |
+
+**Why fail closed.** The wrapper's whole job is to run guards. Earlier versions guarded both hooks with `[ -x ]` and fell through to `exit 0`, which collapses three distinct states — absent, present-but-not-executable, and runnable — into "skip silently". When that happened, protected-branch blocking, conventional-commit validation, provenance trailer injection, and the inline-Node policy check all stopped running locally with no signal. CI still catches some of it at PR time (see ADR-0007), but by then every local guard has been off for the whole branch.
+
+**Portability.** The wrapper resolves your original hook relative to its own directory (`.githooks/..`), never as an absolute path from the machine that ran the installer. An absolute path would not exist on a teammate's clone, and — before the fail-closed change — that turned into their original hooks silently not running.

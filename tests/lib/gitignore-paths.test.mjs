@@ -30,7 +30,7 @@ test("MANAGED_GITIGNORE_PATHS is frozen", () => {
   assert.ok(Object.isFrozen(MANAGED_GITIGNORE_PATHS));
 });
 
-test("MANAGED_GITIGNORE_PATHS contains the spec-declared 18 entries in declared order", () => {
+test("MANAGED_GITIGNORE_PATHS contains the spec-declared 19 entries in declared order", () => {
   const paths = MANAGED_GITIGNORE_PATHS.map((e) => e.path);
   const expected = [
     ".context-index/hygiene/",
@@ -51,6 +51,7 @@ test("MANAGED_GITIGNORE_PATHS contains the spec-declared 18 entries in declared 
     "*.partial.lock",
     ".gitignore.*.tmp",
     ".adev/",
+    ".githooks/*.adev",
   ];
   assert.deepEqual(paths, expected);
 });
