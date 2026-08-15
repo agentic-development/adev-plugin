@@ -129,6 +129,10 @@ const MAXIMAL_ENTRIES = {
     id: 'no-direct-db',
     severity: 'error',
     pattern: 'import.*from.*prisma',
+    // Task 13: `flags` joined the allowlist so the contribution boundary stops
+    // disagreeing with the evaluator, which has honoured it since it shipped.
+    // Constrained to the matching-semantics flags — see assertRegexFlags.
+    flags: 'i',
     exclude: ['src/db/**', 'prisma/**'],
     description: 'Direct database imports live in src/db only',
     enabled: true,

@@ -95,7 +95,19 @@ Each registry has an exhaustive allowlist (`FIELD_ALLOWLIST` in `lib/extensions/
 | `review.yaml` | `id`, `name`, `dispatch`, `profile`, `context_pack`, `severity_cap`, `prompt`, `package`, `enabled`, `disabled_reason` |
 | `gates.yaml` | `id`, `command`, `description`, `severity`, `tier`, `enabled`, `disabled_reason` |
 | `diagnostics.yaml` | `id`, `runner`, `severity`, `tier`, `scope`, `enabled`, `disabled_reason` |
-| `boundaries.yaml` | `id`, `severity`, `pattern`, `exclude`, `description`, `enabled`, `disabled_reason` |
+| `boundaries.yaml` | `id`, `severity`, `pattern`, `flags`, `exclude`, `description`, `enabled`, `disabled_reason` |
+
+`flags` on a boundary rule accepts only `i`, `m`, `s` and `u` — the regex flags
+that change what a pattern matches. `g` and `y` are refused because they make the
+compiled pattern stateful, and a boundary rule that quietly stops matching is a
+merge gate that fails open.
+
+`enabled: false` switches an entry off without deleting it: the entry stays in the
+registry and in the loaded config, carrying `disabled_reason`, so a deliberately
+disabled check reads differently from one the project never declared. Omitting
+`disabled_reason` is a warning (`DISABLED_WITHOUT_REASON`), not a refusal — the
+entry stays disabled either way. Only the boolean `false` disables; any other
+value warns (`INVALID_ENABLED_VALUE`) and the entry stays enabled.
 
 Three field-level rules are worth memorising:
 

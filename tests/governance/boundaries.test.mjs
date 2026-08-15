@@ -122,7 +122,15 @@ describe("checkBoundaries — rule loading", () => {
       writeFixture(dir, "src/a.mjs", "FORBIDDEN\n");
       const r = await checkBoundaries(dir, { changed: ["src/a.mjs"] });
       assert.strictEqual(r.verdict, "SKIP");
-      assert.match(r.reason, /no boundary rules declared/);
+      // Fixture maintenance (Task 13) — the SKIP is unchanged; its REASON was
+      // wrong. "No boundary rules declared" was a false statement about a
+      // registry that declares one and disables it, and it hid the only thing
+      // an operator needs to know here. The disabled rule is now also visible
+      // on the result. Full coverage: tests/governance/enabled-flag.test.mjs.
+      assert.doesNotMatch(r.reason, /no boundary rules declared/);
+      assert.match(r.reason, /disabled/);
+      assert.deepEqual(r.disabled.map((d) => d.id), ["off"]);
+      assert.deepEqual(r.findings, []);
     }),
   );
 });

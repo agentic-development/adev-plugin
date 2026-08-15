@@ -83,19 +83,32 @@ describe("review-config loadReviewConfig", () => {
     assert.ok(sec.promptPath.endsWith("security-reviewer-prompt.md"));
   });
 
-  test("enabled: false excludes a reviewer", () => {
+  test("enabled: false excludes a reviewer from dispatch, but not from the registry", () => {
+    // Fixture maintenance (Task 13) — an INVERSION of the second assertion.
+    // This asserted that a disabled reviewer was REMOVED, which made it
+    // indistinguishable from a reviewer the project never declared — the exact
+    // conflation `explicit-governance-registries.spec.md` Invariant 5 forbids.
+    // The entry is now retained and marked; `shouldDispatch` is what excludes
+    // it. Nothing is loosened: "does not run" is still asserted, now at the
+    // gate that actually decides it.
     const repo = tmp();
     writeReview(
       repo,
       `reviewers:
   - id: consistency-analyzer
     enabled: false
+    disabled_reason: 'superseded by the linter'
 `
     );
     const r = loadReviewConfig(repo);
     assert.equal(r.errors.length, 0);
-    const ids = r.reviewers.map((x) => x.id);
-    assert.ok(!ids.includes("consistency-analyzer"));
+    const entry = r.reviewers.find((x) => x.id === "consistency-analyzer");
+    assert.equal(entry.enabled, false);
+    assert.equal(entry.disabled_reason, "superseded by the linter");
+    assert.equal(
+      shouldDispatch(entry, { targetSpecPath: "a/b.spec.md", specContent: "" }).dispatch,
+      false,
+    );
   });
 
   test("reviewer referencing implementer profile fails load (Behavior 11a)", () => {
