@@ -53,6 +53,12 @@ diagnostics:
 # write-once, so a later `adev governance materialize --registry diagnostics`
 # leaves it exactly as it is.
 #
-# The instant is when this template's diagnostic set was fixed — that is what
-# the marker vouches for — not when your project was scaffolded.
+# HONEST ABOUT THE VALUE: the instant below is a FROZEN LITERAL shipped in
+# this template — the date this template's diagnostic set was fixed. Nothing
+# stamps it at scaffold time; `cpSync` copies it verbatim, so it is NOT when
+# your project was materialized. No consumer reads the value: every loader and
+# the install gate check only that a valid top-level marker is PRESENT. If you
+# want an instant that means something for your project, delete this line and
+# run `adev governance materialize --registry diagnostics` — the marker is
+# write-once, so while the line is here that command leaves it as it is.
 materialized_at: 2026-08-15T00:00:00Z

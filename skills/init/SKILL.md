@@ -231,6 +231,11 @@ If yes, walk the sub-steps in order. Sub-steps 7a-7e are independent — the use
   is reading IS the complete effective set, so a fresh scaffold passes the fail-closed guard on
   its very first run and no `adev governance materialize` step is needed here. The marker is
   write-once: running `adev governance materialize --registry gates` later leaves it unchanged.
+  Be accurate about what the copied value MEANS if the user asks: it is a frozen literal fixed
+  when the template's gate set was fixed, not a stamp of when this project was materialized.
+  Nothing reads the value — every loader and the extension-install gate check only that a valid
+  top-level marker is present. A project that wants a real instant deletes the line and runs
+  `adev governance materialize --registry <name>`.
   Do the same for `governance/diagnostics.yaml` (from `templates/diagnostics-template.yaml`) and
   `governance/review.yaml` (Step 7c) — those are the other two marked registries. Do NOT add a
   marker to `boundaries.yaml` or `validate.yaml`: both are marker-exempt single-source registries,
