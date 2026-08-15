@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Additive optional flag with a fully pinned contract (D2: stdout regex, exit codes, error codes, ordering). One source file plus one test, same-function precedent in --blocker-id. Mechanical and cheaply revertible."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Additive optional flag forwarded to writeHeuristic, which already accepts signature. Spec-implied rather than spec-named (D10), so validate will raise a scope-expansion sub-finding; rationale is on record. Single file, mechanical."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Extract a string literal into prefixFor(); body given verbatim and PASS output stays byte-identical. Blast held at 0.8 because it edits a live non-blocking Stop hook that runs on every validate run, not because the change is large."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Implements the identifiers-only security boundary in a live Stop hook. Captured text is git-tracked and /adev:sync copies it into four agent files, so a widened read set leaks outward. Checkpoint after RED: confirm no field beyond checks[].id/outcome is read."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Mirrors Task 3 into the harness the PASS suite actually asserts against. Total 16 clears auto, but tier full is recommended: the two copies are deliberately unshared (D9) and divergence is silent, since no PASS test invokes the hook."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Byte-identity is the acceptance bar but PRE_CHANGE_FIXTURE names no file and no capture procedure; captured after a partial edit the assertion is vacuous. Checkpoint that the fixture came from unmodified code before SKILL.md is touched."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Deletes a verb, a flag, deriveId, a check file and 27 test references across lib/, tests/ and skills/, and falsifies a criterion in another charter's spec. Deletion is not cheaply revertible and the 'if they lose their last caller' helper list is left to implementer judgement."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Mechanical edits, but they span docs/, lib/diagnostics/ and a spec owned by a different charter, and the supersede annotation has no prescribed wording. Total 15 lands just under auto; the review that matters is the cross-spec line only."
+    }
+  ]
+}
