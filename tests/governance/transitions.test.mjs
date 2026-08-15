@@ -769,9 +769,16 @@ describe("gate-set parity with `adev domain load-gates`", () => {
   const MOD_GATE = "mod-gate";
 
   /**
-   * A project whose MODULE-level domain contributes the required gate. The
-   * project-level domain contributes nothing, so the two views diverge unless
-   * the module slug is threaded through.
+   * A project that declares the required gate in its own materialized
+   * `gates.yaml`, with a module-level domain sitting behind it.
+   *
+   * Fixture maintenance (Task 11): the gate used to live ONLY in
+   * `.context-index/domains/mod-domain/gates.yaml`, so the two views diverged
+   * unless the module slug was threaded through, and that divergence was what
+   * these tests pinned. The run-time overlay is gone — a domain's gates are
+   * adopted into the project file by `adev governance materialize` — so the
+   * fixture is seeded in the ADOPTED state. The domain files are kept, now
+   * demonstrating that they contribute nothing.
    */
   function seedModuleProject() {
     const dir = createTempDir();
@@ -790,7 +797,8 @@ describe("gate-set parity with `adev domain load-gates`", () => {
       dir,
       GATES_REL,
       stampMarker(
-        "gates: []\n" +
+        "gates:\n" +
+          `  - id: ${MOD_GATE}\n    tier: fast\n    command: ["npm", "run", "mod"]\n` +
           "transitions:\n" +
           "  implement-to-validate:\n" +
           "    required_gates:\n" +
@@ -818,7 +826,7 @@ describe("gate-set parity with `adev domain load-gates`", () => {
       const view = JSON.parse(loaded.stdout);
       assert.equal(view.domain.resolved_domain, "mod-domain");
       const gate = view.gates.find((g) => g.id === MOD_GATE);
-      assert.ok(gate, "the module domain must contribute the required gate");
+      assert.ok(gate, "the project's own gates.yaml must declare the required gate");
 
       // Record the outcome exactly as Check 1 would, using the digest the
       // consumer view published.
@@ -850,9 +858,16 @@ describe("gate-set parity with `adev domain load-gates`", () => {
     }
   });
 
-  it("degrades to unattested without --module, proving the flag is what closes the divergence", () => {
+  it("resolves the same gate set WITHOUT --module — the domain no longer decides membership", () => {
     const dir = seedModuleProject();
     try {
+      // Fixture maintenance (Task 11) — an INVERSION. This asserted the OLD
+      // contract: omitting `--module` resolved the project-level domain, whose
+      // overlay contributed nothing, so the comparator degraded the outcome to
+      // `unattested-gate-record`. Membership is now the project file's, which
+      // no flag can change — so the same omission must be a NON-EVENT. The
+      // attestation machinery it exercised is asserted just as strictly, only
+      // in the passing direction.
       const loaded = runCli(dir, ["domain", "load-gates", "--module", "m"]);
       const gate = JSON.parse(loaded.stdout).gates.find((g) => g.id === MOD_GATE);
       seedOutcome(dir, {
@@ -872,8 +887,10 @@ describe("gate-set parity with `adev domain load-gates`", () => {
         SPEC_REL,
         "--json",
       ]);
-      assert.equal(r.status, 2);
-      assert.equal(JSON.parse(r.stdout).gates[MOD_GATE].reason, "unattested-gate-record");
+      assert.equal(r.status, 0, r.stderr);
+      const out = JSON.parse(r.stdout);
+      assert.equal(out.verdict, "PASS");
+      assert.equal(out.gates[MOD_GATE].command_attested, true);
     } finally {
       cleanupTempDir(dir);
     }
@@ -902,8 +919,12 @@ describe("gate-set parity with `adev domain load-gates`", () => {
         "--json",
       ]);
       assert.equal(r.status, 2, r.stderr);
-      // The gate IS declared (charter resolved mod-domain), so the failure is
-      // the missing record, not an unknown gate.
+      // The gate IS declared, so the failure is the missing record and not an
+      // unknown gate. Fixture maintenance (Task 11): before, "declared" was a
+      // consequence of the charter resolving `mod-domain`; now it is a
+      // consequence of the project file, and the assertion holds for the
+      // stronger reason. Charter-over-module precedence is still exercised —
+      // a bogus module slug must not derail the run.
       assert.equal(JSON.parse(r.stdout).gates[MOD_GATE].reason, "no-recorded-outcome");
     } finally {
       cleanupTempDir(dir);

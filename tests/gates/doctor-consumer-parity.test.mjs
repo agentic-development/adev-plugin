@@ -76,14 +76,17 @@ function seedCustomDomain(dir, domain, gateId) {
 }
 
 describe("gate-set divergence between the raw file and the merged consumer view", () => {
-  it("reports divergence and names the id each side is missing", async () => {
+  it("names a dropped gate and no longer credits the domain overlay", async () => {
     const dir = createTempDir();
     try {
-      // Both directions at once. `domain-only` is contributed by the overlay
-      // and never appears in the raw file; `proj-only` is declared in the raw
-      // file in string form, which `mergeGates` drops, so it never reaches a
-      // consumer. The finding must name the WHOLE symmetric difference — a
-      // message covering one side would leave the other silently undiagnosed.
+      // Fixture maintenance (Task 11), and an INVERSION of the assertion that
+      // used to sit here. Before Task 11 this test asserted BOTH directions:
+      // `domain-only` was contributed by the overlay and never appeared in the
+      // raw file, and `proj-only` is declared in string form, which `mergeGates`
+      // drops. The first direction asserted the OLD contract — that a domain
+      // overlay contributes at run time — so it is inverted rather than
+      // deleted. The drop direction is unchanged and still the one that
+      // produced the original defect.
       seedCustomDomain(dir, "fixture-domain", "domain-only");
       writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: "npm test"\n');
 
@@ -94,13 +97,13 @@ describe("gate-set divergence between the raw file and the merged consumer view"
       assert.equal(f.severity, "warning");
       assert.match(
         f.message,
-        /domain-only/,
-        "a gate the consumers run but the raw file never mentions must be named",
-      );
-      assert.match(
-        f.message,
         /proj-only/,
-        "a gate the raw file declares but the consumers never run must be named too",
+        "a gate the raw file declares but the consumers never run must be named",
+      );
+      assert.equal(
+        /domain-only/.test(f.message),
+        false,
+        "the domain overlay no longer contributes at run time, so it cannot be a divergence",
       );
     } finally {
       cleanupTempDir(dir);
@@ -204,14 +207,20 @@ describe("the two gate-set loaders", () => {
         "the raw view must be gates.yaml verbatim — no overlay contributions",
       );
 
-      // The consumer view is the domain overlay with the project file merged
-      // on top, which is a strictly different set here.
+      // Fixture maintenance (Task 11) — an INVERSION. This asserted the OLD
+      // contract, that the consumer view carries the overlay's contribution.
+      // The two views now agree on membership; what still distinguishes them is
+      // that the consumer view is RESOLVED (tier defaulted, `command_sha`
+      // stamped, unrunnable rows dropped) while the doctor view is verbatim.
       const merged = loadCheck1Gates(dir, { moduleSlug: "m" });
       assert.deepEqual(
         merged.gates.map((g) => g.id).sort(),
-        ["domain-only", "test"],
-        "the consumer view must include the overlay's contribution",
+        ["test"],
+        "the consumer view must NOT include the overlay's contribution",
       );
+      assert.equal(merged.gates[0].tier, "fast", "the consumer view resolves the tier default");
+      assert.equal(typeof merged.gates[0].command_sha, "string");
+      assert.equal(raw[0].tier, undefined, "the raw view resolves nothing");
       assert.equal(merged.domain.resolved_domain, "fixture-domain");
       assert.ok(Array.isArray(merged.warnings));
     } finally {
@@ -264,20 +273,108 @@ describe("the two gate-set loaders", () => {
   });
 });
 
+// ── The equality Task 11 makes true ─────────────────────────────────────────
+
+describe("the doctor's gate set equals the set Check 1 executes", () => {
+  it("agrees on a materialized project with no domain of its own", () => {
+    const dir = createTempDir();
+    try {
+      // Task 11: the effective set is the materialized project file and
+      // nothing else. No manifest here, so the project resolves the DEFAULT
+      // domain — whose bundled overlay used to contribute `quality-gate` and
+      // `integration-test` to the consumer view and to no other view.
+      writeFixture(
+        dir,
+        GATES_REL,
+        stampMarker('gates:\n  - id: test\n    command: ["npm", "test"]\n', "2026-01-01T00:00:00Z"),
+      );
+
+      const doctorIds = loadDoctorGates(dir).map((g) => g.id).sort();
+      const check1Ids = loadCheck1Gates(dir, { moduleSlug: "m" }).gates.map((g) => g.id).sort();
+
+      assert.deepEqual(check1Ids, doctorIds);
+      assert.deepEqual(doctorIds, ["test"]);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("agrees even when a domain overlay is sitting right there", () => {
+    const dir = createTempDir();
+    try {
+      // The case that failed before Task 11: a custom domain contributing a
+      // gate that has no row in the project's own file. Reading the file must
+      // now tell you exactly what runs.
+      seedCustomDomain(dir, "fixture-domain", "domain-only");
+      writeFixture(
+        dir,
+        GATES_REL,
+        stampMarker('gates:\n  - id: test\n    command: ["npm", "test"]\n', "2026-01-01T00:00:00Z"),
+      );
+
+      const doctorIds = loadDoctorGates(dir).map((g) => g.id).sort();
+      const merged = loadCheck1Gates(dir, { moduleSlug: "m" });
+
+      assert.deepEqual(merged.gates.map((g) => g.id).sort(), doctorIds);
+      assert.equal(
+        merged.gates.some((g) => g.id === "domain-only"),
+        false,
+        "a domain overlay must not contribute at run time — adoption is via `adev governance materialize`",
+      );
+      assert.equal(merged.domain.resolved_domain, "fixture-domain");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("still stamps provenance on every gate it returns", () => {
+    const dir = createTempDir();
+    try {
+      writeFixture(
+        dir,
+        GATES_REL,
+        stampMarker('gates:\n  - id: test\n    command: ["npm", "test"]\n', "2026-01-01T00:00:00Z"),
+      );
+      const { gates } = loadCheck1Gates(dir, { moduleSlug: "m" });
+      assert.ok(gates.length > 0);
+      for (const gate of gates) {
+        assert.equal(typeof gate.__source, "string", `gate '${gate.id}' lost its provenance`);
+      }
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("still fails closed on an unmarked gates.yaml", () => {
+    const dir = createTempDir();
+    try {
+      writeFixture(dir, GATES_REL, 'gates:\n  - id: test\n    command: ["npm", "test"]\n');
+      assert.throws(
+        () => loadCheck1Gates(dir, { moduleSlug: "m" }),
+        (err) => err.code === "REGISTRY_NOT_MATERIALIZED",
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
 describe("an uncomputable merged view", () => {
   it("reports the coded misconfiguration instead of saying nothing", async () => {
     const dir = createTempDir();
     try {
-      // `software` is a bundled domain; a project directory of the same name
-      // makes `loadDomainConfig` throw BUNDLED_OVERRIDE_BLOCKED. Every consumer
-      // of `adev domain load-gates` hard-fails on this project, so a doctor that
-      // returns a clean bill of health is diagnosing a project nobody can run.
-      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: software\n");
-      writeFixture(
-        dir,
-        ".context-index/domains/software/gates.yaml",
-        'gates:\n  - id: shadow\n    command: ["npm", "run", "x"]\n',
-      );
+      // Fixture maintenance (Task 11). This fixture used to shadow the bundled
+      // `software` domain so that `loadDomainConfig` threw
+      // BUNDLED_OVERRIDE_BLOCKED; the consumer view no longer reads a domain
+      // overlay, so that code is unreachable from here. The BEHAVIOUR under
+      // test is unchanged and the assertion is not weakened — a CODED failure
+      // to compute the consumer view must be reported rather than swallowed —
+      // so the fixture is re-pointed at a coded failure that is still reachable:
+      // an illegal domain name, which `resolveDomain` refuses with
+      // INVALID_DOMAIN_NAME. Every consumer of `adev domain load-gates`
+      // hard-fails on this project, so a doctor that returns a clean bill of
+      // health is diagnosing a project nobody can run.
+      writeFixture(dir, ".context-index/manifest.yaml", 'project:\n  domain: "../evil"\n');
       writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: ["npm", "test"]\n');
 
       const report = await runDoctor(dir);
@@ -287,7 +384,7 @@ describe("an uncomputable merged view", () => {
       assert.equal(f.severity, "warning");
       assert.match(
         f.message,
-        /BUNDLED_OVERRIDE_BLOCKED/,
+        /INVALID_DOMAIN_NAME/,
         "the caught error code is the actionable part and must be named",
       );
       assert.equal(
@@ -300,14 +397,17 @@ describe("an uncomputable merged view", () => {
     }
   });
 
-  it("rethrows an error carrying no code rather than hiding a real bug", async () => {
+  it("is unmoved by a domain overlay that does not even parse", async () => {
     const dir = createTempDir();
     try {
-      // A custom domain with no gates.yaml of its own sends `loadDomainConfig`
-      // into `resolveExtends`, whose `parseYaml` throws a bare YamlParseError —
-      // no `code` property. Anything uncoded is, by contract, a defect rather
-      // than a diagnosable project state, and a swallowed defect would disable
-      // `gate-set-divergence` permanently with the whole suite still green.
+      // Fixture maintenance (Task 11) — an INVERSION. This fixture used to
+      // assert that an UNCODED throw out of `loadDomainConfig`'s `resolveExtends`
+      // reached the caller rather than being traded for a silent null. That
+      // asserted the OLD contract: that the consumer view reads the domain
+      // overlay at all. It no longer does, so the same fixture must now be a
+      // non-event — which is itself the strongest statement of the new
+      // contract. `mergedGateIds` still rethrows anything uncoded (doctor.mjs);
+      // no project state reaches that branch any more.
       writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: fixture-domain\n");
       writeFixture(
         dir,
@@ -316,11 +416,14 @@ describe("an uncomputable merged view", () => {
       );
       writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: ["npm", "test"]\n');
 
-      await assert.rejects(
-        () => runDoctor(dir),
-        (err) => err.code === undefined && err instanceof Error,
-        "an uncoded error must reach the caller, not be traded for a silent null",
+      const report = await runDoctor(dir);
+
+      assert.equal(
+        ids(report).includes("gate-doctor/merged-view-unavailable"),
+        false,
+        `an unread overlay cannot make the consumer view unavailable; got ${JSON.stringify(ids(report))}`,
       );
+      assert.equal(ids(report).includes("gate-doctor/gate-set-divergence"), false);
     } finally {
       cleanupTempDir(dir);
     }

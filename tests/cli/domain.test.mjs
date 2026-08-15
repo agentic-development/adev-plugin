@@ -228,9 +228,15 @@ test("adev domain load-gates with out-of-bounds --charter path exits 1 (containm
 
 // ── load-gates: default domain (no module/charter declares one) ──────────
 
-test("adev domain load-gates emits JSON with bundled software gates when no domain declared", () => {
+test("adev domain load-gates emits no gates for a project that declares none", () => {
   const dir = makeTempProject();
   try {
+    // Fixture maintenance (Task 11) — an INVERSION. This asserted the OLD
+    // contract: that `templates/domains/software/gates.yaml` contributed
+    // `quality-gate` at run time to a project whose own gates.yaml never
+    // mentions it. The overlay is now adopted once, by
+    // `adev governance materialize --registry gates`; the verb reports the
+    // resolved domain exactly as before, but the gate set is the project file.
     const r = spawnSync(
       "node",
       [CLI, "domain", "load-gates", "--module", "m"],
@@ -240,10 +246,8 @@ test("adev domain load-gates emits JSON with bundled software gates when no doma
     const out = JSON.parse(r.stdout);
     assert.strictEqual(out.domain.resolved_domain, "software");
     assert.strictEqual(out.domain.source_level, "default");
-    // Bundled software/gates.yaml has one gate: quality-gate
     assert.ok(Array.isArray(out.gates));
-    const ids = out.gates.map((g) => g.id);
-    assert.ok(ids.includes("quality-gate"), `expected quality-gate in: ${ids.join(", ")}`);
+    assert.deepStrictEqual(out.gates.map((g) => g.id), []);
   } finally {
     cleanup(dir);
   }
@@ -251,10 +255,15 @@ test("adev domain load-gates emits JSON with bundled software gates when no doma
 
 // ── load-gates: merge governance ──────────────────────────────────────────
 
-test("adev domain load-gates merges governance/gates.yaml on top of domain gates (governance wins on id conflict)", () => {
+test("adev domain load-gates emits the project's own gates.yaml, verbatim", () => {
   const dir = makeTempProject();
   try {
-    // Governance overrides the bundled quality-gate id with a different command.
+    // Fixture maintenance (Task 11) — an INVERSION of the GATE_OVERRIDE half.
+    // `quality-gate` used to arrive from the domain overlay, so a project row
+    // of the same id was an OVERRIDE and `mergeGates` said so. With no overlay
+    // read there is nothing to override: both rows are simply the project's,
+    // and the absence of the warning is the assertion. The resolved values are
+    // asserted exactly as before.
     writeGovernanceGates(dir, [
       { id: "quality-gate", command: ["npm", "run", "lint"], tier: "fast", severity: "error" },
       { id: "custom-gate", command: ["./bin/custom"], tier: "integration" },
@@ -274,9 +283,11 @@ test("adev domain load-gates merges governance/gates.yaml on top of domain gates
     assert.strictEqual(gateById["quality-gate"].__source, "governance");
     assert.ok(gateById["custom-gate"], "expected custom-gate in merged set");
 
-    // mergeGates emits GATE_OVERRIDE warning when governance overrides domain.
     const codes = (out.warnings ?? []).map((w) => w.code);
-    assert.ok(codes.includes("GATE_OVERRIDE"), `expected GATE_OVERRIDE in warnings: ${codes.join(", ")}`);
+    assert.ok(
+      !codes.includes("GATE_OVERRIDE"),
+      `nothing is overridden when nothing else contributes: ${codes.join(", ")}`,
+    );
   } finally {
     cleanup(dir);
   }

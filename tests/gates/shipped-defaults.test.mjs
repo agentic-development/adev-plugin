@@ -203,26 +203,27 @@ describe("gate doctor on a fresh scaffold", () => {
 
       // Tolerated BY NAME: a fresh scaffold has no CI config, and neither
       // `npm test` nor `npm run --if-present test:integration` exposes an
-      // identifiable runner. `gate-set-divergence` joined the list when the
-      // doctor learned to compute the merged consumer view: the software
-      // starter contributes `quality-gate`, which every consumer runs and this
-      // scaffold's governance file never mentions. That asymmetry is real, and
-      // the divergence assertion below pins it by name rather than shrugging.
-      // Asserted as a closed set so an unexpected warning still fails.
+      // identifiable runner. Asserted as a closed set so an unexpected warning
+      // still fails.
+      //
+      // Fixture maintenance (Task 11) — an INVERSION. `gate-set-divergence`
+      // used to be on this list, and the assertion below used to REQUIRE it:
+      // the software starter contributed `quality-gate` at run time and this
+      // scaffold's governance file never mentioned it. That asymmetry was the
+      // old contract. With no run-time overlay the scaffold's file IS what
+      // runs, so the finding must now be absent — which is the whole point of
+      // keeping the finding rather than deleting it.
       const tolerated = new Set([
         "gate-doctor/ci-config-missing",
         "gate-doctor/runner-unknown",
-        "gate-doctor/gate-set-divergence",
       ]);
       for (const id of ids(report)) {
         assert.ok(tolerated.has(id), `unexpected finding on a fresh seeded scaffold: ${id}`);
       }
-      const divergence = report.findings.find((f) => f.id === "gate-doctor/gate-set-divergence");
-      assert.ok(divergence, "the domain starter's extra gate must be reported, not hidden");
-      assert.match(
-        divergence.message,
-        /quality-gate/,
-        "the divergence must name the domain-contributed gate the scaffold never declares",
+      assert.equal(
+        ids(report).includes("gate-doctor/gate-set-divergence"),
+        false,
+        "a scaffold that declares its own gates has nothing left to diverge from",
       );
       assert.ok(
         ids(report).includes("gate-doctor/ci-config-missing"),

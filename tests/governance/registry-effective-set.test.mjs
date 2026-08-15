@@ -24,6 +24,8 @@ import {
   canonicalise,
   effectiveSet,
 } from "../../lib/governance/materialize.mjs";
+import { loadCheck1Gates, loadDoctorGates } from "../../lib/gates/gate-sets.mjs";
+import { loadReviewConfig } from "../../lib/governance/review-config.mjs";
 
 export function runCli(dir, args) {
   const result = spawnSync("node", [join(PLUGIN_ROOT, "cli", "index.mjs"), ...args], {
@@ -168,6 +170,73 @@ describe("registry effective set", () => {
       const without = canonicalise([{ id: "a" }]);
       assert.notEqual(withSource, without);
     },
+  );
+
+  // ── Invariant 2, Task 11 ────────────────────────────────────────────────
+  //
+  // Task 11 removed the run-time overlays. Invariant 2 says the effective set
+  // must be UNCHANGED by that removal — which, stated as something a test can
+  // check, is: once a registry is materialized, what the CONSUMERS resolve is
+  // exactly what `effectiveSet` computed, and it no longer moves when the
+  // overlay behind it moves.
+  test(
+    "after materialization the run-time set IS the effective set",
+    withDir(async (dir) => {
+      seedProject(dir);
+      for (const registry of MARKED_REGISTRY_NAMES) {
+        const r = runCli(dir, ["governance", "materialize", "--registry", registry]);
+        assert.equal(r.exitCode, 0, `${registry}: ${r.stderr}`);
+      }
+
+      const gateIds = (await effectiveSet(dir, "gates")).map((g) => String(g.id)).sort();
+      assert.deepEqual(
+        loadCheck1Gates(dir, { moduleSlug: "m" }).gates.map((g) => String(g.id)).sort(),
+        gateIds,
+        "the consumer view must resolve the materialized set and nothing else",
+      );
+      assert.deepEqual(
+        loadDoctorGates(dir).map((g) => String(g.id)).sort(),
+        gateIds,
+        "and the raw view must agree with it — there is nothing left to diverge",
+      );
+
+      assert.deepEqual(
+        loadReviewConfig(dir).reviewers.map((r) => String(r.id)).sort(),
+        (await effectiveSet(dir, "review")).map((r) => String(r.id)).sort(),
+      );
+    }),
+  );
+
+  test(
+    "the run-time set does not move when the domain overlay behind it moves",
+    withDir(async (dir) => {
+      seedProject(dir);
+      // A CUSTOM domain, because a bundled one cannot be overridden.
+      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: fixture-domain\n");
+      writeFixture(
+        dir,
+        ".context-index/domains/fixture-domain/gates.yaml",
+        'gates:\n  - id: adopted\n    command: ["npm", "run", "adopted"]\n',
+      );
+      const first = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
+      assert.equal(first.exitCode, 0, first.stderr);
+
+      const before = loadCheck1Gates(dir, { moduleSlug: "m" }).gates.map((g) => g.id).sort();
+      assert.ok(before.includes("adopted"), "the fixture must actually adopt a domain gate");
+
+      writeFixture(
+        dir,
+        ".context-index/domains/fixture-domain/gates.yaml",
+        'gates:\n  - id: adopted\n    command: ["npm", "run", "adopted"]\n' +
+          '  - id: added-later\n    command: ["npm", "run", "later"]\n',
+      );
+
+      assert.deepEqual(
+        loadCheck1Gates(dir, { moduleSlug: "m" }).gates.map((g) => g.id).sort(),
+        before,
+        "an un-adopted domain gate must not appear at run time",
+      );
+    }),
   );
 
   test(
