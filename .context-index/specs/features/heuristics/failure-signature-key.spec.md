@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone: 3
-revision: 1
+revision: 2
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -32,27 +32,65 @@ This spec collapses those copies into one CLI primitive, adds a `signature` fiel
 cross-scope recurrence identity that `id` cannot express, corrects `id` derivation to be
 location-independent, and migrates the existing store to the corrected keys.
 
+### Two keys, two rules, one digest function
+
+The review of revision 1 surfaced that this spec collapsed two distinct derivations into one. They are
+separated here, and the separation governs every behavior below.
+
+| | `signature` | `id` |
+|---|---|---|
+| Answers | "is this the same underlying failure, anywhere in the store" | "is this the same entry within this scope file" |
+| Prefix | the origin slug | caller-supplied (spec slug for validate, diagnosis category for recover) |
+| Hashed input | normalized **failure text** | `<repo-relative-spec-path>\|<pattern>` |
+| Normalizer | `normalizeFailureText` — lowercase, collapse whitespace, strip punctuation except `-` and `_` | `normalizeIdInput` — lowercase, path separators folded to `/`; **no punctuation stripping**, because `/`, `.`, and `\|` are the separators that carry the meaning |
+
+Both rules call one shared digest function (`normalize` → SHA-256 → first 8 lowercase hex), but they
+pass different normalizers and compose different prefixes. "Exactly one implementation" is asserted
+per-rule, not across the two.
+
+This separation is what keeps `/adev:recover`'s ids byte-identical: recover composes
+`<category-slug>-<digest>` exactly as it does today, while gaining a `signature` of
+`recover-<digest>`. The two coexist on the same entry.
+
 ### Preconditions
 
 - `.context-index/memory/heuristics/` exists, or the store is empty and will be created on first write.
 - `lib/heuristics.mjs` exposes `writeHeuristic`, `readHeuristics`, and the serialization path used by both.
-- The invoking process can resolve the project root, so a repo-relative spec path can be computed.
+- Signature derivation has no filesystem precondition — it reads only the text it is given.
+- `id` derivation requires a resolvable project root, so a repo-relative spec path can be computed. When
+  the root cannot be resolved, `id` derivation fails closed and the caller skips extraction entirely
+  (see Error Cases). Capture is non-blocking, so skipping is safe; guessing a key is not.
 
 ### Behaviors
 
 1. **When** `adev heuristics signature --origin <slug> --text <text>` is invoked with a legal origin
    **then** it prints `<origin-slug>-<digest>` on stdout and exits 0, where `<digest>` is the first 8
-   lowercase hex characters of the SHA-256 of the normalized text.
+   lowercase hex characters of the SHA-256 of the text after `normalizeFailureText`.
 
-2. **When** the primitive normalizes text **then** it lowercases, collapses consecutive whitespace to
-   a single space, strips leading and trailing whitespace, and strips punctuation except `-` and `_`
-   — the rule currently documented in `skills/recover/SKILL.md:392`. Identical input text differing
-   only in case, run-length whitespace, or stripped punctuation yields an identical digest.
+2. **When** the primitive applies `normalizeFailureText` **then** it lowercases, collapses consecutive
+   whitespace to a single space, strips leading and trailing whitespace, and strips punctuation except
+   `-` and `_` — the rule currently documented in `skills/recover/SKILL.md:393`. Identical input text
+   differing only in case, run-length whitespace, or stripped punctuation yields an identical digest.
+   **This normalizer applies to signature derivation only.** It is never applied to an `id` hash
+   input, whose separators it would destroy.
 
 3. **When** `--origin` is not one of `recover`, `validate`, `review-specs`, `implement` **then** the
    verb exits non-zero with `INVALID_SIGNATURE_ORIGIN`, prints the legal set, and prints nothing on
    stdout. The rejected value is stripped of control and ANSI characters and truncated before it is
-   echoed.
+   echoed. The origin determines only the signature's prefix — it never determines an `id` prefix.
+
+3a. **When** `--origin review-specs` is used **then** `--blocker-id <id>` is required and `--text` is
+   rejected with `CONFLICTING_SIGNATURE_INPUT`. The signature is derived from the supplied
+   `blocker_id` rather than by re-hashing finding text: the verb parses it via
+   `parseBlockerId` from `lib/blocker-id.mjs` and reuses its existing hash component as the digest,
+   yielding `review-specs-<that-digest>`. This satisfies the charter invariant that a BLOCK-origin
+   heuristic's signature derives from `blocker_id`, and guarantees one reviewer finding resolves to
+   one identity across the retry loop and the store. A `--blocker-id` that fails to parse exits
+   non-zero with `INVALID_BLOCKER_ID`.
+
+3b. **When** `--blocker-id` is supplied with any origin other than `review-specs` **then** the verb
+   exits non-zero with `CONFLICTING_SIGNATURE_INPUT`. Only the reviewer path has a pre-existing
+   canonical identity to inherit.
 
 4. **When** the same failure text is passed to the primitive on two different machines, in two
    different worktrees, or at two different times **then** the resulting signature is byte-identical.
@@ -68,9 +106,16 @@ location-independent, and migrates the existing store to the corrected keys.
    rejected for lacking the field.
 
 7. **When** the validate-side extractor derives an `id` **then** the hash input is
-   `<repo-relative-spec-path>|<pattern>` with forward-slash separators, not the absolute path. The
-   same spec and pattern extracted from two different worktrees of the same repository yield an
-   identical `id`.
+   `<repo-relative-spec-path>|<pattern>` passed through `normalizeIdInput` — lowercase, path
+   separators folded to `/`, **no punctuation stripping** — and the result is composed as
+   `<spec-slug>-<digest>`. The same spec and pattern extracted from two different worktrees of the
+   same repository yield an identical `id`.
+
+7a. **When** any caller derives an `id` **then** the prefix is supplied by that caller, not by the
+   origin. `/adev:recover` composes `<category-slug>-<digest>` over its normalized root cause, exactly
+   as it does today, so its post-migration ids are byte-identical to its pre-migration ids — the
+   property `failure-capture.spec.md` Behavior 6 depends on. The shared code these callers reuse is the
+   digest function, not the prefix.
 
 8. **When** `adev heuristics migrate-keys` is invoked **then** it recomputes `id` for every stored
    entry whose evidence permits recomputation, rewrites each entry under its corrected `id`, and
@@ -88,8 +133,12 @@ location-independent, and migrates the existing store to the corrected keys.
 
 ### Postconditions
 
-- Exactly one implementation of the derivation rule exists in shipped code. `skills/recover/SKILL.md`
-  names the verb rather than restating the rule.
+- One shared digest function exists in `lib/heuristics.mjs`, and every caller that this spec touches
+  invokes it rather than holding a private copy. (The assertion that *no* copy remains anywhere is
+  owned by `failure-capture.spec.md`, which performs the removals — it is not verifiable at this
+  spec's own validation point.)
+- Signature derivation and id derivation each have exactly one implementation, with distinct
+  normalizers, both reusing the shared digest function.
 - Every entry in the store has a location-independent `id`.
 - `signature` round-trips through serialization for entries that carry it.
 - No entry has lost evidence, confidence, or contradiction history.
@@ -100,9 +149,11 @@ location-independent, and migrates the existing store to the corrected keys.
 |---|---|---|
 | `--origin` outside the legal set | `INVALID_SIGNATURE_ORIGIN`, legal set printed, stdout empty | 1 |
 | `--text` missing or empty after normalization | `EMPTY_SIGNATURE_TEXT`, stdout empty | 1 |
+| `--origin review-specs` without `--blocker-id`, or `--blocker-id` with any other origin, or both `--text` and `--blocker-id` | `CONFLICTING_SIGNATURE_INPUT`, stdout empty | 1 |
+| `--blocker-id` fails `parseBlockerId` | `INVALID_BLOCKER_ID`, stdout empty | 1 |
 | Store file unreadable during migration | `MIGRATION_READ_FAILED` naming the file; no file is written; prior state intact | 1 |
 | Migration interrupted mid-write | Store left in its prior state; writes are atomic per file (temp-then-rename) | — |
-| Project root unresolvable when computing a repo-relative path | Extraction degrades to writing the entry without a `signature`, logs a warning, does not fail the caller | 0 |
+| Project root unresolvable when deriving an `id` | **Fail closed** — the caller skips extraction entirely, writes no entry, logs a warning, and does not fail the lifecycle step. Signature derivation is unaffected, since it reads no path | 0 |
 | Migration detects an id collision | Entries merged per Behavior 9, reported in the summary | 0 |
 
 ## System Constitution Reference
@@ -117,25 +168,30 @@ location-independent, and migrates the existing store to the corrected keys.
   implementation, not in skill prose." — Applies directly. The derivation rule currently lives as
   executable prose in `skills/recover/SKILL.md:387-397`. Moving it into `adev heuristics signature`
   is what brings the repository into compliance, and is the reason this capability is scoped as a
-  CLI verb rather than a documented convention.
+  CLI verb rather than a documented convention. (The prose removal itself is performed by
+  `failure-capture.spec.md`; this spec provides the verb that makes the removal possible.)
 - **Principle:** "Skills are primarily markdown — companion code is allowed but must not be required
   for the skill to function." — Applies as a constraint on the primitive: when
-  `adev heuristics signature` is unavailable, extraction degrades to writing an entry without a
-  `signature` rather than failing, consistent with the charter's Degradation attribute.
+  `adev heuristics signature` is unavailable, extraction still writes the entry, just without a
+  `signature`, consistent with the charter's Degradation attribute. This is distinct from an
+  unresolvable project root, which blocks `id` derivation and therefore fails closed.
 
 ## Actionable Task Map
 
 | Task | Description | Complexity |
 |---|---|---|
 | Add `signature` to `FIELD_ORDER` | `lib/heuristics.mjs:185-199`; verify round-trip through `serializeHeuristic` | small |
-| Implement derivation in `lib/heuristics.mjs` | Normalization + SHA-256 prefix; single exported function | small |
-| Add `adev heuristics signature` verb | Wire to `lib/cli/heuristics.mjs` subcommand dispatch; origin enum validation | small |
-| Correct id hash input | Replace absolute path with repo-relative in `hooks/post-validate-extract-heuristics.mjs:123-127` | small |
-| Retire the dead twin | Remove `deriveId` at `lib/cli/heuristics.mjs:103-108` alongside the `extract` verb (owned by the `failure-capture` spec; this spec only stops depending on it) | small |
-| Update test harnesses | `tests/skills/validate-success-heuristic-harness.mjs:145` and `tests/skills/recover-extract-heuristic-harness.mjs:119` call the shared function instead of holding copies | medium |
+| Shared digest function | `lib/heuristics.mjs`: `normalize → SHA-256 → first 8 hex`, taking the normalizer as a parameter | small |
+| Two normalizers | `normalizeFailureText` (strips punctuation) and `normalizeIdInput` (folds separators, strips nothing); both exported and separately tested | small |
+| Add `adev heuristics signature` verb | Wire to `lib/cli/heuristics.mjs` dispatch; origin enum validation; `--blocker-id` path for `review-specs` origin via `parseBlockerId` | medium |
+| Correct id hash input | Replace absolute path with repo-relative in `hooks/post-validate-extract-heuristics.mjs:123-127`; caller composes the `<spec-slug>` prefix | small |
+| Update test harnesses | `tests/skills/validate-success-heuristic-harness.mjs:145` and `tests/skills/recover-extract-heuristic-harness.mjs:119` call the shared digest function with their own normalizer and prefix, instead of holding private copies. Recover's harness must keep producing category-prefixed ids | medium |
 | Implement `adev heuristics migrate-keys` | Recompute, merge-on-collision, report counts; idempotent | medium |
-| Migrate `skills/recover/SKILL.md` | Replace the prose ID Derivation Rule with a verb invocation (coordinated with the `failure-capture` spec) | small |
-| Tests | Round-trip, cross-worktree id equality, origin rejection, migration idempotency, collision merge | medium |
+| Tests | Round-trip, cross-worktree id equality, recover id byte-equality across the change, normalizer separation, origin rejection, `--blocker-id` derivation, migration idempotency, collision merge | medium |
+
+Removal of the dead `deriveId` twin, the `extract` verb, and the `skills/recover/SKILL.md` prose rule
+are **not** tasks of this spec — they belong to `failure-capture.spec.md`, which runs after this one.
+This spec only stops depending on them.
 
 ## Acceptance Criteria
 
@@ -144,6 +200,12 @@ location-independent, and migrates the existing store to the corrected keys.
 - [ ] The same text with different casing, run-length whitespace, and stripped punctuation yields an
       identical digest
 - [ ] An illegal `--origin` exits non-zero with `INVALID_SIGNATURE_ORIGIN` and prints nothing on stdout
+- [ ] `--origin review-specs --blocker-id <id>` derives the signature from the parsed `blocker_id`'s
+      hash component and never re-hashes finding text
+- [ ] `--origin review-specs` without `--blocker-id`, `--blocker-id` with another origin, and
+      `--text` plus `--blocker-id` together each exit non-zero with `CONFLICTING_SIGNATURE_INPUT`
+- [ ] `normalizeIdInput` preserves `/`, `.`, and `|`; `normalizeFailureText` strips them. A test
+      asserts two distinct spec paths do not collide under `normalizeIdInput`
 - [ ] A heuristic written with a `signature` reads back with that `signature` intact
 - [ ] A heuristic written without a `signature` reads back successfully with `signature` undefined
 - [ ] A test extracts the same spec and pattern from two temp directories with different absolute
@@ -152,7 +214,10 @@ location-independent, and migrates the existing store to the corrected keys.
       every entry, verified field-by-field against a pre-migration snapshot
 - [ ] Running `migrate-keys` twice leaves the store byte-identical after the first run
 - [ ] An induced id collision merges rather than overwrites, and the merge is reported
-- [ ] No copy of the derivation rule remains in shipped code outside the single exported function
-      (test harnesses call it; `skills/recover/SKILL.md` names the verb)
+- [ ] `/adev:recover` produces byte-identical ids before and after this change for the same
+      normalized root cause, asserted against a fixture captured pre-change
+- [ ] Every caller this spec touches invokes the shared digest function rather than a private copy
+      (the repo-wide "no copy remains" assertion belongs to `failure-capture.spec.md`)
+- [ ] When the project root is unresolvable, extraction is skipped and no entry is written
 - [ ] `npm test` passes
 - [ ] No constitutional violations
