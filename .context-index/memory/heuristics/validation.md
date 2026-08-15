@@ -1,5 +1,5 @@
 ---
-id: validate-config-single-source-spec-fc36fed8
+id: validate-config-single-source-34b47495
 scope: validation
 title: First-run PASS: Refactoring Spec: Single-Source Validate Configuration
 pattern: First-run PASS for Refactoring Spec: Single-Source Validate Configuration: implementation matched all acceptance criteria without revision

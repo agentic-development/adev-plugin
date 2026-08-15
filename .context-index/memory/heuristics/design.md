@@ -1,5 +1,5 @@
 ---
-id: brainstorm-kind-routing-a4ef606f
+id: brainstorm-kind-routing-54585553
 scope: design
 title: First-run PASS: /adev:brainstorm Kind Routing
 pattern: Mirroring SKILL.md edits across all three provider variants (claude, opencode, codex) in lockstep ensures a single test fixture validates every provider; centralizing kind validation in lib/kinds.mjs (isValidKind) keeps the strict-on-write enumeration consistent between authoring skills.
