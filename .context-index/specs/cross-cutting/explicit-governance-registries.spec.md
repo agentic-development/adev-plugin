@@ -2,7 +2,7 @@
 mode: cross-cutting
 affects: [validation, unified-gates, review, cli-driver-surface, domain-extensions]
 kind: refactor
-status: review-pending
+status: review-blocked
 risk_level: medium
 revision: 4
 created: 2026-08-14

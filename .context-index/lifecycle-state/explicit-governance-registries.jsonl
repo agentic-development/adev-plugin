@@ -19,3 +19,10 @@
 {"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"1 blocker: Behavior 4 reads per-gate outcomes the lifecycle event log never records; fix crosses undeclared ADR-0009 boundary. 3 warnings, 3 suggestions.","ts":"2026-08-15T00:52:54.209Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T00:54:04.453Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T00:54:50.491Z"}
+{"event":"spec_revised","from_revision":3,"to_revision":4,"addressed_blocker_ids":["consistency-analyzer:contract:8be5ee5c","structural-architect:undefined-contract:50848539"],"unresolved_blocker_ids":[],"ts":"2026-08-15T02:15:54.787Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-15T02:17:58.359Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"FAIL","notes":"Both rev-3 blockers closed; 2 new blockers: undeclared validator_report writer chain (behaviors-4), materialized_at universalized vs Step 5 scope.","ts":"2026-08-15T02:22:36.705Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"FAIL","notes":"SEC-1/SEC-2 closed; new blocker: serializeGovernanceYaml scalar escaping unspecified, YAML injection defeats all install-time controls.","ts":"2026-08-15T02:22:36.761Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"Rev-3 substrate blocker genuinely closed; new blocker: staleness rule compares a timestamp against a SHA (type error, unimplementable).","ts":"2026-08-15T02:22:36.819Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T02:25:30.954Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T02:26:14.340Z"}
