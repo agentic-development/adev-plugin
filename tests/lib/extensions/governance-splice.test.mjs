@@ -93,10 +93,15 @@ test('form 4 — a file with no trailing newline keeps its convention', () => {
   assert.equal(text, 'other_key: value\nchecks:\n  - id: n');
 });
 
-// ── Form 5: file absent (empty / blank rawText) ──────────────────────────
+// ── Form 5: file absent (rawText === null) ───────────────────────────────
+//
+// `null` means "no file on disk" and is the ONLY input that fabricates a header.
+// `''` and whitespace-only text mean "the file exists and is blank": appending a
+// created-by-adev provenance claim to a file the project already owns would be a
+// false claim, so those take the plain form-4 path instead.
 
-test('form 5 — an empty rawText creates the file with a generated header comment', () => {
-  const { text } = spliceRegistryEntries('', 'checks', [{ id: 'n', severity: 'error' }], {
+test('form 5 — a null rawText creates the file with a generated header comment', () => {
+  const { text } = spliceRegistryEntries(null, 'checks', [{ id: 'n', severity: 'error' }], {
     extensionName: 'acme-domain',
   });
   assert.ok(text.startsWith('# checks — governance registry created by adev extension install\n'));
@@ -105,11 +110,121 @@ test('form 5 — an empty rawText creates the file with a generated header comme
   assert.ok(text.endsWith('\n'));
 });
 
-test('form 5 — a blank-only rawText is treated as absent, header omits an unnamed extension', () => {
-  const { text } = spliceRegistryEntries('\n  \n', 'reviewers', [{ id: 'r' }]);
+test('form 5 — an absent file with no named extension omits the Extension line', () => {
+  const { text } = spliceRegistryEntries(null, 'reviewers', [{ id: 'r' }]);
   assert.ok(text.startsWith('# reviewers — governance registry created by adev extension install\n'));
   assert.equal(text.includes('# Extension:'), false);
   assert.deepEqual(parseYaml(text), { reviewers: [{ id: 'r' }] });
+});
+
+test('an existing but empty file is appended to WITHOUT a fabricated provenance header', () => {
+  const { text } = spliceRegistryEntries('', 'checks', [{ id: 'n' }], { extensionName: 'acme' });
+  assert.equal(text, 'checks:\n  - id: n\n');
+  assert.equal(text.includes('#'), false, 'no header may be fabricated for an existing file');
+  assert.deepEqual(parseYaml(text), { checks: [{ id: 'n' }] });
+});
+
+test('an existing whitespace-only file keeps its bytes and gains no header', () => {
+  const { text } = spliceRegistryEntries('\n  \n', 'reviewers', [{ id: 'r' }]);
+  assert.equal(text.includes('#'), false, 'no header may be fabricated for an existing file');
+  assert.ok(text.includes('\n  \n'), 'the existing whitespace bytes survive');
+  assert.deepEqual(parseYaml(text), { reviewers: [{ id: 'r' }] });
+});
+
+// ── CRLF line endings ────────────────────────────────────────────────────
+//
+// A `\r` that is not recognised as part of the line terminator makes `checks:\r`
+// invisible to the key scan: the key reads as absent, form 4 appends a SECOND
+// `checks:` block, and the pre-existing entries vanish from the effective
+// registry — silently, and permanently poisoning the file with a duplicate key.
+
+test('CRLF form 1 — existing entries survive and the file stays CRLF', () => {
+  const src = 'checks:\r\n  - id: a\r\n    severity: error\r\nother: v\r\n';
+  const { text } = spliceRegistryEntries(src, 'checks', [{ id: 'b' }]);
+  assert.equal(text.includes('\n\n'), false, 'no bare LF may be introduced into a CRLF file');
+  assert.equal((text.match(/\r\n/g) || []).length, text.split('\n').length - 1);
+  assert.equal(text.match(/^checks:/gm).length, 1, 'exactly one checks: block');
+  assert.deepEqual(parseYaml(text), {
+    checks: [{ id: 'a', severity: 'error' }, { id: 'b' }],
+    other: 'v',
+  });
+});
+
+test('CRLF form 2 — an inline empty list is rewritten in place', () => {
+  const { text } = spliceRegistryEntries('reviewers: []\r\n', 'reviewers', [{ id: 'r' }]);
+  assert.equal(text, 'reviewers:\r\n  - id: r\r\n');
+  assert.deepEqual(parseYaml(text), { reviewers: [{ id: 'r' }] });
+});
+
+test('CRLF form 4 — an absent key is appended with CRLF endings', () => {
+  const { text } = spliceRegistryEntries('other: v\r\n', 'gates', [{ id: 'g' }]);
+  assert.equal(text, 'other: v\r\ngates:\r\n  - id: g\r\n');
+  assert.deepEqual(parseYaml(text), { other: 'v', gates: [{ id: 'g' }] });
+});
+
+test('a mixed-ending file refuses rather than being silently normalised', () => {
+  throwsCode(
+    () => spliceRegistryEntries('checks:\r\n  - id: a\nother: v\n', 'checks', [{ id: 'b' }]),
+    'GOVERNANCE_PARSE_REFUSED'
+  );
+  assert.throws(
+    () => spliceRegistryEntries('checks:\r  - id: a\n', 'checks', [{ id: 'b' }]),
+    (e) => e.code === 'GOVERNANCE_PARSE_REFUSED',
+    'a lone carriage return is not a line terminator this splice can preserve'
+  );
+});
+
+// ── Sibling keys the strict key pattern does not recognise ───────────────
+//
+// `lib/profiles/yaml.mjs:98` accepts far more key shapes than a conservative
+// identifier pattern. A sibling the splice fails to recognise as a block
+// boundary makes new items land AFTER it at indent 2, producing a file the
+// repo's own parser rejects with "unexpected indentation".
+
+test('a dotted sibling key ends the block, so the result still parses', () => {
+  const src = 'checks:\n  - id: a\nsome.key: v\n';
+  const { text } = spliceRegistryEntries(src, 'checks', [{ id: 'b' }]);
+  assert.deepEqual(parseYaml(text), {
+    checks: [{ id: 'a' }, { id: 'b' }],
+    'some.key': 'v',
+  });
+  assert.ok(text.indexOf('- id: b') < text.indexOf('some.key: v'));
+});
+
+test('unusual top-level sibling shapes all act as block boundaries', () => {
+  for (const sibling of ['some.key: v', 'a$b: v', 'UPPER_CASE: v', '"quoted key": v']) {
+    const { text } = spliceRegistryEntries(`checks:\n  - id: a\n${sibling}\n`, 'checks', [{ id: 'b' }]);
+    assert.ok(
+      text.indexOf('- id: b') < text.indexOf(sibling),
+      `new entries must land before the sibling ${JSON.stringify(sibling)}`
+    );
+    assert.deepEqual(parseYaml(text).checks, [{ id: 'a' }, { id: 'b' }]);
+  }
+});
+
+// ── Refusals that were implemented but previously untested ───────────────
+
+test('a non-empty inline flow sequence at the root key refuses', () => {
+  throwsCode(
+    () => spliceRegistryEntries('gates: [a, b]\n', 'gates', [{ id: 'c' }]),
+    'GOVERNANCE_PARSE_REFUSED'
+  );
+  assert.throws(
+    () => spliceRegistryEntries('gates: ["a"]\n', 'gates', [{ id: 'c' }]),
+    (e) => /not an empty sequence/.test(e.message),
+    'appending would require reserialising the existing items — the defect this module removes'
+  );
+});
+
+test('an inline empty list with real content indented beneath it refuses', () => {
+  throwsCode(
+    () => spliceRegistryEntries('boundaries: []\n  - id: a\n', 'boundaries', [{ id: 'b' }]),
+    'GOVERNANCE_PARSE_REFUSED'
+  );
+  assert.throws(
+    () => spliceRegistryEntries('boundaries: []\n  key: v\n', 'boundaries', [{ id: 'b' }]),
+    (e) => e.code === 'GOVERNANCE_PARSE_REFUSED' && /ambiguous/.test(e.message)
+  );
 });
 
 // ── Real repo fixtures ───────────────────────────────────────────────────
