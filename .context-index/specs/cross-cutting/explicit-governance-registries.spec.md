@@ -4,7 +4,7 @@ affects: [validation, unified-gates, review, cli-driver-surface, domain-extensio
 kind: refactor
 status: review-pending
 risk_level: medium
-revision: 2
+revision: 3
 created: 2026-08-14
 updated: 2026-08-15
 tracker-ref: adev-plugin-8ekd.1
@@ -188,6 +188,14 @@ shipped code today, independent of this spec, and are tracked as `adev-plugin-xg
   extension-writable, an unbounded pattern is a denial-of-service lever on a merge gate, not only an
   author-carelessness risk.
 
+  **Mechanism, named.** A synchronous `RegExp.exec` cannot be interrupted mid-backtrack — no timer,
+  `AbortSignal`, or wall-clock check runs while the engine backtracks — so a budget expressed over
+  plain `RegExp` is untestable by construction. Each rule is therefore evaluated inside a
+  `node:worker_threads` worker (a Node built-in, so the zero-dependency principle holds) and the
+  parent calls `worker.terminate()` when the budget expires. **Budget: 250 ms per rule per file**,
+  with an input-size cap of 1 MB per file above which the rule records SKIP rather than running.
+  Termination is reported identically to `INVALID_BOUNDARY_PATTERN` — fail closed, name the rule.
+
 - **Risk:** Low in blast radius (no shipped extension uses `provides.governance`), high in
   consequence if skipped.
 - **Verify:** Installing the reference extension against a `validate.yaml` holding 7 checks yields 8
@@ -210,11 +218,28 @@ with nothing left to populate the effective set — `/adev:review-specs` would d
 while still reporting a verdict. Invariant 2 forbids exactly that.
 
 **Resolution: fail closed, do not silently degrade.** The loaders gain an explicit
-un-materialized state rather than an empty one. A registry is un-materialized when it carries no
-`materialized_at` marker and its entry list is empty while bundled/domain defaults exist for it. In
-that state the loader raises `REGISTRY_NOT_MATERIALIZED` naming the registry and the one-line
-remedy (`adev governance materialize --registry <name>`), and the calling skill halts. It never
-proceeds with an empty set.
+un-materialized state. **A registry is un-materialized if and only if its project file lacks a
+`materialized_at` marker.** Entry count is irrelevant, and so is whether bundled or domain defaults
+exist.
+
+Both properties are deliberate. Keying on emptiness would leave the *partially*-populated case open:
+registries compose additively (`review-config.mjs:80-83` merges project reviewers on top of the
+bundled base), so a project with one hand-added reviewer plus the three bundled ones has a non-empty
+list, is not "empty", and would silently lose the three bundled reviewers — including
+`security-reviewer` — the moment the overlay is removed. One entry would have been enough to defeat
+the guard, and hand-adding one reviewer is the workflow `review.yaml`'s own header documents.
+
+Keying on "defaults exist" would also be undecidable: that is a question about the merged set, and
+this same step removes run-time merging. The marker is a property of the project file alone, which
+is the only thing the loader can still read.
+
+In the un-materialized state the loader raises `REGISTRY_NOT_MATERIALIZED` naming the registry and
+the remedy (`adev governance materialize --registry <name>`), and the calling skill halts. It never
+proceeds with a partial or empty set.
+
+Extension install is subject to the same gate: installing into a registry that lacks the marker is
+refused, so an install cannot pre-empt materialization and thereby stamp a registry as materialized
+with only its own entry in it.
 
 Auto-materializing on first read was rejected: it would perform a silent config write during an
 unrelated command, and the whole point of this spec is that governance changes are visible.
@@ -263,13 +288,13 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 7. **When** a registry has been materialized and the plugin later adds a bundled entry **then** `/adev:hygiene` Audit Pass 19 reports a drift finding naming the registry and the entry, and the project's behaviour is unchanged until it adopts.
 8. **When** `adev gate doctor` inspects gates **then** it inspects exactly the set its consumers execute.
 9. **When** an extension declaring `provides.governance` is installed **then** its entries are appended to the target registry under that registry's own root key, every other key and comment in the file is preserved byte-identically, and each appended entry carries `source: extension:<name>`.
-10. **When** an extension whose id collides with an existing entry is installed **then** the project entry wins and retains `source: project` — current behavior, now observable.
+10. **When** an extension whose id collides with an existing entry is installed **then** the existing entry wins untouched and the install reports the collision as skipped, naming the id.
 11. **When** an extension is uninstalled **then** entries carrying its `source` are removed and no other entry is touched.
-12. **When** a registry has bundled or domain defaults but the project file is un-materialized **then** the loader raises `REGISTRY_NOT_MATERIALIZED` and the calling skill halts — it never proceeds with an empty effective set.
+12. **When** a registry's project file lacks a `materialized_at` marker **then** the loader raises `REGISTRY_NOT_MATERIALIZED` and the calling skill halts — regardless of how many entries the file holds, and without consulting bundled or domain defaults.
 13. **When** an extension supplies a `source` field on an entry **then** the installer rejects it; `source` is stamped from install context only.
-14. **When** an extension's entry id collides with an existing entry **then** the fill-gap merge never introduces `enabled`, `disabled_reason`, `severity` or `source` onto the existing entry, even when that key is absent.
+14. **When** an extension's entry id collides with an existing entry **then** the colliding entry is recorded as **skipped** and the existing entry is left byte-identical. The merge introduces no key onto an existing entry — not an absent one, not an optional one, none. Fill-gap merging is removed outright rather than protected by a key list.
 15. **When** an extension's `target` resolves outside `.context-index/governance/` **then** the install refuses with `PATH_TRAVERSAL` and writes nothing.
-16. **When** a boundary rule's evaluation exceeds its time budget **then** the check fails closed naming the rule, exactly as for an invalid pattern — it never hangs the caller.
+16. **When** a boundary rule's evaluation exceeds its 250 ms per-file budget **then** the worker running it is terminated and the check fails closed naming the rule, exactly as for an invalid pattern — it never hangs the caller. Files above the 1 MB input cap record SKIP rather than being scanned.
 
 ### Error Cases
 
@@ -286,7 +311,8 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 | Extension entry carries a field outside its registry's allowlist | Install refuses; names field and registry | `GOVERNANCE_FIELD_NOT_ALLOWED` |
 | Extension entry supplies `source` | Install refuses; `source` is installer-stamped only | `GOVERNANCE_SOURCE_FORGED` |
 | Boundary rule exceeds its evaluation time budget | Check fails closed naming the rule | `BOUNDARY_PATTERN_TIMEOUT` |
-| Registry un-materialized while bundled/domain defaults exist | Loader raises; calling skill halts | `REGISTRY_NOT_MATERIALIZED` |
+| Registry project file lacks `materialized_at` | Loader raises; calling skill halts | `REGISTRY_NOT_MATERIALIZED` |
+| Extension install targets a registry lacking `materialized_at` | Install refuses; cannot pre-empt materialization | `REGISTRY_NOT_MATERIALIZED` |
 
 ## Module Impact Map
 
@@ -307,7 +333,7 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 
 ## System Constitution Reference
 
-- **Minimize external dependencies** — all three new verbs use Node built-ins only; the regex evaluation needs nothing beyond `RegExp` and existing glob helpers.
+- **Minimize external dependencies** — all three new verbs use Node built-ins only. Regex evaluation uses `RegExp` plus `node:worker_threads` for the per-rule time budget (see Step 3); both are built-ins, so no dependency is added. The earlier claim that evaluation "needs nothing beyond `RegExp`" was wrong — a synchronous regex cannot be interrupted, which made the budget unimplementable as written.
 - **Hook protocol compliance** — boundary evaluation becomes reusable by `.githooks/`, letting the bespoke `pre-commit-no-inline-node` hook eventually become one boundary rule among many.
 - **Skills are primarily markdown** — check bodies shrink to a verb invocation; the logic moves to `lib/`, matching the cli-driver-surface charter.
 - **Architecture Boundaries / Requires Human Approval** — this spec changes what blocks a merge. Step 4 lands rules at `warning` before `error` for that reason.
@@ -328,12 +354,15 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 - [ ] Installing any extension targeting `gates.yaml` leaves `transitions:` byte-identical.
 - [ ] Every governance entry carries a `source:` value; hygiene drift findings exclude non-`project` sources.
 - [ ] Uninstalling an extension removes exactly its entries.
-- [ ] A loader on an un-materialized registry raises `REGISTRY_NOT_MATERIALIZED` and the calling skill halts; no skill ever runs with a silently-empty effective set.
+- [ ] A registry holding entries but no `materialized_at` marker still raises `REGISTRY_NOT_MATERIALIZED` — asserted with a non-empty `review.yaml`, which is the case a list-emptiness predicate would miss.
+- [ ] The loader decides materialization from the project file alone, with no read of bundled or domain defaults — asserted by a test that removes the defaults and observes the same verdict.
+- [ ] An extension install into a registry lacking `materialized_at` is refused.
 - [ ] `adev gate transitions check` records FAIL naming any required gate without a passing record, and never executes a gate.
 - [ ] An extension `target` of `../../x.yaml` is refused with `PATH_TRAVERSAL` and writes nothing — asserted by a test that reproduces the current escape.
 - [ ] An extension supplying `source: project` is refused; installer-stamped `source` survives uninstall correctly.
-- [ ] An extension colliding with a default-on check cannot introduce `enabled: false` onto it.
-- [ ] A catastrophically-backtracking boundary pattern fails closed within its time budget rather than hanging.
+- [ ] An extension colliding on id cannot introduce **any** key onto the existing entry; the collision is reported as skipped and the entry is byte-identical afterwards.
+- [ ] An extension cannot introduce a `command` onto an existing `gates.yaml` entry — the specific arbitrary-code-execution path, asserted directly.
+- [ ] A catastrophically-backtracking pattern (`(a+)+$`) against a crafted input terminates within the 250 ms budget and records a failure naming the rule — asserted by a test that would hang without worker termination.
 - [ ] Hygiene flags `enabled: false` on any `bundled`/`domain:*` entry.
 - [ ] No check identifier changed; no check moved between surfaces.
 - [ ] All quality gates pass; no constitutional violations.
