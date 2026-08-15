@@ -854,3 +854,135 @@ test("heuristics write with schema error degrades to stderr + exit 0", () => {
     cleanup(dir);
   }
 });
+
+// ── write --signature (Behavior 5: recover-side signature persistence) ────
+
+function runWriteCli(dir, extraArgs = [], { id = "missing-context-a1b2c3d4" } = {}) {
+  return spawnSync(
+    "node",
+    [
+      CLI,
+      "heuristics",
+      "write",
+      "--id",
+      id,
+      "--scope",
+      "_global",
+      "--title",
+      "T",
+      "--pattern",
+      "P",
+      ...extraArgs,
+    ],
+    { encoding: "utf8", cwd: dir },
+  );
+}
+
+function readGlobalStore(dir) {
+  return readFileSync(
+    join(dir, ".context-index", "memory", "heuristics", "_global.md"),
+    "utf8",
+  );
+}
+
+test("heuristics write --signature persists the signature field", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, ["--signature", "recover-a1b2c3d4"]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.match(body, /^signature: recover-a1b2c3d4$/m);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write without --signature writes no signature field", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, [], { id: "tool-failure-0badc0de" });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.ok(!/^signature:/m.test(body), "the key is omitted, not written empty");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write with an empty --signature omits the key and exits 0", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, ["--signature", ""], { id: "tool-failure-0badc0de" });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.ok(!/^signature:/m.test(body), "empty signature must not be serialized");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write with a malformed --signature degrades to stderr + exit 0", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, ["--signature", "Bad Value"], {
+      id: "tool-failure-0badc0de",
+    });
+    assert.strictEqual(r.status, 0);
+    assert.match(r.stderr, /extraction skipped/);
+    assert.match(r.stderr, /signature/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics signature output composes into heuristics write --signature", () => {
+  const dir = makeTempProject();
+  try {
+    const sig = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "signature",
+        "--origin",
+        "recover",
+        "--text",
+        "Timeout waiting for the fixture server on port 8080",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(sig.status, 0, sig.stderr);
+    const value = sig.stdout.trim();
+    assert.match(value, /^recover-[0-9a-f]{8}$/);
+
+    const r = runWriteCli(dir, ["--signature", value]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.match(body, new RegExp(`^signature: ${value}$`, "m"));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write --signature is EXISTING-wins on a re-write of the same id", () => {
+  const dir = makeTempProject();
+  try {
+    const first = runWriteCli(dir, ["--signature", "recover-aaaaaaaa"]);
+    assert.strictEqual(first.status, 0, first.stderr);
+
+    const second = runWriteCli(dir, ["--signature", "recover-bbbbbbbb"]);
+    assert.strictEqual(second.status, 0, second.stderr);
+    assert.match(second.stderr, /signature divergence/);
+    assert.match(second.stderr, /recover-aaaaaaaa/);
+    assert.match(second.stderr, /recover-bbbbbbbb/);
+
+    const body = readGlobalStore(dir);
+    assert.match(body, /^signature: recover-aaaaaaaa$/m);
+    assert.ok(
+      !/recover-bbbbbbbb/.test(body),
+      "the incoming signature must not overwrite the stored one",
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
