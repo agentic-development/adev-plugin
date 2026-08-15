@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone: 3
-revision: 4
+revision: 5
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -145,8 +145,17 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
    was produced by the path-dependent validate-side rule, and no others. The discriminator and the
    recomputation inputs are both explicit:
 
-   - **In scope:** an entry with at least one `evidence[]` element whose `source` is `validation`. Its
-     `id` came from the absolute-path hash and is therefore machine-dependent.
+   - **In scope:** an entry with at least one `evidence[]` element whose `source`, after alias
+     normalization, is `validation`. Its `id` came from the absolute-path hash and is therefore
+     machine-dependent.
+   - **Alias normalization is required, not cosmetic.** `EvidenceRef.source` is unenforced today and
+     the live store has drifted to four spellings — `validation` (24 entries), `learn` (4),
+     `validate` (2), `recover` (2) — of which only `validation` appears in the charter's
+     `EvidenceRef` enum. A strict equality test would strand the `validate`-spelled entries
+     unmigrated forever, which is exactly the silent-skip failure this spec exists to eliminate. The
+     migration therefore folds `validate` → `validation` and `recover` → `recovery` before applying
+     the discriminator, and reports any source spelling it does not recognize rather than silently
+     treating it as out of scope.
    - **Out of scope, never rekeyed:** every entry that is not in scope — that is, any entry with no
      `validation`-sourced evidence element, whatever its other sources are or may become. The rule is
      the complement of the in-scope test, not an enumeration, so a future `EvidenceRef.source` value
@@ -230,13 +239,13 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 
 | Task | Description | Complexity |
 |---|---|---|
-| Thread `signature` through the write path | Three gates, all required: `validateEntry` (`lib/heuristics.mjs:101`) accepts and validates it; `writeHeuristic` names it in both `finalEntry` literals (`:733` update, `:767` new) with incoming-wins-then-preserve semantics; `FIELD_ORDER` (`:185-199`) includes it for serialization | medium |
+| Thread `signature` through the write path | Three gates, all required: `validateEntry` (`lib/heuristics.mjs:101`) accepts and validates it; `writeHeuristic` names it in both `finalEntry` literals (`:733` update, `:767` new) with **existing-wins** semantics per Behavior 5(b) — the first assigned signature stands, unlike the incoming-wins rule used for the `antiPattern` and `tags` refinement fields; `FIELD_ORDER` (`:185-199`) includes it for serialization | medium |
 | Shared digest function | `lib/heuristics.mjs`: `normalize → SHA-256 → first 8 hex`, taking the normalizer as a parameter | small |
 | Two normalizers | `normalizeFailureText` (strips punctuation) and `normalizeIdInput` (folds separators, strips nothing); both exported and separately tested | small |
 | Add `adev heuristics signature` verb | Wire to `lib/cli/heuristics.mjs` dispatch; origin enum validation; `--blocker-id` path for `review-specs` origin via `parseBlockerId` | medium |
 | Correct id hash input | Replace absolute path with repo-relative in `hooks/post-validate-extract-heuristics.mjs:123-127`; caller composes the `<spec-slug>` prefix | small |
 | Update test harnesses | `tests/skills/validate-success-heuristic-harness.mjs:145` and `tests/skills/recover-extract-heuristic-harness.mjs:119` call the shared digest function with their own normalizer and prefix, instead of holding private copies. Recover's harness must keep producing category-prefixed ids | medium |
-| Implement `adev heuristics migrate-keys` | Discriminate on `evidence[].source === "validation"`; recompute from evidence path + stored pattern; skip out-of-scope and unrecoverable entries; merge-on-collision; report four counts; idempotent | medium |
+| Implement `adev heuristics migrate-keys` | Normalize `evidence[].source` aliases (`validate` → `validation`, `recover` → `recovery`) then discriminate on `validation`; recompute from evidence path + stored pattern; skip out-of-scope and unrecoverable entries; merge-on-collision with the contradiction invariant re-applied; report the counts plus any unrecognized source spelling; idempotent | medium |
 | Tests | Round-trip, cross-worktree id equality, recover id byte-equality across the change, normalizer separation, origin rejection, `--blocker-id` derivation, migration idempotency, collision merge | medium |
 
 Removal of the dead `deriveId` twin, the `extract` verb, and the `skills/recover/SKILL.md` prose rule
@@ -273,6 +282,9 @@ This spec only stops depending on them.
       migrates the first and leaves the second's `id` byte-identical
 - [ ] An entry whose evidence path cannot be resolved is left untouched and counted as skipped, not
       rekeyed to a guessed value
+- [ ] An entry spelled `source: validate` migrates identically to one spelled `source: validation`,
+      asserted against the live store's actual drift (24 `validation` / 2 `validate`)
+- [ ] An unrecognized `source` spelling is reported in the summary rather than silently skipped
 - [ ] Running `migrate-keys` twice leaves the store byte-identical after the first run
 - [ ] An induced id collision merges rather than overwrites, and the merge is reported
 - [ ] `/adev:recover` produces byte-identical ids before and after this change for the same
