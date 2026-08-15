@@ -348,9 +348,22 @@ After resolution, the `kind` variable is available for Step 5's `resolveTemplate
 Guide the user through each section defined in the loaded domain template. Do not dump a blank template. Use the template's section names and structure -- do not substitute or rename sections. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
 
 **Behavioral Contract:**
-Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors in the **When...then** format:
-- **When** a user drags a card to a new position within the same column **then** the card's `position` updates and affected cards reindex.
-- **When** a user drags a card to a different column **then** the card moves and both columns reindex.
+Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors as an **unordered** list, each item opening with a bolded behavior ID, in the **When...then** format:
+
+```markdown
+### Behaviors
+
+<!-- retired-behavior-ids: (none) -->
+
+- **BEH-1** — **When** a user drags a card within the same column **then** the card's `position` updates and affected cards reindex.
+- **BEH-2** — **When** a user drags a card to a different column **then** the card moves and both columns reindex.
+```
+
+A behavior ID is `BEH-<n>`, `<n>` a positive integer unique within *this* spec. IDs are spec-scoped — `BEH-3` in two specs are unrelated. The list is unordered deliberately: an ordered list re-renders `1. 2. 3.` alongside the IDs, leaving two competing referents for the same behavior.
+
+**Allocation.** The next ID is one greater than the highest number ever used in this spec — counting live IDs *and* every ID listed in the `retired-behavior-ids` comment. Numbers are never reused; gaps carry no meaning.
+
+**Tombstones.** The `<!-- retired-behavior-ids: … -->` comment sits immediately under the Behaviors heading and records every withdrawn ID. It is the allocator's memory: without it, deleting `BEH-5` and later inserting a behavior would resurrect `BEH-5` under new text.
 
 Aim for 3-8 directly testable behavior statements.
 
