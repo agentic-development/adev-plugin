@@ -2,7 +2,7 @@
 mode: cross-cutting
 affects: [domain-extensions, validation, unified-gates]
 kind: refactor
-status: review-pending
+status: review-blocked
 risk_level: high
 revision: 4
 created: 2026-08-15
