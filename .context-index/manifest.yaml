@@ -297,3 +297,18 @@ hygiene:
       - "87a47b3ee0fd6904cbc453db188879752c161064"
 
 domain: software
+
+# ============================================================================
+# Build Orchestrator
+# ============================================================================
+
+build:
+  # Cycles of the /adev:build BLOCK -> /adev:specify --revise -> re-review loop
+  # before the convergence detector returns BUDGET_EXHAUSTED. Library default is 2.
+  # Raised to 5 on 2026-08-15: the explicit-governance-registries review converged
+  # cleanly (blockers 5 -> 5 -> 2, persistent: 0 at every step — no ID ever recurred)
+  # and still hit the budget mid-descent. A budget that stops a converging loop is
+  # tuned too low for cross-cutting specs of this size. The detector still halts
+  # early on NO_PROGRESS or REGRESSED, so raising this trades wall-clock for
+  # completion without weakening the stall guards.
+  max_review_retries: 5
