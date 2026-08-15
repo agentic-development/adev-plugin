@@ -9,6 +9,7 @@ import {
   sanitizeAdapterOutput,
 } from "../../lib/governance/review-config.mjs";
 import { createRedactor } from "../../lib/profiles/redaction.mjs";
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 const tempDirs = [];
@@ -20,6 +21,23 @@ function tmp() {
 afterEach(() => {
   while (tempDirs.length) cleanupTempDir(tempDirs.pop());
 });
+
+/**
+ * Fixture maintenance (Task 10): `review.yaml` is a MARKED registry, so
+ * `loadReviewConfig` fails closed on a file with no `materialized_at` marker.
+ * Every fixture below is about reviewer validation, path resolution, posture
+ * and merge precedence — none is about materialization — so each is seeded
+ * already-materialized, the state `adev governance materialize` leaves behind.
+ * No assertion is relaxed; the guard just runs first. The zero-config test
+ * writes no governance file at all, and absence is deliberately unguarded.
+ */
+function writeReview(repo, body) {
+  writeFixture(
+    repo,
+    ".context-index/governance/review.yaml",
+    stampMarker(body, "2026-08-15T00:00:00Z"),
+  );
+}
 
 function hasCode(issues, code) {
   return issues.some((i) => i.code === code);
@@ -41,9 +59,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("enabled: false excludes a reviewer", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: consistency-analyzer
     enabled: false
@@ -57,9 +74,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("reviewer referencing implementer profile fails load (Behavior 11a)", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: security-reviewer
     profile: implementer
@@ -71,9 +87,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("relative prompt path with '..' is rejected", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: traversal-attempt
     dispatch: always
@@ -86,9 +101,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("cross-plugin prompt reference rejected with v2-deferral message", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: x
     dispatch: always
@@ -101,9 +115,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("reviewer with both prompt and package fails load", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: hybrid
     dispatch: always
@@ -118,9 +131,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("reviewer with neither prompt nor package fails load", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: empty
     dispatch: always
@@ -138,9 +150,8 @@ describe("review-config loadReviewConfig", () => {
       ".context-index/skills/my-reviewer/SKILL.md",
       "# Project skill\n"
     );
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: project-pkg
     dispatch: always
@@ -158,9 +169,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("bundled default override emits WARN", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: security-reviewer
     severity_cap: warning
@@ -215,9 +225,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("domainReviewers + governance overlay merges correctly", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: data-contract-reviewer
     severity_cap: warning

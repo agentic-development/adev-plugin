@@ -42,6 +42,7 @@ import {
 } from "../../../lib/profiles/index.mjs";
 import * as claudeCode from "../../../lib/profiles/adapters/claude-code.mjs";
 import { loadReviewConfig, shouldDispatch, applySeverityCap, computeVerdict } from "../../../lib/governance/review-config.mjs";
+import { stampMarker } from "../../../lib/governance/registry-marker.mjs";
 import { loadValidateConfig, shouldSkipDueToFailFast } from "../../../lib/governance/validate-config.mjs";
 import { runQualityGate } from "../../../lib/governance/quality-gate.mjs";
 import { renderPack } from "../../../lib/governance/context-pack.mjs";
@@ -67,7 +68,13 @@ function hasCode(issues, code) {
 function useNegativeReviewConfig(repo, variant) {
   const src = join(repo, ".context-index", "negative", `${variant}.yaml`);
   const dest = join(repo, ".context-index", "governance", "review.yaml");
-  cpSync(src, dest);
+  // Fixture maintenance (Task 10): review.yaml is a MARKED registry, so
+  // `loadReviewConfig` fails closed before it can reach the validation each
+  // negative variant is written to trip. Stamping on the way in restores the
+  // ONLY thing these tests are about — the rejection code. Nothing is relaxed:
+  // an unmarked file still raises, as its own test in
+  // tests/governance/registry-marker.test.mjs asserts.
+  writeFileSync(dest, stampMarker(readFileSync(src, "utf8"), "2026-08-15T00:00:00Z"));
 }
 
 function useNegativeValidateConfig(repo, variant) {

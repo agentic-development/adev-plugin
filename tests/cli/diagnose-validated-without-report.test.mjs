@@ -21,6 +21,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, "..", "..");
 const CLI = resolve(PROJECT_ROOT, "cli", "index.mjs");
@@ -59,7 +61,14 @@ function makeTempProject() {
     join(dir, ".context-index", "manifest.yaml"),
     'project:\n  name: t\n  adev_version: "0.22.0"\n',
   );
-  writeFileSync(join(dir, ".context-index", "governance", "diagnostics.yaml"), REGISTRY);
+  // Fixture maintenance (Task 10): `diagnostics.yaml` is a MARKED registry and
+  // the loader fails closed without a `materialized_at` marker. Seeded
+  // already-materialized; this suite is about one diagnostic's firing
+  // conditions, not about materialization, so nothing is weakened.
+  writeFileSync(
+    join(dir, ".context-index", "governance", "diagnostics.yaml"),
+    stampMarker(REGISTRY, "2026-08-15T00:00:00Z"),
+  );
   return dir;
 }
 

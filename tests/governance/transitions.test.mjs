@@ -23,6 +23,7 @@ import { join } from "node:path";
 
 import { evaluateTransitions } from "../../lib/governance/transitions.mjs";
 import { computeCommandSha, loadCheck1Gates } from "../../lib/gates/gate-sets.mjs";
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
 import { appendEvent } from "../../lib/lifecycle-state.mjs";
 import { PLUGIN_ROOT, createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
@@ -49,7 +50,14 @@ function seedProject({ gatesYaml, sourceManifest = defaultFrontmatter() } = {}) 
   const dir = createTempDir();
   writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: fixture-domain\n");
   writeFixture(dir, ".context-index/domains/fixture-domain/gates.yaml", "gates: []\n");
-  if (gatesYaml !== undefined) writeFixture(dir, GATES_REL, gatesYaml);
+  // Fixture maintenance (Task 10): `gates.yaml` is a MARKED registry, so every
+  // consumer read now fails closed without a `materialized_at` marker. These
+  // fixtures are about attestation, not about materialization, so they are
+  // seeded already-materialized — the same state `adev governance materialize`
+  // leaves behind. Nothing about what these tests assert has been relaxed.
+  if (gatesYaml !== undefined) {
+    writeFixture(dir, GATES_REL, stampMarker(gatesYaml, "2026-03-01T00:00:00Z"));
+  }
   writeFixture(dir, SPEC_REL, `${sourceManifest ?? ""}# Spec\n`);
   return dir;
 }
@@ -618,10 +626,13 @@ describe("execution boundary", () => {
     writeFixture(
       dir,
       GATES_REL,
-      "gates:\n" +
-        "  - id: test\n    tier: fast\n" +
-        `    command: ["sh", "-c", "touch ${marker}"]\n` +
-        "transitions:\n  implement-to-validate:\n    required_gates:\n      - test\n",
+      stampMarker(
+        "gates:\n" +
+          "  - id: test\n    tier: fast\n" +
+          `    command: ["sh", "-c", "touch ${marker}"]\n` +
+          "transitions:\n  implement-to-validate:\n    required_gates:\n      - test\n",
+        "2026-03-01T00:00:00Z",
+      ),
     );
     try {
       seedOutcome(dir, {
@@ -778,11 +789,14 @@ describe("gate-set parity with `adev domain load-gates`", () => {
     writeFixture(
       dir,
       GATES_REL,
-      "gates: []\n" +
-        "transitions:\n" +
-        "  implement-to-validate:\n" +
-        "    required_gates:\n" +
-        `      - ${MOD_GATE}\n`,
+      stampMarker(
+        "gates: []\n" +
+          "transitions:\n" +
+          "  implement-to-validate:\n" +
+          "    required_gates:\n" +
+          `      - ${MOD_GATE}\n`,
+        "2026-03-01T00:00:00Z",
+      ),
     );
     writeFixture(dir, SPEC_REL, `${defaultFrontmatter()}# Spec\n`);
     return dir;

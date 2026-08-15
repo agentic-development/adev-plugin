@@ -33,6 +33,7 @@ import { runGateDoctor } from "../../lib/gates/doctor.mjs";
 import { loadCheck1Gates, loadDoctorGates } from "../../lib/gates/gate-sets.mjs";
 import { mergeGates } from "../../lib/domains/merge-gates.mjs";
 import { parseYaml } from "../../lib/profiles/yaml.mjs";
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
 import { PLUGIN_ROOT, createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 const GATES_REL = ".context-index/governance/gates.yaml";
@@ -182,7 +183,15 @@ describe("the two gate-set loaders", () => {
     const dir = createTempDir();
     try {
       seedCustomDomain(dir, "fixture-domain", "domain-only");
-      writeFixture(dir, GATES_REL, 'gates:\n  - id: test\n    command: ["npm", "test"]\n');
+      // Fixture maintenance (Task 10): only the CONSUMER view guards the
+      // marker, and this test drives it directly. The doctor tests above pass
+      // a pre-read governance document and stay deliberately unguarded — that
+      // asymmetry is the point, so nothing here is weakened.
+      writeFixture(
+        dir,
+        GATES_REL,
+        stampMarker('gates:\n  - id: test\n    command: ["npm", "test"]\n', "2026-08-15T00:00:00Z"),
+      );
 
       assert.equal(typeof loadDoctorGates, "function");
       assert.equal(typeof loadCheck1Gates, "function");
@@ -220,8 +229,11 @@ describe("the two gate-set loaders", () => {
       writeFixture(
         dir,
         GATES_REL,
-        'gates:\n  - id: test\n    command: ["npm", "test"]\n' +
-          '  - id: dropped\n    command: "npm run x"\n',
+        stampMarker(
+          'gates:\n  - id: test\n    command: ["npm", "test"]\n' +
+            '  - id: dropped\n    command: "npm run x"\n',
+          "2026-08-15T00:00:00Z",
+        ),
       );
 
       const cli = spawnSync(

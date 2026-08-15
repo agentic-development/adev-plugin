@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import * as claudeCode from "../../../lib/profiles/adapters/claude-code.mjs";
 import * as openCode from "../../../lib/profiles/adapters/opencode.mjs";
 import { loadReviewConfig } from "../../../lib/governance/review-config.mjs";
+import { stampMarker } from "../../../lib/governance/registry-marker.mjs";
 import {
   buildReviewerDispatches,
   renderReviewReport,
@@ -59,7 +60,9 @@ describe("Tier 2 / exec AC #14 — prompt-snapshot: env values absent from promp
       // project-gate-profile (which carries a real API_TOKEN env).
       writeFileSync(
         join(repo, ".context-index/governance/review.yaml"),
-        `reviewers:
+        // Fixture maintenance (Task 10): review.yaml is a MARKED registry and
+        // `loadReviewConfig` fails closed without a `materialized_at` marker.
+        stampMarker(`reviewers:
   - id: project.env-consumer
     dispatch: always
     prompt: "prompts/billing-reviewer.md"
@@ -69,7 +72,7 @@ context_packs:
   base:
     include:
       - ".context-index/specs/features/billing/charter.md"
-`
+`, "2026-08-15T00:00:00Z")
       );
       const cfg = loadReviewConfig(repo);
       // project-gate-profile has allow_add with filesystem-write? No — it uses
@@ -129,12 +132,14 @@ context_packs:
       );
       writeFileSync(
         join(repo, ".context-index/governance/review.yaml"),
-        `reviewers:
+        // Fixture maintenance (Task 10): review.yaml is a MARKED registry and
+        // `loadReviewConfig` fails closed without a `materialized_at` marker.
+        stampMarker(`reviewers:
   - id: project.consumer
     dispatch: always
     prompt: "prompts/billing-reviewer.md"
     profile: reviewer-with-env
-`
+`, "2026-08-15T00:00:00Z")
       );
       const cfg = loadReviewConfig(repo);
       assert.equal(cfg.errors.length, 0, JSON.stringify(cfg.errors, null, 2));
@@ -194,7 +199,9 @@ describe("Tier 2 / reviewers AC #4 — package mode produces runner + adapter di
       );
       writeFileSync(
         join(repo, ".context-index/governance/review.yaml"),
-        `reviewers:
+        // Fixture maintenance (Task 10): review.yaml is a MARKED registry and
+        // `loadReviewConfig` fails closed without a `materialized_at` marker.
+        stampMarker(`reviewers:
   - id: project.packaged
     dispatch: always
     package:
@@ -202,7 +209,7 @@ describe("Tier 2 / reviewers AC #4 — package mode produces runner + adapter di
       args:
         spec: "<target>"
     profile: reviewer-capable
-`
+`, "2026-08-15T00:00:00Z")
       );
       const cfg = loadReviewConfig(repo);
       assert.equal(cfg.errors.length, 0, JSON.stringify(cfg.errors, null, 2));

@@ -46,6 +46,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname, "..", "..");
@@ -109,9 +111,13 @@ function writeGovernanceGates(dir, gates) {
     if (g.tier) lines.push(`    tier: ${g.tier}`);
     if (g.severity) lines.push(`    severity: ${g.severity}`);
   }
+  // Fixture maintenance (Task 10): gates.yaml is a MARKED registry and
+  // `adev domain load-gates` now fails closed without a `materialized_at`
+  // marker. Seeded already-materialized — these tests assert on the merge
+  // result, not on materialization.
   writeFileSync(
     join(dir, ".context-index", "governance", "gates.yaml"),
-    lines.join("\n") + "\n",
+    stampMarker(lines.join("\n") + "\n", "2026-08-15T00:00:00Z"),
   );
 }
 
@@ -122,9 +128,11 @@ function writeGovernanceReview(dir, reviewers) {
     if (r.name) lines.push(`    name: ${JSON.stringify(r.name)}`);
     if (r.dispatch) lines.push(`    dispatch: ${r.dispatch}`);
   }
+  // Same fixture maintenance for review.yaml, the other MARKED registry this
+  // verb reads.
   writeFileSync(
     join(dir, ".context-index", "governance", "review.yaml"),
-    lines.join("\n") + "\n",
+    stampMarker(lines.join("\n") + "\n", "2026-08-15T00:00:00Z"),
   );
 }
 

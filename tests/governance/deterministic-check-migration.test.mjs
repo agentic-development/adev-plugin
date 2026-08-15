@@ -25,6 +25,7 @@ import { fileURLToPath } from "node:url";
 
 import { computeCommandSha, loadCheck1Gates } from "../../lib/gates/gate-sets.mjs";
 import { parseYaml } from "../../lib/profiles/yaml.mjs";
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 /** Repo-root-relative reads, resolved off this file so cwd never matters. */
@@ -184,10 +185,13 @@ describe("the resolved gate set carries its own command_sha", () => {
     const dir = createTempDir();
     try {
       writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: software\n");
+      // Fixture maintenance (Task 10): gates.yaml is a MARKED registry and the
+      // consumer view fails closed without a `materialized_at` marker. Seeded
+      // already-materialized; this test is about command_sha stamping.
       writeFixture(
         dir,
         ".context-index/governance/gates.yaml",
-        'gates:\n  - id: unit\n    command: ["npm", "test"]\n    tier: fast\n',
+        stampMarker('gates:\n  - id: unit\n    command: ["npm", "test"]\n    tier: fast\n', "2026-08-15T00:00:00Z"),
       );
 
       const { gates } = loadCheck1Gates(dir, { moduleSlug: "m" });
@@ -223,7 +227,7 @@ describe("the resolved gate set carries its own command_sha", () => {
       writeFixture(
         dir,
         ".context-index/governance/gates.yaml",
-        'gates:\n  - id: untiered\n    command: ["npm", "run", "lint"]\n',
+        stampMarker('gates:\n  - id: untiered\n    command: ["npm", "run", "lint"]\n', "2026-08-15T00:00:00Z"),
       );
 
       const { gates } = loadCheck1Gates(dir, { moduleSlug: "m" });
@@ -256,7 +260,7 @@ describe("a malformed argv element never aborts the gate loader", () => {
   function seedProject() {
     const dir = createTempDir();
     writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: software\n");
-    writeFixture(dir, ".context-index/governance/gates.yaml", BAD_GATES);
+    writeFixture(dir, ".context-index/governance/gates.yaml", stampMarker(BAD_GATES, "2026-08-15T00:00:00Z"));
     return dir;
   }
 

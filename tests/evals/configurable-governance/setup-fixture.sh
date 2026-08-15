@@ -165,6 +165,11 @@ context_packs:
   base:
     include:
       - ".context-index/specs/features/billing/charter.md"
+
+# Fixture maintenance (Task 10): review.yaml is a MARKED governance registry,
+# so every loader fails closed without this top-level marker. Written in the
+# same shape `adev governance materialize` produces.
+materialized_at: 2026-08-15T00:00:00Z
 EOF
 
 mkdir -p .context-index/prompts
@@ -442,6 +447,11 @@ context_packs:
   shared-rules:
     include:
       - ".context-index/specs/features/billing/charter.md"
+
+# Fixture maintenance (Task 10): review.yaml is a MARKED governance registry,
+# so every loader fails closed without this top-level marker. Written in the
+# same shape `adev governance materialize` produces.
+materialized_at: 2026-08-15T00:00:00Z
 EOF
 
 cat > .context-index/cross-pack/validate.yaml << 'EOF'
