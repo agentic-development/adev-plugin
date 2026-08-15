@@ -24,6 +24,7 @@ source-manifest:
     - .context-index/specs/features/heuristics/store-and-helper.spec.md
     - .context-index/memory/heuristics/_format.md
   computed-at: "2026-04-25T21:55:13.324Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract

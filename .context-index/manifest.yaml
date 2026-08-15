@@ -144,6 +144,14 @@ completion:
 # Task Management
 # ============================================================================
 
+# Build pipeline. `max_review_retries` bounds the BLOCK -> revise loop in
+# `/adev:build --full`. Raised from the default 2 on 2026-08-15: high-risk
+# specs reviewed at full tier converge monotonically but need more than two
+# rounds, and the loop was halting at BUDGET_EXHAUSTED mid-convergence
+# (heuristics Phase 3 went 6 -> 2 -> 1 blockers across three rounds).
+build:
+  max_review_retries: 9
+
 tasks:
   backend: beads
 
