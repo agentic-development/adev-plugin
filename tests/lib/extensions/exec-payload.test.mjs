@@ -339,6 +339,51 @@ test('flag tokens with a leading dash survive the argv rule', () => {
   cleanupTempDir(ext); cleanupTempDir(proj);
 });
 
+// Emission safety is NOT containment. Each of these files sits legitimately
+// inside the extension; the attack is the FILENAME itself being a YAML
+// injection once it is re-serialized into a governance config.
+test('a contained file whose NAME is a YAML injection is refused at plan time', () => {
+  const names = ['a#b.sh', 'a: b.sh', 'a"b.sh', 'a,b.sh'];
+  assert.equal(names.length, 4);
+  for (const filename of names) {
+    const { ext, proj } = fixture();
+    writeFileSync(join(ext, 'bin', filename), '#!/bin/sh\nexit 0\n');
+    // The file is genuinely inside the extension — containment passes; it is
+    // the emitted scalar that is refused.
+    assert.throws(() => planExecPayload({
+      extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+      contributions: [{ entryId: 'c1', field: 'command', value: ['bash', `bin/${filename}`] }],
+    }), e => e.code === 'GOVERNANCE_SCALAR_UNSAFE', `expected refusal for ${filename}`);
+    // Refused during planning, so nothing reached disk.
+    assert.equal(existsSync(payloadDir(proj, 'demo')), false);
+    cleanupTempDir(ext); cleanupTempDir(proj);
+  }
+});
+
+test('an unsafe filename is refused for package fields too', () => {
+  const { ext, proj } = fixture();
+  writeFileSync(join(ext, 'bin', 'a#b.md'), 'x\n');
+  assert.throws(() => planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{ entryId: 'r1', field: 'package.skill', value: 'bin/a#b.md' }],
+  }), e => e.code === 'GOVERNANCE_SCALAR_UNSAFE');
+  assert.equal(existsSync(payloadDir(proj, 'demo')), false);
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
+test('ordinary paths still pass emission safety, including the absolute form', () => {
+  const { ext, proj } = fixture();
+  const plan = planExecPayload({
+    extensionRoot: ext, extensionName: 'demo', projectRoot: proj,
+    contributions: [{ entryId: 'c1', field: 'command', value: ['bash', 'bin/check.sh'] }],
+  });
+  // '/' is neither an unsafe character nor a leading indicator, so a normal
+  // absolute temp-dir path survives the scalar rule unchanged.
+  assert.equal(plan.rewrites[0].absolute, join(payloadDir(proj, 'demo'), 'bin/check.sh'));
+  assert.equal(plan.rewrites[0].contextRelative, 'extensions/demo/bin/check.sh');
+  cleanupTempDir(ext); cleanupTempDir(proj);
+});
+
 test('the same file contributed twice is copied once', () => {
   const { ext, proj } = fixture();
   const plan = planExecPayload({
