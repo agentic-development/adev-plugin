@@ -149,10 +149,13 @@ one rule with an exception.
 The operation order inside `normalizeFailureText` is load-bearing, not
 cosmetic: **lowercase → strip punctuation except `-` and `_` → collapse
 consecutive whitespace to a single space → trim**. Stripping before collapsing
-is what makes `"a . b"` normalize to `"a b"` rather than `"a  b"`, and it is
-what keeps this rule byte-compatible with the one that produced every
-`/adev:recover` id already in the store. Reordering the steps produces
-different digests for the same text.
+is what makes `"a . b"` normalize to `"a b"` rather than `"a  b"`.
+
+This order is byte-compatible with `normalizeRootCause` in
+`tests/skills/recover-extract-heuristic-harness.mjs`, which is the
+implementation that produced the `/adev:recover` ids already in the store.
+Reordering the steps produces different digests for the same text and would
+orphan those entries.
 
 **Derived mode** hashes text, so the same failure reported with different
 casing, run-length whitespace, or stripped punctuation collapses onto one key.
@@ -277,14 +280,19 @@ stays where it was until an explicit `demote` is requested.
 Ids live inside a scope, so global uniqueness is not required — only
 uniqueness within the scope. Every id is `<prefix>-<8 lowercase hex>`, where
 the **prefix is supplied by the calling extractor** and is never derived from
-the origin. The digest is produced by the shared digest function in
-`lib/heuristics.mjs`, under the `normalizeIdInput` normalizer.
+the origin. Every digest comes from the one shared digest function in
+`lib/heuristics.mjs`.
+
+**Which normalizer that function is given depends on what is being hashed, and
+the two extractors differ.** A path-keyed extractor such as `/adev:validate`
+hashes a path and passes `normalizeIdInput`; `/adev:recover` hashes free text
+and passes `normalizeFailureText`, the same normalizer signatures use. Each
+section below names its own.
 
 `normalizeIdInput` lowercases and folds `\` path separators to `/`, and
 performs **no punctuation stripping** — `/`, `.` and `|` are the separators
-that carry the hash input's meaning, and removing them would collide distinct
-specs onto one id. It is a different normalizer from the one used for
-signatures, deliberately.
+that carry a path-keyed hash input's meaning, and removing them would collide
+distinct specs onto one id.
 
 ### `/adev:recover`
 
@@ -295,7 +303,9 @@ Format: `<category-slug>-<hash>`
   `constraint-conflict`, `novel-problem`, `tool-failure`, `budget-exhaustion`.
   This is a **closed set**, and it is load-bearing: the store migration keys on
   exactly these six prefixes to decide which ids it must never rekey.
-- `<hash>` — the digest of the normalized root-cause text.
+- `<hash>` — the digest of the root-cause text under **`normalizeFailureText`**,
+  not `normalizeIdInput`. This extractor hashes free text, not a path, so it
+  wants punctuation stripped.
 
 Example: `tool-failure-a1b2c3d4`
 
@@ -481,6 +491,5 @@ updated: 2026-04-07
 This entry has three distinct evidence paths, so the store would keep it
 at `high` confidence on the next update.
 
-The `signature` line is optional. Entries written before the field existed,
-and entries derived from a success rather than a failure, omit it entirely —
-they parse normally and are never rejected for lacking it.
+The `signature` line is optional — see the Signature Field section for when it
+is absent and why.

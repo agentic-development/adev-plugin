@@ -102,13 +102,26 @@ const RECOVER_CATEGORY_SLUGS = [
 
 const recoverSkillPath = resolve(projectRoot, "skills", "recover", "SKILL.md");
 
+/**
+ * Slice out one `## <heading>` section so an assertion cannot be satisfied by
+ * an unrelated part of the file. Several of the strings below (`64`,
+ * `[a-z0-9][a-z0-9-]*`, `derived`) already appear elsewhere in the document,
+ * so a whole-file match would pass against the pre-change version.
+ */
+function section(content, heading) {
+  const parts = content.split(/^## /m);
+  const found = parts.find((p) => p.startsWith(heading));
+  assert.ok(found, `_format.md must carry a '## ${heading}' section`);
+  return found;
+}
+
 describe("heuristics _format.md — signature field", () => {
   it("documents the signature field with its constraints", async () => {
     const content = await readFile(formatDocPath, "utf8");
-    assert.match(content, /Signature Field/);
-    assert.match(content, /\[a-z0-9\]\[a-z0-9-\]\*/);
-    assert.match(content, /64/);
-    assert.match(content, /optional/i);
+    const sig = section(content, "Signature Field");
+    assert.match(sig, /\/\^\[a-z0-9\]\[a-z0-9-\]\*\$\//);
+    assert.match(sig, /Maximum length: 64/);
+    assert.match(sig, /\*\*Optional\.\*\*/);
   });
 
   it("states that a signature is never rewritten once assigned", async () => {
@@ -128,18 +141,33 @@ describe("heuristics _format.md — signature field", () => {
 
   it("documents both signature modes, derived and inherited", async () => {
     const content = await readFile(formatDocPath, "utf8");
-    assert.match(content, /derived/i);
-    assert.match(content, /inherited/i);
-    assert.match(content, /blocker_id/);
+    const sig = section(content, "Signature Field");
+    assert.match(sig, /The two signature modes/);
+    assert.match(sig, /Derived mode/);
+    assert.match(sig, /Inherited mode/);
+    assert.match(sig, /blocker_id/);
     // Inherited mode hashes nothing — that is the whole point of the mode.
-    assert.match(content, /hashes nothing/i);
+    assert.match(sig, /hashes nothing/i);
   });
 
   it("names the three derived-mode origins and the single inherited-mode origin", async () => {
     const content = await readFile(formatDocPath, "utf8");
+    const sig = section(content, "Signature Field");
     for (const origin of ["recover", "validate", "implement", "review-specs"]) {
-      assert.match(content, new RegExp(`\`${origin}\``), `origin '${origin}' must be documented`);
+      assert.match(sig, new RegExp(`\`${origin}\``), `origin '${origin}' must be documented`);
     }
+  });
+
+  it("documents the normalizeFailureText operation order, which is load-bearing", async () => {
+    const sig = section(await readFile(formatDocPath, "utf8"), "Signature Field");
+    // Stripping before collapsing is what keeps the rule byte-compatible with
+    // the one that produced the recover ids already in the store. Matched
+    // order-only, so rewording the connectors does not break the assertion.
+    const order = ["lowercase", "strip punctuation", "collapse", "trim"].map((step) =>
+      sig.toLowerCase().indexOf(step),
+    );
+    for (const idx of order) assert.notEqual(idx, -1, "every step must be named");
+    assert.deepEqual([...order].sort((a, b) => a - b), order, "the steps must appear in order");
   });
 });
 
@@ -150,23 +178,22 @@ describe("heuristics _format.md — corrected ID Namespace Convention", () => {
     assert.match(content, /<repo-relative-spec-path>\\?\|<pattern>/);
   });
 
-  it("no longer describes the hash input as a normalized absolute path", async () => {
+  it("no longer describes the digest with the vague pre-change wording", async () => {
     const content = await readFile(formatDocPath, "utf8");
-    // Target the actual pre-change claim, and tolerate line wrapping — the
-    // doc may legitimately mention the absolute path when explaining what the
-    // old rule got wrong.
-    assert.doesNotMatch(content, /hash\s+input\s+is\s+(a\s+|an\s+)?(normalized\s+)?absolute/i);
+    // This is the phrasing the pre-change file actually used. It said nothing
+    // about the hash INPUT, which is what made the section wrong once the
+    // input changed from an absolute path to a repo-relative one.
+    assert.doesNotMatch(content, /6-8 hex chars/i);
     assert.doesNotMatch(content, /normalized-abs-path/i);
   });
 
-  it("documents the normalizeFailureText operation order, which is load-bearing", async () => {
-    const content = await readFile(formatDocPath, "utf8");
-    // Stripping before collapsing is what keeps the rule byte-compatible with
-    // the one that produced the recover ids already in the store.
-    assert.match(
-      content,
-      /lowercase\s*→\s*strip punctuation[^→]*→\s*collapse[^→]*→\s*trim/i,
-    );
+  it("names the normalizer each extractor passes to the shared digest function", async () => {
+    const ids = section(await readFile(formatDocPath, "utf8"), "ID Namespace Convention");
+    // The two extractors deliberately differ: /adev:validate hashes a path,
+    // /adev:recover hashes free text. Claiming one normalizer for both is the
+    // divergence this assertion guards.
+    assert.match(ids, /normalizeIdInput/);
+    assert.match(ids, /normalizeFailureText/);
   });
 
   it("states the derived id is location-independent", async () => {
@@ -213,7 +240,13 @@ describe("heuristics _format.md — recover category slugs", () => {
 
   it("uses a real category slug in its example id", async () => {
     const content = await readFile(formatDocPath, "utf8");
-    const example = content.match(/^Example: `?([a-z0-9-]+)-[0-9a-f]+`?\s*$/m);
+    // Scope to the recover subsection — the validate subsection carries its
+    // own `Example:` line, and an unanchored match would silently retarget
+    // onto it if the sections were ever reordered.
+    const ids = section(content, "ID Namespace Convention");
+    const recoverSubsection = ids.split(/^### /m).find((s) => s.startsWith("`/adev:recover`"));
+    assert.ok(recoverSubsection, "the ID section must carry a /adev:recover subsection");
+    const example = recoverSubsection.match(/^Example: `?([a-z0-9-]+)-[0-9a-f]+`?\s*$/m);
     assert.ok(example, "the recover section must carry an example id");
     assert.ok(
       RECOVER_CATEGORY_SLUGS.includes(example[1]),
