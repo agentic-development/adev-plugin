@@ -56,15 +56,39 @@ const VALIDATOR = "validate.check-2-spec-compliance";
 const SPEC_REL = ".context-index/specs/features/m/gate-outcomes.spec.md";
 const SLUG = "gate-outcomes";
 
-function makeTempProject() {
+/**
+ * @param {object} [opts]
+ * @param {boolean} [opts.strictEventDiagnostics] When true, write
+ *   `lifecycle.event_diagnostics: strict` into the manifest AND register the
+ *   Tier-1 `adev/frontmatter-present` diagnostic at `error` severity in
+ *   `.context-index/governance/diagnostics.yaml`. The spec this suite writes
+ *   has no `---` frontmatter, so the diagnostic fires and `appendEvent`
+ *   throws a `GateError` before the log write. Mirrors `makeProject({mode:
+ *   'strict'})` in tests/lib/lifecycle-state-event-diagnostics.test.mjs.
+ */
+function makeTempProject(opts = {}) {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "adev-gate-outcomes-")));
   mkdirSync(join(dir, ".context-index", "specs", "features", "m"), {
     recursive: true,
   });
-  writeFileSync(
-    join(dir, ".context-index", "manifest.yaml"),
-    'project:\n  name: t\n  adev_version: "0.22.0"\n',
-  );
+  const manifest = ['project:\n  name: t\n  adev_version: "0.22.0"\n'];
+  if (opts.strictEventDiagnostics) {
+    manifest.push("lifecycle:\n  event_diagnostics: strict\n");
+    mkdirSync(join(dir, ".context-index", "governance"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "governance", "diagnostics.yaml"),
+      [
+        "diagnostics:",
+        "  - id: adev/frontmatter-present",
+        "    runner: plugin:tier1/frontmatter-present.mjs",
+        "    severity: error",
+        "    tier: 1",
+        "    scope: event-impact",
+        "",
+      ].join("\n"),
+    );
+  }
+  writeFileSync(join(dir, ".context-index", "manifest.yaml"), manifest.join(""));
   writeFileSync(join(dir, SPEC_REL), "# Spec\n");
   return dir;
 }
@@ -258,6 +282,64 @@ test("gate outcome violating validateGateOutcomes exits 1 with the underlying er
   }
 });
 
+// ── Exit-code contract of the try/catch around reportValidator ───────────
+//
+// The catch added by this task sits between `reportValidator` and
+// `cli/index.mjs::dispatch`. Two classes of throw must NOT be flattened into
+// the friendly exit-1 message:
+//
+//   * `GateError` (`code: "GATE_BLOCKED"`) — must reach dispatch, which exits
+//     **2**. Before this task the catch did not exist and exit 2 was
+//     structurally guaranteed; it now rests on a single rethrow, so it is
+//     pinned here.
+//   * anything without `code === "EVENT_SCHEMA_INVALID"` — genuine crashes
+//     (FS_ERROR, TypeError, engine bugs) must keep their stack, which only
+//     dispatch prints.
+
+test("a strict-mode Tier-1 diagnostic block exits 2 and writes no log line", () => {
+  const dir = makeTempProject({ strictEventDiagnostics: true });
+  try {
+    const r = runReport(
+      dir,
+      baseArgs([
+        "--gate-outcomes",
+        '[{"id":"test","verdict":"pass","tier":"fast"}]',
+      ]),
+    );
+    // GATE_BLOCKED is rethrown past the verb's catch; dispatch exits 2.
+    assert.strictEqual(r.code, 2, `stderr: ${r.stderr}`);
+    assert.match(r.stderr, /event blocked by Tier-1 diagnostics/);
+    assert.match(r.stderr, /adev\/frontmatter-present/);
+    // strict mode rejects BEFORE the file write — disk state unchanged.
+    assert.deepStrictEqual(readLog(dir), []);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("an unexpected (non-EVENT_SCHEMA_INVALID) failure keeps its stack trace", () => {
+  const dir = makeTempProject();
+  try {
+    // Make the log path a directory so `appendFileSync` fails with EISDIR,
+    // which the lib rewraps as an `FS_ERROR` — a throw that is neither
+    // GATE_BLOCKED nor EVENT_SCHEMA_INVALID, i.e. exactly the "real crash"
+    // class the verb must not flatten.
+    mkdirSync(join(dir, ".context-index", "lifecycle-state", `${SLUG}.jsonl`), {
+      recursive: true,
+    });
+    const r = runReport(dir, baseArgs(["--gate-outcomes", "[]"]));
+    assert.strictEqual(r.code, 1);
+    // dispatch (not the verb) handled it, so the stack survived.
+    assert.match(
+      r.stderr,
+      /\n\s+at /,
+      "an uncoded/internal error must propagate to dispatch with its stack intact",
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
 // ── Field independence and empty-array distinctness ──────────────────────
 
 test("--manifest-sha alone (without --gate-outcomes) round-trips", () => {
@@ -265,6 +347,7 @@ test("--manifest-sha alone (without --gate-outcomes) round-trips", () => {
   try {
     const r = runReport(dir, baseArgs(["--manifest-sha", "deadbee"]));
     assert.strictEqual(r.code, 0, `stderr: ${r.stderr}`);
+    assert.strictEqual(r.stderr, "");
     const ev = lastEvent(dir);
     assert.strictEqual(ev.manifest_sha, "deadbee");
     assert.strictEqual(
@@ -282,6 +365,7 @@ test("--gate-outcomes '[]' round-trips as [] and is NOT collapsed to absent", ()
   try {
     const r = runReport(dir, baseArgs(["--gate-outcomes", "[]"]));
     assert.strictEqual(r.code, 0, `stderr: ${r.stderr}`);
+    assert.strictEqual(r.stderr, "");
     const ev = lastEvent(dir);
     assert.strictEqual(
       "gate_outcomes" in ev,
