@@ -100,8 +100,80 @@ An entry with no tags or an empty tags array omits the line entirely:
 
 ### Tag pattern
 
-Tags are placed between `anti-pattern` and `confidence` in the serialized
+Tags are placed between `anti-pattern` and `signature` in the serialized
 field order.
+
+---
+
+## Signature Field
+
+The optional `signature` field is the **cross-scope recurrence key**: it
+answers "is this the same underlying failure, anywhere in the store", which
+`id` cannot express because `id` is only unique within one scope file.
+
+`id` and `signature` key on different inputs, so one `id` can legitimately be
+reached by two different failure texts, and one `signature` can legitimately
+appear on entries in different scopes.
+
+### Constraints
+
+- Must match `/^[a-z0-9][a-z0-9-]*$/` — lowercase ASCII letters, digits, and
+  hyphens only. No underscores, no uppercase, no spaces. Narrower than the
+  safe-slug pattern on purpose: a signature is always machine-composed.
+- Maximum length: 64 characters.
+- **Optional.** Entries written before this field existed, and entries derived
+  from a success rather than a failure, carry no `signature` and are never
+  rejected for lacking one.
+- **Never rewritten once assigned.** On update the stored value wins — the
+  opposite of the incoming-wins rule used for `anti-pattern` and `tags`, which
+  are refinements. A signature is an identity, so first assignment sticks. An
+  incoming signature that differs from the stored one is kept out and logged at
+  warning level, not treated as an error.
+- **Not unique within a scope.** A signature does not participate in `id`
+  uniqueness — two entries in one scope file may share a signature.
+- Serialized between `tags` and `confidence`. The line is omitted when the
+  field is absent.
+
+### The two signature modes
+
+A signature is `<origin-slug>-<8 lowercase hex>`. How the digest is produced
+depends on the origin, and the two modes are genuinely different rules — not
+one rule with an exception.
+
+| | Derived mode | Inherited mode |
+|---|---|---|
+| Origins | `recover`, `validate`, `implement` | `review-specs` only |
+| Digest source | SHA-256 of the normalized failure text | **inherited** — the hash component of the supplied `blocker_id` |
+| Normalizer | `normalizeFailureText` | none |
+
+The operation order inside `normalizeFailureText` is load-bearing, not
+cosmetic: **lowercase → strip punctuation except `-` and `_` → collapse
+consecutive whitespace to a single space → trim**. Stripping before collapsing
+is what makes `"a . b"` normalize to `"a b"` rather than `"a  b"`, and it is
+what keeps this rule byte-compatible with the one that produced every
+`/adev:recover` id already in the store. Reordering the steps produces
+different digests for the same text.
+
+**Derived mode** hashes text, so the same failure reported with different
+casing, run-length whitespace, or stripped punctuation collapses onto one key.
+
+**Inherited mode hashes nothing.** A `/adev:review-specs` finding already
+carries a canonical identity in its `blocker_id`
+(`<reviewer>:<type>:<location-hash>`); the verb parses it and reuses that hash
+component verbatim. Re-hashing the finding text would mint a second identity
+for one finding, so a reviewer finding would stop resolving to the same key in
+the retry loop and in the store.
+
+Both modes are produced by `adev heuristics signature`:
+
+```
+adev heuristics signature --origin recover --text "Error: cache miss"
+adev heuristics signature --origin review-specs --blocker-id <blocker_id>
+```
+
+Derivation reads no clock, no filesystem path, no environment variable, and no
+run identifier, so a signature is byte-identical on any machine, in any
+worktree, at any time.
 
 ---
 
@@ -120,6 +192,7 @@ store translates between the two: `antiPattern` <-> `anti-pattern`,
 | `pattern`            | `pattern`             | string       | yes      | The "do this" rule, <= 500 chars. |
 | `anti-pattern`       | `antiPattern`         | string       | no       | Counter-rule ("don't do this"), <= 500 chars. |
 | `tags`               | `tags`                | string[]     | no       | Classification labels. Each tag: `[a-z0-9][a-z0-9-]*`, max 64 chars, max 20 tags. Omitted from file when empty. |
+| `signature`          | `signature`           | string       | no       | Cross-scope recurrence key. `[a-z0-9][a-z0-9-]*`, max 64 chars. Never rewritten once assigned. See Signature Field. |
 | `confidence`         | `confidence`          | enum         | yes      | One of `low`, `medium`, `high`. |
 | `evidence`           | `evidence`            | array        | yes      | Array of `{path, date, source}` objects. May be empty. |
 | `contradicted-by`    | `contradictedBy`      | array        | yes      | Array of `{path, date, source}` objects. May be empty. |
@@ -202,29 +275,54 @@ stays where it was until an explicit `demote` is requested.
 ## ID Namespace Convention
 
 Ids live inside a scope, so global uniqueness is not required — only
-uniqueness within the scope. Extractors should follow these conventions so
-ids are stable, reproducible, and collision-resistant.
+uniqueness within the scope. Every id is `<prefix>-<8 lowercase hex>`, where
+the **prefix is supplied by the calling extractor** and is never derived from
+the origin. The digest is produced by the shared digest function in
+`lib/heuristics.mjs`, under the `normalizeIdInput` normalizer.
+
+`normalizeIdInput` lowercases and folds `\` path separators to `/`, and
+performs **no punctuation stripping** — `/`, `.` and `|` are the separators
+that carry the hash input's meaning, and removing them would collide distinct
+specs onto one id. It is a different normalizer from the one used for
+signatures, deliberately.
 
 ### `/adev:recover`
 
 Format: `<category-slug>-<hash>`
 
-- `<category-slug>` — one of the six recovery root-cause categories, e.g.
-  `spec-violation`, `context-gap`, `tool-failure`.
-- `<hash>` — short deterministic hash (6-8 hex chars) derived from the
-  generalized pattern text, used to make the id stable across sessions.
+- `<category-slug>` — one of the six diagnosis categories defined in
+  `skills/recover/SKILL.md`: `missing-context`, `ambiguous-spec`,
+  `constraint-conflict`, `novel-problem`, `tool-failure`, `budget-exhaustion`.
+  This is a **closed set**, and it is load-bearing: the store migration keys on
+  exactly these six prefixes to decide which ids it must never rekey.
+- `<hash>` — the digest of the normalized root-cause text.
 
-Example: `spec-violation-a1b2c3`
+Example: `tool-failure-a1b2c3d4`
 
 ### `/adev:validate`
 
 Format: `<spec-slug>-<hash>`
 
-- `<spec-slug>` — the slug of the spec under validation.
-- `<hash>` — short deterministic hash (6-8 hex chars) derived from the
-  generalized pattern text.
+- `<spec-slug>` — the slug of the spec under validation, with the `.spec` stem
+  **stripped** (`foo.spec.md` yields `foo`, not `foo-spec`). This stripped form
+  is canonical; ids in the older unstripped convention are normalized by the
+  store migration.
+- `<hash>` — the digest of `<repo-relative-spec-path>|<pattern>` under
+  `normalizeIdInput`.
 
-Example: `charter-evolution-a1b2c3`
+Example: `charter-evolution-a1b2c3d4`
+
+The path in the hash input is **repo-relative**, never absolute. This makes the
+id **location-independent**: the same spec and pattern extracted from two
+worktrees of one repository produce a byte-identical id. Hashing the absolute
+path instead produced a different id per checkout, so `writeHeuristic`'s
+append-or-update-by-id wrote a duplicate entry rather than appending a second
+evidence reference, and `autoPromote` could not see the two distinct evidence
+paths it needed.
+
+When the project root cannot be resolved — so no repo-relative path exists —
+extraction is **skipped entirely** rather than keyed on a guess. Capture is
+non-blocking, so skipping is safe; a guessed key is not.
 
 ### Rules for all extractors
 
@@ -232,8 +330,8 @@ Example: `charter-evolution-a1b2c3`
 - Ids must be unique within their scope. If a collision is detected, the
   extractor should update the existing entry (adding evidence) rather than
   inventing a suffix.
-- Ids must be derivable from stable inputs so re-running the extractor on
-  the same evidence produces the same id.
+- Ids must be derivable from stable, location-independent inputs so re-running
+  the extractor on the same evidence — in any checkout — produces the same id.
 
 ---
 
@@ -362,6 +460,7 @@ title: Always verify config after edit
 pattern: After editing settings.json, run /config validate
 anti-pattern: Assume edit is valid without verification
 tags: [config, hooks, validation]
+signature: recover-a1b2c3d4
 confidence: high
 evidence:
   - path: sessions/2026-04-01-abc.md
@@ -381,3 +480,7 @@ updated: 2026-04-07
 
 This entry has three distinct evidence paths, so the store would keep it
 at `high` confidence on the next update.
+
+The `signature` line is optional. Entries written before the field existed,
+and entries derived from a success rather than a failure, omit it entirely —
+they parse normally and are never rejected for lacking it.
