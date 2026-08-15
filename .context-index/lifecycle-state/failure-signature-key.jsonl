@@ -1,2 +1,23 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-15T09:44:39.344Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-15T09:46:27.263Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t7","status":"done","notes":"prefix-based classifier plus the store walk; six category slugs taken from skills/recover/SKILL.md","ts":"2026-08-15T12:29:59.244Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t8","status":"done","notes":"rekey write path with collision merge, contradiction invariant re-applied, and byte-identical idempotency","ts":"2026-08-15T13:17:00.128Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t1","status":"done","notes":"shared digest function and the two normalizers (re-emitted; original event lost to an accidental tree restore)","ts":"2026-08-15T13:26:55.951Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t2","status":"done","notes":"signature threaded through validateEntry, FIELD_ORDER and both finalEntry literals (re-emitted; original event lost to an accidental tree restore)","ts":"2026-08-15T13:26:56.005Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t3","status":"done","notes":"adev heuristics signature derived mode (re-emitted; original event lost to an accidental tree restore)","ts":"2026-08-15T13:26:56.060Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t4","status":"done","notes":"inherited mode reuses the blocker_id location hash verbatim (re-emitted; original event lost to an accidental tree restore)","ts":"2026-08-15T13:26:56.119Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t5","status":"done","notes":"hook derives ids from repo-relative spec paths and fails closed (re-emitted; original event lost to an accidental tree restore)","ts":"2026-08-15T13:26:56.174Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t6","status":"done","notes":"both harnesses converged on the shared digest; recover ids byte-identical (re-emitted; original event lost to an accidental tree restore)","ts":"2026-08-15T13:26:56.230Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/failure-signature-key.plan.md","task_id":"t9","status":"done","notes":"_format.md documents signature and the corrected ID namespace convention (re-emitted; original event lost to an accidental tree restore)","ts":"2026-08-15T13:26:56.284Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-15T13:27:21.626Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-15T13:57:45.928Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"No blockers. Six warnings where rev-8 text lags shipped code: undeclared --dry-run, missing archive-conflict error row, underspecified merge field rules.","ts":"2026-08-15T14:04:29.588Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"PASS","notes":"Sanitization, atomic writes, path handling and fail-closed root resolution all match spec claims in shipped code. No blockers or warnings; two suggestions.","ts":"2026-08-15T14:04:34.297Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"Error codes, verb/flag names, six category slugs, blocker_id inheritance and _format.md schema all conform to Behaviors 1-10. Only the three known queued charter/doc defects.","ts":"2026-08-15T14:04:39.469Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-08-15T14:06:11.214Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-15T14:07:07.836Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-15T14:07:09.735Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-08-15T14:07:15.055Z"}
+{"event":"step_completed","step":"route","verdict":"PASS","ts":"2026-08-15T14:07:19.640Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-15T14:07:40.696Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-15T14:08:37.206Z"}

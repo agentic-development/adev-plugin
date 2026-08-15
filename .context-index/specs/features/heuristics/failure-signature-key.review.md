@@ -2,239 +2,229 @@
 kind: review
 spec: .context-index/specs/features/heuristics/failure-signature-key.spec.md
 charter: .context-index/specs/features/heuristics/charter.md
-verdict: BLOCK
+date: 2026-08-15
+verdict: PASS_WITH_NOTES
 rigor-tier: full
-reviewed: 2026-08-15
-last-reviewed-revision: 7
-file-sha: 091ac6a2319bbce4430a34756e5d802dc06b7cdcdeaa74deb45fbd92dbbf5157
+last-reviewed-revision: 8
+file-sha: 20ebc536bd8c4a6adbb11d9cc9a19219ecf6bbaf4dd296b2c659534513ac547d
 ---
 
 # Architecture Review: failure-signature-key
 
 > **Date:** 2026-08-15
-> **Spec:** `.context-index/specs/features/heuristics/failure-signature-key.spec.md` (revision 7)
-> **Charter:** `.context-index/specs/features/heuristics/charter.md` (revision 6, Phase 3)
-> **Rigor tier:** full (explicit `--tier full`; `risk_level: high` → `review_mode: full` resolves the same)
-> **Verdict:** BLOCK — 1 blocker, 2 warnings, 5 suggestions
-> **Prior verdicts:** BLOCK at revisions 1 (6 blockers), 2 (2), 3 (1), 4 (1), 5 (2); revision 6's review stalled before consolidating and produced no durable verdict.
+> **Spec:** .context-index/specs/features/heuristics/failure-signature-key.spec.md
+> **Charter:** .context-index/specs/features/heuristics/charter.md (approved, revision 6, Phase 3)
+> **Rigor tier:** full (explicit `--tier full`; risk_level `high` maps to `review_mode: full` independently)
+> **Verdict:** PASS_WITH_NOTES — 0 blockers, 6 warnings, 7 suggestions
 
-## Convergence against revision 6
-
-Revision 6's review never consolidated — a `.review.md` was written but no `.blockers.md` and no status
-transition, so that round has no durable verdict. Its two substantive findings were verified
-independently by the orchestrator and fixed in revision 7 (commit `920919a9`):
-
-- **Dual legacy slug conventions.** Confirmed live and correct as now written: `specSlug` in
-  `lib/cli/heuristics.mjs:89-95` retains the `.spec` stem, while
-  `hooks/post-validate-extract-heuristics.mjs:103` strips it. All seven retained-form store ids the
-  spec cites exist verbatim, as do the two stripped-form examples.
-- **`_format.md` stale category slugs.** Confirmed: `_format.md:205-217` still documents
-  `spec-violation` / `context-gap` / `tool-failure` with the example `spec-violation-a1b2c3`; only
-  `tool-failure` is one of the six real categories in `skills/recover/SKILL.md:130-185`. The Task Map
-  row now names this explicitly.
-
-All three reviewers independently spot-checked the spec's concrete factual claims against live files
-and found them accurate: the four `evidence[].source` spellings and their counts (24 `validation`,
-4 `learn`, 2 `validate`, 2 `recover`), the six recover diagnosis categories, the nine named store ids,
-`lib/heuristics.mjs:101` / `:185-199` / `:733` / `:767`, `lib/blocker-id.mjs::parseBlockerId`'s
-`locationHash` return, and the two test-harness copies at
-`tests/skills/validate-success-heuristic-harness.mjs:145` and
-`tests/skills/recover-extract-heuristic-harness.mjs:119`. Factual accuracy is not the problem in
-revision 7.
-
-Revision 7's blocker is new and does not recur any prior `blocker_id`. Seven rounds, seven disjoint
-blocker sets.
+<!-- Regenerated artifact. The revision-8 spec text was previously reviewed and returned
+     PASS_WITH_NOTES; that .review.md was destroyed by an out-of-band `git checkout HEAD -- .`
+     which reverted this file to a stale revision-7 BLOCK report. The spec text itself was not
+     reverted. This round re-reviews the same revision-8 text and, because all 9 plan tasks have
+     since shipped (68c71627..928375d2, 152 passing tests), checks the spec against real code
+     rather than against intent. -->
 
 ## Reviewers Dispatched
 
 | ID | Name | Mode | Profile | Prompt/Skill |
 |----|------|------|---------|--------------|
-| structural-architect | Structural Architect | subagent | reviewer-reasoning | `plugin:review-specs/structural-architect-prompt.md` |
-| security-reviewer | Security Reviewer | subagent | reviewer-capable | `plugin:review-specs/security-reviewer-prompt.md` |
-| consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | `plugin:review-specs/consistency-analyzer-prompt.md` |
+| structural-architect | Structural Architect | subagent | reviewer-reasoning | plugin:review-specs/structural-architect-prompt.md |
+| security-reviewer | Security Reviewer | subagent | reviewer-capable | plugin:review-specs/security-reviewer-prompt.md |
+| consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | plugin:review-specs/consistency-analyzer-prompt.md |
 
-Registry: `adev domain load-reviewers` resolved domain `software` (source level: default); project
-`review.yaml` declares `reviewers: []`, so all three bundled defaults dispatched with
-`dispatch: always`. Context pack `base` is empty by configuration; each reviewer received the charter,
-constitution, sibling specs, cross-cutting `review-block-auto-retry.spec.md`, the ADR directory,
-`platform-context.yaml`, and the module heuristics (three `medium`-confidence entries) by path.
-Deviation from the tier map: the consistency analyzer ran on the `capable` model rather than `fast`,
-after a prior round's `fast`-tier reviewer failed to return.
+Registry: domain `software` (source level `default`), three bundled reviewers, all `dispatch: always`,
+`severity_cap: blocker`, `context_pack: base`. `.context-index/governance/review.yaml` declares
+`reviewers: []`, so no overlay applied. No severity was clamped. No `blocker_id` validation advisories
+were raised (`LEGACY_REVIEWER_OUTPUT` / `INVALID_BLOCKER_ID` / `MISSING_SECTION_ANCHOR` all clean),
+because no reviewer emitted a blocker.
+
+Module heuristics were injected at `summary` tier (three medium-confidence entries under the
+`heuristics` module).
 
 ## Structural Architect (structural-architect)
 
-**Verdict:** BLOCK
+**Verdict:** PASS_WITH_NOTES
 
-### SA-1 — `blocker`
+- **SA-1** (warning) — *Behaviors §8, bullet "New-key inputs, once an entry qualifies"*. The claim
+  that a migrated entry "lands on the id a fresh extraction would produce" holds only when the stored
+  `pattern` equals what today's extractor would emit. Confirmed against shipped code: `planRekey`
+  (`lib/cli/heuristics.mjs:1091-1096`) recomputes from `canonicalSpecSlug(specPath)` + `entry.pattern`
+  — the *stored* pattern.
+  **Consistent with the prior adjudication of `structural-architect:mutable-hash-input:a15235f5`
+  (BLOCKER → WARNING, operator-accepted).** The shipped code did not change the analysis.
+  *Recommendation:* leave the text as adjudicated; keep the plan's prohibition on any test asserting
+  that equality (`failure-signature-key.plan.md:16` and `:674` both carry it, and no test in
+  `tests/cli/heuristics-migrate-keys.test.mjs` asserts `migratedId === freshExtractionId`).
 
-- **blocker_id:** `structural-architect:unsatisfiable-migration-proof:d2ec180b`
-- **section_anchor:** `behaviors-8`
-- **Location:** Behavior 8, "Part 2 — recomputation under a legacy rule reproduces the stored `id`
-  exactly", and the acceptance criterion naming `deploy-core-spec-91c5a876` / `prototype-core-277ce212`.
+- **SA-2** (warning) — *Behavior 8 / Error Cases / Acceptance Criteria*. The shipped verb accepts
+  `--dry-run` (`MIGRATE_KEYS_USAGE` at `lib/cli/heuristics.mjs:824`, parsed at `:837`, summary header
+  `migrate-keys (dry run — nothing written)` at `:1159`; tested at
+  `tests/cli/heuristics-migrate-keys.test.mjs:730`). The revision-8 spec defines no dry-run mode
+  anywhere — undeclared public CLI surface on a destructive verb.
+  *Recommendation:* add `--dry-run` to Behavior 8 (classify + report, write nothing, exit 0).
 
-**Finding:** Part 2's discriminator is unsatisfiable against the live store, and it contradicts this
-spec's own acceptance criteria. The legacy rule hashed `<absolute-spec-path>|<pattern>`; the absolute
-path at write time is not recorded on the entry and is not recoverable from it — that unrecoverability
-*is* the bug this spec exists to fix. The reviewer recomputed the legacy rule for both entries the
-acceptance criteria name as must-migrate, using each entry's stored `pattern` (verified unmodified
-since its introducing commit `1cffdd2b`) against every plausible spec path:
+- **SA-3** (warning) — *Behavior 9 / Error Cases table*. Behavior 9 says a merged entry "is archived
+  per the same invariant" but never specifies the archive contract. Shipped code writes
+  `<scope-dir>/archive/<scope>-<id>.md` stamping `archived` / `archivedReason: "contradicted"`, and
+  `assertNoArchiveConflict` (`lib/cli/heuristics.mjs:904-917`) exits 1 with
+  `MIGRATION_ARCHIVE_CONFLICT (HEURISTICS_ARCHIVE_CONFLICT)` when a target exists or is claimed twice
+  — an error path absent from the Error Cases table.
+  *Recommendation:* name the archive target shape and add the conflict row (exit 1, nothing written).
 
-- `deploy-core-spec-91c5a876` → main-repo absolute path yields `9681f3e1`; repo-relative yields
-  `97fec754`; the four plausible worktree paths yield `0ff5b6cf` / `b4c9ae8e` / `f6a4b3e0` /
-  `41dd7b7e`. None is `91c5a876`.
-- `prototype-core-277ce212` → `07cd548f` (absolute) / `42e8f53f` (relative). Neither matches.
+- **SA-4** (warning) — *Behavior 9 (merge contract)*. The spec names three merged fields (evidence
+  union, `contradicted-by` union, higher confidence). `mergeColliding`
+  (`lib/cli/heuristics.mjs:1024-1058`) also reconciles four more with distinct rules: `created`
+  (earlier wins), `signature` (existing wins), `tags` (existing non-empty wins), `antiPattern`
+  (existing truthy wins). Ownership of those transformations is unspecified, so the postcondition
+  "no entry has lost evidence, confidence, or contradiction history" does not cover them.
+  *Recommendation:* enumerate the per-field merge rule for every field the merged entry carries.
 
-**Independently reproduced by the orchestrator** before this reviewer returned: hashing
-`sha256(<path>|<stored pattern>)` for `deploy-core-spec-91c5a876` yields `9681f3e1` (absolute,
-main-repo), `97fec754` (repo-relative), and `4e966839` / `fe333ee6` for the shorter hook-generated
-pattern form — never `91c5a876`. This finding is verified fact, not a reviewer inference.
+- **SA-5** (warning) — *Behavior 9 (scope of merge)*. Behavior 9 reads unconditionally, but shipped
+  `planRekey` merges only collisions the migration *created*; a pair that already shared an id
+  pre-run is deliberately left as two entries. Defensible, but a real narrowing of the stated
+  contract, and it interacts with Behavior 10's byte-identity guarantee.
+  *Recommendation:* add the qualifier "a collision the migration created" to Behavior 9.
 
-Under Behavior 8 as written, both entries fail Part 2 under *both* slug conventions, are classified
-unprovable, and are skipped — yet the acceptance criterion "Entries in both legacy slug conventions
-migrate — asserted against real store ids, one retaining the `.spec` stem
-(`deploy-core-spec-91c5a876`) and one stripping it (`prototype-core-277ce212`)" requires exactly these
-two to migrate. As specified, the migration rekeys zero entries while its own tests demand the
-opposite. An implementer cannot satisfy both; planning cannot proceed without choosing between them.
+- **SA-6** (warning) — *Behavior 5a*. "The stored `signature` is preserved in every case — whether
+  the incoming entry omits one, carries the same one, or carries a *different* one" is contradicted by
+  `lib/heuristics.mjs:1015-1032`: preservation is gated on `SIGNATURE_PATTERN.test(existing.signature)`,
+  so a malformed stored signature (reachable via hand-edit) is discarded and the incoming value
+  adopted, with a stderr notice. Four cases in code, three in spec. The code's behavior is the better
+  one — existing-wins would otherwise make bad on-disk data permanently unfixable.
+  *Recommendation:* add the malformed-stored-signature case, or scope "preserved" to well-formed
+  stored values.
 
-Note the shape of this defect: it is not the revision-6 finding restated. Revision 6 found that Part 2
-implemented only one of two slug conventions; revision 7 correctly added the second convention. The
-defect now is that *neither* convention — nor any path variant — reproduces the stored digests,
-because the hash input is unrecoverable in principle, not because the prefix rule was incomplete.
+- **SA-7** (suggestion) — *Postconditions bullet 3 vs Behavior 8 closing paragraph*. The postcondition
+  says ambiguity-guard hits are "reported in the skip counts", but `classifyPlan` counts ambiguous
+  entries into a separate `ambiguous` list, deliberately excluded from `skipped-out-of-scope` and
+  `skipped-unrecoverable`. Behavior 8's closing sentence names four counts; the verb emits seven keys
+  plus detail lines. Align the wording: ambiguous / unrecognized-sources / archived are reported
+  channels of their own, not skip counts.
 
-**Recommendation:** Resolve the contradiction at the contract level. Either (a) define a discriminator
-that keys only on properties recoverable from the entry (for example a structural prefix test plus a
-positively-defined in-scope predicate), or (b) restate the migration's guarantee to match what
-proof-by-recomputation can actually deliver, and remove the two named-id acceptance criteria. Whichever
-is chosen, the Part 2 wording and the acceptance criteria must agree on the same expected outcome for
-these two entries.
+- **SA-8** (suggestion) — *charter alignment; known, queued*. Charter `FailureSignature.digest`
+  ("SHA-256 prefix over the normalized failure text", `charter.md:97`) and the Exposed API row
+  (`charter.md:182`, `--origin <slug> --text <text>`) describe a single-mode verb; the shipped verb
+  has an inherited mode that hashes nothing (Behavior 3a). Same for the `EvidenceRef.source` enum vs
+  the four live spellings. Known defect (a)/(b) — not blocking.
 
-### SA-2 — `warning`
-
-- **Location:** Behavior 8, "New-key inputs" and "Part 2".
-
-**Finding:** Both the proof recomputation and the new-key derivation are specified to run off "the
-entry's `validation`-sourced evidence path", but every stored evidence path is a validate *report*
-(`.validate.md`), while both the legacy and the corrected hash input take the *spec* path
-(`.spec.md`). The report→spec transform is referenced only as "recovered from the evidence element"
-and is never defined; it is also lossy — the hook derives the report path via
-`specPath.replace(/\.spec\.md$/, '')` only as a fallback, and `verdict.report_path` may point
-elsewhere. Two implementations of "recover" will produce two different new keys.
-
-**Recommendation:** State the evidence-path → spec-path mapping explicitly as part of the Behavior 8
-contract, including what happens when the mapping is not invertible (presumably the existing
-`skipped-unrecoverable` count).
-
-### SA-3 — `warning`
-
-- **Location:** Behavior 8, "Alias normalization" bullet, versus "Out of scope, never rekeyed" and
-  Behavior 10.
-
-**Finding:** The spec does not say whether alias folding (`validate`→`validation`,
-`recover`→`recovery`, `learn`→`manual`) is persisted to the store or applied only in memory for
-evidence selection. Persisting it conflicts with the out-of-scope guarantee that skipped entries are
-"left untouched" (a `learn`-sourced entry that is never rekeyed would still be rewritten) and bears on
-Behavior 10's byte-identical second run; not persisting it means the drift the spec identifies
-survives the migration. The postcondition "No entry has lost evidence" is also silent on `source`
-mutation.
-
-**Recommendation:** Make the persistence decision explicit in Behavior 8 and reconcile it with the
-"left untouched" wording and Behavior 10's idempotency statement.
-
-### SA-4 — `suggestion`
-
-- **Location:** Error Cases table, `EMPTY_SIGNATURE_TEXT` row.
-
-**Finding:** The row is unscoped by mode. In inherited mode `--text` is rejected with
-`CONFLICTING_SIGNATURE_INPUT` and nothing is hashed, so `EMPTY_SIGNATURE_TEXT` can only apply to
-derived mode. Two error codes are reachable for the same missing-flag shape depending on origin.
-
-**Recommendation:** Scope the row to derived mode, mirroring the "in derived mode" qualifiers already
-used in Behaviors 1 and 2.
-
-**Not counted as findings:** the known-deferred items (charter Consumed/Exposed API rows,
-`FailureSignature.digest`, `EvidenceRef.source` enum, `docs/cli-reference.md`) were checked and none
-contradicts this spec's own text. No ADR conflict: ADR-0019's validator-spelling problem is explicitly
-sidestepped by the charter's out-of-scope row, and ADR-0016 is satisfied (all state stays under
-`.context-index/`, zero new dependencies).
+**Structure assessment.** API shape (two modes, four typed error codes, exit contract), dependency
+direction (consumes `parseBlockerId` from the cross-cutting owner; owns neither `blocker_id` nor loop
+control), and module boundaries (removals delegated to `failure-capture.spec.md`, retrieval to
+`signature-retrieval.spec.md`) are clean and match the shipped code. No ADR conflict; ADR-0016 and
+ADR-0005 are respected — the migration writes only under `.context-index/memory/heuristics/`.
 
 ## Security Reviewer (security-reviewer)
 
-**Verdict:** PASS_WITH_NOTES (no blockers, no warnings — two suggestions)
+**Verdict:** PASS
 
-### SEC-1 — `suggestion` (input-validation)
+Threat model: local developer CLI plus a git-tracked markdown store. No network endpoint, no auth
+surface, no multi-tenant boundary.
 
-Behavior 3 requires a rejected `--origin` value to be stripped of control and ANSI characters and
-truncated before it is echoed, but Behavior 8's alias-normalization step — which reports unrecognized
-`evidence[].source` spellings — carries no equivalent requirement. The `source` values come from the
-git-tracked store, which the threat model treats as trusted content, so this is not exploitable; the
-two report paths are simply structurally identical and only one got the treatment.
+Verified against shipped code:
 
-**Recommendation:** Apply the same stripping-and-truncation rule to the unrecognized-`source` report
-line in `migrate-keys`, for consistency rather than because the threat model requires it.
+- **Behavior 3 echo sanitization** — implemented. `sanitizeForEcho` (`lib/cli/heuristics.mjs:548`)
+  strips ANSI CSI sequences and C0/C1 control characters (including U+2028/U+2029) and truncates to 40
+  chars, applied to the rejected `--origin`, `--blocker-id`, and `parseBlockerId` error messages. The
+  `EMPTY_SIGNATURE_TEXT` path never echoes `--text` at all — stronger than the spec requires.
+- **Migration write path** — `atomicWrite` (`lib/heuristics.mjs:597`) is temp-file-with-random-suffix
+  plus rename, with temp cleanup on failure; `applyPlans` writes only after the full read-and-classify
+  pass succeeds (fail-closed on `MIGRATION_READ_FAILED`). The `.validate.md` → `.spec.md` mapping is a
+  pure string suffix swap used only as a hash input — it never opens a file, so there is no traversal
+  read surface. Archive targets are built from a `SAFE_SLUG_PATTERN`-constrained `id` plus
+  `basename(plan.file)`, and `assertNoArchiveConflict` refuses to overwrite before any write occurs.
+- **Fail-closed root resolution** — `hooks/post-validate-extract-heuristics.mjs:86-87`
+  returns immediately when `resolveProjectRoot()` yields `null`, writing nothing, warning to stderr
+  only, and not failing the lifecycle step. Matches the Error Cases row exactly.
 
-### SEC-2 — `suggestion` (data-exposure)
+Findings:
 
-Because `/adev:recover` is constitutionally required to invoke a CLI verb rather than import a lib
-function, diagnosis text passed via `--text` is argv-visible to other local users (`ps`) and lands in
-shell and agent-transcript history for the duration of the call. The validate-hook path is unaffected —
-it runs in-process. Recover's root-cause text can legitimately contain fragments of command output.
-
-**Recommendation:** Note in the spec (or in `docs/cli-reference.md` when written) that `--text` should
-carry normalized diagnosis prose, not raw stderr/stdout capture, consistent with the redaction
-boundary the hook already documents. No code change required by this spec.
-
-**Verified as already handled, not re-flagged:** origin-value terminal-echo hardening (Behavior 3);
-`blocker_id` parsing reusing `lib/blocker-id.mjs`'s existing allowlists (Behavior 3a); the `signature`
-regex and length cap (Behavior 5a); atomic temp-then-rename migration writes and fail-closed behavior
-on an unreadable store; fail-closed `id` derivation on an unresolvable project root; existing-wins
-`signature` semantics (Behavior 5b). No authentication, authorization, secrets, or rate-limiting
-findings apply — this is a local single-user CLI over trusted git-tracked content.
+- **SEC-1** (suggestion, data-exposure) — Neither `validateEntry` nor the migration inspects `pattern`
+  or `title` for secret-shaped text before it lands in the git-tracked store. This is an inherent
+  property of the heuristics capture design, not something this spec changes or regresses; capture
+  content policy belongs to `failure-capture.spec.md` and the charter. Forward-looking note only.
+- **SEC-2** (suggestion, input-validation) — `runSignature`'s `--text` has no length cap before
+  hashing (unlike `FIELD_LENGTH_CAPS` enforced later at `writeHeuristic` time). Not exploitable for a
+  local single-user CLI, but capping at the verb would fail faster and more clearly than a downstream
+  `validateEntry` rejection.
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** PASS (no blockers, no warnings — two suggestions)
+**Verdict:** PASS
 
-### CON-1 — `suggestion` (contract)
+No blocking or warning-level consistency issues. Verified spec-against-shipped-code:
 
-- **This Spec:** the Task Map row "Correct id hash input" cites
-  `hooks/post-validate-extract-heuristics.mjs:123-127`.
-- **Conflicts With:** the live file — the `hashInput` / `createHash` composition sits at lines 122-125.
-- **Recommendation:** refresh the citation before implementation to avoid a wrong-anchor edit. Drift of
-  a few lines only.
+- **Error codes** — all five (`INVALID_SIGNATURE_ORIGIN`, `EMPTY_SIGNATURE_TEXT`,
+  `CONFLICTING_SIGNATURE_INPUT`, `INVALID_BLOCKER_ID`, `MIGRATION_READ_FAILED`) match the shipped
+  strings.
+- **Verb and flags** — `adev heuristics signature --origin --text --blocker-id` matches Behaviors 1,
+  3, 3a, 3b; `adev heuristics migrate-keys` matches Behaviors 8-10.
+- **Recover diagnosis categories** — the closed six-value set (`missing-context`, `ambiguous-spec`,
+  `constraint-conflict`, `novel-problem`, `tool-failure`, `budget-exhaustion`) matches
+  `skills/recover/SKILL.md`, `_format.md`, and `lib/cli/heuristics.mjs:694-699`. Classification uses
+  exact segment matching, not `startsWith`, so `missing-contextual-loader` is not mistaken for
+  `missing-context`.
+- **Signature field** — present in `FIELD_ORDER` between `tags` and `confidence`; `validateEntry`
+  accepts it as optional and validates against `SIGNATURE_PATTERN`; signature-less entries stay
+  readable (Behavior 6).
+- **Write path** — existing-wins on the update path with a stderr divergence warning (Behaviors 5b,
+  5a); the new-entry path accepts the incoming signature. Both `finalEntry` literals name it.
+- **Normalizers** — `normalizeFailureText` and `normalizeIdInput` are separate exports over one shared
+  `deriveDigest`; separator preservation in `normalizeIdInput` is intact.
+- **Inherited mode** — `parseBlockerId`'s `locationHash` is reused verbatim, producing
+  `review-specs-<locationHash>` and hashing nothing. Matches `review-block-auto-retry.spec.md`
+  Behavior 3's canonical `<reviewer-slug>:<finding-type>:<8-hex>` shape.
+- **Migration** — prefix discriminator, ambiguity guard, `.validate.md` → `.spec.md` sibling mapping,
+  read-time-only alias folding (`validate → validation`, `recover → recovery`, `learn → manual`), and
+  byte-identical idempotency all conform.
 
-### CON-2 — `suggestion` (terminology)
+Known defects, reported as suggestions per the standing repair queue:
 
-Behavior 8's alias table (`validate`→`validation`, `recover`→`recovery`, `learn`→`manual`) is
-charter-conformant against the `EvidenceRef.source` enum in `charter.md`'s Domain Model, and the
-spec's own claim that "only `validation` appears in the charter's enum" is accurate. Recorded as
-verified, not as a defect.
+- **CON-1** (suggestion, domain-model) — charter `FailureSignature.digest` (`charter.md:97`) omits the
+  inherited-mode case. Queued defect (a).
+- **CON-2** (suggestion, domain-model) — charter `EvidenceRef.source` enum (`charter.md:99`) does not
+  match the live store's four spellings. The spec correctly handles the drift at read time only.
+  Queued defect (b).
+- **CON-3** (suggestion, contract) — `docs/cli-reference.md` has no entries for `adev heuristics
+  signature` or `adev heuristics migrate-keys` (confirmed: zero matches). Queued defect (c),
+  coordinated with `failure-capture.spec.md`.
 
-All other cross-references check out: `signature-retrieval.spec.md`'s dependency on the `signature`
-field and its round-trip postcondition; `failure-capture.spec.md` Behavior 6's byte-identical
-recover-id requirement, satisfied by Behavior 7a's unchanged `<category-slug>-<digest>` composition
-and Behavior 8 Part 1's structural exclusion; and the `blocker_id` contract this spec consumes in
-inherited mode, matching `review-block-auto-retry.spec.md` Behavior 3's
-`<reviewer>:<type>:<8-hex>` shape.
+## Spec vs Implementation
+
+The implementation shipped across 12 commits (`68c71627..928375d2`); the five spec-named test files
+run 152 tests, all passing. Divergences found, all warning-level and all in the direction of the code
+being *more* complete than the revision-8 text:
+
+| # | Spec says | Shipped code does | File |
+|---|---|---|---|
+| SA-2 | no dry-run mode | `--dry-run` flag exists on `migrate-keys` | `lib/cli/heuristics.mjs:824,837,1159` |
+| SA-3 | no archive-conflict error row | exits 1 with `MIGRATION_ARCHIVE_CONFLICT` | `lib/cli/heuristics.mjs:904-917` |
+| SA-4 | merge reconciles 3 fields | merge reconciles 7 | `lib/cli/heuristics.mjs:1024-1058` |
+| SA-5 | merge stated unconditionally | merges only migration-created collisions | `lib/cli/heuristics.mjs:1127` |
+| SA-6 | signature preserved in 3 cases | 4 cases; malformed stored value is discarded | `lib/heuristics.mjs:1015-1032` |
+
+No behavior was found wrong or unimplementable as written. Nothing the spec requires is missing from
+the code. Behaviors 1-7a, 8's discriminator, 9's contradiction-invariant re-application, and 10's
+byte-identical idempotency are all implemented and directly tested.
+
+Out-of-scope items correctly remain untouched, exactly as the spec's closing paragraph and Postcondition 1
+scope them to `failure-capture.spec.md`: the dead `deriveId` twin (`lib/cli/heuristics.mjs:128`) still
+holds a private absolute-path copy of the rule, and `skills/recover/SKILL.md:387` still carries the
+prose ID Derivation Rule. These are deferrals, not divergences.
 
 ---
 
 ## Summary
 
-**Total findings:** 8 (1 blocker, 2 warnings, 5 suggestions)
+**Total findings:** 13 (0 blockers, 6 warnings, 7 suggestions)
 
-**Action required:** SA-1 must be resolved before planning. The spec is otherwise sound — its factual
-claims are verified accurate, its two-key model is internally consistent, it is consistent with the
-charter and both sibling specs, and it raises no security or ADR concerns. The single blocker is a
-contradiction between Behavior 8 Part 2's proof-by-recomputation discriminator and the acceptance
-criteria that name two specific store entries as must-migrate: no path variant under either slug
-convention reproduces either entry's stored digest, so as written the migration rekeys nothing while
-its own tests demand it rekey those two. Resolving it means choosing a recoverable discriminator or
-restating the migration's guarantee — a contract-level decision, not a wording fix.
+**Action required:** None blocking. The spec passes at revision 8, as it did in the round whose
+artifact was destroyed. The six warnings are all "the revision-8 text lags the code that shipped from
+it" — the right repair is a documentation-only revision 9 that adds `--dry-run`, the
+`MIGRATION_ARCHIVE_CONFLICT` error row, the full per-field merge table, the migration-created-collision
+qualifier, and the malformed-stored-signature case. None of them change behavior, none invalidate the
+implementation, and none need to be resolved before `/adev:plan` (which has already run). SA-1 is
+carried forward at its adjudicated warning severity.
 
-Address the blocker via `/adev:specify --revise`, then re-review. SA-2 and SA-3 are worth folding into
-the same revision: both concern Behavior 8, and SA-2's undefined evidence-path → spec-path mapping is
-adjacent to whatever discriminator replaces Part 2.
-
-> **Governance:** `risk_level: high` → `require_hitl_approval: true` per
-> `.context-index/governance/risk-policies.yaml`. Human approval is required at the spec-to-plan
-> transition once this spec passes review.
+**Governance footer:** `.context-index/governance/gates.yaml` defines a `spec-to-plan` transition;
+`risk_level: high` sets `require_hitl_approval: true` in `risk-policies.yaml`. Informational only —
+not blocking this verdict.

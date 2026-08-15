@@ -24,6 +24,7 @@ source-manifest:
     - tests/lib/heuristics-format-doc.test.mjs
     - tests/lib/heuristics.test.mjs
   computed-at: "2026-04-09T23:39:18.512Z"
+drift_detected: true
 ---
 
 ## Behavioral Contract
