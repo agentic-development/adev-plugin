@@ -12,11 +12,11 @@
 
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { readHeuristics } from "../../lib/heuristics.mjs";
+import { readHeuristics, deriveHeuristicId } from "../../lib/heuristics.mjs";
 import { createTempDir, cleanupTempDir } from "../helpers.mjs";
-import { runCheck12 } from "./validate-success-heuristic-harness.mjs";
+import { deriveId, runCheck12 } from "./validate-success-heuristic-harness.mjs";
 
 const MODULE_SLUG = "hooks";
 const DATE = "2026-04-09";
@@ -193,5 +193,114 @@ describe("validate Check 13 — eval paths", () => {
 
     const found = await readHeuristics(tempDir, { module: MODULE_SLUG });
     assert.equal(found.length, 0);
+  });
+});
+
+// ── Convergence on the shared digest function ────────────────────────────
+//
+// Spec: .context-index/specs/features/heuristics/failure-signature-key.spec.md
+// Plan-task: 6
+//
+// The harness used to hash the ABSOLUTE spec path, so the same spec extracted
+// from two checkouts produced two different ids. Its derivation now takes a
+// repo-relative path and delegates to the shared digest function.
+
+describe("validate harness — convergence on the shared digest function", () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  it("runCheck12 derives the id from the repo-relative spec path, not the absolute one", async () => {
+    // The seam under test is the harness's absolute -> repo-relative
+    // conversion. Asserting `deriveId === deriveHeuristicId` would be a
+    // tautology (deriveId is a pass-through) and would pass with the
+    // absolute-path bug fully intact, so pin runCheck12's actual output.
+    const { specAbs, specRel, reportRel } = seedFixture(tempDir);
+
+    const result = await runCheck12(tempDir, {
+      specPath: specAbs,
+      charter: MODULE_SLUG,
+      specTitle: SPEC_TITLE,
+      reportPath: reportRel,
+      checkResults: allPassing(),
+      modules: [MODULE_SLUG],
+      date: DATE,
+    });
+
+    assert.equal(result.status, "PASS", JSON.stringify(result));
+    assert.equal(
+      result.heuristic.id,
+      deriveHeuristicId("some-feature", specRel, result.heuristic.pattern),
+    );
+    // And the absolute-path derivation must NOT be what was used.
+    assert.notEqual(
+      result.heuristic.id,
+      deriveHeuristicId("some-feature", specAbs, result.heuristic.pattern),
+    );
+  });
+
+  it("two checkouts at different absolute paths yield the same id", async () => {
+    const other = createTempDir();
+    try {
+      const a = seedFixture(tempDir);
+      const b = seedFixture(other);
+      assert.notEqual(a.specAbs, b.specAbs, "the two fixtures must differ in absolute path");
+
+      const context = (seeded) => ({
+        specPath: seeded.specAbs,
+        charter: MODULE_SLUG,
+        specTitle: SPEC_TITLE,
+        reportPath: seeded.reportRel,
+        checkResults: allPassing(),
+        modules: [MODULE_SLUG],
+        date: DATE,
+      });
+
+      const first = await runCheck12(tempDir, context(a));
+      const second = await runCheck12(other, context(b));
+
+      assert.equal(first.status, "PASS", JSON.stringify(first));
+      assert.equal(second.status, "PASS", JSON.stringify(second));
+      assert.equal(
+        first.heuristic.id,
+        second.heuristic.id,
+        "the id must not depend on where the repository is checked out",
+      );
+    } finally {
+      cleanupTempDir(other);
+    }
+  });
+
+  it("two distinct spec paths still yield distinct ids", () => {
+    assert.notEqual(
+      deriveId("x", "specs/features/a/foo.md", "P"),
+      deriveId("x", "specs/features/b/foo.md", "P"),
+    );
+  });
+
+  it("the harness holds no private createHash call", () => {
+    const source = readFileSync(
+      new URL("./validate-success-heuristic-harness.mjs", import.meta.url),
+      "utf8",
+    );
+    // Assert on the import graph rather than a raw substring: a comment that
+    // merely names `createHash` must not fail this guard, but pulling the
+    // primitive back in must.
+    assert.doesNotMatch(
+      source,
+      /^\s*import\s[^\n]*["']node:crypto["']/m,
+      "the harness must not import node:crypto — hashing belongs to the shared digest function",
+    );
+    assert.match(
+      source,
+      /from ["']\.\.\/\.\.\/lib\/heuristics\.mjs["']/,
+      "the harness must import the shared helpers from lib/heuristics.mjs",
+    );
   });
 });
