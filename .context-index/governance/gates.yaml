@@ -67,16 +67,11 @@ gates:
   #   triggers:
   #     - post-task
 
-  # - id: integration-test
-  #   name: Integration Tests
-  #   kind: deterministic
-  #   tier: integration
-  #   command: ""                 # e.g., "npm run test:integration"
-  #   scope: project
-  #   required: true
-  #   severity: error
-  #   triggers:
-  #     - post-implement
+  # NOTE: the commented `integration-test` scaffold example that used to sit
+  # here was REMOVED. `integration-test` is now a LIVE entry above (materialized
+  # from the software domain), so uncommenting the example would have declared
+  # the id twice — a duplicate whose merge behaviour is silent last-wins. Only
+  # add a commented template for an id that no live entry already declares.
 
 # Lifecycle transition requirements
 #

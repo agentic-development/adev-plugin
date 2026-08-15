@@ -52,6 +52,13 @@ adev skill-ext load --skill hygiene
 
 If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
 
+<!-- ⚠ BYTE BUDGET: this file sits a few hundred bytes below a HARD 65,536-byte
+     cap enforced by lib/providers/copilot/skill-validator.mjs
+     (FRONTMATTER_BYTE_LIMIT); overflow throws INVALID_SKILL_FRONTMATTER and
+     breaks the copilot adapter. Run `wc -c skills/hygiene/SKILL.md` before
+     adding ANY pass or paragraph below. Do not trim prose to make room — the
+     remedy is to split this catalogue out, or raise/relocate the cap. -->
+
 ## Audit Pass 1: Constitution Freshness
 
 **Goal:** Verify that agent files are in sync with the constitution and that all pointers resolve.

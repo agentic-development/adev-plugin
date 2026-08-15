@@ -35,6 +35,7 @@ import { join } from "node:path";
 
 import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from "../../helpers.mjs";
 import { mergeGovernanceEntries } from "../../../lib/extensions/content-install.mjs";
+import { installExtension } from "../../../lib/extensions/install.mjs";
 import { readMarker, MARKED_REGISTRIES } from "../../../lib/governance/registry-marker.mjs";
 
 const GOV_REL = ".context-index/governance";
@@ -210,4 +211,93 @@ test("templates/boundaries-template.yaml carries NO marker — it is marker-exem
   const text = readFileSync(join(PLUGIN_ROOT, "templates", "boundaries-template.yaml"), "utf8");
   assert.equal(/^materialized_at:/m.test(text), false, "boundaries-template.yaml must stay unmarked");
   assert.equal(MARKED_REGISTRIES.has("boundaries.yaml"), false);
+});
+
+// ── Ordering: the marker gate precedes exec-consent (Stage-2 review, Task 12) ──
+//
+// `installExtension` used to reach the marker refusal only at Phase 1f, after
+// Phase 1e had already asked the operator to approve an executable payload. No
+// consent answer can make an un-materialized registry installable, so the
+// prompt was wasted and it pointed the operator at the payload when the fix is
+// `adev governance materialize`. The check is now Phase 1a.
+
+test("an unmarked-registry install refuses on the MARKER, not on exec-consent", async (t) => {
+  const root = createTempDir();
+  const ext = createTempDir();
+  t.after(() => {
+    cleanupTempDir(root);
+    cleanupTempDir(ext);
+  });
+
+  writeFixture(root, `${GOV_REL}/gates.yaml`, "gates: []\n");
+  writeFixture(
+    ext,
+    "adev-extension.yaml",
+    [
+      "name: gate-ext-demo",
+      "version: 1.0.0",
+      "provides:",
+      "  governance:",
+      "    - target: gates.yaml",
+      "      entries:",
+      "        - id: ext-gate",
+      "          command: [node, runner.mjs]",
+      "",
+    ].join("\n"),
+  );
+  writeFixture(ext, "runner.mjs", "// payload\n");
+
+  // No `--allow-exec`, non-interactive: the consent gate WOULD refuse here.
+  await assert.rejects(
+    () => installExtension(ext, root, { allowExec: false, interactive: false }),
+    (err) => {
+      assert.equal(err.code, "REGISTRY_NOT_MATERIALIZED", `got ${err.code}: ${err.message}`);
+      assert.match(err.message, /adev governance materialize --registry gates/);
+      return true;
+    },
+  );
+
+  // And the refusal is still pre-write: SEC-8 holds.
+  assert.equal(readFileSync(govPath(root, "gates.yaml"), "utf8"), "gates: []\n");
+});
+
+test("the same install succeeds once the registry is materialized", async (t) => {
+  const root = createTempDir();
+  const ext = createTempDir();
+  t.after(() => {
+    cleanupTempDir(root);
+    cleanupTempDir(ext);
+  });
+
+  writeFixture(root, ".context-index/manifest.yaml", "project:\n  name: fixture\n");
+  writeFixture(
+    root,
+    `${GOV_REL}/gates.yaml`,
+    "gates: []\n\nmaterialized_at: 2026-08-15T00:00:00Z\n",
+  );
+  writeFixture(
+    ext,
+    "adev-extension.yaml",
+    [
+      "name: gate-ext-demo",
+      "version: 1.0.0",
+      "provides:",
+      "  governance:",
+      "    - target: gates.yaml",
+      "      entries:",
+      "        - id: ext-gate",
+      "          command: [node, runner.mjs]",
+      "",
+    ].join("\n"),
+  );
+  writeFixture(ext, "runner.mjs", "// payload\n");
+
+  const report = await installExtension(ext, root, {
+    allowExec: true,
+    interactive: false,
+  });
+  assert.ok(
+    report.mergesApplied.some((m) => m.includes("ext-gate")),
+    report.mergesApplied.join(", "),
+  );
 });

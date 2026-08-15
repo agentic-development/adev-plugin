@@ -12,7 +12,14 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert";
-import { readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -513,6 +520,145 @@ describe("the `source` field records provenance AT MATERIALIZATION TIME", () => 
       const acme = effective.find((g) => g.id === "acme-gate");
       assert.equal(acme.__source, "governance", "the CURRENT contributor is the project file");
       assert.equal(acme.source, "domain:acme", "`source` is origin-at-materialization");
+    }),
+  );
+});
+
+// ── Stage-2 review fixes (Task 9 CHANGES_REQUIRED) ──────────────────────────
+
+describe("materialize — durability and honesty of the stamp", () => {
+  test(
+    "the registry write is atomic: no temp file survives and the content is whole",
+    withDir(async (dir) => {
+      seedProject(dir);
+      const r = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
+      assert.equal(r.exitCode, 0, r.stderr);
+
+      const govDir = join(dir, ".context-index", "governance");
+      const stray = readdirSync(govDir).filter((f) => /\.tmp$/.test(f));
+      assert.deepEqual(stray, [], `temp files left behind: ${stray.join(", ")}`);
+
+      const text = readFileSync(join(dir, GATES), "utf8");
+      assert.match(text, /- id: quality-gate/);
+      assert.match(text, /^materialized_at: /m);
+      assert.ok(text.endsWith("\n"), "the written file must not be truncated mid-line");
+    }),
+  );
+
+  test(
+    "a second real run rewrites nothing — the file's mtime is untouched",
+    withDir(async (dir) => {
+      seedProject(dir);
+      assert.equal(runCli(dir, ["governance", "materialize", "--registry", "gates"]).exitCode, 0);
+      const path = join(dir, GATES);
+      const before = readFileSync(path, "utf8");
+      const mtimeBefore = statSync(path).mtimeMs;
+
+      const second = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
+      assert.equal(second.exitCode, 0, second.stderr);
+      assert.equal(readFileSync(path, "utf8"), before, "a no-op run must not change the bytes");
+      assert.equal(statSync(path).mtimeMs, mtimeBefore, "a no-op run must not touch the mtime");
+    }),
+  );
+
+  test(
+    "a corrupt marker reports materialized_at: null, exactly as readMarker sees it",
+    withDir(async (dir) => {
+      seedProject(dir, {
+        gates: 'gates:\n  - id: test\n    command: ["npm", "test"]\n\nmaterialized_at: not-an-instant\n',
+      });
+      const r = runCli(dir, ["governance", "materialize", "--registry", "gates", "--json"]);
+      assert.equal(r.exitCode, 0, r.stderr);
+      const env = JSON.parse(r.stdout);
+      assert.equal(
+        env.materialized_at,
+        null,
+        "--json must not report a marker that readMarker calls null",
+      );
+      assert.equal(readMarker(join(dir, GATES)), null, "readMarker is the single reader");
+      assert.equal(
+        env.marker_written,
+        false,
+        "the write-once key was already present, so this run stamped nothing",
+      );
+    }),
+  );
+});
+
+describe("materialize — manifest.yaml:specialists still dispatch (review Important #2)", () => {
+  const SPECIALIST_MANIFEST = [
+    "project:",
+    "  name: fixture",
+    "  domain: software",
+    "specialists:",
+    "  - id: db-expert",
+    "    name: Database Expert",
+    "    prompt: specialists/db.md",
+    "",
+  ].join("\n");
+
+  test(
+    "review materialization REFUSES while manifest.yaml declares specialists",
+    withDir(async (dir) => {
+      seedProject(dir);
+      writeFixture(dir, ".context-index/manifest.yaml", SPECIALIST_MANIFEST);
+
+      const before = readFileSync(join(dir, REVIEW), "utf8");
+      const r = runCli(dir, ["governance", "materialize", "--registry", "review"]);
+      assert.equal(r.exitCode, 1, r.stdout);
+      assert.match(r.stderr, /MATERIALIZE_SPECIALISTS_DECLARED/);
+      assert.match(r.stderr, /db-expert/, "the refusal must name the offending entries");
+      assert.match(r.stderr, /reviewers/, "the refusal must name the remedy");
+      assert.equal(readFileSync(join(dir, REVIEW), "utf8"), before, "nothing may be written");
+    }),
+  );
+
+  test(
+    "--dry-run refuses identically — the check is pre-write",
+    withDir(async (dir) => {
+      seedProject(dir);
+      writeFixture(dir, ".context-index/manifest.yaml", SPECIALIST_MANIFEST);
+      const r = runCli(dir, ["governance", "materialize", "--registry", "review", "--dry-run"]);
+      assert.equal(r.exitCode, 1, r.stdout);
+      assert.match(r.stderr, /MATERIALIZE_SPECIALISTS_DECLARED/);
+    }),
+  );
+
+  test(
+    "effectiveSet('review') refuses too, so no consumer sees the narrower set",
+    withDir(async (dir) => {
+      seedProject(dir);
+      writeFixture(dir, ".context-index/manifest.yaml", SPECIALIST_MANIFEST);
+      await assert.rejects(
+        () => effectiveSet(dir, "review"),
+        (err) => err.code === "MATERIALIZE_SPECIALISTS_DECLARED",
+      );
+    }),
+  );
+
+  test(
+    "an EMPTY specialists list is not a declaration — review materializes normally",
+    withDir(async (dir) => {
+      seedProject(dir);
+      writeFixture(
+        dir,
+        ".context-index/manifest.yaml",
+        "project:\n  name: fixture\n  domain: software\nspecialists: []\n",
+      );
+      const r = runCli(dir, ["governance", "materialize", "--registry", "review"]);
+      assert.equal(r.exitCode, 0, r.stderr);
+    }),
+  );
+
+  test(
+    "gates and diagnostics are unaffected — specialists only contribute reviewers",
+    withDir(async (dir) => {
+      seedProject(dir);
+      writeFixture(dir, ".context-index/manifest.yaml", SPECIALIST_MANIFEST);
+      for (const registry of ["gates", "diagnostics"]) {
+        const r = runCli(dir, ["governance", "materialize", "--registry", registry]);
+        assert.equal(r.exitCode, 0, `${registry}: ${r.stderr}`);
+      }
     }),
   );
 });
