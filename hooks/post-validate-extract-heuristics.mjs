@@ -30,7 +30,7 @@
  * so validate's verdict is unaffected.
  */
 
-import { resolve, relative, isAbsolute, basename, sep } from 'node:path';
+import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { realpathSync, statSync } from 'node:fs';
 
 let input = '';
@@ -102,8 +102,9 @@ async function run(rawInput) {
   // "helper unavailable" SKIP semantics.
   let writeHeuristic;
   let deriveHeuristicId;
+  let canonicalSpecSlug;
   try {
-    ({ writeHeuristic, deriveHeuristicId } = await import(
+    ({ writeHeuristic, deriveHeuristicId, canonicalSpecSlug } = await import(
       resolve(pluginRoot, 'lib/heuristics.mjs')
     ));
   } catch (err) {
@@ -115,7 +116,9 @@ async function run(rawInput) {
   const scope = typeof verdict.charter === 'string' && verdict.charter
     ? verdict.charter
     : '_global';
-  const specSlug = slugify(basename(specPath, '.md').replace(/\.spec$/i, ''));
+  // Shared with the store migration, so the hook and the rekey cannot drift
+  // onto two different canonical forms.
+  const specSlug = canonicalSpecSlug(specPath);
   if (!specSlug) return; // pathological filename — SKIP
 
   const specTitle = typeof verdict.spec_title === 'string' && verdict.spec_title
@@ -157,13 +160,6 @@ async function run(rawInput) {
   }
 }
 
-function slugify(s) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
 
 function cap(s, n) {
   if (s.length <= n) return s;
