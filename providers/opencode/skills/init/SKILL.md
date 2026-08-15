@@ -224,6 +224,17 @@ If yes, walk the sub-steps in order. Sub-steps 7a-7e are independent — the use
   — a declared-but-unwired tier, not a broken scaffold, and the warning is the actionable signal.
   Never write a `{{ }}` placeholder into a `command` value (`gate-doctor/unsubstituted-placeholder`
   is error-severity).
+
+  **A scaffolded project is born materialized.** `templates/gates-template.yaml` already ends with
+  a top-level `materialized_at:` line, and seeding the gate commands does not touch it — copy it
+  through verbatim. That marker is what tells every loader of a marked registry that the file it
+  is reading IS the complete effective set, so a fresh scaffold passes the fail-closed guard on
+  its very first run and no `adev governance materialize` step is needed here. The marker is
+  write-once: running `adev governance materialize --registry gates` later leaves it unchanged.
+  Do the same for `governance/diagnostics.yaml` (from `templates/diagnostics-template.yaml`) and
+  `governance/review.yaml` (Step 7c) — those are the other two marked registries. Do NOT add a
+  marker to `boundaries.yaml` or `validate.yaml`: both are marker-exempt single-source registries,
+  and a marker there would enforce nothing while breaking the empty-`boundaries.yaml` SKIP path.
 - Copy `boundaries.yaml` from `templates/boundaries-template.yaml` (empty rules, commented examples)
 - Copy `risk-policies.yaml` from `templates/risk-policies-template.yaml` (sensible defaults). The
   copied file carries a literal `test_depth` value per risk level (`thorough` / `standard` /
@@ -386,6 +397,14 @@ If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguo
 
    - A `reviewers:` block containing all chosen entries.
    - A commented `context_packs:` block seeded with `base: include: []` for easy extension.
+   - A top-level `materialized_at:` line, copied verbatim from the one at the bottom of
+     `templates/governance/review.example.yaml`. `review.yaml` is a marked registry: written
+     without that line it fails closed on the project's first `/adev:review-specs` and an
+     extension install into it is refused with `REGISTRY_NOT_MATERIALIZED`. Writing it here is
+     what makes the scaffolded project born materialized. The marker is a claim about this file —
+     that the reviewers listed above are the whole effective set, with nothing merged in behind
+     them at run time — so if you write a `review.yaml` that omits a bundled reviewer, that
+     reviewer does not run, which is the intended and now-visible behaviour.
    - A pointer at the bottom: `# See templates/governance/review.example.yaml for more examples.`
 
    If nothing was selected, DO NOT write the file — keep the repo on the zero-config path.

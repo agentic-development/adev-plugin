@@ -29,6 +29,23 @@ function project(files = {}) {
   return root;
 }
 
+/**
+ * A registry fixture that is already materialized.
+ *
+ * `gates.yaml`, `review.yaml` and `diagnostics.yaml` are the three MARKED
+ * registries: an extension install into one of them is refused with
+ * `REGISTRY_NOT_MATERIALIZED` until the file carries a top-level
+ * `materialized_at` (that gate is owned by
+ * `tests/lib/extensions/governance-marker-gate.test.mjs`). Marking a fixture
+ * here is setup, not behaviour — every assertion in this file is about
+ * containment, additivity and refusal.
+ *
+ * The marker goes FIRST, before the root key, so `startsWith` and byte-identity
+ * assertions on the fixture text keep meaning what they meant: the splice
+ * appends inside the root-key block, which is now the tail of the file.
+ */
+const marked = (body) => `materialized_at: 2026-01-01T00:00:00Z\n${body}`;
+
 const opts = { extensionName: 'demo', execConsent: { granted: true, at: null } };
 
 // ── Behavior 1 — containment ───────────────────────────────────────────
@@ -98,7 +115,7 @@ test('a real validate.yaml keeps every comment line and every pre-existing check
 // ── Behavior 4 — collisions are skipped, never merged into ─────────────
 
 test('Behavior 4 — a collision is skipped and the existing entry is byte-identical', (t) => {
-  const src = 'gates:\n  - id: g1\n    tier: 1\n';
+  const src = marked('gates:\n  - id: g1\n    tier: 1\n');
   const root = project({ 'gates.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -114,7 +131,7 @@ test('Behavior 4 — a collision is skipped and the existing entry is byte-ident
 });
 
 test('the arbitrary-execution path — no command reaches an existing gate entry', (t) => {
-  const src = 'gates:\n  - id: lint\n    tier: 1\n';
+  const src = marked('gates:\n  - id: lint\n    tier: 1\n');
   const root = project({ 'gates.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -124,7 +141,7 @@ test('the arbitrary-execution path — no command reaches an existing gate entry
 });
 
 test('a colliding entry is skipped while a fresh sibling in the same block is appended', (t) => {
-  const src = 'gates:\n  - id: g1\n    tier: 1\n';
+  const src = marked('gates:\n  - id: g1\n    tier: 1\n');
   const root = project({ 'gates.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -213,14 +230,19 @@ test('Behavior 13 — plan writes nothing even when it succeeds', (t) => {
   assert.ok(out.includes('pattern: lib/**'));
 });
 
+// The absent-target cases below run against an EXEMPT registry. Creating a
+// MARKED one from nothing is refused outright now (`REGISTRY_NOT_MATERIALIZED`,
+// covered in `governance-marker-gate.test.mjs`), so `validate.yaml` is the only
+// place the create-on-absent splice form is still reachable — which is exactly
+// the form these three tests exist to pin.
 test('plan creates no governance file when the target does not exist yet', (t) => {
   const root = createTempDir();
   mkdirSync(join(root, '.context-index'), { recursive: true });
   t.after(() => cleanupTempDir(root));
 
-  planGovernanceMerge(root, 'review.yaml', [{ id: 'r', dispatch: 'always' }], opts);
+  planGovernanceMerge(root, 'validate.yaml', [{ id: 'c', kind: 'observational' }], opts);
 
-  assert.equal(existsSync(govPath(root, 'review.yaml')), false);
+  assert.equal(existsSync(govPath(root, 'validate.yaml')), false);
   assert.equal(existsSync(join(root, '.context-index', 'governance')), false);
 });
 
@@ -251,7 +273,7 @@ test('exactly 32 entries are accepted', (t) => {
 // ── Forged provenance precedence ───────────────────────────────────────
 
 test('a supplied source reports GOVERNANCE_SOURCE_FORGED, never GOVERNANCE_FIELD_NOT_ALLOWED', (t) => {
-  const src = 'gates:\n  - id: g1\n    tier: 1\n';
+  const src = marked('gates:\n  - id: g1\n    tier: 1\n');
   const root = project({ 'gates.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -345,7 +367,7 @@ test('an unsafe scalar anywhere in the batch refuses and writes nothing', (t) =>
 // ── Open-namespace closure (constraint C) ──────────────────────────────
 
 test('an unknown profile is refused with GOVERNANCE_FIELD_VALUE_INVALID', (t) => {
-  const src = 'reviewers: []\n';
+  const src = marked('reviewers: []\n');
   const root = project({ 'review.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -363,7 +385,7 @@ test('an unknown profile is refused with GOVERNANCE_FIELD_VALUE_INVALID', (t) =>
 });
 
 test('an unknown context_pack is refused with GOVERNANCE_FIELD_VALUE_INVALID', (t) => {
-  const src = 'reviewers: []\n';
+  const src = marked('reviewers: []\n');
   const root = project({ 'review.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -381,7 +403,7 @@ test('an unknown context_pack is refused with GOVERNANCE_FIELD_VALUE_INVALID', (
 });
 
 test('an unresolvable plugin: prompt is refused with GOVERNANCE_FIELD_VALUE_INVALID', (t) => {
-  const src = 'reviewers: []\n';
+  const src = marked('reviewers: []\n');
   const root = project({ 'review.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -398,7 +420,7 @@ test('an unresolvable plugin: prompt is refused with GOVERNANCE_FIELD_VALUE_INVA
 });
 
 test('a prompt escaping the plugin skills tree is refused', (t) => {
-  const src = 'reviewers: []\n';
+  const src = marked('reviewers: []\n');
   const root = project({ 'review.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -415,7 +437,7 @@ test('a prompt escaping the plugin skills tree is refused', (t) => {
 });
 
 test('known profile, context_pack and prompt values are accepted', (t) => {
-  const root = project({ 'review.yaml': 'reviewers: []\n' });
+  const root = project({ 'review.yaml': marked('reviewers: []\n') });
   t.after(() => cleanupTempDir(root));
 
   const r = mergeGovernanceEntries(
@@ -441,7 +463,7 @@ test('known profile, context_pack and prompt values are accepted', (t) => {
 // ── Provenance stamping ────────────────────────────────────────────────
 
 test('exec_consented_at is absent when consent carries no timestamp', (t) => {
-  const root = project({ 'gates.yaml': 'gates: []\n' });
+  const root = project({ 'gates.yaml': marked('gates: []\n') });
   t.after(() => cleanupTempDir(root));
 
   mergeGovernanceEntries(root, 'gates.yaml', [{ id: 'g1', command: ['node', 'a.mjs'] }], opts);
@@ -477,7 +499,7 @@ test('exec_consented_at stamps only the entries that carry an executable contrib
 // ── Argv rewrites, per emission form (constraint B) ────────────────────
 
 test('a command rewrite emits the ABSOLUTE payload path', (t) => {
-  const root = project({ 'gates.yaml': 'gates: []\n' });
+  const root = project({ 'gates.yaml': marked('gates: []\n') });
   t.after(() => cleanupTempDir(root));
 
   const absolute = join(root, '.context-index', 'extensions', 'demo', 'tools', 'x.mjs');
@@ -505,7 +527,7 @@ test('a command rewrite emits the ABSOLUTE payload path', (t) => {
 });
 
 test('a package.skill rewrite emits the .context-index-relative path', (t) => {
-  const root = project({ 'review.yaml': 'reviewers: []\n' });
+  const root = project({ 'review.yaml': marked('reviewers: []\n') });
   t.after(() => cleanupTempDir(root));
 
   const absolute = join(root, '.context-index', 'extensions', 'demo', 'prompts', 'r.md');
@@ -533,7 +555,7 @@ test('a package.skill rewrite emits the .context-index-relative path', (t) => {
 });
 
 test('a command rewrite targeting an entry with no command refuses and writes nothing', (t) => {
-  const src = 'gates: []\n';
+  const src = marked('gates: []\n');
   const root = project({ 'gates.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -561,7 +583,7 @@ test('a command rewrite targeting an entry with no command refuses and writes no
 });
 
 test('a package rewrite targeting an entry with no package refuses and writes nothing', (t) => {
-  const src = 'reviewers: []\n';
+  const src = marked('reviewers: []\n');
   const root = project({ 'review.yaml': src });
   t.after(() => cleanupTempDir(root));
 
@@ -600,22 +622,22 @@ test('an absent governance file is created with a provenance header', (t) => {
   mkdirSync(join(root, '.context-index'), { recursive: true });
   t.after(() => cleanupTempDir(root));
 
-  mergeGovernanceEntries(root, 'review.yaml', [{ id: 'first', dispatch: 'always' }], opts);
+  mergeGovernanceEntries(root, 'validate.yaml', [{ id: 'first', kind: 'observational' }], opts);
 
-  const out = readFileSync(govPath(root, 'review.yaml'), 'utf8');
-  assert.ok(out.startsWith('# reviewers — governance registry created by adev extension install\n'), out);
+  const out = readFileSync(govPath(root, 'validate.yaml'), 'utf8');
+  assert.ok(out.startsWith('# checks — governance registry created by adev extension install\n'), out);
   assert.ok(out.includes('# Extension: demo'));
   assert.ok(out.includes('- id: first'));
 });
 
 test('an existing but empty governance file is appended to without a fabricated header', (t) => {
-  const root = project({ 'review.yaml': '' });
+  const root = project({ 'validate.yaml': '' });
   t.after(() => cleanupTempDir(root));
 
-  mergeGovernanceEntries(root, 'review.yaml', [{ id: 'first', dispatch: 'always' }], opts);
+  mergeGovernanceEntries(root, 'validate.yaml', [{ id: 'first', kind: 'observational' }], opts);
 
-  const out = readFileSync(govPath(root, 'review.yaml'), 'utf8');
+  const out = readFileSync(govPath(root, 'validate.yaml'), 'utf8');
   assert.equal(out.includes('#'), false, out);
-  assert.ok(out.includes('reviewers:'));
+  assert.ok(out.includes('checks:'));
   assert.ok(out.includes('- id: first'));
 });

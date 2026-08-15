@@ -147,12 +147,31 @@ describe('installExtension — two-phase install', () => {
   afterEach(() => { for (const dir of trash) cleanupTempDir(dir); });
 
   /** Extension dir + a project with a manifest and an empty governance directory. */
+  /** The three MARKED registries and their root keys, as init scaffolds them. */
+  const MARKED_FIXTURES = [
+    ['gates.yaml', 'gates'],
+    ['review.yaml', 'reviewers'],
+    ['diagnostics.yaml', 'diagnostics'],
+  ];
+
   function tempPair() {
     const extDir = createTempDir();
     const projectRoot = createTempDir();
     trash.push(extDir, projectRoot);
     writeFixture(projectRoot, '.context-index/manifest.yaml', 'project:\n  name: test\n');
     mkdirSync(join(projectRoot, '.context-index', 'governance'), { recursive: true });
+    // A real install target is a project that has already been scaffolded, and
+    // /adev:init scaffolds the three MARKED registries with their
+    // `materialized_at` marker already in place. Without it an install into
+    // gates/review/diagnostics is refused with REGISTRY_NOT_MATERIALIZED (see
+    // `governance-marker-gate.test.mjs`), which is not what these cases are about.
+    for (const [file, rootKey] of MARKED_FIXTURES) {
+      writeFixture(
+        projectRoot,
+        `.context-index/governance/${file}`,
+        `materialized_at: 2026-01-01T00:00:00Z\n${rootKey}: []\n`
+      );
+    }
     return { extDir, projectRoot };
   }
 

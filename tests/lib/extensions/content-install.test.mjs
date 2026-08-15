@@ -77,9 +77,19 @@ describe('extensions/content-install — domain profiles', () => {
 
 describe('extensions/content-install — governance merge', () => {
   let projectRoot, extDir;
+
+  // `review.yaml` is one of the three MARKED registries: an install into it is
+  // refused with REGISTRY_NOT_MATERIALIZED until it carries a top-level
+  // `materialized_at` (owned by `governance-marker-gate.test.mjs`). The fixture
+  // below is therefore born materialized so these cases still reach the
+  // entry-level verdicts they are about. The marker leads the file so that
+  // byte-identity assertions on the fixture text keep their meaning.
+  const MARKER = 'materialized_at: 2026-01-01T00:00:00Z\n';
+
   beforeEach(() => {
     projectRoot = createTempDir();
     mkdirSync(join(projectRoot, '.context-index/governance'), { recursive: true });
+    writeFileSync(join(projectRoot, '.context-index/governance/review.yaml'), MARKER + 'reviewers: []\n');
     extDir = createTempDir();
   });
   afterEach(() => { cleanupTempDir(projectRoot); cleanupTempDir(extDir); });
@@ -137,7 +147,7 @@ describe('extensions/content-install — governance merge', () => {
 
   it('merges new entries into existing governance file', () => {
     writeFileSync(join(projectRoot, '.context-index/governance/review.yaml'),
-      'reviewers:\n  - id: existing\n    dispatch: always\n');
+      MARKER + 'reviewers:\n  - id: existing\n    dispatch: always\n');
     mergeGovernanceEntries(projectRoot, 'review.yaml', [{ id: 'new-one', dispatch: 'always' }]);
     const content = readFileSync(join(projectRoot, '.context-index/governance/review.yaml'), 'utf8');
     assert.ok(content.includes('existing'));
@@ -145,7 +155,7 @@ describe('extensions/content-install — governance merge', () => {
   });
 
   it('skips a colliding id and leaves the existing entry byte-identical', () => {
-    const src = 'reviewers:\n  - id: shared\n    dispatch: always\n';
+    const src = MARKER + 'reviewers:\n  - id: shared\n    dispatch: always\n';
     const overlay = join(projectRoot, '.context-index/governance/review.yaml');
     writeFileSync(overlay, src);
     const report = mergeGovernanceEntries(projectRoot, 'review.yaml',
@@ -157,11 +167,14 @@ describe('extensions/content-install — governance merge', () => {
   });
 
   it('auto-creates governance file when missing', () => {
-    // Remove the governance dir to test auto-creation
+    // Remove the governance dir to test auto-creation. The target is an EXEMPT
+    // registry: creating a MARKED one from nothing is now refused outright
+    // (REGISTRY_NOT_MATERIALIZED), so validate.yaml is where auto-creation
+    // still lives.
     const govDir = join(projectRoot, '.context-index/governance');
     rmSync(govDir, { recursive: true, force: true });
-    mergeGovernanceEntries(projectRoot, 'review.yaml', [{ id: 'first', dispatch: 'always' }]);
-    assert.ok(existsSync(join(projectRoot, '.context-index/governance/review.yaml')));
+    mergeGovernanceEntries(projectRoot, 'validate.yaml', [{ id: 'first', kind: 'observational' }]);
+    assert.ok(existsSync(join(projectRoot, '.context-index/governance/validate.yaml')));
   });
 });
 

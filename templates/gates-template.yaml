@@ -140,3 +140,18 @@ transitions: {}
   #   required_gates:
   #     - test
   #   approver_role: ""
+
+# ── Materialization marker ────────────────────────────────────────────────
+# `materialized_at` says one thing: what THIS file declares is the complete
+# effective set — nothing is contributed from a domain starter or a bundled
+# default at run time. Every loader of a marked registry (gates, review,
+# diagnostics) fails closed without it.
+#
+# It ships in the template so a scaffolded project is BORN materialized: the
+# guard is satisfied on the project's first run, and neither /adev:init nor an
+# extension install has to stamp it. The marker is write-once, so a later
+# `adev governance materialize --registry gates` leaves it exactly as it is.
+#
+# The instant is when this template's gate set was fixed — that is what the
+# marker vouches for — not when your project was scaffolded.
+materialized_at: 2026-08-15T00:00:00Z
