@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone: 3
-revision: 6
+revision: 7
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -167,11 +167,22 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
      `constraint-conflict`, `novel-problem`, `tool-failure`, `budget-exhaustion`
      (`skills/recover/SKILL.md:130-185`). An `id` carrying one of these prefixes was produced by the
      recover rule and is never rekeyed, regardless of what evidence the entry accumulated later.
-   - **Part 2 — recomputation under the legacy rule reproduces the stored `id` exactly.** Using the
+   - **Part 2 — recomputation under a legacy rule reproduces the stored `id` exactly.** Using the
      entry's `validation`-sourced evidence path and its stored `pattern`, recompute
      `<spec-slug>-<sha256-prefix(normalized-absolute-path|pattern)>` — the pre-migration rule. If the
      result equals the stored `id`, the legacy validate-side rule demonstrably produced it, and the
      entry is rekeyed. If it does not match, the entry is left untouched and counted as skipped.
+   - **Part 2 must try both legacy slug conventions before declaring an entry unprovable.** There is
+     not one pre-migration rule but two, and both are present in the live store: `specSlug` in
+     `lib/cli/heuristics.mjs` **retains** the `.spec` stem, while the hook **strips** it. Seven entries
+     carry the retained form (`deploy-core-spec-91c5a876`, `template-replacement-spec-4ea79ce7`,
+     `pipeline-eval-project-spec-1aa2a8a8`, `api-eval-project-spec-2d48a175`,
+     `milestone-ship-spec-a4781bcd`, `adev-build-skill-spec-68369828`,
+     `validate-config-single-source-spec-fc36fed8`) alongside stripped-form entries such as
+     `prototype-core-277ce212` and `template-resolution-6280563d`. A Part 2 that implements only one
+     convention would reproduce only that half of the store and silently skip the rest as unprovable —
+     the exact silent-skip failure this spec exists to eliminate. An entry is declared unprovable only
+     after **both** variants fail to reproduce its `id`.
 
    Part 2 is what makes the migration sound rather than heuristic: an entry is only rekeyed when the
    old rule is *proven* to have produced its current key. An entry with mixed evidence fails Part 1 or
@@ -274,7 +285,7 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 | Correct id hash input | Replace absolute path with repo-relative in `hooks/post-validate-extract-heuristics.mjs:123-127`; caller composes the `<spec-slug>` prefix | small |
 | Update test harnesses | `tests/skills/validate-success-heuristic-harness.mjs:145` and `tests/skills/recover-extract-heuristic-harness.mjs:119` call the shared digest function with their own normalizer and prefix, instead of holding private copies. Recover's harness must keep producing category-prefixed ids | medium |
 | Implement `adev heuristics migrate-keys` | Two-part structural discriminator per Behavior 8 — reject diagnosis-category prefixes, then confirm by recomputing under the legacy path-dependent rule and requiring an exact match to the stored `id`; normalize `evidence[].source` aliases first (`validate`→`validation`, `recover`→`recovery`, `learn`→`manual`); recompute the new key from evidence path + stored pattern; skip anything unproven; merge-on-collision with the contradiction invariant re-applied; report counts plus any unrecognized source spelling; idempotent | large |
-| Revise `_format.md` | Charter row 152 makes `.context-index/memory/heuristics/_format.md` the public schema contract. Add `signature`, document the two signature modes, and correct the ID Namespace Convention section, which Behavior 7 makes wrong the moment it lands | small |
+| Revise `_format.md` | Charter row 152 makes `.context-index/memory/heuristics/_format.md` the public schema contract. Add `signature`, document the two signature modes, correct the ID Namespace Convention section that Behavior 7 makes wrong on landing, **and replace the stale recover category slugs** — `_format.md:211-217` documents `spec-violation`, `context-gap`, `tool-failure` with example `spec-violation-a1b2c3`, of which only `tool-failure` is real. An implementer building Behavior 8 Part 1's prefix-reject set from this file rather than `skills/recover/SKILL.md` would get three wrong slugs and rekey recover entries the migration must never touch | medium |
 | Tests | Round-trip, cross-worktree id equality, recover id byte-equality across the change, normalizer separation, origin rejection, `--blocker-id` derivation, migration idempotency, collision merge | medium |
 
 Removal of the dead `deriveId` twin, the `extract` verb, and the `skills/recover/SKILL.md` prose rule
@@ -312,8 +323,12 @@ This spec only stops depending on them.
 - [ ] An entry carrying **both** `validation` and `recovery` evidence — reachable via `/adev:retro`
       consolidation — is not rekeyed when its prefix is a diagnosis category, nor when legacy
       recomputation fails to reproduce its stored `id`
-- [ ] An entry whose legacy recomputation does not reproduce its stored `id` is skipped and counted,
-      never rekeyed on the strength of evidence provenance alone
+- [ ] An entry whose legacy recomputation does not reproduce its stored `id` under **either** slug
+      convention is skipped and counted, never rekeyed on the strength of evidence provenance alone
+- [ ] Entries in both legacy slug conventions migrate — asserted against real store ids, one retaining
+      the `.spec` stem (`deploy-core-spec-91c5a876`) and one stripping it (`prototype-core-277ce212`)
+- [ ] `_format.md`'s recover category slugs match the six in `skills/recover/SKILL.md`, with no
+      `spec-violation` or `context-gap` remaining
 - [ ] `_format.md` documents `signature` and both signature modes, and its ID Namespace Convention
       section matches Behavior 7
 - [ ] An entry whose evidence path cannot be resolved is left untouched and counted as skipped, not

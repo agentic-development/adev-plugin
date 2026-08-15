@@ -150,7 +150,7 @@ completion:
 # rounds, and the loop was halting at BUDGET_EXHAUSTED mid-convergence
 # (heuristics Phase 3 went 6 -> 2 -> 1 blockers across three rounds).
 build:
-  max_review_retries: 5
+  max_review_retries: 9
 
 tasks:
   backend: beads
