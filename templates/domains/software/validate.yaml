@@ -5,13 +5,29 @@
 # See: .context-index/specs/features/validation/validate-config-single-source.spec.md
 # See: .context-index/specs/features/validation/configurable-checks.spec.md rev 3.
 #
-# Check 1 (quality gates) is sourced from governance/gates.yaml by a separate
-# flow in skills/validate/SKILL.md and is not represented here. All other
-# checks are registry entries; each check's prompt body lives in
+# Every check is a registry entry; each check's prompt body lives in
 # skills/validate/checks/<id>.md in the plugin tree, referenced via the
-# `plugin:validate/checks/<id>.md` URI scheme.
+# `plugin:validate/checks/<id>.md` URI scheme. Check 1's *gate set* is still
+# sourced from governance/gates.yaml — the row below registers the check
+# itself, not its gates.
 
 checks:
+  # Check 1 (explicit-governance-registries.spec.md). The gate set it runs
+  # comes from governance/gates.yaml via `adev domain load-gates`; this row
+  # exists so the check has a declared severity. Without it, every
+  # `validator_report` carrying this id resolved to UNKNOWN_VALIDATOR_DEFAULTED
+  # and was stamped `warning` — a failing build aggregating to PASS_WITH_NOTES.
+  # `error` + `fail_fast` because a failed quality gate stops validation.
+  # It is also the SOLE sanctioned writer of `gate_outcomes` on a
+  # `validator_report`; see the prompt body.
+  - id: validate.check-1-quality-gates
+    name: "Quality Gates"
+    kind: deterministic-check
+    severity: error
+    fail_fast: true
+    prompt: plugin:validate/checks/validate.check-1-quality-gates.md
+    description: "Run the resolved gate set and record per-gate outcomes."
+
   - id: validate.check-1.5-source-manifest
     name: "Source Manifest Verification"
     kind: deterministic-check

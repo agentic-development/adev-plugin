@@ -15,10 +15,24 @@
 #
 # Entries below were copied from the software domain starter on 2026-05-17
 # to populate the previously-empty registry (issue-507). Check 1 (quality
-# gates) is NOT represented here — it is sourced from governance/gates.yaml
-# by a separate flow in skills/validate/SKILL.md.
+# gates) was added on 2026-08-15 by explicit-governance-registries.spec.md:
+# its *gate set* is still sourced from governance/gates.yaml, but the check
+# itself is now a declared row so its severity is `error` rather than the
+# UNKNOWN_VALIDATOR_DEFAULTED fallback of `warning`.
 
 checks:
+  # Check 1 (explicit-governance-registries.spec.md). Fail-fast: a failing
+  # quality gate stops validation, so `error` is the only honest severity.
+  # This check is the SOLE sanctioned writer of `gate_outcomes` on a
+  # `validator_report` — see the prompt body.
+  - id: validate.check-1-quality-gates
+    name: "Quality Gates"
+    kind: deterministic-check
+    severity: error
+    fail_fast: true
+    prompt: plugin:validate/checks/validate.check-1-quality-gates.md
+    description: "Run the resolved gate set and record per-gate outcomes."
+
   - id: validate.check-1.5-source-manifest
     name: "Source Manifest Verification"
     kind: deterministic-check

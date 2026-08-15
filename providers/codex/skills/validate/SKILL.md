@@ -120,7 +120,7 @@ Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governan
 - Resolves each check's profile via `lib/profiles/` (MCP-missing fails load; required env missing fails load).
 - Topologically sorts by `after` with lex-by-id tie-break; cycles fail load; unknown `after` ids emit WARN.
 
-Abort on any loader error. Warnings surface in the report header. Check 1 (quality gates) is not in this registry; it continues to be sourced from `governance/gates.yaml`.
+Abort on any loader error. Warnings surface in the report header. Check 1 (quality gates) IS a registry entry (`validate.check-1-quality-gates`, `kind: deterministic-check`, `severity: error`, `fail_fast: true`) — the entry declares the check's severity so its `validator_report` is stamped `error` rather than defaulting to `warning`. Its *gate set* continues to be sourced from `governance/gates.yaml` merged with the domain overlay, via `adev domain load-gates` above; the registry entry does not change where gates come from.
 
 **Load Skill Extensions:** Load any skill extension instructions before proceeding:
 
@@ -170,7 +170,7 @@ When the resolved tier is `full` (default), run the whole check set as described
 
 #### Gate Source Resolution
 
-1. Use the `mergedGates` list computed in Step 0 (domain gates merged with governance gates). If the merged list is non-empty, group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only).
+1. Use the `mergedGates` list computed in Step 0 (domain gates merged with governance gates). If the merged list is non-empty, group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only), and `command_sha` — the SHA-256 of the gate's resolved argv, computed by the loader (`computeCommandSha` in `lib/gates/gate-sets.mjs`) and carried on the `adev domain load-gates` output. Use the value as given; never recompute it.
 2. If the merged gate list is empty and `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found and no domain gates configured. Quality gates are not configured. Run `/adev:init` to set up gates."
 
 **Legacy gate detection:** If `manifest.yaml` contains a `gates:` section, emit a migration warning: "Legacy gates: section found in manifest.yaml. This is no longer used. Move gate definitions to governance/gates.yaml." This warning is informational and does not affect Check 1 execution.
@@ -209,6 +209,18 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 **Tier summary:** After Check 1 completes (all tiers pass or warning-only failures), include a tier summary in the report showing each tier's status, commands run, and duration per command. Use GateResult format: `Check 1a (fast): npm test — PASS (2.1s)`.
 
 **If all tiers pass (or only warning-severity tiers fail):** Proceed to Check 2.
+
+#### Per-Gate Outcome Attestation
+
+After the tiers have run, Check 1 emits **exactly one** `validator_report` for the whole check, carrying one outcome per gate in the resolved set. The substantive procedure lives in `skills/validate/checks/validate.check-1-quality-gates.md`; the normative rule is here:
+
+**Check 1 is the only sanctioned writer of `gate_outcomes`.** No other check, no subagent, and no other skill may emit a `validator_report` carrying that field. A `gate_outcomes` record is read downstream as evidence that the named gates actually executed against the code the spec's source manifest pins — a record from any other producer asserts an execution that did not happen.
+
+Each outcome is `{ id, verdict, tier, command_sha }`: `id` and `command_sha` verbatim from the resolved gate set, `verdict` one of `pass` | `fail` | `skip` (lowercase), `tier` the gate's tier. Gates that never ran because an earlier gate failed are recorded as `skip` — omitting them is indistinguishable from never declaring them. `--manifest-sha` carries the `sha` from the spec's `source-manifest` frontmatter block, omitted when the spec has no such block.
+
+Prefer the `@<path>` form of `--gate-outcomes` (a JSON file inside the project root): a non-trivial gate set exceeds what an argv element reliably carries.
+
+Emit it once for the whole check — never once per gate.
 
 ### Check 1.5: Source Manifest Verification
 
@@ -394,9 +406,11 @@ adev report --type validator \
   [--notes "<≤200-char summary>"]
 ```
 
-Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier that MUST match the `id:` declared in `governance/validate.yaml` (or the domain starter at `templates/domains/<domain>/validate.yaml`). The six registry-backed IDs in the bundled software domain are: `validate.check-1.5-source-manifest`, `validate.check-2-spec-compliance`, `validate.check-4-constitution`, `validate.check-8-boundaries`, `validate.check-9-transition-gates`, `validate.check-11-visual-verification`. Use these exact strings — emitting an unprefixed form (e.g., `check-2-spec-compliance`) bypasses `_resolveActorSeverity` lookup and defaults every event to `severity: warning`, suppressing blocker-severity FAILs in the aggregation table.
+Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier that MUST match the `id:` declared in `governance/validate.yaml` (or the domain starter at `templates/domains/<domain>/validate.yaml`). The registry-backed IDs in the bundled software domain are: `validate.check-1-quality-gates`, `validate.check-1.5-source-manifest`, `validate.check-2-spec-compliance`, `validate.check-4-constitution`, `validate.check-8-boundaries`, `validate.check-9-transition-gates`, `validate.check-11-visual-verification`. Use these exact strings — emitting an unprefixed form (e.g., `check-2-spec-compliance`) bypasses `_resolveActorSeverity` lookup and defaults every event to `severity: warning`, suppressing blocker-severity FAILs in the aggregation table.
 
-For Check 1 (quality gates, sourced from `gates.yaml` in a separate flow) and Check 1.6 (code-drift, observational), no registry entry exists today — events emitted with `--validator validate.check-1-quality-gates` or `validate.check-1.6-code-drift` will trip the unknown-validator fallback (severity defaults to warning). This is acceptable for these checks because they don't aggregate into blocker-severity verdicts; if that changes, add explicit entries to `templates/domains/<domain>/validate.yaml`.
+Check 1's emission additionally carries `--gate-outcomes` and `--manifest-sha` (see Check 1 § Per-Gate Outcome Attestation). **No other check may pass `--gate-outcomes`** — Check 1 is the only sanctioned writer of `gate_outcomes`.
+
+Check 1.6 (code-drift, observational) still has no registry entry — an event emitted with `--validator validate.check-1.6-code-drift` trips the unknown-validator fallback and is stamped `severity: warning`. That is acceptable because the check is advisory and never aggregates into a blocker-severity verdict; if that changes, add an explicit entry to `templates/domains/<domain>/validate.yaml` and to the project's `governance/validate.yaml`.
 
 `--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
 
