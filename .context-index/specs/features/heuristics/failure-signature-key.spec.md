@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone: 3
-revision: 7
+revision: 8
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -155,55 +155,56 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
    was produced by the path-dependent validate-side rule, and no others. The discriminator and the
    recomputation inputs are both explicit:
 
-   The discriminator keys on **which rule produced the `id`**, not on where the entry's evidence came
-   from. Evidence provenance is the wrong property: `/adev:retro` consolidation can merge entries, so a
-   single entry may carry both `validation` and `recovery` evidence. A provenance test would rekey such
-   an entry and destroy a recover-produced `id` — breaking the byte-identity that
-   `failure-capture.spec.md` Behavior 6 depends on. The test is therefore structural, and both parts
-   must hold:
+   The discriminator keys on **which rule composed the `id`**, read off the `id` itself. Evidence
+   provenance is the wrong property: `/adev:retro` consolidation can merge entries, so a single entry
+   may carry both `validation` and `recovery` evidence, and a provenance test would rekey such an entry
+   and destroy a recover-produced `id` — breaking the byte-identity `failure-capture.spec.md`
+   Behavior 6 depends on. The `id`'s own prefix does not have that problem: it records which rule
+   composed the key at write time and is unaffected by evidence the entry accretes later.
 
-   - **Part 1 — the prefix is not a diagnosis category.** `/adev:recover` composes
+   **Proof by recomputing the legacy `id` is not available, and is not needed.** An earlier revision
+   specified confirming each candidate by reproducing its stored `id` under the pre-migration rule.
+   That rule hashed the **absolute** spec path, and stored evidence paths are repo-relative (e.g.
+   `.context-index/specs/features/validation/validate-config-single-source.validate.md`). The absolute
+   path is not recoverable from the entry — it depends on which checkout or worktree wrote it — so the
+   recomputation could never match and the migration would rekey nothing. The prefix test alone is
+   sufficient, because prefix already answers the only question that matters.
+
+   - **The test — the prefix is not a diagnosis category.** `/adev:recover` composes
      `<category-slug>-<digest>` from a closed six-value set: `missing-context`, `ambiguous-spec`,
      `constraint-conflict`, `novel-problem`, `tool-failure`, `budget-exhaustion`
-     (`skills/recover/SKILL.md:130-185`). An `id` carrying one of these prefixes was produced by the
-     recover rule and is never rekeyed, regardless of what evidence the entry accumulated later.
-   - **Part 2 — recomputation under a legacy rule reproduces the stored `id` exactly.** Using the
-     entry's `validation`-sourced evidence path and its stored `pattern`, recompute
-     `<spec-slug>-<sha256-prefix(normalized-absolute-path|pattern)>` — the pre-migration rule. If the
-     result equals the stored `id`, the legacy validate-side rule demonstrably produced it, and the
-     entry is rekeyed. If it does not match, the entry is left untouched and counted as skipped.
-   - **Part 2 must try both legacy slug conventions before declaring an entry unprovable.** There is
-     not one pre-migration rule but two, and both are present in the live store: `specSlug` in
-     `lib/cli/heuristics.mjs` **retains** the `.spec` stem, while the hook **strips** it. Seven entries
-     carry the retained form (`deploy-core-spec-91c5a876`, `template-replacement-spec-4ea79ce7`,
-     `pipeline-eval-project-spec-1aa2a8a8`, `api-eval-project-spec-2d48a175`,
-     `milestone-ship-spec-a4781bcd`, `adev-build-skill-spec-68369828`,
-     `validate-config-single-source-spec-fc36fed8`) alongside stripped-form entries such as
-     `prototype-core-277ce212` and `template-resolution-6280563d`. A Part 2 that implements only one
-     convention would reproduce only that half of the store and silently skip the rest as unprovable —
-     the exact silent-skip failure this spec exists to eliminate. An entry is declared unprovable only
-     after **both** variants fail to reproduce its `id`.
-
-   Part 2 is what makes the migration sound rather than heuristic: an entry is only rekeyed when the
-   old rule is *proven* to have produced its current key. An entry with mixed evidence fails Part 1 or
-   Part 2 and is left alone.
-
-   - **Alias normalization, applied before Part 2 selects an evidence element.** `EvidenceRef.source`
-     is unenforced today and the live store has drifted to four spellings — `validation` (24 entries),
-     `learn` (4), `validate` (2), `recover` (2) — of which only `validation` appears in the charter's
+     (`skills/recover/SKILL.md:130-185`). An `id` carrying one of these prefixes was composed by the
+     recover rule and is never rekeyed, whatever evidence the entry accumulated later. Every other
+     `id` was composed by the validate-side rule and is rekeyed.
+   - **Ambiguity guard.** A spec slug could in principle collide with a category slug — a spec named
+     `tool-failure.spec.md` would yield an `id` indistinguishable from a recover key. When an entry's
+     prefix matches a category slug **and** the entry carries `validation`-sourced evidence, the
+     migration cannot tell the two rules apart. It leaves the entry untouched and reports it as
+     ambiguous. Skipping a rekey is recoverable; destroying a recover id is not.
+   - **Alias normalization is read-time only and is never written back.** `EvidenceRef.source` is
+     unenforced and the live store has drifted to four spellings — `validation` (24 entries), `learn`
+     (4), `validate` (2), `recover` (2) — of which only `validation` appears in the charter's
      `EvidenceRef` enum. The migration folds `validate` → `validation`, `recover` → `recovery`, and
-     `learn` → `manual` (the source `/adev:learn` writes for user-driven capture), and **reports** any
-     spelling it does not recognize rather than silently treating it as out of scope. Without this, the
-     `validate`-spelled entries would never be considered — the silent-skip failure this spec exists to
-     eliminate.
-   - **Out of scope, never rekeyed:** every entry failing either part of the test — a diagnosis-category
-     prefix, or a legacy recomputation that does not reproduce the stored `id`. This is the complement
-     of the two-part test, not an enumeration, so anything the test cannot positively confirm is
-     excluded by default rather than rekeyed on a guess. It covers recover-produced entries (whose ids
-     must stay byte-identical for `failure-capture.spec.md` Behavior 6), manually captured entries with
-     no derivable input, and any entry whose key provenance is simply unprovable.
-   - **New-key inputs, once an entry qualifies:** the repo-relative spec path recovered from the
-     evidence element used in Part 2, and the entry's stored `pattern` — the same two inputs Behavior 7 defines, so a
+     `learn` → `manual` when *reading* an entry to classify it, and **reports** any spelling it does
+     not recognize. It never rewrites a stored `source` value: doing so would violate the
+     "left untouched" guarantee for skipped entries and would make Behavior 10's byte-identical
+     second run impossible. Repairing the stored vocabulary is a separate concern from rekeying.
+   - **Evidence path → spec path mapping.** The `id` hash input needs the spec path; the evidence
+     element holds the validate **report** path. They are siblings by construction: replace the
+     trailing `.validate.md` with `.spec.md` on the same stem. If an in-scope entry has no evidence
+     path ending in `.validate.md`, the mapping is undefined — the entry is left untouched and counted
+     as skipped rather than mapped by guesswork.
+   - **Migration also normalizes the two legacy slug conventions.** The store holds ids from both:
+     `specSlug` in `lib/cli/heuristics.mjs` retains the `.spec` stem (`deploy-core-spec-91c5a876`,
+     `template-replacement-spec-4ea79ce7` and five more) while the hook strips it
+     (`prototype-core-277ce212`, `template-resolution-6280563d`). Because rekeying recomputes rather
+     than reproduces, both converge on Behavior 7's single canonical form — the stem is stripped. This
+     is a consequence of the migration, not an extra step.
+   - **Out of scope, never rekeyed:** entries whose prefix is a diagnosis category, entries flagged by
+     the ambiguity guard, and entries whose evidence path cannot be mapped to a spec path. Anything the
+     test cannot positively classify is left alone rather than rekeyed on a guess.
+   - **New-key inputs, once an entry qualifies:** the repo-relative spec path mapped from the entry's
+     validate-report evidence path, and the entry's stored `pattern` — the same two inputs Behavior 7 defines, so a
      migrated entry lands on the id a fresh extraction would produce.
    - **Unrecoverable input:** if the evidence `path` cannot be resolved to a repo-relative spec path,
      the entry is left untouched and counted as skipped. The migration never guesses a key.
@@ -234,8 +235,9 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 - Signature derivation and id derivation each have exactly one implementation, with distinct
   normalizers, both reusing the shared digest function.
 - Every entry that was in migration scope has a location-independent `id`. Entries the migration
-  deliberately skipped — out-of-scope sources, and in-scope entries whose evidence path could not be
-  resolved — retain their prior `id` and are reported in the skip counts. The postcondition is
+  deliberately skipped — diagnosis-category prefixes, ambiguity-guard hits, and entries with no
+  mappable `.validate.md` evidence path — retain their prior `id` and are reported in the skip
+  counts. The postcondition is
   scoped this way on purpose: asserting it over *every* entry would contradict Behavior 8, which
   requires the migration to skip rather than guess.
 - `signature` round-trips through serialization for entries that carry it.
@@ -284,8 +286,8 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 | Add `adev heuristics signature` verb | Wire to `lib/cli/heuristics.mjs` dispatch; origin enum validation; `--blocker-id` path for `review-specs` origin via `parseBlockerId` | medium |
 | Correct id hash input | Replace absolute path with repo-relative in `hooks/post-validate-extract-heuristics.mjs:123-127`; caller composes the `<spec-slug>` prefix | small |
 | Update test harnesses | `tests/skills/validate-success-heuristic-harness.mjs:145` and `tests/skills/recover-extract-heuristic-harness.mjs:119` call the shared digest function with their own normalizer and prefix, instead of holding private copies. Recover's harness must keep producing category-prefixed ids | medium |
-| Implement `adev heuristics migrate-keys` | Two-part structural discriminator per Behavior 8 — reject diagnosis-category prefixes, then confirm by recomputing under the legacy path-dependent rule and requiring an exact match to the stored `id`; normalize `evidence[].source` aliases first (`validate`→`validation`, `recover`→`recovery`, `learn`→`manual`); recompute the new key from evidence path + stored pattern; skip anything unproven; merge-on-collision with the contradiction invariant re-applied; report counts plus any unrecognized source spelling; idempotent | large |
-| Revise `_format.md` | Charter row 152 makes `.context-index/memory/heuristics/_format.md` the public schema contract. Add `signature`, document the two signature modes, correct the ID Namespace Convention section that Behavior 7 makes wrong on landing, **and replace the stale recover category slugs** — `_format.md:211-217` documents `spec-violation`, `context-gap`, `tool-failure` with example `spec-violation-a1b2c3`, of which only `tool-failure` is real. An implementer building Behavior 8 Part 1's prefix-reject set from this file rather than `skills/recover/SKILL.md` would get three wrong slugs and rekey recover entries the migration must never touch | medium |
+| Implement `adev heuristics migrate-keys` | Prefix-based discriminator per Behavior 8 — reject the closed six diagnosis-category prefixes, apply the ambiguity guard, rekey everything else; map the evidence `.validate.md` path to its `.spec.md` sibling; fold `evidence[].source` aliases at read time only, never writing them back; recompute the new key from mapped spec path + stored pattern; skip anything unclassifiable; merge-on-collision with the contradiction invariant re-applied; report counts plus ambiguous entries and unrecognized source spellings; idempotent | large |
+| Revise `_format.md` | Charter row 152 makes `.context-index/memory/heuristics/_format.md` the public schema contract. Add `signature`, document the two signature modes, correct the ID Namespace Convention section that Behavior 7 makes wrong on landing, **and replace the stale recover category slugs** — `_format.md:211-217` documents `spec-violation`, `context-gap`, `tool-failure` with example `spec-violation-a1b2c3`, of which only `tool-failure` is real. Behavior 8's whole discriminator is that six-value prefix set, so an implementer building it from this file rather than `skills/recover/SKILL.md` would get three wrong slugs and rekey recover entries the migration must never touch | medium |
 | Tests | Round-trip, cross-worktree id equality, recover id byte-equality across the change, normalizer separation, origin rejection, `--blocker-id` derivation, migration idempotency, collision merge | medium |
 
 Removal of the dead `deriveId` twin, the `extract` verb, and the `skills/recover/SKILL.md` prose rule
@@ -321,18 +323,22 @@ This spec only stops depending on them.
 - [ ] A store fixture containing both a legacy validate-produced entry and a recover-produced entry
       migrates the first and leaves the second's `id` byte-identical
 - [ ] An entry carrying **both** `validation` and `recovery` evidence — reachable via `/adev:retro`
-      consolidation — is not rekeyed when its prefix is a diagnosis category, nor when legacy
-      recomputation fails to reproduce its stored `id`
-- [ ] An entry whose legacy recomputation does not reproduce its stored `id` under **either** slug
-      convention is skipped and counted, never rekeyed on the strength of evidence provenance alone
-- [ ] Entries in both legacy slug conventions migrate — asserted against real store ids, one retaining
-      the `.spec` stem (`deploy-core-spec-91c5a876`) and one stripping it (`prototype-core-277ce212`)
+      consolidation — is not rekeyed when its prefix is a diagnosis category
+- [ ] An entry whose prefix matches a category slug **and** which carries `validation` evidence is
+      reported as ambiguous and left untouched, not rekeyed
+- [ ] Entries in both legacy slug conventions migrate and converge on the single canonical stripped
+      form — asserted against real store ids, one retaining the `.spec` stem
+      (`deploy-core-spec-91c5a876`) and one stripping it (`prototype-core-277ce212`)
+- [ ] The migration never rewrites a stored `evidence[].source` value; a skipped entry is byte-identical
+      afterward, including its original source spelling
 - [ ] `_format.md`'s recover category slugs match the six in `skills/recover/SKILL.md`, with no
       `spec-violation` or `context-gap` remaining
 - [ ] `_format.md` documents `signature` and both signature modes, and its ID Namespace Convention
       section matches Behavior 7
-- [ ] An entry whose evidence path cannot be resolved is left untouched and counted as skipped, not
-      rekeyed to a guessed value
+- [ ] An in-scope entry with no `.validate.md` evidence path is left untouched and counted as skipped,
+      since the report-path → spec-path mapping is undefined for it
+- [ ] The `.validate.md` → `.spec.md` sibling mapping is asserted directly against a real store entry
+      (`.context-index/specs/features/validation/validate-config-single-source.validate.md`)
 - [ ] An entry spelled `source: validate` is considered identically to one spelled `source: validation`,
       asserted against the live store's actual drift (24 `validation` / 4 `learn` / 2 `validate` /
       2 `recover`)
