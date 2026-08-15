@@ -170,9 +170,21 @@ executable field the three bounds do *not* govern; see Invariant 6 and the `runn
    A rule checked against one base and resolved against another is not a containment property.
 
    Therefore the installer **copies** the declared executable payload into a project-owned directory
-   `.context-index/extensions/<extension-name>/` and **rewrites** every contributed argv path element
-   to an **absolute** path under that directory, which makes the executor's `cwd` irrelevant and the
-   install-time check the run-time guarantee. Specifically:
+   `.context-index/extensions/<extension-name>/` and **rewrites** every contributed path element to
+   point at its copy there. One payload directory, two emission forms, because the two consumers
+   accept different ones:
+
+   - **`command` argv elements are rewritten to an absolute path** under that directory. That is what
+     makes the executor's `cwd` irrelevant and the install-time check the run-time guarantee, since
+     `doctor.mjs:965` spawns with `cwd: projectRoot` and `quality-gate.mjs:45-51` uses a
+     caller-supplied `cwd`.
+   - **`package.skill` / `package.adapter` are rewritten to the `.context-index/`-relative form**
+     `extensions/<extension-name>/<path-inside-extension>` — *not* absolute. `resolveReviewerPath`
+     rejects an absolute path outright (`review-config.mjs:459-465`, `ABS_PATH_REJECTED`) and resolves
+     a relative one against `<repoRoot>/.context-index/` (`:476-484`), so the relative form names
+     exactly the same file in the same payload directory, reached the only way that loader accepts.
+
+   Specifically:
 
    - Containment is asserted against the *extension source* at plan time and against the *payload
      directory* at apply time, with `realpathSync` applied to **both the base and the candidate**
@@ -270,8 +282,12 @@ operator never saw, and consent without containment grants a blanket permission 
     `shouldDispatch` compute `triggered = null` at `:167`, so it is a silent-misconfiguration trap
     even where it is not a capability grant. A project author can still configure `triggered` by hand.
   - `package` is a **one-level** object with exactly `{skill, adapter}`, both strings, both subject to
-    the same payload containment and rewrite as `command` (they are resolved by `resolveReviewerPath`,
-    `review-config.mjs:408` / `:411`). `package.args` is **refused**: `review-config.mjs:418` is
+    the **same containment** as `command` — realpath on both base and candidate, must resolve inside
+    the extension source — but a **different emission**. They are resolved by `resolveReviewerPath`
+    (`review-config.mjs:408` / `:411`), which rejects an absolute path with `ABS_PATH_REJECTED`
+    (`:459-465`) and resolves a relative one against `<repoRoot>/.context-index/` (`:476-484`), so
+    they are emitted `.context-index/`-relative as `extensions/<extension-name>/…` rather than
+    absolute. `package.args` is **refused**: `review-config.mjs:418` is
     `validated.args = pkg.args ?? {}` — unvalidated, arbitrary depth, and passed to the reviewer.
 
   With `triggered` and `args` out, the one-level cap is internally consistent. `patterns`, `keywords`
@@ -463,7 +479,7 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
 6. **When** an extension entry supplies an installer-owned field (`source`, `__source`, or `exec_consented_at`) **then** the install refuses with `GOVERNANCE_SOURCE_FORGED`. **Precedence:** installer-owned fields are checked before the allowlist, so a supplied `source` always reports `GOVERNANCE_SOURCE_FORGED` and never `GOVERNANCE_FIELD_NOT_ALLOWED`. Exactly one code is emitted per rejected entry.
 7. **When** any supplied value contains a newline, carriage return, `"`, `'`, `#`, `{`, `}`, `[`, `]`, `,`, or a leading `-`/`?`/`:`/`&`/`*`/`!`/`|`/`>`/`%`/`@`/backtick **then** the install is refused with `GOVERNANCE_SCALAR_UNSAFE`, naming the field. The flow indicators are load-bearing, not decorative: `lib/profiles/yaml.mjs` parses `{ … }` as a flow map, so omitting `{` lets a value reparse into a map with attacker-chosen keys. **This applies to every emitted value, not only top-level scalars** — array elements and one-level object values are checked identically, because `parseFlowSeq`/`parseFlowMap` reparse them the same way. Unsafe values are rejected, never escaped — `unquote` (`:244-252`) performs no unescape, so no escape scheme round-trips through the repo's own parser.
 8. **When** a supplied `id` is not a string after parse **then** the install is refused with `GOVERNANCE_FIELD_VALUE_INVALID`. `parseYaml` coerces bare integers to Number (`:179`), and a non-string id would bypass the string-keyed collision check in Behavior 4.
-9. **When** an extension entry declares `command` (in `gates.yaml`, or in `validate.yaml` with `kind: quality-gate`) — or a `review.yaml` `package.skill` / `package.adapter` — **then** the value must be an array for `command`, every element naming a path must resolve inside the extension's *source* directory and exist, `argv[0]` may instead be an allowlisted interpreter (`bash`, `sh`, `node`, `python3`), each such file is copied to `.context-index/extensions/<extension-name>/` at mode `0o555` and the element rewritten to its absolute path there. A string `command` is refused with `GOVERNANCE_COMMAND_NOT_ARGV`; an escaping path, or a `realpathSync` failure on the candidate, with `GOVERNANCE_COMMAND_ESCAPES_EXTENSION`; a derived payload member that does not exist with `GOVERNANCE_PAYLOAD_MISSING`.
+9. **When** an extension entry declares `command` (in `gates.yaml`, or in `validate.yaml` with `kind: quality-gate`) — or a `review.yaml` `package.skill` / `package.adapter` — **then** the value must be an array for `command`, every element naming a path must resolve inside the extension's *source* directory and exist, `argv[0]` may instead be an allowlisted interpreter (`bash`, `sh`, `node`, `python3`), and each such file is copied to `.context-index/extensions/<extension-name>/` at mode `0o555`. The copied file's element is then rewritten to point at that copy, in the form its consumer accepts: a `command` argv element becomes an **absolute** path under the payload directory, while `package.skill` / `package.adapter` become the **`.context-index/`-relative** form `extensions/<extension-name>/…`, because `resolveReviewerPath` rejects absolute paths (`review-config.mjs:459-465`) and resolves relative ones against `<repoRoot>/.context-index/` (`:476-484`). A string `command` is refused with `GOVERNANCE_COMMAND_NOT_ARGV`; an escaping path, or a `realpathSync` failure on the candidate, with `GOVERNANCE_COMMAND_ESCAPES_EXTENSION`; a derived payload member that does not exist with `GOVERNANCE_PAYLOAD_MISSING`.
 10. **When** a manifest declares any executable contribution **then** the install refuses with `GOVERNANCE_EXEC_NOT_CONSENTED` without explicit consent for that install — an interactive prompt listing each command verbatim, or `--allow-exec` non-interactively — and records `exec_consented_at` on each executable entry. Consent is per-install, never remembered, and the path fails closed when interactivity cannot be determined.
 11. **When** an extension declares `runner` outside `diagnostics.yaml` **then** the install is refused with `GOVERNANCE_FIELD_NOT_ALLOWED`; **when** it declares a `runner` inside `diagnostics.yaml` that is not `plugin:`-prefixed **then** the install is refused with `GOVERNANCE_FIELD_VALUE_INVALID`.
 12. **When** the target registry cannot be parsed **then** the install refuses with `GOVERNANCE_PARSE_REFUSED` and writes nothing. It never treats an unparseable file as empty.
@@ -539,6 +555,7 @@ with `GOVERNANCE_PARSE_REFUSED` and write nothing.
 - [ ] An executable contribution without consent is refused; with `--allow-exec` it installs and each executable entry carries `exec_consented_at`.
 - [ ] `kind` outside the four values `validate-config.mjs` accepts is refused with `GOVERNANCE_FIELD_VALUE_INVALID`.
 - [ ] A `review.yaml` entry with an object-valued `package: {skill, adapter}` round-trips through install and `loadReviewConfig`; `package.args`, `dispatch: triggered` and any two-level nested object are refused.
+- [ ] A contributed `package.skill` is emitted as a `.context-index/`-relative path (`extensions/<name>/…`), not an absolute one, and `loadReviewConfig` resolves it — an absolute emission would be rejected by `resolveReviewerPath` with `ABS_PATH_REJECTED`. A contributed `command` argv element is emitted absolute, and the two forms are asserted to name the same file in the same payload directory.
 - [ ] An unsafe value inside an array element or a nested object value is refused, not only a top-level scalar.
 - [ ] The `lib/diagnostics/index.mjs` containment guard is asserted by a test owned here, so Invariant 6's first declared dependency cannot regress silently.
 - [ ] `normaliseCommand` / `NEEDS_QUOTING` (`lib/gates/doctor.mjs`) are asserted by a test owned here — Invariant 6's second declared dependency — and an array-valued `command` is proven to execute through the argv-direct branch with `shell: false`, never through `normaliseCommand`, while the shipped string-form gate keeps working.
