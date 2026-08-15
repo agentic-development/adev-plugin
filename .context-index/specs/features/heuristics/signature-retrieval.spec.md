@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone: 3
-revision: 2
+revision: 3
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -30,7 +30,7 @@ is whatever the module-scoped query returned minutes earlier.
 This spec adds an exact-match `signature` axis to retrieval and re-queries the store at lifecycle
 failure points using it. One constraint dominates the design: `retrieveHeuristics` drops every
 `low`-confidence entry in its budget cap — `if (entry.confidence === "low") continue;` at
-**`lib/heuristics.mjs:1441`**, inside `retrieveHeuristics`'s budget loop — and failure heuristics enter
+**`lib/heuristics.mjs:1442`**, inside `retrieveHeuristics`'s budget loop — and failure heuristics enter
 the store at `low`. Without an exemption, a signature-keyed lookup would return nothing on a first
 recurrence, inert exactly when the loop is meant to close. The exemption is therefore part of the
 contract, not an optimization.
@@ -40,7 +40,7 @@ contract, not an optimization.
 > `if (entry.confidence === "low")` at **`:1204`** lives in `demoteHeuristic` and its body is
 > `return archiveHeuristic(projectRoot, id, "demoted-below-low")` — it **archives the entry**. A change
 > made there while intending a read-side exemption would silently alter demotion and archive entries.
-> The only line this spec touches is `:1441`.
+> The only line this spec touches is `:1442`.
 
 ### Failure heuristics stay at `low` permanently
 
@@ -85,11 +85,12 @@ Two consequences bind this spec:
    requires `checks[]`. A `.context-index/lifecycle-state/*.jsonl` record carries `validator` and
    `verdict` but **no `checks[]`**, so the key is underivable there. Any implementation that sources
    the failure from the log instead of the in-flight verdict payload cannot compute a matching key.
-   Where a failure surface genuinely has no `checks[]` — a review BLOCK, an implement task failure —
-   it uses that surface's own already-canonical identity as the signature input rather than
-   synthesizing one: a BLOCK uses its `blocker_id` via the inherited mode
-   (`failure-signature-key.spec.md` Behavior 3a), and a surface with neither is out of scope for
-   error-triggered retrieval and skips it (Error Cases).
+   Where a failure surface has no `checks[]` but does have its own already-canonical identity, it uses
+   that rather than synthesizing one: a review BLOCK uses its `blocker_id` via inherited mode
+   (`failure-signature-key.spec.md` Behavior 3a). A surface with neither a `checks[]` array nor a
+   canonical identity is out of scope for error-triggered retrieval and skips it (Behavior 6, Error
+   Cases) — this spec defines inputs for exactly the two surfaces in Behavior 6's table and wires no
+   others.
 
 1. **When** `retrieveHeuristics` is called with a `signature` **then** entries whose `signature` matches
    exactly are returned first — **above confidence**, which remains the primary key for every other
@@ -105,10 +106,34 @@ Two consequences bind this spec:
    entry-time callers.
 
 2. **When** an entry matches the requested `signature` exactly **then** it is returned even if its
-   confidence is `low`, bypassing the exclusion at **`lib/heuristics.mjs:1441`**. Confidence still
+   confidence is `low`, bypassing the exclusion at **`lib/heuristics.mjs:1442`**. Confidence still
    governs ordering within the signature-matched set, and still governs every non-signature retrieval
    path — the exemption is scoped to exact signature matches only, and is made at the retrieval budget
    loop, never in `demoteHeuristic`.
+
+2a. **Signature-matched entries are allocated off the top of `limit`, before the high/medium split.**
+   The budget loop is not a flat cap: `highMax = Math.ceil(limit * 5 / 8)` (`:1436`) and
+   `mediumMax = limit - highMax` (`:1437`), with the buckets checked at `:1443` and `:1446`. A `low`
+   entry fits **neither** bucket, so an exemption that does not say how it is budgeted leaves four
+   defensible implementations — off the top, from the high bucket, from the medium bucket, or a
+   separate allocation. This spec chooses **off the top**:
+
+   1. Signature-matched entries are taken first, up to `limit`.
+   2. `limit` is reduced by the number taken, and the existing formula splits **the remainder** into
+      high and medium buckets.
+   3. With zero signature matches the remainder equals `limit`, so the split is arithmetically
+      identical to today — which is what keeps entry-time callers byte-identical.
+
+   Off-the-top is the only option consistent with Behavior 1's signature-primary ordering: any variant
+   that draws signature matches from a confidence bucket lets bucket exhaustion drop the exact match
+   for the failure in hand while retaining unrelated entries.
+
+   **Charter note.** The Context Budget attribute is phrased as "max five `high`-confidence plus three
+   `medium`-confidence heuristics per task context packet" — a formulation with no slot for an
+   exempted `low` entry. The total is unchanged (never more than `limit`), but the high/medium
+   composition is not, so the charter's wording needs a Phase 3 amendment to describe the budget as a
+   total with a signature-first allocation. That amendment is out of this spec's scope and is recorded
+   as a follow-up.
 
 3. **When** `retrieveHeuristics` is called with both `signature` and `keywords` **then** both axes
    apply, signature-matched entries outrank keyword-matched entries, and an entry matching both is
@@ -134,7 +159,7 @@ Two consequences bind this spec:
 5. **When** `adev heuristics retrieve --signature <sig>` is invoked **then** it renders matches in
    whichever output format is selected, preserving each format's existing empty-result shape exactly:
    `--format text` prints the sentinel `__NONE__`; `--format json` — **the default** — emits
-   `{"count":0,"rendered":""}` (`lib/cli/heuristics.mjs:212`). An earlier revision claimed `__NONE__`
+   `{"count":0,"rendered":""}` (`lib/cli/heuristics.mjs:214`). An earlier revision claimed `__NONE__`
    in both formats and that the verb "exits 0 regardless"; both are false. The verb already exits **1**
    on argument errors — missing `--module`, malformed `--tier`, `--format`, or `--injection-limit` —
    and `--signature` does not change that. What this spec preserves is narrower and accurate: **a
@@ -143,10 +168,23 @@ Two consequences bind this spec:
    than as an argument error (Error Cases), because a failure path must never be turned into an
    argument failure.
 
-6. **When** a lifecycle failure occurs at a point that has a signature — a validate FAIL, a
-   review-specs BLOCK, an implement task failure, or a recover dispatch — **then** the store is
-   re-queried by that signature and the result is injected into the agent's context, in addition to
-   whatever was injected at skill entry.
+6. **When** a lifecycle failure occurs at one of the **two** surfaces with a defined signature input
+   **then** the store is re-queried by that signature and the result is injected into the agent's
+   context, in addition to whatever was injected at skill entry:
+
+   | Surface | Origin | Signature input | Read from |
+   |---|---|---|---|
+   | validate FAIL | `validate` | deduped, sorted `checks[].id` where `outcome !== 'PASS'`, joined by a space | the live `verdict_metadata` payload |
+   | review-specs BLOCK | `review-specs` | the finding's `blocker_id`, via inherited mode (`failure-signature-key.spec.md` Behavior 3a) | the reviewer's finding |
+
+   **Implement task failure and recover dispatch are explicitly OUT OF SCOPE for this spec.** An
+   earlier revision listed all four surfaces here while defining a derivation input for only two,
+   leaving an implementer to choose between wiring two and wiring four with no rule for the extra two.
+   The exclusion is not because those surfaces lack an identity — `deriveSignature`'s origin set does
+   include `implement` and `recover`, and recover-origin entries already carry signatures — but
+   because this spec has not defined *what text feeds them*, and inventing one here would repeat the
+   unspecified-derivation defect that blocked revision 1. Wiring them is a follow-up that must state
+   their inputs with the precision this table gives the first two.
 
 7. **When** error-triggered retrieval fires **then** it is capped independently of and more tightly
    than entry-time injection: `summary` tier, default **3** entries, drawn from signature matches where
@@ -178,7 +216,7 @@ Two consequences bind this spec:
 | Failure surface has no derivable identity (no `checks[]`, no `blocker_id`) | Error-triggered retrieval is skipped; the entry-time context stands; no synthesized key is invented | 0 |
 | An entry carries a malformed `signature` | That entry is skipped for signature matching but remains available to keyword and module-scope retrieval | 0 |
 | Failure event carries no derivable signature | Error-triggered retrieval is skipped entirely; entry-time context stands | 0 |
-| Injection cap reached | Extra matches are dropped, highest-confidence first retained; the drop is reported in the rendered output | 0 |
+| Injection cap reached | Signature-matched entries are retained first (Behavior 2a), then the remainder fills the high/medium buckets by the existing split; drops are reported in the rendered output. **Not** "highest-confidence first retained" — that ordering would drop a `low` signature match before an unrelated `medium` module entry, the exact outcome Behavior 1 exists to prevent | 0 |
 
 ## System Constitution Reference
 
@@ -198,11 +236,12 @@ Two consequences bind this spec:
 |---|---|---|
 | Shared lookup-key derivation | Export the composition the capture side already uses — `deriveSignature(origin, <deduped, sorted failing check ids joined by " ">)` per `hooks/post-validate-extract-heuristics.mjs:201` — so read and write call ONE helper and cannot drift. This is the task the whole spec hinges on | medium |
 | Add `signature` param to `retrieveHeuristics` | Exact match, ranked **above confidence**, inert when absent so no-signature callers are byte-identical | small |
-| Exempt exact matches from the `low` floor | Scoped change at **`lib/heuristics.mjs:1441`** — the `continue` inside `retrieveHeuristics`'s budget loop. **NOT `:1176`/`:1204`**, which is `demoteHeuristic`'s archive branch; editing there would alter demotion and archive entries | medium |
+| Exempt exact matches from the `low` floor | Scoped change at **`lib/heuristics.mjs:1442`** — the `if (entry.confidence === "low") continue;` inside `retrieveHeuristics`'s budget loop (`:1441` is the loop header). **NOT `:1204`**, which is `demoteHeuristic`'s archive branch; editing there would alter demotion and archive entries | medium |
+| Signature-first budget allocation | Take signature matches off the top of `limit`, then split the remainder into `highMax`/`mediumMax` by the existing formula (`:1436-:1437`). With zero matches the split must be arithmetically identical to today | medium |
 | Dedup across axes | An entry matching both signature and keyword returns once | small |
 | Capped fallback to module scope | Empty signature match falls back within the CALLER's cap, never escalating to the entry-time 8 | small |
-| `--signature` flag on the retrieve verb | Wire through `lib/cli/heuristics.mjs`; preserve each format's existing empty shape — `__NONE__` for text, `{"count":0,"rendered":""}` for the json default (`:212`) — and leave existing exit-1 argument-error paths intact | small |
-| Error-triggered retrieval | Fire from the LIVE failure payload, not the lifecycle log (which has no `checks[]`). validate FAIL by derived signature; review BLOCK by `blocker_id` inherited mode; surfaces with neither identity skip | medium |
+| `--signature` flag on the retrieve verb | Wire through `lib/cli/heuristics.mjs`; preserve each format's existing empty shape — `__NONE__` for text, `{"count":0,"rendered":""}` for the json default (`:214`) — and leave existing exit-1 argument-error paths intact | small |
+| Error-triggered retrieval | Wire **exactly the two surfaces** in Behavior 6's table — validate FAIL (derived signature) and review-specs BLOCK (`blocker_id`, inherited mode). Fire from the LIVE failure payload, never the lifecycle log, which has no `checks[]`. Implement-task failure and recover dispatch are out of scope; do not wire them | medium |
 | Independent injection cap | Separate config key; default 3; governs signature matches AND the fallback | small |
 | Tests | Read/write key agreement on a real captured entry, ranking order, exemption scoping, dedup, capped fallback, both CLI empty shapes, non-blocking degradation | medium |
 
@@ -220,6 +259,12 @@ Two consequences bind this spec:
 - [ ] Signature-matched entries rank above confidence, then keyword-matched, then module-scope
 - [ ] A `low` signature match outranks an unrelated `medium` module entry — the ordering that makes the
       axis useful given failure entries never leave `low`
+- [ ] A `low` signature match is **retained** and an unrelated `medium` module entry **dropped** when
+      the cap binds — the drop order agrees with the ranking rather than contradicting it
+- [ ] With `injectionLimit: 3` and two signature matches, exactly one slot remains and it is split by
+      the existing high/medium formula over the reduced limit
+- [ ] With zero signature matches, `highMax`/`mediumMax` are arithmetically identical to today —
+      asserted numerically, not by inspection
 - [ ] An entry matching both signature and keyword appears exactly once
 - [ ] A signature matching nothing falls back to module-scope results **within the caller's cap** — an
       error-triggered fallback returns at most 3, never the entry-time 8
@@ -231,6 +276,8 @@ Two consequences bind this spec:
       asserts the lifecycle-log path is not used, since it carries no `checks[]`
 - [ ] A review BLOCK derives its signature from `blocker_id` via inherited mode rather than synthesizing
       one
+- [ ] Error-triggered retrieval is wired at exactly two surfaces; a test asserts implement-task failure
+      and recover dispatch do **not** trigger it, since this spec defines no signature input for them
 - [ ] Error-triggered injection is capped at 3 by default, independently of `injection_limit`, and the
       cap governs the fallback too
 - [ ] Every failure path completes unchanged when the store is missing or unreadable
