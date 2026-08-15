@@ -1,13 +1,32 @@
 ---
 charter: heuristics
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: high
 milestone: 3
 revision: 3
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
+source-manifest:
+  sha: "4a9ac56"
+  files:
+    - .context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md
+    - docs/cli-reference.md
+    - hooks/post-validate-extract-heuristics.mjs
+    - lib/cli/heuristics.mjs
+    - lib/diagnostics/tier2/validated-without-report.mjs
+    - providers/codex/skills/recover/SKILL.md
+    - providers/opencode/skills/recover/SKILL.md
+    - skills/recover/SKILL.md
+    - tests/cli/heuristics-signature.test.mjs
+    - tests/cli/heuristics.test.mjs
+    - tests/fixtures/recover-heuristic-ids.pre-change.json
+    - tests/hooks/post-validate-failure-capture.test.mjs
+    - tests/skills/recover-extract-heuristic.test.mjs
+    - tests/skills/validate-success-heuristic-harness.mjs
+    - tests/skills/validate-success-heuristic.test.mjs
+  computed-at: "2026-08-15T18:09:16.070Z"
 ---
 
 # Live Spec: Failure Capture — learn from what went wrong, not only from what went right
