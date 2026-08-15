@@ -1209,11 +1209,17 @@ async function cmdExtension() {
 
   switch (subcommand) {
     case "install": {
-      const source = process.argv[4];
+      // Minimal flag scan: --allow-exec anywhere, first non-flag token is the source.
+      const args = process.argv.slice(4);
+      const allowExec = args.includes("--allow-exec");
+      const source = args.find((a) => !a.startsWith("--"));
       if (!source) {
         error("Missing source argument.");
-        log("Usage: npx adev-cli extension install <source>");
+        log("Usage: npx adev-cli extension install <source> [--allow-exec]");
         log("  <source> can be a local path, npm package, or git URL.");
+        log("  --allow-exec approves the extension's executable contributions");
+        log("  (gate commands, reviewer skills/adapters) without prompting.");
+        log("  Consent applies to this install only and is never remembered.");
         process.exit(1);
       }
 
@@ -1224,6 +1230,8 @@ async function cmdExtension() {
           pluginRoot: PLUGIN_ROOT,
           sourceUri: source,
           _tmpDir: resolved._tmpDir,
+          allowExec,
+          interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
         });
 
         heading("Extension Installed");
