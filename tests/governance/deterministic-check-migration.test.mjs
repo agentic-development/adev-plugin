@@ -20,10 +20,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { computeCommandSha, loadCheck1Gates } from "../../lib/gates/gate-sets.mjs";
+import { checkBoundaries } from "../../lib/governance/boundaries.mjs";
 import { parseYaml } from "../../lib/profiles/yaml.mjs";
 import { stampMarker } from "../../lib/governance/registry-marker.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
@@ -65,6 +66,55 @@ const CHECK_BODIES = [
     // so its registry severity has to be `error`. `warning` would let a broken
     // build aggregate to PASS_WITH_NOTES.
     severity: "error",
+  },
+];
+
+/**
+ * Migration Step 2 (Task 18): the two checks whose bodies stop being a prose
+ * algorithm a subagent re-implements and become a call to a CLI verb whose
+ * evaluator this spec shipped. `kind` flips to `deterministic-check`, so
+ * `profile` / `context_pack` — fields that only mean anything to the
+ * subagent-review dispatch path — must be gone from both registries.
+ *
+ * `envelope` lists every field name and gate-level reason the verb can emit
+ * today; a body that omits one leaves the agent guessing at a real output.
+ */
+const VERB_CHECKS = [
+  {
+    id: "validate.check-8-boundaries",
+    body: "skills/validate/checks/validate.check-8-boundaries.md",
+    // Unchanged from the pre-migration registry: a boundary violation is a
+    // blocker, and the flip is about HOW the check runs, not how hard it bites.
+    severity: "error",
+    verb: /adev boundaries check --json/,
+    envelope: [
+      "verdict",
+      "reason",
+      "findings",
+      "disabled",
+      "warnings",
+      "summary",
+      "DISABLED_WITHOUT_REASON",
+    ],
+  },
+  {
+    id: "validate.check-9-transition-gates",
+    body: "skills/validate/checks/validate.check-9-transition-gates.md",
+    severity: "warning",
+    verb: /adev gate transitions[^\n]*--json/,
+    envelope: [
+      "transition",
+      "verdict",
+      "reason",
+      "gates",
+      "error",
+      "code",
+      "no-recorded-outcome",
+      "stale-gate-record",
+      "no-manifest-stamp",
+      "unattested-gate-record",
+      "disabled-gate",
+    ],
   },
 ];
 
@@ -115,7 +165,7 @@ describe("deterministic check bodies", () => {
 
 describe("the validate registries", () => {
   for (const registry of REGISTRY_FILES) {
-    for (const { id, severity } of CHECK_BODIES) {
+    for (const { id, severity } of [...CHECK_BODIES, ...VERB_CHECKS]) {
       it(`${registry} registers ${id}`, () => {
         const doc = parseYaml(readRepoFile(registry));
         assert.ok(
@@ -355,4 +405,163 @@ describe("the fail_fast declaration in both registries", () => {
       );
     });
   }
+});
+
+describe("Migration Step 2 — checks 8 and 9 become verb calls", () => {
+  for (const { id, body, verb, envelope } of VERB_CHECKS) {
+    it(`${id} body invokes its verb and dispatches no subagent`, () => {
+      const text = readRepoFile(body);
+      assert.match(text, verb);
+      assert.doesNotMatch(text, INLINE_NODE_RE);
+    });
+
+    it(`${id} body names every field its verb emits`, () => {
+      const text = readRepoFile(body);
+      for (const field of envelope) {
+        assert.ok(
+          text.includes(field),
+          `${body} must tell the agent what to do with \`${field}\`; the verb emits it today`,
+        );
+      }
+    });
+
+    it(`${id} body is not a skill and carries no skill-ext block`, () => {
+      // Check bodies under skills/validate/checks/ are prompts, not skills.
+      // tests/skills-extension-coverage.test.mjs scopes itself to SKILL.md;
+      // adding the block here would be cargo-culting the wrong contract.
+      assert.doesNotMatch(readRepoFile(body), /adev skill-ext load/);
+    });
+  }
+});
+
+describe("the kind flip", () => {
+  for (const registry of REGISTRY_FILES) {
+    for (const { id } of VERB_CHECKS) {
+      it(`${registry} declares ${id} as deterministic-check`, () => {
+        const doc = parseYaml(readRepoFile(registry));
+        const entry = doc.checks.find((c) => c.id === id);
+        assert.ok(entry, `${registry} must declare ${id}`);
+        assert.equal(entry.kind, "deterministic-check", `${registry} :: ${id}`);
+      });
+
+      it(`${registry} drops profile/context_pack from ${id}`, () => {
+        const doc = parseYaml(readRepoFile(registry));
+        const entry = doc.checks.find((c) => c.id === id);
+        assert.ok(entry, `${registry} must declare ${id}`);
+        for (const field of ["profile", "context_pack"]) {
+          assert.equal(
+            field in entry,
+            false,
+            `${field} only means something on the subagent-review dispatch path; `
+              + `${id} in ${registry} no longer takes it`,
+          );
+        }
+      });
+    }
+  }
+});
+
+describe("the no-surface-move invariant", () => {
+  // The spec's invariant: this migration changes HOW a check runs, never its
+  // identity or where it lives. A renamed id silently unregisters the check
+  // (_resolveActorSeverity defaults it to `warning`); a moved body breaks the
+  // `plugin:validate/checks/...` prompt path.
+  for (const { id, body } of VERB_CHECKS) {
+    it(`${id} keeps its identifier in both registries`, () => {
+      for (const registry of REGISTRY_FILES) {
+        const doc = parseYaml(readRepoFile(registry));
+        assert.ok(
+          doc.checks.some((c) => c.id === id),
+          `${registry} must still declare ${id}`,
+        );
+      }
+    });
+
+    it(`${id} keeps its body under skills/validate/checks/`, () => {
+      assert.match(body, /^skills\/validate\/checks\//);
+      assert.ok(existsSync(repoPath(body)), `${body} must still exist at that path`);
+      for (const registry of REGISTRY_FILES) {
+        const doc = parseYaml(readRepoFile(registry));
+        const entry = doc.checks.find((c) => c.id === id);
+        assert.equal(entry.prompt, `plugin:validate/checks/${id}.md`);
+      }
+    });
+  }
+});
+
+describe("check 8 on an empty registry", () => {
+  // The migration's risk note, pinned from the correct side: the OUTCOME is
+  // unchanged (validation does not start failing), but the VERDICT moves from
+  // the old body's PASS to SKIP. A test pinning PASS-preservation would pin the
+  // exact behaviour `lib/governance/boundaries.mjs` was written to remove.
+  //
+  // The "dispatches no subagent" half of the AC is pinned by the `kind`
+  // assertion above, which is the only observable that exists: the check body
+  // is markdown read by an agent, and no harness in tests/ counts dispatches.
+  // Asserting a dispatch counter here would assert against nothing.
+  it("SKIPs, never PASSes, when no boundary rules are declared", async () => {
+    const dir = createTempDir();
+    try {
+      writeFixture(dir, "src/a.mjs", "export const a = 1;\n");
+      const result = await checkBoundaries(dir, { changed: ["src/a.mjs"] });
+      assert.equal(result.verdict, "SKIP");
+      assert.match(result.reason, /no boundary rules declared/);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("SKIPs with a reason naming the disabled rules when all are switched off", async () => {
+    const dir = createTempDir();
+    try {
+      writeFixture(dir, "src/a.mjs", "export const a = 1;\n");
+      writeFixture(
+        dir,
+        ".context-index/governance/boundaries.yaml",
+        "boundaries:\n  - id: off\n    pattern: \"never\"\n    severity: error\n"
+          + "    enabled: false\n    disabled_reason: \"pinned by this test\"\n",
+      );
+      const result = await checkBoundaries(dir, { changed: ["src/a.mjs"] });
+      assert.equal(result.verdict, "SKIP");
+      assert.match(result.reason, /disabled/);
+      assert.equal(result.disabled.length, 1);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+describe("the docs name the verbs the checks now call", () => {
+  it("docs/cli-reference.md documents all three governance verbs", () => {
+    const ref = readRepoFile("docs/cli-reference.md");
+    for (const verb of [
+      "adev boundaries check",
+      "adev gate transitions",
+      "adev governance materialize",
+    ]) {
+      assert.ok(
+        new RegExp(verb.replace(/ /g, "\\s+")).test(ref),
+        `docs/cli-reference.md must document \`${verb}\``,
+      );
+    }
+  });
+
+  it("docs/governance.md documents the materialized_at marker and its bounded set", () => {
+    const doc = readRepoFile("docs/governance.md");
+    assert.ok(/materialized_at/.test(doc), "the marker key must be documented by name");
+    assert.ok(
+      /write-once/i.test(doc),
+      "the write-once semantics are the whole point of the marker",
+    );
+    for (const file of ["review.yaml", "diagnostics.yaml", "gates.yaml"]) {
+      assert.ok(
+        new RegExp(`\`${file.replace(".", "\\.")}\``).test(doc),
+        `the marked set is bounded and ${file} is in it — the docs must say so`,
+      );
+    }
+    assert.ok(
+      /boundaries\.yaml[^\n]*exempt|exempt[^\n]*boundaries\.yaml/i.test(doc),
+      "validate.yaml and boundaries.yaml are EXEMPT (DDR-1); the docs must say which files are not marked",
+    );
+  });
 });

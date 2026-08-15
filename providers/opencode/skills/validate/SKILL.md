@@ -320,25 +320,39 @@ Record PASS or FAIL with specific principle/boundary violated and code location.
 
 ### Check 8: Boundary Compliance
 
-If the `governance/` directory does not exist → SKIP: "No governance directory configured."
+Run the boundary evaluator and record what it returns:
 
-If `governance/` exists but `.context-index/governance/boundaries.yaml` is missing → PASS (no rules configured).
+```
+adev boundaries check --json
+```
 
-If `governance/boundaries.yaml` exists, collect all files changed. For each boundary rule:
+Take the `verdict` verbatim — `PASS`, `WARN`, `FAIL` or `SKIP`. Do not recompute it from the findings, and do not run the rule regexes yourself: the algorithm (regex against file contents, `exclude` globs, severity mapping, time and size budgets) lives in the verb.
 
-1. Run regex `pattern` against file contents, respecting `exclude` globs.
-2. `severity: error` → FAIL
-3. `severity: warning` → WARN (does not cause overall FAIL)
-4. Apply charter-specific overrides from `governance/overrides/<slug>.yaml` if present.
+The envelope carries `verdict`, `reason`, `findings`, `disabled`, `warnings` and `summary`. List every finding with its `rule` and `file:line`; list every `disabled` rule with its `disabled_reason` (a switched-off rule must read differently from one the project never declared); surface the top-level `warnings`, which are registry **schema** warnings such as `DISABLED_WITHOUT_REASON` and are a different thing from `summary.warnings`.
+
+**A project declaring no rules records SKIP, never PASS** — nothing was read, so nothing held; the reason reads `no boundary rules declared`. A registry whose rules are all switched off SKIPs with a different reason naming them, because "nobody declared any" and "somebody turned them off" are different facts. Exit 1 (`INVALID_BOUNDARY_PATTERN`, `BOUNDARIES_PARSE_ERROR`) is a FAIL, not a SKIP: the project believes it has boundaries and the registry is unreadable.
+
+Full body, including the per-finding table: `skills/validate/checks/validate.check-8-boundaries.md`.
 
 ### Check 9: Transition Gates
 
-If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merge` transition:
+Run the transition comparator for the transition this skill drives:
 
-1. Verify each `required_gates` was run and passed in Check 1.
-2. If a required gate was skipped (probabilistic/no command) → log "manual verification required."
-3. Note `approver_role` if present (informational).
-4. If no transitions configured in `governance/gates.yaml` (or `governance/` absent) → SKIP: "No transitions configured."
+```
+adev gate transitions --transition implement-to-validate --spec <spec-path> --json
+```
+
+`implement-to-validate` is the only transition Check 9 evaluates: `/adev:validate` sits at the `implemented → validated` boundary. A project may declare others (this repo also declares `validate-to-merge`), but those belong to whoever drives that boundary — at the moment Check 9 runs, validate has not recorded its own outcome yet.
+
+Add `--module <slug>` or `--charter <path>` when Check 1 ran under a module scope; the slug MUST match, or the resolved gate set differs and every recorded outcome reads as `unattested-gate-record`.
+
+The envelope is `{transition, verdict, reason, gates}`; take the `verdict` verbatim. On exit 1 it is `{transition, error, code}` instead (`GATES_PARSE_ERROR`, `GATES_PATH_ESCAPE`, `GOVERNANCE_READ_ERROR`, `MANIFEST_PARSE_ERROR`, `INVALID_DOMAIN_NAME`) — record FAIL and quote the code. Report each blocked gate's reason: `no-recorded-outcome`, `stale-gate-record`, `no-manifest-stamp`, `unattested-gate-record`, `disabled-gate` and `unknown-gate` each call for a different remedy.
+
+A SKIP means no transition was evaluated, and the reason says which case: `no transitions configured`, no transition of that name, the transition requires no gates, or the spec carries no source-manifest stamp (`no-manifest-stamp` — an unstamped spec has never completed implementation, so it owes no outcomes).
+
+The verb reads recorded history only. It never runs a gate — Check 1 remains the only sanctioned writer of `gate_outcomes`.
+
+Full body, including the per-reason table: `skills/validate/checks/validate.check-9-transition-gates.md`.
 
 ### Check 11: Visual Verification (UI projects)
 
@@ -475,13 +489,17 @@ The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec
 - Non-negotiable principles: PASS | FAIL [principle violated, file:line]
 - Coding standards: PASS | FAIL [standard violated, file:line]
 
-## Check 8: Boundary Compliance — PASS | FAIL | N/A
-- [boundary-id]: PASS | FAIL | WARN [details]
-- ...
+## Check 8: Boundary Compliance — PASS | WARN | FAIL | SKIP
+- Verdict and reason as returned by `adev boundaries check --json`
+- [rule-id]: FAIL | WARN [file:line — message]
+- Disabled: [rule-id] — [disabled_reason]  (omit when none)
+- Registry warnings: [code] — [message]  (omit when none)
+- SKIP means no rules were declared, or all declared rules are disabled — not that boundaries held
 
-## Check 9: Transition Gates — PASS | FAIL | N/A
-- [transition-id]: PASS | FAIL [details]
-- ...
+## Check 9: Transition Gates — PASS | FAIL | SKIP
+- Transition: implement-to-validate
+- [gate-id]: pass | blocked [reason: no-recorded-outcome | stale-gate-record | no-manifest-stamp | unattested-gate-record | disabled-gate | unknown-gate]
+- [gate-id]: command_attested: false  (when attestation did not hold)
 
 ## Check 11: Visual Verification — PASS | FAIL | N/A
 - [expectation 1]: PASS | FAIL [what was seen]

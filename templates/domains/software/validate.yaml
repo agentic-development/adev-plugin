@@ -81,20 +81,22 @@ checks:
   # (duplicate dispatch path; /adev:review-specs already runs the same
   # specialist registry).
 
+  # Checks 8 and 9 are deterministic (explicit-governance-registries.spec.md,
+  # Migration Step 2): each body is a thin wrapper over a CLI verb —
+  # `adev boundaries check --json` and `adev gate transitions --json` — whose
+  # evaluator owns the algorithm. No subagent judgment, so no `profile` and no
+  # `context_pack`: those fields only mean something on the subagent-review
+  # dispatch path.
   - id: validate.check-8-boundaries
     name: "Governance Boundaries"
-    kind: subagent-review
-    profile: reviewer-capable
-    context_pack: base
+    kind: deterministic-check
     severity: error
     prompt: plugin:validate/checks/validate.check-8-boundaries.md
     after: [validate.check-2-spec-compliance]
 
   - id: validate.check-9-transition-gates
     name: "Transition Gate Compliance"
-    kind: subagent-review
-    profile: reviewer-capable
-    context_pack: base
+    kind: deterministic-check
     severity: warning
     prompt: plugin:validate/checks/validate.check-9-transition-gates.md
     after: [validate.check-2-spec-compliance]

@@ -32,7 +32,9 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 
 | Verb | Purpose | Implementation |
 |------|---------|----------------|
-| `gate` | Evaluate a lifecycle gate; diagnose whether quality gates can run | `lib/cli/gate.mjs` |
+| `gate` | Evaluate a lifecycle gate; diagnose whether quality gates can run; compare a transition against recorded gate outcomes | `lib/cli/gate.mjs` |
+| `boundaries` | Evaluate the boundary registry against a set of changed files | `lib/cli/boundaries.mjs` |
+| `governance` | Materialize a registry's effective set; audit registry drift | `lib/cli/governance.mjs` |
 | `report` | Append a lifecycle event to the per-spec event log | `lib/cli/report.mjs` |
 | `diagnose` | Run registered write-time diagnostics over artifacts | `lib/cli/diagnose.mjs` |
 | `source-manifest` | Verify or compute a spec's source-file manifest | `lib/cli/source-manifest.mjs` |
@@ -229,6 +231,73 @@ adev gate doctor --json
 ```
 
 **Implementation:** `lib/cli/gate.mjs` → `lib/gates/doctor.mjs`. **Called by:** `/adev:validate` (check-14), `/adev:hygiene` (Audit Pass 8).
+
+#### `gate transitions`
+
+**Purpose:** Check a lifecycle transition's `required_gates` against the `gate_outcomes` recorded on a spec's lifecycle log. **Reads history only** — it never runs a gate and never checks a workflow precondition (that is `gate require`). Exit 2 means a required gate has no fresh, attested, passing outcome.
+
+**Signature:** `gate transitions --transition <name> --spec <path> [--json] [--gates <path>] [--module <slug>] [--charter <path>]`
+
+A gate counts only when its recorded outcome is **fresh** (the event's `ts` is at or after the spec's source-manifest `computed-at`, and any recorded `manifest_sha` matches) and **attested** (the gate is declared in the resolved gate set, and any recorded `command_sha` matches the hash of its resolved argv). The attestation is partial: `command_sha` catches drift and catches copying between gates whose resolved argv differ, but two gates resolving to the same command share a digest, and it catches no deliberate forgery.
+
+`--module` / `--charter` must name the same scope the gates ran under — a different scope resolves a different gate set and degrades every outcome to `unattested-gate-record`. With neither flag the domain resolves at the project level.
+
+Under `--json` the envelope is `{transition, verdict, reason, gates}`, where each `gates[id]` carries `id`, `verdict`, `reason` and `command_attested`. Per-gate reasons: `recorded-<verdict>`, `no-recorded-outcome`, `unknown-gate`, `stale-gate-record`, `no-manifest-stamp`, `unattested-gate-record`, `disabled-gate`. A spec with no source-manifest stamp reports `no-manifest-stamp` (never `stale-gate-record`) and SKIPs — an unstamped spec has never completed implementation, so it owes no outcomes.
+
+Exit 1 (`GATES_PARSE_ERROR`, `GATES_PATH_ESCAPE`, `GOVERNANCE_READ_ERROR`, `MANIFEST_PARSE_ERROR`, `INVALID_DOMAIN_NAME`) emits `{transition, error, code}` on stdout as well as stderr.
+
+**Example:**
+```
+adev gate transitions --transition implement-to-validate --spec .context-index/specs/features/auth/login.spec.md --json
+```
+
+**Implementation:** `lib/cli/gate.mjs` → `lib/governance/transitions.mjs`. **Called by:** `/adev:validate` (check-9).
+
+### `boundaries`
+
+**Purpose:** Evaluate `.context-index/governance/boundaries.yaml` against a set of files. Each rule is a regex matched against file **contents**, honouring its `exclude` globs. `severity: error` → FAIL; `severity: warning` → WARN.
+
+**Signature:** `boundaries check [--json] [--changed <path,...>] [--all]`
+
+With neither flag the changed set is `git diff --name-only --diff-filter=ACMR HEAD` plus untracked, not-ignored files. `--changed` is repeatable and wins over the git-derived set; `--all` evaluates every tracked file. Without git, pass `--changed`.
+
+**SKIP is not PASS.** A project declaring no rules records SKIP — nothing was read, so nothing held — and no file is opened. An empty changed set SKIPs for the same reason. The two SKIP reasons are worded differently from "all N declared rules are disabled", because a switched-off registry is a different fact from an empty one.
+
+The evaluator **fails closed**: an unevaluatable rule (blown time budget, oversize input) becomes a finding, never silence. Binary files are skipped with an info note.
+
+Under `--json` the envelope is `{verdict, reason, findings, disabled, warnings, summary}`. `disabled` names every rule declared with `enabled: false` and its `disabled_reason`. The top-level `warnings` array holds **registry schema** warnings such as `DISABLED_WITHOUT_REASON` — a different thing from `summary.warnings`, which counts warning-severity findings.
+
+Exit codes: 0 for SKIP/PASS/WARN, 2 for FAIL, 1 for an argument error or a registry the evaluator refuses (`INVALID_BOUNDARY_PATTERN`, `BOUNDARIES_PARSE_ERROR`).
+
+**Example:**
+```
+adev boundaries check --json
+```
+
+**Implementation:** `lib/cli/boundaries.mjs` → `lib/governance/boundaries.mjs`. **Called by:** `/adev:validate` (check-8).
+
+### `governance`
+
+**Purpose:** Write a governance registry's **effective** set into the project's own file and stamp the write-once `materialized_at` marker, so that reading the file tells you what actually runs. A second subcommand audits registry drift.
+
+**Signature:**
+```
+governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json]
+governance drift [--registry <validate|review|diagnostics|gates>] [--json]
+```
+
+`validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
+
+Materialization is **write-once**: a second run preserves the original stamp verbatim, so an unchanged effective set produces byte-identical output. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive. Exit 1 covers an argument error, an unknown or exempt registry, a containment refusal, and the two write refusals `MATERIALIZE_LOAD_INCOMPLETE` (a row failed to load) and `MATERIALIZE_WOULD_DROP` (a row would be lost).
+
+`governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN) and `hygiene/non-project-execution-field` (info). Field **names** are printed, never field values, and an unmaterialized marked registry is reported rather than read.
+
+**Example:**
+```
+adev governance materialize --registry gates --dry-run
+```
+
+**Implementation:** `lib/cli/governance.mjs`. **Called by:** `/adev:init`, `/adev:hygiene` (Audit Pass 19).
 
 ### `report`
 

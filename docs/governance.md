@@ -329,7 +329,7 @@ Full template with commented examples: [`templates/governance/validate.example.y
 |------|---------|-----------------------|
 | `quality-gate` | Argv-form `execFile` subprocess (npm test, linter, typechecker). | Yes |
 | `subagent-review` | LLM-driven review via a prompt + profile. | Yes |
-| `deterministic-check` | Bundled library function (e.g. source-manifest verification). | **No** — bundled only |
+| `deterministic-check` | Bundled library function or a thin wrapper over a CLI verb (source-manifest verification; `adev boundaries check`; `adev gate transitions`). No subagent, so no `profile` and no `context_pack`. | **No** — bundled only |
 | `observational` | Runs but never affects verdict (`severity: info` only). | Yes |
 
 ### Common overrides
@@ -424,6 +424,31 @@ Both fields are installer-owned. An extension that supplies either one is refuse
 - **A colliding `id` is skipped, never merged.** If an extension contributes an entry whose `id` already exists in your registry, the extension's entry is dropped and yours is left byte-identical — no field is overwritten, and no key is introduced onto it, absent or otherwise. The install report lists the id under skipped. An extension therefore cannot inject a `command` into a commandless gate you scaffolded.
 - **An unparseable registry is refused, not replaced.** If the target file does not parse, the merge fails with `GOVERNANCE_PARSE_REFUSED` and writes nothing. It is never treated as an empty registry — doing so would overwrite your entries and bypass collision detection at the same time. The same refusal covers a duplicated root key, a root key that is not a sequence, and mixed or lone-CR line endings. Fix the file (or its line endings) and re-run the install.
 - **Comments and sibling keys survive.** The merge splices the target key's block by line range rather than reserializing the file, so every byte outside the inserted lines — comments, formatting, other top-level keys — is written back unchanged.
+
+## Materialized registries and the `materialized_at` marker
+
+Three of the governance files can have entries contributed from outside themselves — a domain overlay, an installed extension — which means reading the file did not tell you what actually runs. `adev governance materialize` fixes that: it writes the **effective** set into your own file and stamps a `materialized_at` key at the bottom.
+
+```yaml
+# Stamped by 'adev governance materialize' — write-once. The entries above are
+# the complete effective set; nothing is contributed from anywhere else.
+materialized_at: 2026-08-15T19:35:31.097Z
+```
+
+**The marked set is bounded and closed: `review.yaml`, `diagnostics.yaml` and `gates.yaml`.** Those three, and only those three, carry the marker.
+
+`validate.yaml` and `boundaries.yaml` are **exempt**. Both are already explicit single-source registries — what the file says is what runs — so there is no effective set to materialize, and naming either one is refused with an argument error rather than silently stamped. `risk-policies.yaml` and `sensitive-paths.yaml` are outside the mechanism entirely.
+
+**The marker is write-once.** A second `materialize` run preserves the original timestamp verbatim, so re-running against an unchanged effective set produces byte-identical output — the marker records when the file became authoritative, not when you last ran the command. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive, because the writer splices by line range rather than reserializing.
+
+Two refusals protect the write: `MATERIALIZE_LOAD_INCOMPLETE` when a row failed to load (materializing a partial view would silently drop what did not load), and `MATERIALIZE_WOULD_DROP` when a row already on disk would be lost. Both write nothing.
+
+A consumer of a **marked** registry that carries no marker fails closed rather than reading a file that may be missing contributed entries. `adev governance drift` — Hygiene Audit Pass 19 — reports an unmaterialized marked registry instead of reading it.
+
+```
+adev governance materialize --registry gates --dry-run   # show the diff, write nothing
+adev governance materialize --registry gates
+```
 
 ## Migrating an existing project
 
