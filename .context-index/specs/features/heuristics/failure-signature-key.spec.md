@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone: 3
-revision: 2
+revision: 3
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -96,10 +96,26 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
    different worktrees, or at two different times **then** the resulting signature is byte-identical.
    Derivation reads no clock, no filesystem path, no environment variable, and no run identifier.
 
-5. **When** a heuristic carrying a `signature` field is serialized **then** the field is written to
-   the entry's YAML frontmatter and survives a read-write round trip. `signature` is added to
-   `FIELD_ORDER` in `lib/heuristics.mjs`; without that addition `serializeHeuristic` drops unknown
-   fields silently, including on the update path that rewrites existing entries.
+5. **When** a heuristic carrying a `signature` field is written **then** the field survives the entire
+   write path and appears in the entry's YAML frontmatter. Serialization is the *last* of three gates,
+   and all three must pass — adding `signature` to `FIELD_ORDER` alone is insufficient:
+
+   a. `validateEntry` (`lib/heuristics.mjs:101`) accepts `signature` as an optional field and rejects a
+      malformed one — it must be a string matching `[a-z0-9][a-z0-9-]*`, max 64 characters. An entry
+      with no `signature` remains valid.
+
+   b. `writeHeuristic` carries `signature` into `finalEntry` on **both** paths. `finalEntry` is
+      constructed as an explicit object literal — the update path at `lib/heuristics.mjs:733` and the
+      new-entry path at `:767` — so any field not named there is silently discarded before
+      serialization. `signature` follows the same incoming-wins-then-preserve-existing rule already
+      used for `antiPattern` and `tags`.
+
+   c. `signature` is present in `FIELD_ORDER` (`lib/heuristics.mjs:185-199`) so `serializeHeuristic`
+      emits it in a deterministic position.
+
+5a. **When** an existing entry carrying a `signature` is updated with an incoming entry that omits one
+   **then** the stored `signature` is preserved, not cleared. A signature is an identity, and an update
+   that happens not to carry it is not an assertion that the entry has none.
 
 6. **When** a heuristic without a `signature` field is read **then** it parses successfully and
    `signature` is `undefined`. Entries written before this spec remain readable and are never
@@ -117,11 +133,25 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
    property `failure-capture.spec.md` Behavior 6 depends on. The shared code these callers reuse is the
    digest function, not the prefix.
 
-8. **When** `adev heuristics migrate-keys` is invoked **then** it recomputes `id` for every stored
-   entry whose evidence permits recomputation, rewrites each entry under its corrected `id`, and
-   preserves `evidence[]`, `confidence`, `contradicted-by[]`, `created`, `tags`, `pattern`,
-   `anti-pattern`, and `title` unchanged. It reports counts of entries rekeyed, entries left
-   untouched, and any collisions detected.
+8. **When** `adev heuristics migrate-keys` is invoked **then** it rekeys exactly the entries whose `id`
+   was produced by the path-dependent validate-side rule, and no others. The discriminator and the
+   recomputation inputs are both explicit:
+
+   - **In scope:** an entry with at least one `evidence[]` element whose `source` is `validation`. Its
+     `id` came from the absolute-path hash and is therefore machine-dependent.
+   - **Out of scope, never rekeyed:** entries whose evidence sources are all `recovery`, `debug`,
+     `retro`, or `manual`. `/adev:recover`'s ids are already content-only and must stay byte-identical
+     — this is the property `failure-capture.spec.md` Behavior 6 depends on, and rekeying them would
+     break it. Manual entries have no derivable input at all.
+   - **Recomputation inputs:** the repo-relative spec path recovered from the in-scope evidence
+     element's `path`, and the entry's stored `pattern` — the same two inputs Behavior 7 defines, so a
+     migrated entry lands on the id a fresh extraction would produce.
+   - **Unrecoverable input:** if the evidence `path` cannot be resolved to a repo-relative spec path,
+     the entry is left untouched and counted as skipped. The migration never guesses a key.
+
+   Rekeyed entries preserve `evidence[]`, `confidence`, `contradicted-by[]`, `created`, `tags`,
+   `pattern`, `anti-pattern`, `title`, and `signature` unchanged. The verb reports counts of entries
+   rekeyed, skipped-out-of-scope, skipped-unrecoverable, and merged on collision.
 
 9. **When** the migration would produce an `id` that already exists in the same scope file **then**
    the two entries are merged: evidence arrays are unioned, the higher confidence is kept, and
@@ -180,13 +210,13 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 
 | Task | Description | Complexity |
 |---|---|---|
-| Add `signature` to `FIELD_ORDER` | `lib/heuristics.mjs:185-199`; verify round-trip through `serializeHeuristic` | small |
+| Thread `signature` through the write path | Three gates, all required: `validateEntry` (`lib/heuristics.mjs:101`) accepts and validates it; `writeHeuristic` names it in both `finalEntry` literals (`:733` update, `:767` new) with incoming-wins-then-preserve semantics; `FIELD_ORDER` (`:185-199`) includes it for serialization | medium |
 | Shared digest function | `lib/heuristics.mjs`: `normalize → SHA-256 → first 8 hex`, taking the normalizer as a parameter | small |
 | Two normalizers | `normalizeFailureText` (strips punctuation) and `normalizeIdInput` (folds separators, strips nothing); both exported and separately tested | small |
 | Add `adev heuristics signature` verb | Wire to `lib/cli/heuristics.mjs` dispatch; origin enum validation; `--blocker-id` path for `review-specs` origin via `parseBlockerId` | medium |
 | Correct id hash input | Replace absolute path with repo-relative in `hooks/post-validate-extract-heuristics.mjs:123-127`; caller composes the `<spec-slug>` prefix | small |
 | Update test harnesses | `tests/skills/validate-success-heuristic-harness.mjs:145` and `tests/skills/recover-extract-heuristic-harness.mjs:119` call the shared digest function with their own normalizer and prefix, instead of holding private copies. Recover's harness must keep producing category-prefixed ids | medium |
-| Implement `adev heuristics migrate-keys` | Recompute, merge-on-collision, report counts; idempotent | medium |
+| Implement `adev heuristics migrate-keys` | Discriminate on `evidence[].source === "validation"`; recompute from evidence path + stored pattern; skip out-of-scope and unrecoverable entries; merge-on-collision; report four counts; idempotent | medium |
 | Tests | Round-trip, cross-worktree id equality, recover id byte-equality across the change, normalizer separation, origin rejection, `--blocker-id` derivation, migration idempotency, collision merge | medium |
 
 Removal of the dead `deriveId` twin, the `extract` verb, and the `skills/recover/SKILL.md` prose rule
@@ -206,12 +236,20 @@ This spec only stops depending on them.
       `--text` plus `--blocker-id` together each exit non-zero with `CONFLICTING_SIGNATURE_INPUT`
 - [ ] `normalizeIdInput` preserves `/`, `.`, and `|`; `normalizeFailureText` strips them. A test
       asserts two distinct spec paths do not collide under `normalizeIdInput`
-- [ ] A heuristic written with a `signature` reads back with that `signature` intact
+- [ ] A heuristic written with a `signature` reads back with that `signature` intact — asserted on the
+      **new-entry** path and again on the **update** path, since `finalEntry` is built separately in each
+- [ ] Updating an entry that has a `signature` with an incoming entry that omits one preserves the
+      stored `signature` rather than clearing it
+- [ ] `validateEntry` rejects a malformed `signature` and accepts an entry with none
 - [ ] A heuristic written without a `signature` reads back successfully with `signature` undefined
 - [ ] A test extracts the same spec and pattern from two temp directories with different absolute
       paths and asserts the derived `id` is identical
-- [ ] `adev heuristics migrate-keys` preserves evidence, confidence, and contradiction history for
-      every entry, verified field-by-field against a pre-migration snapshot
+- [ ] `adev heuristics migrate-keys` preserves evidence, confidence, contradiction history, and
+      `signature` for every entry, verified field-by-field against a pre-migration snapshot
+- [ ] A store fixture containing both a `validation`-evidenced entry and a `recovery`-evidenced entry
+      migrates the first and leaves the second's `id` byte-identical
+- [ ] An entry whose evidence path cannot be resolved is left untouched and counted as skipped, not
+      rekeyed to a guessed value
 - [ ] Running `migrate-keys` twice leaves the store byte-identical after the first run
 - [ ] An induced id collision merges rather than overwrites, and the merge is reported
 - [ ] `/adev:recover` produces byte-identical ids before and after this change for the same

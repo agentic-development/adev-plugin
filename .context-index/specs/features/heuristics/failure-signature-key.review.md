@@ -5,17 +5,18 @@ charter: .context-index/specs/features/heuristics/charter.md
 verdict: BLOCK
 rigor-tier: full
 reviewed: 2026-08-15
-last-reviewed-revision: 1
-file-sha: dfe1902f5f27b6745969f022cf08e46fe8f972553b1d342ee8cb5e226ff7ff68
+last-reviewed-revision: 2
+file-sha: a27274f744bd1d31a3dbec2bd5c5b55c50d07396d79e8f6046fcbe595bba63fa
 ---
 
 # Architecture Review: failure-signature-key
 
 > **Date:** 2026-08-15
-> **Spec:** `.context-index/specs/features/heuristics/failure-signature-key.spec.md`
+> **Spec:** `.context-index/specs/features/heuristics/failure-signature-key.spec.md` (revision 2)
 > **Charter:** `.context-index/specs/features/heuristics/charter.md` (revision 6, Phase 3)
-> **Rigor tier:** full (explicit `--tier full`; risk_level `high` → `review_mode: full` also resolves to full)
+> **Rigor tier:** full (explicit `--tier full`; `risk_level: high` → `review_mode: full` resolves the same)
 > **Verdict:** BLOCK
+> **Prior verdict:** BLOCK at revision 1 (6 blockers)
 
 ## Reviewers Dispatched
 
@@ -25,160 +26,155 @@ file-sha: dfe1902f5f27b6745969f022cf08e46fe8f972553b1d342ee8cb5e226ff7ff68
 | security-reviewer | Security Reviewer | subagent | reviewer-capable | `plugin:review-specs/security-reviewer-prompt.md` |
 | consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | `plugin:review-specs/consistency-analyzer-prompt.md` |
 
-Registry source: domain `software` (source level `default`), no `.context-index/governance/review.yaml` overrides (`reviewers: []`). No registry warnings. Severity cap `blocker` for all three — no findings were clamped.
+Registry source: domain `software` (source level `default`); `.context-index/governance/review.yaml` declares `reviewers: []`, so no overrides applied. No registry warnings. Severity cap `blocker` for all three — nothing was clamped.
 
 Heuristics injected: 3 module-scoped entries at `summary` tier (`adev heuristics retrieve --module heuristics`).
 
 Cross-repo `depends-on` validation: skipped — the spec declares no `depends-on` frontmatter and no workspace was detected.
 
+## Revision-1 blocker disposition
+
+All six revision-1 blockers were independently re-checked against the revision-2 body. **All six are resolved.** The `revise --auto` run made no body edits, but the hand-authored fixes committed as `ddea5eb9` do close them:
+
+| Prior blocker_id | Status | Evidence in revision 2 |
+|---|---|---|
+| `structural-architect:api-shape-conflict:25796bde` | RESOLVED | The "Two keys, two rules, one digest function" table plus Behaviors 3 and 7a separate origin (signature prefix) from caller-supplied `id` prefix; recover keeps `<category-slug>-<digest>` |
+| `structural-architect:ambiguous-behavior:6c240478` | RESOLVED | Behaviors 2 and 7 define `normalizeFailureText` and `normalizeIdInput` as distinct normalizers; "exactly one implementation" is now asserted per-rule |
+| `structural-architect:missing-precondition:bee2251f` | RESOLVED | Precondition 4 and the Error Cases row now agree: unresolvable root fails closed and the caller skips extraction |
+| `structural-architect:circular-ownership:39f99256` | RESOLVED | Postcondition 1 is scoped to "every caller that this spec touches"; the repo-wide no-copy assertion is explicitly delegated to `failure-capture.spec.md` |
+| `consistency-analyzer:contract:ee7e74a8` | RESOLVED | Behavior 3a derives the `review-specs` signature from `--blocker-id` via `parseBlockerId`, never re-hashing finding text |
+| `consistency-analyzer:domain-model:8c5333d5` | RESOLVED | Behaviors 3a/3b give the charter's BLOCK-origin invariant an owning behavior, with `CONFLICTING_SIGNATURE_INPUT` guarding both directions |
+
+The two new blockers below are **not** re-raises. They are newly surfaced concerns in territory the revision-1 review did not reach, with freshly computed `blocker_id`s.
+
 ## Structural Architect (structural-architect)
 
 **Verdict:** BLOCK
 
-**Claim verification performed by the reviewer:** `FIELD_ORDER` at `lib/heuristics.mjs:185-199` confirmed to omit `signature`, and `serializeHeuristic` iterates `FIELD_ORDER` so unknown fields are dropped (spec claim accurate). Path-dependent hash at `hooks/post-validate-extract-heuristics.mjs:123-127` confirmed. Dead twin at `lib/cli/heuristics.mjs:103-108` confirmed. Both test-harness copies confirmed. Behavior 6 already holds today — the parser applies `toCamel` generically (`lib/heuristics.mjs:336`), so an unknown `signature` key round-trips on read. No ADR conflict: ADR-0016 §1 names heuristics as `.context-index/` state and the migration stays in-repo; the charter's avoidance of check-ID keying keeps ADR-0019 / `check-id-enum.spec.md` out of scope.
+**Claim verification performed by the reviewer:** `parseBlockerId` confirmed at `lib/blocker-id.mjs:110`, returning an 8-hex `locationHash`. Cited line numbers confirmed accurate: `hooks/post-validate-extract-heuristics.mjs:123-124`, `lib/heuristics.mjs:185-199`. `writeHeuristic`'s whitelist construction confirmed at `lib/heuristics.mjs:687-780`.
 
 ### SA-1 — blocker
 
-- **Location:** Behaviors 3 and 1 (`--origin` enum / output form)
-- **blocker_id:** `structural-architect:api-shape-conflict:25796bde`
-- **section_anchor:** `behaviors-3`
-- **Finding:** The verb emits `<origin-slug>-<digest>` with `origin ∈ {recover, validate, review-specs, implement}`. But `/adev:recover`'s id is `<category-slug>-<hash>` where the prefix is the diagnosis category (`missing-context`, `tool-failure` — `skills/recover/SKILL.md:387-397`), and `tests/skills/recover-extract-heuristic-harness.mjs:119` takes `(category, normalizedText)`. Charter capability "Recover Migration" states recover's `id` derivation is *unchanged*, and `failure-capture.spec.md` Behavior 6 plus its acceptance criterion require recover's post-migration ids to be byte-identical to today's. The specified API cannot produce them: `recover-a1b2c3d4 ≠ missing-context-a1b2c3d4`. The Task Map nevertheless requires that harness to "call the shared function".
-- **Recommendation:** Decide and state whether the prefix is a caller-supplied slug validated against a character class (with `origin` a separate concern), or whether the verb exposes the bare digest and callers compose the prefix. Reconcile with `failure-capture.spec.md` Behavior 6 either way.
+- **Location:** Behaviors 5 and 6; Postconditions ("`signature` round-trips through serialization"); Task Map row "Add `signature` to `FIELD_ORDER`"
+- **blocker_id:** `structural-architect:incomplete-persistence-contract:d46375fd`
+- **section_anchor:** `behaviors-5`
+- **Finding:** Behavior 5 asserts that adding `signature` to `FIELD_ORDER` is what makes the field survive a round trip. That is not sufficient against the live write contract. `writeHeuristic` (`lib/heuristics.mjs:687-780`) constructs `finalEntry` from a fixed field whitelist on **both** the new-entry and update paths, so a caller-supplied `signature` never reaches `serializeHeuristic` at all. Independently confirmed by the aggregator: the update-path `finalEntry` literal enumerates `id`, `scope`, `title`, `pattern`, `confidence`, `evidence`, `contradictedBy`, `created`, `updated`, then conditionally `antiPattern` and `tags` — `signature` appears nowhere, and `validateEntry` (`lib/heuristics.mjs:101`) has no knowledge of the field. The spec therefore leaves the write-path contract unowned in three respects: (a) `writeHeuristic` accepting the field, (b) preserving it unchanged on the update path — the charter invariant "a `signature` is never rewritten once assigned" has no owning behavior anywhere in this spec, and (c) `validateEntry` treating it as legal. Both sibling specs declare this as a precondition *on this spec*: `failure-capture.spec.md:44` ("`writeHeuristic` accepts a `signature` field") and `signature-retrieval.spec.md:39`.
+- **Recommendation:** Add a behavior covering the write-path contract for `signature`: accepted on write, persisted, preserved unchanged when an existing entry is updated, and absent-safe. Restate Behavior 5's mechanism claim so it does not assert that `FIELD_ORDER` alone is sufficient.
 
 ### SA-2 — blocker
 
-- **Location:** Behavior 2 vs Behavior 7 vs Postconditions ("Exactly one implementation")
-- **blocker_id:** `structural-architect:ambiguous-behavior:6c240478`
-- **section_anchor:** `behaviors-7`
-- **Finding:** Two incompatible derivations are collapsed into one. Behavior 2 normalizes by stripping punctuation except `-`/`_`; Behavior 7 defines the id hash input as `<repo-relative-spec-path>|<pattern>`, which is *all* punctuation — `/`, `.`, `|` are exactly the separators that carry the meaning, and stripping them makes distinct spec paths collide. The Task Map lists a "single exported function" doing "Normalization + SHA-256 prefix", and the Postconditions assert one implementation, but the spec never says whether id derivation passes through the Behavior 2 normalizer or a different one. Every downstream artifact (migration recomputation, the two harnesses, the cross-worktree equality test) depends on which.
-- **Recommendation:** State the id derivation contract explicitly and separately from the signature contract — including whether path normalization is limited to separator folding plus case, and whether the two share code at all. If they do not share a normalizer, the "exactly one implementation" postcondition needs to be worded per-rule.
+- **Location:** Behavior 8 (`migrate-keys`), interacting with Behavior 7a
+- **blocker_id:** `structural-architect:missing-input-contract:ff941c2c`
+- **section_anchor:** `behaviors-8`
+- **Finding:** `migrate-keys` has no defined input contract. It recomputes `id` "for every stored entry whose evidence permits recomputation" but never states (a) the discriminator that selects an entry as in-scope, or (b) where the recomputation reads its hash inputs from. The live store mixes three id families: hand-authored ids with no digest (`.context-index/memory/heuristics/_global.md` — `eval-with-session-jsonl`, `cache-reads-dominate-cost`), validate-derived `<spec-slug>-<8hex>` ids, and recover-derived `<category-slug>-<8hex>` ids. Only the second family is recomputable under Behavior 7's rule, and Behavior 7a makes recover ids' byte-identity a load-bearing property that `failure-capture.spec.md` Behavior 6 depends on — so misclassification here silently breaks a sibling spec's contract. Separately, Behavior 7's hash input needs the repo-relative **spec path**, which stored entries do not carry (evidence rows hold a `.validate.md` report path); the spec does not say that the spec path is reconstructed from evidence, or that entries lacking one are left untouched.
+- **Recommendation:** Specify the in-scope discriminator explicitly (which id families are rekeyed, which are left untouched and counted as such), and specify what the recomputation reads for each in-scope entry. State that recover-derived and hand-authored ids are out of scope for rekeying.
 
-### SA-3 — blocker
+### SA-3 — warning
 
-- **Location:** Error Cases, row "Project root unresolvable when computing a repo-relative path"
-- **blocker_id:** `structural-architect:missing-precondition:bee2251f`
-- **section_anchor:** `error-cases`
-- **Finding:** The stated degradation is "write the entry without a `signature`". But the repo-relative path is an input to `id` (Behavior 7), not to `signature` (Behavior 4 explicitly reads no filesystem path). Dropping the signature does not answer what `id` the entry gets when the root is unresolvable — and the third Precondition makes root resolution a hard precondition, so the error table contradicts it.
-- **Recommendation:** Specify the id-side fallback (skip extraction, fall back to the bare spec basename, or fail closed) and align the Preconditions with whichever is chosen.
+- **Location:** Behaviors 8 and 9; Acceptance Criteria ("preserves evidence, confidence, and contradiction history")
+- **Finding:** Behavior 8 says migration preserves `confidence` unchanged and Behavior 9 says a merge keeps "the higher confidence". Both conflict with the charter's absolute-threshold promotion invariant and with `autoPromote` (`lib/heuristics.mjs:647`), which raises confidence whenever merged evidence reaches 2 or 3 distinct `path` values. A Behavior 9 merge unions evidence arrays and will routinely cross that threshold, leaving the stated migration outcome and the charter invariant in disagreement. Behavior 8 also omits `updated` from its preservation list without saying whether it is refreshed — while Behavior 10 demands byte-identity on a second run.
+- **Recommendation:** State explicitly whether post-merge confidence is subject to the promotion rule or frozen at the higher of the two, and settle the `updated` field's treatment.
 
-### SA-4 — blocker
+### SA-4 — warning
 
-- **Location:** Postconditions bullet 1 and the corresponding Acceptance Criterion
-- **blocker_id:** `structural-architect:circular-ownership:39f99256`
-- **section_anchor:** `postconditions`
-- **Finding:** This spec asserts as its own postcondition that `skills/recover/SKILL.md` names the verb and that no duplicate rule remains — but the Task Map assigns both the SKILL.md migration and the dead-twin / `extract`-verb removal to `failure-capture.spec.md`, whose Preconditions require *this* spec to have shipped first. The postcondition and its acceptance criterion are therefore unverifiable at this spec's own validation point.
-- **Recommendation:** Restate the postcondition as what this spec can satisfy alone (the shared function exists and every remaining caller uses it) and move the "no copy remains" assertion to the spec that performs the removals.
+- **Location:** Error Cases table, rows 2 and 3
+- **Finding:** Error precedence is undefined for `--origin review-specs` with neither `--text` nor `--blocker-id`. Row 2 (`--text` missing → `EMPTY_SIGNATURE_TEXT`) and row 3 (`review-specs` without `--blocker-id` → `CONFLICTING_SIGNATURE_INPUT`) both match, and an acceptance criterion asserts the latter. Callers keyed on the error code cannot rely on either.
+- **Recommendation:** Define the validation order (origin legality → origin-specific input requirement → emptiness) so exactly one code is reachable per input shape.
 
 ### SA-5 — warning
 
-- **Location:** Behavior 8 ("every stored entry whose evidence permits recomputation")
-- **Finding:** The discriminator is undefined against the live store. `.context-index/memory/heuristics/_global.md` holds human-authored ids (`eval-with-session-jsonl`, `source: learn`) that were never path-derived; `domain-extensions.md` holds hand-written placeholder digests (`-a1b2c3d4`, `-b2c3d4e5`) under `source: validation`. A recompute-everything reading rewrites human ids; a recompute-nothing-without-a-hash-suffix reading is unstated.
-- **Recommendation:** Name the discriminator explicitly (e.g. `evidence[].source === 'validation'` plus an `-[0-9a-f]{8}` id suffix) and state that non-matching entries are reported as "left untouched".
+- **Location:** Actionable Task Map / System Constitution Reference
+- **Finding:** The spec introduces two new public CLI verbs (`heuristics signature`, `heuristics migrate-keys`) but has no task or acceptance criterion covering `docs/cli-reference.md`, which the constitution names as the reference for all CLI verbs by audience. The sibling `failure-capture.spec.md:77` explicitly handles the *removal*-side doc update for `extract`, so the omission here is asymmetric rather than delegated.
+- **Recommendation:** Add the reference-doc update to this spec's task map, or state explicitly which spec owns documenting the new verbs.
 
-### SA-6 — warning
+### SA-6 — suggestion
 
-- **Location:** Behaviors 8, 9, 10 vs the existing write path
-- **Finding:** `writeHeuristic`'s update path (`lib/heuristics.mjs:724-742`) ignores the caller's confidence, runs `autoPromote(baseConfidence, mergedEvidence)`, and refreshes `updated: now`. Behavior 9's collision merge unions evidence, which can push distinct-path count to 2 and trigger promotion — colliding with both Behavior 8's "preserves `confidence` unchanged" and Behavior 9's "the higher confidence is kept". Behavior 8 also omits `updated` from its preservation list while Behavior 10 demands byte-identity.
-- **Recommendation:** State whether the migration writes through `writeHeuristic` or bypasses it, and settle `updated` and post-merge promotion explicitly.
-
-### SA-7 — warning
-
-- **Location:** Behaviors 1/3 (signature form) vs charter Domain Model invariant on BLOCK-origin signatures
-- **Finding:** The charter requires a `review-specs`-origin signature to derive from `buildBlockerId` (`lib/blocker-id.mjs`, owned by `review-block-auto-retry.spec.md`), whose output is `<reviewer>:<type>:<8hex>` — colons, three segments. This spec admits `review-specs` into the origin enum but defines no mapping from a `blocker_id` into `<origin-slug>-<digest>`, and neither sibling Phase-3 spec claims it. The consumed contract is declared in the charter with no owning behavior.
-- **Recommendation:** Either define the mapping here (this spec owns the key's shape) or explicitly defer it and note that `review-specs` is not yet a legal origin.
-
-### SA-8 — suggestion
-
-- **Location:** Behavior 2 citation
-- **Finding:** The normalization rule is at `skills/recover/SKILL.md:393`, not `:392` (393 is the `**Normalization:**` bullet; 387 is the heading).
+- **Location:** Behavior 1 vs Behavior 3a
+- **Finding:** Behavior 1 is written unconditionally ("with a legal origin … where `<digest>` is the SHA-256 of the text after `normalizeFailureText`"), which Behavior 3a then contradicts for `review-specs`. The `review-specs` digest also inherits `blocker_id`'s hash input (`<section-anchor>:<truncated-finding-text>`), which is not `normalizeFailureText` output.
+- **Recommendation:** Scope Behavior 1 to the text-derived origins and cross-reference 3a as the exception.
 
 ## Security Reviewer (security-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-**Threat model applied:** local dev CLI plus a git-tracked, team-shared markdown store. No auth/authz boundaries apply — all operators already have full repo write access. Evaluated for injection surfaces, secret exposure, and downstream consumption by the sibling capture/retrieval specs.
+**Threat model applied:** local dev CLI plus a git-tracked, team-shared markdown store in a single repository. No auth/authz boundary — all operators already have full repo write access. No network surface.
 
-### SEC-1 — warning (input-validation)
+Revision 2's new `--blocker-id` path is well-formed from a security standpoint: `parseBlockerId` already enforces `[a-z0-9-]+` on components and `^[0-9a-f]{8}$` on the hash segment, both inputs fail closed (`INVALID_BLOCKER_ID`, `CONFLICTING_SIGNATURE_INPUT`), and no error message echoes uncontrolled data. No new security issues introduced by the revision.
 
-- **Finding:** The `signature` field is added to `FIELD_ORDER` for serialization (Behavior 5) but the spec never requires format validation on write or read — unlike `id`, `scope`, and `tags`, which are all validated against `SAFE_SLUG_PATTERN` / `TAG_PATTERN` in `validateEntry()`. Since the derivation is public and deterministic (SHA-256 of normalized text, no secret salt), anyone with git write access to `.context-index/memory/heuristics/` can precompute the exact signature for a common failure string and hand-author an entry carrying it with attacker-chosen `pattern` / `anti-pattern`. Per the sibling `signature-retrieval.spec.md` Behavior 2, an exact signature match bypasses the low-confidence exclusion and is auto-injected into an agent's context at the precise moment that failure recurs — a more surgical and less visible injection path than the always-on `## Learned Lessons` sync index, which is at least passively reviewed.
-- **Recommendation:** Add format validation in `validateEntry()` (`lib/heuristics.mjs`) requiring `signature` to match `^(recover|validate|review-specs|implement)-[0-9a-f]{8}$` when present, rejecting writes with malformed or hand-crafted values at the point this spec already extends the schema.
+### SEC-1 — suggestion (input-validation)
+
+- **Finding:** Carried forward from revision 1 and **downgraded from warning**. `signature` still has no format check in `validateEntry()`; only `id` gets a `SAFE_SLUG_PATTERN` backstop (`lib/heuristics.mjs:124`). Every sanctioned write path (Behaviors 1 and 3a) produces values matching `^(recover|validate|review-specs|implement)-[0-9a-f]{8}$` by construction, and under this threat model a schema check would not close a privilege-escalation path — a hand-edit could inject equally through `pattern`/`title`.
+- **Recommendation:** For consistency with the existing `id` treatment, and to catch corrupted or hand-authored entries before they enter the exact-match auto-inject path of `signature-retrieval.spec.md` Behavior 2, add the same format assertion to `validateEntry()`. Treat it as a data-integrity guard, not a trust-boundary control.
 
 ### SEC-2 — suggestion (secrets)
 
-- **Finding:** `adev heuristics signature --origin <slug> --text <text>` takes failure text as a CLI argument. Automatically captured failure text can contain secrets pulled from logs/stderr. Passing it via `argv` is transiently visible to other local users via process listings and may land in shell history.
-- **Recommendation:** Support reading `--text` from stdin (`--text -`, or omit `--text` to read stdin) for hook/skill callers that pipe captured failure output, and prefer that path in the extractor implementations. Keep `--text <value>` for interactive and test use.
+- **Finding:** Unaddressed from revision 1. `--origin <slug> --text <text>` (Behavior 1) still takes failure text — which the caller sources from captured stderr per the charter — as a bare argv value for the `recover`, `validate`, and `implement` origins. On a shared local machine this is visible via `ps aux` and persists in shell history.
+- **Recommendation:** Accept `--text -` (or auto-detect non-TTY stdin) as an alternative to the argv form, and have the callers in `failure-capture.spec.md` pipe captured text. The `review-specs` origin is now exempt via 3a, which reduces but does not eliminate the exposure.
 
 ### SEC-3 — suggestion (input-validation)
 
-- **Finding:** `INVALID_SIGNATURE_ORIGIN`'s echoed rejected value is specified to be "stripped of control and ANSI characters and truncated" — correctly defending against terminal-escape injection — but no explicit truncation length is pinned.
-- **Recommendation:** Specify a concrete cap (e.g. 64 chars) in the Error Cases table so the bound is unambiguous and testable.
+- **Finding:** Unaddressed from revision 1. Behavior 3 still says the rejected `--origin` value is "truncated before it is echoed" with no pinned length, so the `INVALID_SIGNATURE_ORIGIN` error contract is untestable and can regress silently.
+- **Recommendation:** Pin a concrete constant (e.g. reuse the 200-char pattern established by `BLOCKER_FINDING_TEXT_TRUNCATE` in `lib/blocker-id.mjs`, or a smaller value appropriate to a single CLI flag such as 80) and state it in Behavior 3.
 
-**Explicitly not flagged:** origin allowlist enforcement and ANSI/control-char stripping (already correctly specified); atomic temp-then-rename writes, migration rollback-on-read-failure, and idempotent re-runs (well specified); no shell execution and no path-traversal surface (origin is enum-constrained, the `id` hash input is not used as a filesystem path); raw `--text` is never persisted — only its 8-hex digest survives into `signature`.
+**Explicitly not flagged:** origin allowlist enforcement and ANSI/control-char stripping (correctly specified); atomic temp-then-rename writes, migration rollback-on-read-failure, and idempotent re-runs; no shell execution and no path-traversal surface; raw `--text` is never persisted — only its 8-hex digest survives into `signature`.
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** BLOCK
+**Verdict:** PASS_WITH_NOTES
 
-### CON-1 — blocker (contract)
+Revision 2 closes both prior blockers. Cross-cutting compliance verified: `review-block-auto-retry.spec.md` Behavior 3 and the `lib/blocker-id.mjs` format (`<reviewer>:<type>:<8-hex>`) are respected — `INVALID_BLOCKER_ID` error code, 8-lowercase-hex digest length, and determinism all match. No conflict with `check-id-enum.spec.md`.
 
-- **blocker_id:** `consistency-analyzer:contract:ee7e74a8`
-- **section_anchor:** `behavioral-contract` *(reviewer emitted `Behavioral_Contract`; normalized to the anchor form — see Advisories)*
-- **This spec:** Behavior 1 defines uniform text-hashing derivation — `adev heuristics signature --origin <slug> --text <text>` hashes the text to produce `<origin-slug>-<digest>` for all origin values including `review-specs` (lines 43-45).
-- **Conflicts with:** `charter.md` § Domain Model § Invariants (line 124): "A heuristic whose origin is a `/adev:review-specs` BLOCK carries a `signature` derived from that finding's `blocker_id`"; and `charter.md` § Phase 3 (line 51): "For heuristics originating from a `/adev:review-specs` BLOCK, the signature derives from the existing `blocker_id` (`lib/blocker-id.mjs`) rather than re-hashing the finding text."
-- **Recommendation:** Clarify how `review-specs`-origin inputs differ from other origins: (a) document that with `--origin review-specs` the `--text` parameter is expected to be a `blocker_id` string and is not re-hashed, (b) add a separate `--blocker-id` flag, or (c) move `review-specs` handling out of this spec's scope. The current text implies all four origins follow identical text-hashing, contradicting the charter invariant.
+### CON-1 — warning (contract)
 
-### CON-2 — blocker (domain-model)
+- **This spec:** Behavior 3a says the verb "parses it via `parseBlockerId` … and reuses its existing hash component". Verified against `lib/blocker-id.mjs`: `parseBlockerId` returns `{ reviewer, type, locationHash }`.
+- **Conflicts with:** `charter.md` § Interface Contracts § Consumed APIs, which lists the consumed interface as `buildBlockerId({ reviewer, type, sectionAnchor, findingText })` — the constructor, not the parser this spec actually depends on.
+- **Recommendation:** Charter-side fix. Change the Consumed APIs row to `parseBlockerId(blockerId)` (or list both), since `buildBlockerId` is invoked upstream by reviewer subagents per `review-block-auto-retry.spec.md` Behavior 3, not by this spec.
 
-- **blocker_id:** `consistency-analyzer:domain-model:8c5333d5`
-- **section_anchor:** `behavioral-contract` *(reviewer emitted `Behavioral_Contract`; normalized — see Advisories)*
-- **This spec:** The origin enum includes `recover`, `validate`, `review-specs`, `implement` (Behavior 3, lines 53-55). No behavior differentiates between origins.
-- **Conflicts with:** `charter.md` § Domain Model § Invariants (line 124). This invariant is mandatory — it sits in the Invariants section, not in Deferred Capabilities — but the target spec never mentions `blocker_id` handling.
-- **Recommendation:** Add a behavior that explicitly documents the `review-specs` case, stating whether `blocker_id` is a valid input format to `--text`, a separate input parameter, or handled outside this primitive.
+### CON-2 — warning (contract)
 
-### CON-3 — warning (pattern)
+- **This spec:** Adds `--blocker-id` and the mutual-exclusivity rule with `--text` (Behaviors 3a/3b).
+- **Conflicts with:** `charter.md` § Interface Contracts § Exposed APIs, row `adev heuristics signature --origin <slug> --text <text>`, which documents only the `--text` path.
+- **Recommendation:** Charter-side fix. Update the row to reflect the two-input verb signature. Documentation-completeness gap, not a runtime mismatch — the charter's Phase 3 In Scope prose already anticipates the `blocker_id` path.
 
-- **This spec:** Behavior 1 uses a uniform pattern for all origins: text normalization → SHA-256 → prefix.
-- **Conflicts with:** `charter.md` § Interface Contracts § Exposed APIs (line 183) describes the verb as "the single implementation of the derivation rule". If `review-specs` requires special `blocker_id` handling, this verb cannot be that single implementation without an additional parameter or explicit clarification.
-- **Recommendation:** Clarify whether the verb is "the single implementation for all origins" or "the single implementation for the standard text-hashing origins". If the latter, `review-specs` extraction needs its own logic, which weakens the single-implementation contract.
+### CON-3 — suggestion (domain-model)
+
+- **This spec:** Behavior 3a's `review-specs` digest is the reused `locationHash` from `blocker_id` (hashed over `<sectionAnchor>:<truncatedFindingText>`), not a hash of `normalizeFailureText` output.
+- **Conflicts with:** `charter.md` § Domain Model § Entities, where `FailureSignature.digest` is stated unconditionally as "SHA-256 prefix over the normalized failure text", without the `review-specs` carve-out the charter's own Phase 3 prose describes.
+- **Recommendation:** Charter-side. Note the exception inline on the entity row.
 
 ### CON-4 — suggestion (terminology)
 
-- **This spec:** Behavior 2 traces the normalization rule to existing prose at `skills/recover/SKILL.md:392` rather than defining it in the spec.
-- **Recommendation:** Add a sentence clarifying that the primitive *consumes* the rule rather than defining it, to prevent future copy-paste of the rule into other specs.
+- **This spec:** Behavior 2 traces `normalizeFailureText` to `skills/recover/SKILL.md:393` rather than giving the normalizer's own canonical definition location. Carried from revision 1, informational only; not re-escalated.
 
 ---
 
 ## Advisories
 
-- **SECTION_ANCHOR_NORMALIZED** (informational, 2 occurrences): `consistency-analyzer` emitted `section_anchor: Behavioral_Contract` for CON-1 and CON-2. The value was normalized to `behavioral-contract` (lowercase, underscores folded to hyphens) so `/adev:specify --revise` can resolve it against the spec body. No `MISSING_SECTION_ANCHOR` advisory was raised — the anchor was present, only its casing differed.
-- No `LEGACY_REVIEWER_OUTPUT` advisories: every `blocker` finding carried a well-formed `blocker_id`.
-- No `INVALID_BLOCKER_ID` advisories: all six blocker ids parse cleanly via `lib/blocker-id.mjs::parseBlockerId`.
-- No `BLOCKER_ID_COLLISION` advisories: all six ids are distinct.
+- No `LEGACY_REVIEWER_OUTPUT` advisories: both `blocker` findings carried a well-formed `blocker_id`.
+- No `INVALID_BLOCKER_ID` advisories: both ids parse cleanly via `lib/blocker-id.mjs::parseBlockerId` (verified by the aggregator, not asserted).
+- No `MISSING_SECTION_ANCHOR` advisories: both blockers carried a lowercase-kebab `section_anchor` (`behaviors-5`, `behaviors-8`).
+- No `BLOCKER_ID_COLLISION` advisories: the two ids are distinct.
+- No `SECTION_ANCHOR_NORMALIZED` advisories this round (unlike revision 1).
 - Severity cap (`blocker` for all three reviewers) demoted nothing.
+- **Convergence note:** the revision-2 blocker set is disjoint from the revision-1 set. Zero of the six prior blocker_ids recur; both current blocker_ids are new. This is forward progress, not a stall.
 
 ## Governance Footer
 
-`.context-index/governance/gates.yaml` defines no `approver_role` on a `spec-to-plan` transition, so no human approver is named for this transition. Note that `risk-policies.yaml` sets `require_hitl_approval: true` for `risk_level: high` — this spec is `high`, so a human sign-off is expected before implementation regardless of the review verdict.
+`.context-index/governance/gates.yaml` defines no `approver_role` on a `spec-to-plan` transition, so no human approver is named for this transition. Note that `risk-policies.yaml` sets `require_hitl_approval: true` for `risk_level: high` — this spec is `high`, so human sign-off is expected before implementation regardless of the review verdict.
 
 ---
 
 ## Summary
 
-**Total findings:** 15 (6 blockers, 5 warnings, 4 suggestions)
+**Total findings:** 13 (2 blockers, 5 warnings, 6 suggestions)
 
 **Blockers:**
 
 | ID | blocker_id | Section | Theme |
 |----|-----------|---------|-------|
-| SA-1 | `structural-architect:api-shape-conflict:25796bde` | `behaviors-3` | Origin enum cannot reproduce `/adev:recover`'s existing category-prefixed ids, contradicting `failure-capture.spec.md` Behavior 6 |
-| SA-2 | `structural-architect:ambiguous-behavior:6c240478` | `behaviors-7` | `id` and `signature` derivations conflated; the Behavior 2 normalizer would destroy the path separators Behavior 7 depends on |
-| SA-3 | `structural-architect:missing-precondition:bee2251f` | `error-cases` | Unresolvable-project-root row degrades the wrong key and contradicts Precondition 3 |
-| SA-4 | `structural-architect:circular-ownership:39f99256` | `postconditions` | Postcondition depends on work this spec's Task Map assigns to `failure-capture.spec.md`, which in turn depends on this spec |
-| CON-1 | `consistency-analyzer:contract:ee7e74a8` | `behavioral-contract` | `review-specs` origin hashes text, but the charter mandates deriving from `blocker_id` |
-| CON-2 | `consistency-analyzer:domain-model:8c5333d5` | `behavioral-contract` | The charter's mandatory BLOCK-origin invariant has no owning behavior in the spec |
+| SA-1 | `structural-architect:incomplete-persistence-contract:d46375fd` | `behaviors-5` | `signature` write-path contract is unowned — `writeHeuristic`'s field whitelist drops it before serialization, and both siblings declare that acceptance as a precondition on this spec |
+| SA-2 | `structural-architect:missing-input-contract:ff941c2c` | `behaviors-8` | `migrate-keys` has no in-scope discriminator and no stated source for its recomputation inputs; misclassifying recover-derived ids would break `failure-capture.spec.md` Behavior 6 |
 
-SA-7 (warning) is the structural reviewer's independent restatement of the same gap CON-1 and CON-2 raise as blockers; addressing the blockers resolves it.
+**Action required:** BLOCK. Run `/adev:specify --revise --spec .context-index/specs/features/heuristics/failure-signature-key.spec.md` to address the two blockers listed in `failure-signature-key.blockers.md`, then re-run `/adev:review-specs` on revision 3. Planning cannot begin until the verdict is PASS or PASS_WITH_NOTES.
 
-**Action required:** BLOCK. Run `/adev:specify --revise --spec .context-index/specs/features/heuristics/failure-signature-key.spec.md` to address the six blockers listed in `failure-signature-key.blockers.md`, then re-run `/adev:review-specs` on revision 2. Planning cannot begin until the verdict is PASS or PASS_WITH_NOTES.
-
-Both sibling Phase-3 specs (`failure-capture.spec.md`, `signature-retrieval.spec.md`) declare a precondition that this spec ships first, so they are transitively blocked.
+Both sibling Phase-3 specs (`failure-capture.spec.md`, `signature-retrieval.spec.md`) declare a precondition that this spec ships first, so they remain transitively blocked. CON-1, CON-2, and CON-3 are charter-side edits, not spec-side — they can be folded into a charter revision 7 independently of the revise loop.
