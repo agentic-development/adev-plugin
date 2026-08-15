@@ -153,8 +153,8 @@ Phase 3 makes failure a first-class capture trigger and consults the store at li
 | Recover Migration | `/adev:recover` Step 7 calls the shared primitive instead of restating the ID Derivation Rule in skill prose; `id` derivation is unchanged | must-have | 3 | validated |
 | Validate Failure Capture | The validate Stop hook extracts on FAIL as well as PASS; outcome-derived title prefix replaces the hardcoded `"First-run PASS: "` in both copies | must-have | 3 | validated |
 | Dead Capture-Path Retirement | Remove the unreachable `adev heuristics extract` verb, its `--check-first-run` flag, and the orphaned `validate.check-12-heuristic-extraction.md` check file | must-have | 3 | validated |
-| Signature-Keyed Retrieval | `signature` match axis on `retrieveHeuristics`, ranked above keyword matching, bypassing the `low`-confidence exclusion on exact match | must-have | 3 | specified |
-| Error-Triggered Retrieval | Lifecycle failure points re-query the store by signature instead of relying on the entry-time module query | must-have | 3 | specified |
+| Signature-Keyed Retrieval | `signature` match axis on `retrieveHeuristics`, ranked above keyword matching, bypassing the `low`-confidence exclusion on exact match | must-have | 3 | review-passed |
+| Error-Triggered Retrieval | Lifecycle failure points re-query the store by signature instead of relying on the entry-time module query | must-have | 3 | review-passed |
 | Review-Specs Failure Capture | `/adev:review-specs` extracts a heuristic on BLOCK verdicts, with the signature derived from the finding's `blocker_id` | should-have | 3 | — |
 
 ## Deferred Capabilities

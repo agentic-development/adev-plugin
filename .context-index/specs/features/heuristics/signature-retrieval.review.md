@@ -2,10 +2,10 @@
 spec: .context-index/specs/features/heuristics/signature-retrieval.spec.md
 charter: .context-index/specs/features/heuristics/charter.md
 date: 2026-08-15
-verdict: BLOCK
-rigor-tier: full
-last-reviewed-revision: 2
-file-sha: 0ad8d582306d615bdd646c3cb764729cc8361286a7d462d7c375909e09e602fe
+verdict: PASS_WITH_NOTES
+rigor-tier: quick
+last-reviewed-revision: 3
+file-sha: da050fcd1747f79b478d0994eb09b82a1aecba03f2c63b0127762b323175e652
 ---
 
 # Architecture Review: signature-retrieval
@@ -13,292 +13,131 @@ file-sha: 0ad8d582306d615bdd646c3cb764729cc8361286a7d462d7c375909e09e602fe
 > **Date:** 2026-08-15
 > **Spec:** .context-index/specs/features/heuristics/signature-retrieval.spec.md
 > **Charter:** .context-index/specs/features/heuristics/charter.md (approved, revision 6, Phase 3)
-> **Rigor tier:** full (explicit `--tier full`; `risk_level: medium` resolves identically)
-> **Spec revision at review:** 2 (re-review; revision 1 was BLOCK with 13 blocker entries)
-> **Verdict:** BLOCK
+> **Rigor tier:** quick (explicit `--tier quick`; overrides `risk-policies.yaml` `medium → review_mode: full`)
+> **Spec revision at review:** 3 (third review round; revisions 1 and 2 were BLOCK with 13 and 3 blockers)
+> **Verdict:** PASS_WITH_NOTES
 
 ## Reviewers Dispatched
 
 | ID | Name | Mode | Profile | Prompt/Skill |
 |----|------|------|---------|--------------|
-| structural-architect | Structural Architect | subagent | reviewer-reasoning | plugin:review-specs/structural-architect-prompt.md |
-| security-reviewer | Security Reviewer | subagent | reviewer-capable | plugin:review-specs/security-reviewer-prompt.md |
-| consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | plugin:review-specs/consistency-analyzer-prompt.md |
+| quick-synthesized-reviewer | Quick Synthesized Reviewer | subagent | reviewer-capable | plugin:review-specs/quick-synthesized-reviewer-prompt.md |
+
+Rigor tier `quick` dispatches exactly one synthesized reviewer covering all three lenses
+(structural, security, consistency) instead of the three specialist defaults. Per
+`graduated-rigor-tiers.spec.md`, `quick` does not skip the gate — the `.review.md` and the full
+lifecycle event chain are produced identically.
 
 Domain resolution: `software` (source level: `default`). Registry warnings: none.
-Registry: `.context-index/governance/review.yaml` declares `reviewers: []`; the three bundled
-domain reviewers stand. All three resolved to read-only-compatible profiles; severity cap `blocker`
-for each (no finding was clamped).
+Registry: `.context-index/governance/review.yaml` declares `reviewers: []`; the three bundled domain
+reviewers stand but are not dispatched under `quick`. Severity cap `blocker`; no finding was clamped.
 Module heuristics injected: 3 (`heuristics` module, tier `summary`).
-Governance: `risk-policies.yaml` present; `medium` sets `review_mode: full` and does not skip review.
-`gates.yaml` `transitions` is empty — no `spec-to-plan` approver role is declared.
+Governance: `risk-policies.yaml` present; `medium` sets `require_review: true` and `review_mode: full`
+— the explicit `--tier quick` override takes precedence per the resolution order in
+`lib/governance/rigor-mode.mjs`. Review was NOT skipped.
+`gates.yaml` `transitions: {}` — no `spec-to-plan` approver role is declared.
 Cross-repo `depends-on` refs: none. Workspace: not detected.
+Advisory on event emission: `UNKNOWN_REVIEWER_DEFAULTED` — `quick-synthesized-reviewer` is not
+declared in the `software` domain `reviewers.yaml`, so the `reviewer_report` event's severity
+defaulted to `warning`. Non-blocking; the verdict recorded on the event is correct.
 
-## Revision-1 blocker disposition
+## Prior blocker disposition
 
-Revision 1 emitted 13 blocker entries collapsing to five distinct defects. Verified individually
-against live code at review time:
+Revision 2 closed with three blocker entries. Each was re-verified against live source at review
+time (grep, not inference — two prior rounds were spent on citation errors alone):
 
-| Rev-1 blocker_id | Status at revision 2 |
+| Rev-2 blocker_id | Status at revision 3 |
 |---|---|
-| `structural-architect:unspecified-signature-derivation:550fc24d` | **Resolved.** New Behavior 0 pins the read side to the exported `deriveSignature` and Behavior 0a to the live payload. |
-| `structural-architect:false-code-citation:50e43d50` | **Partially resolved** — the destructive `:1176`/`:1204` confusion is fixed and now carries an explicit implementer warning, but the replacement citation is itself off by one (see CON-1). |
-| `structural-architect:contradictory-ranking-contract:681976e9` | **Resolved.** Revision 2 decides signature-primary and justifies it from the permanence of `low` on failure entries. |
-| `structural-architect:contradictory-fallback:776c5d09` | **Resolved.** Behavior 4 caps the fallback at the caller's own budget; Behavior 7 is corrected to match. |
-| `structural-architect:unbudgeted-exemption:4e641159` | **NOT resolved.** Carried forward — see blocker list. |
-| `security-reviewer:rate-limiting:06168089` | **Resolved to non-blocking.** See Security Reviewer section. |
-| `security-reviewer:data-exposure:fb9cc805` | **Resolved.** See Security Reviewer section. |
-| `consistency-analyzer:*` (5 contract/pattern entries) | **Resolved** as duplicates of the structural findings above, except the ranking-phrasing residue recorded as CON-5 (suggestion). |
+| `consistency-analyzer:code-citation:76923748` | **RESOLVED.** All cited lines confirmed against live source: `lib/heuristics.mjs:1441` is the loop header `for (const entry of deduped) {`, `:1442` is `if (entry.confidence === "low") continue;`, `:1436`/`:1437` are `highMax`/`mediumMax`, `:1443`/`:1446` are the high/medium bucket checks, `:1204` is `demoteHeuristic`'s archive branch with body `return archiveHeuristic(projectRoot, id, "demoted-below-low")`. `hooks/post-validate-extract-heuristics.mjs:201` is exactly `deriveSignature('validate', uniqueFailed.join(' '))` with `:188` being `const uniqueFailed = [...new Set(failed)].sort();` — the "deduplicated, sorted" claim in Behavior 0 is accurate. `lib/cli/heuristics.mjs:212` is the `__NONE__` text branch and `:214` the json branch. The implementer warning that itself misstated a line is now correct. |
+| `structural-architect:contradictory-scope:0c91e320` | **RESOLVED.** Behavior 6 now carries exactly two table rows, each with a named origin, an exact signature input, and a read-source. Implement-task failure and recover dispatch are explicitly out of scope in Behavior 6, the Task Map's "Error-triggered retrieval" row, and a negative acceptance criterion. Behavior 0a's closing sentence was swept to match. |
+| `structural-architect:unbudgeted-exemption:4e641159` | **RESOLVED** — the persistent blocker carried from revision 1 is closed. Behavior 2a specifies off-the-top allocation unambiguously: signature matches are taken first up to `limit`, `limit` is reduced by the count taken, and the existing formula splits the remainder. Verified arithmetically against live `:1436-:1437`: zero signature matches ⇒ remainder = `limit` ⇒ `highMax`/`mediumMax` identical to today, which is what preserves byte-identical results for the eight entry-time callers; `limit: 3` with two matches ⇒ remainder 1 ⇒ `highMax` 1, `mediumMax` 0, matching the stated acceptance criterion. The choice is justified rather than asserted — any variant drawing signature matches from a confidence bucket lets bucket exhaustion drop the exact match, contradicting Behavior 1. The Error Cases "Injection cap reached" row, which previously said "highest-confidence first retained", now retains signature matches first and therefore agrees with Behavior 1 instead of contradicting it. |
 
-## Structural Architect (structural-architect)
+The charter's `Retrieval Reachability` attribute (`charter.md:216`) already sanctions the exemption
+itself, so no charter invariant is violated by Behavior 2. The remaining charter divergence is the
+Context Budget row's wording, recorded below as CON-1 and already flagged in the spec as a Phase 3
+follow-up.
 
-**Verdict:** BLOCK
-
-Revision-2 claims verified against live code — the four cited fixes largely hold:
-`hooks/post-validate-extract-heuristics.mjs:201` is exactly `deriveSignature('validate', uniqueFailed.join(' '))`;
-`demoteHeuristic`'s `if (entry.confidence === "low")` is at `:1204` with body
-`return archiveHeuristic(..., "demoted-below-low")`, so the implementer warning is accurate and useful;
-`--format` defaults to `json` (`lib/cli/heuristics.mjs:146`), text-empty is `__NONE__`, json-empty is
-`{count, rendered}`, and the verb exits 1 on missing `--module` or a bad `--tier`/`--format`/`--injection-limit`;
-Behaviors 1, 4 and 7 are now internally coherent on ranking and the capped fallback.
-
-- **SA-1** — `blocker` — `blocker_id: structural-architect:contradictory-scope:0c91e320` — section `behaviors-6`
-
-  Behavior 6 names four failure surfaces that "ha[ve] a signature" — a validate FAIL, a review-specs
-  BLOCK, an implement task failure, and a recover dispatch — and mandates a re-query "by that
-  signature". Behavior 0a defines a derivation input for only two of them (`checks[]` → validate;
-  `blocker_id` → BLOCK) and orders any surface with neither to skip. The Task Map row
-  ("Error-triggered retrieval") and the Acceptance Criteria likewise cover only validate and review
-  BLOCK. This is not resolvable by reading: `deriveSignature`'s live origin set includes `implement`
-  and `recover`, and recover-origin entries already carry signatures, so "those two have no identity"
-  is not self-evident — yet the spec never states what text feeds them. The implementer must choose
-  between wiring two surfaces or four with no rule for the extra two.
-
-  **Recommendation:** either narrow Behavior 6 to the two surfaces with a defined input and move
-  implement/recover to an explicit out-of-scope note, or state their signature input with the same
-  precision Behavior 0 gives the validate path.
-
-- **SA-2** — `warning` — section `behaviors-0` / Task Map row 1
-
-  The spec describes the shared composition as the "deduplicated, sorted list of `checks[].id` …
-  joined by a single space", but the live capture also sanitizes each id
-  (`c.id.replace(/[^A-Za-z0-9._-]/g, '')`) and drops empties before dedup and sort
-  (`hooks/post-validate-extract-heuristics.mjs:178-183`). A helper written from the spec prose rather
-  than lifted from the live block produces a different key for any id containing a stripped
-  character — the exact silent failure Behavior 0 exists to prevent.
-  **Recommendation:** state sanitization as part of the composition, or say explicitly that the task
-  is a lift-and-export of the existing block with no reformulation.
-
-- **SA-3** — `warning` (folded into blocker `structural-architect:unbudgeted-exemption:4e641159`) — section `behaviors-2` / `error-cases`
-
-  The live budget loop is not a flat cap: it splits `limit` into `highMax = ceil(limit * 5 / 8)` and
-  `mediumMax = limit - highMax`, and `low` entries fall through both buckets. The spec exempts `low`
-  signature matches from the exclusion but never says how they are budgeted. Two implementers will
-  differ on what `injectionLimit: 3` returns for two signature matches plus module scope.
-
-- **SA-4** — `warning` — section `error-cases` ("Injection cap reached")
-
-  "the drop is reported in the rendered output" introduces an output-contract change with no channel
-  named, no Task Map row, and no acceptance criterion, on a surface eight call sites parse.
-  **Recommendation:** drop the clause or specify the field/line and cover it in the Task Map.
-
-- **SA-5** — `warning` — section `behaviors-2` vs. shipped sibling
-
-  `retrieval-filtering.spec.md` (shipped, validated) states as Behavior 3, Postcondition, and
-  Acceptance Criterion that "`low`-confidence heuristics are never injected", and
-  `tests/lib/heuristics.test.mjs:1839` asserts it. Behavior 2 implicitly supersedes that contract.
-  The exemption is scoped so the test still passes, but the sibling spec becomes false as written,
-  and the constitution requires updating specs whose assumptions a change invalidates.
-  **Recommendation:** add an explicit amendment note pointing at `retrieval-filtering.spec.md`.
-
-- **SA-6** — `warning` — section `behaviors-0` vs. charter Out of Scope, and ADR-0019
-
-  The charter's Out of Scope list rules out "signatures keyed on validator check IDs" (deferring to
-  content-addressed failure text), yet the shipped key — which this spec pins as the read-side
-  input — is exactly the failing check IDs. Separately, ADR-0019 (Proposed) canonicalizes check IDs
-  to namespace-qualified form with an alias table for historical spellings; if it lands, the same
-  failure yields a different signature before and after, breaking the charter's Signature Stability
-  invariant that recurrence counting and the downstream breaker depend on.
-  **Recommendation:** cite ADR-0019 and state whether the key input is canonicalized or deliberately
-  pinned to raw emitted IDs; reconcile the charter's Out of Scope row.
-
-- **SA-7** — `suggestion` — line citations. The retrieval `continue` is at `lib/heuristics.mjs:1442`,
-  not `:1441` (five citations). `lib/cli/heuristics.mjs:212` is the `__NONE__` text branch; the json
-  empty shape is the following branch. The store-unreadable *throw* path emits
-  `{count:0,rendered:"",error:…}` (`:203`), so "each format's existing empty shape" is not byte-exact
-  there — a test asserting strict equality would fail. (Escalated to blocker via CON-1 below.)
-
-- **SA-8** — `suggestion` — Task Map, "Independent injection cap". The "separate config key" is never
-  named, while the charter names its counterpart (`heuristics.injection_limit`) as a consumed
-  contract. Name it so the manifest surface is a decided contract rather than an implementer's choice.
-
-Known-accepted defects (a)–(d) were observed and are not counted.
-
-## Security Reviewer (security-reviewer)
+## Quick Synthesized Reviewer (quick-synthesized-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-Both revision-1 security blockers were given an explicit disposition, as mandated.
+### CON-1 — warning — Behaviors 4 and 7 / charter Context Budget row
 
-- **`security-reviewer:rate-limiting:06168089` — RESOLVED to non-blocking.** Revision 2 binds the
-  concern concretely: Behavior 7 caps error-triggered retrieval independently and more tightly than
-  entry-time injection (`summary` tier, default 3), never escalating to the entry-time 8 even on
-  fallback (Behavior 4); Behaviors 8 and 9 guarantee retrieval never blocks, never retries, and
-  degrades to nothing on any store failure, so a failure storm cannot cascade into a retrieval storm.
-  The charter's Performance attribute bounds each lookup to one or two file reads under 50 ms.
+The charter (`.context-index/specs/features/heuristics/charter.md:214`) constrains error-triggered
+retrieval to "signature-matched entries only, `summary` tier, default 3". Behaviors 4 and 7
+deliberately widen this to a module-scope fallback within the same cap, which is the correct
+resolution — a first occurrence of any failure matches no signature by definition, so an
+unqualified "signature-matched only" rule would make the modal case return nothing. The
+total-token invariant is preserved (never more than the caller's cap, default 3), so no budget
+invariant is broken. The gap is bookkeeping: the spec's Phase 3 charter-amendment follow-up (the
+Charter note in Behavior 2a) is scoped only to the high/medium *composition* wording and does not
+record this second divergence in the same row.
 
-- **SEC-1** — `suggestion` — category `rate-limiting` — section `behaviors-7`
+**Recommendation:** extend the recorded follow-up to also cover the "signature-matched entries
+only" phrasing, so both known divergences from `charter.md:214` travel together into the Phase 3
+amendment.
 
-  Residual from the above: multiple distinct failure surfaces in one task (validate FAIL → recover
-  dispatch → validate FAIL) each independently re-fire at up to 3 entries. The compounding cache-read
-  cost the charter worries about is bounded *per event*, not *per task*; nothing in Behaviors 6–7 caps
-  the total across repeated failures within one task. Within this threat model (no adversary; worst
-  case is a flaky task retried by the developer who already controls the loop) this is a cost/UX
-  tuning question, not a security finding. **Recommendation:** consider a per-task ceiling on the
-  number of error-triggered injections, or state explicitly that the cap is per-event by design.
+### SA-1 — warning — Error Cases, "Store missing or unreadable" row
 
-- **`security-reviewer:data-exposure:fb9cc805` — RESOLVED, not live in revision 2.** The read side
-  derives its lookup key from exactly the identifier-only input the write side already captured
-  (Behavior 0). The live hook (`hooks/post-validate-extract-heuristics.mjs:174-206`) reads only
-  `checks[].id`/`outcome`, sanitizes ids to `[A-Za-z0-9._-]`, and never touches prose, tool-result
-  channels, or file contents — scoping enforced by `failure-capture.spec.md` Behavior 1a and unchanged
-  here. Retrieval surfaces only entries produced under that scoping, and the signature value itself is
-  an opaque SHA-256 prefix, never raw failure prose. No new exposure surface is introduced by the
-  `signature` axis or by the second injection.
+The row states the json output is `{"count":0,"rendered":""}`. The live store-failure path — the
+`catch` around `retrieveHeuristics` in `lib/cli/heuristics.mjs` — emits a third key:
+`{ count: 0, rendered: "", error: <message> }`. Only the *success*-path empty shape at `:214` is
+two-key. Because the spec's normative instruction in Behavior 5 is "preserving each format's
+existing empty-result shape **exactly**", an implementer following the literal Error Cases row
+would drop the `error` field and change existing behavior.
 
-- **SEC-2** — `suggestion` — category `data-exposure` — section `behaviors-5` / `error-cases`
+Independently confirmed by the aggregator against live source.
 
-  Behavior 5 and the "Store missing or unreadable" Error Cases row mandate the json empty shape be
-  exactly `{"count":0,"rendered":""}`. The shipped `runRetrieve` catch branch
-  (`lib/cli/heuristics.mjs:196-206`) instead emits `{"count":0,"rendered":"","error":<err.message>}`.
-  If `retrieveHeuristics` throws past its internal per-read try/catch, that message can carry an
-  absolute local path to stdout and into injected context. Low severity in a single-local-user threat
-  model, but it is a genuine spec/implementation gap on the very row the spec added to correct the
-  rev-1 CLI claim. **Recommendation:** state explicitly that the empty-shape response never includes
-  an `error` field, with diagnostic detail relegated to the stderr warning channel Behavior 9 already
-  requires — or correct the row to describe the shape the code actually emits.
+**Recommendation:** correct the Error Cases row to name the catch-path shape including `error`, and
+keep the two-key `:214` shape scoped to Behavior 5's matched-nothing case.
 
-- **Input validation — no finding.** Matching is exact string comparison, never regex over
-  user-supplied values. `SIGNATURE_PATTERN` (`^[a-z0-9][a-z0-9-]{0,63}$`) has no catastrophic
-  backtracking; a malformed stored signature is inert per the Error Cases table. Derivation input is
-  restricted to sanitized `checks[].id` values or an already-canonical `blocker_id`, never free text.
-  No YAML or markdown injection surface — serialization is unchanged machinery.
+### SA-2 — suggestion — Behavior 4, second paragraph
 
-## Consistency Analyzer (consistency-analyzer)
+Behavior 4 attributes the phrase "signature-matched entries only, capped at 3" to Behavior 7, but
+Behavior 7 as written in revision 3 already says "drawn from signature matches where any exist and
+otherwise from module scope". The quoted phrase is the charter's, not this spec's — stale prose
+carried from the prior revision. The resolved text is internally consistent; only the attribution
+is wrong.
 
-**Verdict:** BLOCK
+**Recommendation:** attribute the quote to the charter row.
 
-- **CON-1** — `blocker` — `blocker_id: consistency-analyzer:code-citation:76923748` — section `behavioral-contract`
+### SA-3 — suggestion — Error Cases, "Injection cap reached" row
 
-  Category `contract`. **This spec:** the Behavioral Contract, Behavior 2, and the Task Map row
-  "Exempt exact matches from the `low` floor" all cite `lib/heuristics.mjs:1441` as "the `continue`
-  inside `retrieveHeuristics`'s budget loop" (five citations in total). **Conflicts with:** live code —
-  `:1441` is the loop header `for (const entry of deduped) {`; the conditional
-  `if (entry.confidence === "low") continue;` is at **`:1442`**. Separately,
-  `lib/cli/heuristics.mjs:212` is cited as the source of the json empty shape but is the `__NONE__`
-  text branch; the json branch is `:214`. Revision 1 was blocked for a false citation on this exact
-  line; revision 2 corrected the *function* but not the *number*, and its own implementer warning
-  ("The only line this spec touches is `:1441`") is therefore still wrong.
-  **Recommendation:** replace all `:1441` citations with `:1442` and the `lib/cli/heuristics.mjs:212`
-  citation with `:214`, and verify the numbers at write time rather than by inference.
+"drops are reported in the rendered output" introduces an output requirement the live budget loop
+does not implement (it drops silently), and it has no corresponding Task Map entry or acceptance
+criterion.
 
-  *Aggregator note:* the reviewer emitted three section anchors on this finding; the sidecar records
-  the first (`behavioral-contract`) per the writer's single-anchor contract. The other implicated
-  sections are `behaviors-2` and `actionable-task-map`.
+**Recommendation:** either drop the clause or give it a task and a criterion.
 
-- **CON-2** — ~~`blocker`~~ **demoted to `suggestion` by the aggregator** — section `behaviors-1`
+### Security lens
 
-  The reviewer flagged as a blocker that `retrieveHeuristics` has no `signature` option
-  (`lib/heuristics.mjs:1350`) and `lib/cli/heuristics.mjs` has no `--signature` flag, then wrote in its
-  own Recommendation: *"this is not a conflict with shipped code but an implementation gap tracked by
-  the Task Map."* The finding self-refutes: this spec is `review-pending` and pre-implementation, and
-  absent-by-design future work is not a contract mismatch. Propagating it into `.blockers.md` would
-  direct `/adev:specify --revise` to "fix" the spec by deleting its own reason for existing.
-  Demoted and excluded from the sidecar; recorded here for audit.
+No findings. The spec introduces no auth, credential, or trust-boundary surface. `signature`
+matching is exact string comparison over already-parsed frontmatter (no index, no search library,
+consistent with the constitution's "Minimize external dependencies"). Malformed `--signature`
+values degrade to no-match rather than to an argument error, which is the right call for a path
+that only ever runs during a failure. Retrieved content is inert markdown per the charter's Safety
+attribute. Both revision-1 security blockers remain resolved.
 
-- **CON-3** — `warning` (folded into blocker `structural-architect:contradictory-scope:0c91e320`) — section `behaviors-6`
+### Known defects reviewed and confirmed out of scope
 
-  Category `contract`. Behavior 6 names four failure points but specifies a derivation input for only
-  one (validate) in full and one (BLOCK) by reference; independent confirmation of SA-1.
-  **Recommendation:** add a table to Behavior 6 with one row per failure point — origin, exact
-  signature input source, and where in the payload it is read.
+Defects (a) charter Consumed/Exposed API rows and `FailureSignature.digest` lag, (b) charter
+`EvidenceRef.source` enum vs the store's four spellings, (c) `failure-signature-key.spec.md`
+lagging its implementation, (d) the latent 500-char `pattern` cap, and (e) the Context Budget
+wording gap were all reviewed. Each is correctly out of this spec's scope or already recorded as a
+follow-up. (e) is the same charter row as CON-1.
 
-- **CON-4** — `warning` (folded into blocker `structural-architect:unbudgeted-exemption:4e641159`) — section `behaviors-2`
-
-  Category `domain-model`. Behavior 2 exempts signature-matched `low` entries from the floor but never
-  specifies whether they are budgeted separately or consume the high/medium allocations, against the
-  charter's Context Budget attribute ("max five `high` plus three `medium` per task context packet").
-  Independent confirmation of SA-3.
-
-- **CON-5** — `suggestion` — section `behaviors-1`
-
-  Category `terminology`. `retrieval-filtering.spec.md` and `keyword-tags-and-tiered-retrieval.spec.md`
-  both establish confidence as the primary sort key; Behavior 1's "above confidence" is compatible only
-  under the signature-primary reading revision 2 in fact adopts. The aggregator judges the rev-1
-  ambiguity (`consistency-analyzer:contract:6987d58f`) resolved — revision 2 states the decision and
-  its justification explicitly — but the two sibling specs still read as if confidence were primary.
-  **Recommendation:** amend the sibling specs' sort-key language, or add a pointer from them to this
-  spec's decision.
-
-- **CON-6** — `suggestion` — section `postconditions`
-
-  Category `pattern`. Postcondition 1 ("A recurring failure surfaces its own prior lesson at the moment
-  it recurs") reads as an unconditional guarantee, while the Error Cases unmatched-signature row and
-  Behaviors 4, 8, and 9 all provide paths where nothing is returned.
-  **Recommendation:** reword to "when a signature match exists it is returned; failures with no
-  recorded history fall back per Behavior 4."
-
-Known-accepted lags (a)–(d) were observed and are not counted.
-
-## Aggregator adjudication
-
-Three blocker entries reach the sidecar. Partitioned against the revision-1 set as instructed:
-
-| blocker_id | Reviewer | Section | Class |
-|---|---|---|---|
-| `structural-architect:contradictory-scope:0c91e320` | structural-architect | `behaviors-6` | **NEW** — not present in revision 1 |
-| `structural-architect:unbudgeted-exemption:4e641159` | structural-architect | `behaviors-2` | **PERSISTENT** — carried forward verbatim from revision 1 |
-| `consistency-analyzer:code-citation:76923748` | consistency-analyzer | `behavioral-contract` | **NEW id, same defect class** as revision 1's `structural-architect:false-code-citation:50e43d50` |
-
-`structural-architect:unbudgeted-exemption:4e641159` is carried forward under its original revision-1
-id rather than re-issued: no reviewer this round asserts it resolved, both independently re-raised it
-(SA-3, CON-4), and the aggregator confirmed against live code that the budget loop splits `limit` into
-`highMax`/`mediumMax` buckets that a `low` entry fits neither of. Compounding it, the Error Cases row
-"Injection cap reached | Extra matches are dropped, highest-confidence first retained" directly
-contradicts Behavior 1's signature-primary ordering: under "highest-confidence first retained" a `low`
-signature match is dropped before an unrelated `medium` entry, which is precisely the outcome
-Behavior 1 exists to prevent. Reviewers rated it `warning` this round; the aggregator does not promote
-severities, so it enters the sidecar under its standing revision-1 blocker classification.
-
-`consistency-analyzer:contract:5c9d7e41` was emitted as a blocker and is **excluded** — see CON-2.
-No `LEGACY_REVIEWER_OUTPUT`, `INVALID_BLOCKER_ID`, or `MISSING_SECTION_ANCHOR` advisories: all three
-sidecar entries carry well-formed ids and anchors. No `BLOCKER_ID_COLLISION`.
-
-## Independent aggregator verification
-
-Checked at review time, outside any reviewer:
-
-- The Behavioral Contract's opening claim is exact. There are exactly eight `adev heuristics retrieve`
-  call sites across `skills/*/SKILL.md`, and only `skills/debug/SKILL.md:70` passes `--keyword`.
-- `deriveSignature` is exported once, at `lib/heuristics.mjs:210`. The only composition sites are the
-  hook at `:201` and the CLI at `lib/cli/heuristics.mjs:402`. Behavior 0's "one exported helper" claim
-  is achievable as written.
-- `grep -n 'entry.confidence === "low"' lib/heuristics.mjs` → `1157`, `1204`, `1442`. The spec's `:1204`
-  attribution to `demoteHeuristic`'s archive branch is correct; its `:1441` is not (CON-1).
-- `--format` default is `json` (`lib/cli/heuristics.mjs:146`) and the four argument-error paths do exit
-  1. Behavior 5's corrected CLI contract holds except for the `error` field noted in SEC-2.
+---
 
 ## Summary
 
-**Total findings:** 16 (3 blockers, 6 warnings, 7 suggestions)
-**Action required:** Revise the spec to revision 3 addressing the three sidecar blockers, then
-re-run `/adev:review-specs`. Revision 2 made real progress — four of the five revision-1 structural
-defects and both security blockers are genuinely resolved, and the spec's factual claims about
-`deriveSignature`, `demoteHeuristic`, the CLI defaults, and the eight call sites now hold against
-shipped code. What remains is one unresolved carry-forward (the exemption's budget arithmetic), one
-newly-exposed scope contradiction (Behavior 6's four surfaces versus Behavior 0a's two), and a
-line-number correction. None require re-deciding anything revision 2 decided.
+**Total findings:** 4 (0 blockers, 2 warnings, 2 suggestions)
+**Action required:** None blocking. The spec is implementable and internally consistent at revision
+3; all three revision-2 blockers, including the persistent `unbudgeted-exemption:4e641159` carried
+from revision 1, are resolved. Proceed to `/adev:plan --spec .context-index/specs/features/heuristics/signature-retrieval.spec.md`.
+The two warnings (CON-1, SA-1) are editorial corrections that can be folded into planning or a
+later revision without another review round; SA-1 in particular should reach the implementer, since
+following the Error Cases row literally would change the CLI's existing store-failure output shape.
 
-> **Governance footer:** `.context-index/governance/gates.yaml` declares `transitions: {}` — no
-> `spec-to-plan` approver role is defined, so no human approval gate applies to this transition.
-> `risk-policies.yaml` sets `require_hitl_approval: false` for `medium`.
+**Governance footer:** `gates.yaml` declares no `spec-to-plan` approver role, so no additional
+human approval is gated on this transition. `risk-policies.yaml` sets `require_hitl_approval: false`
+for `medium`.

@@ -13,3 +13,6 @@
 {"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"BLOCK: low-confidence exemption still unbudgeted against the high/medium split (persistent rev-1 blocker); retrieval continue is at :1442 not :1441.","ts":"2026-08-15T18:51:36.930Z"}
 {"event":"step_completed","step":"review","verdict":"FAIL","ts":"2026-08-15T18:52:11.332Z"}
 {"event":"spec_revised","from_revision":2,"to_revision":3,"addressed_blocker_ids":["consistency-analyzer:code-citation:76923748","structural-architect:contradictory-scope:0c91e320","structural-architect:unbudgeted-exemption:4e641159"],"unresolved_blocker_ids":[],"ts":"2026-08-15T18:53:41.258Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-15T18:55:07.357Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"PASS_WITH_NOTES","notes":"Quick tier, single synthesized reviewer. All three prior blockers RESOLVED incl. persistent 4e641159 (Behavior 2a off-the-top allocation verified arithmetically). 2 warnings, 2 suggestions.","ts":"2026-08-15T18:58:19.979Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-08-15T18:59:31.482Z"}
