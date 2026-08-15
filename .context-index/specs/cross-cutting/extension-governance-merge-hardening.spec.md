@@ -29,81 +29,97 @@ governance registries compose, which is `explicit-governance-registries.spec.md`
 
 ## Current State
 
+> **All line references in this section are to the code as it stood on 2026-08-14, before this spec
+> was implemented. They are retained as the forensic record of the defects; they do not describe
+> current code.** Several of the functions named below no longer exist, and the line numbers have
+> long since moved. Everything from [Target State](#target-state) onward describes shipped behavior
+> and is cited against current code.
+
 ### Structure
 
-| File | Role | Lines |
+| File | Role (as of 2026-08-14) | Lines then |
 |---|---|---|
-| `lib/extensions/install.mjs` | Reads `provides.governance[]`, picks `target`, calls the merge | `:91` |
-| `lib/extensions/content-install.mjs` | `mergeGovernanceEntries`, `validateGovernanceEntry`, `isValidGovernanceValue`, `inferRootKey`, `serializeGovernanceYaml` | `:101-269` |
+| `lib/extensions/install.mjs` | Read `provides.governance[]`, picked `target`, called the merge | `:91` |
+| `lib/extensions/content-install.mjs` | `mergeGovernanceEntries`, plus `validateGovernanceEntry`, `isValidGovernanceValue`, `inferRootKey` and `serializeGovernanceYaml` — all four removed by this spec | `:101-269` |
 | `extensions/example-validation-check/` | The reference extension; the only consumer of this path | — |
-| `tests/lib/extensions/example-validation-check-install.test.mjs` | Encodes one of the defects as expected behavior | `:208` |
+| `tests/lib/extensions/example-validation-check-install.test.mjs` | Encoded one of the defects as expected behavior | `:208` |
 
 ### Problems
 
-Seven defects, all in the same function cluster, all reachable from a manifest field. Two carry board
+Seven defects, all in the same function cluster, all reachable from a manifest field. Two carried board
 issues (`adev-plugin-xg1f.1`, `adev-plugin-xg1f.2`); three were found in successive reviews of the
-parent spec.
+parent spec. Stated in the past tense throughout: each was true of the pre-fix code and each is
+closed by this spec.
 
-1. **Path traversal — reproduced.** `install.mjs:91` takes `target` from the manifest;
-   `mergeGovernanceEntries` does `join(govDir, targetFile)` then `writeFileSync` with no containment
+1. **Path traversal — reproduced.** `install.mjs:91` took `target` from the manifest;
+   `mergeGovernanceEntries` did `join(govDir, targetFile)` then `writeFileSync` with no containment
    check. Verified 2026-08-14: `target: '../../ESCAPED.yaml'` wrote outside
    `.context-index/governance/` and returned without error. Two sibling functions in the same file
-   already do the check this one omits — `installSamples` (`:307-318`) and `installSkillExtensions`
-   (`:383-384`) both `resolve()` and verify `startsWith(resolvedDir + '/')`. **Neither uses
-   `realpathSync`** — the sibling pattern is containment against a lexically resolved path only, so
-   this spec adds the symlink step rather than inheriting it.
+   already did the check this one omitted — `installSamples` and `installSkillExtensions` both
+   `resolve()` and verify `startsWith(resolvedDir + '/')`. **Neither uses `realpathSync`** — the
+   sibling pattern is containment against a lexically resolved path only, so this spec adds the
+   symlink step rather than inheriting it.
 
-2. **No field allowlist.** `validateGovernanceEntry` (`:101-133`) validates `id` — type, non-empty,
-   ≤128 chars — and then checks every other field's *value* shape at `:121-132` via
-   `isValidGovernanceValue`. What it never checks is the field *name*: any key passes through
-   verbatim, so an extension can declare provenance or state fields that the governance model treats
-   as authoritative.
+2. **No field allowlist.** `validateGovernanceEntry` (`:101-133`, removed by this spec) validated
+   `id` — type, non-empty, ≤128 chars — and then checked every other field's *value* shape at
+   `:121-132` via `isValidGovernanceValue` (also removed). What it never checked was the field
+   *name*: any key passed through verbatim, so an extension could declare provenance or state fields
+   that the governance model treats as authoritative.
 
-3. **Fill-gap merging injects executable fields.** The collision path fills absent keys rather than
-   rejecting (`:206-210`): `if (!(key in projectEntry)) projectEntry[key] = value`. `gates.yaml`
-   entries carry `command:`, which reaches `spawnSync` (`spawnGate` at `lib/gates/doctor.mjs:755-768`,
-   invoked from `:1004` — the same set Check 1 executes). An extension colliding on a gate id whose
-   project entry has no `command` —
-   the commented `lint`/`typecheck` scaffolds, or any gate seeded without one — injects a shell
-   command into a **project-owned** entry. A per-registry field allowlist does not help: `command`
-   is a legitimate `gates.yaml` field.
+3. **Fill-gap merging injected executable fields.** The collision path filled absent keys rather
+   than rejecting (`:206-210`): `if (!(key in projectEntry)) projectEntry[key] = value`. `gates.yaml`
+   entries carry `command:`, which reaches `spawnSync` — today that is `spawnGate` at
+   `lib/gates/doctor.mjs:755-768`, invoked from `:1004`, the same set Check 1 executes. An extension
+   colliding on a gate id whose project entry had no `command` — the commented `lint`/`typecheck`
+   scaffolds, or any gate seeded without one — injected a shell command into a **project-owned**
+   entry. A per-registry field allowlist does not close this on its own: `command` is a legitimate
+   `gates.yaml` field.
 
-4. **Destructive serialization.** `serializeGovernanceYaml` (`:242-256`) emits one root key and its
-   entries. Sibling keys and comments are dropped. Combined with defect 5, installing the reference
-   extension against a real `validate.yaml` replaced 7 checks and 20 lines of comments with three
-   lines — verified 2026-08-14.
+4. **Destructive serialization.** `serializeGovernanceYaml` (`:242-256`, removed by this spec)
+   emitted one root key and its entries. Sibling keys and comments were dropped. Combined with
+   defect 5, installing the reference extension against a real `validate.yaml` replaced 7 checks and
+   20 lines of comments with three lines — verified 2026-08-14.
 
-5. **Root-key mismatch.** `inferRootKey('validate.yaml')` returns `'validators'` (`:235`), but the
-   schema key is `checks:` — what `validate-config.mjs:110` reads, and what the project file and
+5. **Root-key mismatch.** `inferRootKey('validate.yaml')` returned `'validators'` (`:235`;
+   the helper was removed by this spec), but the schema key is `checks:` — what
+   `validate-config.mjs:110` reads, and what the project file and
    `templates/domains/software/validate.yaml` both use. `boundaries.yaml` and `diagnostics.yaml`
-   work only because the fallthrough returns the filename stem, which happens to be correct.
+   worked only because the fallthrough returned the filename stem, which happened to be correct.
 
-6. **No escaping contract.** Nothing specifies how a scalar is serialized. A newline inside any
-   extension-supplied string writes YAML at column 0, so a crafted `description` or `id` can emit
+6. **No escaping contract.** Nothing specified how a scalar was serialized. A newline inside any
+   extension-supplied string wrote YAML at column 0, so a crafted `description` or `id` could emit
    arbitrary keys into the file — defeating the field allowlist, provenance stamping and every other
-   guard in one move. This defect makes the others' fixes conditional on it.
+   guard in one move. This defect made the others' fixes conditional on it, which is why the scalar
+   rule is sequenced first in the Migration Path.
 
-7. **A parse failure destroys the registry.** `content-install.mjs:187-189` catches a YAML parse
-   error and starts from an empty entry set, so an unparseable file is overwritten with only the
-   extension's entries — silently, and with collision detection bypassed because nothing remains to
+7. **A parse failure destroyed the registry.** `content-install.mjs:187-189` caught a YAML parse
+   error and started from an empty entry set, so an unparseable file was overwritten with only the
+   extension's entries — silently, and with collision detection bypassed because nothing remained to
    collide with.
 
-*(An eighth defect — no uninstall reversal for governance entries — is real but out of scope here;
-see Out of Scope.)*
+*(An eighth defect — no uninstall reversal for governance entries — was real but out of scope here
+and remains open; see Out of Scope.)*
 
 ### Why this is an oversight rather than a design choice
 
 The extension governance path is the *right* model — it writes into the project's own file at install
-time, project-wins on collision, with no run-time overlay. It has simply never been exercised: neither
-shipped extension (`data-engineering`, `process-automation`) uses `provides.governance`; both go
-through `installDomainProfile`. The only consumer is the reference example that documents the
-mechanism. Meanwhile `tests/lib/extensions/example-validation-check-install.test.mjs:208` encodes
-defect 5 as expected behavior (`const entries = validate.validators || validate.checks || []`;
-`:206-207` is the comment above it), which is why it survived.
+time, project-wins on collision, with no run-time overlay. It had simply never been exercised: neither
+shipped extension (`data-engineering`, `process-automation`) used `provides.governance`; both go
+through `installDomainProfile`. The only consumer was the reference example that documents the
+mechanism. Meanwhile `tests/lib/extensions/example-validation-check-install.test.mjs:208` encoded
+defect 5 as expected behavior (`const entries = validate.validators || validate.checks || []`, with
+the comment above it at `:206-207`), which is why it survived. That assertion was corrected as part
+of this spec's implementation, so `:208` no longer holds it.
 
 ## Target State
 
 ### Structure
+
+The left column names the pre-fix functions from Current State, so the two tables line up row for
+row. Only `mergeGovernanceEntries` kept its name: the other four were replaced rather than edited,
+landing as `validateEntryFields` / `resolveRootKey` (`lib/extensions/governance-registry.mjs`),
+`spliceRegistryEntries` (`lib/extensions/governance-splice.mjs`) and `assertValidValue`
+(`lib/extensions/governance-values.mjs`).
 
 | Function | After |
 |---|---|
