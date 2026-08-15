@@ -1,12 +1,12 @@
 ---
 mode: cross-cutting
-affects: [validation, unified-gates, review, cli-driver-surface]
+affects: [validation, unified-gates, review, cli-driver-surface, agent-reliable-state-artifacts, domain-extensions]
 depends-on:
   - .context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md
 kind: refactor
 status: review-passed
 risk_level: medium
-revision: 4
+revision: 5
 created: 2026-08-14
 updated: 2026-08-15
 tracker-ref: adev-plugin-8ekd.1
@@ -26,7 +26,7 @@ tracker-ref: adev-plugin-8ekd.1
 | `.context-index/governance/validate.yaml` | Composite post-implementation verdict | **Replace-all** — no bundled read, no overlay (`lib/governance/validate-config.mjs:74`) | 7 checks, explicit |
 | `.context-index/governance/review.yaml` | Subjective architectural review | **Three-layer overlay** — bundled → domain → project (`lib/governance/review-config.mjs:53-79`) | `reviewers: []` — 3 reviewers run, none named |
 | `.context-index/governance/diagnostics.yaml` | Artifact-level verifiability | **Append, first-wins**; bundled `plugin:` entries unshadowable | 4 entries, explicit |
-| `.context-index/governance/gates.yaml` | Process gates | **Domain-merged** via `lib/domains/merge-gates.mjs` | 1 uncommented gate (`test`); `integration-test` present; `transitions: {}` |
+| `.context-index/governance/gates.yaml` | Process gates | **Domain-merged** via `lib/domains/merge-gates.mjs` | `test` only; `lint`, `typecheck`, `integration-test` commented out; `transitions: {}` |
 | `.context-index/governance/boundaries.yaml` | Single-regex content rules | n/a | `boundaries: []` |
 
 ### Problems
@@ -44,7 +44,7 @@ tracker-ref: adev-plugin-8ekd.1
 ### Dependencies
 
 - `lib/governance/validate-config.mjs`, `lib/governance/review-config.mjs` — registry loaders; the composition models live here.
-- `lib/domains/merge-gates.mjs`, `lib/domains/merge-reviewers.mjs` — the overlay machinery this spec makes explicit rather than implicit.
+- `lib/domains/merge-gates.mjs`, `lib/domains/merge-reviewers.mjs::mergeReviewers` (exported; sole consumer `lib/cli/domain.mjs:53`) — the overlay machinery this spec makes explicit rather than implicit. It is **retained**, and moves from run time to scaffold time. This is a different function from the module-private `mergeReviewers` in `lib/governance/review-config.mjs:312`, which REMOVED targets; the two share a name and nothing else (CON-4).
 - `lib/gates/doctor.mjs` — consumes gates; blocks this work (`adev-plugin-3sw`).
 - `skills/hygiene/SKILL.md` Audit Pass 19 (Validate Config Drift) — the compensating mechanism the validation charter pairs with single-source. Extending single-source to three more registries extends this pass's remit.
 - ADR-0010 (Proposed) — role assignments consumed here as normative. This spec does **not** move any check between surfaces, so neither of the ADR's two deferrals is implicated.
@@ -97,31 +97,36 @@ one-way.
 ### ADDED
 
 - `adev boundaries check [--json]` — CLI verb evaluating `boundaries.yaml` regexes against changed files. Wraps a new `lib/governance/boundaries.mjs`.
-- `adev gate transitions check [--json]` — CLI verb evaluating `transitions` required-gates for a lifecycle transition.
+- `adev gate transitions [--json]` — CLI verb evaluating `transitions` required-gates for a lifecycle transition. Two tokens, not three: `docs/cli-reference.md` has no three-token precedent (`adev gate doctor`, `adev gate require`, `adev domain load-gates`), so the earlier three-token spelling (which appended a `check` token) is dropped (CON-5, DDR-8).
+- `skills/validate/checks/validate.check-1-quality-gates.md` — **a new file.** Check 1 has no check body on disk today (`skills/validate/checks/` holds `check-1.5` through `check-14`, but no `check-1`), so this is an addition, not a modification. Its body records the per-gate outcome array described in MODIFIED.
 - `enabled` + `disabled_reason` fields on entries in `review.yaml`, `diagnostics.yaml`, `gates.yaml`, `validate.yaml`.
 - `adev governance materialize --registry <name>` — one-shot verb writing the currently-effective merged set into the project's yaml, so existing projects can adopt single-source without hand-transcribing defaults.
 - Boundary rules in `boundaries.yaml` derived from the constitution's mechanical anti-patterns.
 - `transitions` entries in `gates.yaml` naming gates that carry real argv commands.
 - `source:` **vocabulary extension only.** The field itself is declared and installer-stamped by `extension-governance-merge-hardening.spec.md` (value `extension:<name>`). This spec adds the `project` | `bundled` | `domain:<slug>` values, written by `adev governance materialize`, and consumes the field in Step 6's drift pass. Declaring it there rather than here is what keeps the dependency one-way — that spec is implementable against the registries as they stand today.
-- `materialized_at` — **top-level root key** in each governance yaml (a sibling of `checks:` / `reviewers:` / `gates:` / `diagnostics:` / `boundaries:`, never an entry field), holding an ISO-8601 UTC timestamp. It is the sole discriminator of the un-materialized state, so its writers and immutability are contract, not incidental:
+- `materialized_at` — **top-level root key** in a **marked registry** (a sibling of `reviewers:` / `diagnostics:` / `gates:`, never an entry field), holding an ISO-8601 UTC timestamp. It is the sole discriminator of the un-materialized state, so its applicable set, its writers and its immutability are contract, not incidental:
+  - **Marked registries, exhaustively (SA-2):** `review.yaml`, `diagnostics.yaml`, `gates.yaml` — exactly the three that Step 5 materializes. `validate.yaml` and `boundaries.yaml` are **exempt**: both are already explicit single-source today, so there is no implicit-to-explicit transition for a marker to record (the Target State table lists both "unchanged"). Marking them would make `/adev:validate` Check 8 unreachable on the current tree (`boundaries: []` with no marker would halt the caller instead of reaching Behavior 1's SKIP) and would make an extension install against `validate.yaml` — the reference extension's actual target, `tests/lib/extensions/example-validation-check-install.test.mjs:49` — refuse.
   - **Writers, exhaustively:** `adev governance materialize` stamps it when absent, and `/adev:init` scaffolding stamps it when creating a registry from a domain starter. Nothing else writes it.
   - **Write-once.** Once present it is never refreshed. Re-materialization preserves the original value, which is what keeps Behavior 6's byte-identical guarantee true on the second and subsequent runs.
   - **Installer-immutable.** Extension install never writes, refreshes or removes it, and an extension-supplied `materialized_at` in entry data is rejected exactly as a supplied `source` is.
 
 ### MODIFIED
 
-- `lib/governance/review-config.mjs` — drop the three-layer overlay; read the project file as authoritative.
+- `lib/governance/review-config.mjs` — drop the three-layer overlay; read the project file as authoritative. Also carries the `__source` → on-disk `source:` vocabulary mapping declared under Review-Debt Dispositions (DDR-4), which is what makes `project-override` and `manifest-specialist` entries defined rather than undefined for Step 6's drift pass.
 - `lib/diagnostics/index.mjs` — bundled `plugin:` entries become explicit registry rows rather than implicit additions.
 - `lib/domains/merge-gates.mjs` — retained for `adev governance materialize` and `/adev:init` scaffolding; no longer consulted at run time.
 - `skills/validate/checks/validate.check-8-boundaries.md` — body becomes a call to `adev boundaries check --json`, following the `check-14-gate-executability` pattern.
-- `skills/validate/checks/validate.check-9-transition-gates.md` — same, calling `adev gate transitions check --json`.
+- `skills/validate/checks/validate.check-9-transition-gates.md` — same, calling `adev gate transitions --json`.
 - `.context-index/governance/validate.yaml` — Checks 8 and 9 change `kind: subagent-review` → `deterministic-check`.
-- `skills/hygiene/SKILL.md` Audit Pass 19 — remit extended from `validate.yaml` to all four registries; entries with a non-`project` `source` are excluded from drift findings.
-- `skills/validate/checks/validate.check-1-quality-gates.md` + the `validator_report` payload — Check 1 additionally records a per-gate outcome array (`[{id, verdict, tier}]`) alongside its existing aggregate verdict. This is a payload extension to an existing `CANONICAL_EVENTS` variant, **not** a new variant, so it does not cross the ADR-0009 `[BOUNDARY: human-approved]` line that adding a gate-outcome event would.
+- `skills/hygiene/SKILL.md` Audit Pass 19 — remit extended from `validate.yaml` to all four registries. The non-`project` `source` exclusion is **narrowed to unadopted-upgrade findings only** (DDR-6): a non-`project` entry is still exempt from "you have not adopted this new bundled entry" noise, but Pass 19 additionally emits a sub-finding listing every non-`project` entry carrying an execution-bearing field (`command`, `runner`, `prompt`, `pattern`).
+- **The `validator_report` payload** — Check 1 additionally records a per-gate outcome array (`gate_outcomes`) alongside its existing aggregate verdict. This is a payload extension to an existing `CANONICAL_EVENTS` variant, **not** a new variant, so it does not cross the ADR-0009 `[BOUNDARY: human-approved]` line that adding a gate-outcome event would. The two writers are named below, because today neither can carry the array (SA-1):
+- `lib/cli/report.mjs` — gains a **`--gate-outcomes <json>` flag** on `adev report --type validator`, carrying the per-gate outcome array. Today the validator flag set is closed (`--error` / `--score` / `--duration-ms` / `--notes`, `lib/cli/report.mjs:427-442`), so an unlisted array has no transport.
+- `lib/lifecycle-state.mjs::reportValidator` — gains `gate_outcomes` and `manifest_sha` in its destructured argument list and in the constructed `payload`. Today it destructures a fixed argument list and builds `payload` from only those fields (`lib/lifecycle-state.mjs:866-886`), so an unlisted field is silently dropped. `manifest_sha` is the spec source-manifest `sha` at the moment of the gate run, consumed by Behavior 4's freshness rule.
+  Both optional fields are recorded against the `validator_report` variant in `lifecycle-event-log.spec.md`, attributed to this spec — the mechanism that spec already uses to record `revision` contributed by `review-block-auto-retry`. That charter (`agent-reliable-state-artifacts`) is in this spec's `affects:` list for exactly this reason.
 
 ### REMOVED
 
-- Implicit bundled-reviewer injection in `review-config.mjs`.
+- Implicit bundled-reviewer injection in `review-config.mjs` — specifically the module-private `mergeReviewers` at `lib/governance/review-config.mjs:312` and its call site at `:85`. The identically-named **exported** `mergeReviewers` in `lib/domains/merge-reviewers.mjs:26` is **not** removed; it is retained for scaffold-time use by its one consumer, `lib/cli/domain.mjs:53` (CON-4).
 - Run-time domain merging of gates.
 
 ### RENAMED
@@ -171,9 +176,10 @@ with nothing left to populate the effective set — `/adev:review-specs` would d
 while still reporting a verdict. Invariant 2 forbids exactly that.
 
 **Resolution: fail closed, do not silently degrade.** The loaders gain an explicit
-un-materialized state. **A registry is un-materialized if and only if its project file lacks a
-`materialized_at` marker.** Entry count is irrelevant, and so is whether bundled or domain defaults
-exist.
+un-materialized state. **A marked registry — `review.yaml`, `diagnostics.yaml`, `gates.yaml` — is
+un-materialized if and only if its project file lacks a `materialized_at` marker.** Entry count is
+irrelevant, and so is whether bundled or domain defaults exist. The marked set is exactly the set
+this step materializes; `validate.yaml` and `boundaries.yaml` are exempt (SA-2, see ADDED).
 
 Both properties are deliberate. Keying on emptiness would leave the *partially*-populated case open:
 registries compose additively (`review-config.mjs:80-83` merges project reviewers on top of the
@@ -190,8 +196,8 @@ In the un-materialized state the loader raises `REGISTRY_NOT_MATERIALIZED` namin
 the remedy (`adev governance materialize --registry <name>`), and the calling skill halts. It never
 proceeds with a partial or empty set.
 
-Extension install is subject to the same gate: installing into a registry that lacks the marker is
-refused, so an install cannot pre-empt materialization and thereby stamp a registry as materialized
+Extension install is subject to the same gate: installing into a **marked** registry that lacks the
+marker is refused, so an install cannot pre-empt materialization and thereby stamp a registry as materialized
 with only its own entry in it. **This rule is owned here, not by
 `extension-governance-merge-hardening.spec.md`** — the marker is this spec's construct, so the gate
 layers onto the install path after that spec lands. That spec's Invariant 4 anticipates it by
@@ -212,7 +218,10 @@ Ship `adev governance materialize`, run it for `review`, `diagnostics` and `gate
 Widen hygiene Audit Pass 19 to all four registries so upgrades surface as findings, and add a
 disabled-check audit: flag any entry carrying `enabled: false` whose `source` is `bundled` or
 `domain:*`. Absent this, a bundled check can be switched off in an ordinary one-line PR diff and the
-drift pass — which reports only *unadopted new* entries — stays silent (SEC-4).
+drift pass — which reports only *unadopted new* entries — stays silent (SEC-4). Add the
+execution-bearing-field sub-finding from DDR-6 in the same pass: list every non-`project` entry
+carrying `command`, `runner`, `prompt` or `pattern`, so an appended extension gate that reaches
+`spawnSync` is visible even though it is exempt from unadopted-upgrade findings.
 
 - **Risk:** Low.
 - **Verify:** Adding an entry to a bundled default produces a drift finding naming the registry and entry.
@@ -234,7 +243,7 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 2. **When** `boundaries.yaml` declares rules and a changed file matches a rule's `pattern` outside its `exclude` globs **then** the check records FAIL for `severity: error` rules and WARN for `severity: warning` rules, naming file, rule id and matched line.
 3. **When** `/adev:validate` runs Check 9 and `transitions` is empty **then** the check records SKIP, not PASS — a PASS asserts a verification that did not occur.
 4. **When** `transitions` declares `required_gates` for a lifecycle transition **then**
-   `adev gate transitions check --transition <name>` reads the **per-gate outcomes carried in Check
+   `adev gate transitions --transition <name>` reads the **per-gate outcomes carried in Check
    1's `validator_report` payload** and records FAIL naming any required gate without a passing
    outcome. It does **not** execute gates — execution belongs to `gates.yaml` (Check 1) — and it does
    **not** evaluate workflow preconditions such as "did the prior step complete", which ADR-0010's
@@ -250,17 +259,42 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
    adding a `CANONICAL_EVENTS` variant is a `[BOUNDARY: human-approved]` change under ADR-0009, and
    enriching an existing payload stays inside this spec's authority. See MODIFIED.
 
-   **Staleness.** A gate outcome is usable only if recorded at or after the source-manifest SHA the
-   spec currently carries. An outcome predating the current implementation state records SKIP with
-   reason `stale-gate-record`, never a pass.
+   **Outcome record shape.** Each element of `gate_outcomes` is
+   `{ id, verdict, tier, command_sha? }`. This supersedes the earlier `{id, verdict, tier}` triple.
+   `command_sha` is the SHA-256 of the gate's resolved argv, computed by the executor at run time.
+
+   **Staleness (CON-1).** `sha` is a content fingerprint with no temporal ordering, so it cannot be
+   the left side of an "at or after" comparison — `computed-at` is the only ordered field in the
+   `{sha, files, computed-at}` stamp (ADR-0011). An outcome is therefore **fresh** if and only if
+   both hold:
+   1. the enclosing `validator_report` event's own `ts` is at or after the `computed-at` timestamp
+      of the spec's current source-manifest stamp; **and**
+   2. when the payload carries `manifest_sha`, that value equals the spec's current source-manifest
+      `sha`.
+
+   A payload with no `manifest_sha` is a pre-upgrade record: condition 2 is vacuously satisfied and
+   the timestamp comparison alone decides. An outcome that is not fresh records SKIP with reason
+   `stale-gate-record`, never a pass.
+
+   **Attestation (SEC-2).** `gate_outcomes` is written **only** by Check 1, from its own gate
+   execution results. It is never accepted as an authority from an arbitrary
+   `adev report --type validator` payload, because that verb is an open CLI surface any agent or
+   skill-extension block can call. Check 9 therefore re-checks each outcome it reads:
+   - an outcome whose `id` is absent from the resolved `gates.yaml` gate set records SKIP with
+     reason `unattested-gate-record`, never a pass;
+   - an outcome whose `command_sha` **is present** and does not equal the SHA-256 of the resolved
+     argv for that gate id records SKIP with the same reason;
+   - an outcome whose `command_sha` is **missing** is not an error. It is a pre-upgrade record, and
+     the gate-id membership check alone applies — the same fail-soft posture the staleness rule
+     gives a missing `manifest_sha`.
 5. **When** a governance registry entry carries `enabled: false` **then** the check does not run and the report records it as deliberately disabled with its `disabled_reason`, distinct from a check that is absent.
 6. **When** `adev governance materialize --registry <name>` runs against a registry with no `materialized_at` **then** it writes the currently-effective merged set into the project's yaml and stamps `materialized_at` with the current UTC time, and makes no other change.
 7. **When** `adev governance materialize` runs against a registry that already carries `materialized_at` **then** it refreshes the entry set but preserves the existing timestamp verbatim, so a second run against an unchanged effective set produces byte-identical output. Stamping is write-once; the marker records when the registry left the un-materialized state, not when it was last written.
 8. **When** `/adev:init` scaffolds a registry from a domain starter **then** it stamps `materialized_at` at scaffold time, so a freshly initialized project is born materialized and never hits the fail-closed guard on its first run.
 9. **When** a registry has been materialized and the plugin later adds a bundled entry **then** `/adev:hygiene` Audit Pass 19 reports a drift finding naming the registry and the entry, and the project's behaviour is unchanged until it adopts.
 10. **When** `adev gate doctor` inspects gates **then** it inspects exactly the set its consumers execute.
-11. **When** a registry's project file lacks a `materialized_at` marker **then** the loader raises `REGISTRY_NOT_MATERIALIZED` and the calling skill halts — regardless of how many entries the file holds, and without consulting bundled or domain defaults.
-12. **When** a boundary rule's evaluation exceeds its 250 ms per-file budget **then** the worker running it is terminated and the check fails closed naming the rule, exactly as for an invalid pattern — it never hangs the caller. Files above the 1 MB input cap record SKIP rather than being scanned.
+11. **When** a **marked** registry's project file — `review.yaml`, `diagnostics.yaml` or `gates.yaml` — lacks a `materialized_at` marker **then** the loader raises `REGISTRY_NOT_MATERIALIZED` and the calling skill halts — regardless of how many entries the file holds, and without consulting bundled or domain defaults. `validate.yaml` and `boundaries.yaml` are exempt (SA-2): both are already explicit single-source and the Target State table leaves both "unchanged", so their loaders never evaluate the marker and never raise.
+12. **When** a boundary rule's evaluation exceeds its 250 ms per-file budget **then** the worker running it is terminated and the check fails closed naming the rule, exactly as for an invalid pattern — it never hangs the caller. Files above the 1 MB input cap are not scanned; the check **records a finding at the rule's own severity, naming file and rule** (SEC-3 — a silent SKIP would let padding a file past the cap silence every boundary rule on it, a fail-open bypass of a merge gate this spec introduces). The cap is applied via `statSync().size` before reading. Binary content is skipped by the same rule and reported the same way (DDR-14).
 
 ### Error Cases
 
@@ -272,8 +306,8 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 | Registry file missing after materialization | Hard error, as `validate.yaml` already does | `MISSING_REGISTRY_CONFIG` |
 | `enabled: false` without `disabled_reason` | Schema warning; check still disabled | `DISABLED_WITHOUT_REASON` |
 | Boundary rule exceeds its evaluation time budget | Check fails closed naming the rule | `BOUNDARY_PATTERN_TIMEOUT` |
-| Registry project file lacks `materialized_at` | Loader raises; calling skill halts | `REGISTRY_NOT_MATERIALIZED` |
-| Extension install targets a registry lacking `materialized_at` | Install refuses; cannot pre-empt materialization | `REGISTRY_NOT_MATERIALIZED` |
+| A **marked** registry project file (`review.yaml`, `diagnostics.yaml`, `gates.yaml`) lacks `materialized_at` | Loader raises; calling skill halts. `validate.yaml` and `boundaries.yaml` are exempt and never raise | `REGISTRY_NOT_MATERIALIZED` |
+| Extension install targets a **marked** registry (`review.yaml`, `diagnostics.yaml`, `gates.yaml`) lacking `materialized_at` | Install refuses; cannot pre-empt materialization. Installs into the exempt `validate.yaml` / `boundaries.yaml` are unaffected | `REGISTRY_NOT_MATERIALIZED` |
 
 ## Module Impact Map
 
@@ -283,6 +317,8 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 | unified-gates | High | Gates become explicit; `transitions` populated; doctor defect resolved |
 | review | Medium | Bundled reviewers materialized into `review.yaml`; loader drops overlay |
 | cli-driver-surface | Medium | Three new CLI verbs; check bodies become verb calls (the established `check-14` pattern) |
+| agent-reliable-state-artifacts | Low | Two optional `validator_report` payload fields (`gate_outcomes`, `manifest_sha`) recorded in `lifecycle-event-log.spec.md`; `reportValidator` and `adev report --type validator` carry them |
+| domain-extensions | Low — install refuses into a registry lacking `materialized_at` | The marker gate layers onto `lib/extensions/content-install.mjs` after `extension-governance-merge-hardening.spec.md` lands; no other install-path change |
 
 ## Integration Points
 
@@ -310,19 +346,73 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 - [ ] `enabled: false` entries appear in the validate report as deliberately disabled with their reason.
 - [ ] `adev gate doctor` and `/adev:validate` Check 1 operate on the same gate set, asserted by a test.
 - [ ] Hygiene Audit Pass 19 reports drift for all four registries.
-- [ ] Every governance entry carries a `source:` value; hygiene drift findings exclude non-`project` sources.
-- [ ] A registry holding entries but no `materialized_at` marker still raises `REGISTRY_NOT_MATERIALIZED` — asserted with a non-empty `review.yaml`, which is the case a list-emptiness predicate would miss.
+- [ ] Every governance entry carries a `source:` value; hygiene **unadopted-upgrade** findings exclude non-`project` sources, and a separate Pass 19 sub-finding lists every non-`project` entry carrying `command`, `runner`, `prompt` or `pattern`.
+- [ ] A **marked** registry (`review.yaml`, `diagnostics.yaml`, `gates.yaml`) holding entries but no `materialized_at` marker still raises `REGISTRY_NOT_MATERIALIZED` — asserted with a non-empty `review.yaml`, which is the case a list-emptiness predicate would miss. The exempt registries (`validate.yaml`, `boundaries.yaml`) never raise it, asserted by loading both without a marker.
 - [ ] The loader decides materialization from the project file alone, with no read of bundled or domain defaults — asserted by a test that removes the defaults and observes the same verdict.
-- [ ] An extension install into a registry lacking `materialized_at` is refused.
+- [ ] An extension install into a **marked** registry lacking `materialized_at` is refused; an install into `validate.yaml` or `boundaries.yaml` is unaffected by the marker gate.
 - [ ] Round trip: a registry with no marker raises `REGISTRY_NOT_MATERIALIZED`; after `adev governance materialize` the loader proceeds; a second materialize produces byte-identical output including an unchanged `materialized_at`.
-- [ ] A freshly `/adev:init`-scaffolded project carries `materialized_at` on every registry and never raises the guard on first run.
-- [ ] `adev gate transitions check` reads per-gate outcomes from Check 1's `validator_report` payload; a gate outcome older than the spec's current source-manifest SHA records SKIP with `stale-gate-record`, not a pass.
+- [ ] A freshly `/adev:init`-scaffolded project carries `materialized_at` on every **marked** registry (`review.yaml`, `diagnostics.yaml`, `gates.yaml`) and never raises the guard on first run.
+- [ ] `adev gate transitions` reads per-gate outcomes from Check 1's `validator_report` payload; a gate outcome whose event `ts` precedes the `computed-at` of the spec's current source-manifest stamp records SKIP with `stale-gate-record`, not a pass.
+- [ ] A gate outcome whose payload carries a `manifest_sha` unequal to the spec's current source-manifest `sha` records SKIP with `stale-gate-record`, even when its `ts` is recent. A payload with no `manifest_sha` is judged on `ts` alone.
+- [ ] A hand-appended `validator_report` carrying `gate_outcomes` for a gate id absent from the resolved `gates.yaml` set records SKIP with `unattested-gate-record` and does not satisfy a transition's `required_gates`.
+- [ ] An outcome whose `command_sha` is present and does not match the SHA-256 of the gate's resolved argv records SKIP with `unattested-gate-record`, not a pass.
+- [ ] An outcome with **no** `command_sha` is not rejected on that basis — it is judged by gate-id membership alone, asserted by a fixture holding a pre-upgrade record.
+- [ ] `lib/cli/report.mjs` accepts `--gate-outcomes` and `reportValidator` persists `gate_outcomes` and `manifest_sha` into the `validator_report` payload, asserted by a round-trip test that writes and re-reads the event.
 - [ ] No new `CANONICAL_EVENTS` variant is introduced — asserted by a test pinning the variant list, so the ADR-0009 boundary stays uncrossed.
-- [ ] `adev gate transitions check` records FAIL naming any required gate without a passing record, and never executes a gate.
+- [ ] `adev gate transitions` records FAIL naming any required gate without a passing record, and never executes a gate.
 - [ ] A catastrophically-backtracking pattern (`(a+)+$`) against a crafted input terminates within the 250 ms budget and records a failure naming the rule — asserted by a test that would hang without worker termination.
+- [ ] A file above the 1 MB input cap produces a finding at the offending rule's own severity naming file and rule — not a silent SKIP — asserted by a fixture padded past the cap that would otherwise match an `error`-severity rule.
 - [ ] Hygiene flags `enabled: false` on any `bundled`/`domain:*` entry.
 - [ ] No check identifier changed; no check moved between surfaces.
 - [ ] All quality gates pass; no constitutional violations.
+
+## Review-Debt Dispositions
+
+The revision-4 architecture review carried four warnings that had survived multiple revisions
+untouched. They are decided here, so the next reviewer reads a disposition rather than silence.
+
+| Ref | Finding | Disposition |
+|---|---|---|
+| DDR-4 | SA-4 / CON-3 — the on-disk `source:` enum has no counterpart in `review-config.mjs`'s runtime `__source` vocabulary | **ADDRESSED** — mapping declared below |
+| DDR-6 | SEC-4 — Pass 19 is blind to an extension-appended `command` because it excludes all non-`project` sources | **PARTIALLY ADDRESSED** — exclusion narrowed + sub-finding taken now; ledger diff and install-time summary DEFERRED |
+| DDR-14 | SEC-6 — no aggregate ceiling on boundary evaluation cost | **PARTIALLY ADDRESSED** — binary-content skip taken now; wall-clock budget and changed-file ceiling DEFERRED |
+| DDR-15 | SEC-7 — containment via `resolve()` + `startsWith` does not resolve symlinks | **ADOPTED**, in narrow form |
+
+**DDR-4 — `source:` vocabulary mapping (ADDRESSED).** `adev governance materialize` writes the
+on-disk enum from the runtime provenance value:
+
+| Runtime `__source` (`lib/governance/review-config.mjs`) | On-disk `source:` |
+|---|---|
+| `bundled` | `bundled` |
+| `project` | `project` |
+| `project-override` | `project` |
+| `manifest-specialist` | `project` |
+| domain-sourced | `domain:<slug>` |
+| installer-stamped | `extension:<name>` |
+
+The three project-flavoured runtime values collapse to `project` because they differ only in *how*
+the project expressed the entry, not in *who owns* it — and ownership is the only question Step 6's
+drift pass and the `enabled: false` audit ask. This closes the previously-undefined treatment of
+`project-override` entries.
+
+**DDR-6 — Pass 19 scope (PARTIALLY ADDRESSED).** Taken now: the non-`project` exclusion applies
+only to unadopted-upgrade findings, plus the new execution-bearing-field sub-finding (see MODIFIED
+and Step 6). Deferred with an issue: the ledger-based *changed-since-last-install* diff and the
+install-time summary line naming any appended entry carrying an execution-bearing field. Both need
+an install ledger that does not exist yet; the sub-finding covers the standing state without one.
+
+**DDR-14 — boundary evaluation cost (PARTIALLY ADDRESSED).** Taken now: binary content is skipped
+(Behavior 12). Deferred with an issue: the aggregate wall-clock budget across all rules × changed
+files, and the changed-file ceiling. Both are cross-cutting cost controls over the whole check set
+rather than properties of this spec's two checks, and pinning either number without measurement
+would be arbitrary.
+
+**DDR-15 — symlink containment (ADOPTED, narrow form).** Every write path in this spec resolves its
+target, and **when the target already exists**, `realpathSync`es it and re-asserts containment
+within `.context-index/governance/`. The `realpath` step is conditional on existence because a
+not-yet-created registry file has no real path to resolve; the plain containment assertion still
+covers that case. The known registry set is enumerated explicitly (`validate.yaml`, `review.yaml`,
+`diagnostics.yaml`, `gates.yaml`, `boundaries.yaml`) rather than left implicit.
 
 ## Out of Scope
 
