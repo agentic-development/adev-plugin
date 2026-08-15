@@ -25,15 +25,26 @@ runs it and records what came back.
    `BOUNDARIES_PARSE_ERROR`).
 
 2. Parse the JSON envelope. It carries `verdict`, `reason`, `findings`, `disabled`, `warnings` and
-   `summary`. Each finding has `rule`, `severity`, `file`, `line` and `message`. `summary` counts
-   `errors`, `warnings`, `infos` and `files_checked`.
+   `summary`. Each finding carries, verbatim from `lib/governance/boundaries.mjs`:
+
+   | Field | Meaning |
+   |---|---|
+   | `ruleId` | The boundary rule's `id`. **The field is `ruleId`, not `rule`** — reading `finding.rule` yields `undefined` and reports every FAIL with no rule id at all. |
+   | `severity` | `error`, `warning` or `info`, taken from the rule. |
+   | `file` | Repo-relative path of the offending file. |
+   | `line` | 1-based line number of the match. |
+   | `matchedLine` | The offending source line itself, already truncated by the evaluator. Quote it as evidence; never re-read the file to recover it. |
+   | `message` | Pre-rendered `<file>:<line> matches boundary rule "<id>" — <description>`. Prefer it over rebuilding a sentence from the parts. |
+   | `code` | The finding's machine code: `BOUNDARY_RULE_MATCH` for a real crossing, or a fail-closed code when a rule could not be evaluated (`BOUNDARY_PATTERN_TIMEOUT`, `BOUNDARY_INPUT_TOO_LARGE`, `BOUNDARY_WORKER_ERROR`, `BOUNDARY_BINARY_SKIPPED`). |
+
+   `summary` counts `errors`, `warnings`, `infos` and `files_checked`.
 
 3. Record the check result from `verdict` verbatim — do not recompute it from the findings:
 
    - **`PASS`:** PASS. Cite `summary.files_checked` and the rule count from `reason`.
    - **`WARN`:** WARN, listing each warning-severity finding with its `file:line`. Warning findings
      do not fail validation.
-   - **`FAIL`:** FAIL, listing each error-severity finding with its `file:line` and `rule`.
+   - **`FAIL`:** FAIL, listing each error-severity finding with its `file:line`, its `ruleId`, and its `matchedLine` as evidence.
    - **`SKIP`:** SKIP, quoting `reason`. The two SKIP reasons are different facts and must not be
      collapsed: "no boundary rules declared" means the project declares none, and "all N declared
      boundary rule(s) are disabled" means somebody switched them off.

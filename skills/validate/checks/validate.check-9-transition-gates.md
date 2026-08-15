@@ -32,7 +32,11 @@ lifecycle history, which is what a later reader of the `.validate.md` report can
    comparator cannot read.
 
 2. Parse the JSON envelope: `{transition, verdict, reason, gates}`. `gates` is keyed by gate id, and
-   each value carries `id`, `verdict`, `reason` and `command_attested`.
+   each value carries `id`, `verdict`, `reason` and `command_attested` — verbatim from
+   `lib/governance/transitions.mjs`. Note the case split: the TRANSITION's `verdict` is uppercase
+   (`PASS`/`FAIL`/`SKIP`), each `gates[id].verdict` is the recorded gate outcome in lowercase
+   (`pass`/`fail`/`skip`). A gate the registry declares with `enabled: false` carries one extra
+   field, `disabled_reason` (`null` when the registry stated none); report it alongside the gate.
 
    On exit 1 the envelope is instead `{transition, error, code}` on stdout as well as stderr. Record
    **FAIL** and quote `code` and `error` — the project declares transitions and the comparator
