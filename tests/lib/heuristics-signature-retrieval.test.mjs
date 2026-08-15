@@ -3,6 +3,7 @@
  *
  * Shared suite for the signature/recurrence retrieval behaviors:
  *   Behavior 1: `signature` option and signature-primary ranking
+ *   Behavior 2: exact signature matches are exempt from the `low` floor
  *
  * Fixture note: `validateEntry` enforces SIGNATURE_PATTERN, so `writeHeuristic`
  * cannot seed an entry carrying a malformed signature. Those fixtures are
@@ -234,6 +235,87 @@ describe("retrieveHeuristics: malformed stored signature", () => {
     assert.ok(
       ids.indexOf("plain") < ids.indexOf("malformed"),
       `malformed stored signature must not match, got ${ids.join(", ")}`,
+    );
+  });
+});
+
+describe("retrieveHeuristics: low-floor exemption for exact signature matches", () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  it("returns a low-confidence entry on an exact signature match", async () => {
+    await seedEntries(tempDir, [
+      makeEntry({ id: "low-sig", confidence: "low", signature: "validate-abc" }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: "validate-abc",
+    });
+
+    const ids = out.map((e) => e.id);
+    assert.ok(
+      ids.includes("low-sig"),
+      `expected the low-confidence signature match to be returned, got ${ids.join(", ") || "(none)"}`,
+    );
+  });
+
+  it("still excludes a low-confidence entry that does not match the signature", async () => {
+    await seedEntries(tempDir, [
+      makeEntry({ id: "low-sig", confidence: "low", signature: "validate-abc" }),
+      makeEntry({ id: "low-nomatch", confidence: "low", signature: "validate-xyz" }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: "validate-abc",
+    });
+
+    const ids = out.map((e) => e.id);
+    assert.ok(ids.includes("low-sig"), `expected 'low-sig', got ${ids.join(", ") || "(none)"}`);
+    assert.equal(
+      ids.includes("low-nomatch"),
+      false,
+      `the exemption must not leak to non-matching low entries, got ${ids.join(", ")}`,
+    );
+  });
+
+  it("still excludes every low-confidence entry when no signature is passed", async () => {
+    await seedEntries(tempDir, [
+      makeEntry({ id: "low-sig", confidence: "low", signature: "validate-abc" }),
+      makeEntry({ id: "low-nomatch", confidence: "low" }),
+      makeEntry({ id: "hi", confidence: "high" }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {});
+
+    assert.deepEqual(
+      out.map((e) => e.id),
+      ["hi"],
+      "no-signature retrieval must keep the low floor for every entry",
+    );
+  });
+
+  it("ranks a low signature match above an unrelated medium module entry", async () => {
+    await seedEntries(tempDir, [
+      makeEntry({ id: "med", confidence: "medium" }),
+      makeEntry({ id: "low-sig", confidence: "low", signature: "validate-abc" }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: "validate-abc",
+    });
+
+    const ids = out.map((e) => e.id);
+    assert.equal(
+      ids[0],
+      "low-sig",
+      `expected the low signature match first, got ${ids.join(", ") || "(none)"}`,
     );
   });
 });
