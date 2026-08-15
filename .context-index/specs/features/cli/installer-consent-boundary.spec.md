@@ -5,7 +5,7 @@ charter: cli
 kind: behavioral
 status: draft
 risk_level: high
-revision: 1
+revision: 2
 charter-revision: 4
 created: 2026-08-14
 updated: 2026-08-14
@@ -121,6 +121,54 @@ rewrites tracked files in `.githooks/`.
    The anchor is the wrapper's own directory (`.githooks/..`), **not**
    `git rev-parse --show-toplevel`, which can answer for a different repository
    under a linked worktree or an unexpected `--git-dir`.
+
+   The path is computed at install time relative to the **same** directory the
+   wrapper resolves from (the repo root containing `.githooks/`), not
+   `process.cwd()` — they differ whenever `adev install` is run from a
+   subdirectory. (SA-3.)
+
+12. **When** `core.hooksPath` contains anything outside `[A-Za-z0-9._/-]`, or
+    resolves outside the repository root, **then** the installer REFUSES to
+    chain, names the offending value and the reason, and offers only replace or
+    skip. It never generates a wrapper from that value.
+
+    `core.hooksPath` is the one input to this feature that crosses a trust
+    boundary. It is read with `git config --get` and written into a file that is
+    `chmod 755`, tracked, and executed by git on every commit. `$(…)` and
+    backticks expand **inside double quotes**, so interpolating the raw value
+    made it code:
+
+    ```
+    ORIGINAL="$REPO_ROOT/$(touch /tmp/pwned)/h/pre-commit"
+    ```
+
+    Reproduced end to end before the fix: an ordinary `git commit` executed the
+    payload. The fail-closed guard of AC-7 does **not** contain it — expansion
+    happens while computing the variable, before any `-e`/`-x` test.
+
+    Precondition is prior config-write access (an npm `postinstall`, a bootstrap
+    script), **not** a hostile clone: `.git/config` is never tracked and never
+    transferred by clone, which was verified rather than assumed. The escalation
+    is that the victim then *commits* the poisoned wrapper, so it runs on every
+    teammate's machine — a persistence and lateral-movement primitive.
+    CWE-78 / CWE-94.
+
+13. **When** any externally-sourced value is written into a generated hook,
+    **then** it is emitted as a **single-quoted** bash literal (`'` escaped as
+    `'\''`), where `$` and backticks are inert. Values adev controls, such as
+    `$REPO_ROOT`, are concatenated outside the literal so they still expand.
+
+    The AC-12 allowlist is the control; this quoting is the containment. Both,
+    because a future caller may reach `buildChainedHook` by a path that skips
+    the validation. (SEC-1.)
+
+14. **When** the resolved original hook lies outside the repository root,
+    **then** chaining is refused. "Relative" is not "contained":
+    `relative()` happily yields `../../husky/pre-commit`, which resolves to a
+    directory the installer does not own on a teammate's machine or a CI runner,
+    and the wrapper would execute whatever is there. AC-7's fail-closed rule
+    makes this *more* reachable, not less — a missing path now hard-fails, but
+    an existing attacker-writable one still runs. CWE-22. (SEC-2.)
 
 ### Destructive rewrites are announced
 
