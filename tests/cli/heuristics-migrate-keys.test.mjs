@@ -741,6 +741,30 @@ describe("adev heuristics migrate-keys — rekey", () => {
     assert.equal(r.status, 0, r.stderr);
     assertCount(r.stdout, "rekeyed", 1);
     assert.equal(readStore(root, "validation"), before);
+    // The summary must be distinguishable from a real run's.
+    assert.match(r.stdout, /dry run — nothing written/);
+  });
+
+  it("preserves the absorbed entry's signature, tags and anti-pattern on merge", () => {
+    writeStore(
+      root,
+      "validation",
+      collidingPair({
+        first: { signature: undefined, tags: [], antiPattern: "" },
+        second: {
+          signature: "validate-99887766",
+          tags: ["alpha"],
+          antiPattern: "an anti-pattern",
+        },
+      }),
+    );
+
+    const r = runMigrate(root);
+    assert.equal(r.status, 0, r.stderr);
+    const raw = readStore(root, "validation");
+    assert.match(raw, /^signature: validate-99887766$/m);
+    assert.match(raw, /^tags: \[alpha\]$/m);
+    assert.match(raw, /^anti-pattern: an anti-pattern$/m);
   });
 });
 
