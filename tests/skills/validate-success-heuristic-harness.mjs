@@ -101,15 +101,41 @@ export function deriveScope(charter, modules) {
 }
 
 /**
- * Derive the title `"First-run PASS: <spec-title>"`, capped at 120 chars.
- * If the full title is longer than 120 chars, the spec-title portion is
- * truncated to 117 chars and `"..."` is appended.
+ * Title prefix derived from the validate outcome.
  *
- * @param {string} specTitle
+ * DELIBERATELY MIRRORED from `hooks/post-validate-extract-heuristics.mjs`,
+ * NOT shared via a `lib/` export: the spec's acceptance criterion is that
+ * exactly two copies of this derivation exist and agree, which a shared
+ * helper would defeat. Keep the body byte-identical to the hook's.
+ *
+ * @param {string} outcome - The validate outcome (`"PASS"` | `"FAIL"` | ...).
  * @returns {string}
  */
-export function deriveTitle(specTitle) {
-  const prefix = "First-run PASS: ";
+function prefixFor(outcome) {
+  return outcome === "FAIL" ? "Validate FAIL: " : "First-run PASS: ";
+}
+
+/**
+ * Derive the title `"<outcome prefix><spec-title>"`, capped at 120 chars.
+ * If the full title is longer than 120 chars, it is truncated to 117 chars
+ * and `"..."` is appended.
+ *
+ * `outcome` comes FIRST so the derivation reads like the hook's. A caller
+ * that supplies only ONE argument is an existing spec-title-only caller —
+ * those only ever ran on an all-checks-passed verdict — so the lone argument
+ * is read as the spec title and the outcome defaults to `"PASS"`, preserving
+ * the previous behavior exactly.
+ *
+ * @param {string} [outcome] - The validate outcome; defaults to `"PASS"`.
+ * @param {string} [specTitle]
+ * @returns {string}
+ */
+export function deriveTitle(outcome, specTitle) {
+  if (arguments.length < 2) {
+    specTitle = outcome;
+    outcome = "PASS";
+  }
+  const prefix = prefixFor(outcome);
   const safeSpecTitle = typeof specTitle === "string" ? specTitle : "";
   const full = `${prefix}${safeSpecTitle}`;
   if (full.length <= TITLE_MAX_LENGTH) {
@@ -251,7 +277,9 @@ export async function runCheck12(projectRoot, context) {
 
   // 7. Derive the remaining fields.
   const scope = deriveScope(context.charter, context.modules || []);
-  const title = deriveTitle(context.specTitle || "");
+  // runCheck12 only reaches here on an all-checks-passed verdict, so the
+  // outcome is always PASS.
+  const title = deriveTitle("PASS", context.specTitle || "");
   const pattern =
     typeof context.successFactor === "string" && context.successFactor.length > 0
       ? context.successFactor.slice(0, PATTERN_MAX_LENGTH)
