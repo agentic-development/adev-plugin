@@ -295,8 +295,8 @@ test('severity_cap uses its own vocabulary, not severity\'s', () => {
 
 test('kind is not contributable to gates.yaml', () => {
   // Not a harmless no-op omission. merge-gates.mjs:41-47 drops `kind` from the
-  // projection, but gate-doctor reads it off the raw file (doctor.mjs:805) and
-  // `kind: probabilistic` makes doctor skip every command check (:808) while
+  // projection, but gate-doctor reads it off the raw file (doctor.mjs:844) and
+  // `kind: probabilistic` makes doctor skip every command check (:847) while
   // the runner still executes the gate — static-analysis evasion.
   throwsCode(() => validateEntryFields('gates.yaml', { id: 'g', command: ['x'], kind: 'probabilistic' }),
     'GOVERNANCE_FIELD_NOT_ALLOWED');
