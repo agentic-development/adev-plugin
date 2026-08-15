@@ -26,6 +26,7 @@ source-manifest:
     - tests/skills/validate-success-heuristic-harness.mjs
     - tests/skills/validate-success-heuristic.test.mjs
   computed-at: "2026-08-15T13:21:44.564Z"
+drift_detected: true
 ---
 
 # Live Spec: Failure Signature Key — one content-addressed identity for recurring failures
@@ -209,9 +210,19 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
      second run impossible. Repairing the stored vocabulary is a separate concern from rekeying.
    - **Evidence path → spec path mapping.** The `id` hash input needs the spec path; the evidence
      element holds the validate **report** path. They are siblings by construction: replace the
-     trailing `.validate.md` with `.spec.md` on the same stem. If an in-scope entry has no evidence
-     path ending in `.validate.md`, the mapping is undefined — the entry is left untouched and counted
-     as skipped rather than mapped by guesswork.
+     trailing report suffix with `.spec.md` on the same stem.
+
+     **There are two report-suffix conventions in the store, and both must be recognized.**
+     `.validate.md` is current; older reports were written as `<stem>-validation.md`. Three live
+     entries carry the older form — `workspace-aware-vision-validation.md`,
+     `adev-build-skill-validation.md`, `unified-gate-system-validation.md`. A mapping that knows only
+     the current suffix strands them as permanently unrecoverable, which is the silent-skip failure
+     this migration exists to eliminate; it cost 3 of 24 rekeyable entries on the first real run.
+     Suffixes are tested longest-first so `-validation.md` is matched before any shorter suffix that
+     could prefix-match it.
+
+     If an in-scope entry has no evidence path ending in **any** recognized report suffix, the mapping
+     is undefined — the entry is left untouched and counted as skipped rather than mapped by guesswork.
    - **Migration also normalizes the two legacy slug conventions.** The store holds ids from both:
      `specSlug` in `lib/cli/heuristics.mjs` retains the `.spec` stem (`deploy-core-spec-91c5a876`,
      `template-replacement-spec-4ea79ce7` and five more) while the hook strips it
@@ -355,8 +366,12 @@ This spec only stops depending on them.
       section matches Behavior 7
 - [ ] An in-scope entry with no `.validate.md` evidence path is left untouched and counted as skipped,
       since the report-path → spec-path mapping is undefined for it
-- [ ] The `.validate.md` → `.spec.md` sibling mapping is asserted directly against a real store entry
-      (`.context-index/specs/features/validation/validate-config-single-source.validate.md`)
+- [ ] The report → `.spec.md` sibling mapping is asserted directly against real store entries in
+      **both** conventions: `.validate.md`
+      (`.context-index/specs/features/validation/validate-config-single-source.validate.md`) and
+      `-validation.md` (`.context-index/specs/features/unified-gates/unified-gate-system-validation.md`)
+- [ ] An entry whose evidence uses the legacy `-validation.md` suffix is classified in-scope and
+      rekeyed, not counted as `skipped-unrecoverable`
 - [ ] An entry spelled `source: validate` is considered identically to one spelled `source: validation`,
       asserted against the live store's actual drift (24 `validation` / 4 `learn` / 2 `validate` /
       2 `recover`)

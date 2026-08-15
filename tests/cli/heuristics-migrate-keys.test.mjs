@@ -343,12 +343,54 @@ describe("classifyForRekey — rule 3, the sibling path mapping", () => {
     assert.equal(result.specPath, "specs/features/x/a.validate.md.spec.md");
   });
 
-  it("skips an in-scope entry with no `.validate.md` evidence path as unrecoverable", () => {
+  it("skips an in-scope entry with no recognized report suffix as unrecoverable", () => {
     const result = classifyForRekey(
       entry({ evidence: [validateEvidence(".context-index/sessions/2026-04-01.md")] }),
     );
     assert.equal(result.action, "skip");
     assert.equal(result.reason, "skipped-unrecoverable");
+  });
+
+  // Regression: the first real migration run stranded 3 of 24 rekeyable entries
+  // because the mapping recognized only `.validate.md`. Older reports in this
+  // store are named `<stem>-validation.md`.
+  it("maps a legacy `-validation.md` path to its `.spec.md` sibling", () => {
+    const result = classifyForRekey(
+      entry({
+        evidence: [
+          validateEvidence(
+            ".context-index/specs/features/unified-gates/unified-gate-system-validation.md",
+          ),
+        ],
+      }),
+    );
+    assert.equal(result.action, "rekey");
+    assert.equal(
+      result.specPath,
+      ".context-index/specs/features/unified-gates/unified-gate-system.spec.md",
+    );
+  });
+
+  it("does not strand the three real `-validation.md` store entries", () => {
+    const legacyReports = [
+      ".context-index/specs/features/multi-repo-workspace/workspace-aware-vision-validation.md",
+      ".context-index/specs/features/strategic-planning/adev-build-skill-validation.md",
+      ".context-index/specs/features/unified-gates/unified-gate-system-validation.md",
+    ];
+    for (const path of legacyReports) {
+      const result = classifyForRekey(entry({ evidence: [validateEvidence(path)] }));
+      assert.equal(result.action, "rekey", `${path} must be rekeyable`);
+      assert.ok(result.specPath.endsWith(".spec.md"));
+      assert.ok(!result.specPath.includes("-validation"));
+    }
+  });
+
+  it("prefers the longer `-validation.md` suffix over any shorter match", () => {
+    // A stem that itself ends in `.validate` must not be mis-split.
+    const result = classifyForRekey(
+      entry({ evidence: [validateEvidence("specs/features/x/a-validation.md")] }),
+    );
+    assert.equal(result.specPath, "specs/features/x/a.spec.md");
   });
 
   it("skips an in-scope entry with no evidence at all as unrecoverable", () => {
