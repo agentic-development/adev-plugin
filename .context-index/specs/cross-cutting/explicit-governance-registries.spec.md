@@ -2,9 +2,9 @@
 mode: cross-cutting
 affects: [validation, unified-gates, review, cli-driver-surface, domain-extensions]
 kind: refactor
-status: review-blocked
+status: review-pending
 risk_level: medium
-revision: 3
+revision: 4
 created: 2026-08-14
 updated: 2026-08-15
 tracker-ref: adev-plugin-8ekd.1
@@ -121,6 +121,10 @@ Three further gaps this spec closes:
 - Boundary rules in `boundaries.yaml` derived from the constitution's mechanical anti-patterns.
 - `transitions` entries in `gates.yaml` naming gates that carry real argv commands.
 - `source:` provenance field on every governance entry (`project` | `bundled` | `domain:<slug>` | `extension:<name>`), written by materialize and by extension install.
+- `materialized_at` — **top-level root key** in each governance yaml (a sibling of `checks:` / `reviewers:` / `gates:` / `diagnostics:` / `boundaries:`, never an entry field), holding an ISO-8601 UTC timestamp. It is the sole discriminator of the un-materialized state, so its writers and immutability are contract, not incidental:
+  - **Writers, exhaustively:** `adev governance materialize` stamps it when absent, and `/adev:init` scaffolding stamps it when creating a registry from a domain starter. Nothing else writes it.
+  - **Write-once.** Once present it is never refreshed. Re-materialization preserves the original value, which is what keeps Behavior 6's byte-identical guarantee true on the second and subsequent runs.
+  - **Installer-immutable.** Extension install never writes, refreshes or removes it, and an extension-supplied `materialized_at` in entry data is rejected exactly as a supplied `source` is.
 - `adev extension uninstall --name <n>` governance reversal: removes entries whose `source` matches, leaving project-authored entries untouched.
 
 ### MODIFIED
@@ -132,6 +136,7 @@ Three further gaps this spec closes:
 - `skills/validate/checks/validate.check-9-transition-gates.md` — same, calling `adev gate transitions check --json`.
 - `.context-index/governance/validate.yaml` — Checks 8 and 9 change `kind: subagent-review` → `deterministic-check`.
 - `skills/hygiene/SKILL.md` Audit Pass 19 — remit extended from `validate.yaml` to all four registries; entries with a non-`project` `source` are excluded from drift findings.
+- `skills/validate/checks/validate.check-1-quality-gates.md` + the `validator_report` payload — Check 1 additionally records a per-gate outcome array (`[{id, verdict, tier}]`) alongside its existing aggregate verdict. This is a payload extension to an existing `CANONICAL_EVENTS` variant, **not** a new variant, so it does not cross the ADR-0009 `[BOUNDARY: human-approved]` line that adding a gate-outcome event would.
 - `lib/extensions/content-install.mjs::inferRootKey` — replace stem-inference with an explicit registry→root-key table; `validate.yaml` maps to `checks`, not `validators`.
 - `lib/extensions/content-install.mjs::serializeGovernanceYaml` — preserve sibling root keys and comments; write only the targeted key's array.
 - `tests/lib/extensions/example-validation-check-install.test.mjs:206` — assert the `checks` contract instead of accommodating `validators || checks`.
@@ -178,11 +183,17 @@ shipped code today, independent of this spec, and are tracked as `adev-plugin-xg
   `installSamples` (`content-install.mjs:307-318`) and `installSkillExtensions` (`:383-384`) already
   use in the same file, and additionally constrain `target` to the known registry set. Error code
   `PATH_TRAVERSAL`, distinct from `UNKNOWN_GOVERNANCE_TARGET`.
-- **Field allowlist and protected keys (SEC-1).** `validateGovernanceEntry`
-  (`content-install.mjs:101-119`) validates only `id`. Add a per-registry field allowlist; stamp
-  `source` from install context and reject an extension-supplied one; and exclude `enabled`,
-  `disabled_reason`, `severity` and `source` from the collision fill-gap loop, which today injects
-  any key absent from the project entry — including `enabled: false` onto a default-on check.
+- **Field allowlist, and removal of fill-gap merging (SEC-1).** `validateGovernanceEntry`
+  (`content-install.mjs:101-119`) validates only `id`. Add a per-registry field allowlist, and stamp
+  `source` from install context while rejecting an extension-supplied `source` or `materialized_at`.
+
+  **Delete the collision fill-gap loop outright** (`content-install.mjs:206-210`) rather than
+  guarding it with a protected-key list. A key list cannot be made safe: `gates.yaml` entries carry
+  `command:`, which reaches `spawnSync`, and `command` is a *legitimate* field for that registry —
+  so an extension colliding on a gate id whose entry has no command injects a shell command into a
+  project-owned entry, permanently, because the entry then reads as project-authored. Per Behavior
+  16 a colliding entry is **skipped** and the existing entry left byte-identical. Fill-gap's only
+  value was populating absent optional fields, which explicit single-source makes unnecessary.
 - **Regex time budget (SEC-3).** `adev boundaries check` must bound each rule's evaluation and treat
   a timeout exactly as an invalid pattern: fail closed naming the rule. Because `boundaries.yaml` is
   extension-writable, an unbounded pattern is a denial-of-service lever on a merge gate, not only an
@@ -277,24 +288,39 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 2. **When** `boundaries.yaml` declares rules and a changed file matches a rule's `pattern` outside its `exclude` globs **then** the check records FAIL for `severity: error` rules and WARN for `severity: warning` rules, naming file, rule id and matched line.
 3. **When** `/adev:validate` runs Check 9 and `transitions` is empty **then** the check records SKIP, not PASS — a PASS asserts a verification that did not occur.
 4. **When** `transitions` declares `required_gates` for a lifecycle transition **then**
-   `adev gate transitions check` reads the recorded outcome of each named gate from the lifecycle
-   event log for the current spec and records FAIL naming any gate that has no passing record. It
-   does **not** execute gates — execution belongs to `gates.yaml` (Check 1) — and it does **not**
-   evaluate workflow preconditions such as "did the prior step complete", which ADR-0010's
+   `adev gate transitions check --transition <name>` reads the **per-gate outcomes carried in Check
+   1's `validator_report` payload** and records FAIL naming any required gate without a passing
+   outcome. It does **not** execute gates — execution belongs to `gates.yaml` (Check 1) — and it does
+   **not** evaluate workflow preconditions such as "did the prior step complete", which ADR-0010's
    decision-flow step 1 routes to `requireGate` in `lib/lifecycle-state.mjs`. Check 9 answers only
    "did the gates this transition requires actually pass?"
+
+   **Substrate note.** The lifecycle log has no per-gate record today: `CANONICAL_EVENTS`
+   (`lib/lifecycle-events.mjs:36-79`) has no gate variant, and Check 1 emits one aggregate
+   `validator_report` for the whole gate run, so gate ids are never event subjects. Read against
+   that substrate the check would FAIL every required gate — build-breaking once Step 4 promotes
+   rules to `error`. This spec therefore **extends Check 1's existing `validator_report` payload**
+   with a per-gate outcome array rather than adding a new event variant. That choice is deliberate:
+   adding a `CANONICAL_EVENTS` variant is a `[BOUNDARY: human-approved]` change under ADR-0009, and
+   enriching an existing payload stays inside this spec's authority. See MODIFIED.
+
+   **Staleness.** A gate outcome is usable only if recorded at or after the source-manifest SHA the
+   spec currently carries. An outcome predating the current implementation state records SKIP with
+   reason `stale-gate-record`, never a pass.
 5. **When** a governance registry entry carries `enabled: false` **then** the check does not run and the report records it as deliberately disabled with its `disabled_reason`, distinct from a check that is absent.
-6. **When** `adev governance materialize --registry <name>` runs **then** it writes the currently-effective merged set into the project's yaml and makes no other change; running it twice produces byte-identical output.
-7. **When** a registry has been materialized and the plugin later adds a bundled entry **then** `/adev:hygiene` Audit Pass 19 reports a drift finding naming the registry and the entry, and the project's behaviour is unchanged until it adopts.
-8. **When** `adev gate doctor` inspects gates **then** it inspects exactly the set its consumers execute.
-9. **When** an extension declaring `provides.governance` is installed **then** its entries are appended to the target registry under that registry's own root key, every other key and comment in the file is preserved byte-identically, and each appended entry carries `source: extension:<name>`.
-10. **When** an extension whose id collides with an existing entry is installed **then** the existing entry wins untouched and the install reports the collision as skipped, naming the id.
-11. **When** an extension is uninstalled **then** entries carrying its `source` are removed and no other entry is touched.
-12. **When** a registry's project file lacks a `materialized_at` marker **then** the loader raises `REGISTRY_NOT_MATERIALIZED` and the calling skill halts — regardless of how many entries the file holds, and without consulting bundled or domain defaults.
-13. **When** an extension supplies a `source` field on an entry **then** the installer rejects it; `source` is stamped from install context only.
-14. **When** an extension's entry id collides with an existing entry **then** the colliding entry is recorded as **skipped** and the existing entry is left byte-identical. The merge introduces no key onto an existing entry — not an absent one, not an optional one, none. Fill-gap merging is removed outright rather than protected by a key list.
-15. **When** an extension's `target` resolves outside `.context-index/governance/` **then** the install refuses with `PATH_TRAVERSAL` and writes nothing.
-16. **When** a boundary rule's evaluation exceeds its 250 ms per-file budget **then** the worker running it is terminated and the check fails closed naming the rule, exactly as for an invalid pattern — it never hangs the caller. Files above the 1 MB input cap record SKIP rather than being scanned.
+6. **When** `adev governance materialize --registry <name>` runs against a registry with no `materialized_at` **then** it writes the currently-effective merged set into the project's yaml and stamps `materialized_at` with the current UTC time, and makes no other change.
+7. **When** `adev governance materialize` runs against a registry that already carries `materialized_at` **then** it refreshes the entry set but preserves the existing timestamp verbatim, so a second run against an unchanged effective set produces byte-identical output. Stamping is write-once; the marker records when the registry left the un-materialized state, not when it was last written.
+8. **When** `/adev:init` scaffolds a registry from a domain starter **then** it stamps `materialized_at` at scaffold time, so a freshly initialized project is born materialized and never hits the fail-closed guard on its first run.
+9. **When** a registry has been materialized and the plugin later adds a bundled entry **then** `/adev:hygiene` Audit Pass 19 reports a drift finding naming the registry and the entry, and the project's behaviour is unchanged until it adopts.
+10. **When** `adev gate doctor` inspects gates **then** it inspects exactly the set its consumers execute.
+11. **When** an extension declaring `provides.governance` is installed **then** its entries are appended to the target registry under that registry's own root key, every other key and comment in the file is preserved byte-identically, and each appended entry carries `source: extension:<name>`.
+12. **When** an extension whose id collides with an existing entry is installed **then** the existing entry wins untouched and the install reports the collision as skipped, naming the id.
+13. **When** an extension is uninstalled **then** entries carrying its `source` are removed and no other entry is touched.
+14. **When** a registry's project file lacks a `materialized_at` marker **then** the loader raises `REGISTRY_NOT_MATERIALIZED` and the calling skill halts — regardless of how many entries the file holds, and without consulting bundled or domain defaults.
+15. **When** an extension supplies a `source` or `materialized_at` field on an entry **then** the installer rejects it; `source` is stamped from install context only.
+16. **When** an extension's entry id collides with an existing entry **then** the colliding entry is recorded as **skipped** and the existing entry is left byte-identical. The merge introduces no key onto an existing entry — not an absent one, not an optional one, none. Fill-gap merging is removed outright rather than protected by a key list.
+17. **When** an extension's `target` resolves outside `.context-index/governance/` **then** the install refuses with `PATH_TRAVERSAL` and writes nothing.
+18. **When** a boundary rule's evaluation exceeds its 250 ms per-file budget **then** the worker running it is terminated and the check fails closed naming the rule, exactly as for an invalid pattern — it never hangs the caller. Files above the 1 MB input cap record SKIP rather than being scanned.
 
 ### Error Cases
 
@@ -357,6 +383,11 @@ drift pass — which reports only *unadopted new* entries — stays silent (SEC-
 - [ ] A registry holding entries but no `materialized_at` marker still raises `REGISTRY_NOT_MATERIALIZED` — asserted with a non-empty `review.yaml`, which is the case a list-emptiness predicate would miss.
 - [ ] The loader decides materialization from the project file alone, with no read of bundled or domain defaults — asserted by a test that removes the defaults and observes the same verdict.
 - [ ] An extension install into a registry lacking `materialized_at` is refused.
+- [ ] Round trip: a registry with no marker raises `REGISTRY_NOT_MATERIALIZED`; after `adev governance materialize` the loader proceeds; a second materialize produces byte-identical output including an unchanged `materialized_at`.
+- [ ] A freshly `/adev:init`-scaffolded project carries `materialized_at` on every registry and never raises the guard on first run.
+- [ ] An extension supplying `materialized_at` in entry data is rejected.
+- [ ] `adev gate transitions check` reads per-gate outcomes from Check 1's `validator_report` payload; a gate outcome older than the spec's current source-manifest SHA records SKIP with `stale-gate-record`, not a pass.
+- [ ] No new `CANONICAL_EVENTS` variant is introduced — asserted by a test pinning the variant list, so the ADR-0009 boundary stays uncrossed.
 - [ ] `adev gate transitions check` records FAIL naming any required gate without a passing record, and never executes a gate.
 - [ ] An extension `target` of `../../x.yaml` is refused with `PATH_TRAVERSAL` and writes nothing — asserted by a test that reproduces the current escape.
 - [ ] An extension supplying `source: project` is refused; installer-stamped `source` survives uninstall correctly.
