@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, realpathSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, readSync, writeFileSync, cpSync, chmodSync, realpathSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -46,6 +46,40 @@ async function ask(question) {
       resolve(answer.trim().toLowerCase());
     });
   });
+}
+
+/**
+ * Ask the operator a question and read one line back, SYNCHRONOUSLY.
+ *
+ * `ask()` cannot be used for install consent. `resolveExecConsent`
+ * (lib/extensions/exec-consent.mjs) calls its `promptFn` synchronously, and its
+ * whole contract — only an explicit y/yes grants; an empty answer, EOF, any
+ * other answer, or a throwing prompt all refuse — is pinned by SYNCHRONOUS
+ * tests using `assert.throws`. Making the consent resolution async would turn
+ * every one of those refusals from a throw into a rejection and break the
+ * module that owns the fail-closed guarantee. So the prompt is made
+ * synchronous rather than the consent made asynchronous.
+ *
+ * Read one byte at a time so the read stops at the newline and does not swallow
+ * input belonging to whatever runs next. Any read failure (EOF, EAGAIN on a
+ * non-blocking TTY, a closed stdin) propagates to `resolveExecConsent`, which
+ * catches it and refuses — the fail-closed direction.
+ *
+ * @param {string} text - Prompt to display.
+ * @returns {string} The line the operator typed, without its terminator.
+ */
+export function readConsentAnswerSync(text) {
+  process.stdout.write(`${text} `);
+  const byte = Buffer.alloc(1);
+  let answer = "";
+  for (;;) {
+    const bytesRead = readSync(0, byte, 0, 1, null);
+    if (bytesRead === 0) break; // EOF — an empty answer, which refuses.
+    const ch = byte.toString("utf8");
+    if (ch === "\n") break;
+    if (ch !== "\r") answer += ch;
+  }
+  return answer;
 }
 
 function ensureDir(path) {
@@ -1232,6 +1266,7 @@ async function cmdExtension() {
           _tmpDir: resolved._tmpDir,
           allowExec,
           interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+          promptFn: readConsentAnswerSync,
         });
 
         heading("Extension Installed");
@@ -1860,4 +1895,4 @@ if (isDirectRun) {
   await dispatch(process.argv);
 }
 
-export { VERB_REGISTRY, dispatch, printVerbRegistry, stripAnsi };
+export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi };
