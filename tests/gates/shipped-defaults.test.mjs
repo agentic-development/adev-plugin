@@ -203,12 +203,27 @@ describe("gate doctor on a fresh scaffold", () => {
 
       // Tolerated BY NAME: a fresh scaffold has no CI config, and neither
       // `npm test` nor `npm run --if-present test:integration` exposes an
-      // identifiable runner. Asserted as a closed set so an unexpected
-      // warning still fails.
-      const tolerated = new Set(["gate-doctor/ci-config-missing", "gate-doctor/runner-unknown"]);
+      // identifiable runner. `gate-set-divergence` joined the list when the
+      // doctor learned to compute the merged consumer view: the software
+      // starter contributes `quality-gate`, which every consumer runs and this
+      // scaffold's governance file never mentions. That asymmetry is real, and
+      // the divergence assertion below pins it by name rather than shrugging.
+      // Asserted as a closed set so an unexpected warning still fails.
+      const tolerated = new Set([
+        "gate-doctor/ci-config-missing",
+        "gate-doctor/runner-unknown",
+        "gate-doctor/gate-set-divergence",
+      ]);
       for (const id of ids(report)) {
         assert.ok(tolerated.has(id), `unexpected finding on a fresh seeded scaffold: ${id}`);
       }
+      const divergence = report.findings.find((f) => f.id === "gate-doctor/gate-set-divergence");
+      assert.ok(divergence, "the domain starter's extra gate must be reported, not hidden");
+      assert.match(
+        divergence.message,
+        /quality-gate/,
+        "the divergence must name the domain-contributed gate the scaffold never declares",
+      );
       assert.ok(
         ids(report).includes("gate-doctor/ci-config-missing"),
         "a scaffold with no CI config must still say so",
@@ -234,12 +249,17 @@ describe("gate doctor on a fresh scaffold", () => {
 
       // Exactly — a multiset, because `empty-command` must appear once per
       // unwired tier. Set membership would hide a dropped tier.
+      // `gate-set-divergence` is expected here for the same reason it is on the
+      // seeded scaffold, and more sharply: BOTH unwired sentinels are dropped
+      // by mergeGates, so the gates this file declares and the gates consumers
+      // run have nothing in common.
       assert.deepEqual(
         ids(report).slice().sort(),
         [
           "gate-doctor/ci-config-missing",
           "gate-doctor/empty-command",
           "gate-doctor/empty-command",
+          "gate-doctor/gate-set-divergence",
         ],
         `unexpected finding set on an unseeded scaffold: ${JSON.stringify(ids(report))}`,
       );

@@ -37,11 +37,26 @@ function seedSingleGate(dir, command) {
   );
 }
 
+/** A healthy gate: argv form, the only form every consumer actually runs. */
+function seedArgvGate(dir, argv) {
+  writeFixture(
+    dir,
+    ".context-index/governance/gates.yaml",
+    `gates:\n  - id: test\n    kind: deterministic\n    tier: fast\n    command: ` +
+      `${JSON.stringify(argv)}\n`,
+  );
+}
+
 test("exits 0 with no error-severity findings", () => {
   const dir = createTempDir();
   try {
     writeFixture(dir, ".github/workflows/ci.yml", "steps:\n  - run: npm test\n");
-    seedSingleGate(dir, "npm test");
+    // Argv form, not the string form the other fixtures use: a string-form
+    // command is dropped by lib/domains/merge-gates.mjs, so since
+    // `gate-doctor/shell-form-command` landed it is an error-severity finding
+    // in its own right and this test's premise — a gate with nothing wrong
+    // with it — requires the form the consumers accept.
+    seedArgvGate(dir, ["npm", "test"]);
     const r = runDoctor(dir);
     assert.equal(r.status, 0, r.stderr);
   } finally {

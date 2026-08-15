@@ -25,7 +25,7 @@ gates:
     name: Test Suite
     kind: deterministic
     tier: fast
-    command: "npm test"
+    command: ["npm", "test"]
     scope: project
     required: true
     severity: error
