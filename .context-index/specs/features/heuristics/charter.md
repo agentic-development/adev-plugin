@@ -13,7 +13,9 @@ The heuristics module is a team-shared, lifecycle-driven memory layer that turns
 
 Phase 2 extends the heuristic system from a lifecycle-internal memory layer to a project-wide context layer. The motivating problem: agents repeatedly try wrong approaches (wrong DB paths, incorrect auth middleware, misplaced config) because learned lessons are only visible during plan/implement. By surfacing a compact heuristic index in agent files (CLAUDE.md, AGENTS.md) and widening injection to all lifecycle phases with tiered progressive disclosure, heuristics become available in every interaction — including freeform coding — at minimal token cost.
 
-Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *successes* and consults them at *skill entry*: automatic capture fires only when a spec passes on its first attempt, and every retrieval call site queries once, keyed on module slug. The result is a memory layer that records that nothing went wrong, and is never queried at the moment something does. Phase 3 makes failure a first-class capture trigger, promotes the content-addressed recurrence key already proven inside `/adev:recover` into a shared primitive, and consults the store at lifecycle failure points rather than only at entry.
+Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *successes* and consults them at *skill entry*. Automatic capture runs in a Stop-event hook gated on a PASS verdict, so it is structurally blind to failure; every retrieval call site queries once, keyed on module slug, and never re-queries when something breaks. The result is a memory layer that records that nothing went wrong, and is never consulted at the moment something does.
+
+Phase 3 makes failure a first-class capture trigger and consults the store at lifecycle failure points rather than only at entry. It also resolves a fragmentation that Phases 1 and 2 left behind: the same "stable identity for a recurring thing" was reinvented three times with incompatible inputs — a path-dependent hash in the validate extractor, a content-only hash described in `/adev:recover` prose, and a reviewer-finding hash in `lib/blocker-id.mjs`. Recurrence counting is only sound with one key, so Phase 3 defines that key once and has the extractors consume it.
 
 ## Scope and Boundaries
 
@@ -43,11 +45,14 @@ Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *su
 
 #### Phase 3 (close the loop)
 
-- `signature` field added to the heuristic schema — a content-addressed recurrence key of the form `<origin-slug>-<sha256-prefix>` computed over normalized failure text. Generalizes the ID Derivation Rule currently embedded in `/adev:recover` skill prose
+- `signature` field added to the heuristic schema — a content-addressed recurrence key of the form `<origin-slug>-<sha256-prefix>` computed over normalized failure text. It is an **additional** field, not a replacement for `id`: existing `id` derivation is unchanged, so no store entry is rekeyed and no recurrence count resets
 - `adev heuristics signature` CLI verb — the single implementation of the derivation rule, consumed by every extractor. `/adev:recover` switches to calling it rather than restating the rule in markdown
-- Failure capture widened past `/adev:recover`: `/adev:validate` extracts on FAIL as well as on first-run PASS; `/adev:review-specs` extracts on BLOCK
-- Outcome-derived heuristic title prefix, replacing the hardcoded `"First-run PASS: "` prefix; removal of the `--check-first-run` rule that skips capture whenever a validate report already exists
-- `signature` match axis in `retrieveHeuristics`, ranked above keyword matching
+- Content-only derivation as a correctness fix. `deriveId` currently hashes the absolute spec path, so the same spec yields different keys across machines and worktrees. The shared primitive standardizes on normalized failure content, and `deriveId`'s path dependence is corrected as part of adopting it
+- For heuristics originating from a `/adev:review-specs` BLOCK, the signature derives from the existing `blocker_id` (`lib/blocker-id.mjs`) rather than re-hashing the finding text. `agent-reliable-state-artifacts` remains the owner of `blocker_id`; this module consumes it, so one reviewer finding has exactly one identity
+- Failure capture widened past `/adev:recover`: the validate-side Stop hook (`hooks/post-validate-extract-heuristics.mjs`) extracts on FAIL as well as PASS; `/adev:review-specs` extracts on BLOCK. Widening the hook's trigger condition is a behavioral change *within* the existing stdin/stdout hook protocol — it does not alter the protocol itself
+- Outcome-derived heuristic title prefix, replacing the hardcoded `"First-run PASS: "` prefix, which is duplicated in `lib/cli/heuristics.mjs` and `hooks/post-validate-extract-heuristics.mjs`
+- Retirement of the unreachable capture path: `adev heuristics extract` and its `--check-first-run` flag are invoked by no skill and no hook, and the orphaned check file `skills/validate/checks/validate.check-12-heuristic-extraction.md` describes a check ID that is in `REMOVED_CHECK_IDS`. Both carry stale copies of the derivation rules and are removed so the "single implementation" contract holds
+- `signature` match axis in `retrieveHeuristics`, ranked above keyword matching. An exact signature match **bypasses the `low`-confidence exclusion** in the budget cap; without this the axis returns nothing on a first recurrence, because failure heuristics are written at `low` and only reach `medium` at two distinct evidence paths
 - Error-triggered retrieval at lifecycle failure points, keyed by signature rather than by module slug alone
 - `signature` published as an exposed contract for the cross-cutting batch systemic-failure breaker
 
@@ -62,8 +67,8 @@ Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *su
 - Automatic self-modification of code or specs based on heuristics (retro is the only consolidation surface)
 - Token-budget caps replacing count-based `injection_limit` (deferred to a future revision if heuristic size variance becomes a real problem)
 - Semantic/embedding-based retrieval (keyword matching is sufficient for expected store size of tens to low hundreds of entries)
-- Batch-level systemic-failure circuit breaker — the rule that halts a batch when the same finding ID fails N specs. Chartered as a cross-cutting concern alongside `review-block-auto-retry.spec.md`, which already owns `lib/loop-convergence.mjs` and its single-loop `NO_PROGRESS` detector. This module publishes the `signature` key that breaker consumes; it does not own loop control
-- Tool-level error signals via `PostToolUse` on failing Bash or Edit results. Phase 3 fires on adev lifecycle failure events only — raw stderr yields unstable signatures, and injecting on every failing command would pay a per-command context cost against a store that cannot key it reliably
+- Batch-level systemic-failure circuit breaker — the rule that halts a batch when the same failure recurs across N specs. Chartered as a cross-cutting concern alongside `review-block-auto-retry.spec.md`, which already owns `lib/loop-convergence.mjs` and its single-loop `NO_PROGRESS` detector. This module publishes the `signature` key that breaker consumes; it does not own loop control
+- Error signals derived from raw tool results (a failing Bash exit code, an Edit rejection). Phase 3 keys on adev's own structured lifecycle verdicts, which already carry an outcome and a spec reference. This is a distinction of *signal source*, not of mechanism — hooks remain the delivery vehicle, since the live capture path is already a Stop-event hook. Unstructured stderr does not yield a stable signature, and injecting on every failing command would pay a per-command context cost against a key that cannot be computed reliably
 - Signatures keyed on validator check IDs. `check-id-enum.spec.md` measures 46 distinct `validator` spellings in the live corpus and is itself blocked on ADR-0010; content-addressed hashing of failure text sidesteps that dependency
 
 ### Dependencies
@@ -114,6 +119,8 @@ Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *su
 - `signature` is stable: identical normalized failure text yields an identical signature across runs, machines, and modules. Derivation depends only on failure content — never on timestamp, file path, run id, or observer identity
 - `signature` is not unique within a scope and does not participate in `id` uniqueness. Two heuristics may carry the same signature, and one signature may recur across scopes — that recurrence is the signal the breaker consumes
 - A `signature` is never rewritten once assigned. Consolidation in `/adev:retro` may merge entries that share a signature, but it does not recompute signatures on existing entries
+- `id` and `signature` are independent. Adding `signature` never changes an existing entry's `id`, so recurrence counts and auto-promotion state established under Phases 1 and 2 survive the Phase 3 migration intact
+- A heuristic whose origin is a `/adev:review-specs` BLOCK carries a `signature` derived from that finding's `blocker_id`. One reviewer finding therefore resolves to exactly one identity across both the single-spec retry loop and the heuristic store
 
 ## Capability Map
 
@@ -139,13 +146,24 @@ Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *su
 | Review-Specs Injection | `/adev:review-specs` reviewers receive relevant heuristics for the module under review | must-have | 2 | planned |
 | Validate Injection | `/adev:validate` loads heuristics at `summary` tier during validation checks | must-have | 2 | planned |
 | `/adev:learn` Skill | Explicit user-driven heuristic capture for lessons the lifecycle missed | must-have | 2 | implemented |
-| Failure Signature Primitive | `adev heuristics signature` verb — single implementation of the content-addressed derivation rule, consumed by every extractor | must-have | 3 | — |
-| Signature Schema Field | `signature` field on the heuristic schema, with `_format.md` revision and a read path for entries that predate it | must-have | 3 | — |
-| Recover Migration | `/adev:recover` Step 7 calls the shared primitive instead of restating the ID Derivation Rule in skill prose | must-have | 3 | — |
-| Validate Failure Capture | `/adev:validate` extracts on FAIL as well as first-run PASS; outcome-derived title prefix replaces the hardcoded `"First-run PASS: "` | must-have | 3 | — |
-| Signature-Keyed Retrieval | `signature` match axis on `retrieveHeuristics`, ranked above keyword matching | must-have | 3 | — |
+| Failure Signature Primitive | `adev heuristics signature` verb — single implementation of the content-addressed derivation rule, consumed by every extractor; corrects `deriveId`'s absolute-path dependence | must-have | 3 | — |
+| Signature Schema Field | `signature` field on the heuristic schema, added to `FIELD_ORDER` so serialization does not drop it; `_format.md` revision; read path for entries that predate the field | must-have | 3 | — |
+| Recover Migration | `/adev:recover` Step 7 calls the shared primitive instead of restating the ID Derivation Rule in skill prose; `id` derivation is unchanged | must-have | 3 | — |
+| Validate Failure Capture | The validate Stop hook extracts on FAIL as well as PASS; outcome-derived title prefix replaces the hardcoded `"First-run PASS: "` in both copies | must-have | 3 | — |
+| Dead Capture-Path Retirement | Remove the unreachable `adev heuristics extract` verb, its `--check-first-run` flag, and the orphaned `validate.check-12-heuristic-extraction.md` check file | must-have | 3 | — |
+| Signature-Keyed Retrieval | `signature` match axis on `retrieveHeuristics`, ranked above keyword matching, bypassing the `low`-confidence exclusion on exact match | must-have | 3 | — |
 | Error-Triggered Retrieval | Lifecycle failure points re-query the store by signature instead of relying on the entry-time module query | must-have | 3 | — |
-| Review-Specs Failure Capture | `/adev:review-specs` extracts a heuristic on BLOCK verdicts | should-have | 3 | — |
+| Review-Specs Failure Capture | `/adev:review-specs` extracts a heuristic on BLOCK verdicts, with the signature derived from the finding's `blocker_id` | should-have | 3 | — |
+
+## Deferred Capabilities
+
+| Capability | Reason | Target Milestone | Depends On |
+|-----------|--------|-------------|------------|
+| Batch systemic-failure breaker | Loop control belongs with `lib/loop-convergence.mjs`, not in a memory-layer charter. This module publishes the key it consumes | cross-cutting charter, post-3 | Signature Schema Field (milestone 3) |
+| Tool-level error signals | Raw stderr does not yield a stable signature; deferred until the lifecycle-event path has proven the key in practice | future revision | Error-Triggered Retrieval (milestone 3) |
+| Token-budget caps replacing count-based `injection_limit` | Deferred unless heuristic size variance becomes a measured problem | future revision | — |
+| `session-start.sh` hook injection | Risks polluting unrelated tasks; revisit only if demand emerges | future revision | — |
+| Backfill of pre-Phase-3 entries with signatures | Signatures are content-addressed from failure text that historical entries do not retain; backfill would fabricate keys | not planned | — |
 
 ## Interface Contracts
 
@@ -174,7 +192,8 @@ Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *su
 | Interface | Source Module | Description |
 |-----------|-------------|-------------|
 | `.context-index/hygiene/recoveries/*.md` | Implementation | Source material for failure heuristics extracted by `/adev:recover` |
-| `.context-index/specs/**/*-validation.md` | Validation | Source material for success heuristics extracted by `/adev:validate` |
+| `.context-index/specs/**/*.validate.md` | Validation | Source material for success heuristics extracted from validate verdicts |
+| `buildBlockerId({ reviewer, type, sectionAnchor, findingText })` | Assessment | Canonical reviewer-finding identity from `lib/blocker-id.mjs`, owned by `agent-reliable-state-artifacts`. Phase 3 derives the `signature` of BLOCK-origin heuristics from it rather than re-hashing finding text |
 | `manifest.yaml` `modules[].slug` | Setup | Canonical module list for per-file scoping and retrieval filtering |
 | `manifest.yaml` `heuristics.injection_limit` | Setup | Per-task context-budget cap (default 8) |
 | `manifest.yaml` `sync.targets` | Setup | Sync targets list for writing the heuristic index |
@@ -191,7 +210,8 @@ Phase 3 closes the learning loop. Phases 1 and 2 built a store that captures *su
 | Testability | `lib/heuristics.mjs` is testable via the Node.js built-in test runner and the `createTempDir()` helper. Extraction steps are testable via skill markdown evals. |
 | Degradation | A missing or malformed heuristic file never blocks an agent. Skills log a warning via `additionalContext` and proceed without heuristics. |
 | Context Budget | Injection is capped: max five `high`-confidence plus three `medium`-confidence heuristics per task context packet. Configurable via `heuristics.injection_limit` in `manifest.yaml` (default 8). Error-triggered retrieval (Phase 3) is a *second* injection within the same task and is capped independently and more tightly: signature-matched entries only, `summary` tier, default 3. Rationale is measured — cache reads are roughly 71% of session cost, so a second per-task injection compounds across every subsequent turn rather than being paid once. |
-| Signature Stability | Failure-signature derivation is content-addressed and deterministic: the same failure yields the same key regardless of when, where, or by which lifecycle surface it was observed. Recurrence counting and the downstream batch breaker are only sound if this holds, so it is a contract rather than an implementation detail. |
+| Signature Stability | Failure-signature derivation is content-addressed and deterministic: the same failure yields the same key regardless of when, where, or by which lifecycle surface it was observed. Derivation depends only on normalized failure content — never on timestamp, absolute path, run id, or machine. Recurrence counting and the downstream batch breaker are only sound if this holds, so it is a contract rather than an implementation detail, and it is the reason `deriveId`'s current absolute-path input has to be corrected rather than preserved. |
+| Retrieval Reachability | An exact signature match is exempt from the `low`-confidence exclusion that the budget cap otherwise applies. Failure heuristics enter the store at `low` and reach `medium` only at two distinct evidence paths, so without this exemption error-triggered retrieval would return nothing on a first recurrence — inert precisely when the loop is supposed to close. Confidence still governs ranking and every non-signature retrieval path. |
 | Transparency | Every heuristic links back to its source evidence (recovery record, validation report, debug resolution, retro consolidation, or manual capture). Humans can always trace why a heuristic exists. |
 | Safety | Heuristics are inert markdown — they cannot execute. No self-modifying code path. Only `/adev:retro` demotes or archives entries; there is no runtime auto-editing during implementation. |
 | Token Efficiency | The always-on CLAUDE.md index costs at most ~5 tokens per high-confidence heuristic. For a mature project with 10 high-confidence entries, the total always-on cost is ~50 tokens. Tiered retrieval ensures skills only pay for the detail level they need. |
