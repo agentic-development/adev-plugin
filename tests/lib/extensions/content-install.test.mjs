@@ -11,11 +11,12 @@ import { join } from 'node:path';
 import { createTempDir, cleanupTempDir } from '../../helpers.mjs';
 import {
   installDomainProfile,
-  validateGovernanceEntry,
+  planGovernanceMerge,
   mergeGovernanceEntries,
   installSamples,
   checkSkillConflicts,
 } from '../../../lib/extensions/content-install.mjs';
+import { CAPS } from '../../../lib/extensions/governance-values.mjs';
 
 // ── Task 1: Domain profiles ────────────────────────────────────────────
 
@@ -85,45 +86,74 @@ describe('extensions/content-install — governance merge', () => {
 
   it('validates governance entry schema — missing id', () => {
     assert.throws(
-      () => validateGovernanceEntry({ dispatch: 'always' }),
-      (err) => err.code === 'GOVERNANCE_SCHEMA'
+      () => planGovernanceMerge(projectRoot, 'review.yaml', [{ dispatch: 'always' }]),
+      (err) => err.code === 'GOVERNANCE_FIELD_VALUE_INVALID'
     );
   });
 
-  it('rejects id exceeding 128 chars', () => {
+  it('rejects an id longer than the scalar cap', () => {
     assert.throws(
-      () => validateGovernanceEntry({ id: 'a'.repeat(129) }),
-      (err) => err.code === 'GOVERNANCE_SCHEMA'
+      () => planGovernanceMerge(projectRoot, 'review.yaml', [{ id: 'a'.repeat(CAPS.scalarChars + 1) }]),
+      (err) => err.code === 'GOVERNANCE_LIMIT_EXCEEDED'
+    );
+  });
+
+  it('rejects a field outside the target registry allowlist', () => {
+    assert.throws(
+      () => planGovernanceMerge(projectRoot, 'review.yaml', [{ id: 'test', config: { nested: true } }]),
+      (err) => err.code === 'GOVERNANCE_FIELD_NOT_ALLOWED'
     );
   });
 
   it('rejects nested objects in entry values', () => {
     assert.throws(
-      () => validateGovernanceEntry({ id: 'test', config: { nested: { deep: true } } }),
-      (err) => err.code === 'GOVERNANCE_SCHEMA'
+      () => planGovernanceMerge(projectRoot, 'review.yaml', [{ id: 'test', package: { skill: { deep: true } } }]),
+      (err) => err.code === 'GOVERNANCE_FIELD_VALUE_INVALID'
     );
   });
 
-  it('accepts valid governance entry', () => {
-    // Should not throw
-    validateGovernanceEntry({ id: 'test-entry', dispatch: 'always', tags: ['a', 'b'], enabled: true, count: 3 });
+  it('rejects fields that are not contributable — tags and count', () => {
+    // Previously accepted by the target-blind `validateGovernanceEntry`. The
+    // allowlist is per registry, and review.yaml contributes neither field.
+    assert.throws(
+      () => planGovernanceMerge(projectRoot, 'review.yaml',
+        [{ id: 'test-entry', dispatch: 'always', tags: ['a', 'b'], enabled: true, count: 3 }]),
+      (err) => err.code === 'GOVERNANCE_FIELD_NOT_ALLOWED'
+    );
+  });
+
+  it('accepts a valid governance entry', () => {
+    const plan = planGovernanceMerge(projectRoot, 'review.yaml',
+      [{ id: 'test-entry', dispatch: 'always', enabled: true }]);
+    assert.deepEqual(plan.mergesApplied, ['appended: test-entry']);
+  });
+
+  it('rejects dispatch: triggered', () => {
+    assert.throws(
+      () => planGovernanceMerge(projectRoot, 'review.yaml', [{ id: 'new-one', dispatch: 'triggered' }]),
+      (err) => err.code === 'GOVERNANCE_FIELD_VALUE_INVALID'
+    );
   });
 
   it('merges new entries into existing governance file', () => {
     writeFileSync(join(projectRoot, '.context-index/governance/review.yaml'),
       'reviewers:\n  - id: existing\n    dispatch: always\n');
-    mergeGovernanceEntries(projectRoot, 'review.yaml', [{ id: 'new-one', dispatch: 'triggered' }]);
+    mergeGovernanceEntries(projectRoot, 'review.yaml', [{ id: 'new-one', dispatch: 'always' }]);
     const content = readFileSync(join(projectRoot, '.context-index/governance/review.yaml'), 'utf8');
     assert.ok(content.includes('existing'));
     assert.ok(content.includes('new-one'));
   });
 
-  it('preserves project values on id collision (project wins)', () => {
-    writeFileSync(join(projectRoot, '.context-index/governance/review.yaml'),
-      'reviewers:\n  - id: shared\n    dispatch: always\n');
-    mergeGovernanceEntries(projectRoot, 'review.yaml', [{ id: 'shared', dispatch: 'triggered', extra: 'new' }]);
-    const content = readFileSync(join(projectRoot, '.context-index/governance/review.yaml'), 'utf8');
-    assert.ok(content.includes('dispatch: always')); // project wins
+  it('skips a colliding id and leaves the existing entry byte-identical', () => {
+    const src = 'reviewers:\n  - id: shared\n    dispatch: always\n';
+    const overlay = join(projectRoot, '.context-index/governance/review.yaml');
+    writeFileSync(overlay, src);
+    const report = mergeGovernanceEntries(projectRoot, 'review.yaml',
+      [{ id: 'shared', dispatch: 'never', enabled: false }]);
+    // No field of the extension entry reaches the project entry — not even one
+    // the project left unset. The old fill-gap merge was an execution lever.
+    assert.equal(readFileSync(overlay, 'utf8'), src);
+    assert.deepEqual(report.mergesApplied, ['skipped: shared']);
   });
 
   it('auto-creates governance file when missing', () => {

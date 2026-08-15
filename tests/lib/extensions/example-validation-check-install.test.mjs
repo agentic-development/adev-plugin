@@ -289,19 +289,18 @@ describe("example-validation-check: install collision reporting", () => {
     cleanupTempDir(projectRoot);
   });
 
-  it("install-collision-report: pre-existing project entry preserved; merge logged", () => {
-    // Seed project's validate.yaml with the same id, error severity, enabled: false.
+  it("install-collision-report: pre-existing project entry untouched; collision logged as skipped", () => {
+    // Seed project's validate.yaml under the root key validate-config actually
+    // reads (`checks`, not `validators` — lib/governance/validate-config.mjs:110-111).
     const overlayPath = join(projectRoot, ".context-index/governance/validate.yaml");
-    writeFileSync(
-      overlayPath,
-      [
-        "validators:",
-        "  - id: example-validation-check.passing",
-        "    severity: error",
-        "    enabled: false",
-        "",
-      ].join("\n"),
-    );
+    const src = [
+      "checks:",
+      "  - id: example-validation-check.passing",
+      "    severity: error",
+      "    enabled: false",
+      "",
+    ].join("\n");
+    writeFileSync(overlayPath, src);
 
     const entries = [
       {
@@ -316,22 +315,19 @@ describe("example-validation-check: install collision reporting", () => {
 
     const report = mergeGovernanceEntries(projectRoot, "validate.yaml", entries);
 
-    // Merge ran in project-wins mode (entry id already existed in project)
-    assert.ok(
-      report.mergesApplied.some((m) => m.startsWith("merged (project-wins)")),
-      `expected project-wins merge log, got ${report.mergesApplied.join(", ")}`,
-    );
+    assert.deepEqual(report.mergesApplied, ["skipped: example-validation-check.passing"]);
+
+    // The file is byte-identical: a colliding id is skipped outright. The old
+    // fill-gap merge would have attached the extension's `command` to the
+    // project's own entry — arbitrary code execution dressed as a merge.
+    assert.equal(readFileSync(overlayPath, "utf8"), src);
 
     const result = parseYaml(readFileSync(overlayPath, "utf8"));
-    const projectEntry = result.validators.find((e) => e.id === "example-validation-check.passing");
-
-    // Project's severity preserved (non-overridable)
+    const projectEntry = result.checks.find((e) => e.id === "example-validation-check.passing");
     assert.equal(projectEntry.severity, "error", "project severity must win");
-    // Project's enabled preserved
     assert.equal(projectEntry.enabled, false, "project enabled must win");
-    // Extension fills in fields the project did not set (kind, profile)
-    assert.equal(projectEntry.kind, "quality-gate", "extension fills missing kind");
-    assert.equal(projectEntry.profile, "read-only", "extension fills missing profile");
+    assert.equal(projectEntry.kind, undefined, "no extension field may be filled in");
+    assert.equal(projectEntry.command, undefined, "no command may reach an existing entry");
   });
 
   it("install-collision-multiple-ids: all colliding ids appear in mergesApplied report", () => {
@@ -339,7 +335,7 @@ describe("example-validation-check: install collision reporting", () => {
     writeFileSync(
       overlayPath,
       [
-        "validators:",
+        "checks:",
         "  - id: example-validation-check.passing",
         "    severity: error",
         "  - id: example-validation-check.secondary",
@@ -348,22 +344,36 @@ describe("example-validation-check: install collision reporting", () => {
       ].join("\n"),
     );
 
+    // A quality-gate check requires a command: a commandless one is rejected by
+    // lib/governance/validate-config.mjs:429-443 rather than executed, so it is
+    // refused at contribution time.
+    const cmd = ["bash", "extensions/example-validation-check/bin/check.sh"];
     const entries = [
-      { id: "example-validation-check.passing", kind: "quality-gate", profile: "read-only" },
-      { id: "example-validation-check.secondary", kind: "quality-gate", profile: "read-only" },
-      { id: "example-validation-check.new", kind: "quality-gate", profile: "read-only" },
+      { id: "example-validation-check.passing", kind: "quality-gate", profile: "read-only", command: cmd },
+      { id: "example-validation-check.secondary", kind: "quality-gate", profile: "read-only", command: cmd },
+      { id: "example-validation-check.new", kind: "quality-gate", profile: "read-only", command: cmd },
     ];
 
     const report = mergeGovernanceEntries(projectRoot, "validate.yaml", entries);
 
-    const merges = report.mergesApplied;
-    const collisions = merges.filter((m) => m.startsWith("merged (project-wins)"));
-    const appends = merges.filter((m) => m.startsWith("appended"));
+    assert.deepEqual(report.mergesApplied, [
+      "skipped: example-validation-check.passing",
+      "skipped: example-validation-check.secondary",
+      "appended: example-validation-check.new",
+    ]);
 
-    assert.equal(collisions.length, 2, `expected 2 project-wins collisions, got ${collisions.length}`);
-    assert.equal(appends.length, 1, `expected 1 append, got ${appends.length}`);
-    assert.ok(collisions.some((m) => m.includes("example-validation-check.passing")));
-    assert.ok(collisions.some((m) => m.includes("example-validation-check.secondary")));
-    assert.ok(appends.some((m) => m.includes("example-validation-check.new")));
+    const result = parseYaml(readFileSync(overlayPath, "utf8"));
+    assert.deepEqual(
+      result.checks.map((c) => c.id),
+      [
+        "example-validation-check.passing",
+        "example-validation-check.secondary",
+        "example-validation-check.new",
+      ],
+    );
+    // Neither colliding entry gained the extension's command.
+    assert.equal(result.checks[0].command, undefined);
+    assert.equal(result.checks[1].command, undefined);
+    assert.deepEqual(result.checks[2].command, cmd);
   });
 });
