@@ -94,6 +94,61 @@ test('assertValidValue accepts bare scalars of each allowed type', () => {
   assert.doesNotThrow(() => assertValidValue({ k: 'v', n: 3, b: false }, 'f'));
 });
 
+test('colon-space and trailing colon are refused — the block-sequence reparse path', () => {
+  // Verified against lib/profiles/yaml.mjs: `after:\n  - foo: bar` parses to
+  // { after: [ { foo: 'bar' } ] } — the string became a map. Quoting does not help.
+  assert.throws(
+    () => assertSafeScalar('run: rm -rf /', 'after'),
+    e => e.code === 'GOVERNANCE_SCALAR_UNSAFE' && /after/.test(e.message),
+  );
+  for (const bad of ['foo: bar', 'foo:', 'a\tb: c', 'trailing colon:', 'x: y: z'])
+    throwsCode(() => assertSafeScalar(bad, 'f'), 'GOVERNANCE_SCALAR_UNSAFE');
+  // The list-element form is the actual attack surface.
+  throwsCode(() => assertValidValue(['run: rm -rf /'], 'after'), 'GOVERNANCE_SCALAR_UNSAFE');
+});
+
+test('a colon with no following whitespace is still allowed', () => {
+  // These round-trip as strings through the parser and the design depends on them.
+  assert.doesNotThrow(() => assertSafeScalar('plugin:tier1/x.mjs', 'runner'));
+  assert.doesNotThrow(() => assertSafeScalar('plugin:validate/checks/foo.md', 'prompt'));
+  assert.doesNotThrow(() => assertSafeScalar('a:b', 'f'));
+  assert.doesNotThrow(() => assertValidValue({ runner: 'plugin:tier1/x.mjs' }, 'package'));
+});
+
+test('scalars that change type on reparse are refused', () => {
+  // yaml.mjs:173-183 coerces each of these on the way back in.
+  assert.throws(
+    () => assertSafeScalar('42', 'f'),
+    e => e.code === 'GOVERNANCE_SCALAR_UNSAFE',
+  );
+  for (const bad of ['', '0', '-7', 'true', 'false', 'null', '~'])
+    throwsCode(() => assertSafeScalar(bad, 'f'), 'GOVERNANCE_SCALAR_UNSAFE');
+  throwsCode(() => assertValidValue(['42'], 'after'), 'GOVERNANCE_SCALAR_UNSAFE');
+  throwsCode(() => assertValidValue({ k: 'true' }, 'package'), 'GOVERNANCE_SCALAR_UNSAFE');
+  // Lookalikes that are NOT coerced stay allowed.
+  assert.doesNotThrow(() => assertSafeScalar('42x', 'f'));
+  assert.doesNotThrow(() => assertSafeScalar('4.2', 'f'));
+  assert.doesNotThrow(() => assertSafeScalar('True', 'f'));
+});
+
+test('real numbers and booleans are still accepted as typed values', () => {
+  // Only the STRING forms flip type. A real 42 / true reparses correctly.
+  assert.doesNotThrow(() => assertValidValue(42, 'f'));
+  assert.doesNotThrow(() => assertValidValue(0, 'f'));
+  assert.doesNotThrow(() => assertValidValue(true, 'f'));
+  assert.doesNotThrow(() => assertValidValue(false, 'f'));
+  assert.doesNotThrow(() => assertValidValue({ n: 42, b: true }, 'package'));
+});
+
+test('a non-string input is a type error, not a content refusal', () => {
+  // Tasks 4 and 7 depend on this distinction — pin it.
+  assert.throws(() => assertSafeScalar(42, 'f'), e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+  for (const bad of [null, undefined, true, {}, []])
+    throwsCode(() => assertSafeScalar(bad, 'f'), 'GOVERNANCE_FIELD_VALUE_INVALID');
+  for (const bad of [42, null, undefined, true, {}, []])
+    throwsCode(() => assertSafeArgvToken(bad), 'GOVERNANCE_FIELD_VALUE_INVALID');
+});
+
 test('one level means scalar leaves only', () => {
   assert.throws(() => assertValidValue({ k: ['a'] }, 'package'), e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
   throwsCode(() => assertValidValue([['a']], 'after'), 'GOVERNANCE_FIELD_VALUE_INVALID');
