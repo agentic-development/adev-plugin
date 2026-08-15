@@ -125,9 +125,9 @@ async function run(rawInput) {
   let writeHeuristic;
   let deriveHeuristicId;
   let canonicalSpecSlug;
-  let deriveSignature;
+  let deriveValidateFailureSignature;
   try {
-    ({ writeHeuristic, deriveHeuristicId, canonicalSpecSlug, deriveSignature } = await import(
+    ({ writeHeuristic, deriveHeuristicId, canonicalSpecSlug, deriveValidateFailureSignature } = await import(
       resolve(pluginRoot, 'lib/heuristics.mjs')
     ));
   } catch (err) {
@@ -185,6 +185,8 @@ async function run(rawInput) {
     // say. Write nothing rather than reaching into prose for material.
     if (failed.length === 0) return;
 
+    // Prose-only derivation. The lookup key is NOT composed here — see the
+    // shared helper call below.
     const uniqueFailed = [...new Set(failed)].sort();
     const checkList = uniqueFailed.slice(0, 5).join(', ');
 
@@ -196,9 +198,11 @@ async function run(rawInput) {
     // `signature` is the CROSS-SCOPE recurrence key, so its input carries no
     // spec identity — the same failing checks under two specs must match.
     // `id` stays spec-scoped, so recurrence on one spec updates one entry.
-    // A throw here costs the recurrence key, not the capture.
+    // The composition lives in lib/heuristics.mjs so the read side derives the
+    // identical key; the try/catch stays HERE so a throw costs the recurrence
+    // key, not the capture.
     try {
-      signature = deriveSignature('validate', uniqueFailed.join(' '));
+      signature = deriveValidateFailureSignature(verdict.checks);
     } catch (err) {
       console.warn(
         `[post-validate-hook] signature derivation failed (non-blocking): ${err.message}`,
@@ -215,7 +219,10 @@ async function run(rawInput) {
     evidence: [{ source: 'validation', path: reportPath, date: today }],
   };
   if (antiPattern !== undefined) entry.antiPattern = antiPattern;
-  if (signature !== undefined) entry.signature = signature;
+  // Truthiness, not `!== undefined`: the shared helper returns `null` when
+  // there is nothing to derive, and storing `signature: null` would be a
+  // regression on the previous shape.
+  if (signature) entry.signature = signature;
 
   try {
     const stored = await writeHeuristic(projectRoot, entry);

@@ -162,8 +162,15 @@ function addSpec(projectRoot, relPath, title) {
 
 /**
  * A plugin root whose `lib/heuristics.mjs` re-exports the real module but
- * replaces `deriveSignature` with a throwing stub. `export *` skips names that
- * are also exported locally, so every other binding stays real.
+ * replaces `deriveValidateFailureSignature` with a throwing stub. `export *`
+ * skips names that are also exported locally, so every other binding stays real.
+ *
+ * The override must name the function the hook actually imports. Overriding
+ * `deriveSignature` here would no longer intercept anything: the hook now calls
+ * the shared `deriveValidateFailureSignature` helper, and that helper reaches
+ * `deriveSignature` through a module-local binding inside the real module,
+ * which no re-export can shadow. A stub on the wrong name leaves the call-site
+ * try/catch unexercised while the test still appears to cover it.
  */
 function makeSignatureShimRoot() {
   const shimRoot = createTempDir();
@@ -173,7 +180,9 @@ function makeSignatureShimRoot() {
     shimRoot,
     "lib/heuristics.mjs",
     `export * from ${JSON.stringify(realUrl)};\n` +
-      `export function deriveSignature() { throw new Error("shim: deriveSignature exploded"); }\n`,
+      `export function deriveValidateFailureSignature() {\n` +
+      `  throw new Error("shim: deriveValidateFailureSignature exploded");\n` +
+      `}\n`,
   );
   return shimRoot;
 }
