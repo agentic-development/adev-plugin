@@ -6,7 +6,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from './helpers.mjs';
 
 describe('CLI extension commands', () => {
@@ -53,5 +53,77 @@ describe('CLI extension commands', () => {
     });
     assert.ok(result.stdout.toString().includes('test-ext'));
     cleanupTempDir(extDir);
+  });
+
+  // ── --allow-exec flag surface ────────────────────────────────────────
+  //
+  // spawnSync (not the shared `runCLI` helper) because `runCLI` passes its
+  // `command` as a single argv element and these cases need four.
+
+  /** A local extension contributing an executable quality gate. */
+  function execExtensionFixture() {
+    const extDir = createTempDir();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: cli-exec-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  governance:',
+      '    - target: validate.yaml',
+      '      entries:',
+      '        - id: cli-exec-gate',
+      '          kind: quality-gate',
+      '          severity: error',
+      '          command: [bash, bin/check.sh]',
+      '',
+    ].join('\n'));
+    writeFixture(extDir, 'bin/check.sh', '#!/usr/bin/env bash\nexit 0\n');
+    return extDir;
+  }
+
+  it('extension install without --allow-exec refuses an executable contribution', () => {
+    const extDir = execExtensionFixture();
+    const result = spawnSync('node', [join(PLUGIN_ROOT, 'cli/index.mjs'), 'extension', 'install', extDir], {
+      cwd: tmp, env: { ...process.env }
+    });
+    const output = result.stdout.toString() + result.stderr.toString();
+    assert.notEqual(result.status, 0);
+    assert.match(output, /--allow-exec/);
+    assert.match(output, /validate\.yaml \[cli-exec-gate\] command: bash bin\/check\.sh/);
+    assert.equal(existsSync(join(tmp, '.context-index/governance/validate.yaml')), false);
+    cleanupTempDir(extDir);
+  });
+
+  it('extension install --allow-exec installs the executable contribution', () => {
+    const extDir = execExtensionFixture();
+    const result = spawnSync('node', [join(PLUGIN_ROOT, 'cli/index.mjs'), 'extension', 'install', extDir, '--allow-exec'], {
+      cwd: tmp, env: { ...process.env }
+    });
+    assert.equal(result.status, 0, result.stdout.toString() + result.stderr.toString());
+    const out = readFileSync(join(tmp, '.context-index/governance/validate.yaml'), 'utf8');
+    assert.match(out, /id: cli-exec-gate/);
+    assert.match(out, /exec_consented_at: \d{4}-\d{2}-\d{2}T/);
+    assert.match(out, /source: extension:cli-exec-ext/);
+    // The payload was relocated into the project and its directory reported.
+    assert.match(result.stdout.toString(), /\.context-index\/extensions\/cli-exec-ext/);
+    cleanupTempDir(extDir);
+  });
+
+  it('extension install --allow-exec is accepted before the source argument', () => {
+    const extDir = execExtensionFixture();
+    const result = spawnSync('node', [join(PLUGIN_ROOT, 'cli/index.mjs'), 'extension', 'install', '--allow-exec', extDir], {
+      cwd: tmp, env: { ...process.env }
+    });
+    assert.equal(result.status, 0, result.stdout.toString() + result.stderr.toString());
+    assert.match(readFileSync(join(tmp, '.context-index/governance/validate.yaml'), 'utf8'), /id: cli-exec-gate/);
+    cleanupTempDir(extDir);
+  });
+
+  it('extension install usage names --allow-exec when the source is missing', () => {
+    const result = spawnSync('node', [join(PLUGIN_ROOT, 'cli/index.mjs'), 'extension', 'install', '--allow-exec'], {
+      cwd: tmp, env: { ...process.env }
+    });
+    const output = result.stdout.toString() + result.stderr.toString();
+    assert.notEqual(result.status, 0);
+    assert.match(output, /Usage: npx adev-cli extension install <source> \[--allow-exec\]/);
   });
 });
