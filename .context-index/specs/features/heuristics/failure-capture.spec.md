@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone: 3
-revision: 2
+revision: 3
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -22,7 +22,7 @@ updated: 2026-08-15
 ## Behavioral Contract
 
 Automatic heuristic capture is structurally blind to failure. The live capture path is the
-non-blocking Stop hook `hooks/post-validate-extract-heuristics.mjs`, which returns early at line 73
+non-blocking Stop hook `hooks/post-validate-extract-heuristics.mjs`, which returns early at line 72
 on `verdict.overall !== 'PASS'`. Nothing else captures automatically: `/adev:recover` Step 7 captures,
 but only when an agent is already stuck, and `/adev:learn` requires a human to think of it. The
 result is a store whose automatic entries all say a spec passed.
@@ -59,12 +59,12 @@ evidence. That is false against the shipped code, and the correction drives Beha
 - The Stop hook continues to receive `tool_result.verdict_metadata` with `overall` and `spec_path`.
 - `writeHeuristic` accepts a `signature` field and reconciles on `id`.
 - **Input scoping (security boundary).** The hook's PASS path consumes only structured
-  verdict-metadata fields and never reads or re-emits quality-gate subprocess stdout/stderr, which
-  flow through the redaction pipeline. The FAIL path inherits that guarantee unchanged — see
-  Behavior 1a. This matters more on the FAIL path than the PASS path: captured text lands in a
-  git-tracked store file that `/adev:sync` later copies into `CLAUDE.md`, `AGENTS.md`, `.cursorrules`,
-  and `copilot-instructions`, so an unredacted secret in a failing gate's stderr would propagate into
-  four agent files.
+  verdict-metadata fields and never reads or re-emits quality-gate subprocess stdout/stderr. The FAIL
+  path is scoped *more* tightly still — identifiers only, no prose fields at all (Behavior 1a). The
+  stakes are higher here than on the PASS path: captured text lands in a git-tracked store file that
+  `/adev:sync` copies into `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and `copilot-instructions`, so
+  anything unsanitized reaching the store propagates into four agent files. The spec does not rely on
+  the redaction pipeline to make prose safe; it declines to read prose.
 
 ### Behaviors
 
@@ -73,14 +73,25 @@ evidence. That is false against the shipped code, and the correction drives Beha
    failure text via the shared primitive with origin `validate`, and exits 0. It remains non-blocking:
    a failed extraction never changes the validate verdict.
 
-1a. **When** the FAIL path assembles its failure text **then** it reads **only** `verdict_metadata`
-   `checks[]` entries whose outcome is not PASS, using their structured `id`/`name`/`detail` fields —
-   the same already-redacted values the quality-gate pipeline produced. It **never** reads
-   `tool_result` subprocess channels, raw stdout/stderr, file contents, or environment values, and it
-   never re-emits any field the PASS path does not already consume. If no non-PASS `checks[]` entry is
-   present, the hook writes nothing and exits 0 rather than falling back to a broader field. This is a
-   security boundary, not a formatting preference: the captured text is git-tracked and propagates to
-   four agent files via `/adev:sync`.
+1a. **When** the FAIL path assembles its failure text **then** it reads **only the `id` and `outcome`
+   fields** of `verdict_metadata.checks[]` entries whose outcome is not PASS. Those two are the only
+   check fields the hook's documented input contract names
+   (`hooks/post-validate-extract-heuristics.mjs:15`, `checks: [ { id, outcome, ... } ]`). The hook
+   **never** reads free-text fields, `tool_result` subprocess channels, raw stdout/stderr, file
+   contents, or environment values, and never consumes a field the PASS path does not already consume.
+   If no non-PASS `checks[]` entry is present, the hook writes nothing and exits 0 rather than falling
+   back to a broader field.
+
+   **Reading identifiers rather than prose is the security design, not a limitation.** An earlier
+   revision proposed drawing failure text from `detail`-style fields on the premise that the
+   quality-gate redaction pipeline had already sanitized them. That premise is narrower than it
+   appeared: `configurable-checks.spec.md` Behavior 25a redacts only `kind: quality-gate` subprocess
+   bytes, and no live code constructs `checks[]` with prose fields at all. Depending on redaction the
+   spec cannot verify would put unsanitized text into a git-tracked store that `/adev:sync` copies into
+   `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and `copilot-instructions`. A check `id` is a closed
+   identifier from a known vocabulary, so there is no free text to leak and no redaction dependency to
+   assume. The resulting heuristic is coarser — it names *which checks failed*, not their prose — and
+   that is the correct trade for this surface.
 
 2. **When** the hook captures on FAIL **then** the heuristic's `anti-pattern` field carries the "don't
    do this" counter-rule derived from the failure, and `pattern` carries the corrective action. The
@@ -88,10 +99,22 @@ evidence. That is false against the shipped code, and the correction drives Beha
 
 3. **When** the hook captures on PASS **then** existing behavior is unchanged except for the title
    prefix: the hardcoded `"First-run PASS: "` is replaced by an outcome-derived prefix, so a PASS
-   entry and a FAIL entry are distinguishable by title. The prefix is currently duplicated in
-   `lib/cli/heuristics.mjs` and the hook; Behavior 7 deletes the CLI copy along with the dead `extract`
-   verb, so **after this spec lands exactly one copy remains — the hook's**. The two behaviors are
-   ordered, not contradictory: the derivation is unified first, then the dead caller is removed.
+   entry and a FAIL entry are distinguishable by title.
+
+   **There are three copies of the prefix, not two, and the third is the one the tests actually
+   exercise:**
+
+   | Copy | Fate |
+   |---|---|
+   | `lib/cli/heuristics.mjs:155` | deleted by Behavior 7 with the dead `extract` verb |
+   | `hooks/post-validate-extract-heuristics.mjs:127` | **survives** — this is the live capture path |
+   | `tests/skills/validate-success-heuristic-harness.mjs:112` | **survives** — and must be updated |
+
+   The harness copy matters disproportionately: the PASS-path suite imports `runCheck12` from that
+   harness and never exercises the hook, so changing only the hook and the CLI would leave the
+   outcome-derived-prefix acceptance criterion verified by nothing. The harness is updated in the same
+   change, and after this spec lands two copies remain — the hook's and the harness's, which mirror
+   each other by construction.
 
 4. **When** the same failure recurs on a later validate run for the same spec **then** the derived
    **`id`** is identical to the first occurrence, so `writeHeuristic` updates the existing entry rather
@@ -177,9 +200,14 @@ evidence. That is false against the shipped code, and the correction drives Beha
   a behavioral change *within* the protocol, which the constitution's Architecture Boundaries place
   under Autonomous — not "Changing the hook protocol", which requires human approval.
 - **Principle:** "Skills are primarily markdown — companion code is allowed but must not be required
-  for the skill to function." — Applies to Behavior 5: after migration, `/adev:recover` names a verb.
-  If the verb is unavailable the step degrades to writing an entry without a signature rather than
-  failing, so the skill still functions.
+  for the skill to function." — Applies to Behavior 5, and the degradation is **fail-closed, not
+  partial**. After migration `/adev:recover` needs the verb for *both* values: the `signature` and the
+  digest its `id` is composed from. So "write the entry without a signature" is not reachable — without
+  the verb there is no id either, and an entry cannot be keyed. When the verb is unavailable, recover
+  **skips heuristic extraction entirely**, logs a warning, and continues. This matches
+  `failure-signature-key.spec.md`'s rule that an underivable key fails closed rather than being
+  guessed. The principle still holds: `/adev:recover`'s actual job — diagnosis, correction, re-dispatch
+  — is unaffected; only the optional capture step is skipped.
 - **Anti-pattern:** "No `Run inline Node.js:` step directives… Skills name a CLI subcommand." —
   Applies to the removal of the prose derivation rule from `skills/recover/SKILL.md`.
 - **Principle:** "Minimize external dependencies" — Applies; no new dependency.
@@ -188,13 +216,14 @@ evidence. That is false against the shipped code, and the correction drives Beha
 
 | Task | Description | Complexity |
 |---|---|---|
-| Widen the hook gate | Replace the early return at `hooks/post-validate-extract-heuristics.mjs:73` with PASS/FAIL branching | small |
+| Widen the hook gate | Replace the early return at `hooks/post-validate-extract-heuristics.mjs:72` with PASS/FAIL branching | small |
 | FAIL-path extraction | Derive title, pattern, anti-pattern, `signature` and **`id`** from a FAIL verdict, reading only non-PASS `checks[]` entries per Behavior 1a. The `id` uses the PASS-path composition so recurrence updates rather than duplicates | medium |
 | Outcome-derived title prefix | Single derivation replacing the hardcoded `"First-run PASS: "`; two copies exist now, one remains after the retirement task | small |
 | `--digest-only` on the signature verb | Bare 8-hex digest with no prefix, rejected together with `--blocker-id`; required by Behavior 5a so recover can compose `<category-slug>-<digest>` | small |
 | Migrate recover Step 7 | Replace the prose rule in `skills/recover/SKILL.md:387-397` with two verb invocations — `--origin recover` for the signature, `--digest-only` for the id's digest | small |
 | Remove the dead path | Delete the `extract` verb, `--check-first-run`, and the orphaned check file | small |
-| Retire the dead path's tests | `tests/cli/heuristics.test.mjs` exercises the `extract` verb throughout (27 references) and is listed in the source manifest of **another spec**, `cli-driver-surface/inline-node-extraction-sweep.spec.md`. Deleting the verb without retiring these tests means `npm test` cannot pass, so no acceptance criterion depending on a green suite could hold. Removing them also touches a second spec's manifest and must be reflected there | medium |
+| Retire the dead path's tests | `tests/cli/heuristics.test.mjs` exercises the `extract` verb throughout (27 references). Deleting the verb without retiring these tests means `npm test` cannot pass, so no acceptance criterion depending on a green suite could hold. The file is referenced by `.context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md` in its **Task Map (line 77) and Acceptance Criteria (line 89) only** — that spec has no `source-manifest` frontmatter, no Source Manifest section, and no `.validate.md` sibling, so there is no manifest to update. Note the coupling in that spec's prose instead | medium |
+| Update the PASS-path test harness | `tests/skills/validate-success-heuristic-harness.mjs:112` holds the third prefix copy and is what the PASS-path suite actually asserts against — it imports `runCheck12` and never touches the hook. Without this the outcome-derived-prefix criterion is unverified | small |
 | Update dangling references | `docs/cli-reference.md` and `lib/diagnostics/tier2/validated-without-report.mjs` | small |
 | Tests | FAIL capture, PASS unchanged, recurrence updates rather than duplicates, input scoping honored, non-blocking on every error path, recover ids byte-identical | medium |
 
@@ -211,8 +240,11 @@ evidence. That is false against the shipped code, and the correction drives Beha
 - [ ] **No test asserts automatic promotion on the hook path.** Per Behavior 4a it is structurally
       unreachable — deterministic evidence paths keep the distinct-path count at 1 — so such a test
       would be unsatisfiable
-- [ ] The FAIL path reads only non-PASS `checks[]` entries; a test feeds a verdict carrying a secret in
-      a subprocess-style field and asserts it does not reach the store
+- [ ] The FAIL path reads only the `id` and `outcome` of non-PASS `checks[]` entries; a test feeds a
+      verdict carrying a secret in both a prose `checks[]` field and a subprocess-style field, and
+      asserts neither reaches the store
+- [ ] The captured FAIL heuristic names which checks failed and contains no text copied from any field
+      outside `checks[].id` / `checks[].outcome`
 - [ ] With no non-PASS `checks[]` entry present, the hook writes nothing and exits 0
 - [ ] Every error path in the hook exits 0 and leaves the validate verdict unchanged
 - [ ] `skills/recover/SKILL.md` contains no derivation-rule text and names the verb for both values
@@ -221,8 +253,10 @@ evidence. That is false against the shipped code, and the correction drives Beha
 - [ ] Heuristics written by `/adev:recover` after the change carry ids byte-identical to before for the
       same normalized root cause, asserted against a pre-change fixture
 - [ ] `adev heuristics extract`, `--check-first-run`, and the orphaned check file are gone
-- [ ] `tests/cli/heuristics.test.mjs` no longer exercises the removed verb, and
-      `cli-driver-surface/inline-node-extraction-sweep.spec.md`'s source manifest reflects the change
+- [ ] `tests/cli/heuristics.test.mjs` no longer exercises the removed verb
+- [ ] `tests/skills/validate-success-heuristic-harness.mjs` uses the outcome-derived prefix, so the
+      PASS-path suite actually verifies the prefix criterion rather than asserting against a stale copy
+- [ ] Exactly two prefix copies remain after this spec — the hook's and the harness's — and they agree
 - [ ] No reference to the removed verb remains in `docs/` or `lib/`
 - [ ] `npm test` passes
 - [ ] No constitutional violations
