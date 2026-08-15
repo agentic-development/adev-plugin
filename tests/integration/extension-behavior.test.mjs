@@ -165,9 +165,10 @@ describe("example-validation-check: runtime quality-gate execution (Behavior 3)"
     // No path fixups are needed. The manifest declares an extension-source-
     // relative `bin/check.sh`; install copies that payload into the project at
     // .context-index/extensions/<name>/ and rewrites the argv element to the
-    // absolute installed path. The entry is directly runnable as written, with
-    // the runner's cwd locked to the project root (configurable-checks
-    // Behavior 6c).
+    // absolute installed path. The entry is directly runnable as written.
+    // (`runQualityGate` takes its cwd from the caller; it is configurable-checks
+    // Behavior 6c that pins that to the project root in a real validate run,
+    // which is what we pass below.)
     const payloadPath = join(
       projectRoot,
       ".context-index/extensions/example-validation-check/bin/check.sh",
@@ -468,30 +469,51 @@ describe("example-validation-check: pitfall enforcement (docs/extensions.md)", (
 describe("templates/adev-extension.example.yaml: installability", () => {
   let projectRoot;
   let stubPluginRoot;
+  let extDir;
 
   beforeEach(() => {
     projectRoot = setupProject();
     stubPluginRoot = stubPluginRootDir();
+    extDir = null;
   });
 
   afterEach(() => {
     cleanupTempDir(projectRoot);
     cleanupTempDir(stubPluginRoot);
+    // In the test body this leaks the fixture on any failure path.
+    if (extDir !== null) cleanupTempDir(extDir);
+  });
+
+  it("template declares the extension-source-relative command form", () => {
+    // This template is what every extension author copies, so a regression to
+    // the project-root-relative form (`extensions/my-extension/bin/check.sh`)
+    // would re-seed the original defect into every new extension written from
+    // it. The value is asserted against the SHIPPED FILE, not a fixture.
+    const template = parseYaml(readFileSync(TEMPLATE_PATH, "utf8"));
+    const entry = template.provides.governance[0].entries[0];
+    assert.deepEqual(
+      entry.command,
+      ["bash", "bin/check.sh"],
+      "command must be extension-source-relative; a project-root-relative path " +
+        "resolves only inside a repo that vendors the extension at that path and " +
+        "refuses elsewhere with GOVERNANCE_PAYLOAD_MISSING",
+    );
+    assert.equal(entry.profile, "read-only", "profile must be explicit on a quality-gate");
+    assert.equal(entry.kind, "quality-gate");
   });
 
   it("template installs successfully (proves it's a working manifest)", async () => {
-    // Build an extension directory from the template:
-    //   - Strip leading '# ' comment lines (commented-out worked examples)
-    //     so the parser sees real YAML, not all-commented placeholder content.
-    //   - Copy any required runtime files (we provide a real bin/check.sh
-    //     since the governance slot references one).
-    const extDir = createTempDir();
-    const raw = readFileSync(TEMPLATE_PATH, "utf8");
-    // Take only top-level keys that should be uncommented (name, version,
-    // description, author, requires, provides). The template's `provides`
-    // section is fully commented out as examples; we use a minimal real
-    // manifest derived from the template's documented shape.
-    const realisticManifest = [
+    // The fixture is DERIVED from the shipped template, not duplicated: every
+    // governance field below is read out of the file, so a regression in the
+    // template's `command` breaks this install rather than passing against a
+    // hand-written copy that happens to still be correct.
+    const template = parseYaml(readFileSync(TEMPLATE_PATH, "utf8"));
+    const block = template.provides.governance[0];
+    const templateEntry = block.entries[0];
+    const payloadRel = templateEntry.command[1];
+
+    extDir = createTempDir();
+    const derivedManifest = [
       "name: template-derived-extension",
       "version: 0.1.0",
       "description: Built from templates/adev-extension.example.yaml",
@@ -500,22 +522,24 @@ describe("templates/adev-extension.example.yaml: installability", () => {
       '  adev: ">=0.0.0"',
       "provides:",
       "  governance:",
-      "    - target: validate.yaml",
+      `    - target: ${block.target}`,
       "      entries:",
       "        - id: template-derived.passing",
-      "          kind: quality-gate",
-      "          profile: read-only",
-      "          command: [bash, bin/check.sh]",
-      "          severity: warning",
+      `          kind: ${templateEntry.kind}`,
+      `          profile: ${templateEntry.profile}`,
+      `          command: [${templateEntry.command.join(", ")}]`,
+      `          severity: ${templateEntry.severity}`,
       "",
     ].join("\n");
-    writeFileSync(join(extDir, "adev-extension.yaml"), realisticManifest);
-    mkdirSync(join(extDir, "bin"), { recursive: true });
-    // Reuse the canonical bin/check.sh shape from the example extension.
-    copyFileSync(join(EXAMPLE_DIR, "bin", "check.sh"), join(extDir, "bin", "check.sh"));
-    chmodSync(join(extDir, "bin", "check.sh"), 0o755);
+    writeFileSync(join(extDir, "adev-extension.yaml"), derivedManifest);
+    // Place a real payload at exactly the path the template names.
+    mkdirSync(join(extDir, dirname(payloadRel)), { recursive: true });
+    copyFileSync(join(EXAMPLE_DIR, "bin", "check.sh"), join(extDir, payloadRel));
+    chmodSync(join(extDir, payloadRel), 0o755);
 
-    // The template MUST install cleanly.
+    // The template MUST install cleanly. Consent is explicit: the governance
+    // slot ships an executable, so a non-interactive install without
+    // --allow-exec refuses with GOVERNANCE_EXEC_NOT_CONSENTED.
     const result = await installExtension(extDir, projectRoot, {
       pluginRoot: stubPluginRoot,
       sourceUri: extDir,
@@ -531,26 +555,26 @@ describe("templates/adev-extension.example.yaml: installability", () => {
     assert.equal(validate.validators, undefined, "root key must be checks, never validators");
     const installed = validate.checks.find((e) => e && e.id === "template-derived.passing");
     assert.ok(installed, "validate.yaml must contain the template-derived check id");
-    // The template's declared `[bash, bin/check.sh]` is rewritten to the
-    // relocated payload, proving the documented form is the installable one.
-    assert.deepEqual(installed.command, [
-      "bash",
-      join(projectRoot, ".context-index/extensions/template-derived-extension/bin/check.sh"),
-    ]);
-
-    cleanupTempDir(extDir);
+    // The template's declared relative path is rewritten to the relocated
+    // payload, proving the documented form is the installable one.
+    const payloadPath = join(
+      projectRoot,
+      ".context-index/extensions/template-derived-extension",
+      payloadRel,
+    );
+    assert.deepEqual(installed.command, ["bash", payloadPath]);
+    assert.ok(existsSync(payloadPath), `relocated payload must exist at ${payloadPath}`);
   });
 
   it("template enumerates all 5 provides.* slots as readable YAML examples", () => {
-    const raw = readFileSync(TEMPLATE_PATH, "utf8");
-    // The slots appear as section markers / comments in the commented body.
-    for (const slot of ["skills", "hooks", "governance", "domain-profile", "samples"]) {
-      assert.match(
-        raw,
-        new RegExp(slot),
-        `template must reference the '${slot}' provides slot`,
-      );
-    }
+    // Parsed keys, not a substring grep: `new RegExp("hooks")` matches the word
+    // anywhere in a 140-line commented file, so it could not fail.
+    const template = parseYaml(readFileSync(TEMPLATE_PATH, "utf8"));
+    assert.deepEqual(
+      Object.keys(template.provides).sort(),
+      ["domain-profile", "governance", "hooks", "samples", "skills"],
+      "every provides.* slot must be live YAML the installer parses, not prose",
+    );
   });
 });
 
