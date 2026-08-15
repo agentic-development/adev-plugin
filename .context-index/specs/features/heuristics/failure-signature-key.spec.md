@@ -4,7 +4,7 @@ kind: behavioral
 status: review-pending
 risk_level: high
 milestone: 3
-revision: 5
+revision: 6
 charter-revision: 6
 created: 2026-08-15
 updated: 2026-08-15
@@ -37,16 +37,23 @@ location-independent, and migrates the existing store to the corrected keys.
 The review of revision 1 surfaced that this spec collapsed two distinct derivations into one. They are
 separated here, and the separation governs every behavior below.
 
-| | `signature` | `id` |
-|---|---|---|
-| Answers | "is this the same underlying failure, anywhere in the store" | "is this the same entry within this scope file" |
-| Prefix | the origin slug | caller-supplied (spec slug for validate, diagnosis category for recover) |
-| Hashed input | normalized **failure text** | `<repo-relative-spec-path>\|<pattern>` |
-| Normalizer | `normalizeFailureText` — lowercase, collapse whitespace, strip punctuation except `-` and `_` | `normalizeIdInput` — lowercase, path separators folded to `/`; **no punctuation stripping**, because `/`, `.`, and `\|` are the separators that carry the meaning |
+| | `signature` (derived mode) | `signature` (inherited mode) | `id` |
+|---|---|---|---|
+| Applies to | origins `recover`, `validate`, `implement` | origin `review-specs` only | all callers |
+| Answers | "is this the same underlying failure, anywhere in the store" | same, for a reviewer finding | "is this the same entry within this scope file" |
+| Prefix | the origin slug | the literal `review-specs` | caller-supplied (spec slug for validate, diagnosis category for recover) |
+| Digest source | SHA-256 of the hashed input | **inherited** — the hash component of the supplied `blocker_id`; nothing is hashed | SHA-256 of the hashed input |
+| Hashed input | normalized **failure text** | none | `<repo-relative-spec-path>\|<pattern>` |
+| Normalizer | `normalizeFailureText` — lowercase, collapse whitespace, strip punctuation except `-` and `_` | none | `normalizeIdInput` — lowercase, path separators folded to `/`; **no punctuation stripping**, because `/`, `.`, and `\|` are the separators that carry the meaning |
 
-Both rules call one shared digest function (`normalize` → SHA-256 → first 8 lowercase hex), but they
-pass different normalizers and compose different prefixes. "Exactly one implementation" is asserted
-per-rule, not across the two.
+The verb therefore has **two modes**, not one. Derived mode hashes text; inherited mode reuses an
+identity that already exists, so that a reviewer finding resolves to the same key in the retry loop
+and in the store. Behavior 1 covers derived mode and Behavior 3a covers inherited mode — 3a is a
+distinct mode, not an exception to 1.
+
+The two derived rules (`signature` and `id`) call one shared digest function (`normalize` → SHA-256 →
+first 8 lowercase hex), but pass different normalizers and compose different prefixes. Inherited mode
+calls neither. "Exactly one implementation" is asserted per-rule, not across them.
 
 This separation is what keeps `/adev:recover`'s ids byte-identical: recover composes
 `<category-slug>-<digest>` exactly as it does today, while gaining a `signature` of
@@ -63,16 +70,19 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 
 ### Behaviors
 
-1. **When** `adev heuristics signature --origin <slug> --text <text>` is invoked with a legal origin
-   **then** it prints `<origin-slug>-<digest>` on stdout and exits 0, where `<digest>` is the first 8
-   lowercase hex characters of the SHA-256 of the text after `normalizeFailureText`.
+1. **When** `adev heuristics signature --origin <slug> --text <text>` is invoked in **derived mode** —
+   that is, with origin `recover`, `validate`, or `implement` — **then** it prints
+   `<origin-slug>-<digest>` on stdout and exits 0, where `<digest>` is the first 8 lowercase hex
+   characters of the SHA-256 of the text after `normalizeFailureText`. Origin `review-specs` does not
+   take this path; see Behavior 3a.
 
-2. **When** the primitive applies `normalizeFailureText` **then** it lowercases, collapses consecutive
-   whitespace to a single space, strips leading and trailing whitespace, and strips punctuation except
-   `-` and `_` — the rule currently documented in `skills/recover/SKILL.md:393`. Identical input text
-   differing only in case, run-length whitespace, or stripped punctuation yields an identical digest.
-   **This normalizer applies to signature derivation only.** It is never applied to an `id` hash
-   input, whose separators it would destroy.
+2. **When** the primitive applies `normalizeFailureText` **in derived mode** **then** it lowercases,
+   collapses consecutive whitespace to a single space, strips leading and trailing whitespace, and
+   strips punctuation except `-` and `_` — the rule currently documented in
+   `skills/recover/SKILL.md:393`. Identical input text differing only in case, run-length whitespace,
+   or stripped punctuation yields an identical digest. **This normalizer applies to derived-mode
+   signature derivation only.** It is never applied to an `id` hash input, whose separators it would
+   destroy, and never runs in inherited mode, which hashes nothing.
 
 3. **When** `--origin` is not one of `recover`, `validate`, `review-specs`, `implement` **then** the
    verb exits non-zero with `INVALID_SIGNATURE_ORIGIN`, prints the legal set, and prints nothing on
@@ -145,26 +155,44 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
    was produced by the path-dependent validate-side rule, and no others. The discriminator and the
    recomputation inputs are both explicit:
 
-   - **In scope:** an entry with at least one `evidence[]` element whose `source`, after alias
-     normalization, is `validation`. Its `id` came from the absolute-path hash and is therefore
-     machine-dependent.
-   - **Alias normalization is required, not cosmetic.** `EvidenceRef.source` is unenforced today and
-     the live store has drifted to four spellings — `validation` (24 entries), `learn` (4),
-     `validate` (2), `recover` (2) — of which only `validation` appears in the charter's
-     `EvidenceRef` enum. A strict equality test would strand the `validate`-spelled entries
-     unmigrated forever, which is exactly the silent-skip failure this spec exists to eliminate. The
-     migration therefore folds `validate` → `validation` and `recover` → `recovery` before applying
-     the discriminator, and reports any source spelling it does not recognize rather than silently
-     treating it as out of scope.
-   - **Out of scope, never rekeyed:** every entry that is not in scope — that is, any entry with no
-     `validation`-sourced evidence element, whatever its other sources are or may become. The rule is
-     the complement of the in-scope test, not an enumeration, so a future `EvidenceRef.source` value
-     is excluded by default rather than silently rekeyed. Concretely this covers today's `recovery`,
-     `debug`, `retro`, and `manual` sources. `/adev:recover`'s ids are already content-only and must
-     stay byte-identical — the property `failure-capture.spec.md` Behavior 6 depends on. Manual
-     entries have no derivable input at all.
-   - **Recomputation inputs:** the repo-relative spec path recovered from the in-scope evidence
-     element's `path`, and the entry's stored `pattern` — the same two inputs Behavior 7 defines, so a
+   The discriminator keys on **which rule produced the `id`**, not on where the entry's evidence came
+   from. Evidence provenance is the wrong property: `/adev:retro` consolidation can merge entries, so a
+   single entry may carry both `validation` and `recovery` evidence. A provenance test would rekey such
+   an entry and destroy a recover-produced `id` — breaking the byte-identity that
+   `failure-capture.spec.md` Behavior 6 depends on. The test is therefore structural, and both parts
+   must hold:
+
+   - **Part 1 — the prefix is not a diagnosis category.** `/adev:recover` composes
+     `<category-slug>-<digest>` from a closed six-value set: `missing-context`, `ambiguous-spec`,
+     `constraint-conflict`, `novel-problem`, `tool-failure`, `budget-exhaustion`
+     (`skills/recover/SKILL.md:130-185`). An `id` carrying one of these prefixes was produced by the
+     recover rule and is never rekeyed, regardless of what evidence the entry accumulated later.
+   - **Part 2 — recomputation under the legacy rule reproduces the stored `id` exactly.** Using the
+     entry's `validation`-sourced evidence path and its stored `pattern`, recompute
+     `<spec-slug>-<sha256-prefix(normalized-absolute-path|pattern)>` — the pre-migration rule. If the
+     result equals the stored `id`, the legacy validate-side rule demonstrably produced it, and the
+     entry is rekeyed. If it does not match, the entry is left untouched and counted as skipped.
+
+   Part 2 is what makes the migration sound rather than heuristic: an entry is only rekeyed when the
+   old rule is *proven* to have produced its current key. An entry with mixed evidence fails Part 1 or
+   Part 2 and is left alone.
+
+   - **Alias normalization, applied before Part 2 selects an evidence element.** `EvidenceRef.source`
+     is unenforced today and the live store has drifted to four spellings — `validation` (24 entries),
+     `learn` (4), `validate` (2), `recover` (2) — of which only `validation` appears in the charter's
+     `EvidenceRef` enum. The migration folds `validate` → `validation`, `recover` → `recovery`, and
+     `learn` → `manual` (the source `/adev:learn` writes for user-driven capture), and **reports** any
+     spelling it does not recognize rather than silently treating it as out of scope. Without this, the
+     `validate`-spelled entries would never be considered — the silent-skip failure this spec exists to
+     eliminate.
+   - **Out of scope, never rekeyed:** every entry failing either part of the test — a diagnosis-category
+     prefix, or a legacy recomputation that does not reproduce the stored `id`. This is the complement
+     of the two-part test, not an enumeration, so anything the test cannot positively confirm is
+     excluded by default rather than rekeyed on a guess. It covers recover-produced entries (whose ids
+     must stay byte-identical for `failure-capture.spec.md` Behavior 6), manually captured entries with
+     no derivable input, and any entry whose key provenance is simply unprovable.
+   - **New-key inputs, once an entry qualifies:** the repo-relative spec path recovered from the
+     evidence element used in Part 2, and the entry's stored `pattern` — the same two inputs Behavior 7 defines, so a
      migrated entry lands on the id a fresh extraction would produce.
    - **Unrecoverable input:** if the evidence `path` cannot be resolved to a repo-relative spec path,
      the entry is left untouched and counted as skipped. The migration never guesses a key.
@@ -245,7 +273,8 @@ This separation is what keeps `/adev:recover`'s ids byte-identical: recover comp
 | Add `adev heuristics signature` verb | Wire to `lib/cli/heuristics.mjs` dispatch; origin enum validation; `--blocker-id` path for `review-specs` origin via `parseBlockerId` | medium |
 | Correct id hash input | Replace absolute path with repo-relative in `hooks/post-validate-extract-heuristics.mjs:123-127`; caller composes the `<spec-slug>` prefix | small |
 | Update test harnesses | `tests/skills/validate-success-heuristic-harness.mjs:145` and `tests/skills/recover-extract-heuristic-harness.mjs:119` call the shared digest function with their own normalizer and prefix, instead of holding private copies. Recover's harness must keep producing category-prefixed ids | medium |
-| Implement `adev heuristics migrate-keys` | Normalize `evidence[].source` aliases (`validate` → `validation`, `recover` → `recovery`) then discriminate on `validation`; recompute from evidence path + stored pattern; skip out-of-scope and unrecoverable entries; merge-on-collision with the contradiction invariant re-applied; report the counts plus any unrecognized source spelling; idempotent | medium |
+| Implement `adev heuristics migrate-keys` | Two-part structural discriminator per Behavior 8 — reject diagnosis-category prefixes, then confirm by recomputing under the legacy path-dependent rule and requiring an exact match to the stored `id`; normalize `evidence[].source` aliases first (`validate`→`validation`, `recover`→`recovery`, `learn`→`manual`); recompute the new key from evidence path + stored pattern; skip anything unproven; merge-on-collision with the contradiction invariant re-applied; report counts plus any unrecognized source spelling; idempotent | large |
+| Revise `_format.md` | Charter row 152 makes `.context-index/memory/heuristics/_format.md` the public schema contract. Add `signature`, document the two signature modes, and correct the ID Namespace Convention section, which Behavior 7 makes wrong the moment it lands | small |
 | Tests | Round-trip, cross-worktree id equality, recover id byte-equality across the change, normalizer separation, origin rejection, `--blocker-id` derivation, migration idempotency, collision merge | medium |
 
 Removal of the dead `deriveId` twin, the `extract` verb, and the `skills/recover/SKILL.md` prose rule
@@ -278,13 +307,23 @@ This spec only stops depending on them.
       paths and asserts the derived `id` is identical
 - [ ] `adev heuristics migrate-keys` preserves evidence, confidence, contradiction history, and
       `signature` for every entry, verified field-by-field against a pre-migration snapshot
-- [ ] A store fixture containing both a `validation`-evidenced entry and a `recovery`-evidenced entry
+- [ ] A store fixture containing both a legacy validate-produced entry and a recover-produced entry
       migrates the first and leaves the second's `id` byte-identical
+- [ ] An entry carrying **both** `validation` and `recovery` evidence — reachable via `/adev:retro`
+      consolidation — is not rekeyed when its prefix is a diagnosis category, nor when legacy
+      recomputation fails to reproduce its stored `id`
+- [ ] An entry whose legacy recomputation does not reproduce its stored `id` is skipped and counted,
+      never rekeyed on the strength of evidence provenance alone
+- [ ] `_format.md` documents `signature` and both signature modes, and its ID Namespace Convention
+      section matches Behavior 7
 - [ ] An entry whose evidence path cannot be resolved is left untouched and counted as skipped, not
       rekeyed to a guessed value
-- [ ] An entry spelled `source: validate` migrates identically to one spelled `source: validation`,
-      asserted against the live store's actual drift (24 `validation` / 2 `validate`)
+- [ ] An entry spelled `source: validate` is considered identically to one spelled `source: validation`,
+      asserted against the live store's actual drift (24 `validation` / 4 `learn` / 2 `validate` /
+      2 `recover`)
 - [ ] An unrecognized `source` spelling is reported in the summary rather than silently skipped
+- [ ] The verb has two modes and the two-keys table, Behavior 1, Behavior 2, and Behavior 3a all
+      describe the same two — derived mode hashes text, inherited mode hashes nothing
 - [ ] Running `migrate-keys` twice leaves the store byte-identical after the first run
 - [ ] An induced id collision merges rather than overwrites, and the merge is reported
 - [ ] `/adev:recover` produces byte-identical ids before and after this change for the same
