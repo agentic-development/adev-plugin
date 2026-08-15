@@ -1,2 +1,7 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-15T00:09:44.190Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-15T00:09:44.250Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-15T00:20:13.544Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-15T00:25:40.080Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"FAIL","notes":null,"ts":"2026-08-15T00:25:51.204Z"}
+{"event":"reviewer_report","step":"review","reviewer":"security-reviewer","severity":"blocker","verdict":"FAIL","notes":null,"ts":"2026-08-15T00:25:51.262Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":null,"ts":"2026-08-15T00:25:51.319Z"}
