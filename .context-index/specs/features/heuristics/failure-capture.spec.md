@@ -1,7 +1,7 @@
 ---
 charter: heuristics
 kind: behavioral
-status: review-pending
+status: review-passed
 risk_level: high
 milestone: 3
 revision: 3
