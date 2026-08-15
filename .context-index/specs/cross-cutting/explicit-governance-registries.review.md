@@ -1,7 +1,16 @@
 ---
 spec: .context-index/specs/cross-cutting/explicit-governance-registries.spec.md
 date: 2026-08-15
-verdict: BLOCK
+verdict: PASS_WITH_NOTES
+verdict-source: operator-override
+overridden-verdict: BLOCK
+overridden-by: daniel@indicium.tech
+overridden-at: 2026-08-15
+override-reason: >-
+  Operator manually approved the review to unblock the LOOP_REGRESSED halt and
+  resume /adev:build. Three of the four blockers are NOT retracted and remain
+  required reading. The fourth (SEC-1) was independently verified as moot after
+  this spec's dependency, extension-governance-merge-hardening, shipped.
 tier: full
 last-reviewed-revision: 4
 file-sha: 5884b3cc21fbbdfcf43f39ec0db1908a5458a3f69389d969f69005509e32733a
@@ -15,7 +24,33 @@ reviewers: [structural-architect, security-reviewer, consistency-analyzer]
 > **Charter:** cross-cutting (affects: validation, unified-gates, review, cli-driver-surface, domain-extensions)
 > **Tier:** full (explicit `--tier full`; `risk_level: medium` → `review_mode: full`)
 > **Revision reviewed:** 4 (retry 3 of 5; `build.max_review_retries` raised 2 → 5)
-> **Verdict:** BLOCK
+> **Verdict:** PASS_WITH_NOTES (operator override; reviewers returned BLOCK)
+
+> **Operator override — 2026-08-15.** The BLOCK→revise loop halted at
+> `LOOP_REGRESSED` on revision 4. The operator manually approved this review so
+> `/adev:build --resume` could proceed to plan → route → implement → validate.
+>
+> **SA-1, SA-2 and CON-1 stand.** They are not waived and not closed. Downstream
+> steps must treat them as open defects to resolve during planning, and
+> `/adev:validate` should be expected to surface any that remain.
+>
+> **SEC-1 is moot as of this override, verified against current code — not
+> assumed.** It described `serializeGovernanceYaml` emitting extension-supplied
+> strings verbatim, so a newline could write arbitrary YAML at column 0. That
+> function no longer exists: this spec's dependency,
+> `extension-governance-merge-hardening.spec.md`, replaced it with
+> `lib/extensions/governance-splice.mjs` (in-place splice) and added a scalar
+> refusal layer in `lib/extensions/governance-values.mjs`. Probed at override
+> time: `assertSafeScalar("line1\nline2: injected")` and
+> `assertSafeScalar("multi\n  - id: evil")` both refuse with
+> `GOVERNANCE_SCALAR_UNSAFE`; a benign value is accepted. The layer SEC-1 said
+> every other control delegated to is now safe.
+>
+> **SA-1 was re-verified as still live at override time.** `reportValidator`
+> (`lib/lifecycle-state.mjs:866-886`) destructures a fixed argument list and
+> builds `payload` from only those fields, so an unlisted per-gate outcome array
+> is silently dropped. The Changes Catalog still names neither
+> `lib/cli/report.mjs` nor `reportValidator`. Planning must close this.
 
 ## Reviewers Dispatched
 

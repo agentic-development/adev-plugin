@@ -4,7 +4,7 @@ affects: [validation, unified-gates, review, cli-driver-surface]
 depends-on:
   - .context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md
 kind: refactor
-status: review-pending
+status: review-passed
 risk_level: medium
 revision: 4
 created: 2026-08-14
