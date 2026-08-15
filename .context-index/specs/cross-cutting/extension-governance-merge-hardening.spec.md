@@ -2,12 +2,47 @@
 mode: cross-cutting
 affects: [domain-extensions, validation, unified-gates]
 kind: refactor
-status: review-passed
+status: implemented
 risk_level: high
 revision: 5
 created: 2026-08-15
 updated: 2026-08-15
 tracker-ref: adev-plugin-xg1f.1
+source-manifest:
+  sha: "5fe0617"
+  files:
+    - cli/index.mjs
+    - docs/cli-reference.md
+    - docs/extensions.md
+    - docs/governance.md
+    - extensions/example-validation-check/adev-extension.yaml
+    - lib/diagnostics/index.mjs
+    - lib/extensions/content-install.mjs
+    - lib/extensions/exec-consent.mjs
+    - lib/extensions/exec-payload.mjs
+    - lib/extensions/governance-registry.mjs
+    - lib/extensions/governance-splice.mjs
+    - lib/extensions/governance-values.mjs
+    - lib/extensions/install.mjs
+    - lib/gates/doctor.mjs
+    - templates/adev-extension.example.yaml
+    - tests/cli-extension.test.mjs
+    - tests/docs/extensions-links.test.mjs
+    - tests/gates/doctor-argv-execution.test.mjs
+    - tests/integration/extension-behavior.test.mjs
+    - tests/integration/extension-validate-flow.test.mjs
+    - tests/lib/extensions/content-install.test.mjs
+    - tests/lib/extensions/example-validation-check-install.test.mjs
+    - tests/lib/extensions/exec-consent.test.mjs
+    - tests/lib/extensions/exec-payload.test.mjs
+    - tests/lib/extensions/governance-merge-hardening.test.mjs
+    - tests/lib/extensions/governance-registry.test.mjs
+    - tests/lib/extensions/governance-splice.test.mjs
+    - tests/lib/extensions/governance-values.test.mjs
+    - tests/lib/extensions/install.test.mjs
+    - tests/lib/extensions/invariant-dependencies.test.mjs
+    - tests/specs/extension-governance-merge-hardening-consistency.test.mjs
+  computed-at: "2026-08-15T16:00:00.000Z"
 ---
 
 # Live Spec: Extension Governance Merge Hardening
