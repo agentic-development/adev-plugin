@@ -350,6 +350,68 @@ test('_resolveActorSeverity returns reviewer severity_cap for a known reviewer',
   assert.equal(sev, 'blocker');
 });
 
+// The project's MATERIALIZED registry is the first source, not the domain
+// overlay. Reading the overlay first was a surviving run-time composition path:
+// after `adev governance materialize`, a project's reviewers live in its own
+// `governance/review.yaml`, and resolving against the overlay reported them as
+// undeclared and stamped `warning` over the severity they actually declare.
+
+test('_resolveActorSeverity reads the PROJECT registry before the domain overlay', () => {
+  const root = createTempDir();
+  mkdirSync(join(root, '.context-index', 'governance'), { recursive: true });
+  writeFileSync(
+    join(root, '.context-index', 'governance', 'review.yaml'),
+    'reviewers:\n  - id: structural-architect\n    severity_cap: suggestion\n\nmaterialized_at: 2026-08-15T00:00:00Z\n',
+  );
+
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'structural-architect',
+    repoRoot: root,
+    pluginRoot: PLUGIN_ROOT,
+  });
+  // The overlay says `blocker` for this id; the project's own file says
+  // `suggestion`, and the project's file is what dispatches.
+  assert.equal(sev, 'suggestion');
+  cleanupTempDir(root);
+});
+
+test('_resolveActorSeverity resolves a validator from the project validate.yaml', () => {
+  const root = createTempDir();
+  mkdirSync(join(root, '.context-index', 'governance'), { recursive: true });
+  writeFileSync(
+    join(root, '.context-index', 'governance', 'validate.yaml'),
+    'checks:\n  - id: validate.check-8-boundaries\n    severity: error\n',
+  );
+
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'validator',
+    actorName: 'validate.check-8-boundaries',
+    repoRoot: root,
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'error');
+  cleanupTempDir(root);
+});
+
+test('a malformed project registry degrades to the overlay rather than throwing', () => {
+  const root = createTempDir();
+  mkdirSync(join(root, '.context-index', 'governance'), { recursive: true });
+  writeFileSync(join(root, '.context-index', 'governance', 'review.yaml'), 'reviewers: [\n  - broken');
+
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'structural-architect',
+    repoRoot: root,
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'blocker', 'the overlay still answers when the project file is unreadable');
+  cleanupTempDir(root);
+});
+
 test('_resolveActorSeverity returns "warning" for an unknown reviewer', () => {
   const sev = _resolveActorSeverity({
     domain: 'software',
