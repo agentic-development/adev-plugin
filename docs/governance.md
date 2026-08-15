@@ -115,7 +115,30 @@ The integration gate is LIVE and error-severity, but `--if-present` makes it a v
 
 Add a `test:integration` script to `package.json` and the integration gate starts enforcing — no configuration change, no new gate. To wire the template's own `test` and `integration-test` entries, rerun [`/adev:init`](skill-reference.md), which seeds a real argv command from the detected stack, or set the commands by hand.
 
-Templates are consumed verbatim by `cpSync()`, so these defaults reach NEW scaffolds only. Existing projects are untouched by a plugin upgrade; they must rerun `/adev:init` or edit `governance/gates.yaml` by hand.
+Templates are consumed verbatim by `cpSync()`, so these defaults reach NEW scaffolds only. An existing project is untouched by a plugin upgrade — see [Adopting an upgrade](#adopting-an-upgrade) below for the one command that adopts it.
+
+### Adopting an upgrade
+
+A plugin or domain upgrade never changes what your project runs on its own. That is the point of the materialized registries: nothing is contributed behind your file. Adopting an upgrade is three steps.
+
+1. Upgrade adev (`npx @adev-org/adev-cli install`, or your usual channel).
+2. Ask what changed:
+
+   ```bash
+   adev governance drift --json
+   ```
+
+   An entry the upgraded starter declares that your file does not is reported as `hygiene/unadopted-upgrade` (info severity — it is a choice, not a defect). `/adev:hygiene` Pass 19 surfaces the same findings inside a hygiene run.
+
+3. Adopt it:
+
+   ```bash
+   adev governance materialize --registry gates      # or review, or diagnostics
+   ```
+
+   The new entries are appended to your own file with a `source:` recording where they came from. Entries already on disk keep their positions and their bytes, and the `materialized_at` marker is write-once, so a second run is byte-identical.
+
+Do NOT rerun `/adev:init` to pick up an upgrade, and do not hand-copy rows out of the templates: `init` scaffolds a project that has none of these files, and a hand-copied row loses the `source:` provenance that `adev governance drift` and hygiene Pass 19 read.
 
 ### Verifying it
 
