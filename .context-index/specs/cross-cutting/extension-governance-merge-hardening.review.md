@@ -2,7 +2,16 @@
 spec: .context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md
 charter: (cross-cutting — no parent charter)
 date: 2026-08-15
-verdict: BLOCK
+verdict: PASS_WITH_NOTES
+verdict-source: operator-override
+overridden-verdict: BLOCK
+overridden-by: daniel@indicium.tech
+overridden-at: 2026-08-15
+override-reason: >-
+  Operator manually approved the review to unblock the LOOP_REGRESSED halt and
+  resume /adev:build. The 18 blockers below are NOT retracted — they remain the
+  authoritative record of rev-4 defects and are carried forward as required
+  reading for plan and implement.
 rigor-tier: full
 last-reviewed-revision: 4
 file-sha: 1a7ddf3e47111aa1ff08c3982f057c7a8cc1b758b889e18d1298e8a0b16208cc
@@ -18,7 +27,15 @@ suggestions: 4
 > **Spec:** `.context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md` (revision 4)
 > **Charter:** none (cross-cutting spec)
 > **Rigor tier:** full (explicit `--tier full`)
-> **Verdict:** BLOCK
+> **Verdict:** PASS_WITH_NOTES (operator override; reviewers returned BLOCK)
+
+> **Operator override — 2026-08-15.** The BLOCK→revise loop halted at
+> `LOOP_REGRESSED` on revision 4. The operator manually approved this review so
+> `/adev:build --resume` could proceed to plan → route → implement → validate.
+> **The 18 blockers below stand.** They are not waived, and they are not closed.
+> Downstream steps must treat the five deduplicated defects in the Summary as
+> open design questions to be resolved during planning and implementation, and
+> `/adev:validate` should be expected to surface any that remain unresolved.
 
 ## Reviewers Dispatched
 
