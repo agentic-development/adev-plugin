@@ -16,10 +16,7 @@
 //   INVALID_SIGNATURE_ORIGIN    exit 1, stdout empty, legal set printed
 //   EMPTY_SIGNATURE_TEXT        exit 1, stdout empty
 //   CONFLICTING_SIGNATURE_INPUT exit 1, stdout empty
-//
-// This file currently covers derived mode plus the two permanent
-// CONFLICTING_SIGNATURE_INPUT rules. The inherited derivation itself — and
-// its INVALID_BLOCKER_ID row — arrive with Task 4, which extends this suite.
+//   INVALID_BLOCKER_ID          exit 1, stdout empty
 
 import { test } from "node:test";
 import assert from "node:assert";
@@ -33,6 +30,7 @@ import {
   writeFixture,
 } from "../helpers.mjs";
 import { deriveSignature } from "../../lib/heuristics.mjs";
+import { buildBlockerId } from "../../lib/blocker-id.mjs";
 
 const CLI = join(PLUGIN_ROOT, "cli", "index.mjs");
 
@@ -127,12 +125,12 @@ test("the rejection prints the legal set", () => {
 });
 
 test("a rejected origin carrying ANSI escapes and control chars is sanitized in the echo", () => {
-  const nasty = "[31mred[0m\nbad";
+  const nasty = "\u001b[31mred\u001b[0m\u0007\nbad";
   const r = runSignature(["--origin", nasty, "--text", "x"]);
   assert.strictEqual(r.status, 1);
   assert.strictEqual(r.stdout, "");
-  assert.ok(!r.stderr.includes(""), "ANSI escape must not be echoed");
-  assert.ok(!r.stderr.includes(""), "control char must not be echoed");
+  assert.ok(!r.stderr.includes("\u001b"), "ANSI escape must not be echoed");
+  assert.ok(!r.stderr.includes("\u0007"), "control char must not be echoed");
   // The sanitized remnant is still shown so the operator can see what was sent.
   assert.match(r.stderr, /red/);
 });
@@ -229,5 +227,113 @@ test("an EMPTY --blocker-id still conflicts — the rule keys on the flag, not i
   assert.strictEqual(r.status, 1);
   assert.strictEqual(r.stdout, "");
   assert.match(r.stderr, /CONFLICTING_SIGNATURE_INPUT/);
+});
+
+// ── Inherited mode (Task 4, Behaviors 3a, 3b) ────────────────────────────
+//
+// Inherited mode hashes NOTHING. It reuses the hash component that
+// parseBlockerId already extracted, so one reviewer finding resolves to one
+// identity across the retry loop and the store.
+
+const SAMPLE_BLOCKER_ID = "structural-architect:mutable-hash-input:a15235f5";
+
+test("inherited mode reuses the blocker_id hash component verbatim", () => {
+  const r = runSignature(["--origin", "review-specs", "--blocker-id", SAMPLE_BLOCKER_ID]);
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual(r.stdout.trim(), "review-specs-a15235f5");
+});
+
+test("inherited mode hashes nothing — it differs from the derived signature of the same id text", () => {
+  const r = runSignature(["--origin", "review-specs", "--blocker-id", SAMPLE_BLOCKER_ID]);
+  assert.notStrictEqual(r.stdout.trim(), deriveSignature("review-specs", SAMPLE_BLOCKER_ID));
+});
+
+test("a blocker_id built by buildBlockerId round-trips into the signature", () => {
+  const id = buildBlockerId({
+    reviewer: "structural-architect",
+    type: "mutable-hash-input",
+    sectionAnchor: "behavior-8",
+    findingText: "the migrated id claim is false when the stored pattern has drifted",
+  });
+  const hash = id.split(":")[2];
+  const r = runSignature(["--origin", "review-specs", "--blocker-id", id]);
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual(r.stdout.trim(), `review-specs-${hash}`);
+});
+
+test("the same finding yields the same signature regardless of reviewer-slug or type", () => {
+  // Only the location hash participates, so two findings that share it agree.
+  const a = runSignature(["--origin", "review-specs", "--blocker-id", "alpha:one:a15235f5"]);
+  const b = runSignature(["--origin", "review-specs", "--blocker-id", "beta:two:a15235f5"]);
+  assert.strictEqual(a.status, 0, a.stderr);
+  assert.strictEqual(a.stdout.trim(), b.stdout.trim());
+});
+
+test("two different blocker ids yield two different signatures", () => {
+  const a = runSignature(["--origin", "review-specs", "--blocker-id", "alpha:one:a15235f5"]);
+  const b = runSignature(["--origin", "review-specs", "--blocker-id", "alpha:one:b26346a6"]);
+  assert.notStrictEqual(a.stdout.trim(), b.stdout.trim());
+});
+
+test("the inherited signature is a valid store signature", () => {
+  const r = runSignature(["--origin", "review-specs", "--blocker-id", SAMPLE_BLOCKER_ID]);
+  assert.match(r.stdout.trim(), /^[a-z0-9][a-z0-9-]{0,63}$/);
+});
+
+test("unparseable --blocker-id → INVALID_BLOCKER_ID, stdout empty", () => {
+  const r = runSignature(["--origin", "review-specs", "--blocker-id", "not-an-id"]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /INVALID_BLOCKER_ID/);
+});
+
+test("a blocker_id whose hash component is not 8 lowercase hex → INVALID_BLOCKER_ID", () => {
+  const r = runSignature(["--origin", "review-specs", "--blocker-id", "reviewer:type:NOTHEX12"]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /INVALID_BLOCKER_ID/);
+});
+
+test("a blocker_id with a non-kebab component → INVALID_BLOCKER_ID", () => {
+  const r = runSignature([
+    "--origin",
+    "review-specs",
+    "--blocker-id",
+    "Reviewer_Slug:type:a15235f5",
+  ]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /INVALID_BLOCKER_ID/);
+});
+
+test("an unparseable blocker id is sanitized before it is echoed", () => {
+  const ESC = "\u001b";
+  const r = runSignature([
+    "--origin",
+    "review-specs",
+    "--blocker-id",
+    `${ESC}[31ma:b:zzzzzzzz${ESC}[0m`,
+  ]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.ok(!r.stderr.includes(ESC), "ANSI escape must not be echoed");
+});
+
+// ── Help surface ─────────────────────────────────────────────────────────
+
+test("help() documents both signature modes", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync("node", [CLI, "heuristics", "--help"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    assert.strictEqual(r.status, 0);
+    assert.match(r.stdout, /signature/);
+    assert.match(r.stdout, /--origin/);
+    assert.match(r.stdout, /--blocker-id/);
+  } finally {
+    cleanup(dir);
+  }
 });
 
