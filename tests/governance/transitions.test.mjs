@@ -18,7 +18,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { evaluateTransitions } from "../../lib/governance/transitions.mjs";
@@ -177,6 +177,30 @@ describe("unconfigured transitions", () => {
   });
 });
 
+// ── An unreadable gates.yaml is an ERROR, never a silent SKIP ───────────────
+
+describe("an unreadable governance/gates.yaml", () => {
+  it("throws GOVERNANCE_READ_ERROR rather than degrading to SKIP", () => {
+    const dir = seedProject({ gatesYaml: gatesYaml() });
+    const abs = join(dir, GATES_REL);
+    try {
+      chmodSync(abs, 0o000);
+      assert.throws(
+        () => evaluate(dir),
+        (err) => {
+          assert.equal(err.code, "GOVERNANCE_READ_ERROR");
+          assert.match(err.message, /cannot read/i);
+          assert.match(err.message, /gates\.yaml/);
+          return true;
+        },
+      );
+    } finally {
+      chmodSync(abs, 0o644);
+      cleanupTempDir(dir);
+    }
+  });
+});
+
 // ── The missing-outcome FAIL ────────────────────────────────────────────────
 
 describe("a required gate with no recorded outcome", () => {
@@ -306,8 +330,53 @@ describe("freshness against the spec's source-manifest stamp", () => {
       });
       const r = evaluate(dir);
       assert.equal(r.gates.test.verdict, "skip");
-      assert.equal(r.gates.test.reason, "stale-gate-record");
+      // NOT `stale-gate-record`: "the record is outdated" and "the spec has no
+      // anchor to date it against" have opposite remedies.
+      assert.equal(r.gates.test.reason, "no-manifest-stamp");
+      assert.notEqual(r.gates.test.reason, "stale-gate-record");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+// ── An unstamped spec SKIPs; it does not FAIL ───────────────────────────────
+
+describe("a spec carrying no source-manifest stamp", () => {
+  it("SKIPs the transition when EVERY required gate is blocked only by the missing stamp", () => {
+    const dir = seedProject({ gatesYaml: gatesYaml(), sourceManifest: null });
+    try {
+      seedOutcome(dir, {
+        ts: AFTER,
+        outcomes: [{ id: "test", verdict: "pass", tier: "fast", command_sha: shaFor(dir, "test") }],
+      });
+      const r = evaluate(dir);
+      assert.equal(r.verdict, "SKIP");
+      assert.notEqual(r.verdict, "FAIL");
+      assert.notEqual(r.verdict, "PASS");
+      assert.match(r.reason, /source-manifest/i);
+      assert.match(r.reason, /adev:implement|re-stamp/i);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("still FAILs when any required gate is blocked for a reason OTHER than the missing stamp", () => {
+    const dir = seedProject({
+      gatesYaml: gatesYaml({ gateIds: ["test", "lint"], requiredGates: ["test", "lint"] }),
+      sourceManifest: null,
+    });
+    try {
+      // `test` has a (stamp-blocked) record; `lint` has no record at all.
+      seedOutcome(dir, {
+        ts: AFTER,
+        outcomes: [{ id: "test", verdict: "pass", tier: "fast", command_sha: shaFor(dir, "test") }],
+      });
+      const r = evaluate(dir);
+      assert.equal(r.gates.test.reason, "no-manifest-stamp");
+      assert.equal(r.gates.lint.reason, "no-recorded-outcome");
       assert.equal(r.verdict, "FAIL");
+      assert.match(r.reason, /\blint\b/);
     } finally {
       cleanupTempDir(dir);
     }
@@ -680,5 +749,308 @@ describe("adev gate transitions", () => {
       timeout: 30_000,
     });
     assert.match(r.stdout + r.stderr, /gate transitions/);
+  });
+});
+
+// ── The gate set the comparator sees is the gate set Check 1 ran ────────────
+
+describe("gate-set parity with `adev domain load-gates`", () => {
+  const MOD_GATE = "mod-gate";
+
+  /**
+   * A project whose MODULE-level domain contributes the required gate. The
+   * project-level domain contributes nothing, so the two views diverge unless
+   * the module slug is threaded through.
+   */
+  function seedModuleProject() {
+    const dir = createTempDir();
+    writeFixture(
+      dir,
+      ".context-index/manifest.yaml",
+      "project:\n  domain: fixture-domain\nmodules:\n  - slug: m\n    domain: mod-domain\n",
+    );
+    writeFixture(dir, ".context-index/domains/fixture-domain/gates.yaml", "gates: []\n");
+    writeFixture(
+      dir,
+      ".context-index/domains/mod-domain/gates.yaml",
+      `gates:\n  - id: ${MOD_GATE}\n    tier: fast\n    command: ["npm", "run", "mod"]\n`,
+    );
+    writeFixture(
+      dir,
+      GATES_REL,
+      "gates: []\n" +
+        "transitions:\n" +
+        "  implement-to-validate:\n" +
+        "    required_gates:\n" +
+        `      - ${MOD_GATE}\n`,
+    );
+    writeFixture(dir, SPEC_REL, `${defaultFrontmatter()}# Spec\n`);
+    return dir;
+  }
+
+  function runCli(dir, args) {
+    return spawnSync(process.execPath, [CLI, ...args], {
+      cwd: dir,
+      encoding: "utf8",
+      timeout: 30_000,
+    });
+  }
+
+  it("resolves the SAME gate set as `adev domain load-gates --module` for a module domain", () => {
+    const dir = seedModuleProject();
+    try {
+      const loaded = runCli(dir, ["domain", "load-gates", "--module", "m"]);
+      assert.equal(loaded.status, 0, loaded.stderr);
+      const view = JSON.parse(loaded.stdout);
+      assert.equal(view.domain.resolved_domain, "mod-domain");
+      const gate = view.gates.find((g) => g.id === MOD_GATE);
+      assert.ok(gate, "the module domain must contribute the required gate");
+
+      // Record the outcome exactly as Check 1 would, using the digest the
+      // consumer view published.
+      seedOutcome(dir, {
+        ts: AFTER,
+        outcomes: [
+          { id: MOD_GATE, verdict: "pass", tier: gate.tier, command_sha: gate.command_sha },
+        ],
+        manifestSha: SPEC_SHA,
+      });
+
+      const r = runCli(dir, [
+        "gate",
+        "transitions",
+        "--transition",
+        "implement-to-validate",
+        "--spec",
+        SPEC_REL,
+        "--module",
+        "m",
+        "--json",
+      ]);
+      assert.equal(r.status, 0, r.stderr);
+      const out = JSON.parse(r.stdout);
+      assert.equal(out.verdict, "PASS");
+      assert.equal(out.gates[MOD_GATE].command_attested, true);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("degrades to unattested without --module, proving the flag is what closes the divergence", () => {
+    const dir = seedModuleProject();
+    try {
+      const loaded = runCli(dir, ["domain", "load-gates", "--module", "m"]);
+      const gate = JSON.parse(loaded.stdout).gates.find((g) => g.id === MOD_GATE);
+      seedOutcome(dir, {
+        ts: AFTER,
+        outcomes: [
+          { id: MOD_GATE, verdict: "pass", tier: gate.tier, command_sha: gate.command_sha },
+        ],
+        manifestSha: SPEC_SHA,
+      });
+
+      const r = runCli(dir, [
+        "gate",
+        "transitions",
+        "--transition",
+        "implement-to-validate",
+        "--spec",
+        SPEC_REL,
+        "--json",
+      ]);
+      assert.equal(r.status, 2);
+      assert.equal(JSON.parse(r.stdout).gates[MOD_GATE].reason, "unattested-gate-record");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("prefers --charter over --module, matching resolveDomain's precedence", () => {
+    const dir = seedModuleProject();
+    try {
+      writeFixture(
+        dir,
+        ".context-index/specs/features/m/charter.md",
+        "---\ndomain: mod-domain\n---\n# Charter\n",
+      );
+      // The module slug is wrong on purpose; the charter must win.
+      const r = runCli(dir, [
+        "gate",
+        "transitions",
+        "--transition",
+        "implement-to-validate",
+        "--spec",
+        SPEC_REL,
+        "--module",
+        "does-not-exist",
+        "--charter",
+        ".context-index/specs/features/m/charter.md",
+        "--json",
+      ]);
+      assert.equal(r.status, 2, r.stderr);
+      // The gate IS declared (charter resolved mod-domain), so the failure is
+      // the missing record, not an unknown gate.
+      assert.equal(JSON.parse(r.stdout).gates[MOD_GATE].reason, "no-recorded-outcome");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("rejects a --charter path that escapes the project root", () => {
+    const dir = seedModuleProject();
+    try {
+      const r = runCli(dir, [
+        "gate",
+        "transitions",
+        "--transition",
+        "implement-to-validate",
+        "--spec",
+        SPEC_REL,
+        "--charter",
+        "../evil.md",
+      ]);
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /charter/i);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+// ── Project-config errors are diagnosable under --json ──────────────────────
+
+describe("project-config errors on the CLI", () => {
+  function runCli(dir, args) {
+    return spawnSync(process.execPath, [CLI, "gate", "transitions", ...args], {
+      cwd: dir,
+      encoding: "utf8",
+      timeout: 30_000,
+    });
+  }
+
+  it("emits a machine-readable envelope on exit 1 under --json", () => {
+    const dir = seedProject({ gatesYaml: "gates:\n - a\n   - b\n" });
+    try {
+      const r = runCli(dir, ["--transition", "implement-to-validate", "--spec", SPEC_REL, "--json"]);
+      assert.equal(r.status, 1);
+      const out = JSON.parse(r.stdout);
+      assert.equal(out.transition, "implement-to-validate");
+      assert.equal(out.code, "GATES_PARSE_ERROR");
+      assert.ok(typeof out.error === "string" && out.error.length > 0);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("names the file in the parse error", () => {
+    const dir = seedProject({ gatesYaml: "gates:\n - a\n   - b\n" });
+    try {
+      const r = runCli(dir, ["--transition", "implement-to-validate", "--spec", SPEC_REL]);
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /gates\.yaml/);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("documents the project-config exit-1 path in --help", () => {
+    const r = spawnSync(process.execPath, [CLI, "gate", "--help"], {
+      encoding: "utf8",
+      timeout: 30_000,
+    });
+    assert.match(r.stdout, /GATES_PARSE_ERROR/);
+    assert.match(r.stdout, /MANIFEST_PARSE_ERROR/);
+    assert.match(r.stdout, /GOVERNANCE_READ_ERROR/);
+  });
+
+  it("names the same-command gap in the --help attestation caveat", () => {
+    const r = spawnSync(process.execPath, [CLI, "gate", "--help"], {
+      encoding: "utf8",
+      timeout: 30_000,
+    });
+    assert.match(r.stdout, /same (resolved )?(argv|command)/i);
+  });
+});
+
+// ── End to end: the REAL producer feeds the REAL consumer ───────────────────
+
+describe("end to end through `adev report --type validator`", () => {
+  it("PASSes on an outcome written by the real producer verb", () => {
+    const dir = seedProject({ gatesYaml: gatesYaml() });
+    try {
+      const outcomes = [
+        { id: "test", verdict: "pass", tier: "fast", command_sha: shaFor(dir, "test") },
+      ];
+      const w = spawnSync(
+        process.execPath,
+        [
+          CLI,
+          "report",
+          "--type",
+          "validator",
+          "--spec",
+          SPEC_REL,
+          "--step",
+          "validate",
+          "--validator",
+          "quality-gates",
+          "--verdict",
+          "PASS",
+          "--gate-outcomes",
+          JSON.stringify(outcomes),
+          "--manifest-sha",
+          SPEC_SHA,
+        ],
+        { cwd: dir, encoding: "utf8", timeout: 30_000 },
+      );
+      assert.equal(w.status, 0, w.stderr);
+
+      // No hand-built payload anywhere on this path: the shape the consumer
+      // reads is the shape `reportValidator` / `validateGateOutcomes` wrote.
+      const r = evaluate(dir);
+      assert.equal(r.verdict, "PASS", r.reason);
+      assert.equal(r.gates.test.verdict, "pass");
+      assert.equal(r.gates.test.command_attested, true);
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("FAILs when the real producer records a failing gate", () => {
+    const dir = seedProject({ gatesYaml: gatesYaml() });
+    try {
+      const outcomes = [
+        { id: "test", verdict: "fail", tier: "fast", command_sha: shaFor(dir, "test") },
+      ];
+      const w = spawnSync(
+        process.execPath,
+        [
+          CLI,
+          "report",
+          "--type",
+          "validator",
+          "--spec",
+          SPEC_REL,
+          "--step",
+          "validate",
+          "--validator",
+          "quality-gates",
+          "--verdict",
+          "FAIL",
+          "--gate-outcomes",
+          JSON.stringify(outcomes),
+          "--manifest-sha",
+          SPEC_SHA,
+        ],
+        { cwd: dir, encoding: "utf8", timeout: 30_000 },
+      );
+      assert.equal(w.status, 0, w.stderr);
+
+      const r = evaluate(dir);
+      assert.equal(r.verdict, "FAIL");
+      assert.equal(r.gates.test.reason, "recorded-fail");
+    } finally {
+      cleanupTempDir(dir);
+    }
   });
 });
