@@ -9,10 +9,10 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 3
+revision: 4
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-05-19
+updated: 2026-08-15
 source-manifest:
   sha: "449d3d5"
   files:

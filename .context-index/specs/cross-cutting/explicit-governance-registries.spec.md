@@ -318,7 +318,7 @@ carrying `command`, `runner`, `prompt` or `pattern`, so an appended extension ga
 | review | Medium | Bundled reviewers materialized into `review.yaml`; loader drops overlay |
 | cli-driver-surface | Medium | Three new CLI verbs; check bodies become verb calls (the established `check-14` pattern) |
 | agent-reliable-state-artifacts | Low | Two optional `validator_report` payload fields (`gate_outcomes`, `manifest_sha`) recorded in `lifecycle-event-log.spec.md`; `reportValidator` and `adev report --type validator` carry them |
-| domain-extensions | Low — install refuses into a registry lacking `materialized_at` | The marker gate layers onto `lib/extensions/content-install.mjs` after `extension-governance-merge-hardening.spec.md` lands; no other install-path change |
+| domain-extensions | Low — install refuses into a **marked** registry lacking `materialized_at` | The marker gate layers onto `lib/extensions/content-install.mjs` after `extension-governance-merge-hardening.spec.md` lands; no other install-path change |
 
 ## Integration Points
 
