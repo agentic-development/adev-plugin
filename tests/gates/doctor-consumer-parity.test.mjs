@@ -25,10 +25,12 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { runGateDoctor } from "../../lib/gates/doctor.mjs";
+import { loadCheck1Gates, loadDoctorGates } from "../../lib/gates/gate-sets.mjs";
 import { mergeGates } from "../../lib/domains/merge-gates.mjs";
 import { parseYaml } from "../../lib/profiles/yaml.mjs";
 import { PLUGIN_ROOT, createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
@@ -76,8 +78,13 @@ describe("gate-set divergence between the raw file and the merged consumer view"
   it("reports divergence and names the id each side is missing", async () => {
     const dir = createTempDir();
     try {
+      // Both directions at once. `domain-only` is contributed by the overlay
+      // and never appears in the raw file; `proj-only` is declared in the raw
+      // file in string form, which `mergeGates` drops, so it never reaches a
+      // consumer. The finding must name the WHOLE symmetric difference — a
+      // message covering one side would leave the other silently undiagnosed.
       seedCustomDomain(dir, "fixture-domain", "domain-only");
-      writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: ["npm", "test"]\n');
+      writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: "npm test"\n');
 
       const report = await runDoctor(dir);
       const f = report.findings.find((x) => x.id === "gate-doctor/gate-set-divergence");
@@ -88,6 +95,11 @@ describe("gate-set divergence between the raw file and the merged consumer view"
         f.message,
         /domain-only/,
         "a gate the consumers run but the raw file never mentions must be named",
+      );
+      assert.match(
+        f.message,
+        /proj-only/,
+        "a gate the raw file declares but the consumers never run must be named too",
       );
     } finally {
       cleanupTempDir(dir);
@@ -156,6 +168,83 @@ describe("gate-set divergence between the raw file and the merged consumer view"
         ids(report).includes("gate-doctor/gate-set-divergence"),
         false,
         `identical gate sets must not be reported as divergent; got ${JSON.stringify(ids(report))}`,
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+});
+
+// ── The two gate-set loaders, as named seams ────────────────────────────────
+
+describe("the two gate-set loaders", () => {
+  it("are separately addressable and each returns its own view", () => {
+    const dir = createTempDir();
+    try {
+      seedCustomDomain(dir, "fixture-domain", "domain-only");
+      writeFixture(dir, GATES_REL, 'gates:\n  - id: test\n    command: ["npm", "test"]\n');
+
+      assert.equal(typeof loadDoctorGates, "function");
+      assert.equal(typeof loadCheck1Gates, "function");
+
+      // The doctor view is the raw file and nothing else.
+      const raw = loadDoctorGates(dir);
+      assert.deepEqual(
+        raw.map((g) => g.id).sort(),
+        ["test"],
+        "the raw view must be gates.yaml verbatim — no overlay contributions",
+      );
+
+      // The consumer view is the domain overlay with the project file merged
+      // on top, which is a strictly different set here.
+      const merged = loadCheck1Gates(dir, { moduleSlug: "m" });
+      assert.deepEqual(
+        merged.gates.map((g) => g.id).sort(),
+        ["domain-only", "test"],
+        "the consumer view must include the overlay's contribution",
+      );
+      assert.equal(merged.domain.resolved_domain, "fixture-domain");
+      assert.ok(Array.isArray(merged.warnings));
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("agrees with the CLI verb `domain load-gates` on the merged id set", () => {
+    const dir = createTempDir();
+    try {
+      // If `loadCheck1Gates` and `adev domain load-gates` can disagree, the
+      // duplication this task removed has grown back: the doctor would be
+      // diagnosing a merged set no consumer of the CLI verb ever reads.
+      seedCustomDomain(dir, "fixture-domain", "domain-only");
+      writeFixture(
+        dir,
+        GATES_REL,
+        'gates:\n  - id: test\n    command: ["npm", "test"]\n' +
+          '  - id: dropped\n    command: "npm run x"\n',
+      );
+
+      const cli = spawnSync(
+        process.execPath,
+        [join(PLUGIN_ROOT, "cli", "index.mjs"), "domain", "load-gates", "--module", "m"],
+        { cwd: dir, encoding: "utf8", timeout: 30_000 },
+      );
+      assert.equal(cli.status, 0, `CLI failed: ${cli.stderr}`);
+      const fromCli = JSON.parse(cli.stdout);
+
+      const fromLib = loadCheck1Gates(dir, { moduleSlug: "m" });
+
+      assert.deepEqual(
+        fromLib.gates.map((g) => g.id).sort(),
+        fromCli.gates.map((g) => g.id).sort(),
+        "the library seam and the CLI verb must resolve one and the same merged gate set",
+      );
+      assert.deepEqual(fromLib.domain, fromCli.domain);
+      assert.deepEqual(fromLib.warnings, fromCli.warnings);
+      assert.equal(
+        fromCli.gates.some((g) => g.id === "dropped"),
+        false,
+        "the fixture must actually exercise a drop, or the comparison proves nothing",
       );
     } finally {
       cleanupTempDir(dir);
