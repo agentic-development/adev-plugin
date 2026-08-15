@@ -10,10 +10,11 @@
 
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readHeuristics } from "../../lib/heuristics.mjs";
-import { createTempDir, cleanupTempDir } from "../helpers.mjs";
+import { createTempDir, cleanupTempDir, PLUGIN_ROOT } from "../helpers.mjs";
 import {
   CATEGORY_ID_SLUGS,
   CATEGORY_LABELS,
@@ -319,5 +320,172 @@ describe("recover harness — convergence on the shared digest function", () => 
 
   it("an unknown category is still rejected", () => {
     assert.throws(() => deriveId("NOT_A_CATEGORY", "text"), /unknown category/);
+  });
+});
+
+// ── Task 6: migration onto the shared `adev heuristics signature` verb ───────
+//
+// Spec: .context-index/specs/features/heuristics/failure-capture.spec.md
+// Plan-task: 6
+//
+// Behavior 6's acceptance bar is BYTE IDENTITY: recover ids for the same
+// normalized root cause must be unchanged after Step 7 stops carrying its own
+// prose derivation rule. The fixture below was captured from the UNMODIFIED
+// skills/recover/SKILL.md derivation and is IMMUTABLE — if an assertion here
+// fails, the code is wrong, never the fixture.
+
+const RECOVER_SKILL = join(PLUGIN_ROOT, "skills", "recover", "SKILL.md");
+const ADEV_CLI = join(PLUGIN_ROOT, "cli", "index.mjs");
+
+const PRE_CHANGE_FIXTURE = JSON.parse(
+  readFileSync(
+    new URL("../fixtures/recover-heuristic-ids.pre-change.json", import.meta.url),
+    "utf8",
+  ),
+).cases;
+
+/**
+ * Invoke the adev CLI with argv, returning its result.
+ * @param {string[]} args
+ */
+function runCli(args) {
+  const result = spawnSync("node", [ADEV_CLI, ...args], {
+    encoding: "utf8",
+    env: { ...process.env, ADEV_ROOT: PLUGIN_ROOT },
+  });
+  assert.equal(
+    result.status,
+    0,
+    `adev ${args.join(" ")} must exit 0 (stderr: ${result.stderr})`,
+  );
+  return result.stdout.trim();
+}
+
+describe("Task 6 — recover keys derive from `adev heuristics signature`", () => {
+  it("the fixture covers all six categories plus edge cases", () => {
+    assert.equal(PRE_CHANGE_FIXTURE.length, 9, "fixture must hold 9 cases");
+    const covered = new Set(PRE_CHANGE_FIXTURE.map((c) => c.category));
+    assert.deepEqual([...covered].sort(), Object.keys(CATEGORY_ID_SLUGS).sort());
+  });
+
+  for (const { category, categorySlug, rootCause, normalized, id } of PRE_CHANGE_FIXTURE) {
+    it(`verb id is byte-identical to the pre-change fixture for ${id}`, () => {
+      const digest = runCli([
+        "heuristics",
+        "signature",
+        "--origin",
+        "recover",
+        "--text",
+        rootCause,
+        "--digest-only",
+      ]);
+      assert.equal(
+        `${CATEGORY_ID_SLUGS[category]}-${digest}`,
+        id,
+        `${category} / "${rootCause}" must still compose ${id}`,
+      );
+      assert.equal(
+        CATEGORY_ID_SLUGS[category],
+        categorySlug,
+        `${category} slug must still be '${categorySlug}'`,
+      );
+    });
+
+    it(`the shipped normalizer still agrees with the fixture for ${id}`, () => {
+      assert.equal(
+        normalizeRootCause(rootCause),
+        normalized,
+        `normalization of "${rootCause}" must be unchanged`,
+      );
+    });
+
+    it(`the harness deriveId still equals the fixture id for ${id}`, () => {
+      assert.equal(
+        deriveId(category, normalizeRootCause(rootCause)),
+        id,
+        `harness deriveId must agree with the verb for ${id}`,
+      );
+    });
+
+    it(`the signature is recover-<digest> and shares the id digest for ${id}`, () => {
+      const sig = runCli([
+        "heuristics",
+        "signature",
+        "--origin",
+        "recover",
+        "--text",
+        rootCause,
+      ]);
+      const digest = runCli([
+        "heuristics",
+        "signature",
+        "--origin",
+        "recover",
+        "--text",
+        rootCause,
+        "--digest-only",
+      ]);
+      assert.equal(sig, `recover-${digest}`, "signature must be recover-<digest>");
+      assert.equal(
+        id.endsWith(`-${digest}`),
+        true,
+        `${id} must end with the same digest the signature carries`,
+      );
+    });
+  }
+});
+
+describe("Task 6 — skills/recover/SKILL.md names the verb, not the rule", () => {
+  const src = () => readFileSync(RECOVER_SKILL, "utf8");
+
+  it("carries no prose derivation rule", () => {
+    const source = src();
+    assert.doesNotMatch(source, /ID Derivation Rule/);
+    assert.doesNotMatch(source, /SHA-256/);
+    assert.doesNotMatch(source, /collapse consecutive whitespace/i);
+  });
+
+  it("names the signature verb for both the signature and the digest", () => {
+    const source = src();
+    assert.match(source, /adev heuristics signature --origin recover --text/);
+    assert.match(source, /--digest-only/);
+  });
+
+  it("names the write verb with --signature", () => {
+    const source = src();
+    assert.match(source, /adev heuristics write/);
+    assert.match(source, /--signature recover-<?[a-z0-9-]*>?/);
+  });
+
+  it("states the fail-closed rule when the verb is unavailable", () => {
+    const source = src();
+    assert.match(source, /heuristics: extraction skipped — signature verb unavailable/);
+    assert.match(source, /skip heuristic extraction entirely/i);
+  });
+
+  it("keeps the sibling derivation sections intact", () => {
+    const source = src();
+    for (const heading of [
+      "#### Category Templates",
+      "#### Scope Derivation Rule",
+      "#### Title Derivation Rule",
+      "#### Contradiction Scan (before write)",
+    ]) {
+      assert.ok(source.includes(heading), `${heading} must survive the migration`);
+    }
+  });
+
+  it("its composition rule still lists the six category slugs from the harness", () => {
+    const source = src();
+    for (const slug of Object.values(CATEGORY_ID_SLUGS)) {
+      assert.ok(source.includes(slug), `category slug '${slug}' must appear in the skill`);
+    }
+  });
+
+  it("contains no inline-Node invocation", () => {
+    const source = src();
+    assert.doesNotMatch(source, /node -e/);
+    assert.doesNotMatch(source, /node --input-type=module -e/);
+    assert.doesNotMatch(source, /Run inline Node\.js:/);
   });
 });
