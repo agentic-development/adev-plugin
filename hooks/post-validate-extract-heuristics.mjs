@@ -124,7 +124,7 @@ async function run(rawInput) {
   const specTitle = typeof verdict.spec_title === 'string' && verdict.spec_title
     ? verdict.spec_title
     : specSlug;
-  const title = cap(`First-run PASS: ${specTitle}`, 120);
+  const title = cap(`${prefixFor(verdict.overall)}${specTitle}`, 120);
 
   // Default pattern derivation — uses the Success Factor #4 fallback from
   // the former Check 12 prompt. The richer derivations (golden sample,
@@ -160,6 +160,19 @@ async function run(rawInput) {
   }
 }
 
+
+/**
+ * Title prefix derived from the validate outcome. Behavior 3: PASS output is
+ * byte-identical to the previous hardcoded form; FAIL is distinguishable.
+ * Mirrored — deliberately, not shared — by
+ * tests/skills/validate-success-heuristic-harness.mjs.
+ *
+ * @param {string} outcome - `verdict.overall`.
+ * @returns {string}
+ */
+function prefixFor(outcome) {
+  return outcome === 'FAIL' ? 'Validate FAIL: ' : 'First-run PASS: ';
+}
 
 function cap(s, n) {
   if (s.length <= n) return s;
