@@ -127,7 +127,15 @@ When reviewing in bulk, resolve the tier per spec. Record the resolved tier in t
 
 ## Step 3: Load Reviewer Registry
 
-**Domain-Aware Reviewer Loading:** Resolve the active domain and load domain-aware reviewers before calling `loadReviewConfig` via the CLI:
+**The dispatching set.** Run this FIRST — its output is the reviewer set you dispatch:
+
+```bash
+adev governance reviewers --json
+```
+
+The envelope is `{ reviewers, disabled, context_packs, verdict_rules, warnings, errors, notes }`. Abort on any `errors` entry; surface `warnings` and `notes` in the report header. This verb wraps `loadReviewConfig` (`lib/governance/review-config.mjs`), which reads the project's MATERIALIZED `.context-index/governance/review.yaml` and **nothing else**, and fails closed with `REGISTRY_NOT_MATERIALIZED` when the file exists without its marker.
+
+**Comparison view (optional).** To see what the active domain WOULD contribute, so the report can name reviewers the project has not adopted:
 
 ```bash
 adev domain load-reviewers --module <module-slug> [--charter <charter-path>]
@@ -141,7 +149,7 @@ The verb resolves the active domain (charter frontmatter → manifest.modules[].
 
 Log any warnings from the `warnings` field.
 
-The reviewer set that actually dispatches comes from `loadReviewConfig(repoRoot)` in `lib/governance/review-config.mjs`, which reads `.context-index/governance/review.yaml` and **nothing else**. Neither the bundled defaults nor the domain overlay contributes at run time: a domain's reviewers are adopted once, by `adev governance materialize --registry review`, which writes them into the project's own file and stamps its write-once marker. The `adev domain load-reviewers` output above is therefore a comparison view — reviewers it lists that the project file does not declare are NOT dispatched, and hygiene Pass 19 is where that divergence is reported. The loader:
+`adev domain load-reviewers` is a COMPARISON VIEW ONLY. It merges the domain overlay over the project file, and none of that merge dispatches: the set that runs is the one `adev governance reviewers` printed above. Neither the bundled defaults nor the domain overlay contributes at run time: a domain's reviewers are adopted once, by `adev governance materialize --registry review`, which writes them into the project's own file and stamps its write-once marker. The `adev domain load-reviewers` output above is therefore a comparison view — reviewers it lists that the project file does not declare are NOT dispatched, and hygiene Pass 19 is where that divergence is reported. The loader:
 
 - Fails closed (`REGISTRY_NOT_MATERIALIZED`) when `review.yaml` exists without its `materialized_at` marker; a project with no `review.yaml` at all runs no reviewers.
 - Reads `templates/review-specs/defaults.yaml` for `context_packs` and `verdict_rules` only, with the project's values winning field-by-field.
@@ -149,7 +157,7 @@ The reviewer set that actually dispatches comes from `loadReviewConfig(repoRoot)
 - Validates `prompt` / `package.skill` / `package.adapter` paths: `plugin:<skill>/<file>` scheme resolves inside the plugin `skills/` tree; relative paths resolve under `.context-index/` with traversal guard (`..` rejected, `fs.realpath` used for symlink escape); absolute paths rejected; cross-plugin (`plugin:<other>:...`) deferred to v2.
 - Migrates `manifest.yaml:specialists` in-memory to `dispatch: triggered` reviewer entries and emits a deprecation note (scheduled for removal in 0.19.0).
 
-If `loadReviewConfig` returns any errors, abort with the error list. Warnings are surfaced in the report header.
+If `adev governance reviewers` reported any `errors`, abort with the error list. Warnings are surfaced in the report header.
 
 ## Step 4: Dispatch Reviewers
 
@@ -224,7 +232,7 @@ Determine the overall verdict for each spec:
 
 Produce one section per dispatched reviewer, in registry order. For each reviewer record the dispatch mode (`subagent` or `package`), the resolved profile, and the prompt source (`plugin:` URI or repo-relative). For package-mode reviewers also record the skill path and the adapter path.
 
-**Disabled reviewers get a report row, not silence.** `loadReviewConfig` keeps a reviewer declared with `enabled: false` in `reviewers` and also returns it on `disabled`, each entry carrying `disabled_reason`. Emit one `## Disabled Reviewers` table row per entry on that list, naming the reviewer id and its `disabled_reason` — or the literal text `no reason given` when the registry stated none (the loader also raises a `DISABLED_WITHOUT_REASON` warning in that case, which belongs in the report header with the other warnings). Omit the whole section when nothing is disabled. A reviewer that was deliberately switched off must read differently from one the project never declared; dropping it from the report collapses the two.
+**Disabled reviewers get a report row, not silence.** `adev governance reviewers` keeps a reviewer declared with `enabled: false` in `reviewers` and also returns it on `disabled`, each entry carrying `disabled_reason`. Emit one `## Disabled Reviewers` table row per entry on that list, naming the reviewer id and its `disabled_reason` — or the literal text `no reason given` when the registry stated none (the loader also raises a `DISABLED_WITHOUT_REASON` warning in that case, which belongs in the report header with the other warnings). Omit the whole section when nothing is disabled. A reviewer that was deliberately switched off must read differently from one the project never declared; dropping it from the report collapses the two.
 
 ```markdown
 # Architecture Review: <spec-slug>

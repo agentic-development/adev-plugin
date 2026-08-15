@@ -543,9 +543,9 @@ reviewers:
     min_score: 2
 ```
 
-### Overriding a domain reviewer's severity cap
+### Changing a reviewer's severity cap
 
-To keep a domain reviewer running but limit its impact (e.g., treat all findings as warnings during a migration):
+`review.yaml` is a **single-source** registry: every row in it is a WHOLE reviewer, never a patch over a bundled or domain entry. A partial row like
 
 ```yaml
 reviewers:
@@ -553,19 +553,26 @@ reviewers:
     severity_cap: warning
 ```
 
-This merges into the domain entry, leaving `dispatch`, `prompt`, and other fields inherited from the domain.
+does **not** inherit `prompt` and `dispatch` from the domain — it fails to load with `REVIEWER_MODE_MISSING` ("must declare 'prompt' (subagent mode) or 'package' (external-skill mode)"). Adopt the domain's reviewer first, then edit the row that adoption wrote:
 
-### Merge order summary
-
-```
-bundled defaults (templates/review-specs/defaults.yaml)
-  ↓  domain reviewers (templates/domains/<domain>/reviewers.yaml)
-       — replace bundled defaults when domainReviewers is non-empty
-  ↓  governance overlay (.context-index/governance/review.yaml)
-       — governance wins on ID conflict
+```bash
+adev governance materialize --registry review   # writes the domain's reviewers into your file
+$EDITOR .context-index/governance/review.yaml   # change severity_cap on the real row
 ```
 
-The result is the final reviewer list passed to `shouldDispatch()` for each spec.
+### Where reviewers come from
+
+There is one contributor, and it is your own file:
+
+```
+.context-index/governance/review.yaml   (materialized — the whole set)
+```
+
+The bundled defaults and the domain overlay contribute **nothing at run time**. They are adopted once, by `adev governance materialize --registry review`, which writes them into your file and stamps the write-once `materialized_at` marker; afterwards a plugin upgrade that adds a reviewer does not silently start dispatching it — `adev governance drift` reports it as `hygiene/unadopted-upgrade` and you adopt it by materializing again. `templates/review-specs/defaults.yaml` is still read, for `context_packs` and `verdict_rules` only.
+
+`adev governance reviewers` prints the set that actually dispatches. `adev domain load-reviewers` shows what the domain would contribute and is a comparison view only.
+
+The materialized list is the final reviewer list passed to `shouldDispatch()` for each spec.
 
 ### Context packs
 
