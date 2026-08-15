@@ -147,9 +147,9 @@ Phase 3 makes failure a first-class capture trigger and consults the store at li
 | Review-Specs Injection | `/adev:review-specs` reviewers receive relevant heuristics for the module under review | must-have | 2 | planned |
 | Validate Injection | `/adev:validate` loads heuristics at `summary` tier during validation checks | must-have | 2 | planned |
 | `/adev:learn` Skill | Explicit user-driven heuristic capture for lessons the lifecycle missed | must-have | 2 | implemented |
-| Failure Signature Primitive | `adev heuristics signature` verb — single implementation of the content-addressed derivation rule, consumed by every extractor including the two test harnesses that currently hold their own copies | must-have | 3 | review-passed |
-| Location-Independent `id` | Remove the absolute-path input from id derivation in the live hook and its dead twin; one-time migration rekeys existing entries, preserving evidence and confidence | must-have | 3 | review-passed |
-| Signature Schema Field | `signature` field on the heuristic schema, added to `FIELD_ORDER` so serialization does not drop it; `_format.md` revision; read path for entries that predate the field | must-have | 3 | review-passed |
+| Failure Signature Primitive | `adev heuristics signature` verb — single implementation of the content-addressed derivation rule, consumed by every extractor including the two test harnesses that currently hold their own copies | must-have | 3 | validated |
+| Location-Independent `id` | Remove the absolute-path input from id derivation in the live hook and its dead twin; one-time migration rekeys existing entries, preserving evidence and confidence | must-have | 3 | validated |
+| Signature Schema Field | `signature` field on the heuristic schema, added to `FIELD_ORDER` so serialization does not drop it; `_format.md` revision; read path for entries that predate the field | must-have | 3 | validated |
 | Recover Migration | `/adev:recover` Step 7 calls the shared primitive instead of restating the ID Derivation Rule in skill prose; `id` derivation is unchanged | must-have | 3 | specified |
 | Validate Failure Capture | The validate Stop hook extracts on FAIL as well as PASS; outcome-derived title prefix replaces the hardcoded `"First-run PASS: "` in both copies | must-have | 3 | specified |
 | Dead Capture-Path Retirement | Remove the unreachable `adev heuristics extract` verb, its `--check-first-run` flag, and the orphaned `validate.check-12-heuristic-extraction.md` check file | must-have | 3 | specified |
