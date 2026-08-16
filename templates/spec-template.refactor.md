@@ -131,8 +131,14 @@ created: {{ date }}
 
 ### Behaviors
 
-1. **When** ... **then** ...
-2. **When** ... **then** ...
+<!-- Each behavior carries a spec-scoped ID of the form BEH-<n>. Allocate the next
+     ID above the highest ever used in this spec (live or retired); never reuse a
+     number. When a behavior is withdrawn, move its ID into the comment below. -->
+
+<!-- retired-behavior-ids: (none) -->
+
+- **BEH-1** — **When** ... **then** ...
+- **BEH-2** — **When** ... **then** ...
 
 ### Error Cases
 

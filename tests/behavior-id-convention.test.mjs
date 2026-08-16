@@ -104,3 +104,28 @@ describe("specify SKILL.md — non-delegating authoring sites cross-reference th
     });
   }
 });
+
+const BEHAVIORS_TEMPLATES = [
+  ["templates", "spec-template.behavioral.md"],
+  ["templates", "spec-template.refactor.md"],
+  ["templates", "domains", "software", "spec-template.md"],
+];
+
+describe("spec templates — Behaviors placeholder carries behavior IDs", () => {
+  for (const parts of BEHAVIORS_TEMPLATES) {
+    const rel = parts.join("/");
+    const body = readFileSync(join(ROOT, ...parts), "utf8");
+
+    it(`${rel} renders the placeholder as an unordered BEH-<n> item`, () => {
+      assert.match(
+        body,
+        /^- \*\*BEH-\d+\*\* — \*\*When\*\* .+ \*\*then\*\* .+$/m,
+        `${rel} must render behaviors as "- **BEH-n** — **When** ... **then** ..."`
+      );
+    });
+
+    it(`${rel} carries a retired-behavior-ids tombstone comment`, () => {
+      assert.match(body, /<!-- retired-behavior-ids: \(none\) -->/, rel);
+    });
+  }
+});
