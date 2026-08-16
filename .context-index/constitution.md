@@ -87,7 +87,8 @@ Plan-task: <task-number>          # when implementing a plan task
 - Updating templates
 - Updating internal documentation
 - **Updating specs/ADRs when code changes affect their assumptions** (this is required, not optional — `/adev:debug` Phase 7 and `/adev:validate` check for this)
-- Bumping version in `package.json` AND `.claude-plugin/plugin.json` (must stay in sync) when a PR adds features, fixes, or breaking changes
+
+**Do not bump `package.json` / `.claude-plugin/plugin.json` / `.cursor-plugin/plugin.json` versions in a feature or fix PR.** Releases are fully automated by release-please (ADR-0008): on push to `main` it scans conventional commits and opens its own Release PR that bumps all three manifests in lockstep and updates `CHANGELOG.md`. Merging that Release PR is the only "ship" action. A manual bump fights release-please's own version computation.
 
 ## Context Routing
 
