@@ -4,14 +4,14 @@ affects: [validation, unified-gates, review, cli-driver-surface, agent-reliable-
 depends-on:
   - .context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md
 kind: refactor
-status: implemented
+status: validated
 risk_level: medium
 revision: 5
 created: 2026-08-14
 updated: 2026-08-16
 tracker-ref: adev-plugin-8ekd.1
 source-manifest:
-  sha: "35d210b"
+  sha: "bf3de1d"
   files:
     - .context-index/governance/boundaries.yaml
     - .context-index/governance/diagnostics.yaml
@@ -117,7 +117,7 @@ source-manifest:
     - tests/lifecycle/gate-outcomes.test.mjs
     - tests/skills/validate-gate-resolution.test.mjs
     - tests/specs/explicit-governance-registries-contract.test.mjs
-  computed-at: "2026-08-16T00:22:19.907Z"
+  computed-at: "2026-08-16T01:35:31.046Z"
 ---
 
 # Live Spec: Explicit Governance Registries
