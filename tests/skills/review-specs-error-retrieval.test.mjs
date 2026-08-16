@@ -19,9 +19,9 @@
 
 import { test } from "node:test";
 import assert from "node:assert";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 
 import {
   PLUGIN_ROOT,
@@ -184,4 +184,112 @@ test("an inherited signature retrieves the entry stored under it", async () => {
   } finally {
     cleanupTempDir(dir);
   }
+});
+
+// ── Task 11 — negative scope: exactly TWO signature-keyed call surfaces ────
+//
+// An earlier spec revision listed FOUR error-triggered surfaces while defining
+// a signature derivation input for only TWO. Behavior 6's table gives inputs
+// for the validate FAIL path and the review-specs BLOCK path and for nothing
+// else, so implement-task failure and recover dispatch stay UNWIRED until a
+// follow-up states their inputs with the same precision. These assertions are
+// what keeps them out.
+
+/** Line-scoped on purpose: `skills/recover/SKILL.md` wraps a heuristics
+ * invocation across newlines (`adev heuristics write \` + continuations), so a
+ * pattern letting `.` cross lines could stitch an unrelated `retrieve` to an
+ * unrelated `--signature` and manufacture a false positive. */
+const SIGNATURE_RETRIEVAL = /heuristics retrieve[^\n]*--signature/;
+
+/** @param {string} src */
+const usesSignatureRetrieval = (src) => SIGNATURE_RETRIEVAL.exec(src) !== null;
+
+/** @param {string[]} segments */
+const readSurface = (...segments) => readFileSync(join(PLUGIN_ROOT, ...segments), "utf8");
+
+/**
+ * Every executable call surface, as repo-root-relative POSIX paths.
+ *
+ * Deliberately narrow. `lib/` implements the parameter, `tests/` exercises it,
+ * `docs/cli-reference.md` documents it, `.context-index/` quotes the
+ * invocation in the spec and plan, and `providers/*` are checked-in mirrors —
+ * all legitimate mentions that a whole-tree sweep would wrongly flag. What is
+ * pinned here is the set of surfaces that actually RUN the retrieval.
+ *
+ * `hooks/` is swept precisely so it can be asserted to contribute NOTHING: the
+ * Stop hook is capture-only and must never re-query.
+ *
+ * @param {string} dir absolute
+ * @returns {string[]} absolute paths
+ */
+function walkHookScripts(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    const isScript = entry.isFile() && (entry.name.endsWith(".mjs") || entry.name.endsWith(".sh"));
+    return entry.isDirectory() ? walkHookScripts(full) : isScript ? [full] : [];
+  });
+}
+
+function callSurfaces() {
+  const skillsDir = join(PLUGIN_ROOT, "skills");
+  const skillDocs = readdirSync(skillsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(skillsDir, entry.name, "SKILL.md"))
+    .filter((path) => existsSync(path));
+
+  return [...walkHookScripts(join(PLUGIN_ROOT, "hooks")), ...skillDocs].map((abs) =>
+    relative(PLUGIN_ROOT, abs).split(sep).join("/"),
+  );
+}
+
+test("implement-task failure does not trigger signature-keyed retrieval", () => {
+  assert.equal(
+    usesSignatureRetrieval(readSurface("skills", "implement", "SKILL.md")),
+    false,
+    "skills/implement/SKILL.md must NOT perform signature-keyed retrieval: the spec defines no signature input for a failed implement task",
+  );
+});
+
+test("recover dispatch does not trigger signature-keyed retrieval", () => {
+  assert.equal(
+    usesSignatureRetrieval(readSurface("skills", "recover", "SKILL.md")),
+    false,
+    "skills/recover/SKILL.md must NOT perform signature-keyed retrieval: recover MINTS a signature for the lesson it writes, it does not re-query by one",
+  );
+});
+
+test("exactly two call surfaces name --signature on a retrieve", () => {
+  const surfaces = callSurfaces();
+  // Guards the sweep itself: an empty or truncated walk would make the
+  // equality below unfalsifiable rather than true.
+  //
+  // Each ROOT is asserted separately, deliberately. A single combined floor is
+  // durable only by coincidence — `hooks/` alone already supplies ~20 files, so
+  // one added hook script would let a skills walk that returned NOTHING clear a
+  // combined threshold while the equality below silently degenerated into
+  // `[] === []`-shaped nonsense. Per-root floors cannot be satisfied by the
+  // other root growing.
+  const hookFiles = surfaces.filter((rel) => rel.startsWith("hooks/"));
+  const skillFiles = surfaces.filter((rel) => rel.startsWith("skills/"));
+  assert.ok(
+    hookFiles.length >= 10,
+    `the sweep collected only ${hookFiles.length} files under hooks/ — the hooks walk is truncated`,
+  );
+  assert.ok(
+    skillFiles.length >= 20,
+    `the sweep collected only ${skillFiles.length} files under skills/ — the skills walk is truncated`,
+  );
+  assert.equal(
+    hookFiles.length + skillFiles.length,
+    surfaces.length,
+    "the sweep must scan only hooks/ and skills/ — lib/, tests/, docs/, .context-index/ and providers/ all legitimately name the flag",
+  );
+
+  const matched = surfaces.filter((rel) => usesSignatureRetrieval(readSurface(rel))).sort();
+
+  assert.deepStrictEqual(
+    matched,
+    ["skills/review-specs/SKILL.md", "skills/validate/SKILL.md"],
+    "signature-keyed retrieval is limited to the validate FAIL path and the review-specs BLOCK path; a third surface means one was wired without a spec-defined signature input",
+  );
 });
