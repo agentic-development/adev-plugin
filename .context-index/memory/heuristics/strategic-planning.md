@@ -1,5 +1,5 @@
 ---
-id: adev-build-skill-spec-68369828
+id: adev-build-skill-43f22c34
 scope: strategic-planning
 title: First-run PASS: adev:build Orchestrator
 pattern: First-run PASS for adev:build Orchestrator: one-step-per-invocation dispatch model correctly isolates pipeline steps via state-driven re-invocation and fresh context boundaries

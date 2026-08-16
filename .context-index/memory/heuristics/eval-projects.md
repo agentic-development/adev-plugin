@@ -1,5 +1,5 @@
 ---
-id: pipeline-eval-project-spec-1aa2a8a8
+id: pipeline-eval-project-2dbf1fd8
 scope: eval-projects
 title: First-run PASS: Pipeline Eval Project
 pattern: First-run PASS for Pipeline Eval Project: implementation matched all acceptance criteria without revision
@@ -14,7 +14,7 @@ updated: 2026-05-06
 ---
 
 ---
-id: api-eval-project-spec-2d48a175
+id: api-eval-project-f227efca
 scope: eval-projects
 title: First-run PASS: API Eval Project
 pattern: First-run PASS for API Eval Project: implementation matched all acceptance criteria without revision
