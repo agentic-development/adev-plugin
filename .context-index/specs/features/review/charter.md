@@ -71,8 +71,8 @@ Architecture review is the gate between specification and planning. This module 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Configurable reviewer registry | Project-level `governance/review.yaml` controls which reviewers run, their dispatch, and severity caps. | must-have |  | review-passed |
-| Bundled defaults preservation | Plugin ships `plugin:review-specs/defaults.yaml` encoding today's three-reviewer flow; projects with no governance file see no change. | must-have |  | draft |
-| Context pack rendering | Named, reusable file bundles with `extends` resolve to concrete file contents at dispatch time. | must-have |  | draft |
+| Bundled defaults preservation | Plugin ships `plugin:review-specs/defaults.yaml` encoding today's three-reviewer flow; projects with no governance file see no change. | must-have |  | validated |
+| Context pack rendering | Named, reusable file bundles with `extends` resolve to concrete file contents at dispatch time. | must-have |  | validated |
 | Execution profile consumption | Reviewer entries reference execution profiles (ADR-0004) for tool permissions, MCP, model tier, env, limits. Dispatch concerns are not redefined inline. | must-have |  | draft |
 | External skill packaging (package mode) | A reviewer can wrap an existing skill as a package: runner subagent runs the skill verbatim under a profile; adapter subagent extracts findings. Skills stay unaware they are being used as reviewers. | must-have |  | draft |
 | Multi-repo env resolution | In a workspace context, env resolves consumer-repo-local (the spec's repo wins over CWD); `$workspace/` prefix opts into a shared env file. Disjoint from cross-repo spec refs (`@<repo-slug>/<spec-slug>`, see `multi-repo-workspace/charter.md`). | must-have |  | draft |

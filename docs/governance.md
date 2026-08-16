@@ -302,7 +302,61 @@ context_packs:
       - ".context-index/specs/features/billing/**/*.md"
 ```
 
-**Hard denylist** (fails load — does NOT reach the reviewer's prompt): `.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`. Enforced at both glob-string and resolved-path layers.
+**Hard denylist** (does NOT reach the reviewer's prompt): `.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`. Enforced at both glob-string and resolved-path layers.
+
+Severity depends on how the file was reached. A denylist match on an **explicitly enumerated**
+include path is a hard load error — naming a secret file directly is an authoring mistake that
+must fail loudly. A match found by expanding a **wildcard** include is a skip-with-warning
+(`CONTEXT_PACK_DENYLIST_SKIP`), so one stray file dropped into a globbed directory cannot brick
+review for a whole project.
+
+#### Target-relative tokens
+
+Includes may reference the spec under review. Both tokens expand before glob expansion, and the
+`..` traversal guard runs on the **expanded** value:
+
+| Token | Expands to |
+|---|---|
+| `<charter-dir>` | the directory containing the target spec (repo-root-relative, no trailing slash) |
+| `<target-spec>` | the full repo-root-relative target spec path |
+
+An include entry may also carry `exclude:` to drop matches — the bundled sibling-spec include uses
+`exclude: ["<target-spec>"]` so the spec under review is not shipped twice.
+
+A pack that uses either token but is rendered without a target spec fails with
+`CONTEXT_PACK_NO_TARGET` rather than silently rendering nothing. The bundled `base` pack is
+deliberately **target-agnostic** so non-review consumers (validate checks) can still render it;
+review-only includes live in `review-base`, which `extends: base`.
+
+```yaml
+context_packs:
+  review-base:
+    extends: base
+    max_file_bytes: 16384      # per-file cap (default)
+    max_total_bytes: 262144    # per-pack cap (default)
+    include:
+      - glob: "<charter-dir>/charter.md"
+        title: Parent Charter
+      - glob: "<charter-dir>/*.spec.md"
+        exclude: ["<target-spec>"]
+        title: Sibling Specs
+```
+
+#### Size bounding
+
+Packs are byte-bounded so a large corpus cannot displace the target spec. A file over
+`max_file_bytes` is truncated on a UTF-8 boundary with an inline marker; once `max_total_bytes` is
+reached, remaining files are omitted and a single aggregate notice lists the omitted paths (a
+reviewer can Glob/Grep those on demand). File ordering is deterministic — declaration order across
+includes, byte-order path sort within one — so truncation is reproducible.
+
+#### Section fencing
+
+Rendered sections are wrapped in fences bearing a **per-run nonce** rather than a plain
+`=== <path> ===` delimiter, and the target spec is fenced with the same nonce on every dispatch
+stage (`subagent`, `runner`, `adapter`). A provenance preamble tells the reviewer that only content
+inside a fence carrying that exact token is repository-sourced. This prevents an artifact under
+review from forging a pack section that appears to carry repository authority.
 
 ### Guardrails applied at load
 
