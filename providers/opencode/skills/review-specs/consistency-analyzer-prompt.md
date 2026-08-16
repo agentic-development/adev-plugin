@@ -16,11 +16,11 @@ You are a consistency analyst reviewing a Live Spec for naming drift, pattern vi
 
 You will receive:
 - The target spec being reviewed
-- Its parent charter
 - The project constitution
-- Other specs from the same charter (siblings)
-- Specs from other charters that this spec depends on or is depended upon by
-- External references (API contracts, shared standards) if configured
+- Platform context
+- Its parent charter
+- Sibling specs from the same charter
+- Cross-cutting specs
 
 ## Output Format
 

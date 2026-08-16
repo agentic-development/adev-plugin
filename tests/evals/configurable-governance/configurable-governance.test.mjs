@@ -215,11 +215,14 @@ describe("/adev:review-specs install + run", () => {
     assert.equal(computeVerdict([{ severity: "blocker" }], r.verdictRules), "BLOCK");
   });
 
-  it("context pack renders billing charter verbatim with a per-file header", () => {
+  it("context pack renders billing charter verbatim inside a nonce fence", () => {
     const r = loadReviewConfig(repo);
     const render = renderPack("base", r.contextPacks, { repoRoot: repo });
     assert.equal(render.errors.length, 0, JSON.stringify(render.errors, null, 2));
-    assert.match(render.rendered, /=== .*charter\.md ===/);
+    assert.match(
+      render.rendered,
+      new RegExp(`<<<ADEV-PACK-${render.nonce} path="[^"]*charter\\.md">>>`)
+    );
     assert.match(render.rendered, /Billing Feature Charter/);
   });
 });

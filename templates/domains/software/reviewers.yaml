@@ -7,7 +7,7 @@ reviewers:
     dispatch: always
     prompt: "plugin:review-specs/structural-architect-prompt.md"
     profile: reviewer-reasoning
-    context_pack: base
+    context_pack: architecture
     severity_cap: blocker
 
   - id: security-reviewer
@@ -15,7 +15,7 @@ reviewers:
     dispatch: always
     prompt: "plugin:review-specs/security-reviewer-prompt.md"
     profile: reviewer-capable
-    context_pack: base
+    context_pack: security
     severity_cap: blocker
 
   - id: consistency-analyzer
@@ -23,5 +23,5 @@ reviewers:
     dispatch: always
     prompt: "plugin:review-specs/consistency-analyzer-prompt.md"
     profile: reviewer-fast
-    context_pack: base
+    context_pack: consistency
     severity_cap: blocker
