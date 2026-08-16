@@ -115,7 +115,30 @@ The integration gate is LIVE and error-severity, but `--if-present` makes it a v
 
 Add a `test:integration` script to `package.json` and the integration gate starts enforcing — no configuration change, no new gate. To wire the template's own `test` and `integration-test` entries, rerun [`/adev:init`](skill-reference.md), which seeds a real argv command from the detected stack, or set the commands by hand.
 
-Templates are consumed verbatim by `cpSync()`, so these defaults reach NEW scaffolds only. Existing projects are untouched by a plugin upgrade; they must rerun `/adev:init` or edit `governance/gates.yaml` by hand.
+Templates are consumed verbatim by `cpSync()`, so these defaults reach NEW scaffolds only. An existing project is untouched by a plugin upgrade — see [Adopting an upgrade](#adopting-an-upgrade) below for the one command that adopts it.
+
+### Adopting an upgrade
+
+A plugin or domain upgrade never changes what your project runs on its own. That is the point of the materialized registries: nothing is contributed behind your file. Adopting an upgrade is three steps.
+
+1. Upgrade adev (`npx @adev-org/adev-cli install`, or your usual channel).
+2. Ask what changed:
+
+   ```bash
+   adev governance drift --json
+   ```
+
+   An entry the upgraded starter declares that your file does not is reported as `hygiene/unadopted-upgrade` (info severity — it is a choice, not a defect). `/adev:hygiene` Pass 19 surfaces the same findings inside a hygiene run.
+
+3. Adopt it:
+
+   ```bash
+   adev governance materialize --registry gates      # or review, or diagnostics
+   ```
+
+   The new entries are appended to your own file with a `source:` recording where they came from. Entries already on disk keep their positions and their bytes, and the `materialized_at` marker is write-once, so a second run is byte-identical.
+
+Do NOT rerun `/adev:init` to pick up an upgrade, and do not hand-copy rows out of the templates: `init` scaffolds a project that has none of these files, and a hand-copied row loses the `source:` provenance that `adev governance drift` and hygiene Pass 19 read.
 
 ### Verifying it
 
@@ -244,7 +267,14 @@ Full template with commented examples: [`templates/governance/review.example.yam
 reviewers:
   - id: consistency-analyzer
     enabled: false
+    disabled_reason: too noisy on the legacy billing module
 ```
+
+The reviewer stays in the registry and in the loaded config, so the review report
+records it as deliberately disabled rather than letting it vanish. Omitting
+`disabled_reason` is a schema warning (`DISABLED_WITHOUT_REASON`) — the reviewer
+stays disabled either way, but the report can then only say that it does not run,
+never why.
 
 **Cap severity.** Keeps the reviewer active but degrades its findings.
 
@@ -376,7 +406,7 @@ Full template with commented examples: [`templates/governance/validate.example.y
 |------|---------|-----------------------|
 | `quality-gate` | Argv-form `execFile` subprocess (npm test, linter, typechecker). | Yes |
 | `subagent-review` | LLM-driven review via a prompt + profile. | Yes |
-| `deterministic-check` | Bundled library function (e.g. source-manifest verification). | **No** — bundled only |
+| `deterministic-check` | Bundled library function or a thin wrapper over a CLI verb (source-manifest verification; `adev boundaries check`; `adev gate transitions`). No subagent, so no `profile` and no `context_pack`. | **No** — bundled only |
 | `observational` | Runs but never affects verdict (`severity: info` only). | Yes |
 
 ### Common overrides
@@ -387,7 +417,12 @@ Full template with commented examples: [`templates/governance/validate.example.y
 checks:
   - id: validate.check-10-platform-drift
     enabled: false
+    disabled_reason: platform pinned by the deploy image; drift is expected here
 ```
+
+As with reviewers, the check stays visible and `/adev:validate` records it as
+`SKIPPED-DISABLED` with the stated reason. Omitting `disabled_reason` warns
+(`DISABLED_WITHOUT_REASON`) without re-enabling the check.
 
 **Add an argv-form quality-gate.**
 
@@ -439,6 +474,58 @@ The quality-gate runner enforces:
 Checks run in topological order by the `after:` field. Lex-by-id tie-break for independent checks ensures deterministic report order. Cycles fail load. Unknown `after:` targets emit a WARN and are treated as empty.
 
 ---
+
+## Extension-contributed entries
+
+An installed extension may append entries to five of the files above — `validate.yaml`, `review.yaml`, `gates.yaml`, `diagnostics.yaml` and `boundaries.yaml`. `risk-policies.yaml` and `sensitive-paths.yaml` are never extension-writable: they are the project's own guard boundary. The author-side contract (writable set, per-registry field allowlists, executable payloads) is in [Extensions](extensions.md#the-governance-contribution-contract); this section covers what you will see in your own files afterwards.
+
+### Provenance stamps
+
+Every appended entry carries `source: extension:<name>`. An entry that is also executable — a `command` on a gate or a `kind: quality-gate` check, or a reviewer `package.skill` / `package.adapter` — additionally carries `exec_consented_at`, an ISO timestamp of the install at which you granted execution consent.
+
+```yaml
+gates:
+  - id: my-extension.schema-lint
+    command: ["/home/me/proj/.context-index/extensions/my-extension/bin/lint.sh"]
+    tier: fast
+    source: extension:my-extension
+    exec_consented_at: 2026-08-15T12:00:00.000Z
+```
+
+Both fields are installer-owned. An extension that supplies either one is refused at install with `GOVERNANCE_SOURCE_FORGED`, so a stamp you read in your file was written by adev, not by the extension.
+
+**Provenance is file-level and invisible to gate consumers.** `lib/domains/merge-gates.mjs` projects at most five fields onto each merged gate — `id`, `command`, and `description` / `severity` / `tier` when the entry sets them — and drops everything else, so nothing downstream of the merge ever observes `source` or `exec_consented_at`. That is intended rather than an oversight: the stamps exist for uninstall and audit, and both of those read the file directly.
+
+### What an install will not do to your entries
+
+- **A colliding `id` is skipped, never merged.** If an extension contributes an entry whose `id` already exists in your registry, the extension's entry is dropped and yours is left byte-identical — no field is overwritten, and no key is introduced onto it, absent or otherwise. The install report lists the id under skipped. An extension therefore cannot inject a `command` into a commandless gate you scaffolded.
+- **An unparseable registry is refused, not replaced.** If the target file does not parse, the merge fails with `GOVERNANCE_PARSE_REFUSED` and writes nothing. It is never treated as an empty registry — doing so would overwrite your entries and bypass collision detection at the same time. The same refusal covers a duplicated root key, a root key that is not a sequence, and mixed or lone-CR line endings. Fix the file (or its line endings) and re-run the install.
+- **Comments and sibling keys survive.** The merge splices the target key's block by line range rather than reserializing the file, so every byte outside the inserted lines — comments, formatting, other top-level keys — is written back unchanged.
+
+## Materialized registries and the `materialized_at` marker
+
+Three of the governance files can have entries contributed from outside themselves — a domain overlay, an installed extension — which means reading the file did not tell you what actually runs. `adev governance materialize` fixes that: it writes the **effective** set into your own file and stamps a `materialized_at` key at the bottom.
+
+```yaml
+# Stamped by 'adev governance materialize' — write-once. The entries above are
+# the complete effective set; nothing is contributed from anywhere else.
+materialized_at: 2026-08-15T19:35:31.097Z
+```
+
+**The marked set is bounded and closed: `review.yaml`, `diagnostics.yaml` and `gates.yaml`.** Those three, and only those three, carry the marker.
+
+`validate.yaml` and `boundaries.yaml` are **exempt**. Both are already explicit single-source registries — what the file says is what runs — so there is no effective set to materialize, and naming either one is refused with an argument error rather than silently stamped. `risk-policies.yaml` and `sensitive-paths.yaml` are outside the mechanism entirely.
+
+**The marker is write-once.** A second `materialize` run preserves the original timestamp verbatim, so re-running against an unchanged effective set produces byte-identical output — the marker records when the file became authoritative, not when you last ran the command. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive, because the writer splices by line range rather than reserializing.
+
+Two refusals protect the write: `MATERIALIZE_LOAD_INCOMPLETE` when a row failed to load (materializing a partial view would silently drop what did not load), and `MATERIALIZE_WOULD_DROP` when a row already on disk would be lost. Both write nothing.
+
+A consumer of a **marked** registry that carries no marker fails closed rather than reading a file that may be missing contributed entries. `adev governance drift` — Hygiene Audit Pass 19 — reports an unmaterialized marked registry instead of reading it.
+
+```
+adev governance materialize --registry gates --dry-run   # show the diff, write nothing
+adev governance materialize --registry gates
+```
 
 ## Migrating an existing project
 

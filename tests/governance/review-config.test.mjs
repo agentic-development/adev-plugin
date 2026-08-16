@@ -9,6 +9,7 @@ import {
   sanitizeAdapterOutput,
 } from "../../lib/governance/review-config.mjs";
 import { createRedactor } from "../../lib/profiles/redaction.mjs";
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 const tempDirs = [];
@@ -21,47 +22,107 @@ afterEach(() => {
   while (tempDirs.length) cleanupTempDir(tempDirs.pop());
 });
 
+/**
+ * Fixture maintenance (Task 10): `review.yaml` is a MARKED registry, so
+ * `loadReviewConfig` fails closed on a file with no `materialized_at` marker.
+ * Every fixture below is about reviewer validation, path resolution, posture
+ * and merge precedence — none is about materialization — so each is seeded
+ * already-materialized, the state `adev governance materialize` leaves behind.
+ * No assertion is relaxed; the guard just runs first. The zero-config test
+ * writes no governance file at all, and absence is deliberately unguarded.
+ */
+function writeReview(repo, body) {
+  writeFixture(
+    repo,
+    ".context-index/governance/review.yaml",
+    stampMarker(body, "2026-08-15T00:00:00Z"),
+  );
+}
+
 function hasCode(issues, code) {
   return issues.some((i) => i.code === code);
 }
 
 describe("review-config loadReviewConfig", () => {
-  test("zero-config returns the three bundled reviewers", () => {
+  test("zero-config returns no reviewers — and still loads packs and verdict rules", () => {
     const repo = tmp();
     writeFixture(repo, ".context-index/.keep", "");
     const r = loadReviewConfig(repo);
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-    const ids = r.reviewers.map((x) => x.id).sort();
-    assert.deepEqual(ids, ["consistency-analyzer", "security-reviewer", "structural-architect"]);
+    // Fixture maintenance (Task 11) — an INVERSION. This asserted the OLD
+    // contract: that the three bundled reviewers were injected at run time into
+    // a project that declares none. They are now adopted once, by
+    // `adev governance materialize`, so a project with no review.yaml runs
+    // nothing. The rest of the loader's zero-config behaviour is unchanged and
+    // is asserted here so the inversion does not quietly widen into "the
+    // zero-config path stopped working".
+    assert.deepEqual(r.reviewers, []);
+    assert.deepEqual(r.verdictRules, { blocker_threshold: 1 });
+    assert.ok(r.contextPacks.base, "bundled context packs are still contributed");
+  });
+
+  test("a materialized project's own reviewers load and resolve", () => {
+    const repo = tmp();
+    writeReview(
+      repo,
+      `reviewers:
+  - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
+`
+    );
+    const r = loadReviewConfig(repo);
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
     const sec = r.reviewers.find((x) => x.id === "security-reviewer");
     assert.equal(sec.profile, "reviewer-capable");
     assert.equal(sec.mode, "subagent");
     assert.ok(sec.promptPath.endsWith("security-reviewer-prompt.md"));
   });
 
-  test("enabled: false excludes a reviewer", () => {
+  test("enabled: false excludes a reviewer from dispatch, but not from the registry", () => {
+    // Fixture maintenance (Task 13) — an INVERSION of the second assertion.
+    // This asserted that a disabled reviewer was REMOVED, which made it
+    // indistinguishable from a reviewer the project never declared — the exact
+    // conflation `explicit-governance-registries.spec.md` Invariant 5 forbids.
+    // The entry is now retained and marked; `shouldDispatch` is what excludes
+    // it. Nothing is loosened: "does not run" is still asserted, now at the
+    // gate that actually decides it.
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: consistency-analyzer
     enabled: false
+    disabled_reason: 'superseded by the linter'
 `
     );
     const r = loadReviewConfig(repo);
     assert.equal(r.errors.length, 0);
-    const ids = r.reviewers.map((x) => x.id);
-    assert.ok(!ids.includes("consistency-analyzer"));
+    const entry = r.reviewers.find((x) => x.id === "consistency-analyzer");
+    assert.equal(entry.enabled, false);
+    assert.equal(entry.disabled_reason, "superseded by the linter");
+    assert.equal(
+      shouldDispatch(entry, { targetSpecPath: "a/b.spec.md", specContent: "" }).dispatch,
+      false,
+    );
   });
 
   test("reviewer referencing implementer profile fails load (Behavior 11a)", () => {
     const repo = tmp();
-    writeFixture(
+    // Fixture maintenance (Task 11): the row used to be a PATCH over the
+    // bundled `security-reviewer`, inheriting its `prompt`. With no run-time
+    // bundled layer the project file must declare the whole reviewer — which is
+    // the point of materialization — so the prompt moves into the fixture. The
+    // assertion (an implementer-profile reviewer is refused) is untouched.
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: security-reviewer
+    prompt: plugin:review-specs/security-reviewer-prompt.md
     profile: implementer
 `
     );
@@ -71,9 +132,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("relative prompt path with '..' is rejected", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: traversal-attempt
     dispatch: always
@@ -86,9 +146,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("cross-plugin prompt reference rejected with v2-deferral message", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: x
     dispatch: always
@@ -101,9 +160,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("reviewer with both prompt and package fails load", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: hybrid
     dispatch: always
@@ -118,9 +176,8 @@ describe("review-config loadReviewConfig", () => {
 
   test("reviewer with neither prompt nor package fails load", () => {
     const repo = tmp();
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: empty
     dispatch: always
@@ -138,9 +195,8 @@ describe("review-config loadReviewConfig", () => {
       ".context-index/skills/my-reviewer/SKILL.md",
       "# Project skill\n"
     );
-    writeFixture(
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: project-pkg
     dispatch: always
@@ -156,21 +212,44 @@ describe("review-config loadReviewConfig", () => {
     assert.ok(pkg.adapterPath.endsWith("generic.md"));
   });
 
-  test("bundled default override emits WARN", () => {
+  test("a partial row is no longer a patch over a bundled default", () => {
     const repo = tmp();
-    writeFixture(
+    // Fixture maintenance (Task 11) — an INVERSION. This asserted the OLD
+    // contract: `- id: security-reviewer / severity_cap: warning` patched the
+    // bundled entry field-by-field and emitted REVIEWER_OVERRIDE. There is no
+    // entry to patch now, so the same row is an INCOMPLETE reviewer and the
+    // loader says so — a louder failure than the silent partial merge it
+    // replaces, not a weaker one.
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: security-reviewer
     severity_cap: warning
 `
     );
     const r = loadReviewConfig(repo);
-    assert.equal(r.errors.length, 0);
+    assert.ok(hasCode(r.errors, "REVIEWER_MODE_MISSING"));
+    assert.ok(!hasCode(r.warnings, "REVIEWER_OVERRIDE"));
+  });
+
+  test("REVIEWER_OVERRIDE now means a duplicate id inside the project's own file", () => {
+    const repo = tmp();
+    writeReview(
+      repo,
+      `reviewers:
+  - id: dupe
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    severity_cap: blocker
+  - id: dupe
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    severity_cap: warning
+`
+    );
+    const r = loadReviewConfig(repo);
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
     assert.ok(hasCode(r.warnings, "REVIEWER_OVERRIDE"));
-    const sec = r.reviewers.find((x) => x.id === "security-reviewer");
-    assert.equal(sec.severity_cap, "warning");
+    assert.equal(r.reviewers.length, 1);
+    assert.equal(r.reviewers[0].severity_cap, "warning", "the last entry wins");
   });
 
   test("manifest specialists are converted to triggered reviewers with deprecation note", () => {
@@ -188,66 +267,156 @@ describe("review-config loadReviewConfig", () => {
     assert.ok(spec.dispatch?.triggered);
   });
 
-  test("domainReviewers replaces bundled defaults as base", () => {
+  test("a materialized domain reviewer runs on the project file's own terms", () => {
     const repo = tmp();
-    writeFixture(repo, ".context-index/.keep", "");
-    // Domain overlay with a custom reviewer (e.g., data-engineering domain)
-    const domainReviewers = {
-      merge_strategy: "append",
-      reviewers: [
-        {
-          id: "data-contract-reviewer",
-          name: "Data Contract Reviewer",
-          dispatch: "always",
-          prompt: "plugin:review-specs/structural-architect-prompt.md",
-          profile: "reviewer-capable",
-        },
-      ],
-    };
-    const r = loadReviewConfig(repo, { domainReviewers });
-    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-    const ids = r.reviewers.map((x) => x.id);
-    // Domain reviewer should be present
-    assert.ok(ids.includes("data-contract-reviewer"), "domain reviewer should be included");
-    // Bundled defaults should NOT be present (domain replaces bundled)
-    assert.ok(!ids.includes("structural-architect"), "bundled defaults should not be loaded when domain is provided");
-  });
-
-  test("domainReviewers + governance overlay merges correctly", () => {
-    const repo = tmp();
-    writeFixture(
+    // Fixture maintenance (Task 11) — an INVERSION of the two tests that used
+    // to sit here ("domainReviewers replaces bundled defaults as base" and
+    // "domainReviewers + governance overlay merges correctly"). Both asserted
+    // the OLD contract: that a domain overlay handed to `loadReviewConfig`
+    // formed the base and the project file patched it field-by-field. The
+    // overlay is composed once now, by `adev governance materialize`, which
+    // writes the WHOLE row into the project's file — so the state under test is
+    // that written row, and it must load with its own declared fields and
+    // nothing inherited from anywhere.
+    writeReview(
       repo,
-      ".context-index/governance/review.yaml",
       `reviewers:
   - id: data-contract-reviewer
+    name: "Data Contract Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/structural-architect-prompt.md"
+    profile: reviewer-capable
     severity_cap: warning
+    source: domain:data-engineering
   - id: custom-project-reviewer
     dispatch: always
     prompt: "plugin:review-specs/structural-architect-prompt.md"
     profile: reviewer-capable
 `
     );
-    const domainReviewers = {
-      merge_strategy: "append",
-      reviewers: [
-        {
-          id: "data-contract-reviewer",
-          name: "Data Contract Reviewer",
-          dispatch: "always",
-          prompt: "plugin:review-specs/structural-architect-prompt.md",
-          profile: "reviewer-capable",
-          severity_cap: "blocker",
-        },
-      ],
-    };
-    const r = loadReviewConfig(repo, { domainReviewers });
+    const r = loadReviewConfig(repo);
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
+    const ids = r.reviewers.map((x) => x.id).sort();
+    assert.deepEqual(ids, ["custom-project-reviewer", "data-contract-reviewer"]);
+    const dcr = r.reviewers.find((x) => x.id === "data-contract-reviewer");
+    assert.equal(dcr.severity_cap, "warning");
+    assert.equal(
+      dcr.source,
+      "domain:data-engineering",
+      "the row still records where it originated, even though nothing re-derives it",
+    );
+    assert.ok(!ids.includes("structural-architect"), "bundled defaults are never contributed");
+  });
+});
+
+// ─── Task 11: the run-time overlays are gone ────────────────────────────────
+//
+// The reviewer set is read from the materialized project file ALONE. Neither
+// the bundled defaults nor a domain overlay contributes at run time; adoption
+// happens once, through `adev governance materialize`, and drift is surfaced by
+// hygiene Pass 19 rather than silently merged back in on every load.
+
+/** A full, self-sufficient reviewer row — the shape materialization writes. */
+function reviewerRow(id, extra = "") {
+  return (
+    `  - id: ${id}\n` +
+    `    name: "${id}"\n` +
+    `    dispatch: always\n` +
+    `    prompt: "plugin:review-specs/structural-architect-prompt.md"\n` +
+    `    profile: reviewer-capable\n` +
+    extra
+  );
+}
+
+/** A domain reviewers overlay, as `adev domain load-reviewers` would emit it. */
+function domainOverlay(ids) {
+  return {
+    merge_strategy: "append",
+    reviewers: ids.map((id) => ({
+      id,
+      name: id,
+      dispatch: "always",
+      prompt: "plugin:review-specs/structural-architect-prompt.md",
+      profile: "reviewer-capable",
+    })),
+  };
+}
+
+describe("review-config run-time overlays (Task 11)", () => {
+  test("a domain-only reviewer no longer appears at run time", () => {
+    const repo = tmp();
+    // The materialized state: the domain's reviewer was adopted into the
+    // project's own file, so it runs because the FILE says so.
+    writeReview(repo, `reviewers:\n${reviewerRow("domain-only")}`);
+
+    // The domain later grows a second reviewer. Nothing adopted it.
+    const r = loadReviewConfig(repo, {
+      domainReviewers: domainOverlay(["domain-only", "added-later"]),
+    });
+
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
     const ids = r.reviewers.map((x) => x.id);
-    assert.ok(ids.includes("data-contract-reviewer"));
-    assert.ok(ids.includes("custom-project-reviewer"));
-    // Governance overrides domain on id match
-    const dcr = r.reviewers.find((x) => x.id === "data-contract-reviewer");
-    assert.equal(dcr.severity_cap, "warning", "governance should override domain severity_cap");
+    assert.ok(ids.includes("domain-only"));
+    assert.ok(
+      !ids.includes("added-later"),
+      "run-time overlay is gone; adoption is via `adev governance materialize` / hygiene",
+    );
+  });
+
+  test("a domain reviewer that was never materialized does not appear at all", () => {
+    const repo = tmp();
+    writeFixture(repo, ".context-index/.keep", "");
+
+    const r = loadReviewConfig(repo, { domainReviewers: domainOverlay(["never-adopted"]) });
+
+    assert.deepEqual(
+      r.reviewers.map((x) => x.id),
+      [],
+      "fail-closed consequence: an un-materialized project runs no reviewers, " +
+        "which is exactly why hygiene Pass 19 exists",
+    );
+  });
+
+  test("bundled defaults are not contributed at run time either", () => {
+    const repo = tmp();
+    writeReview(repo, `reviewers:\n${reviewerRow("project-only")}`);
+
+    const ids = loadReviewConfig(repo).reviewers.map((x) => x.id).sort();
+
+    assert.deepEqual(ids, ["project-only"]);
+  });
+
+  test("every entry still carries provenance", () => {
+    const repo = tmp();
+    writeReview(
+      repo,
+      `reviewers:\n${reviewerRow("declared", "    source: domain:acme\n")}${reviewerRow("plain")}`,
+    );
+
+    const r = loadReviewConfig(repo);
+    assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
+    for (const entry of r.reviewers) {
+      assert.equal(typeof entry.__source, "string", `${entry.id} lost __source`);
+    }
+    assert.equal(
+      r.reviewers.find((x) => x.id === "declared").source,
+      "domain:acme",
+      "a declared `source` is the entry's recorded origin and must survive the load",
+    );
+  });
+
+  test("an unmarked registry still raises REGISTRY_NOT_MATERIALIZED", () => {
+    const repo = tmp();
+    writeFixture(
+      repo,
+      ".context-index/governance/review.yaml",
+      `reviewers:\n${reviewerRow("unmarked")}`,
+    );
+
+    assert.throws(
+      () => loadReviewConfig(repo),
+      (err) => err.code === "REGISTRY_NOT_MATERIALIZED",
+    );
   });
 });
 

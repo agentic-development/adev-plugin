@@ -4,7 +4,40 @@ import { readFileSync } from "node:fs";
 
 import { loadReviewConfig } from "../../lib/governance/review-config.mjs";
 import { resolveExtends } from "../../lib/governance/context-pack.mjs";
-import { createTempDir, cleanupTempDir } from "../helpers.mjs";
+import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
+
+// Reviewers are no longer bundled-by-default (explicit-governance-registries
+// removed the three-layer merge): a project's own materialized review.yaml is
+// now the whole reviewer set. This mirrors what `adev governance materialize`
+// writes from `templates/domains/software/reviewers.yaml`, and is what makes a
+// fresh temp project exercise the same bundled prompts this test targets.
+const MATERIALIZED_REVIEW_YAML = `reviewers:
+  - id: structural-architect
+    name: Structural Architect
+    dispatch: always
+    profile: reviewer-reasoning
+    context_pack: architecture
+    severity_cap: blocker
+    prompt: plugin:review-specs/structural-architect-prompt.md
+    source: domain:software
+  - id: security-reviewer
+    name: Security Reviewer
+    dispatch: always
+    profile: reviewer-capable
+    context_pack: security
+    severity_cap: blocker
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    source: domain:software
+  - id: consistency-analyzer
+    name: Consistency Analyzer
+    dispatch: always
+    profile: reviewer-fast
+    context_pack: consistency
+    severity_cap: blocker
+    prompt: plugin:review-specs/consistency-analyzer-prompt.md
+    source: domain:software
+materialized_at: 2026-08-16T00:00:00.000Z
+`;
 
 // CON-1: the heading is `## Input`; "You will receive:" is body text below it,
 // and consistency-analyzer-prompt.md is currently the ONLY bundled prompt with
@@ -57,6 +90,7 @@ describe("Behavior 22q — bundled prompt Input bullets map to titled pack inclu
   test("at least one bundled prompt declares an Input section", () => {
     const repo = createTempDir();
     try {
+      writeFixture(repo, ".context-index/governance/review.yaml", MATERIALIZED_REVIEW_YAML);
       const cfg = loadReviewConfig(repo);
       const withInput = reviewersWithInputSection(cfg);
       assert.ok(
@@ -71,6 +105,7 @@ describe("Behavior 22q — bundled prompt Input bullets map to titled pack inclu
   test("every Input bullet maps to a titled include in that reviewer's resolved pack", () => {
     const repo = createTempDir();
     try {
+      writeFixture(repo, ".context-index/governance/review.yaml", MATERIALIZED_REVIEW_YAML);
       const cfg = loadReviewConfig(repo);
       const entries = reviewersWithInputSection(cfg);
       assert.ok(entries.length >= 1, "no bundled prompt has an ## Input section — assertion would be vacuous");

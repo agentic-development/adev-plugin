@@ -11,6 +11,6 @@ provides:
         - id: example-validation-check.passing
           kind: quality-gate
           profile: read-only
-          command: [bash, extensions/example-validation-check/bin/check.sh]
+          command: [bash, bin/check.sh]
           severity: warning
           after: [validate.check-1-quality-gates]

@@ -272,7 +272,17 @@ test("a gitignored build output entered AFTER a build step is a warning, not an 
     const f = report.findings.find((x) => x.id === "gate-doctor/path-gitignored");
     assert.ok(f);
     assert.equal(f.severity, "warning", "an earlier step in the same command may build dist/");
-    assert.equal(report.summary.errors, 0, "an ordinary build-then-test gate must not exit 2");
+    // The gitignored path itself contributes NO error. The one error this
+    // fixture does carry is `shell-form-command`: a shell-composed gate is a
+    // string, and lib/domains/merge-gates.mjs drops string commands, so this
+    // gate never runs for any consumer. Asserting the exact error set keeps
+    // the original claim ("this path is not an error") intact rather than
+    // weakening it to an inequality.
+    assert.deepEqual(
+      report.findings.filter((x) => x.severity === "error").map((x) => x.id),
+      ["gate-doctor/shell-form-command"],
+      "an ordinary build-then-test gate must raise no error beyond its shell form",
+    );
   } finally {
     cleanupTempDir(dir);
   }

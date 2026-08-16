@@ -23,7 +23,14 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import { strict as assert } from "node:assert";
 import { spawnSync, execSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync, readFileSync, realpathSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  realpathSync,
+  copyFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 import { installExtension } from "../../lib/extensions/install.mjs";
@@ -96,6 +103,14 @@ function setupStubPluginRoot() {
     JSON.stringify({ name: "stub", version: "0.27.0" }),
   );
   mkdirSync(join(dir, "skills"), { recursive: true });
+  // The install-time namespace resolver reads the bundled profile vocabulary
+  // from `<pluginRoot>/templates/governance/profiles.yaml` to prove the
+  // contributed entry's `profile` is a name the loader can resolve.
+  mkdirSync(join(dir, "templates", "governance"), { recursive: true });
+  copyFileSync(
+    join(PLUGIN_ROOT, "templates", "governance", "profiles.yaml"),
+    join(dir, "templates", "governance", "profiles.yaml"),
+  );
   return dir;
 }
 
@@ -141,6 +156,8 @@ describe("extension-validate-flow: end-to-end install + validator_report event",
     const installReport = await installExtension(EXAMPLE_DIR, projectDir, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
     assert.equal(installReport.name, "example-validation-check");
 
@@ -155,30 +172,27 @@ describe("extension-validate-flow: end-to-end install + validator_report event",
     );
 
     // ── Step 3: the validate-config loader walks the registry and the new
-    //          check appears in the sorted check list under its profile. The
-    //          loader prepends `validators:` from the overlay onto the
-    //          bundled `checks:` list — the new entry must therefore be
-    //          surfaced as a registered check by id.
-    const loadResult = loadValidateConfig(projectDir, { pluginRoot: PLUGIN_ROOT });
-    const newCheck = loadResult.checks.find((c) => c.id === "example-validation-check.passing");
-    // The bundled validate registry uses the `checks:` root key. The overlay
-    // file written by the installer uses the inferred root key for
-    // `validate.yaml` ('validators'). The loader does not currently fold
-    // `validators:` into `checks:` — that wiring is part of a separate
-    // milestone. We assert here on the install-side surface: the entry is
-    // present in the on-disk file under the canonical root key the
-    // installer emits.
+    //          check appears in the sorted check list under its profile.
+    //
+    // The installer now writes the overlay under `checks:` — the root key
+    // `lib/governance/validate-config.mjs:110-111` actually reads. The old
+    // `inferRootKey` emitted `validators:`, which no loader has ever read, so
+    // the entry was silently inert on disk and this test could only assert the
+    // install-side surface. There is nothing left to fold in: the loader
+    // surfaces the check directly.
     const validateYaml = readFileSync(validatePath, "utf8");
-    assert.match(validateYaml, /validators:/m, "installer emits 'validators:' root key for validate.yaml");
-    // Sanity: the loader returns its result object with the expected shape
+    assert.match(validateYaml, /^checks:/m, "installer emits the 'checks:' root key for validate.yaml");
+    assert.doesNotMatch(validateYaml, /validators:/m, "'validators:' is read by no loader");
+
+    const loadResult = loadValidateConfig(projectDir, { pluginRoot: PLUGIN_ROOT });
     assert.ok(Array.isArray(loadResult.checks), "loadValidateConfig returns checks array");
     assert.ok(Array.isArray(loadResult.errors), "loadValidateConfig returns errors array");
-    // Either the loader surfaces the new check (when fold-in is wired) or it
-    // reports zero errors with the existing bundled registry. Both are
-    // acceptable outcomes for this integration boundary.
+    const newCheck = loadResult.checks.find((c) => c.id === "example-validation-check.passing");
+    assert.ok(newCheck, `loader must surface the installed check, got ${loadResult.checks.map((c) => c.id).join(", ")}`);
+    assert.equal(newCheck.kind, "quality-gate");
+    assert.equal(newCheck.profile, "read-only");
     const hasError = loadResult.errors.some((e) => /example-validation-check/.test(e.message || ""));
     assert.equal(hasError, false, `no errors for new check, got ${JSON.stringify(loadResult.errors)}`);
-    void newCheck; // loader fold-in semantics are a separate milestone; surface assertion above is the contract
 
     // ── Step 4: emit a validator_report event citing the new check ─────
     const r = adev(projectDir, [
@@ -208,6 +222,8 @@ describe("extension-validate-flow: end-to-end install + validator_report event",
     await installExtension(EXAMPLE_DIR, projectDir, {
       pluginRoot: stubPluginRoot,
       sourceUri: EXAMPLE_DIR,
+      allowExec: true,
+      interactive: false,
     });
 
     // Behavior 3: --validator MUST be a single token. The CLI parseArgs

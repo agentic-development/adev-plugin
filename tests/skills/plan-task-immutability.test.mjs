@@ -235,3 +235,216 @@ test("plan-immutability: manifest exempt_commits suppresses a real modification 
     cleanupTempDir(tmp);
   }
 });
+
+// ────────────────────────────────────────────────────────────────────────
+// Rewrite-durable exemptions (exempt_patch_ids)
+//
+// A commit SHA does not survive a history rewrite. `git filter-branch`, a
+// rebase, or a squash merge re-hashes every commit it touches, so an
+// `exempt_commits` entry recorded beforehand silently stops matching and the
+// exemption evaporates. This is not hypothetical: every SHA in this repo's
+// own exempt_commits list was orphaned by a filter-branch, which is what made
+// `real repo has no violations` go red with 25 violations.
+//
+// `git patch-id --stable` hashes the diff rather than the commit, so it is
+// invariant under rewriting.
+// ────────────────────────────────────────────────────────────────────────
+
+test("plan-immutability: exempt_commits stops matching after a history rewrite, exempt_patch_ids survives", async () => {
+  const { execSync, execFileSync } = await import("node:child_process");
+  const tmp = createTempDir();
+  try {
+    execSync("git init -b main", { cwd: tmp, stdio: "ignore" });
+    execSync('git config user.email "test@test.com"', { cwd: tmp, stdio: "ignore" });
+    execSync('git config user.name "Test"', { cwd: tmp, stdio: "ignore" });
+    execSync("git config commit.gpgsign false", { cwd: tmp, stdio: "ignore" });
+
+    writeFixture(tmp, ".context-index/specs/features/x/foo.plan.md", "# Plan: foo\n\n### Task 1: Stub\n");
+    writeFixture(
+      tmp,
+      ".context-index/lifecycle-state/foo.jsonl",
+      JSON.stringify({
+        ts: "2020-01-01T00:00:00.000Z",
+        event: "plan_task",
+        plan: ".context-index/specs/features/x/foo.plan.md",
+        task_id: "t1",
+        status: "pending",
+        notes: null,
+      }) + "\n",
+    );
+    execSync("git add -A && git commit -m 'init'", { cwd: tmp, stdio: "ignore" });
+
+    writeFixture(
+      tmp,
+      ".context-index/specs/features/x/foo.plan.md",
+      "<!-- DO NOT EDIT statuses inline -->\n# Plan: foo\n\n### Task 1: Stub\n",
+    );
+    execSync("git add -A && git commit -m 'stamp header'", { cwd: tmp, stdio: "ignore" });
+
+    const shaBefore = execSync("git rev-parse HEAD", { cwd: tmp, encoding: "utf8" }).trim();
+    const patch = execFileSync("git", ["show", shaBefore, "--format=", "--patch"], {
+      cwd: tmp,
+      encoding: "utf8",
+    });
+    const patchId = execFileSync("git", ["patch-id", "--stable"], {
+      cwd: tmp,
+      input: patch,
+      encoding: "utf8",
+    })
+      .trim()
+      .split(" ")[0];
+
+    // Rewrite history. `--amend` re-hashes the commit while leaving the diff
+    // byte-identical — the same effect a rebase or filter-branch has, minus
+    // the ceremony.
+    execSync("git commit --amend --no-edit -m 'stamp header (rewritten)'", {
+      cwd: tmp,
+      stdio: "ignore",
+    });
+    const shaAfter = execSync("git rev-parse HEAD", { cwd: tmp, encoding: "utf8" }).trim();
+    assert.notEqual(shaAfter, shaBefore, "amend must produce a new SHA for this test to mean anything");
+
+    const { detectMutatedPlans } = await import("../../lib/plan-immutability.mjs");
+
+    // The pre-rewrite SHA is now stale. This is the regression: the exemption
+    // was recorded and approved, yet the violation fires again.
+    writeFixture(
+      tmp,
+      ".context-index/manifest.yaml",
+      `hygiene:\n  plan_immutability:\n    exempt_commits:\n      - "${shaBefore}"\n`,
+    );
+    const staleSha = await detectMutatedPlans(tmp);
+    assert.equal(
+      staleSha.length,
+      1,
+      "a SHA-keyed exemption must go stale after a rewrite (guards the premise of this test)",
+    );
+
+    // The patch id is unchanged by the rewrite, so the exemption still applies.
+    writeFixture(
+      tmp,
+      ".context-index/manifest.yaml",
+      `hygiene:\n  plan_immutability:\n    exempt_patch_ids:\n      - "${patchId}"\n`,
+    );
+    assert.deepEqual(
+      await detectMutatedPlans(tmp),
+      [],
+      "exempt_patch_ids must survive the rewrite and suppress the violation",
+    );
+
+    // Both lists together: either may match.
+    writeFixture(
+      tmp,
+      ".context-index/manifest.yaml",
+      `hygiene:\n  plan_immutability:\n    exempt_commits:\n      - "${shaBefore}"\n    exempt_patch_ids:\n      - "${patchId}"\n`,
+    );
+    assert.deepEqual(
+      await detectMutatedPlans(tmp),
+      [],
+      "both lists must be read when present, matching if either hits",
+    );
+
+    // An unrelated patch id must not suppress anything.
+    writeFixture(
+      tmp,
+      ".context-index/manifest.yaml",
+      `hygiene:\n  plan_immutability:\n    exempt_patch_ids:\n      - "${"0".repeat(40)}"\n`,
+    );
+    assert.equal(
+      (await detectMutatedPlans(tmp)).length,
+      1,
+      "a non-matching patch id must not suppress a real violation",
+    );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// Nested-root git history leak
+//
+// When projectRoot is not itself a working-tree root, git resolves upward and
+// answers about the ENCLOSING repository. A checked-in fixture then inherits
+// every commit that ever touched it in the parent repo, and a deliberately
+// backdated mtime is ignored in favour of the parent's commit date. That is
+// what made `clean fixture with no inline Routing and no sidecar` go red.
+// ────────────────────────────────────────────────────────────────────────
+
+test("plan-immutability: a nested project root does not inherit the enclosing repo's history", async () => {
+  const { execSync } = await import("node:child_process");
+  const tmp = createTempDir();
+  try {
+    execSync("git init -b main", { cwd: tmp, stdio: "ignore" });
+    execSync('git config user.email "test@test.com"', { cwd: tmp, stdio: "ignore" });
+    execSync('git config user.name "Test"', { cwd: tmp, stdio: "ignore" });
+    execSync("git config commit.gpgsign false", { cwd: tmp, stdio: "ignore" });
+
+    // The fixture is a "project" nested inside the outer repo, exactly like
+    // tests/fixtures/plan-immutability/* inside this repo.
+    const nested = "fixture/.context-index";
+    writeFixture(tmp, `${nested}/specs/features/x/foo.plan.md`, "# Plan: foo\n\n### Task 1: Stub\n");
+    writeFixture(
+      tmp,
+      `${nested}/lifecycle-state/foo.jsonl`,
+      JSON.stringify({
+        ts: "2020-01-01T00:00:00.000Z",
+        event: "plan_task",
+        plan: "fixture/.context-index/specs/features/x/foo.plan.md",
+        task_id: "t1",
+        status: "pending",
+        notes: null,
+      }) + "\n",
+    );
+    execSync("git add -A && git commit -m 'add fixture'", { cwd: tmp, stdio: "ignore" });
+
+    // Someone later edits the fixture in the OUTER repo. This is an M-commit
+    // dated now — far after the fixture's synthetic 2020 pending event.
+    writeFixture(
+      tmp,
+      `${nested}/specs/features/x/foo.plan.md`,
+      "# Plan: foo\n\n### Task 1: Stub\n\n<!-- touched later -->\n",
+    );
+    execSync("git add -A && git commit -m 'edit fixture'", { cwd: tmp, stdio: "ignore" });
+
+    // Backdate the mtime the way the fixture-based tests do.
+    const past = new Date("2019-01-01T00:00:00.000Z");
+    utimesSync(join(tmp, `${nested}/specs/features/x/foo.plan.md`), past, past);
+
+    const { detectMutatedPlans } = await import("../../lib/plan-immutability.mjs");
+    const violations = await detectMutatedPlans(join(tmp, "fixture"));
+    assert.deepEqual(
+      violations,
+      [],
+      `the enclosing repo's history must not be attributed to a nested project root; got: ${JSON.stringify(violations)}`,
+    );
+
+    // Control: the same detector run at the actual working-tree root DOES see
+    // the modification, so the guard above is narrow rather than a blanket
+    // disabling of the git branch.
+    writeFixture(tmp, ".context-index/specs/features/x/bar.plan.md", "# Plan: bar\n");
+    writeFixture(
+      tmp,
+      ".context-index/lifecycle-state/bar.jsonl",
+      JSON.stringify({
+        ts: "2020-01-01T00:00:00.000Z",
+        event: "plan_task",
+        plan: ".context-index/specs/features/x/bar.plan.md",
+        task_id: "t1",
+        status: "pending",
+        notes: null,
+      }) + "\n",
+    );
+    execSync("git add -A && git commit -m 'add bar'", { cwd: tmp, stdio: "ignore" });
+    writeFixture(tmp, ".context-index/specs/features/x/bar.plan.md", "# Plan: bar\n\nmutated\n");
+    execSync("git add -A && git commit -m 'mutate bar'", { cwd: tmp, stdio: "ignore" });
+
+    const atRoot = await detectMutatedPlans(tmp);
+    assert.equal(
+      atRoot.filter((v) => v.path && v.path.endsWith("bar.plan.md")).length,
+      1,
+      "a genuine post-pending modification at the working-tree root must still be detected",
+    );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});

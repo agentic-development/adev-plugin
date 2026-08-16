@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Writes 16 unaudited AUTO-mode DDRs into normative spec text across two specs and widens affects:. Edits are enumerated exhaustively, but no reviewer has seen plan revision 3 and the plan itself requests a human audit before this task commits."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Guard semantics and decidability are contract-level explicit with four named tests. Blast radius is the open-ended part: the task also sweeps every existing fixture that seeds an unmarked registry, plus a confirm-then-decide judgement on lib/diagnostics."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Deletes composition behaviour every consumer depends on, guarded only by the byte-identity net from Task 9. Two identically named mergeReviewers functions must be told apart - one removed, one retained - across four files."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 0.8
+      },
+      "rationale": "Applies an existing refusal pattern (INSTALLER_OWNED, exec-consent) at a new point before any write. Six files spanning the install path, init scaffolding and three templates, on a surface DDR-13 only just widened into affects:."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "validate-config.mjs already implements the enabled skip and is the reference to mirror into the review and diagnostics loaders. Scope was corrected in the plan after the already-shipped half was found, so the remaining work is narrow and well evidenced."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Four candidate rules named with patterns, and pre-commit-no-inline-node.sh is a direct precedent. Translating prose anti-patterns into regexes takes judgement, and the instruction to fix the rule rather than the tree implies tuning against the whole repo."
+    },
+    {
+      "task_id": "t15",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Config population with the exact content prescribed (implement-to-validate and validate-to-merge requiring the test gate), two files, two tests, and hygiene Pass 8 as the existing guard."
+    },
+    {
+      "task_id": "t16",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "DDR-4 supplies the full mapping table and the four __source values sit at named line numbers, so the work is table-driven. Domain slug resolution is the only unpinned part; no curated sample exists for provenance stamping."
+    },
+    {
+      "task_id": "t17",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Three enumerated changes with severities fixed and a deferred SEC-4 remainder filed as an issue. Two files, but the pass is markdown prose and the tests assume a programmatic runPass19 harness whose existence is unverified."
+    },
+    {
+      "task_id": "t18",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 0.8
+      },
+      "rationale": "Mechanical once both verbs exist, following check-14-gate-executability exactly. Seven files across skills, templates, both validate registries and docs, and it is the user-visible cutover that changes how this project's own validate runs."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Two named findings with ids and severities, reproduced at planning time. Mechanical, but the argv conversion adds a gate to the executed set in this repo's own gates.yaml and the starter template - a behaviour change worth a checkpoint."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Pure extract-and-export refactor plus a symmetric-difference message, two files in one module, with the scope correction already resolved in the plan. Test-helper sample covers the harness."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Field shapes, validation rules and the fail-soft upgrade path are fully stated, with reportReviewer's optional revision field as an in-file precedent. Held at assisted because it extends the shared lifecycle event substrate next to the ADR-0009 human-approved boundary."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Add two parseArgs options, parse a JSON literal or @path, delegate. Two files in one module, no boundary crossing, and the verb-module shape is established across the CLI surface."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 0.4
+      },
+      "rationale": "How a markdown check body computes SHA-256 of resolved argv without inline Node is not prescribed, and the constitution forbids the obvious route. Five files across skills, templates and both validate registries, including this repo's live one."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "Composes source-manifest reads, event filtering, a DDR-2 freshness comparator and three DDR-3 attestation sub-rules that no human has reviewed, and ships a knowingly partial forgery closure with a follow-up issue. Contract is precise; the semantics behind it are not yet audited."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "node:worker_threads has no precedent in this codebase, and the ReDoS-termination harness, per-file budget, oversize finding and binary skip are new machinery composed from scratch. The contract is well specified; the implementation is unprecedented here."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.4
+      },
+      "rationale": "Lowest-scoring task. Nine files, rewrites this repo's three live governance registries, and computes an effective set across three different composition models with a canonicalisation order the spec never fixes. The plan itself flags it unsplittable and a subagent-stall candidate."
+    }
+  ]
+}

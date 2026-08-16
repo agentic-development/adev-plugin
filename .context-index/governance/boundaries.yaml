@@ -1,21 +1,151 @@
 # boundaries.yaml — Architectural boundary rules
 # This file lives at .context-index/governance/boundaries.yaml
-# Each rule defines a regex pattern. Files matching the pattern trigger
-# an error or warning during planning, implementation, and validation.
+# Each rule defines a regex pattern matched against file CONTENT. Files matching
+# the pattern trigger an error or warning during planning, implementation, and
+# validation. Evaluated by `adev boundaries check` (lib/governance/boundaries.mjs).
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# QUOTING: every `pattern` MUST be SINGLE-quoted with SINGLE backslashes.
+#
+# The parser (lib/profiles/yaml.mjs::unquote) strips the outer quotes and
+# processes NO escape sequences, for either quote style. A double-quoted
+# "console\\.log" therefore yields a pattern holding a LITERAL double backslash,
+# which compiles cleanly and matches nothing — a silently dead rule. Bare is no
+# better: an unquoted `#` is stripped as a comment. A literal apostrophe is
+# unrepresentable ('it''s' parses to it''s) — write ['] or \x27 instead.
+# `tests/governance/boundary-rules-corpus.test.mjs` pins this.
+#
+# SCOPE: there is no `include` field. A rule's scope is expressed ONLY through
+# `exclude` globs, so a rule aimed at one file type or one subtree has to carve
+# the rest of the tree away. Every exclude below was derived by RUNNING the rule
+# over `git ls-files` and reading what it hit; the corpus test re-runs exactly
+# that and fails if a rule ever flags sanctioned code again. When it does, the
+# rule is mis-specified — fix the rule, never the source file it flagged.
+#
+# SEVERITY: every rule ships at `warning` (DDR-11). Promotion to `error` is a
+# deliberate follow-up after one clean cycle, not a drive-by edit.
+#
+# The rules below are the mechanically decidable half of the Anti-Patterns
+# section of CLAUDE.md. The judgement-requiring half (e.g. "no executable logic
+# inside SKILL.md") stays prose — a regex cannot decide it.
+# ─────────────────────────────────────────────────────────────────────────────
 
-boundaries: []
+boundaries:
+  # Constitution Principle 3 — Pure ESM. `require(` or `module.exports` reached
+  # for as a statement; the leading-character class keeps the rule off prose and
+  # off assertions that merely NAME the token (`content.includes("require(")`,
+  # "using `require()` in a pure-ESM project"), which is where every false
+  # positive in this tree came from.
+  - id: no-commonjs
+    severity: warning
+    flags: 'm'
+    pattern: '(?:^|[\s=;{])(?:require\s*\(|module\.exports)'
+    description: "CommonJS in a pure-ESM project (Constitution Principle 3) — use import/export"
+    exclude:
+      - 'tests/fixtures/governance/**'   # this rule's own corpus fixtures
+      - 'node_modules/**'
+      - '.beads/**'                      # issue records quote code verbatim
+      - '.context-index/**'              # specs, ADRs, sessions: documents about code
+      - '.githooks/**'                   # installed hooks are CJS `node -e` bodies
+      - '.github/**'                     # CI shell steps likewise
+      - 'viz/**'                         # vendored UMD bundles
+      - 'tests/evals/**'                 # eval sample projects are deliberately CJS
+      - 'tests/fixtures/**'              # fixtures reproduce the anti-pattern on purpose
+      - 'tests/templates/manifest-template.test.mjs'  # asserts the token's ABSENCE, in prose
+      - '**/*.sh'                        # shell; `node -e` bodies are CJS by definition
+      - '**/*.js'                        # not the ESM extension this project uses
+      - '**/*.cjs'                       # CommonJS by declaration
+      - '**/*.jsonl'                     # captured transcripts
+
+  # Constitution Anti-Pattern — no inline Node in SKILL.md. Same three shapes the
+  # bespoke git hook `hooks/pre-commit-no-inline-node.sh` already rejects, and the
+  # same regex `tests/skills-no-inline-node.test.mjs` sweeps with. The exclude set
+  # emulates the include this format lacks: everything that is not `skills/**`,
+  # including `providers/*/skills/**`, which the hook also scopes out.
+  - id: no-inline-node-in-skills
+    severity: warning
+    pattern: 'Run inline Node|node\s+--input-type=module\s+-e|node\s+-e'
+    description: "inline Node in a skill body (Constitution Anti-Patterns) — name an `adev <verb>` instead"
+    exclude:
+      - 'tests/fixtures/governance/**'   # this rule's own corpus fixtures
+      - '*'                              # every root-level file (CLAUDE.md, README.md, …)
+      - 'node_modules/**'
+      - '.beads/**'
+      - '.claude/**'
+      - '.claude-plugin/**'
+      - '.context-index/**'
+      - '.cursor-plugin/**'
+      - '.githooks/**'
+      - '.github/**'
+      - 'cli/**'
+      - 'docs/**'
+      - 'extensions/**'
+      - 'hooks/**'
+      - 'lib/**'
+      - 'providers/**'                   # provider mirrors — out of scope, as in the hook
+      - 'scripts/**'
+      - 'templates/**'
+      - 'tests/**'
+      - 'viz/**'
+
+  # Constitution Anti-Pattern — no hardcoded `~/.claude/` paths; resolve the
+  # plugin root instead. The installer and the transcript readers are excluded
+  # because naming that path IS their job: `providers/**` holds the adapters that
+  # install into it, and `lib/session-*.mjs` reads Claude Code's own transcript
+  # tree. Markdown is excluded as prose — CLAUDE.md, CHANGELOG.md and the skills
+  # that document user-scoped Claude Code files all mention the path legitimately.
+  - id: no-hardcoded-claude-home
+    severity: warning
+    pattern: '~/\.claude/'
+    description: "hardcoded ~/.claude/ path (Constitution Anti-Patterns) — resolve the plugin root"
+    exclude:
+      - 'tests/fixtures/governance/**'   # this rule's own corpus fixtures
+      - 'node_modules/**'
+      - '.beads/**'
+      - '.context-index/**'
+      - 'providers/**'                   # the installer adapters own this path
+      - 'lib/providers/**'               # peer-adapter install logic and its README
+      - 'lib/session-*.mjs'              # readers of Claude Code's transcript tree
+      - 'scripts/**'                     # one-off analysis scripts over real sessions
+      - 'tests/**'
+      - '**/*.md'                        # prose that documents the path
+      - '**/*.jsonl'
+
+  # Constitution Principle 5 / release-please (ADR-0008) — versions are bumped by
+  # the Release PR, never by hand.
+  #
+  # DECLARED AND DISABLED, deliberately (Invariant 5: opting out is a statement,
+  # and an absent rule says nothing). This evaluator matches file CONTENT, and a
+  # version FIELD is not a version BUMP: any pattern precise enough to catch the
+  # edit fires on package.json and .claude-plugin/plugin.json permanently, since
+  # those files always contain the field. Excluding them instead would leave a
+  # rule that can never fire, which is worse than none. Enforcing this needs a
+  # DIFF-aware evaluator; the pattern is kept here, verified to compile, so the
+  # rule is one `enabled: true` away once that exists.
+  - id: no-manual-version-bump
+    severity: warning
+    enabled: false
+    disabled_reason: 'the boundary evaluator matches file content, not diffs; a version field is not a version bump, so this rule would fire on package.json forever. Needs a diff-aware evaluator.'
+    pattern: '"version"\s*:'
+    description: "manual version bump — release-please owns package.json / .claude-plugin/plugin.json (ADR-0008)"
+    exclude:
+      - 'tests/fixtures/governance/**'
+      - 'node_modules/**'
+
+  # ── Worked examples (commented; single-quoted, as every live rule must be) ──
+  #
   # - id: no-direct-db-outside-db-layer
-  #   severity: error             # error | warning
-  #   pattern: "import.*from.*prisma"
+  #   severity: error
+  #   pattern: 'import.*from.*prisma'
   #   exclude:
-  #     - "src/db/**"
-  #     - "prisma/**"
+  #     - 'src/db/**'
+  #     - 'prisma/**'
   #   description: "Direct database imports are only allowed in src/db/"
-
+  #
   # - id: no-console-log
   #   severity: warning
-  #   pattern: "console\\.log"
+  #   pattern: 'console\.log'
   #   exclude:
-  #     - "scripts/**"
-  #     - "**/*.test.*"
+  #     - 'scripts/**'
+  #     - '**/*.test.*'
   #   description: "Avoid console.log in production code"

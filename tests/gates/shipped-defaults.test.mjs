@@ -203,12 +203,28 @@ describe("gate doctor on a fresh scaffold", () => {
 
       // Tolerated BY NAME: a fresh scaffold has no CI config, and neither
       // `npm test` nor `npm run --if-present test:integration` exposes an
-      // identifiable runner. Asserted as a closed set so an unexpected
-      // warning still fails.
-      const tolerated = new Set(["gate-doctor/ci-config-missing", "gate-doctor/runner-unknown"]);
+      // identifiable runner. Asserted as a closed set so an unexpected warning
+      // still fails.
+      //
+      // Fixture maintenance (Task 11) — an INVERSION. `gate-set-divergence`
+      // used to be on this list, and the assertion below used to REQUIRE it:
+      // the software starter contributed `quality-gate` at run time and this
+      // scaffold's governance file never mentioned it. That asymmetry was the
+      // old contract. With no run-time overlay the scaffold's file IS what
+      // runs, so the finding must now be absent — which is the whole point of
+      // keeping the finding rather than deleting it.
+      const tolerated = new Set([
+        "gate-doctor/ci-config-missing",
+        "gate-doctor/runner-unknown",
+      ]);
       for (const id of ids(report)) {
         assert.ok(tolerated.has(id), `unexpected finding on a fresh seeded scaffold: ${id}`);
       }
+      assert.equal(
+        ids(report).includes("gate-doctor/gate-set-divergence"),
+        false,
+        "a scaffold that declares its own gates has nothing left to diverge from",
+      );
       assert.ok(
         ids(report).includes("gate-doctor/ci-config-missing"),
         "a scaffold with no CI config must still say so",
@@ -234,12 +250,17 @@ describe("gate doctor on a fresh scaffold", () => {
 
       // Exactly — a multiset, because `empty-command` must appear once per
       // unwired tier. Set membership would hide a dropped tier.
+      // `gate-set-divergence` is expected here for the same reason it is on the
+      // seeded scaffold, and more sharply: BOTH unwired sentinels are dropped
+      // by mergeGates, so the gates this file declares and the gates consumers
+      // run have nothing in common.
       assert.deepEqual(
         ids(report).slice().sort(),
         [
           "gate-doctor/ci-config-missing",
           "gate-doctor/empty-command",
           "gate-doctor/empty-command",
+          "gate-doctor/gate-set-divergence",
         ],
         `unexpected finding set on an unseeded scaffold: ${JSON.stringify(ids(report))}`,
       );

@@ -145,7 +145,7 @@ Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governan
 - Resolves each check's profile via `lib/profiles/` (MCP-missing fails load; required env missing fails load).
 - Topologically sorts by `after` with lex-by-id tie-break; cycles fail load; unknown `after` ids emit WARN.
 
-Abort on any loader error. Warnings surface in the report header. Check 1 (quality gates) is not in this registry; it continues to be sourced from `governance/gates.yaml`.
+Abort on any loader error. Warnings surface in the report header. Check 1 (quality gates) IS a registry entry (`validate.check-1-quality-gates`, `kind: deterministic-check`, `severity: error`, `fail_fast: true`) — the entry declares the check's severity so its `validator_report` is stamped `error` rather than defaulting to `warning`. Its *gate set* is sourced from the project's MATERIALIZED `governance/gates.yaml` and nothing else, via `adev domain load-gates` above. The domain overlay is NOT merged at run time — `loadCheck1Gates` composes it only under `composeDomainOverlay`, which only `adev governance materialize --registry gates` sets. A domain gate that the project has not materialized does not run. The registry entry does not change where gates come from.
 
 **Load Skill Extensions:** Load any skill extension instructions before proceeding:
 
@@ -185,7 +185,9 @@ When the resolved tier is `full` (default), run the whole check set as described
 
 **Project quality-gate checks:** invoke `runQualityGate(check, { env, redactor, cwd })` from `lib/governance/quality-gate.mjs`. The runner uses `execFile` with `shell: false`; the subprocess environment consists of the profile-resolved env plus a minimal startup whitelist (`PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TMPDIR`, `USER`, `LOGNAME`). `LD_PRELOAD`, `NODE_OPTIONS`, `PYTHONPATH`, `SSL_CERT_FILE`, and any other invoking-shell var is NOT inherited. stdout/stderr flow through the profile's redactor before report/display/dispatch-record use. Combined output is capped at 64 KiB with a tail-truncation marker.
 
-**Subagent-review checks** (Checks 2, 4, 8, 9, 11): dispatch the subagent with the prompt body loaded from each check's `resolvedPromptPath` (resolved at registry-load time from the `plugin:validate/checks/<id>.md` URI). Each check's section begins with an `enabled` guard — if the registry marked it disabled, the check is skipped without running.
+**Subagent-review checks** (Checks 2, 4, 11): dispatch the subagent with the prompt body loaded from each check's `resolvedPromptPath` (resolved at registry-load time from the `plugin:validate/checks/<id>.md` URI). Each check's section begins with an `enabled` guard — if the registry marked it disabled, the check is skipped without running.
+
+**Checks 8 and 9 are NOT subagent-review checks.** Both are deterministic CLI reads — `adev boundaries check --json` and `adev gate transitions --json` — that this skill runs directly and records verbatim. Dispatch no subagent for either. Check 8 records SKIP when the project declares no boundary rules, and Check 9 SKIPs when it configures no `implement-to-validate` transition; in neither case is a subagent involved. Their bodies (`skills/validate/checks/validate.check-8-boundaries.md`, `…check-9-transition-gates.md`) are instructions for the orchestrator, not prompts to hand to an agent.
 
 ## The Checks
 
@@ -195,8 +197,8 @@ When the resolved tier is `full` (default), run the whole check set as described
 
 #### Gate Source Resolution
 
-1. Use the `mergedGates` list computed in Step 0 (domain gates merged with governance gates). If the merged list is non-empty, group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only).
-2. If the merged gate list is empty and `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found and no domain gates configured. Quality gates are not configured. Run `/adev:init` to set up gates."
+1. Use the resolved gate list computed in Step 0. It is the project's materialized `governance/gates.yaml`, not a run-time merge with the domain overlay (Task 11 removed that). If the list is non-empty, group gates by `tier` into ordered execution: fast → integration → e2e. Execute as sub-checks 1a/1b/1c. Each gate has fields: `id`, `name`, `kind`, `tier`, `command`, `scope`, `required`, `severity`, `triggers`, `group` (e2e-only), and `command_sha` — the SHA-256 of the gate's resolved argv, computed by the loader (`computeCommandSha` in `lib/gates/gate-sets.mjs`) and carried on the `adev domain load-gates` output. Use the value as given; never recompute it.
+2. If the gate list is empty and `governance/gates.yaml` does not exist → SKIP Check 1 with advisory: "No governance/gates.yaml found. Quality gates are not configured. Run `/adev:init` to set up gates, then `adev governance materialize --registry gates` to adopt the domain's."
 
 **Legacy gate detection:** If `manifest.yaml` contains a `gates:` section, emit a migration warning: "Legacy gates: section found in manifest.yaml. This is no longer used. Move gate definitions to governance/gates.yaml." This warning is informational and does not affect Check 1 execution.
 
@@ -234,6 +236,18 @@ When tiered gates are resolved from `governance/gates.yaml`, Check 1 splits into
 **Tier summary:** After Check 1 completes (all tiers pass or warning-only failures), include a tier summary in the report showing each tier's status, commands run, and duration per command. Use GateResult format: `Check 1a (fast): npm test — PASS (2.1s)`.
 
 **If all tiers pass (or only warning-severity tiers fail):** Proceed to Check 2.
+
+#### Per-Gate Outcome Attestation
+
+After the tiers have run, Check 1 emits **exactly one** `validator_report` for the whole check, carrying one outcome per gate in the resolved set. The substantive procedure lives in `skills/validate/checks/validate.check-1-quality-gates.md`; the normative rule is here:
+
+**Check 1 is the only sanctioned writer of `gate_outcomes`.** No other check, no subagent, and no other skill may emit a `validator_report` carrying that field. A `gate_outcomes` record is read downstream as evidence that the named gates actually executed against the code the spec's source manifest pins — a record from any other producer asserts an execution that did not happen.
+
+Each outcome is `{ id, verdict, tier, command_sha }`: `id` and `command_sha` verbatim from the resolved gate set, `verdict` one of `pass` | `fail` | `skip` (lowercase), `tier` the gate's tier. Gates that never ran because an earlier gate failed are recorded as `skip` — omitting them is indistinguishable from never declaring them. `--manifest-sha` carries the `sha` from the spec's `source-manifest` frontmatter block, omitted when the spec has no such block.
+
+Prefer the `@<path>` form of `--gate-outcomes` (a JSON file inside the project root): a non-trivial gate set exceeds what an argv element reliably carries.
+
+Emit it once for the whole check — never once per gate.
 
 ### Check 1.5: Source Manifest Verification
 
@@ -333,25 +347,39 @@ Record PASS or FAIL with specific principle/boundary violated and code location.
 
 ### Check 8: Boundary Compliance
 
-If the `governance/` directory does not exist → SKIP: "No governance directory configured."
+Run the boundary evaluator and record what it returns:
 
-If `governance/` exists but `.context-index/governance/boundaries.yaml` is missing → PASS (no rules configured).
+```
+adev boundaries check --json
+```
 
-If `governance/boundaries.yaml` exists, collect all files changed. For each boundary rule:
+Take the `verdict` verbatim — `PASS`, `WARN`, `FAIL` or `SKIP`. Do not recompute it from the findings, and do not run the rule regexes yourself: the algorithm (regex against file contents, `exclude` globs, severity mapping, time and size budgets) lives in the verb.
 
-1. Run regex `pattern` against file contents, respecting `exclude` globs.
-2. `severity: error` → FAIL
-3. `severity: warning` → WARN (does not cause overall FAIL)
-4. Apply charter-specific overrides from `governance/overrides/<slug>.yaml` if present.
+The envelope carries `verdict`, `reason`, `findings`, `disabled`, `warnings` and `summary`. List every finding with its `ruleId` (the field is `ruleId`, **not** `rule`), its `file:line` and its `matchedLine`; list every `disabled` rule with its `disabled_reason` (a switched-off rule must read differently from one the project never declared); surface the top-level `warnings`, which are registry **schema** warnings such as `DISABLED_WITHOUT_REASON` and are a different thing from `summary.warnings`.
+
+**A project declaring no rules records SKIP, never PASS** — nothing was read, so nothing held; the reason reads `no boundary rules declared`. A registry whose rules are all switched off SKIPs with a different reason naming them, because "nobody declared any" and "somebody turned them off" are different facts. Exit 1 (`INVALID_BOUNDARY_PATTERN`, `BOUNDARIES_PARSE_ERROR`) is a FAIL, not a SKIP: the project believes it has boundaries and the registry is unreadable.
+
+Full body, including the per-finding table: `skills/validate/checks/validate.check-8-boundaries.md`.
 
 ### Check 9: Transition Gates
 
-If `governance/gates.yaml` defines `implement-to-validate` or `implement-to-merge` transition:
+Run the transition comparator for the transition this skill drives:
 
-1. Verify each `required_gates` was run and passed in Check 1.
-2. If a required gate was skipped (probabilistic/no command) → log "manual verification required."
-3. Note `approver_role` if present (informational).
-4. If no transitions configured in `governance/gates.yaml` (or `governance/` absent) → SKIP: "No transitions configured."
+```
+adev gate transitions --transition implement-to-validate --spec <spec-path> --json
+```
+
+`implement-to-validate` is the only transition Check 9 evaluates: `/adev:validate` sits at the `implemented → validated` boundary. A project may declare others (this repo also declares `validate-to-merge`), but those belong to whoever drives that boundary — at the moment Check 9 runs, validate has not recorded its own outcome yet.
+
+Add `--module <slug>` or `--charter <path>` when Check 1 ran under a module scope; the slug MUST match, or the resolved gate set differs and every recorded outcome reads as `unattested-gate-record`.
+
+The envelope is `{transition, verdict, reason, gates}`; take the `verdict` verbatim. On exit 1 it is `{transition, error, code}` instead (`GATES_PARSE_ERROR`, `GATES_PATH_ESCAPE`, `GOVERNANCE_READ_ERROR`, `MANIFEST_PARSE_ERROR`, `INVALID_DOMAIN_NAME`) — record FAIL and quote the code. Report each blocked gate's reason: `no-recorded-outcome`, `stale-gate-record`, `no-manifest-stamp`, `unattested-gate-record`, `disabled-gate` and `unknown-gate` each call for a different remedy.
+
+A SKIP means no transition was evaluated, and the reason says which case: `no transitions configured`, no transition of that name, the transition requires no gates, or the spec carries no source-manifest stamp (`no-manifest-stamp` — an unstamped spec has never completed implementation, so it owes no outcomes).
+
+The verb reads recorded history only. It never runs a gate — Check 1 remains the only sanctioned writer of `gate_outcomes`.
+
+Full body, including the per-reason table: `skills/validate/checks/validate.check-9-transition-gates.md`.
 
 ### Check 11: Visual Verification (UI projects)
 
@@ -419,9 +447,11 @@ adev report --type validator \
   [--notes "<≤200-char summary>"]
 ```
 
-Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier that MUST match the `id:` declared in `governance/validate.yaml` (or the domain starter at `templates/domains/<domain>/validate.yaml`). The six registry-backed IDs in the bundled software domain are: `validate.check-1.5-source-manifest`, `validate.check-2-spec-compliance`, `validate.check-4-constitution`, `validate.check-8-boundaries`, `validate.check-9-transition-gates`, `validate.check-11-visual-verification`. Use these exact strings — emitting an unprefixed form (e.g., `check-2-spec-compliance`) bypasses `_resolveActorSeverity` lookup and defaults every event to `severity: warning`, suppressing blocker-severity FAILs in the aggregation table.
+Run one invocation per surviving check (1, 1.5, 1.6, 2, 4, 8, 9, 11). `--validator` is a stable identifier that MUST match the `id:` declared in `governance/validate.yaml` (or the domain starter at `templates/domains/<domain>/validate.yaml`). The registry-backed IDs in the bundled software domain are: `validate.check-1-quality-gates`, `validate.check-1.5-source-manifest`, `validate.check-2-spec-compliance`, `validate.check-4-constitution`, `validate.check-8-boundaries`, `validate.check-9-transition-gates`, `validate.check-11-visual-verification`. Use these exact strings — emitting an unprefixed form (e.g., `check-2-spec-compliance`) bypasses `_resolveActorSeverity` lookup and defaults every event to `severity: warning`, suppressing blocker-severity FAILs in the aggregation table.
 
-For Check 1 (quality gates, sourced from `gates.yaml` in a separate flow) and Check 1.6 (code-drift, observational), no registry entry exists today — events emitted with `--validator validate.check-1-quality-gates` or `validate.check-1.6-code-drift` will trip the unknown-validator fallback (severity defaults to warning). This is acceptable for these checks because they don't aggregate into blocker-severity verdicts; if that changes, add explicit entries to `templates/domains/<domain>/validate.yaml`.
+Check 1's emission additionally carries `--gate-outcomes` and `--manifest-sha` (see Check 1 § Per-Gate Outcome Attestation). **No other check may pass `--gate-outcomes`** — Check 1 is the only sanctioned writer of `gate_outcomes`.
+
+Check 1.6 (code-drift, observational) still has no registry entry — an event emitted with `--validator validate.check-1.6-code-drift` trips the unknown-validator fallback and is stamped `severity: warning`. That is acceptable because the check is advisory and never aggregates into a blocker-severity verdict; if that changes, add an explicit entry to `templates/domains/<domain>/validate.yaml` and to the project's `governance/validate.yaml`.
 
 `--verdict` is one of `PASS`, `PASS_WITH_NOTES`, `FAIL`. Optional fields (`--error`, `--score`, `--duration-ms`, `--notes`) are passed through verbatim to the underlying `reportValidator(projectRoot, specPath, args)` call in `lib/lifecycle-state.mjs`.
 
@@ -486,13 +516,17 @@ The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec
 - Non-negotiable principles: PASS | FAIL [principle violated, file:line]
 - Coding standards: PASS | FAIL [standard violated, file:line]
 
-## Check 8: Boundary Compliance — PASS | FAIL | N/A
-- [boundary-id]: PASS | FAIL | WARN [details]
-- ...
+## Check 8: Boundary Compliance — PASS | WARN | FAIL | SKIP
+- Verdict and reason as returned by `adev boundaries check --json`
+- [rule-id]: FAIL | WARN [file:line — message]
+- Disabled: [rule-id] — [disabled_reason]  (omit when none)
+- Registry warnings: [code] — [message]  (omit when none)
+- SKIP means no rules were declared, or all declared rules are disabled — not that boundaries held
 
-## Check 9: Transition Gates — PASS | FAIL | N/A
-- [transition-id]: PASS | FAIL [details]
-- ...
+## Check 9: Transition Gates — PASS | FAIL | SKIP
+- Transition: implement-to-validate
+- [gate-id]: pass | blocked [reason: no-recorded-outcome | stale-gate-record | no-manifest-stamp | unattested-gate-record | disabled-gate | unknown-gate]
+- [gate-id]: command_attested: false  (when attestation did not hold)
 
 ## Check 11: Visual Verification — PASS | FAIL | N/A
 - [expectation 1]: PASS | FAIL [what was seen]

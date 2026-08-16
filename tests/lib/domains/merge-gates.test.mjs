@@ -33,6 +33,18 @@ describe('mergeGates', () => {
     assert.ok(result.warnings.some(w => w.code === 'INVALID_GATE'));
   });
 
+  it('should reject a non-string argv element with INVALID_GATE', () => {
+    // The YAML parser coerces numerics, so `command: ["node", 8080]` reaches
+    // here as a mixed array. Dropping it matches the shell-form precedent and
+    // keeps `computeCommandSha` (which only accepts strings) off a value it
+    // would have to throw on — a throw there aborts `adev domain load-gates`
+    // and `adev gate doctor` for the whole project.
+    const domain = { gates: [{ id: 'test', command: ['node', 8080] }] };
+    const result = mergeGates(domain, null);
+    assert.equal(result.gates.length, 0);
+    assert.ok(result.warnings.some(w => w.code === 'INVALID_GATE' && /test/.test(w.message)));
+  });
+
   it('should return new object, never mutate inputs', () => {
     const domain = Object.freeze({ gates: Object.freeze([Object.freeze({ id: 'test', command: Object.freeze(['npm', 'test']) })]) });
     assert.doesNotThrow(() => mergeGates(domain, null));
