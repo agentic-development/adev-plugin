@@ -233,7 +233,13 @@ test("the FAIL path names the check-id signature verb", () => {
 });
 
 test("the FAIL path re-queries by signature and lets the verb supply the cap", () => {
-  const m = SKILL.match(/adev heuristics retrieve[^\n]*--signature[^\n]*/);
+  // Scoped to failWindow(), not the whole file. `skills/validate/SKILL.md`
+  // carries a SECOND `adev heuristics retrieve` line — the Step 0 entry-time
+  // block at ~line 114 — which has no `--signature` today. An unscoped match
+  // would silently retarget onto that earlier line the moment Step 0 ever
+  // gained the flag, and would then pass while asserting nothing about the
+  // FAIL-path step. Same hazard the sibling review-specs suite scopes for.
+  const m = failWindow().match(/adev heuristics retrieve[^\n]*--signature[^\n]*/);
   assert.ok(m, "the FAIL path must invoke 'adev heuristics retrieve ... --signature' on one line");
   assert.ok(
     !m[0].includes("--injection-limit"),
