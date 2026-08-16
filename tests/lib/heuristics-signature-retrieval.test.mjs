@@ -646,3 +646,90 @@ describe("retrieveHeuristics: an entry is allocated once across all axes", () =>
     );
   });
 });
+
+describe("retrieveHeuristics: unmatched-signature fallback to module scope", () => {
+  let tempDir;
+
+  /** A well-formed signature that no seeded entry carries. */
+  const UNMATCHED_SIG = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+
+  /**
+   * Seed 6 `high` + 4 `medium` entries, none carrying a signature. Ten eligible
+   * entries is deliberately more than any cap under test (3 and 8), so a cap
+   * assertion cannot pass merely because the store was too small to exceed it.
+   */
+  async function seedTenEligible(dir) {
+    const entries = [];
+    for (let i = 0; i < 6; i++) {
+      entries.push(makeEntry({ id: `high-${i}`, confidence: "high", title: `High ${i}` }));
+    }
+    for (let i = 0; i < 4; i++) {
+      entries.push(makeEntry({ id: `medium-${i}`, confidence: "medium", title: `Medium ${i}` }));
+    }
+    await seedEntries(dir, entries);
+    return entries.length;
+  }
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  it("falls back to module scope rather than returning empty when the signature matches nothing", async () => {
+    await seedTenEligible(tempDir);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, { signature: UNMATCHED_SIG });
+
+    // A FIRST occurrence of a failure matches no stored signature by
+    // definition. Blanking the context on the modal path would be worse than
+    // having no signature support at all.
+    assert.ok(
+      out.length > 0,
+      "an unmatched signature must fall back to module-scope retrieval, got an empty result",
+    );
+    assert.ok(
+      out.every((e) => e.signature === undefined),
+      `fallback fixture must carry no signatures, got ${out.map((e) => e.signature).join(", ")}`,
+    );
+  });
+
+  it("bounds the unmatched-signature fallback by the caller's cap, never the entry-time default", async () => {
+    const seeded = await seedTenEligible(tempDir);
+    assert.ok(seeded > 3, `fixture must exceed the cap under test, seeded ${seeded}`);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: UNMATCHED_SIG,
+      injectionLimit: 3,
+    });
+
+    // The cap genuinely binds: 10 eligible entries, caller asked for 3.
+    // Substituting the default 8 here would inject 8 unrelated entries on top
+    // of the entry-time injection that already happened.
+    assert.equal(
+      out.length,
+      3,
+      `expected the caller's cap of 3 to bind over ${seeded} eligible entries, got ${out.length}: ${out.map((e) => e.id).join(", ")}`,
+    );
+  });
+
+  it("keeps the default budget of 8 for entry-time callers that pass no signature", async () => {
+    const seeded = await seedTenEligible(tempDir);
+    assert.ok(seeded > 8, `fixture must exceed the default budget, seeded ${seeded}`);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {});
+
+    // Deterministic by construction: with limit 8 the split is 5 high / 3
+    // medium, and the fixture supplies 6 high and 4 medium, so both buckets
+    // fill exactly.
+    assert.equal(
+      out.length,
+      8,
+      `expected the default budget of 8 to fill exactly, got ${out.length}: ${out.map((e) => e.id).join(", ")}`,
+    );
+    assert.equal(out.filter((e) => e.confidence === "high").length, 5);
+    assert.equal(out.filter((e) => e.confidence === "medium").length, 3);
+  });
+});
