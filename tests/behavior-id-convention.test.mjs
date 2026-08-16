@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -126,6 +126,71 @@ describe("spec templates — Behaviors placeholder carries behavior IDs", () => 
 
     it(`${rel} carries a retired-behavior-ids tombstone comment`, () => {
       assert.match(body, /<!-- retired-behavior-ids: \(none\) -->/, rel);
+    });
+  }
+});
+
+// Discover every spec template rather than hardcoding the list, so a template
+// added later cannot escape the guard.
+function discoverSpecTemplates() {
+  const roots = [join(ROOT, "templates"), join(ROOT, "templates", "domains", "software")];
+  const found = [];
+  for (const dir of roots) {
+    for (const name of readdirSync(dir)) {
+      const isSpecTemplate = name.startsWith("spec-template") && name.endsWith(".md");
+      if (isSpecTemplate) found.push(join(dir, name));
+    }
+  }
+  return found;
+}
+
+// Returns the body of the template's "## Behaviors"/"### Behaviors" section, or
+// null when the template has no Behaviors section at all. Four spec templates
+// (artifact, skill, integration, action) omit the section BY DESIGN; they are
+// partitioned out at discovery time below rather than short-circuited inside a
+// test body, so every test that runs carries real assertions.
+function behaviorsSection(body) {
+  const start = body.search(/^#{2,3} Behaviors\s*$/m);
+  const rest = body.slice(start).replace(/^#{2,3} Behaviors\s*$/m, "");
+  const end = rest.search(/\n#{2,3} /);
+  return start === -1 ? null : end === -1 ? rest : rest.slice(0, end);
+}
+
+describe("spec templates — no bare behavior ordinals anywhere", () => {
+  const templates = discoverSpecTemplates();
+  const rel = (file) => file.slice(ROOT.length + 1);
+  const sections = new Map(templates.map((f) => [f, behaviorsSection(readFileSync(f, "utf8"))]));
+  const bearing = templates.filter((f) => sections.get(f) !== null);
+  const omitting = templates.filter((f) => sections.get(f) === null);
+
+  it("discovers every spec template", () => {
+    assert.ok(templates.length >= 7, `expected >= 7 spec templates, found ${templates.length}`);
+  });
+
+  it("partitions templates into Behaviors-bearing and by-design omissions", () => {
+    assert.deepEqual(bearing.map(rel).sort(), [
+      "templates/domains/software/spec-template.md",
+      "templates/spec-template.behavioral.md",
+      "templates/spec-template.refactor.md",
+    ]);
+    assert.deepEqual(omitting.map(rel).sort(), [
+      "templates/spec-template.action.md",
+      "templates/spec-template.artifact.md",
+      "templates/spec-template.integration.md",
+      "templates/spec-template.skill.md",
+    ]);
+  });
+
+  for (const file of bearing) {
+    it(`${rel(file)} renders no ordinal behavior item`, () => {
+      const behaviors = sections.get(file);
+
+      assert.doesNotMatch(
+        behaviors,
+        /^\d+\.\s+\*\*When\*\*/m,
+        "behavior statements must not render as an ordered-list ordinal"
+      );
+      assert.match(behaviors, /^- \*\*BEH-\d+\*\*/m, "behaviors must open with a bolded BEH- ID");
     });
   }
 });
