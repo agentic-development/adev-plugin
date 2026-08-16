@@ -33,3 +33,35 @@
 {"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-13","status":"pending","notes":null,"ts":"2026-08-15T19:31:53.602Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-15T19:32:17.238Z"}
 {"event":"lifecycle_step","step":"route","status":"started","ts":"2026-08-15T19:33:14.211Z"}
+{"event":"step_completed","step":"route","verdict":"PASS","ts":"2026-08-15T19:37:56.271Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-15T19:38:39.570Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-15T19:39:37.837Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-08-15T19:46:41.482Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-1","status":"done","notes":"Shared deriveValidateFailureSignature helper; hook rewired; shim test double retargeted","ts":"2026-08-15T19:58:38.043Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-08-15T19:58:38.097Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-2","status":"done","notes":"signature option + signature-primary comparator term; inert when absent","ts":"2026-08-15T23:05:16.539Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-08-15T23:05:16.609Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-3","status":"done","notes":"low-floor exemption gated on _signatureMatch in retrieval budget loop; demoteHeuristic untouched","ts":"2026-08-15T23:50:56.055Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-4","status":"in_progress","notes":null,"ts":"2026-08-15T23:50:56.148Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-4","status":"done","notes":"Two-phase off-the-top allocation; zero-match split arithmetically identical to prior behavior","ts":"2026-08-16T00:02:11.169Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-5","status":"in_progress","notes":null,"ts":"2026-08-16T00:02:11.242Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-5","status":"done","notes":"Direct Behavior 3 coverage; both cases fail under guard mutation; no production change","ts":"2026-08-16T00:15:39.537Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-6","status":"in_progress","notes":null,"ts":"2026-08-16T00:15:39.655Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-6","status":"done","notes":"Capped fallback pinned as contract; JSDoc-only production change","ts":"2026-08-16T00:25:47.518Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-7","status":"in_progress","notes":null,"ts":"2026-08-16T00:25:47.632Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-8","status":"in_progress","notes":null,"ts":"2026-08-16T00:44:58.475Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-7","status":"done","notes":"Signature flag forwarded not validated; both emit shapes pinned; plan carry-forward corrected","ts":"2026-08-16T00:45:06.156Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-8","status":"done","notes":"Error-time cap resolver; strict typeof guard; insertion point verified against both silent-failure traps","ts":"2026-08-16T01:43:29.595Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-9","status":"in_progress","notes":null,"ts":"2026-08-16T01:43:29.664Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-9","status":"done","notes":"validate FAIL surface wired via skill prose; check-id delegates to shared helper; mirrors synced","ts":"2026-08-16T10:27:05.567Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-10","status":"in_progress","notes":null,"ts":"2026-08-16T10:27:05.620Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-10","status":"done","notes":"review-specs BLOCK surface wired via inherited mode; retrieve assertion scoped to BLOCK window","ts":"2026-08-16T11:30:50.039Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-12","status":"in_progress","notes":null,"ts":"2026-08-16T11:30:50.092Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-12","status":"done","notes":"End-to-end round trip proves loop closes; drift mutation verified on scratchpad copy only","ts":"2026-08-16T12:18:49.530Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-13","status":"done","notes":"cli-reference documents signature flag, check-id form, and error-time cap","ts":"2026-08-16T12:18:51.649Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-11","status":"in_progress","notes":null,"ts":"2026-08-16T12:18:51.696Z"}
+{"event":"plan_task","plan":".context-index/specs/features/heuristics/signature-retrieval.plan.md","task_id":"task-11","status":"done","notes":"Surface sweep pins exactly two call surfaces; per-root sanity floors; both mutation directions verified","ts":"2026-08-16T13:01:42.584Z"}
+{"event":"code_drift_detected","drift_source":"tests/skills/validate-error-retrieval.test.mjs","drift_at":"2026-08-16T13:31:40.878Z","ts":"2026-08-16T13:31:40.880Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-16T13:32:08.653Z"}
+{"event":"code_drift_cleared","drift_at":"2026-08-16T13:34:14.479Z","ts":"2026-08-16T13:34:14.479Z"}
+{"event":"code_drift_cleared","drift_at":"2026-08-16T13:34:14.482Z","ts":"2026-08-16T13:34:14.482Z"}

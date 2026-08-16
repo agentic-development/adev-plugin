@@ -1,13 +1,34 @@
 ---
 charter: heuristics
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: 3
 revision: 3
 charter-revision: 6
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
+source-manifest:
+  sha: "34ff039"
+  files:
+    - .context-index/manifest.yaml
+    - docs/cli-reference.md
+    - hooks/post-validate-extract-heuristics.mjs
+    - lib/cli/heuristics.mjs
+    - lib/heuristics.mjs
+    - providers/codex/skills/review-specs/SKILL.md
+    - providers/codex/skills/validate/SKILL.md
+    - providers/opencode/skills/review-specs/SKILL.md
+    - providers/opencode/skills/validate/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/validate/SKILL.md
+    - tests/cli/heuristics-retrieve-signature.test.mjs
+    - tests/hooks/post-validate-failure-capture.test.mjs
+    - tests/lib/heuristics-lookup-key.test.mjs
+    - tests/lib/heuristics-signature-retrieval.test.mjs
+    - tests/skills/review-specs-error-retrieval.test.mjs
+    - tests/skills/validate-error-retrieval.test.mjs
+  computed-at: "2026-08-16T13:32:40.730Z"
 ---
 
 # Live Spec: Signature Retrieval — consult the store at the moment something fails

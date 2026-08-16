@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "The hinge: read and write must share ONE deriveSignature composition or the loop silently never closes while every ranking test passes. Extraction spans lib/ and a live capture hook, with an open null-vs-undefined decision. Checkpoint after RED."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Same prose-under-regex constraint set as Task 9 against another live lifecycle skill, minus the CLI work. Inherited mode already exists so nothing is synthesized, but there is no golden sample for authoring skill prose that must satisfy assertion windows."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Test-only surface sweep with the exclusion set given as a table and triage instructions for both failure directions. Precedent in tests/skills-extension-coverage.test.mjs. Must run strictly last; never widen the expected set or delete doc/spec/provider text to make it pass."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Test-only round trip that proves the loop closes; helpers and full test code are given, with a golden sample for test helpers. Novelty scored down for the mutate-and-restore verification step - confirm the tree is clean afterward so Task 1's refactor is not left reverted."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Documentation edit to one reference table at named line numbers, pinned by a two-line regex test. Only constraint is not to claim the Stop hook makes a retrieve call."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Add an optional param, tag entries, prepend one comparator term, strip the tag - mirroring the existing _scopePriority/_keywordMatch precedent in the same function. Impl and tests given verbatim; inert when no signature is passed."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "One-line guard ahead of the low floor at :1442. Blast scored down for adjacency to demoteHeuristic's archive branch at :1204, but the plan carries an explicit STOP box naming both lines. Run npm test at verify, not just the single file - the stated verification would not catch a mis-targeted :1204 edit."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Restructures the hot budget loop into two phases; eight entry-time call sites require byte-identical output when no signature is passed, and the Math.ceil(remaining*5/8) identity must hold exactly. No sample for the two-phase form. Checkpoint on the arithmetic-identity test before GREEN."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Regression pins plus a boundary comment; the plan states it may pass by construction from Task 4's guard. One test file and one comment. Reverts cleanly."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "JSDoc contract plus three regression tests the plan expects to already pass under Task 4's arithmetic. Documentation-only production change, no behavioral branch."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Additive parseArgs flag on an existing verb - the most repeated pattern in this repo, with a named harness. The one trap (never validate the flag into an exit-1 path) and both empty-result shapes are pinned by separate assertions and a carry-forward box."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Single-line insertion point with failure on both sides: one line earlier is a TDZ ReferenceError on the common path breaking all eight entry-time callers; one line later is a silent no-op. Touches lib, lib/cli, and manifest.yaml, and its guard must textually match Task 7's. Checkpoint on placement."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Edits skills/validate/SKILL.md, which runs on every spec in the repo - the widest-reaching artifact in the plan. Two parts (CLI flag plus skill prose) against brittle regex windows, a single-line invocation constraint, the no-inline-Node policy, and three silent-skip conditions. Review the prose before it lands."
+    }
+  ]
+}
