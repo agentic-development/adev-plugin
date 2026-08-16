@@ -320,6 +320,202 @@ describe("retrieveHeuristics: low-floor exemption for exact signature matches", 
   });
 });
 
+describe("retrieveHeuristics: signature-first off-the-top budget allocation", () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  const SIG = "validate-abc";
+
+  /** Count returned entries carrying the queried signature. */
+  function countSignature(entries, signature) {
+    return entries.filter((e) => e.signature === signature).length;
+  }
+
+  /** Count returned entries at a given confidence. */
+  function countConfidence(entries, confidence) {
+    return entries.filter((e) => e.confidence === confidence).length;
+  }
+
+  it("takes signature matches off the top, then splits only the remainder", async () => {
+    // 2 matches + plenty of non-matching filler. limit 3 => remaining 1,
+    // highMax = ceil(1 * 5 / 8) = 1, mediumMax = 0.
+    await seedEntries(tempDir, [
+      makeEntry({ id: "sig-1", confidence: "medium", signature: SIG }),
+      makeEntry({ id: "sig-2", confidence: "medium", signature: SIG }),
+      makeEntry({ id: "h1", confidence: "high" }),
+      makeEntry({ id: "h2", confidence: "high" }),
+      makeEntry({ id: "h3", confidence: "high" }),
+      makeEntry({ id: "m1", confidence: "medium" }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: SIG,
+      injectionLimit: 3,
+    });
+
+    assert.equal(
+      out.length,
+      3,
+      `expected exactly 3 entries (2 signature + 1 from the remainder), got ${out.length}: ${out.map((e) => e.id).join(", ")}`,
+    );
+    assert.equal(
+      countSignature(out, SIG),
+      2,
+      `expected both signature matches retained, got ${out.map((e) => e.id).join(", ")}`,
+    );
+  });
+
+  it("never exceeds injectionLimit when signature matches are plentiful", async () => {
+    const many = [];
+    for (let i = 0; i < 10; i++) {
+      many.push(
+        makeEntry({ id: `many-${i}`, confidence: "high", signature: "validate-many" }),
+      );
+    }
+    await seedEntries(tempDir, many);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: "validate-many",
+      injectionLimit: 2,
+    });
+
+    assert.equal(
+      out.length,
+      2,
+      `signature phase must be capped at injectionLimit; got ${out.length} entries: ${out.map((e) => e.id).join(", ")}`,
+    );
+  });
+
+  it("is arithmetically identical to the no-signature split when nothing matches", async () => {
+    // 7 high + 5 medium, none carrying a signature. limit 8 =>
+    // highMax = ceil(8 * 5 / 8) = 5, mediumMax = 3.
+    const filler = [];
+    for (let i = 0; i < 7; i++) {
+      filler.push(makeEntry({ id: `h${i}`, confidence: "high" }));
+    }
+    for (let i = 0; i < 5; i++) {
+      filler.push(makeEntry({ id: `m${i}`, confidence: "medium" }));
+    }
+    await seedEntries(tempDir, filler);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: "validate-nomatch",
+      injectionLimit: 8,
+    });
+    const baseline = await retrieveHeuristics(tempDir, MODULE, {
+      injectionLimit: 8,
+    });
+
+    assert.equal(out.length, 8, `expected 8 entries, got ${out.length}`);
+    assert.equal(
+      countConfidence(out, "high"),
+      5,
+      `expected exactly 5 high, got ${countConfidence(out, "high")}`,
+    );
+    assert.equal(
+      countConfidence(out, "medium"),
+      3,
+      `expected exactly 3 medium, got ${countConfidence(out, "medium")}`,
+    );
+    assert.deepEqual(
+      out,
+      baseline,
+      "zero signature matches must leave the existing split byte-identical",
+    );
+  });
+
+  it("retains a low signature match and drops an unrelated medium at limit 1", async () => {
+    await seedEntries(tempDir, [
+      makeEntry({ id: "low-sig", confidence: "low", signature: SIG }),
+      makeEntry({ id: "med", confidence: "medium" }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: SIG,
+      injectionLimit: 1,
+    });
+
+    assert.equal(
+      out.length,
+      1,
+      `expected exactly 1 entry, got ${out.length}: ${out.map((e) => e.id).join(", ")}`,
+    );
+    assert.equal(
+      out[0].id,
+      "low-sig",
+      `drop order follows ranking, not confidence: expected 'low-sig', got '${out[0].id}'`,
+    );
+  });
+
+  it("retains a low signature match and drops an unrelated high at limit 1", async () => {
+    // Sharper form of the drop-order case: the non-match is `high`, which the
+    // remainder split would otherwise admit first.
+    await seedEntries(tempDir, [
+      makeEntry({ id: "low-sig", confidence: "low", signature: SIG }),
+      makeEntry({ id: "hi", confidence: "high" }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: SIG,
+      injectionLimit: 1,
+    });
+
+    assert.equal(
+      out.length,
+      1,
+      `expected exactly 1 entry, got ${out.length}: ${out.map((e) => e.id).join(", ")}`,
+    );
+    assert.equal(
+      out[0].id,
+      "low-sig",
+      `expected the signature match to win the only slot, got '${out[0].id}'`,
+    );
+  });
+
+  it("recomputes the bucket sizes from the remainder, not the full limit", async () => {
+    // Arithmetic boundary: 1 match at limit 8 => remaining 7, so
+    // highMax = ceil(7 * 5 / 8) = 5 and mediumMax = 2 (NOT the 5/3 split of
+    // the full limit). The match is `low` so it lands in neither bucket.
+    const filler = [makeEntry({ id: "sig-1", confidence: "low", signature: SIG })];
+    for (let i = 0; i < 6; i++) {
+      filler.push(makeEntry({ id: `h${i}`, confidence: "high" }));
+    }
+    for (let i = 0; i < 4; i++) {
+      filler.push(makeEntry({ id: `m${i}`, confidence: "medium" }));
+    }
+    await seedEntries(tempDir, filler);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: SIG,
+      injectionLimit: 8,
+    });
+
+    assert.equal(
+      out.length,
+      8,
+      `expected exactly 8 entries, got ${out.length}: ${out.map((e) => e.id).join(", ")}`,
+    );
+    assert.equal(countSignature(out, SIG), 1, "expected the single signature match");
+    assert.equal(
+      countConfidence(out, "high"),
+      5,
+      `expected ceil(7 * 5 / 8) = 5 high, got ${countConfidence(out, "high")}`,
+    );
+    assert.equal(
+      countConfidence(out, "medium"),
+      2,
+      `expected 7 - 5 = 2 medium, got ${countConfidence(out, "medium")}`,
+    );
+  });
+});
+
 describe("retrieveHeuristics: internal signature tag does not leak", () => {
   let tempDir;
 
