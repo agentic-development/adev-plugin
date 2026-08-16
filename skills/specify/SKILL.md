@@ -605,7 +605,7 @@ Read each selected file. For each, identify:
 Produce a Live Spec where:
 
 - **Behavioral Contract** describes observed behavior. Use comment: `<!-- Extracted from existing code. Describes current behavior as of YYYY-MM-DD. -->`
-- **Behaviors** are derived from code paths. Each public function or API endpoint becomes one or more behavior statements.
+- **Behaviors** are derived from code paths. Each public function or API endpoint becomes one or more behavior statements. Render them with behavior IDs exactly as standard mode's *Step 4: Interactive Spec Authoring* describes: an unordered list, each item opening with a bolded `BEH-<n>`, under a `<!-- retired-behavior-ids: (none) -->` comment.
 - **Error Cases** come from existing error handling code. Flag unhandled cases:
   ```
   | Missing auth token | Returns 401 | 401 |
@@ -828,7 +828,7 @@ Load context per the shared section above. Read the full diff content. For each 
 Produce a Live Spec where:
 
 - **Behavioral Contract** describes behavior as it exists after the diff.
-- **Behaviors** map to changes in the diff — each significant code change becomes a behavior statement.
+- **Behaviors** map to changes in the diff — each significant code change becomes a behavior statement. Render them with behavior IDs exactly as standard mode's *Step 4: Interactive Spec Authoring* describes: an unordered list, each item opening with a bolded `BEH-<n>`, under a `<!-- retired-behavior-ids: (none) -->` comment.
 - **Error Cases** extracted from new or modified error handling.
 - **Actionable Task Map** replaced with **Changes Summary**:
   ```
