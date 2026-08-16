@@ -591,7 +591,9 @@ context_packs:
       - .context-index/specs/cross-cutting/security-policy.md
 ```
 
-Paths are resolved relative to the project root. Files matching the denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) are rejected at load time.
+Paths are resolved relative to the project root. Files matching the denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) never reach a reviewer prompt. Naming such a path in an explicit include is a hard load error; a match found by expanding a wildcard include is skipped with a `CONTEXT_PACK_DENYLIST_SKIP` warning so one stray file cannot block review entirely.
+
+Includes may use the target-relative tokens `<charter-dir>` and `<target-spec>`, carry an `exclude:` list, and set `max_file_bytes` / `max_total_bytes` size caps. Rendered sections are wrapped in per-run nonce fences. See [governance.md](governance.md#context-packs) for the full contract.
 
 ---
 

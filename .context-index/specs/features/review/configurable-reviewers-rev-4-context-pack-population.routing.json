@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Behaviors 22b-22f give exact token semantics, error code and message; two files in one module; extends an existing renderPack with prescribed guard-after-expansion ordering."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Fence format, neutralization predicate and warning code are fully pinned by 22g/22h plus review note SEC-1; node:crypto has precedent elsewhere in lib/, but no fencing pattern exists yet in this codebase."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Marker strings are exact, but UTF-8 boundary-safe truncation, cumulative accounting and budget inheritance through resolveExtends have no codebase precedent and compose three mechanisms; checkpoint after RED."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Single branch split on an existing denylist check with both codes and messages specified; mechanical application against an established call site."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Full YAML is given verbatim in both spec and plan; declarative template edits, but spans two template trees plus spec frontmatter and has a stated latent blast radius on five validate checks."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Touches the shared specBlock site feeding all three dispatch stages plus renderArgs and the tier-2 eval suite with a golden master; nonce reuse and no-leak-into-description constraints need a human look at the RED tests."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Prompt and SKILL.md prose edits are well specified, but the new 22q mapping test invents a title-to-bullet matching heuristic, and SKILL.md edits must satisfy inline-Node and skill-extension policy tests."
+    }
+  ]
+}
