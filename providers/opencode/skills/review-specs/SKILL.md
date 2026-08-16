@@ -36,6 +36,30 @@ In Step 8, emit the matching exit event with the consolidated review verdict:
 adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict> --from-summary
 ```
 
+### Step 0-fail: Failure-path exit event
+
+A BLOCK verdict is **not** a failure — it is a completed review whose consolidated verdict happens to block downstream steps, and it exits through the `--status completed --verdict BLOCK` line above. This section covers the *other* case: the review aborts before it can produce any verdict at all.
+
+Whenever the skill stops after the `--status started` event above without reaching the Step 8 exit event, emit the terminal event before surfacing the error to the operator:
+
+```bash
+adev report --type step --spec <spec-path> --step review --status failed --verdict FAIL
+```
+
+`--verdict FAIL` is required, not decorative. The projection's aggregation pass in `lib/lifecycle-state.mjs` only treats a step terminal as explicit when it carries a string verdict; a `step_failed` emitted without one is overwritten by the verdict synthesized from whatever `reviewer_report` events already landed, so a partial review whose first reviewer passed would project as `{verdict: PASS, status: completed}` and open the `plan` gate. This is the same class of bug fixed for BLOCK in `aggregateReports`.
+
+Abort paths in this skill that MUST emit it:
+
+| Step | Abort |
+|---|---|
+| Step 2 | The parent charter or the constitution is missing and the operator chooses **abort** rather than proceeding with reduced context. |
+| Step 3 | `loadReviewConfig` returns errors — the reviewer registry could not be loaded, so no reviewer can be dispatched. |
+| Step 4 | Rigor tier `quick` and the bundled `plugin:review-specs/quick-synthesized-reviewer-prompt.md` is missing (the documented fail-loud path — do not silently fall back to a weaker review). |
+
+Argument-level rejections (`INVALID_TIER`) and the "no specs need review" no-op exit in Step 1 happen *before* the `--status started` event and therefore strand nothing — do not emit for those.
+
+**Known gap (not this skill's to fix):** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot be carried on the event even though the `step_failed` schema has an `error` field. Name the code in operator-facing output; widening the CLI surface is a follow-up.
+
 ## Step 1: Identify Target Specs
 
 Determine which specs need review:
@@ -51,17 +75,19 @@ If no specs need review, report that and exit.
 
 ## Step 2: Load Context for Each Spec
 
-For each spec to be reviewed, gather the context package that all reviewers will receive:
+For each spec to be reviewed, gather the context the orchestrator needs. **Not all of it reaches the reviewers.** Items 1-7 are delivered to a reviewer only insofar as that reviewer's context pack includes them (see Step 4 — packs are per-reviewer, so a category listed here may reach one reviewer and not another). Items 8 and 9 are orchestrator-only and are never forwarded to a reviewer subagent.
 
-1. **The spec itself:** Read the full Live Spec file.
-2. **Parent charter:** Read `.context-index/specs/features/<module>/charter.md` (the charter that owns this spec).
-3. **Constitution:** Read `.context-index/constitution.md`.
-4. **Sibling specs:** Read other specs under the same charter (for cross-reference checks).
-5. **Cross-cutting specs:** Read all files in `.context-index/specs/cross-cutting/` (for contract compatibility).
-6. **ADRs:** Read all files in `.context-index/adrs/` (for decision compliance).
-7. **Platform context:** Read `.context-index/platform-context.yaml` (for technology constraints).
-8. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts that specs must comply with.
-9. **Governance policies:** If `.context-index/governance/risk-policies.yaml` exists, read it.
+1. **The spec itself:** Read the full Live Spec file. *Delivered to every reviewer — appended as the fenced target spec, not as a pack include (see Step 4).*
+2. **Parent charter:** Read `.context-index/specs/features/<module>/charter.md` (the charter that owns this spec). *Delivered via the reviewer's context pack (see Step 4) — in `review-base`, so all three bundled reviewers get it.*
+3. **Constitution:** Read `.context-index/constitution.md`. *Delivered via the reviewer's context pack (see Step 4) — in `base`.*
+4. **Sibling specs:** Read other specs under the same charter (for cross-reference checks). *Delivered via the reviewer's context pack (see Step 4) — in `review-base`, with the target spec itself excluded.*
+5. **Cross-cutting specs:** Read all files in `.context-index/specs/cross-cutting/` (for contract compatibility). *Delivered via the reviewer's context pack (see Step 4) — in `consistency` only, so the Consistency Analyzer gets these and the other two bundled reviewers do not.*
+6. **ADRs:** Read all files in `.context-index/adrs/` (for decision compliance). *Delivered via the reviewer's context pack (see Step 4) — in `architecture` and `security`, not in `consistency`.*
+7. **Platform context:** Read `.context-index/platform-context.yaml` (for technology constraints). *Delivered via the reviewer's context pack (see Step 4) — in `base`.*
+8. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts that specs must comply with. *Orchestrator-only — not passed to reviewers.* No bundled pack includes `.context-index/references/`, so reviewer prompts must not promise them as input. The Consistency Analyzer's "External Reference Compliance" review scope stays conditional (*"If external references are provided"*) precisely because the default packs do not provide them; a project that wants that scope active must add the include to a project-level pack in `.context-index/governance/review.yaml`.
+9. **Governance policies:** *Orchestrator-only — not passed to reviewers.* The reads below drive the orchestrator's own risk gating and report footer, and their results are not forwarded to any reviewer subagent. Note the distinction: the `security` pack separately enumerates `.context-index/governance/risk-policies.yaml` and `.context-index/governance/gates.yaml` as **content** for the Security Reviewer to read as material — that is the pack delivering the files, not this step forwarding its decisions.
+
+   If `.context-index/governance/risk-policies.yaml` exists, read it.
    Check the spec's `risk_level` frontmatter field (default: "medium"). If the policy allows
    skipping review for this level (`require_review: false`), inform the user and offer to skip.
    If skipped, write a `.review.md` with verdict PASS and note "Review skipped per risk policy."
@@ -182,12 +208,16 @@ Launch all dispatched reviewers in parallel. Each runs in a clean context window
 For each subagent-mode reviewer:
 
 1. Call `resolveProfile(reviewer.profile, { profiles, consumerRepoRoot, workspaceRoot, adapter, mcpAvailable })` from `lib/profiles/`.
-2. Render the reviewer's context pack via `renderPack(reviewer.context_pack, contextPacks, { repoRoot })`. The denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) is enforced — matching globs fail load, not WARN.
+2. Render the reviewer's context pack via `renderPack(reviewer.context_pack, contextPacks, { repoRoot, targetSpecPath })`. Every review-time pack is **target-anchored**: the `review-base` pack (which `architecture`, `security`, and `consistency` all extend) uses the `<charter-dir>` and `<target-spec>` tokens, so a render without `targetSpecPath` fails with `CONTEXT_PACK_NO_TARGET` rather than emitting a literal token. The denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) is enforced — matching globs fail load, not WARN.
 3. Read `reviewer.promptPath` contents.
 4. Dispatch a subagent with:
    - `description`: `"<reviewer.name> review of <spec-slug>"`
-   - `prompt`: `<prompt contents>\n\n---\n<rendered context pack>\n\n---\n## Target Spec\n<target spec contents>`
+   - `prompt`: the provenance preamble, then the prompt body, then the rendered context pack, then the target spec — the pack sections and the target spec each wrapped in a nonce-scoped fence (`<<<ADEV-PACK-<nonce> …>>>`) so the reviewer can tell repository-sourced content from text the artifact under review merely claims is a delimiter. Both use the **same** nonce from the `renderPack` call, and the preamble names that token.
    - Tool restrictions, model, env, redaction set all from the adapter's `prepareForDispatch` return.
+
+   This composition is owned by `buildReviewerDispatches(...)` in `lib/governance/dispatch-shape.mjs` — that function is the single source of truth for prompt assembly, fencing, and preamble text. The description above is reference only; do not hand-assemble the prompt.
+
+**What each reviewer actually receives** is exactly its `context_pack` (Step 3 registry entry) plus the target spec. The nine context categories in Step 2 are *not* uniformly forwarded — see the per-item labels there.
 
 ### Package-mode reviewer (reviewer entry has `package`)
 
@@ -257,11 +287,20 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 
 ## <Reviewer Name> (<id>)
 
-**Verdict:** PASS | PASS_WITH_NOTES | BLOCK
+**Verdict:** PASS | PASS_WITH_NOTES | FAIL
 
 <findings list, or "No findings.">
 
 (repeat for each dispatched reviewer)
+
+> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated*
+> verdict in the header above, computed from post-cap findings across all
+> reviewers — PASS (zero warnings/blockers), PASS_WITH_NOTES (>=1 warning,
+> zero blockers), BLOCK (>= `verdict_rules.blocker_threshold` blockers,
+> default 1). See `configurable-reviewers.spec.md` behaviors 37-38. An
+> individual reviewer signals a blocker by emitting FAIL with a
+> blocker-severity finding, which is what the `reportReviewer` snippet in
+> Step 6a records.
 
 ---
 

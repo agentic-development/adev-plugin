@@ -204,7 +204,32 @@ adev report --type step --spec <spec-path> --step specify --status started
 adev report --type step --spec <spec-path> --step specify --status completed --verdict PASS --from-summary
 ```
 
-The `--verdict PASS` is required — downstream gates require the prior step to have completed with PASS or PASS_WITH_NOTES. The specify step has no failure path that reaches the Summary step (success implies the spec was written, status set to `review-pending`, and the Feature work item created or skipped), so success implies PASS. Failure paths emit `--status failed` separately and do not reach the exit emission.
+The `--verdict PASS` is required — downstream gates require the prior step to have completed with PASS or PASS_WITH_NOTES. The specify step has no failure path that reaches the Summary step (success implies the spec was written, status set to `review-pending`, and the Feature work item created or skipped), so success implies PASS.
+
+**Failure-path exit event.** Whenever the skill stops after the entry event without reaching the exit event, emit the terminal event before surfacing the error to the operator:
+
+```bash
+adev report --type step --spec <spec-path> --step specify --status failed --verdict FAIL
+```
+
+`--verdict FAIL` is required, not decorative. The projection's aggregation pass in `lib/lifecycle-state.mjs` only treats a step terminal as explicit when it carries a string verdict; a `step_failed` emitted without one is overwritten by the verdict synthesized from the actor reports already on the log, so the step projects as `{status: "completed", verdict: "PASS"}` and opens the `review` gate on a spec that was never finished.
+
+**Ordering constraint — read before adding an emission.** `adev report` requires `<spec-path>` to exist on disk and exits `1` with `spec not found` otherwise. Every abort earlier than the atomic-rename commit in Step 5 therefore *cannot* emit a step event, because at that point only `<spec-path>.partial` exists:
+
+| Abort | Emit? |
+|---|---|
+| Step 2.5 `CHARTER_CLOSED` | No — spec file does not exist yet. |
+| Step 3.5 invalid `kind` | No — spec file does not exist yet. |
+| Step 5 `PARTIAL_ARTIFACT_OVERSIZE`, or the operator choosing **abort** at the prior-`.partial` prompt | No — only the `.partial` exists. |
+| Step 5 `resolveTemplate` throwing `TEMPLATE_NOT_FOUND` / `UNSAFE_TEMPLATE_PATH` / `INVALID_KIND` | No — spec file does not exist yet. |
+| Step 5.5 failing to read back or rewrite the saved spec's `status:` frontmatter | **Yes** — the atomic rename has committed, so the spec is on disk and a stop here strands the step. |
+| Step 5.6 issue-board adapter throwing | No — this is explicitly non-blocking; the run continues to Step 6 and exits `completed`. |
+
+Be precise about what that single **Yes** row is: Step 5.5 is written as a plain read-modify-write with no documented halt, so this skill currently has **no prose-level abort that both follows the entry event and reaches a spec that exists on disk**. The instruction above is therefore a standing rule for any future edit that introduces one — not a description of a path that fires today. Every abort this skill *does* document is a pre-write abort whose entry event could not land either: the same `spec not found` guard rejects the `--status started` emission at Step 0 in every mode that authors a new spec, so nothing is stranded and there is nothing to close out. Recording pre-write specify aborts requires either a spec-less event channel or relaxing the existence check in `lib/cli/report.mjs`; both are library changes and out of scope here.
+
+`--revise` mode is unaffected: it emits `spec_revised` rather than step entry/exit events, so its error cases (`NO_REVIEW_SIDECARS`, `SPEC_NOT_BLOCKED`, `INVALID_SPEC_PATH`, `REVISION_NOT_INCREMENTED`, `CONFLICTING_FLAGS`) strand no step and must not emit `--status failed`.
+
+**Known gap (not this skill's to fix):** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot be carried on the event even though the `step_failed` schema has an `error` field. Name the code in operator-facing output; widening the CLI surface is a follow-up.
 
 For `--cross-cutting` mode, the spec path is `.context-index/specs/cross-cutting/<slug>.spec.md` rather than `.context-index/specs/features/<module>/<slug>.spec.md`. The events are otherwise identical.
 
@@ -323,9 +348,26 @@ After resolution, the `kind` variable is available for Step 5's `resolveTemplate
 Guide the user through each section defined in the loaded domain template. Do not dump a blank template. Use the template's section names and structure -- do not substitute or rename sections. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
 
 **Behavioral Contract:**
-Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors in the **When...then** format:
-- **When** a user drags a card to a new position within the same column **then** the card's `position` updates and affected cards reindex.
-- **When** a user drags a card to a different column **then** the card moves and both columns reindex.
+Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors as an **unordered** list, each item opening with a bolded behavior ID, in the **When...then** format:
+
+```markdown
+### Behaviors
+
+<!-- retired-behavior-ids: (none) -->
+
+- **BEH-1** — **When** a user drags a card within the same column **then** the card's `position` updates and affected cards reindex.
+- **BEH-2** — **When** a user drags a card to a different column **then** the card moves and both columns reindex.
+```
+
+A behavior ID is `BEH-<n>`, `<n>` a positive integer unique within *this* spec. IDs are spec-scoped — `BEH-3` in two specs are unrelated. The list is unordered deliberately: an ordered list re-renders `1. 2. 3.` alongside the IDs, leaving two competing referents for the same behavior.
+
+**Allocation.** The next ID is one greater than the highest number ever used in this spec — counting live IDs *and* every ID listed in the `retired-behavior-ids` comment. Numbers are never reused; gaps carry no meaning.
+
+**Tombstones.** The `<!-- retired-behavior-ids: … -->` comment sits immediately under the Behaviors heading and records every withdrawn ID. It is the allocator's memory: without it, deleting `BEH-5` and later inserting a behavior would resurrect `BEH-5` under new text.
+
+**Revising behaviors.** Inserting a behavior at any position gives it the next unused ID and **no other behavior's ID changes** — never renumber to close a gap. Rewriting a behavior's wording *without changing which condition it governs* keeps its existing ID, so a finding already filed against that ID still resolves. If a rewrite changes *which* condition the behavior governs (different trigger, different subject), retire the old ID and mint a new one, so a citation against the old ID resolves to a tombstone rather than to unrelated text. A deleted behavior's ID is appended to `retired-behavior-ids` and is never reassigned.
+
+Specs authored before this convention landed keep their ordinal behaviors and are **not retro-migrated**. Read a legacy spec as-is; do not mint IDs into it as a side effect of an unrelated revision.
 
 Aim for 3-8 directly testable behavior statements.
 
@@ -563,7 +605,7 @@ Read each selected file. For each, identify:
 Produce a Live Spec where:
 
 - **Behavioral Contract** describes observed behavior. Use comment: `<!-- Extracted from existing code. Describes current behavior as of YYYY-MM-DD. -->`
-- **Behaviors** are derived from code paths. Each public function or API endpoint becomes one or more behavior statements.
+- **Behaviors** are derived from code paths. Each public function or API endpoint becomes one or more behavior statements. Render them with behavior IDs exactly as standard mode's *Step 4: Interactive Spec Authoring* describes: an unordered list, each item opening with a bolded `BEH-<n>`, under a `<!-- retired-behavior-ids: (none) -->` comment.
 - **Error Cases** come from existing error handling code. Flag unhandled cases:
   ```
   | Missing auth token | Returns 401 | 401 |
@@ -786,7 +828,7 @@ Load context per the shared section above. Read the full diff content. For each 
 Produce a Live Spec where:
 
 - **Behavioral Contract** describes behavior as it exists after the diff.
-- **Behaviors** map to changes in the diff — each significant code change becomes a behavior statement.
+- **Behaviors** map to changes in the diff — each significant code change becomes a behavior statement. Render them with behavior IDs exactly as standard mode's *Step 4: Interactive Spec Authoring* describes: an unordered list, each item opening with a bolded `BEH-<n>`, under a `<!-- retired-behavior-ids: (none) -->` comment.
 - **Error Cases** extracted from new or modified error handling.
 - **Actionable Task Map** replaced with **Changes Summary**:
   ```

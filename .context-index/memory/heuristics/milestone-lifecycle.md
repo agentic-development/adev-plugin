@@ -1,5 +1,5 @@
 ---
-id: milestone-ship-spec-a4781bcd
+id: milestone-ship-eff93551
 scope: milestone-lifecycle
 title: First-run PASS: Milestone Ship with Strategy-Based Release Execution
 pattern: Strategy-based dispatch (manual/tag-only/release-please) with injectable executors and ADR-0008-aligned release-please config writes. Pure data returns from lib functions let skills handle user-facing output. All strategies share criteria evaluation and epic-close logic, differing only in release mechanics.

@@ -10,7 +10,7 @@
 
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readHeuristics } from "../../lib/heuristics.mjs";
 import { createTempDir, cleanupTempDir } from "../helpers.mjs";
@@ -200,4 +200,124 @@ describe("Step 7 extractHeuristic — per-category eval", () => {
       assert.equal(readBack[0].confidence, "low");
     });
   }
+});
+
+// ── Convergence on the shared digest function ────────────────────────────
+//
+// Spec: .context-index/specs/features/heuristics/failure-signature-key.spec.md
+// Plan-task: 6
+//
+// /adev:recover ids must be byte-identical before and after the harness stops
+// holding a private copy of the derivation. `failure-capture.spec.md`
+// Behavior 6 depends on it, and Behavior 8's migration deliberately never
+// rekeys these entries — so a drift here would silently orphan every recover
+// heuristic already in the store.
+
+/**
+ * Ids captured from the harness BEFORE it was converged onto
+ * `lib/heuristics.mjs`. If `normalizeFailureText` is not byte-compatible with
+ * the deleted `normalizeRootCause`, this is where it surfaces — fix the
+ * normalizer, never the fixture.
+ */
+const PRE_CHANGE_RECOVER_IDS = [
+  {
+    category: "MISSING_CONTEXT",
+    rootCause: "Error: cache miss on third-party API",
+    normalized: "error cache miss on third-party api",
+    id: "missing-context-3afbd8be",
+  },
+  {
+    category: "AMBIGUOUS_SPEC",
+    rootCause: "Spec says 'handle errors appropriately' without a response shape",
+    normalized: "spec says handle errors appropriately without a response shape",
+    id: "ambiguous-spec-81e9ee99",
+  },
+  {
+    category: "CONSTRAINT_CONFLICT",
+    rootCause:
+      "ADR-0004 forbids direct DB access, but the spec requires an unsupported query",
+    normalized:
+      "adr-0004 forbids direct db access but the spec requires an unsupported query",
+    id: "constraint-conflict-11feedad",
+  },
+  {
+    category: "NOVEL_PROBLEM",
+    rootCause: "First WebSocket integration in a REST-only project",
+    normalized: "first websocket integration in a rest-only project",
+    id: "novel-problem-dbf24ac6",
+  },
+  {
+    category: "TOOL_FAILURE",
+    rootCause: "npm run test failed: Cannot find module '@prisma/client'",
+    normalized: "npm run test failed cannot find module prismaclient",
+    id: "tool-failure-4c373923",
+  },
+  {
+    category: "BUDGET_EXHAUSTION",
+    rootCause:
+      "Task spans 5 endpoints, their tests and their consumers in one dispatch",
+    normalized:
+      "task spans 5 endpoints their tests and their consumers in one dispatch",
+    id: "budget-exhaustion-c33638e7",
+  },
+  {
+    category: "MISSING_CONTEXT",
+    rootCause: "  MIXED  Case,, punctuation!!  and   run-length   whitespace  ",
+    normalized: "mixed case punctuation and run-length whitespace",
+    id: "missing-context-7367d80b",
+  },
+  {
+    category: "TOOL_FAILURE",
+    rootCause: "Café — Ünïcode 42! in the root cause",
+    normalized: "café ünïcode 42 in the root cause",
+    id: "tool-failure-369f30a9",
+  },
+];
+
+describe("recover harness — convergence on the shared digest function", () => {
+  for (const fx of PRE_CHANGE_RECOVER_IDS) {
+    it(`normalization is byte-identical for ${fx.category}: ${fx.id}`, () => {
+      assert.equal(normalizeRootCause(fx.rootCause), fx.normalized);
+    });
+
+    it(`the id is byte-identical to the pre-change fixture for ${fx.id}`, () => {
+      assert.equal(deriveId(fx.category, normalizeRootCause(fx.rootCause)), fx.id);
+    });
+  }
+
+  it("covers all six diagnosis categories", () => {
+    const covered = new Set(PRE_CHANGE_RECOVER_IDS.map((f) => f.category));
+    assert.deepEqual([...covered].sort(), Object.keys(CATEGORY_ID_SLUGS).sort());
+  });
+
+  it("the harness holds no private createHash call", () => {
+    const source = readFileSync(
+      new URL("./recover-extract-heuristic-harness.mjs", import.meta.url),
+      "utf8",
+    );
+    // Assert on the import graph rather than a raw substring: a comment that
+    // merely names `createHash` must not fail this guard, but pulling the
+    // primitive back in must.
+    assert.doesNotMatch(
+      source,
+      /^\s*import\s[^\n]*["']node:crypto["']/m,
+      "the harness must not import node:crypto — hashing belongs to the shared digest function",
+    );
+    assert.match(
+      source,
+      /from ["']\.\.\/\.\.\/lib\/heuristics\.mjs["']/,
+      "the harness must import the shared helpers from lib/heuristics.mjs",
+    );
+  });
+
+  it("the harness still composes category-prefixed ids, not origin-prefixed ones", () => {
+    for (const [category, slug] of Object.entries(CATEGORY_ID_SLUGS)) {
+      const id = deriveId(category, normalizeRootCause("some root cause"));
+      assert.ok(id.startsWith(`${slug}-`), `${category} must yield a '${slug}-' prefix`);
+    }
+  });
+
+  it("an unknown category is still rejected", () => {
+    assert.throws(() => deriveId("NOT_A_CATEGORY", "text"), /unknown category/);
+  });
 });

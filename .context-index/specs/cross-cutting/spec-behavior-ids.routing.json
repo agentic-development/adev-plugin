@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Spec states the convention verbatim (BEH-1, AC1) and the plan supplies both the exact prose and the exact test; two files, markdown-only, autonomous per constitution."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "BEH-2 through BEH-5 and BEH-7 plus the Error Cases table fully specify the revision obligations; the task appends supplied prose to the block Task 1 created and extends the same suite."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Integration Points table names the two non-delegating sites and AC4 fixes the outcome; both bullet rewrites are supplied verbatim and touch one SKILL.md plus the shared suite."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "AC5/AC6 and the Template survey pin exactly three templates; tests/templates/spec-template.behavioral.test.mjs is a direct assertion exemplar. Four files, source confined to templates/; the software template needs an addition rather than a conversion."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Test-only task; AC6/AC7 and the Template survey define the discovery sweep and its deliberate exclusions, and tests/skills-no-inline-node.test.mjs is the in-repo sweep precedent. Single file."
+    }
+  ]
+}

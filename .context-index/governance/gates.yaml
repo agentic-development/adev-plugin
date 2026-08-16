@@ -7,7 +7,13 @@
 #   name:      Display name
 #   kind:      deterministic | probabilistic (default: deterministic)
 #   tier:      fast | integration | e2e (default: fast)
-#   command:   Shell command to execute (deterministic gates only)
+#   command:   (required for deterministic gates) An argv LIST, never a shell string.
+#              e.g., command: [npm, test]
+#              A string value is rejected at load by lib/domains/merge-gates.mjs with
+#              INVALID_GATE: Gate '<id>' command must be an argv list (array), not a
+#              string — skipped. Commands are executed without shell interpolation,
+#              so a chained shell string such as `npm test && npm run lint` is not a
+#              valid gate — declare two gates instead.
 #   scope:     project | charter (default: project)
 #   required:  true | false (default: true). When false, severity is forced to warning.
 #   severity:  error | warning. Defaults: error for fast/integration, warning for e2e.
@@ -45,11 +51,30 @@ gates:
     tier: integration
     source: domain:software
 
+  # The integration tier. `npm test` deliberately excludes tests/evals/ —
+  # scripts/run-tests.mjs splits them into an opt-in tier — so without this gate
+  # the eval suites are declared and never executed by any gate, which is the
+  # exact failure mode issue-552 exists to catch.
+  #
+  # required: false (→ severity warning) until the eval tier is green again.
+  # Measured 2026-08-14: 361 tests, 334 pass, 27 fail (issue-590, issue-591,
+  # issue-592). Promote to required: true once those close.
+  - id: integration-test
+    name: Integration Tests (eval tier)
+    kind: deterministic
+    tier: integration
+    command: [npm, run, test:evals]
+    scope: project
+    required: false
+    severity: warning
+    triggers:
+      - post-implement
+
   # - id: lint
   #   name: Linter
   #   kind: deterministic
   #   tier: fast
-  #   command: ""                 # e.g., "npm run lint", "ruff check ."
+  #   command: ""                 # e.g., [npm, run, lint] or [ruff, check, .]
   #   scope: project
   #   required: true
   #   severity: error
@@ -60,7 +85,7 @@ gates:
   #   name: Type Checker
   #   kind: deterministic
   #   tier: fast
-  #   command: ""                 # e.g., "npx tsc --noEmit", "mypy ."
+  #   command: ""                 # e.g., [npx, tsc, --noEmit] or [mypy, .]
   #   scope: project
   #   required: true
   #   severity: error
@@ -69,7 +94,8 @@ gates:
 
   # NOTE: the commented `integration-test` scaffold example that used to sit
   # here was REMOVED. `integration-test` is now a LIVE entry above (materialized
-  # from the software domain), so uncommenting the example would have declared
+  # from the software domain, and duplicated by the eval-tier `integration-test`
+  # gate added independently), so uncommenting the example would have declared
   # the id twice — a duplicate whose merge behaviour is silent last-wins. Only
   # add a commented template for an id that no live entry already declares.
 

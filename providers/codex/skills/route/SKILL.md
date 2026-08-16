@@ -5,7 +5,7 @@ description: "Score tasks on a four-dimensional routing matrix (spec completenes
 
 # Task Routing Advisor
 
-Score each task in an implementation plan on four dimensions and recommend a routing mode: auto-agent (fully autonomous), assisted-agent (checkpoint at mid-point), or human-only (agent scaffolds, human implements). The routing annotations integrate directly with `/adev:implement` to adjust execution behavior per task.
+Score each task in an implementation plan on four dimensions and recommend a routing mode: auto-agent (fully autonomous), assisted-agent (checkpoint at mid-point), or human-only (agent scaffolds, human implements). Decisions are persisted to the sibling `<plan-stem>.routing.json` sidecar — never into the plan body — and `/adev:implement` reads them from there to adjust execution behavior per task.
 
 **Announce at start:** "I'm using the adev:route skill to score tasks and recommend routing."
 
@@ -13,7 +13,7 @@ Score each task in an implementation plan on four dimensions and recommend a rou
 
 - `--plan <path>`: route all tasks in a plan file (required unless `--task` is used)
 - `--task <N>`: route a specific task number from the plan (requires `--plan`)
-- `--dry-run`: show scores and recommendations without writing annotations to the plan file
+- `--dry-run`: show scores and recommendations without writing the `<plan-stem>.routing.json` sidecar
 
 ## Prerequisites
 
@@ -125,6 +125,24 @@ verb. **The plan markdown body MUST NOT be modified by this skill.** Routing
 state is owned by the sidecar; plan files are read-only after `/adev:plan`
 authored them (CON-8 in `plan-task-events.spec.md`; ADR-0012).
 
+**Normalize the dimension scores first.** Steps 2 and 3 work in integers
+`1..5` (and a `4..20` total) because those are the units humans reason about.
+The sidecar schema requires each dimension as a fraction in `0..1` (spec
+Behavior 2), and `adev route emit-sidecar` rejects anything outside that range
+with `INVALID_ROUTING_ENTRY`. Divide each dimension score by 5 before
+emitting:
+
+| Step 2 score | Sidecar value |
+|--------------|---------------|
+| 5            | `1.0`         |
+| 4            | `0.8`         |
+| 3            | `0.6`         |
+| 2            | `0.4`         |
+| 1            | `0.2`         |
+
+The `1..5` totals stay in the Step 5 chat summary; only the sidecar uses the
+normalized `0..1` form.
+
 Invoke the verb once per `/adev:route` run, passing the full entry list as a
 JSON array on stdin. The verb performs an atomic temp-then-rename write and
 surfaces `SIDECAR_WRITE_FAILED` on rename failure.
@@ -136,9 +154,9 @@ adev route emit-sidecar --plan <plan-path> <<'ENTRIES'
     "task_id": "t1",
     "selected_agent": "auto-agent",
     "scores": {
-      "spec_completeness": 0.9,
+      "spec_completeness": 1.0,
       "pattern_coverage": 1.0,
-      "blast_radius": 0.8,
+      "blast_radius": 1.0,
       "novelty": 0.8
     },
     "rationale": "Well-specified CRUD route with a direct golden sample match and minimal blast radius."
@@ -147,17 +165,30 @@ adev route emit-sidecar --plan <plan-path> <<'ENTRIES'
 ENTRIES
 ```
 
+(The example above is task `t1` from the Step 5 summary table: spec 5, pattern
+5, blast 5, novelty 4 — 19/20, routed `auto-agent`.)
+
 Field contract (per spec Behavior 2):
 
 | Field            | Type       | Notes                                                                          |
 |------------------|------------|--------------------------------------------------------------------------------|
 | `task_id`        | string     | Matches the plan's anchor (`t1`, `t2`, …)                                      |
 | `selected_agent` | string     | `auto-agent` / `assisted-agent` / `human-only` or a specialist slug            |
-| `scores`         | object     | Four required dimensions, each `0..1`: `spec_completeness`, `pattern_coverage`, `blast_radius`, `novelty` |
+| `scores`         | object     | Four required dimensions, each `0..1` (Step 2 score ÷ 5): `spec_completeness`, `pattern_coverage`, `blast_radius`, `novelty` |
 | `rationale`      | string     | ≤ 400 chars; one short sentence explaining the recommendation                  |
 
 The verb is writer-owned: a re-run fully replaces the prior sidecar. No
 history is preserved inside the sidecar; consult git history for prior runs.
+
+**`--task <N>` mode must merge before emitting.** `adev route emit-sidecar`
+replaces the whole sidecar with the array it receives on stdin — it does not
+merge. When only one task was scored, emitting a one-entry array would discard
+every other task's routing decision. So in `--task <N>` mode: read the
+existing `<plan-stem>.routing.json` first (if it exists), take its `entries`
+array, replace the entry whose `task_id` matches the routed task (or append
+one if absent), and pass the **complete merged array** to `emit-sidecar`.
+Leave the other entries byte-identical. When routing a whole plan without
+`--task`, the scored set already covers every task, so pass it as-is.
 
 **Human-readable view.** The sidecar is JSON (machine-primary). To inspect
 routing decisions as a markdown table without `jq`, run
@@ -190,7 +221,7 @@ Task Routing Summary for <plan file>
 
 Route distribution: 5 auto-agent, 3 assisted-agent, 1 human-only
 
-Annotations written to <plan file path>.
+Routing sidecar written to <plan-stem>.routing.json (plan file unchanged).
 ```
 
 If any tasks are marked `human-only`, highlight them with specific guidance:
@@ -230,14 +261,14 @@ parsing.
 
 ## Dry-Run Mode
 
-If `--dry-run` is passed, perform Steps 1 through 3 (load context, score tasks, compute recommendations) and display the summary table from Step 5. Do not modify the plan file. This allows the user to preview routing decisions before committing them.
+If `--dry-run` is passed, perform Steps 1 through 3 (load context, score tasks, compute recommendations) and display the summary table from Step 5. Skip Step 4 entirely: do not invoke `adev route emit-sidecar`, and leave any existing sidecar in place. The plan file is never modified in either mode. This allows the user to preview routing decisions before committing them.
 
 ```
-Dry run: routing scores computed but not written.
+Dry run: routing scores computed but no sidecar written.
 
 [summary table]
 
-To write annotations: /adev:route --plan <path>
+To write the routing sidecar: /adev:route --plan <path>
 ```
 
 ## Red Flags

@@ -56,20 +56,36 @@ function collectLibFiles(rootRelative, opts = {}) {
 }
 
 describe("architectural: milestones JSON migration (Task 12)", () => {
-  it("lib/milestones.mjs contains no `parseYaml` import or symbol reference", () => {
+  // NARROWED (issue-525). These two assertions used to ban the `parseYaml`
+  // symbol and the profiles/yaml import outright. That was a PROXY for the real
+  // Task 12 invariant — "the milestone DOCUMENT is JSON, never YAML" — and the
+  // proxy became wrong once milestones.mjs had to read governance gates from
+  // `.context-index/governance/gates.yaml`, which is legitimately YAML and is
+  // read the same way by every other gate consumer.
+  //
+  // The document invariant itself is unaffected and is still enforced, three
+  // ways: the `milestones.yaml` ban below, the handcrafted-YAML-serialization
+  // check, and the "only milestones.mjs writes milestones.json" check. So this
+  // now asserts the intent directly: a YAML parser may be imported ONLY to read
+  // governance config, and never to read or write the milestone document.
+  it("lib/milestones.mjs YAML-parses governance config only, never the milestone document", () => {
     const content = read(join(REPO_ROOT, "lib", "milestones.mjs"));
-    // No import of parseYaml from any module
-    assert.ok(
-      !/parseYaml/.test(content),
-      "lib/milestones.mjs must not reference parseYaml after JSON migration"
-    );
-  });
+    const usesYaml =
+      /parseYaml/.test(content) || /from\s+["'][^"']*profiles\/yaml/.test(content);
 
-  it("lib/milestones.mjs contains no import from `lib/profiles/yaml.mjs`", () => {
-    const content = read(join(REPO_ROOT, "lib", "milestones.mjs"));
+    if (usesYaml) {
+      assert.ok(
+        /governance[/\\]?["',\s)]|gates\.yaml/.test(content),
+        "lib/milestones.mjs imports a YAML parser but does not read governance " +
+          "config — the only sanctioned YAML source here. If the milestone " +
+          "document is being YAML-parsed again, that is the Task 12 regression " +
+          "this test exists to catch."
+      );
+    }
+
     assert.ok(
-      !/from\s+["'][^"']*profiles\/yaml/.test(content),
-      "lib/milestones.mjs must not import from lib/profiles/yaml.mjs"
+      !/milestones\.yaml/.test(content),
+      "lib/milestones.mjs must never reference the legacy milestones.yaml path"
     );
   });
 

@@ -23,6 +23,7 @@ source-manifest:
     - tests/lib/test-strategies/helper-inventory.test.mjs
     - tests/skills/test-helper-inventory-injection.test.mjs
   computed-at: "2026-08-13T13:37:59.684Z"
+drift_detected: true
 ---
 
 # Live Spec: Test Helper Inventory

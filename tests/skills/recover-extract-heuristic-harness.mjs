@@ -23,8 +23,11 @@
  * @module tests/skills/recover-extract-heuristic-harness
  */
 
-import { createHash } from "node:crypto";
-import { writeHeuristic } from "../../lib/heuristics.mjs";
+import {
+  writeHeuristic,
+  deriveDigest,
+  normalizeFailureText,
+} from "../../lib/heuristics.mjs";
 
 /**
  * Map of diagnosis category to human-readable label used as the title prefix.
@@ -79,49 +82,40 @@ const DEFAULT_DISTILLATION_GUARDS = [
 ];
 
 /**
- * Normalize a root-cause text string per the SKILL.md rules:
- * - lowercase
- * - collapse consecutive whitespace to single spaces
- * - strip leading/trailing whitespace
- * - strip punctuation except `-` and `_`
+ * Normalize a root-cause text string.
+ *
+ * Re-exported from `lib/heuristics.mjs` — the harness no longer holds a
+ * private copy. The name is kept because it is the vocabulary Step 7's prose
+ * uses; the rule (lowercase → strip punctuation except `-`/`_` → collapse
+ * whitespace → trim) is identical, so ids are byte-identical across the
+ * convergence.
  *
  * @param {string} text
  * @returns {string}
  */
-export function normalizeRootCause(text) {
-  if (typeof text !== "string") return "";
-  let s = text.toLowerCase();
-  // Strip punctuation except hyphen, underscore, and whitespace.
-  s = s.replace(/[^\p{L}\p{N}\s\-_]/gu, "");
-  // Collapse whitespace to single space.
-  s = s.replace(/\s+/g, " ").trim();
-  return s;
-}
-
-/**
- * Compute the 8-character lowercase hex prefix of the SHA-256 hash of
- * the normalized root-cause text.
- *
- * @param {string} normalizedText
- * @returns {string}
- */
-export function hashPrefix(normalizedText) {
-  return createHash("sha256").update(normalizedText).digest("hex").slice(0, 8);
-}
+export const normalizeRootCause = normalizeFailureText;
 
 /**
  * Derive the heuristic id from the category and normalized root-cause text.
  *
+ * Only the hashing moved to the shared digest function — the harness keeps its
+ * `CATEGORY_ID_SLUGS` prefix composition, because the prefix is caller-supplied
+ * and is never determined by the origin (spec Behavior 7a).
+ *
+ * `deriveDigest` applies `normalizeFailureText` internally, and that normalizer
+ * is idempotent, so the argument may be raw or already-normalized root-cause
+ * text and the digest is the same either way.
+ *
  * @param {string} category
- * @param {string} normalizedText
+ * @param {string} rootCauseText - Root-cause text; normalization is applied internally.
  * @returns {string}
  */
-export function deriveId(category, normalizedText) {
+export function deriveId(category, rootCauseText) {
   const slug = CATEGORY_ID_SLUGS[category];
   if (!slug) {
     throw new Error(`extract-heuristic: unknown category '${category}'`);
   }
-  return `${slug}-${hashPrefix(normalizedText)}`;
+  return `${slug}-${deriveDigest(rootCauseText, normalizeFailureText)}`;
 }
 
 /**

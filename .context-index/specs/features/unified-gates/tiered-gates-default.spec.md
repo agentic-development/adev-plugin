@@ -4,10 +4,10 @@ status: validated
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 2
+revision: 3
 charter-revision: 4
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-14
 charter-extension: true
 affects:
   - setup
@@ -20,18 +20,22 @@ source-manifest:
     - extensions/data-engineering/domain/gates.yaml
     - extensions/process-automation/domain/gates.yaml
     - lib/gates/doctor.mjs
+    - lib/migrate-gate-commands.mjs
     - skills/implement/SKILL.md
     - skills/init/SKILL.md
     - templates/domains/software/gates.yaml
     - templates/gates-template.yaml
+    - cli/index.mjs
     - tests/docs/advanced-guides.test.mjs
     - tests/domains/starter-integration-tier.test.mjs
     - tests/gates/shipped-defaults.test.mjs
     - tests/lib/gates/doctor.test.mjs
+    - tests/lib/migrate-gate-commands.test.mjs
     - tests/skills/implement-integration-gate.test.mjs
     - tests/skills/init-governance-scaffolding.test.mjs
     - tests/templates/gates-template.test.mjs
   computed-at: "2026-08-13T17:32:39.284Z"
+drift_detected: true
 ---
 
 # Live Spec: Tiered Gates by Default — Active Integration Tier in the Gates Template
@@ -271,6 +275,42 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
     consumer where `mergeGates`' own drop behavior does not apply.
     (Addresses review blocker SA-2.)
 
+11. **When** `adev upgrade` runs against a project whose
+    `.context-index/governance/gates.yaml` declares a `command:` as a shell
+    string **then** the value is rewritten in place to argv form
+    (`command: "npm test"` → `command: [npm, test]`), the change is reported to
+    the operator, and the file's comments and structure are preserved.
+
+    **This reverses the rev-2 non-goal above, and the reversal is the point.**
+    Rev 2 reasoned from template purity: templates are copied verbatim, so
+    changing one must not reach back into existing projects. That is right for
+    a *default* — a project that prefers the old default is entitled to keep
+    it. It is wrong for a *rejected* value. A string `command:` is not an older
+    preference the project chose; it is a value `merge-gates.mjs` discards at
+    load (SEC-2, shipped in v0.25.0), so the gate never runs. Such a project
+    reports zero gates and is indistinguishable from one whose gates all
+    passed. Leaving it for "an `/adev:init` rerun or a manual edit" requires the
+    operator to first notice a failure that produces no output — this repo
+    itself carried the defect from v0.25.0 until 26f302e4, unnoticed.
+
+    Scaffolding cannot fix it either: `cmdInstall`/`cmdUpgrade` copy templates
+    under `if (!existsSync(destPath))`, so the file needing repair is precisely
+    the file the installer refuses to touch.
+
+    The rewrite is deliberately narrow, and the narrowness is the safety
+    argument. Only a command with **no shell metacharacters** is converted.
+    Anything containing `&&`, `|`, `>`, `;`, `$`, backticks, or quotes is
+    reported and left byte-for-byte as authored, because splitting it on
+    whitespace would produce an argv list that runs something different from
+    what its author wrote. Silent semantic change is the one outcome worse than
+    the defect. Commented-out template placeholders are not gates and are never
+    counted or altered.
+
+    Implemented by `lib/migrate-gate-commands.mjs`, called from `cmdUpgrade`.
+    It operates on raw YAML text rather than a parse/serialize round trip:
+    this repo has no YAML writer, and re-emitting the document would discard
+    the comments that explain each gate.
+
 ### Postconditions
 
 - Every newly scaffolded project declares at least two tiers, and its
@@ -303,6 +343,13 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
   affect new scaffolds." This spec changes defaults for **new** projects only.
   Existing projects are untouched; the migration path is `/adev:init` rerun or
   a manual edit, and this is called out in `docs/governance.md`.
+
+  **REVISED at rev 3 (2026-08-14) — see Behavior 11.** The sentence above is
+  retained as the record of what rev 2 decided. It no longer describes the
+  shipped behavior: `adev upgrade` now rewrites shell-string `command:` values
+  in an existing `governance/gates.yaml`. The reversal is deliberate and its
+  reasoning is in Behavior 11; the template-purity principle still governs
+  every other template, and this is the single documented exception.
 - **Principle:** "No executable logic inside SKILL.md files" / cli-driver
   surface. The `/adev:init` change is prose naming what to seed, not new
   inline logic; the argv normalisation lives in `lib/gates/doctor.mjs`.

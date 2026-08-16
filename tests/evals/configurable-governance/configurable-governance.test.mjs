@@ -206,10 +206,17 @@ describe("/adev:review-specs install + run", () => {
     const sec = r.reviewers.find((x) => x.id === "security-reviewer");
     assert.equal(sec.severity_cap, "warning");
     assert.equal(sec.enabled, true);
+    // The old BUNDLED_DEFAULT_OVERRIDE code is dead: there is no bundled layer
+    // left to override (single-source model). Its successor, REVIEWER_OVERRIDE,
+    // fires only when `collectReviewers` sees the SAME id declared twice within
+    // this project's own review.yaml (lib/governance/review-config.mjs) — a
+    // different mechanism than a project-vs-domain-default collision. This
+    // fixture declares `security-reviewer` exactly once, so no override warning
+    // of either name fires here.
     assert.equal(
-      hasCode(r.warnings, "BUNDLED_DEFAULT_OVERRIDE"),
+      hasCode(r.warnings, "REVIEWER_OVERRIDE"),
       false,
-      "there is no bundled layer left to override",
+      "single declaration of security-reviewer must not trip the duplicate-id warning",
     );
   });
 
@@ -242,11 +249,14 @@ describe("/adev:review-specs install + run", () => {
     assert.equal(computeVerdict([{ severity: "blocker" }], r.verdictRules), "BLOCK");
   });
 
-  it("context pack renders billing charter verbatim with a per-file header", () => {
+  it("context pack renders billing charter verbatim inside a nonce fence", () => {
     const r = loadReviewConfig(repo);
     const render = renderPack("base", r.contextPacks, { repoRoot: repo });
     assert.equal(render.errors.length, 0, JSON.stringify(render.errors, null, 2));
-    assert.match(render.rendered, /=== .*charter\.md ===/);
+    assert.match(
+      render.rendered,
+      new RegExp(`<<<ADEV-PACK-${render.nonce} path="[^"]*charter\\.md">>>`)
+    );
     assert.match(render.rendered, /Billing Feature Charter/);
   });
 });
@@ -305,17 +315,79 @@ describe("/adev:validate install + run", () => {
   });
   after(() => rmSync(repo, { recursive: true, force: true }));
 
-  it("loads 12 bundled checks + 2 project checks + 1 disabled default", () => {
+  // The fixture ships a *pre-restructure* single-source registry (it lists Checks
+  // 1.5 and 2-12 plus three project additions) — i.e. a consumer project that
+  // scaffolded before check-set-restructure.spec.md landed and has not migrated.
+  // That spec relocated six of those checks out of validate, and its Behavior 11
+  // says a project-authored reference to a relocated ID WARNs with
+  // RESURRECTED_CHECK_ID and skips the entry. So this eval asserts the
+  // post-restructure contract: surviving checks load, relocated ones do not, and
+  // each relocated one is reported rather than silently dropped.
+  //
+  // The pre-restructure expectation ("Check 10 loads as a disabled entry") was
+  // retired by that spec on purpose — line 95: the earlier
+  // configurable-checks.spec.md AC "presumes Check 10 is in the registry — this
+  // refactor removes it. The earlier spec's AC is honored historically". See also
+  // its System Constitution Reference (this refactor "explicitly invalidates
+  // assumptions in configurable-checks.spec.md's acceptance criterion referencing
+  // validate.check-10-platform-drift").
+  //
+  // The `enabled: false` -> SKIPPED-DISABLED entry shape is still live behavior
+  // and is covered in the default tier by
+  // tests/governance/validate-config.test.mjs ("enabled: false surfaces as
+  // SKIPPED-DISABLED entry without running").
+  it("loads the surviving checks + 3 project checks, skipping relocated IDs", () => {
     const r = loadValidateConfig(repo);
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
     const ids = r.checks.map((c) => c.id);
-    // Bundled stay present (disabled check surfaces as entry so report can show SKIPPED-DISABLED).
-    assert.ok(ids.includes("validate.check-1.5-source-manifest"));
-    assert.ok(ids.includes("validate.check-10-platform-drift"));
-    const drift = r.checks.find((c) => c.id === "validate.check-10-platform-drift");
-    assert.equal(drift.enabled, false);
-    assert.match(drift.disabledNote, /disabled by governance\/validate\.yaml/);
-    // Project additions
+
+    // Set-equality on the surviving validate.* inventory, so a future relocation
+    // fails with a readable diff rather than an off-by-one on a bare count.
+    // check-set-restructure.spec.md AC: the surviving IDs are 1.5, 2, 4, and
+    // optionally 8 and 9 when governance is configured.
+    //
+    // check-11 is listed in that spec's REMOVED catalog, but it is deliberately
+    // NOT in the loader's rejection set: Behavior 11 is the normative loader
+    // contract and enumerates exactly seven relocated IDs, omitting check-11 —
+    // because its logic is "preserved in skills/validate/SKILL.md as a
+    // conditional dispatch" rather than re-homed to another skill. So the ID
+    // stays loadable and a stale consumer config listing it still resolves.
+    // Do NOT "fix" this by adding check-11 to REMOVED_CHECK_IDS.
+    assert.deepEqual(
+      ids.filter((id) => id.startsWith("validate.")).sort(),
+      [
+        "validate.check-1.5-source-manifest",
+        "validate.check-11-visual-verification",
+        "validate.check-2-spec-compliance",
+        "validate.check-4-constitution",
+        "validate.check-8-boundaries",
+        "validate.check-9-transition-gates",
+      ],
+    );
+
+    // Relocated checks must NOT load, and each must be reported (never silently
+    // dropped). These are exactly the IDs enumerated in Behavior 11.
+    const relocated = [
+      "validate.check-3-charter-consistency",
+      "validate.check-5-adrs",
+      "validate.check-6-cross-cutting",
+      "validate.check-7-specialist-review",
+      "validate.check-10-platform-drift",
+      "validate.check-12-heuristic-extraction",
+    ];
+    for (const id of relocated) {
+      assert.ok(!ids.includes(id), `relocated check '${id}' leaked into the registry`);
+      assert.ok(
+        r.warnings.some((w) => w.code === "RESURRECTED_CHECK_ID" && w.message.includes(id)),
+        `expected RESURRECTED_CHECK_ID warning naming '${id}'`,
+      );
+    }
+    assert.equal(
+      r.warnings.filter((w) => w.code === "RESURRECTED_CHECK_ID").length,
+      relocated.length,
+    );
+
+    // Project additions are unaffected by the restructure.
     assert.ok(ids.includes("project.npm-test"));
     assert.ok(ids.includes("project.billing-domain-rules"));
     assert.ok(ids.includes("project.adoption-metric"));

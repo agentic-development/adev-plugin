@@ -27,10 +27,9 @@
  * @module tests/skills/validate-success-heuristic-harness
  */
 
-import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
-import { writeHeuristic } from "../../lib/heuristics.mjs";
+import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
+import { writeHeuristic, deriveHeuristicId } from "../../lib/heuristics.mjs";
 
 /**
  * Hard cap on the total title length (matches the heuristics schema).
@@ -124,28 +123,34 @@ export function deriveTitle(specTitle) {
 }
 
 /**
- * Normalize a path's separators to `/` and lowercase the result.
- * @param {string} p
- * @returns {string}
- */
-function normalizeAbsPath(p) {
-  if (typeof p !== "string") return "";
-  return p.replace(/\\/g, "/").toLowerCase();
-}
-
-/**
- * Derive the heuristic id: `<spec-slug>-<8-char hex sha256>` where the
- * hash input is `<normalized-abs-path>|<pattern>`.
+ * Derive the heuristic id: `<spec-slug>-<8-char hex sha256>` over the hash
+ * input `<repo-relative-spec-path>|<pattern>`.
+ *
+ * The path argument is **repo-relative**, not absolute. Hashing the absolute
+ * path made the same spec produce a different id in every checkout, which made
+ * `writeHeuristic` append a duplicate entry instead of a second evidence
+ * reference. Delegates to the shared digest function rather than hashing here.
  *
  * @param {string} specSlug
- * @param {string} absPath
+ * @param {string} repoRelativePath
  * @param {string} pattern
  * @returns {string}
  */
-export function deriveId(specSlug, absPath, pattern) {
-  const hashInput = `${normalizeAbsPath(absPath)}|${pattern}`;
-  const hash = createHash("sha256").update(hashInput).digest("hex").slice(0, 8);
-  return `${specSlug}-${hash}`;
+export function deriveId(specSlug, repoRelativePath, pattern) {
+  return deriveHeuristicId(specSlug, repoRelativePath, pattern);
+}
+
+/**
+ * Convert a spec path to its repo-relative form, normalizing separators to
+ * `/` so two checkouts on different platforms agree.
+ *
+ * @param {string} projectRoot - Absolute project root.
+ * @param {string} specPath - Absolute or already-relative spec path.
+ * @returns {string}
+ */
+function toRepoRelative(projectRoot, specPath) {
+  if (!isAbsolute(specPath)) return specPath.split(sep).join("/");
+  return relative(projectRoot, specPath).split(sep).join("/");
 }
 
 /**
@@ -251,7 +256,7 @@ export async function runCheck12(projectRoot, context) {
     typeof context.successFactor === "string" && context.successFactor.length > 0
       ? context.successFactor.slice(0, PATTERN_MAX_LENGTH)
       : deriveDefaultPattern(context.specTitle || "");
-  const id = deriveId(specSlug, context.specPath, pattern);
+  const id = deriveId(specSlug, toRepoRelative(projectRoot, context.specPath), pattern);
 
   /** @type {import("../../lib/heuristics.mjs").Heuristic} */
   const entry = {

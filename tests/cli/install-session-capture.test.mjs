@@ -604,11 +604,24 @@ test("issue-582 regression: a malicious Spec: trailer never reaches the JS as co
 
     const raw = readFileSync(join(sessionsDir, files[0]), "utf8");
     assert.match(raw, /^specs-touched:/m, "frontmatter should still contain specs-touched");
-    // The payload survives verbatim in the rendered commit body — proof it
-    // flowed through as inert data rather than altering control flow.
+    // The payload survives in the rendered commit body — proof it flowed
+    // through as inert data rather than altering control flow.
+    //
+    // Asserted on path-FREE fragments rather than the whole payload
+    // (issue adev-plugin-3v2i): `payload` embeds join(dir, "PWNED_SHELL"),
+    // and `dir` is a temp path under /var/folders/…, which redactSecrets now
+    // rewrites to [REDACTED:path] on write. The property under test is
+    // unchanged — these are the executable fragments of the payload, so their
+    // literal presence still proves it was treated as data. The assertions
+    // that test the security property directly (no PWNED marker file exists)
+    // are below and are untouched.
     assert.ok(
-      raw.includes(payload),
-      "payload should appear as literal data in the capture, not have altered control flow",
+      raw.includes("const fs = await import('node:fs')"),
+      "JS payload fragment should appear as literal data, not have altered control flow",
+    );
+    assert.ok(
+      raw.includes("${IFS}//"),
+      "shell payload fragment should appear as literal data, not have altered control flow",
     );
     // issue-564: it must NOT reach `specs-touched`. That field is now an
     // allow-list of repo-relative `.context-index/specs/**/*.spec.md` paths,

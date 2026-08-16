@@ -32,11 +32,23 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
 
    In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
-   When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. The `implement` step only reaches this emission point after all tasks completed and the GREEN-phase gate fired in Step 4; success at this stage implies PASS. (Failure modes earlier in the skill emit `status: failed` separately and do not reach this line.)
+   When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. This point is only reached after all tasks completed and the GREEN-phase gate fired, so success here implies PASS. Failures after that gate emit `--status failed` instead — see "Failure-path exit event" below.
 
    ```bash
    adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS --from-summary
    ```
+
+   **Failure-path exit event.** Whenever the skill stops after the `--status started` event above without reaching the exit event, emit the terminal event before surfacing the error to the operator:
+
+   ```bash
+   adev report --type step --spec <spec-path> --step implement --status failed --verdict FAIL
+   ```
+
+   `--verdict FAIL` is required, not decorative — a `step_failed` without one is overwritten by the verdict synthesized from the actor reports on the log, so a run that died partway projects as passing and opens the `validate` gate on unfinished work. For the enumerated abort paths that MUST emit it, follow `failure-path-exit-event.md` from this skill directory.
+
+   **Already covered — do not double-emit.** Per-task escalations terminate through the Step 2d blocker path (`plan_task` `blocked`): the blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT`, and `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level failed event only when the *whole skill* stops.
+
+   **Known gap:** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot ride on the event. Name it in operator-facing output instead.
 4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
@@ -571,12 +583,37 @@ Dispatch a fresh code quality reviewer subagent with:
 - The Coding Standards section from the constitution
 - Any concerns from the implementer (if DONE_WITH_CONCERNS)
 - Secondary specialist matches from step 2a (so the reviewer checks those domains)
+- Instructions to tag every Critical or Important finding with a stable short id (for example `cq-1`, `cq-2`) and to reuse the same id across cycles for the same underlying finding. The ids are what make the convergence check below meaningful — without them, "the same three issues came back" is indistinguishable from "three different issues".
 
 The code quality reviewer checks the items in `code-quality-checklist.md` from this skill directory.
 
-**Critical or Important issues:** The implementer fixes them. The reviewer reviews again. Repeat until approved.
-
 **Minor issues:** Noted but do not block progress.
+
+**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum 3 code-quality review cycles per task**, matching the Stage 1 cap (2f) and the visual fix cap (2e). This is a hardcoded convention because no manifest knob exists for it yet; a config-backed budget mirroring `build.max_review_retries` (see `lib/manifest.mjs` and `skills/build/SKILL.md` Step 1) is a follow-up.
+
+Each cycle, compare the reviewer's Critical/Important finding ids against the previous cycle's set the way `/adev:build`'s BLOCK→revise loop does, using the convergence primitive `lib/loop-convergence.mjs` (`partitionBlockers` splits the two id sets into addressed / persistent / new; `evaluateStopCondition` turns that partition plus the cycles remaining into one verdict). Act on the verdict:
+
+| Verdict | Action |
+|---------|--------|
+| `PASS` | No Critical or Important findings remain. Stage 2 passes; proceed to 2h. |
+| `CONTINUE` | Findings were addressed (or this is the first cycle) and cycles remain. Decrement the remaining cycles and dispatch the implementer for another fix pass. |
+| `NO_PROGRESS` | The reviewer returned the identical Critical/Important id set — the fix pass changed nothing the reviewer can see. Stop with `LOOP_NO_PROGRESS`. |
+| `REGRESSED` | The fix pass introduced more new Critical/Important findings than it resolved. Stop with `LOOP_REGRESSED`. Preserve the work as-is (no rollback); the operator decides whether to revert. |
+| `BUDGET_EXHAUSTED` | The third cycle ended with Critical or Important findings still open. Stop with `LOOP_BUDGET_EXHAUSTED`. |
+
+**On any terminal non-PASS verdict, Stage 2 has NOT passed.** Do not fall through to 2h — the task is not marked complete, no `plan_task` `done` event is emitted, no governance gates run, and the next task is not started. Escalate through the existing blocker path from Step 2d: emit the `plan_task` `blocked` event and write execution state with `status: "blocked"`, `blockers` set to the outstanding Critical/Important findings, and `nextAction` set to the recommended fix.
+
+What the operator sees is a halt naming the outcome, not a silent pass:
+
+```text
+Task <N> (<task-title>): code-quality review did not converge — LOOP_BUDGET_EXHAUSTED
+after 3 cycles. Outstanding: cq-2 (Critical), cq-5 (Important).
+The task is NOT marked complete and implementation has stopped here.
+Fix the findings and re-run `/adev:implement --task <N>`, or run `/adev:recover`
+if the fix loop is stuck.
+```
+
+Use the same message shape for `LOOP_NO_PROGRESS` and `LOOP_REGRESSED`, substituting the verdict and (for `LOOP_REGRESSED`) noting which findings are newly introduced.
 
 #### 2h. Mark Task Complete
 
@@ -594,59 +631,15 @@ After both reviews pass:
 4. Record: specialist used (or "generic"), review cycles needed, concerns noted.
 5. Move to the next task.
 
-### Step 2.5: Parallel Group Execution (`--parallel`)
+### Step 2.5: Parallel Group Execution
 
-When invoked with `--parallel`, file-disjoint task groups run concurrently in adev-managed worktrees instead of strictly serially. This changes *when* work runs, never *what* it produces — a parallel run must be behaviorally equivalent to serial (the equivalence eval is the load-bearing gate). Groups are **consumed, not computed** here: `adev parallel groups --plan <plan>` parses the plan's `## Parallelization` section.
-
-**Fall back to the serial Step 2 loop** (printing the reason) when any of these holds:
-- the `--parallel` flag is absent (no message);
-- `adev parallel groups --plan <plan>` reports `malformed: true`, or yields 0 or 1 independent group (`serial: no/malformed parallelization section` / `serial: single group`);
-- `adev worktree guard` reports `nested: true` (`serial: nested in <kind> worktree`).
-
-**Otherwise, orchestrate:**
-
-1. Ensure `.adev/worktrees/` is git-ignored (managed block). Record the baseline with `adev parallel baseline` → `{ branch, head, clean }`, and read the concurrency cap with `adev parallel max-parallel`.
-2. For each independent group, in waves bounded by the cap: guard re-runs with `adev parallel collision --slug <plan-slug>-<group>`. On `collision: true`: if `--fresh` was passed, auto-remove the retained worktree with `adev worktree remove --slug <…> --force` and continue; otherwise abort that group with `RERUN_COLLISION` (the operator must clear it manually with `adev worktree remove --slug <…> --force`, or re-run with `--fresh`). With no collision, create the worktree with `adev worktree add --slug <plan-slug>-<group>`.
-3. Dispatch the wave's group subagents **concurrently in a single message** — one `Agent({description, prompt, run_in_background: false})` per group, all issued in the same message so the wave runs in parallel. Two failure modes to avoid: a backgrounded dispatch (`run_in_background` omitted or true) stalls because the nested caller is never re-invoked (see the Step 2d guardrail), and dispatching the groups across separate messages serializes them, defeating `--parallel`. **Never** pass `isolation: "worktree"` (the same nesting/cleanup hazards as Step 2d apply). Each group's prompt MUST bind the subagent to its worktree: *"`<worktree-path>` is your working-tree root; run every git and file operation with an absolute path or `git -C <worktree-path>` — never a relative op in the shared cwd (it would race on `index.lock`); run the group's tasks sequentially with full TDD + 2-stage review; commit each task to branch `adev/<plan-slug>-<group>`."*
-4. **Join** — wait for every group subagent to return — then, before any merge-back:
-   - assert the orchestrator is unpolluted: `adev parallel assert-clean --base-head <baseline.head>`. A non-zero `ORCHESTRATOR_POLLUTED` (a subagent committed/edited the orchestrator branch instead of its worktree) aborts the whole run before any merge.
-   - verify each group is complete: `adev parallel verify --branch adev/<plan-slug>-<group> --base <baseline.head> --tasks <group task ids> --done <done task ids>`. A `COMMITS_NOT_VERIFIED` (a group task's commit is missing — partial work) marks that group failed; it is not merged.
-5. Merge verified groups back into the orchestrator branch in deterministic order via `adev worktree merge --slug <plan-slug>-<group>`. On each clean merge, remove that group's worktree immediately (`adev worktree remove --slug <…> --delete-branch`) so a crash mid-run never leaves a merged worktree behind.
-6. On any group failure (subagent error, `COMMITS_NOT_VERIFIED`, `RERUN_COLLISION`, or `MERGE_CONFLICT`): retain that group's worktree for inspection, leave its plan tasks open, still merge and clean up the *successful* groups, print a summary naming the retained worktree paths, and exit non-zero so orchestrators (e.g. `/adev:build`) detect the partial failure.
-
-The per-task TDD loop, 2-stage review, and commit-per-task rules from Step 2 apply unchanged *inside* each worktree; this section only governs the parallel orchestration and merge-back.
+> **Conditional loading:** Read `skills/implement/parallel-mode.md` for the full Parallel Group Execution instructions.
+> Load it only when `--parallel` is passed; it is not needed on a serial run.
 
 ### Step 2-post: Integration Gate
 
-After all tasks are complete, run the integration tier gate if configured.
-
-1. Resolve the gate set from the **merged** gate list — domain gates merged with the project's governance gates — via the CLI:
-
-   ```bash
-   adev domain load-gates --module <module-slug> [--charter <charter-path>]
-   ```
-
-   This is the same source `/adev:validate` Check 1 uses, so both integration-gate consumers see the same gates. Filter the merged list to `tier: integration`. A gate that omits `tier` is `fast` and is not an integration gate. If the merged list yields no integration-tier gates, skip this step silently (current behavior preserved — Step 3 follows Step 2 directly). Surface any loader `warnings` (`INVALID_GATE`, `GATE_OVERRIDE`) in the step output rather than swallowing them — an `INVALID_GATE` naming a gate whose command is still the unwired sentinel is the actionable signal that a declared tier was never seeded.
-2. **Argv guard.** Execute only gates that are deterministic and carry a non-empty argv-list `command`. The merged list **drops `kind`**, so an entry with no `kind` is treated as `deterministic` (the same default `/adev:validate` states) — never require a literal `kind: deterministic` on a merged entry, which would skip every integration gate. Any gate whose `command` is empty, absent, or not an argv list is recorded as **skipped** with a named reason (for example, `skipped: command is the unwired sentinel — run /adev:init or set the command in governance/gates.yaml`) and nothing is spawned for it. Gate commands execute without shell interpolation, consistent with the argv-only contract.
-3. If `--task <N>` was passed (single-task re-run), skip this step. Integration gates only run when all tasks complete in a full plan execution.
-4. **E2E exclusion:** Only the fast tier (per-task in Step 2) and integration tier (this step) execute during implementation. The E2E tier is excluded from `/adev:implement` — E2E gates execute only during `/adev:validate` Check 1c.
-
-**Execute gates sequentially.** Each gate's severity is its own `severity` field when present; a gate that omits `severity` inherits the tier default (`error` for the integration tier). A gate with `required: false` is always `warning`, whatever its explicit severity says. This matches `/adev:validate` Check 1, so both integration-gate consumers agree on both the source and the severity of every gate. (`required` is not observable on a merged entry — the merge narrows each gate — so the `required: false` rule governs wherever the raw gate entry is visible, such as Step 2h and `/adev:validate`'s own resolution; here per-gate `severity` applies with the tier default as fallback.)
-
-**If a gate exits non-zero with `severity: error`:**
-- Emit a standalone failure report immediately with command output (truncated to last 8 KB per stream).
-- Steps 3 (Final Review), 4 (Completion), and all subsequent steps do not execute.
-- Write execution state: `status: "blocked"`, `blockers` set to the integration gate failure details, `nextAction` set to "Fix integration issues and re-run /adev:implement or /adev:validate."
-- Report: "Integration gates failed. Fix the integration issues and re-run `/adev:implement --task <last>` or `/adev:validate`."
-
-**If a gate exits non-zero with `severity: warning`:**
-- Record the failure as WARN.
-- Step 3 (Final Review) proceeds.
-- The warning is included in the Step 4 completion report.
-
-**If every executed gate passes:** Proceed to Step 3. Gates recorded as skipped by the argv guard do not block — they are reported, not run.
-
-**Integration Gates section in completion report:** If integration gates were executed, the Step 4 completion report includes an "Integration Gates" section showing a GateResult per gate: tier name, gate id, command, pass/fail/warn/**skipped** status (skipped entries carry their named reason), duration, and output for failures.
+> **Conditional loading:** Read `skills/implement/integration-gate.md` for the full Integration Gate instructions.
+> Load it only when the plan declares integration-tier gates; it is not needed on a serial run.
 
 ### Step 3: Final Review
 
