@@ -196,6 +196,26 @@ test_policy:
 #   partial_roots: []                   # optional containment-allowlist roots beyond .context-index/
 
 # ============================================================================
+# Heuristics
+# ============================================================================
+
+# Budget knobs for heuristic injection into context packets, consumed by
+# `adev heuristics retrieve` and the lifecycle skills that call it.
+
+# Cap on entries injected at ERROR time — i.e. any `adev heuristics retrieve`
+# carrying a `--signature`, which is by definition a mid-task failure lookup.
+# Default 3. Deliberately NOT the entry-time default of 8, and never inherited
+# from it: entry-time injection happens once at the top of a task and is
+# amortized across the run, whereas error-time entries are appended to an
+# already-loaded context window and are re-read from cache on every remaining
+# turn of that task. The marginal cost is paid per turn, not per task.
+# Must be an integer >= 0; 0 disables error-time injection entirely. Anything
+# else (strings, floats, booleans) falls back to 3. An explicit
+# `--injection-limit` on the command line always wins over this value.
+# heuristics:
+#   error_injection_limit: 3
+
+# ============================================================================
 # Provenance Tracking
 # ============================================================================
 

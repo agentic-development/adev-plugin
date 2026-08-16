@@ -404,6 +404,179 @@ test("the retrieve argument-error usage string advertises --signature", () => {
   }
 });
 
+// ── The error-time injection cap (Task 8) ────────────────────────────────
+//
+// A `--signature` invocation IS by definition an error-time retrieval — no
+// entry-time call site passes one — so the verb itself applies the error-time
+// default of 3 (`heuristics.error_injection_limit`) instead of the library's
+// entry-time default of 8. The cap governs BOTH the signature phase and the
+// unmatched-signature fallback.
+//
+// FIXTURE IS LOAD-BEARING and gets its OWN temp root. The Task 7 fixtures above
+// assert `count === 1` on a single-entry store; sharing a root with the 20-entry
+// store below would break them.
+//
+// The store holds, all in scope `m`:
+//   10 x low, signature `validate-many`   — the signature-phase population
+//    6 x high, no signature               — eligible fallback filler
+//    4 x medium, no signature             — eligible fallback filler
+//
+// The 6+4 unsigned block is what makes the no-signature case observable: the 10
+// signature entries are `low`, and the budget loop's low floor drops every one
+// of them on any path that does not match them by signature. Without the filler
+// the no-signature assertion would read 0 and prove nothing about the default.
+//
+// Eligible (non-low) entries for the unmatched-signature fallback: 10. That
+// exceeds both of the caps exercised below — 3 and 8 — so a cap assertion
+// cannot pass merely because the store ran out of entries.
+
+const MANY_SIGNATURE = "validate-many";
+const UNMATCHED_SIGNATURE = "validate-nothing";
+
+/** Non-low entries in the error-cap fixture — the fallback-eligible population. */
+const ERROR_CAP_ELIGIBLE = 10;
+
+/**
+ * Seed a SEPARATE project root for the error-time cap cases.
+ *
+ * @param {{errorInjectionLimit?: number}} [options] - when
+ *   `errorInjectionLimit` is given, the manifest is rewritten to configure
+ *   `heuristics.error_injection_limit`.
+ * @returns {string} the temp project root
+ */
+function makeErrorCapProject({ errorInjectionLimit } = {}) {
+  const dir = makeTempProject();
+  if (errorInjectionLimit !== undefined) {
+    writeFixture(
+      dir,
+      ".context-index/manifest.yaml",
+      'project:\n  name: t\n  adev_version: "0.22.0"\n' +
+        `heuristics:\n  error_injection_limit: ${errorInjectionLimit}\n`,
+    );
+  }
+  const entries = [];
+  for (let i = 0; i < 10; i++) {
+    entries.push(
+      makeEntry({ id: `many-${i}`, confidence: "low", signature: MANY_SIGNATURE }),
+    );
+  }
+  for (let i = 0; i < 6; i++) {
+    entries.push(makeEntry({ id: `high-${i}`, confidence: "high" }));
+  }
+  for (let i = 0; i < 4; i++) {
+    entries.push(makeEntry({ id: `med-${i}`, confidence: "medium" }));
+  }
+  seedScope(dir, "m", entries);
+  return dir;
+}
+
+test("a --signature retrieval defaults to the error-time cap of 3, not the entry-time 8", () => {
+  const dir = makeErrorCapProject();
+  try {
+    const r = runRetrieveIn(dir, ["--module", "m", "--signature", MANY_SIGNATURE]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.strictEqual(
+      out.count,
+      3,
+      `10 entries carry ${MANY_SIGNATURE}; a --signature run with no explicit cap must resolve ` +
+        `to the error-time default of 3, not the library's entry-time 8. Got ${out.count}.`,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("a retrieval with NO signature keeps the entry-time default of 8", () => {
+  // The error-time default must not leak onto the eight entry-time call sites.
+  const dir = makeErrorCapProject();
+  try {
+    const r = runRetrieveIn(dir, ["--module", "m"]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.strictEqual(
+      out.count,
+      8,
+      `${ERROR_CAP_ELIGIBLE} non-low entries are eligible (6 high + 4 medium); at limit 8 the ` +
+        `split is 5 high / 3 medium, so an entry-time call must still return 8. Got ${out.count}.`,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("an explicit --injection-limit always wins over the error-time default", () => {
+  const dir = makeErrorCapProject();
+  try {
+    const r = runRetrieveIn(dir, [
+      "--module",
+      "m",
+      "--signature",
+      MANY_SIGNATURE,
+      "--injection-limit",
+      "5",
+    ]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.strictEqual(
+      out.count,
+      5,
+      `an explicit cap is the caller's decision and must not be overridden by the ` +
+        `error-time default. Got ${out.count}.`,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("an unmatched --signature falls back to module scope but stays under the error-time cap", () => {
+  const dir = makeErrorCapProject();
+  try {
+    const r = runRetrieveIn(dir, ["--module", "m", "--signature", UNMATCHED_SIGNATURE]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    // The fallback is the MODAL path — a first occurrence matches no stored
+    // signature — so it must not escalate to the entry-time budget of 8.
+    assert.ok(
+      out.count <= 3,
+      `${ERROR_CAP_ELIGIBLE} entries are eligible for the fallback, so the cap genuinely binds: ` +
+        `the unmatched-signature fallback must stay at or under 3, got ${out.count}.`,
+    );
+    assert.ok(
+      out.count > 0,
+      `the fallback must not blank the context on the modal path, got ${out.count}`,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("a configured heuristics.error_injection_limit overrides the default of 3", () => {
+  // This case exists because of an INSERTION-POINT experiment, not because the
+  // plan called for it. Placing the resolver call BEFORE `const absRoot` is a
+  // temporal-dead-zone ReferenceError on `loadManifest(absRoot)` — but that
+  // throw lands inside the resolver's own defensive try/catch, degrades to an
+  // empty manifest, and yields the default 3. Every other case here asserts 3,
+  // so all of them pass under the broken placement. Reading a CONFIGURED value
+  // off disk is the only assertion that distinguishes "the manifest was read"
+  // from "the manifest read failed and we fell back".
+  const dir = makeErrorCapProject({ errorInjectionLimit: 2 });
+  try {
+    const r = runRetrieveIn(dir, ["--module", "m", "--signature", MANY_SIGNATURE]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.strictEqual(
+      out.count,
+      2,
+      `the manifest configures heuristics.error_injection_limit: 2, so the verb must resolve ` +
+        `the cap from the manifest rather than from the default of 3 or the entry-time 8. ` +
+        `Got ${out.count}.`,
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
 test("help() documents --signature under retrieve", () => {
   const dir = makeTempProject();
   try {

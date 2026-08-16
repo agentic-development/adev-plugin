@@ -23,6 +23,13 @@ import {
   parseHeuristicsFile,
   validateEntry,
 } from "../../lib/heuristics.mjs";
+// Namespace import, deliberately NOT a named import of the two Task 8 exports.
+// A named import of an export that does not exist yet is a link-time
+// SyntaxError, which would fail every test in this file — including the Task
+// 1-7 regressions above — and make the RED phase unreadable. Through the
+// namespace, a missing export is `undefined` at call time, so exactly the four
+// resolver tests below fail and every existing assertion still runs.
+import * as heuristicsLib from "../../lib/heuristics.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 const MODULE = "mymodule";
@@ -731,5 +738,69 @@ describe("retrieveHeuristics: unmatched-signature fallback to module scope", () 
     );
     assert.equal(out.filter((e) => e.confidence === "high").length, 5);
     assert.equal(out.filter((e) => e.confidence === "medium").length, 3);
+  });
+});
+
+describe("resolveErrorInjectionLimit", () => {
+  /**
+   * Call through the namespace so a missing export fails HERE with a readable
+   * message rather than at module link time.
+   */
+  function resolveLimit(manifest) {
+    assert.equal(
+      typeof heuristicsLib.resolveErrorInjectionLimit,
+      "function",
+      "lib/heuristics.mjs must export resolveErrorInjectionLimit(manifest)",
+    );
+    return heuristicsLib.resolveErrorInjectionLimit(manifest);
+  }
+
+  it("exports DEFAULT_ERROR_INJECTION_LIMIT as 3, distinct from the entry-time 8", () => {
+    assert.equal(
+      heuristicsLib.DEFAULT_ERROR_INJECTION_LIMIT,
+      3,
+      "the error-time default is deliberately tighter than the entry-time budget of 8",
+    );
+  });
+
+  it("defaults to 3 with no manifest config", () => {
+    assert.equal(resolveLimit({}), 3);
+    // A manifest carrying a `heuristics` section but no cap is the same case.
+    assert.equal(resolveLimit({ heuristics: {} }), 3);
+  });
+
+  it("reads heuristics.error_injection_limit when configured", () => {
+    assert.equal(resolveLimit({ heuristics: { error_injection_limit: 5 } }), 5);
+    // 0 is a legal configured value — it disables error-time injection — and
+    // must NOT be swallowed by a falsy check that falls back to the default.
+    assert.equal(resolveLimit({ heuristics: { error_injection_limit: 0 } }), 0);
+  });
+
+  it("ignores heuristics.injection_limit — the entry-time knob must not leak", () => {
+    // The two budgets are independent by design. An operator who widened the
+    // entry-time budget did not thereby widen the error-time one.
+    assert.equal(resolveLimit({ heuristics: { injection_limit: 8 } }), 3);
+    assert.equal(resolveLimit({ heuristics: { injection_limit: 20 } }), 3);
+    // With both present the error-time key wins and the entry-time key is never
+    // consulted.
+    assert.equal(
+      resolveLimit({ heuristics: { injection_limit: 20, error_injection_limit: 4 } }),
+      4,
+    );
+  });
+
+  it("falls back to 3 on a non-integer, negative, or unreadable value", () => {
+    for (const bad of ["many", -1, null, 2.5, NaN, true, [], {}, "3"]) {
+      assert.equal(
+        resolveLimit({ heuristics: { error_injection_limit: bad } }),
+        3,
+        `error_injection_limit ${JSON.stringify(bad)} must fall back to 3`,
+      );
+    }
+    // An unreadable manifest degrades to the default rather than throwing:
+    // heuristic retrieval is non-blocking on every calling path.
+    for (const bad of [undefined, null, "not a manifest", 42, { heuristics: null }]) {
+      assert.equal(resolveLimit(bad), 3, `manifest ${JSON.stringify(bad)} must fall back to 3`);
+    }
   });
 });
