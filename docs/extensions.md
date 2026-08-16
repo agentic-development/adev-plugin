@@ -11,6 +11,7 @@ If you have never installed an extension, the worked example below (`extensions/
 - Merge semantics ADR: [`.context-index/adrs/0003-configurable-review-registry.md`](../.context-index/adrs/0003-configurable-review-registry.md)
 - Install implementation: [`lib/extensions/install.mjs`](../lib/extensions/install.mjs)
 - Validate-time event surface: [`lib/cli/report.mjs`](../lib/cli/report.mjs)
+- Governance contribution rules (writable registries, field allowlists, executable payloads): [The governance contribution contract](#the-governance-contribution-contract)
 
 ## Manifest schema
 
@@ -42,7 +43,7 @@ This is the slot most authors get wrong. The canonical schema is an **array** of
 ```yaml
 provides:
   governance:
-    - target: validate.yaml          # one of: review.yaml, validate.yaml, gates.yaml
+    - target: validate.yaml          # one of the five writable registries — see below
       entries:
         - id: my-extension.my-check
           kind: quality-gate
@@ -60,9 +61,108 @@ A single `provides.governance` array may target multiple files — each `target`
 | `provides.governance: {checks: [...]}` (object with `checks` wrapper) | Not the canonical shape; the install pass ignores it. |
 | `command: "bash bin/check.sh"` (string, not argv) | Fails load with `QUALITY_GATE_COMMAND_SHELL` per `configurable-checks.spec.md` Behavior 6a. |
 | Omitting `profile:` on a `kind: quality-gate` entry | Fails load with the explicit-acknowledgement error per Behavior 13. |
-| Omitting `id:` | Fails with `GOVERNANCE_SCHEMA` (validation runs before merge). |
+| Omitting `id:` | Fails with `GOVERNANCE_FIELD_VALUE_INVALID` (validation runs before merge). |
 
 The other `provides.*` slots are documented inline in [`templates/adev-extension.example.yaml`](../templates/adev-extension.example.yaml). The template parses cleanly with all five slots populated; trim what you do not need.
+
+### The governance contribution contract
+
+A governance contribution is untrusted third-party content written into a file the project owns, so the boundary is narrow and stated exhaustively in code. The reference implementations are [`lib/extensions/governance-registry.mjs`](../lib/extensions/governance-registry.mjs) (what may be written, and where) and [`lib/extensions/exec-payload.mjs`](../lib/extensions/exec-payload.mjs) (what happens to anything executable). When this guide and those modules disagree, the modules win.
+
+#### The five writable registries
+
+`target:` must name one of five files, each of which has exactly one root YAML key its entries land under (`WRITABLE_REGISTRIES`):
+
+| `target:` | Root key | Registry |
+|---|---|---|
+| `validate.yaml` | `checks` | Validate check registry |
+| `review.yaml` | `reviewers` | Reviewer registry |
+| `gates.yaml` | `gates` | Quality gates |
+| `diagnostics.yaml` | `diagnostics` | Write-time diagnostic producers |
+| `boundaries.yaml` | `boundaries` | Architectural boundary rules |
+
+Note that `validate.yaml` takes `checks`, not `validators` — a `validators:` key is never read by the loader.
+
+Anything else is refused with `UNKNOWN_GOVERNANCE_TARGET`, and two files are called out by name because they are the tempting ones: `risk-policies.yaml` and `sensitive-paths.yaml` are **never** extension-writable. Which paths count as sensitive, and which risk levels demand review, are decisions the project makes *about* the extension — never decisions the extension makes about itself.
+
+#### Per-registry field allowlists
+
+Each registry has an exhaustive allowlist (`FIELD_ALLOWLIST` in `lib/extensions/governance-registry.mjs`). A field outside it is refused with `GOVERNANCE_FIELD_NOT_ALLOWED` — the entry is not trimmed and installed anyway.
+
+| Registry | Contributable fields |
+|---|---|
+| `validate.yaml` | `id`, `name`, `kind`, `severity`, `profile`, `context_pack`, `prompt`, `after`, `description`, `command`, `fail_fast`, `enabled`, `disabled_reason` |
+| `review.yaml` | `id`, `name`, `dispatch`, `profile`, `context_pack`, `severity_cap`, `prompt`, `package`, `enabled`, `disabled_reason` |
+| `gates.yaml` | `id`, `command`, `description`, `severity`, `tier`, `enabled`, `disabled_reason` |
+| `diagnostics.yaml` | `id`, `runner`, `severity`, `tier`, `scope`, `enabled`, `disabled_reason` |
+| `boundaries.yaml` | `id`, `severity`, `pattern`, `flags`, `exclude`, `description`, `enabled`, `disabled_reason` |
+
+`flags` on an extension-contributed boundary rule accepts only `i`, `m`, `s` and
+`u` — the regex flags that change what a pattern matches. `g` and `y` are refused
+because they make the compiled pattern stateful, and a boundary rule that quietly
+stops matching is a merge gate that fails open. The evaluator
+(`lib/governance/boundaries.mjs`) applies the same allowlist when it loads
+`boundaries.yaml`, so a PROJECT-authored rule is held to it too and a rule
+carrying `g` refuses the run with `INVALID_BOUNDARY_PATTERN`.
+
+`enabled: false` switches an entry off without deleting it: the entry stays in the
+registry and in the loaded config, carrying `disabled_reason`, so a deliberately
+disabled check reads differently from one the project never declared. Omitting
+`disabled_reason` is a warning (`DISABLED_WITHOUT_REASON`), not a refusal — the
+entry stays disabled either way. Only the boolean `false` disables; any other
+value warns (`INVALID_ENABLED_VALUE`) and the entry stays enabled.
+
+Three field-level rules are worth memorising:
+
+- `source`, `__source` and `exec_consented_at` are stamped by the installer. Supplying one is refused with `GOVERNANCE_SOURCE_FORGED`, which outranks the allowlist check so the report names the forgery rather than the weaker "field not allowed".
+- `runner` is contributable to `diagnostics.yaml` only, and its value must start with `plugin:`. A `project:` runner names project-owned files under `.context-index/diagnostics/` that the extension does not ship.
+- `kind` is **not** contributable to `gates.yaml`, because `gate doctor` reads it straight off the raw file to select the gate's execution contract.
+
+Per-entry validation is `validateEntryFields(target, entry)` in `lib/extensions/governance-registry.mjs`. (Earlier releases exported a single target-blind entry validator; it was removed, because target-blindness was precisely the defect — a field legitimate in one registry is a capability grant in another.)
+
+#### Two fields you cannot contribute, and why
+
+- **`dispatch: triggered` is refused.** `dispatch`'s only non-degenerate form is two levels deep with array leaves (`patterns`, `keywords`, `min_score`). Allowing it would hand an untrusted extension control over which files and which keywords summon a reviewer — that is a capability grant, not a preference. Contribute `always` or `never`; a project can widen it afterwards by hand.
+- **`package.args` is refused.** `lib/governance/review-config.mjs` line 418 reads `validated.args = pkg.args ?? {}` — unvalidated, arbitrary depth — and passes it straight to the reviewer. Only `package.skill` and `package.adapter` may be supplied.
+
+#### Executable payloads and the `.context-index/extensions/<name>/` directory
+
+An extension may contribute executables. Three rules bound them together, and none is optional.
+
+**1. Consent.** Any `command` on an entry that will actually execute (every `gates.yaml` entry, and a `validate.yaml` entry whose `kind` is `quality-gate`), plus any reviewer `package.skill` / `package.adapter`, is an executable contribution. All of them are collected across every block of every target and surfaced *before a single byte is written*. `adev extension install <source> --allow-exec` grants consent non-interactively; an interactive install prompts and lists each command verbatim. Consent is per-install and never remembered — the payload can change between versions. A non-interactive install with no `--allow-exec` refuses with `GOVERNANCE_EXEC_NOT_CONSENTED` and writes nothing.
+
+**2. Containment and relocation.** The installer **copies** the payload into the project-owned directory `.context-index/extensions/<name>/` and rewrites every contributed path element to point at the copy. Copied files are set mode `0o555`. Both sides of every containment check are `realpathSync`-resolved, so a symlink cannot smuggle a file out of the extension root or into a directory outside the payload tree.
+
+The payload set is **derived, not declared**. There is no manifest slot listing payload files: `planExecPayload` walks the argv path elements of each contributed `command` plus each `package.skill` / `package.adapter` value, and that set *is* the payload. A file the manifest never references through one of those fields is never copied. At most 32 payload files per extension.
+
+**3. Argv-only invocation, with an interpreter allowlist.** `command` must be an argv array; a shell-form string is refused. `argv[0]` must be either a path inside the extension or one of the four members of the interpreter allowlist — `bash`, `sh`, `node`, `python3` (`INTERPRETER_ALLOWLIST` in `lib/extensions/exec-payload.mjs`). Anything else is refused with `GOVERNANCE_COMMAND_ESCAPES_EXTENSION`.
+
+#### The two emission forms
+
+The rewritten path is emitted in one of two forms, chosen by field. This is deliberate and cannot be collapsed, because the two consumers have incompatible path contracts:
+
+| Contributed field | Emitted as | Example |
+|---|---|---|
+| `command` argv elements | **absolute** | `/home/me/proj/.context-index/extensions/my-ext/bin/check.sh` |
+| `package.skill`, `package.adapter` | **`.context-index/`-relative** | `extensions/<name>/reviewers/my-reviewer.md` |
+
+A `command` is spawned with a `cwd` this layer does not control (`gate doctor` uses `cwd: projectRoot`; the quality-gate runner uses a caller-supplied `cwd`), so only an absolute path makes the install-time check a run-time guarantee. A reviewer path takes the opposite form because `resolveReviewerPath` rejects an absolute path outright with `ABS_PATH_REJECTED` and returns immediately — before the `..` guard, before the containment check, before the existence check. An absolute emission there would be permanently unloadable.
+
+Both forms are derived from the same relative path, so `resolve(projectRoot, '.context-index', contextRelative)` equals the absolute form by construction.
+
+#### Values are refused, never sanitized
+
+Every contributed scalar is eventually re-serialized into YAML and re-read by this repo's own parser (`lib/profiles/yaml.mjs`), which strips quotes without unescaping and truncates a value at a bare `#`. There is no escape sequence that round-trips through it, so there is no sanitizing layer — an unsafe value is refused with `GOVERNANCE_SCALAR_UNSAFE`.
+
+Refused anywhere in a scalar: newline, carriage return, `"`, `'`, `#`, `{`, `}`, `[`, `]`, `,`, and a colon followed by whitespace (or a trailing colon). Refused as the first character: the YAML indicators `- ? : & * ! | > % @` and backtick. Also refused: the strings that change type on reparse (`""`, digits, `true`, `false`, `null`, `~`). Argv tokens get a slightly different rule so that `--silent` and `--` survive. Scalars cap at 512 characters, argv at 32 elements, entries at 32 per target.
+
+#### Merge behavior
+
+- A new `id` is appended to the target file.
+- A **colliding `id` is skipped, never merged.** The existing entry is left byte-identical — no field is filled in, no key is added. The install report lists it as skipped.
+- The splice is a line-range text operation, not a reserialization: comments, sibling keys and formatting outside the inserted lines are preserved byte-for-byte.
+- An unparseable target registry is **refused** with `GOVERNANCE_PARSE_REFUSED` and left untouched. It is never treated as empty — treating it as empty would overwrite the registry and bypass collision detection in one move.
+- Every appended entry is stamped `source: extension:<name>`, and executable entries also carry `exec_consented_at`.
 
 ### `provides.skills`
 
@@ -124,9 +224,9 @@ The `_<ext-name>/` prefix signals that the file is extension-managed. It is dist
 
 **Merge-by-id (governance):**
 - Entries with a new `id` are appended to the target file.
-- Entries with an `id` that already exists: project values win on every field, extension values only fill fields the project left unset.
-- `severity`, `enabled`, and `after` are non-overridable from the extension side — installing an extension never downgrades a project's severity from `error` to `warning`, never silently enables a check the project disabled, and never re-orders a project's `after` list.
+- Entries with an `id` that already exists are **skipped entirely** — the existing entry is left byte-identical, and no field of it is filled, overwritten or added. An install therefore never downgrades a project's severity, never enables a check the project disabled, and never injects a `command` into an entry the project owns.
 - Every colliding id is reported in a single dedicated section of the install report (no buried output).
+- See [The governance contribution contract](#the-governance-contribution-contract) above for the writable set, the field allowlists and the executable-payload rules.
 
 **Copy-on-first-write (domain profiles, samples):** Files are copied verbatim into `.context-index/domains/<name>/` or `.context-index/samples/`. Re-installing overwrites the destination (idempotent — see `content-installation.spec.md` Behavior 4).
 
@@ -162,7 +262,7 @@ Without `requires.adev`, your extension installs against any adev version. If a 
 
 ### 4. Missing `id:` on a governance entry
 
-Every governance entry needs a stable `id` (max 128 chars, validated by `validateGovernanceEntry`). The merge engine keys on `id` — without it, the entry is rejected with `GOVERNANCE_SCHEMA`. Use the convention `<extension-name>.<check-name>` (e.g., `my-extension.no-secrets`) to avoid collisions with bundled or other-extension ids.
+Every governance entry needs a stable, non-empty **string** `id`, validated by `validateEntryFields(target, entry)` in [`lib/extensions/governance-registry.mjs`](../lib/extensions/governance-registry.mjs). The merge engine keys on `id` — without it, the entry is rejected with `GOVERNANCE_FIELD_VALUE_INVALID`. Note that `id: 42` is rejected for the same reason: the YAML parser coerces digit strings to numbers, and a numeric id would slip past a string-keyed collision check. Use the convention `<extension-name>.<check-name>` (e.g., `my-extension.no-secrets`) to avoid collisions with bundled or other-extension ids.
 
 ### 5. Threat-model: `profile:` does NOT sandbox the subprocess
 
@@ -180,7 +280,17 @@ Author your check binaries defensively:
 
 The reference extension's `bin/check.sh` follows all of these rules in fewer than 10 lines — copy it as a starting point.
 
-### 6. Untrusted sources
+### 6. Project paths containing `"`, `'`, `#`, `,` or a brace
+
+adev **cannot install an extension executable payload into a project whose absolute path contains** one of the characters that is unsafe in a governance scalar: `"`, `'`, `#`, `,`, `{`, `}`, `[`, `]`, a newline, or a colon followed by whitespace. Spaces are fine, and so is every ordinary punctuation character (`-`, `_`, `.`, `@`, `+`). A project at `/Users/me/my projects/app` installs normally; one at `/Users/me/c#-experiments/app` does not.
+
+The cause is structural rather than incidental. A rewritten `command` path is emitted **absolute**, so it embeds your `projectRoot`, and every emitted path is checked with `assertSafeScalar` before anything is written. The install fails at validation with `GOVERNANCE_SCALAR_UNSAFE` naming the offending character, and nothing is copied or spliced.
+
+This is deliberate, not a gap waiting to be patched. The repo's YAML parser performs no unescape, so an unquoted `#` truncates the emitted value at that point and a stray quote or brace re-parses the line as different structure — that is a real injection vector, not a cosmetic one. The contract is *rejected at validation, not sanitized; there is no escaping layer to get wrong.* Adding one would mean adding the very layer that could be wrong.
+
+**Remedy:** relocate the checkout to a path without those characters. Non-executable slots (`provides.samples`, `provides.skills`, `provides.domain-profile`, `provides.skill_extensions`) are unaffected, because no project path is emitted into a governance file for them.
+
+### 7. Untrusted sources
 
 Treat `npx adev-cli extension install <unknown-package>` with the same scrutiny you would treat `curl | bash`. The installer copies files, merges YAML, and registers skills — but the moment `/adev:validate` runs on your project, it spawns the extension's `bin/*` binaries with your full user privileges. There is no Docker container, no UID drop, no syscall filter. If the npm package was hijacked, that hijacker now runs code on your machine the next time validate fires.
 

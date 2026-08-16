@@ -1,8 +1,9 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { writeManifestStamp, readManifestStamps, listExtensions } from '../../../lib/extensions/install.mjs';
+import { installExtension, writeManifestStamp, readManifestStamps, listExtensions } from '../../../lib/extensions/install.mjs';
+import { parseYaml } from '../../../lib/profiles/yaml.mjs';
 import { createTempDir, cleanupTempDir, writeFixture } from '../../helpers.mjs';
 
 describe('extensions/install', () => {
@@ -99,5 +100,362 @@ describe('extensions/install', () => {
       assert.ok(content.includes('name: my-project'));
       assert.ok(content.includes('installed_extensions:'));
     });
+  });
+});
+
+// ── installExtension: plan-everything-then-write ─────────────────────────
+
+/**
+ * Deterministic recursive snapshot of every path AND its bytes under `root`.
+ *
+ * Directories are recorded too (as `'<dir>'`), so a merge that creates an empty
+ * directory and writes nothing into it is still a difference. Nothing is excluded.
+ *
+ * Two deliberate limitations: contents are read as utf8, so a byte-level change
+ * inside a binary file that decodes identically is invisible; and file mode is
+ * not captured, so a chmod-only mutation does not register. The install path
+ * writes text and asserts modes separately (see the 0o555 payload test), so
+ * neither gap is load-bearing for the atomicity assertions here.
+ *
+ * @param {string} root - Directory to snapshot.
+ * @returns {Record<string, string>} Relative path → file contents (or `'<dir>'`).
+ */
+function snapshotDir(root) {
+  const out = {};
+  const walk = (dir, prefix) => {
+    const dirents = readdirSync(dir, { withFileTypes: true })
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const dirent of dirents) {
+      const rel = prefix === '' ? dirent.name : `${prefix}/${dirent.name}`;
+      const full = join(dir, dirent.name);
+      if (dirent.isDirectory()) {
+        out[rel] = '<dir>';
+        walk(full, rel);
+      } else {
+        out[rel] = readFileSync(full, 'utf8');
+      }
+    }
+  };
+  walk(root, '');
+  return out;
+}
+
+describe('installExtension — two-phase install', () => {
+  /** @type {string[]} Temp dirs created by the fixtures, cleaned after every test. */
+  let trash;
+  beforeEach(() => { trash = []; });
+  afterEach(() => { for (const dir of trash) cleanupTempDir(dir); });
+
+  /** Extension dir + a project with a manifest and an empty governance directory. */
+  /** The three MARKED registries and their root keys, as init scaffolds them. */
+  const MARKED_FIXTURES = [
+    ['gates.yaml', 'gates'],
+    ['review.yaml', 'reviewers'],
+    ['diagnostics.yaml', 'diagnostics'],
+  ];
+
+  function tempPair() {
+    const extDir = createTempDir();
+    const projectRoot = createTempDir();
+    trash.push(extDir, projectRoot);
+    writeFixture(projectRoot, '.context-index/manifest.yaml', 'project:\n  name: test\n');
+    mkdirSync(join(projectRoot, '.context-index', 'governance'), { recursive: true });
+    // A real install target is a project that has already been scaffolded, and
+    // /adev:init scaffolds the three MARKED registries with their
+    // `materialized_at` marker already in place. Without it an install into
+    // gates/review/diagnostics is refused with REGISTRY_NOT_MATERIALIZED (see
+    // `governance-marker-gate.test.mjs`), which is not what these cases are about.
+    for (const [file, rootKey] of MARKED_FIXTURES) {
+      writeFixture(
+        projectRoot,
+        `.context-index/governance/${file}`,
+        `materialized_at: 2026-01-01T00:00:00Z\n${rootKey}: []\n`
+      );
+    }
+    return { extDir, projectRoot };
+  }
+
+  /**
+   * An extension contributing one `validate.yaml` quality-gate whose `command`
+   * argv names a real `bin/check.sh` shipped inside the extension.
+   */
+  function fixtureWithExecutableGovernance() {
+    const { extDir, projectRoot } = tempPair();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: exec-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  governance:',
+      '    - target: validate.yaml',
+      '      entries:',
+      '        - id: exec-gate',
+      '          kind: quality-gate',
+      '          severity: error',
+      '          command: [bash, bin/check.sh]',
+      '',
+    ].join('\n'));
+    writeFixture(extDir, 'bin/check.sh', '#!/usr/bin/env bash\nexit 0\n');
+    return { extDir, projectRoot };
+  }
+
+  /**
+   * A VALID `gates.yaml` block followed by a `review.yaml` block carrying a field
+   * outside that registry's allowlist, plus a `domain-profile` so the test proves
+   * the profile is not written either.
+   */
+  function fixtureWithTwoTargetsSecondInvalid() {
+    const { extDir, projectRoot } = tempPair();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: two-target-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  domain-profile:',
+      '    name: two-target-domain',
+      '    extends: software',
+      '  governance:',
+      '    - target: gates.yaml',
+      '      entries:',
+      '        - id: first-gate',
+      '          severity: error',
+      '          command: [bash, bin/first.sh]',
+      '    - target: review.yaml',
+      '      entries:',
+      '        - id: second-reviewer',
+      '          name: Second',
+      '          args: nope',
+      '',
+    ].join('\n'));
+    writeFixture(extDir, 'bin/first.sh', '#!/usr/bin/env bash\nexit 0\n');
+    return { extDir, projectRoot };
+  }
+
+  /** An extension whose single governance block targets `target`. */
+  function fixtureTargeting(target) {
+    const { extDir, projectRoot } = tempPair();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: targeting-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  governance:',
+      `    - target: ${target}`,
+      '      entries:',
+      '        - id: policy-one',
+      '          severity: error',
+      '',
+    ].join('\n'));
+    return { extDir, projectRoot };
+  }
+
+  it('an executable contribution without consent refuses and writes nothing', async () => {
+    const { extDir, projectRoot } = fixtureWithExecutableGovernance();
+    const before = snapshotDir(projectRoot);
+    await assert.rejects(
+      installExtension(extDir, projectRoot, { allowExec: false, interactive: false }),
+      e => e.code === 'GOVERNANCE_EXEC_NOT_CONSENTED'
+    );
+    assert.deepEqual(snapshotDir(projectRoot), before);
+  });
+
+  it('--allow-exec installs and stamps exec_consented_at', async () => {
+    const { extDir, projectRoot } = fixtureWithExecutableGovernance();
+    await installExtension(extDir, projectRoot, { allowExec: true, interactive: false });
+    const out = readFileSync(join(projectRoot, '.context-index/governance/validate.yaml'), 'utf8');
+    assert.match(out, /exec_consented_at: \d{4}-\d{2}-\d{2}T/);
+    assert.match(out, /source: extension:/);
+  });
+
+  it('per-install atomicity — a refused second target leaves the first untouched', async () => {
+    const { extDir, projectRoot } = fixtureWithTwoTargetsSecondInvalid();
+    const before = snapshotDir(projectRoot);
+    await assert.rejects(installExtension(extDir, projectRoot, { allowExec: true }));
+    assert.deepEqual(snapshotDir(projectRoot), before,
+      'no registry, and no domain profile, may be written when any block refuses');
+  });
+
+  it('an unknown target refuses before any write', async () => {
+    const { extDir, projectRoot } = fixtureTargeting('risk-policies.yaml');
+    await assert.rejects(installExtension(extDir, projectRoot, { allowExec: true }),
+      e => e.code === 'UNKNOWN_GOVERNANCE_TARGET');
+  });
+
+  it('relocates the payload to .context-index/extensions/<name>/ at mode 0o555 and rewrites argv to it', async () => {
+    const { extDir, projectRoot } = fixtureWithExecutableGovernance();
+    await installExtension(extDir, projectRoot, { allowExec: true, interactive: false });
+
+    const payloadPath = join(projectRoot, '.context-index/extensions/exec-ext/bin/check.sh');
+    assert.equal(readFileSync(payloadPath, 'utf8'), '#!/usr/bin/env bash\nexit 0\n');
+    assert.equal(statSync(payloadPath).mode & 0o777, 0o555);
+
+    const parsed = parseYaml(readFileSync(join(projectRoot, '.context-index/governance/validate.yaml'), 'utf8'));
+    assert.equal(parsed.checks.length, 1);
+    assert.equal(parsed.checks[0].id, 'exec-gate');
+    assert.deepEqual(parsed.checks[0].command, ['bash', payloadPath]);
+  });
+
+  it('reports the payload directory in filesWritten', async () => {
+    const { extDir, projectRoot } = fixtureWithExecutableGovernance();
+    const report = await installExtension(extDir, projectRoot, { allowExec: true, interactive: false });
+    assert.ok(
+      report.filesWritten.includes(join(projectRoot, '.context-index/extensions/exec-ext')),
+      `filesWritten should name the payload dir, got ${JSON.stringify(report.filesWritten)}`
+    );
+  });
+
+  it('an interactive install answered "n" refuses and writes nothing', async () => {
+    const { extDir, projectRoot } = fixtureWithExecutableGovernance();
+    const before = snapshotDir(projectRoot);
+    await assert.rejects(
+      installExtension(extDir, projectRoot, { interactive: true, promptFn: () => 'n' }),
+      e => e.code === 'GOVERNANCE_EXEC_NOT_CONSENTED'
+    );
+    assert.deepEqual(snapshotDir(projectRoot), before);
+  });
+
+  it('an interactive install answered "y" installs and stamps exec_consented_at', async () => {
+    const { extDir, projectRoot } = fixtureWithExecutableGovernance();
+    const prompts = [];
+    await installExtension(extDir, projectRoot, {
+      interactive: true,
+      promptFn: (text) => { prompts.push(text); return 'y'; },
+    });
+    assert.equal(prompts.length, 1);
+    assert.match(prompts[0], /validate\.yaml \[exec-gate\] command: bash bin\/check\.sh/);
+    const out = readFileSync(join(projectRoot, '.context-index/governance/validate.yaml'), 'utf8');
+    assert.match(out, /exec_consented_at: \d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('a manifest with no executable contribution installs without prompting', async () => {
+    const { extDir, projectRoot } = tempPair();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: benign-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  governance:',
+      '    - target: boundaries.yaml',
+      '      entries:',
+      '        - id: no-secrets',
+      '          severity: error',
+      '          pattern: secrets/',
+      '',
+    ].join('\n'));
+
+    let promptCalls = 0;
+    const report = await installExtension(extDir, projectRoot, {
+      interactive: true,
+      promptFn: () => { promptCalls += 1; return 'n'; },
+    });
+    assert.equal(promptCalls, 0);
+    assert.deepEqual(report.mergesApplied, ['appended: no-secrets']);
+    const out = readFileSync(join(projectRoot, '.context-index/governance/boundaries.yaml'), 'utf8');
+    assert.match(out, /id: no-secrets/);
+    assert.equal(/exec_consented_at/.test(out), false);
+  });
+
+  it('a plugin: package.skill passes through unrewritten — it is not a payload', async () => {
+    const { extDir, projectRoot } = tempPair();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: plugin-ref-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  governance:',
+      '    - target: review.yaml',
+      '      entries:',
+      '        - id: plugin-reviewer',
+      '          name: Plugin Reviewer',
+      '          dispatch: always',
+      '          package:',
+      '            skill: plugin:review-specs/SKILL.md',
+      '',
+    ].join('\n'));
+
+    await installExtension(extDir, projectRoot, { allowExec: true, interactive: false });
+    const parsed = parseYaml(readFileSync(join(projectRoot, '.context-index/governance/review.yaml'), 'utf8'));
+    assert.equal(parsed.reviewers.length, 1);
+    assert.equal(parsed.reviewers[0].package.skill, 'plugin:review-specs/SKILL.md');
+    assert.equal(readdirSync(join(projectRoot, '.context-index')).includes('extensions'), false);
+  });
+
+  it('payload rewrites are scoped per target — a same-named id in another registry is untouched', async () => {
+    const { extDir, projectRoot } = tempPair();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: shared-id-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  governance:',
+      '    - target: gates.yaml',
+      '      entries:',
+      '        - id: shared',
+      '          severity: error',
+      '          command: [bash, bin/gate.sh]',
+      '    - target: review.yaml',
+      '      entries:',
+      '        - id: shared',
+      '          name: Shared Reviewer',
+      '          dispatch: always',
+      '',
+    ].join('\n'));
+    writeFixture(extDir, 'bin/gate.sh', '#!/usr/bin/env bash\nexit 0\n');
+
+    await installExtension(extDir, projectRoot, { allowExec: true, interactive: false });
+
+    const gates = parseYaml(readFileSync(join(projectRoot, '.context-index/governance/gates.yaml'), 'utf8'));
+    assert.deepEqual(gates.gates[0].command, [
+      'bash',
+      join(projectRoot, '.context-index/extensions/shared-id-ext/bin/gate.sh'),
+    ]);
+
+    const reviewers = parseYaml(readFileSync(join(projectRoot, '.context-index/governance/review.yaml'), 'utf8'));
+    assert.equal(reviewers.reviewers[0].id, 'shared');
+    assert.equal(reviewers.reviewers[0].command, undefined);
+    assert.equal(reviewers.reviewers[0].name, 'Shared Reviewer');
+  });
+
+  it('a field refusal names the extension and the entry, and keeps its code', async () => {
+    const { extDir, projectRoot } = fixtureWithTwoTargetsSecondInvalid();
+    await assert.rejects(
+      installExtension(extDir, projectRoot, { allowExec: true }),
+      e => e.code === 'GOVERNANCE_FIELD_NOT_ALLOWED'
+        && /Extension 'two-target-ext' entry 'second-reviewer': /.test(e.message)
+        && /Field 'args' is not contributable to review\.yaml/.test(e.message)
+    );
+  });
+
+  it('a malformed entry reports its schema verdict, not a payload verdict, and never prompts', async () => {
+    const { extDir, projectRoot } = tempPair();
+    writeFixture(extDir, 'adev-extension.yaml', [
+      'name: no-id-ext',
+      'version: 1.0.0',
+      'provides:',
+      '  governance:',
+      '    - target: validate.yaml',
+      '      entries:',
+      '        - kind: quality-gate',
+      '          severity: error',
+      '          command: [bash, /etc/passwd]',
+      '',
+    ].join('\n'));
+
+    let promptCalls = 0;
+    await assert.rejects(
+      installExtension(extDir, projectRoot, {
+        interactive: true,
+        promptFn: () => { promptCalls += 1; return 'y'; },
+      }),
+      e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID' && /'id' must be a non-empty string/.test(e.message)
+    );
+    assert.equal(promptCalls, 0, 'consent must not be asked for an entry that can never be installed');
+  });
+
+  it('a re-install skips the already-present ids and leaves the registry byte-identical', async () => {
+    const { extDir, projectRoot } = fixtureWithExecutableGovernance();
+    const first = await installExtension(extDir, projectRoot, { allowExec: true, interactive: false });
+    assert.deepEqual(first.mergesApplied, ['appended: exec-gate']);
+
+    const registryPath = join(projectRoot, '.context-index/governance/validate.yaml');
+    const afterFirst = readFileSync(registryPath, 'utf8');
+
+    const second = await installExtension(extDir, projectRoot, { allowExec: true, interactive: false });
+    assert.deepEqual(second.mergesApplied, ['skipped: exec-gate']);
+    assert.equal(readFileSync(registryPath, 'utf8'), afterFirst);
   });
 });

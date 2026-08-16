@@ -49,3 +49,7 @@ diagnostics:
     severity: error
     tier: 2
     scope: spec
+
+# Stamped by 'adev governance materialize' — write-once. The entries above are
+# the complete effective set; nothing is contributed from anywhere else.
+materialized_at: 2026-08-15T19:35:31.037Z

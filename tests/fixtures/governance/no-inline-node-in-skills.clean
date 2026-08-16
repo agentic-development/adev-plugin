@@ -1,0 +1,9 @@
+## Step 4 — Read the drift flag
+
+Run the CLI verb; the helper body lives in `lib/cli/`, not in this file.
+
+```bash
+adev repomap drift --json
+```
+
+Read the `drift` field from the JSON envelope.

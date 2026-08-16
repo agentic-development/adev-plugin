@@ -9,10 +9,10 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 3
+revision: 4
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-05-19
+updated: 2026-08-15
 source-manifest:
   sha: "449d3d5"
   files:
@@ -67,7 +67,7 @@ The module enforces a path-containment invariant on every public function that t
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Event schema + canonical variants | Define the open discriminated-union event shape and the canonical variants (`lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `partial_recovery`, `spec_revised`, `human_approval_required`). Include `ts` and `event` invariants. The `reviewer_report`, `step_completed`, `step_failed`, and `lifecycle_step` variants accept an OPTIONAL integer `revision: N` field added by the `review-block-auto-retry` cross-cutting spec. `step_completed` optionally carries `totals`, `model_breakdown`, and `skipped_lines` when emitted with `--from-summary`. | small |
+| Event schema + canonical variants | Define the open discriminated-union event shape and the canonical variants (`lifecycle_step`, `step_completed`, `step_failed`, `reviewer_report`, `validator_report`, `plan_task`, `debug_intervention`, `recovery_record`, `manual_override`, `partial_recovery`, `spec_revised`, `human_approval_required`). Include `ts` and `event` invariants. The `reviewer_report`, `step_completed`, `step_failed`, and `lifecycle_step` variants accept an OPTIONAL integer `revision: N` field added by the `review-block-auto-retry` cross-cutting spec. `step_completed` optionally carries `totals`, `model_breakdown`, and `skipped_lines` when emitted with `--from-summary`. The `validator_report` variant accepts two OPTIONAL fields added by the `explicit-governance-registries` cross-cutting spec: `gate_outcomes`, an array of `{ id, verdict, tier, command_sha? }` per-gate records written only by `/adev:validate` Check 1 from its own gate-execution results, and `manifest_sha`, the spec's source-manifest `sha` at the moment of that gate run. Both are optional and absent on pre-upgrade records; consumers treat a missing field as "unknown", never as a failure. | small |
 | `appendEvent` primitive | Atomic-append-one-line implementation using `fs.appendFile` with `O_APPEND` semantics. Validates required fields (`ts`, `event`). Stamps `ts` if absent. Creates parent dir + file if missing. | small |
 | `readEvents` primitive | Read file, split on newline, parse each line as JSON. Tolerates truncated final line (skip-and-continue). Returns `[]` for missing file. | small |
 | `slugFromSpec` / path helpers | Compute slug from spec filename. Resolve path to `<projectRoot>/.context-index/lifecycle-state/<slug>.jsonl`. | small |
@@ -136,6 +136,7 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 - **When** `reportValidator({step, validator, verdict})` is called **then** the helper looks up the validator's `severity` from `gates.yaml`, stamps it on the event, and appends. Same default-to-warning fallback as reviewers.
 - **When** `currentState(projectRoot, specPath)` is called **then** the events are read, folded into a `StateProjection` object containing `{spec, status, currentStep, currentTask, steps{}, planTasks{}, interventions[], partialRecoveries[], specRevisions?[], humanApprovalsRequired?[], startedAt, updatedAt, unknownEvents[]}`, and that object is returned. Each entry in `steps{}` carries the latest-revision projection plus a `byRevision[N]` map keyed by integer revision (`{ verdict, blockers[], completed_at, reports[] }`). Events without a `revision:` field fold into `byRevision[1]` (legacy-fold-as-rev-1); top-level `step.verdict`/`step.status` reflect the latest revision (no breaking change for callers that ignore the new field). Per-revision history is added by the `review-block-auto-retry` cross-cutting spec.
 - **When** any of `reviewer_report`, `step_completed`, `step_failed`, or `lifecycle_step` carries an optional integer `revision: N` (`N >= 1`) **then** the fold uses it to populate `steps.<step>.byRevision[N]`. Emitters that do not know the spec's revision MAY omit the field; the fold treats those events as revision 1 for projection purposes (forward-compatible / no breaking change for legacy events).
+- **When** a `validator_report` carries the optional `gate_outcomes` array and/or the optional `manifest_sha` string **then** both pass through `reportValidator` into the persisted payload unmodified, and the fold ignores them — they are consumed by `adev gate transitions` (`explicit-governance-registries.spec.md`), not by the projection. `gate_outcomes` elements are `{ id, verdict, tier, command_sha? }`. This is a per-variant optional-field contribution, the same mechanism by which `review-block-auto-retry` contributed `revision`; no `CANONICAL_EVENTS` variant is added, so the ADR-0009 `[BOUNDARY: human-approved]` line is not crossed.
 
 - **When** the fold encounters `code_drift_detected` (fields `drift_source`, `drift_at`) or `code_drift_cleared` (field `drift_at`) **then** it projects `state.drift`, which is `{ source, at, ts }` for the latest `code_drift_detected` not superseded by a later `code_drift_cleared`, and `null` otherwise (`null` by default, always present). This implements `jsonl-drift-events.spec.md` Behavior 5's "latest unsuperseded event" rule as a forward fold: last-wins on detected, reset-to-null on cleared. It is deliberately NOT an accumulating list — rev 3 of that spec rescinded multi-source history because every consumer reads only the latest unresolved event. Projection keys are `source`/`at` rather than the raw `drift_source`/`drift_at`, per the no-snake_case-on-the-projection rule above; raw payloads keep their own field names.
 
@@ -146,6 +147,7 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 - **When** any of `code_drift_detected`, `code_drift_cleared`, or `spec_amended` is folded **then** `status` and `currentStep` are unchanged and no gate is affected. Both concerns are advisory/relational, not lifecycle positions.
 
   These three rows close the debt from `jsonl-drift-events.spec.md` Migration Step 0 and `spec-amendment-artifacts.spec.md` Behavior 4, which required BOTH canonical registration and a documented variant here. Step 0 was half-executed: the discriminators reached `CANONICAL_EVENTS`, so `appendEvent` accepted them, but no reducer case and no spec row were written — leaving events the writer treated as canonical and the reducer bucketed into `unknownEvents`, which is the CON-4 blocker that step names.
+
 - **When** the fold encounters reports from multiple actors on the same step **then** the step's aggregate verdict is computed by the explicit severity × verdict table below (SA-5):
 
   | Worst-case actor severity reporting FAIL | Aggregate step verdict | Aggregate step status |

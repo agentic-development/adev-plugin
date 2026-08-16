@@ -41,3 +41,24 @@ diagnostics:
     severity: error
     tier: 1
     scope: event-impact
+
+# ── Materialization marker ────────────────────────────────────────────────
+# `materialized_at` says one thing: what THIS file declares is the complete
+# effective set — no bundled `plugin:` row is added behind it at run time.
+# `lib/diagnostics/index.mjs::loadRegistry` fails closed without it.
+#
+# It ships in the template so a scaffolded project is BORN materialized: the
+# guard is satisfied on the project's first `adev diagnose`, and neither
+# /adev:init nor an extension install has to stamp it. The marker is
+# write-once, so a later `adev governance materialize --registry diagnostics`
+# leaves it exactly as it is.
+#
+# HONEST ABOUT THE VALUE: the instant below is a FROZEN LITERAL shipped in
+# this template — the date this template's diagnostic set was fixed. Nothing
+# stamps it at scaffold time; `cpSync` copies it verbatim, so it is NOT when
+# your project was materialized. No consumer reads the value: every loader and
+# the install gate check only that a valid top-level marker is PRESENT. If you
+# want an instant that means something for your project, delete this line and
+# run `adev governance materialize --registry diagnostics` — the marker is
+# write-once, so while the line is here that command leaves it as it is.
+materialized_at: 2026-08-15T00:00:00Z
