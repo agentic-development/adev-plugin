@@ -1,5 +1,5 @@
 ---
-id: workspace-aware-vision-0b94e54a
+id: workspace-aware-vision-0c88eb8b
 scope: multi-repo-workspace
 title: First-run PASS: Workspace-Aware Strategic Planning
 pattern: First-run PASS for Workspace-Aware Strategic Planning: workspace-mode branching pattern — detectWorkspace guard + resolveWorkspaceProductPath routing + unconditional epic-sync deferral keeps single-repo paths untouched while adding workspace capabilities. Input-hardening helpers (assertPathInWorkspace, validateModuleName, sanitizeIdentityOneLiner, readCappedText) applied at skill boundaries before any filesystem access.

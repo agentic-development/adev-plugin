@@ -1,5 +1,5 @@
 ---
-id: bundled-domain-profiles-b89e1ab2
+id: bundled-domain-profiles-5aef5a1e
 scope: domain-profiles
 title: First-run PASS: Bundled Domain Profiles
 pattern: First-run PASS for Bundled Domain Profiles: extracting hardcoded defaults into static overlay files with comprehensive backward-compatibility testing produces clean validation on first attempt
@@ -14,7 +14,7 @@ updated: 2026-05-10
 ---
 
 ---
-id: template-replacement-spec-4ea79ce7
+id: template-replacement-9ec4561b
 scope: domain-profiles
 title: First-run PASS: Template Replacement for Domain Profiles
 pattern: When LLM agents consume domain-specific configuration via skill prose, use complete templates (single source of truth) instead of overlay fragments merged dynamically — agents follow explicit prose instructions over dynamically computed variables

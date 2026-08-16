@@ -1,5 +1,5 @@
 ---
-id: foundation-onboarding-431e05fe
+id: foundation-onboarding-64995e82
 scope: user-docs
 title: First-run PASS: Foundation & Onboarding
 pattern: First-run PASS for Foundation & Onboarding: pure markdown documentation with comprehensive cross-page link verification tests produced clean validation on first attempt
@@ -14,7 +14,7 @@ updated: 2026-05-09
 ---
 
 ---
-id: workflow-guides-fc82d57d
+id: workflow-guides-51880df9
 scope: user-docs
 title: First-run PASS: Workflow Guides
 pattern: First-run PASS for Workflow Guides: lifecycle phase documentation with skill coverage tests validated on first attempt
@@ -29,7 +29,7 @@ updated: 2026-05-09
 ---
 
 ---
-id: support-polish-6d8a85a1
+id: support-polish-36f802fb
 scope: user-docs
 title: First-run PASS: Support & Polish
 pattern: First-run PASS for Support and Polish: troubleshooting FAQ, breadcrumb navigation, and dead link elimination validated on first attempt
@@ -44,7 +44,7 @@ updated: 2026-05-09
 ---
 
 ---
-id: advanced-guides-e6994d1b
+id: advanced-guides-e55fd996
 scope: user-docs
 title: First-run PASS: Advanced Guides
 pattern: First-run PASS for Advanced Guides: content absorption from existing docs with prerequisite and cross-link enrichment validated on first attempt
@@ -59,7 +59,7 @@ updated: 2026-05-09
 ---
 
 ---
-id: project-types-guide-21aeb47a
+id: project-types-guide-4411d4a1
 scope: user-docs
 title: First-run PASS: Project Types Guide
 pattern: First-run PASS for Project Types Guide: worked examples sourced from real eval fixtures validated on first attempt
@@ -74,7 +74,7 @@ updated: 2026-05-09
 ---
 
 ---
-id: reference-section-e9d305bf
+id: reference-section-d06e1467
 scope: user-docs
 title: First-run PASS: Reference Section
 pattern: First-run PASS for Reference Section: comprehensive skill, config, and hooks reference documentation validated on first attempt
