@@ -4,6 +4,7 @@
  * Shared suite for the signature/recurrence retrieval behaviors:
  *   Behavior 1: `signature` option and signature-primary ranking
  *   Behavior 2: exact signature matches are exempt from the `low` floor
+ *   Behavior 3: an entry is allocated once even when it matches several axes
  *
  * Fixture note: `validateEntry` enforces SIGNATURE_PATTERN, so `writeHeuristic`
  * cannot seed an entry carrying a malformed signature. Those fixtures are
@@ -548,5 +549,100 @@ describe("retrieveHeuristics: internal signature tag does not leak", () => {
       assert.equal("_keywordMatch" in entry, false);
       assert.equal("_scopePriority" in entry, false);
     }
+  });
+});
+
+describe("retrieveHeuristics: an entry is allocated once across all axes", () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(tempDir);
+  });
+
+  const SIG = "validate-abc";
+  const KEYWORD = "auth";
+
+  it("returns an entry matching BOTH signature and keyword exactly once", async () => {
+    await seedEntries(tempDir, [
+      makeEntry({
+        id: "both-axes",
+        confidence: "high",
+        signature: SIG,
+        title: "Auth token refresh rule",
+        pattern: "When auth tokens expire, refresh before retrying",
+        tags: ["auth"],
+      }),
+      makeEntry({ id: "plain", confidence: "high", title: "Unrelated", tags: ["misc"] }),
+    ]);
+
+    // Fixture proof, axis 1 (keyword): a keyword-only query with no signature
+    // must already return the entry. Without this, the both-axes assertion
+    // below could pass vacuously because the entry never matched the keyword.
+    const keywordOnly = await retrieveHeuristics(tempDir, MODULE, {
+      keywords: [KEYWORD],
+    });
+    assert.ok(
+      keywordOnly.some((e) => e.id === "both-axes"),
+      `fixture does not match the keyword axis: ${keywordOnly.map((e) => e.id).join(", ") || "(none)"}`,
+    );
+
+    // Fixture proof, axis 2 (signature): the stored signature is the queried one.
+    const signatureOnly = await retrieveHeuristics(tempDir, MODULE, { signature: SIG });
+    const seeded = signatureOnly.find((e) => e.id === "both-axes");
+    assert.ok(seeded, "fixture missing from a signature-only query");
+    assert.equal(seeded.signature, SIG, "fixture does not carry the queried signature");
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: SIG,
+      keywords: [KEYWORD],
+    });
+
+    const ids = out.map((e) => e.id);
+    assert.ok(
+      ids.includes("both-axes"),
+      `expected the both-axes entry to be returned, got ${ids.join(", ") || "(none)"}`,
+    );
+    assert.equal(
+      out.filter((e) => e.id === "both-axes").length,
+      1,
+      `an entry matching both axes must be allocated once, got ${ids.join(", ")}`,
+    );
+  });
+
+  it("returns no duplicate ids under any axis combination", async () => {
+    await seedEntries(tempDir, [
+      makeEntry({ id: "sig-only", confidence: "high", signature: SIG, title: "Signature only", tags: ["misc"] }),
+      makeEntry({ id: "sig-only-low", confidence: "low", signature: SIG, title: "Signature only low", tags: ["misc"] }),
+      makeEntry({ id: "kw-one", confidence: "high", title: "Auth handling", tags: ["auth"] }),
+      makeEntry({ id: "kw-two", confidence: "medium", title: "Retry rule", pattern: "retry on failure", tags: ["retry"] }),
+      makeEntry({
+        id: "both-axes",
+        confidence: "medium",
+        signature: SIG,
+        title: "Auth retry rule",
+        pattern: "auth retry backoff",
+        tags: ["auth", "retry"],
+      }),
+      makeEntry({ id: "neither-one", confidence: "high", title: "Unrelated one", tags: ["misc"] }),
+      makeEntry({ id: "neither-two", confidence: "medium", title: "Unrelated two", tags: ["misc"] }),
+    ]);
+
+    const out = await retrieveHeuristics(tempDir, MODULE, {
+      signature: SIG,
+      keywords: [KEYWORD, "retry"],
+      injectionLimit: 8,
+    });
+
+    const ids = out.map((e) => e.id);
+    assert.ok(ids.includes("both-axes"), `expected 'both-axes' in ${ids.join(", ") || "(none)"}`);
+    assert.equal(
+      new Set(ids).size,
+      out.length,
+      `duplicate ids returned: ${ids.join(", ")}`,
+    );
   });
 });
