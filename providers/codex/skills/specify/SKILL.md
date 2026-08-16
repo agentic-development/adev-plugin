@@ -348,9 +348,26 @@ After resolution, the `kind` variable is available for Step 5's `resolveTemplate
 Guide the user through each section defined in the loaded domain template. Do not dump a blank template. Use the template's section names and structure -- do not substitute or rename sections. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
 
 **Behavioral Contract:**
-Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors in the **When...then** format:
-- **When** a user drags a card to a new position within the same column **then** the card's `position` updates and affected cards reindex.
-- **When** a user drags a card to a different column **then** the card moves and both columns reindex.
+Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors as an **unordered** list, each item opening with a bolded behavior ID, in the **When...then** format:
+
+```markdown
+### Behaviors
+
+<!-- retired-behavior-ids: (none) -->
+
+- **BEH-1** — **When** a user drags a card within the same column **then** the card's `position` updates and affected cards reindex.
+- **BEH-2** — **When** a user drags a card to a different column **then** the card moves and both columns reindex.
+```
+
+A behavior ID is `BEH-<n>`, `<n>` a positive integer unique within *this* spec. IDs are spec-scoped — `BEH-3` in two specs are unrelated. The list is unordered deliberately: an ordered list re-renders `1. 2. 3.` alongside the IDs, leaving two competing referents for the same behavior.
+
+**Allocation.** The next ID is one greater than the highest number ever used in this spec — counting live IDs *and* every ID listed in the `retired-behavior-ids` comment. Numbers are never reused; gaps carry no meaning.
+
+**Tombstones.** The `<!-- retired-behavior-ids: … -->` comment sits immediately under the Behaviors heading and records every withdrawn ID. It is the allocator's memory: without it, deleting `BEH-5` and later inserting a behavior would resurrect `BEH-5` under new text.
+
+**Revising behaviors.** Inserting a behavior at any position gives it the next unused ID and **no other behavior's ID changes** — never renumber to close a gap. Rewriting a behavior's wording *without changing which condition it governs* keeps its existing ID, so a finding already filed against that ID still resolves. If a rewrite changes *which* condition the behavior governs (different trigger, different subject), retire the old ID and mint a new one, so a citation against the old ID resolves to a tombstone rather than to unrelated text. A deleted behavior's ID is appended to `retired-behavior-ids` and is never reassigned.
+
+Specs authored before this convention landed keep their ordinal behaviors and are **not retro-migrated**. Read a legacy spec as-is; do not mint IDs into it as a side effect of an unrelated revision.
 
 Aim for 3-8 directly testable behavior statements.
 
@@ -588,7 +605,7 @@ Read each selected file. For each, identify:
 Produce a Live Spec where:
 
 - **Behavioral Contract** describes observed behavior. Use comment: `<!-- Extracted from existing code. Describes current behavior as of YYYY-MM-DD. -->`
-- **Behaviors** are derived from code paths. Each public function or API endpoint becomes one or more behavior statements.
+- **Behaviors** are derived from code paths. Each public function or API endpoint becomes one or more behavior statements. Render them with behavior IDs exactly as standard mode's *Step 4: Interactive Spec Authoring* describes: an unordered list, each item opening with a bolded `BEH-<n>`, under a `<!-- retired-behavior-ids: (none) -->` comment.
 - **Error Cases** come from existing error handling code. Flag unhandled cases:
   ```
   | Missing auth token | Returns 401 | 401 |
@@ -811,7 +828,7 @@ Load context per the shared section above. Read the full diff content. For each 
 Produce a Live Spec where:
 
 - **Behavioral Contract** describes behavior as it exists after the diff.
-- **Behaviors** map to changes in the diff — each significant code change becomes a behavior statement.
+- **Behaviors** map to changes in the diff — each significant code change becomes a behavior statement. Render them with behavior IDs exactly as standard mode's *Step 4: Interactive Spec Authoring* describes: an unordered list, each item opening with a bolded `BEH-<n>`, under a `<!-- retired-behavior-ids: (none) -->` comment.
 - **Error Cases** extracted from new or modified error handling.
 - **Actionable Task Map** replaced with **Changes Summary**:
   ```

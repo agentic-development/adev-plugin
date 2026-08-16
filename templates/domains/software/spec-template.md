@@ -67,7 +67,14 @@ updated: {{ date }}
 
 ## Behaviors
 
-<!-- "When X happens, then Y is the result." Concrete, testable statements. -->
+<!-- "When X happens, then Y is the result." Concrete, testable statements.
+     Each behavior carries a spec-scoped ID of the form BEH-<n>; allocate above the
+     highest ever used (live or retired) and never reuse a number. -->
+
+<!-- retired-behavior-ids: (none) -->
+
+- **BEH-1** — **When** ... **then** ...
+- **BEH-2** — **When** ... **then** ...
 
 ## Postconditions
 
