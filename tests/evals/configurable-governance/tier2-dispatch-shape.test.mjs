@@ -62,12 +62,24 @@ describe("Tier 2 / exec AC #14 — prompt-snapshot: env values absent from promp
         join(repo, ".context-index/governance/review.yaml"),
         // Fixture maintenance (Task 10): review.yaml is a MARKED registry and
         // `loadReviewConfig` fails closed without a `materialized_at` marker.
+        // Single-source (Task 11): this file IS the whole reviewer set, so
+        // `security-reviewer` — which the assertion below reads — must be a
+        // WHOLE row here. It used to be inherited from the bundled defaults at
+        // run time; nothing merges in behind this file any more.
         stampMarker(`reviewers:
   - id: project.env-consumer
     dispatch: always
     prompt: "prompts/billing-reviewer.md"
     profile: project-gate-profile
     context_pack: base
+
+  - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
 context_packs:
   base:
     include:
@@ -246,12 +258,19 @@ describe("Tier 2 / reviewers AC #4 — package mode produces runner + adapter di
 // reviewers #1 / checks #1 — byte-identical `.review.md` body via golden master.
 // ---------------------------------------------------------------------------
 describe("Tier 2 / golden master — renderReviewReport is byte-stable", () => {
-  const goldenPath = join(GOLDEN_DIR, "zero-config-review.md");
+  const goldenPath = join(GOLDEN_DIR, "no-registry-review.md");
 
-  it("produces the bundled-defaults report body matching the committed golden master", () => {
+  // INVERTED by explicit-governance-registries Task 11. The golden master used
+  // to capture the report of a project with NO `governance/` directory, on the
+  // expectation that three bundled reviewers would still be merged in and
+  // dispatched. That composition is gone: a project that declares no reviewers
+  // runs none, so the honest golden for this input is a report with an EMPTY
+  // dispatch table. The golden file was regenerated to match; the assertion
+  // itself is unchanged and is still byte-exact.
+  it("produces the no-registry report body matching the committed golden master", () => {
     const repo = cloneDir(BASE_FIXTURE);
     try {
-      // Remove project overlays so the output reflects pure bundled defaults.
+      // Remove the project's registries entirely — the zero-declaration case.
       rmSync(join(repo, ".context-index/governance"), { recursive: true, force: true });
       rmSync(join(repo, ".context-index/profiles.yaml"), { force: true });
       const cfg = loadReviewConfig(repo);

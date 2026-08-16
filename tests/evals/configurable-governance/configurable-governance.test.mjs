@@ -161,32 +161,56 @@ describe("/adev:review-specs install + run", () => {
   });
   after(() => rmSync(repo, { recursive: true, force: true }));
 
-  it("zero-config load (no project overlay) returns the three bundled reviewers", () => {
+  // INVERTED by explicit-governance-registries Task 11. This case used to assert
+  // that a project with NO `governance/review.yaml` still ran the three bundled
+  // reviewers, merged in at run time behind its back. That composition is gone:
+  // the project file is the whole reviewer set, so a project that declares none
+  // runs none. The old expectation is now the defect the spec exists to remove —
+  // a reviewer dispatching without a row in the file that is supposed to declare
+  // it — so the assertion is flipped rather than relaxed.
+  it("zero-config load (no project review.yaml) runs NO reviewers", () => {
     const clean = mkdtempSync(join(tmpdir(), "adev-cg-zc-"));
     try {
       // Only the context-index scaffold — no governance/review.yaml.
-      cpSync(join(repo, ".context-index", "constitution.md"), join(clean, ".context-index", "constitution.md"), { recursive: false, force: true });
       execSync(`mkdir -p ${clean}/.context-index`);
       writeFileSync(join(clean, ".context-index", "constitution.md"), "# stub");
       writeFileSync(join(clean, ".context-index", "manifest.yaml"), "project: zc");
       const r = loadReviewConfig(clean);
       assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-      const ids = r.reviewers.map((x) => x.id).sort();
-      assert.deepEqual(ids, ["consistency-analyzer", "security-reviewer", "structural-architect"]);
+      assert.deepEqual(r.reviewers.map((x) => x.id), []);
     } finally {
       rmSync(clean, { recursive: true, force: true });
     }
   });
 
-  it("project overlay disables consistency-analyzer and caps security-reviewer severity", () => {
+  // Also adjusted for the single-source model. `consistency-analyzer` is no
+  // longer DROPPED when switched off — Invariant 5 keeps a disabled row visible
+  // with its reason, so a reviewer the project deliberately turned off reads
+  // differently from one it never declared. And `BUNDLED_DEFAULT_OVERRIDE` can
+  // no longer be raised: there is nothing to override, because the file's rows
+  // are whole reviewers rather than patches over a bundled default.
+  it("the project registry disables consistency-analyzer and caps security-reviewer severity", () => {
     const r = loadReviewConfig(repo);
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-    const ids = r.reviewers.map((x) => x.id);
-    assert.ok(!ids.includes("consistency-analyzer"), "disabled reviewer leaked into registry");
+    const off = r.reviewers.find((x) => x.id === "consistency-analyzer");
+    assert.ok(off, "a disabled reviewer must stay visible (Invariant 5)");
+    assert.equal(off.enabled, false);
+    assert.equal(typeof off.disabled_reason, "string");
+    assert.equal(
+      shouldDispatch(off, { targetSpecPath: "specs/features/billing/x.md", specContent: "" }).dispatch,
+      false,
+      "visible must never mean runnable",
+    );
+    assert.ok(r.disabled.some((x) => x.id === "consistency-analyzer"));
+
     const sec = r.reviewers.find((x) => x.id === "security-reviewer");
     assert.equal(sec.severity_cap, "warning");
-    // Override emits an informational WARN.
-    assert.ok(hasCode(r.warnings, "BUNDLED_DEFAULT_OVERRIDE"));
+    assert.equal(sec.enabled, true);
+    assert.equal(
+      hasCode(r.warnings, "BUNDLED_DEFAULT_OVERRIDE"),
+      false,
+      "there is no bundled layer left to override",
+    );
   });
 
   it("project-triggered reviewer dispatches on a matching billing spec path", () => {

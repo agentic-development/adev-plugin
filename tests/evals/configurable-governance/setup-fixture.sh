@@ -142,12 +142,38 @@ chmod 600 .env
 # and adds a project-triggered reviewer
 # ---------------------------------------------------------------------------
 cat > .context-index/governance/review.yaml << 'EOF'
+# review.yaml is SINGLE-SOURCE (explicit-governance-registries, Task 11): every
+# row here is a WHOLE reviewer, never a patch over a bundled or domain default.
+# Nothing is merged in behind this file at run time. `structural-architect` and
+# `security-reviewer` are therefore spelled out in full — this is exactly what
+# `adev governance materialize --registry review` would have written, with
+# `security-reviewer`'s cap then edited down to `warning`. The old fixture
+# carried partial rows (`severity_cap` alone) which now fail to load with
+# REVIEWER_MODE_MISSING.
 reviewers:
+  - id: structural-architect
+    name: "Structural Architect"
+    dispatch: always
+    prompt: plugin:review-specs/structural-architect-prompt.md
+    profile: reviewer-reasoning
+    context_pack: base
+    severity_cap: blocker
+    source: bundled
+
+  # Declared-and-disabled: a disabled row is retained (Invariant 5) and is
+  # skipped BEFORE mode validation, so it stays legitimately partial.
   - id: consistency-analyzer
     enabled: false
+    disabled_reason: "switched off by this fixture to exercise the disabled path"
 
   - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    profile: reviewer-capable
+    context_pack: base
     severity_cap: warning
+    source: bundled
 
   - id: project.billing-domain
     name: "Billing Domain Reviewer"
@@ -339,9 +365,19 @@ reviewers:
 EOF
 
 # 2) implementer profile on reviewer (posture violation)
+# Single-source: a whole reviewer row that names a write-capable profile. The
+# old form here was a partial row (`id` + `profile`) that relied on inheriting
+# `prompt` from the bundled defaults; with the run-time merge removed it now
+# trips REVIEWER_MODE_MISSING before it can reach the posture check this
+# variant exists to exercise.
 cat > .context-index/negative/implementer-reviewer.yaml << 'EOF'
 reviewers:
   - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    context_pack: base
+    severity_cap: blocker
     profile: implementer
 EOF
 
