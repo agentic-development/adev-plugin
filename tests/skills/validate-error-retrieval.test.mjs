@@ -35,7 +35,10 @@ import {
   cleanupTempDir,
   writeFixture,
 } from "../helpers.mjs";
-import { deriveValidateFailureSignature } from "../../lib/heuristics.mjs";
+import {
+  deriveValidateFailureSignature,
+  parseHeuristicsFile,
+} from "../../lib/heuristics.mjs";
 
 const CLI = join(PLUGIN_ROOT, "cli", "index.mjs");
 
@@ -126,6 +129,23 @@ test("--check-id combined with --text is rejected", () => {
     /CONFLICTING_SIGNATURE_INPUT/,
     "two competing input forms must be reported as CONFLICTING_SIGNATURE_INPUT",
   );
+});
+
+test("--check-id requires --origin validate, and says so rather than silently retargeting", () => {
+  // deriveValidateFailureSignature hard-codes the `validate` origin, so any
+  // other origin is silently overridden rather than honoured. Left unchecked,
+  // `--origin recover --check-id x` prints `validate-<digest>` — a wrong answer
+  // wearing the shape of a right one. Both non-inherited origins are pinned.
+  for (const origin of ["recover", "implement"]) {
+    const r = runSignature(["--origin", origin, "--check-id", "gate-1"]);
+    assert.strictEqual(r.status, 1, `--origin ${origin} --check-id must be rejected`);
+    assert.strictEqual(r.stdout, "", `--origin ${origin} --check-id must emit no signature`);
+    assert.match(
+      r.stderr,
+      /CONFLICTING_SIGNATURE_INPUT/,
+      `--origin ${origin} cannot compose a validate-failure key`,
+    );
+  }
 });
 
 test("--check-id combined with --blocker-id under --origin review-specs is rejected", () => {
@@ -264,4 +284,206 @@ test("hooks/post-validate-extract-heuristics.sh is untouched by the re-query", (
   );
   // Its stdout contract is unchanged: the literal `echo '{}'` line.
   assert.match(hook, /^echo '\{\}'$/m, "the hook must still emit '{}' on stdout");
+});
+
+// ── Task 12: end-to-end key agreement ────────────────────────────────────
+//
+// Everything above this line — and every ranking test in Tasks 2-6 — stays
+// green even if the capture side and the read side compose the lookup key
+// DIFFERENTLY. A write-side key of `a b` and a read-side key of `a|b` both
+// hash cleanly, both store cleanly, and retrieval then matches ZERO entries
+// while the suite reports success. The only thing that catches that drift is
+// a round trip: drive the LIVE capture hook, read back the key it ACTUALLY
+// wrote, re-derive the key through the REAL read verb, and compare.
+//
+// Deliberately NOT re-derived in the test. Calling
+// `deriveValidateFailureSignature` to build the expectation would compare the
+// shared helper against itself and prove nothing about the hook's wiring.
+
+const HOOK = join(PLUGIN_ROOT, "hooks", "post-validate-extract-heuristics.mjs");
+
+const RT_CHARTER = "validation";
+const RT_SPEC_REL =
+  ".context-index/specs/features/validation/validate-config-single-source.spec.md";
+const RT_SPEC_TITLE = "Validate config single source";
+
+/**
+ * Failing checks with a deliberate DUPLICATE and DELIBERATELY out of order.
+ *
+ * Both properties are load-bearing. A read side that forgot to dedupe would
+ * hash three ids where the capture side hashed two; a read side that forgot to
+ * sort would hash them in argv order where the capture side sorted. Either
+ * drift changes the digest, and the `lookup === stored.signature` assertion
+ * below is what turns that into a RED test instead of an empty result set.
+ */
+const RT_CHECKS = [
+  { id: "validate.check-3-spec-compliance", outcome: "FAIL" },
+  { id: "validate.check-1-quality-gates", outcome: "FAIL" },
+  { id: "validate.check-3-spec-compliance", outcome: "FAIL" },
+];
+
+/** A project root carrying a manifest plus one spec fixture per entry in `specs`. */
+function makeRoundTripProject(specs = [[RT_SPEC_REL, RT_SPEC_TITLE]]) {
+  const dir = makeTempProject();
+  for (const [rel, title] of specs) {
+    writeFixture(dir, rel, `---\ncharter: ${RT_CHARTER}\n---\n\n# Live Spec: ${title}\n`);
+  }
+  return dir;
+}
+
+/**
+ * Drive the LIVE Stop hook with a FAIL verdict. Mirrors the payload shape and
+ * env contract of tests/hooks/post-validate-failure-capture.test.mjs.
+ */
+function runCaptureHook(projectRoot, { specPath, specTitle, checks }) {
+  const r = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({
+      tool_name: "adev:validate",
+      tool_result: {
+        verdict_metadata: {
+          overall: "FAIL",
+          spec_path: specPath,
+          charter: RT_CHARTER,
+          spec_title: specTitle,
+          report_path: specPath.replace(/\.spec\.md$/, ".validate.md"),
+          checks,
+        },
+      },
+    }),
+    encoding: "utf8",
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT,
+      CLAUDE_PROJECT_ROOT: projectRoot,
+    },
+    timeout: 20_000,
+  });
+  return { status: r.status ?? 1, stdout: r.stdout || "", stderr: r.stderr || "" };
+}
+
+/**
+ * Read back what the hook actually wrote.
+ *
+ * Both round-trip tests keep every spec under the SAME `charter: validation`,
+ * so all entries land in the single scope file `validation.md` and one read
+ * covers them — chosen over reading every scope file because a second file
+ * appearing would itself be a capture-side regression this read would hide.
+ */
+function readStoredEntries(projectRoot, scope = RT_CHARTER) {
+  return parseHeuristicsFile(
+    join(projectRoot, ".context-index", "memory", "heuristics", `${scope}.md`),
+  );
+}
+
+test("round trip: the key the hook writes is the key the read verb derives", async () => {
+  const root = makeRoundTripProject();
+  try {
+    // 1. Capture through the live hook.
+    const hook = runCaptureHook(root, {
+      specPath: RT_SPEC_REL,
+      specTitle: RT_SPEC_TITLE,
+      checks: RT_CHECKS,
+    });
+    assert.strictEqual(hook.status, 0, `the Stop hook must exit 0 — ${hook.stderr}`);
+
+    // 2. Read the entry the hook ACTUALLY stored. No expectation is composed
+    //    here; the stored bytes ARE the write-side key.
+    const entries = await readStoredEntries(root);
+    assert.strictEqual(entries.length, 1, `expected one captured entry — ${hook.stderr}`);
+    const [stored] = entries;
+    assert.ok(stored.signature, `the FAIL capture must store a signature — ${hook.stderr}`);
+
+    // 3. Re-derive the lookup key through the REAL read path the skill uses:
+    //    the CLI verb, from RAW check ids, in the same messy order.
+    const sig = runCli(root, [
+      "heuristics",
+      "signature",
+      "--origin",
+      "validate",
+      ...RT_CHECKS.flatMap((c) => ["--check-id", c.id]),
+    ]);
+    assert.strictEqual(sig.status, 0, sig.stderr);
+    const lookup = sig.stdout.trim();
+
+    // 4. THE assertion this task exists for.
+    assert.strictEqual(
+      lookup,
+      stored.signature,
+      "read/write key drift: the capture hook and the read verb composed DIFFERENT signatures, " +
+        "which would silently return zero matches while every ranking test stayed green",
+    );
+
+    // 5. The key actually retrieves the entry — including past the `low` floor,
+    //    which is where validate-FAIL entries live permanently.
+    const got = runCli(root, [
+      "heuristics",
+      "retrieve",
+      "--module",
+      stored.scope,
+      "--signature",
+      lookup,
+      "--injection-limit",
+      "3",
+    ]);
+    assert.strictEqual(got.status, 0, got.stderr);
+    const payload = JSON.parse(got.stdout);
+    assert.strictEqual(payload.count, 1, `expected the captured entry back — ${got.stdout}`);
+    assert.match(
+      payload.rendered,
+      /confidence: low/,
+      "a signature match is exempt from the `low` confidence floor",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("signature is the cross-scope recurrence key; id stays spec-scoped", async () => {
+  const otherSpecRel =
+    ".context-index/specs/features/validation/validate-scope-expansion.spec.md";
+  const otherSpecTitle = "Validate scope expansion";
+
+  // Both specs share `charter: validation`, so both entries land in the one
+  // scope file `validation.md` — see readStoredEntries.
+  const root = makeRoundTripProject([
+    [RT_SPEC_REL, RT_SPEC_TITLE],
+    [otherSpecRel, otherSpecTitle],
+  ]);
+  try {
+    const a = runCaptureHook(root, {
+      specPath: RT_SPEC_REL,
+      specTitle: RT_SPEC_TITLE,
+      checks: RT_CHECKS,
+    });
+    const b = runCaptureHook(root, {
+      specPath: otherSpecRel,
+      specTitle: otherSpecTitle,
+      checks: RT_CHECKS,
+    });
+    assert.strictEqual(a.status, 0, a.stderr);
+    assert.strictEqual(b.status, 0, b.stderr);
+
+    const entries = await readStoredEntries(root);
+    assert.strictEqual(entries.length, 2, `two specs, two entries — ${b.stderr}`);
+
+    const signatures = entries.map((e) => e.signature);
+    assert.ok(signatures.every(Boolean), "both FAIL captures must carry a signature");
+    assert.strictEqual(
+      new Set(signatures).size,
+      1,
+      "the SAME failing checks under two different specs must share ONE signature: " +
+        JSON.stringify(signatures),
+    );
+
+    const ids = entries.map((e) => e.id);
+    assert.strictEqual(
+      new Set(ids).size,
+      2,
+      "`id` carries spec identity, so recurrence on one spec updates one entry while " +
+        "`signature` unifies them across specs: " + JSON.stringify(ids),
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
 });
