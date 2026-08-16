@@ -37,7 +37,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -593,4 +593,18 @@ test("help() documents --signature under retrieve", () => {
   } finally {
     cleanup(dir);
   }
+});
+
+test("documents --signature and --check-id in the cli reference", () => {
+  const doc = readFileSync(join(PLUGIN_ROOT, "docs/cli-reference.md"), "utf8");
+  assert.match(doc, /heuristics retrieve --module <slug>[^\n]*--signature/);
+  assert.match(doc, /heuristics signature[^\n]*--check-id/);
+  // The Signature: line lists every subcommand on ONE line separated by "·",
+  // so an unanchored [^\n]* would also be satisfied by `write`'s --signature.
+  // Re-assert within the retrieve form only.
+  assert.match(doc, /heuristics retrieve --module <slug>[^·\n]*--signature/);
+  // The error-time cap is the one behavior a reader cannot infer from the
+  // signature line: a --signature call silently swaps the entry-time default
+  // of 8 for heuristics.error_injection_limit (default 3). Pin that it is stated.
+  assert.match(doc, /error_injection_limit/);
 });

@@ -520,16 +520,19 @@ adev retro session-activity --since 2026-05-01 --until 2026-05-31
 
 ### `heuristics`
 
-**Purpose:** Read and write project heuristics in the memory store. `retrieve` pulls module-scoped heuristics for context-packet injection; `signature` derives the cross-scope failure-recurrence key; `write` records a heuristic directly; `migrate-keys` performs the one-time, idempotent rekey of the store.
+**Purpose:** Read and write project heuristics in the memory store. `retrieve` pulls module-scoped heuristics for context-packet injection — passing `--signature` turns it into an exact-match recurrence lookup, where a heuristic carrying that failure signature outranks every confidence-ordered candidate and is exempt from the `low`-confidence floor that otherwise filters it out; `signature` derives the cross-scope failure-recurrence key; `write` records a heuristic directly; `migrate-keys` performs the one-time, idempotent rekey of the store.
 
-**Signature:** `heuristics retrieve --module <slug> […]` · `heuristics signature --origin <o> (--text <t> | --blocker-id <id>) [--digest-only]` · `heuristics write --id <id> --scope <s> --title <t> --pattern <p> [--signature <sig>] […]` · `heuristics migrate-keys [--dry-run]`
+**Signature:** `heuristics retrieve --module <slug> [--signature <sig>] [--injection-limit <n>] […]` · `heuristics signature --origin <o> (--text <t> | --blocker-id <id>) [--digest-only]` · `heuristics signature --origin validate --check-id <id> [--check-id <id> …]` · `heuristics write --id <id> --scope <s> --title <t> --pattern <p> [--signature <sig>] […]` · `heuristics migrate-keys [--dry-run]`
 
 **Example:**
 ```
 adev heuristics retrieve --module auth --tier summary --format text
+adev heuristics retrieve --module auth --signature validate-<digest> --tier summary --format text
 ```
 
-**Implementation:** `lib/cli/heuristics.mjs`. **Called by:** `/adev:validate`, `/adev:implement`, `/adev:plan`, `/adev:brainstorm`, `/adev:specify`, `/adev:review-specs`, `/adev:debug`, `/adev:recover`, `/adev:prototype`.
+A `--signature` retrieval is by definition error-time, so it caps injection with `heuristics.error_injection_limit` (default **3**) rather than the entry-time default of 8. An explicit `--injection-limit` always wins over both.
+
+**Implementation:** `lib/cli/heuristics.mjs`. **Called by:** `/adev:validate`, `/adev:implement`, `/adev:plan`, `/adev:brainstorm`, `/adev:specify`, `/adev:review-specs`, `/adev:debug`, `/adev:recover`, `/adev:prototype`. Both error-time (`--signature`) calls are made from skill prose: `/adev:validate` on FAIL and `/adev:review-specs` on BLOCK.
 
 ### `domain`
 
