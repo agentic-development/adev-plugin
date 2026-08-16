@@ -403,3 +403,94 @@ test("the pass runs against this repository without throwing", async () => {
     0,
   );
 });
+
+// ────────────────────────────────────────────────────────────────────────
+// Provenance that is NOT carried by `source:`
+//
+// `materialize` stamps `source:` only on rows it WRITES; a row already on disk
+// keeps an absent `source`, which `entrySource()` reads as `project`. The
+// module used to justify that with "for a project-file entry [project] is the
+// only thing it can be" — which is false. A project file routinely holds
+// bundled rows: every entry in this repo's own `diagnostics.yaml` carries
+// `runner: plugin:…` and every entry in `validate.yaml` carries
+// `prompt: plugin:…`, and none of them carries `source:`. All twelve were
+// therefore invisible to the sub-audit built to surface exactly them
+// (spec AC 11, DDR-6 / SEC-4).
+//
+// A `plugin:`-prefixed execution field is self-evident proof that the entry
+// runs code the project did not author, whether or not anything stamped it.
+// ────────────────────────────────────────────────────────────────────────
+
+test(
+  "an unstamped entry whose runner is plugin:-prefixed is listed as execution-bearing",
+  withProject(async (ctx) => {
+    // No `source:` — exactly the shape materialize leaves on a pre-existing row.
+    seedEntry(ctx, "diagnostics", { id: "adev/unstamped", runner: "plugin:tier1/x.mjs" });
+    const findings = (await runPass19(ctx)).filter(
+      (f) => f.id === "hygiene/non-project-execution-field" && f.entry_id === "adev/unstamped",
+    );
+    assert.equal(findings.length, 1, "a plugin:-runner row must surface even with no source:");
+    assert.ok(findings[0].message.includes("runner"), "message should name the runner field");
+  }),
+);
+
+test(
+  "an unstamped entry whose prompt is plugin:-prefixed is listed, in a materialization-exempt registry",
+  withProject(async (ctx) => {
+    // validate.yaml is SA-2-exempt: it is never materialized, so it can never
+    // acquire a stamped `source:`. The audit must not depend on one.
+    seedEntry(ctx, "validate", {
+      id: "validate.check-x",
+      prompt: "plugin:validate/checks/validate.check-x.md",
+    });
+    const findings = (await runPass19(ctx)).filter(
+      (f) => f.id === "hygiene/non-project-execution-field" && f.entry_id === "validate.check-x",
+    );
+    assert.equal(findings.length, 1, "an exempt registry's plugin: row must still surface");
+  }),
+);
+
+test(
+  "a genuinely project-authored execution field is still NOT listed",
+  withProject(async (ctx) => {
+    // The guard must stay narrow: only the `plugin:` prefix promotes a row.
+    // A hand-authored command with no source: keeps reading as project.
+    seedEntry(ctx, "gates", { id: "own-gate-unstamped", command: ["npm", "test"] });
+    seedEntry(ctx, "review", { id: "own-reviewer", prompt: "./local/reviewer.md" });
+    const findings = (await runPass19(ctx)).filter(
+      (f) => f.id === "hygiene/non-project-execution-field",
+    );
+    assert.equal(findings.length, 0, "plain project rows must not be promoted");
+  }),
+);
+
+test(
+  "a plugin:-referencing row is not misreported as a disabled BUNDLED entry",
+  withProject(async (ctx) => {
+    // The disabled-entry audit reads `source:` proper. A project file that
+    // switches off its own row must not be accused of disabling a bundled
+    // check merely because that row points at a plugin-shipped prompt.
+    seedEntry(ctx, "validate", {
+      id: "validate.check-off",
+      prompt: "plugin:validate/checks/validate.check-off.md",
+      enabled: false,
+      disabled_reason: "not applicable here",
+    });
+    const findings = await runPass19(ctx);
+    assert.equal(
+      findings.filter(
+        (f) => f.id === "hygiene/disabled-bundled-entry" && f.entry_id === "validate.check-off",
+      ).length,
+      0,
+      "provenance for the disabled audit still comes from source:, not from the field value",
+    );
+    // ...but it IS execution-bearing.
+    assert.equal(
+      findings.filter(
+        (f) =>
+          f.id === "hygiene/non-project-execution-field" && f.entry_id === "validate.check-off",
+      ).length,
+      1,
+    );
+  }),
+);
