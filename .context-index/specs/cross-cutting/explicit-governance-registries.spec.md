@@ -4,12 +4,120 @@ affects: [validation, unified-gates, review, cli-driver-surface, agent-reliable-
 depends-on:
   - .context-index/specs/cross-cutting/extension-governance-merge-hardening.spec.md
 kind: refactor
-status: review-passed
+status: implemented
 risk_level: medium
 revision: 5
 created: 2026-08-14
-updated: 2026-08-15
+updated: 2026-08-16
 tracker-ref: adev-plugin-8ekd.1
+source-manifest:
+  sha: "35d210b"
+  files:
+    - .context-index/governance/boundaries.yaml
+    - .context-index/governance/diagnostics.yaml
+    - .context-index/governance/gates.yaml
+    - .context-index/governance/review.yaml
+    - .context-index/governance/validate.yaml
+    - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md
+    - cli/index.mjs
+    - docs/cli-reference.md
+    - docs/configuration.md
+    - docs/extensions.md
+    - docs/governance.md
+    - lib/cli/boundaries.mjs
+    - lib/cli/diagnose.mjs
+    - lib/cli/domain.mjs
+    - lib/cli/gate.mjs
+    - lib/cli/governance.mjs
+    - lib/cli/report.mjs
+    - lib/diagnostics/event-schemas.mjs
+    - lib/diagnostics/index.mjs
+    - lib/domains/merge-gates.mjs
+    - lib/extensions/content-install.mjs
+    - lib/extensions/governance-registry.mjs
+    - lib/extensions/governance-splice.mjs
+    - lib/extensions/governance-values.mjs
+    - lib/extensions/install.mjs
+    - lib/gates/doctor.mjs
+    - lib/gates/gate-sets.mjs
+    - lib/governance/boundaries.mjs
+    - lib/governance/boundary-worker.mjs
+    - lib/governance/enablement.mjs
+    - lib/governance/materialize.mjs
+    - lib/governance/registry-marker.mjs
+    - lib/governance/review-config.mjs
+    - lib/governance/source-vocabulary.mjs
+    - lib/governance/transitions.mjs
+    - lib/governance/validate-config.mjs
+    - lib/hygiene/registry-drift.mjs
+    - lib/lifecycle-state.mjs
+    - providers/codex/skills/hygiene/SKILL.md
+    - providers/codex/skills/init/SKILL.md
+    - providers/codex/skills/review-specs/SKILL.md
+    - providers/codex/skills/validate/SKILL.md
+    - providers/opencode/skills/hygiene/SKILL.md
+    - providers/opencode/skills/init/SKILL.md
+    - providers/opencode/skills/review-specs/SKILL.md
+    - providers/opencode/skills/validate/SKILL.md
+    - skills/hygiene/SKILL.md
+    - skills/init/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/validate/SKILL.md
+    - skills/validate/checks/validate.check-1-quality-gates.md
+    - skills/validate/checks/validate.check-8-boundaries.md
+    - skills/validate/checks/validate.check-9-transition-gates.md
+    - templates/diagnostics-template.yaml
+    - templates/domains/software/validate.yaml
+    - templates/gates-template.yaml
+    - templates/governance/review.example.yaml
+    - tests/cli/boundaries-check.test.mjs
+    - tests/cli/diagnose-validated-without-report.test.mjs
+    - tests/cli/diagnose.test.mjs
+    - tests/cli/domain.test.mjs
+    - tests/cli/gate-doctor.test.mjs
+    - tests/cli/report-gate-outcomes.test.mjs
+    - tests/diagnostics/event-schemas.test.mjs
+    - tests/diagnostics/registry.test.mjs
+    - tests/evals/configurable-governance/configurable-governance.test.mjs
+    - tests/evals/configurable-governance/golden/no-registry-review.md
+    - tests/evals/configurable-governance/setup-fixture.sh
+    - tests/evals/configurable-governance/tier2-dispatch-shape.test.mjs
+    - tests/fixtures/governance/no-commonjs.clean
+    - tests/fixtures/governance/no-commonjs.violating
+    - tests/fixtures/governance/no-hardcoded-claude-home.clean
+    - tests/fixtures/governance/no-hardcoded-claude-home.violating
+    - tests/fixtures/governance/no-inline-node-in-skills.clean
+    - tests/fixtures/governance/no-inline-node-in-skills.violating
+    - tests/gates/doctor-consumer-parity.test.mjs
+    - tests/gates/shipped-defaults.test.mjs
+    - tests/governance/boundaries.test.mjs
+    - tests/governance/boundary-rules-corpus.test.mjs
+    - tests/governance/deterministic-check-migration.test.mjs
+    - tests/governance/enabled-flag.test.mjs
+    - tests/governance/materialize.test.mjs
+    - tests/governance/registry-effective-set.test.mjs
+    - tests/governance/registry-marker.test.mjs
+    - tests/governance/review-config.test.mjs
+    - tests/governance/source-vocabulary.test.mjs
+    - tests/governance/transitions-config.test.mjs
+    - tests/governance/transitions.test.mjs
+    - tests/governance/validate-config-single-source.test.mjs
+    - tests/hygiene/registry-drift-pass-19.test.mjs
+    - tests/lib/domains/merge-gates.test.mjs
+    - tests/lib/extensions/content-install.test.mjs
+    - tests/lib/extensions/governance-marker-gate.test.mjs
+    - tests/lib/extensions/governance-merge-hardening.test.mjs
+    - tests/lib/extensions/governance-registry.test.mjs
+    - tests/lib/extensions/governance-splice.test.mjs
+    - tests/lib/extensions/governance-values.test.mjs
+    - tests/lib/extensions/install.test.mjs
+    - tests/lib/extensions/invariant-dependencies.test.mjs
+    - tests/lib/gates/doctor.test.mjs
+    - tests/lib/lifecycle-state.test.mjs
+    - tests/lifecycle/gate-outcomes.test.mjs
+    - tests/skills/validate-gate-resolution.test.mjs
+    - tests/specs/explicit-governance-registries-contract.test.mjs
+  computed-at: "2026-08-16T00:22:19.907Z"
 ---
 
 # Live Spec: Explicit Governance Registries
