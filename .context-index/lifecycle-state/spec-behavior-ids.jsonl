@@ -28,3 +28,5 @@
 {"event":"plan_task","plan":".context-index/specs/cross-cutting/spec-behavior-ids.plan.md","task_id":"t5","status":"in_progress","notes":null,"ts":"2026-08-16T00:14:00.418Z"}
 {"event":"plan_task","plan":".context-index/specs/cross-cutting/spec-behavior-ids.plan.md","task_id":"t5","status":"done","notes":"Discovery sweep added; partitions bearing/omitting templates with deepEqual pinning; 22/22 suite green","ts":"2026-08-16T00:25:35.228Z"}
 {"event":"step_failed","step":"implement","ts":"2026-08-16T00:27:14.902Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-16T00:44:36.257Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-16T00:45:26.056Z"}
