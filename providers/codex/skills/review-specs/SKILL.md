@@ -322,6 +322,28 @@ for (const reviewer of dispatchedReviewers) {
 
 The sidecar revision is included in the `.blockers.md` header so `/adev:specify --revise` can verify it matches the spec's current `revision:` frontmatter before producing rev N+1.
 
+**6b-ter. Heuristics on BLOCK: prior occurrences of this blocker (BLOCK only).** After the sidecar is written, and only for findings whose `blocker_id` passed the aggregator's validation above, re-query the heuristics store to surface what past work already learned about this same blocker.
+
+A reviewer finding needs no synthesized key — its `blocker_id` already IS its canonical identity. Derive the recurrence key in inherited mode, one invocation per validated `blocker_id`:
+
+```bash
+adev heuristics signature --origin review-specs --blocker-id <blocker_id>
+```
+
+The verb hashes nothing here: it reuses the location-hash component of the `blocker_id` you pass, so one finding resolves to one identity across the retry loop and the store. Pass the `blocker_id` exactly as the reviewer emitted it. **Never** fall back to the derived-mode `--text` form with the finding's prose — that would mint a SECOND identity for a finding that already has one, and the entry stored under the inherited key would then be unreachable.
+
+Then re-query the store with the key the verb printed:
+
+```bash
+adev heuristics retrieve --module <charter-module> --signature <sig> --tier summary --format text
+```
+
+Stdout is either rendered markdown blocks or the literal sentinel `__NONE__`. When it is not `__NONE__`, inject the blocks into your BLOCK output under the heading `## Heuristics — prior occurrences of this blocker`, prefixed with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+
+Derive the module slug from the spec's `charter:` frontmatter field — the same slug Step 0 uses. Do not pass `--injection-limit`: because `--signature` is present the verb applies the error-time cap itself. Do not read a limit out of `manifest.yaml` and do not hardcode one.
+
+Skip this step silently, emitting nothing at all about heuristics, when the output is `__NONE__`, when either verb exits non-zero, or when the finding carried a `LEGACY_REVIEWER_OUTPUT` or `INVALID_BLOCKER_ID` advisory — a finding with no valid `blocker_id` has no identity to inherit, and there is nothing to fall back to. The step is advisory only: the BLOCK verdict and the `.blockers.md` sidecar are emitted unchanged either way, and this step never blocks, never retries a reviewer, and never edits the verdict.
+
 - Feature spec at `.context-index/specs/features/<module>/<task>.md` gets its review at `.context-index/specs/features/<module>/<task>.review.md`
 - Cross-cutting spec at `.context-index/specs/cross-cutting/<topic>.spec.md` gets its review at `.context-index/specs/cross-cutting/<topic>.review.md`
 
