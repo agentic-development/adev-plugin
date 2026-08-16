@@ -44,12 +44,6 @@ gates:
     severity: error
     tier: fast
     source: domain:software
-  - id: integration-test
-    command: ["npm", "run", "--if-present", "test:integration"]
-    description: Run integration tests (no-op until a test:integration script exists)
-    severity: error
-    tier: integration
-    source: domain:software
 
   # The integration tier. `npm test` deliberately excludes tests/evals/ —
   # scripts/run-tests.mjs splits them into an opt-in tier — so without this gate
@@ -93,11 +87,13 @@ gates:
   #     - post-task
 
   # NOTE: the commented `integration-test` scaffold example that used to sit
-  # here was REMOVED. `integration-test` is now a LIVE entry above (materialized
-  # from the software domain, and duplicated by the eval-tier `integration-test`
-  # gate added independently), so uncommenting the example would have declared
-  # the id twice — a duplicate whose merge behaviour is silent last-wins. Only
-  # add a commented template for an id that no live entry already declares.
+  # here was REMOVED. `integration-test` is now a LIVE entry above (the eval-tier
+  # gate), so uncommenting the example would have declared the id twice — a
+  # duplicate whose merge behaviour is silent last-wins. The software domain's
+  # own materialized `integration-test` (a no-op until a `test:integration`
+  # script exists) collided with this same id and was dropped in favor of the
+  # eval-tier gate, which actually runs something. Only add a commented
+  # template for an id that no live entry already declares.
 
 # Lifecycle transition requirements
 #

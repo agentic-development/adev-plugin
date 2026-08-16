@@ -785,9 +785,9 @@ async function installProviders(providerNames, { ask: askFn = ask } = {}) {
 
     if (providerName === "claude-code") {
       // Ask BEFORE installing. provider.install() enables the plugin as part of
-      // its work, so calling it first defaulted the scope to "user" and wrote
-      // ~/.claude/settings.json before the user had answered — making the
-      // prompt cosmetic for anyone who chose "project". The codex branch below
+      // its work, so calling it first defaulted the scope to "user" and wrote the
+      // user-level Claude Code settings file before the user had answered — making
+      // the prompt cosmetic for anyone who chose "project". The codex branch below
       // has always had this ordering; this matches it.
       const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
       const targetScope = scope === "project" ? "project" : "user";

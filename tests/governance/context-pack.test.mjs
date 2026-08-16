@@ -339,6 +339,41 @@ describe("bundled context packs", () => {
     writeFixture(repo, ".context-index/specs/features/review/charter.md", "# Charter");
     writeFixture(repo, ".context-index/specs/features/review/sib.spec.md", "# Sibling");
     writeFixture(repo, ".context-index/specs/features/review/target.spec.md", "# Target");
+    // Reviewers are no longer bundled-by-default (explicit-governance-registries
+    // removed the three-layer merge): a project's own materialized review.yaml is
+    // now the whole reviewer set. This mirrors what `adev governance materialize`
+    // writes from `templates/domains/software/reviewers.yaml`.
+    writeFixture(
+      repo,
+      ".context-index/governance/review.yaml",
+      `reviewers:
+  - id: structural-architect
+    name: Structural Architect
+    dispatch: always
+    profile: reviewer-reasoning
+    context_pack: architecture
+    severity_cap: blocker
+    prompt: plugin:review-specs/structural-architect-prompt.md
+    source: domain:software
+  - id: security-reviewer
+    name: Security Reviewer
+    dispatch: always
+    profile: reviewer-capable
+    context_pack: security
+    severity_cap: blocker
+    prompt: plugin:review-specs/security-reviewer-prompt.md
+    source: domain:software
+  - id: consistency-analyzer
+    name: Consistency Analyzer
+    dispatch: always
+    profile: reviewer-fast
+    context_pack: consistency
+    severity_cap: blocker
+    prompt: plugin:review-specs/consistency-analyzer-prompt.md
+    source: domain:software
+materialized_at: 2026-08-16T00:00:00.000Z
+`,
+    );
     const target = ".context-index/specs/features/review/target.spec.md";
     const cfg = loadReviewConfig(repo);
     const byId = Object.fromEntries(cfg.reviewers.map((r) => [r.id, r.context_pack]));
