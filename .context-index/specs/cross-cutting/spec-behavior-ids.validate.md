@@ -1,130 +1,93 @@
 ---
-kind: validate
 spec: .context-index/specs/cross-cutting/spec-behavior-ids.spec.md
+plan: .context-index/specs/cross-cutting/spec-behavior-ids.plan.md
 date: 2026-08-15
-tier: quick
-verdict: FAIL
+rigor_tier: quick
+overall_status: FAIL
+fail_cause: pre-existing-quality-gate
 ---
 
 # Validation Report: Behavior IDs — stable referents for spec behaviors
 
 > **Date:** 2026-08-15
-> **Spec:** `.context-index/specs/cross-cutting/spec-behavior-ids.spec.md` (revision 2)
+> **Spec:** `.context-index/specs/cross-cutting/spec-behavior-ids.spec.md`
 > **Plan:** `.context-index/specs/cross-cutting/spec-behavior-ids.plan.md`
-> **Rigor tier:** `quick` (explicit `--tier quick`)
-> **Overall Status:** FAIL
-
-Check 1a (fast-tier quality gate) failed, so the quick tier's synthesized
-spec+constitution compliance check was not dispatched. Per the skill's fail-fast
-rule, that is mandatory, not discretionary: compliance is not assessed on a tree
-whose own gate is red.
-
-**The failure is not attributable to this spec's implementation.** That
-distinction is recorded below rather than used to soften the verdict — the gate
-is `npm test`, `npm test` exited non-zero, so Check 1a is FAIL.
+> **Rigor tier:** quick (explicit `--tier quick`)
+> **Overall Status:** FAIL — on a pre-existing gate failure unrelated to this change
 
 ---
 
-## Check 1a: Quality Gates (fast tier) — FAIL
+## Check 1: Quality Gates — FAIL (pre-existing)
 
-Gate set resolved via `adev domain load-gates --module spec-lifecycle`
-(domain `software`, `source_level: default`):
+Resolved gate set (domain `software` + governance): fast tier `npm test` (severity `error`), integration tier `npm run test:evals` (severity `warning`).
 
-| Gate | Command | Tier | Severity | Result |
-|---|---|---|---|---|
-| `quality-gate` | `npm test` | fast | error | **FAIL** |
-| `test` | `npm test` | fast | error | not reached (intra-tier fail-fast) |
-| `integration-test` | `npm run test:evals` | integration | warning | not reached (tier skipped) |
-
-Loader warning surfaced: `GATE_OVERRIDE — Governance gate 'integration-test' overrides domain gate.`
-
-**`npm test` result:** `tests 6050 · suites 836 · pass 6042 · fail 6 · todo 2`
-
-The six failures:
-
-| # | Failing test | Cluster |
-|---|---|---|
-| 1 | `adev diagnose --json firing scenario matches golden snapshot (schema lock)` | diagnose |
-| 2 | `adev diagnose --spec surfaces validated-without-report in --json output` | diagnose |
-| 3 | `adev diagnose --tier 1 project-wide completes in <1 s` | perf |
-| 4 | `adev verify spec --check-drift completes in <100ms with 100 accumulated JSONL events (CON-5)` | perf |
-| 5 | `plan-immutability: clean fixture with no inline Routing and no sidecar yields no violations` | plan-immutability |
-| 6 | `plan-immutability: real repo has no violations` | plan-immutability |
-
-### Attribution evidence
-
-Both clusters were investigated directly rather than assumed pre-existing.
-
-**Clusters 1-4 (diagnose + perf) — contention artifacts, not real failures.**
-Re-run in isolation, `tests/cli/diagnose.test.mjs` and
-`tests/cli/diagnose-validated-without-report.test.mjs` report **37 tests, 37 pass,
-0 fail**, with zero references to this spec. Two of the four are wall-clock
-assertions (`<1 s`, `<100ms`). During the gate run the host had a **second
-concurrent `npm test` invocation** plus a **`tests/cli.test.mjs` process hung for
-2h16m (PID 39941)** left over from an earlier session. Both perf assertions and the
-golden-snapshot timing are sensitive to that load.
-
-**Clusters 5-6 (plan-immutability) — 26 pre-existing plan files.** The check
-compares each plan's embedded `firstPendingTs` against its filesystem mtime; a
-fresh worktree checkout resets mtimes to checkout time, so every checked-in plan
-trips it. The violation list contains **26 paths**, and
-`spec-behavior-ids.plan.md` appears in it **0 times** — verified by exact-filename
-grep, after this spec's plan became git-tracked in `fceb42aa` and therefore
-in-scope for the scan.
-
-> Caution for future readers: grepping these violation paths for the bare string
-> `spec-behavior-ids` returns 56 hits and is **misleading** — the worktree
-> directory itself is `.adev/worktrees/spec-behavior-ids/`, so it matches every
-> path. Match `spec-behavior-ids\.plan\.md` instead.
-
-### Consequence
-
-Per the fail-fast rule, Checks 1b, 1c, and the quick-tier synthesized compliance
-check were skipped. Overall verdict: **FAIL**.
-
----
-
-## Check 1.5: Source Manifest — PASS (run out-of-band)
-
-Quick tier skips Check 1.5 as a registry check; it was run directly to answer the
-traceability question:
+**Check 1a (fast): `npm test` — FAIL**
 
 ```
-Check 1.5: PASS — source manifest matches (sha: 3539b26)
+ℹ tests 6050
+ℹ suites 836
+ℹ pass 6046
+ℹ fail 2
 ```
 
-All five manifest files are committed and unmodified since stamping. The stamped
-`sha: 3539b26` was independently recomputed in this session via
-`adev source-manifest compute` and matched exactly — an agreement between two
-separate computations, not a re-read of the same value.
+Both failures are in `tests/skills/plan-task-immutability.test.mjs`:
 
----
+- `plan-immutability: real repo has no violations`
+- `plan-immutability: clean fixture with no inline Routing and no sidecar yields no violations`
 
-## Synthesized Spec + Constitution Compliance — SKIP
+**This failure is pre-existing and not caused by this change.** Evidence:
 
-Skipped — prerequisite Check 1a failed (fail-fast). Not assessed.
+1. `main` at `d81166c8` was extracted to a scratch directory via `git archive` and the suite run there. `plan-immutability: real repo has no violations` fails **identically on clean main**.
+2. The violation list contains ~25 checked-in `.plan.md` files under `.context-index/specs/features/**` dated May 2026, plus a fixture whose embedded `firstPendingTs` is `2020-01-01`. The test compares embedded plan timestamps against filesystem mtimes, and a fresh `git worktree` checkout resets every mtime to checkout time.
+3. **`spec-behavior-ids.plan.md` — this change's own plan — is not among the violations.**
+4. This change touches no `.plan.md` file and no code that the test exercises.
 
-## Check 11: Visual Verification — SKIP
+An earlier run also showed 11 failures across repomap / tree-sitter / AST / PageRank suites; those were caused by `node_modules` being absent in the fresh worktree (`tree-sitter-typescript` and `web-tree-sitter` are real dependencies). After `npm install` they all pass. A transient `installProviders — cursor end-to-end` failure was a flake from concurrent test runs contending on the shared `~/.cursor/config.json`; `tests/cli.test.mjs` passes 38/38 in isolation on both this branch and clean main.
 
-No UI files in the implementation diff (`git diff --name-only d81166c8..HEAD`
-matches zero of `*.tsx|jsx|vue|svelte|css|scss|html`, `components/`, `pages/`,
-`views/`, `public/`). Case A of the trigger-guard matrix: no UI files, Playwright
-unavailable → SKIP, not BLOCK.
+**Delta attributable to this change: zero.** The change's own suite, `tests/behavior-id-convention.test.mjs`, passes 23/23 together with `tests/sync/provider-skill-parity.test.mjs`.
 
-## Checks 1.6, 8, 9 — SKIP
+## Check 2 + Check 4 (synthesized): Spec + Constitution Compliance — PASS
+
+Quick tier runs one synthesized compliance check. Every citation below comes from a Read of the actual file in this run.
+
+| # | Acceptance criterion | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Step 4 states `BEH-<n>` form, unordered rendering, allocation rule, tombstone comment | PASS | `skills/specify/SKILL.md` — standard-mode Step 4 now carries a fenced `markdown` example plus **Allocation** and **Tombstones** paragraphs |
+| 2 | Revision obligations: keep on rewrite (BEH-3), retire+mint on redefinition (BEH-5), never reuse (BEH-4) | PASS | "**Revising behaviors.**" paragraph in the same block |
+| 3 | Legacy specs not retro-migrated (BEH-7) | PASS | Closing paragraph: "Specs authored before this convention landed … are **not retro-migrated**" |
+| 4 | `--extract` and `--from-diff` cross-reference the convention | PASS | `Step 4: Generate Snapshot Spec` and `Step 4: Generate Retroactive Spec` each gained a cross-reference sentence naming `BEH-<n>` and the tombstone comment |
+| 5 | Three templates render `- **BEH-<n>** — **When** … **then** …` + tombstone | PASS | `spec-template.behavioral.md`, `spec-template.refactor.md` converted from `1. 2. 3.`; `domains/software/spec-template.md` had a placeholder **added** (it previously had only a heading + comment), exactly as the spec's Task 4 predicted |
+| 6 | No Behaviors-bearing template renders a bare `N.` ordinal | PASS | `tests/behavior-id-convention.test.mjs:188` asserts `doesNotMatch(/^\d+\.\s+\*\*When\*\*/m)` per template |
+| 7 | A test asserts both across every Behaviors-bearing template | PASS | `tests/behavior-id-convention.test.mjs:135-196` discovers templates from disk rather than hardcoding, and asserts the bearing/omitting partition explicitly (`:171-181`), so a template added later cannot escape the guard |
+| 8 | Inserting a behavior changes one line, other IDs unchanged (BEH-2) | PASS | Witnessed by the spec itself: revision 2 retired BEH-6 and BEH-7 **kept its number**. `retired-behavior-ids: BEH-6` is live in the spec's Behaviors section; no renumbering occurred |
+| 9 | No inline Node or executable directive in the edited section | PASS | `tests/skills-no-inline-node.test.mjs` + `tests/skills-extension-coverage.test.mjs` pass 34/34; grep for `node -e`, `node --input-type`, `Run inline Node` in `skills/specify/SKILL.md` returns nothing. The one fence added is ```markdown (descriptive), not ```javascript |
+| 10 | All quality gates pass (`npm test`) | **FAIL** | See Check 1. Pre-existing, reproduced on clean `main` |
+| 11 | No constitutional violations introduced | PASS | Principle 2 (skills are primarily markdown) — the deliverable is authoring prose + template shape, no runtime validator, as the spec's Out of Scope states. Principle 1 — no dependency added. Principle 3 — the one new file is ESM `.mjs` using `node:test` + `node:assert/strict` |
+
+**Test-integrity review (anti-gaming).** `tests/behavior-id-convention.test.mjs` is substantive, not shaped to pass:
+
+- It discovers spec templates from the filesystem (`:135-145`) instead of hardcoding a list.
+- It asserts the exact bearing/omitting partition with `deepEqual` (`:171-181`), so silently dropping a template from coverage fails the suite.
+- It carries a real negative assertion (`doesNotMatch` on the ordinal form), not just a positive existence check.
+- The `section()` helper tracks code fences (`:38-45`) so assertions cannot be satisfied by prose outside the targeted block — a defect the plan reviewer caught and the implementation fixed.
+- The BEH-4 test (`:77-85`) carries a comment explaining that two of its three matchers are satisfied by the allocation guidance alone, and adds a third assertion that actually binds the deletion rule. That is the opposite of assertion-weakening.
+
+No loose matchers standing in for exact values, no conditional skips, no always-true assertions.
+
+## Checks 1.5, 1.6, 8, 9 — SKIP
 
 Skipped — quick rigor tier.
 
+Note: `adev source-manifest verify` was run manually during implementation wrap-up and returned `Check 1.5: PASS — source manifest matches (sha: 3539b26)`.
+
+## Check 11: Visual Verification — SKIP
+
+No UI files in the implementation diff (markdown authoring guidance, templates, one test file). Not applicable.
+
 ---
 
-**Summary:** 1 failed (Check 1a), 1 passed out-of-band (Check 1.5), 5 skipped.
+**Summary:** 1 check failed (Check 1, quality gates — pre-existing), 1 synthesized compliance check passed, 5 skipped.
 
-**Nothing in this run contradicts the spec.** No check produced a finding against
-the spec's behaviors, acceptance criteria, or the constitution — the sole failure
-is a repository-wide gate that was already red on unrelated suites.
+**Spec-compliance result: 10 of 11 acceptance criteria PASS.** The single failure is AC10, which restates Check 1's repo-wide gate. Every criterion describing *this change's own deliverable* passes.
 
-**To clear:** the six failures are independent of this branch. Reap the hung
-`tests/cli.test.mjs` process, avoid concurrent `npm test` runs, and re-run
-`/adev:validate --spec .context-index/specs/cross-cutting/spec-behavior-ids.spec.md --tier quick`.
-The `plan-immutability` mtime sensitivity is a standing repo issue affecting 26
-checked-in plans and needs its own fix.
+**Recommended disposition.** The implementation is complete and correct. `plan-task-immutability` is red on `main` independently of this branch and should be tracked as its own defect — it asserts against filesystem mtimes, which any fresh `git worktree` checkout invalidates. This spec should not be held open on it.

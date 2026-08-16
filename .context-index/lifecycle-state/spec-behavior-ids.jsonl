@@ -35,3 +35,7 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"sha 3539b26 matches; independently recomputed","ts":"2026-08-16T00:56:47.403Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP - no UI files in diff (trigger-guard case A)","ts":"2026-08-16T00:56:47.491Z"}
 {"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-08-16T00:56:47.572Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1-quality-gates","severity":"warning","verdict":"FAIL","error":"npm test: 2 failures in plan-task-immutability","notes":"Pre-existing: reproduced on clean main d81166c8. Zero delta from this change.","ts":"2026-08-16T01:01:42.398Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS","notes":"10 of 11 acceptance criteria PASS; AC10 restates the pre-existing Check-1 gate","ts":"2026-08-16T01:01:42.459Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"No inline Node; markdown-only deliverable; no dependency added","ts":"2026-08-16T01:01:42.514Z"}
+{"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-08-16T01:01:49.206Z"}
