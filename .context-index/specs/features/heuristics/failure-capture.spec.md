@@ -27,6 +27,7 @@ source-manifest:
     - tests/skills/validate-success-heuristic-harness.mjs
     - tests/skills/validate-success-heuristic.test.mjs
   computed-at: "2026-08-15T18:09:16.070Z"
+drift_detected: true
 ---
 
 # Live Spec: Failure Capture — learn from what went wrong, not only from what went right

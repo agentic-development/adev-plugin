@@ -1,7 +1,7 @@
 ---
 charter: heuristics
 kind: behavioral
-status: implemented
+status: validated
 risk_level: medium
 milestone: 3
 revision: 3
