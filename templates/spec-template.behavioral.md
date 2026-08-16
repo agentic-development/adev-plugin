@@ -55,11 +55,16 @@ updated: {{ date }}
 
 ### Behaviors
 
-<!-- The core behavioral statements. Each should map to one or more test cases. -->
+<!-- The core behavioral statements. Each should map to one or more test cases.
+     Each behavior carries a spec-scoped ID of the form BEH-<n>. Allocate the next
+     ID above the highest ever used in this spec (live or retired); never reuse a
+     number. When a behavior is withdrawn, move its ID into the comment below. -->
 
-1. **When** ... **then** ...
-2. **When** ... **then** ...
-3. **When** ... **then** ...
+<!-- retired-behavior-ids: (none) -->
+
+- **BEH-1** — **When** ... **then** ...
+- **BEH-2** — **When** ... **then** ...
+- **BEH-3** — **When** ... **then** ...
 
 ### Postconditions
 
