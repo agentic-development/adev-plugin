@@ -1,13 +1,3 @@
-# Live Spec: Plan Injection
-
-<!-- Live Spec within the heuristics charter.
-     Adds heuristic injection to /adev:plan so that per-task context packets
-     in the generated plan include relevant heuristics. This enables
-     /adev:implement subagents to receive heuristics even before runtime
-     retrieval, as the plan itself carries the heuristic references.
-     Depends on: retrieval-filtering.md (budget and format conventions).
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -27,6 +17,16 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.556Z"
 drift_detected: true
 ---
+
+# Live Spec: Plan Injection
+
+<!-- Live Spec within the heuristics charter.
+     Adds heuristic injection to /adev:plan so that per-task context packets
+     in the generated plan include relevant heuristics. This enables
+     /adev:implement subagents to receive heuristics even before runtime
+     retrieval, as the plan itself carries the heuristic references.
+     Depends on: retrieval-filtering.md (budget and format conventions).
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

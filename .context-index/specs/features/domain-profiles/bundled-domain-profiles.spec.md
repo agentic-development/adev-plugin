@@ -1,9 +1,3 @@
-# Live Spec: Bundled Domain Profiles
-
-<!-- Live Spec within the domain-profiles charter.
-     This defines the content of the three bundled domain profiles.
-     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
-
 ---
 charter: domain-profiles
 status: validated
@@ -38,6 +32,12 @@ source-manifest:
   computed-at: "2026-05-11T16:09:28.512Z"
 drift_detected: true
 ---
+
+# Live Spec: Bundled Domain Profiles
+
+<!-- Live Spec within the domain-profiles charter.
+     This defines the content of the three bundled domain profiles.
+     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
 
 ## Behavioral Contract
 

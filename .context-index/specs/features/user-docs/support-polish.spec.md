@@ -1,5 +1,3 @@
-# Live Spec: Support & Polish
-
 ---
 charter: user-docs
 status: validated
@@ -16,6 +14,8 @@ source-manifest:
   computed-at: "2026-05-10T23:51:35.315Z"
 drift_detected: true
 ---
+
+# Live Spec: Support & Polish
 
 ## Behavioral Contract
 

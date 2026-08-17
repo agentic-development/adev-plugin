@@ -1,9 +1,3 @@
-# Live Spec: Git Subdirectory Fragment Support
-
-<!-- Live Spec within the domain-extensions charter.
-     Defines the enhancement to resolve-source.mjs for parsing repo#path fragments.
-     Parent Charter: .context-index/specs/features/domain-extensions/charter.md -->
-
 ---
 charter: domain-extensions
 status: implemented
@@ -14,6 +8,12 @@ charter-revision: 2
 created: 2026-05-11
 updated: 2026-05-11
 ---
+
+# Live Spec: Git Subdirectory Fragment Support
+
+<!-- Live Spec within the domain-extensions charter.
+     Defines the enhancement to resolve-source.mjs for parsing repo#path fragments.
+     Parent Charter: .context-index/specs/features/domain-extensions/charter.md -->
 
 ## Behavioral Contract
 

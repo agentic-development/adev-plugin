@@ -1,6 +1,6 @@
 ---
 charter: multi-repo-workspace
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1

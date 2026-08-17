@@ -1,8 +1,6 @@
-# Live Spec: Spec Revision Tracking
-
 ---
 charter: spec-lifecycle
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -18,6 +16,8 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Spec Revision Tracking
 
 ## Behavioral Contract
 

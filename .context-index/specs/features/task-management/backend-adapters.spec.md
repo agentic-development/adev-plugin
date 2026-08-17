@@ -1,5 +1,3 @@
-# Live Spec: Backend Adapters and Registry
-
 ---
 charter: task-management
 status: validated
@@ -20,6 +18,8 @@ source-manifest:
   computed-at: "2026-04-01T13:43:22.545Z"
 drift_detected: true
 ---
+
+# Live Spec: Backend Adapters and Registry
 
 ## Behavioral Contract
 

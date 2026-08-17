@@ -1,8 +1,6 @@
-# Live Spec: Source Manifest
-
 ---
 charter: spec-lifecycle
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -17,6 +15,8 @@ source-manifest:
   computed-at: "2026-04-01T13:43:22.524Z"
 drift_detected: true
 ---
+
+# Live Spec: Source Manifest
 
 ## Behavioral Contract
 

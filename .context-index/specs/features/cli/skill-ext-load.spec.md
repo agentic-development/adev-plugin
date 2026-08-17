@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: cli
 kind: behavioral
@@ -21,6 +19,8 @@ source-manifest:
   computed-at: "2026-05-26T00:05:48.486Z"
 drift_detected: true
 ---
+
+<!-- partial_schema: spec@1 -->
 
 # Live Spec: `adev skill-ext load` — Skill Extension Verb
 

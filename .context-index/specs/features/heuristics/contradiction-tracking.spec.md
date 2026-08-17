@@ -1,13 +1,3 @@
-# Live Spec: Contradiction Tracking
-
-<!-- Live Spec within the heuristics charter.
-     Defines when and how the contradicted-by field is populated during the
-     adev lifecycle. The addContradiction API already exists in lib/heuristics.mjs
-     (Phase 1a); this spec defines the lifecycle events that trigger it:
-     validation failures that contradict success heuristics, and recovery
-     diagnoses that contradict failure heuristics.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -28,6 +18,16 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.449Z"
 drift_detected: true
 ---
+
+# Live Spec: Contradiction Tracking
+
+<!-- Live Spec within the heuristics charter.
+     Defines when and how the contradicted-by field is populated during the
+     adev lifecycle. The addContradiction API already exists in lib/heuristics.mjs
+     (Phase 1a); this spec defines the lifecycle events that trigger it:
+     validation failures that contradict success heuristics, and recovery
+     diagnoses that contradict failure heuristics.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

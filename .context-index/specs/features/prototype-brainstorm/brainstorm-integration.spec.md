@@ -1,9 +1,3 @@
-# Live Spec: Brainstorm Integration
-
-<!-- Live Spec within the prototype-brainstorm charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/prototype-brainstorm/charter.md -->
-
 ---
 charter: prototype-brainstorm
 status: implemented
@@ -20,6 +14,12 @@ source-manifest:
   computed-at: "2026-05-10T23:51:54.631Z"
 drift_detected: true
 ---
+
+# Live Spec: Brainstorm Integration
+
+<!-- Live Spec within the prototype-brainstorm charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/prototype-brainstorm/charter.md -->
 
 ## Behavioral Contract
 

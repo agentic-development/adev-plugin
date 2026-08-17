@@ -1,5 +1,3 @@
-# Live Spec: Configurable Reviewer Registry
-
 ---
 charter: review
 status: validated
@@ -22,6 +20,8 @@ source-manifest:
   computed-at: "2026-05-10T23:51:35.315Z"
 drift_detected: true
 ---
+
+# Live Spec: Configurable Reviewer Registry
 
 ## Behavioral Contract
 

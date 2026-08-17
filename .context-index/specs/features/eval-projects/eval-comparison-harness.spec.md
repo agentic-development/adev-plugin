@@ -1,10 +1,3 @@
-# Live Spec: Eval Comparison Harness
-
-<!-- Live Spec within the eval-projects charter.
-     Defines the scoring rubrics, comparison runner, and report format for
-     evaluating plain-claude vs adev-built implementations across all four eval projects.
-     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
-
 ---
 charter: eval-projects
 status: review-pending
@@ -15,6 +8,13 @@ charter-revision: 1
 created: 2026-05-06
 updated: 2026-05-06
 ---
+
+# Live Spec: Eval Comparison Harness
+
+<!-- Live Spec within the eval-projects charter.
+     Defines the scoring rubrics, comparison runner, and report format for
+     evaluating plain-claude vs adev-built implementations across all four eval projects.
+     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
 
 ## Behavioral Contract
 

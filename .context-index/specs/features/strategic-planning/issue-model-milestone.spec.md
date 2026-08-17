@@ -1,9 +1,3 @@
-# Live Spec: Issue Model Milestone Extension
-
-<!-- Live Spec within the strategic-planning charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/strategic-planning/charter.md -->
-
 ---
 charter: strategic-planning
 status: superseded
@@ -27,6 +21,12 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.757Z"
 drift_detected: true
 ---
+
+# Live Spec: Issue Model Milestone Extension
+
+<!-- Live Spec within the strategic-planning charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/strategic-planning/charter.md -->
 
 ## Behavioral Contract
 

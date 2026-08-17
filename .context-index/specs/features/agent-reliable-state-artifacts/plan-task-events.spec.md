@@ -1,9 +1,3 @@
-# Live Spec: Plan-Task Events in Lifecycle Log
-
-<!-- Live Spec within the agent-reliable-state-artifacts charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
-
 ---
 charter: agent-reliable-state-artifacts
 status: validated
@@ -30,6 +24,12 @@ source-manifest:
   computed-at: "2026-05-12T18:02:31.778Z"
 drift_detected: true
 ---
+
+# Live Spec: Plan-Task Events in Lifecycle Log
+
+<!-- Live Spec within the agent-reliable-state-artifacts charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
 
 ## Behavioral Contract
 

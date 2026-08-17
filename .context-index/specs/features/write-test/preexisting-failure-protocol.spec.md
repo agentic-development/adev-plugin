@@ -1,11 +1,6 @@
-# Live Spec: Pre-existing Failure Protocol
-
-<!-- Live Spec within the adev:write-test charter.
-     Parent Charter: .context-index/specs/features/adev:write-test/charter.md -->
-
 ---
 charter: adev:write-test
-status: validated
+status: implemented
 risk_level: high
 milestone:
 revision: 1
@@ -19,6 +14,11 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Pre-existing Failure Protocol
+
+<!-- Live Spec within the adev:write-test charter.
+     Parent Charter: .context-index/specs/features/adev:write-test/charter.md -->
 
 ## Behavioral Contract
 
