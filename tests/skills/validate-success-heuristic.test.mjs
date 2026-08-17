@@ -12,11 +12,11 @@
 
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readHeuristics, deriveHeuristicId } from "../../lib/heuristics.mjs";
-import { createTempDir, cleanupTempDir } from "../helpers.mjs";
-import { deriveId, runCheck12 } from "./validate-success-heuristic-harness.mjs";
+import { createTempDir, cleanupTempDir, PLUGIN_ROOT } from "../helpers.mjs";
+import { deriveId, deriveTitle, runCheck12 } from "./validate-success-heuristic-harness.mjs";
 
 const MODULE_SLUG = "hooks";
 const DATE = "2026-04-09";
@@ -301,6 +301,184 @@ describe("validate harness — convergence on the shared digest function", () =>
       source,
       /from ["']\.\.\/\.\.\/lib\/heuristics\.mjs["']/,
       "the harness must import the shared helpers from lib/heuristics.mjs",
+    );
+  });
+});
+
+// ── Outcome-derived title prefix (PASS-path harness) ─────────────────────
+//
+// Spec: .context-index/specs/features/heuristics/failure-capture.spec.md
+// Plan-task: 5
+//
+// The PASS-path suites import `runCheck12` from the harness and never invoke
+// the hook, so the outcome-derived-prefix criterion has to be verified here
+// too. The hook (`hooks/post-validate-extract-heuristics.mjs`) and the harness
+// each own a copy of `prefixFor` BY DESIGN (plan decision D9): the acceptance
+// criterion is that exactly two derivation copies exist and agree, which a
+// shared `lib/` export would violate.
+
+const HARNESS_PATH = join(PLUGIN_ROOT, "tests/skills/validate-success-heuristic-harness.mjs");
+const HOOK_PATH = join(PLUGIN_ROOT, "hooks/post-validate-extract-heuristics.mjs");
+
+/**
+ * Count PREFIX-DERIVATION SITES across the repo's first-party source trees.
+ *
+ * The criterion is about copies of the prefix *derivation*, not every mention
+ * of the literal — a plain grep for `"First-run PASS: "` also catches doc
+ * comments and test assertions that legitimately name the string. So a file
+ * counts as a derivation site iff BOTH hold:
+ *
+ *   1. it contains the literal `First-run PASS: ` at all, AND
+ *   2. it contains a prefix-SELECTION construct at the start of a line —
+ *      `const prefix =` or `function prefixFor` — i.e. the prefix is bound as
+ *      a value used to compose a title, rather than appearing inside an
+ *      argument to `assert.match(...)`.
+ *
+ * The line-start anchor is what separates a definition from an assertion:
+ * `tests/hooks/post-validate-failure-capture.test.mjs` mentions
+ * `function prefixFor` inside a regex literal on an `assert.match` line and is
+ * correctly NOT a derivation site. `tests/skills/recover-extract-heuristic-
+ * harness.mjs` binds a `const prefix` but never the PASS literal, so it is
+ * excluded by (1).
+ *
+ * Today this returns exactly three files:
+ *   1. hooks/post-validate-extract-heuristics.mjs      (survives)
+ *   2. tests/skills/validate-success-heuristic-harness.mjs (survives)
+ *   3. lib/cli/heuristics.mjs — the dead `extract` verb, deleted by Task 7
+ *
+ * TASK 7 TIGHTENS THE BOUND: after the dead verb is removed, Task 7 imports
+ * this same helper and asserts `=== 2` instead of `<= 3`. Do not reimplement
+ * the scan there.
+ *
+ * @returns {string[]} Repo-relative paths of derivation sites, sorted.
+ */
+export function findPrefixDerivationSites() {
+  const roots = ["hooks", "lib", "skills", "tests"];
+  const selection = /^\s*(?:const\s+prefix\s*=|function\s+prefixFor\b)/m;
+  const sites = [];
+
+  const walk = (absDir, relDir) => {
+    for (const entry of readdirSync(absDir, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      const abs = join(absDir, entry.name);
+      const rel = `${relDir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        walk(abs, rel);
+        continue;
+      }
+      if (!/\.(mjs|js|md)$/.test(entry.name)) continue;
+      const src = readFileSync(abs, "utf8");
+      if (!src.includes("First-run PASS: ")) continue;
+      if (!selection.test(src)) continue;
+      sites.push(rel);
+    }
+  };
+
+  for (const root of roots) walk(join(PLUGIN_ROOT, root), root);
+  return sites.sort();
+}
+
+describe("validate harness — outcome-derived title prefix", () => {
+  it("derives its prefix from the outcome, like the hook", () => {
+    assert.equal(deriveTitle("PASS", "Foo"), "First-run PASS: Foo");
+    assert.equal(deriveTitle("FAIL", "Foo"), "Validate FAIL: Foo");
+  });
+
+  it("defaults the outcome to PASS so single-argument callers keep working", () => {
+    assert.equal(deriveTitle("Foo"), "First-run PASS: Foo");
+    assert.equal(deriveTitle(), "First-run PASS: ");
+  });
+
+  it("treats an unknown outcome as PASS, matching the hook's ternary exactly", () => {
+    // The hook is `outcome === 'FAIL' ? 'Validate FAIL: ' : 'First-run PASS: '`
+    // — every non-FAIL value, settled or not, takes the PASS branch.
+    assert.equal(deriveTitle("BLOCK", "Foo"), "First-run PASS: Foo");
+    assert.equal(deriveTitle("SKIP", "Foo"), "First-run PASS: Foo");
+    assert.equal(deriveTitle("", "Foo"), "First-run PASS: Foo");
+  });
+
+  it("caps both prefixes at 120 chars with unchanged truncation semantics", () => {
+    const long = "X".repeat(150);
+
+    const pass = deriveTitle("PASS", long);
+    assert.equal(pass, `First-run PASS: ${"X".repeat(101)}...`);
+    assert.equal(pass.length, 120);
+
+    const fail = deriveTitle("FAIL", long);
+    assert.equal(fail, `Validate FAIL: ${"X".repeat(102)}...`);
+    assert.equal(fail.length, 120);
+
+    // A title that exactly fits is not truncated for either prefix.
+    const fitsPass = deriveTitle("PASS", "Y".repeat(104));
+    assert.equal(fitsPass, `First-run PASS: ${"Y".repeat(104)}`);
+    assert.equal(fitsPass.length, 120);
+    const fitsFail = deriveTitle("FAIL", "Y".repeat(105));
+    assert.equal(fitsFail, `Validate FAIL: ${"Y".repeat(105)}`);
+    assert.equal(fitsFail.length, 120);
+  });
+
+  it("runCheck12 still produces the PASS prefix end-to-end", async () => {
+    const tempDir = createTempDir();
+    try {
+      const { specAbs, reportRel } = seedFixture(tempDir);
+      const result = await runCheck12(tempDir, {
+        specPath: specAbs,
+        charter: MODULE_SLUG,
+        specTitle: SPEC_TITLE,
+        reportPath: reportRel,
+        checkResults: allPassing(),
+        modules: [MODULE_SLUG],
+        date: DATE,
+      });
+      assert.equal(result.status, "PASS", JSON.stringify(result));
+      // runCheck12 only ever runs on all-checks-passed, so it passes 'PASS'.
+      assert.equal(result.heuristic.title, `First-run PASS: ${SPEC_TITLE}`);
+    } finally {
+      cleanupTempDir(tempDir);
+    }
+  });
+
+  it("the hook and the harness both own the prefix pair, and they agree", () => {
+    const hookSrc = readFileSync(HOOK_PATH, "utf8");
+    const harnessSrc = readFileSync(HARNESS_PATH, "utf8");
+
+    // Extract the two literals from each source and compare them pairwise,
+    // rather than merely asserting each source mentions them.
+    const extract = (src, label) => {
+      const fail = src.match(/['"`](Validate FAIL: )['"`]/);
+      const pass = src.match(/['"`](First-run PASS: )['"`]/);
+      assert.ok(fail, `${label} must own the FAIL prefix literal`);
+      assert.ok(pass, `${label} must own the PASS prefix literal`);
+      return { fail: fail[1], pass: pass[1] };
+    };
+
+    const hook = extract(hookSrc, "the hook");
+    const harness = extract(harnessSrc, "the harness");
+    assert.deepEqual(harness, hook, "the two mirrored copies must agree");
+
+    // Both must select on the outcome, not hardcode one branch.
+    assert.match(hookSrc, /function\s+prefixFor\s*\(/);
+    assert.match(harnessSrc, /function\s+prefixFor\s*\(/);
+  });
+
+  it("exactly the expected prefix-derivation sites exist", () => {
+    const sites = findPrefixDerivationSites();
+    // Task 7 deleted the third copy (lib/cli/heuristics.mjs's dead `extract`
+    // verb), so the spec's acceptance criterion now holds exactly: two
+    // derivation copies remain — the hook's and the harness's — and they
+    // agree (pairwise agreement is asserted by the test above).
+    assert.deepEqual(
+      sites,
+      [
+        "hooks/post-validate-extract-heuristics.mjs",
+        "tests/skills/validate-success-heuristic-harness.mjs",
+      ],
+      `expected exactly the hook and the harness, got: ${sites.join(", ")}`,
+    );
+    assert.equal(
+      sites.length,
+      2,
+      `expected exactly 2 prefix-derivation sites, got ${sites.length}: ${sites.join(", ")}`,
     );
   });
 });

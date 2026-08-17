@@ -86,7 +86,7 @@ This is the master spec for the inline-Node extraction sweep across the 18 canon
 
 ## Acceptance Criteria
 
-- [ ] PR 1 extracts Check 13 heuristic extraction; `adev heuristics extract` works; `skills/validate/SKILL.md` no longer contains the inline block; `tests/cli/heuristics.test.mjs` covers all behaviors
+- [ ] PR 1 extracts Check 13 heuristic extraction; ~~`adev heuristics extract` works~~ (superseded by `.context-index/specs/features/heuristics/failure-capture.spec.md` Behavior 7 — the verb was retired as unreachable); `skills/validate/SKILL.md` no longer contains the inline block; `tests/cli/heuristics.test.mjs` covers the surviving subcommands
 - [ ] PR 2 extracts `reportValidator`; post-PR, `validator_report` events appear in `.context-index/lifecycle-state/*.jsonl` for every validate run
 - [ ] PR 3 extracts `reportStep` across all lifecycle skills
 - [ ] PR 4 extracts `requireGate` Step 0a usage from every lifecycle skill; all calls go through `adev gate require`

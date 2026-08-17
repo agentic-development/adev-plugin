@@ -29,7 +29,7 @@ import {
   cleanupTempDir,
   writeFixture,
 } from "../helpers.mjs";
-import { deriveSignature } from "../../lib/heuristics.mjs";
+import { deriveSignature, deriveDigest, normalizeFailureText } from "../../lib/heuristics.mjs";
 import { buildBlockerId } from "../../lib/blocker-id.mjs";
 
 const CLI = join(PLUGIN_ROOT, "cli", "index.mjs");
@@ -319,6 +319,125 @@ test("an unparseable blocker id is sanitized before it is echoed", () => {
   assert.ok(!r.stderr.includes(ESC), "ANSI escape must not be echoed");
 });
 
+// ── --digest-only (Behavior 5a) ──────────────────────────────────────────
+//
+// The primitive half of the recover migration: `/adev:recover` composes its
+// own `<category-slug>-<digest>` id, so it needs the digest WITHOUT the
+// origin prefix that `deriveSignature` bakes in. `--origin` stays required
+// (one argument shape for the verb, and origin errors still report first),
+// but the digest itself does not depend on it.
+
+test("--digest-only emits the bare 8-hex digest and nothing else", () => {
+  const r = runSignature([
+    "--origin",
+    "recover",
+    "--text",
+    "Error: cache miss on third-party API",
+    "--digest-only",
+  ]);
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^[0-9a-f]{8}\n$/);
+  assert.strictEqual(r.stderr, "");
+});
+
+test("--digest-only agrees with deriveDigest from lib/heuristics.mjs exactly", () => {
+  const text = "Error: cache miss on third-party API";
+  const r = runSignature(["--origin", "recover", "--text", text, "--digest-only"]);
+  assert.strictEqual(r.stdout.trim(), deriveDigest(text, normalizeFailureText));
+});
+
+test("--digest-only output is the digest half of the composed signature", () => {
+  const composed = runSignature(["--origin", "recover", "--text", "boom"]);
+  const bare = runSignature(["--origin", "recover", "--text", "boom", "--digest-only"]);
+  assert.strictEqual(composed.status, 0, composed.stderr);
+  assert.strictEqual(bare.status, 0, bare.stderr);
+  assert.strictEqual(composed.stdout.trim(), `recover-${bare.stdout.trim()}`);
+});
+
+test("the digest does not depend on the origin", () => {
+  const text = "Error: cache miss on third-party API";
+  const base = runSignature(["--origin", "recover", "--text", text, "--digest-only"]);
+  assert.strictEqual(base.status, 0, base.stderr);
+  for (const origin of ["validate", "implement"]) {
+    const r = runSignature(["--origin", origin, "--text", text, "--digest-only"]);
+    assert.strictEqual(r.status, 0, `${origin}: ${r.stderr}`);
+    assert.strictEqual(r.stdout.trim(), base.stdout.trim(), origin);
+  }
+});
+
+test("--digest-only with --blocker-id → CONFLICTING_SIGNATURE_INPUT, exit 1", () => {
+  const r = runSignature([
+    "--origin",
+    "review-specs",
+    "--blocker-id",
+    SAMPLE_BLOCKER_ID,
+    "--digest-only",
+  ]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /CONFLICTING_SIGNATURE_INPUT/);
+});
+
+test("--digest-only with --blocker-id conflicts on derived origins too", () => {
+  const r = runSignature([
+    "--origin",
+    "recover",
+    "--blocker-id",
+    SAMPLE_BLOCKER_ID,
+    "--digest-only",
+  ]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /CONFLICTING_SIGNATURE_INPUT/);
+});
+
+test("--digest-only with --origin review-specs and no --blocker-id also conflicts", () => {
+  const r = runSignature(["--origin", "review-specs", "--digest-only"]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /CONFLICTING_SIGNATURE_INPUT/);
+});
+
+test("the --digest-only conflict is reported ahead of a missing --text", () => {
+  const r = runSignature([
+    "--origin",
+    "recover",
+    "--blocker-id",
+    SAMPLE_BLOCKER_ID,
+    "--digest-only",
+  ]);
+  assert.match(r.stderr, /CONFLICTING_SIGNATURE_INPUT/);
+  assert.doesNotMatch(r.stderr, /EMPTY_SIGNATURE_TEXT/);
+});
+
+test("an illegal --origin still reports ahead of any --digest-only conflict", () => {
+  const r = runSignature(["--origin", "bogus", "--blocker-id", SAMPLE_BLOCKER_ID, "--digest-only"]);
+  assert.strictEqual(r.status, 1);
+  assert.match(r.stderr, /INVALID_SIGNATURE_ORIGIN/);
+  assert.doesNotMatch(r.stderr, /CONFLICTING_SIGNATURE_INPUT/);
+});
+
+test("--digest-only still requires --text to survive normalization", () => {
+  const r = runSignature(["--origin", "recover", "--text", "!!!", "--digest-only"]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /EMPTY_SIGNATURE_TEXT/);
+});
+
+test("--digest-only with no --text at all → EMPTY_SIGNATURE_TEXT", () => {
+  const r = runSignature(["--origin", "recover", "--digest-only"]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.stdout, "");
+  assert.match(r.stderr, /EMPTY_SIGNATURE_TEXT/);
+});
+
+test("absence of the flag leaves the composed output byte-identical", () => {
+  const r = runSignature(["--origin", "recover", "--text", "Error: cache miss"]);
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual(r.stdout, `${deriveSignature("recover", "Error: cache miss")}\n`);
+  assert.strictEqual(r.stderr, "");
+});
+
 // ── Help surface ─────────────────────────────────────────────────────────
 
 test("help() documents both signature modes", () => {
@@ -332,6 +451,7 @@ test("help() documents both signature modes", () => {
     assert.match(r.stdout, /signature/);
     assert.match(r.stdout, /--origin/);
     assert.match(r.stdout, /--blocker-id/);
+    assert.match(r.stdout, /--digest-only/);
   } finally {
     cleanup(dir);
   }

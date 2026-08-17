@@ -1,41 +1,35 @@
 // tests/cli/heuristics.test.mjs
 //
-// Tests for `adev heuristics extract` (lib/cli/heuristics.mjs).
+// Tests for the surviving `adev heuristics` subcommands — `retrieve` and
+// `write` — plus the module's driver-substrate contract and the retirement
+// of the dead `extract` capture path.
 //
-// Covers Task 1 of the inline-Node extraction sweep — the extraction of
-// Check 13 (Success Heuristic Extraction) from skills/validate/SKILL.md
-// into a callable CLI verb.
+// `signature` and `migrate-keys` have their own suites
+// (tests/cli/heuristics-signature.test.mjs,
+// tests/cli/heuristics-migrate-keys.test.mjs); this file only spot-checks
+// that they still dispatch.
 //
 // Spec: .context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md
-// Plan: .context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.plan.md (Task 1)
-// Source SKILL.md behavior: skills/validate/SKILL.md "Check 13: Success Heuristic Extraction"
+// Spec: .context-index/specs/features/heuristics/failure-capture.spec.md (Task 7 — retirement)
 //
 // Contract (driver-substrate.spec.md):
 //   - Module exports `run({ projectRoot, argv, manifest })` and `help()`.
-//   - Does NOT export LIFECYCLE_STEP (this is an observational helper inside
-//     the validate step, not a lifecycle step itself).
-//   - Exit codes per Check 13: ALWAYS 0 (SKIP and success both exit 0;
-//     Check 13 is observational and never blocks validation).
-//   - Stdout line on success: `Check 13: Success Heuristic Extracted — <id> (scope: <scope>, confidence: <confidence>)`
-//   - Stdout line on skip:    `Check 13: SKIP — <reason>`
+//   - Does NOT export LIFECYCLE_STEP (these are helpers invoked from inside
+//     other lifecycle steps, not lifecycle steps themselves).
 //
 // CLI surface:
-//   adev heuristics extract --spec <p> --report <p> [--pattern "..."] [--source <golden|adr|spec|default>] [--success-factor "..."]
-//   adev heuristics --help  → prints usage
+//   adev heuristics retrieve --module <slug> [--injection-limit N] [...]
+//   adev heuristics write    --id <id> --scope <s> --title <t> --pattern <p> [...]
+//   adev heuristics --help   → prints usage
 //
 // Tests cover:
 //   - module exports run + help, no LIFECYCLE_STEP
-//   - missing args → exit 1 with usage
-//   - spec containment (out-of-bounds path → exit 1)
-//   - missing spec file → exit 1
-//   - successful extraction → exit 0, stdout has success line, heuristic file written
-//   - spec without charter: → exit 0, stdout "SKIP — no charter scope"
-//   - spec with charter not in manifest modules[] → falls back to `_global`
-//   - id derivation rule (spec-slug + 8-char SHA-256 hex)
-//   - pattern derivation: default vs --pattern override
-//   - invalid (empty) spec slug → SKIP "invalid spec slug"
-//   - report path is required
+//   - no subcommand → exit 1 with usage
 //   - `--help` prints usage and exits 0
+//   - retrieve: argument validation, empty result, seeded result, both formats
+//   - write: argument validation, success line, --signature persistence
+//   - retirement: `extract` no longer dispatches, its helpers are gone, and
+//     the orphaned check file is deleted
 
 import { test } from "node:test";
 import assert from "node:assert";
@@ -45,6 +39,7 @@ import {
   mkdirSync,
   writeFileSync,
   readFileSync,
+  readdirSync,
   rmSync,
   existsSync,
   realpathSync,
@@ -52,7 +47,6 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -84,13 +78,6 @@ function cleanup(dir) {
   }
 }
 
-function writeSpec(dir, relPath, body) {
-  const abs = join(dir, relPath);
-  mkdirSync(dirname(abs), { recursive: true });
-  writeFileSync(abs, body);
-  return abs;
-}
-
 // ── Driver-substrate contract ─────────────────────────────────────────────
 
 test("lib/cli/heuristics.mjs exports run and help", async () => {
@@ -114,83 +101,7 @@ test("adev heuristics with no subcommand exits 1 with usage", () => {
       cwd: dir,
     });
     assert.strictEqual(r.status, 1);
-    assert.match(r.stderr + r.stdout, /usage|extract/i);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("adev heuristics extract without --spec exits 1 with usage", () => {
-  const dir = makeTempProject();
-  try {
-    const r = spawnSync(
-      "node",
-      [CLI, "heuristics", "extract", "--report", "x"],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 1);
-    assert.match(r.stderr + r.stdout, /--spec|usage/i);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("adev heuristics extract without --report exits 1 with usage", () => {
-  const dir = makeTempProject();
-  try {
-    const r = spawnSync(
-      "node",
-      [CLI, "heuristics", "extract", "--spec", "x"],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 1);
-    assert.match(r.stderr + r.stdout, /--report|usage/i);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("adev heuristics extract with out-of-bounds --spec path exits 1 (containment)", () => {
-  const dir = makeTempProject();
-  try {
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        "../../../etc/passwd",
-        "--report",
-        ".context-index/specs/features/m/x.validate.md",
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 1);
-    assert.match(r.stderr, /spec not found|escapes/i);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("adev heuristics extract with missing --spec file exits 1", () => {
-  const dir = makeTempProject();
-  try {
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        ".context-index/specs/features/m/does-not-exist.spec.md",
-        "--report",
-        ".context-index/specs/features/m/x.validate.md",
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 1);
-    assert.match(r.stderr, /spec not found/i);
+    assert.match(r.stderr + r.stdout, /usage: adev heuristics/i);
   } finally {
     cleanup(dir);
   }
@@ -201,336 +112,9 @@ test("adev heuristics --help exits 0 and prints usage", () => {
     encoding: "utf8",
   });
   assert.strictEqual(r.status, 0);
-  assert.match(r.stdout, /heuristics extract/i);
+  assert.match(r.stdout, /Usage: adev heuristics <subcommand>/);
+  assert.match(r.stdout, /heuristics retrieve/);
 });
-
-// ── Happy path: extraction success ────────────────────────────────────────
-
-test("extracts a success heuristic from a spec with charter scope", () => {
-  const dir = makeTempProject({ manifestModules: ["m"] });
-  try {
-    const specRel = ".context-index/specs/features/m/foo-spec.spec.md";
-    writeSpec(
-      dir,
-      specRel,
-      "---\ncharter: m\nstatus: review-passed\n---\n# Live Spec: Foo Spec\n\nBody.\n",
-    );
-    const reportRel = ".context-index/specs/features/m/foo-spec.validate.md";
-    writeSpec(dir, reportRel, "# Validation Report\n\nPASS\n");
-
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-
-    assert.strictEqual(
-      r.status,
-      0,
-      `expected 0, got ${r.status}: stderr=${r.stderr} stdout=${r.stdout}`,
-    );
-    assert.match(
-      r.stdout,
-      /Check 13: Success Heuristic Extracted — .+ \(scope: m, confidence: .+\)/,
-    );
-
-    // Heuristic file should exist at the canonical HEURISTICS_DIR path
-    // (.context-index/memory/heuristics/<scope>.md per lib/heuristics.mjs).
-    const heuristicsFile = join(
-      dir,
-      ".context-index",
-      "memory",
-      "heuristics",
-      "m.md",
-    );
-    assert.ok(
-      existsSync(heuristicsFile),
-      "memory/heuristics/m.md should be written",
-    );
-    const content = readFileSync(heuristicsFile, "utf8");
-    // Spec basename (sans .md) is "foo-spec.spec" → slugged to "foo-spec-spec".
-    // This matches skills/validate/SKILL.md Spec-Slug Derivation Rule which
-    // strips only the `.md` extension, not `.spec.md`.
-    assert.match(content, /id: foo-spec-spec-[0-9a-f]{8}/);
-    assert.match(content, /scope: m/);
-    assert.match(content, /confidence: medium/);
-    assert.match(content, /title: First-run PASS: Foo Spec/);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("id is deterministic per spec-slug + path + pattern (SHA-256, first 8 hex)", () => {
-  const dir = makeTempProject({ manifestModules: ["m"] });
-  try {
-    const specRel = ".context-index/specs/features/m/bar-spec.spec.md";
-    writeSpec(
-      dir,
-      specRel,
-      "---\ncharter: m\n---\n# Live Spec: Bar Spec\n",
-    );
-    const reportRel = ".context-index/specs/features/m/bar-spec.validate.md";
-    writeSpec(dir, reportRel, "# r\n");
-
-    const r1 = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r1.status, 0);
-
-    // Run again — id must be identical, and the heuristic file must still
-    // contain exactly one entry for that id (merge path, not new).
-    const r2 = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r2.status, 0);
-
-    // Extract the id from each stdout
-    const id1 = r1.stdout.match(/Extracted — (\S+)/)?.[1];
-    const id2 = r2.stdout.match(/Extracted — (\S+)/)?.[1];
-    assert.ok(id1, `failed to extract id from: ${r1.stdout}`);
-    assert.strictEqual(id1, id2, "id must be deterministic across invocations");
-
-    // Spec-slug derived from filename: basename(p, ".md") = "bar-spec.spec"
-    // then slugged → "bar-spec-spec".
-    assert.match(id1, /^bar-spec-spec-[0-9a-f]{8}$/);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("custom --pattern overrides default success-factor pattern", () => {
-  const dir = makeTempProject({ manifestModules: ["m"] });
-  try {
-    const specRel = ".context-index/specs/features/m/baz.spec.md";
-    writeSpec(
-      dir,
-      specRel,
-      "---\ncharter: m\n---\n# Live Spec: Baz\n",
-    );
-    const reportRel = ".context-index/specs/features/m/baz.validate.md";
-    writeSpec(dir, reportRel, "# r\n");
-    const customPattern =
-      "Apply ADR-0003 review.yaml schema for new diagnostic registries";
-
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-        "--pattern",
-        customPattern,
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}, stdout: ${r.stdout}`);
-
-    const content = readFileSync(
-      join(dir, ".context-index", "memory", "heuristics", "m.md"),
-      "utf8",
-    );
-    assert.match(content, new RegExp(customPattern.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")));
-  } finally {
-    cleanup(dir);
-  }
-});
-
-// ── SKIP semantics ────────────────────────────────────────────────────────
-
-test("SKIP when spec has no charter field (no charter scope)", () => {
-  const dir = makeTempProject();
-  try {
-    const specRel = ".context-index/specs/features/m/no-charter.spec.md";
-    writeSpec(dir, specRel, "---\nstatus: draft\n---\n# Live Spec: No Charter\n");
-    const reportRel = ".context-index/specs/features/m/no-charter.validate.md";
-    writeSpec(dir, reportRel, "# r\n");
-
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 0);
-    assert.match(r.stdout, /Check 13: SKIP — no charter scope/);
-
-    // No heuristic file should be created in either layout (defensive)
-    const newDir = join(dir, ".context-index", "memory", "heuristics");
-    const legacyDir = join(dir, ".context-index", "heuristics");
-    const newEntries = readDirSafe(newDir).filter((f) => f.endsWith(".md"));
-    const legacyEntries = readDirSafe(legacyDir).filter((f) => f.endsWith(".md"));
-    assert.strictEqual(newEntries.length + legacyEntries.length, 0);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("falls back to _global scope when charter not in manifest modules[]", () => {
-  const dir = makeTempProject({ manifestModules: ["other-module"] });
-  try {
-    const specRel = ".context-index/specs/features/m/unknown-charter.spec.md";
-    writeSpec(
-      dir,
-      specRel,
-      "---\ncharter: not-in-manifest\n---\n# Live Spec: Unknown\n",
-    );
-    const reportRel =
-      ".context-index/specs/features/m/unknown-charter.validate.md";
-    writeSpec(dir, reportRel, "# r\n");
-
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 0);
-    assert.match(r.stdout, /scope: _global/);
-    assert.ok(
-      existsSync(
-        join(dir, ".context-index", "memory", "heuristics", "_global.md"),
-      ),
-      "_global.md must be written for fallback scope",
-    );
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("SKIP when validation report already exists (not first run)", () => {
-  // Per spec: "A validation is first run if and only if no file matching
-  // <spec-slug>.validate.md exists in the same directory as the target spec."
-  // The CLI verb accepts a --report path; if that file already exists at
-  // call time AND the caller passes --check-first-run, we SKIP.
-  //
-  // Design note: the SKILL.md skill is responsible for first-run detection
-  // logic (because it controls the report path lifecycle). The CLI helper
-  // exposes the same SKIP path via an explicit flag so callers in tests +
-  // automation can opt into first-run gating. The flag is opt-in to keep
-  // the helper deterministic and the skill in control.
-  const dir = makeTempProject({ manifestModules: ["m"] });
-  try {
-    const specRel = ".context-index/specs/features/m/qux.spec.md";
-    writeSpec(dir, specRel, "---\ncharter: m\n---\n# Live Spec: Qux\n");
-    // First-run marker: <spec-slug>.validate.md where spec-slug is the
-    // basename minus .md then slug-normalised. For qux.spec.md the slug is
-    // "qux-spec", so the marker file lives at qux-spec.validate.md.
-    const markerRel =
-      ".context-index/specs/features/m/qux-spec.validate.md";
-    writeSpec(dir, markerRel, "# already exists\n");
-    // The --report argument is the *evidence* path; it can differ from
-    // the first-run marker. Use a separate filename so we are sure the
-    // SKIP fires off the slug-derived marker, not the --report argument.
-    const reportRel = ".context-index/specs/features/m/qux-evidence.md";
-    writeSpec(dir, reportRel, "# r\n");
-
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-        "--check-first-run",
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 0);
-    assert.match(r.stdout, /Check 13: SKIP — not first-run PASS/);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-test("SKIP with invalid spec slug (e.g., dotfile filename produces empty slug)", () => {
-  const dir = makeTempProject({ manifestModules: ["m"] });
-  try {
-    // A filename of "--.md" — basename minus .md is "--", which after
-    // slug normalisation (collapse + trim leading/trailing `-`) becomes "".
-    const specRel = ".context-index/specs/features/m/--.md";
-    writeSpec(dir, specRel, "---\ncharter: m\n---\n# Live Spec\n");
-    const reportRel = ".context-index/specs/features/m/--.validate.md";
-    writeSpec(dir, reportRel, "# r\n");
-
-    const r = spawnSync(
-      "node",
-      [
-        CLI,
-        "heuristics",
-        "extract",
-        "--spec",
-        specRel,
-        "--report",
-        reportRel,
-      ],
-      { encoding: "utf8", cwd: dir },
-    );
-    assert.strictEqual(r.status, 0);
-    assert.match(r.stdout, /Check 13: SKIP — invalid spec slug/);
-  } finally {
-    cleanup(dir);
-  }
-});
-
-// ── Helper: read directory entries safely (returns [] for ENOENT) ────────
-
-import { readdirSync } from "node:fs";
-function readDirSafe(p) {
-  try {
-    return readdirSync(p);
-  } catch {
-    return [];
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────
 // PR 8-9 subcommands: retrieve + write
@@ -853,4 +437,438 @@ test("heuristics write with schema error degrades to stderr + exit 0", () => {
   } finally {
     cleanup(dir);
   }
+});
+
+// ── write --signature (Behavior 5: recover-side signature persistence) ────
+
+function runWriteCli(dir, extraArgs = [], { id = "missing-context-a1b2c3d4" } = {}) {
+  return spawnSync(
+    "node",
+    [
+      CLI,
+      "heuristics",
+      "write",
+      "--id",
+      id,
+      "--scope",
+      "_global",
+      "--title",
+      "T",
+      "--pattern",
+      "P",
+      ...extraArgs,
+    ],
+    { encoding: "utf8", cwd: dir },
+  );
+}
+
+function readGlobalStore(dir) {
+  return readFileSync(
+    join(dir, ".context-index", "memory", "heuristics", "_global.md"),
+    "utf8",
+  );
+}
+
+test("heuristics write --signature persists the signature field", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, ["--signature", "recover-a1b2c3d4"]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.match(body, /^signature: recover-a1b2c3d4$/m);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write without --signature writes no signature field", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, [], { id: "tool-failure-0badc0de" });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.ok(!/^signature:/m.test(body), "the key is omitted, not written empty");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write with an empty --signature omits the key and exits 0", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, ["--signature", ""], { id: "tool-failure-0badc0de" });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.ok(!/^signature:/m.test(body), "empty signature must not be serialized");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write with a malformed --signature degrades to stderr + exit 0", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runWriteCli(dir, ["--signature", "Bad Value"], {
+      id: "tool-failure-0badc0de",
+    });
+    assert.strictEqual(r.status, 0);
+    assert.match(r.stderr, /extraction skipped/);
+    assert.match(r.stderr, /signature/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics signature output composes into heuristics write --signature", () => {
+  const dir = makeTempProject();
+  try {
+    const sig = spawnSync(
+      "node",
+      [
+        CLI,
+        "heuristics",
+        "signature",
+        "--origin",
+        "recover",
+        "--text",
+        "Timeout waiting for the fixture server on port 8080",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(sig.status, 0, sig.stderr);
+    const value = sig.stdout.trim();
+    assert.match(value, /^recover-[0-9a-f]{8}$/);
+
+    const r = runWriteCli(dir, ["--signature", value]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const body = readGlobalStore(dir);
+    assert.match(body, new RegExp(`^signature: ${value}$`, "m"));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("heuristics write --signature is EXISTING-wins on a re-write of the same id", () => {
+  const dir = makeTempProject();
+  try {
+    const first = runWriteCli(dir, ["--signature", "recover-aaaaaaaa"]);
+    assert.strictEqual(first.status, 0, first.stderr);
+
+    const second = runWriteCli(dir, ["--signature", "recover-bbbbbbbb"]);
+    assert.strictEqual(second.status, 0, second.stderr);
+    assert.match(second.stderr, /signature divergence/);
+    assert.match(second.stderr, /recover-aaaaaaaa/);
+    assert.match(second.stderr, /recover-bbbbbbbb/);
+
+    const body = readGlobalStore(dir);
+    assert.match(body, /^signature: recover-aaaaaaaa$/m);
+    assert.ok(
+      !/recover-bbbbbbbb/.test(body),
+      "the incoming signature must not overwrite the stored one",
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Retirement of the dead `extract` capture path
+//
+// Spec: .context-index/specs/features/heuristics/failure-capture.spec.md
+// Plan-task: 7
+//
+// The `extract` verb was the validate-side capture path that the
+// PostToolUse hook (`hooks/post-validate-extract-heuristics.mjs`) replaced.
+// Nothing dispatched to it any more, so it is gone along with the eight
+// helpers reachable only from it and the orphaned check file that
+// documented it.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Run the CLI in a throwaway project and return the spawn result. */
+function runCli(args) {
+  const dir = makeTempProject();
+  try {
+    return spawnSync("node", [CLI, ...args], { encoding: "utf8", cwd: dir });
+  } finally {
+    cleanup(dir);
+  }
+}
+
+/** The eight helpers that were reachable only from the `extract` path. */
+const DELETED_SYMBOLS = [
+  "specSlug",
+  "deriveId",
+  "deriveTitle",
+  "readCharterField",
+  "resolveScope",
+  "defaultPattern",
+  "parseExtractArgs",
+  "resolveContained",
+];
+
+const HEURISTICS_MODULE = resolve(PROJECT_ROOT, "lib", "cli", "heuristics.mjs");
+
+test("adev heuristics extract is gone — unknown subcommand exits 1 with usage", () => {
+  const r = runCli(["heuristics", "extract", "--spec", "x", "--report", "y"]);
+  assert.equal(r.status, 1);
+  assert.match(
+    r.stderr + r.stdout,
+    /usage: adev heuristics <retrieve\|signature\|migrate-keys\|write>/,
+  );
+});
+
+test("--help no longer advertises extract or --check-first-run", () => {
+  const r = runCli(["heuristics", "--help"]);
+  assert.equal(r.status, 0);
+  // The verb must be gone from both the subcommand list and the usage lines.
+  // A bare /extract/i would also match the `write` subcommand's documented
+  // stderr string ("heuristics: extraction skipped — <error>"), which is live
+  // behaviour asserted elsewhere in this file — so match the VERB, not the
+  // substring.
+  assert.ok(
+    !/heuristics extract\b/.test(r.stdout),
+    `stdout still shows an 'adev heuristics extract' usage line:\n${r.stdout}`,
+  );
+  assert.ok(
+    !/^\s+extract\b/m.test(r.stdout),
+    `stdout still lists 'extract' as a subcommand:\n${r.stdout}`,
+  );
+  assert.ok(!/check-first-run/.test(r.stdout), "stdout still mentions --check-first-run");
+  // And the four surviving verbs are all still listed.
+  for (const verb of ["retrieve", "signature", "migrate-keys", "write"]) {
+    assert.match(r.stdout, new RegExp(`^\\s+${verb}\\b`, "m"));
+  }
+});
+
+test("lib/cli/heuristics.mjs exports no id-derivation function", async () => {
+  const mod = await import("../../lib/cli/heuristics.mjs");
+  assert.equal(mod.deriveId, undefined);
+  assert.equal(mod.specSlug, undefined);
+});
+
+test("the orphaned check file is gone", () => {
+  assert.equal(
+    existsSync(
+      join(
+        PROJECT_ROOT,
+        "skills/validate/checks/validate.check-12-heuristic-extraction.md",
+      ),
+    ),
+    false,
+  );
+});
+
+test("the module source contains none of the eight deleted symbol names", () => {
+  const src = readFileSync(HEURISTICS_MODULE, "utf8");
+  for (const symbol of DELETED_SYMBOLS) {
+    assert.ok(
+      !new RegExp(`\\b${symbol}\\b`).test(src),
+      `lib/cli/heuristics.mjs still names the deleted symbol '${symbol}'`,
+    );
+  }
+});
+
+test("the surviving exports are all present and callable", async () => {
+  const mod = await import("../../lib/cli/heuristics.mjs");
+  assert.strictEqual(typeof mod.run, "function");
+  assert.strictEqual(typeof mod.help, "function");
+  assert.ok(Array.isArray(mod.RECOVER_CATEGORY_SLUGS));
+  assert.strictEqual(mod.RECOVER_CATEGORY_SLUGS.length, 6);
+  assert.strictEqual(typeof mod.foldEvidenceSource, "function");
+  assert.deepStrictEqual(mod.foldEvidenceSource("validate"), {
+    folded: "validation",
+    recognized: true,
+  });
+  assert.strictEqual(typeof mod.classifyForRekey, "function");
+  assert.strictEqual(
+    mod.classifyForRekey({ id: "tool-failure-aaaa1111", evidence: [] }).action,
+    "skip",
+  );
+});
+
+test("each surviving subcommand still dispatches", () => {
+  // retrieve: empty store is a well-formed empty result at exit 0.
+  const retrieve = runCli(["heuristics", "retrieve", "--module", "m"]);
+  assert.equal(retrieve.status, 0, retrieve.stderr);
+  assert.deepEqual(JSON.parse(retrieve.stdout.trim()), { count: 0, rendered: "" });
+
+  // signature: pure derivation, exit 0 with the composed key.
+  const signature = runCli([
+    "heuristics",
+    "signature",
+    "--origin",
+    "recover",
+    "--text",
+    "a failure",
+  ]);
+  assert.equal(signature.status, 0, signature.stderr);
+  assert.match(signature.stdout.trim(), /^recover-[0-9a-f]{8}$/);
+
+  // migrate-keys: dry run over an empty store reports zero of everything.
+  const migrate = runCli(["heuristics", "migrate-keys", "--dry-run"]);
+  assert.equal(migrate.status, 0, migrate.stderr);
+  assert.match(migrate.stdout, /^rekeyed=0$/m);
+
+  // write: missing required flags is still an argument error, not a crash.
+  const write = runCli(["heuristics", "write"]);
+  assert.equal(write.status, 1);
+  assert.match(write.stderr, /missing: --id/);
+});
+
+test("--check-first-run is rejected as an unknown option by every surviving subcommand", () => {
+  const invocations = [
+    ["heuristics", "retrieve", "--module", "m", "--check-first-run"],
+    ["heuristics", "signature", "--origin", "recover", "--text", "t", "--check-first-run"],
+    ["heuristics", "migrate-keys", "--dry-run", "--check-first-run"],
+    [
+      "heuristics",
+      "write",
+      "--id",
+      "tool-failure-aaaa1111",
+      "--scope",
+      "_global",
+      "--title",
+      "T",
+      "--pattern",
+      "P",
+      "--check-first-run",
+    ],
+  ];
+  for (const argv of invocations) {
+    const r = runCli(argv);
+    assert.equal(
+      r.status,
+      1,
+      `${argv[1]} accepted --check-first-run (status ${r.status}): ${r.stdout}${r.stderr}`,
+    );
+    assert.match(r.stderr, /check-first-run/);
+  }
+});
+
+// ── Task 8: dangling-reference sweep ────────────────────────────────────────
+//
+// Scope is deliberately EXACTLY `docs/` and `lib/`. `.context-index/` still
+// contains the strings `heuristics extract` and `--check-first-run` on
+// purpose — the failure-capture charter, this spec, the superseded
+// cli-driver-surface acceptance criterion, research artifacts and session
+// logs all record the retired verb as history. Scanning `.context-index/`
+// would fail forever and would pressure a future author to erase that record.
+
+const SCAN_DIRS = ["docs", "lib"];
+const SCAN_EXTS = new Set([".md", ".mjs", ".js"]);
+
+/** Walk SCAN_DIRS and return every `file:line` whose text matches `pattern`. */
+function grepRepo(pattern, dirs = SCAN_DIRS) {
+  const hits = [];
+  const walk = (abs, rel) => {
+    for (const entry of readdirSync(abs, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      const childAbs = join(abs, entry.name);
+      const childRel = `${rel}/${entry.name}`;
+      if (entry.isDirectory()) {
+        walk(childAbs, childRel);
+        continue;
+      }
+      const dot = entry.name.lastIndexOf(".");
+      if (dot < 0 || !SCAN_EXTS.has(entry.name.slice(dot))) continue;
+      const lines = readFileSync(childAbs, "utf8").split("\n");
+      lines.forEach((line, i) => {
+        if (pattern.test(line)) hits.push(`${childRel}:${i + 1}`);
+      });
+    }
+  };
+  for (const dir of dirs) walk(resolve(PROJECT_ROOT, dir), dir);
+  return hits;
+}
+
+test("no reference to the removed verb remains in docs/ or lib/", () => {
+  const hits = grepRepo(/heuristics extract|--check-first-run/);
+  assert.deepEqual(hits, [], `dangling references: ${hits.join(", ")}`);
+});
+
+test("docs/cli-reference.md documents all four surviving heuristics subcommands", () => {
+  const doc = readFileSync(resolve(PROJECT_ROOT, "docs", "cli-reference.md"), "utf8");
+  const section = doc.slice(doc.indexOf("### `heuristics`"));
+  const entry = section.slice(0, section.indexOf("### `domain`"));
+
+  for (const sub of ["retrieve", "signature", "write", "migrate-keys"]) {
+    assert.ok(
+      entry.includes(`heuristics ${sub}`),
+      `docs/cli-reference.md heuristics entry omits the '${sub}' subcommand`,
+    );
+  }
+  for (const flag of ["--digest-only", "--signature"]) {
+    assert.ok(entry.includes(flag), `heuristics entry omits the ${flag} flag`);
+  }
+  assert.ok(
+    !/\bExtract\b/.test(entry),
+    "heuristics **Purpose:** still advertises the retired Extract capability",
+  );
+});
+
+test("validated-without-report.mjs names exactly two .validate.md call sites", () => {
+  const src = readFileSync(
+    resolve(PROJECT_ROOT, "lib", "diagnostics", "tier2", "validated-without-report.mjs"),
+    "utf8",
+  );
+  assert.ok(
+    /Two call sites derive/.test(src),
+    "the SA-13 ownership note must say 'Two call sites derive', not 'Three'",
+  );
+  assert.ok(!/Three call sites/.test(src), "stale 'Three call sites' prose remains");
+  assert.ok(
+    !/lib\/cli\/heuristics\.mjs/.test(src),
+    "stale lib/cli/heuristics.mjs call site remains",
+  );
+  const numbered = src.match(/^ \* {3}\d\. /gm) ?? [];
+  assert.equal(
+    numbered.length,
+    2,
+    `expected 2 numbered call sites in the ownership note, found ${numbered.length}`,
+  );
+  assert.ok(
+    /^ \* {3}1\. /m.test(src) && /^ \* {3}2\. /m.test(src),
+    "the surviving call sites are not renumbered 1, 2",
+  );
+  assert.ok(
+    !/one of\s*\n \* the three\b/.test(src),
+    "prose still says 'one of the three'",
+  );
+});
+
+test("the superseded cli-driver-surface criterion is annotated, not deleted", () => {
+  const sweepPath = resolve(
+    PROJECT_ROOT,
+    ".context-index/specs/features/cli-driver-surface/inline-node-extraction-sweep.spec.md",
+  );
+  const lines = readFileSync(sweepPath, "utf8").split("\n");
+
+  // The criterion must still EXIST as a bullet — it is another charter's
+  // record and must stay readable, only marked as falsified.
+  const criterion = lines.find((l) =>
+    l.startsWith("- [ ] PR 1 extracts Check 13 heuristic extraction"),
+  );
+  assert.ok(criterion, "the PR 1 acceptance criterion was deleted rather than annotated");
+  assert.ok(
+    criterion.includes("`adev heuristics extract` works"),
+    "the original claim text must remain visible (struck through), not erased",
+  );
+  assert.ok(
+    criterion.includes("failure-capture.spec.md"),
+    "the superseding spec is not named on the criterion",
+  );
+  assert.ok(criterion.includes("~~"), "the falsified claim is not marked struck through");
+
+  // Exactly one line changed in place: the file's line count is unchanged (±1).
+  assert.ok(
+    Math.abs(lines.length - 105) <= 1,
+    `sweep spec line count drifted to ${lines.length}; expected 104-105 (one line edited in place)`,
+  );
+
+  // The Task Map row naming lib/cli/heuristics.mjs records what PR 1 shipped
+  // ("paired test") and remains true — it is not this task's to edit.
+  assert.ok(
+    lines.some((l) => l.startsWith("| PR 1 — Extract Check 13")),
+    "the PR 1 Task Map row was modified or removed",
+  );
 });
