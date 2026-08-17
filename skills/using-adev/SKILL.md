@@ -94,7 +94,7 @@ When a user asks about a specific skill's behavior (e.g. "how does `/adev:plan` 
 
 - **Skill not found** — if the named skill does not exist, report that it was not found and list the closest matching names from the skill tables above ("Start here" / "Lifecycle stages").
 - **Docs insufficient** — if `docs/*.md` doesn't cover the needed detail, fall back to `skills/<name>/SKILL.md` automatically; this needs no user-visible caveat.
-- **Ambiguous question** — if a question could be either "What should I do?" or "How does X work?", answer as "How does X work?" only when a specific skill name is present in the question; otherwise answer as "What should I do?" (see above).
+- **Ambiguous question** — if a question could be either "What should I do?" or "How does X work?", answer as "How does X work?" only when a specific skill name or command is named in the question; otherwise answer as "What should I do?" (see above).
 
 ## Lifecycle Gates
 
