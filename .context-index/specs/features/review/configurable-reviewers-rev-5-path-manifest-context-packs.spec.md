@@ -10,6 +10,34 @@ target-revision: 5
 created: 2026-08-17
 updated: 2026-08-17
 tracker-ref: adev-plugin-j7pq.6
+source-manifest:
+  sha: "0eafe41"
+  files:
+    - docs/governance.md
+    - lib/governance/context-pack.mjs
+    - lib/governance/dispatch-shape.mjs
+    - lib/governance/review-config.mjs
+    - providers/codex/skills/review-specs/SKILL.md
+    - providers/opencode/skills/review-specs/SKILL.md
+    - skills/review-specs/SKILL.md
+    - templates/review-specs/defaults.yaml
+    - tests/governance/context-pack-consistency-glob.test.mjs
+    - tests/governance/context-pack-delivery-field.test.mjs
+    - tests/governance/context-pack-inline-parity.test.mjs
+    - tests/governance/context-pack-manifest-budgets.test.mjs
+    - tests/governance/context-pack-manifest-denylist.test.mjs
+    - tests/governance/context-pack-path-manifest.test.mjs
+    - tests/governance/context-pack-path-safety.test.mjs
+    - tests/governance/dispatch-manifest-prompt.test.mjs
+    - tests/governance/helpers/parse-pack-sections.mjs
+    - tests/governance/review-config-manifest-profile.test.mjs
+  computed-at: "2026-08-17T22:00:58.935Z"
+# status intentionally left at `review-passed`, NOT advanced to `implemented`:
+# plan tasks 8, 9, 12 and 13 are deliberately deferred (8 and 13 gated on the
+# OPEN tracker adev-plugin-j7pq.7; 9 depends on 8; 12 routed human-only). The
+# renderer ships complete and inert — no bundled pack declares
+# `delivery: manifest` — so advancing the status would overstate what landed.
+# Advancing it is an operator call once j7pq.7 closes and 8/9/12/13 land.
 ---
 
 # Amendment: Configurable Reviewer Registry (targeting rev 5)
