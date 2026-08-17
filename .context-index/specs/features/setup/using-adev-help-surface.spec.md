@@ -1,7 +1,7 @@
 ---
 charter: setup
 kind: skill
-status: implemented
+status: validated
 risk_level: low
 milestone:
 revision: 1
