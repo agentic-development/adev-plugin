@@ -29,3 +29,5 @@
 {"event":"plan_task","plan":".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md","task_id":"task-13","status":"pending","notes":null,"ts":"2026-08-17T20:06:50.667Z"}
 {"event":"plan_task","plan":".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md","task_id":"task-14","status":"pending","notes":null,"ts":"2026-08-17T20:06:50.703Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-17T20:09:30.492Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-08-17T20:10:09.558Z"}
+{"event":"step_completed","step":"route","verdict":"PASS","ts":"2026-08-17T20:14:49.259Z"}
