@@ -71,6 +71,17 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 
 For full per-skill usage, argument signatures, and worked examples, see [`docs/skill-reference.md`](../../docs/skill-reference.md). For the complete CLI verb surface (including internal verbs like `adev gate`, `adev report`, `adev build-state`, `adev partial`, `adev heuristics`, `adev source-manifest`, `adev domain`, etc. that this gateway does not list), consult [`docs/cli-reference.md`](../../docs/cli-reference.md) or `node cli/index.mjs <verb> --help` for any specific verb. End-user-facing topics — installation, getting-started, governance, hooks, extensions, troubleshooting — are indexed at [`docs/README.md`](../../docs/README.md).
 
+## "What should I do?" Q&A Mode
+
+When a user asks an orientation or lifecycle-choice question (e.g. "what should I do next", "which skill do I need", "how do I start") outside of session-start injection, answer conceptually:
+
+- Explain the relevant lifecycle stage(s) from the tables above — what each stage does and when it applies.
+- **Never perform the routing decision yourself.** Do not tell the user "run `/adev:plan`" as a conclusion — that decision belongs to `/adev:work`.
+- Always end by pointing the user to `/adev:work` for the actual routing decision.
+- This is a chat-only response: no file writes, no lifecycle events.
+
+If the question is ambiguous between this mode and "How does X work?" below, treat it as "How does X work?" only when a specific skill name or command is named in the question; otherwise treat it as this mode.
+
 ## Lifecycle Gates
 
 These gates enforce quality:
