@@ -112,6 +112,9 @@ Plan-task: <task-number>          # when implementing a plan task
 
 ## Quality Gates
 
+<!-- Commands that must pass before any implementation is considered complete.
+     /adev:implement and /adev:validate will run these automatically. -->
+
 ```bash
 # Tests
 npm test
@@ -128,12 +131,16 @@ This project uses the Agentic Development Framework (adev).
 <!-- BEGIN TASK MANAGEMENT -->
 ## Task Management
 
-Issues are tracked using the JSON backend. The issue board lives at `.context-index/tasks/tasks.json` (rendered to a human-readable board on demand).
+Issues are tracked using the beads backend (`br`). Issue data lives in `.beads/`, git-committed via `br sync --flush-only`.
 
+- Use `br ready` to see actionable issues (open, unblocked)
+- Use `br list --status in_progress` to see current work
+- Use `br create "title" --type <bug|feature|task>` to create issues
+- Use `br close <id> --reason "text"` to complete issues
 - Use `/adev:issues` to manage issues interactively (create, update, close, view board)
-- Use `/adev:issues ready` to see actionable issues (open and unblocked)
 - `lib/issues/registry.mjs` provides `getIssueManager(manifest)` for programmatic access
 - `/adev:plan` and `/adev:implement` create and update issues automatically when `tasks.backend` is configured
+- Claims are leased, not locked: `tasks.claim_ttl_minutes` (240 here) bounds how long a claim survives an unresponsive session before the next claimant can take over — see `adev issues stale [--json]`
 <!-- END TASK MANAGEMENT -->
 
 # User Additions

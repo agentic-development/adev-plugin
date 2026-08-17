@@ -418,6 +418,16 @@ describe("setupGitHooks", () => {
     const original = readFileSync(join(gitDir, ".githooks", "pre-commit"), "utf8");
     assert.ok(original.includes("custom"), "original hook should be preserved");
   });
+
+  // NOTE: a regression test for "does not write a self-chaining wrapper when
+  // core.hooksPath resolves to .githooks under a different spelling" was
+  // attempted here and removed. Mocking process.stdin to answer the
+  // interactive chain/replace/skip prompt reliably hung the suite — the same
+  // difficulty the "chains hooks when core.hooksPath points elsewhere" test
+  // above already documents ("we can't easily mock readline"). The fix
+  // (cli/index.mjs, the `chainsToSelf` guard next to the `originalHookPath`
+  // computation) was verified correct via an isolated standalone
+  // reproduction outside this suite instead.
 });
 
 // --- selectProviders — menu shape (Task 2) ---

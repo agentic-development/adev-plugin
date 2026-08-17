@@ -133,6 +133,106 @@ describe("verifySpecImplemented", () => {
     }
   });
 
+  test("strips a trailing line-ref suffix from a backtick-quoted plan path", () => {
+    // Plan entries can annotate the exact span to touch, e.g.
+    // `lib/feature.mjs:518-662` — the ":518-662" is not part of the path on
+    // disk. Before the fix, every one of these entries failed existsSync()
+    // and confidence bottomed out at NONE even on a fully implemented spec.
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n\nTests at tests/feature.test.mjs\n");
+      writeFixture(tmp, "spec.plan.md", `# Plan
+
+**Create:**
+- \`lib/feature.mjs:12-40\` — the module
+- \`tests/feature.test.mjs\` — tests
+
+**Reference (read, do not modify):**
+- README.md
+`);
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      writeFixture(tmp, "tests/feature.test.mjs", "import { test } from 'node:test';\ntest('pass', () => {});\n");
+
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      assert.equal(result.confidence, CONFIDENCE.HIGH);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("merges a bullet's wrapped continuation lines instead of treating each as its own path", () => {
+    // A long description commonly wraps onto an indented continuation line
+    // with no "- " prefix of its own. Before the fix, splitting on every
+    // "\n" treated that continuation text as a separate bullet, and the raw
+    // prose fragment (e.g. "primary comparator term") got existsSync()-
+    // checked as if it were a file path — always failing, always dragging
+    // confidence down to NONE regardless of the real files.
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n\nTests at tests/feature.test.mjs\n");
+      writeFixture(tmp, "spec.plan.md", `# Plan
+
+**Create:**
+- \`lib/feature.mjs:1409-1431\` — compute the derived value; add it as the
+  primary comparator term
+- \`tests/feature.test.mjs\` — tests
+
+**Reference (read, do not modify):**
+- README.md
+`);
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      writeFixture(tmp, "tests/feature.test.mjs", "import { test } from 'node:test';\ntest('pass', () => {});\n");
+
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      const failMessages = result.evidence.filter((e) => e.type === "fail").map((e) => e.message);
+      assert.deepEqual(failMessages, [], `Expected no false-positive failures, got: ${JSON.stringify(failMessages)}`);
+      assert.equal(result.confidence, CONFIDENCE.HIGH);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("extracts a bare (non-backtick) path from a bullet whose continuation line has no em dash", () => {
+    // A bare-path bullet's own description can wrap without ever using an
+    // em dash on the continuation line. Before the fix, the bareMatch regex
+    // anchored `$` to the true end of the (continuation-merged) bullet
+    // string, which could never be reached without an em dash present
+    // somewhere in the tail — so the match failed outright and the entry
+    // was silently dropped from planFiles, instead of being extracted.
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n\nTests at tests/feature.test.mjs\n");
+      writeFixture(tmp, "spec.plan.md", `# Plan
+
+**Create:**
+- lib/feature.mjs — compute the derived value and use it as the
+  primary comparator term
+- tests/feature.test.mjs — tests
+
+**Reference (read, do not modify):**
+- README.md
+`);
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      writeFixture(tmp, "tests/feature.test.mjs", "import { test } from 'node:test';\ntest('pass', () => {});\n");
+
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      const failMessages = result.evidence.filter((e) => e.type === "fail").map((e) => e.message);
+      assert.deepEqual(failMessages, [], `Expected no false-positive failures, got: ${JSON.stringify(failMessages)}`);
+      assert.equal(result.confidence, CONFIDENCE.HIGH);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
   test("returns low confidence when files exist but are not committed", () => {
     const tmp = createTempGitDir();
     try {
