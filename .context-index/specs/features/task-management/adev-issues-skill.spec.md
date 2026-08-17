@@ -1,5 +1,3 @@
-# Live Spec: /adev:issues Skill
-
 ---
 charter: task-management
 status: validated
@@ -18,6 +16,8 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.760Z"
 drift_detected: true
 ---
+
+# Live Spec: /adev:issues Skill
 
 ## Behavioral Contract
 

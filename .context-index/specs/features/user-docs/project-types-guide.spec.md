@@ -1,5 +1,3 @@
-# Live Spec: Project Types Guide
-
 ---
 charter: user-docs
 status: validated
@@ -14,6 +12,8 @@ source-manifest:
     - docs/project-types.md
   computed-at: "2026-05-10T23:51:35.315Z"
 ---
+
+# Live Spec: Project Types Guide
 
 ## Behavioral Contract
 

@@ -88,7 +88,7 @@ Plan-task: <task-number>          # when implementing a plan task
 - Updating internal documentation
 - **Updating specs/ADRs when code changes affect their assumptions** (this is required, not optional — `/adev:debug` Phase 7 and `/adev:validate` check for this)
 
-**Do not bump `package.json` / `.claude-plugin/plugin.json` / `.cursor-plugin/plugin.json` versions in a feature or fix PR.** Releases are fully automated by release-please (ADR-0008): on push to `main` it scans conventional commits and opens its own Release PR that bumps all three manifests in lockstep and updates `CHANGELOG.md`. Merging that Release PR is the only "ship" action. A manual bump fights release-please's own version computation.
+**Do not bump `package.json` / `.claude-plugin/plugin.json` / `.cursor-plugin/plugin.json` versions in a feature or fix PR.** Releases are fully automated by release-please (ADR-0008): on push to `main` it scans conventional commits and opens its own Release PR that bumps all three manifests in lockstep (`release-please-config.json`'s `extra-files`) and updates `CHANGELOG.md`. Merging that Release PR is the only "ship" action. A manual bump in an unrelated PR fights release-please's own version computation. To force a specific target version (e.g. to land on a named milestone), use `/adev:issues milestone ship <name>` with the `release-please` strategy, which writes `release-as` into `release-please-config.json` for release-please to pick up.
 
 ## Context Routing
 

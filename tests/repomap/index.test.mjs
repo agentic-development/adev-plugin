@@ -114,6 +114,47 @@ describe('repomap/index orchestrator', () => {
       // main.ts should be included
       assert.ok(repoMap.includes('main.ts'), 'main.ts should be included');
     });
+
+    it('anchors a dir/** exclude pattern at the repo root only, not at any depth', () => {
+      // A nested directory that merely SHARES A NAME with an exclude prefix
+      // (e.g. "build/**", a stock DEFAULT_EXCLUDE entry for compiled output)
+      // must NOT be excluded just because the name matches somewhere deeper
+      // in the tree — this repo itself has a real, git-tracked skill
+      // directory at skills/build/ that any-depth matching silently dropped.
+      mkdirSync(join(tempDir, '.context-index'), { recursive: true });
+      writeFileSync(
+        join(tempDir, '.context-index', 'manifest.yaml'),
+        ['repomap:', '  exclude:', '    - "build/**"'].join('\n'),
+      );
+
+      // Top-level build/ IS excluded (root-anchored).
+      mkdirSync(join(tempDir, 'build'), { recursive: true });
+      writeFileSync(join(tempDir, 'build', 'out.js'), 'export const out = 1;');
+
+      // A nested directory named "build" that is NOT compiled output — e.g.
+      // this repo's skills/build/ — must be left alone.
+      mkdirSync(join(tempDir, 'skills', 'build'), { recursive: true });
+      writeFileSync(
+        join(tempDir, 'skills', 'build', 'handler.ts'),
+        'export const handleBuild = 1;',
+      );
+
+      execFileSync('node', [SCRIPT_PATH, '--root', tempDir], {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      const repoMap = readFileSync(
+        join(tempDir, '.context-index', 'hygiene', 'repo-map.md'),
+        'utf-8',
+      );
+
+      assert.ok(!repoMap.includes('out.js'), 'top-level build/ file should be excluded');
+      assert.ok(
+        repoMap.includes('handler.ts'),
+        'nested skills/build/ file must NOT be excluded just because it shares the "build" name',
+      );
+    });
   });
 
   describe('empty project', () => {

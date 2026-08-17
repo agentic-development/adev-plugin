@@ -1,10 +1,3 @@
-# Live Spec: Comparison Eval Runner
-
-<!-- Live Spec within the eval-projects charter.
-     This defines the behavioral contract for a comparison runner and rubric system
-     that scores plain-claude vs adev-built implementations across the four eval projects.
-     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
-
 ---
 charter: eval-projects
 status: review-pending
@@ -15,6 +8,13 @@ charter-revision: 1
 created: 2026-05-06
 updated: 2026-05-06
 ---
+
+# Live Spec: Comparison Eval Runner
+
+<!-- Live Spec within the eval-projects charter.
+     This defines the behavioral contract for a comparison runner and rubric system
+     that scores plain-claude vs adev-built implementations across the four eval projects.
+     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
 
 ## Behavioral Contract
 

@@ -1,10 +1,3 @@
-# Live Spec: Deploy Core
-
-<!-- Live Spec within the deploy charter.
-     This defines the behavioral contract for the core deployment pipeline:
-     config schema, step execution, milestone integration, and failure recovery.
-     Parent Charter: .context-index/specs/features/deploy/charter.md -->
-
 ---
 charter: deploy
 status: validated
@@ -24,6 +17,13 @@ source-manifest:
   computed-at: "2026-05-11T16:09:28.509Z"
 drift_detected: true
 ---
+
+# Live Spec: Deploy Core
+
+<!-- Live Spec within the deploy charter.
+     This defines the behavioral contract for the core deployment pipeline:
+     config schema, step execution, milestone integration, and failure recovery.
+     Parent Charter: .context-index/specs/features/deploy/charter.md -->
 
 ## Behavioral Contract
 

@@ -1,8 +1,6 @@
-# Live Spec: Status Query Skill
-
 ---
 charter: spec-lifecycle
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -15,6 +13,8 @@ source-manifest:
     - path: .claude-plugin/plugin.json
     - path: lib/source-manifest.mjs
 ---
+
+# Live Spec: Status Query Skill
 
 ## Behavioral Contract
 

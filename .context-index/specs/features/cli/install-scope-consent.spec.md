@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: cli
 kind: behavioral
@@ -16,6 +14,8 @@ source-manifest:
     - tests/cli-install-scope.test.mjs
 drift_detected: true
 ---
+
+<!-- partial_schema: spec@1 -->
 
 # Live Spec: Install Scope Consent
 

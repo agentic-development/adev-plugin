@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: cli
 kind: behavioral
@@ -21,6 +19,8 @@ source-manifest:
     - tests/cli-hook-chaining.test.mjs
     - tests/cli-install-scope.test.mjs
 ---
+
+<!-- partial_schema: spec@1 -->
 
 # Live Spec: Installer Consent Boundary
 

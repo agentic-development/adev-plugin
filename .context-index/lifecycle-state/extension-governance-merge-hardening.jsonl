@@ -113,3 +113,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS_WITH_NOTES","duration_ms":367554,"notes":"31/35 criteria PASS, 4 PARTIAL (assertion-method gaps, behavior correct). All 5 review defects resolved against code. Scope expansion: lib/plan-immutability.mjs + tests/skills/.","ts":"2026-08-15T16:41:33.723Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-15T16:43:57.088Z"}
 {"event":"code_drift_detected","drift_source":"lib/extensions/content-install.mjs","drift_at":"2026-08-15T21:50:00.226Z","ts":"2026-08-15T21:50:00.226Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-08-17T12:04:35.226Z","ts":"2026-08-17T12:04:35.226Z"}

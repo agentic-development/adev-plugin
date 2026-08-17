@@ -1,12 +1,6 @@
-# Live Spec: RED Phase Test Authoring
-
-<!-- Live Spec within the adev:write-test charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/adev:write-test/charter.md -->
-
 ---
 charter: adev:write-test
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -31,6 +25,12 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: RED Phase Test Authoring
+
+<!-- Live Spec within the adev:write-test charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/adev:write-test/charter.md -->
 
 ## Behavioral Contract
 

@@ -71,6 +71,7 @@ export ADEV_PC_CHANGED_FILES="$CHANGED_FILES"
 export ADEV_PC_OUTPUT_DIR="$OUTPUT_DIR"
 export ADEV_PC_TRACKING_FILE="$TRACKING_FILE"
 
+# >>> adev:session-capture >>>
 # Call session-summary writer with enriched content
 node --input-type=module -e "
   import { writeSummary, deriveSpecsTouched } from './lib/session-summary.mjs';
@@ -161,4 +162,5 @@ node --input-type=module -e "
   }
 " 2>/dev/null || true
 
+# <<< adev:session-capture <<<
 exit 0

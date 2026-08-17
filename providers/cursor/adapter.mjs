@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, cpSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readJson } from "../../lib/provider/json-io.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,14 +12,6 @@ const PLUGIN_VERSION = JSON.parse(
 
 function ensureDir(path) {
   if (!existsSync(path)) mkdirSync(path, { recursive: true });
-}
-
-function readJson(path) {
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    return null;
-  }
 }
 
 function writeJson(path, data) {

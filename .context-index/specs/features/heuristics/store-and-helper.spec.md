@@ -1,12 +1,3 @@
-# Live Spec: Heuristic Store Structure and Helper API
-
-<!-- Live Spec within the heuristics charter.
-     Phase 1a foundation: on-disk layout, YAML schema, confidence lifecycle,
-     the lib/heuristics.mjs API, and the public schema documentation at
-     .context-index/memory/heuristics/_format.md.
-     Does NOT cover extraction or injection points — those are separate specs.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -26,6 +17,15 @@ source-manifest:
   computed-at: "2026-04-09T23:39:18.512Z"
 drift_detected: true
 ---
+
+# Live Spec: Heuristic Store Structure and Helper API
+
+<!-- Live Spec within the heuristics charter.
+     Phase 1a foundation: on-disk layout, YAML schema, confidence lifecycle,
+     the lib/heuristics.mjs API, and the public schema documentation at
+     .context-index/memory/heuristics/_format.md.
+     Does NOT cover extraction or injection points — those are separate specs.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

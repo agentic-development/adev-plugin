@@ -1,13 +1,3 @@
-# Live Spec: adev:research Skill
-
-<!-- Live Spec within the strategic-planning charter.
-     Refactor rev 3: builds on rev 2's multi-agent orchestrator/researcher
-     pattern (following Anthropic's multi-agent research system and the
-     in-framework precedent set by /adev:review-specs) and adds the prompt-
-     injection, read-budget, and sensitive-file-exclusion defenses required
-     by the rev 2 architecture review (SEC-2 blocker + SEC-3/4/5 + SA-1/2/3).
-     Parent Charter: .context-index/specs/features/strategic-planning/charter.md -->
-
 ---
 charter: strategic-planning
 status: validated
@@ -31,6 +21,16 @@ source-manifest:
   computed-at: "2026-04-09T17:22:23.021Z"
 drift_detected: true
 ---
+
+# Live Spec: adev:research Skill
+
+<!-- Live Spec within the strategic-planning charter.
+     Refactor rev 3: builds on rev 2's multi-agent orchestrator/researcher
+     pattern (following Anthropic's multi-agent research system and the
+     in-framework precedent set by /adev:review-specs) and adds the prompt-
+     injection, read-budget, and sensitive-file-exclusion defenses required
+     by the rev 2 architecture review (SEC-2 blocker + SEC-3/4/5 + SA-1/2/3).
+     Parent Charter: .context-index/specs/features/strategic-planning/charter.md -->
 
 ## Current State
 

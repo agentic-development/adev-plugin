@@ -1,10 +1,3 @@
-# Live Spec: Context Graph Extraction & Visualization
-
-<!-- Live Spec within the context-viz charter.
-     This defines the complete data model, gap analysis, and technical design
-     for extracting and visualizing the context index as an interactive graph.
-     Parent Charter: .context-index/specs/features/context-viz/charter.md -->
-
 ---
 charter: context-viz
 status: review-pending
@@ -13,6 +6,13 @@ milestone:
 created: 2026-04-11
 updated: 2026-04-13
 ---
+
+# Live Spec: Context Graph Extraction & Visualization
+
+<!-- Live Spec within the context-viz charter.
+     This defines the complete data model, gap analysis, and technical design
+     for extracting and visualizing the context index as an interactive graph.
+     Parent Charter: .context-index/specs/features/context-viz/charter.md -->
 
 ## 1. Graph Data Model
 

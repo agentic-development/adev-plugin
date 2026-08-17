@@ -29,6 +29,7 @@ source-manifest:
     - tests/skills/review-specs-error-retrieval.test.mjs
     - tests/skills/validate-error-retrieval.test.mjs
   computed-at: "2026-08-16T13:32:40.730Z"
+drift_detected: true
 ---
 
 # Live Spec: Signature Retrieval — consult the store at the moment something fails

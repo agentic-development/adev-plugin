@@ -13,6 +13,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 
 
 import { createTempDir, cleanupTempDir } from './helpers.mjs';
 import { amendSpec } from '../lib/specify-amend.mjs';
+import { currentState, requireGate } from '../lib/lifecycle-state.mjs';
 
 function seedRoot(root) {
   mkdirSync(join(root, '.context-index'), { recursive: true });
@@ -174,6 +175,94 @@ test('amendSpec: valid kebab descriptor accepted', () => {
     writeBase(root, BASE_REL, baseFields());
     const result = amendSpec({ specPath: BASE_REL, projectRoot: root, descriptor: 'drop-coupon-v2' });
     assert.ok(existsSync(join(root, result.amendmentPath)));
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+// ── adev-plugin-gkfv.1 ─────────────────────────────────────────────────────
+//
+// `amendSpec` used to emit `spec_amended` on the BASE log and nothing else, so
+// the amendment had no lifecycle log of its own and no `specify` step. Under
+// strict gate mode `requireGate(state, "review")` on the amendment therefore
+// read `{status: "missing"}` and hard-blocked — making every amendment
+// unreviewable, which contradicts the scaffold's own promise that the artifact
+// "is reviewed, planned, and validated on its own lifecycle".
+//
+// Reviewing against the BASE path is not the alternative: /adev:review-specs
+// rewrites the `status:` frontmatter of whatever --spec it is handed, so that
+// would flip the immutable validated base to review-passed/review-blocked.
+
+/** Read one spec's log by slug, so base and amendment logs stay distinguishable. */
+function readLogBySlug(root, slug) {
+  const p = join(root, '.context-index', 'lifecycle-state', `${slug}.jsonl`);
+  if (!existsSync(p)) return [];
+  return readFileSync(p, 'utf8').split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+}
+
+test('amendSpec: emits the specify step pair on the AMENDMENT own log (gkfv.1)', () => {
+  const root = seedRoot(createTempDir());
+  try {
+    writeBase(root, BASE_REL, baseFields());
+    const result = amendSpec({ specPath: BASE_REL, projectRoot: root, descriptor: 'drop-coupon' });
+
+    const events = readLogBySlug(root, result.amendmentSlug);
+    assert.ok(events.length > 0, 'the amendment must have a lifecycle log of its own');
+
+    const specify = events.filter(e => e.step === 'specify');
+    assert.equal(specify.length, 2, `expected exactly 2 specify events, got ${specify.length}`);
+
+    // Ordering matters: a terminal with no matching `started` is precisely what
+    // ORPHAN_STEP_TERMINAL (lifecycle-event-log rev-5 BEH-7) will reject.
+    assert.equal(specify[0].event, 'lifecycle_step', 'first specify event must open the step');
+    assert.equal(specify[0].status, 'started');
+    assert.equal(specify[1].event, 'step_completed', 'second specify event must close the step');
+    assert.equal(specify[1].verdict, 'PASS', 'terminal must carry an explicit verdict');
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('amendSpec: specify events do NOT land on the base log (gkfv.1)', () => {
+  const root = seedRoot(createTempDir());
+  try {
+    writeBase(root, BASE_REL, baseFields());
+    const result = amendSpec({ specPath: BASE_REL, projectRoot: root, descriptor: 'drop-coupon' });
+
+    const baseEvents = readLogBySlug(root, 'checkout');
+    assert.ok(
+      baseEvents.some(e => e.event === 'spec_amended'),
+      'spec_amended still belongs on the base log',
+    );
+    assert.equal(
+      baseEvents.filter(e => e.step === 'specify').length, 0,
+      'the base spec was not re-specified — its log must not gain specify events',
+    );
+    // And the amendment log must not carry spec_amended.
+    const amendEvents = readLogBySlug(root, result.amendmentSlug);
+    assert.equal(
+      amendEvents.filter(e => e.event === 'spec_amended').length, 0,
+      'spec_amended is a base-log event only',
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test('amendSpec: the amendment passes the review gate under strict mode (gkfv.1)', () => {
+  const root = seedRoot(createTempDir());
+  try {
+    writeBase(root, BASE_REL, baseFields());
+    const result = amendSpec({ specPath: BASE_REL, projectRoot: root, descriptor: 'drop-coupon' });
+
+    // The end-to-end property this issue is about.
+    const state = currentState(root, result.amendmentPath);
+    assert.equal(state.steps?.specify?.status, 'completed');
+    assert.equal(state.steps?.specify?.verdict, 'PASS');
+    assert.doesNotThrow(
+      () => requireGate(state, 'review', { mode: 'strict' }),
+      'a freshly scaffolded amendment must be reviewable without a manual event fixup',
+    );
   } finally {
     cleanupTempDir(root);
   }

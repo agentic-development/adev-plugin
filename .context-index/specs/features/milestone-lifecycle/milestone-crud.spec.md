@@ -1,5 +1,3 @@
-# Live Spec: Milestone Create and List
-
 ---
 charter: milestone-lifecycle
 status: review-passed
@@ -11,6 +9,8 @@ created: 2026-05-08
 updated: 2026-05-11
 tracker-ref: issue-355
 ---
+
+# Live Spec: Milestone Create and List
 
 ## Behavioral Contract
 

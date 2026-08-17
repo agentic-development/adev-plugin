@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, readSync, writeFileSync, cpSync, chmodSync, realpathSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, readSync, writeFileSync, cpSync, chmodSync } from "fs";
 import { join, resolve, dirname, relative, isAbsolute } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -9,6 +9,7 @@ import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
 import { resolveExtensionSource } from "../lib/extensions/resolve-source.mjs";
 import { installExtension, readManifestStamps } from "../lib/extensions/install.mjs";
 import { loadManifest } from "../lib/manifest.mjs";
+import { safeRealpath as resolveSymlink } from "../lib/path-safety.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -616,7 +617,18 @@ async function setupGitHooks() {
       }
 
       // Create chained wrapper (or update if it's not already a chained wrapper)
-      if (existsSync(originalHookPath)) {
+      //
+      // Guard against chaining a hook to ITSELF. `isConflict` above already
+      // tries to rule this out with a literal string compare against
+      // ".githooks"/".githooks/", but `existingHooksPath` can take other
+      // forms — an absolute path, a "./.githooks" spelling, or a relative
+      // path resolved from a different cwd than this run — that still
+      // resolve to the exact same directory without matching that string
+      // check. Without this guard, `originalHookPath` collapses to
+      // `destPath`, and the wrapper this branch writes ends up invoking
+      // itself: unbounded recursion on every git commit.
+      const chainsToSelf = resolve(originalHookPath) === resolve(destPath);
+      if (existsSync(originalHookPath) && !chainsToSelf) {
         // Pass a REPO-RELATIVE path. The wrapper is written into tracked
         // .githooks/, so an absolute path from this machine would not resolve
         // on a teammate's clone — and the old fail-open guard turned that into
@@ -1803,14 +1815,6 @@ export {
 export const enablePlugin = getProvider("claude-code").enable;
 export const detectConflicts = getProvider("claude-code").detectConflicts;
 export const disableConflictingPlugin = getProvider("claude-code").disableConflictingPlugin;
-
-function resolveSymlink(p) {
-  try {
-    return realpathSync(p);
-  } catch {
-    return p;
-  }
-}
 
 // ============================================================================
 // CLI Verb Registry

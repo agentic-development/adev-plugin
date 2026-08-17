@@ -1,8 +1,6 @@
-# Live Spec: Skill Gate Integration
-
 ---
 charter: spec-drift-detection
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -19,6 +17,8 @@ source-manifest:
   computed-at: "2026-05-10T23:51:35.315Z"
 drift_detected: true
 ---
+
+# Live Spec: Skill Gate Integration
 
 ## Behavioral Contract
 

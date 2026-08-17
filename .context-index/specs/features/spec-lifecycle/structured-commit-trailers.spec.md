@@ -1,8 +1,6 @@
-# Live Spec: Structured Commit Trailers
-
 ---
 charter: spec-lifecycle
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -16,6 +14,8 @@ source-manifest:
   computed-at: "2026-04-01T13:43:22.538Z"
 drift_detected: true
 ---
+
+# Live Spec: Structured Commit Trailers
 
 ## Behavioral Contract
 

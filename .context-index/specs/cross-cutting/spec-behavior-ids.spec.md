@@ -17,6 +17,7 @@ tracker-ref: adev-plugin-j7pq.2
 revision: 2
 created: 2026-08-15
 updated: 2026-08-15
+drift_detected: true
 ---
 
 # Live Spec: Behavior IDs — stable referents for spec behaviors

@@ -1,11 +1,6 @@
-# Live Spec: Immutable Handoff Block
-
-<!-- Live Spec within the adev:write-test charter.
-     Parent Charter: .context-index/specs/features/adev:write-test/charter.md -->
-
 ---
 charter: adev:write-test
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -22,6 +17,11 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Immutable Handoff Block
+
+<!-- Live Spec within the adev:write-test charter.
+     Parent Charter: .context-index/specs/features/adev:write-test/charter.md -->
 
 ## Behavioral Contract
 

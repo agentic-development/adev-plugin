@@ -1,11 +1,3 @@
-# Live Spec: Work Triage and Routing
-
-<!-- Live Spec within the adev:work charter.
-     This defines the behavioral contract for the /adev:work skill — a pre-lifecycle
-     triage entry point that classifies work, detects project state, and routes to
-     the correct /adev:* skill.
-     Parent Charter: .context-index/specs/features/work/charter.md -->
-
 ---
 charter: adev:work
 status: validated
@@ -29,6 +21,14 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.746Z"
 drift_detected: true
 ---
+
+# Live Spec: Work Triage and Routing
+
+<!-- Live Spec within the adev:work charter.
+     This defines the behavioral contract for the /adev:work skill — a pre-lifecycle
+     triage entry point that classifies work, detects project state, and routes to
+     the correct /adev:* skill.
+     Parent Charter: .context-index/specs/features/work/charter.md -->
 
 ## Behavioral Contract
 

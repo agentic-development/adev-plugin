@@ -1,5 +1,3 @@
-# Live Spec: Unified Gate System
-
 ---
 charter: unified-gates
 status: validated
@@ -32,6 +30,8 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.860Z"
 drift_detected: true
 ---
+
+# Live Spec: Unified Gate System
 
 ## Behavioral Contract
 

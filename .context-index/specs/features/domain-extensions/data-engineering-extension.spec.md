@@ -1,9 +1,3 @@
-# Live Spec: Data Engineering Extension
-
-<!-- Live Spec within the domain-extensions charter.
-     Defines the structure and content of the data-engineering extension package.
-     Parent Charter: .context-index/specs/features/domain-extensions/charter.md -->
-
 ---
 charter: domain-extensions
 status: validated
@@ -14,6 +8,12 @@ charter-revision: 2
 created: 2026-05-11
 updated: 2026-05-11
 ---
+
+# Live Spec: Data Engineering Extension
+
+<!-- Live Spec within the domain-extensions charter.
+     Defines the structure and content of the data-engineering extension package.
+     Parent Charter: .context-index/specs/features/domain-extensions/charter.md -->
 
 ## Behavioral Contract
 

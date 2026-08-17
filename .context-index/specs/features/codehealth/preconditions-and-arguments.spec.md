@@ -1,5 +1,3 @@
-# Live Spec: Preconditions and Argument Parsing
-
 ---
 charter: adev:codehealth
 status: validated
@@ -19,6 +17,8 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.735Z"
 drift_detected: true
 ---
+
+# Live Spec: Preconditions and Argument Parsing
 
 ## Behavioral Contract
 

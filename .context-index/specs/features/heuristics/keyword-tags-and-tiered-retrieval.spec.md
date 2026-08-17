@@ -1,10 +1,3 @@
-# Live Spec: Keyword Tags and Tiered Retrieval
-
-<!-- Live Spec within the heuristics charter.
-     Adds the `tags` schema field, tiered rendering (index/summary/full), and keyword
-     matching to `retrieveHeuristics`. Foundation for progressive disclosure.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -26,6 +19,13 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.273Z"
 drift_detected: true
 ---
+
+# Live Spec: Keyword Tags and Tiered Retrieval
+
+<!-- Live Spec within the heuristics charter.
+     Adds the `tags` schema field, tiered rendering (index/summary/full), and keyword
+     matching to `retrieveHeuristics`. Foundation for progressive disclosure.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

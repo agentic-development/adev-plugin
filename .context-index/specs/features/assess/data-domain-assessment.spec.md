@@ -1,12 +1,6 @@
-# Live Spec: Data Domain Assessment
-
-<!-- Live Spec within the adev:assess charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/adev:assess/charter.md -->
-
 ---
 charter: adev:assess
-status: validated
+status: implemented
 risk_level: low
 milestone:
 revision: 1
@@ -22,6 +16,12 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Data Domain Assessment
+
+<!-- Live Spec within the adev:assess charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/adev:assess/charter.md -->
 
 ## Behavioral Contract
 

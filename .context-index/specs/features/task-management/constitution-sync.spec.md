@@ -1,5 +1,3 @@
-# Live Spec: Constitution and Sync Integration
-
 ---
 charter: task-management
 status: validated
@@ -16,6 +14,8 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.767Z"
 drift_detected: true
 ---
+
+# Live Spec: Constitution and Sync Integration
 
 ## Behavioral Contract
 

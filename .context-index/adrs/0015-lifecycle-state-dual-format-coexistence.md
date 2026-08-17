@@ -2,9 +2,11 @@
 
 ## Status
 
-**Proposed**
+**Accepted**
 
 > **Proposed 2026-05-22**: Documents that `.context-index/lifecycle-state/` intentionally hosts two distinct file formats — `<slug>.jsonl` event logs (tracked) and `<slug>.json` build orchestrator snapshots (gitignored) — written by separate libraries for separate concerns.
+
+> **Accepted 2026-08-17**: Verified directly against the live directory — `.context-index/lifecycle-state/` holds 189 `.jsonl` files and 2 `.json` files, exactly matching the documented pattern. `.gitignore` still excludes `.context-index/lifecycle-state/*.json` with a comment matching this ADR's table verbatim, and `lib/build-state.mjs`'s header docstring is essentially this ADR's own language, unchanged since. No alternative (directory split, rename) was ever implemented; ADR-0016 references this ADR only as an adjacent decision, not a supersession.
 
 ## Date
 

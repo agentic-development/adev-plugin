@@ -39,3 +39,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS","notes":"10 of 11 acceptance criteria PASS; AC10 restates the pre-existing Check-1 gate","ts":"2026-08-16T01:01:42.459Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"No inline Node; markdown-only deliverable; no dependency added","ts":"2026-08-16T01:01:42.514Z"}
 {"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-08-16T01:01:49.206Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-08-17T18:30:16.589Z","ts":"2026-08-17T18:30:16.590Z"}

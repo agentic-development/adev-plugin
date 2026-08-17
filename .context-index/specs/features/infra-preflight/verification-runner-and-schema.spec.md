@@ -1,6 +1,6 @@
 ---
 charter: infra-preflight
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 3

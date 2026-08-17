@@ -119,3 +119,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-16T01:31:27.732Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-16T01:35:59.010Z"}
 {"event":"code_drift_detected","drift_source":".context-index/governance/review.yaml","drift_at":"2026-08-17T17:50:44.738Z","ts":"2026-08-17T17:50:44.740Z"}
+{"event":"code_drift_detected","drift_source":"lib/gates/gate-sets.mjs","drift_at":"2026-08-17T11:54:47.061Z","ts":"2026-08-17T11:54:47.062Z"}

@@ -1,12 +1,6 @@
-# Live Spec: Model Selection
-
-<!-- Live Spec within the adev:write-test charter.
-     Parent Charter: .context-index/specs/features/adev:write-test/charter.md
-     Cross-cutting dependency: .context-index/specs/cross-cutting/model-routing.md -->
-
 ---
 charter: adev:write-test
-status: validated
+status: implemented
 risk_level: low
 milestone:
 revision: 1
@@ -24,6 +18,12 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Model Selection
+
+<!-- Live Spec within the adev:write-test charter.
+     Parent Charter: .context-index/specs/features/adev:write-test/charter.md
+     Cross-cutting dependency: .context-index/specs/cross-cutting/model-routing.md -->
 
 ## Behavioral Contract
 

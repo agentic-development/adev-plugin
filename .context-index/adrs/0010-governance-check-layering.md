@@ -2,9 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted
 
 > **Proposed 2026-05-14**: Articulates the conceptual boundary between the six configurable-check surfaces living under `.context-index/governance/` before the diagnostic-registry implementation lands. Decision unblocks author judgement: "should this new check be a gate, a reviewer, a validate-check, a boundary, or a diagnostic?"
+>
+> **Accepted 2026-08-17**: All six proposed governance-surface roles exist unchanged under `.context-index/governance/`. ADR-0019 (2026-08-13) explicitly treats this decision as settled — "Amends ADR 0010... The six surface roles are unchanged" — and `explicit-governance-registries.spec.md` cites it as normative for role assignments. The decision has been operating as binding policy for months; this flips the label to match reality.
 
 ## Date
 

@@ -1,5 +1,3 @@
-# Live Spec: Content Installation
-
 ---
 charter: extensions
 status: validated
@@ -17,6 +15,8 @@ source-manifest:
   computed-at: "2026-05-11T16:09:28.534Z"
 drift_detected: true
 ---
+
+# Live Spec: Content Installation
 
 ## Behavioral Contract
 

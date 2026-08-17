@@ -1,9 +1,3 @@
-# Live Spec: One-Shot Migration Tool
-
-<!-- Live Spec within the agent-reliable-state-artifacts charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
-
 ---
 charter: agent-reliable-state-artifacts
 status: validated
@@ -28,6 +22,12 @@ source-manifest:
   computed-at: "2026-05-12T03:09:20.310Z"
 drift_detected: true
 ---
+
+# Live Spec: One-Shot Migration Tool
+
+<!-- Live Spec within the agent-reliable-state-artifacts charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
 
 ## Behavioral Contract
 

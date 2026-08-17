@@ -2,7 +2,7 @@
 charter: hooks
 kind: refactor
 mode: refactor
-status: validated
+status: review-passed
 milestone: —
 revision: 2
 charter-revision: 1

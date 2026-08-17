@@ -1,13 +1,3 @@
-# Live Spec: Implement Injection
-
-<!-- Live Spec within the heuristics charter.
-     Adds heuristic injection to /adev:implement Step 1 (Load Context) and
-     Step 2a (Context Packet Assembly). Subagents receive relevant heuristics
-     as part of their context, enabling them to learn from past failures and
-     successes without reading heuristic files themselves.
-     Depends on: retrieval-filtering.md (budget and format conventions).
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -27,6 +17,16 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.503Z"
 drift_detected: true
 ---
+
+# Live Spec: Implement Injection
+
+<!-- Live Spec within the heuristics charter.
+     Adds heuristic injection to /adev:implement Step 1 (Load Context) and
+     Step 2a (Context Packet Assembly). Subagents receive relevant heuristics
+     as part of their context, enabling them to learn from past failures and
+     successes without reading heuristic files themselves.
+     Depends on: retrieval-filtering.md (budget and format conventions).
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

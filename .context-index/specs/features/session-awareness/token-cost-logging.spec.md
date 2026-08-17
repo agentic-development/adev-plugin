@@ -1,10 +1,3 @@
-# Live Spec: Token Cost Logging
-
-<!-- Live Spec within the session-awareness charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/session-awareness/charter.md
-     Research: .context-index/research/token-cost-logging-for-plugin-lifecycle-sk.md -->
-
 ---
 charter: session-awareness
 charter-extension: true
@@ -31,6 +24,13 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.685Z"
 drift_detected: true
 ---
+
+# Live Spec: Token Cost Logging
+
+<!-- Live Spec within the session-awareness charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/session-awareness/charter.md
+     Research: .context-index/research/token-cost-logging-for-plugin-lifecycle-sk.md -->
 
 ## Behavioral Contract
 

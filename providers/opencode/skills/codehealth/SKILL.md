@@ -170,8 +170,8 @@ Execute passes in this fixed order. If `--check` is provided, skip passes not in
    - **Skip if uniformly old:** If ALL files in the module have the same "most recent" date (the entire module is uniformly aged), emit no staleness findings for that module.
    - Otherwise, check if the file also appears as a dead export or orphan finding from earlier passes.
 6. **Severity classification:**
-   - **high:** The stale file also has zero references (dead export or orphan finding exists for this file).
-   - **low:** The stale file is still actively referenced (stable code, not necessarily problematic).
+   - **high:** The stale file also has zero references — either an orphan-file finding exists for this file, OR a dead-export finding exists for this file **at `high` severity** (meaning the export list is empty of referenced symbols — see the dead-exports row of the Severity Reference table: "Only export in file"). A `medium`-severity dead-export finding ("Coexists with other referenced exports in the same file") does NOT qualify — the file has at least one live reference and is not actually unreferenced, no matter how many of its other exports are dead.
+   - **low:** The stale file is still actively referenced (stable code, not necessarily problematic) — this includes files whose only cross-reference finding is a `medium`-severity dead export.
 7. Emit findings: `{ pass: "stale-code", severity, file_path, description: "Last modified: <date>. Module last active: <date>." }`.
 
 ### Pass 5: Duplicate Logic Detection (`duplicate-logic`)

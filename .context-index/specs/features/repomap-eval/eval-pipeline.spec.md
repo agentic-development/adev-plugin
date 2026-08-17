@@ -1,8 +1,6 @@
-# Live Spec: Eval Pipeline
-
 ---
 charter: repomap-eval
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -29,6 +27,8 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.741Z"
 drift_detected: true
 ---
+
+# Live Spec: Eval Pipeline
 
 ## Behavioral Contract
 

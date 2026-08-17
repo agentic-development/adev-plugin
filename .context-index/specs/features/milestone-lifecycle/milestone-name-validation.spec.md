@@ -1,5 +1,3 @@
-# Live Spec: Name Validation in Lifecycle Skills
-
 ---
 charter: milestone-lifecycle
 status: review-passed
@@ -10,6 +8,8 @@ charter-revision: 2
 created: 2026-05-09
 updated: 2026-05-09
 ---
+
+# Live Spec: Name Validation in Lifecycle Skills
 
 ## Behavioral Contract
 
