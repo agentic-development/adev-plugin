@@ -142,3 +142,73 @@ test("prepare-commit-msg: %(trailers) returns all trailers when body has in-trai
     cleanupTempDir(tmp);
   }
 });
+
+test("prepare-commit-msg: collapses a blank line INSIDE the body trailer block before appending", () => {
+  // A commit message can arrive with a blank line splitting what should be
+  // one trailer block — e.g. a HEREDOC that writes Spec: and Plan-task: as
+  // separate paragraphs. The prior fix only inspected the last line to
+  // decide whether to prepend a blank separator; it never noticed a gap
+  // further up, so Spec: silently dropped out of %(trailers) even though
+  // Plan-task:/Author-type:/Operator: survived.
+  const tmp = createTempDir();
+  try {
+    const body = [
+      "feat(test): gap inside the trailer block",
+      "",
+      "Body text.",
+      "",
+      "Spec: .context-index/specs/features/foo/bar.spec.md",
+      "",
+      "Plan-task: 9",
+      "",
+    ].join("\n");
+
+    const { exitCode, body: out } = runHook(tmp, body);
+    assert.equal(exitCode, 0, "hook should exit 0");
+
+    // The internal gap must be gone — Spec: and Plan-task: now abut directly.
+    assert.ok(
+      !out.includes("Spec:.*\n\nPlan-task:"),
+      "no blank line should remain between Spec: and Plan-task:",
+    );
+
+    const trailers = parseTrailers(out);
+    const keys = trailers.map((line) => line.split(":")[0]);
+    for (const required of ["Spec", "Plan-task", "Author-type", "Operator"]) {
+      assert.ok(
+        keys.includes(required),
+        `${required}: must be parsed as a single trailer block (got: ${keys.join(", ")})`,
+      );
+    }
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("prepare-commit-msg: does not touch a blank line between unrelated body prose", () => {
+  // A body paragraph that happens to contain "Word: value" text must not be
+  // swept into the trailer block just because collapse_trailer_gaps scans
+  // backward from EOF — it stops at the first non-blank, non-trailer line.
+  const tmp = createTempDir();
+  try {
+    const body = [
+      "feat(test): body prose with a colon must stay untouched",
+      "",
+      "Note: this line looks trailer-shaped but is regular body prose.",
+      "",
+      "Another paragraph with no trailers at all.",
+      "",
+    ].join("\n");
+
+    const { exitCode, body: out } = runHook(tmp, body);
+    assert.equal(exitCode, 0, "hook should exit 0");
+
+    // Both body paragraphs must survive untouched, still separated.
+    assert.ok(
+      out.includes("Note: this line looks trailer-shaped but is regular body prose.\n\nAnother paragraph"),
+      "unrelated body paragraphs must not be collapsed together",
+    );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
