@@ -1,0 +1,73 @@
+{
+  "_comment": "PRE-CHANGE fixture for failure-capture Task 6 (Behavior 6, byte-identity bar). Captured from the UNMODIFIED skills/recover/SKILL.md ID Derivation Rule as implemented by tests/skills/recover-extract-heuristic-harness.mjs::deriveId, BEFORE any edit to that skill or harness. Regenerating this file defeats its purpose: it exists to prove recover ids did not move.",
+  "capturedAt": "2026-08-15T16:27:49.058Z",
+  "capturedFrom": {
+    "skills/recover/SKILL.md": "f71209a4c22478ddc5f60b5754e799c1d7dd26ca",
+    "head": "d94004243420072291d08cba5dade578ef946892"
+  },
+  "cases": [
+    {
+      "category": "MISSING_CONTEXT",
+      "categorySlug": "missing-context",
+      "rootCause": "Error: cache miss on third-party API",
+      "normalized": "error cache miss on third-party api",
+      "id": "missing-context-3afbd8be"
+    },
+    {
+      "category": "MISSING_CONTEXT",
+      "categorySlug": "missing-context",
+      "rootCause": "The agent did not know the manifest declares a tasks backend",
+      "normalized": "the agent did not know the manifest declares a tasks backend",
+      "id": "missing-context-3f2ca16e"
+    },
+    {
+      "category": "AMBIGUOUS_SPEC",
+      "categorySlug": "ambiguous-spec",
+      "rootCause": "Spec did not say whether the flag is required or optional",
+      "normalized": "spec did not say whether the flag is required or optional",
+      "id": "ambiguous-spec-3ccc8dee"
+    },
+    {
+      "category": "CONSTRAINT_CONFLICT",
+      "categorySlug": "constraint-conflict",
+      "rootCause": "Constitution forbids inline Node while the plan required it",
+      "normalized": "constitution forbids inline node while the plan required it",
+      "id": "constraint-conflict-cab9c9b5"
+    },
+    {
+      "category": "NOVEL_PROBLEM",
+      "categorySlug": "novel-problem",
+      "rootCause": "First use of the beads_rust adapter in a worktree",
+      "normalized": "first use of the beads_rust adapter in a worktree",
+      "id": "novel-problem-88b0b4c6"
+    },
+    {
+      "category": "TOOL_FAILURE",
+      "categorySlug": "tool-failure",
+      "rootCause": "tree-sitter wasm grammar missing from node_modules",
+      "normalized": "tree-sitter wasm grammar missing from node_modules",
+      "id": "tool-failure-db2a78f1"
+    },
+    {
+      "category": "BUDGET_EXHAUSTION",
+      "categorySlug": "budget-exhaustion",
+      "rootCause": "Task touched 40 files and exceeded the context window",
+      "normalized": "task touched 40 files and exceeded the context window",
+      "id": "budget-exhaustion-3c6f52f0"
+    },
+    {
+      "category": "MISSING_CONTEXT",
+      "categorySlug": "missing-context",
+      "rootCause": "  MIXED   Case  With\tTabs, punctuation!! and  spaces  ",
+      "normalized": "mixed case with tabs punctuation and spaces",
+      "id": "missing-context-31c8ad8e"
+    },
+    {
+      "category": "TOOL_FAILURE",
+      "categorySlug": "tool-failure",
+      "rootCause": "exit code 2 from the pre-commit hook: policy violation",
+      "normalized": "exit code 2 from the pre-commit hook policy violation",
+      "id": "tool-failure-20e7571d"
+    }
+  ]
+}

@@ -25,6 +25,25 @@
  * the redaction pipeline established by `configurable-checks.spec.md`
  * Behavior 25a and must stay out of the heuristic store.
  *
+ * FAIL read set (SEC-1a) — IDENTIFIERS ONLY. The FAIL branch reads exactly
+ * five fields: `overall`, `spec_path`, `charter`, `spec_title`, `report_path`
+ * (the same top-level set the PASS branch reads) plus, from each element of
+ * `checks[]`, ONLY `id` and `outcome`. It reads NO prose: no `detail`, no
+ * `message`, no `remediation`, no sibling keys on `verdict_metadata`, no
+ * `tool_result` subprocess channels, no stdout/stderr, no file contents, no
+ * environment values.
+ *
+ * Why the rule is absolute: captured text lands in a git-tracked store file,
+ * and `/adev:sync` copies that store into CLAUDE.md, AGENTS.md, .cursorrules
+ * and copilot-instructions — a widened read set leaks into four agent files
+ * at once. Behavior 25a redacts only `kind: quality-gate` subprocess bytes; it
+ * does not sanitize arbitrary prose, so this hook declines to read prose
+ * rather than depending on redaction it cannot verify. A check `id` is a
+ * closed identifier from a known vocabulary: no free text to leak, and it is
+ * re-sanitized to `[A-Za-z0-9._-]` here as defence in depth. The resulting
+ * heuristic is coarser — it names WHICH checks failed, not their prose — and
+ * that is the intended trade. Do not widen this to produce a nicer lesson.
+ *
  * Failure mode (SEC-2): any error logs to console.warn (stderr channel),
  * never to stdout (the hook's protocol channel). The process always exits 0
  * so validate's verdict is unaffected.
@@ -69,8 +88,11 @@ async function run(rawInput) {
   const verdict = data && data.tool_result && data.tool_result.verdict_metadata;
   if (!verdict || typeof verdict !== 'object') return;
 
-  // Only first-run PASS extraction (matching former Check 12 semantics).
-  if (verdict.overall !== 'PASS') return;
+  // PASS captures the first-run success lesson (former Check 12 semantics);
+  // FAIL captures which checks blocked the spec. Every other outcome
+  // (BLOCK, SKIP, ...) is not a settled verdict and writes nothing.
+  const outcome = verdict.overall;
+  if (outcome !== 'PASS' && outcome !== 'FAIL') return;
 
   const specPath = typeof verdict.spec_path === 'string' ? verdict.spec_path : '';
   if (!specPath) return;
@@ -103,8 +125,9 @@ async function run(rawInput) {
   let writeHeuristic;
   let deriveHeuristicId;
   let canonicalSpecSlug;
+  let deriveValidateFailureSignature;
   try {
-    ({ writeHeuristic, deriveHeuristicId, canonicalSpecSlug } = await import(
+    ({ writeHeuristic, deriveHeuristicId, canonicalSpecSlug, deriveValidateFailureSignature } = await import(
       resolve(pluginRoot, 'lib/heuristics.mjs')
     ));
   } catch (err) {
@@ -124,14 +147,7 @@ async function run(rawInput) {
   const specTitle = typeof verdict.spec_title === 'string' && verdict.spec_title
     ? verdict.spec_title
     : specSlug;
-  const title = cap(`First-run PASS: ${specTitle}`, 120);
-
-  // Default pattern derivation — uses the Success Factor #4 fallback from
-  // the former Check 12 prompt. The richer derivations (golden sample,
-  // ADR, cross-cutting) required context-packet inspection that the hook
-  // does not have access to, so they degrade to the default lesson here.
-  const pattern =
-    `First-run PASS for ${specTitle}: implementation matched all acceptance criteria without revision.`;
+  const title = cap(`${prefixFor(outcome)}${specTitle}`, 120);
 
   const reportPath = typeof verdict.report_path === 'string' && verdict.report_path
     ? verdict.report_path
@@ -139,14 +155,74 @@ async function run(rawInput) {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // Two entry builders, ONE write below. `pattern` is the only field both
+  // branches must produce, because the `id` digests it.
+  let pattern;
+  let antiPattern;
+  let confidence;
+  let signature;
+
+  if (outcome === 'PASS') {
+    // Default pattern derivation — uses the Success Factor #4 fallback from
+    // the former Check 12 prompt. The richer derivations (golden sample,
+    // ADR, cross-cutting) required context-packet inspection that the hook
+    // does not have access to, so they degrade to the default lesson here.
+    pattern =
+      `First-run PASS for ${specTitle}: implementation matched all acceptance criteria without revision.`;
+    confidence = 'medium';
+  } else {
+    // FAIL branch — IDENTIFIERS ONLY (SEC-1a above). `id` and `outcome` are
+    // the only per-check fields read; the sanitizer keeps a hand-authored or
+    // extension-supplied id inside the closed charset even so.
+    const failed = Array.isArray(verdict.checks)
+      ? verdict.checks
+        .filter((c) => c && typeof c.id === 'string' && c.id
+          && typeof c.outcome === 'string' && c.outcome !== 'PASS')
+        .map((c) => c.id.replace(/[^A-Za-z0-9._-]/g, ''))
+        .filter(Boolean)
+      : [];
+    // No non-PASS check means there is nothing an identifier-only capture can
+    // say. Write nothing rather than reaching into prose for material.
+    if (failed.length === 0) return;
+
+    // Prose-only derivation. The lookup key is NOT composed here — see the
+    // shared helper call below.
+    const uniqueFailed = [...new Set(failed)].sort();
+    const checkList = uniqueFailed.slice(0, 5).join(', ');
+
+    pattern =
+      `Validate FAIL for ${specTitle}: satisfy the checks that failed before treating the spec as done — ${checkList}.`;
+    antiPattern = `Don't mark ${specTitle} complete while ${checkList} still fail.`;
+    confidence = 'low';
+
+    // `signature` is the CROSS-SCOPE recurrence key, so its input carries no
+    // spec identity — the same failing checks under two specs must match.
+    // `id` stays spec-scoped, so recurrence on one spec updates one entry.
+    // The composition lives in lib/heuristics.mjs so the read side derives the
+    // identical key; the try/catch stays HERE so a throw costs the recurrence
+    // key, not the capture.
+    try {
+      signature = deriveValidateFailureSignature(verdict.checks);
+    } catch (err) {
+      console.warn(
+        `[post-validate-hook] signature derivation failed (non-blocking): ${err.message}`,
+      );
+    }
+  }
+
   const entry = {
     id: deriveHeuristicId(specSlug, repoRelSpecPath, pattern),
     scope,
     title,
     pattern,
-    confidence: 'medium',
+    confidence,
     evidence: [{ source: 'validation', path: reportPath, date: today }],
   };
+  if (antiPattern !== undefined) entry.antiPattern = antiPattern;
+  // Truthiness, not `!== undefined`: the shared helper returns `null` when
+  // there is nothing to derive, and storing `signature: null` would be a
+  // regression on the previous shape.
+  if (signature) entry.signature = signature;
 
   try {
     const stored = await writeHeuristic(projectRoot, entry);
@@ -160,6 +236,19 @@ async function run(rawInput) {
   }
 }
 
+
+/**
+ * Title prefix derived from the validate outcome. Behavior 3: PASS output is
+ * byte-identical to the previous hardcoded form; FAIL is distinguishable.
+ * Mirrored — deliberately, not shared — by
+ * tests/skills/validate-success-heuristic-harness.mjs.
+ *
+ * @param {string} outcome - `verdict.overall`.
+ * @returns {string}
+ */
+function prefixFor(outcome) {
+  return outcome === 'FAIL' ? 'Validate FAIL: ' : 'First-run PASS: ';
+}
 
 function cap(s, n) {
   if (s.length <= n) return s;

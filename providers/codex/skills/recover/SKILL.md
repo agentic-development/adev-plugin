@@ -384,17 +384,26 @@ Compose the heuristic `title` as `"<category-label>: <short-summary>"` where:
 - `<short-summary>` is a distilled 5-10 word summary of the root cause (generalized, not verbatim).
 - Total title length must not exceed 120 characters (matches the heuristic schema cap).
 
-#### ID Derivation Rule
+#### Key Derivation (via the shared verb)
 
-Compose the heuristic `id` as `<category-slug>-<hash>` where:
+Both keys come from the shared signature verb — never derive them by hand, and never restate the hashing or normalization rule here. The verb is the single implementation.
 
-- `<category-slug>` is the lowercased diagnosis category with underscores replaced by hyphens (e.g., `missing-context`, `tool-failure`).
-- `<hash>` is the first 8 characters of the lowercase hex SHA-256 of the normalized root-cause text.
-- **Normalization:** lowercase, collapse consecutive whitespace to single spaces, strip leading/trailing whitespace, strip punctuation except `-` and `_`.
-- The resulting id must match `/^[_a-z0-9][_a-z0-9-]{0,63}$/`.
-- Purpose: recurrence detection — the same normalized root cause produces the same id across `/adev:recover` invocations, triggering the helper's auto-promotion path.
+- `signature`: run `adev heuristics signature --origin recover --text "<root-cause>"` → the verb prints `recover-<digest>`. Use that line verbatim.
+- `id`: run `adev heuristics signature --origin recover --text "<root-cause>" --digest-only` → the verb prints `<digest>`, then compose `<category-slug>-<digest>` where `<category-slug>` is the lowercased diagnosis category with underscores replaced by hyphens — one of `missing-context`, `ambiguous-spec`, `constraint-conflict`, `novel-problem`, `tool-failure`, `budget-exhaustion`.
 
-Worked example: `MISSING_CONTEXT` + "Error: cache miss on third-party API" → normalized to `error cache miss on third-party api` → SHA-256 prefix `a1b2c3d4` → id `missing-context-a1b2c3d4`.
+The resulting id must match `/^[_a-z0-9][_a-z0-9-]{0,63}$/`.
+
+Purpose: recurrence detection — the same root cause yields the same digest across `/adev:recover` invocations, so the id repeats and triggers the helper's auto-promotion path, while the `recover-<digest>` signature lets the same failure be correlated across origins.
+
+Worked example: `MISSING_CONTEXT` + "Error: cache miss on third-party API" → `adev heuristics signature --origin recover --text "Error: cache miss on third-party API" --digest-only` prints `a1b2c3d4` → id `missing-context-a1b2c3d4`; the same invocation without `--digest-only` prints `recover-a1b2c3d4`, the signature.
+
+**Fail-closed rule.** If the signature verb is unavailable or exits non-zero, skip heuristic extraction entirely, log the line below, and continue the recovery workflow (Step 7 is still non-blocking):
+
+```
+heuristics: extraction skipped — signature verb unavailable
+```
+
+Without the verb there is neither a signature nor an id, so there is no partially-degraded entry to write. This is the one degradation in Step 7 that is fail-closed rather than partial — contrast the write verb below, which degrades to a warning and still exits 0.
 
 #### projectRoot Resolution
 
@@ -442,6 +451,7 @@ Concrete invocation via the CLI:
 ```bash
 adev heuristics write \
     --id missing-context-a1b2c3d4 \
+    --signature recover-a1b2c3d4 \
     --scope hooks \
     --title "Missing context: cache layer assumptions" \
     --pattern "Include cache invalidation docs in context packets for hook tasks" \
