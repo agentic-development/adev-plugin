@@ -7,15 +7,20 @@
  * walking child → root wins). An unrecognised value is a LOAD ERROR
  * (`INVALID_PACK_DELIVERY`), never a silent fallback.
  *
- * This task is the FIELD ONLY. No manifest rendering behavior exists yet, so a
- * pack resolving to `delivery: "manifest"` still renders the rev-4 inline
- * output — a later task adds that branch.
+ * This suite stays scoped to the FIELD: how `delivery` resolves through an
+ * `extends` chain, and how `renderPack` surfaces a bad value. BEH-10's manifest
+ * *rendering* assertions — section shape, one-per-include grouping, the title
+ * fallback chain, ordering — live in `context-pack-path-manifest.test.mjs`.
+ * The two tests below only pin the seam between the two: that a resolved
+ * `manifest` actually reaches the manifest branch, and that the branch's
+ * delivery-level target guard fires.
  */
 
 import { test, describe, afterEach } from "node:test";
 import { strict as assert } from "node:assert";
 
 import { resolveExtends, renderPack } from "../../lib/governance/context-pack.mjs";
+import { parseSections } from "./helpers/parse-pack-sections.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 
 const tempDirs = [];
@@ -106,13 +111,35 @@ describe("context-pack delivery field", () => {
     assert.ok(r.errors.some((e) => e.code === "INVALID_PACK_DELIVERY"));
   });
 
-  test("a manifest pack still renders rev-4 inline output at this task", () => {
+  test("a manifest pack renders path-manifest sections, not inline bodies", () => {
     const repo = tmp();
     writeFixture(repo, "docs/one.md", "hello one");
     const packs = deliveryPacks();
-    const r = renderPack("manifestParent", packs, { repoRoot: repo });
+    const r = renderPack("manifestParent", packs, {
+      repoRoot: repo,
+      targetSpecPath: "specs/review/target.spec.md",
+    });
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors));
     assert.deepEqual(r.files, ["docs/one.md"]);
-    assert.ok(r.rendered.includes("hello one"));
+    // The resolved `delivery` really does reach the manifest branch: the path is
+    // named inside a `role="path-manifest"` fence and the body is NOT inlined.
+    const sections = parseSections(r.rendered, r.nonce);
+    assert.equal(sections.length, 1);
+    assert.equal(sections[0].attrs.role, "path-manifest");
+    assert.equal(sections[0].body, "docs/one.md");
+    assert.ok(!r.rendered.includes("hello one"));
+  });
+
+  test("a manifest pack with no targetSpecPath fails load with CONTEXT_PACK_NO_TARGET", () => {
+    const repo = tmp();
+    writeFixture(repo, "docs/one.md", "hello one");
+    const packs = deliveryPacks();
+    // `manifestParent`'s include carries no <charter-dir> / <target-spec> token,
+    // so this can only come from the delivery-level guard, not token expansion.
+    const r = renderPack("manifestParent", packs, { repoRoot: repo });
+    assert.equal(r.errors[0].code, "CONTEXT_PACK_NO_TARGET");
+    assert.match(r.errors[0].message, /manifestParent/);
+    assert.equal(r.rendered, "");
+    assert.deepEqual(r.files, []);
   });
 });
