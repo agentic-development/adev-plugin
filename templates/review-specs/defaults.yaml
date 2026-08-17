@@ -31,8 +31,9 @@ reviewers:
     severity_cap: blocker
 
 context_packs:
-  # `base` is SHARED with configurable-checks (five checks in
-  # templates/domains/software/validate.yaml reference it). It stays
+  # `base` is SHARED with configurable-checks (three checks in
+  # templates/domains/software/validate.yaml reference it, at lines 54, 69 and
+  # 113). It stays
   # target-agnostic: renderable with no targetSpecPath. Never add a
   # <charter-dir> or <target-spec> token here.
   base:
@@ -75,7 +76,7 @@ context_packs:
   consistency:
     extends: review-base
     include:
-      - glob: .context-index/specs/cross-cutting/*.md
+      - glob: .context-index/specs/cross-cutting/*.spec.md
         title: Cross-Cutting Specs
 
 verdict_rules:
