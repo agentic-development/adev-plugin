@@ -1,9 +1,3 @@
-# Live Spec: Lifecycle Skill Instruction Updates
-
-<!-- Live Spec within the agent-reliable-state-artifacts charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
-
 ---
 charter: agent-reliable-state-artifacts
 status: validated
@@ -41,6 +35,12 @@ source-manifest:
   computed-at: "2026-08-13T00:39:02.229Z"
 drift_detected: true
 ---
+
+# Live Spec: Lifecycle Skill Instruction Updates
+
+<!-- Live Spec within the agent-reliable-state-artifacts charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
 
 ## Behavioral Contract
 

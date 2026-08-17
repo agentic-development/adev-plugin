@@ -1,5 +1,3 @@
-# Live Spec: Playbook Format and Debug Loading
-
 ---
 charter: debug-playbooks
 status: validated
@@ -19,6 +17,8 @@ source-manifest:
   computed-at: "2026-04-24T23:00:36.167Z"
 drift_detected: true
 ---
+
+# Live Spec: Playbook Format and Debug Loading
 
 ## Behavioral Contract
 

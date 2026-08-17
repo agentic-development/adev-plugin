@@ -1,13 +1,6 @@
-# Live Spec: Sync Index
-
-<!-- Live Spec within the heuristics charter.
-     Extends /adev:sync to append a compact heuristic index to all sync targets,
-     making high-confidence learned lessons visible in every interaction.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 test_strategy: unit
@@ -22,6 +15,13 @@ source-manifest:
   computed-at: "2026-05-10T23:51:54.631Z"
 drift_detected: true
 ---
+
+# Live Spec: Sync Index
+
+<!-- Live Spec within the heuristics charter.
+     Extends /adev:sync to append a compact heuristic index to all sync targets,
+     making high-confidence learned lessons visible in every interaction.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

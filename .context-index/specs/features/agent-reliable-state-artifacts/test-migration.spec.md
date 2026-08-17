@@ -1,9 +1,3 @@
-# Live Spec: Test Migration
-
-<!-- Live Spec within the agent-reliable-state-artifacts charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
-
 ---
 charter: agent-reliable-state-artifacts
 status: validated
@@ -24,6 +18,12 @@ source-manifest:
   computed-at: "2026-05-13T08:40:13.650Z"
 drift_detected: true
 ---
+
+# Live Spec: Test Migration
+
+<!-- Live Spec within the agent-reliable-state-artifacts charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
 
 ## Behavioral Contract
 

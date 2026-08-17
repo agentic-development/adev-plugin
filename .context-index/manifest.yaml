@@ -7,7 +7,7 @@
 
 project:
   name: "adev-plugin"
-  adev_version: "0.27.9-next"
+  adev_version: "0.28.0-next.2"
   description: "Claude Code plugin and CLI implementing a full-lifecycle Agentic Development Framework"
   type: cli
 
@@ -280,15 +280,9 @@ repomap:
 
 integrations:
   session_capture:
-    # provider: native      — captures session events via the native plugin (no third-party SDK)
-    # capture: hook         — drives capture from Claude Code SessionEnd + PreCompact hooks (recommended for new projects)
-    # capture: post-commit  — legacy back-compat path: capture fires from .githooks/post-commit
-    # capture: off          — capture disabled; no hooks register, no files write
-    # gitignored: true|false — when true, installer maintains a paired-marker block in .gitignore
-    #                         covering .context-index/sessions/ (default true for new projects)
     provider: native
     capture: post-commit
-
+    gitignored: false
 hygiene:
   staleness_threshold_days: 30
   source_roots:

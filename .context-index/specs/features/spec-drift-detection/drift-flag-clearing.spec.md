@@ -1,8 +1,6 @@
-# Live Spec: Drift Flag Clearing
-
 ---
 charter: spec-drift-detection
-status: validated
+status: implemented
 risk_level: low
 milestone:
 revision: 1
@@ -16,6 +14,8 @@ source-manifest:
   computed-at: "2026-05-10T23:51:35.315Z"
 drift_detected: true
 ---
+
+# Live Spec: Drift Flag Clearing
 
 ## Behavioral Contract
 

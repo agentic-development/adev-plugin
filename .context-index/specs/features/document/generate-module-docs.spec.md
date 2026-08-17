@@ -1,12 +1,6 @@
-# Live Spec: Generate module docs
-
-<!-- Live Spec within the adev:document charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/adev:document/charter.md -->
-
 ---
 charter: adev:document
-status: validated
+status: implemented
 risk_level: low
 milestone:
 revision: 1
@@ -21,6 +15,12 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.740Z"
 drift_detected: true
 ---
+
+# Live Spec: Generate module docs
+
+<!-- Live Spec within the adev:document charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/adev:document/charter.md -->
 
 ## Behavioral Contract
 

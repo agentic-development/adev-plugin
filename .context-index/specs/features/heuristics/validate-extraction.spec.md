@@ -1,12 +1,3 @@
-# Live Spec: Validate Extraction
-
-<!-- Live Spec within the heuristics charter.
-     Phase 1a: add Check 12 (Success Heuristic Extraction) to /adev:validate
-     SKILL.md, consuming the lib/heuristics.mjs API defined in
-     store-and-helper.md. Runs only on first-run PASS.
-     Does NOT modify the helper API — only consumes it.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -26,6 +17,15 @@ source-manifest:
   computed-at: "2026-04-10T00:28:19.351Z"
 drift_detected: true
 ---
+
+# Live Spec: Validate Extraction
+
+<!-- Live Spec within the heuristics charter.
+     Phase 1a: add Check 12 (Success Heuristic Extraction) to /adev:validate
+     SKILL.md, consuming the lib/heuristics.mjs API defined in
+     store-and-helper.md. Runs only on first-run PASS.
+     Does NOT modify the helper API — only consumes it.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

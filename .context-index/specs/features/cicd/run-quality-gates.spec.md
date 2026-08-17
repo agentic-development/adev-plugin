@@ -1,9 +1,3 @@
-# Live Spec: Run Quality Gates
-
-<!-- Live Spec within the cicd charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/cicd/charter.md -->
-
 ---
 charter: cicd
 status: validated
@@ -19,6 +13,12 @@ source-manifest:
     - .github/workflows/ci.yml
   computed-at: "2026-04-01T13:43:22.551Z"
 ---
+
+# Live Spec: Run Quality Gates
+
+<!-- Live Spec within the cicd charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/cicd/charter.md -->
 
 ## Behavioral Contract
 

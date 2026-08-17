@@ -1,9 +1,3 @@
-# Live Spec: JSON Issue Board + Adapter
-
-<!-- Live Spec within the agent-reliable-state-artifacts charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
-
 ---
 charter: agent-reliable-state-artifacts
 status: validated
@@ -18,6 +12,12 @@ revision-history:
     date: 2026-05-13
     change: "Clarification amendment (CON-1 from test-migration.review.md). Made the version-3 round-trip behaviour for top-level unknown keys explicit: epic/issue unknown fields preserved; top-level unknown keys dropped on write. No code change — _write() at lib/issues/json-adapter.mjs:316 already reconstructs the document this way."
 ---
+
+# Live Spec: JSON Issue Board + Adapter
+
+<!-- Live Spec within the agent-reliable-state-artifacts charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md -->
 
 ## Behavioral Contract
 

@@ -1,6 +1,6 @@
 ---
 charter: validation
-status: validated
+status: implemented
 kind: refactor
 mode: refactor
 revision: 2

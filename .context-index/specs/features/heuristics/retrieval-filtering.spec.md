@@ -1,12 +1,3 @@
-# Live Spec: Retrieval Filtering
-
-<!-- Live Spec within the heuristics charter.
-     Defines the policy layer that callers use to select and budget heuristics
-     for injection into context packets. Consumes the readHeuristics API from
-     store-and-helper but does NOT modify it — this spec defines the retrieval
-     conventions and budget rules that injection specs follow.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -26,6 +17,15 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.324Z"
 drift_detected: true
 ---
+
+# Live Spec: Retrieval Filtering
+
+<!-- Live Spec within the heuristics charter.
+     Defines the policy layer that callers use to select and budget heuristics
+     for injection into context packets. Consumes the readHeuristics API from
+     store-and-helper but does NOT modify it — this spec defines the retrieval
+     conventions and budget rules that injection specs follow.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

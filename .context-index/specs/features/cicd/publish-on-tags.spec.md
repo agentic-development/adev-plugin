@@ -1,12 +1,6 @@
-# Live Spec: Publish on Tags
-
-<!-- Live Spec within the cicd charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/cicd/charter.md -->
-
 ---
 charter: cicd
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 1
@@ -19,6 +13,12 @@ source-manifest:
     - .github/workflows/ci.yml
   computed-at: "2026-04-12T11:48:02.733Z"
 ---
+
+# Live Spec: Publish on Tags
+
+<!-- Live Spec within the cicd charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/cicd/charter.md -->
 
 ## Behavioral Contract
 

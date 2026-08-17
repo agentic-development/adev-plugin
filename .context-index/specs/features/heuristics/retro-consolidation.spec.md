@@ -1,13 +1,3 @@
-# Live Spec: Retro Consolidation
-
-<!-- Live Spec within the heuristics charter.
-     Adds a heuristics consolidation step to /adev:retro that merges
-     duplicates, promotes recurring patterns, demotes contradicted entries,
-     and archives stale heuristics. This is the only lifecycle surface that
-     performs bulk heuristic maintenance.
-     Depends on: store-and-helper (API), contradiction-tracking (contradicted-by data).
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -27,6 +17,16 @@ source-manifest:
   computed-at: "2026-04-25T21:55:13.377Z"
 drift_detected: true
 ---
+
+# Live Spec: Retro Consolidation
+
+<!-- Live Spec within the heuristics charter.
+     Adds a heuristics consolidation step to /adev:retro that merges
+     duplicates, promotes recurring patterns, demotes contradicted entries,
+     and archives stale heuristics. This is the only lifecycle surface that
+     performs bulk heuristic maintenance.
+     Depends on: store-and-helper (API), contradiction-tracking (contradicted-by data).
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

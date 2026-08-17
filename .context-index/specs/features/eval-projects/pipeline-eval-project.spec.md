@@ -1,9 +1,3 @@
-# Live Spec: Pipeline Eval Project
-
-<!-- Live Spec within the eval-projects charter.
-     Python weather station data pipeline with DuckDB.
-     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
-
 ---
 charter: eval-projects
 status: validated
@@ -37,6 +31,12 @@ source-manifest:
     - tests/evals/data-pipeline/scenarios/.gitkeep
   computed-at: "2026-05-11T16:09:58.840Z"
 ---
+
+# Live Spec: Pipeline Eval Project
+
+<!-- Live Spec within the eval-projects charter.
+     Python weather station data pipeline with DuckDB.
+     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
 
 ## Behavioral Contract
 

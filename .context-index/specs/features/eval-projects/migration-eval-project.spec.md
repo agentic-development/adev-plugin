@@ -1,9 +1,3 @@
-# Live Spec: Migration Eval Project
-
-<!-- Live Spec within the eval-projects charter.
-     Python+YAML legacy ETL migrating to dbt+DuckDB.
-     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
-
 ---
 charter: eval-projects
 status: implemented
@@ -20,6 +14,12 @@ source-manifest:
     - tests/evals/data-migration/scenarios/.gitkeep
   computed-at: "2026-05-11T16:09:58.839Z"
 ---
+
+# Live Spec: Migration Eval Project
+
+<!-- Live Spec within the eval-projects charter.
+     Python+YAML legacy ETL migrating to dbt+DuckDB.
+     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
 
 ## Behavioral Contract
 

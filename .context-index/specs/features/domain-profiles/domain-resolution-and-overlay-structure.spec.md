@@ -1,9 +1,3 @@
-# Live Spec: Domain Resolution & Overlay Structure
-
-<!-- Live Spec within the domain-profiles charter.
-     This defines the foundational resolution engine and file conventions for domain profiles.
-     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
-
 ---
 charter: domain-profiles
 status: validated
@@ -25,6 +19,12 @@ source-manifest:
   computed-at: "2026-05-11T16:09:28.530Z"
 drift_detected: true
 ---
+
+# Live Spec: Domain Resolution & Overlay Structure
+
+<!-- Live Spec within the domain-profiles charter.
+     This defines the foundational resolution engine and file conventions for domain profiles.
+     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
 
 ## Behavioral Contract
 

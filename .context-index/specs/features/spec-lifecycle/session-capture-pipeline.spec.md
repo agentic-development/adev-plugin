@@ -1,8 +1,6 @@
-# Live Spec: Session Capture Pipeline
-
 ---
 charter: spec-lifecycle
-status: validated
+status: implemented
 risk_level: high
 milestone:
 revision: 1
@@ -19,6 +17,8 @@ source-manifest:
   computed-at: "2026-04-01T13:43:22.528Z"
 drift_detected: true
 ---
+
+# Live Spec: Session Capture Pipeline
 
 ## Behavioral Contract
 

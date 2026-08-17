@@ -1,9 +1,3 @@
-# Live Spec: Automation Eval Project
-
-<!-- Live Spec within the eval-projects charter.
-     Python file-processing pipeline with inbox watching, validation, transformation, and reporting.
-     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
-
 ---
 charter: eval-projects
 status: validated
@@ -35,6 +29,12 @@ source-manifest:
     - tests/evals/process-automation/scenarios/.gitkeep
   computed-at: "2026-05-11T16:09:58.813Z"
 ---
+
+# Live Spec: Automation Eval Project
+
+<!-- Live Spec within the eval-projects charter.
+     Python file-processing pipeline with inbox watching, validation, transformation, and reporting.
+     Parent Charter: .context-index/specs/features/eval-projects/charter.md -->
 
 ## Behavioral Contract
 

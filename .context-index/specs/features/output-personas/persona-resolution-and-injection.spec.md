@@ -1,5 +1,3 @@
-# Live Spec: Persona Resolution and Injection
-
 ---
 charter: output-personas
 status: validated
@@ -24,6 +22,8 @@ source-manifest:
   computed-at: "2026-04-21T13:05:58.708Z"
 drift_detected: true
 ---
+
+# Live Spec: Persona Resolution and Injection
 
 ## Behavioral Contract
 
