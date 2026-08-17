@@ -41,3 +41,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP (Case A): no UI files in implementation diff and no Playwright MCP - visual verification not applicable.","ts":"2026-08-16T01:26:33.809Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-16T01:28:35.899Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-16T01:28:52.510Z"}
+{"event":"code_drift_detected","drift_source":"templates/review-specs/defaults.yaml","drift_at":"2026-08-17T20:22:55.006Z","ts":"2026-08-17T20:22:55.007Z"}

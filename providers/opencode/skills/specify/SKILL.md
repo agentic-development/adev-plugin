@@ -192,6 +192,8 @@ After writing any spec, output the path, mode-specific stats (see each mode), an
 
 Every mode (Standard, Extract, Refactor, From-Diff, Cross-Cutting) MUST emit a lifecycle entry event before writing any spec content and a matching exit event after the spec is saved. Without these events, the lifecycle log has no record of the specify step and `/adev:review-specs` blocks with `step "review" requires prior step "specify" to be completed`.
 
+**Amend Mode is the exception, and NOT because it is exempt.** `adev specify amend` emits the pair itself, on the amendment's own log, immediately after the atomic write — so the skill MUST NOT emit them again or the step opens twice. This is deliberate: the amendment needs a lifecycle of its own to be reviewable, and the verb is the only place that knows the amendment's path before it exists on disk. Amend Mode also has no failure-path exit event to emit for the same reason (see `adev-plugin-gkfv.1`).
+
 **Entry event** (emit before Step 1 / earliest spec-related action):
 
 ```bash
@@ -1033,7 +1035,8 @@ Seventh workflow axis. Scaffolds a **new co-located amendment** of an already-sh
    - Writes frontmatter `amends: <base path>`, `target-revision: <N>`, an inherited/overridable `kind:`, `revision: 1`, `status: review-pending` (keeps the `.spec.md` extension).
    - Sets `target-revision` to `base.revision + 1` by default; an explicit `--target-revision` must be strictly greater than the base revision, else `INVALID_TARGET_REVISION`.
    - Writes the amendment atomically (temp-then-rename) and never modifies the base spec.
-   - Emits a `spec_amended` lifecycle event on the **base** spec's log carrying `{ amendment_slug, amendment_path, target_revision }`.
+   - Emits a `spec_amended` lifecycle event on the **base** spec's log carrying `{ amendment_slug, amendment_path, target_revision }`. The base gets no `specify` events — it was not re-specified.
+   - Opens and closes `specify` on the **amendment's own** log (`started`, then `completed` with verdict `PASS`, in that order). Without this the amendment has no log, `specify` projects as `{status: "missing"}`, and `adev gate require --skill review-specs` exits 2 under the default strict mode — leaving the artifact unreviewable despite the scaffold promising it "is reviewed, planned, and validated on its own lifecycle". Do not re-emit these from the skill.
 
 3. **Path containment (SEC-1):** the CLI verb re-asserts `assertWithin(projectRoot, specPath)` and rejects path-traversal with `INVALID_SPEC_PATH`. The skill MUST NOT pre-validate paths.
 

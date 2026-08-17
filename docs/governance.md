@@ -322,6 +322,7 @@ Named, reusable bundles of files appended to reviewer prompts. Shared across `re
 ```yaml
 context_packs:
   base:
+    delivery: inline           # optional; inline (the default) | manifest
     include:
       - ".context-index/specs/features/billing/charter.md"
       - ".context-index/references/accounting-conventions.md"
@@ -372,6 +373,50 @@ context_packs:
         title: Sibling Specs
 ```
 
+#### Delivery: `inline` or `manifest`
+
+A pack chooses **what** it hands the reviewer, independently of **which** files it selects:
+
+| `delivery` | What the reviewer receives |
+|---|---|
+| `inline` (default) | one fenced section per matched file, containing that file's bytes |
+| `manifest` | one fenced section per **include**, containing only repo-root-relative **paths** — the reviewer opens what it needs |
+
+`delivery` is inherited through `extends` with the **same nearest-declaration precedence as
+`max_file_bytes` / `max_total_bytes`**: a pack's own value wins, otherwise the nearest ancestor that
+declares one, otherwise the `inline` default. An unrecognised value is a load error
+(`INVALID_PACK_DELIVERY`) — never a silent fallback to `inline`. Every link in the chain is
+validated, so a typo in an ancestor a child happens to override still fails loudly.
+
+Under `delivery: manifest` each include emits exactly one section, in include declaration order:
+
+```
+<<<ADEV-PACK-<nonce> role="path-manifest" title="Sibling Specs">>>
+.context-index/specs/features/billing/invoicing.spec.md
+.context-index/specs/features/billing/refunds.spec.md
+<<<END-ADEV-PACK-<nonce>>>>
+```
+
+- The `title` attribute follows a fallback chain: the include's declared `title`, else the include's
+  glob string, else the attribute is **omitted entirely**.
+- Paths are repo-root-relative, one per line, **byte-sorted within an include** (never
+  locale-collated) — the same ordering rule inline delivery uses.
+- An include that matched nothing still emits its section, with the body `<no matches>`.
+- Under `delivery: inline` an empty include emits `role="no-matches"` instead, unchanged.
+
+**Which bundled packs use which.** `base` is **`inline`**, and stays that way deliberately: it is
+shared with the check registry — **three** checks in
+[`templates/domains/software/validate.yaml`](../templates/domains/software/validate.yaml) reference
+it — and those consumers must keep rendering byte-identically to before. The designed end state is
+for `review-base` to be `manifest`, with `architecture` / `security` / `consistency` inheriting it
+through `extends`.
+
+> **Not yet shipped.** [`templates/review-specs/defaults.yaml`](../templates/review-specs/defaults.yaml)
+> declares no `delivery` key at all today, so **every bundled pack currently resolves to `inline`
+> and reviewers do not yet receive path manifests.** The mechanism above is available for a project
+> to opt into on its own packs; flipping the bundled `review-base` is separate work gated on tracker
+> `adev-plugin-j7pq.7` (open — see [Known limitations](#known-limitations-manifest-delivery)).
+
 #### Size bounding
 
 Packs are byte-bounded so a large corpus cannot displace the target spec. A file over
@@ -379,6 +424,20 @@ Packs are byte-bounded so a large corpus cannot displace the target spec. A file
 reached, remaining files are omitted and a single aggregate notice lists the omitted paths (a
 reviewer can Glob/Grep those on demand). File ordering is deterministic — declaration order across
 includes, byte-order path sort within one — so truncation is reproducible.
+
+Both caps above describe `delivery: inline`. Under `delivery: manifest`:
+
+- The **target spec is exempt from both caps and is never truncated.** When it alone exceeds
+  `max_total_bytes` it is still inlined in full and a `TARGET_SPEC_OVERSIZE` **warning** is emitted
+  naming the path, its byte size and the cap — no truncation, and no inline marker. The cap bounds
+  the path manifest, not the spec the review is about.
+- **No `role="truncation-notice"` section is emitted**, because no file is omitted for budget
+  reasons — a manifest ships paths, not bodies. The aggregate notice is fully retained for `inline`
+  and is simply unreachable here.
+
+The target spec is supplied by the dispatch assembler as its own `role="target-spec"` section under
+the same per-run nonce, not by the pack render. That is why `review-base`'s sibling include carries
+`exclude: ["<target-spec>"]` — without it the spec under review would be named twice.
 
 #### Section fencing
 
@@ -388,9 +447,29 @@ stage (`subagent`, `runner`, `adapter`). A provenance preamble tells the reviewe
 inside a fence carrying that exact token is repository-sourced. This prevents an artifact under
 review from forging a pack section that appears to carry repository authority.
 
+#### Known limitations (manifest delivery)
+
+Two gaps are open and tracked as `adev-plugin-j7pq.7`. Both matter most when a `manifest` pack is
+pointed at a tree you do not fully control, so weigh them before configuring one:
+
+1. **Fence-header attribute values are not neutralized.** A `"` or a `>>>` inside a pack `title` — or
+   inside a charter directory name that a `<charter-dir>` glob expands into a title — can escape the
+   attribute it is interpolated into. Section *bodies* are neutralized; header attributes are not
+   yet.
+2. **A control character in a path can produce an unintended manifest line.** A newline is a legal
+   character in a POSIX path component, and the denylist regexes anchor on `(^|/)`, so a crafted
+   filename can inject what looks like an extra path into a manifest body.
+
+Neither is closed by the delivery mechanism itself. Under `delivery: inline` the fence body
+neutralizer and the per-file truncation marker are unchanged, and the denylist's three-way severity
+split (`CONTEXT_PACK_DENYLIST` for a denied glob string, `CONTEXT_PACK_DENYLIST_SKIP` for a wildcard
+match, `CONTEXT_PACK_DENYLIST_MATCH` for an enumerated one) is retained verbatim for both delivery
+modes.
+
 ### Guardrails applied at load
 
 - Reviewer profiles must be read-only-compatible. `{ category: filesystem-write }`, `{ category: shell }`, any `{ tool: <literal> }`, non-deny filesystem write/execute, and non-`{deny, read-only}` network all fail load. `implementer` is forbidden for reviewers.
+- A reviewer whose context pack resolves to `delivery: manifest` must use a profile granting **both** `filesystem-read` and `search`, or load fails with `PROFILE_CANNOT_CONSUME_MANIFEST` and the reviewer is not dispatched — a manifest is only useful to a reviewer that can open the paths it names. Every bundled reviewer profile extends `read-only`, which grants both, so this only bites a project-authored profile. Disabled reviewers are exempt, and a pack that does not resolve at all reports its own error instead.
 - Paths (`prompt`, `package.skill`, `package.adapter`) are sandboxed under `.context-index/` — `..` segments rejected pre-resolution; `fs.realpath` catches symlink escape.
 - Cross-plugin `plugin:<other-plugin>:...` references fail load with a v2-deferral message.
 
