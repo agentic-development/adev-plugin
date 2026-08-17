@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-1 plus acceptance criterion 1 give exact assertions and counts; a one-glob YAML edit in templates/review-specs/defaults.yaml with a new test suite. Only wrinkle is a live-repo count (18 of 55) the plan already tells the author to pin with a comment."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Five files across lib/governance, skills/review-specs and two provider mirrors. Prompt wording must reconcile with 22j's provenance rule and name read tools derived from the resolved profile rather than hardcoded; prompt-safety phrasing is judgement work."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Scores 16/20 (auto band), held at assisted because review-config.mjs is a sensitive path and the plan flags a real error-ordering hazard around mergePacks. checkReadOnlyCompatible is a direct in-file precedent and option 1 is prescribed."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "human-only",
+      "scores": {
+        "spec_completeness": 0.4,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.4
+      },
+      "rationale": "BEH-8 is written against a dispatch record that does not exist in the tree, so the planner had to invent where the behavior lives. Five files including two provider mirrors, a byte-stability constraint on renderReviewReport, and an explicit stop-and-escalate if a new lifecycle artifact seems needed."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 1
+      },
+      "rationale": "Three-line edit with no backing behavior that changes what actually dispatches for every future review in this repo, and it collides with commit 863e119b on branch worktree-j7pq-review-gate. Transitively behind Task 8's gate. Needs a human to resolve the collision."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Prose only in docs/governance.md, extending an existing context-pack section, with five explicitly enumerated content requirements including the Known limitations note naming adev-plugin-j7pq.7 and both open gaps."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Scores 16/20 (auto band), held at assisted because context-pack.mjs is declared sensitive in governance/sensitive-paths.yaml and this is the head of the spine seven tasks depend on. Implementation is a direct copy of the max_file_bytes precedence loop."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Test-only parity guard, no production change expected, full assertion set and the denonce approach specified. Rev-4 context-pack.test.mjs is the oracle. Zero production files touched."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Rewrites both passes of renderPack, the shared surface behind reviewer dispatch AND three constitution-compliance checks in validate.yaml, under a byte-identity requirement for inline. Eight design constraints, one of which (SA-2) deliberately enforces nothing. Checkpoint after RED."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.4,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Security-sensitive and knowingly half-specified: SEC-1 is deferred to adev-plugin-j7pq.7, acceptance criterion 6 cannot be marked done, and the gap must be encoded as an executable assertion the plan describes only in prose. Human review of the boundary is warranted."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.4,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "BEH-11's central claim (a denied path is never named) is explicitly not entailed pending SEC-2/j7pq.7. 22p-bis gives strong assertion precedent, but whether a production fix is needed is left to discovery and the author must consciously not close a known hole."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Spans two sensitive lib/governance modules and adds a new seam (dispatch-shape reading renderPack's budgets) serving all three dispatch stages. Implements SA-1's second recommendation, so the code intentionally diverges from BEH-12's current wording."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "human-only",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 1
+      },
+      "rationale": "Gate-driven override above the 14/20 band. The edit is two trivial YAML lines, but it is the switch that exposes every reviewer to manifest delivery while SEC-1 and SEC-2 remain open in adev-plugin-j7pq.7. Judging that the gate has cleared is a human release decision, not an agent one."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Test-only, but the RED must be captured before Task 8 flips the bundled packs via a two-branch baseline procedure the author must choose and record. Also substitutes a measurable invariant for acceptance criterion 11, whose literal wording the plan admits is false."
+    }
+  ]
+}

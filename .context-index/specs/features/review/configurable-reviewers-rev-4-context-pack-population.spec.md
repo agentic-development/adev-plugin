@@ -28,6 +28,7 @@ source-manifest:
     - tests/governance/context-pack.test.mjs
     - tests/governance/reviewer-prompt-inputs.test.mjs
   computed-at: "2026-08-16T01:17:12.735Z"
+drift_detected: true
 ---
 
 # Amendment: Live Spec: Configurable Reviewer Registry (targeting rev 4)
