@@ -17,3 +17,4 @@
 {"event":"plan_task","plan":".context-index/specs/features/setup/using-adev-help-surface.plan.md","task_id":"task-2","status":"done","notes":"What should I do mode added; forward-refs How does X work (Task 3, next).","ts":"2026-08-17T18:49:48.457Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"plan_task","plan":".context-index/specs/features/setup/using-adev-help-surface.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-08-17T18:53:29.045Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"plan_task","plan":".context-index/specs/features/setup/using-adev-help-surface.plan.md","task_id":"task-3","status":"done","notes":"How does X work mode + failure modes added.","ts":"2026-08-17T18:57:06.761Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-17T19:04:15.640Z"}
