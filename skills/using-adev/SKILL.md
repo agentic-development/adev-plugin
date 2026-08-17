@@ -1,6 +1,6 @@
 ---
 name: using-adev
-description: "Gateway skill for the Agentic Development Framework. Injected at session start to establish methodology, available skills, and context routing. Use when the user asks 'what skills are available', 'how does adev work', 'what is the adev methodology', 'show me the workflow', or needs an overview of the framework and its lifecycle."
+description: "Gateway skill for the Agentic Development Framework. Injected at session start to establish methodology, available skills, and context routing; also answers on-demand questions during a session. Use when the user asks 'what skills are available', 'how does adev work', 'what is the adev methodology', 'show me the workflow', 'what should I do', 'what should I do next', 'which skill do I need', 'how do I start', 'how does /adev:plan work', or asks how a specific skill or command works."
 ---
 
 # Agentic Development Framework (adev)
