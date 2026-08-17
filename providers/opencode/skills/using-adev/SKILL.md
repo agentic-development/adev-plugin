@@ -82,6 +82,20 @@ When a user asks an orientation or lifecycle-choice question (e.g. "what should 
 
 If the question is ambiguous between this mode and "How does X work?" below, treat it as "How does X work?" only when a specific skill name or command is named in the question; otherwise treat it as this mode.
 
+## "How does X work?" Q&A Mode
+
+When a user asks about a specific skill's behavior (e.g. "how does `/adev:plan` work", "what does `--refactor` do on `specify`"):
+
+- Check `docs/*.md` first — `docs/skill-reference.md` for per-skill usage and arguments, `docs/cli-reference.md` for CLI verbs, or other files indexed at `docs/README.md`.
+- Fall back to reading the actual `skills/<name>/SKILL.md` only when the docs do not cover the needed detail (e.g. exact argument behavior, ask-first prompt wording).
+- This is a chat-only response: no file writes, no lifecycle events.
+
+**Failure modes:**
+
+- **Skill not found** — if the named skill does not exist, report that it was not found and list the closest matching names from the skill tables above ("Start here" / "Lifecycle stages").
+- **Docs insufficient** — if `docs/*.md` doesn't cover the needed detail, fall back to `skills/<name>/SKILL.md` automatically; this needs no user-visible caveat.
+- **Ambiguous question** — if a question could be either "What should I do?" or "How does X work?", answer as "How does X work?" only when a specific skill name is present in the question; otherwise answer as "What should I do?" (see above).
+
 ## Lifecycle Gates
 
 These gates enforce quality:
