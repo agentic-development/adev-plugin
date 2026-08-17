@@ -77,3 +77,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"No drift detected.","ts":"2026-08-16T13:47:15.293Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-14-gate-executability","severity":"warning","verdict":"PASS","notes":"Gate doctor: 3 warnings, 0 errors; pre-existing gate posture.","ts":"2026-08-16T13:47:17.019Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-16T13:47:34.331Z"}
+{"event":"code_drift_detected","drift_source":".context-index/manifest.yaml","drift_at":"2026-08-17T10:23:53.775Z","ts":"2026-08-17T10:23:53.776Z"}

@@ -138,6 +138,45 @@ trailer_exists() {
   grep -qF "$trailer" "$COMMIT_MSG_FILE" 2>/dev/null
 }
 
+# Collapse blank lines within a trailing pure-trailer run. A commit message
+# assembled elsewhere (e.g. a HEREDOC that writes `Spec:` and `Plan-task:` as
+# separate paragraphs) can arrive with a blank line INSIDE what should be one
+# trailer block:
+#   Spec: .context-index/specs/features/x/y.spec.md
+#
+#   Plan-task: 3
+# `git interpret-trailers --parse` only recognizes the LAST contiguous block
+# as trailers, so the blank line silently drops Spec: from every trailer
+# reader (retro, hygiene, etc.) even though Plan-task: survives. The
+# last-line check below only inspects one line, so it can't see this — it
+# would happily append Author-type:/Operator: after "Plan-task: 3" and
+# report success while Spec: stays orphaned.
+#
+# Only touches a trailing run where EVERY non-blank line already looks
+# trailer-shaped (`Key: value`) — body prose is never in scope, since the
+# scan stops at the first non-blank line that doesn't match.
+collapse_trailer_gaps() {
+  awk '
+    { lines[NR] = $0; last = NR }
+    END {
+      start = last + 1
+      for (i = last; i >= 1; i--) {
+        line = lines[i]
+        if (line ~ /^[ \t]*$/) continue
+        if (line ~ /^[A-Za-z][A-Za-z0-9_-]*: /) { start = i; continue }
+        break
+      }
+      for (i = 1; i < start; i++) print lines[i]
+      for (i = start; i <= last; i++) {
+        line = lines[i]
+        if (line ~ /^[ \t]*$/) continue
+        print line
+      }
+    }
+  ' "$COMMIT_MSG_FILE" > "$COMMIT_MSG_FILE.tmp" && mv "$COMMIT_MSG_FILE.tmp" "$COMMIT_MSG_FILE"
+}
+collapse_trailer_gaps
+
 # Build trailers to append
 TRAILERS=""
 

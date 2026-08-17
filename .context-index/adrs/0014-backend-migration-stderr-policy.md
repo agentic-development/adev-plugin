@@ -2,9 +2,11 @@
 
 ## Status
 
-**Proposed**
+**Accepted (amended)**
 
 > **Proposed 2026-05-19**: Establishes that the `adev issues migrate` verb forwards `br` stderr verbatim — both to the operator's terminal and in the `errors[]` field of the `MIGRATE_PARTIAL_FAILURE` JSON report. Resolves review note SEC-1 on `backend-migration.spec.md` (rev 1).
+
+> **Accepted with amendment, 2026-08-17**: The core policy is implemented exactly as decided — `lib/cli/issues-migrate.mjs` forwards `br` output verbatim into both `errors[]` and the terminal, with no scrubbing or truncation, citing SEC-1 in an inline comment. Amendment: `issues-migrate.mjs` and `beads-adapter.mjs` were extended to fall back to `err.stdout` when stderr is empty, because `br` reports structured failures as JSON on stdout in practice, leaving stderr blank. The no-scrubbing/no-truncation spirit of this ADR is unchanged; only the source-field selection is broader than the original text (`err.stderr || err.message`) — it should read `err.stderr || err.stdout || err.message`.
 
 ## Date
 

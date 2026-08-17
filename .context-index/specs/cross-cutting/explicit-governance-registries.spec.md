@@ -118,6 +118,7 @@ source-manifest:
     - tests/skills/validate-gate-resolution.test.mjs
     - tests/specs/explicit-governance-registries-contract.test.mjs
   computed-at: "2026-08-16T01:35:31.046Z"
+drift_detected: true
 ---
 
 # Live Spec: Explicit Governance Registries

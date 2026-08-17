@@ -260,7 +260,15 @@ repomap:
     - "*.min.js"
     - "*.generated.*"
     - ".claude/**"
+    - ".adev/worktrees/**"
     - ".context-index/hygiene/**"
+    # adev-api-eval is a full standalone eval-fixture project (its own
+    # package.json/node_modules) with a checked-in dist/ that isn't real
+    # adev-plugin source. Exclude patterns are root-anchored only (a
+    # nested-anywhere match previously misfired on skills/build/, which
+    # legitimately shares a name with the DEFAULT_EXCLUDE "build/**" entry),
+    # so this nested dist/ needs its own explicit entry.
+    - "tests/evals/adev-api-eval/dist/**"
 
 # ============================================================================
 # Hygiene
@@ -293,6 +301,17 @@ hygiene:
   coverage_exclude:
     - "tests/**"
     - "skills/*/evals/**"
+    - ".adev/worktrees/**"
+    - ".claude/worktrees/**"
+  # Test Debt (Pass 23) deliberately does NOT apply coverage_exclude above —
+  # this is its own, separate exclusion key. Without it, worktree checkouts
+  # under .adev/worktrees/**  and .claude/worktrees/** (each a full repo
+  # checkout with its own duplicate test suite) get scanned as if they were
+  # real project test debt.
+  test_debt:
+    exclude:
+      - ".adev/worktrees/**"
+      - ".claude/worktrees/**"
   plan_immutability:
     # One-time batch modifications the detector should ignore.
     #

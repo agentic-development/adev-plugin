@@ -43,6 +43,7 @@ source-manifest:
     - tests/lib/extensions/invariant-dependencies.test.mjs
     - tests/specs/extension-governance-merge-hardening-consistency.test.mjs
   computed-at: "2026-08-15T16:00:00.000Z"
+drift_detected: true
 ---
 
 # Live Spec: Extension Governance Merge Hardening

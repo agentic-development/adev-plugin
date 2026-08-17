@@ -12,7 +12,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createTempDir, cleanupTempDir } from "../helpers.mjs";
-import { loadManifest } from "../../lib/manifest.mjs";
+import { loadManifest, loadManifestForStorage, assertProjectRoot } from "../../lib/manifest.mjs";
 
 test("loadManifest: happy path returns parsed manifest object", () => {
   const root = createTempDir();
@@ -205,4 +205,80 @@ test("loadManifest: rejects fractional build.max_review_retries — INVALID_MAX_
   } finally {
     cleanupTempDir(root);
   }
+});
+
+// loadManifestForStorage — tolerant wrapper lifted from the (formerly)
+// triplicated private helper in lib/execution-state.mjs, lib/milestones.mjs,
+// lib/migrate-state-artifacts.mjs, and lib/issues/render-markdown.mjs.
+
+test("loadManifestForStorage: returns the parsed manifest when present and valid", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\ntasks:\n  backend: file\n",
+    );
+    const m = loadManifestForStorage(root);
+    assert.equal(m.project.name, "t");
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifestForStorage: returns null (not throw) when the manifest is missing", () => {
+  const root = createTempDir();
+  try {
+    assert.equal(loadManifestForStorage(root), null);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifestForStorage: returns null (not throw) when the manifest is unparseable", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      'project:\n  name: t\nbuild:\n  max_review_retries: "two"\n',
+    );
+    assert.equal(loadManifestForStorage(root), null);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+// assertProjectRoot — containment-only check lifted from the (formerly)
+// duplicated private helper in lib/issues/json-adapter.mjs and
+// lib/milestones.mjs.
+
+test("assertProjectRoot: returns the resolved absolute path when the manifest exists", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(join(root, ".context-index/manifest.yaml"), "project:\n  name: t\n");
+    assert.equal(assertProjectRoot(root), root);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("assertProjectRoot: throws INVALID_PROJECT_ROOT when the manifest is missing", () => {
+  const root = createTempDir();
+  try {
+    assert.throws(
+      () => assertProjectRoot(root),
+      (err) => err.code === "INVALID_PROJECT_ROOT",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("assertProjectRoot: throws INVALID_PROJECT_ROOT for a non-string input", () => {
+  assert.throws(
+    () => assertProjectRoot(undefined),
+    (err) => err.code === "INVALID_PROJECT_ROOT",
+  );
 });
