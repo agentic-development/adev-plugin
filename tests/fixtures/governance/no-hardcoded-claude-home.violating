@@ -1,0 +1,4 @@
+// Corpus fixture — MUST match boundaries.yaml rule `no-hardcoded-claude-home`.
+// Hardcodes the Claude Code home path instead of resolving the plugin root.
+
+export const PLUGIN_CACHE = "~/.claude/plugins/cache";

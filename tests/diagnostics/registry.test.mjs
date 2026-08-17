@@ -31,6 +31,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir, homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { runDiagnostics, loadRegistry, normaliseMessage } from '../../lib/diagnostics/index.mjs';
+import { stampMarker } from '../../lib/governance/registry-marker.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_RUNNERS = join(__dirname, 'fixtures', 'runners');
@@ -53,8 +54,21 @@ function copyFixture(dir, name) {
   );
 }
 
+/**
+ * Fixture maintenance (Task 10): `diagnostics.yaml` is a MARKED registry, so
+ * `loadRegistry` now fails closed on a file with no `materialized_at` marker.
+ * Every fixture here is about entry validation, containment and dispatch — none
+ * is about materialization — so each is seeded already-materialized, the state
+ * `adev governance materialize` leaves behind. No assertion below is weakened;
+ * the guard simply runs before the code these tests exercise. The one test that
+ * IS about the absent-registry path deletes the file rather than writing it,
+ * and absence is deliberately not a guard failure.
+ */
 function writeRegistry(dir, yaml) {
-  writeFileSync(join(dir, '.context-index', 'governance', 'diagnostics.yaml'), yaml);
+  writeFileSync(
+    join(dir, '.context-index', 'governance', 'diagnostics.yaml'),
+    stampMarker(yaml, '2026-08-15T00:00:00Z'),
+  );
 }
 
 function cleanup(dir) {

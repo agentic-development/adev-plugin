@@ -1,0 +1,8 @@
+## Step 4 — Read the drift flag
+
+Run inline Node.js:
+
+```bash
+node -e "console.log(1)"
+node --input-type=module -e "import { x } from './lib/x.mjs'; console.log(x);"
+```

@@ -74,3 +74,24 @@ verdict_rules:
   # Default: any blocker finding → BLOCK verdict. Raise the threshold to
   # require multiple blockers before blocking (e.g. for early-stage specs).
   # blocker_threshold: 1
+
+# ── Materialization marker ────────────────────────────────────────────────
+# `materialized_at` says one thing: what THIS file declares is the complete
+# effective set of reviewers — the bundled three are explicit rows above (or
+# deliberately absent), never merged in behind the file at run time.
+# `lib/governance/review-config.mjs` fails closed without it.
+#
+# Keep this line when you write `.context-index/governance/review.yaml` from
+# this example, so the project is materialized from birth and /adev:review-specs
+# runs on its first invocation. The marker is write-once, so a later
+# `adev governance materialize --registry review` leaves it exactly as it is.
+#
+# HONEST ABOUT THE VALUE: the instant below is a FROZEN LITERAL shipped in
+# this example — the date this example's reviewer set was fixed. Nothing stamps
+# it at scaffold time; it is copied verbatim, so it is NOT when your project was
+# materialized. No consumer reads the value: every loader and the install gate
+# check only that a valid top-level marker is PRESENT. If you want an instant
+# that means something for your project, delete this line and run
+# `adev governance materialize --registry review` — the marker is write-once, so
+# while the line is here that command leaves it exactly as it is.
+materialized_at: 2026-08-15T00:00:00Z

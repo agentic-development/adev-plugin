@@ -29,13 +29,21 @@ describe("validate SKILL.md — unified gate system", () => {
       "Should report SKIP with advisory when gates.yaml missing");
   });
 
-  it("should report SKIP for Check 8 when governance directory absent", () => {
-    assert.ok(content.includes("No governance directory configured"),
-      "Check 8 should SKIP when governance/ directory absent");
+  // Migration Step 2 (explicit-governance-registries.spec.md) replaced both
+  // bodies with a CLI verb call, so the SKIP reason is now the verb's own
+  // string rather than prose the skill invented. Check 8's trigger also moved:
+  // it used to SKIP on an absent `governance/` directory and PASS on a missing
+  // `boundaries.yaml`; it now SKIPs whenever no rule was evaluated, because a
+  // PASS would assert that boundaries held when nothing was read.
+  it("should report SKIP for Check 8 when no boundary rules are declared", () => {
+    assert.ok(content.includes("no boundary rules declared"),
+      "Check 8 should SKIP, with the evaluator's own reason, when no rule was evaluated");
+    assert.ok(content.includes("records SKIP, never PASS"),
+      "Check 8 must not record PASS on an empty registry");
   });
 
   it("should report SKIP for Check 9 when no transitions", () => {
-    assert.ok(content.includes("No transitions configured"),
+    assert.ok(content.includes("no transitions configured"),
       "Check 9 should SKIP when no transitions");
   });
 

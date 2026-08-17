@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "13-item edit list is precise, but this rewrites the security contract 11 later tasks implement under an operator-override BLOCK verdict. Prose authoring resolving 18 blockers wants human eyes before it becomes law."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Both plan heuristics prescribe exactly this shape (installExtension end-to-end, then a loader call). Assisted because Decision A changes the shipped reference extension so it no longer installs unchanged, affecting downstream copiers."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Pure pin test over already-exported functions; one new file, zero source modifications. The plan states two assertions start green and that this is expected."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Prose documenting already-decided behavior into three existing docs, with the exact grep strings the test asserts and eight sibling docs suites as the style sample. No runtime risk."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Exact character sets, an exact argv regex, named error codes and a complete failing test. Two new files, no modifications. Novelty held at 3: the token rules must agree with the repo's own YAML parser threat model."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Allowlist tables, constants and precedence are fully decided by Decision B; the task transcribes them and composes t2's checks. Two new files, sibling prior art in manifest-schema.mjs."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.8,
+        "novelty": 0.4
+      },
+      "rationale": "Greenfield containment: the named prior art (installSamples) lacks the realpath this module is built around. Introduces a new project-owned payload directory. Symlink, multi-file and Windows edge cases are underspecified."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "The plan states --allow-exec, allowExec and exec_consented_at have zero implementation hits in the repo. Fail-closed TTY consent is the human-in-the-loop control itself; a wrong default silently grants execution."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.2,
+        "blast_radius": 1,
+        "novelty": 0.4
+      },
+      "rationale": "Pattern coverage 1 forces assisted: a hand-rolled line-range YAML splicer with no serializer in the repo and no prior art. Forms 4 and 5 have no test in the plan. Byte-preservation has many indentation and newline edge cases."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "The integration point: rewrites ~180 lines of content-install.mjs, deletes three exported functions, and composes four modules that do not exist yet. The plan/apply split and provenance stamping need design care."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.4,
+        "novelty": 0.4
+      },
+      "rationale": "Lowest-scoring task (10/20), one point above human-only. Retrofits per-install atomicity onto an installer that writes incrementally, across lib/extensions and cli. All four test fixtures are undefined; strategy confidence is medium."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Mechanical shell:false branch with direct prior art in quality-gate.mjs, but it changes execution semantics of the gate runner every project depends on; the shipped string-form gate must keep working. Test helpers undefined."
+    }
+  ]
+}

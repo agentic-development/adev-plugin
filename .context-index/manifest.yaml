@@ -294,8 +294,22 @@ hygiene:
     - "tests/**"
     - "skills/*/evals/**"
   plan_immutability:
-    # One-time batch modifications whose hashes the detector should ignore.
-    # Use full 40-char SHAs. Document the reason inline.
+    # One-time batch modifications the detector should ignore.
+    #
+    # PREFER `exempt_patch_ids` BELOW FOR NEW ENTRIES. A commit SHA does not
+    # survive a history rewrite: `git filter-branch`, a rebase, or a squash
+    # merge re-hashes every commit it touches, and an `exempt_commits` entry
+    # recorded beforehand silently stops matching — the exemption evaporates
+    # and the plan re-flags. That happened to every SHA in the list below
+    # (a filter-branch on feat/session-history/session-end-hooks; the
+    # pre-rewrite commits survive only under refs/original/). A patch id
+    # hashes the diff rather than the commit, so it is invariant under
+    # rewriting. Both lists are read; entries match if EITHER hits.
+    #
+    # Record a patch id with:
+    #   git show <sha> --format= --patch | git patch-id --stable
+    #
+    # Use full 40-char values in both lists. Document the reason inline.
     exempt_commits:
       # 0.26.0 migration: stamped the DO-NOT-EDIT advisory header on 20 plan
       # files (chore: migrate context-index to 0.26.0 lifecycle-state shape).
@@ -349,5 +363,59 @@ hygiene:
       # update + its own revert, not content drift.
       - "452f1de4dc0a005d68988e83a9d4a01d1934bd61"
       - "87a47b3ee0fd6904cbc453db188879752c161064"
+    # Rewrite-durable form of the exemptions above, in the same order. Each
+    # was derived from its `exempt_commits` sibling, so the rationale comments
+    # there remain the documentation of record. These keep matching after the
+    # SHAs move again.
+    exempt_patch_ids:
+      # 0.26.0 migration: DO-NOT-EDIT advisory header on 20 plan files.
+      - "7adb4cd351a85ad6e041877a2bebc03b44fb96a6"
+      # Hygiene audit: ADR reference 0009 -> 0010 in diagnostic-registry.
+      - "c134e25e15b897d67dd5dfc0fa4dcf2261c7da5d"
+      # session-capture: move installer helper out of lib/cli/.
+      - "a4c128f766a17a6608207f9200f96281638d4cd5"
+      # session-awareness: revert restoring hook-driven-capture plan.
+      - "a908b90ddcf392fe9a1cea737512c2d859528f7f"
+      # Milestone bulk-rename 0.26.0 -> 0.27.0.
+      - "16f73b701d609edb1112f39160e0101abfa215c9"
+      # Milestone bulk-rename 0.27.0 -> 0.27.1.
+      - "3bd3f34d89f0dde95a588e62507759029b3b48ca"
+      # orphan-lock-cleanup: revert to first-pending state.
+      - "de12899734dbdd5eb82250ace4bbc2498f830eda"
+      # JSON sidecar migration: ".routing.md" -> ".routing.json" in fixtures.
+      - "e2abc5b04453aa2a47b14712318b98c49b3b9086"
+      # Copilot-adapter spec-rev refinement (spec rev 2 -> 3).
+      - "c8a4c53976bc0183b59830f2a2336f6610a4c861"
+      # retro-session-consumption: inline route annotations + restoring merge.
+      - "832010986335922dce16444987aeb3796ae97802"
+      - "736653f35eeaea1afaebef6f9f03c9d1f8347137"
+      # test-depth-policy: ADR 0016 -> 0017 renumber and its revert.
+      - "5a8b7b47e03d87dc1d18664d6162aade77765c44"
+      - "a2073143d8597b4dbcc833413d7fea35a0f9f8db"
+      # cli-driver-surface/driver-substrate: `feat(cli): revise CLI charter to
+      # rev 3` added a 3-line advisory note above the superseded
+      # _legacy-*.mjs registry sketch, pointing readers to the inline-closure
+      # approach. The commit message declares the annotation explicitly.
+      # Advisory comment, not content drift. NEW EXEMPTION (2026-08-15) — this
+      # one had no `exempt_commits` predecessor; every other entry here is a
+      # rewrite-durable restatement of a previously approved decision.
+      - "d31e2d4433fd3ab0b22a73870e1a1df07f23e561"
 
 domain: software
+
+# ============================================================================
+# Build Orchestrator
+# ============================================================================
+
+build:
+  # Cycles of the /adev:build BLOCK -> /adev:specify --revise -> re-review loop
+  # before the convergence detector returns BUDGET_EXHAUSTED. Library default is 2.
+  #
+  # Reverted to 2 on 2026-08-15. It was raised to 5 earlier the same day on the
+  # reading that blockers 5 -> 5 -> 2 with persistent: 0 meant the loop was
+  # converging. That reading was wrong twice over: persistent: 0 is structural
+  # against an LLM reviser (adev-plugin-j7pq.1), and adev-plugin-lvcp had already
+  # validated the lower cap at -22% cost with "3rd iteration added no value".
+  # Raising it bought one additional regression and no convergence. Fix the stall
+  # guards before touching the budget again.
+  max_review_retries: 2

@@ -31,13 +31,19 @@ gates:
     name: Test Suite
     kind: deterministic
     tier: fast
-    command: [npm, test]
+    command: ["npm", "test"]
     scope: project
     required: true
     severity: error
     triggers:
       - post-task
       - post-implement
+  - id: quality-gate
+    command: ["npm", "test"]
+    description: Run project test suite
+    severity: error
+    tier: fast
+    source: domain:software
 
   # The integration tier. `npm test` deliberately excludes tests/evals/ —
   # scripts/run-tests.mjs splits them into an opt-in tier — so without this gate
@@ -80,30 +86,40 @@ gates:
   #   triggers:
   #     - post-task
 
-  # - id: e2e-smoke
-  #   name: E2E Smoke Tests
-  #   kind: deterministic
-  #   tier: e2e
-  #   group: smoke                # smoke runs before full
-  #   command: ""                 # e.g., [npm, run, test:e2e:smoke]
-  #   scope: project
-  #   required: true
-  #   severity: error             # default for e2e smoke group
+  # NOTE: the commented `integration-test` scaffold example that used to sit
+  # here was REMOVED. `integration-test` is now a LIVE entry above (the eval-tier
+  # gate), so uncommenting the example would have declared the id twice — a
+  # duplicate whose merge behaviour is silent last-wins. The software domain's
+  # own materialized `integration-test` (a no-op until a `test:integration`
+  # script exists) collided with this same id and was dropped in favor of the
+  # eval-tier gate, which actually runs something. Only add a commented
+  # template for an id that no live entry already declares.
 
 # Lifecycle transition requirements
-transitions: {}
+#
+# Each entry names the gates that must have a FRESH, ATTESTED, PASSING outcome
+# recorded by validate's Check 1 before the transition is allowed. Nothing here
+# executes a gate — `adev gate transitions` reads recorded history only.
+#
+# Only gates carrying a real argv `command` may be named. `lint` and `typecheck`
+# below are commented-out templates with no command, so requiring them would
+# produce a required_gates id no gate declares — the MISSING_GATE_REF finding
+# /adev:hygiene Pass 8 raises. Uncomment the gate first, then add it here.
+transitions:
+  implement-to-validate:
+    required_gates:
+      - test
+    approver_role: ""
+
+  validate-to-merge:
+    required_gates:
+      - test
+    approver_role: ""
+
   # spec-to-plan:
   #   required_gates: []
   #   approver_role: ""
 
-  # implement-to-validate:
-  #   required_gates:
-  #     - test
-  #     - lint
-  #     - typecheck
-  #   approver_role: ""
-
-  # validate-to-merge:
-  #   required_gates:
-  #     - test
-  #   approver_role: ""
+# Stamped by 'adev governance materialize' — write-once. The entries above are
+# the complete effective set; nothing is contributed from anywhere else.
+materialized_at: 2026-08-15T19:35:31.097Z

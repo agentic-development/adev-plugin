@@ -42,6 +42,7 @@ import {
 } from "../../../lib/profiles/index.mjs";
 import * as claudeCode from "../../../lib/profiles/adapters/claude-code.mjs";
 import { loadReviewConfig, shouldDispatch, applySeverityCap, computeVerdict } from "../../../lib/governance/review-config.mjs";
+import { stampMarker } from "../../../lib/governance/registry-marker.mjs";
 import { loadValidateConfig, shouldSkipDueToFailFast } from "../../../lib/governance/validate-config.mjs";
 import { runQualityGate } from "../../../lib/governance/quality-gate.mjs";
 import { renderPack } from "../../../lib/governance/context-pack.mjs";
@@ -67,7 +68,13 @@ function hasCode(issues, code) {
 function useNegativeReviewConfig(repo, variant) {
   const src = join(repo, ".context-index", "negative", `${variant}.yaml`);
   const dest = join(repo, ".context-index", "governance", "review.yaml");
-  cpSync(src, dest);
+  // Fixture maintenance (Task 10): review.yaml is a MARKED registry, so
+  // `loadReviewConfig` fails closed before it can reach the validation each
+  // negative variant is written to trip. Stamping on the way in restores the
+  // ONLY thing these tests are about — the rejection code. Nothing is relaxed:
+  // an unmarked file still raises, as its own test in
+  // tests/governance/registry-marker.test.mjs asserts.
+  writeFileSync(dest, stampMarker(readFileSync(src, "utf8"), "2026-08-15T00:00:00Z"));
 }
 
 function useNegativeValidateConfig(repo, variant) {
@@ -154,36 +161,63 @@ describe("/adev:review-specs install + run", () => {
   });
   after(() => rmSync(repo, { recursive: true, force: true }));
 
-  it("zero-config load (no project overlay) returns the three bundled reviewers", () => {
+  // INVERTED by explicit-governance-registries Task 11. This case used to assert
+  // that a project with NO `governance/review.yaml` still ran the three bundled
+  // reviewers, merged in at run time behind its back. That composition is gone:
+  // the project file is the whole reviewer set, so a project that declares none
+  // runs none. The old expectation is now the defect the spec exists to remove —
+  // a reviewer dispatching without a row in the file that is supposed to declare
+  // it — so the assertion is flipped rather than relaxed.
+  it("zero-config load (no project review.yaml) runs NO reviewers", () => {
     const clean = mkdtempSync(join(tmpdir(), "adev-cg-zc-"));
     try {
       // Only the context-index scaffold — no governance/review.yaml.
-      cpSync(join(repo, ".context-index", "constitution.md"), join(clean, ".context-index", "constitution.md"), { recursive: false, force: true });
       execSync(`mkdir -p ${clean}/.context-index`);
       writeFileSync(join(clean, ".context-index", "constitution.md"), "# stub");
       writeFileSync(join(clean, ".context-index", "manifest.yaml"), "project: zc");
       const r = loadReviewConfig(clean);
       assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-      const ids = r.reviewers.map((x) => x.id).sort();
-      assert.deepEqual(ids, ["consistency-analyzer", "security-reviewer", "structural-architect"]);
+      assert.deepEqual(r.reviewers.map((x) => x.id), []);
     } finally {
       rmSync(clean, { recursive: true, force: true });
     }
   });
 
-  it("project overlay disables consistency-analyzer and caps security-reviewer severity", () => {
+  // Also adjusted for the single-source model. `consistency-analyzer` is no
+  // longer DROPPED when switched off — Invariant 5 keeps a disabled row visible
+  // with its reason, so a reviewer the project deliberately turned off reads
+  // differently from one it never declared. And `BUNDLED_DEFAULT_OVERRIDE` can
+  // no longer be raised: there is nothing to override, because the file's rows
+  // are whole reviewers rather than patches over a bundled default.
+  it("the project registry disables consistency-analyzer and caps security-reviewer severity", () => {
     const r = loadReviewConfig(repo);
     assert.equal(r.errors.length, 0, JSON.stringify(r.errors, null, 2));
-    const ids = r.reviewers.map((x) => x.id);
-    assert.ok(!ids.includes("consistency-analyzer"), "disabled reviewer leaked into registry");
+    const off = r.reviewers.find((x) => x.id === "consistency-analyzer");
+    assert.ok(off, "a disabled reviewer must stay visible (Invariant 5)");
+    assert.equal(off.enabled, false);
+    assert.equal(typeof off.disabled_reason, "string");
+    assert.equal(
+      shouldDispatch(off, { targetSpecPath: "specs/features/billing/x.md", specContent: "" }).dispatch,
+      false,
+      "visible must never mean runnable",
+    );
+    assert.ok(r.disabled.some((x) => x.id === "consistency-analyzer"));
+
     const sec = r.reviewers.find((x) => x.id === "security-reviewer");
     assert.equal(sec.severity_cap, "warning");
-    // Override emits an informational WARN. The code was renamed
-    // BUNDLED_DEFAULT_OVERRIDE -> REVIEWER_OVERRIDE when domain profiles replaced
-    // the bundled reviewer tier (domain-profiles/domain-aware-skill-integration:
-    // "Warning logic for BUNDLED_DEFAULT_OVERRIDE migrates to mergeReviewers()",
-    // review finding SA-2). See tests/governance/review-config.test.mjs.
-    assert.ok(hasCode(r.warnings, "REVIEWER_OVERRIDE"));
+    assert.equal(sec.enabled, true);
+    // The old BUNDLED_DEFAULT_OVERRIDE code is dead: there is no bundled layer
+    // left to override (single-source model). Its successor, REVIEWER_OVERRIDE,
+    // fires only when `collectReviewers` sees the SAME id declared twice within
+    // this project's own review.yaml (lib/governance/review-config.mjs) — a
+    // different mechanism than a project-vs-domain-default collision. This
+    // fixture declares `security-reviewer` exactly once, so no override warning
+    // of either name fires here.
+    assert.equal(
+      hasCode(r.warnings, "REVIEWER_OVERRIDE"),
+      false,
+      "single declaration of security-reviewer must not trip the duplicate-id warning",
+    );
   });
 
   it("project-triggered reviewer dispatches on a matching billing spec path", () => {
@@ -215,11 +249,14 @@ describe("/adev:review-specs install + run", () => {
     assert.equal(computeVerdict([{ severity: "blocker" }], r.verdictRules), "BLOCK");
   });
 
-  it("context pack renders billing charter verbatim with a per-file header", () => {
+  it("context pack renders billing charter verbatim inside a nonce fence", () => {
     const r = loadReviewConfig(repo);
     const render = renderPack("base", r.contextPacks, { repoRoot: repo });
     assert.equal(render.errors.length, 0, JSON.stringify(render.errors, null, 2));
-    assert.match(render.rendered, /=== .*charter\.md ===/);
+    assert.match(
+      render.rendered,
+      new RegExp(`<<<ADEV-PACK-${render.nonce} path="[^"]*charter\\.md">>>`)
+    );
     assert.match(render.rendered, /Billing Feature Charter/);
   });
 });

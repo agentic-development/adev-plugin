@@ -60,7 +60,7 @@ test('schema entries always include the two universal required fields (event + t
 });
 
 test('reviewer_report requires step, reviewer, verdict, severity', () => {
-  // Cross-checked against reportReviewer at lib/lifecycle-state.mjs:434-441.
+  // Cross-checked against reportReviewer in lib/lifecycle-state.mjs.
   const required = REQUIRED_FIELDS_BY_EVENT.reviewer_report;
   for (const field of ['step', 'reviewer', 'verdict', 'severity']) {
     assert.ok(required.includes(field), `reviewer_report missing required field "${field}"`);
@@ -68,7 +68,7 @@ test('reviewer_report requires step, reviewer, verdict, severity', () => {
 });
 
 test('validator_report requires step, validator, verdict, severity', () => {
-  // Cross-checked against reportValidator at lib/lifecycle-state.mjs:473-484.
+  // Cross-checked against reportValidator in lib/lifecycle-state.mjs.
   const required = REQUIRED_FIELDS_BY_EVENT.validator_report;
   for (const field of ['step', 'validator', 'verdict', 'severity']) {
     assert.ok(required.includes(field), `validator_report missing required field "${field}"`);
@@ -76,7 +76,7 @@ test('validator_report requires step, validator, verdict, severity', () => {
 });
 
 test('lifecycle_step requires step (the step-started discriminator)', () => {
-  // Cross-checked against reportStep at lib/lifecycle-state.mjs:514-519 where
+  // Cross-checked against reportStep in lib/lifecycle-state.mjs where
   // status === "started" writes { event: "lifecycle_step", step, status: "started" }.
   const required = REQUIRED_FIELDS_BY_EVENT.lifecycle_step;
   assert.ok(required.includes('step'), 'lifecycle_step missing required field "step"');
@@ -92,7 +92,7 @@ test('step_completed and step_failed require step', () => {
 });
 
 test('plan_task requires plan, task_id, status', () => {
-  // Cross-checked against reportPlanTask at lib/lifecycle-state.mjs:543-549.
+  // Cross-checked against reportPlanTask in lib/lifecycle-state.mjs.
   const required = REQUIRED_FIELDS_BY_EVENT.plan_task;
   for (const field of ['plan', 'task_id', 'status']) {
     assert.ok(required.includes(field), `plan_task missing required field "${field}"`);
@@ -100,7 +100,7 @@ test('plan_task requires plan, task_id, status', () => {
 });
 
 test('debug_intervention requires kind, note', () => {
-  // Cross-checked against reportIntervention at lib/lifecycle-state.mjs:567-571.
+  // Cross-checked against reportIntervention in lib/lifecycle-state.mjs.
   const required = REQUIRED_FIELDS_BY_EVENT.debug_intervention;
   for (const field of ['kind', 'note']) {
     assert.ok(required.includes(field), `debug_intervention missing required field "${field}"`);

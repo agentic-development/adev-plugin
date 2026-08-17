@@ -90,11 +90,20 @@ checks:
 });
 
 describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", () => {
-  it("skills/hygiene/SKILL.md declares Audit Pass 19: Validate Config Drift", () => {
+  // The pass was renamed when `explicit-governance-registries.spec.md` widened
+  // its remit from validate.yaml alone to all four governance registries. This
+  // spec's requirement — that validate.yaml drift is audited by Pass 19 — is
+  // unchanged and is asserted on the widened heading plus the registry name.
+  it("skills/hygiene/SKILL.md declares Audit Pass 19 covering validate.yaml drift", () => {
     const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
     assert.ok(
-      content.includes("Audit Pass 19: Validate Config Drift"),
-      "hygiene SKILL.md must declare the new audit pass"
+      content.includes("Audit Pass 19: Governance Registry Drift"),
+      "hygiene SKILL.md must declare the audit pass"
+    );
+    const passIdx = content.indexOf("Audit Pass 19");
+    assert.ok(
+      content.slice(passIdx, passIdx + 4000).includes("`validate.yaml`"),
+      "Audit Pass 19 must still name validate.yaml in its remit"
     );
   });
 

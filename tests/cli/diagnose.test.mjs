@@ -21,6 +21,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { performance } from "node:perf_hooks";
 
+import { stampMarker } from "../../lib/governance/registry-marker.mjs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname, "..", "..");
@@ -49,9 +51,16 @@ function makeTempProject({ withRegistry = true } = {}) {
     'project:\n  name: t\n  adev_version: "0.22.0"\n',
   );
   if (withRegistry) {
+    // Fixture maintenance (Task 10): `diagnostics.yaml` is a MARKED registry,
+    // so the loader now fails closed without a `materialized_at` marker. This
+    // fixture is seeded already-materialized — the state `adev governance
+    // materialize` leaves behind — because these tests are about diagnose's
+    // filters, output and exit codes, not about materialization. The
+    // `withRegistry: false` path still omits the file entirely, and absence
+    // remains its own (unguarded) state.
     writeFileSync(
       join(dir, ".context-index", "governance", "diagnostics.yaml"),
-      `diagnostics:
+      stampMarker(`diagnostics:
   - id: adev/event-schema-valid
     runner: plugin:tier1/event-schema-valid.mjs
     severity: error
@@ -69,7 +78,7 @@ function makeTempProject({ withRegistry = true } = {}) {
     severity: error
     tier: 1
     scope: event-impact
-`,
+`, "2026-08-15T00:00:00Z"),
     );
   }
   return dir;

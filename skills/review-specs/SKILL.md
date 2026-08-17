@@ -75,17 +75,19 @@ If no specs need review, report that and exit.
 
 ## Step 2: Load Context for Each Spec
 
-For each spec to be reviewed, gather the context package that all reviewers will receive:
+For each spec to be reviewed, gather the context the orchestrator needs. **Not all of it reaches the reviewers.** Items 1-7 are delivered to a reviewer only insofar as that reviewer's context pack includes them (see Step 4 — packs are per-reviewer, so a category listed here may reach one reviewer and not another). Items 8 and 9 are orchestrator-only and are never forwarded to a reviewer subagent.
 
-1. **The spec itself:** Read the full Live Spec file.
-2. **Parent charter:** Read `.context-index/specs/features/<module>/charter.md` (the charter that owns this spec).
-3. **Constitution:** Read `.context-index/constitution.md`.
-4. **Sibling specs:** Read other specs under the same charter (for cross-reference checks).
-5. **Cross-cutting specs:** Read all files in `.context-index/specs/cross-cutting/` (for contract compatibility).
-6. **ADRs:** Read all files in `.context-index/adrs/` (for decision compliance).
-7. **Platform context:** Read `.context-index/platform-context.yaml` (for technology constraints).
-8. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts that specs must comply with.
-9. **Governance policies:** If `.context-index/governance/risk-policies.yaml` exists, read it.
+1. **The spec itself:** Read the full Live Spec file. *Delivered to every reviewer — appended as the fenced target spec, not as a pack include (see Step 4).*
+2. **Parent charter:** Read `.context-index/specs/features/<module>/charter.md` (the charter that owns this spec). *Delivered via the reviewer's context pack (see Step 4) — in `review-base`, so all three bundled reviewers get it.*
+3. **Constitution:** Read `.context-index/constitution.md`. *Delivered via the reviewer's context pack (see Step 4) — in `base`.*
+4. **Sibling specs:** Read other specs under the same charter (for cross-reference checks). *Delivered via the reviewer's context pack (see Step 4) — in `review-base`, with the target spec itself excluded.*
+5. **Cross-cutting specs:** Read all files in `.context-index/specs/cross-cutting/` (for contract compatibility). *Delivered via the reviewer's context pack (see Step 4) — in `consistency` only, so the Consistency Analyzer gets these and the other two bundled reviewers do not.*
+6. **ADRs:** Read all files in `.context-index/adrs/` (for decision compliance). *Delivered via the reviewer's context pack (see Step 4) — in `architecture` and `security`, not in `consistency`.*
+7. **Platform context:** Read `.context-index/platform-context.yaml` (for technology constraints). *Delivered via the reviewer's context pack (see Step 4) — in `base`.*
+8. **External references:** If `.context-index/references/` exists and has files, read `.context-index/references/**/*.md`. Note external reference charters and contracts that specs must comply with. *Orchestrator-only — not passed to reviewers.* No bundled pack includes `.context-index/references/`, so reviewer prompts must not promise them as input. The Consistency Analyzer's "External Reference Compliance" review scope stays conditional (*"If external references are provided"*) precisely because the default packs do not provide them; a project that wants that scope active must add the include to a project-level pack in `.context-index/governance/review.yaml`.
+9. **Governance policies:** *Orchestrator-only — not passed to reviewers.* The reads below drive the orchestrator's own risk gating and report footer, and their results are not forwarded to any reviewer subagent. Note the distinction: the `security` pack separately enumerates `.context-index/governance/risk-policies.yaml` and `.context-index/governance/gates.yaml` as **content** for the Security Reviewer to read as material — that is the pack delivering the files, not this step forwarding its decisions.
+
+   If `.context-index/governance/risk-policies.yaml` exists, read it.
    Check the spec's `risk_level` frontmatter field (default: "medium"). If the policy allows
    skipping review for this level (`require_review: false`), inform the user and offer to skip.
    If skipped, write a `.review.md` with verdict PASS and note "Review skipped per risk policy."
@@ -151,7 +153,15 @@ When reviewing in bulk, resolve the tier per spec. Record the resolved tier in t
 
 ## Step 3: Load Reviewer Registry
 
-**Domain-Aware Reviewer Loading:** Resolve the active domain and load domain-aware reviewers before calling `loadReviewConfig` via the CLI:
+**The dispatching set.** Run this FIRST — its output is the reviewer set you dispatch:
+
+```bash
+adev governance reviewers --json
+```
+
+The envelope is `{ reviewers, disabled, context_packs, verdict_rules, warnings, errors, notes }`. Abort on any `errors` entry; surface `warnings` and `notes` in the report header. This verb wraps `loadReviewConfig` (`lib/governance/review-config.mjs`), which reads the project's MATERIALIZED `.context-index/governance/review.yaml` and **nothing else**, and fails closed with `REGISTRY_NOT_MATERIALIZED` when the file exists without its marker.
+
+**Comparison view (optional).** To see what the active domain WOULD contribute, so the report can name reviewers the project has not adopted:
 
 ```bash
 adev domain load-reviewers --module <module-slug> [--charter <charter-path>]
@@ -165,15 +175,15 @@ The verb resolves the active domain (charter frontmatter → manifest.modules[].
 
 Log any warnings from the `warnings` field.
 
-Call `loadReviewConfig(repoRoot, { domainReviewers: <reviewers-from-cli-output> })` from `lib/governance/review-config.mjs`. When `domainReviewers` is provided, the loader uses domain reviewers as the base instead of bundled defaults. The loader:
+`adev domain load-reviewers` is a COMPARISON VIEW ONLY. It merges the domain overlay over the project file, and none of that merge dispatches: the set that runs is the one `adev governance reviewers` printed above. Neither the bundled defaults nor the domain overlay contributes at run time: a domain's reviewers are adopted once, by `adev governance materialize --registry review`, which writes them into the project's own file and stamps its write-once marker. The `adev domain load-reviewers` output above is therefore a comparison view — reviewers it lists that the project file does not declare are NOT dispatched, and hygiene Pass 19 is where that divergence is reported. The loader:
 
-- Reads bundled defaults from `templates/review-specs/defaults.yaml` (the three core reviewers: structural-architect, security-reviewer, consistency-analyzer).
-- Overlays `.context-index/governance/review.yaml` if present. Matching `id` overrides field-by-field; new `id` appends.
+- Fails closed (`REGISTRY_NOT_MATERIALIZED`) when `review.yaml` exists without its `materialized_at` marker; a project with no `review.yaml` at all runs no reviewers.
+- Reads `templates/review-specs/defaults.yaml` for `context_packs` and `verdict_rules` only, with the project's values winning field-by-field.
 - Resolves each reviewer's execution profile via `lib/profiles/` and **rejects any reviewer whose profile is not read-only-compatible** (no `filesystem-write`/`shell` categories, no literal tools, fs write/execute must be `deny`, network must be `deny` or `read-only`). A reviewer referencing `implementer` fails load.
 - Validates `prompt` / `package.skill` / `package.adapter` paths: `plugin:<skill>/<file>` scheme resolves inside the plugin `skills/` tree; relative paths resolve under `.context-index/` with traversal guard (`..` rejected, `fs.realpath` used for symlink escape); absolute paths rejected; cross-plugin (`plugin:<other>:...`) deferred to v2.
 - Migrates `manifest.yaml:specialists` in-memory to `dispatch: triggered` reviewer entries and emits a deprecation note (scheduled for removal in 0.19.0).
 
-If `loadReviewConfig` returns any errors, abort with the error list. Warnings are surfaced in the report header.
+If `adev governance reviewers` reported any `errors`, abort with the error list. Warnings are surfaced in the report header.
 
 ## Step 4: Dispatch Reviewers
 
@@ -198,12 +208,16 @@ Launch all dispatched reviewers in parallel. Each runs in a clean context window
 For each subagent-mode reviewer:
 
 1. Call `resolveProfile(reviewer.profile, { profiles, consumerRepoRoot, workspaceRoot, adapter, mcpAvailable })` from `lib/profiles/`.
-2. Render the reviewer's context pack via `renderPack(reviewer.context_pack, contextPacks, { repoRoot })`. The denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) is enforced — matching globs fail load, not WARN.
+2. Render the reviewer's context pack via `renderPack(reviewer.context_pack, contextPacks, { repoRoot, targetSpecPath })`. Every review-time pack is **target-anchored**: the `review-base` pack (which `architecture`, `security`, and `consistency` all extend) uses the `<charter-dir>` and `<target-spec>` tokens, so a render without `targetSpecPath` fails with `CONTEXT_PACK_NO_TARGET` rather than emitting a literal token. The denylist (`.env*`, `*.pem`, `*.key`, `id_*`, `profiles.yaml`, `**/secrets/**`) is enforced — matching globs fail load, not WARN.
 3. Read `reviewer.promptPath` contents.
 4. Dispatch a subagent with:
    - `description`: `"<reviewer.name> review of <spec-slug>"`
-   - `prompt`: `<prompt contents>\n\n---\n<rendered context pack>\n\n---\n## Target Spec\n<target spec contents>`
+   - `prompt`: the provenance preamble, then the prompt body, then the rendered context pack, then the target spec — the pack sections and the target spec each wrapped in a nonce-scoped fence (`<<<ADEV-PACK-<nonce> …>>>`) so the reviewer can tell repository-sourced content from text the artifact under review merely claims is a delimiter. Both use the **same** nonce from the `renderPack` call, and the preamble names that token.
    - Tool restrictions, model, env, redaction set all from the adapter's `prepareForDispatch` return.
+
+   This composition is owned by `buildReviewerDispatches(...)` in `lib/governance/dispatch-shape.mjs` — that function is the single source of truth for prompt assembly, fencing, and preamble text. The description above is reference only; do not hand-assemble the prompt.
+
+**What each reviewer actually receives** is exactly its `context_pack` (Step 3 registry entry) plus the target spec. The nine context categories in Step 2 are *not* uniformly forwarded — see the per-item labels there.
 
 ### Package-mode reviewer (reviewer entry has `package`)
 
@@ -248,6 +262,8 @@ Determine the overall verdict for each spec:
 
 Produce one section per dispatched reviewer, in registry order. For each reviewer record the dispatch mode (`subagent` or `package`), the resolved profile, and the prompt source (`plugin:` URI or repo-relative). For package-mode reviewers also record the skill path and the adapter path.
 
+**Disabled reviewers get a report row, not silence.** `adev governance reviewers` keeps a reviewer declared with `enabled: false` in `reviewers` and also returns it on `disabled`, each entry carrying `disabled_reason`. Emit one `## Disabled Reviewers` table row per entry on that list, naming the reviewer id and its `disabled_reason` — or the literal text `no reason given` when the registry stated none (the loader also raises a `DISABLED_WITHOUT_REASON` warning in that case, which belongs in the report header with the other warnings). Omit the whole section when nothing is disabled. A reviewer that was deliberately switched off must read differently from one the project never declared; dropping it from the report collapses the two.
+
 ```markdown
 # Architecture Review: <spec-slug>
 
@@ -262,6 +278,12 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 |----|------|------|---------|--------------|
 | <reviewer-id> | <reviewer-name> | subagent | <profile-name> | <plugin: URI or repo-relative path> |
 | <package-id>  | <package-name>  | package  | <profile-name> | <skill path> (adapter: <adapter path>) |
+
+## Disabled Reviewers
+
+| ID | Reason |
+|----|--------|
+| <reviewer-id> | <disabled_reason, or "no reason given"> |
 
 ## <Reviewer Name> (<id>)
 

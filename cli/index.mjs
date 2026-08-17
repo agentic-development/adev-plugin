@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, realpathSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, readSync, writeFileSync, cpSync, chmodSync, realpathSync } from "fs";
 import { join, resolve, dirname, relative, isAbsolute } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -45,6 +45,40 @@ async function ask(question) {
       resolve(answer.trim().toLowerCase());
     });
   });
+}
+
+/**
+ * Ask the operator a question and read one line back, SYNCHRONOUSLY.
+ *
+ * `ask()` cannot be used for install consent. `resolveExecConsent`
+ * (lib/extensions/exec-consent.mjs) calls its `promptFn` synchronously, and its
+ * whole contract — only an explicit y/yes grants; an empty answer, EOF, any
+ * other answer, or a throwing prompt all refuse — is pinned by SYNCHRONOUS
+ * tests using `assert.throws`. Making the consent resolution async would turn
+ * every one of those refusals from a throw into a rejection and break the
+ * module that owns the fail-closed guarantee. So the prompt is made
+ * synchronous rather than the consent made asynchronous.
+ *
+ * Read one byte at a time so the read stops at the newline and does not swallow
+ * input belonging to whatever runs next. Any read failure (EOF, EAGAIN on a
+ * non-blocking TTY, a closed stdin) propagates to `resolveExecConsent`, which
+ * catches it and refuses — the fail-closed direction.
+ *
+ * @param {string} text - Prompt to display.
+ * @returns {string} The line the operator typed, without its terminator.
+ */
+export function readConsentAnswerSync(text) {
+  process.stdout.write(`${text} `);
+  const byte = Buffer.alloc(1);
+  let answer = "";
+  for (;;) {
+    const bytesRead = readSync(0, byte, 0, 1, null);
+    if (bytesRead === 0) break; // EOF — an empty answer, which refuses.
+    const ch = byte.toString("utf8");
+    if (ch === "\n") break;
+    if (ch !== "\r") answer += ch;
+  }
+  return answer;
 }
 
 function ensureDir(path) {
@@ -751,9 +785,9 @@ async function installProviders(providerNames, { ask: askFn = ask } = {}) {
 
     if (providerName === "claude-code") {
       // Ask BEFORE installing. provider.install() enables the plugin as part of
-      // its work, so calling it first defaulted the scope to "user" and wrote
-      // ~/.claude/settings.json before the user had answered — making the
-      // prompt cosmetic for anyone who chose "project". The codex branch below
+      // its work, so calling it first defaulted the scope to "user" and wrote the
+      // user-level Claude Code settings file before the user had answered — making
+      // the prompt cosmetic for anyone who chose "project". The codex branch below
       // has always had this ordering; this matches it.
       const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
       const targetScope = scope === "project" ? "project" : "user";
@@ -1325,11 +1359,17 @@ async function cmdExtension() {
 
   switch (subcommand) {
     case "install": {
-      const source = process.argv[4];
+      // Minimal flag scan: --allow-exec anywhere, first non-flag token is the source.
+      const args = process.argv.slice(4);
+      const allowExec = args.includes("--allow-exec");
+      const source = args.find((a) => !a.startsWith("--"));
       if (!source) {
         error("Missing source argument.");
-        log("Usage: npx adev-cli extension install <source>");
+        log("Usage: npx adev-cli extension install <source> [--allow-exec]");
         log("  <source> can be a local path, npm package, or git URL.");
+        log("  --allow-exec approves the extension's executable contributions");
+        log("  (gate commands, reviewer skills/adapters) without prompting.");
+        log("  Consent applies to this install only and is never remembered.");
         process.exit(1);
       }
 
@@ -1340,6 +1380,9 @@ async function cmdExtension() {
           pluginRoot: PLUGIN_ROOT,
           sourceUri: source,
           _tmpDir: resolved._tmpDir,
+          allowExec,
+          interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+          promptFn: readConsentAnswerSync,
         });
 
         heading("Extension Installed");
@@ -1834,6 +1877,8 @@ const VERB_REGISTRY = new Map([
                         }, help: () => cmdHelp() })],
   ["help",      () => ({ run: () => cmdHelp(),                   help: () => cmdHelp() })],
   ["gate",            () => import("../lib/cli/gate.mjs")],
+  ["boundaries",      () => import("../lib/cli/boundaries.mjs")],
+  ["governance",      () => import("../lib/cli/governance.mjs")],
   ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
   ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
   ["report",          () => import("../lib/cli/report.mjs")],
@@ -1974,4 +2019,4 @@ if (isDirectRun) {
   await dispatch(process.argv);
 }
 
-export { VERB_REGISTRY, dispatch, printVerbRegistry, stripAnsi };
+export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi };
