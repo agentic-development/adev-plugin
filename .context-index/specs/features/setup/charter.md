@@ -1,7 +1,7 @@
 ---
-status: evolving
+status: approved
 kind: module
-revision: 3
+revision: 4
 updated: 2026-08-17
 ---
 
