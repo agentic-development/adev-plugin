@@ -1,13 +1,3 @@
-# Live Spec: Recover Extraction
-
-<!-- Live Spec within the heuristics charter.
-     Phase 1a: add Step 7 (Extract Heuristic) to /adev:recover SKILL.md,
-     placed after the existing Step 6 (Enrich) which writes the recovery
-     record that this step's evidence[] references.
-     Consumes the lib/heuristics.mjs API defined in store-and-helper.md.
-     Does NOT modify the helper API — only consumes it.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
 status: validated
@@ -27,6 +17,16 @@ source-manifest:
   computed-at: "2026-04-10T00:08:54.070Z"
 drift_detected: true
 ---
+
+# Live Spec: Recover Extraction
+
+<!-- Live Spec within the heuristics charter.
+     Phase 1a: add Step 7 (Extract Heuristic) to /adev:recover SKILL.md,
+     placed after the existing Step 6 (Enrich) which writes the recovery
+     record that this step's evidence[] references.
+     Consumes the lib/heuristics.mjs API defined in store-and-helper.md.
+     Does NOT modify the helper API — only consumes it.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

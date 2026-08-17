@@ -1,5 +1,3 @@
-# Live Spec: Configurable Validate Check Registry
-
 ---
 charter: validation
 status: validated
@@ -28,6 +26,7 @@ superseded-by-behaviors:
 drift_detected: true
 ---
 
+# Live Spec: Configurable Validate Check Registry
 
 > **Partial supersession (2026-05-15):** Behaviors 1, 2, 5 (registry loading & merge, canonical IDs from bundled defaults) and Acceptance Criterion #1 (zero-config behavior parity) are **superseded** by `validate-config-single-source.spec.md`. The configurable-checks `kind` taxonomy, profile-driven dispatch, `kind: deterministic-check` restriction, quality-gate argv form and shell-rejection, prompt URI resolution (Behavior 22), ordering via `after:`, severity semantics, multi-repo dispatch, quality-gate output redaction, and report emission (Behaviors 6-23, 25, 26) **remain in force**.
 

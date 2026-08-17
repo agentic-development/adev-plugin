@@ -1,20 +1,6 @@
-# Live Spec: Core Parser Pipeline
-
-<!-- REVISION HISTORY
-     - rev 1 (2026-03-23): initial draft and implementation contract.
-     - rev 2 (2026-05-17): additive schema evolution from sibling spec
-       `non-code-reference-detection.spec.md`. Adds optional `tags: string[]`
-       to FileNode, adds `"doc-reference"` to the Edge `type` enumeration,
-       adds optional `count: integer` to Edge, adds optional
-       `referenceSources: string[]` to symbol entries. All additions are
-       purely additive; pre-existing artifacts produced under rev 1 remain
-       schema-valid under rev 2. Consumers MUST tolerate unknown edge
-       types and additional FileNode fields per the graceful-degradation
-       contract.
--->
 ---
 charter: tree-sitter-repomap
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 2
@@ -47,6 +33,21 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.771Z"
 drift_detected: true
 ---
+
+# Live Spec: Core Parser Pipeline
+
+<!-- REVISION HISTORY
+     - rev 1 (2026-03-23): initial draft and implementation contract.
+     - rev 2 (2026-05-17): additive schema evolution from sibling spec
+       `non-code-reference-detection.spec.md`. Adds optional `tags: string[]`
+       to FileNode, adds `"doc-reference"` to the Edge `type` enumeration,
+       adds optional `count: integer` to Edge, adds optional
+       `referenceSources: string[]` to symbol entries. All additions are
+       purely additive; pre-existing artifacts produced under rev 1 remain
+       schema-valid under rev 2. Consumers MUST tolerate unknown edge
+       types and additional FileNode fields per the graceful-degradation
+       contract.
+-->
 
 ## Behavioral Contract
 

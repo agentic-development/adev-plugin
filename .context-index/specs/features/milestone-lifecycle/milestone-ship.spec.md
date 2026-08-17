@@ -1,5 +1,3 @@
-# Live Spec: Milestone Ship with Strategy-Based Release Execution
-
 ---
 charter: milestone-lifecycle
 status: validated
@@ -18,6 +16,8 @@ source-manifest:
   computed-at: "2026-05-11T15:53:40.792Z"
 drift_detected: true
 ---
+
+# Live Spec: Milestone Ship with Strategy-Based Release Execution
 
 ## Behavioral Contract
 

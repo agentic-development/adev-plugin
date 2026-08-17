@@ -1,8 +1,6 @@
-# Live Spec: Hygiene Integration
-
 ---
 charter: adev:codehealth
-status: validated
+status: implemented
 risk_level: low
 milestone:
 revision: 1
@@ -17,6 +15,8 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Hygiene Integration
 
 ## Behavioral Contract
 

@@ -1,10 +1,3 @@
-# Refactoring Spec: Template Replacement for Domain Profiles
-
-<!-- Refactoring spec within the domain-profiles charter.
-     Replaces markdown overlay merging with full template replacement so LLM agents
-     reliably use domain-specific section names and vocabulary.
-     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
-
 ---
 charter: domain-profiles
 status: validated
@@ -29,6 +22,13 @@ source-manifest:
   computedAt: "2026-05-11T00:29:38.436Z"
 drift_detected: true
 ---
+
+# Refactoring Spec: Template Replacement for Domain Profiles
+
+<!-- Refactoring spec within the domain-profiles charter.
+     Replaces markdown overlay merging with full template replacement so LLM agents
+     reliably use domain-specific section names and vocabulary.
+     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
 
 ## Current State
 

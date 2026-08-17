@@ -1,6 +1,6 @@
 ---
 charter: design
-status: validated
+status: implemented
 risk_level: low
 milestone:
 revision: 1

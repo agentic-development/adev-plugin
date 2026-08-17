@@ -1,8 +1,6 @@
-# Live Spec: Git Drift Detection
-
 ---
 charter: spec-lifecycle
-status: validated
+status: implemented
 risk_level: high
 milestone:
 revision: 1
@@ -18,6 +16,8 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Git Drift Detection
 
 ## Behavioral Contract
 

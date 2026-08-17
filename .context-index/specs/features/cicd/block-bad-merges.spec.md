@@ -1,12 +1,6 @@
-# Live Spec: Block Bad Merges
-
-<!-- Live Spec within the cicd charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/cicd/charter.md -->
-
 ---
 charter: cicd
-status: validated
+status: implemented
 risk_level: medium
 milestone:
 revision: 2
@@ -22,6 +16,12 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Block Bad Merges
+
+<!-- Live Spec within the cicd charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/cicd/charter.md -->
 
 ## Behavioral Contract
 

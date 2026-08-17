@@ -1,12 +1,6 @@
-# Live Spec: Output JSON
-
-<!-- Live Spec within the adev:assess charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/adev:assess/charter.md -->
-
 ---
 charter: adev:assess
-status: validated
+status: implemented
 risk_level: low
 milestone:
 revision: 1
@@ -20,6 +14,12 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.729Z"
 drift_detected: true
 ---
+
+# Live Spec: Output JSON
+
+<!-- Live Spec within the adev:assess charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/adev:assess/charter.md -->
 
 ## Behavioral Contract
 

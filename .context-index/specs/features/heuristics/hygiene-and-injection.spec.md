@@ -1,13 +1,6 @@
-# Live Spec: Hygiene and Injection
-
-<!-- Live Spec within the heuristics charter.
-     Adds hygiene Pass 16 (index staleness + orphan tags) and widens heuristic
-     injection to debug, brainstorm, specify, review-specs, and validate skills.
-     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
-
 ---
 charter: heuristics
-status: validated
+status: implemented
 risk_level: low
 milestone:
 test_strategy: unit
@@ -27,6 +20,13 @@ source-manifest:
   computed-at: "2026-05-10T23:51:54.631Z"
 drift_detected: true
 ---
+
+# Live Spec: Hygiene and Injection
+
+<!-- Live Spec within the heuristics charter.
+     Adds hygiene Pass 16 (index staleness + orphan tags) and widens heuristic
+     injection to debug, brainstorm, specify, review-specs, and validate skills.
+     Parent Charter: .context-index/specs/features/heuristics/charter.md -->
 
 ## Behavioral Contract
 

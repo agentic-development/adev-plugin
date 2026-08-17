@@ -1,9 +1,3 @@
-# Live Spec: adev:build Orchestrator
-
-<!-- Live Spec within the strategic-planning charter.
-     This defines a specific behavioral contract that drives implementation and testing.
-     Parent Charter: .context-index/specs/features/strategic-planning/charter.md -->
-
 ---
 charter: strategic-planning
 status: implemented
@@ -15,6 +9,12 @@ created: 2026-04-05
 updated: 2026-05-19
 drift_detected: true
 ---
+
+# Live Spec: adev:build Orchestrator
+
+<!-- Live Spec within the strategic-planning charter.
+     This defines a specific behavioral contract that drives implementation and testing.
+     Parent Charter: .context-index/specs/features/strategic-planning/charter.md -->
 
 ## Behavioral Contract
 

@@ -1,5 +1,3 @@
-# Live Spec: Lifecycle Skill Integration
-
 ---
 charter: task-management
 status: validated
@@ -18,6 +16,8 @@ source-manifest:
   computed-at: "2026-04-12T11:48:02.769Z"
 drift_detected: true
 ---
+
+# Live Spec: Lifecycle Skill Integration
 
 ## Behavioral Contract
 

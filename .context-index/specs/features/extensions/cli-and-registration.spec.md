@@ -1,5 +1,3 @@
-# Live Spec: CLI and Registration
-
 ---
 charter: extensions
 status: validated
@@ -19,6 +17,8 @@ source-manifest:
   computed-at: "2026-05-11T16:09:28.533Z"
 drift_detected: true
 ---
+
+# Live Spec: CLI and Registration
 
 ## Behavioral Contract
 

@@ -1,9 +1,3 @@
-# Live Spec: Domain-Aware Skill Integration
-
-<!-- Live Spec within the domain-profiles charter.
-     This defines how lifecycle skills consume domain overlays to adapt their behavior.
-     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
-
 ---
 charter: domain-profiles
 status: validated
@@ -43,6 +37,12 @@ source-manifest:
   computed-at: "2026-05-11T16:09:28.518Z"
 drift_detected: true
 ---
+
+# Live Spec: Domain-Aware Skill Integration
+
+<!-- Live Spec within the domain-profiles charter.
+     This defines how lifecycle skills consume domain overlays to adapt their behavior.
+     Parent Charter: .context-index/specs/features/domain-profiles/charter.md -->
 
 ## Behavioral Contract
 

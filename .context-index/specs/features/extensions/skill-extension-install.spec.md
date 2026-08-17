@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: extensions
 kind: behavioral
@@ -20,6 +18,8 @@ source-manifest:
   computed-at: "2026-05-26T00:52:25.468Z"
 drift_detected: true
 ---
+
+<!-- partial_schema: spec@1 -->
 
 # Live Spec: `provides.skill_extensions` — Domain Extension Skill Injection
 
