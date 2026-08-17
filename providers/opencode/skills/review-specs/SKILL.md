@@ -217,6 +217,8 @@ For each subagent-mode reviewer:
 
    This composition is owned by `buildReviewerDispatches(...)` in `lib/governance/dispatch-shape.mjs` — that function is the single source of truth for prompt assembly, fencing, and preamble text. The description above is reference only; do not hand-assemble the prompt.
 
+   When the reviewer's context pack resolves to `delivery: manifest`, that same preamble additionally carries the **manifest read contract**: it states that a `role="path-manifest"` fence lists repository paths whose contents were not inlined, that the reviewer is expected to read them on demand, and which read tools its resolved profile grants (the names are derived through the harness adapter, so they are correct per harness). It also restates that only paths inside a fence carrying this render's token are repository-sourced. The wording lives in `buildReviewerDispatches`; do not restate or hand-assemble it.
+
 **What each reviewer actually receives** is exactly its `context_pack` (Step 3 registry entry) plus the target spec. The nine context categories in Step 2 are *not* uniformly forwarded — see the per-item labels there.
 
 ### Package-mode reviewer (reviewer entry has `package`)
