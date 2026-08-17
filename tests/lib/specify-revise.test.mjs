@@ -261,3 +261,91 @@ test('reviseSpec rejects path-traversal — INVALID_SPEC_PATH (SEC-1)', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+// ── adev-plugin-akoy.1 regression ─────────────────────────────────────────
+//
+// 129 of this repo's 254 .spec.md files open with an H1 + MULTI-LINE HTML
+// comment before the fence. The frontmatter reader used to break on the
+// comment's continuation lines (non-blank, no leading `#`, no leading `<!--`),
+// so it never found the fence and returned `{}` — reviseSpec then read no
+// `revision:` at all. The fixtures above only cover an H1 + blank line, which
+// is why this went unnoticed.
+//
+// This also guards `rewriteFrontmatter`'s splice: it rebuilds the file as
+// lines[0..openIdx] + newFrontmatter + lines[closeIdx..], so a wrong openIdx
+// silently corrupts or drops the preamble rather than erroring.
+
+function makeBlockedSpecWithCommentPreamble({ revision = 1 } = {}) {
+  const root = mkdtempSync(join(tmpdir(), 'adev-revise-preamble-'));
+  mkdirSync(join(root, '.context-index/specs/cross-cutting'), { recursive: true });
+  mkdirSync(join(root, '.context-index/lifecycle-state'), { recursive: true });
+  writeFileSync(join(root, '.context-index', 'manifest.yaml'),
+    'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
+  const specPath = '.context-index/specs/cross-cutting/sample.spec.md';
+  const preamble = [
+    '# Live Spec: Sample',
+    '',
+    '<!-- REVISION HISTORY',
+    '     - rev 1: initial draft. This continuation line is what broke the old',
+    '       reader: non-blank, no leading hash, no leading comment-open.',
+    '-->',
+  ];
+  const specBody = [
+    ...preamble,
+    '---',
+    `revision: ${revision}`,
+    'created: 2026-05-01',
+    'updated: 2026-05-01',
+    'status: review-blocked',
+    'risk_level: low',
+    '---',
+    '',
+    '## Behavioral Contract',
+    '',
+    'The sample feature does sample things.',
+    '',
+    '## Acceptance Criteria',
+    '',
+    '- [ ] X works',
+    '',
+  ].join('\n');
+  writeFileSync(join(root, specPath), specBody);
+  return { root, specPath, preamble };
+}
+
+test('reviseSpec reads revision from behind a multi-line comment preamble (akoy.1)', () => {
+  const { root, specPath } = makeBlockedSpecWithCommentPreamble({ revision: 3 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'sa:missing-precondition:aaaaaaaa', section_anchor: 'preconditions', prose: 'block 1' },
+    ]);
+    const result = reviseSpec({ specPath, projectRoot: root });
+    assert.equal(result.fromRevision, 3, 'must read revision 3 from behind the comment');
+    assert.equal(result.toRevision, 4);
+    assert.ok(readFileSync(join(root, specPath), 'utf8').includes('revision: 4'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('reviseSpec preserves an H1 + multi-line comment preamble byte-identically (akoy.1)', () => {
+  const { root, specPath, preamble } = makeBlockedSpecWithCommentPreamble({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'sa:missing-precondition:aaaaaaaa', section_anchor: 'preconditions', prose: 'block 1' },
+    ]);
+    reviseSpec({ specPath, projectRoot: root });
+    const rewritten = readFileSync(join(root, specPath), 'utf8');
+    assert.equal(
+      rewritten.split('\n').slice(0, preamble.length).join('\n'),
+      preamble.join('\n'),
+      'the preamble must survive the frontmatter rewrite unchanged',
+    );
+    // And the fence must still sit immediately after it — exactly once.
+    assert.equal(rewritten.split('\n')[preamble.length], '---');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
