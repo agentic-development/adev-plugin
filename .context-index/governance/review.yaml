@@ -31,7 +31,7 @@ reviewers:
     name: Structural Architect
     dispatch: always
     profile: reviewer-reasoning
-    context_pack: base
+    context_pack: architecture
     severity_cap: blocker
     prompt: plugin:review-specs/structural-architect-prompt.md
     source: domain:software
@@ -39,7 +39,7 @@ reviewers:
     name: Security Reviewer
     dispatch: always
     profile: reviewer-capable
-    context_pack: base
+    context_pack: security
     severity_cap: blocker
     prompt: plugin:review-specs/security-reviewer-prompt.md
     source: domain:software
@@ -47,7 +47,7 @@ reviewers:
     name: Consistency Analyzer
     dispatch: always
     profile: reviewer-fast
-    context_pack: base
+    context_pack: consistency
     severity_cap: blocker
     prompt: plugin:review-specs/consistency-analyzer-prompt.md
     source: domain:software
