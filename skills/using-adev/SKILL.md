@@ -1,6 +1,6 @@
 ---
 name: using-adev
-description: "Gateway skill for the Agentic Development Framework. Injected at session start to establish methodology, available skills, and context routing. Use when the user asks 'what skills are available', 'how does adev work', 'what is the adev methodology', 'show me the workflow', or needs an overview of the framework and its lifecycle."
+description: "Gateway skill for the Agentic Development Framework. Injected at session start to establish methodology, available skills, and context routing; also answers on-demand questions during a session. Use when the user asks 'what skills are available', 'how does adev work', 'what is the adev methodology', 'show me the workflow', 'what should I do', 'what should I do next', 'which skill do I need', 'how do I start', 'how does /adev:plan work', or asks how a specific skill or command works."
 ---
 
 # Agentic Development Framework (adev)
@@ -70,6 +70,31 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 | Everything else | `research`, `eval`, `deploy`, `document`, `retro`, `sample`, `learn`, `sync`, `repomap`, `codehealth`, `prototype`, `write-test` |
 
 For full per-skill usage, argument signatures, and worked examples, see [`docs/skill-reference.md`](../../docs/skill-reference.md). For the complete CLI verb surface (including internal verbs like `adev gate`, `adev report`, `adev build-state`, `adev partial`, `adev heuristics`, `adev source-manifest`, `adev domain`, etc. that this gateway does not list), consult [`docs/cli-reference.md`](../../docs/cli-reference.md) or `node cli/index.mjs <verb> --help` for any specific verb. End-user-facing topics — installation, getting-started, governance, hooks, extensions, troubleshooting — are indexed at [`docs/README.md`](../../docs/README.md).
+
+## "What should I do?" Q&A Mode
+
+When a user asks an orientation or lifecycle-choice question (e.g. "what should I do next", "which skill do I need", "how do I start") outside of session-start injection, answer conceptually:
+
+- Explain the relevant lifecycle stage(s) from the tables above — what each stage does and when it applies.
+- **Never perform the routing decision yourself.** Do not tell the user "run `/adev:plan`" as a conclusion — that decision belongs to `/adev:work`.
+- Always end by pointing the user to `/adev:work` for the actual routing decision.
+- This is a chat-only response: no file writes, no lifecycle events.
+
+If the question is ambiguous between this mode and "How does X work?" below, treat it as "How does X work?" only when a specific skill name or command is named in the question; otherwise treat it as this mode.
+
+## "How does X work?" Q&A Mode
+
+When a user asks about a specific skill's behavior (e.g. "how does `/adev:plan` work", "what does `--refactor` do on `specify`"):
+
+- Check `docs/*.md` first — `docs/skill-reference.md` for per-skill usage and arguments, `docs/cli-reference.md` for CLI verbs, or other files indexed at `docs/README.md`.
+- Fall back to reading the actual `skills/<name>/SKILL.md` only when the docs do not cover the needed detail (e.g. exact argument behavior, ask-first prompt wording).
+- This is a chat-only response: no file writes, no lifecycle events.
+
+**Failure modes:**
+
+- **Skill not found** — if the named skill does not exist, report that it was not found and list the closest matching names from the skill tables above ("Start here" / "Lifecycle stages").
+- **Docs insufficient** — if `docs/*.md` doesn't cover the needed detail, fall back to `skills/<name>/SKILL.md` automatically; this needs no user-visible caveat.
+- **Ambiguous question** — if a question could be either "What should I do?" or "How does X work?", answer as "How does X work?" only when a specific skill name or command is named in the question; otherwise answer as "What should I do?" (see above).
 
 ## Lifecycle Gates
 
