@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.28.0-next.2](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.1...adev-cli-v0.28.0-next.2) (2026-08-17)
+
+
+### Features
+
+* **heuristics:** implement failure-capture and signature-retrieval ([315d0a6](https://github.com/agentic-development/adev-plugin/commit/315d0a6adfc1e7f17ea3f784fa430e253144bacc))
+* **review:** add per-pack delivery field defaulting to inline ([9e4a30d](https://github.com/agentic-development/adev-plugin/commit/9e4a30dc3d43356716f73cf279c8b201c7b33a56))
+* **review:** per-pack delivery + path-manifest context packs (inert; does not close j7pq.6) ([88ffed5](https://github.com/agentic-development/adev-plugin/commit/88ffed5d738dec3fbf36cdbbdf13ab026e3d68b9))
+* **review:** reject manifest-pack reviewers whose profile cannot read files ([5204f60](https://github.com/agentic-development/adev-plugin/commit/5204f6031e0aaa1d4338148af39fef417fd8f420))
+* **review:** render path-manifest sections for delivery: manifest packs ([9c24b6e](https://github.com/agentic-development/adev-plugin/commit/9c24b6e5ba04942aeb82777ffcf3b17ef99c703e))
+* **review:** tell manifest-pack reviewers to read path-manifest paths on demand ([e9623fa](https://github.com/agentic-development/adev-plugin/commit/e9623fafd0b0b9cc9846b6e92ce0d1e1a75895fe))
+* **review:** warn TARGET_SPEC_OVERSIZE without truncating the target spec ([519d6ab](https://github.com/agentic-development/adev-plugin/commit/519d6ab992e1f0973ddd66f928d61ed311dbcde8))
+
+
+### Bug Fixes
+
+* **hygiene:** resolve /adev:hygiene findings and the self-chaining hook bug ([a632d18](https://github.com/agentic-development/adev-plugin/commit/a632d18f5ac70d351b31219368d98fbe6e101dad))
+* **hygiene:** resolve /adev:hygiene findings and the self-chaining hook bug ([04f23a7](https://github.com/agentic-development/adev-plugin/commit/04f23a779dae064a92e00168daa47f958eed7d8e))
+* **review:** narrow consistency pack glob to *.spec.md ([3408deb](https://github.com/agentic-development/adev-plugin/commit/3408debb47c7254e8d91b46c4e0ccc83c8668e2a))
+* **review:** neutralize fence tokens in manifest path lines ([806a134](https://github.com/agentic-development/adev-plugin/commit/806a134ab2da6be777206c00bb0069e0e85c1b31))
+* **specify:** open and close specify on an amendment's own log ([6e7f351](https://github.com/agentic-development/adev-plugin/commit/6e7f35178d212a9f8a28c100b8168fb4cc672d47))
+
 ## [0.28.0-next.1](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.9-next.1...adev-cli-v0.28.0-next.1) (2026-08-16)
 
 
