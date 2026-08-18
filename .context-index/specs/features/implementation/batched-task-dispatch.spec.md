@@ -3,26 +3,40 @@
 ---
 charter: implementation
 kind: skill
-status: review-pending
+status: implemented
 risk_level: high
 milestone:
 revision: 1
 charter-revision: 1
 created: 2026-08-17
-updated: 2026-08-17
+updated: 2026-08-18
 research-ref: .context-index/research/tdd-cycle-graduation-design-analysis.md
 depends-on:
   - .context-index/specs/features/implementation/review-provenance.spec.md
 relates-to: .context-index/specs/cross-cutting/incremental-artifact-writes.spec.md
 source-manifest:
+  sha: "8723ea0"
   files:
-    - skills/implement/SKILL.md
-    - skills/implement/batched-mode.md
-    - skills/implement/parallel-mode.md
+    - .context-index/manifest.yaml
+    - docs/cli-reference.md
+    - docs/skill-reference.md
+    - lib/cli/implement.mjs
+    - lib/implement/batch-verify.mjs
     - lib/implement/batching.mjs
     - lib/manifest.mjs
-    - skills/plan/SKILL.md
-drift_detected: true
+    - skills/implement/SKILL.md
+    - skills/implement/batched-mode.md
+    - tests/cli/implement-batches.test.mjs
+    - tests/docs/batched-task-dispatch-docs.test.mjs
+    - tests/evals/batched-task-dispatch/fixture/example.plan.md
+    - tests/evals/batched-task-dispatch/fixture/example.routing.json
+    - tests/evals/batched-task-dispatch/run-ab-eval.mjs
+    - tests/evals/batched-task-dispatch/run-ab-eval.smoke.test.mjs
+    - tests/lib/implement/batch-verify.test.mjs
+    - tests/lib/implement/batching.test.mjs
+    - tests/lib/manifest.test.mjs
+    - tests/skills/implement-batched-mode.test.mjs
+  computed-at: "2026-08-18T22:04:02.308Z"
 ---
 
 # Skill Spec: Batched Task Dispatch

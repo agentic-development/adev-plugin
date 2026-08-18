@@ -31,6 +31,7 @@ source-manifest:
     - tests/skills/implement-review-provenance.test.mjs
     - tests/specs/review-provenance-amendments.test.mjs
   computed-at: "2026-08-18T15:56:53.462Z"
+drift_detected: true
 ---
 
 <!-- partial_schema: implement@1 -->
