@@ -301,6 +301,21 @@ reviewers:
     severity_cap: blocker
 ```
 
+**Add a reviewer with an inline prompt (`prompt_text`).** `prompt` is always resolved as a file reference; a reviewer that wants prose directly in `review.yaml` (common for a domain extension shipping a short, single-purpose reviewer) uses `prompt_text` instead. The two are mutually exclusive — declare exactly one of `prompt`, `prompt_text`, or `package`.
+
+```yaml
+reviewers:
+  - id: data-contract-reviewer
+    name: "Data Contract Reviewer"
+    dispatch: always
+    prompt_text: "Review data contracts for schema completeness and SLA definitions."
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
+```
+
+No path is resolved and no file needs to exist — the string is used verbatim as the reviewer's prompt body. Keep it comma-free if it will ever be *newly written* by `adev governance materialize` (e.g. adopted from a domain extension's `reviewers.yaml`): the write goes through the same scalar-safety pass every extension-contributed governance value gets (`lib/extensions/governance-values.mjs`), which refuses a literal `,` — among other characters that would change meaning on YAML re-read — in any scalar. Once the value is on disk in the project's own `review.yaml`, `loadReviewConfig` reads it as-is and imposes no such restriction.
+
 **Wrap an external skill (package mode).** The runner launches the skill; an adapter subagent extracts findings.
 
 ```yaml
