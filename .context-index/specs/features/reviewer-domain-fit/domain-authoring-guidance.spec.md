@@ -1,6 +1,6 @@
 ---
 charter: reviewer-domain-fit
-status: implemented
+status: validated
 mode: refactor
 kind: refactor
 milestone:
