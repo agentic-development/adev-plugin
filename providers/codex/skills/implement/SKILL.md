@@ -21,11 +21,12 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 
 ## Prerequisites
 
-Before starting, verify all four conditions. If any fails, stop and tell the user what to fix.
+Before starting, verify all five conditions. If any fails, stop and tell the user what to fix.
 
-1. **Plan exists.** The plan file must exist and be readable.
-2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
+1. **No conflicting batch flags.** If both `--no-batch` and `--parallel` were passed to this skill invocation, stop immediately with `CONFLICTING_BATCH_FLAGS` — do not proceed to Step 1, Step 2, or Step 2.5. This check runs here, unconditionally, precisely because it must fire regardless of which of those steps the run would otherwise take: `--parallel` present routes to Step 2.5's group dispatch instead of Step 2's per-task loop, and Step 2's own "Batch resolution" paragraph (where `adev implement batches` is invoked) never executes on that path — so the flag conflict would otherwise go undetected on exactly the run where the operator most needs to hear about it. Report the same message `adev implement batches` itself would give: "`CONFLICTING_BATCH_FLAGS`: `--no-batch` and `--parallel` are mutually exclusive — `--parallel`'s unit of dispatch is already the group. Drop one flag."
+2. **Plan exists.** The plan file must exist and be readable.
+3. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
+4. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
 
    ```bash
    adev gate require --skill implement --spec <spec-path>
@@ -51,7 +52,7 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
    **Already covered — do not double-emit.** Per-task escalations terminate through the Step 2d blocker path (`plan_task` `blocked`): the blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT`, and `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level failed event only when the *whole skill* stops.
 
    **Known gap:** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot ride on the event. Name it in operator-facing output instead.
-4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
+5. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
 

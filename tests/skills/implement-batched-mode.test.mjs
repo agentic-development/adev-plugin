@@ -66,4 +66,21 @@ describe("SKILL.md batched-dispatch wiring", () => {
       assert.match(combined, new RegExp(advisory));
     }
   });
+
+  it("checks the --no-batch/--parallel conflict as an unconditional Prerequisite, not only inside Step 2's batch-resolution paragraph", () => {
+    // Step 2's own "Batch resolution" paragraph (and Step 2.5) are reached
+    // conditionally — Step 2.5 takes over entirely when --parallel routes
+    // there, bypassing Step 2's paragraph where `adev implement batches` is
+    // invoked. If CONFLICTING_BATCH_FLAGS were only checked from inside that
+    // paragraph, a run with both --no-batch and --parallel would never hit
+    // it. The check must therefore also live in Prerequisites, which every
+    // invocation passes through before Step 1/2/2.5 are reached at all.
+    const prereqSection = skillBody.slice(
+      skillBody.indexOf("## Prerequisites"),
+      skillBody.indexOf("## Process"),
+    );
+    assert.ok(prereqSection.length > 0, "Prerequisites section must exist");
+    assert.match(prereqSection, /CONFLICTING_BATCH_FLAGS/);
+    assert.match(prereqSection, /stop immediately/i);
+  });
 });
