@@ -4,7 +4,7 @@ reviewers:
   - id: integration-reviewer
     name: "Integration Reviewer"
     dispatch: always
-    prompt: "Review integration point completeness and recovery action coverage. Verify that every external system touchpoint has defined timeouts, retry policies, and failure handling. Check that compensation logic covers all failure modes."
+    prompt_text: "Review integration point completeness and recovery action coverage. Verify that every external system touchpoint has defined timeouts and retry policies and failure handling. Check that compensation logic covers all failure modes."
     profile: reviewer-capable
     context_pack: base
     severity_cap: blocker
