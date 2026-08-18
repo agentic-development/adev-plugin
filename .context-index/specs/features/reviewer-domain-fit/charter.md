@@ -26,11 +26,12 @@ It covers both ends of the pipeline — the authoring prompts that shape specs a
 reviewer prompts that judge them — because fixing only one leaves half the mismatch in
 place.
 
-It also makes the domain layer **extension-native**: the default `software` domain stops
-being a special bundled case and travels the same path as any third-party domain. This
-is a dogfooding argument as much as an architectural one. Today the extension path is
-exercised by almost nobody, which is why `adev-plugin-xg1f.4` — a first-party extension
-whose reviewers have never once loaded — survived undetected.
+The `software` domain stays bundled exactly as it is today. An earlier draft proposed making it
+an extension for dogfooding reasons — the extension path is exercised by almost nobody, which is
+how `adev-plugin-xg1f.4` (a first-party extension whose reviewers have never once loaded) survived
+undetected. Charter review established that moving it is a separate architectural effort, tracked as
+`adev-plugin-xg1f.5`. This initiative gets the same dogfooding benefit more cheaply by shipping `web-service`
+as a real vendored extension and validating registries at install time.
 
 ## Scope
 
@@ -46,15 +47,22 @@ whose reviewers have never once loaded — survived undetected.
 - Split load-failure semantics: fatal for project-declared reviewers, warn-and-drop for extension-contributed
 - Codebase-shape domain detection at `/adev:init`, proposing with evidence
 - `adev governance adopt` as hygiene Pass 19's apply path
-- Unbundling `software` into a vendored, default-installed extension
 
 ### Out of Scope
 
 - Extension marketplace, registry service, `adev extension search` — deferred, tracked as `adev-plugin-zsmh.3`
 - `extension remove` — `adev-plugin-zsmh.4`
-- Extension-to-extension dependencies — `adev-plugin-zsmh.5`. Phase D does not create one: `software`
-  keeps its `BUNDLED_DOMAIN_NAMES` entry as a presence guarantee, so the only domain any shipped
-  extension extends is guaranteed installed and no dependency graph is required
+- Extension-to-extension dependencies — `adev-plugin-zsmh.5`. Nothing here creates one: `software`
+  stays bundled, so the only domain any shipped extension extends remains present
+- **Unbundling `software` into an extension.** Charter review found six architectural blockers, any
+  one of which would need resolving first: `extends` verifies the bundled DIRECTORY at
+  `lib/domains/domain-config.mjs:222`, not set membership, so `extends: software` breaks whatever
+  `BUNDLED_DOMAIN_NAMES` says; `content-install.mjs:53` is the only name-squatting guard and
+  relaxing it leaves none; `installDomainProfile` writes `extends: ${parent}` unconditionally and
+  cannot express a root domain; the upgrade trigger is unowned; `resolveTemplate` scans
+  `<pluginRoot>/extensions/` while installs write to `<projectRoot>/.context-index/domains/` and the
+  two never meet (tracked separately as `adev-plugin-xg1f.6`); and it contradicts
+  `template-resolution.spec.md` Behaviors 3 and 4. Tracked as `adev-plugin-xg1f.5`
 - Automatic updates or version polling — `adev-plugin-zsmh.6`
 - Fixing `data-engineering`'s own reviewer data — `adev-plugin-xg1f.4`
 - Requiring a network fetch to initialize a project: the `software` domain is vendored
@@ -72,8 +80,8 @@ whose reviewers have never once loaded — survived undetected.
 | `setup` | modifies | `/adev:init` gains codebase-shape domain detection |
 | `design` | modifies | `/adev:specify` sheds hardcoded guidance |
 | `maintenance` | modifies | Pass 19 gains a named apply path |
-| `domain-profiles` | **modifies invariants** | Phase D breaks three stated invariants: that `software` is a real bundled profile, that bundled profiles are immutable, and that the `extends` chain is custom→bundled only |
-| `lifecycle-artifacts` | modifies | Owns `resolveTemplate` (`template-resolution.spec.md`), named directly by a Phase D acceptance criterion |
+| `domain-profiles` | modifies | Adds a `web-service` domain and a `specify-guidance.md` entry to the domain-config set; breaks none of its invariants, since `software` stays bundled |
+| `lifecycle-artifacts` | modifies | Owns the spec templates whose `HTTP Status` column Phase 2 removes; `resolveTemplate`'s fall-through behaviour is unchanged |
 
 ## Current State
 
@@ -143,22 +151,11 @@ says determinism is the missing ingredient.
 ships the OWASP and structural prompts; each domain ships `specify-guidance.md` in the
 **domain-config set** (`DOMAIN_CONFIG_FILENAMES`, installed to `.context-index/domains/<name>/`),
 loaded via `loadDomainConfig` exactly as `reviewers.yaml` and `gates.yaml` are — NOT in the
-`resolveTemplate` discovery root. Phase D unifies the two trees; until it lands, guidance and
-templates deliberately resolve through different roots and the charter states which is which. `/adev:specify` keeps method and
+`resolveTemplate` discovery root. The two trees are NOT unified by this initiative: guidance
+resolves through `loadDomainConfig` and written templates through `resolveTemplate`, and each
+acceptance criterion names which. Unifying them belongs with the deferred unbundling work. `/adev:specify` keeps method and
 sheds examples. Inline prompt bodies let a domain declare a small reviewer without a file
 per reviewer.
-
-**The default domain is an extension.** `software` is vendored and installed by default,
-resolved through the same path as any third-party domain. One resolution path, exercised by
-every install.
-
-**`BUNDLED_DOMAIN_NAMES` narrows from a resolution branch to a presence guarantee.** Today the
-set means two things at once: *loaded from `templates/domains/`* and *guaranteed present, so it is
-a safe `extends` target*. Phase D keeps the second meaning and drops the first. `software` stays
-in the set, so `extends: software` continues to resolve and the one-level extends rule
-(`lib/domains/domain-config.mjs:203`) is unchanged — but it is no longer a separate load path.
-This is what keeps extension-to-extension dependency resolution (`adev-plugin-zsmh.5`) out of
-scope: the only domain anyone extends is guaranteed installed, so no dependency graph is needed.
 
 **Broken extensions cannot take down the gate.** A malformed reviewer in the project's
 own registry stays fatal — the project declared it, and silently reviewing with less is
@@ -210,18 +207,6 @@ loading; split load-failure semantics; install-time registry validation.
 
 **Phase C — `adev governance adopt`.** Pass 19's apply path.
 
-**Phase D — Extension-native software.** Move `software` to a vendored, default-installed
-extension resolved through the standard extension path, while KEEPING its entry in
-`BUNDLED_DOMAIN_NAMES` as a presence guarantee. `extends: software` — declared by both
-`data-engineering` and `process-automation` — keeps working unchanged, and the one-level extends
-rule is untouched.
-
-Sequenced last in this track: it is the largest refactor, it touches `resolveTemplate`'s
-fallback, the domain picker, `adev install` and governance loading, and it benefits from Phases
-A-C having already hardened the extension path it will then depend on. It also unifies the two
-template trees documented in Current State, after which `specify-guidance.md` and the written
-spec templates resolve from one root.
-
 The tracks touch different trees — evidence track in `skills/review-specs/` and
 `templates/domains/`, enablement track in `lib/governance/`, `lib/cli/`, `skills/init/` —
 so they proceed without collision. Phase A ships the `web-service` domain regardless of
@@ -270,26 +255,6 @@ panel.
 - [ ] `adev governance adopt` splices named entries into a materialized registry with a diff and confirmation
 - [ ] The write-once marker is preserved; the operation is idempotent
 - [ ] Pass 19 names the exact adopt command that resolves each divergence
-
-### Phase D — extension-native software
-
-- [ ] `software` REMAINS in `BUNDLED_DOMAIN_NAMES` (`lib/domains/constants.mjs:51`); `extends: software`
-      resolves unchanged for both `data-engineering` and `process-automation`, asserted by a test that
-      loads each extension's domain config after the move
-- [ ] The set's two meanings are separated in code: `lib/domains/domain-config.mjs:203` (the `extends`
-      depth check) keeps consulting it as a PRESENCE guarantee, while `:76` (custom-override) and
-      `lib/extensions/content-install.mjs:53` (refuses to install a bundled-named extension) no longer
-      treat a bundled name as implying a separate resolution path
-- [ ] `adev extension install software` is permitted rather than refused by the `content-install.mjs:53`
-      guard, since the vendored default now travels that path
-- [ ] **Upgrade path:** a project already carrying `domain: software` in `manifest.yaml`, upgraded to a
-      version where `software` is an extension, continues to resolve templates and load governance —
-      asserted by a test that starts from a pre-upgrade fixture, not a fresh init
-- [ ] `adev init` succeeds with no network access
-- [ ] A project with no domain extension installed FAILS template resolution with a diagnostic
-      naming the missing extension — it does NOT warn-and-fall-back to a bundled default. Fail-closed,
-      matching the posture of materialized governance registries
-- [ ] `resolveTemplate`'s `TEMPLATE_NOT_FOUND` names the extension the project is missing
 
 ### Global
 
