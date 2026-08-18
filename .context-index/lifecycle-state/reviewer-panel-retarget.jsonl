@@ -12,3 +12,5 @@
 {"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/reviewer-panel-retarget.plan.md","task_id":"task-5","status":"pending","notes":null,"ts":"2026-08-18T21:31:12.267Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T21:32:11.539Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T21:32:40.519Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-08-18T21:32:49.951Z"}
+{"event":"step_completed","step":"route","ts":"2026-08-18T21:35:16.240Z"}
