@@ -140,6 +140,14 @@ completion:
   # — set true only if you want agents merging their own PRs here.
   allow_agent_pr_merge: false
 
+  # May an agent run whole-tree-destructive git commands (`git reset --hard`,
+  # `git clean -f*`, `git checkout`/`git restore` against the whole tree)?
+  # Read by hooks/destructive-git-guard.sh. These commands have no legitimate
+  # use inside a pipeline subagent step — they can silently destroy
+  # uncommitted lifecycle artifacts (review history, in-progress edits) with
+  # no way to recover them. Left at the default so behaviour is unchanged.
+  allow_destructive_git: false
+
 # ============================================================================
 # Task Management
 # ============================================================================
@@ -184,6 +192,16 @@ test_policy:
 #   advisory — emit console.warn and continue
 # lifecycle:
 #   gate_mode: strict
+
+# Rejects an orphan step_completed/step_failed (no matching "started" event
+# for the same step + revision) instead of silently accepting it. Off by
+# default repo-wide because reportStep also serves as a bare low-level
+# primitive in test fixtures; this project turns it on for real runs since
+# it is the exact gap that let adev-plugin-implement-destructive-checkout-
+# fabricated-proven-2s9i's fabricated `step_completed implement` open the
+# validate gate undetected.
+lifecycle:
+  step_pairing: strict
 
 # Partial-artifact (`.partial` + atomic-rename) knobs — incremental-artifact-writes.spec.md.
 # These knobs govern lifecycle-artifact write-state, which is a lifecycle concern

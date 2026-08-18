@@ -27,6 +27,7 @@ source-manifest:
     - tests/hooks/gaming-gate.test.mjs
     - tests/lib/test-strategies/gaming-gate.test.mjs
   computed-at: "2026-08-13T03:38:13.765Z"
+drift_detected: true
 ---
 
 # Live Spec: Gaming Detector Gate Enforcement

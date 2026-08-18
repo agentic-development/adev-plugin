@@ -47,6 +47,11 @@
         "timeout": 30
       },
       {
+        "command": "./hooks/destructive-git-guard.sh",
+        "failClosed": true,
+        "timeout": 30
+      },
+      {
         "command": "./hooks/lifecycle-gate.sh pre-bash",
         "failClosed": true,
         "timeout": 30
