@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.9,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.2,
+        "novelty": 0.3
+      },
+      "rationale": "Fixture task 1: well-specified, low blast radius, routed auto-agent."
+    },
+    {
+      "task_id": "2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.9,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.2,
+        "novelty": 0.3
+      },
+      "rationale": "Fixture task 2: shares a file with task 1, still auto-agent eligible."
+    },
+    {
+      "task_id": "3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.9,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.2,
+        "novelty": 0.3
+      },
+      "rationale": "Fixture task 3: independent group member, always solo regardless of scores."
+    }
+  ]
+}
