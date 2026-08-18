@@ -1,7 +1,7 @@
 ---
 charter: reviewer-domain-fit
 kind: action
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone:
 revision: 3
