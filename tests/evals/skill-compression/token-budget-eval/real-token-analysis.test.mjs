@@ -16,13 +16,27 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { join, basename } from "node:path";
-import { homedir } from "node:os";
+import { join, basename, dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { resolveSessionDir } from "../../../../lib/session-file-reader.mjs";
 
-const PROJECT_SESSIONS_DIR = join(
-  homedir(),
-  ".claude/projects/-Users-dpavancini-Development-adev-plugin"
-);
+// ─── Opt-in gate (adev-plugin-hl0m) ──────────────────────────────────────────
+//
+// This suite measures REAL token consumption from Claude Code transcripts under
+// ~/.claude/projects/. That data is a property of the developer's machine: it
+// cannot exist on CI or on a clean checkout, so the suite is opt-in.
+//
+// It is opt-in, NOT self-skipping. With ADEV_EVAL_REAL_TOKENS=1 set, missing or
+// unusable transcript data FAILS HARD rather than degrading to a pass — asking
+// for the measurement and silently getting nothing is the failure mode this
+// gate exists to prevent. Without the flag the suite does not run at all.
+const REAL_TOKENS_ENABLED = process.env.ADEV_EVAL_REAL_TOKENS === "1";
+
+// Derived from this file's location, never a hardcoded absolute path, so the
+// suite is correct on any machine and inside a worktree. resolveSessionDir
+// handles both Claude Code cwd encodings (see adev-plugin-882a.1).
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
+const PROJECT_SESSIONS_DIR = resolveSessionDir(REPO_ROOT);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -83,8 +97,18 @@ function computeCost(stats) {
 }
 
 function analyzeFullSession(sessionId) {
+  // Fail loudly rather than returning null into a property access — an opted-in
+  // measurement run with no data is a hard failure, not a silent zero.
+  if (!sessionId) {
+    throw new Error(
+      `No usable Claude Code transcript found under ${PROJECT_SESSIONS_DIR}. ` +
+        "ADEV_EVAL_REAL_TOKENS=1 requires real local session data."
+    );
+  }
   const mainFile = join(PROJECT_SESSIONS_DIR, `${sessionId}.jsonl`);
-  if (!existsSync(mainFile)) return null;
+  if (!existsSync(mainFile)) {
+    throw new Error(`Session transcript disappeared mid-run: ${mainFile}`);
+  }
 
   const mainTurns = parseSessionTokens(mainFile);
   const mainStats = aggregateTurns(mainTurns);
@@ -105,7 +129,12 @@ function analyzeFullSession(sessionId) {
             meta.description || meta.prompt?.substring(0, 60) || "unknown";
         } catch {}
       }
-      subagents.push({ id: f.replace(".jsonl", ""), description, ...subStats });
+      subagents.push({
+        id: f.replace(".jsonl", ""),
+        description,
+        turnDetail: subTurns,
+        ...subStats,
+      });
     }
   }
 
@@ -130,10 +159,66 @@ function analyzeFullSession(sessionId) {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe("Real Token Analysis", () => {
-  const CURRENT_SESSION = "2f030a32-ff9f-44dd-81ec-220595e6a2b7";
+/**
+ * Discover the most recent local session that actually carries token data.
+ *
+ * Replaces a hardcoded session UUID, which went stale as soon as that
+ * transcript was rotated away — the suite then failed on the author's own
+ * machine, not just on CI.
+ *
+ * @returns {string | null} Session id, or null when no usable transcript exists.
+ */
+function discoverSession() {
+  if (!existsSync(PROJECT_SESSIONS_DIR)) return null;
+
+  // Rank by turn count, not recency. These tests measure artifact echo and
+  // subagent overhead, so they need a session rich enough to contain both; the
+  // newest transcript is often a short one with neither, which would surface as
+  // a bogus "0% savings" failure rather than as the selection problem it is.
+  // This mirrors the intent of the original hardcoded UUID, which named a large
+  // session — without hardcoding an id that goes stale on rotation.
+  const candidates = readdirSync(PROJECT_SESSIONS_DIR)
+    .filter((f) => f.endsWith(".jsonl"))
+    .map((f) => {
+      const path = join(PROJECT_SESSIONS_DIR, f);
+      const id = basename(f, ".jsonl");
+      const turns = parseSessionTokens(path);
+      const subDir = join(PROJECT_SESSIONS_DIR, id, "subagents");
+      const hasSubagents =
+        existsSync(subDir) &&
+        readdirSync(subDir).some((x) => x.endsWith(".jsonl"));
+      return { id, turns: turns.length, hasSubagents };
+    })
+    .filter((c) => c.turns > 0);
+
+  if (candidates.length === 0) return null;
+
+  // Prefer a subagent-bearing session; fall back to the richest one available.
+  const withSubagents = candidates.filter((c) => c.hasSubagents);
+  const pool = withSubagents.length > 0 ? withSubagents : candidates;
+  pool.sort((a, b) => b.turns - a.turns);
+  return pool[0].id;
+}
+
+describe(
+  "Real Token Analysis",
+  {
+    skip: REAL_TOKENS_ENABLED
+      ? false
+      : "opt-in: set ADEV_EVAL_REAL_TOKENS=1 to measure real local transcripts",
+  },
+  () => {
+    const CURRENT_SESSION = discoverSession();
 
   it("session JSONL files exist and contain token data", () => {
+    assert.ok(
+      existsSync(PROJECT_SESSIONS_DIR),
+      `ADEV_EVAL_REAL_TOKENS=1 was set but no transcripts directory exists at ${PROJECT_SESSIONS_DIR}`
+    );
+    assert.ok(
+      CURRENT_SESSION,
+      `ADEV_EVAL_REAL_TOKENS=1 was set but no transcript in ${PROJECT_SESSIONS_DIR} carries token data`
+    );
     const mainFile = join(PROJECT_SESSIONS_DIR, `${CURRENT_SESSION}.jsonl`);
     assert.ok(existsSync(mainFile), "Session JSONL must exist");
     const turns = parseSessionTokens(mainFile);
@@ -179,7 +264,17 @@ describe("Real Token Analysis", () => {
 
   it("measures artifact echo waste (Strategy 8 — real data)", () => {
     const session = analyzeFullSession(CURRENT_SESSION);
-    const turns = session.mainTurns;
+
+    // Measure across main AND subagent turns. Artifact echo is a property of
+    // whichever context ran the Write, and in a delegating session the
+    // orchestrator writes nothing — every artifact is produced inside a
+    // subagent. Measuring session.mainTurns alone reported 0% savings for a
+    // session with 17 subagents, which is a measurement gap (the scope caveat
+    // recorded on epic adev-plugin-04jr), not evidence the strategy is inert.
+    const turns = [
+      ...session.mainTurns,
+      ...session.subagents.flatMap((a) => a.turnDetail),
+    ];
 
     // Turns with Write tool + >500 output tokens = artifact echo candidates
     const writeTurns = turns.filter((t) => t.hasWrite && t.output > 500);
