@@ -51,11 +51,29 @@ reviewers:
     severity_cap: blocker
     prompt: plugin:review-specs/consistency-analyzer-prompt.md
     source: domain:software
+  - id: referent-integrity
+    name: Referent Integrity
+    dispatch: always
+    profile: reviewer-reasoning
+    context_pack: referent-integrity-pack
+    severity_cap: blocker
+    prompt: prompts/referent-integrity.md
 
 # Context packs — additional files loaded for all reviewers
 # context_packs:
 #   base:
 #     include: []
+
+context_packs:
+  referent-integrity-pack:
+    extends: base
+    include:
+      - glob: "docs/cli-reference.md"
+        title: "CLI Verb Reference"
+      - glob: "docs/skill-reference.md"
+        title: "Skill Reference"
+      - glob: ".context-index/orientation/architecture.md"
+        title: "Architecture Orientation"
 
 # Stamped by 'adev governance materialize' — write-once. The entries above are
 # the complete effective set; nothing is contributed from anywhere else.
