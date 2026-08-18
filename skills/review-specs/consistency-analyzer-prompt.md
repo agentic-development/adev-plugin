@@ -31,7 +31,7 @@ Produce a list of findings. Each finding must include:
 
 - **ID:** Sequential (CON-1, CON-2, ...)
 - **Severity:** `blocker` (contract mismatch that will cause integration failure), `warning` (inconsistency that will cause confusion), or `suggestion` (minor drift worth aligning)
-- **Category:** One of: naming, pattern, contract, domain-model, terminology
+- **Category:** One of: naming, pattern, contract, domain-model, terminology, adr-compliance, module-boundary
 - **This Spec:** What this spec says
 - **Conflicts With:** What the other spec/charter/constitution says (with file reference)
 - **Recommendation:** Which side should change, or how to reconcile
@@ -42,7 +42,7 @@ For every BLOCK finding (severity = `blocker`), also emit (reviewer-slug for thi
 `consistency-analyzer`):
 
 - **`section_anchor`:** the spec-section anchor the finding implicates (e.g., `preconditions`, `behaviors-3`, `error-cases`). Drives byte-identical preservation of unaffected sections in `/adev:specify --revise`.
-- **`finding-type`:** a stable kebab-case category aligned with the **Category** field above (e.g., `naming`, `pattern`, `contract`, `domain-model`, `terminology`, `adr-conflict`, `module-boundary-violation`).
+- **`finding-type`:** a stable kebab-case category aligned with the **Category** field above (e.g., `naming`, `pattern`, `contract`, `domain-model`, `terminology`, `adr-compliance`, `module-boundary`).
 
 **Do not emit a `blocker_id` field.** See the note below on why, and what to do instead.
 

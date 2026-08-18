@@ -100,7 +100,7 @@ Keep your response under 1,500 tokens. Focus on findings, not restating the inpu
 ## On `blocker_id`
 
 Some other reviewer prompts in this pipeline (`structural-architect-prompt.md`,
-`security-reviewer-prompt.md`, `consistency-analyzer-prompt.md`) instruct their model to mint a
+`security-reviewer-prompt.md`) instruct their model to mint a
 `blocker_id` by hashing `<section-anchor>:<truncated-finding-text>` with a cryptographic digest
 function and taking the first 8 hex characters of the result. **You must not do this, and you must
 not approximate it by typing out something that looks like a digest.**
