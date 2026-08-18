@@ -4,7 +4,7 @@ kind: action
 status: review-pending
 risk_level: medium
 milestone:
-revision: 2
+revision: 3
 charter-revision: 2
 created: 2026-08-18
 updated: 2026-08-18
@@ -42,7 +42,10 @@ tracker-ref: adev-plugin-j7pq.5
 4. **The threshold is evaluated against a denominator fixed before scoring, subject to a floor.**
    The bar is 3 of 5. If fewer than five ids map to a reviewable artifact, the denominator is the
    number that mapped and the bar is `ceil(0.6 × denominator)`, recorded explicitly before any run
-   is scored. **Below a denominator of 3 the experiment is INCONCLUSIVE** — it neither unblocks nor
+   is scored. A run that stays VOID after retry does not re-open the denominator — it reduces the
+   count of SCORABLE runs, and the bar is re-evaluated against scorable runs only in the direction of
+   caution: if scorable runs fall below 3 the result is INCONCLUSIVE, never a miss.
+   **Below a denominator of 3 the experiment is INCONCLUSIVE** — it neither unblocks nor
    stops Phase 2, and the finding says so. Without that floor a single mapped id yields a bar of 1,
    so the gate could be "met" on one run; and because Step 1's `UNMAPPED` classification is what
    sets the denominator, the weakening would happen upstream of the fix-the-denominator guard rather
@@ -90,11 +93,23 @@ Add one entry — `id: referent-integrity`, `dispatch: always`, `profile: review
 **`context_pack: referent-integrity-pack`** — plus that pack's body, declared under the
 `context_packs:` map in the same `review.yaml`.
 
-Naming the pack is not optional bookkeeping. An entry that omits `context_pack` silently inherits
-`base`, whose globs resolve only under `.context-index/` — and context reachability is the exact
-hypothesis this experiment falsifies, so an accidental fall-through would confound the result.
-An entry naming a pack absent from `context_packs:` produces a load error instead, which aborts the
-whole panel.
+Naming the pack is not optional bookkeeping, and **an empty `errors` array does not prove the pack
+resolved.** `loadReviewConfig` explicitly `continue`s past a pack that fails to resolve
+(`lib/governance/review-config.mjs:196-201` — "its own error already surfaces where the pack is
+rendered"); `UNKNOWN_CONTEXT_PACK` is raised only in `renderPack`
+(`lib/governance/context-pack.mjs:117`), which returns `rendered: ""`. So a typo'd or undeclared
+pack loads cleanly, the reviewer dispatches with NO context, finds nothing, and its report still
+names `referent-integrity`. That is the rev-1 false-negative failure reachable through the check
+added to prevent it.
+
+Verify the pack POSITIVELY, by two checks that do not depend on `errors`:
+
+1. The key named by `context_pack` is literally present under `context_packs:` in the same
+   `review.yaml`.
+2. The rendered pack is non-empty — the dispatch record or preserved `.review.md` shows pack
+   sections under the render nonce.
+
+A run whose pack rendered empty is VOID, exactly like a run that did not dispatch the reviewer.
 The prompt path is relative, so it resolves under `.context-index/` and needs no plugin file.
 
 Confirm with `adev governance reviewers --json`: the entry appears, `errors` is empty. A non-empty
@@ -122,7 +137,10 @@ For each row:
    `.context-index/prompts/referent-integrity.md` into it, overwriting the historical versions.**
 3. Run `adev governance reviewers --json` inside the worktree and confirm `referent-integrity`
    appears with an empty `errors` array. A run that skips this check is void.
-4. Run `/adev:review-specs --spec <path>`.
+4. Run `/adev:review-specs --spec <path> **--tier full**`. The tier pin is mandatory, not
+   stylistic: in `quick` the skill "skip[s] the registry loop below" and dispatches only the bundled
+   synthesized reviewer (`skills/review-specs/SKILL.md` Step 4), so an unpinned run could resolve to
+   a tier in which `referent-integrity` never dispatches at all.
 5. Confirm the resulting `.review.md` names `referent-integrity` among its dispatched reviewers
    before scoring it. A `.review.md` that does not is a void run, not a miss.
 
@@ -160,7 +178,9 @@ three qualifications.
   second set rather than replacing the first. Scoring must therefore read the preserved `.review.md`
   copies, not the projection, which would blend runs.
 - **Step 3 is additive and re-runnable.** Re-declaring an existing `id` in `review.yaml` is an
-  edit, not a duplicate; `mergeReviewers` is keyed on `id`.
+  edit, not a duplicate — the project file IS the whole effective reviewer set
+  (`lib/governance/review-config.mjs:107-115`). `mergeReviewers` is NOT on this path; it runs only
+  inside `adev governance materialize`.
 
 Steps 1, 2, 5 and 6 are pure authoring and may be repeated freely.
 
@@ -196,8 +216,13 @@ discarded with it; nothing on the working branch requires cleanup.
 
 - [ ] `adev governance reviewers --json` lists `referent-integrity` with an empty `errors` array,
       and the three bundled reviewers still load alongside it
-- [ ] The `referent-integrity` entry names a `context_pack`, and that pack is declared under
-      `context_packs:` in the same `review.yaml` — it does NOT fall through to `base`
+- [ ] The `referent-integrity` entry names a `context_pack`, that key is literally present under
+      `context_packs:` in the same `review.yaml`, and the RENDERED pack is non-empty — verified
+      positively, NOT by an empty `errors` array, which does not prove a pack resolved
+- [ ] Every run was dispatched with `--tier full`; a run at any other tier is VOID
+- [ ] A run whose pack rendered empty is recorded VOID, not scored as a miss
+- [ ] Unresolvable VOIDs reduce scorable runs without re-deriving the committed denominator; below
+      3 scorable runs the result is INCONCLUSIVE
 - [ ] Each preserved `.review.md` names `referent-integrity` among its dispatched reviewers; a run
       whose report does not is recorded VOID and rescheduled, never scored as a miss
 - [ ] Each run's worktree carried the CURRENT `review.yaml` and `prompts/referent-integrity.md`,

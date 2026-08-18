@@ -4,3 +4,7 @@
 {"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"1 blocker: Step 4's scratch worktree at a pre-fix commit carries the HISTORICAL review.yaml, so referent-integrity would never dispatch and the gate would self-falsify.","ts":"2026-08-18T14:01:18.258Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-18T14:01:41.157Z"}
 {"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":["quick-synthesized-reviewer:procedure-contradiction:7e350d4b"],"unresolved_blocker_ids":[],"ts":"2026-08-18T14:03:42.122Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T14:04:04.711Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"1 blocker: an empty errors array does not prove the context pack resolved — loadReviewConfig continues past an unresolvable pack, so the safeguard added in rev 2 admits the rev-1 false negative.","ts":"2026-08-18T14:08:17.040Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-18T14:08:17.168Z"}
+{"event":"spec_revised","from_revision":2,"to_revision":3,"addressed_blocker_ids":["quick-synthesized-reviewer:false-safeguard:a8a1f7ad"],"unresolved_blocker_ids":[],"ts":"2026-08-18T14:08:17.227Z"}
