@@ -1,3 +1,12 @@
+import { afterEach, beforeEach, describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { GENERATED_HEADER, escapeField, renderTasksMd, writeTasksMd } from "../../../lib/issues/render-markdown.mjs";
+import { JsonAdapter } from "../../../lib/issues/json-adapter.mjs";
+import { parseTasksMd } from "../../../lib/issues/markdown-parser.mjs";
+import { cleanupTempDir, createTempDir, writeFixture } from "../../helpers.mjs";
+
 /**
  * Tests for lib/issues/render-markdown.mjs (markdown-rendering-layer spec).
  *
@@ -10,19 +19,15 @@
  *   - Task 17: rendered-file-editing-has-no-effect invariant
  */
 
-import { describe, it, beforeEach, afterEach } from "node:test";
-import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, statSync } from "node:fs";
-import { join } from "node:path";
 
-import {
-  renderTasksMd,
-  writeTasksMd,
-  GENERATED_HEADER,
-} from "../../../lib/issues/render-markdown.mjs";
-import { JsonAdapter } from "../../../lib/issues/json-adapter.mjs";
-import { parseTasksMd } from "../../../lib/issues/markdown-parser.mjs";
-import { createTempDir, cleanupTempDir, writeFixture } from "../../helpers.mjs";
+
+
+
+
+
+
+
+
 
 function seedProject(tmp) {
   // Minimal manifest required by JsonAdapter / writeTasksMd.
@@ -394,3 +399,615 @@ describe("writeTasksMd — Task 17 hand-edits have no effect on authoritative st
     assert.ok(!reRendered.includes("HACKED MARKER"), "re-render must overwrite hand-edits");
   });
 });
+
+// ─── merged from tests/lib/issues/render-markdown.atomic.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Atomic-write fault injection tests (Task 16).
+   *
+   * Tests writeTasksMd and CLI status --render under various write-failure
+   * scenarios. Asserts prior content preserved, temp file cleaned up
+   * (best-effort per CON-6), follow-up render succeeds.
+   */
+
+
+
+
+
+
+
+
+
+
+  function seedProject(tmp) {
+    writeFixture(tmp, ".context-index/manifest.yaml", "project:\n  name: atomic-test\n");
+    return tmp;
+  }
+
+  describe("writeTasksMd atomic-write fault injection (Task 16)", () => {
+    let tmp;
+    beforeEach(() => {
+      tmp = seedProject(createTempDir());
+    });
+    afterEach(() => cleanupTempDir(tmp));
+
+    it("preserves prior tasks.md content when rename fails", async () => {
+      const adapter = new JsonAdapter(tmp);
+      await adapter.init();
+      await adapter.create({ title: "Original", type: "task", priority: 2 });
+      await writeTasksMd(tmp);
+      const target = join(tmp, ".context-index", "tasks", "tasks.md");
+      const beforeContent = readFileSync(target, "utf8");
+      assert.ok(beforeContent.includes("Original"), "seed render must include Original");
+
+      // Inject failure: replace the target file with a directory so the next
+      // rename fails. Atomic write must preserve prior state (or rather, the
+      // prior directory remains — but importantly, no partial-write state
+      // and no orphan temp file).
+      const { rmSync } = await import("node:fs");
+      rmSync(target, { recursive: false });
+      mkdirSync(target);
+
+      await assert.rejects(() => writeTasksMd(tmp), (err) => {
+        // Some fs error is rethrown.
+        assert.ok(err instanceof Error, "must throw on rename failure");
+        return true;
+      });
+
+      // Verify no orphan temp files remain (CON-6 best-effort cleanup).
+      const dir = join(tmp, ".context-index", "tasks");
+      const entries = readdirSync(dir);
+      const tmpFiles = entries.filter((n) => n.startsWith("tasks.md.") && n.endsWith(".tmp"));
+      assert.equal(tmpFiles.length, 0, `orphan temp files found: ${tmpFiles.join(", ")}`);
+    });
+
+    it("follow-up render succeeds after the failure scenario is resolved", async () => {
+      const adapter = new JsonAdapter(tmp);
+      await adapter.init();
+      await adapter.create({ title: "Original", type: "task", priority: 2 });
+      await writeTasksMd(tmp);
+
+      // Inject and resolve.
+      const target = join(tmp, ".context-index", "tasks", "tasks.md");
+      const { rmSync } = await import("node:fs");
+      rmSync(target);
+      mkdirSync(target);
+      await assert.rejects(() => writeTasksMd(tmp));
+      rmSync(target, { recursive: true });
+
+      // Now a follow-up render must succeed.
+      await writeTasksMd(tmp);
+      assert.ok(existsSync(target), "follow-up render must produce tasks.md");
+    });
+  });
+}
+
+// ─── merged from tests/lib/issues/render-markdown.escape.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Byte-exact escape contract tests (Task 15).
+   *
+   * Exercises each of the 6 rules from the spec's HTML/Markdown Escaping
+   * Contract independently. Asserts the byte-exact escape output.
+   */
+
+
+
+
+
+
+  describe("escapeField — Rule 1: newline normalization", () => {
+    it("normalizes CRLF → LF in block context", () => {
+      const out = escapeField("a\r\nb", { slot: "block", cap: 0 });
+      assert.equal(out, "a\nb");
+    });
+
+    it("normalizes lone CR → LF in block context", () => {
+      const out = escapeField("a\rb", { slot: "block", cap: 0 });
+      assert.equal(out, "a\nb");
+    });
+  });
+
+  describe("escapeField — Rule 2: slot-context newline collapse", () => {
+    it("inline slot replaces \\n with a single space", () => {
+      const out = escapeField("a\nb\nc", { slot: "inline" });
+      assert.equal(out, "a b c");
+    });
+
+    it("block slot preserves \\n", () => {
+      const out = escapeField("a\nb", { slot: "block" });
+      assert.equal(out, "a\nb");
+    });
+
+    it("inline slot collapses CRLF-normalized sequences too", () => {
+      const out = escapeField("a\r\nb\r\nc", { slot: "inline" });
+      assert.equal(out, "a b c");
+    });
+  });
+
+  describe("escapeField — Rule 3: HTML escape", () => {
+    it("escapes <script>alert('xss')</script> byte-exact", () => {
+      const out = escapeField("<script>alert('xss')</script>", { slot: "inline" });
+      // The output goes through HTML escape (rule 3) then markdown escape (rule 4).
+      // HTML escape: `<` → `&lt;`, `'` → `&#39;`, `>` → `&gt;`.
+      // Markdown escape on the HTML-escaped form: no `&`, `;`, etc. are escaped.
+      // The amp/sl chars in the HTML entities (`&`, `;`) are NOT in the
+      // markdown escape set, so they survive.
+      // `(` and `)` are escaped by markdown structural rule.
+      assert.equal(
+        out,
+        "&lt;script&gt;alert\\(&#39;xss&#39;\\)&lt;/script&gt;",
+      );
+    });
+
+    it("escapes ampersand first to avoid double-escape", () => {
+      const out = escapeField("a&b", { slot: "inline" });
+      assert.equal(out, "a&amp;b");
+    });
+
+    it("escapes double-quote and single-quote", () => {
+      const out = escapeField("\"x\"'y'", { slot: "inline" });
+      assert.equal(out, "&quot;x&quot;&#39;y&#39;");
+    });
+  });
+
+  describe("escapeField — Rule 4: markdown structural escape", () => {
+    it("escapes a pipe inside table cell as \\|", () => {
+      const out = escapeField("a|b", { slot: "inline" });
+      assert.equal(out, "a\\|b");
+    });
+
+    it("escapes backtick as \\`", () => {
+      const out = escapeField("a`b", { slot: "inline" });
+      assert.equal(out, "a\\`b");
+    });
+
+    it("escapes backslash first, then other chars (no double-escape)", () => {
+      // Input: a|b\\c`d  →  rule 4 escapes \, |, ` in that order →
+      //   a\|b\\c\`d (per spec line 174)
+      const out = escapeField("a|b\\c`d", { slot: "inline" });
+      assert.equal(out, "a\\|b\\\\c\\`d");
+    });
+
+    it("escapes * _ [ ] ( ) #", () => {
+      const out = escapeField("*x_y[z](q)#h", { slot: "inline" });
+      assert.equal(out, "\\*x\\_y\\[z\\]\\(q\\)\\#h");
+    });
+
+    it("escapes a leading > with \\>", () => {
+      const out = escapeField("> quote", { slot: "inline" });
+      // HTML escape first: `>` → `&gt;`. After HTML escape, the `>` is gone
+      // and the leading-`>` rule no longer applies (because the string starts
+      // with `&` now). This is the intended outcome: HTML escape suppresses
+      // the block-quote anchor.
+      assert.equal(out, "&gt; quote");
+    });
+
+    it("HTML escape MUST precede markdown escape (rule 3 → rule 4)", () => {
+      // `<` becomes `&lt;` (HTML escape), NOT `\<&lt;`. This is a spec invariant.
+      const out = escapeField("<", { slot: "inline" });
+      assert.equal(out, "&lt;");
+      assert.ok(!out.startsWith("\\<"), "must not double-escape via markdown before HTML");
+    });
+  });
+
+  describe("escapeField — Rule 5: length truncation", () => {
+    it("truncates strings longer than cap with …[truncated]", () => {
+      const cap = 20;
+      const long = "x".repeat(50);
+      const out = escapeField(long, { slot: "inline", cap });
+      assert.equal(out.length, cap);
+      assert.ok(out.endsWith("…[truncated]"), `expected truncated marker, got: ${out}`);
+    });
+
+    it("does NOT truncate strings <= cap", () => {
+      const out = escapeField("short", { slot: "inline", cap: 100 });
+      assert.equal(out, "short");
+    });
+
+    it("is codepoint-counted (Unicode-safe), not byte-counted", () => {
+      // 30 emoji of 4 UTF-16 bytes each — would be 60 codepoints in UTF-16
+      // surrogate counting but 30 codepoints via Array.from. We use
+      // codepoint counting per spec ("codepoint-counted (Unicode-safe)").
+      const cap = 10;
+      const emoji = "🎉".repeat(30); // 30 codepoints
+      const out = escapeField(emoji, { slot: "inline", cap });
+      // Array.from(out).length must be <= cap.
+      assert.ok(
+        Array.from(out).length <= cap,
+        `expected ≤${cap} codepoints, got ${Array.from(out).length}: ${out}`,
+      );
+    });
+
+    it("applies cap on the ESCAPED form so backslash-bomb cannot defeat it", () => {
+      // Many backticks → each becomes \` (2 chars). The cap is applied after
+      // the escape, so an attacker cannot inflate output length past cap.
+      const cap = 20;
+      const out = escapeField("`".repeat(100), { slot: "inline", cap });
+      assert.ok(Array.from(out).length <= cap, `output exceeds cap: ${out}`);
+    });
+  });
+
+  describe("escapeField — Rule 6: null placeholder", () => {
+    it("null renders as em-dash", () => {
+      assert.equal(escapeField(null, { slot: "inline" }), "—");
+    });
+
+    it("undefined renders as em-dash", () => {
+      assert.equal(escapeField(undefined, { slot: "inline" }), "—");
+    });
+
+    it("empty string renders as em-dash", () => {
+      assert.equal(escapeField("", { slot: "inline" }), "—");
+    });
+
+    it("non-empty space-only string does NOT render as em-dash", () => {
+      // A literal space-only string is not equivalent to null per spec.
+      const out = escapeField(" ", { slot: "inline" });
+      assert.equal(out, " ");
+    });
+  });
+
+  describe("escapeField — Combined attacks", () => {
+    it("backtick-bomb cannot escape a fenced code block (rule 4 escapes ```)", () => {
+      const payload = "```\nrm -rf /\n```";
+      // Block slot — preserves \n.
+      const out = escapeField(payload, { slot: "block" });
+      // The triple-backtick must be escaped — each ` → \`.
+      assert.equal(out, "\\`\\`\\`\nrm -rf /\n\\`\\`\\`");
+    });
+
+    it("pipe-injection into table row escapes pipes", () => {
+      const out = escapeField("a | b | c", { slot: "inline" });
+      assert.equal(out, "a \\| b \\| c");
+    });
+
+    it("line-break injection (\\n## Fake Heading) cannot break inline slot", () => {
+      const out = escapeField("legit\n## Fake", { slot: "inline" });
+      // Rule 2 collapses \n → space, then rule 4 escapes #.
+      assert.equal(out, "legit \\#\\# Fake");
+    });
+  });
+}
+
+// ─── merged from tests/lib/issues/render-markdown.roundtrip.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Round-trip property test (Task 13):
+   *
+   *   parseTasksMd(renderTasksMd(board)) ≡ board
+   *
+   * for 50+ canonical board fixtures.
+   *
+   * SA-5 contract: legacy issues with BOTH `planRef` AND `planTask` populated
+   * are explicitly excluded from this property — they render fine, but the
+   * parser already rejects writes at the JsonAdapter layer (CON-3), so the
+   * board never contains them on a normal write path. This test documents
+   * the exclusion.
+   */
+
+
+
+
+
+
+
+  // ── Fixture builders ───────────────────────────────────────────────────────
+
+  function mkIssue(over = {}) {
+    return {
+      id: "issue-1",
+      title: "Default",
+      status: "open",
+      priority: 2,
+      type: "task",
+      epicId: undefined,
+      planRef: undefined,
+      planTask: undefined,
+      spec_ref: undefined,
+      dependencies: [],
+      notes: "",
+      next_action: null,
+      created: "2026-05-01",
+      updated: "2026-05-01",
+      ...over,
+    };
+  }
+
+  function mkEpic(over = {}) {
+    return {
+      id: "epic-1",
+      title: "Default Epic",
+      status: "open",
+      planRef: undefined,
+      milestone: undefined,
+      created: "2026-05-01",
+      updated: "2026-05-01",
+      ...over,
+    };
+  }
+
+  function mkBoard(epics, issues) {
+    return { version: 2, epics, issues };
+  }
+
+  // ── Fixture catalog (50+ shapes) ───────────────────────────────────────────
+
+  const FIXTURES = [];
+
+  // 1-4: empty / minimal shapes
+  FIXTURES.push({ name: "empty board", board: mkBoard([], []) });
+  FIXTURES.push({ name: "one epic, no issues", board: mkBoard([mkEpic()], []) });
+  FIXTURES.push({ name: "one orphan issue", board: mkBoard([], [mkIssue()]) });
+  FIXTURES.push({
+    name: "one epic + one child issue",
+    board: mkBoard([mkEpic()], [mkIssue({ id: "issue-1", epicId: "epic-1" })]),
+  });
+
+  // 5-14: per-status variations
+  for (const status of ["open", "in_progress", "blocked", "closed", "deferred"]) {
+    FIXTURES.push({
+      name: `issue status=${status}`,
+      board: mkBoard([], [mkIssue({ id: `issue-${status}`, status, title: `T-${status}` })]),
+    });
+    FIXTURES.push({
+      name: `epic status=${status}`,
+      board: mkBoard([mkEpic({ id: `epic-${status}`, status, title: `E-${status}` })], []),
+    });
+  }
+
+  // 15-19: per-priority
+  for (const p of [0, 1, 2, 3, 4]) {
+    FIXTURES.push({
+      name: `priority=${p}`,
+      board: mkBoard([], [mkIssue({ id: `issue-p${p}`, priority: p })]),
+    });
+  }
+
+  // 20-24: per-type
+  for (const t of ["task", "bug", "feature", "spike", "research"]) {
+    FIXTURES.push({
+      name: `type=${t}`,
+      board: mkBoard([], [mkIssue({ id: `issue-${t}`, type: t })]),
+    });
+  }
+
+  // 25-30: spec_ref / dependencies / planRef-only / next_action / multi-epic / closed mix
+  FIXTURES.push({
+    name: "issue with spec_ref",
+    board: mkBoard([], [mkIssue({ spec_ref: "specs/feature/x.spec.md" })]),
+  });
+  FIXTURES.push({
+    name: "issue with multi-dep dependencies",
+    board: mkBoard([], [mkIssue({ dependencies: ["issue-9", "issue-10", "issue-11"] })]),
+  });
+  FIXTURES.push({
+    name: "issue with planRef ONLY (no planTask) — SA-5 allowed",
+    board: mkBoard([], [mkIssue({ planRef: "plans/x.md" })]),
+  });
+  FIXTURES.push({
+    name: "issue with next_action",
+    board: mkBoard([], [mkIssue({ next_action: "review with maintainer" })]),
+  });
+  FIXTURES.push({
+    name: "two epics, both open",
+    board: mkBoard([mkEpic({ id: "epic-1" }), mkEpic({ id: "epic-2", title: "Second" })], []),
+  });
+  FIXTURES.push({
+    name: "closed + open mix",
+    board: mkBoard(
+      [],
+      [
+        mkIssue({ id: "issue-1", status: "open" }),
+        mkIssue({ id: "issue-2", status: "closed" }),
+        mkIssue({ id: "issue-3", status: "in_progress" }),
+      ],
+    ),
+  });
+
+  // 31-40: free-text-flavored notes. We intentionally avoid leading/trailing
+  // whitespace because parseTasksMd's `unescapeCell` calls `.trim()`. That
+  // transformation is a parser invariant; the renderer should not be expected
+  // to preserve trailing whitespace through the round-trip.
+  const safeNotes = [
+    "plain text",
+    "long-but-short note",
+    "with numbers 1234567890",
+    "uppercase NOTE",
+    "with hyphens",
+    "n",
+    "single",
+    "noSpecialCharsHere",
+    "ASCII-only here",
+    "no special chars",
+  ];
+  for (const n of safeNotes) {
+    FIXTURES.push({
+      name: `notes "${n.slice(0, 20)}"`,
+      board: mkBoard([], [mkIssue({ id: `issue-n${FIXTURES.length}`, notes: n })]),
+    });
+  }
+
+  // 41-50: epic + milestone + planRef combinations
+  FIXTURES.push({
+    name: "epic with milestone + planRef",
+    board: mkBoard(
+      [mkEpic({ planRef: "plans/x.md", milestone: "0.26.0" })],
+      [mkIssue({ epicId: "epic-1" })],
+    ),
+  });
+  FIXTURES.push({
+    name: "epic with milestone only",
+    board: mkBoard([mkEpic({ milestone: "1.0.0" })], []),
+  });
+  FIXTURES.push({
+    name: "multiple epics with milestones",
+    board: mkBoard(
+      [
+        mkEpic({ id: "epic-1", milestone: "0.26.0" }),
+        mkEpic({ id: "epic-2", milestone: "0.27.0" }),
+        mkEpic({ id: "epic-3", milestone: "0.28.0" }),
+      ],
+      [],
+    ),
+  });
+  FIXTURES.push({
+    name: "epic with no milestone, one child",
+    board: mkBoard([mkEpic({ milestone: undefined })], [mkIssue({ epicId: "epic-1" })]),
+  });
+  FIXTURES.push({
+    name: "orphan + child issues mixed",
+    board: mkBoard(
+      [mkEpic()],
+      [
+        mkIssue({ id: "issue-1", epicId: "epic-1" }),
+        mkIssue({ id: "issue-2" }), // orphan
+        mkIssue({ id: "issue-3", epicId: "epic-1" }),
+      ],
+    ),
+  });
+  FIXTURES.push({
+    name: "issue with all optional fields populated except planTask (legacy excluded)",
+    board: mkBoard(
+      [mkEpic({ planRef: "plans/x.md", milestone: "1.0" })],
+      [
+        mkIssue({
+          title: "Full",
+          status: "in_progress",
+          priority: 1,
+          type: "feature",
+          epicId: "epic-1",
+          planRef: "plans/x.md",
+          spec_ref: "specs/x.spec.md",
+          dependencies: ["issue-9"],
+          notes: "with details",
+          next_action: "review",
+        }),
+      ],
+    ),
+  });
+  FIXTURES.push({
+    name: "many open issues (10)",
+    board: mkBoard(
+      [],
+      Array.from({ length: 10 }, (_, k) =>
+        mkIssue({ id: `issue-${k + 1}`, title: `T${k + 1}` }),
+      ),
+    ),
+  });
+  FIXTURES.push({
+    name: "many closed issues",
+    board: mkBoard(
+      [],
+      Array.from({ length: 5 }, (_, k) =>
+        mkIssue({ id: `issue-c${k}`, status: "closed", title: `Closed-${k}` }),
+      ),
+    ),
+  });
+  FIXTURES.push({
+    name: "epic + 5 children + 2 orphans",
+    board: mkBoard(
+      [mkEpic()],
+      [
+        ...Array.from({ length: 5 }, (_, k) =>
+          mkIssue({ id: `issue-c${k}`, epicId: "epic-1", title: `Child-${k}` }),
+        ),
+        mkIssue({ id: "issue-o1", title: "Orphan 1" }),
+        mkIssue({ id: "issue-o2", title: "Orphan 2" }),
+      ],
+    ),
+  });
+  FIXTURES.push({
+    name: "issue with notes containing markdown but no control chars",
+    board: mkBoard([], [mkIssue({ notes: "a normal note about a feature" })]),
+  });
+
+  // Compare two boards modulo equivalent representations of undefined / "" /
+  // null on optional fields.
+  function eqIssues(a, b, msg) {
+    // Normalize "undefined" / null / "" to a single sentinel for optional fields
+    // so the round-trip is robust to representation variants.
+    const norm = (v) => (v === undefined || v === null || v === "" ? null : v);
+    const fields = [
+      "id",
+      "title",
+      "status",
+      "priority",
+      "type",
+      "epicId",
+      "planRef",
+      "planTask",
+      "spec_ref",
+      "next_action",
+      "created",
+      "updated",
+    ];
+    for (const f of fields) {
+      assert.equal(
+        norm(a[f]),
+        norm(b[f]),
+        `${msg}: field ${f} differs (got ${JSON.stringify(a[f])}, want ${JSON.stringify(b[f])})`,
+      );
+    }
+    // notes — empty/undef both render as em-dash and parser returns "—" in that
+    // slot; we accept that the parser preserves the rendered placeholder.
+    assert.equal(
+      norm(a.notes === "—" ? "" : a.notes),
+      norm(b.notes),
+      `${msg}: notes differs (got ${JSON.stringify(a.notes)}, want ${JSON.stringify(b.notes)})`,
+    );
+    // dependencies array equality
+    const aDeps = Array.isArray(a.dependencies) ? a.dependencies : [];
+    const bDeps = Array.isArray(b.dependencies) ? b.dependencies : [];
+    assert.deepEqual(aDeps, bDeps, `${msg}: dependencies differ`);
+  }
+
+  function eqEpics(a, b, msg) {
+    const norm = (v) => (v === undefined || v === null || v === "" ? null : v);
+    const fields = ["id", "title", "status", "planRef", "milestone", "created", "updated"];
+    for (const f of fields) {
+      assert.equal(
+        norm(a[f]),
+        norm(b[f]),
+        `${msg}: epic.${f} differs`,
+      );
+    }
+  }
+
+  describe("renderTasksMd ⇄ parseTasksMd round-trip property (Task 13)", () => {
+    it(`covers ${FIXTURES.length} canonical board fixtures (>= 50 required)`, () => {
+      assert.ok(FIXTURES.length >= 50, `expected >= 50 fixtures, got ${FIXTURES.length}`);
+    });
+
+    for (const { name, board } of FIXTURES) {
+      it(`round-trips: ${name}`, () => {
+        const rendered = renderTasksMd(board);
+        const parsed = parseTasksMd(rendered);
+        assert.equal(parsed.epics.length, board.epics.length, `${name}: epic count`);
+        assert.equal(parsed.issues.length, board.issues.length, `${name}: issue count`);
+        for (let i = 0; i < board.epics.length; i++) {
+          eqEpics(parsed.epics.find((e) => e.id === board.epics[i].id), board.epics[i], name);
+        }
+        for (let i = 0; i < board.issues.length; i++) {
+          eqIssues(parsed.issues.find((x) => x.id === board.issues[i].id), board.issues[i], name);
+        }
+      });
+    }
+
+    // SA-5: legacy issues with both planRef AND planTask are excluded. Document.
+    it("SA-5 exclusion: legacy planRef+planTask issues are NOT round-trip-tested", () => {
+      // The renderer emits the legacy fields; the parser preserves them. The
+      // JsonAdapter rejects writes that include planTask (board-granularity
+      // invariant). So under normal write paths, no board ever contains a
+      // legacy issue. This test documents the exclusion explicitly.
+      const legacyBoard = mkBoard(
+        [],
+        [mkIssue({ planRef: "plans/x.md", planTask: 3 })],
+      );
+      const rendered = renderTasksMd(legacyBoard);
+      // Rendered output references planTask in the cell, but we don't require
+      // round-trip equality on this field per SA-5.
+      assert.ok(rendered.includes("3"), "legacy planTask number is rendered (read-tolerated)");
+    });
+  });
+}
