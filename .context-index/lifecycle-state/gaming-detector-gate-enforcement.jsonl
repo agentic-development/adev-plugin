@@ -43,3 +43,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"No UI files in diff","ts":"2026-08-13T03:29:18.130Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"sha 34b5815 matches","ts":"2026-08-13T03:29:18.170Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-08-13T03:29:26.386Z"}
+{"event":"code_drift_detected","drift_source":"hooks/hooks.json","drift_at":"2026-08-18T17:50:06.385Z","ts":"2026-08-18T17:50:06.385Z"}
