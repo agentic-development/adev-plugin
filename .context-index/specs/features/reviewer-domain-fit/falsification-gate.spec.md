@@ -24,6 +24,7 @@ source-manifest:
     - .context-index/research/referent-integrity-falsification/zx5.review.md
     - .context-index/specs/features/reviewer-domain-fit/charter.md
   computed-at: "2026-08-18T17:09:30.736Z"
+drift_detected: true
 ---
 
 # Action Spec: Falsification Gate

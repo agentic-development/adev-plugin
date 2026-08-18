@@ -63,3 +63,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-14-gate-executability","severity":"warning","verdict":"PASS","notes":"gate doctor: 0 errors, 4 warnings (runner-unknown x3, ci-gate-not-invoked for integration-test). Pre-existing gate config, unrelated to this change.","ts":"2026-08-18T17:28:13.326Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T17:29:26.029Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T17:31:48.002Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/reviewer-domain-fit/charter.md","drift_at":"2026-08-18T23:04:35.324Z","ts":"2026-08-18T23:04:35.328Z"}
