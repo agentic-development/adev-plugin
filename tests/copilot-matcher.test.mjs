@@ -18,27 +18,23 @@ test("MultiEdit is rewritten as edit, NOT corrupted into Multiedit", () => {
   assert.equal(rewriteMatcher("^MultiEdit$", TOOL_NAMES), "^edit$");
 });
 
-test("MultiEdit and Edit in alternation each map to edit", () => {
+test("MultiEdit and Edit in alternation each map to edit (+5 more contract assertions)", () => {
+  // MultiEdit and Edit in alternation each map to edit
   assert.equal(rewriteMatcher("^(MultiEdit|Edit)$", TOOL_NAMES), "^(edit|edit)$");
-});
 
-test("alternation passthrough — non-identifier characters preserved", () => {
+  // alternation passthrough — non-identifier characters preserved
   assert.equal(rewriteMatcher("^(Bash|Write)$", TOOL_NAMES), "^(bash|create)$");
-});
 
-test("preserves regex metacharacters around tokens", () => {
+  // preserves regex metacharacters around tokens
   assert.equal(rewriteMatcher(".*Read.*", TOOL_NAMES), ".*view.*");
-});
 
-test("handles WebFetch (longer name with same prefix as Web*)", () => {
+  // handles WebFetch (longer name with same prefix as Web*)
   assert.equal(rewriteMatcher("^WebFetch$", TOOL_NAMES), "^web_fetch$");
-});
 
-test("an empty matcher round-trips unchanged", () => {
+  // an empty matcher round-trips unchanged
   assert.equal(rewriteMatcher("", TOOL_NAMES), "");
-});
 
-test("matcher with no identifier tokens passes through unchanged", () => {
+  // matcher with no identifier tokens passes through unchanged
   assert.equal(rewriteMatcher(".*", TOOL_NAMES), ".*");
 });
 

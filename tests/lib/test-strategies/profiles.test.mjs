@@ -35,9 +35,13 @@ describe('UNIT_PROFILE', () => {
     }
   });
 
-  test('gaming_blockers is a non-empty array', () => {
+  test("gaming_blockers is a non-empty array (+1 more contract assertions)", () => {
+    // gaming_blockers is a non-empty array
     assert.ok(Array.isArray(UNIT_PROFILE.gaming_blockers));
     assert.ok(UNIT_PROFILE.gaming_blockers.length > 0);
+
+    // strategy_id is "unit"
+    assert.equal(UNIT_PROFILE.strategy_id, 'unit');
   });
 
   test('permitted_tools is an empty array (tools now come from the domain profile)', () => {
@@ -47,9 +51,6 @@ describe('UNIT_PROFILE', () => {
     assert.equal(UNIT_PROFILE.permitted_tools.length, 0);
   });
 
-  test('strategy_id is "unit"', () => {
-    assert.equal(UNIT_PROFILE.strategy_id, 'unit');
-  });
 
   test('is frozen (immutable)', () => {
     assert.ok(Object.isFrozen(UNIT_PROFILE), 'UNIT_PROFILE should be frozen');
@@ -58,11 +59,11 @@ describe('UNIT_PROFILE', () => {
     }, TypeError);
   });
 
-  test('gaming_blockers array is frozen', () => {
+  test("gaming_blockers array is frozen (+1 more contract assertions)", () => {
+    // gaming_blockers array is frozen
     assert.ok(Object.isFrozen(UNIT_PROFILE.gaming_blockers));
-  });
 
-  test('permitted_tools array is frozen', () => {
+    // permitted_tools array is frozen
     assert.ok(Object.isFrozen(UNIT_PROFILE.permitted_tools));
   });
 });

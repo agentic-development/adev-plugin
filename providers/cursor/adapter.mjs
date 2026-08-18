@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../../lib/provider/json-io.mjs";
+import { installCopyFilter } from "../../lib/provider/ship-filter.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -164,14 +165,7 @@ export const CursorAdapter = {
     // new CursorAdapter does not need that legacy.
     cpSync(PLUGIN_ROOT, cacheDir, {
       recursive: true,
-      filter: (src) => {
-        const basename = src.split("/").pop();
-        return (
-          basename !== ".git" &&
-          basename !== "node_modules" &&
-          basename !== ".DS_Store"
-        );
-      },
+      filter: installCopyFilter(PLUGIN_ROOT),
     });
 
     // Publish sanitized skill directories (Task 3 fills in publishSkillsFromCache).

@@ -12,19 +12,19 @@ const SKILL_PATH = join(PLUGIN_ROOT, 'skills', 'write-test', 'SKILL.md');
 const skill = readFileSync(SKILL_PATH, 'utf8');
 
 describe('write-test SKILL.md — fail hard principle (issue-192)', () => {
-  it('states default behavior is FAILURE not skip', () => {
+  it("states default behavior is FAILURE not skip (+1 more contract assertions)", () => {
+    // states default behavior is FAILURE not skip
     assert.match(
-      skill,
-      /[Dd]efault.*(?:behavior|behaviour).*(?:FAILURE|fail|failing).*not skip/i,
-      'Must state that default when infra is unavailable is failure, not skip'
+    skill,
+    /[Dd]efault.*(?:behavior|behaviour).*(?:FAILURE|fail|failing).*not skip/i,
+    'Must state that default when infra is unavailable is failure, not skip'
     );
-  });
 
-  it('prohibits agent from adding skip guards', () => {
+    // prohibits agent from adding skip guards
     assert.match(
-      skill,
-      /agent must.*NEVER.*skip guard|NEVER add skip guard/i,
-      'Must explicitly prohibit the agent from adding skip guards'
+    skill,
+    /agent must.*NEVER.*skip guard|NEVER add skip guard/i,
+    'Must explicitly prohibit the agent from adding skip guards'
     );
   });
 

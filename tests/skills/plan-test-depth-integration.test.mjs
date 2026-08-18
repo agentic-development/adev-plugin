@@ -4,16 +4,15 @@ import { readFileSync } from "node:fs";
 
 const skill = readFileSync(new URL("../../skills/plan/SKILL.md", import.meta.url), "utf8");
 
-test("plan SKILL.md documents granularity-driven Tests: field emission", () => {
+test("plan SKILL.md documents granularity-driven Tests: field emission (+2 more contract assertions)", () => {
+  // plan SKILL.md documents granularity-driven Tests: field emission
   assert.match(skill, /### Granularity Assignment/);
   assert.match(skill, /resolveGranularity/);
-});
 
-test("plan SKILL.md still mandates a **Files:** block on every emitted task (Behavior 2)", () => {
+  // plan SKILL.md still mandates a **Files:** block on every emitted task (Behavior 2)
   assert.match(skill, /every task .*carries its own \*\*Files:\*\* block/i);
-});
 
-test("plan SKILL.md instructs an 'extend' wording when a suite already covers the behavior", () => {
+  // plan SKILL.md instructs an 'extend' wording when a suite already covers the behavior
   assert.match(skill, /extend/i);
 });
 

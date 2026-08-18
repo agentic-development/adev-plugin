@@ -1,26 +1,30 @@
+import { after, before, describe, it } from "node:test";
+import { strict as assert } from "node:assert";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { cleanupTempDir, createTempDir } from "../helpers.mjs";
+import { _internal, migrateAll, migrateConstitution, migrateExecutionState, migrateLifecycleState, migrateMilestones, migrateTasks } from "../../lib/migrate-state-artifacts.mjs";
+import { JsonAdapter } from "../../lib/issues/json-adapter.mjs";
+import { currentState, readEvents } from "../../lib/lifecycle-state.mjs";
+import { readExecutionState } from "../../lib/execution-state.mjs";
+import { loadMilestones } from "../../lib/milestones.mjs";
+
 /**
  * Per-artifact migration parity tests for lib/migrate-state-artifacts.mjs.
  *
  * Spec: .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md
  */
 
-import { describe, it, before, after } from "node:test";
-import { strict as assert } from "node:assert";
-import { mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { createTempDir, cleanupTempDir } from "../helpers.mjs";
-import {
-  migrateAll,
-  migrateTasks,
-  migrateLifecycleState,
-  migrateExecutionState,
-  migrateMilestones,
-  migrateConstitution,
-} from "../../lib/migrate-state-artifacts.mjs";
-import { JsonAdapter } from "../../lib/issues/json-adapter.mjs";
-import { currentState, readEvents } from "../../lib/lifecycle-state.mjs";
-import { readExecutionState } from "../../lib/execution-state.mjs";
-import { loadMilestones } from "../../lib/milestones.mjs";
+
+
+
+
+
+
+
+
+
+
 
 /* ────────────────────────────────────────────────────────────────────
  * Helpers
@@ -494,3 +498,507 @@ describe("migrateAll: plan-file DO-NOT-EDIT advisory header", () => {
     }
   });
 });
+
+// ─── merged from tests/lib/migrate-state-artifacts.collision.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Collision tests — RENAME_COLLISION + LIFECYCLE_STATE_FILE_EXISTS +
+   * skip-rename recovery flow.
+   *
+   * Spec: .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md
+   */
+
+
+
+
+
+
+
+
+  function makeProject() {
+    const dir = createTempDir();
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      'project:\n  name: "t"\n',
+    );
+    return dir;
+  }
+
+  describe("per-file collision", () => {
+    it("matching slug.jsonl already present → idempotent skip (CON-4)", async () => {
+      // Per spec CON-4: when both legacy <slug>.json and migrated <slug>.jsonl
+      // exist for the same slug, treat the migrated target as authoritative
+      // and skip silently. (LIFECYCLE_STATE_FILE_EXISTS is the OTHER path:
+      // a stray <slug>.jsonl exists for a slug that ISN'T present in the
+      // source dir as well — handled by the orphan check.)
+      const root = makeProject();
+      try {
+        const bsDir = join(root, ".context-index", "build-state");
+        const lsDir = join(root, ".context-index", "lifecycle-state");
+        mkdirSync(bsDir, { recursive: true });
+        writeFileSync(
+          join(bsDir, "foo.json"),
+          JSON.stringify({
+            spec: ".context-index/specs/x/foo.spec.md",
+            status: "in_progress",
+            steps: [{ name: "review", status: "completed", verdict: "PASS" }],
+          }),
+        );
+        mkdirSync(lsDir, { recursive: true });
+        const existingContent = '{"event":"existing","ts":"2026-01-01T00:00:00Z"}\n';
+        writeFileSync(join(lsDir, "foo.jsonl"), existingContent);
+
+        const result = await migrateLifecycleState(root, {});
+        assert.equal(result.action, "skipped");
+        // Verify existing file is unchanged
+        const after = readFileSync(join(lsDir, "foo.jsonl"), "utf8");
+        assert.equal(after, existingContent);
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("BUILD_STATE_ORPHAN surfaces orphan slug", async () => {
+      const root = makeProject();
+      try {
+        const bsDir = join(root, ".context-index", "build-state");
+        const lsDir = join(root, ".context-index", "lifecycle-state");
+        mkdirSync(bsDir, { recursive: true });
+        mkdirSync(lsDir, { recursive: true });
+        // build-state has foo, lifecycle-state has bar — orphan
+        writeFileSync(
+          join(bsDir, "foo.json"),
+          JSON.stringify({ status: "in_progress", steps: [] }),
+        );
+        writeFileSync(join(lsDir, "bar.jsonl"), '{"event":"x","ts":"2026-01-01T00:00:00Z"}\n');
+
+        await assert.rejects(
+          () => migrateLifecycleState(root, {}),
+          (e) => {
+            assert.equal(e.code, "BUILD_STATE_ORPHAN");
+            assert.equal(e.slug, "foo");
+            return true;
+          },
+        );
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+  });
+
+  describe("skip-rename recovery flow", () => {
+    it("migrateLifecycleState with skipRename writes jsonl without touching source dir", async () => {
+      const root = makeProject();
+      try {
+        const bsDir = join(root, ".context-index", "build-state");
+        mkdirSync(bsDir, { recursive: true });
+        writeFileSync(
+          join(bsDir, "foo.json"),
+          JSON.stringify({
+            status: "in_progress",
+            steps: [{ name: "review", status: "completed", verdict: "PASS" }],
+          }),
+        );
+        const result = await migrateLifecycleState(root, { skipRename: true });
+        assert.equal(result.action, "migrated");
+        assert.ok(existsSync(join(root, ".context-index", "lifecycle-state", "foo.jsonl")));
+        // Source still exists
+        assert.ok(existsSync(join(bsDir, "foo.json")));
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+  });
+}
+
+// ─── merged from tests/lib/migrate-state-artifacts.constitution.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Constitution scoped-match tests.
+   *
+   * Spec: .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md
+   */
+
+
+
+
+
+
+
+
+  function makeProject() {
+    const dir = createTempDir();
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      'project:\n  name: "t"\n',
+    );
+    return dir;
+  }
+
+  const TARGET_ROW = "| Build state | `.context-index/build-state/` |";
+  const REPLACEMENT = "| Lifecycle state | `.context-index/lifecycle-state/` |";
+
+  describe("migrateConstitution — scoped match", () => {
+    it("replaces row when present only in active Context Routing table", async () => {
+      const root = makeProject();
+      try {
+        const constitution = `# Constitution\n\n## Context Routing\n\n| K | V |\n|---|---|\n${TARGET_ROW}\n\n## Other section\n\nNothing here.\n`;
+        writeFileSync(join(root, ".context-index", "constitution.md"), constitution);
+        const result = await migrateConstitution(root, {});
+        assert.equal(result.action, "migrated");
+        const updated = readFileSync(
+          join(root, ".context-index", "constitution.md"),
+          "utf8",
+        );
+        assert.ok(updated.includes(REPLACEMENT));
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("CONSTITUTION_AMBIGUOUS_MATCH when target appears twice", async () => {
+      const root = makeProject();
+      try {
+        // Two literal-identical rows: one in active table, one in a quoted ADR section.
+        const constitution = `# Constitution\n\n## Context Routing\n\n| K | V |\n${TARGET_ROW}\n\n## Historical example\n\nIn ADR-N we had:\n\n${TARGET_ROW}\n`;
+        writeFileSync(join(root, ".context-index", "constitution.md"), constitution);
+        await assert.rejects(
+          () => migrateConstitution(root, {}),
+          (e) => {
+            assert.equal(e.code, "CONSTITUTION_AMBIGUOUS_MATCH");
+            assert.ok(Array.isArray(e.occurrenceLines));
+            assert.equal(e.occurrenceLines.length, 2);
+            return true;
+          },
+        );
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("skips when target row is inside a fenced code block only", async () => {
+      const root = makeProject();
+      try {
+        const constitution = `# Constitution\n\n## Context Routing\n\n| K | V |\n|---|---|\n| Some | other |\n\n## Example\n\n\`\`\`markdown\n${TARGET_ROW}\n\`\`\`\n`;
+        writeFileSync(join(root, ".context-index", "constitution.md"), constitution);
+        const result = await migrateConstitution(root, {});
+        assert.equal(result.action, "skipped");
+        const updated = readFileSync(
+          join(root, ".context-index", "constitution.md"),
+          "utf8",
+        );
+        // Target row remains
+        assert.ok(updated.includes(TARGET_ROW));
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("skips with CONSTITUTION_ROW_MISSING advisory when row absent and not migrated", async () => {
+      const root = makeProject();
+      try {
+        const constitution = `# Constitution\n\n## Context Routing\n\n| Some | other |\n`;
+        writeFileSync(join(root, ".context-index", "constitution.md"), constitution);
+        const result = await migrateConstitution(root, {});
+        assert.equal(result.action, "skipped");
+        const adv = result.advisories.find((a) => a.code === "CONSTITUTION_ROW_MISSING");
+        assert.ok(adv);
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+  });
+}
+
+// ─── merged from tests/lib/migrate-state-artifacts.containment.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Path containment, size cap, and slug allowlist tests.
+   *
+   * Spec: .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md
+   */
+
+
+
+
+
+
+
+
+  function makeProject() {
+    const dir = createTempDir();
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      'project:\n  name: "t"\n',
+    );
+    return dir;
+  }
+
+  describe("path safety — projectRoot validation", () => {
+    it("rejects missing manifest.yaml", async () => {
+      const dir = createTempDir();
+      try {
+        // Don't create manifest
+        await assert.rejects(
+          () => migrateAll(dir, {}),
+          (e) => e.code === "INVALID_PROJECT_ROOT",
+        );
+      } finally {
+        cleanupTempDir(dir);
+      }
+    });
+
+    it("rejects non-string projectRoot", async () => {
+      await assert.rejects(
+        () => migrateAll(null, {}),
+        (e) => e.code === "INVALID_PROJECT_ROOT",
+      );
+    });
+  });
+
+  describe("size caps", () => {
+    it("rejects oversized tasks.md via preflight", async () => {
+      const root = makeProject();
+      try {
+        mkdirSync(join(root, ".context-index", "tasks"), { recursive: true });
+        // 11 MB
+        const bigContent = "x".repeat(11 * 1024 * 1024);
+        writeFileSync(join(root, ".context-index", "tasks", "tasks.md"), bigContent);
+        const result = await migrateAll(root, {});
+        assert.equal(result.failed, true);
+        const fail = result.preflight.failures.find((f) => f.code === "LEGACY_FILE_TOO_LARGE");
+        assert.ok(fail, "expected LEGACY_FILE_TOO_LARGE failure");
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("rejects oversized build-state slug", async () => {
+      const root = makeProject();
+      try {
+        mkdirSync(join(root, ".context-index", "build-state"), { recursive: true });
+        writeFileSync(
+          join(root, ".context-index", "build-state", "big.json"),
+          '{"steps":["' + "x".repeat(2 * 1024 * 1024) + '"]}',
+        );
+        const result = await migrateAll(root, {});
+        assert.equal(result.failed, true);
+        const fail = result.preflight.failures.find((f) => f.code === "LEGACY_FILE_TOO_LARGE");
+        assert.ok(fail, "expected LEGACY_FILE_TOO_LARGE for build-state");
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+  });
+
+  describe("slug allowlist", () => {
+    it("rejects build-state filename with traversal chars", async () => {
+      const root = makeProject();
+      try {
+        const bsDir = join(root, ".context-index", "build-state");
+        mkdirSync(bsDir, { recursive: true });
+        // The OS-allowed but conceptually-bad slug: ../escape.json is rejected
+        // by the filesystem itself if we tried to create it through that path,
+        // but the slug allowlist guards against the FILENAME stem containing
+        // any invalid characters.
+        writeFileSync(join(bsDir, "BAD-Slug-WITHUPPER.json"), '{"steps":[]}');
+        const result = await migrateAll(root, {});
+        assert.equal(result.failed, true);
+        const fail = result.preflight.failures.find((f) => f.code === "INVALID_LEGACY_SLUG");
+        assert.ok(fail, "expected INVALID_LEGACY_SLUG");
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+  });
+
+  describe("tasks.db_path positive containment", () => {
+    it("rejects when tasks.db_path is missing/non-existent dir", async () => {
+      const root = makeProject();
+      try {
+        writeFileSync(
+          join(root, ".context-index", "manifest.yaml"),
+          'project:\n  name: "t"\ntasks:\n  db_path: "/nonexistent/path/that/does/not/exist"\n',
+        );
+        const result = await migrateAll(root, {});
+        assert.equal(result.failed, true);
+        const fail = result.preflight.failures.find((f) => f.code === "INVALID_STORAGE_PATH");
+        assert.ok(fail, "expected INVALID_STORAGE_PATH");
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+  });
+}
+
+// ─── merged from tests/lib/migrate-state-artifacts.idempotency.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Idempotency tests for migrate-state-artifacts.
+   *
+   * Spec: .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md
+   */
+
+
+
+
+
+
+
+
+  function makeProject() {
+    const dir = createTempDir();
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      'project:\n  name: "t"\n',
+    );
+    writeFileSync(
+      join(dir, ".context-index", "milestones.yaml"),
+      'milestones:\n  - name: "0.25.0"\n    status: planned\n',
+    );
+    writeFileSync(
+      join(dir, ".context-index", "constitution.md"),
+      "# Constitution\n\n## Context Routing\n\n| K | V |\n|---|---|\n| Build state | `.context-index/build-state/` |\n",
+    );
+    return dir;
+  }
+
+  describe("idempotency — three-run check", () => {
+    it("first run migrates, second run skips with no I/O", async () => {
+      const root = makeProject();
+      try {
+        const first = await migrateAll(root, {});
+        assert.equal(first.failed, false);
+        const milestones1 = first.results.find((r) => r.artifact === "milestones");
+        assert.equal(milestones1?.action, "migrated");
+
+        // Capture mtimes
+        const targets = [
+          join(root, ".context-index", "milestones.json"),
+          join(root, ".context-index", "constitution.md"),
+        ];
+        const mtimes1 = targets.map((t) => statSync(t).mtimeMs);
+
+        // Sleep a moment to allow detectable mtime delta
+        await new Promise((r) => setTimeout(r, 50));
+
+        const second = await migrateAll(root, {});
+        assert.equal(second.failed, false);
+        for (const r of second.results) {
+          assert.equal(r.action, "skipped", `${r.artifact} should be skipped`);
+        }
+        const mtimes2 = targets.map((t) => statSync(t).mtimeMs);
+        assert.deepEqual(mtimes1, mtimes2, "skip path produces no on-disk diff");
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("third run still skips when legacy files are removed", async () => {
+      const root = makeProject();
+      try {
+        await migrateAll(root, {});
+        // Remove the legacy files manually
+        unlinkSync(join(root, ".context-index", "milestones.yaml"));
+        const third = await migrateAll(root, {});
+        assert.equal(third.failed, false);
+        const milestones3 = third.results.find((r) => r.artifact === "milestones");
+        assert.equal(milestones3?.action, "skipped");
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+  });
+}
+
+// ─── merged from tests/lib/migrate-state-artifacts.redaction.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Parse-error advisory redaction tests.
+   *
+   * Spec: .context-index/specs/features/agent-reliable-state-artifacts/one-shot-migration-tool.spec.md
+   */
+
+
+
+
+
+
+
+
+  const SECRET = "SUPER_SECRET_API_KEY_hunter2_DO_NOT_LEAK";
+
+  function makeProject() {
+    const dir = createTempDir();
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(dir, ".context-index", "manifest.yaml"),
+      'project:\n  name: "t"\n',
+    );
+    return dir;
+  }
+
+  describe("parse-error advisory redaction", () => {
+    it("malformed build-state JSON does not leak raw content", async () => {
+      const root = makeProject();
+      try {
+        const bsDir = join(root, ".context-index", "build-state");
+        mkdirSync(bsDir, { recursive: true });
+        // malformed JSON with a secret in it
+        writeFileSync(
+          join(bsDir, "foo.json"),
+          `{ "api_key": "${SECRET}", not_valid_json: [`,
+        );
+        const result = await migrateAll(root, {});
+        assert.equal(result.failed, true);
+
+        // The secret must NOT appear in any failure advisory's context
+        // (we redact via safeContext)
+        const fail = result.preflight.failures.find((f) =>
+          f.code === "BUILD_STATE_PARSE_ERROR" || f.code === "PARSE_ERROR" ||
+          (typeof f.context === "string" && f.context.length > 0)
+        );
+        // The preflight returns a structured advisory; ensure raw secret is
+        // not embedded in any failure record's serialized form.
+        const serialized = JSON.stringify(result.preflight.failures);
+        assert.ok(
+          !serialized.includes(SECRET),
+          `secret should NOT be present in preflight failure serialization`,
+        );
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("malformed milestones.yaml does not leak raw content", async () => {
+      const root = makeProject();
+      try {
+        const yamlPath = join(root, ".context-index", "milestones.yaml");
+        // Broken YAML with secret
+        writeFileSync(
+          yamlPath,
+          `password: ${SECRET}\nmilestones:\n  - name: ":bad:\n   nested:\n      [unbalanced\n`,
+        );
+        const result = await migrateAll(root, {});
+        const serialized = JSON.stringify(result);
+        assert.ok(
+          !serialized.includes(SECRET),
+          `secret should NOT be present in migrate result`,
+        );
+      } finally {
+        cleanupTempDir(root);
+      }
+    });
+
+    it("safeContext strips control chars and caps at 200", () => {
+      const raw = "hello\x00world" + "x".repeat(500);
+      const ctx = _internal.safeContext(raw);
+      assert.ok(!ctx.includes("\x00"));
+      assert.ok(ctx.length <= 200);
+    });
+  });
+}

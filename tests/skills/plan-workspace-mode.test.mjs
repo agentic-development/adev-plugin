@@ -14,30 +14,28 @@ const releaseModeSection = readFileSync(RELEASE_MODE_PATH, "utf8");
 const milestoneModeSection = readFileSync(MILESTONE_MODE_PATH, "utf8");
 
 describe("adev:plan SKILL.md — Release Mode workspace-mode branching", () => {
-  it("Release Mode branches on workspace detection", () => {
+  it("Release Mode branches on workspace detection (+3 more contract assertions)", () => {
+    // Release Mode branches on workspace detection
     assert.match(releaseModeSection, /detectWorkspace/,
-      "Release Mode must reference detectWorkspace()");
+    "Release Mode must reference detectWorkspace()");
     assert.match(releaseModeSection, /workspace mode/i,
-      "Release Mode must mention workspace mode");
-  });
+    "Release Mode must mention workspace mode");
 
-  it("Release Mode reads workspace product.md via resolveWorkspaceProductPath", () => {
+    // Release Mode reads workspace product.md via resolveWorkspaceProductPath
     assert.match(releaseModeSection, /resolveWorkspaceProductPath/,
-      "Release Mode must reference resolveWorkspaceProductPath");
-  });
+    "Release Mode must reference resolveWorkspaceProductPath");
 
-  it("Release Mode feature list annotates source as workspace/<module> or <repo-slug>/<module>", () => {
+    // Release Mode feature list annotates source as workspace/<module> or <repo-slug>/<module>
     assert.match(releaseModeSection, /workspace\/<module>/,
-      "Release Mode must annotate workspace-level features as workspace/<module>");
+    "Release Mode must annotate workspace-level features as workspace/<module>");
     assert.match(releaseModeSection, /<repo-slug>\/<module>/,
-      "Release Mode must annotate per-repo features as <repo-slug>/<module>");
-  });
+    "Release Mode must annotate per-repo features as <repo-slug>/<module>");
 
-  it("Release Mode documents non-transitive dependency inheritance rule", () => {
+    // Release Mode documents non-transitive dependency inheritance rule
     assert.match(releaseModeSection, /inherit/i,
-      "Release Mode must document inheritance of dependency edges");
+    "Release Mode must document inheritance of dependency edges");
     assert.match(releaseModeSection, /NOT transitive|non-transitive/i,
-      "Release Mode must explicitly state the inheritance is NOT transitive");
+    "Release Mode must explicitly state the inheritance is NOT transitive");
   });
 
   it("Release Mode reads dependency graph via resolveWorkspaceContext", () => {

@@ -3,6 +3,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 import { readJson } from "../../lib/provider/json-io.mjs";
+import { shouldCopyTopLevel } from "../../lib/provider/ship-filter.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -67,8 +68,9 @@ export const OpenCodeAdapter = {
     ensureDir(cacheDir);
 
     const items = readdirSync(PLUGIN_ROOT, { withFileTypes: true });
+    const shouldCopy = shouldCopyTopLevel(PLUGIN_ROOT);
     for (const item of items) {
-      if (item.name === ".git" || item.name === "node_modules" || item.name === ".DS_Store") {
+      if (!shouldCopy(item.name)) {
         continue;
       }
       const src = join(PLUGIN_ROOT, item.name);

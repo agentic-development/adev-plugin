@@ -22,14 +22,14 @@ function readSkill(name) {
 describe("implement SKILL.md — infrastructure preflight", () => {
   const c = readSkill("implement");
 
-  it("documents --no-infra in Arguments section", () => {
+  it("documents --no-infra in Arguments section (+1 more contract assertions)", () => {
+    // documents --no-infra in Arguments section
     assert.ok(c.includes("--no-infra"), "must document --no-infra");
-  });
 
-  it("contains Infrastructure Preflight step", () => {
+    // contains Infrastructure Preflight step
     assert.ok(
-      c.includes("Infrastructure Preflight"),
-      "must contain Infrastructure Preflight step"
+    c.includes("Infrastructure Preflight"),
+    "must contain Infrastructure Preflight step"
     );
   });
 
@@ -46,24 +46,23 @@ describe("implement SKILL.md — infrastructure preflight", () => {
     );
   });
 
-  it("includes agent prohibition instruction", () => {
+  it("includes agent prohibition instruction (+2 more contract assertions)", () => {
+    // includes agent prohibition instruction
     assert.ok(
-      c.includes("agent must never set") || c.includes("must never set"),
-      "must include agent-prohibition instruction"
+    c.includes("agent must never set") || c.includes("must never set"),
+    "must include agent-prohibition instruction"
     );
-  });
 
-  it("sets ADEV_DISPATCHED_BY for write-test dispatch", () => {
+    // sets ADEV_DISPATCHED_BY for write-test dispatch
     assert.ok(
-      c.includes("ADEV_DISPATCHED_BY"),
-      "must set ADEV_DISPATCHED_BY when dispatching write-test"
+    c.includes("ADEV_DISPATCHED_BY"),
+    "must set ADEV_DISPATCHED_BY when dispatching write-test"
     );
-  });
 
-  it("includes runPreflight invocation pattern", () => {
+    // includes runPreflight invocation pattern
     assert.ok(
-      c.includes("runPreflight") && c.includes("infra-preflight.mjs"),
-      "must include runPreflight invocation"
+    c.includes("runPreflight") && c.includes("infra-preflight.mjs"),
+    "must include runPreflight invocation"
     );
   });
 });
@@ -75,15 +74,15 @@ describe("implement SKILL.md — infrastructure preflight", () => {
 describe("validate SKILL.md — infrastructure preflight", () => {
   const c = readSkill("validate");
 
-  it("documents --no-infra in Arguments", () => {
+  it("documents --no-infra in Arguments (+1 more contract assertions)", () => {
+    // documents --no-infra in Arguments
     assert.ok(c.includes("--no-infra"), "must document --no-infra");
-  });
 
-  it("contains Infrastructure preflight section", () => {
+    // contains Infrastructure preflight section
     assert.ok(
-      c.includes("Infrastructure Verification") ||
-        c.includes("Infrastructure Preflight"),
-      "must contain preflight section"
+    c.includes("Infrastructure Verification") ||
+    c.includes("Infrastructure Preflight"),
+    "must contain preflight section"
     );
   });
 
@@ -142,14 +141,14 @@ describe("build SKILL.md — infrastructure preflight", () => {
 describe("write-test SKILL.md — infrastructure preflight", () => {
   const c = readSkill("write-test");
 
-  it("documents --no-infra", () => {
+  it("documents --no-infra (+1 more contract assertions)", () => {
+    // documents --no-infra
     assert.ok(c.includes("--no-infra"), "must document --no-infra");
-  });
 
-  it("contains preflight step", () => {
+    // contains preflight step
     assert.ok(
-      c.includes("Infrastructure Preflight"),
-      "must contain Infrastructure Preflight step"
+    c.includes("Infrastructure Preflight"),
+    "must contain Infrastructure Preflight step"
     );
   });
 
@@ -175,21 +174,20 @@ describe("write-test SKILL.md — infrastructure preflight", () => {
 describe("debug SKILL.md — infrastructure preflight", () => {
   const c = readSkill("debug");
 
-  it("documents --no-infra in Arguments", () => {
+  it("documents --no-infra in Arguments (+2 more contract assertions)", () => {
+    // documents --no-infra in Arguments
     assert.ok(c.includes("--no-infra"), "must document --no-infra");
-  });
 
-  it("contains preflight step", () => {
+    // contains preflight step
     assert.ok(
-      c.includes("Infrastructure Preflight"),
-      "must contain Infrastructure Preflight step"
+    c.includes("Infrastructure Preflight"),
+    "must contain Infrastructure Preflight step"
     );
-  });
 
-  it("includes three-tier resolution", () => {
+    // includes three-tier resolution
     assert.ok(
-      c.includes("tier") || (c.includes("Arguments") && c.includes("Active plan") && c.includes("Inference")),
-      "must include three-tier resolution (arguments, active plan, inference)"
+    c.includes("tier") || (c.includes("Arguments") && c.includes("Active plan") && c.includes("Inference")),
+    "must include three-tier resolution (arguments, active plan, inference)"
     );
   });
 
@@ -215,15 +213,15 @@ describe("debug SKILL.md — infrastructure preflight", () => {
 describe("eval SKILL.md — infrastructure preflight", () => {
   const c = readSkill("eval");
 
-  it("documents --no-infra in Arguments", () => {
+  it("documents --no-infra in Arguments (+1 more contract assertions)", () => {
+    // documents --no-infra in Arguments
     assert.ok(c.includes("--no-infra"), "must document --no-infra");
-  });
 
-  it("contains preflight section", () => {
+    // contains preflight section
     assert.ok(
-      c.includes("Infrastructure Verification") ||
-        c.includes("Infrastructure Preflight"),
-      "must contain preflight section"
+    c.includes("Infrastructure Verification") ||
+    c.includes("Infrastructure Preflight"),
+    "must contain preflight section"
     );
   });
 
@@ -242,28 +240,26 @@ describe("eval SKILL.md — infrastructure preflight", () => {
 describe("recover SKILL.md — infrastructure preflight", () => {
   const c = readSkill("recover");
 
-  it("documents --no-infra in Arguments", () => {
+  it("documents --no-infra in Arguments (+3 more contract assertions)", () => {
+    // documents --no-infra in Arguments
     assert.ok(c.includes("--no-infra"), "must document --no-infra");
-  });
 
-  it("contains preflight step", () => {
+    // contains preflight step
     assert.ok(
-      c.includes("Infrastructure Preflight"),
-      "must contain Infrastructure Preflight step"
+    c.includes("Infrastructure Preflight"),
+    "must contain Infrastructure Preflight step"
     );
-  });
 
-  it("includes corrective context injection for infra root causes", () => {
+    // includes corrective context injection for infra root causes
     assert.ok(
-      c.includes("formatPreflightReport") || c.includes("corrective context"),
-      "must include formatted preflight report in corrective context"
+    c.includes("formatPreflightReport") || c.includes("corrective context"),
+    "must include formatted preflight report in corrective context"
     );
-  });
 
-  it("includes agent prohibition instruction", () => {
+    // includes agent prohibition instruction
     assert.ok(
-      c.includes("agent must never set") || c.includes("must never set"),
-      "must include agent-prohibition instruction"
+    c.includes("agent must never set") || c.includes("must never set"),
+    "must include agent-prohibition instruction"
     );
   });
 });

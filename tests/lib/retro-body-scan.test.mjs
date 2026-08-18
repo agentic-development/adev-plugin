@@ -13,8 +13,19 @@ import {
   containsLiteralToken,
 } from '../../lib/retro/body-scan.mjs';
 
-test('body-scan: BODY_SIZE_LIMIT is 5 MB', () => {
+test("body-scan: BODY_SIZE_LIMIT is 5 MB (+2 more contract assertions)", () => {
+  // body-scan: BODY_SIZE_LIMIT is 5 MB
   assert.equal(BODY_SIZE_LIMIT, 5 * 1024 * 1024);
+
+  // body-scan: isOversizeBody handles non-string input
+  assert.equal(isOversizeBody(null), false);
+  assert.equal(isOversizeBody(undefined), false);
+  assert.equal(isOversizeBody(123), false);
+
+  // body-scan: containsLiteralToken returns boolean
+  assert.equal(containsLiteralToken('foo bar baz', 'bar'), true);
+  assert.equal(containsLiteralToken('foo bar baz', 'qux'), false);
+  assert.equal(containsLiteralToken('', 'bar'), false);
 });
 
 test('body-scan: isOversizeBody flags > 5 MB', () => {
@@ -29,11 +40,6 @@ test('body-scan: isOversizeBody allows ≤ 5 MB', () => {
   assert.equal(isOversizeBody('short'), false);
 });
 
-test('body-scan: isOversizeBody handles non-string input', () => {
-  assert.equal(isOversizeBody(null), false);
-  assert.equal(isOversizeBody(undefined), false);
-  assert.equal(isOversizeBody(123), false);
-});
 
 test('body-scan: literal scan is backtracking-free under adversarial input', () => {
   const adversarial = '/'.repeat(100_000);
@@ -66,11 +72,6 @@ test('body-scan: scanLiteralTokens counts occurrences', () => {
   assert.equal(bar.count, 1);
 });
 
-test('body-scan: containsLiteralToken returns boolean', () => {
-  assert.equal(containsLiteralToken('foo bar baz', 'bar'), true);
-  assert.equal(containsLiteralToken('foo bar baz', 'qux'), false);
-  assert.equal(containsLiteralToken('', 'bar'), false);
-});
 
 test('body-scan: frame-anchored scan rejects out-of-frame matches', () => {
   const body = [

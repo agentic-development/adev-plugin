@@ -30,13 +30,30 @@ import {
   assertNotOversize,
 } from "../../lib/partial-artifact.mjs";
 
-test("partialPath appends .partial to a path", () => {
+test("partialPath appends .partial to a path (+3 more contract assertions)", () => {
+  // partialPath appends .partial to a path
   assert.equal(partialPath("/foo/bar.md"), "/foo/bar.md.partial");
   assert.equal(
-    partialPath("/abs/path/to/file.spec.md"),
-    "/abs/path/to/file.spec.md.partial"
+  partialPath("/abs/path/to/file.spec.md"),
+  "/abs/path/to/file.spec.md.partial"
   );
   assert.equal(partialPath("relative/path.md"), "relative/path.md.partial");
+
+  // lockPath returns final + .partial.lock
+  assert.equal(lockPath("/foo/bar.md"), "/foo/bar.md.partial.lock");
+  assert.equal(
+  lockPath("relative/file.plan.md"),
+  "relative/file.plan.md.partial.lock"
+  );
+
+  // DEFAULT_PARTIAL_KNOBS exposes the documented defaults
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_stale_seconds, 30);
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_stale_hours, 24);
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_oversize_multiplier, 3);
+  assert.deepEqual(DEFAULT_PARTIAL_KNOBS.partial_roots, []);
+
+  // DEFAULT_PARTIAL_KNOBS exposes partial_expected_size_default (50KB)
+  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_expected_size_default, 51200);
 });
 
 test("partialPath rejects non-string input", () => {
@@ -45,13 +62,6 @@ test("partialPath rejects non-string input", () => {
   assert.throws(() => partialPath(42), /finalPath must be a non-empty string/);
 });
 
-test("lockPath returns final + .partial.lock", () => {
-  assert.equal(lockPath("/foo/bar.md"), "/foo/bar.md.partial.lock");
-  assert.equal(
-    lockPath("relative/file.plan.md"),
-    "relative/file.plan.md.partial.lock"
-  );
-});
 
 test("lockPath rejects non-string input", () => {
   assert.throws(() => lockPath(null), /finalPath must be a non-empty string/);
@@ -266,12 +276,6 @@ test("isPartialStale returns false for a missing file", () => {
 // Task 7: Manifest knobs
 // ---------------------------------------------------------------------------
 
-test("DEFAULT_PARTIAL_KNOBS exposes the documented defaults", () => {
-  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_stale_seconds, 30);
-  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_stale_hours, 24);
-  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_oversize_multiplier, 3);
-  assert.deepEqual(DEFAULT_PARTIAL_KNOBS.partial_roots, []);
-});
 
 test("loadPartialKnobs returns defaults for a silent manifest", () => {
   const dir = createTempDir();
@@ -346,9 +350,6 @@ test("loadPartialKnobs ignores invalid override types", () => {
 // Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE per-append firing)
 // ---------------------------------------------------------------------------
 
-test("DEFAULT_PARTIAL_KNOBS exposes partial_expected_size_default (50KB)", () => {
-  assert.equal(DEFAULT_PARTIAL_KNOBS.partial_expected_size_default, 51200);
-});
 
 test("expectedSize returns prior-version size when final exists and exceeds floor", () => {
   const dir = createTempDir();

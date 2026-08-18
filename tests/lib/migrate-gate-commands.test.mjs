@@ -27,14 +27,14 @@ test("classifyCommand refuses anything whose meaning depends on a shell", () => 
   }
 });
 
-test("classifyCommand refuses empty and non-string input", () => {
+test("classifyCommand refuses empty and non-string input (+1 more contract assertions)", () => {
+  // classifyCommand refuses empty and non-string input
   assert.equal(classifyCommand("").safe, false);
   assert.equal(classifyCommand("   ").safe, false);
   assert.equal(classifyCommand(null).safe, false);
   assert.equal(classifyCommand(["npm", "test"]).safe, false);
-});
 
-test("toArgv collapses runs of whitespace", () => {
+  // toArgv collapses runs of whitespace
   assert.deepEqual(toArgv("  npm   run    test:evals "), ["npm", "run", "test:evals"]);
 });
 

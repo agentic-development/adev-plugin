@@ -1,36 +1,25 @@
+import { test } from "node:test";
+import { strict as assert } from "node:assert";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, dirname as pathDirname, join } from "node:path";
+import { cleanupTempDir, createTempDir } from "../helpers.mjs";
+import { fileURLToPath } from "node:url";
+import { CANONICAL_EVENTS, _resolveActorSeverity, appendEvent, currentState, ensureLifecycleState, filterEvents, hasLifecycleState, listLifecycleStates, readEvents, renderMarkdown, reportIntervention, reportPlanTask, reportReviewer, reportStep, reportValidator, requireGate, resolveGateMode, slugFromSpec, validateProjectRoot } from "../../lib/lifecycle-state.mjs";
+import { fork, spawn } from "node:child_process";
+
 /**
  * Unit tests for lib/lifecycle-state.mjs
  */
 
-import { test } from 'node:test';
-import { strict as assert } from 'node:assert';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { createTempDir, cleanupTempDir } from '../helpers.mjs';
-import { existsSync, statSync, readFileSync, appendFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname as pathDirname } from 'node:path';
-import {
-  CANONICAL_EVENTS,
-  slugFromSpec,
-  validateProjectRoot,
-  ensureLifecycleState,
-  hasLifecycleState,
-  appendEvent,
-  readEvents,
-  _resolveActorSeverity,
-  reportReviewer,
-  reportValidator,
-  reportStep,
-  reportPlanTask,
-  reportIntervention,
-  currentState,
-  requireGate,
-  resolveGateMode,
-  listLifecycleStates,
-  filterEvents,
-  renderMarkdown,
-} from '../../lib/lifecycle-state.mjs';
+
+
+
+
+
+
+
+
+
 
 const __dirname = pathDirname(fileURLToPath(import.meta.url));
 // Plugin root lives two levels up from this test file (tests/lib/ → tests/ → project)
@@ -93,11 +82,11 @@ test('normaliseEventInPlace docstring reflects the closed-discriminator / mode-d
 
 // ── Task 2: slugFromSpec / validateProjectRoot ─────────────────────────────
 
-test('slugFromSpec accepts a normal spec filename', () => {
+test("slugFromSpec accepts a normal spec filename (+1 more contract assertions)", () => {
+  // slugFromSpec accepts a normal spec filename
   assert.equal(slugFromSpec('a/b/foo.spec.md'), 'foo');
-});
 
-test('slugFromSpec strips uppercase to lowercase', () => {
+  // slugFromSpec strips uppercase to lowercase
   assert.equal(slugFromSpec('a/b/Foo-Bar.spec.md'), 'foo-bar');
 });
 
@@ -1587,3 +1576,141 @@ test('every CANONICAL_EVENTS discriminator has a reducer case (none land in unkn
     cleanupTempDir(root);
   }
 });
+
+// ─── merged from tests/lib/lifecycle-state-concurrent.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Concurrent-write harness for lib/lifecycle-state.mjs.
+   *
+   * Spawns 100 child processes that each call `appendEvent` once on the same
+   * log file. Asserts every event lands as a complete, well-formed line with
+   * no interleaving (relies on `O_APPEND` atomicity for payloads <= PIPE_BUF
+   * ≈ 4 KB on macOS/Linux — not a POSIX guarantee, but reliable on target
+   * platforms).
+   */
+
+
+
+
+
+
+
+
+
+
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const WRITER_PATH = join(__dirname, '..', 'fixtures', 'lifecycle-state', 'concurrent-writer.mjs');
+
+  const CONCURRENT_WRITERS = 100;
+
+  test('100 concurrent appendEvent calls all land as well-formed lines', async () => {
+    const root = createTempDir();
+    try {
+      mkdirSync(join(root, '.context-index'), { recursive: true });
+      writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
+      const specPath = '.context-index/specs/features/test/concurrent.spec.md';
+
+      // Fork all writers concurrently.
+      const writers = [];
+      for (let i = 0; i < CONCURRENT_WRITERS; i++) {
+        writers.push(new Promise((resolve, reject) => {
+          const child = fork(WRITER_PATH, [root, specPath, String(i)], { stdio: 'pipe' });
+          child.on('exit', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`writer ${i} exited with code ${code}`));
+          });
+          child.on('error', reject);
+        }));
+      }
+      await Promise.all(writers);
+
+      // Read and verify.
+      const events = readEvents(root, specPath);
+      assert.equal(events.length, CONCURRENT_WRITERS, `expected ${CONCURRENT_WRITERS} events, got ${events.length}`);
+
+      // Every event must have a unique writer_index.
+      const indices = new Set(events.map((e) => e.writer_index));
+      assert.equal(indices.size, CONCURRENT_WRITERS, 'every writer must contribute a unique event');
+
+      // Every event must be well-formed (already asserted by readEvents) and
+      // have the expected discriminator.
+      for (const ev of events) {
+        assert.equal(ev.event, 'lifecycle_step');
+        assert.ok(ev.step?.startsWith('concurrent-'));
+        assert.ok(typeof ev.writer_pid === 'number');
+      }
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+}
+
+// ─── merged from tests/lib/lifecycle-state-crash.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Crash-safety harness for lib/lifecycle-state.mjs.
+   *
+   * Spawns a child that begins writing a giant event one byte at a time, then
+   * SIGKILLs it mid-write. The lifecycle log ends up with a truncated final
+   * line. `readEvents` must skip the tail silently and return all prior
+   * complete events.
+   */
+
+
+
+
+
+
+
+
+
+
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const CRASH_WRITER = join(__dirname, '..', 'fixtures', 'lifecycle-state', 'crash-writer.mjs');
+
+  test('readEvents recovers prior complete events after a mid-write crash', async () => {
+    const root = createTempDir();
+    try {
+      mkdirSync(join(root, '.context-index'), { recursive: true });
+      writeFileSync(join(root, '.context-index', 'manifest.yaml'), 'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
+      const specPath = '.context-index/specs/features/test/crash.spec.md';
+
+      // First, write two clean events so we have a baseline.
+      appendEvent(root, specPath, { event: 'lifecycle_step', step: 'specify', status: 'started' });
+      appendEvent(root, specPath, { event: 'step_completed', step: 'specify', verdict: 'PASS' });
+
+      // Resolve the log path the same way the lib would.
+      const logPath = join(root, '.context-index', 'lifecycle-state', 'crash.jsonl');
+      assert.ok(existsSync(logPath), 'log file should exist after appendEvent');
+
+      // Spawn the crash writer and wait for its READY signal, then kill it.
+      await new Promise((resolve, reject) => {
+        const child = spawn('node', [CRASH_WRITER, logPath], { stdio: ['ignore', 'pipe', 'pipe'] });
+        let ready = false;
+        let buf = '';
+        child.stdout.on('data', (chunk) => {
+          buf += chunk.toString('utf8');
+          if (!ready && buf.includes('READY')) {
+            ready = true;
+            // Let the writer emit a few bytes before SIGKILL.
+            setTimeout(() => {
+              child.kill('SIGKILL');
+              resolve();
+            }, 50);
+          }
+        });
+        child.on('error', reject);
+        child.on('exit', () => { /* exit is the goal */ });
+      });
+
+      // After the crash, the log has a truncated final line. readEvents must
+      // tolerate the tail silently and return the two pre-crash events.
+      const events = readEvents(root, specPath);
+      assert.ok(events.length >= 2, `expected at least 2 events, got ${events.length}`);
+      assert.equal(events[0].event, 'lifecycle_step');
+      assert.equal(events[1].event, 'step_completed');
+    } finally {
+      cleanupTempDir(root);
+    }
+  });
+}

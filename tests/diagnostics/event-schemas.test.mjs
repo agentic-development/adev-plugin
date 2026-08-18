@@ -17,8 +17,16 @@ import {
 } from '../../lib/diagnostics/event-schemas.mjs';
 import { CANONICAL_EVENTS } from '../../lib/lifecycle-state.mjs';
 
-test('KNOWN_EVENT_TYPES is frozen', () => {
+test("KNOWN_EVENT_TYPES is frozen (+2 more contract assertions)", () => {
+  // KNOWN_EVENT_TYPES is frozen
   assert.ok(Object.isFrozen(KNOWN_EVENT_TYPES), 'must be frozen');
+
+  // getRequiredFields returns the array for known types, undefined for unknown
+  assert.ok(Array.isArray(getRequiredFields('plan_task')));
+  assert.equal(getRequiredFields('not-a-real-event'), undefined);
+
+  // test_depth_assigned is a known event type
+  assert.equal(isKnownEventType('test_depth_assigned'), true);
 });
 
 test('KNOWN_EVENT_TYPES mirrors lib/lifecycle-state.mjs::CANONICAL_EVENTS exactly', () => {
@@ -120,10 +128,6 @@ test('isKnownEventType accepts canonical discriminators and rejects others', () 
   assert.equal(isKnownEventType(42), false);
 });
 
-test('getRequiredFields returns the array for known types, undefined for unknown', () => {
-  assert.ok(Array.isArray(getRequiredFields('plan_task')));
-  assert.equal(getRequiredFields('not-a-real-event'), undefined);
-});
 
 test('test_depth_assigned requires plan, task_id, depth, floor_inputs, floor_legs', () => {
   const fields = getRequiredFields('test_depth_assigned');
@@ -132,9 +136,6 @@ test('test_depth_assigned requires plan, task_id, depth, floor_inputs, floor_leg
   }
 });
 
-test('test_depth_assigned is a known event type', () => {
-  assert.equal(isKnownEventType('test_depth_assigned'), true);
-});
 
 test('REQUIRED_FIELDS_BY_EVENT and its arrays are frozen (immutable)', () => {
   assert.ok(Object.isFrozen(REQUIRED_FIELDS_BY_EVENT), 'top-level map must be frozen');

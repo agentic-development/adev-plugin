@@ -4,19 +4,17 @@ import assert from 'node:assert/strict';
 import { PRICE_TABLE, getRate, computeCost } from '../../lib/token-pricing.mjs';
 
 describe('PRICE_TABLE', () => {
-  it('contains claude-opus-4-7', () => {
+  it("contains claude-opus-4-7 (+3 more contract assertions)", () => {
+    // contains claude-opus-4-7
     assert.ok('claude-opus-4-7' in PRICE_TABLE);
-  });
 
-  it('contains claude-opus-4-6', () => {
+    // contains claude-opus-4-6
     assert.ok('claude-opus-4-6' in PRICE_TABLE);
-  });
 
-  it('contains claude-sonnet-4-6', () => {
+    // contains claude-sonnet-4-6
     assert.ok('claude-sonnet-4-6' in PRICE_TABLE);
-  });
 
-  it('contains claude-haiku-4-5-20251001', () => {
+    // contains claude-haiku-4-5-20251001
     assert.ok('claude-haiku-4-5-20251001' in PRICE_TABLE);
   });
 
@@ -42,11 +40,11 @@ describe('getRate', () => {
     assert.ok(typeof rate.input === 'number');
   });
 
-  it('returns null for unknown model', () => {
+  it("returns null for unknown model (+1 more contract assertions)", () => {
+    // returns null for unknown model
     assert.strictEqual(getRate('claude-unknown-99'), null);
-  });
 
-  it('returns null for empty string', () => {
+    // returns null for empty string
     assert.strictEqual(getRate(''), null);
   });
 });

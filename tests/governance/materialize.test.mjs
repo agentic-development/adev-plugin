@@ -437,19 +437,24 @@ describe("materialize refuses to stamp an incomplete load", () => {
 // ── DDR-4: the on-disk `source` vocabulary ───────────────────────────────────
 
 describe("deriveSource implements the DDR-4 mapping", () => {
-  test("every runtime provenance value the spec maps is mapped", () => {
+  test("every runtime provenance value the spec maps is mapped (+1 more contract assertions)", () => {
+    // every runtime provenance value the spec maps is mapped
     assert.equal(deriveSource({ id: "a", __source: "bundled" }, "review", "software"), "bundled");
     assert.equal(deriveSource({ id: "a", __source: "project" }, "review", "software"), "project");
     assert.equal(deriveSource({ id: "a", __source: "governance" }, "review", "software"), "project");
     assert.equal(
-      deriveSource({ id: "a", __source: "project-override" }, "review", "software"),
-      "project",
+    deriveSource({ id: "a", __source: "project-override" }, "review", "software"),
+    "project",
     );
     assert.equal(
-      deriveSource({ id: "a", __source: "manifest-specialist" }, "review", "software"),
-      "project",
+    deriveSource({ id: "a", __source: "manifest-specialist" }, "review", "software"),
+    "project",
     );
     assert.equal(deriveSource({ id: "a", __source: "domain" }, "review", "acme"), "domain:acme");
+
+    // diagnostics provenance comes from the runner prefix
+    assert.equal(deriveSource({ id: "a", runner: "plugin:x.mjs" }, "diagnostics", null), "bundled");
+    assert.equal(deriveSource({ id: "a", runner: "project:x.mjs" }, "diagnostics", null), "project");
   });
 
   test("a genuinely unknown provenance value still throws", () => {
@@ -459,10 +464,7 @@ describe("deriveSource implements the DDR-4 mapping", () => {
     );
   });
 
-  test("diagnostics provenance comes from the runner prefix", () => {
-    assert.equal(deriveSource({ id: "a", runner: "plugin:x.mjs" }, "diagnostics", null), "bundled");
-    assert.equal(deriveSource({ id: "a", runner: "project:x.mjs" }, "diagnostics", null), "project");
-  });
+
 });
 
 // ── `source` is origin-at-materialization, not current contributor ───────────

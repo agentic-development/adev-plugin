@@ -20,6 +20,7 @@
     "templates/",
     "extensions/",
     ".claude-plugin/",
+    ".cursor-plugin/",
     ".githooks/"
   ],
   "scripts": {

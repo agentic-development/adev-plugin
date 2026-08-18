@@ -9,18 +9,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 describe("review-specs SKILL.md — cross-repo references", () => {
   const content = readFileSync(join(__dirname, "..", "..", "skills", "review-specs", "SKILL.md"), "utf8");
 
-  it("validates cross-repo depends-on references", () => {
+  it("validates cross-repo depends-on references (+2 more contract assertions)", () => {
+    // validates cross-repo depends-on references
     assert.ok(content.includes("@repo-slug") || content.includes("cross-repo"),
-      "Should validate cross-repo references");
-  });
+    "Should validate cross-repo references");
 
-  it("checks referenced spec status", () => {
+    // checks referenced spec status
     assert.ok(content.includes("draft") && content.includes("superseded"),
-      "Should check referenced spec status");
-  });
+    "Should check referenced spec status");
 
-  it("skips validation when no workspace detected", () => {
+    // skips validation when no workspace detected
     assert.ok(content.includes("no workspace detected"),
-      "Should skip when no workspace");
+    "Should skip when no workspace");
   });
 });

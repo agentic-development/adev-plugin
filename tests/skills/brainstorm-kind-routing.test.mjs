@@ -145,33 +145,33 @@ describe("adev:brainstorm SKILL.md — cross-cutting path policy (Task 2)", () =
     );
   });
 
-  it("SKILL.md warns when kind: module has no matching manifest.yaml entry", () => {
+  it("SKILL.md warns when kind: module has no matching manifest.yaml entry (+1 more contract assertions)", () => {
+    // SKILL.md warns when kind: module has no matching manifest.yaml entry
     assert.ok(
-      content.includes("manifest.yaml") && content.includes("kind: module"),
-      "Must cross-reference kind: module against manifest.yaml"
+    content.includes("manifest.yaml") && content.includes("kind: module"),
+    "Must cross-reference kind: module against manifest.yaml"
     );
     assert.ok(
-      content.includes("Module charters typically correspond to a manifest entry") ||
-        content.includes("Module charters typically correspond"),
-      "Must include the non-blocking warning text"
+    content.includes("Module charters typically correspond to a manifest entry") ||
+    content.includes("Module charters typically correspond"),
+    "Must include the non-blocking warning text"
     );
     assert.ok(
-      content.includes("non-blocking") ||
-        content.includes("Warn") ||
-        content.includes("warn"),
-      "Must describe the warning as non-blocking"
+    content.includes("non-blocking") ||
+    content.includes("Warn") ||
+    content.includes("warn"),
+    "Must describe the warning as non-blocking"
     );
-  });
 
-  it("SKILL.md replaces hardcoded charter-template path with resolveTemplate('charter', kind, domain)", () => {
+    // SKILL.md replaces hardcoded charter-template path with resolveTemplate('charter', kind, domain)
     assert.ok(
-      content.includes("resolveTemplate") &&
-        content.includes("'charter'"),
-      "Must reference resolveTemplate('charter', kind, domain) call"
+    content.includes("resolveTemplate") &&
+    content.includes("'charter'"),
+    "Must reference resolveTemplate('charter', kind, domain) call"
     );
     assert.ok(
-      content.includes("template-resolution.mjs"),
-      "Must import resolveTemplate from lib/template-resolution.mjs"
+    content.includes("template-resolution.mjs"),
+    "Must import resolveTemplate from lib/template-resolution.mjs"
     );
   });
 });

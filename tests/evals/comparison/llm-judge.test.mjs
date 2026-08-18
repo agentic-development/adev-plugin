@@ -316,13 +316,17 @@ describe('llm-judge', () => {
   });
 
   describe('constants', () => {
-    it('exports expected dimensions', () => {
+    it("exports expected dimensions (+1 more contract assertions)", () => {
+      // exports expected dimensions
       assert.deepEqual(JUDGE_DIMENSIONS, [
-        'naming_consistency',
-        'directory_structure',
-        'commit_message_quality',
-        'overall_code_quality',
+      'naming_consistency',
+      'directory_structure',
+      'commit_message_quality',
+      'overall_code_quality',
       ]);
+
+      // uses correct blend factor
+      assert.equal(LLM_BLEND_FACTOR, 0.4);
     });
 
     it('maps all judge dimensions to report dimensions', () => {
@@ -331,8 +335,6 @@ describe('llm-judge', () => {
       }
     });
 
-    it('uses correct blend factor', () => {
-      assert.equal(LLM_BLEND_FACTOR, 0.4);
-    });
+
   });
 });

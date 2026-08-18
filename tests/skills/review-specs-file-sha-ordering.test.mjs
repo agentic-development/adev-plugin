@@ -35,15 +35,15 @@ describe("review-specs SKILL.md — file-sha ordering (issue-187)", () => {
     );
   });
 
-  it("explains why file-sha must be captured after the status update", () => {
+  it("explains why file-sha must be captured after the status update (+1 more contract assertions)", () => {
+    // explains why file-sha must be captured after the status update
     assert.match(
-      skill,
-      /review-pending.*review-passed|status.*update.*hash|hash.*status.*update|false drift|diverge/i,
-      "Must explain that status update changes the file hash, motivating post-Step-7 SHA capture"
+    skill,
+    /review-pending.*review-passed|status.*update.*hash|hash.*status.*update|false drift|diverge/i,
+    "Must explain that status update changes the file hash, motivating post-Step-7 SHA capture"
     );
-  });
 
-  it("Step 7 update spec status section still exists", () => {
+    // Step 7 update spec status section still exists
     assert.match(skill, /## Step 7: Update Spec Status/, "Step 7 must still exist");
   });
 });

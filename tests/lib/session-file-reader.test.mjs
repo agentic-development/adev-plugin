@@ -6,7 +6,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { createTempDir, cleanupTempDir } from "../helpers.mjs";
@@ -355,5 +355,95 @@ describe("resolveSessionUsage — fromOffset", () => {
     } finally {
       cleanupTempDir(tmp);
     }
+  });
+});
+
+// ── resolveSessionDir — dot-directory encoding (adev-plugin-882a.1) ──────────
+//
+// Claude Code encodes the project cwd into the `~/.claude/projects/` segment by
+// replacing BOTH `/` and `.` with `-`. adev originally replaced only `/`, so any
+// cwd containing a dot-directory — every worktree under `.claude/worktrees/` —
+// resolved to a directory that does not exist, and token-cost logging degraded
+// silently per token-cost-logging.spec.md Behavior 2.
+//
+// Both encodings exist on disk in practice: transcripts written before the
+// Claude Code encoding change keep the dot. Resolution therefore probes the
+// current encoding first and falls back to the legacy one.
+
+describe("resolveSessionDir — dot-directory encoding", () => {
+  it("replaces dots as well as slashes (current Claude Code encoding)", () => {
+    const result = resolveSessionDir("/Users/foo/proj/.claude/worktrees/wt-1");
+    const expected = join(
+      homedir(),
+      ".claude",
+      "projects",
+      "-Users-foo-proj--claude-worktrees-wt-1"
+    );
+    assert.equal(result, expected);
+  });
+
+  it("leaves dot-free paths encoded exactly as before", () => {
+    const result = resolveSessionDir("/Users/foo/bar");
+    const expected = join(homedir(), ".claude", "projects", "-Users-foo-bar");
+    assert.equal(result, expected);
+  });
+
+  it("falls back to the legacy dot-preserving encoding when only that dir exists", () => {
+    // Unique synthetic project path carrying a dot segment.
+    const stamp = `adev-882a-${process.pid}-${Date.now()}`;
+    const projectDir = `/tmp/${stamp}/.claude/worktrees/wt`;
+    const legacy = projectDir.replace(/\//g, "-");
+    const legacyDir = join(homedir(), ".claude", "projects", legacy);
+
+    mkdirSync(legacyDir, { recursive: true });
+    try {
+      assert.equal(
+        resolveSessionDir(projectDir),
+        legacyDir,
+        "should resolve to the existing legacy-encoded directory"
+      );
+    } finally {
+      rmSync(legacyDir, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers the current encoding when both encodings exist on disk", () => {
+    const stamp = `adev-882a-both-${process.pid}-${Date.now()}`;
+    const projectDir = `/tmp/${stamp}/.claude/worktrees/wt`;
+    const legacyDir = join(
+      homedir(),
+      ".claude",
+      "projects",
+      projectDir.replace(/\//g, "-")
+    );
+    const currentDir = join(
+      homedir(),
+      ".claude",
+      "projects",
+      projectDir.replace(/[/.]/g, "-")
+    );
+
+    mkdirSync(legacyDir, { recursive: true });
+    mkdirSync(currentDir, { recursive: true });
+    try {
+      assert.equal(resolveSessionDir(projectDir), currentDir);
+    } finally {
+      rmSync(legacyDir, { recursive: true, force: true });
+      rmSync(currentDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns the current encoding when neither directory exists", () => {
+    const projectDir = `/tmp/adev-882a-missing-${process.pid}/.claude/wt`;
+    assert.equal(
+      resolveSessionDir(projectDir),
+      join(
+        homedir(),
+        ".claude",
+        "projects",
+        projectDir.replace(/[/.]/g, "-")
+      ),
+      "a missing session dir must still yield the current-encoding path so callers degrade per Behavior 2"
+    );
   });
 });

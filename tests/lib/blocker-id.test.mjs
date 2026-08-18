@@ -137,13 +137,13 @@ test('validateBlockerIdComponent rejects whitespace, uppercase, colon, slash', (
   }
 });
 
-test('truncateForHash returns string ≤ limit', () => {
+test("truncateForHash returns string ≤ limit (+1 more contract assertions)", () => {
+  // truncateForHash returns string ≤ limit
   assert.equal(truncateForHash('abc', 10), 'abc');
   assert.equal(truncateForHash('abcdefghij', 5), 'abcde');
   assert.equal(truncateForHash('', 5), '');
-});
 
-test('truncateForHash handles undefined/null input', () => {
+  // truncateForHash handles undefined/null input
   assert.equal(truncateForHash(null, 10), '');
   assert.equal(truncateForHash(undefined, 10), '');
 });
