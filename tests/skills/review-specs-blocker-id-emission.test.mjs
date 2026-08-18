@@ -63,3 +63,34 @@ test('review-specs SKILL.md references lib/blockers-writer.mjs', () => {
   assert.ok(body.includes('lib/blockers-writer.mjs') || body.includes('writeBlockers'),
     'must reference the canonical .blockers.md writer');
 });
+
+test('referent-integrity prompt documents section_anchor + finding-type, no hash instruction', () => {
+  const body = readSkill('referent-integrity-prompt.md');
+  assert.ok(body.includes('section_anchor'));
+  assert.ok(body.includes('finding-type') || body.includes('finding_type'));
+  assert.ok(!body.includes('lib/blocker-id.mjs'), 'must not instruct hash computation');
+  assert.ok(!/sha-?256/i.test(body), 'must not name a cryptographic digest');
+});
+
+test('wiring-reviewer prompt states PRODUCER/CONSUMER/TRIGGER/TEST scope and flags no-caller as blocker', () => {
+  const body = readSkill('wiring-reviewer-prompt.md');
+  assert.ok(/producer/i.test(body) && /consumer/i.test(body) && /trigger/i.test(body));
+  assert.ok(/no caller/i.test(body) || /write-only/i.test(body));
+  assert.ok(!body.includes('lib/blocker-id.mjs'));
+});
+
+test('boundary-reviewer prompt embeds the six measured issue classes and dispatches always', () => {
+  const body = readSkill('boundary-reviewer-prompt.md');
+  for (const term of ['path containment', 'subprocess interpolation', 'input trust', 'privilege', 'artifact leakage', 'destructive']) {
+    assert.ok(body.toLowerCase().includes(term), `missing checklist item: ${term}`);
+  }
+  assert.ok(!body.includes('lib/blocker-id.mjs'));
+});
+
+test('termination-reviewer prompt flags missing iteration cap, cap-trip verdict, unattended default', () => {
+  const body = readSkill('termination-reviewer-prompt.md');
+  assert.ok(/iteration cap/i.test(body));
+  assert.ok(/cap-trip/i.test(body) || /trip/i.test(body));
+  assert.ok(/unattended/i.test(body));
+  assert.ok(!body.includes('lib/blocker-id.mjs'));
+});
