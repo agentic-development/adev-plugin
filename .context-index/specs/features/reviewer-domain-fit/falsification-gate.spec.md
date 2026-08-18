@@ -4,7 +4,7 @@ kind: action
 status: review-pending
 risk_level: medium
 milestone:
-revision: 5
+revision: 6
 charter-revision: 2
 created: 2026-08-18
 updated: 2026-08-18
@@ -106,8 +106,9 @@ Add one entry — `id: referent-integrity`, `dispatch: always`, `profile: review
 Naming the pack is not optional bookkeeping, and **an empty `errors` array does not prove the pack
 resolved.** `loadReviewConfig` explicitly `continue`s past a pack that fails to resolve
 (`lib/governance/review-config.mjs:196-201` — "its own error already surfaces where the pack is
-rendered"); `UNKNOWN_CONTEXT_PACK` is raised only in `renderPack`
-(`lib/governance/context-pack.mjs:117`), which returns `rendered: ""`. So a typo'd or undeclared
+rendered"); `UNKNOWN_CONTEXT_PACK` is raised inside `resolveExtends`
+(`lib/governance/context-pack.mjs:117`, in the function beginning at `:102` — NOT in `renderPack`,
+which begins at `:227`), and the render path returns `rendered: ""`. So a typo'd or undeclared
 pack loads cleanly, the reviewer dispatches with NO context, finds nothing, and its report still
 names `referent-integrity`. That is the rev-1 false-negative failure reachable through the check
 added to prevent it.
@@ -161,16 +162,33 @@ For each row:
    and `loadReviewConfig` reads `review.yaml` from the run's `repoRoot`, so a run launched from the
    main checkout with only `--spec` pointing into the worktree would load the current registry but
    render the pack from CURRENT sources against a historical spec — silently, with an empty `errors`
-   array, and defeating Step 3's in-worktree glob check. Recording the plugin root closes the same
+   array, and defeating Step 3's in-worktree glob check.
+
+   **Pack file BODIES are historical by design, and that is correct.** `renderPack` expands every
+   glob against `ctx.repoRoot` (`context-pack.mjs:349`), so running from inside the worktree makes
+   the charter, sibling specs, ADRs and cross-cutting specs the versions that existed at the pre-fix
+   commit. That is what the experiment needs: `referent-integrity` judges whether the referents a
+   spec names existed **at the time**, so evaluating them against today's tree would both clear
+   referents that did not yet exist and fail ones that have since been renamed. The historical/current
+   split is therefore not spec-text-versus-everything — it is **subject matter historical, instrument
+   current**: the spec text and its context bodies come from the commit; the registry, prompt, pack
+   DEFINITION and plugin come from today. Recording the plugin root closes the same
    hole one level up: `getPluginRoot()` derives from `lib/profiles/index.mjs`'s own location two
    levels up, so invoking the worktree's own `cli/index.mjs` instead of the `adev` on PATH would
    make `templates/` historical — and the resolved root distinguishes the two.
 
    Record the resolved plugin root, NOT `adev --version`. That verb does not exist: the dispatcher
-   reads `argv[2]` as a verb name and has no `--version` entry, so both invocations print
-   `unknown verb: --version` plus the usage banner and exit 0 — byte-identical output emitted by the
-   same code in every checkout. A constant cannot distinguish the two plugins, so recording it would
-   pass trivially in exactly the case this pin exists to catch.
+   reads `argv[2]` as a verb name and has no `--version` entry, so both invocations write
+   `unknown verb: --version` plus the usage banner **to stderr** (0 bytes on stdout) and **exit 1**.
+   The output is byte-identical between the installed plugin and a worktree-local `cli/index.mjs`,
+   because the same code emits it in every checkout — a constant cannot distinguish the two, so
+   recording it would pass trivially in exactly the case this pin exists to catch.
+
+   Two traps for whoever verifies this. `$?` after a pipeline reports the LAST command, so
+   `adev --version 2>&1 | head -2; echo $?` measures `head` and reports 0 — an earlier revision of
+   this spec asserted "exit 0" on exactly that mistake. Check the exit code without a pipe, or read
+   `${PIPESTATUS[0]}`. And because all output is on stderr, a check that captures only stdout sees
+   nothing at all.
 5. Confirm the resulting `.review.md` names `referent-integrity` among its dispatched reviewers
    before scoring it. A `.review.md` that does not is a void run, not a miss.
 

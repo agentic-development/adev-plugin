@@ -15,3 +15,8 @@
 {"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"1 blocker: adev --version does not exist — it prints a constant usage banner, so the plugin-currency pin passes trivially in the exact scenario it exists to catch.","ts":"2026-08-18T14:34:50.605Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-18T14:34:50.713Z"}
 {"event":"spec_revised","from_revision":4,"to_revision":5,"addressed_blocker_ids":["quick-synthesized-reviewer:false-verification-command:f5e61ff2"],"unresolved_blocker_ids":[],"ts":"2026-08-18T14:35:08.541Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T14:36:25.678Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T14:37:15.085Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"Quick tier, 1 blocker + 2 warnings. SA-1: Step 4 claims unknown-verb invocations exit 0; cli/index.mjs:1942-1946 exits 1.","revision":5,"ts":"2026-08-18T14:43:47.005Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-18T14:45:14.683Z"}
+{"event":"spec_revised","from_revision":5,"to_revision":6,"addressed_blocker_ids":["quick-synthesized-reviewer:false-mechanism-claim:3708f075"],"unresolved_blocker_ids":[],"ts":"2026-08-18T14:50:48.044Z"}
