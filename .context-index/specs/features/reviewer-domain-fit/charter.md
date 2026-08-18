@@ -269,11 +269,11 @@ panel.
 ### Phase 2 — panel and prompts
 
 - [ ] No default-panel prompt instructs the model to compute a hash; `blocker_id` comes from `adev heuristics signature --origin review-specs --blocker-id`
-- [ ] `/adev:specify` contains no HTTP status codes and no drag-and-drop examples
-- [ ] `templates/spec-template.behavioral.md` and `templates/spec-template.refactor.md` carry no
+- [x] `/adev:specify` contains no HTTP status codes and no drag-and-drop examples (domain-authoring-guidance spec, implemented)
+- [x] `templates/spec-template.behavioral.md` and `templates/spec-template.refactor.md` carry no
       `HTTP Status` column; their error-case columns are domain-neutral. Removing examples from the
-      skill alone does not satisfy this phase
-- [ ] Each domain ships `specify-guidance.md`; `/adev:specify` loads it and renders an explicit empty state when a domain ships none
+      skill alone does not satisfy this phase (domain-authoring-guidance spec, implemented)
+- [x] Each domain ships `specify-guidance.md`; `/adev:specify` loads it and renders an explicit empty state when a domain ships none (domain-authoring-guidance spec, implemented — bundled `software` default ships; other domains fall back to the explicit empty state)
 - [ ] `structural-architect` and `security-reviewer` leave the default panel via `enabled: false` **with a stated reason**, not entry deletion; their prompt files remain resolvable
 
 ### Phase 3 — eval

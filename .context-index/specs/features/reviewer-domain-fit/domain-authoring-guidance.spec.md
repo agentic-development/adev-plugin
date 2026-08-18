@@ -1,6 +1,6 @@
 ---
 charter: reviewer-domain-fit
-status: review-passed
+status: implemented
 mode: refactor
 kind: refactor
 milestone:
@@ -9,7 +9,26 @@ revision: 2
 charter-revision: 2
 updated: 2026-08-18
 tracker-ref: adev-plugin-j7pq.5
+source-manifest:
+  sha: "45e2c66"
+  files:
+    - lib/cli/domain.mjs
+    - lib/domains/constants.mjs
+    - providers/codex/skills/specify/SKILL.md
+    - providers/opencode/skills/specify/SKILL.md
+    - skills/specify/SKILL.md
+    - templates/domains/software/specify-guidance.md
+    - templates/spec-template.behavioral.md
+    - templates/spec-template.refactor.md
+    - tests/cli/domain.test.mjs
+    - tests/domains/bundled-profiles.test.mjs
+    - tests/lib/domains/constants.test.mjs
+    - tests/skills/specify-domain-guidance.test.mjs
+    - tests/templates/spec-template-error-code-header.test.mjs
+  computed-at: "2026-08-18T23:00:11.641Z"
 ---
+
+<!-- partial_schema: implement@1 -->
 
 # Refactoring Spec: Domain Authoring Guidance
 
@@ -160,13 +179,13 @@ tracker-ref: adev-plugin-j7pq.5
 <!-- Properties that must remain true throughout the entire migration.
      Every migration step must preserve these. They are your safety net. -->
 
-- [ ] All existing tests continue to pass at every step, with the single explicit exception of `tests/lib/domains/constants.test.mjs`, which is updated in the SAME change as Step 1/7 — never left failing between steps
-- [ ] Public API contracts do not change: existing `adev domain resolve|load-gates|load-reviewers|load-test-config|load-verification` subcommands keep their current flags and stdout shapes byte-for-byte
-- [ ] No data loss or corruption during migration — this is a pure-addition change to `DOMAIN_CONFIG_TYPES` / `DOMAIN_CONFIG_FILENAMES`; no existing entry's filename, structured/unstructured classification, or resolution precedence changes
-- [ ] `resolveTemplate()`'s discovery path (`extensions/<domain>/domain/` → `templates/`, kind-suffixed filenames) is untouched; `template-resolution.spec.md`'s existing Behaviors 3, 4, and 8 are unaffected by this spec
-- [ ] Specs already authored before this change are not retroactively rewritten — the Error Cases header change affects the TEMPLATE, not any already-written spec's already-filled-in table
-- [ ] Provider mirrors are only ever produced by `scripts/sync-provider-skills.mjs`; no manual edit is made to `providers/*/skills/specify/SKILL.md`
-- [ ] No reviewer panel membership, prompt file, or `review.yaml` change is introduced — that is the sibling `reviewer-panel-retarget` spec's exclusive scope
+- [x] All existing tests continue to pass at every step, with the single explicit exception of `tests/lib/domains/constants.test.mjs`, which is updated in the SAME change as Step 1/7 — never left failing between steps
+- [x] Public API contracts do not change: existing `adev domain resolve|load-gates|load-reviewers|load-test-config|load-verification` subcommands keep their current flags and stdout shapes byte-for-byte
+- [x] No data loss or corruption during migration — this is a pure-addition change to `DOMAIN_CONFIG_TYPES` / `DOMAIN_CONFIG_FILENAMES`; no existing entry's filename, structured/unstructured classification, or resolution precedence changes
+- [x] `resolveTemplate()`'s discovery path (`extensions/<domain>/domain/` → `templates/`, kind-suffixed filenames) is untouched; `template-resolution.spec.md`'s existing Behaviors 3, 4, and 8 are unaffected by this spec
+- [x] Specs already authored before this change are not retroactively rewritten — the Error Cases header change affects the TEMPLATE, not any already-written spec's already-filled-in table
+- [x] Provider mirrors are only ever produced by `scripts/sync-provider-skills.mjs`; no manual edit is made to `providers/*/skills/specify/SKILL.md`
+- [x] No reviewer panel membership, prompt file, or `review.yaml` change is introduced — that is the sibling `reviewer-panel-retarget` spec's exclusive scope
 
 ## Behavioral Contract
 
@@ -201,17 +220,17 @@ tracker-ref: adev-plugin-j7pq.5
 
 ## Acceptance Criteria
 
-- [ ] `skills/specify/SKILL.md` contains no HTTP status codes and no drag-and-drop examples — `grep -n "column not found → 404\|drags a card" skills/specify/SKILL.md` returns no matches. (Scoped to the specific removed phrasing, not a bare `drag`/`40[0-9]` substring: three pre-existing, unrelated lines legitimately retain the word "drag" — a sample module hint, a charter-example capability name, and an unrelated spec filename in Duplicate Detection prose — and none of them are touched by this migration.)
-- [ ] `providers/codex/skills/specify/SKILL.md` and `providers/opencode/skills/specify/SKILL.md` likewise contain no HTTP status codes and no drag-and-drop examples (same scoped check as above), produced only via `node scripts/sync-provider-skills.mjs` regeneration — never hand-edited
-- [ ] `templates/spec-template.behavioral.md` and `templates/spec-template.refactor.md` carry no `HTTP Status` column; their Error Cases column header reads `Error Code`. Removing examples from the skill alone does not satisfy this criterion — both templates must be verified independently
-- [ ] `specify-guidance` is present in `DOMAIN_CONFIG_TYPES` and `DOMAIN_CONFIG_FILENAMES` (mapped to `specify-guidance.md`), and absent from `STRUCTURED_CONFIG_TYPES`
-- [ ] `adev domain load-guidance --module <slug> [--charter <path>]` exists, resolves the domain via the same precedence as `resolve` / `load-reviewers`, and returns `{ domain, guidance, warnings }` on stdout with exit 0
-- [ ] `templates/domains/software/specify-guidance.md` exists and its content is domain-appropriate (no HTTP status codes, no UI drag-and-drop language)
-- [ ] When a resolved domain ships `specify-guidance.md` (bundled, project-installed, or via one-level `extends`), `/adev:specify` Step 4 renders that content as its Behaviors/Error Cases examples (BEH-1, BEH-3, BEH-4)
-- [ ] When no domain ships `specify-guidance.md`, `/adev:specify` renders an explicit empty-state message (not silence) and falls back to domain-neutral generic prompts (BEH-2)
-- [ ] `tests/lib/domains/constants.test.mjs` asserts the updated 9-entry `DOMAIN_CONFIG_TYPES` set and the new `specify-guidance` → `specify-guidance.md` mapping
-- [ ] All existing tests continue to pass at every migration step except the deliberately-updated constants test, which is updated in the same change
-- [ ] `resolveTemplate()`'s discovery path and `template-resolution.spec.md`'s existing Behaviors 3, 4, and 8 are unaffected — verified by the existing template-resolution tests passing unmodified
-- [ ] No reviewer panel membership, prompt file, or `review.yaml` change is introduced by this spec (scope boundary with the sibling `reviewer-panel-retarget` spec)
-- [ ] `npm test` passes
-- [ ] No constitutional violations
+- [x] `skills/specify/SKILL.md` contains no HTTP status codes and no drag-and-drop examples — `grep -n "column not found → 404\|drags a card" skills/specify/SKILL.md` returns no matches. (Scoped to the specific removed phrasing, not a bare `drag`/`40[0-9]` substring: three pre-existing, unrelated lines legitimately retain the word "drag" — a sample module hint, a charter-example capability name, and an unrelated spec filename in Duplicate Detection prose — and none of them are touched by this migration.)
+- [x] `providers/codex/skills/specify/SKILL.md` and `providers/opencode/skills/specify/SKILL.md` likewise contain no HTTP status codes and no drag-and-drop examples (same scoped check as above), produced only via `node scripts/sync-provider-skills.mjs` regeneration — never hand-edited
+- [x] `templates/spec-template.behavioral.md` and `templates/spec-template.refactor.md` carry no `HTTP Status` column; their Error Cases column header reads `Error Code`. Removing examples from the skill alone does not satisfy this criterion — both templates must be verified independently
+- [x] `specify-guidance` is present in `DOMAIN_CONFIG_TYPES` and `DOMAIN_CONFIG_FILENAMES` (mapped to `specify-guidance.md`), and absent from `STRUCTURED_CONFIG_TYPES`
+- [x] `adev domain load-guidance --module <slug> [--charter <path>]` exists, resolves the domain via the same precedence as `resolve` / `load-reviewers`, and returns `{ domain, guidance, warnings }` on stdout with exit 0
+- [x] `templates/domains/software/specify-guidance.md` exists and its content is domain-appropriate (no HTTP status codes, no UI drag-and-drop language)
+- [x] When a resolved domain ships `specify-guidance.md` (bundled, project-installed, or via one-level `extends`), `/adev:specify` Step 4 renders that content as its Behaviors/Error Cases examples (BEH-1, BEH-3, BEH-4)
+- [x] When no domain ships `specify-guidance.md`, `/adev:specify` renders an explicit empty-state message (not silence) and falls back to domain-neutral generic prompts (BEH-2)
+- [x] `tests/lib/domains/constants.test.mjs` asserts the updated 9-entry `DOMAIN_CONFIG_TYPES` set and the new `specify-guidance` → `specify-guidance.md` mapping
+- [x] All existing tests continue to pass at every migration step except the deliberately-updated constants test, which is updated in the same change
+- [x] `resolveTemplate()`'s discovery path and `template-resolution.spec.md`'s existing Behaviors 3, 4, and 8 are unaffected — verified by the existing template-resolution tests passing unmodified
+- [x] No reviewer panel membership, prompt file, or `review.yaml` change is introduced by this spec (scope boundary with the sibling `reviewer-panel-retarget` spec)
+- [x] `npm test` passes
+- [x] No constitutional violations
