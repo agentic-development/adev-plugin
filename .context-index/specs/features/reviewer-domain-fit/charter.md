@@ -1,7 +1,7 @@
 ---
 kind: initiative
-status: draft
-revision: 1
+status: approved
+revision: 2
 updated: 2026-08-18
 tracker-ref: adev-plugin-j7pq.5
 ---
