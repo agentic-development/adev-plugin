@@ -7,3 +7,13 @@
 {"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T18:50:05.716Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"PASS","notes":"Re-review of rev 2: both prior blockers verified resolved (BEH-3 rewrite, grep rescoping); no new findings","ts":"2026-08-18T18:52:06.996Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"review","verdict":"PASS","ts":"2026-08-18T18:52:50.129Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-18T21:16:10.570Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-18T21:17:05.157Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/domain-authoring-guidance.plan.md","task_id":"1","status":"pending","notes":"Extend domain-config type registry","ts":"2026-08-18T21:32:08.519Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/domain-authoring-guidance.plan.md","task_id":"2","status":"pending","notes":"Add load-guidance CLI subcommand","ts":"2026-08-18T21:32:08.524Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/domain-authoring-guidance.plan.md","task_id":"3","status":"pending","notes":"Ship bundled default guidance","ts":"2026-08-18T21:32:08.524Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/domain-authoring-guidance.plan.md","task_id":"4","status":"pending","notes":"Wire skill to load guidance + empty state","ts":"2026-08-18T21:32:08.525Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/domain-authoring-guidance.plan.md","task_id":"5","status":"pending","notes":"Regenerate provider mirrors","ts":"2026-08-18T21:32:08.526Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/domain-authoring-guidance.plan.md","task_id":"6","status":"pending","notes":"Update spec-template Error Cases headers","ts":"2026-08-18T21:32:08.527Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T21:32:36.061Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T21:33:37.173Z"}
