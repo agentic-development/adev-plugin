@@ -346,7 +346,7 @@ for (const reviewer of dispatchedReviewers) {
 
 The sidecar revision is included in the `.blockers.md` header so `/adev:specify --revise` can verify it matches the spec's current `revision:` frontmatter before producing rev N+1.
 
-**6b-ter. Heuristics on BLOCK: prior occurrences of this blocker (BLOCK only).** After the sidecar is written, and only for findings whose `blocker_id` passed the aggregator's validation above, re-query the heuristics store to surface what past work already learned about this same blocker.
+**6b-ter. Heuristics on BLOCK: related prior lessons (BLOCK only).** After the sidecar is written, and only for findings whose `blocker_id` passed the aggregator's validation above, re-query the heuristics store for lessons past work recorded in this module, ranked so that any exact match on this blocker's identity sorts first.
 
 A reviewer finding needs no synthesized key — its `blocker_id` already IS its canonical identity. Derive the recurrence key in inherited mode, one invocation per validated `blocker_id`:
 
@@ -362,7 +362,11 @@ Then re-query the store with the key the verb printed:
 adev heuristics retrieve --module <charter-module> --signature <sig> --tier summary --format text
 ```
 
-Stdout is either rendered markdown blocks or the literal sentinel `__NONE__`. When it is not `__NONE__`, inject the blocks into your BLOCK output under the heading `## Heuristics — prior occurrences of this blocker`, prefixed with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
+Stdout is either rendered markdown blocks or the literal sentinel `__NONE__`.
+
+`--signature` **ranks, it does not filter.** `retrieveHeuristics` takes exact signature matches off the top of the budget and then fills the remainder from the module and `_global` scopes by confidence, so a non-`__NONE__` result routinely carries entries that matched nothing about this blocker. On a project whose store holds only `_global` entries — or whose entries carry no `signature:` field at all — *every* returned entry is of that kind. The verb's output carries no per-entry match flag (`--format json` returns `{count, rendered}` and nothing else), so this step CANNOT isolate the matches, and must not present the result as though it could.
+
+When the output is not `__NONE__`, inject the blocks into your BLOCK output under the heading `## Heuristics — related prior lessons (signature-ranked)`, prefixed with: "The following heuristics are lessons learned from past work in this module, ranked with any exact matches for this blocker first. They are not necessarily prior occurrences of this blocker. Use them as guidance, not as hard rules."
 
 Derive the module slug from the spec's `charter:` frontmatter field — the same slug Step 0 uses. Do not pass `--injection-limit`: because `--signature` is present the verb applies the error-time cap itself. Do not read a limit out of `manifest.yaml` and do not hardcode one.
 
