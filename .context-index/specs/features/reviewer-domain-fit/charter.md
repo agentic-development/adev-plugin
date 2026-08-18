@@ -44,6 +44,8 @@ as a real vendored extension and validating registries at install time.
 - Inline prompt bodies in the reviewer schema
 - `web-service` domain owning the OWASP and structural prompts, with plugin shims
 - Install-time registry validation in `adev extension install`
+- Template resolution reaching CLI-installed extensions, so a domain package supplies its
+  templates as well as its governance config (`adev-plugin-xg1f.6`)
 - Split load-failure semantics: fatal for project-declared reviewers, warn-and-drop for extension-contributed
 - Codebase-shape domain detection at `/adev:init`, proposing with evidence
 - `adev governance adopt` as hygiene Pass 19's apply path
@@ -61,7 +63,7 @@ as a real vendored extension and validating registries at install time.
   relaxing it leaves none; `installDomainProfile` writes `extends: ${parent}` unconditionally and
   cannot express a root domain; the upgrade trigger is unowned; `resolveTemplate` scans
   `<pluginRoot>/extensions/` while installs write to `<projectRoot>/.context-index/domains/` and the
-  two never meet (tracked separately as `adev-plugin-xg1f.6`); and it contradicts
+  two never meet — this initiative REMOVES that blocker (see Phase A); and it contradicts
   `template-resolution.spec.md` Behaviors 3 and 4. Tracked as `adev-plugin-xg1f.5`
 - Automatic updates or version polling — `adev-plugin-zsmh.6`
 - Fixing `data-engineering`'s own reviewer data — `adev-plugin-xg1f.4`
@@ -81,7 +83,7 @@ as a real vendored extension and validating registries at install time.
 | `design` | modifies | `/adev:specify` sheds hardcoded guidance |
 | `maintenance` | modifies | Pass 19 gains a named apply path |
 | `domain-profiles` | modifies | Adds a `web-service` domain and a `specify-guidance.md` entry to the domain-config set; breaks none of its invariants, since `software` stays bundled |
-| `lifecycle-artifacts` | modifies | Owns the spec templates whose `HTTP Status` column Phase 2 removes; `resolveTemplate`'s fall-through behaviour is unchanged |
+| `lifecycle-artifacts` | modifies | Owns the spec templates whose `HTTP Status` column Phase 2 removes, and `resolveTemplate` itself — Phase A widens its signature with a project root and adds a project-local search step ahead of the plugin roots. Its fall-through to the bundled default is preserved |
 
 ## Current State
 
@@ -121,6 +123,16 @@ five review rounds on 2026-08-17/18: reviewers cited `lib/cli/gate.mjs:144`,
 nonetheless deliver no source: all eight globs in `templates/review-specs/defaults.yaml`
 resolve under `.context-index/` or `<charter-dir>`.
 
+**Domain packages resolve only half their content.** `resolveTemplate` discovers domains by
+scanning `<pluginRoot>/extensions/*/domain/` (`discoverExtensionRoots`) and its signature carries
+no project root at all. `adev extension install` writes domain content to
+`<projectRoot>/.context-index/domains/<name>/`. So an installed domain extension supplies its
+`reviewers.yaml` and `gates.yaml` — `loadDomainConfig` reads the project-local path first
+(`lib/domains/domain-config.mjs:90`) — while its `spec-template.md` and `charter-template.md` are
+never found. The install reports success and silently delivers part of what it declared. Invisible
+so far only because both first-party extensions are vendored plugin-side, where `resolveTemplate`
+does look.
+
 **The domain catalog is one entry deep and partly broken.** One bundled domain
 (`software`), three first-party extensions in a static `templates/extensions-catalog.json`.
 `/adev:init` offers that same fixed list to every project with no inspection of what the
@@ -156,6 +168,12 @@ resolves through `loadDomainConfig` and written templates through `resolveTempla
 acceptance criterion names which. Unifying them belongs with the deferred unbundling work. `/adev:specify` keeps method and
 sheds examples. Inline prompt bodies let a domain declare a small reviewer without a file
 per reviewer.
+
+**A domain package resolves as one unit.** Templates follow the same project-then-plugin
+precedence `loadDomainConfig` already uses, so an installed domain supplies templates, governance
+and guidance together. Until this lands, a domain can only be shipped vendored — which is what
+makes `web-service` deliverable in Phase A either way, and what makes user-installable domains
+real rather than nominal.
 
 **Broken extensions cannot take down the gate.** A malformed reviewer in the project's
 own registry stays fatal — the project declared it, and silently reviewing with less is
@@ -203,6 +221,13 @@ data.
 deprecated shims so materialized registries referencing `plugin:review-specs/…` keep
 loading; split load-failure semantics; install-time registry validation.
 
+Also in Phase A: give `resolveTemplate` a project root and search
+`.context-index/domains/<domain>/` ahead of the plugin-side extension roots, mirroring
+`loadDomainConfig`'s precedence. This is `adev-plugin-xg1f.6`, pulled in because Phase A ships
+domain-owned prompts and Phase 2 ships domain-owned guidance — both already resolve project-local,
+and leaving templates plugin-only would ship a domain-package contract that is two-thirds true.
+It also removes one of the six blockers on the deferred unbundling work.
+
 **Phase B — Init domain detection.** Codebase-shape signals, proposed with evidence.
 
 **Phase C — `adev governance adopt`.** Pass 19's apply path.
@@ -244,6 +269,13 @@ panel.
 - [ ] Existing projects whose materialized `review.yaml` references `plugin:review-specs/security-reviewer-prompt.md` continue to load unchanged
 - [ ] `adev extension install` loads the merged registry before committing and refuses on `errors`, naming the offending reviewer
 - [ ] A malformed reviewer in the project's own registry is fatal; a malformed extension-contributed reviewer is dropped with a warning while well-formed reviewers dispatch — asserted by two separate tests
+- [ ] A domain extension installed via `adev extension install` into a scratch project supplies its
+      `spec-template.md`: `/adev:specify` writes from it, asserted by a test that installs rather than
+      vendors the extension
+- [ ] Template resolution follows project-then-plugin precedence, matching `loadDomainConfig`; a
+      project-local domain file wins over a plugin-side one of the same name
+- [ ] `resolveTemplate`'s existing fall-through to the bundled `software` default is unchanged when
+      no project-local domain exists — `template-resolution.spec.md` Behaviors 3 and 4 still hold
 
 ### Phase B — init detection
 
