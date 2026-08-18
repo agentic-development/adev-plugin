@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.28.0-next.3](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.2...adev-cli-v0.28.0-next.3) (2026-08-18)
+
+
+### Bug Fixes
+
+* **provider:** install only what ships — 358MB to 5.7MB, suite 360s to 28s ([9101252](https://github.com/agentic-development/adev-plugin/commit/9101252e9ce14b66efb5e53d74767befc506bb1f))
+* **provider:** install only what ships, derived from package.json files ([d82de7b](https://github.com/agentic-development/adev-plugin/commit/d82de7ba0a106c126c1484e3c0db747fd22d8c3c))
+* **provider:** install only what ships, derived from package.json files ([787c366](https://github.com/agentic-development/adev-plugin/commit/787c3662c7bed3ea6c570da6b929f7be434fb7ac))
+* **review-specs:** stop Step 6b-ter claiming signature-ranked heuristics are prior occurrences ([a212892](https://github.com/agentic-development/adev-plugin/commit/a2128922ca61603c2006d181be77eba847ad669c))
+* **review-specs:** stop Step 6b-ter claiming signature-ranked heuristics are prior occurrences ([38b0d98](https://github.com/agentic-development/adev-plugin/commit/38b0d980345832582d645955495680df76c43034))
+* **session-capture:** resolve transcripts path under dot-directory cwds ([e3dfd48](https://github.com/agentic-development/adev-plugin/commit/e3dfd480562fcf219e8919e1cababe9f86b45ab5))
+* **token-epic:** dot-directory transcripts path, machine-independent evals, test-suite reduction ([0de08ca](https://github.com/agentic-development/adev-plugin/commit/0de08cabd4c0b14e87d107dc679bace4b64c6da9))
+
 ## [0.28.0-next.2](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.1...adev-cli-v0.28.0-next.2) (2026-08-17)
 
 
