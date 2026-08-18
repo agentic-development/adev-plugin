@@ -1,7 +1,8 @@
 ---
+# partial_schema: implement@1
 charter: reviewer-domain-fit
 kind: action
-status: review-passed
+status: implemented
 risk_level: medium
 milestone:
 revision: 6
@@ -9,6 +10,20 @@ charter-revision: 2
 created: 2026-08-18
 updated: 2026-08-18
 tracker-ref: adev-plugin-j7pq.5
+source-manifest:
+  sha: "d7b19bd"
+  files:
+    - .context-index/governance/review.yaml
+    - .context-index/prompts/referent-integrity.md
+    - .context-index/research/referent-integrity-falsification-2026-08.md
+    - .context-index/research/referent-integrity-falsification/he2.review.md
+    - .context-index/research/referent-integrity-falsification/mapping-table.md
+    - .context-index/research/referent-integrity-falsification/r5sc.review.md
+    - .context-index/research/referent-integrity-falsification/run-log.md
+    - .context-index/research/referent-integrity-falsification/scoring.md
+    - .context-index/research/referent-integrity-falsification/zx5.review.md
+    - .context-index/specs/features/reviewer-domain-fit/charter.md
+  computed-at: "2026-08-18T17:09:30.736Z"
 ---
 
 # Action Spec: Falsification Gate
