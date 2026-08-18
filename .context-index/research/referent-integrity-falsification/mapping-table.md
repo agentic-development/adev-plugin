@@ -16,7 +16,7 @@ worktree (sync-merge state could not be inspected), so issue text came from
 | r5sc | `.context-index/specs/features/review/configurable-reviewers.spec.md` | `104a06e6` | `0476a7bc`, `8d8d5c5a` | MAPPED |
 | zx5 | `.context-index/specs/features/cli-driver-surface/driver-substrate.spec.md` | `c0a43569` | `3f28515c` | MAPPED |
 | rftq | — | — | — | UNMAPPED (reason: defect lived only in `skills/eval/SKILL.md` prose; no Live Spec formalizes the Layer 3 default-rubric contract) |
-| ysqd | `.context-index/specs/cross-cutting/review-block-auto-retry.spec.md` | `684a677b` | `11b179d7` | MAPPED |
+| ysqd | — | — | — | UNMAPPED (reason: defect lived only in `skills/implement/SKILL.md` Step 2g prose; the only spec formalizing `lib/loop-convergence.mjs`'s stop-condition contract, `review-block-auto-retry.spec.md`, is scoped exclusively to `/adev:build`'s spec-revision auto-retry loop, not implement's code-quality review loop — see reasoning below) |
 
 ## Reasoning per id
 
@@ -140,34 +140,71 @@ contract lived only in `skills/eval/SKILL.md` prose at the pre-fix revision, wit
 no Live Spec formalizing it — the id is recorded `UNMAPPED` rather than pinned to
 a spec that does not actually describe the defective behaviour.
 
-### ysqd — MAPPED
+### ysqd — UNMAPPED
 
 Issue (`external_ref: issue-0wh69r`): "Implement Stage-2 review loop is
 unbounded (\"Repeat until approved\") while every sibling loop caps at 3." The
-close reason names the fixing commit directly: "Fixed in `11b179d7`."
+close reason names the fixing commit directly: "Fixed in `11b179d7`," and
+`git show 11b179d7 --stat` confirms it touches only `.beads/issues.jsonl`,
+`skills/implement/SKILL.md`, and `tests/skills/implement.test.mjs` — no spec
+file.
 
-The governing spec is `review-block-auto-retry.spec.md`
-(`.context-index/specs/cross-cutting/`), which `11b179d7`'s own `Spec:` trailer
-names. That spec's Behaviors define `lib/loop-convergence.mjs`'s convergence
-algorithm — partitioning blocker ids across cycles into `addressed` /
-`persistent` / `new` sets, and stopping on PASS, `LOOP_BUDGET_EXHAUSTED`,
-`LOOP_NO_PROGRESS`, or `LOOP_REGRESSED` — originally written for `/adev:build`'s
-review-then-revise loop. `11b179d7`'s own message states the fix explicitly
-reuses this machinery ("routed through convergence... Terminal outcomes reuse
-build's vocabulary... so one grep finds both loops"): at the pre-fix revision,
-`skills/implement/SKILL.md` Step 2g's Stage-2 loop said "Repeat until approved"
-without ever calling into this already-specified convergence contract, even
-though the spec's stop-condition vocabulary was equally applicable and its
-sibling loop (Stage 1) already used it. That is the referent gap: the spec
-defines a convergence primitive available to any capped review loop, and
-Stage-2 was the one loop in the framework not exercising a referent it should
-have. Pre-fix SHA (`684a677b`) is `11b179d7`'s first parent, confirmed as an
-ancestor.
+**Correction (2026-08-18, spec-compliance re-review):** this id was originally
+recorded MAPPED to `.context-index/specs/cross-cutting/review-block-auto-retry.spec.md`
+on the strength of that commit's own `Spec:` trailer plus its message citing
+reused vocabulary (`LOOP_BUDGET_EXHAUSTED`, `LOOP_NO_PROGRESS`, `LOOP_REGRESSED`)
+and the shared `lib/loop-convergence.mjs` primitive. A spec-compliance reviewer
+correctly flagged this as exactly the trap the task instructions warn about — a
+`Spec:` trailer is a hint, not proof — and a full read of
+`review-block-auto-retry.spec.md` confirms the flag: its Behavioral Contract,
+Preconditions, all ten Behaviors, Postconditions, and Error Cases are scoped
+entirely to `/adev:build --full`'s spec-review-BLOCK auto-retry loop — reading
+a spec's `.review.md`/`.blockers.md` sidecars, dispatching
+`/adev:specify --revise <spec>`, bumping a spec's `revision:` frontmatter,
+partitioning **blocker IDs across spec revisions**. It names `/adev:implement`
+nowhere, "Stage 2" nowhere, and "code-quality review" nowhere. Its
+source-manifest lists `skills/build/SKILL.md` and `skills/specify/SKILL.md`
+but never `skills/implement/SKILL.md` — confirmed unchanged by re-checking the
+manifest as it stands today, post-fix. `git show 11b179d7 --
+.context-index/specs/cross-cutting/review-block-auto-retry.spec.md` is empty:
+the fixing commit makes zero changes to that spec. The only genuine link is
+that `lib/loop-convergence.mjs` — a generic convergence primitive
+(`partitionBlockers` → `addressed`/`persistent`/`new`, `evaluateStopCondition`)
+first specified for build's spec-revision loop — was reused by the implement
+fix for a structurally similar but functionally distinct loop (capping
+per-task code-quality re-review cycles, comparing Critical/Important finding
+IDs across review cycles rather than spec revisions across blocker IDs). Code
+reuse is not spec governance.
+
+A further search for a genuine governing spec turned up nothing. No
+`*.spec.md` under `.context-index/specs/` lists `skills/implement/SKILL.md` in
+its source-manifest for Step 2g / Stage-2 behavior specifically (the ~25 specs
+that do list `skills/implement/SKILL.md` at all govern unrelated cross-cutting
+concerns — skill extensions, model routing, spec-file suffixes, workspace
+awareness, etc. — none mention a review-loop cap). The only other two
+`*.spec.md` hits for "Stage 2" are false positives on the phrase:
+`diagnostic-registry.spec.md`'s "Stage 2 — hard timeout" governs the
+diagnostics engine's per-runner timeout, and `configurable-reviewers.spec.md`'s
+"Stage 2 (Adapter)" governs a reviewer-dispatch sub-stage that extracts
+findings from a runner's raw output — neither has anything to do with
+implement's per-task review-cycle cap. `adev-build-skill.spec.md` and
+`completion-tokens.spec.md` also reference `lib/loop-convergence.mjs`, but only
+in the context of build's own BLOCK→revise loop, not implement's. The
+`implementation` charter (`.context-index/specs/features/implementation/charter.md`)
+describes "2-stage review" only in charter prose (Capability Map line), with no
+linked Live Spec formalizing the Stage-2 loop's cap or convergence behavior.
+
+Conclusion: the defect lived only in `skills/implement/SKILL.md` Step 2g prose,
+with no Live Spec governing that loop's cap/convergence contract at the
+pre-fix revision. Per the task's own instruction not to substitute a loosely
+related spec to preserve the denominator, `ysqd` is `UNMAPPED`.
 
 ## Denominator note
 
-Four of five ids map to a spec (`he2`, `r5sc`, `zx5`, `ysqd`); `rftq` is
-`UNMAPPED`. Per Postcondition 4, the denominator for Phase 1 scoring is
-therefore **4**, and the bar is `ceil(0.6 × 4) = 3`. This note records the
-denominator for Task 4's implementer; it does not itself run or score any
-review.
+**Updated 2026-08-18** (see `ysqd` correction above). Three of five ids map to
+a spec (`he2`, `r5sc`, `zx5`); `rftq` and `ysqd` are both `UNMAPPED`. Per
+Postcondition 4, the denominator for Phase 1 scoring is therefore **3** — at
+the floor, but not below it, so the experiment is not automatically
+INCONCLUSIVE on denominator grounds — and the bar is `ceil(0.6 × 3) = 2`. This
+note records the denominator for Task 4's implementer; it does not itself run
+or score any review.
