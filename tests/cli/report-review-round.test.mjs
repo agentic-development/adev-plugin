@@ -321,3 +321,41 @@ test("the --type vocabulary is derived from one exported constant, not four stri
     "the four usage/error strings must be derived from REPORT_TYPES, not literal",
   );
 });
+
+test("the documented report --type enum matches the implemented one", () => {
+  const doc = readFileSync(join(PROJECT_ROOT, "docs/cli-reference.md"), "utf8");
+  const src = readFileSync(join(PROJECT_ROOT, "lib/cli/report.mjs"), "utf8");
+
+  const m = doc.match(/report --type <([^>]+)>/);
+  assert.ok(m, "docs/cli-reference.md must carry a `report --type <…>` signature");
+  const documented = m[1].split("|").map((s) => s.trim()).sort();
+
+  const t = src.match(/export const REPORT_TYPES = Object\.freeze\(\[([^\]]+)\]\)/);
+  assert.ok(t, "lib/cli/report.mjs must export REPORT_TYPES as the implemented enum");
+  const implemented = t[1]
+    .split(",")
+    .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
+    .filter(Boolean)
+    .sort();
+
+  assert.ok(documented.includes("review-round"), "docs must list review-round");
+  assert.ok(implemented.includes("review-round"), "the CLI must accept review-round");
+  assert.strictEqual(documented.length, 7, "exactly seven documented values");
+
+  for (const type of implemented) {
+    assert.ok(documented.includes(type), `implemented type ${type} is undocumented`);
+  }
+  const documentedOnly = documented.filter((type) => !implemented.includes(type));
+  assert.deepStrictEqual(
+    documentedOnly,
+    ["cost-checkpoint"],
+    "no new documented-but-unimplemented --type may be introduced",
+  );
+});
+
+test("docs/cli-reference.md shows a review-round invocation example", () => {
+  const doc = readFileSync(join(PROJECT_ROOT, "docs/cli-reference.md"), "utf8");
+  assert.match(doc, /adev report --type review-round[^\n]*--spec/);
+  assert.match(doc, /--stage/);
+  assert.match(doc, /--cycles/);
+});

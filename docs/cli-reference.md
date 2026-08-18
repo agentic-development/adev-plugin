@@ -303,12 +303,17 @@ adev governance materialize --registry gates --dry-run
 
 **Purpose:** Append a lifecycle event to `.context-index/lifecycle-state/<slug>.jsonl`. Replaces the inline `reportValidator` / `reportStep` / `reportReviewer` / `reportPlanTask` / `reportIntervention` calls.
 
-**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|cost-checkpoint> --spec <path> [type-specific flags]`
+**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|cost-checkpoint|review-round> --spec <path> [type-specific flags]`
 
 **Example:**
 ```
 adev report --type validator --spec <p> --step validate --validator check-2-spec-compliance --verdict PASS
+
+adev report --type review-round --spec <p> --plan <p>.plan.md --task-id t1 \
+  --stage code-quality --cycles 2 --findings 1
 ```
+
+`--findings` is omitted for `--stage spec-compliance` — that review stage has no stable finding-id convention to count against. As with the other `report` types, omitting an event entirely means "not recorded", never "zero". `cost-checkpoint` remains documented above but is not yet an implemented `--type`; this is a pre-existing gap, tracked separately, and left untouched here.
 
 **Implementation:** `lib/cli/report.mjs`. **Called by:** `/adev:plan`, `/adev:specify`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`.
 
