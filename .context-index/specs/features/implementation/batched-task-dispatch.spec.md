@@ -3,7 +3,7 @@
 ---
 charter: implementation
 kind: skill
-status: implemented
+status: validated
 risk_level: high
 milestone:
 revision: 1
