@@ -477,7 +477,26 @@ adev route render-sidecar --plan .context-index/specs/features/auth/login.plan.m
 adev implement read-routing --plan <p> --task-id task-3
 ```
 
+Exit codes: `0` success (entry JSON on stdout), `1` argument error / `INVALID_PLAN_PATH` / `INVALID_SIDECAR_JSON`, `2` `ROUTING_SIDECAR_MISSING`, `3` `ROUTING_ENTRY_MISSING`, `4` `ROUTING_AGENT_INVALID`.
+
 **Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement`, `/adev:route`.
+
+#### `implement batches`
+
+**Purpose:** Resolve which of a plan's tasks are eligible to dispatch together as a batch (from `## Parallelization` sequential groups) versus solo, honoring per-run overrides.
+
+**Signature:** `implement batches --plan <p> [--max-batch <n>] [--no-batch]`
+
+Prints `{ batches, solo, advisories }` as JSON to stdout. `--no-batch` forces every task solo and is rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`. `--max-batch <n>` overrides `implement.max_batch_size` for this run; an invalid value is rejected with `INVALID_MAX_BATCH_SIZE`.
+
+**Example:**
+```
+adev implement batches --plan <p> --max-batch 4
+```
+
+Exit codes: `0` success, `1` argument error / `CONFLICTING_BATCH_FLAGS` / `INVALID_MAX_BATCH_SIZE` / `INVALID_PLAN_PATH`, `2` `ROUTING_SIDECAR_MISSING`.
+
+**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only — `/adev:route` does not call `batches`.
 
 ### `specify`
 
