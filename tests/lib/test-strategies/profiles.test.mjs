@@ -58,11 +58,11 @@ describe('UNIT_PROFILE', () => {
     }, TypeError);
   });
 
-  test('gaming_blockers array is frozen', () => {
+  test("gaming_blockers array is frozen (+1 more contract assertions)", () => {
+    // gaming_blockers array is frozen
     assert.ok(Object.isFrozen(UNIT_PROFILE.gaming_blockers));
-  });
 
-  test('permitted_tools array is frozen', () => {
+    // permitted_tools array is frozen
     assert.ok(Object.isFrozen(UNIT_PROFILE.permitted_tools));
   });
 });

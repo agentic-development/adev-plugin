@@ -137,14 +137,14 @@ test('manifest-template.yaml documents lifecycle.event_diagnostics (AC: postcond
 
 // ── resolveEventDiagnosticsMode ────────────────────────────────────────────
 
-test('resolveEventDiagnosticsMode defaults to "tag" when manifest is missing the field', () => {
+test("resolveEventDiagnosticsMode defaults to \"tag\" when manifest is missing the field (+1 more contract assertions)", () => {
+  // resolveEventDiagnosticsMode defaults to "tag" when manifest is missing the field
   assert.equal(resolveEventDiagnosticsMode({}), 'tag');
   assert.equal(resolveEventDiagnosticsMode({ lifecycle: {} }), 'tag');
   assert.equal(resolveEventDiagnosticsMode(null), 'tag');
   assert.equal(resolveEventDiagnosticsMode(undefined), 'tag');
-});
 
-test('resolveEventDiagnosticsMode returns the configured mode when valid', () => {
+  // resolveEventDiagnosticsMode returns the configured mode when valid
   assert.equal(resolveEventDiagnosticsMode({ lifecycle: { event_diagnostics: 'strict' } }), 'strict');
   assert.equal(resolveEventDiagnosticsMode({ lifecycle: { event_diagnostics: 'tag' } }), 'tag');
   assert.equal(resolveEventDiagnosticsMode({ lifecycle: { event_diagnostics: 'off' } }), 'off');

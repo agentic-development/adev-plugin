@@ -82,11 +82,11 @@ test('normaliseEventInPlace docstring reflects the closed-discriminator / mode-d
 
 // ── Task 2: slugFromSpec / validateProjectRoot ─────────────────────────────
 
-test('slugFromSpec accepts a normal spec filename', () => {
+test("slugFromSpec accepts a normal spec filename (+1 more contract assertions)", () => {
+  // slugFromSpec accepts a normal spec filename
   assert.equal(slugFromSpec('a/b/foo.spec.md'), 'foo');
-});
 
-test('slugFromSpec strips uppercase to lowercase', () => {
+  // slugFromSpec strips uppercase to lowercase
   assert.equal(slugFromSpec('a/b/Foo-Bar.spec.md'), 'foo-bar');
 });
 

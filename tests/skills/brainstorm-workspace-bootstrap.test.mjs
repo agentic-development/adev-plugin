@@ -41,39 +41,37 @@ describe("adev:brainstorm SKILL.md — workspace-mode bootstrap (Step 5b-3a)", (
     );
   });
 
-  it("Identity extraction fallback rule is documented with ## Identity and 'no constitution' fallback", () => {
+  it("Identity extraction fallback rule is documented with ## Identity and 'no constitution' fallback (+3 more contract assertions)", () => {
+    // Identity extraction fallback rule is documented with ## Identity and 'no constitution' fallback
     assert.ok(
-      skill.includes("## Identity"),
-      "Must document ## Identity section as primary extraction source"
+    skill.includes("## Identity"),
+    "Must document ## Identity section as primary extraction source"
     );
     assert.ok(
-      skill.includes("no constitution"),
-      "Must document 'no constitution' as final fallback string"
+    skill.includes("no constitution"),
+    "Must document 'no constitution' as final fallback string"
     );
-  });
 
-  it("Identity one-liners are sanitised via sanitizeIdentityOneLiner", () => {
+    // Identity one-liners are sanitised via sanitizeIdentityOneLiner
     assert.ok(
-      /sanitizeIdentityOneLiner|strip.*control char|ANSI/i.test(skill),
-      "Must reference sanitizeIdentityOneLiner or describe control-char/ANSI stripping"
+    /sanitizeIdentityOneLiner|strip.*control char|ANSI/i.test(skill),
+    "Must reference sanitizeIdentityOneLiner or describe control-char/ANSI stripping"
     );
-  });
 
-  it("Module Map in workspace mode contains workspace-charter rows only", () => {
+    // Module Map in workspace mode contains workspace-charter rows only
     assert.ok(
-      /workspace.charter.*only|workspace-charter rows only|workspace charters only/i.test(skill),
-      "Must document that workspace-mode Module Map contains workspace charters only"
+    /workspace.charter.*only|workspace-charter rows only|workspace charters only/i.test(skill),
+    "Must document that workspace-mode Module Map contains workspace charters only"
     );
-  });
 
-  it("Documents supersession of single-question contract from brainstorm-product-bootstrap B3", () => {
+    // Documents supersession of single-question contract from brainstorm-product-bootstrap B3
     assert.ok(
-      /supersed/i.test(skill),
-      "Must use 'supersedes' or related form"
+    /supersed/i.test(skill),
+    "Must use 'supersedes' or related form"
     );
     assert.ok(
-      /single.question/i.test(skill),
-      "Must reference single-question contract"
+    /single.question/i.test(skill),
+    "Must reference single-question contract"
     );
   });
 });

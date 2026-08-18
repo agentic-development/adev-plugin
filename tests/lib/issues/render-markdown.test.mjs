@@ -629,15 +629,14 @@ describe("writeTasksMd — Task 17 hand-edits have no effect on authoritative st
   });
 
   describe("escapeField — Rule 6: null placeholder", () => {
-    it("null renders as em-dash", () => {
+    it("null renders as em-dash (+2 more contract assertions)", () => {
+      // null renders as em-dash
       assert.equal(escapeField(null, { slot: "inline" }), "—");
-    });
 
-    it("undefined renders as em-dash", () => {
+      // undefined renders as em-dash
       assert.equal(escapeField(undefined, { slot: "inline" }), "—");
-    });
 
-    it("empty string renders as em-dash", () => {
+      // empty string renders as em-dash
       assert.equal(escapeField("", { slot: "inline" }), "—");
     });
 

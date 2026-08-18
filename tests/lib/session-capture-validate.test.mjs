@@ -21,22 +21,21 @@ import {
 // validateSessionId — SEC-2: ^[A-Za-z0-9_-]+$
 // ────────────────────────────────────────────────────────────────────────────
 
-test("validateSessionId accepts uuid-like ids", () => {
+test("validateSessionId accepts uuid-like ids (+2 more contract assertions)", () => {
+  // validateSessionId accepts uuid-like ids
   assert.strictEqual(validateSessionId("0bd909e-1a2b-3c4d"), true);
   assert.strictEqual(validateSessionId("abc-123_DEF"), true);
   assert.strictEqual(validateSessionId("a"), true);
   assert.strictEqual(validateSessionId("0123456789ABCDEFabcdef-_"), true);
-});
 
-test("validateSessionId rejects path-injection attempts", () => {
+  // validateSessionId rejects path-injection attempts
   assert.strictEqual(validateSessionId("../../etc/passwd"), false);
   assert.strictEqual(validateSessionId("a/b"), false);
   assert.strictEqual(validateSessionId("a b"), false);
   assert.strictEqual(validateSessionId("a.b"), false);
   assert.strictEqual(validateSessionId(""), false);
-});
 
-test("validateSessionId rejects non-string input", () => {
+  // validateSessionId rejects non-string input
   assert.strictEqual(validateSessionId(null), false);
   assert.strictEqual(validateSessionId(undefined), false);
   assert.strictEqual(validateSessionId(42), false);

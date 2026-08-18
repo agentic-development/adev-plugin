@@ -8,74 +8,63 @@ import { createTempDir, cleanupTempDir, writeFixture } from '../../helpers.mjs';
 
 describe('extensions/resolve-source', () => {
   describe('classifyUri', () => {
-    it('classifies absolute path as local', () => {
+    it("classifies absolute path as local (+10 more contract assertions)", () => {
+      // classifies absolute path as local
       assert.equal(classifyUri('/tmp/my-ext'), 'local');
-    });
 
-    it('classifies ./ relative path as local', () => {
+      // classifies ./ relative path as local
       assert.equal(classifyUri('./my-ext'), 'local');
-    });
 
-    it('classifies ../ relative path as local', () => {
+      // classifies ../ relative path as local
       assert.equal(classifyUri('../my-ext'), 'local');
-    });
 
-    it('classifies https URL as git', () => {
+      // classifies https URL as git
       assert.equal(classifyUri('https://github.com/org/ext.git'), 'git');
-    });
 
-    it('classifies http URL as git', () => {
+      // classifies http URL as git
       assert.equal(classifyUri('http://github.com/org/ext.git'), 'git');
-    });
 
-    it('classifies git:// URL as git', () => {
+      // classifies git:// URL as git
       assert.equal(classifyUri('git://github.com/org/ext.git'), 'git');
-    });
 
-    it('classifies ssh:// URL as git', () => {
+      // classifies ssh:// URL as git
       assert.equal(classifyUri('ssh://git@github.com/org/ext.git'), 'git');
-    });
 
-    it('classifies git@ SSH as git', () => {
+      // classifies git@ SSH as git
       assert.equal(classifyUri('git@github.com:org/ext.git'), 'git');
-    });
 
-    it('classifies npm scoped package name as npm', () => {
+      // classifies npm scoped package name as npm
       assert.equal(classifyUri('@org/adev-ext-foo'), 'npm');
-    });
 
-    it('classifies simple name as npm', () => {
+      // classifies simple name as npm
       assert.equal(classifyUri('adev-ext-foo'), 'npm');
-    });
 
-    it('classifies https URL with # fragment as git', () => {
+      // classifies https URL with # fragment as git
       assert.equal(classifyUri('https://github.com/org/repo#extensions/data-engineering'), 'git');
     });
   });
 
   describe('stripCredentials', () => {
-    it('strips userinfo from https URL', () => {
+    it("strips userinfo from https URL (+3 more contract assertions)", () => {
+      // strips userinfo from https URL
       assert.equal(
-        stripCredentials('https://user:token@github.com/repo'),
-        'https://github.com/repo'
+      stripCredentials('https://user:token@github.com/repo'),
+      'https://github.com/repo'
       );
-    });
 
-    it('strips username-only from URL', () => {
+      // strips username-only from URL
       assert.equal(
-        stripCredentials('https://user@github.com/repo'),
-        'https://github.com/repo'
+      stripCredentials('https://user@github.com/repo'),
+      'https://github.com/repo'
       );
-    });
 
-    it('returns non-URL strings unchanged', () => {
+      // returns non-URL strings unchanged
       assert.equal(stripCredentials('my-package'), 'my-package');
-    });
 
-    it('returns URL without credentials unchanged', () => {
+      // returns URL without credentials unchanged
       assert.equal(
-        stripCredentials('https://github.com/repo'),
-        'https://github.com/repo'
+      stripCredentials('https://github.com/repo'),
+      'https://github.com/repo'
       );
     });
 

@@ -10,18 +10,18 @@ const TEMPLATE = join(__dirname, "..", "..", "templates", "spec-template.behavio
 describe("spec-template.behavioral.md — infra_requirements field", () => {
   const content = readFileSync(TEMPLATE, "utf8");
 
-  it("frontmatter contains infra_requirements field (commented)", () => {
+  it("frontmatter contains infra_requirements field (commented) (+1 more contract assertions)", () => {
+    // frontmatter contains infra_requirements field (commented)
     assert.ok(
-      content.includes("infra_requirements"),
-      "Template must include infra_requirements field or comment"
+    content.includes("infra_requirements"),
+    "Template must include infra_requirements field or comment"
     );
-  });
 
-  it("frontmatter comment explains infra_requirements is for external systems", () => {
+    // frontmatter comment explains infra_requirements is for external systems
     assert.ok(
-      content.includes("infra_requirements") &&
-        (content.includes("external") || content.includes("systems") || content.includes("infra")),
-      "infra_requirements comment must reference external systems"
+    content.includes("infra_requirements") &&
+    (content.includes("external") || content.includes("systems") || content.includes("infra")),
+    "infra_requirements comment must reference external systems"
     );
   });
 

@@ -71,27 +71,23 @@ function reviewerRow(id, extra = "") {
 // ── 1. The mapping table itself ──────────────────────────────────────────────
 
 describe("mapSourceVocabulary implements DDR-4's table", () => {
-  test("bundled is identity", () => {
+  test("bundled is identity (+5 more contract assertions)", () => {
+    // bundled is identity
     assert.equal(mapSourceVocabulary("bundled", "acme"), "bundled");
-  });
 
-  test("project is identity", () => {
+    // project is identity
     assert.equal(mapSourceVocabulary("project", "acme"), "project");
-  });
 
-  test("governance collapses to project", () => {
+    // governance collapses to project
     assert.equal(mapSourceVocabulary("governance", "acme"), "project");
-  });
 
-  test("project-override maps to project, not to a fifth value", () => {
+    // project-override maps to project, not to a fifth value
     assert.equal(mapSourceVocabulary("project-override"), "project");
-  });
 
-  test("manifest-specialist maps to project", () => {
+    // manifest-specialist maps to project
     assert.equal(mapSourceVocabulary("manifest-specialist"), "project");
-  });
 
-  test("domain carries the resolved slug", () => {
+    // domain carries the resolved slug
     assert.equal(mapSourceVocabulary("domain", "acme-corp"), "domain:acme-corp");
   });
 

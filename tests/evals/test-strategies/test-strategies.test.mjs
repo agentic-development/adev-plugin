@@ -535,15 +535,15 @@ describe('Profile content: fixture', () => {
       `Expected small fixture gaming blocker`);
   });
 
-  it('assertion rules require exact output comparison', () => {
+  it("assertion rules require exact output comparison (+1 more contract assertions)", () => {
+    // assertion rules require exact output comparison
     assert.ok(p().assertion_rules.toLowerCase().includes('exact'),
-      `Expected exact comparison requirement`);
-  });
+    `Expected exact comparison requirement`);
 
-  it('seed data rule requires hand-crafted fixtures', () => {
+    // seed data rule requires hand-crafted fixtures
     assert.ok(p().seed_data_rule.toLowerCase().includes('hand-crafted') ||
-      p().seed_data_rule.toLowerCase().includes('deterministic'),
-      `Expected hand-crafted seed data requirement`);
+    p().seed_data_rule.toLowerCase().includes('deterministic'),
+    `Expected hand-crafted seed data requirement`);
   });
 
   it('permitted tools include dbt', () => {

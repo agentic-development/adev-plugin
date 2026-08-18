@@ -30,29 +30,26 @@ describe("adev:validate SKILL.md — workspace-aware cross-repo validation", () 
       "Must state unresolvable references are non-blocking");
   });
 
-  it("Check 2 (Spec Compliance) gains cross-repo interface verification", () => {
+  it("Check 2 (Spec Compliance) gains cross-repo interface verification (+4 more contract assertions)", () => {
+    // Check 2 (Spec Compliance) gains cross-repo interface verification
     assert.match(skill, /cross-repo.*interface|interface.*contract.*cross-repo|cross-repo.*dependenc/i,
-      "Check 2 must reference cross-repo interface verification");
-  });
+    "Check 2 must reference cross-repo interface verification");
 
-  it("Check 3 (Charter Consistency) includes cross-repo dependency context", () => {
+    // Check 3 (Charter Consistency) includes cross-repo dependency context
     assert.match(skill, /cross-repo.*scope|cross-repo.*charter|dependency.*context/i,
-      "Check 3 must include cross-repo dependency context");
-  });
+    "Check 3 must include cross-repo dependency context");
 
-  it("sibling repo content is read-only", () => {
+    // sibling repo content is read-only
     assert.match(skill, /read-only|read.only/i,
-      "Must state sibling repo content is read-only reference");
-  });
+    "Must state sibling repo content is read-only reference");
 
-  it("includes a cross-repo validation report section", () => {
+    // includes a cross-repo validation report section
     assert.match(skill, /Cross-Repo Dependency Validation/,
-      "Must include a Cross-Repo Dependency Validation report section");
-  });
+    "Must include a Cross-Repo Dependency Validation report section");
 
-  it("single-repo backward compatibility is preserved", () => {
+    // single-repo backward compatibility is preserved
     assert.match(skill, /detectWorkspace.*null|null.*detectWorkspace|no workspace/i,
-      "Must describe single-repo fallback when detectWorkspace returns null");
+    "Must describe single-repo fallback when detectWorkspace returns null");
   });
 
   it("applies assertPathInWorkspace for input hardening", () => {

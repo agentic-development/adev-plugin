@@ -73,15 +73,14 @@ test('getStrategy returns valid object for integration', () => {
   assert.ok(Array.isArray(s.typicalTools));
 });
 
-test('getStrategy returns null for empty string', () => {
+test("getStrategy returns null for empty string (+2 more contract assertions)", () => {
+  // getStrategy returns null for empty string
   assert.equal(getStrategy(''), null);
-});
 
-test('getStrategy returns null for undefined', () => {
+  // getStrategy returns null for undefined
   assert.equal(getStrategy(undefined), null);
-});
 
-test('getStrategy returns null for null', () => {
+  // getStrategy returns null for null
   assert.equal(getStrategy(null), null);
 });
 

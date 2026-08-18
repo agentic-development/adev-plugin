@@ -203,11 +203,11 @@ describe("parseId — legacy flat IDs", () => {
 // ---------------------------------------------------------------------------
 
 describe("parseId — invalid input", () => {
-  it("returns null for empty string", () => {
+  it("returns null for empty string (+1 more contract assertions)", () => {
+    // returns null for empty string
     assert.equal(parseId(""), null);
-  });
 
-  it("returns null for garbage string", () => {
+    // returns null for garbage string
     assert.equal(parseId("GARBAGE!@#"), null);
   });
 
@@ -216,11 +216,11 @@ describe("parseId — invalid input", () => {
     assert.equal(parseId("x1"), null);
   });
 
-  it("returns null for ID with dots but invalid prefix", () => {
+  it("returns null for ID with dots but invalid prefix (+1 more contract assertions)", () => {
+    // returns null for ID with dots but invalid prefix
     assert.equal(parseId("z1.q2"), null);
-  });
 
-  it("returns null for malformed dotted ID (empty segment)", () => {
+    // returns null for malformed dotted ID (empty segment)
     assert.equal(parseId("e1..t2"), null);
   });
 

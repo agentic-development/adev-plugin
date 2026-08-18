@@ -23,11 +23,11 @@ const MJS = join(PLUGIN_ROOT, 'hooks/post-validate-extract-heuristics.mjs');
 const HOOKS_JSON = join(PLUGIN_ROOT, 'hooks/hooks.json');
 
 describe('Post-validate heuristic-extraction hook', () => {
-  test('hook script file exists', () => {
+  test("hook script file exists (+1 more contract assertions)", () => {
+    // hook script file exists
     assert.ok(existsSync(SH), 'Missing post-validate-extract-heuristics.sh');
-  });
 
-  test('hook helper mjs file exists', () => {
+    // hook helper mjs file exists
     assert.ok(existsSync(MJS), 'Missing post-validate-extract-heuristics.mjs');
   });
 

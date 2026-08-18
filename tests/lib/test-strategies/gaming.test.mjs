@@ -304,11 +304,11 @@ describe('literal masking — comment prose and string-literal braces', () => {
   // The two control variants, which scored 0 before the fix and must still
   // score 0 after it. They are the ones that catch an over-eager stripper:
   // if masking swallowed real code, these would start reporting.
-  test('string literal with no brace → still no violation', () => {
+  test("string literal with no brace → still no violation (+1 more contract assertions)", () => {
+    // string literal with no brace → still no violation
     assert.deepStrictEqual(detectSharedGamingPatterns(buildFixture(NO_BRACE)).violations, []);
-  });
 
-  test('string literal with balanced braces → still no violation', () => {
+    // string literal with balanced braces → still no violation
     assert.deepStrictEqual(detectSharedGamingPatterns(buildFixture(BALANCED)).violations, []);
   });
 

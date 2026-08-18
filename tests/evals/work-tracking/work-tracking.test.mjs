@@ -94,14 +94,14 @@ describe("Work Tracking Eval: Fixture Setup", () => {
   // Scenario A: Full lifecycle trailer flow
   // =========================================================================
   describe("Scenario A: Full Lifecycle Trailers", () => {
-    it("lib/login.mjs is fully traced (all commits have Spec + Plan-task + Issue)", () => {
+    it("lib/login.mjs is fully traced (all commits have Spec + Plan-task + Issue) (+1 more contract assertions)", () => {
+      // lib/login.mjs is fully traced (all commits have Spec + Plan-task + Issue)
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Spec"));
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Plan-task"));
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Issue"));
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Author-type"));
-    });
 
-    it("tests/login.test.mjs is fully traced", () => {
+      // tests/login.test.mjs is fully traced
       assert.ok(allCommitsHaveTrailer("tests/login.test.mjs", "Spec"));
       assert.ok(allCommitsHaveTrailer("tests/login.test.mjs", "Author-type"));
     });

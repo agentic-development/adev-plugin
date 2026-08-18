@@ -20,17 +20,17 @@ const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".
 const canonicalPath = path.join(pluginRoot, "hooks", "hooks.json");
 const committedPath = path.join(pluginRoot, "providers", "copilot", "hooks.json");
 
-test("canonical hooks.json exists", () => {
+test("canonical hooks.json exists (+1 more contract assertions)", () => {
+  // canonical hooks.json exists
   assert.ok(
-    existsSync(canonicalPath),
-    `MISSING_CANONICAL: ${canonicalPath}`,
+  existsSync(canonicalPath),
+  `MISSING_CANONICAL: ${canonicalPath}`,
   );
-});
 
-test("committed providers/copilot/hooks.json exists", () => {
+  // committed providers/copilot/hooks.json exists
   assert.ok(
-    existsSync(committedPath),
-    `MISSING_COMMITTED: ${committedPath}. Run \`npm run build:copilot-hooks\` to create it.`,
+  existsSync(committedPath),
+  `MISSING_COMMITTED: ${committedPath}. Run \`npm run build:copilot-hooks\` to create it.`,
   );
 });
 

@@ -100,34 +100,32 @@ describe("implement SKILL.md — Step 2-post merged gate source and severity", (
     assert.match(headings[0], /Step 2-post: Integration Gate/);
   });
 
-  it("sources integration gates from the merged gate list via adev domain load-gates", () => {
+  it("sources integration gates from the merged gate list via adev domain load-gates (+3 more contract assertions)", () => {
+    // sources integration gates from the merged gate list via adev domain load-gates
     assert.ok(section.includes("adev domain load-gates"),
-      "Step 2-post must name the `adev domain load-gates` CLI verb as the gate source");
+    "Step 2-post must name the `adev domain load-gates` CLI verb as the gate source");
     assert.ok(section.includes("merged"),
-      "Step 2-post must describe the gate source as the merged gate list");
-  });
+    "Step 2-post must describe the gate source as the merged gate list");
 
-  it("does not instruct a direct read of governance/gates.yaml as the gate source", () => {
+    // does not instruct a direct read of governance/gates.yaml as the gate source
     assert.ok(!/Read\s+`governance\/gates\.yaml`/.test(section),
-      "Step 2-post must not instruct a direct read of governance/gates.yaml");
+    "Step 2-post must not instruct a direct read of governance/gates.yaml");
     assert.ok(!/defined in `governance\/gates\.yaml`/.test(section),
-      "Step 2-post must not describe the gate set as defined in governance/gates.yaml");
-  });
+    "Step 2-post must not describe the gate set as defined in governance/gates.yaml");
 
-  it("no longer declares tier-uniform severity", () => {
+    // no longer declares tier-uniform severity
     assert.ok(!content.includes("Individual commands do not have their own severity."),
-      "The tier-uniform severity sentence must not survive anywhere in the file");
+    "The tier-uniform severity sentence must not survive anywhere in the file");
     assert.ok(!content.includes("All commands within the integration tier share the tier's severity"),
-      "The tier-uniform severity sentence must not survive anywhere in the file");
-  });
+    "The tier-uniform severity sentence must not survive anywhere in the file");
 
-  it("states that a gate's own severity wins over the tier default", () => {
+    // states that a gate's own severity wins over the tier default
     assert.ok(/own `severity`/.test(section),
-      "Step 2-post must state that a gate's own `severity` applies when present");
+    "Step 2-post must state that a gate's own `severity` applies when present");
     assert.ok(section.includes("tier default"),
-      "Step 2-post must name the tier default as the fallback");
+    "Step 2-post must name the tier default as the fallback");
     assert.ok(/`required: false`/.test(section) && section.includes("warning"),
-      "Step 2-post must state that `required: false` forces warning severity");
+    "Step 2-post must state that `required: false` forces warning severity");
   });
 
   it("guards empty, absent, or non-argv commands as skipped with a named reason", () => {
@@ -148,20 +146,19 @@ describe("implement SKILL.md — Step 2-post merged gate source and severity", (
       "Step 2-post must state that the merged list drops `kind`, so absent means deterministic");
   });
 
-  it("surfaces loader warnings rather than swallowing them", () => {
+  it("surfaces loader warnings rather than swallowing them (+2 more contract assertions)", () => {
+    // surfaces loader warnings rather than swallowing them
     assert.ok(section.includes("INVALID_GATE") && section.includes("GATE_OVERRIDE"),
-      "Step 2-post must surface loader warnings by name");
-  });
+    "Step 2-post must surface loader warnings by name");
 
-  it("reports skipped gates in the completion report", () => {
+    // reports skipped gates in the completion report
     assert.ok(/Integration Gates/.test(section) && /skipped/.test(section),
-      "The Integration Gates completion-report section must include skipped gates");
-  });
+    "The Integration Gates completion-report section must include skipped gates");
 
-  it("contains no inline-Node directive (constitution guard)", () => {
+    // contains no inline-Node directive (constitution guard)
     assert.ok(!/node\s+-e/.test(section), "no `node -e` in Step 2-post");
     assert.ok(!/node --input-type=module -e/.test(section),
-      "no `node --input-type=module -e` in Step 2-post");
+    "no `node --input-type=module -e` in Step 2-post");
     assert.ok(!/Run inline Node/i.test(section), "no `Run inline Node` heading in Step 2-post");
   });
 });

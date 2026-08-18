@@ -53,11 +53,11 @@ test('safeRealpath follows a real symlink', () => {
   }
 });
 
-test('isContained: true for the root itself and for a strict descendant', () => {
+test("isContained: true for the root itself and for a strict descendant (+1 more contract assertions)", () => {
+  // isContained: true for the root itself and for a strict descendant
   assert.equal(isContained('/a/b', '/a/b'), true);
   assert.equal(isContained('/a/b/c', '/a/b'), true);
-});
 
-test('isContained: false for a prefix-overlapping sibling', () => {
+  // isContained: false for a prefix-overlapping sibling
   assert.equal(isContained('/a/b-evil/c', '/a/b'), false);
 });

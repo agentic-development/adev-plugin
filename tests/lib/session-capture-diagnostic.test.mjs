@@ -8,34 +8,32 @@ import assert from "node:assert";
 
 import { formatDiagnostic, emitDiagnostic } from "../../lib/session-capture.mjs";
 
-test("formatDiagnostic emits prefix + reason-code only", () => {
+test("formatDiagnostic emits prefix + reason-code only (+3 more contract assertions)", () => {
+  // formatDiagnostic emits prefix + reason-code only
   assert.strictEqual(
-    formatDiagnostic("disabled"),
-    "[adev:session-capture] disabled",
+  formatDiagnostic("disabled"),
+  "[adev:session-capture] disabled",
   );
-});
 
-test("formatDiagnostic appends subject when provided", () => {
+  // formatDiagnostic appends subject when provided
   assert.strictEqual(
-    formatDiagnostic("validation-error", { subject: "session-id" }),
-    "[adev:session-capture] validation-error session-id",
+  formatDiagnostic("validation-error", { subject: "session-id" }),
+  "[adev:session-capture] validation-error session-id",
   );
-});
 
-test("formatDiagnostic appends subject and path", () => {
+  // formatDiagnostic appends subject and path
   assert.strictEqual(
-    formatDiagnostic("path-error", {
-      subject: "transcript",
-      path: ".context-index/sessions/2024.md",
-    }),
-    "[adev:session-capture] path-error transcript .context-index/sessions/2024.md",
+  formatDiagnostic("path-error", {
+  subject: "transcript",
+  path: ".context-index/sessions/2024.md",
+  }),
+  "[adev:session-capture] path-error transcript .context-index/sessions/2024.md",
   );
-});
 
-test("formatDiagnostic appends path without subject", () => {
+  // formatDiagnostic appends path without subject
   assert.strictEqual(
-    formatDiagnostic("disabled", { path: ".githooks/post-commit" }),
-    "[adev:session-capture] disabled .githooks/post-commit",
+  formatDiagnostic("disabled", { path: ".githooks/post-commit" }),
+  "[adev:session-capture] disabled .githooks/post-commit",
   );
 });
 

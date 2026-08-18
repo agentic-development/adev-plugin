@@ -137,11 +137,11 @@ describe("getIssueManager", () => {
 });
 
 describe("SUPPORTED_BACKENDS", () => {
-  it("includes json, file, and beads", () => {
+  it("includes json, file, and beads (+1 more contract assertions)", () => {
+    // includes json, file, and beads
     assert.deepEqual([...SUPPORTED_BACKENDS].sort(), ["beads", "file", "json"]);
-  });
 
-  it("DEFAULT_BACKEND is 'json'", () => {
+    // DEFAULT_BACKEND is 'json'
     assert.equal(DEFAULT_BACKEND, "json");
   });
 });

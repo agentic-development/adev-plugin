@@ -25,21 +25,19 @@ import {
   getRequiredFields,
 } from '../../lib/diagnostics/event-schemas.mjs';
 
-test('CANONICAL_EVENTS includes spec_revised', () => {
+test("CANONICAL_EVENTS includes spec_revised (+3 more contract assertions)", () => {
+  // CANONICAL_EVENTS includes spec_revised
   assert.ok(CANONICAL_EVENTS.has('spec_revised'),
-    'spec_revised must be registered as a canonical event discriminator');
-});
+  'spec_revised must be registered as a canonical event discriminator');
 
-test('CANONICAL_EVENTS includes human_approval_required', () => {
+  // CANONICAL_EVENTS includes human_approval_required
   assert.ok(CANONICAL_EVENTS.has('human_approval_required'),
-    'human_approval_required must be registered as a canonical event discriminator');
-});
+  'human_approval_required must be registered as a canonical event discriminator');
 
-test('isKnownEventType("spec_revised") returns true', () => {
+  // isKnownEventType("spec_revised") returns true
   assert.equal(isKnownEventType('spec_revised'), true);
-});
 
-test('isKnownEventType("human_approval_required") returns true', () => {
+  // isKnownEventType("human_approval_required") returns true
   assert.equal(isKnownEventType('human_approval_required'), true);
 });
 
@@ -76,12 +74,12 @@ test('step_completed schema does NOT add revision to required fields (it is opti
     'revision: must remain optional on step_completed (Behavior 4)');
 });
 
-test('KNOWN_EVENT_TYPES contains both new variants', () => {
+test("KNOWN_EVENT_TYPES contains both new variants (+1 more contract assertions)", () => {
+  // KNOWN_EVENT_TYPES contains both new variants
   assert.ok(KNOWN_EVENT_TYPES.includes('spec_revised'));
   assert.ok(KNOWN_EVENT_TYPES.includes('human_approval_required'));
-});
 
-test('CANONICAL_EVENTS includes test_depth_assigned', () => {
+  // CANONICAL_EVENTS includes test_depth_assigned
   assert.ok(CANONICAL_EVENTS.has('test_depth_assigned'),
-    'test_depth_assigned must be registered as a canonical event discriminator');
+  'test_depth_assigned must be registered as a canonical event discriminator');
 });

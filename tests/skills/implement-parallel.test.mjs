@@ -44,11 +44,11 @@ describe("implement --parallel documentation contract", () => {
     assert.match(skill, /concurrently in a single message/);
   });
 
-  it("documents the worktree-binding prompt contract (absolute / git -C)", () => {
+  it("documents the worktree-binding prompt contract (absolute / git -C) (+1 more contract assertions)", () => {
+    // documents the worktree-binding prompt contract (absolute / git -C)
     assert.match(skill, /git -C/);
-  });
 
-  it("documents the join-time verifications by error code", () => {
+    // documents the join-time verifications by error code
     assert.match(skill, /ORCHESTRATOR_POLLUTED/);
     assert.match(skill, /COMMITS_NOT_VERIFIED/);
     assert.match(skill, /adev parallel assert-clean/);

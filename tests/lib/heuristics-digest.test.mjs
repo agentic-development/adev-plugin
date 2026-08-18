@@ -30,14 +30,14 @@ function sha8(s) {
 }
 
 describe("normalizeFailureText", () => {
-  it("strips punctuation but keeps - and _", () => {
+  it("strips punctuation but keeps - and _ (+1 more contract assertions)", () => {
+    // strips punctuation but keeps - and _
     assert.equal(
-      normalizeFailureText("Error:  Cache   MISS, on-disk_v2!"),
-      "error cache miss on-disk_v2",
+    normalizeFailureText("Error:  Cache   MISS, on-disk_v2!"),
+    "error cache miss on-disk_v2",
     );
-  });
 
-  it("lowercases, collapses run-length whitespace, and trims", () => {
+    // lowercases, collapses run-length whitespace, and trims
     assert.equal(normalizeFailureText("  A\t\tB\n\nC  "), "a b c");
   });
 
@@ -56,26 +56,26 @@ describe("normalizeFailureText", () => {
     assert.equal(normalizeFailureText(once), once);
   });
 
-  it("returns an empty string for non-string input", () => {
+  it("returns an empty string for non-string input (+1 more contract assertions)", () => {
+    // returns an empty string for non-string input
     assert.equal(normalizeFailureText(undefined), "");
     assert.equal(normalizeFailureText(null), "");
     assert.equal(normalizeFailureText(42), "");
-  });
 
-  it("normalizes a punctuation-only string to the empty string", () => {
+    // normalizes a punctuation-only string to the empty string
     assert.equal(normalizeFailureText("!!!"), "");
   });
 });
 
 describe("normalizeIdInput", () => {
-  it("preserves /, . and | and folds backslashes", () => {
+  it("preserves /, . and | and folds backslashes (+1 more contract assertions)", () => {
+    // preserves /, . and | and folds backslashes
     assert.equal(
-      normalizeIdInput(".context-index\\Specs\\Foo.spec.md|Some Pattern."),
-      ".context-index/specs/foo.spec.md|some pattern.",
+    normalizeIdInput(".context-index\\Specs\\Foo.spec.md|Some Pattern."),
+    ".context-index/specs/foo.spec.md|some pattern.",
     );
-  });
 
-  it("does not collapse whitespace or trim (no punctuation stripping at all)", () => {
+    // does not collapse whitespace or trim (no punctuation stripping at all)
     assert.equal(normalizeIdInput("A  B "), "a  b ");
   });
 
@@ -91,15 +91,15 @@ describe("normalizeIdInput", () => {
 });
 
 describe("deriveDigest", () => {
-  it("is the first 8 lowercase hex chars of sha256(normalizer(input))", () => {
+  it("is the first 8 lowercase hex chars of sha256(normalizer(input)) (+1 more contract assertions)", () => {
+    // is the first 8 lowercase hex chars of sha256(normalizer(input))
     assert.equal(
-      deriveDigest("Error: cache miss", normalizeFailureText),
-      sha8("error cache miss"),
+    deriveDigest("Error: cache miss", normalizeFailureText),
+    sha8("error cache miss"),
     );
     assert.equal(deriveDigest("A\\B", normalizeIdInput), sha8("a/b"));
-  });
 
-  it("always returns 8 lowercase hex characters", () => {
+    // always returns 8 lowercase hex characters
     assert.match(deriveDigest("payload", normalizeFailureText), /^[0-9a-f]{8}$/);
   });
 
@@ -134,25 +134,24 @@ describe("deriveDigest", () => {
 });
 
 describe("deriveSignature", () => {
-  it("composes <origin>-<8hex> from the failure-text normalizer", () => {
+  it("composes <origin>-<8hex> from the failure-text normalizer (+2 more contract assertions)", () => {
+    // composes <origin>-<8hex> from the failure-text normalizer
     assert.match(deriveSignature("recover", "Error: cache miss"), /^recover-[0-9a-f]{8}$/);
     assert.equal(
-      deriveSignature("recover", "Error: cache miss"),
-      `recover-${sha8("error cache miss")}`,
+    deriveSignature("recover", "Error: cache miss"),
+    `recover-${sha8("error cache miss")}`,
     );
-  });
 
-  it("is stable across case, whitespace and punctuation drift", () => {
+    // is stable across case, whitespace and punctuation drift
     assert.equal(
-      deriveSignature("recover", "Error: cache miss"),
-      deriveSignature("recover", "  ERROR   cache,  miss  "),
+    deriveSignature("recover", "Error: cache miss"),
+    deriveSignature("recover", "  ERROR   cache,  miss  "),
     );
-  });
 
-  it("keys on the origin prefix — the same text under two origins differs", () => {
+    // keys on the origin prefix — the same text under two origins differs
     assert.notEqual(
-      deriveSignature("recover", "Error: cache miss"),
-      deriveSignature("validate", "Error: cache miss"),
+    deriveSignature("recover", "Error: cache miss"),
+    deriveSignature("validate", "Error: cache miss"),
     );
   });
 

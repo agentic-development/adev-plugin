@@ -68,14 +68,14 @@ describe("adev:specify SKILL.md — workspace-mode target-repo prompt", () => {
 // === Task 3: Frontmatter, reference context, and isolation ===
 
 describe("adev:specify SKILL.md — workspace-mode frontmatter and isolation", () => {
-  it("adds target-repo to frontmatter in workspace mode", () => {
+  it("adds target-repo to frontmatter in workspace mode (+1 more contract assertions)", () => {
+    // adds target-repo to frontmatter in workspace mode
     assert.match(skill, /target-repo:.*<slug>/i,
-      "Must show target-repo in frontmatter template");
-  });
+    "Must show target-repo in frontmatter template");
 
-  it("writes specs to workspace .context-index/ in workspace mode", () => {
+    // writes specs to workspace .context-index/ in workspace mode
     assert.match(skill, /workspace.*\.context-index/i,
-      "Must write specs to workspace .context-index/");
+    "Must write specs to workspace .context-index/");
   });
 
   it("uses resolveWorkspaceContext for sibling repo reference context", () => {

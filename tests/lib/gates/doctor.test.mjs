@@ -383,16 +383,16 @@ test("walkMatching skips node_modules and .git (SEC-4 budget)", () => {
 
 // ── Task 6: runner detection ────────────────────────────────────────────────
 
-test("detectRunner recognises the shipped runner set", () => {
+test("detectRunner recognises the shipped runner set (+1 more contract assertions)", () => {
+  // detectRunner recognises the shipped runner set
   assert.equal(detectRunner("pytest tests/").runner, "pytest");
   assert.equal(detectRunner("python -m pytest").runner, "pytest");
   assert.equal(detectRunner("jest --ci").runner, "jest");
   assert.equal(detectRunner("vitest run").runner, "vitest");
   assert.equal(detectRunner("go test ./...").runner, "go test");
   assert.equal(detectRunner("node --test tests/").runner, "node:test");
-});
 
-test("detectRunner returns null runner for something it does not know", () => {
+  // detectRunner returns null runner for something it does not know
   assert.equal(detectRunner("make check").runner, null);
 });
 

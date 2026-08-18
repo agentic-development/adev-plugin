@@ -18,18 +18,18 @@ import {
 // ── Behavior 1: SPEC_KINDS shape, order, and frozen-ness ────────────────────
 
 describe("SPEC_KINDS", () => {
-  it("deep-equals the documented six-value array in stable order", () => {
+  it("deep-equals the documented six-value array in stable order (+1 more contract assertions)", () => {
+    // deep-equals the documented six-value array in stable order
     assert.deepEqual(SPEC_KINDS, [
-      "behavioral",
-      "refactor",
-      "action",
-      "skill",
-      "integration",
-      "artifact",
+    "behavioral",
+    "refactor",
+    "action",
+    "skill",
+    "integration",
+    "artifact",
     ]);
-  });
 
-  it("is frozen", () => {
+    // is frozen
     assert.equal(Object.isFrozen(SPEC_KINDS), true);
   });
 
@@ -47,16 +47,16 @@ describe("SPEC_KINDS", () => {
 // ── Behavior 2: CHARTER_KINDS shape, order, and frozen-ness ─────────────────
 
 describe("CHARTER_KINDS", () => {
-  it("deep-equals the documented four-value array in stable order", () => {
+  it("deep-equals the documented four-value array in stable order (+1 more contract assertions)", () => {
+    // deep-equals the documented four-value array in stable order
     assert.deepEqual(CHARTER_KINDS, [
-      "module",
-      "feature",
-      "cross-cutting",
-      "initiative",
+    "module",
+    "feature",
+    "cross-cutting",
+    "initiative",
     ]);
-  });
 
-  it("is frozen", () => {
+    // is frozen
     assert.equal(Object.isFrozen(CHARTER_KINDS), true);
   });
 
@@ -101,19 +101,17 @@ describe("isValidKind — valid pairs", () => {
 // ── Behavior 4: unknown kind returns false (does not throw) ─────────────────
 
 describe("isValidKind — unknown kind", () => {
-  it("returns false for ('spec', 'unknown')", () => {
+  it("returns false for ('spec', 'unknown') (+3 more contract assertions)", () => {
+    // returns false for ('spec', 'unknown')
     assert.equal(isValidKind("spec", "unknown"), false);
-  });
 
-  it("returns false for cross-layer ('charter', 'behavioral')", () => {
+    // returns false for cross-layer ('charter', 'behavioral')
     assert.equal(isValidKind("charter", "behavioral"), false);
-  });
 
-  it("returns false for cross-layer ('spec', 'feature')", () => {
+    // returns false for cross-layer ('spec', 'feature')
     assert.equal(isValidKind("spec", "feature"), false);
-  });
 
-  it("returns false for empty string", () => {
+    // returns false for empty string
     assert.equal(isValidKind("spec", ""), false);
   });
 });
@@ -121,23 +119,20 @@ describe("isValidKind — unknown kind", () => {
 // ── Behavior 5: non-string kind returns false (does not throw) ──────────────
 
 describe("isValidKind — non-string kind", () => {
-  it("returns false for null", () => {
+  it("returns false for null (+4 more contract assertions)", () => {
+    // returns false for null
     assert.equal(isValidKind("spec", null), false);
-  });
 
-  it("returns false for undefined", () => {
+    // returns false for undefined
     assert.equal(isValidKind("spec", undefined), false);
-  });
 
-  it("returns false for a number", () => {
+    // returns false for a number
     assert.equal(isValidKind("spec", 123), false);
-  });
 
-  it("returns false for an object", () => {
+    // returns false for an object
     assert.equal(isValidKind("spec", {}), false);
-  });
 
-  it("returns false for an array", () => {
+    // returns false for an array
     assert.equal(isValidKind("spec", ["behavioral"]), false);
   });
 });
@@ -186,11 +181,11 @@ describe("isValidKind — invalid layer", () => {
 // ── Behavior 7: defaultKindFor returns the documented defaults ──────────────
 
 describe("defaultKindFor — valid layer", () => {
-  it("returns 'behavioral' for 'spec'", () => {
+  it("returns 'behavioral' for 'spec' (+1 more contract assertions)", () => {
+    // returns 'behavioral' for 'spec'
     assert.equal(defaultKindFor("spec"), "behavioral");
-  });
 
-  it("returns 'feature' for 'charter'", () => {
+    // returns 'feature' for 'charter'
     assert.equal(defaultKindFor("charter"), "feature");
   });
 });

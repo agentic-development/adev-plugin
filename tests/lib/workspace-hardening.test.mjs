@@ -77,39 +77,32 @@ describe("assertPathInWorkspace", () => {
 });
 
 describe("validateModuleName", () => {
-  it("returns true for a simple alphanumeric name", () => {
+  it("returns true for a simple alphanumeric name (+8 more contract assertions)", () => {
+    // returns true for a simple alphanumeric name
     assert.equal(validateModuleName("mymodule"), true);
-  });
 
-  it("returns true for a name with uppercase letters", () => {
+    // returns true for a name with uppercase letters
     assert.equal(validateModuleName("MyModule"), true);
-  });
 
-  it("returns true for a name with digits", () => {
+    // returns true for a name with digits
     assert.equal(validateModuleName("module123"), true);
-  });
 
-  it("returns true for a name with hyphens", () => {
+    // returns true for a name with hyphens
     assert.equal(validateModuleName("my-module"), true);
-  });
 
-  it("returns true for a name with underscores", () => {
+    // returns true for a name with underscores
     assert.equal(validateModuleName("my_module"), true);
-  });
 
-  it("returns false for an empty string", () => {
+    // returns false for an empty string
     assert.equal(validateModuleName(""), false);
-  });
 
-  it("returns false for a name with a forward slash", () => {
+    // returns false for a name with a forward slash
     assert.equal(validateModuleName("foo/bar"), false);
-  });
 
-  it("returns false for a name with a dot", () => {
+    // returns false for a name with a dot
     assert.equal(validateModuleName("foo.bar"), false);
-  });
 
-  it("returns false for a name with a space", () => {
+    // returns false for a name with a space
     assert.equal(validateModuleName("foo bar"), false);
   });
 
@@ -117,15 +110,14 @@ describe("validateModuleName", () => {
     assert.equal(validateModuleName("foo;bar"), false);
   });
 
-  it("returns false for a name with a shell special character (ampersand)", () => {
+  it("returns false for a name with a shell special character (ampersand) (+2 more contract assertions)", () => {
+    // returns false for a name with a shell special character (ampersand)
     assert.equal(validateModuleName("foo&bar"), false);
-  });
 
-  it("returns false for a name with backtick", () => {
+    // returns false for a name with backtick
     assert.equal(validateModuleName("foo`bar"), false);
-  });
 
-  it("returns false for a name starting with ../", () => {
+    // returns false for a name starting with ../
     assert.equal(validateModuleName("../escape"), false);
   });
 });
@@ -143,14 +135,14 @@ describe("MAX_CHARTER_FILE_BYTES", () => {
 });
 
 describe("sanitizeIdentityOneLiner", () => {
-  it("returns empty string for non-string input", () => {
+  it("returns empty string for non-string input (+1 more contract assertions)", () => {
+    // returns empty string for non-string input
     assert.equal(sanitizeIdentityOneLiner(42), "");
     assert.equal(sanitizeIdentityOneLiner(null), "");
     assert.equal(sanitizeIdentityOneLiner(undefined), "");
     assert.equal(sanitizeIdentityOneLiner([]), "");
-  });
 
-  it("returns empty string for an empty string", () => {
+    // returns empty string for an empty string
     assert.equal(sanitizeIdentityOneLiner(""), "");
   });
 

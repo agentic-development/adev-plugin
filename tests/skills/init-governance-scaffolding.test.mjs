@@ -10,14 +10,14 @@ describe("init SKILL.md — governance scaffolding", () => {
   const skillPath = join(__dirname, "..", "..", "skills", "init", "SKILL.md");
   const content = readFileSync(skillPath, "utf8");
 
-  it("should scaffold governance/gates.yaml from template", () => {
+  it("should scaffold governance/gates.yaml from template (+1 more contract assertions)", () => {
+    // should scaffold governance/gates.yaml from template
     assert.ok(content.includes("gates.yaml") && content.includes("template"),
-      "Init should generate gates.yaml from template");
-  });
+    "Init should generate gates.yaml from template");
 
-  it("should detect legacy gates in manifest.yaml", () => {
+    // should detect legacy gates in manifest.yaml
     assert.ok(content.includes("Legacy gates") || content.includes("legacy gates"),
-      "Init should detect legacy gates: section in manifest");
+    "Init should detect legacy gates: section in manifest");
   });
 
   it("should offer migration path for legacy gates", () => {
@@ -36,16 +36,16 @@ describe("init SKILL.md — Step 7a seeds both gate tiers in argv form", () => {
   const end = content.indexOf("\n### ", start + 1);
   const section = content.substring(start, end === -1 ? content.length : end);
 
-  it("locates a bounded Step 7a section", () => {
+  it("locates a bounded Step 7a section (+1 more contract assertions)", () => {
+    // locates a bounded Step 7a section
     assert.ok(start > -1, "Step 7a heading must exist");
     assert.ok(section.includes("gates.yaml"), "Step 7a must cover gates.yaml");
-  });
 
-  it("names both the fast tier and the integration tier as seeded targets", () => {
+    // names both the fast tier and the integration tier as seeded targets
     assert.ok(/fast[- ]tier/i.test(section), "Step 7a must name the fast tier");
     assert.ok(/integration[- ]tier/i.test(section), "Step 7a must name the integration tier");
     assert.ok(section.includes("`test`") && section.includes("`integration-test`"),
-      "Step 7a must name both live template gate ids");
+    "Step 7a must name both live template gate ids");
   });
 
   it("states that seeded commands are argv lists, never shell strings", () => {
