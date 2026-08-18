@@ -32,3 +32,5 @@
 {"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md","task_id":"6","status":"pending","notes":"Evaluate the threshold and write the finding","ts":"2026-08-18T15:24:52.908Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T15:24:59.311Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T15:25:57.988Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-08-18T15:26:11.735Z"}
+{"event":"step_completed","step":"route","ts":"2026-08-18T15:28:49.794Z"}
