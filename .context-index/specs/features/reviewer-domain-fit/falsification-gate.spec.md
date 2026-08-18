@@ -1,10 +1,10 @@
 ---
 charter: reviewer-domain-fit
 kind: action
-status: review-passed
+status: review-pending
 risk_level: medium
 milestone:
-revision: 3
+revision: 4
 charter-revision: 2
 created: 2026-08-18
 updated: 2026-08-18
@@ -52,11 +52,20 @@ tracker-ref: adev-plugin-j7pq.5
    than after it. The mapping table is committed before Step 4 begins, so the denominator is on
    record independently of any result.
 
-5. **A written finding exists either way, and the initiative's next step follows from it.** The
-   finding is committed at
-   `.context-index/research/referent-integrity-falsification-2026-08.md`. If the bar is met, Phase 2
-   is unblocked. If it is not, the evidence track stops and the finding states that the reviewers
-   were failing on reachability rather than scope.
+5. **A written finding exists for every terminal state, and the initiative's next step follows from
+   it.** The finding is committed at
+   `.context-index/research/referent-integrity-falsification-2026-08.md`. There are three terminal
+   states, not two, and each names its successor:
+   - **Bar met** — Phase 2 is unblocked.
+   - **Bar missed** — the evidence track stops; the finding states that the reviewers were failing
+     on reachability rather than scope.
+   - **INCONCLUSIVE** (denominator < 3, or scorable runs < 3) — Phase 2 stays blocked, and the
+     finding names ONE of two follow-ups: widen the id set with further closed defects of the same
+     class from the board until a denominator of at least 3 is reachable and re-run, or, if no such
+     ids exist, escalate the mapping table to the operator for a human decision on whether the
+     experiment is runnable at all. INCONCLUSIVE must never be left without one of these named, or
+     the evidence track parks with no owner while the charter still gates Phase 2 on Phase 1
+     passing.
 
 6. **No production code changed.** `git diff --stat` against the branch point shows changes confined
    to `.context-index/`.
@@ -140,10 +149,20 @@ For each row:
    `.context-index/prompts/referent-integrity.md` into it, overwriting the historical versions.**
 3. Run `adev governance reviewers --json` inside the worktree and confirm `referent-integrity`
    appears with an empty `errors` array. A run that skips this check is void.
-4. Run `/adev:review-specs --spec <path> **--tier full**`. The tier pin is mandatory, not
-   stylistic: in `quick` the skill "skip[s] the registry loop below" and dispatches only the bundled
-   synthesized reviewer (`skills/review-specs/SKILL.md` Step 4), so an unpinned run could resolve to
-   a tier in which `referent-integrity` never dispatches at all.
+4. **From inside the scratch worktree** — its directory is the run's project root — run
+   `/adev:review-specs --spec <path> --tier full`, and record the resolved project root and
+   `adev --version` (or the resolved plugin root) alongside the run.
+
+   Both pins are load-bearing. The tier pin: in `quick` the skill "skip[s] the registry loop below"
+   and dispatches only the bundled synthesized reviewer (`skills/review-specs/SKILL.md` Step 4), so
+   an unpinned run could resolve to a tier in which `referent-integrity` never dispatches at all.
+   The project-root pin: the skill renders each pack via `renderPack(..., { repoRoot, targetSpecPath })`
+   and `loadReviewConfig` reads `review.yaml` from the run's `repoRoot`, so a run launched from the
+   main checkout with only `--spec` pointing into the worktree would load the current registry but
+   render the pack from CURRENT sources against a historical spec — silently, with an empty `errors`
+   array, and defeating Step 3's in-worktree glob check. Recording the plugin root closes the same
+   hole one level up: `getPluginRoot()` resolves from the library's own location, so invoking the
+   worktree's own `cli/index.mjs` instead of the `adev` on PATH would make `templates/` historical.
 5. Confirm the resulting `.review.md` names `referent-integrity` among its dispatched reviewers
    before scoring it. A `.review.md` that does not is a void run, not a miss.
 
@@ -224,6 +243,10 @@ discarded with it; nothing on the working branch requires cleanup.
       file in each reviewed worktree — all three verified positively, NOT by an empty `errors`
       array, which does not prove a pack resolved
 - [ ] Every run was dispatched with `--tier full`; a run at any other tier is VOID
+- [ ] Every run records its resolved project root, and that root is the scratch worktree; a run
+      whose project root was the main checkout is VOID, not a miss
+- [ ] Every run records `adev --version` or the resolved plugin root, and all runs share one value
+- [ ] If the result is INCONCLUSIVE, the finding names which of the two follow-ups applies
 - [ ] A run whose pack rendered empty is recorded VOID, not scored as a miss
 - [ ] Unresolvable VOIDs reduce scorable runs without re-deriving the committed denominator; below
       3 scorable runs the result is INCONCLUSIVE
